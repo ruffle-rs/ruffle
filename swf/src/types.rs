@@ -728,7 +728,7 @@ bitflags! {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct StyleChangeData {
-    pub move_to: Option<(Twips, Twips)>,
+    pub move_to: Option<Point<Twips>>,
     pub fill_style_0: Option<u32>,
     pub fill_style_1: Option<u32>,
     pub line_style: Option<u32>,

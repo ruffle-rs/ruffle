@@ -38,9 +38,9 @@ pub fn calculate_shape_bounds(shape_records: &[swf::ShapeRecord]) -> swf::Rectan
     for record in shape_records {
         match record {
             swf::ShapeRecord::StyleChange(style_change) => {
-                if let Some((move_x, move_y)) = style_change.move_to {
-                    x = move_x;
-                    y = move_y;
+                if let Some(move_to) = &style_change.move_to {
+                    x = move_to.x;
+                    y = move_to.y;
                     bounds.x_min = Twips::min(bounds.x_min, x);
                     bounds.x_max = Twips::max(bounds.x_max, x);
                     bounds.y_min = Twips::min(bounds.y_min, y);
@@ -404,9 +404,9 @@ impl<'a> ShapeConverter<'a> {
         while let Some(record) = self.iter.next() {
             match record {
                 ShapeRecord::StyleChange(style_change) => {
-                    if let Some((x, y)) = style_change.move_to {
-                        self.x = x;
-                        self.y = y;
+                    if let Some(move_to) = &style_change.move_to {
+                        self.x = move_to.x;
+                        self.y = move_to.y;
                         // We've lifted the pen, so we're starting a new path.
                         // Flush the previous path.
                         self.flush_paths();
@@ -605,7 +605,7 @@ mod tests {
     fn basic_shape() {
         let shape = build_shape(vec![
             ShapeRecord::StyleChange(Box::new(swf::StyleChangeData {
-                move_to: Some((Twips::from_pixels(100.0), Twips::from_pixels(100.0))),
+                move_to: Some(swf::Point::from_pixels(100.0, 100.0)),
                 fill_style_0: None,
                 fill_style_1: Some(1),
                 line_style: None,
@@ -663,7 +663,7 @@ mod tests {
     fn flipped_edges() {
         let shape = build_shape(vec![
             ShapeRecord::StyleChange(Box::new(swf::StyleChangeData {
-                move_to: Some((Twips::from_pixels(100.0), Twips::from_pixels(100.0))),
+                move_to: Some(swf::Point::from_pixels(100.0, 100.0)),
                 fill_style_0: None,
                 fill_style_1: Some(1),
                 line_style: None,
@@ -682,7 +682,7 @@ mod tests {
                 delta_y: Twips::from_pixels(0.0),
             },
             ShapeRecord::StyleChange(Box::new(swf::StyleChangeData {
-                move_to: Some((Twips::from_pixels(100.0), Twips::from_pixels(100.0))),
+                move_to: Some(swf::Point::from_pixels(100.0, 100.0)),
                 fill_style_0: Some(1),
                 fill_style_1: Some(0),
                 line_style: None,
@@ -779,9 +779,9 @@ pub fn shape_hit_test(
                     winding = 0;
                 }
 
-                if let Some((move_x, move_y)) = style_change.move_to {
-                    x = move_x;
-                    y = move_y;
+                if let Some(move_to) = &style_change.move_to {
+                    x = move_to.x;
+                    y = move_to.y;
                 }
 
                 if let Some(i) = style_change.fill_style_0 {

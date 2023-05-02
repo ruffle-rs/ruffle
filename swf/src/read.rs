@@ -1769,10 +1769,9 @@ impl<'a> Reader<'a> {
                 let num_line_bits = context.num_line_bits as u32;
                 let move_to = if flags.contains(ShapeRecordFlag::MOVE_TO) {
                     let num_bits = bits.read_ubits(5)?;
-                    Some((
-                        bits.read_sbits_twips(num_bits)?,
-                        bits.read_sbits_twips(num_bits)?,
-                    ))
+                    let move_x = bits.read_sbits_twips(num_bits)?;
+                    let move_y = bits.read_sbits_twips(num_bits)?;
+                    Some(Point::new(move_x, move_y))
                 } else {
                     None
                 };

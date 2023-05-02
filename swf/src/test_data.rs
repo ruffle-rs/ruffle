@@ -402,7 +402,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 glyphs: vec![
                     vec![
                         ShapeRecord::StyleChange(Box::new(StyleChangeData {
-                            move_to: Some((Twips::from_pixels(19.45), Twips::from_pixels(-14.0))),
+                            move_to: Some(Point::from_pixels(19.45, -14.0)),
                             fill_style_0: None,
                             fill_style_1: Some(1),
                             line_style: Some(0),
@@ -427,7 +427,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                     ],
                     vec![
                         ShapeRecord::StyleChange(Box::new(StyleChangeData {
-                            move_to: Some((Twips::from_pixels(32.65), Twips::from_pixels(7.5))),
+                            move_to: Some(Point::from_pixels(32.65, 7.5)),
                             fill_style_0: None,
                             fill_style_1: Some(1),
                             line_style: Some(0),
@@ -502,7 +502,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         }),
                         shape_records: vec![
                             ShapeRecord::StyleChange(Box::new(StyleChangeData {
-                                move_to: Some((12.9, -37.2)),
+                                move_to: Some(Point::from_pixels(12.9, -37.2)),
                                 fill_style_0: Some(1),
                                 fill_style_1: None,
                                 line_style: None,
@@ -513,7 +513,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                             ShapeRecord::StraightEdge { delta_x: -0.7, delta_y: -26.95 },
                             ShapeRecord::StraightEdge { delta_x: 5.6, delta_y: 0.0 },
                             ShapeRecord::StyleChange(Box::new(StyleChangeData {
-                                move_to: Some((12.65, 0.0)),
+                                move_to: Some(Point::from_pixels(12.65, 0.0)),
                                 fill_style_0: None,
                                 fill_style_1: None,
                                 line_style: None,
@@ -553,7 +553,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                     Glyph {
                         shape_records: vec![
                             ShapeRecord::StyleChange(Box::new(StyleChangeData {
-                                move_to: Some((205.5, -527.5)),
+                                move_to: Some(Point::from_pixels(205.5, -527.5)),
                                 fill_style_0: Some(1),
                                 fill_style_1: None,
                                 line_style: None,
@@ -571,7 +571,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                     Glyph {
                         shape_records: vec![
                             ShapeRecord::StyleChange(Box::new(StyleChangeData {
-                                move_to: Some((249.0, -694.0)),
+                                move_to: Some(Point::from_pixels(249.0, -694.0)),
                                 fill_style_0: Some(1),
                                 fill_style_1: None,
                                 line_style: None,
@@ -737,7 +737,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         .with_color(Color::from_rgba(0xff00ff00))],
                     shape: vec![
                         ShapeRecord::StyleChange(Box::new(StyleChangeData {
-                            move_to: Some((Twips::from_pixels(20.0), Twips::from_pixels(20.0))),
+                            move_to: Some(Point::from_pixels(20.0, 20.0)),
                             fill_style_0: None,
                             fill_style_1: None,
                             line_style: Some(1),
@@ -834,7 +834,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         .with_color(Color::from_rgba(0xffffff00))],
                     shape: vec![
                         ShapeRecord::StyleChange(Box::new(StyleChangeData {
-                            move_to: Some((Twips::from_pixels(20.0), Twips::from_pixels(60.0))),
+                            move_to: Some(Point::from_pixels(20.0, 60.0)),
                             fill_style_0: None,
                             fill_style_1: None,
                             line_style: None,
@@ -956,7 +956,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         .with_color(Color::from_rgba(0xff00ff00))],
                     shape: vec![
                         ShapeRecord::StyleChange(Box::new(StyleChangeData {
-                            move_to: Some((Twips::from_pixels(20.0), Twips::from_pixels(20.0))),
+                            move_to: Some(Point::from_pixels(20.0, 20.0)),
                             fill_style_0: None,
                             fill_style_1: None,
                             line_style: Some(1),
@@ -1065,7 +1065,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         .with_color(Color::from_rgba(0xffffff00))],
                     shape: vec![
                         ShapeRecord::StyleChange(Box::new(StyleChangeData {
-                            move_to: Some((Twips::from_pixels(26.0), Twips::from_pixels(147.35))),
+                            move_to: Some(Point::from_pixels(26.0, 147.35)),
                             fill_style_0: None,
                             fill_style_1: None,
                             line_style: None,
@@ -1439,7 +1439,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 },
                 shape: vec![
                     ShapeRecord::StyleChange(Box::new(StyleChangeData {
-                        move_to: Some((Twips::from_pixels(50.0), Twips::from_pixels(25.0))),
+                        move_to: Some(Point::from_pixels(50.0, 25.0)),
                         fill_style_0: None,
                         fill_style_1: Some(1),
                         line_style: None,
@@ -1625,7 +1625,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 },
                 shape: vec![
                     ShapeRecord::StyleChange(Box::new(StyleChangeData {
-                        move_to: Some((Twips::from_pixels(150.0), Twips::from_pixels(0.0))),
+                        move_to: Some(Point::from_pixels(150.0, 0.0)),
                         fill_style_0: None,
                         fill_style_1: Some(1),
                         line_style: Some(1),
@@ -1655,7 +1655,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         delta_y: Twips::from_pixels(-100.0),
                     },
                     ShapeRecord::StyleChange(Box::new(StyleChangeData {
-                        move_to: Some((Twips::from_pixels(100.0), Twips::from_pixels(50.0))),
+                        move_to: Some(Point::from_pixels(100.0, 50.0)),
                         fill_style_0: None,
                         fill_style_1: Some(2),
                         line_style: Some(2),
