@@ -1479,11 +1479,11 @@ impl<W: Write> Writer<W> {
                     style_change.new_styles.is_some(),
                 );
                 bits.write_ubits(5, flags.bits().into())?;
-                if let Some((move_x, move_y)) = style_change.move_to {
-                    let num_bits = max(count_sbits_twips(move_x), count_sbits_twips(move_y));
+                if let Some(move_to) = &style_change.move_to {
+                    let num_bits = count_sbits_twips(move_to.x).max(count_sbits_twips(move_to.y));
                     bits.write_ubits(5, num_bits)?;
-                    bits.write_sbits_twips(num_bits, move_x)?;
-                    bits.write_sbits_twips(num_bits, move_y)?;
+                    bits.write_sbits_twips(num_bits, move_to.x)?;
+                    bits.write_sbits_twips(num_bits, move_to.y)?;
                 }
                 if let Some(fill_style_index) = style_change.fill_style_0 {
                     bits.write_ubits(num_fill_bits, fill_style_index)?;

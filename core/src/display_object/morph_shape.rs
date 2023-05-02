@@ -287,15 +287,15 @@ impl MorphShapeStatic {
                 (ShapeRecord::StyleChange(start_change), ShapeRecord::StyleChange(end_change)) => {
                     let mut style_change = start_change.clone();
                     if start_change.move_to.is_some() || end_change.move_to.is_some() {
-                        if let Some((s_x, s_y)) = start_change.move_to {
-                            start_x = s_x;
-                            start_y = s_y;
+                        if let Some(move_to) = &start_change.move_to {
+                            start_x = move_to.x;
+                            start_y = move_to.y;
                         }
-                        if let Some((e_x, e_y)) = end_change.move_to {
-                            end_x = e_x;
-                            end_y = e_y;
+                        if let Some(move_to) = &end_change.move_to {
+                            end_x = move_to.x;
+                            end_y = move_to.y;
                         }
-                        style_change.move_to = Some((
+                        style_change.move_to = Some(Point::new(
                             lerp_twips(start_x, end_x, a, b),
                             lerp_twips(start_y, end_y, a, b),
                         ));
@@ -306,10 +306,10 @@ impl MorphShapeStatic {
                 }
                 (ShapeRecord::StyleChange(start_change), _) => {
                     let mut style_change = start_change.clone();
-                    if let Some((s_x, s_y)) = start_change.move_to {
-                        start_x = s_x;
-                        start_y = s_y;
-                        style_change.move_to = Some((
+                    if let Some(move_to) = &start_change.move_to {
+                        start_x = move_to.x;
+                        start_y = move_to.y;
+                        style_change.move_to = Some(Point::new(
                             lerp_twips(start_x, end_x, a, b),
                             lerp_twips(start_y, end_y, a, b),
                         ));
@@ -320,10 +320,10 @@ impl MorphShapeStatic {
                 }
                 (_, ShapeRecord::StyleChange(end_change)) => {
                     let mut style_change = end_change.clone();
-                    if let Some((e_x, e_y)) = end_change.move_to {
-                        end_x = e_x;
-                        end_y = e_y;
-                        style_change.move_to = Some((
+                    if let Some(move_to) = &end_change.move_to {
+                        end_x = move_to.x;
+                        end_y = move_to.y;
+                        style_change.move_to = Some(Point::new(
                             lerp_twips(start_x, end_x, a, b),
                             lerp_twips(start_y, end_y, a, b),
                         ));
@@ -383,9 +383,9 @@ impl MorphShapeStatic {
                 *y += *control_delta_y + *anchor_delta_y;
             }
             ShapeRecord::StyleChange(ref style_change) => {
-                if let Some((move_x, move_y)) = style_change.move_to {
-                    *x = move_x;
-                    *y = move_y;
+                if let Some(move_to) = &style_change.move_to {
+                    *x = move_to.x;
+                    *y = move_to.y;
                 }
             }
         }
