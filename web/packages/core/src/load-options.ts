@@ -173,21 +173,21 @@ export interface ObsoleteDuration {
 export type Duration = SecsDuration | ObsoleteDuration;
 
 /**
- * The handling mode of navigate_to_url website calls.
+ * The handling mode of links opening a new website.
  */
 export const enum OpenURLMode {
     /**
-     * Allow all navigate_to_url website calls.
+     * Allow all links to open a new website.
      */
     Allow = "allow",
 
     /**
-     * A confirmation dialog opens with every navigate_to_url website call.
+     * A confirmation dialog opens with every link trying to open a new website.
      */
     Confirm = "confirm",
 
     /**
-     * Deny all navigate_to_url website calls.
+     * Deny all links to open a new website.
      */
     Deny = "deny",
 }
@@ -203,12 +203,24 @@ export const enum NetworkingAccessMode {
 
     /**
      * The SWF file may not call browser navigation or browser interaction APIs.
+     *
+     * The APIs navigateToURL(), fscommand() and ExternalInterface.call() are
+     * prevented in this mode.
      */
     Internal = "internal",
 
     /**
      * The SWF file may not call browser navigation or browser interaction APIs
      * and it cannot use any SWF-to-SWF communication APIs.
+     *
+     * Additionally to the ones in internal mode, the APIs sendToURL(),
+     * FileReference.download(), FileReference.upload(), Loader.load(),
+     * LocalConnection.connect(), LocalConnection.send(), NetConnection.connect(),
+     * NetStream.play(), Security.loadPolicyFile(), SharedObject.getLocal(),
+     * SharedObject.getRemote(), Socket.connect(), Sound.load(), URLLoader.load(),
+     * URLStream.load() and XMLSocket.connect() are prevented in this mode.
+     *
+     * This mode is not implemented yet.
      */
     None = "none",
 }
@@ -452,14 +464,14 @@ export interface BaseLoadOptions {
     polyfills?: boolean;
 
     /**
-     * The handling mode of navigate_to_url website calls.
+     * The handling mode of links opening a new website.
      *
      * @default OpenURLMode.Allow
      */
     openUrlMode?: OpenURLMode;
 
     /**
-     * Whether and in what way the flash networking APIs can be accessed.
+     * Which flash networking APIs may be accessed.
      *
      * @default NetworkingAccessMode.All
      */

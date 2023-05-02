@@ -33,11 +33,23 @@ pub enum NetworkingAccessMode {
     All,
 
     /// The SWF file may not call browser navigation or browser interaction APIs.
+    ///
+    /// The APIs getURL(), navigateToURL(), fscommand() and ExternalInterface.call()
+    /// are prevented in this mode.
     #[serde(rename = "internal")]
     Internal,
 
     /// The SWF file may not call browser navigation or browser interaction APIs
     /// and it cannot use any SWF-to-SWF communication APIs.
+    ///
+    /// Additionally to the ones in internal mode, the APIs sendToURL(),
+    /// FileReference.download(), FileReference.upload(), Loader.load(),
+    /// LocalConnection.connect(), LocalConnection.send(), NetConnection.connect(),
+    /// NetStream.play(), Security.loadPolicyFile(), SharedObject.getLocal(),
+    /// SharedObject.getRemote(), Socket.connect(), Sound.load(), URLLoader.load(),
+    /// URLStream.load() and XMLSocket.connect() are prevented in this mode.
+    ///
+    /// This mode is not implemented yet.
     #[serde(rename = "none")]
     None,
 }
