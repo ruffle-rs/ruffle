@@ -47,28 +47,26 @@ pub fn calculate_shape_bounds(shape_records: &[swf::ShapeRecord]) -> swf::Rectan
                     bounds.y_max = Twips::max(bounds.y_max, y);
                 }
             }
-            swf::ShapeRecord::StraightEdge { delta_x, delta_y } => {
-                x += *delta_x;
-                y += *delta_y;
+            swf::ShapeRecord::StraightEdge { delta } => {
+                x += delta.dx;
+                y += delta.dy;
                 bounds.x_min = Twips::min(bounds.x_min, x);
                 bounds.x_max = Twips::max(bounds.x_max, x);
                 bounds.y_min = Twips::min(bounds.y_min, y);
                 bounds.y_max = Twips::max(bounds.y_max, y);
             }
             swf::ShapeRecord::CurvedEdge {
-                control_delta_x,
-                control_delta_y,
-                anchor_delta_x,
-                anchor_delta_y,
+                control_delta,
+                anchor_delta,
             } => {
-                x += *control_delta_x;
-                y += *control_delta_y;
+                x += control_delta.dx;
+                y += control_delta.dy;
                 bounds.x_min = Twips::min(bounds.x_min, x);
                 bounds.x_max = Twips::max(bounds.x_max, x);
                 bounds.y_min = Twips::min(bounds.y_min, y);
                 bounds.y_max = Twips::max(bounds.y_max, y);
-                x += *anchor_delta_x;
-                y += *anchor_delta_y;
+                x += anchor_delta.dx;
+                y += anchor_delta.dy;
                 bounds.x_min = Twips::min(bounds.x_min, x);
                 bounds.x_max = Twips::max(bounds.x_max, x);
                 bounds.y_min = Twips::min(bounds.y_min, y);
@@ -458,9 +456,9 @@ impl<'a> ShapeConverter<'a> {
                     }
                 }
 
-                ShapeRecord::StraightEdge { delta_x, delta_y } => {
-                    self.x += *delta_x;
-                    self.y += *delta_y;
+                ShapeRecord::StraightEdge { delta } => {
+                    self.x += delta.dx;
+                    self.y += delta.dy;
 
                     self.visit_point(Point {
                         x: self.x,
@@ -470,13 +468,11 @@ impl<'a> ShapeConverter<'a> {
                 }
 
                 ShapeRecord::CurvedEdge {
-                    control_delta_x,
-                    control_delta_y,
-                    anchor_delta_x,
-                    anchor_delta_y,
+                    control_delta,
+                    anchor_delta,
                 } => {
-                    let x1 = self.x + *control_delta_x;
-                    let y1 = self.y + *control_delta_y;
+                    let x1 = self.x + control_delta.dx;
+                    let y1 = self.y + control_delta.dy;
 
                     self.visit_point(Point {
                         x: x1,
@@ -484,8 +480,8 @@ impl<'a> ShapeConverter<'a> {
                         is_bezier_control: true,
                     });
 
-                    let x2 = x1 + *anchor_delta_x;
-                    let y2 = y1 + *anchor_delta_y;
+                    let x2 = x1 + anchor_delta.dx;
+                    let y2 = y1 + anchor_delta.dy;
 
                     self.visit_point(Point {
                         x: x2,
@@ -573,6 +569,7 @@ impl<'a> ShapeConverter<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use swf::PointDelta;
 
     const FILL_STYLES: [FillStyle; 1] = [FillStyle::Color(swf::Color {
         r: 255,
@@ -612,20 +609,16 @@ mod tests {
                 new_styles: None,
             })),
             ShapeRecord::StraightEdge {
-                delta_x: Twips::from_pixels(100.0),
-                delta_y: Twips::from_pixels(0.0),
+                delta: PointDelta::from_pixels(100.0, 0.0),
             },
             ShapeRecord::StraightEdge {
-                delta_x: Twips::from_pixels(0.0),
-                delta_y: Twips::from_pixels(100.0),
+                delta: PointDelta::from_pixels(0.0, 100.0),
             },
             ShapeRecord::StraightEdge {
-                delta_x: Twips::from_pixels(-100.0),
-                delta_y: Twips::from_pixels(0.0),
+                delta: PointDelta::from_pixels(-100.0, 0.0),
             },
             ShapeRecord::StraightEdge {
-                delta_x: Twips::from_pixels(0.0),
-                delta_y: Twips::from_pixels(-100.0),
+                delta: PointDelta::from_pixels(0.0, -100.0),
             },
         ]);
         let commands = ShapeConverter::from_shape(&shape).into_commands();
@@ -670,16 +663,13 @@ mod tests {
                 new_styles: None,
             })),
             ShapeRecord::StraightEdge {
-                delta_x: Twips::from_pixels(100.0),
-                delta_y: Twips::from_pixels(0.0),
+                delta: PointDelta::from_pixels(100.0, 0.0),
             },
             ShapeRecord::StraightEdge {
-                delta_x: Twips::from_pixels(0.0),
-                delta_y: Twips::from_pixels(100.0),
+                delta: PointDelta::from_pixels(0.0, 100.0),
             },
             ShapeRecord::StraightEdge {
-                delta_x: Twips::from_pixels(-100.0),
-                delta_y: Twips::from_pixels(0.0),
+                delta: PointDelta::from_pixels(-100.0, 0.0),
             },
             ShapeRecord::StyleChange(Box::new(swf::StyleChangeData {
                 move_to: Some(swf::Point::from_pixels(100.0, 100.0)),
@@ -689,8 +679,7 @@ mod tests {
                 new_styles: None,
             })),
             ShapeRecord::StraightEdge {
-                delta_x: Twips::from_pixels(0.0),
-                delta_y: Twips::from_pixels(100.0),
+                delta: PointDelta::from_pixels(0.0, 100.0),
             },
         ]);
         let commands = ShapeConverter::from_shape(&shape).into_commands();
@@ -805,9 +794,9 @@ pub fn shape_hit_test(
                     };
                 }
             }
-            swf::ShapeRecord::StraightEdge { delta_x, delta_y } => {
-                let x1 = x + *delta_x;
-                let y1 = y + *delta_y;
+            swf::ShapeRecord::StraightEdge { delta } => {
+                let x1 = x + delta.dx;
+                let y1 = y + delta.dy;
                 // If this edge has a fill style on only one-side, check for a crossing.
                 if has_fill_style1 {
                     if !has_fill_style0 {
@@ -826,16 +815,14 @@ pub fn shape_hit_test(
                 y = y1;
             }
             swf::ShapeRecord::CurvedEdge {
-                control_delta_x,
-                control_delta_y,
-                anchor_delta_x,
-                anchor_delta_y,
+                control_delta,
+                anchor_delta,
             } => {
-                let x1 = x + *control_delta_x;
-                let y1 = y + *control_delta_y;
+                let x1 = x + control_delta.dx;
+                let y1 = y + control_delta.dy;
 
-                let x2 = x1 + *anchor_delta_x;
-                let y2 = y1 + *anchor_delta_y;
+                let x2 = x1 + anchor_delta.dx;
+                let y2 = y1 + anchor_delta.dy;
 
                 // If this edge has a fill style on only one-side, check for a crossing.
                 if has_fill_style1 {

@@ -704,14 +704,11 @@ pub struct ShapeStyles {
 pub enum ShapeRecord {
     StyleChange(Box<StyleChangeData>),
     StraightEdge {
-        delta_x: Twips,
-        delta_y: Twips,
+        delta: PointDelta<Twips>,
     },
     CurvedEdge {
-        control_delta_x: Twips,
-        control_delta_y: Twips,
-        anchor_delta_x: Twips,
-        anchor_delta_y: Twips,
+        control_delta: PointDelta<Twips>,
+        anchor_delta: PointDelta<Twips>,
     },
 }
 
