@@ -1008,7 +1008,7 @@ pub fn copy_pixels<'gc>(
     }
 
     copy_on_cpu(
-        context,
+        context.gc_context,
         source_bitmap,
         target,
         source_region,
@@ -1180,7 +1180,14 @@ pub fn apply_filter<'gc>(
         }
 
         // Until we support these filters, treat this like a copy
-        copy_on_cpu(context, source, target, source_region, dest_region, false);
+        copy_on_cpu(
+            context.gc_context,
+            source,
+            target,
+            source_region,
+            dest_region,
+            false,
+        );
         return;
     }
 
@@ -1208,7 +1215,7 @@ pub fn apply_filter<'gc>(
 
 #[allow(clippy::too_many_arguments)]
 fn copy_on_cpu<'gc>(
-    context: &mut UpdateContext<'_, 'gc>,
+    context: MutationContext<'gc, '_>,
     source: BitmapDataWrapper<'gc>,
     dest: BitmapDataWrapper<'gc>,
     source_region: PixelRegion,
@@ -1226,7 +1233,7 @@ fn copy_on_cpu<'gc>(
 
     if source.ptr_eq(dest) {
         let dest = dest.sync();
-        let mut write = dest.write(context.gc_context);
+        let mut write = dest.write(context);
 
         for y in 0..dest_region.height() {
             for x in 0..dest_region.width() {
@@ -1244,7 +1251,7 @@ fn copy_on_cpu<'gc>(
         write.set_cpu_dirty(dest_region);
     } else {
         let dest = dest.sync();
-        let mut dest_write = dest.write(context.gc_context);
+        let mut dest_write = dest.write(context);
         let source_read = source.read_area(source_region);
 
         if !blend && (dest_write.transparency() || !source_read.transparency()) {
@@ -1435,7 +1442,7 @@ pub fn draw<'gc>(
                 );
             } else {
                 copy_on_cpu(
-                    context,
+                    context.gc_context,
                     *source,
                     target,
                     source_region,
