@@ -436,16 +436,27 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
     fn filter_clip_event(
         self,
         _context: &mut UpdateContext<'_, 'gc>,
-        _event: ClipEvent,
+        event: ClipEvent,
     ) -> ClipEventResult {
         // An invisible button can still run its `rollOut` or `releaseOutside` event.
         // A disabled button doesn't run its events (`KeyPress` being the exception) but
         // its state can still change. This is tested at "avm1/mouse_events_visible_enabled".
         if !self.visible() && self.0.read().state == ButtonState::Up {
-            ClipEventResult::NotHandled
-        } else {
-            ClipEventResult::Handled
+            return ClipEventResult::NotHandled;
         }
+
+        // The `keyPress` event doesn't fire if the button is inside another button.
+        if matches!(event, ClipEvent::KeyPress { .. })
+            && self
+                .base()
+                .parent
+                .and_then(|p| p.as_avm1_button())
+                .is_some()
+        {
+            return ClipEventResult::NotHandled;
+        }
+
+        ClipEventResult::Handled
     }
 
     fn event_dispatch(

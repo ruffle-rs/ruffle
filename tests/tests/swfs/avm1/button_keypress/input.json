@@ -1,0 +1,38 @@
+[
+    {
+        "type": "MouseMove",
+        "pos": [260.0, 140.0]
+    },
+    {
+        "type": "Wait"
+    },
+    {
+        "type": "MouseDown",
+        "pos": [260.0, 140.0],
+        "btn": "Left"
+    },
+    {
+        "type": "Wait"
+    },
+    {
+        "type": "MouseUp",
+        "pos": [260.0, 140.0],
+        "btn": "Left"
+    },
+    {
+        "type": "Wait"
+    },
+    {
+        "type": "Wait"
+    },
+    {
+        "type": "KeyDown",
+        "key_code": 13
+    },
+    {
+        "type": "Wait"
+    },
+    {
+        "type": "Wait"
+    }
+]
