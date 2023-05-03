@@ -97,6 +97,12 @@ impl Display for StageQuality {
 
 pub struct StageQualityError;
 
+impl Display for StageQualityError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "StageQualityError")
+    }
+}
+
 impl FromStr for StageQuality {
     type Err = StageQualityError;
 

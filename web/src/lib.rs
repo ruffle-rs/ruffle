@@ -261,7 +261,8 @@ struct Config {
     #[serde(deserialize_with = "deserialize_from_str")]
     salign: StageAlign,
 
-    quality: Option<String>,
+    #[serde(deserialize_with = "deserialize_from_str")]
+    quality: StageQuality,
 
     scale: Option<String>,
 
@@ -547,13 +548,6 @@ impl Ruffle {
             }
         };
 
-        let default_quality = if ruffle_web_common::is_mobile_or_tablet() {
-            tracing::info!("Running on a mobile device; defaulting to low quality");
-            StageQuality::Low
-        } else {
-            StageQuality::High
-        };
-
         let trace_observer = Arc::new(RefCell::new(JsValue::UNDEFINED));
         let core = builder
             .with_log(log_adapter::WebLogBackend::new(trace_observer.clone()))
@@ -568,12 +562,7 @@ impl Ruffle {
             } else {
                 CompatibilityRules::empty()
             })
-            .with_quality(
-                config
-                    .quality
-                    .and_then(|q| StageQuality::from_str(&q).ok())
-                    .unwrap_or(default_quality),
-            )
+            .with_quality(config.quality)
             .with_scale_mode(
                 config
                     .scale
