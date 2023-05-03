@@ -68,8 +68,6 @@ pub trait RenderBackend: Downcast {
 
     fn debug_info(&self) -> Cow<'static, str>;
     /// An internal name that is used to identify the render-backend.
-    /// For valid values, look at:
-    /// web/packages/core/src/load-options.ts:RenderBackend
     fn name(&self) -> &'static str;
 
     fn set_quality(&mut self, quality: StageQuality);
