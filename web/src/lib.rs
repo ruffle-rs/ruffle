@@ -20,7 +20,7 @@ use ruffle_core::external::{
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{
     Color, Player, PlayerBuilder, PlayerEvent, SandboxType, StageAlign, StageScaleMode,
-    StaticCallstack, ViewportDimensions,
+    StaticCallstack, ViewportDimensions, WindowMode,
 };
 use ruffle_render::quality::StageQuality;
 use ruffle_video_software::backend::SoftwareVideoBackend;
@@ -271,7 +271,8 @@ struct Config {
 
     frame_rate: Option<f64>,
 
-    wmode: Option<String>,
+    #[serde(deserialize_with = "deserialize_from_str")]
+    wmode: WindowMode,
 
     warn_on_unsupported_content: bool,
 
@@ -576,7 +577,7 @@ impl Ruffle {
             core.set_background_color(config.background_color);
             core.set_show_menu(config.show_menu);
             core.set_stage_align(config.salign);
-            core.set_window_mode(config.wmode.as_deref().unwrap_or("window"));
+            core.set_window_mode(config.wmode);
 
             // Create the external interface.
             if allow_script_access && allow_networking == NetworkingAccessMode::All {
@@ -1445,7 +1446,7 @@ async fn create_renderer(
     )))]
     std::compile_error!("You must enable one of the render backend features (e.g., webgl).");
 
-    let _is_transparent = config.wmode.as_deref() == Some("transparent");
+    let _is_transparent = config.wmode == WindowMode::Transparent;
 
     let mut renderer_list = vec!["webgpu", "wgpu-webgl", "webgl", "canvas"];
     if let Some(preferred_renderer) = &config.preferred_renderer {

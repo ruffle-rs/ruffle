@@ -48,7 +48,7 @@ mod xml;
 
 pub use avm1::globals::system::SandboxType;
 pub use context_menu::ContextMenuItem;
-pub use display_object::{StageAlign, StageDisplayState, StageScaleMode};
+pub use display_object::{StageAlign, StageDisplayState, StageScaleMode, WindowMode};
 pub use events::PlayerEvent;
 pub use indexmap;
 pub use loader::LoadBehavior;
