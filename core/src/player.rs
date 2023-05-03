@@ -826,17 +826,13 @@ impl Player {
 
     pub fn set_show_menu(&mut self, show_menu: bool) {
         self.mutate_with_update_context(|context| {
-            let stage = context.stage;
-            stage.set_show_menu(context, show_menu);
+            context.stage.set_show_menu(context, show_menu);
         })
     }
 
-    pub fn set_stage_align(&mut self, stage_align: &str) {
+    pub fn set_stage_align(&mut self, stage_align: StageAlign) {
         self.mutate_with_update_context(|context| {
-            let stage = context.stage;
-            if let Ok(stage_align) = StageAlign::from_str(stage_align) {
-                stage.set_align(context, stage_align);
-            }
+            context.stage.set_align(context, stage_align);
         })
     }
 

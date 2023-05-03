@@ -2,10 +2,6 @@
 #![allow(clippy::extra_unused_type_parameters)]
 
 #[macro_use]
-mod display_object;
-pub use display_object::{StageDisplayState, StageScaleMode};
-
-#[macro_use]
 extern crate smallvec;
 
 #[macro_use]
@@ -14,22 +10,27 @@ extern crate downcast_rs;
 #[macro_use]
 extern crate num_derive;
 
-#[macro_use]
 mod avm1;
 mod avm2;
+pub mod backend;
 mod binary_data;
 pub mod bitmap;
 mod character;
+pub mod compatibility_rules;
+pub mod config;
 pub mod context;
 pub mod context_menu;
+mod display_object;
 mod drawing;
 mod ecma_conversions;
 pub(crate) mod either;
 pub mod events;
+pub mod external;
 pub mod focus_tracker;
 mod font;
 mod frame_lifecycle;
 mod html;
+pub mod i18n;
 mod library;
 pub mod limits;
 pub mod loader;
@@ -38,21 +39,16 @@ mod player;
 mod prelude;
 mod streams;
 pub mod string;
+pub mod stub;
 pub mod tag_utils;
 pub mod timer;
 mod types;
 mod vminterface;
 mod xml;
 
-pub mod backend;
-pub mod compatibility_rules;
-pub mod config;
-pub mod external;
-pub mod i18n;
-pub mod stub;
-
 pub use avm1::globals::system::SandboxType;
 pub use context_menu::ContextMenuItem;
+pub use display_object::{StageAlign, StageDisplayState, StageScaleMode};
 pub use events::PlayerEvent;
 pub use indexmap;
 pub use loader::LoadBehavior;

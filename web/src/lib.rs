@@ -19,8 +19,8 @@ use ruffle_core::external::{
 };
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{
-    Color, Player, PlayerBuilder, PlayerEvent, SandboxType, StageScaleMode, StaticCallstack,
-    ViewportDimensions,
+    Color, Player, PlayerBuilder, PlayerEvent, SandboxType, StageAlign, StageScaleMode,
+    StaticCallstack, ViewportDimensions,
 };
 use ruffle_render::quality::StageQuality;
 use ruffle_video_software::backend::SoftwareVideoBackend;
@@ -125,6 +125,18 @@ struct JavascriptInterface {
     js_player: JavascriptPlayer,
 }
 
+fn deserialize_from_str<'de, D, T, E>(deserializer: D) -> Result<T, D::Error>
+where
+    D: serde::Deserializer<'de>,
+    T: FromStr<Err = E>,
+    E: std::fmt::Display,
+{
+    use serde::de::Error;
+
+    let value: String = serde::Deserialize::deserialize(deserializer)?;
+    T::from_str(&value).map_err(Error::custom)
+}
+
 fn deserialize_color<'de, D>(deserializer: D) -> Result<Option<Color>, D::Error>
 where
     D: serde::Deserializer<'de>,
@@ -151,15 +163,6 @@ where
         (acc << 4) | digit
     });
     Ok(Some(Color::from_rgb(rgb, 255)))
-}
-
-fn deserialize_log_level<'de, D>(deserializer: D) -> Result<tracing::Level, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    use serde::de::Error;
-    let value: String = serde::Deserialize::deserialize(deserializer)?;
-    tracing::Level::from_str(&value).map_err(Error::custom)
 }
 
 fn deserialize_duration<'de, D>(deserializer: D) -> Result<Duration, D::Error>
@@ -255,7 +258,8 @@ struct Config {
     #[serde(rename = "menu")]
     show_menu: bool,
 
-    salign: Option<String>,
+    #[serde(deserialize_with = "deserialize_from_str")]
+    salign: StageAlign,
 
     quality: Option<String>,
 
@@ -269,7 +273,7 @@ struct Config {
 
     warn_on_unsupported_content: bool,
 
-    #[serde(deserialize_with = "deserialize_log_level")]
+    #[serde(deserialize_with = "deserialize_from_str")]
     log_level: tracing::Level,
 
     #[serde(deserialize_with = "deserialize_duration")]
@@ -587,7 +591,7 @@ impl Ruffle {
             // Set config parameters.
             core.set_background_color(config.background_color);
             core.set_show_menu(config.show_menu);
-            core.set_stage_align(config.salign.as_deref().unwrap_or(""));
+            core.set_stage_align(config.salign);
             core.set_window_mode(config.wmode.as_deref().unwrap_or("window"));
 
             // Create the external interface.
