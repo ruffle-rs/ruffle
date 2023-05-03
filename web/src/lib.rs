@@ -264,7 +264,8 @@ struct Config {
     #[serde(deserialize_with = "deserialize_from_str")]
     quality: StageQuality,
 
-    scale: Option<String>,
+    #[serde(deserialize_with = "deserialize_from_str")]
+    scale: StageScaleMode,
 
     force_scale: bool,
 
@@ -563,13 +564,7 @@ impl Ruffle {
                 CompatibilityRules::empty()
             })
             .with_quality(config.quality)
-            .with_scale_mode(
-                config
-                    .scale
-                    .and_then(|s| StageScaleMode::from_str(&s).ok())
-                    .unwrap_or(StageScaleMode::ShowAll),
-                config.force_scale,
-            )
+            .with_scale_mode(config.scale, config.force_scale)
             .with_frame_rate(config.frame_rate)
             // FIXME - should this be configurable?
             .with_sandbox_type(SandboxType::Remote)

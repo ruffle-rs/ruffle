@@ -890,6 +890,12 @@ impl<'gc> TInteractiveObject<'gc> for Stage<'gc> {
 
 pub struct ParseEnumError;
 
+impl Display for ParseEnumError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "ParseEnumError")
+    }
+}
+
 /// The scale mode of a stage.
 /// This controls the behavior when the player viewport size differs from the SWF size.
 #[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
