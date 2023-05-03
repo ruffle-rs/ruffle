@@ -339,6 +339,14 @@ export interface BaseLoadOptions {
     contextMenu?: boolean;
 
     /**
+     * Whether or not to show a context menu when long-pressing
+     * a Ruffle instance on touch devices.
+     *
+     * @default true
+     */
+    touchContextMenu?: boolean;
+
+    /**
      * Whether or not to show a splash screen before the SWF has loaded with Ruffle (backwards-compatibility).
      *
      * @default true

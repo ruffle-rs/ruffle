@@ -1335,6 +1335,9 @@ export class RufflePlayer extends HTMLElement {
 
         if (
             (this.loadedConfig && this.loadedConfig.contextMenu === false) ||
+            (this.isTouch &&
+                this.loadedConfig &&
+                this.loadedConfig.touchContextMenu === false) ||
             this.contextMenuForceDisabled
         ) {
             return;

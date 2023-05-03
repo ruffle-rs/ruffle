@@ -22,6 +22,7 @@ export const DEFAULT_CONFIG: Required<BaseLoadOptions> = {
     logLevel: LogLevel.Error,
     showSwfDownload: false,
     contextMenu: true,
+    touchContextMenu: true,
     // Backwards-compatibility option
     preloader: true,
     splashScreen: true,
