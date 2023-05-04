@@ -3,7 +3,7 @@ package flash.net {
     import flash.utils.ByteArray;
     import flash.utils.Endian;
     import flash.utils.IDataInput;
-    import flash.utils.IDataOuput;
+    import flash.utils.IDataOutput;
 
     import __ruffle__.stub_method;
     import __ruffle__.stub_getter;
