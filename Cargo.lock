@@ -3715,6 +3715,7 @@ name = "ruffle_gc_extra"
 version = "0.1.0"
 dependencies = [
  "gc-arena",
+ "scopeguard",
 ]
 
 [[package]]
