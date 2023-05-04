@@ -7,9 +7,9 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::RefLock;
-use gc_arena::{Collect, Gc, GcCell, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use ruffle_render::backend::ShaderModule;
-use std::cell::{Ref, RefMut};
+use std::cell::{Ref, RefCell, RefMut};
 use std::rc::Rc;
 
 use super::Context3DObject;
@@ -35,7 +35,7 @@ impl<'gc> Program3DObject<'gc> {
             Program3DObjectData {
                 base: RefLock::new(base),
                 context3d,
-                shader_module_handle: GcCell::new(activation.gc(), None),
+                shader_module_handle: RefCell::new(None),
             },
         ))
         .into();
@@ -46,8 +46,8 @@ impl<'gc> Program3DObject<'gc> {
         Ok(this)
     }
 
-    pub fn shader_module_handle(&self) -> GcCell<'gc, Option<Rc<dyn ShaderModule>>> {
-        self.0.shader_module_handle
+    pub fn shader_module_handle(&self) -> &RefCell<Option<Rc<dyn ShaderModule>>> {
+        &self.0.shader_module_handle
     }
 
     pub fn context3d(&self) -> Context3DObject<'gc> {
@@ -63,7 +63,7 @@ pub struct Program3DObjectData<'gc> {
 
     context3d: Context3DObject<'gc>,
 
-    shader_module_handle: GcCell<'gc, Option<Rc<dyn ShaderModule>>>,
+    shader_module_handle: RefCell<Option<Rc<dyn ShaderModule>>>,
 }
 
 impl<'gc> TObject<'gc> for Program3DObject<'gc> {

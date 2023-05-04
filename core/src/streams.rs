@@ -178,6 +178,7 @@ pub struct NetStreamData<'gc> {
     ///
     /// Any `Video`s on the stage will display the bitmap here when attached to
     /// this `NetStream`.
+    #[collect(require_static)]
     last_decoded_bitmap: Option<BitmapInfo>,
 
     /// The AVM side of this stream.

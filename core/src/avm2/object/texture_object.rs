@@ -62,6 +62,7 @@ pub struct TextureObjectData<'gc> {
 
     context3d: Context3DObject<'gc>,
 
+    #[collect(require_static)]
     handle: Rc<dyn Texture>,
 }
 

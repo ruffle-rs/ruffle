@@ -29,7 +29,7 @@ pub fn upload<'gc>(
         let fragment_agal = fragment_agal.bytes().to_vec();
 
         this.context3d()
-            .upload_shaders(activation, this, vertex_agal, fragment_agal);
+            .upload_shaders(this, vertex_agal, fragment_agal);
     }
     Ok(Value::Undefined)
 }

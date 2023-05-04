@@ -3,7 +3,6 @@ use crate::{
     pixel_bender::{PixelBenderShaderArgument, PixelBenderShaderHandle},
 };
 use downcast_rs::{impl_downcast, Downcast};
-use gc_arena::Collect;
 use std::fmt::Debug;
 use swf::Color;
 
@@ -36,7 +35,7 @@ pub struct ShaderFilter<'a> {
     pub shader_args: Vec<PixelBenderShaderArgument<'a>>,
 }
 
-pub trait ShaderObject: Downcast + Collect + Debug {
+pub trait ShaderObject: Downcast + Debug {
     fn clone_box(&self) -> Box<dyn ShaderObject>;
 }
 impl_downcast!(ShaderObject);
