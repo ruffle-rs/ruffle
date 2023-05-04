@@ -17,5 +17,7 @@ package flash.system {
 
         public native function getDefinition(name:String):Object;
         public native function hasDefinition(name:String):Boolean;
+
+        public native function getQualifiedDefinitionNames():Vector.<String>;
     }
 }
