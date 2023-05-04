@@ -17,7 +17,6 @@ use wgpu::{CommandEncoder, Extent3d, RenderPass};
 use crate::context3d::current_pipeline::{BoundTextureData, AGAL_FLOATS_PER_REGISTER};
 use crate::descriptors::Descriptors;
 use crate::{as_texture, Texture};
-use gc_arena::{Collect, MutationContext};
 
 use std::num::NonZeroU64;
 use std::rc::Rc;
@@ -44,8 +43,6 @@ const STENCIL_MASK: u32 = 1 << 2;
 /// we would need to store a `GcCell<Option<Rc<dyn VertexBuffer>>>`, which prevents
 /// us from obtaining a long-lived reference to the `wgpu:Bufer` (it would instead be
 /// tied to the `Ref` returned by `GcCell::read`).
-#[derive(Collect)]
-#[collect(require_static)]
 pub struct WgpuContext3D {
     // We only use some of the fields from `Descriptors`, but we
     // store an entire `Arc<Descriptors>` rather than wrapping the fields
@@ -302,8 +299,6 @@ impl WgpuContext3D {
     }
 }
 
-#[derive(Collect)]
-#[collect(require_static)]
 pub struct IndexBufferWrapper {
     pub buffer: wgpu::Buffer,
     /// A cpu-side copy of the buffer data. This is used to allow us to
@@ -311,19 +306,14 @@ pub struct IndexBufferWrapper {
     pub data: Vec<u8>,
 }
 
-#[derive(Collect, Debug)]
-#[collect(require_static)]
+#[derive(Debug)]
 pub struct VertexBufferWrapper {
     pub buffer: wgpu::Buffer,
     pub data_32_per_vertex: u8,
 }
 
-#[derive(Collect)]
-#[collect(require_static)]
 pub struct ShaderModuleAgal(Vec<u8>);
 
-#[derive(Collect)]
-#[collect(require_static)]
 pub struct TextureWrapper {
     texture: wgpu::Texture,
     format: wgpu::TextureFormat,
@@ -472,11 +462,7 @@ impl Context3D for WgpuContext3D {
         Ok(Rc::new(TextureWrapper { texture, format }))
     }
 
-    fn process_command<'gc>(
-        &mut self,
-        command: Context3DCommand<'_, 'gc>,
-        mc: MutationContext<'gc, '_>,
-    ) {
+    fn process_command(&mut self, command: Context3DCommand<'_>) {
         match command {
             Context3DCommand::Clear {
                 red,
@@ -889,29 +875,16 @@ impl Context3D for WgpuContext3D {
                 fragment_shader,
                 fragment_shader_agal,
             } => {
-                *vertex_shader.write(mc) = Some(Rc::new(ShaderModuleAgal(vertex_shader_agal)));
-                *fragment_shader.write(mc) = Some(Rc::new(ShaderModuleAgal(fragment_shader_agal)));
+                set_shader_module(vertex_shader, ShaderModuleAgal(vertex_shader_agal));
+                set_shader_module(fragment_shader, ShaderModuleAgal(fragment_shader_agal));
             }
 
             Context3DCommand::SetShaders {
                 vertex_shader,
                 fragment_shader,
             } => {
-                let vertex_module = vertex_shader
-                    .read()
-                    .clone()
-                    .unwrap()
-                    .into_any_rc()
-                    .downcast::<ShaderModuleAgal>()
-                    .unwrap();
-                let fragment_module = fragment_shader
-                    .read()
-                    .clone()
-                    .unwrap()
-                    .into_any_rc()
-                    .downcast::<ShaderModuleAgal>()
-                    .unwrap();
-
+                let vertex_module = get_shader_module(vertex_shader);
+                let fragment_module = get_shader_module(fragment_shader);
                 self.current_pipeline.set_vertex_shader(vertex_module);
                 self.current_pipeline.set_fragment_shader(fragment_module);
             }
@@ -1116,6 +1089,22 @@ impl Context3D for WgpuContext3D {
             }
         }
     }
+}
+
+fn set_shader_module(cell: &Cell<Option<Rc<dyn ShaderModule>>>, module: ShaderModuleAgal) {
+    cell.set(Some(Rc::new(module)))
+}
+
+fn get_shader_module(cell: &Cell<Option<Rc<dyn ShaderModule>>>) -> Rc<ShaderModuleAgal> {
+    // We need this dance to clone the `Rc` from inside its `Cell`.
+    let inner = cell.take();
+    cell.set(inner.clone());
+
+    inner
+        .unwrap()
+        .into_any_rc()
+        .downcast::<ShaderModuleAgal>()
+        .unwrap()
 }
 
 #[derive(Copy, Clone)]

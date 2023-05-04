@@ -5,11 +5,11 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use gc_arena::{Collect, Gc, GcCell, MutationContext};
+use gc_arena::{Collect, Gc, MutationContext};
 use ruffle_gc_extra::lock::RefLock;
 use ruffle_gc_extra::{unlock, GcExt as _};
 use ruffle_render::backend::ShaderModule;
-use std::cell::{Ref, RefMut};
+use std::cell::{Cell, Ref, RefMut};
 use std::rc::Rc;
 
 use super::Context3DObject;
@@ -24,15 +24,14 @@ impl<'gc> Program3DObject<'gc> {
         context3d: Context3DObject<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let class = activation.avm2().classes().program3d;
-        let base = ScriptObjectData::new(class);
 
         let mut this: Object<'gc> = Program3DObject(Gc::allocate(
             activation.context.gc_context,
             Program3DObjectData {
-                base: RefLock::new(base),
+                base: RefLock::new(ScriptObjectData::new(class)),
                 context3d,
-                vertex_shader_handle: GcCell::allocate(activation.context.gc_context, None),
-                fragment_shader_handle: GcCell::allocate(activation.context.gc_context, None),
+                vertex_shader_handle: Cell::new(None),
+                fragment_shader_handle: Cell::new(None),
             },
         ))
         .into();
@@ -43,12 +42,12 @@ impl<'gc> Program3DObject<'gc> {
         Ok(this)
     }
 
-    pub fn vertex_shader_handle(&self) -> GcCell<'gc, Option<Rc<dyn ShaderModule>>> {
-        self.0.vertex_shader_handle
+    pub fn vertex_shader_handle(&self) -> &Cell<Option<Rc<dyn ShaderModule>>> {
+        &self.0.vertex_shader_handle
     }
 
-    pub fn fragment_shader_handle(&self) -> GcCell<'gc, Option<Rc<dyn ShaderModule>>> {
-        self.0.fragment_shader_handle
+    pub fn fragment_shader_handle(&self) -> &Cell<Option<Rc<dyn ShaderModule>>> {
+        &self.0.fragment_shader_handle
     }
 
     pub fn context3d(&self) -> Context3DObject<'gc> {
@@ -64,9 +63,12 @@ pub struct Program3DObjectData<'gc> {
 
     context3d: Context3DObject<'gc>,
 
-    vertex_shader_handle: GcCell<'gc, Option<Rc<dyn ShaderModule>>>,
+    // TODO(moulins): replace these by `OnceCell`s once Rust 1.70 hits stable.
+    #[collect(require_static)]
+    vertex_shader_handle: Cell<Option<Rc<dyn ShaderModule>>>,
 
-    fragment_shader_handle: GcCell<'gc, Option<Rc<dyn ShaderModule>>>,
+    #[collect(require_static)]
+    fragment_shader_handle: Cell<Option<Rc<dyn ShaderModule>>>,
 }
 
 impl<'gc> TObject<'gc> for Program3DObject<'gc> {

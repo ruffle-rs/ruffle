@@ -18,7 +18,6 @@ pub fn upload_from_bitmap_data<'gc>(
                         .bitmap_handle(activation.context.gc_context, activation.context.renderer),
                     texture.handle(),
                     0,
-                    activation,
                 );
             } else {
                 avm2_stub_method!(

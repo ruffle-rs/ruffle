@@ -19,7 +19,6 @@ downcast-rs = "1.2.0"
 lyon = { version = "1.0.1", optional = true }
 thiserror = "1.0"
 wasm-bindgen = { version = "=0.2.86", optional = true }
-gc-arena = { workspace = true }
 enum-map = "2.5.0"
 serde = { version = "1.0.160", features = ["derive"] }
 clap = { version = "4.2.4", features = ["derive"], optional = true }

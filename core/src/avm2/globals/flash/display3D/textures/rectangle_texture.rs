@@ -14,7 +14,6 @@ pub fn upload_from_bitmap_data<'gc>(
                 source.bitmap_handle(activation.context.gc_context, activation.context.renderer),
                 texture.handle(),
                 0,
-                activation,
             );
         } else {
             panic!("Invalid source: {:?}", args[0]);
