@@ -7,7 +7,9 @@ use crate::avm2::value::{abc_default_value, Value};
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::string::AvmString;
-use gc_arena::{Collect, Gc, GcCell, MutationContext};
+use gc_arena::{Collect, Gc, MutationContext};
+use ruffle_gc_extra::lock::Lock;
+use ruffle_gc_extra::{unlock, GcExt as _};
 use std::fmt;
 use std::ops::Deref;
 use std::rc::Rc;
@@ -125,8 +127,9 @@ pub struct BytecodeMethod<'gc> {
     /// The return type of this method.
     pub return_type: Multiname<'gc>,
 
-    /// The associated activation class. None if not needed. Initialized lazily.
-    pub activation_class: Option<GcCell<'gc, Option<ClassObject<'gc>>>>,
+    /// The associated activation class. Initialized lazily, and only
+    /// if the method requires it.
+    activation_class: Lock<Option<ClassObject<'gc>>>,
 
     /// Whether or not this method was declared as a free-standing function.
     ///
@@ -157,12 +160,6 @@ impl<'gc> BytecodeMethod<'gc> {
                 .deref()
                 .clone();
 
-            let activation_class = if method.flags.contains(AbcMethodFlags::NEED_ACTIVATION) {
-                Some(GcCell::allocate(activation.context.gc_context, None))
-            } else {
-                None
-            };
-
             for (index, method_body) in abc.method_bodies.iter().enumerate() {
                 if method_body.method.0 == abc_method.0 {
                     return Ok(Self {
@@ -173,7 +170,7 @@ impl<'gc> BytecodeMethod<'gc> {
                         signature,
                         return_type,
                         is_function,
-                        activation_class,
+                        activation_class: Lock::new(None),
                     });
                 }
             }
@@ -187,7 +184,7 @@ impl<'gc> BytecodeMethod<'gc> {
             signature,
             return_type: Multiname::any(activation.context.gc_context),
             is_function,
-            activation_class: None,
+            activation_class: Lock::new(None),
         })
     }
 
@@ -265,6 +262,27 @@ impl<'gc> BytecodeMethod<'gc> {
         }
 
         !self.method().flags.contains(AbcMethodFlags::NEED_REST)
+    }
+
+    /// Initialize and return the activation class object, if the method requires it.
+    pub fn get_or_init_activation_class(
+        this: Gc<'gc, Self>,
+        mc: MutationContext<'gc, '_>,
+        init: impl FnOnce() -> Result<ClassObject<'gc>, Error<'gc>>,
+    ) -> Result<Option<ClassObject<'gc>>, Error<'gc>> {
+        Ok(if let Some(cached) = this.activation_class.get() {
+            Some(cached)
+        } else if this
+            .method()
+            .flags
+            .contains(AbcMethodFlags::NEED_ACTIVATION)
+        {
+            let cls = Some(init()?);
+            unlock!(Gc::write(mc, this), Self, activation_class).set(cls);
+            cls
+        } else {
+            None
+        })
     }
 }
 

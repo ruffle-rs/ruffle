@@ -466,12 +466,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             RegisterSet::new(num_locals + num_declared_arguments + arg_register + 1);
         *local_registers.get_mut(0).unwrap() = this.map(|t| t.into()).unwrap_or(Value::Null);
 
-        let activation_class = if let Some(class_cache) = method.activation_class {
-            let cached_cls = class_cache.read();
-            let activation_class = if let Some(cls) = *cached_cls {
-                cls
-            } else {
-                drop(cached_cls);
+        let activation_class =
+            BytecodeMethod::get_or_init_activation_class(method, context.gc_context, || {
                 let translation_unit = method.translation_unit();
                 let abc_method = method.method();
                 let mut dummy_activation =
@@ -483,18 +479,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     abc_method,
                     body,
                 )?;
-                let activation_class_object =
-                    ClassObject::from_class(&mut dummy_activation, activation_class, None)?;
-                drop(dummy_activation);
-
-                *class_cache.write(context.gc_context) = Some(activation_class_object);
-                activation_class_object
-            };
-
-            Some(activation_class)
-        } else {
-            None
-        };
+                ClassObject::from_class(&mut dummy_activation, activation_class, None)
+            })?;
 
         let mut activation = Self {
             this,
