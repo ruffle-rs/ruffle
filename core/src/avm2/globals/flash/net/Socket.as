@@ -1,13 +1,14 @@
 package flash.net {
     import flash.events.EventDispatcher;
+    import flash.utils.ByteArray;
     import flash.utils.Endian;
-    
+
     import __ruffle__.stub_method;
     import __ruffle__.stub_getter;
 
     public class Socket extends EventDispatcher {
         private var _timeout:uint;
-        
+
         private var _endian:String = Endian.BIG_ENDIAN;
 
         public function Socket(host:String = null, port:int = 0) {
@@ -42,11 +43,11 @@ package flash.net {
             stub_getter("flash.net.Socket", "bytesPending");
             return 0;
         }
-        
+
         public function get endian():String {
             return this._endian;
         }
-        
+
         public function set endian(value:String) {
             if (value === Endian.BIG_ENDIAN || value === Endian.LITTLE_ENDIAN) {
                 this._endian = value;
@@ -54,10 +55,18 @@ package flash.net {
                 throw new ArgumentError("Error #2008: Parameter endian must be one of the accepted values.", 2008);
             }
         }
-        
+
         public function get connected():Boolean {
             stub_getter("flash.net.Socket", "connected");
             return false;
+        }
+
+        public function writeBytes(bytes:ByteArray, offset:uint = 0, length:uint = 0):void {
+            stub_method("flash.net.Socket", "writeBytes");
+        }
+
+        public function flush():void {
+            stub_method("flash.net.Socket", "flush");
         }
     }
 }
