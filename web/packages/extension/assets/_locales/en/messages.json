@@ -17,6 +17,15 @@
     "settings_log_level": {
         "message": "Log level"
     },
+    "settings_log_level_error": {
+        "message": "Errors"
+    },
+    "settings_log_level_warn": {
+        "message": "Warnings"
+    },
+    "settings_log_level_info": {
+        "message": "Info"
+    },
     "settings_max_execution_duration": {
         "message": "Maximum allowed ActionScript execution duration (in seconds)"
     },
@@ -25,6 +34,12 @@
     },
     "settings_preferred_renderer": {
         "message": "Preferred renderer"
+    },
+    "settings_preferred_renderer_auto": {
+        "message": "Automatic"
+    },
+    "settings_advanced_options": {
+        "message": "Advanced Options"
     },
     "status_init": {
         "message": "Reading current tab…"
