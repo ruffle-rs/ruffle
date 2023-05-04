@@ -1,9 +1,10 @@
 //! `flash.system.ApplicationDomain` class
 
 use crate::avm2::activation::Activation;
-use crate::avm2::object::{DomainObject, Object, TObject};
+use crate::avm2::object::{DomainObject, Object, TObject, VectorObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
+use crate::avm2::vector::VectorStorage;
 use crate::avm2::QName;
 use crate::avm2::{Domain, Error};
 
@@ -97,6 +98,40 @@ pub fn has_definition<'gc>(
             .get_defined_value_handling_vector(activation, qname)
             .is_ok()
             .into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// 'getQualifiedDefinitionNames' method.
+///
+/// NOTE: Normally only available in Flash Player 11.3+.
+pub fn get_qualified_definition_names<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(appdomain) = this.and_then(|this| this.as_application_domain()) {
+        // NOTE: According to the docs of 'getQualifiedDeinitionNames',
+        // it is able to throw a 'SecurityError' if "The definition belongs
+        // to a domain to which the calling code does not have access."
+        //
+        // We do not implement this.
+
+        let storage = VectorStorage::from_values(
+            appdomain
+                .get_defined_names()
+                .iter()
+                .filter(|name| !name.namespace().is_private())
+                .map(|name| Value::String(name.to_qualified_name(activation.context.gc_context)))
+                .collect(),
+            false,
+            activation.avm2().classes().string,
+        );
+
+        let name_array = VectorObject::from_vector(storage, activation)?;
+
+        return Ok(name_array.into());
     }
 
     Ok(Value::Undefined)

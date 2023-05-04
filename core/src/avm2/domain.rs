@@ -219,6 +219,15 @@ impl<'gc> Domain<'gc> {
         res
     }
 
+    pub fn get_defined_names(&self) -> Vec<QName<'gc>> {
+        self.0
+            .read()
+            .defs
+            .iter()
+            .map(|(name, namespace, _)| QName::new(namespace, name))
+            .collect()
+    }
+
     /// Export a definition from a script into the current application domain.
     ///
     /// This does nothing if the definition already exists.
