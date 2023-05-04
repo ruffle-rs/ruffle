@@ -60,7 +60,7 @@ pub fn upload_from_vector<'gc>(
         let start_offset = args.get_u32(activation, 1)?;
         let count = args.get_u32(activation, 2)?;
 
-        index_buffer.set_count(count as usize, activation.context.gc_context);
+        index_buffer.set_count(count as usize);
 
         let data: Result<Vec<u16>, _> = vector
             .iter()

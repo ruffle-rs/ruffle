@@ -23,7 +23,7 @@ use crate::display_object::DisplayObject;
 use crate::html::TextFormat;
 use crate::streams::NetStream;
 use crate::string::AvmString;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use ruffle_macros::enum_trait_object;
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
@@ -1406,14 +1406,14 @@ impl<'gc> Object<'gc> {
             Self::TextFormatObject(o) => WeakObject::TextFormatObject(TextFormatObjectWeak(GcCell::downgrade(o.0))),
             Self::ProxyObject(o) => WeakObject::ProxyObject(ProxyObjectWeak(GcCell::downgrade(o.0))),
             Self::ErrorObject(o) => WeakObject::ErrorObject(ErrorObjectWeak(GcCell::downgrade(o.0))),
-            Self::Stage3DObject(o) => WeakObject::Stage3DObject(Stage3DObjectWeak(GcCell::downgrade(o.0))),
-            Self::Context3DObject(o) => WeakObject::Context3DObject(Context3DObjectWeak(GcCell::downgrade(o.0))),
-            Self::IndexBuffer3DObject(o) => WeakObject::IndexBuffer3DObject(IndexBuffer3DObjectWeak(GcCell::downgrade(o.0))),
-            Self::VertexBuffer3DObject(o) => WeakObject::VertexBuffer3DObject(VertexBuffer3DObjectWeak(GcCell::downgrade(o.0))),
-            Self::TextureObject(o) => WeakObject::TextureObject(TextureObjectWeak(GcCell::downgrade(o.0))),
-            Self::Program3DObject(o) => WeakObject::Program3DObject(Program3DObjectWeak(GcCell::downgrade(o.0))),
+            Self::Stage3DObject(o) => WeakObject::Stage3DObject(Stage3DObjectWeak(Gc::downgrade(o.0))),
+            Self::Context3DObject(o) => WeakObject::Context3DObject(Context3DObjectWeak(Gc::downgrade(o.0))),
+            Self::IndexBuffer3DObject(o) => WeakObject::IndexBuffer3DObject(IndexBuffer3DObjectWeak(Gc::downgrade(o.0))),
+            Self::VertexBuffer3DObject(o) => WeakObject::VertexBuffer3DObject(VertexBuffer3DObjectWeak(Gc::downgrade(o.0))),
+            Self::TextureObject(o) => WeakObject::TextureObject(TextureObjectWeak(Gc::downgrade(o.0))),
+            Self::Program3DObject(o) => WeakObject::Program3DObject(Program3DObjectWeak(Gc::downgrade(o.0))),
             Self::NetStreamObject(o) => WeakObject::NetStreamObject(NetStreamObjectWeak(GcCell::downgrade(o.0))),
-            Self::ShaderDataObject(o) => WeakObject::ShaderDataObject(ShaderDataObjectWeak(GcCell::downgrade(o.0))),
+            Self::ShaderDataObject(o) => WeakObject::ShaderDataObject(ShaderDataObjectWeak(Gc::downgrade(o.0))),
         }
     }
 }

@@ -62,6 +62,6 @@ pub fn init<'gc>(
 
     this.as_shader_data()
         .unwrap()
-        .set_pixel_bender_shader(shader_handle, activation.context.gc_context);
+        .set_pixel_bender_shader(shader_handle);
     Ok(Value::Undefined)
 }
