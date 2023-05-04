@@ -11,6 +11,7 @@ use crate::avm2::{
     FlvValueAvm2Ext, Object as Avm2Object,
 };
 use crate::backend::navigator::Request;
+use crate::buffer::Buffer;
 use crate::context::UpdateContext;
 use crate::loader::Error;
 use crate::string::AvmString;
@@ -26,7 +27,6 @@ use ruffle_video::frame::EncodedFrame;
 use ruffle_video::VideoStreamHandle;
 use std::cmp::max;
 use std::io::Seek;
-use std::sync::{Arc, Mutex};
 use swf::{VideoCodec, VideoDeblocking};
 use url::Url;
 
@@ -150,11 +150,7 @@ pub enum NetStreamType {
 #[collect(no_drop)]
 pub struct NetStreamData<'gc> {
     /// All data currently loaded in the stream.
-    ///
-    /// NOTE: This is stored as an `Arc` to allow independent borrows of the
-    /// buffer data and stream state.
-    #[collect(require_static)]
-    buffer: Arc<Mutex<Vec<u8>>>,
+    buffer: Buffer,
 
     /// The buffer position that we are currently seeking to.
     offset: usize,
@@ -200,7 +196,7 @@ impl<'gc> NetStream<'gc> {
         Self(GcCell::new(
             gc_context,
             NetStreamData {
-                buffer: Arc::new(Mutex::new(Vec::new())),
+                buffer: Buffer::new(),
                 offset: 0,
                 preload_offset: 0,
                 stream_type: None,
@@ -226,12 +222,7 @@ impl<'gc> NetStream<'gc> {
     }
 
     pub fn load_buffer(self, context: &mut UpdateContext<'_, 'gc>, data: &mut Vec<u8>) {
-        self.0
-            .write(context.gc_context)
-            .buffer
-            .lock()
-            .unwrap()
-            .append(data);
+        self.0.write(context.gc_context).buffer.append(data);
 
         // NOTE: The onMetaData event triggers before this event in Flash due to its streaming behavior.
         self.trigger_status_event(
@@ -245,11 +236,11 @@ impl<'gc> NetStream<'gc> {
     }
 
     pub fn bytes_loaded(self) -> usize {
-        self.0.read().buffer.lock().unwrap().len()
+        self.0.read().buffer.len()
     }
 
     pub fn bytes_total(self) -> usize {
-        self.0.read().buffer.lock().unwrap().len()
+        self.0.read().buffer.len()
     }
 
     /// Start playing media from this NetStream.
@@ -300,9 +291,10 @@ impl<'gc> NetStream<'gc> {
     }
 
     pub fn tick(self, context: &mut UpdateContext<'_, 'gc>, dt: f64) {
+        #![allow(clippy::explicit_auto_deref)] //Erroneous lint
         let mut write = self.0.write(context.gc_context);
-        let buffer_owned = write.buffer.clone();
-        let buffer = buffer_owned.lock().unwrap();
+        let slice = write.buffer.to_full_slice();
+        let buffer = slice.data();
 
         // First, try to sniff the stream's container format from headers.
         if write.stream_type.is_none() {
@@ -315,7 +307,7 @@ impl<'gc> NetStream<'gc> {
 
             match buffer.get(0..3) {
                 Some([0x46, 0x4C, 0x56]) => {
-                    let mut reader = FlvReader::from_parts(&buffer, write.offset);
+                    let mut reader = FlvReader::from_parts(&*buffer, write.offset);
                     match FlvHeader::parse(&mut reader) {
                         Ok(header) => {
                             write.offset = reader.into_parts().1;
@@ -369,7 +361,7 @@ impl<'gc> NetStream<'gc> {
 
         //At this point we should know our stream type.
         if matches!(write.stream_type, Some(NetStreamType::Flv { .. })) {
-            let mut reader = FlvReader::from_parts(&buffer, write.offset);
+            let mut reader = FlvReader::from_parts(&*buffer, write.offset);
 
             loop {
                 let tag = FlvTag::parse(&mut reader);
@@ -465,7 +457,9 @@ impl<'gc> NetStream<'gc> {
                                     // own bitstream.
                                     let offset = data.as_ptr() as usize - buffer.as_ptr() as usize;
                                     let len = data.len();
-                                    data = &buffer[offset - 1..offset + len];
+                                    data = buffer
+                                        .get(offset - 1..offset + len)
+                                        .expect("screenvideo flvs have video data bytes");
                                 }
 
                                 // NOTE: Currently, no implementation of the decoder backend actually requires
@@ -500,9 +494,7 @@ impl<'gc> NetStream<'gc> {
                                     context.renderer,
                                 ) {
                                     Ok(bitmap_info) => {
-                                        let (_, position) = reader.into_parts();
                                         write.last_decoded_bitmap = Some(bitmap_info);
-                                        reader = FlvReader::from_parts(&buffer, position);
                                     }
                                     Err(e) => {
                                         tracing::error!(
@@ -533,14 +525,12 @@ impl<'gc> NetStream<'gc> {
                             }
                         }
 
-                        let (_, position) = reader.into_parts();
                         match &mut write.stream_type {
                             Some(NetStreamType::Flv {
                                 ref mut frame_id, ..
                             }) => *frame_id += 1,
                             _ => unreachable!(),
                         };
-                        reader = FlvReader::from_parts(&buffer, position);
                     }
                     FlvTagData::Script(FlvScriptData(vars)) => {
                         let has_stream_already = match write.stream_type {
@@ -597,8 +587,6 @@ impl<'gc> NetStream<'gc> {
                             write = self.0.write(context.gc_context);
                         }
 
-                        let (_, position) = reader.into_parts();
-
                         if tag_needs_preloading {
                             if let (
                                 Some(width),
@@ -636,20 +624,16 @@ impl<'gc> NetStream<'gc> {
                                 }
                             }
                         }
-
-                        reader = FlvReader::from_parts(&buffer, position);
                     }
                     FlvTagData::Invalid(e) => {
                         tracing::error!("FLV data parsing failed: {}", e)
                     }
                 }
 
-                // We cannot mutate stream state while also holding an active
-                // reader or any tags.
-                let (_, position) = reader.into_parts();
-                write.offset = position;
+                write.offset = reader
+                    .stream_position()
+                    .expect("FLV reader stream position") as usize;
                 write.preload_offset = max(write.offset, write.preload_offset);
-                reader = FlvReader::from_parts(&buffer, position);
             }
         }
 
