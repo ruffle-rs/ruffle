@@ -177,7 +177,7 @@ package flash.net {
             stub_method("flash.net.Socket", "writeMultiByte");
         }
 
-        public function writeObject(object:*):void {
+        public function writeObject(value:*):void {
             stub_method("flash.net.Socket", "writeObject");
         }
 
