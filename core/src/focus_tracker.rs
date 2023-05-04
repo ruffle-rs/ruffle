@@ -4,19 +4,20 @@ use crate::context::UpdateContext;
 pub use crate::display_object::{
     DisplayObject, TDisplayObject, TDisplayObjectContainer, TextSelection,
 };
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, MutationContext};
+use ruffle_gc_extra::{GcExt as _, GcLock};
 
 #[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
-pub struct FocusTracker<'gc>(GcCell<'gc, Option<DisplayObject<'gc>>>);
+pub struct FocusTracker<'gc>(GcLock<'gc, Option<DisplayObject<'gc>>>);
 
 impl<'gc> FocusTracker<'gc> {
     pub fn new(gc_context: MutationContext<'gc, '_>) -> Self {
-        Self(GcCell::allocate(gc_context, None))
+        Self(GcLock::allocate(gc_context, None.into()))
     }
 
     pub fn get(&self) -> Option<DisplayObject<'gc>> {
-        *self.0.read()
+        self.0.get()
     }
 
     pub fn set(
@@ -24,7 +25,7 @@ impl<'gc> FocusTracker<'gc> {
         focused_element: Option<DisplayObject<'gc>>,
         context: &mut UpdateContext<'_, 'gc>,
     ) {
-        let old = std::mem::replace(&mut *self.0.write(context.gc_context), focused_element);
+        let old = self.0.unlock(context.gc_context).replace(focused_element);
 
         if old.is_none() && focused_element.is_none() {
             // We didn't have anything, we still don't, no change.
