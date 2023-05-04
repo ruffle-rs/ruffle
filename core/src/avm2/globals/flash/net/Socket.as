@@ -2,12 +2,14 @@ package flash.net {
     import flash.events.EventDispatcher;
     import flash.utils.ByteArray;
     import flash.utils.Endian;
+    import flash.utils.IDataInput;
+    import flash.utils.IDataOutput;
 
     import __ruffle__.stub_method;
     import __ruffle__.stub_getter;
     import __ruffle__.stub_setter;
 
-    public class Socket extends EventDispatcher {
+    public class Socket extends EventDispatcher implements IDataOutput, IDataInput {
         private var _timeout:uint;
 
         private var _endian:String = Endian.BIG_ENDIAN;
@@ -54,7 +56,7 @@ package flash.net {
             return this._endian;
         }
 
-        public function set endian(value:String) {
+        public function set endian(value:String):void {
             if (value === Endian.BIG_ENDIAN || value === Endian.LITTLE_ENDIAN) {
                 this._endian = value;
             } else {
