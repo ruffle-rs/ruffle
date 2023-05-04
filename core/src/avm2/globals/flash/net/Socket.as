@@ -56,7 +56,7 @@ package flash.net {
             return this._endian;
         }
 
-        public function set endian(value:String) {
+        public function set endian(value:String):void {
             if (value === Endian.BIG_ENDIAN || value === Endian.LITTLE_ENDIAN) {
                 this._endian = value;
             } else {
