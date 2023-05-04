@@ -1,4 +1,3 @@
-use gc_arena::Collect;
 use h263_rs_yuv::bt601::yuv420_to_rgba;
 use std::fmt::Debug;
 use std::sync::Arc;
@@ -8,16 +7,14 @@ use swf::{Rectangle, Twips};
 
 use crate::backend::RenderBackend;
 
-#[derive(Clone, Debug, Collect)]
-#[collect(require_static)]
+#[derive(Clone, Debug)]
 pub struct BitmapHandle(pub Arc<dyn BitmapHandleImpl>);
 
 pub trait BitmapHandleImpl: Downcast + Debug {}
 impl_downcast!(BitmapHandleImpl);
 
 /// Info returned by the `register_bitmap` methods.
-#[derive(Clone, Debug, Collect)]
-#[collect(require_static)]
+#[derive(Clone, Debug)]
 pub struct BitmapInfo {
     pub handle: BitmapHandle,
     pub width: u16,
@@ -57,8 +54,7 @@ impl Clone for Box<dyn SyncHandle> {
 }
 
 /// Decoded bitmap data from an SWF tag.
-#[derive(Clone, Debug, Collect)]
-#[collect(require_static)]
+#[derive(Clone, Debug)]
 pub struct Bitmap {
     width: u32,
     height: u32,

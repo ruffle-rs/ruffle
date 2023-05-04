@@ -6,7 +6,6 @@ mod tests;
 
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
 use downcast_rs::{impl_downcast, Downcast};
-use gc_arena::Collect;
 use num_traits::FromPrimitive;
 use std::{
     fmt::{Debug, Display, Formatter},
@@ -20,8 +19,7 @@ use crate::{backend::RawTexture, bitmap::BitmapHandle};
 /// of the pixel being processed.
 pub const OUT_COORD_NAME: &str = "_OutCoord";
 
-#[derive(Clone, Debug, Collect)]
-#[collect(require_static)]
+#[derive(Clone, Debug)]
 pub struct PixelBenderShaderHandle(pub Arc<dyn PixelBenderShaderImpl>);
 
 pub trait PixelBenderShaderImpl: Downcast + Debug {

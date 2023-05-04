@@ -19,7 +19,6 @@ pub fn upload_from_bitmap_data<'gc>(
                     texture.handle(),
                     // FIXME - is this right?
                     side,
-                    activation,
                 );
             } else {
                 avm2_stub_method!(

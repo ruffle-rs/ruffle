@@ -77,6 +77,7 @@ pub struct StageData<'gc> {
     movie_size: (u32, u32),
 
     /// The quality settings of the stage.
+    #[collect(require_static)]
     quality: StageQuality,
 
     /// The dimensions of the stage, as reported to ActionScript.

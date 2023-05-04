@@ -13,12 +13,9 @@ pub fn upload_from_bitmap_data<'gc>(
         if let Some(source) = args[0].coerce_to_object(activation)?.as_bitmap_data() {
             let mip_level = args[1].coerce_to_u32(activation)?;
             if mip_level == 0 {
-                texture.context3d().copy_bitmap_to_texture(
-                    source.sync(),
-                    texture.handle(),
-                    0,
-                    activation,
-                );
+                texture
+                    .context3d()
+                    .copy_bitmap_to_texture(source.sync(), texture.handle(), 0);
             } else {
                 avm2_stub_method!(
                     activation,

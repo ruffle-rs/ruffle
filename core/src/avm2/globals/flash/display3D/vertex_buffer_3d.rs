@@ -44,7 +44,6 @@ pub fn upload_from_byte_array<'gc>(
             data,
             start_vertex as usize,
             vertex_buffer.data32_per_vertex(),
-            activation,
         );
     }
     Ok(Value::Undefined)
@@ -81,7 +80,6 @@ pub fn upload_from_vector<'gc>(
             data_bytes,
             start_vertex as usize,
             vertex_buffer.data32_per_vertex(),
-            activation,
         );
     }
     Ok(Value::Undefined)

@@ -18,7 +18,6 @@ use wgpu::{CommandEncoder, Extent3d, RenderPass};
 use crate::context3d::current_pipeline::{BoundTextureData, AGAL_FLOATS_PER_REGISTER};
 use crate::descriptors::Descriptors;
 use crate::Texture;
-use gc_arena::{Collect, MutationContext};
 
 use std::num::NonZeroU64;
 use std::rc::Rc;
@@ -48,8 +47,6 @@ const STENCIL_MASK: u32 = 1 << 2;
 /// we would need to store a `GcCell<Option<Rc<dyn VertexBuffer>>>`, which prevents
 /// us from obtaining a long-lived reference to the `wgpu:Bufer` (it would instead be
 /// tied to the `Ref` returned by `GcCell::read`).
-#[derive(Collect)]
-#[collect(require_static)]
 pub struct WgpuContext3D {
     // We only use some of the fields from `Descriptors`, but we
     // store an entire `Arc<Descriptors>` rather than wrapping the fields
@@ -335,8 +332,6 @@ impl WgpuContext3D {
     }
 }
 
-#[derive(Collect)]
-#[collect(require_static)]
 pub struct IndexBufferWrapper {
     pub buffer: wgpu::Buffer,
     /// A cpu-side copy of the buffer data. This is used to allow us to
@@ -344,15 +339,12 @@ pub struct IndexBufferWrapper {
     pub data: Vec<u8>,
 }
 
-#[derive(Collect, Debug)]
-#[collect(require_static)]
+#[derive(Debug)]
 pub struct VertexBufferWrapper {
     pub buffer: wgpu::Buffer,
     pub data_32_per_vertex: u8,
 }
 
-#[derive(Collect)]
-#[collect(require_static)]
 pub struct TextureWrapper {
     texture: wgpu::Texture,
 }
@@ -499,11 +491,7 @@ impl Context3D for WgpuContext3D {
         Ok(Rc::new(TextureWrapper { texture }))
     }
 
-    fn process_command<'gc>(
-        &mut self,
-        command: Context3DCommand<'_, 'gc>,
-        mc: MutationContext<'gc, '_>,
-    ) {
+    fn process_command(&mut self, command: Context3DCommand<'_>) {
         match command {
             Context3DCommand::Clear {
                 red,
@@ -918,17 +906,15 @@ impl Context3D for WgpuContext3D {
                 vertex_shader_agal,
                 fragment_shader_agal,
             } => {
-                *module.write(mc) = Some(Rc::new(ShaderPairAgal::new(
+                *module.borrow_mut() = Some(Rc::new(ShaderPairAgal::new(
                     vertex_shader_agal,
                     fragment_shader_agal,
                 )));
             }
 
             Context3DCommand::SetShaders { module } => {
-                let shaders = module
-                    .read()
-                    .clone()
-                    .map(|shader| shader.into_any_rc().downcast::<ShaderPairAgal>().unwrap());
+                let shaders =
+                    module.map(|shader| shader.into_any_rc().downcast::<ShaderPairAgal>().unwrap());
 
                 self.current_pipeline.set_shaders(shaders)
             }

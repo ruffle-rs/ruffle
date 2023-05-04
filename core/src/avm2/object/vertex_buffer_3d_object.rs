@@ -69,6 +69,7 @@ pub struct VertexBuffer3DObjectData<'gc> {
 
     context3d: Context3DObject<'gc>,
 
+    #[collect(require_static)]
     handle: Rc<dyn VertexBuffer>,
 
     /// The 'data32PerVertex' value that this object was created with.

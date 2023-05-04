@@ -1,4 +1,3 @@
-use gc_arena::Collect;
 use lru::LruCache;
 use naga_agal::{SamplerOverride, VertexAttributeFormat};
 use ruffle_render::backend::ShaderModule;
@@ -21,8 +20,6 @@ use super::{
 
 use crate::descriptors::Descriptors;
 
-#[derive(Collect)]
-#[collect(require_static)]
 pub struct ShaderPairAgal {
     vertex_bytecode: Vec<u8>,
     fragment_bytecode: Vec<u8>,

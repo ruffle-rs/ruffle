@@ -19,7 +19,6 @@ downcast-rs = "1.2.0"
 lyon = { version = "1.0.1", optional = true }
 thiserror = "1.0"
 wasm-bindgen = { version = "=0.2.87", optional = true }
-gc-arena = { package = "ruffle_gc_arena", path = "../ruffle_gc_arena" }
 enum-map = "2.6.0"
 serde = { version = "1.0.171", features = ["derive"] }
 clap = { version = "4.3.11", features = ["derive"], optional = true }

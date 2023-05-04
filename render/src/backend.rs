@@ -8,10 +8,10 @@ use crate::pixel_bender::{PixelBenderShader, PixelBenderShaderArgument, PixelBen
 use crate::quality::StageQuality;
 use crate::shape_utils::DistilledShape;
 use downcast_rs::{impl_downcast, Downcast};
-use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_wstr::WStr;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
+use std::cell::RefCell;
 use std::fmt::Debug;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -114,15 +114,15 @@ pub trait RenderBackend: Downcast {
 }
 impl_downcast!(RenderBackend);
 
-pub trait IndexBuffer: Downcast + Collect {}
+pub trait IndexBuffer: Downcast {}
 impl_downcast!(IndexBuffer);
-pub trait VertexBuffer: Downcast + Collect {}
+pub trait VertexBuffer: Downcast {}
 impl_downcast!(VertexBuffer);
 
-pub trait ShaderModule: Downcast + Collect {}
+pub trait ShaderModule: Downcast {}
 impl_downcast!(ShaderModule);
 
-pub trait Texture: Downcast + Collect {}
+pub trait Texture: Downcast {}
 impl_downcast!(Texture);
 
 pub trait RawTexture: Downcast + Debug {}
@@ -131,8 +131,7 @@ impl_downcast!(RawTexture);
 #[cfg(feature = "wgpu")]
 impl RawTexture for wgpu::Texture {}
 
-#[derive(Collect, Debug, Copy, Clone)]
-#[collect(require_static)]
+#[derive(Debug, Copy, Clone)]
 pub enum Context3DTextureFormat {
     Bgra,
     BgraPacked,
@@ -162,8 +161,7 @@ impl Context3DTextureFormat {
     }
 }
 
-#[derive(Collect, Debug, Copy, Clone)]
-#[collect(require_static)]
+#[derive(Debug, Copy, Clone)]
 pub enum Context3DBlendFactor {
     DestinationAlpha,
     DestinationColor,
@@ -205,21 +203,17 @@ impl Context3DBlendFactor {
     }
 }
 
-#[derive(Collect)]
-#[collect(require_static)]
 pub enum BufferUsage {
     DynamicDraw,
     StaticDraw,
 }
 
-#[derive(Collect)]
-#[collect(require_static)]
 pub enum ProgramType {
     Vertex,
     Fragment,
 }
 
-pub trait Context3D: Collect + Downcast {
+pub trait Context3D: Downcast {
     // The BitmapHandle for the texture we're rendering to
     fn bitmap_handle(&self) -> BitmapHandle;
     // Whether or not we should actually render the texture
@@ -259,16 +253,11 @@ pub trait Context3D: Collect + Downcast {
         streaming_levels: u32,
     ) -> Result<Rc<dyn Texture>, Error>;
 
-    fn process_command<'gc>(
-        &mut self,
-        command: Context3DCommand<'_, 'gc>,
-        mc: MutationContext<'gc, '_>,
-    );
+    fn process_command(&mut self, command: Context3DCommand<'_>);
 }
 impl_downcast!(Context3D);
 
-#[derive(Collect, Copy, Clone, Debug)]
-#[collect(require_static)]
+#[derive(Copy, Clone, Debug)]
 pub enum Context3DVertexBufferFormat {
     Float1,
     Float2,
@@ -277,8 +266,7 @@ pub enum Context3DVertexBufferFormat {
     Bytes4,
 }
 
-#[derive(Collect, Copy, Clone, Debug)]
-#[collect(require_static)]
+#[derive(Copy, Clone, Debug)]
 pub enum Context3DTriangleFace {
     None,
     Back,
@@ -286,8 +274,7 @@ pub enum Context3DTriangleFace {
     FrontAndBack,
 }
 
-#[derive(Collect, Copy, Clone, Debug)]
-#[collect(require_static)]
+#[derive(Copy, Clone, Debug)]
 pub enum Context3DCompareMode {
     Never,
     Less,
@@ -323,8 +310,7 @@ impl Context3DCompareMode {
     }
 }
 
-#[derive(Collect, Copy, Clone, Debug)]
-#[collect(require_static)]
+#[derive(Copy, Clone, Debug)]
 pub enum Context3DWrapMode {
     Clamp,
     ClampURepeatV,
@@ -348,8 +334,7 @@ impl Context3DWrapMode {
     }
 }
 
-#[derive(Collect, Copy, Clone, Debug)]
-#[collect(require_static)]
+#[derive(Copy, Clone, Debug)]
 pub enum Context3DTextureFilter {
     Anisotropic16X,
     Anisotropic2X,
@@ -378,7 +363,7 @@ impl Context3DTextureFilter {
         }
     }
 }
-pub enum Context3DCommand<'a, 'gc> {
+pub enum Context3DCommand<'a> {
     Clear {
         red: f64,
         green: f64,
@@ -430,13 +415,13 @@ pub enum Context3DCommand<'a, 'gc> {
     },
 
     UploadShaders {
-        module: GcCell<'gc, Option<Rc<dyn ShaderModule>>>,
+        module: &'a RefCell<Option<Rc<dyn ShaderModule>>>,
         vertex_shader_agal: Vec<u8>,
         fragment_shader_agal: Vec<u8>,
     },
 
     SetShaders {
-        module: GcCell<'gc, Option<Rc<dyn ShaderModule>>>,
+        module: Option<Rc<dyn ShaderModule>>,
     },
     SetProgramConstantsFromVector {
         program_type: ProgramType,
@@ -480,8 +465,7 @@ pub enum Context3DCommand<'a, 'gc> {
     },
 }
 
-#[derive(Clone, Debug, Collect)]
-#[collect(require_static)]
+#[derive(Clone, Debug)]
 pub struct ShapeHandle(pub Arc<dyn ShapeHandleImpl>);
 
 pub trait ShapeHandleImpl: Downcast + Debug {}
