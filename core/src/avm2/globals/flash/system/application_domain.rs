@@ -129,9 +129,9 @@ pub fn get_qualified_definition_names<'gc>(
             activation.avm2().classes().string,
         );
 
-        let name_array = VectorObject::from_vector(storage, activation)?;
+        let name_vector = VectorObject::from_vector(storage, activation)?;
 
-        return Ok(name_array.into());
+        return Ok(name_vector.into());
     }
 
     Ok(Value::Undefined)
