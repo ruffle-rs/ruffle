@@ -5,7 +5,9 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, Gc, GcCell, MutationContext};
+use ruffle_gc_extra::lock::RefLock;
+use ruffle_gc_extra::{unlock, GcExt as _};
 use ruffle_render::backend::ShaderModule;
 use std::cell::{Ref, RefMut};
 use std::rc::Rc;
@@ -14,7 +16,7 @@ use super::Context3DObject;
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct Program3DObject<'gc>(GcCell<'gc, Program3DObjectData<'gc>>);
+pub struct Program3DObject<'gc>(Gc<'gc, Program3DObjectData<'gc>>);
 
 impl<'gc> Program3DObject<'gc> {
     pub fn from_context(
@@ -24,10 +26,10 @@ impl<'gc> Program3DObject<'gc> {
         let class = activation.avm2().classes().program3d;
         let base = ScriptObjectData::new(class);
 
-        let mut this: Object<'gc> = Program3DObject(GcCell::allocate(
+        let mut this: Object<'gc> = Program3DObject(Gc::allocate(
             activation.context.gc_context,
             Program3DObjectData {
-                base,
+                base: RefLock::new(base),
                 context3d,
                 vertex_shader_handle: GcCell::allocate(activation.context.gc_context, None),
                 fragment_shader_handle: GcCell::allocate(activation.context.gc_context, None),
@@ -42,15 +44,15 @@ impl<'gc> Program3DObject<'gc> {
     }
 
     pub fn vertex_shader_handle(&self) -> GcCell<'gc, Option<Rc<dyn ShaderModule>>> {
-        self.0.read().vertex_shader_handle
+        self.0.vertex_shader_handle
     }
 
     pub fn fragment_shader_handle(&self) -> GcCell<'gc, Option<Rc<dyn ShaderModule>>> {
-        self.0.read().fragment_shader_handle
+        self.0.fragment_shader_handle
     }
 
     pub fn context3d(&self) -> Context3DObject<'gc> {
-        self.0.read().context3d
+        self.0.context3d
     }
 }
 
@@ -58,7 +60,7 @@ impl<'gc> Program3DObject<'gc> {
 #[collect(no_drop)]
 pub struct Program3DObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: RefLock<ScriptObjectData<'gc>>,
 
     context3d: Context3DObject<'gc>,
 
@@ -69,15 +71,15 @@ pub struct Program3DObjectData<'gc> {
 
 impl<'gc> TObject<'gc> for Program3DObject<'gc> {
     fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        Ref::map(self.0.read(), |read| &read.base)
+        self.0.base.borrow()
     }
 
     fn base_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<ScriptObjectData<'gc>> {
-        RefMut::map(self.0.write(mc), |write| &mut write.base)
+        unlock!(Gc::write(mc, self.0), Program3DObjectData, base).borrow_mut()
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
-        self.0.as_ptr() as *const ObjectPtr
+        Gc::as_ptr(self.0) as *const ObjectPtr
     }
 
     fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error<'gc>> {
