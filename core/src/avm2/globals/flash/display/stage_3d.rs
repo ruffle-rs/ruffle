@@ -54,12 +54,12 @@ pub fn get_visible<'gc>(
 }
 
 pub fn set_visible<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.as_stage_3d() {
-        this.set_visible(args.get_bool(0), activation.context.gc_context);
+        this.set_visible(args.get_bool(0));
     }
     Ok(Value::Undefined)
 }
