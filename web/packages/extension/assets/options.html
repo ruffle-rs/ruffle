@@ -37,7 +37,7 @@
                 <label for="warn_on_unsupported_content">Warn on unsupported content</label>
             </div>
             <details>
-                <summary>Advanced Options</summary>
+                <summary id="advanced_options">Advanced Options</summary>
                 <div class="options">
                     <div class="option checkbox">
                         <input type="checkbox" id="ignore_optout" />
@@ -45,15 +45,15 @@
                     </div>
                     <div class="option select">
                         <select id="log_level">
-                            <option value="info">Info</option>
-                            <option value="warn">Warning</option>
-                            <option value="error">Error</option>
+                            <option value="info" id="log_level_info">Info</option>
+                            <option value="warn" id="log_level_warn">Warning</option>
+                            <option value="error" id="log_level_error">Error</option>
                         </select>
                         <label for="log_level">Log level</label>
                     </div>
                     <div class="option select">
                         <select id="preferred_renderer">
-                            <option value="">Automatic</option>
+                            <option value="" id="preferred_renderer_auto">Automatic</option>
                             <option value="webgpu">WebGPU</option>
                             <option value="wgpu-webgl">Wgpu (via WebGL)</option>
                             <option value="webgl">WebGL</option>

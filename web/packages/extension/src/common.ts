@@ -76,7 +76,17 @@ class SelectOption implements OptionElement<string | null> {
     constructor(
         private readonly select: HTMLSelectElement,
         readonly label: HTMLLabelElement
-    ) {}
+    ) {
+        // Localize each `option`, if relevant.
+        Array.prototype.forEach.call(select.options, (option) => {
+            if (option.hasAttribute("id")) {
+                const message = utils.i18n.getMessage(`settings_${option.id}`);
+                if (message) {
+                    option.textContent = message;
+                }
+            }
+        });
+    }
 
     get input() {
         return this.select;
