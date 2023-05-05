@@ -153,6 +153,35 @@ export const enum RenderBackend {
 }
 
 /**
+ * Represents the various context menu options that are supported.
+ */
+export const enum ContextMenu {
+    /**
+     * The context menu should appear when right-clicking or long-pressing
+     * the Ruffle instance.
+     */
+    On = "on",
+
+    /**
+     * The context menu should only appear when right-clicking
+     * the Ruffle instance.
+     */
+    RightClickOnly = "rightClickOnly",
+
+    /**
+     * The context menu should only appear when long-pressing
+     * the Ruffle instance.
+     */
+    TouchOnly = "touchOnly",
+
+    /**
+     * The context menu should not appear when right-clicking or long-pressing
+     * the Ruffle instance.
+     */
+    Off = "off",
+}
+
+/**
  * Non-negative duration in seconds.
  */
 export type SecsDuration = number;
@@ -334,17 +363,9 @@ export interface BaseLoadOptions {
      * Whether or not to show a context menu when right-clicking
      * a Ruffle instance.
      *
-     * @default true
+     * @default ContextMenu.On
      */
-    contextMenu?: boolean;
-
-    /**
-     * Whether or not to show a context menu when long-pressing
-     * a Ruffle instance on touch devices.
-     *
-     * @default true
-     */
-    touchContextMenu?: boolean;
+    contextMenu?: ContextMenu | boolean;
 
     /**
      * Whether or not to show a splash screen before the SWF has loaded with Ruffle (backwards-compatibility).

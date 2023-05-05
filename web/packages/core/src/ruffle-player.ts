@@ -4,7 +4,12 @@ import { ruffleShadowTemplate } from "./shadow-template";
 import { lookupElement } from "./register-element";
 import { DEFAULT_CONFIG } from "./config";
 import type { DataLoadOptions, URLLoadOptions } from "./load-options";
-import { AutoPlay, UnmuteOverlay, WindowMode } from "./load-options";
+import {
+    AutoPlay,
+    ContextMenu,
+    UnmuteOverlay,
+    WindowMode,
+} from "./load-options";
 import type { MovieMetadata } from "./movie-metadata";
 import { swfFileName } from "./swf-utils";
 import { buildInfo } from "./build-info";
@@ -461,6 +466,15 @@ export class RufflePlayer extends HTMLElement {
                 "Configuration: An obsolete format for duration for 'maxExecutionDuration' was used, " +
                     "please use a single number indicating seconds instead. For instance '15' instead of " +
                     "'{secs: 15, nanos: 0}'."
+            );
+        }
+        if (
+            this.loadedConfig &&
+            (this.loadedConfig.contextMenu === false ||
+                this.loadedConfig.contextMenu === true)
+        ) {
+            console.warn(
+                'The configuration option contextMenu no longer takes a boolean. Use "on", "off", "rightClickOnly", or "touchOnly".'
             );
         }
         const ruffleConstructor = await loadRuffle(
@@ -1334,10 +1348,14 @@ export class RufflePlayer extends HTMLElement {
         }
 
         if (
-            (this.loadedConfig && this.loadedConfig.contextMenu === false) ||
+            [false, ContextMenu.Off].includes(
+                this.loadedConfig?.contextMenu ?? ContextMenu.On
+            ) ||
             (this.isTouch &&
-                this.loadedConfig &&
-                this.loadedConfig.touchContextMenu === false) ||
+                this.loadedConfig?.contextMenu ===
+                    ContextMenu.RightClickOnly) ||
+            (!this.isTouch &&
+                this.loadedConfig?.contextMenu === ContextMenu.TouchOnly) ||
             this.contextMenuForceDisabled
         ) {
             return;
