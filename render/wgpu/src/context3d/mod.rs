@@ -462,7 +462,7 @@ impl Context3D for WgpuContext3D {
         command: Context3DCommand<'gc>,
         mc: MutationContext<'gc, '_>,
     ) {
-        match &command {
+        match command {
             Context3DCommand::Clear {
                 red,
                 green,
@@ -474,14 +474,14 @@ impl Context3D for WgpuContext3D {
             } => {
                 self.clear_color = Some(ClearColor {
                     rgb: wgpu::Color {
-                        r: *red,
-                        g: *green,
-                        b: *blue,
-                        a: *alpha,
+                        r: red,
+                        g: green,
+                        b: blue,
+                        a: alpha,
                     },
-                    mask: *mask,
-                    depth: *depth as f32,
-                    stencil: *stencil,
+                    mask,
+                    depth: depth as f32,
+                    stencil,
                 });
                 self.seen_clear_command = true;
             }
@@ -493,7 +493,7 @@ impl Context3D for WgpuContext3D {
                 wants_best_resolution: _,
                 wants_best_resolution_on_browser_zoom: _,
             } => {
-                let mut sample_count = *anti_alias;
+                let mut sample_count = anti_alias;
                 if sample_count == 0 {
                     sample_count = 1;
                 }
@@ -508,8 +508,8 @@ impl Context3D for WgpuContext3D {
                             .create_texture(&wgpu::TextureDescriptor {
                                 label: texture_label.as_deref(),
                                 size: Extent3d {
-                                    width: *width,
-                                    height: *height,
+                                    width,
+                                    height,
                                     depth_or_array_layers: 1,
                                 },
                                 mip_level_count: 1,
@@ -533,8 +533,8 @@ impl Context3D for WgpuContext3D {
                                 .create_texture(&wgpu::TextureDescriptor {
                                     label: texture_label.as_deref(),
                                     size: Extent3d {
-                                        width: *width,
-                                        height: *height,
+                                        width,
+                                        height,
                                         depth_or_array_layers: 1,
                                     },
                                     mip_level_count: 1,
@@ -560,11 +560,11 @@ impl Context3D for WgpuContext3D {
                     back_buffer_texture.create_view(&Default::default()),
                 ));
 
-                if *depth_and_stencil {
+                if depth_and_stencil {
                     self.back_buffer_depth_texture_view =
-                        Some(self.create_depth_texture(*width, *height, sample_count));
+                        Some(self.create_depth_texture(width, height, sample_count));
                     self.front_buffer_depth_texture_view =
-                        Some(self.create_depth_texture(*width, *height, sample_count));
+                        Some(self.create_depth_texture(width, height, sample_count));
                     self.current_depth_texture_view = self.back_buffer_depth_texture_view.clone();
                 } else {
                     self.back_buffer_depth_texture_view = None;
@@ -601,16 +601,16 @@ impl Context3D for WgpuContext3D {
                         texture: Arc::new(back_buffer_resolve_texture.unwrap()),
                         bind_linear: Default::default(),
                         bind_nearest: Default::default(),
-                        width: *width,
-                        height: *height,
+                        width,
+                        height,
                         copy_count: Cell::new(0),
                     }));
                     self.front_buffer_raw_texture_handle = BitmapHandle(Arc::new(Texture {
                         texture: Arc::new(front_buffer_resolve_texture.unwrap()),
                         bind_linear: Default::default(),
                         bind_nearest: Default::default(),
-                        width: *width,
-                        height: *height,
+                        width,
+                        height,
                         copy_count: Cell::new(0),
                     }));
                 } else {
@@ -621,23 +621,23 @@ impl Context3D for WgpuContext3D {
                         texture: Arc::new(back_buffer_texture),
                         bind_linear: Default::default(),
                         bind_nearest: Default::default(),
-                        width: *width,
-                        height: *height,
+                        width,
+                        height,
                         copy_count: Cell::new(0),
                     }));
                     self.front_buffer_raw_texture_handle = BitmapHandle(Arc::new(Texture {
                         texture: Arc::new(front_buffer_texture),
                         bind_linear: Default::default(),
                         bind_nearest: Default::default(),
-                        width: *width,
-                        height: *height,
+                        width,
+                        height,
                         copy_count: Cell::new(0),
                     }));
                     self.current_texture_resolve_view = None;
                 }
 
                 self.current_pipeline
-                    .update_has_depth_texture(*depth_and_stencil);
+                    .update_has_depth_texture(depth_and_stencil);
                 self.current_pipeline.update_sample_count(sample_count);
             }
             Context3DCommand::UploadToIndexBuffer {
@@ -654,11 +654,11 @@ impl Context3D for WgpuContext3D {
                     .write_buffer(
                         &mut self.buffer_command_encoder,
                         &buffer.0,
-                        (*start_offset * std::mem::size_of::<u16>()) as u64,
+                        (start_offset * std::mem::size_of::<u16>()) as u64,
                         NonZeroU64::new(data.len() as u64).unwrap(),
                         &self.descriptors.device,
                     )
-                    .copy_from_slice(data);
+                    .copy_from_slice(&data);
             }
 
             Context3DCommand::UploadToVertexBuffer {
@@ -679,12 +679,12 @@ impl Context3D for WgpuContext3D {
                 self.buffer_staging_belt.write_buffer(
                     &mut self.buffer_command_encoder,
                     &buffer.buffer,
-                    (*start_vertex * (*data32_per_vertex as usize) * std::mem::size_of::<f32>())
+                    (start_vertex * (data32_per_vertex as usize) * std::mem::size_of::<f32>())
                         as u64,
                     NonZeroU64::new(rounded_size as u64).unwrap(),
                     &self.descriptors.device,
                 )[..data.len()]
-                    .copy_from_slice(data);
+                    .copy_from_slice(&data);
             }
 
             Context3DCommand::SetRenderToTexture {
@@ -693,7 +693,7 @@ impl Context3D for WgpuContext3D {
                 anti_alias,
                 surface_selector: _,
             } => {
-                let mut sample_count = *anti_alias;
+                let mut sample_count = anti_alias;
                 if sample_count == 0 {
                     sample_count = 1;
                 }
@@ -739,7 +739,7 @@ impl Context3D for WgpuContext3D {
                     texture_wrapper.texture.create_view(&Default::default()),
                 ));
 
-                if *enable_depth_and_stencil {
+                if enable_depth_and_stencil {
                     self.current_depth_texture_view = Some(self.create_depth_texture(
                         texture_wrapper.texture.width(),
                         texture_wrapper.texture.height(),
@@ -749,7 +749,7 @@ impl Context3D for WgpuContext3D {
                     self.current_depth_texture_view = None;
                 }
 
-                self.current_pipeline.remove_texture(texture);
+                self.current_pipeline.remove_texture(&texture);
                 self.current_pipeline.update_sample_count(sample_count);
             }
 
@@ -768,7 +768,7 @@ impl Context3D for WgpuContext3D {
                     .unwrap();
 
                 let indices =
-                    (*first_index as u32)..((*first_index as u32) + (*num_triangles as u32 * 3));
+                    (first_index as u32)..((first_index as u32) + (num_triangles as u32 * 3));
 
                 let new_pipeline = self
                     .current_pipeline
@@ -840,16 +840,16 @@ impl Context3D for WgpuContext3D {
                 let info = if let Some(buffer) = buffer {
                     Some(VertexAttributeInfo {
                         buffer,
-                        offset_in_32bit_units: *buffer_offset as u64,
-                        format: *format,
+                        offset_in_32bit_units: buffer_offset as u64,
+                        format,
                     })
                 } else {
                     None
                 };
 
-                self.vertex_attributes[*index as usize] = info;
+                self.vertex_attributes[index as usize] = info;
                 self.current_pipeline
-                    .update_vertex_buffer_at(*index as usize);
+                    .update_vertex_buffer_at(index as usize);
             }
 
             Context3DCommand::UploadShaders {
@@ -858,10 +858,8 @@ impl Context3D for WgpuContext3D {
                 fragment_shader,
                 fragment_shader_agal,
             } => {
-                *vertex_shader.write(mc) =
-                    Some(Rc::new(ShaderModuleAgal(vertex_shader_agal.clone())));
-                *fragment_shader.write(mc) =
-                    Some(Rc::new(ShaderModuleAgal(fragment_shader_agal.clone())));
+                *vertex_shader.write(mc) = Some(Rc::new(ShaderModuleAgal(vertex_shader_agal)));
+                *fragment_shader.write(mc) = Some(Rc::new(ShaderModuleAgal(fragment_shader_agal)));
             }
 
             Context3DCommand::SetShaders {
@@ -896,7 +894,7 @@ impl Context3D for WgpuContext3D {
                     ProgramType::Fragment => &self.current_pipeline.fragment_shader_uniforms,
                 };
 
-                let offset = *first_register as u64
+                let offset = first_register as u64
                     * AGAL_FLOATS_PER_REGISTER
                     * std::mem::size_of::<f32>() as u64;
 
@@ -915,11 +913,11 @@ impl Context3D for WgpuContext3D {
                 // When the 'transposedMatrix' flag is false, it copies data *directly* from matrix.rawData,
                 // which is stored in column-major order
                 buffer_view.copy_from_slice(bytemuck::cast_slice::<f32, u8>(
-                    matrix_raw_data_column_major,
+                    &matrix_raw_data_column_major,
                 ));
             }
             Context3DCommand::SetCulling { face } => {
-                self.current_pipeline.set_culling(*face);
+                self.current_pipeline.set_culling(face);
             }
             Context3DCommand::CopyBitmapToTexture {
                 source,
@@ -932,7 +930,7 @@ impl Context3D for WgpuContext3D {
                     unimplemented!("Trying to copy to texture format {:?}", dest.format);
                 }
 
-                let source_texture = as_texture(source);
+                let source_texture = as_texture(&source);
 
                 self.buffer_command_encoder.copy_texture_to_texture(
                     ImageCopyTexture {
@@ -947,7 +945,7 @@ impl Context3D for WgpuContext3D {
                         origin: wgpu::Origin3d {
                             x: 0,
                             y: 0,
-                            z: *layer,
+                            z: layer,
                         },
                         aspect: wgpu::TextureAspect::All,
                     },
@@ -968,7 +966,7 @@ impl Context3D for WgpuContext3D {
                         texture.as_any().downcast_ref::<TextureWrapper>().unwrap();
 
                     let mut view: wgpu::TextureViewDescriptor = Default::default();
-                    if *cube {
+                    if cube {
                         view.dimension = Some(wgpu::TextureViewDimension::Cube);
                         view.array_layer_count = Some(6);
                     }
@@ -976,14 +974,14 @@ impl Context3D for WgpuContext3D {
                     Some(BoundTextureData {
                         id: texture.clone(),
                         view: texture_wrapper.texture.create_view(&view),
-                        cube: *cube,
+                        cube,
                     })
                 } else {
                     None
                 };
 
                 self.current_pipeline
-                    .update_texture_at(*sampler as usize, bound_texture);
+                    .update_texture_at(sampler as usize, bound_texture);
             }
             Context3DCommand::SetColorMask {
                 red,
@@ -992,10 +990,10 @@ impl Context3D for WgpuContext3D {
                 alpha,
             } => {
                 let mut color_mask = wgpu::ColorWrites::empty();
-                color_mask.set(wgpu::ColorWrites::RED, *red);
-                color_mask.set(wgpu::ColorWrites::GREEN, *green);
-                color_mask.set(wgpu::ColorWrites::BLUE, *blue);
-                color_mask.set(wgpu::ColorWrites::ALPHA, *alpha);
+                color_mask.set(wgpu::ColorWrites::RED, red);
+                color_mask.set(wgpu::ColorWrites::GREEN, green);
+                color_mask.set(wgpu::ColorWrites::BLUE, blue);
+                color_mask.set(wgpu::ColorWrites::ALPHA, alpha);
                 self.current_pipeline.update_color_mask(color_mask);
             }
             Context3DCommand::SetDepthTest {
@@ -1012,7 +1010,7 @@ impl Context3D for WgpuContext3D {
                     Context3DCompareMode::Never => wgpu::CompareFunction::Never,
                     Context3DCompareMode::NotEqual => wgpu::CompareFunction::NotEqual,
                 };
-                self.current_pipeline.update_depth(*depth_mask, function);
+                self.current_pipeline.update_depth(depth_mask, function);
             }
             Context3DCommand::SetBlendFactors {
                 source_factor,
@@ -1060,9 +1058,9 @@ impl Context3D for WgpuContext3D {
                         }
                     };
                 let (source_blend_factor, source_alpha_blend_factor) =
-                    convert_blend_factor(*source_factor);
+                    convert_blend_factor(source_factor);
                 let (destination_blend_factor, destination_alpha_blend_factor) =
-                    convert_blend_factor(*destination_factor);
+                    convert_blend_factor(destination_factor);
                 // The operation is always Add for Stage3D
                 self.current_pipeline.update_blend_factors(
                     wgpu::BlendComponent {
@@ -1083,7 +1081,7 @@ impl Context3D for WgpuContext3D {
                 filter,
             } => {
                 self.current_pipeline
-                    .update_sampler_state_at(*sampler as usize, *wrap, *filter);
+                    .update_sampler_state_at(sampler as usize, wrap, filter);
             }
         }
     }
