@@ -1105,6 +1105,7 @@ impl Ruffle {
                     // This clone lets us drop the instance borrow to avoid potential double-borrows.
                     let core = instance.core.clone();
                     drop(instance);
+                    drop(instances);
                     let core = core
                         .try_lock()
                         .map_err(|_| RuffleInstanceError::TryLockError)?;
@@ -1136,6 +1137,7 @@ impl Ruffle {
                     // This clone lets us drop the instance to avoid potential double-borrows.
                     let core = instance.core.clone();
                     drop(instance);
+                    drop(instances);
                     let mut core = core
                         .try_lock()
                         .map_err(|_| RuffleInstanceError::TryLockError)?;
