@@ -2217,7 +2217,7 @@ impl PlayerBuilder {
                     audio_manager: AudioManager::new(),
                     action_queue: ActionQueue::new(),
                     avm1: Avm1::new(&mut init, player_version),
-                    avm2: Avm2::new(&mut init),
+                    avm2: Avm2::new(&mut init, player_version),
                     interner,
                     current_context_menu: None,
                     drag_object: None,

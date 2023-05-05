@@ -77,6 +77,9 @@ const BROADCAST_WHITELIST: [&str; 4] = ["enterFrame", "exitFrame", "frameConstru
 #[derive(Collect)]
 #[collect(no_drop)]
 pub struct Avm2<'gc> {
+    /// The Flash Player version we're emulating.
+    player_version: u8,
+
     /// Values currently present on the operand stack.
     stack: Vec<Value<'gc>>,
 
@@ -142,10 +145,11 @@ pub struct Avm2<'gc> {
 
 impl<'gc> Avm2<'gc> {
     /// Construct a new AVM interpreter.
-    pub fn new(context: &mut GcContext<'_, 'gc>) -> Self {
+    pub fn new(context: &mut GcContext<'_, 'gc>, player_version: u8) -> Self {
         let globals = Domain::global_domain(context.gc_context);
 
         Self {
+            player_version,
             stack: Vec::new(),
             scope_stack: Vec::new(),
             call_stack: GcCell::allocate(context.gc_context, CallStack::new()),

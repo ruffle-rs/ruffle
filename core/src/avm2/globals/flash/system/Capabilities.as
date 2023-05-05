@@ -1,18 +1,21 @@
 package flash.system {
+    import __ruffle__.stub_getter;
     public final class Capabilities {
         public static function get os(): String {
+            stub_getter("flash.system.Capabilities", "os");
             return "Linux 5.10.49"
         }
-        public static function get playerType(): String {
-            return "StandAlone"
-        }
-        public static function get version(): String {
-            return "LNX 32,0,0,465"
-        }
+        
+        public native static function get playerType(): String;
+        
+        public native static function get version(): String;
+        
         public static function get manufacturer(): String {
+            stub_getter("flash.system.Capabilities", "manufacturer");
             return "Adobe Linux"
         }
         public static function get language(): String {
+            stub_getter("flash.system.Capabilities", "language");
             return "en"
         }
         public static function get isDebugger(): Boolean {
