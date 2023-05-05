@@ -192,7 +192,8 @@ pub trait Context3D: Collect + Downcast {
     // objects after dispose() has been called.
     fn disposed_vertex_buffer_handle(&self) -> Rc<dyn VertexBuffer>;
 
-    fn create_index_buffer(&mut self, usage: BufferUsage, num_indices: u32) -> Rc<dyn IndexBuffer>;
+    fn create_index_buffer(&mut self, usage: BufferUsage, num_indices: u32)
+        -> Box<dyn IndexBuffer>;
     fn create_vertex_buffer(
         &mut self,
         usage: BufferUsage,
@@ -218,7 +219,7 @@ pub trait Context3D: Collect + Downcast {
 
     fn process_command<'gc>(
         &mut self,
-        command: Context3DCommand<'gc>,
+        command: Context3DCommand<'_, 'gc>,
         mc: MutationContext<'gc, '_>,
     );
 }
@@ -338,7 +339,7 @@ impl Context3DTextureFilter {
 
 #[derive(Collect)]
 #[collect(no_drop)]
-pub enum Context3DCommand<'gc> {
+pub enum Context3DCommand<'a, 'gc> {
     Clear {
         red: f64,
         green: f64,
@@ -365,7 +366,7 @@ pub enum Context3DCommand<'gc> {
     SetRenderToBackBuffer,
 
     UploadToIndexBuffer {
-        buffer: Rc<dyn IndexBuffer>,
+        buffer: &'a mut dyn IndexBuffer,
         start_offset: usize,
         data: Vec<u8>,
     },
@@ -378,7 +379,7 @@ pub enum Context3DCommand<'gc> {
     },
 
     DrawTriangles {
-        index_buffer: Rc<dyn IndexBuffer>,
+        index_buffer: &'a dyn IndexBuffer,
         first_index: usize,
         num_triangles: isize,
     },
