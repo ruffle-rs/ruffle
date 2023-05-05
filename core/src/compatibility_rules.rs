@@ -53,7 +53,7 @@ impl CompatibilityRules {
             name: "kongregate_sitelock".to_string(),
             swf_domain_rewrite_rules: vec![UrlRewriteRule::new(
                 "*.konggames.com",
-                "kongregate.com",
+                "chat.kongregate.com",
             )],
         };
 
