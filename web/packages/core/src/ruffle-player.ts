@@ -910,6 +910,8 @@ export class RufflePlayer extends HTMLElement {
     private checkIfTouch(event: PointerEvent): void {
         if (event.pointerType === "touch" || event.pointerType === "pen") {
             this.isTouch = true;
+        } else {
+            this.isTouch = false;
         }
     }
 
