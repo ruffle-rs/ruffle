@@ -8,7 +8,6 @@ use crate::avm2::Error;
 use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_render::backend::IndexBuffer;
 use std::cell::{Ref, RefMut};
-use std::rc::Rc;
 
 use super::Context3DObject;
 
@@ -20,7 +19,7 @@ impl<'gc> IndexBuffer3DObject<'gc> {
     pub fn from_handle(
         activation: &mut Activation<'_, 'gc>,
         context3d: Context3DObject<'gc>,
-        handle: Rc<dyn IndexBuffer>,
+        handle: Box<dyn IndexBuffer>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let class = activation.avm2().classes().indexbuffer3d;
         let base = ScriptObjectData::new(class);
@@ -50,8 +49,8 @@ impl<'gc> IndexBuffer3DObject<'gc> {
         self.0.write(mc).count = val;
     }
 
-    pub fn handle(&self) -> Rc<dyn IndexBuffer> {
-        self.0.read().handle.clone()
+    pub fn handle(&self, mc: MutationContext<'gc, '_>) -> RefMut<'_, dyn IndexBuffer> {
+        RefMut::map(self.0.write(mc), |data| &mut *data.handle)
     }
 
     pub fn context3d(&self) -> Context3DObject<'gc> {
@@ -65,7 +64,7 @@ pub struct IndexBuffer3DObjectData<'gc> {
     /// Base script object
     base: ScriptObjectData<'gc>,
 
-    handle: Rc<dyn IndexBuffer>,
+    handle: Box<dyn IndexBuffer>,
 
     count: usize,
 

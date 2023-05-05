@@ -62,10 +62,6 @@ pub fn upload_from_vector<'gc>(
 
         index_buffer.set_count(count as usize, activation.context.gc_context);
 
-        if start_offset != 0 {
-            panic!("What exactly does start_offset do?");
-        }
-
         let data: Result<Vec<u16>, _> = vector
             .iter()
             .map(|val| {

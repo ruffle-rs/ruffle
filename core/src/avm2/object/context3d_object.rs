@@ -182,6 +182,7 @@ impl<'gc> Context3DObject<'gc> {
         start_offset: usize,
         activation: &mut Activation<'_, 'gc>,
     ) {
+        let mut handle = buffer.handle(activation.context.gc_context);
         self.0
             .write(activation.context.gc_context)
             .render_context
@@ -189,7 +190,7 @@ impl<'gc> Context3DObject<'gc> {
             .unwrap()
             .process_command(
                 Context3DCommand::UploadToIndexBuffer {
-                    buffer: buffer.handle(),
+                    buffer: &mut *handle,
                     data,
                     start_offset,
                 },
@@ -279,6 +280,7 @@ impl<'gc> Context3DObject<'gc> {
             // FIXME - should we error if the number of indices isn't a multiple of 3?
             num_triangles = (index_buffer.count() / 3) as i32;
         }
+        let handle = index_buffer.handle(activation.context.gc_context);
 
         self.0
             .write(activation.context.gc_context)
@@ -287,7 +289,7 @@ impl<'gc> Context3DObject<'gc> {
             .unwrap()
             .process_command(
                 Context3DCommand::DrawTriangles {
-                    index_buffer: index_buffer.handle(),
+                    index_buffer: &*handle,
                     first_index: first_index as usize,
                     num_triangles: num_triangles as isize,
                 },

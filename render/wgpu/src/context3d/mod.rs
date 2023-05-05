@@ -298,7 +298,12 @@ impl WgpuContext3D {
 
 #[derive(Collect)]
 #[collect(require_static)]
-pub struct IndexBufferWrapper(wgpu::Buffer);
+pub struct IndexBufferWrapper {
+    pub buffer: wgpu::Buffer,
+    /// A cpu-side copy of the buffer data. This is used to allow us to
+    /// perform unaligned writes to the GPU buffer, which is required by ActionScript.
+    pub data: Vec<u8>,
+}
 
 #[derive(Collect, Debug)]
 #[collect(require_static)]
@@ -347,14 +352,18 @@ impl Context3D for WgpuContext3D {
         &mut self,
         _ruffle_usage: ruffle_render::backend::BufferUsage,
         num_indices: u32,
-    ) -> Rc<dyn IndexBuffer> {
+    ) -> Box<dyn IndexBuffer> {
+        let size = align_copy_buffer_size(num_indices as usize * std::mem::size_of::<u16>()) as u32;
         let buffer = self.descriptors.device.create_buffer(&BufferDescriptor {
             label: None,
-            size: num_indices as u64 * 2,
+            size: size as u64,
             usage: BufferUsages::INDEX | BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
-        Rc::new(IndexBufferWrapper(buffer))
+        Box::new(IndexBufferWrapper {
+            buffer,
+            data: vec![0; size as usize],
+        })
     }
 
     fn create_vertex_buffer(
@@ -459,7 +468,7 @@ impl Context3D for WgpuContext3D {
 
     fn process_command<'gc>(
         &mut self,
-        command: Context3DCommand<'gc>,
+        command: Context3DCommand<'_, 'gc>,
         mc: MutationContext<'gc, '_>,
     ) {
         match command {
@@ -645,20 +654,40 @@ impl Context3D for WgpuContext3D {
                 start_offset,
                 data,
             } => {
-                let buffer: &IndexBufferWrapper = buffer
-                    .as_any()
-                    .downcast_ref::<IndexBufferWrapper>()
+                if data.is_empty() {
+                    return;
+                }
+                let buffer: &mut IndexBufferWrapper = buffer
+                    .as_any_mut()
+                    .downcast_mut::<IndexBufferWrapper>()
                     .unwrap();
 
+                // Unfortunately, ActionScript works with 2-byte indices, while wgpu requires
+                // copy offsets and sizes to have 4-byte alignment. To support this, we need
+                // to keep a copy of the data on the CPU side. We round *down* the offset to
+                // the closest multiple of 4 bytes, and round *up* the length to the closest
+                // multiple of 4 bytes. We then perform a copy from our CPU-side buffer, which
+                // which uses the existing data (at the beiginning or end) to fill out the copy
+                // to the required length and offset. Without this, we would lose data in the CPU
+                // buffer whenever we performed a copy with an unalignd offset or length.
+                let offset_bytes = start_offset * std::mem::size_of::<u16>();
+                let rounded_down_offset =
+                    offset_bytes - (offset_bytes % COPY_BUFFER_ALIGNMENT as usize);
+                let rounded_up_length = align_copy_buffer_size(data.len());
+
+                buffer.data[offset_bytes..(offset_bytes + data.len())].copy_from_slice(&data);
                 self.buffer_staging_belt
                     .write_buffer(
                         &mut self.buffer_command_encoder,
-                        &buffer.0,
-                        (start_offset * std::mem::size_of::<u16>()) as u64,
-                        NonZeroU64::new(data.len() as u64).unwrap(),
+                        &buffer.buffer,
+                        rounded_down_offset as u64,
+                        NonZeroU64::new(rounded_up_length as u64).unwrap(),
                         &self.descriptors.device,
                     )
-                    .copy_from_slice(&data);
+                    .copy_from_slice(
+                        &buffer.data
+                            [rounded_down_offset..(rounded_down_offset + rounded_up_length)],
+                    );
             }
 
             Context3DCommand::UploadToVertexBuffer {
@@ -667,21 +696,24 @@ impl Context3D for WgpuContext3D {
                 data32_per_vertex,
                 data,
             } => {
+                if data.is_empty() {
+                    return;
+                }
+
                 let buffer: Rc<VertexBufferWrapper> = buffer
                     .clone()
                     .into_any_rc()
                     .downcast::<VertexBufferWrapper>()
                     .unwrap();
 
-                let align = COPY_BUFFER_ALIGNMENT as usize;
-                let rounded_size = (data.len() + align - 1) & !(align - 1);
-
+                // ActionScript can only work with 32-bit chunks of data, so our `write_buffer`
+                // offset and size will always be a multiple of `COPY_BUFFER_ALIGNMENT` (4 bytes)
                 self.buffer_staging_belt.write_buffer(
                     &mut self.buffer_command_encoder,
                     &buffer.buffer,
                     (start_vertex * (data32_per_vertex as usize) * std::mem::size_of::<f32>())
                         as u64,
-                    NonZeroU64::new(rounded_size as u64).unwrap(),
+                    NonZeroU64::new(data.len() as u64).unwrap(),
                     &self.descriptors.device,
                 )[..data.len()]
                     .copy_from_slice(&data);
@@ -805,7 +837,8 @@ impl Context3D for WgpuContext3D {
 
                 let mut render_pass = self.make_render_pass(&mut render_command_encoder);
 
-                render_pass.set_index_buffer(index_buffer.0.slice(..), wgpu::IndexFormat::Uint16);
+                render_pass
+                    .set_index_buffer(index_buffer.buffer.slice(..), wgpu::IndexFormat::Uint16);
                 render_pass.draw_indexed(indices, 0, 0..1);
 
                 // A `RenderPass` needs to hold references to several fields in `self`, so we can't
@@ -1125,4 +1158,10 @@ fn convert_texture_format(input: Context3DTextureFormat) -> Result<wgpu::Texture
             format!("Texture format {input:?}").into(),
         )),
     }
+}
+
+// Rounds up 'len' to the nearest multiple of COPY_BUFFER_ALIGNMENT
+fn align_copy_buffer_size(len: usize) -> usize {
+    let align = COPY_BUFFER_ALIGNMENT as usize;
+    (len + align - 1) & !(align - 1)
 }
