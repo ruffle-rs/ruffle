@@ -470,8 +470,7 @@ export class RufflePlayer extends HTMLElement {
         }
         if (
             this.loadedConfig &&
-            (this.loadedConfig.contextMenu === false ||
-                this.loadedConfig.contextMenu === true)
+            typeof this.loadedConfig.contextMenu === "boolean"
         ) {
             console.warn(
                 'The configuration option contextMenu no longer takes a boolean. Use "on", "off", "rightClickOnly", or "touchOnly".'
