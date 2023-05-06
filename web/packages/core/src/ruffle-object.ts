@@ -170,29 +170,27 @@ export class RuffleObject extends RufflePlayer {
     }
 
     protected override debugPlayerInfo(): string {
-        let errorText = super.debugPlayerInfo();
-        errorText += "Player type: Object\n";
+        let result = "Player type: Object\n";
 
         let url = null;
-
         if (this.attributes.getNamedItem("data")) {
             url = this.attributes.getNamedItem("data")?.value;
         } else if (this.params["movie"]) {
             url = this.params["movie"];
         }
-        errorText += `SWF URL: ${url}\n`;
+        result += `SWF URL: ${url}\n`;
 
         Object.keys(this.params).forEach((key) => {
-            errorText += `Param ${key}: ${this.params[key]}\n`;
+            result += `Param ${key}: ${this.params[key]}\n`;
         });
 
         Object.keys(this.attributes).forEach((key) => {
-            errorText += `Attribute ${key}: ${
+            result += `Attribute ${key}: ${
                 this.attributes.getNamedItem(key)?.value
             }\n`;
         });
 
-        return errorText;
+        return result;
     }
 
     /**

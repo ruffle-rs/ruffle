@@ -151,7 +151,7 @@ export class RufflePlayer extends HTMLElement {
     private _readyState: ReadyState;
 
     private panicked = false;
-    private _cachedDebugInfo: string | null = null;
+    private rendererDebugInfo = "";
 
     private isExtension = false;
     private longPressTimer: ReturnType<typeof setTimeout> | null = null;
@@ -533,7 +533,7 @@ export class RufflePlayer extends HTMLElement {
             this,
             this.loadedConfig
         );
-        this._cachedDebugInfo = this.instance!.renderer_debug_info();
+        this.rendererDebugInfo = this.instance!.renderer_debug_info();
 
         const actuallyUsedRendererName = this.instance!.renderer_name();
 
@@ -1614,37 +1614,40 @@ export class RufflePlayer extends HTMLElement {
      * @returns A string containing all the data included in the panic.
      */
     private getPanicData(): string {
-        const dataArray = [];
-        dataArray.push("\n# Player Info\n");
-        dataArray.push(this.debugPlayerInfo());
+        let result = "\n# Player Info\n";
+        result += `Allows script access: ${
+            this.loadedConfig ? this.loadedConfig.allowScriptAccess : false
+        }\n`;
+        result += `${this.rendererDebugInfo}\n`;
+        result += this.debugPlayerInfo();
 
-        dataArray.push("\n# Page Info\n");
-        dataArray.push(`Page URL: ${document.location.href}\n`);
+        result += "\n# Page Info\n";
+        result += `Page URL: ${document.location.href}\n`;
         if (this.swfUrl) {
-            dataArray.push(`SWF URL: ${this.swfUrl}\n`);
+            result += `SWF URL: ${this.swfUrl}\n`;
         }
 
-        dataArray.push("\n# Browser Info\n");
-        dataArray.push(`User Agent: ${window.navigator.userAgent}\n`);
-        dataArray.push(`Platform: ${window.navigator.platform}\n`);
-        dataArray.push(
-            `Has touch support: ${window.navigator.maxTouchPoints > 0}\n`
-        );
+        result += "\n# Browser Info\n";
+        result += `User Agent: ${window.navigator.userAgent}\n`;
+        result += `Platform: ${window.navigator.platform}\n`;
+        result += `Has touch support: ${window.navigator.maxTouchPoints > 0}\n`;
 
-        dataArray.push("\n# Ruffle Info\n");
-        dataArray.push(`Version: ${buildInfo.versionNumber}\n`);
-        dataArray.push(`Name: ${buildInfo.versionName}\n`);
-        dataArray.push(`Channel: ${buildInfo.versionChannel}\n`);
-        dataArray.push(`Built: ${buildInfo.buildDate}\n`);
-        dataArray.push(`Commit: ${buildInfo.commitHash}\n`);
-        dataArray.push(`Is extension: ${this.isExtension}\n`);
-        dataArray.push("\n# Metadata\n");
+        result += "\n# Ruffle Info\n";
+        result += `Version: ${buildInfo.versionNumber}\n`;
+        result += `Name: ${buildInfo.versionName}\n`;
+        result += `Channel: ${buildInfo.versionChannel}\n`;
+        result += `Built: ${buildInfo.buildDate}\n`;
+        result += `Commit: ${buildInfo.commitHash}\n`;
+        result += `Is extension: ${this.isExtension}\n`;
+
+        result += "\n# Metadata\n";
         if (this.metadata) {
             for (const [key, value] of Object.entries(this.metadata)) {
-                dataArray.push(`${key}: ${value}\n`);
+                result += `${key}: ${value}\n`;
             }
         }
-        return dataArray.join("");
+
+        return result;
     }
 
     /**
@@ -2019,21 +2022,7 @@ export class RufflePlayer extends HTMLElement {
     }
 
     protected debugPlayerInfo(): string {
-        let result = `Allows script access: ${
-            this.loadedConfig ? this.loadedConfig.allowScriptAccess : false
-        }\n`;
-        let renderInfo = `(Cached) ${this._cachedDebugInfo}`;
-        if (this.instance) {
-            try {
-                renderInfo = this.instance.renderer_debug_info();
-            } catch {
-                // ignored
-            }
-        }
-        if (renderInfo) {
-            result += `${renderInfo}\n`;
-        }
-        return result;
+        return "";
     }
 
     private hideSplashScreen(): void {
