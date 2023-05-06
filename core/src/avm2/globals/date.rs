@@ -1403,11 +1403,11 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
         PUBLIC_CLASS_METHODS,
     );
 
-    const CLASS_CONSTANTS: &[(&str, i32)] = &[("length", 7)];
+    const CLASS_CONSTANTS_INT: &[(&str, i32)] = &[("length", 7)];
 
     write.define_constant_int_class_traits(
         activation.avm2().public_namespace,
-        CLASS_CONSTANTS,
+        CLASS_CONSTANTS_INT,
         activation,
     );
 

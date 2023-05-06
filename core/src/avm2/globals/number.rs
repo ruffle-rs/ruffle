@@ -369,7 +369,7 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
         mc,
     ));
 
-    const CLASS_CONSTANTS: &[(&str, f64)] = &[
+    const CLASS_CONSTANTS_NUMBER: &[(&str, f64)] = &[
         ("MAX_VALUE", f64::MAX),
         ("MIN_VALUE", f64::MIN_POSITIVE),
         ("NaN", f64::NAN),
@@ -378,7 +378,14 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
     ];
     write.define_constant_number_class_traits(
         activation.avm2().public_namespace,
-        CLASS_CONSTANTS,
+        CLASS_CONSTANTS_NUMBER,
+        activation,
+    );
+
+    const CLASS_CONSTANTS_INT: &[(&str, i32)] = &[("length", 1)];
+    write.define_constant_int_class_traits(
+        activation.avm2().public_namespace,
+        CLASS_CONSTANTS_INT,
         activation,
     );
 

@@ -287,10 +287,18 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
         mc,
     ));
 
-    const CLASS_CONSTANTS: &[(&str, u32)] = &[("MAX_VALUE", u32::MAX), ("MIN_VALUE", u32::MIN)];
+    const CLASS_CONSTANTS_UINT: &[(&str, u32)] =
+        &[("MAX_VALUE", u32::MAX), ("MIN_VALUE", u32::MIN)];
     write.define_constant_uint_class_traits(
         activation.avm2().public_namespace,
-        CLASS_CONSTANTS,
+        CLASS_CONSTANTS_UINT,
+        activation,
+    );
+
+    const CLASS_CONSTANTS_INT: &[(&str, i32)] = &[("length", 1)];
+    write.define_constant_int_class_traits(
+        activation.avm2().public_namespace,
+        CLASS_CONSTANTS_INT,
         activation,
     );
 

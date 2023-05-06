@@ -35,5 +35,7 @@ package {
         prototype.setPropertyIsEnumerable("exec", false);
         prototype.setPropertyIsEnumerable("test", false);
         prototype.setPropertyIsEnumerable("toString", false);
+
+        public static const length:int = 1;
     }
 }

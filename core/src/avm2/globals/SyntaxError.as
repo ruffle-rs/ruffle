@@ -16,6 +16,7 @@ package
             this.name = prototype.name;
         }
 
+        public static const length:int = 1;
     }
 }
 
