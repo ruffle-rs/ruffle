@@ -1285,7 +1285,7 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
         PUBLIC_AS3_INSTANCE_METHODS,
     );
 
-    const CONSTANTS: &[(&str, u32)] = &[
+    const CONSTANTS_UINT: &[(&str, u32)] = &[
         (
             "CASEINSENSITIVE",
             SortOptions::CASE_INSENSITIVE.bits() as u32,
@@ -1300,7 +1300,14 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
     ];
     write.define_constant_uint_class_traits(
         activation.avm2().public_namespace,
-        CONSTANTS,
+        CONSTANTS_UINT,
+        activation,
+    );
+
+    const CONSTANTS_INT: &[(&str, i32)] = &[("length", 1)];
+    write.define_constant_int_class_traits(
+        activation.avm2().public_namespace,
+        CONSTANTS_INT,
         activation,
     );
 

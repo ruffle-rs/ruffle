@@ -150,5 +150,12 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
         AS3_INSTANCE_METHODS,
     );
 
+    const CONSTANTS_INT: &[(&str, i32)] = &[("length", 1)];
+    write.define_constant_int_class_traits(
+        activation.avm2().public_namespace,
+        CONSTANTS_INT,
+        activation,
+    );
+
     class
 }

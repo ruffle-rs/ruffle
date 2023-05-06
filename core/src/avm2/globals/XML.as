@@ -151,5 +151,7 @@ package {
             var self:XML = this;
             return self.AS3::length();
         }
+
+        public static const length:int = 1;
     }
 }

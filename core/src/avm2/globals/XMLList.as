@@ -87,5 +87,7 @@ package {
             var self:XMLList = this;
             return self.AS3::text();
         }
+
+        public static const length:int = 1;
     }
 }

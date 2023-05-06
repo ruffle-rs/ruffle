@@ -17,5 +17,7 @@ package {
 		}
 
 		public native function getStackTrace():String;
+
+		public static const length:int = 1;
 	}
 }

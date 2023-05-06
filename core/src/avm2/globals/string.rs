@@ -727,6 +727,13 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
         PUBLIC_INSTANCE_AND_PROTO_METHODS,
     );
 
+    const CONSTANTS_INT: &[(&str, i32)] = &[("length", 1)];
+    write.define_constant_int_class_traits(
+        activation.avm2().public_namespace,
+        CONSTANTS_INT,
+        activation,
+    );
+
     const AS3_CLASS_METHODS: &[(&str, NativeMethodImpl)] = &[("fromCharCode", from_char_code)];
     const PUBLIC_CLASS_METHODS: &[(&str, NativeMethodImpl)] = &[("fromCharCode", from_char_code)];
     write.define_builtin_class_methods(mc, activation.avm2().as3_namespace, AS3_CLASS_METHODS);
