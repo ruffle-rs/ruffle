@@ -320,9 +320,9 @@ impl Ruffle {
                 // Prevent future players from loading so that they can inform the user about the error.
                 return Err("Ruffle is panicking!".into());
             }
-            set_panic_handler();
+            set_panic_hook();
 
-            let ruffle = Ruffle::new_internal(parent, js_player, config)
+            let ruffle = Self::new_internal(parent, js_player, config)
                 .await
                 .map_err(|err| JsValue::from(format!("Error creating player: {}", err)))?;
             Ok(JsValue::from(ruffle))
@@ -610,7 +610,7 @@ impl Ruffle {
         parent: HtmlElement,
         js_player: JavascriptPlayer,
         config: Config,
-    ) -> Result<Ruffle, Box<dyn Error>> {
+    ) -> Result<Self, Box<dyn Error>> {
         // Redirect Log to Tracing if it isn't already
         let _ = tracing_log::LogTracer::builder()
             // wgpu crates are extremely verbose
@@ -752,7 +752,7 @@ impl Ruffle {
             .warn_on_error();
 
         // Register the instance and create the animation frame closure.
-        let mut ruffle = Ruffle::add_instance(instance)?;
+        let mut ruffle = Self::add_instance(instance)?;
 
         // Create the animation frame closure.
         ruffle.with_instance_mut(|instance| {
@@ -1020,10 +1020,10 @@ impl Ruffle {
     }
 
     /// Registers a new Ruffle instance and returns the handle to the instance.
-    fn add_instance(instance: RuffleInstance) -> Result<Ruffle, RuffleInstanceError> {
+    fn add_instance(instance: RuffleInstance) -> Result<Self, RuffleInstanceError> {
         INSTANCES.try_with(|instances| {
             let mut instances = instances.try_borrow_mut()?;
-            let ruffle = Ruffle(instances.insert(RefCell::new(instance)));
+            let ruffle = Self(instances.insert(RefCell::new(instance)));
             Ok(ruffle)
         })?
     }
@@ -1568,7 +1568,7 @@ async fn create_renderer(
     Err("Unable to create renderer".into())
 }
 
-pub fn set_panic_handler() {
+fn set_panic_hook() {
     static HOOK_HAS_BEEN_SET: Once = Once::new();
     HOOK_HAS_BEEN_SET.call_once(|| {
         std::panic::set_hook(Box::new(|info| {
