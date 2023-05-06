@@ -11,6 +11,7 @@ use crate::avm2::value::Value;
 use crate::avm2::ClassObject;
 use crate::avm2::Multiname;
 use crate::avm2::{Error, Object};
+use crate::avm2_stub_method;
 use crate::backend::navigator::{NavigationMethod, Request};
 use crate::display_object::LoaderDisplay;
 use crate::display_object::MovieClip;
@@ -223,5 +224,20 @@ pub fn load_bytes<'gc>(
         );
         activation.context.navigator.spawn_future(future);
     }
+    Ok(Value::Undefined)
+}
+
+pub fn unload<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    // TODO: Broadcast an "unload" event on the LoaderInfo and reset LoaderInfo properties
+    avm2_stub_method!(activation, "flash.display.Loader", "unload");
+    let _ = crate::avm2::globals::flash::display::display_object_container::remove_child_at(
+        activation,
+        this,
+        &[0.into()],
+    );
     Ok(Value::Undefined)
 }
