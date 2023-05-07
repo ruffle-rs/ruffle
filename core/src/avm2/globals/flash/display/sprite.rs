@@ -241,7 +241,7 @@ pub fn get_use_hand_cursor<'gc>(
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_movie_clip())
     {
-        return Ok(mc.use_hand_cursor().into());
+        return Ok(mc.avm2_use_hand_cursor().into());
     }
 
     Ok(Value::Undefined)
@@ -257,7 +257,7 @@ pub fn set_use_hand_cursor<'gc>(
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_movie_clip())
     {
-        mc.set_use_hand_cursor(&mut activation.context, args.get_bool(0));
+        mc.set_avm2_use_hand_cursor(&mut activation.context, args.get_bool(0));
     }
 
     Ok(Value::Undefined)
