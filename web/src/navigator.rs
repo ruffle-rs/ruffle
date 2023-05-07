@@ -1,7 +1,8 @@
 //! Navigator backend for web
 use js_sys::{Array, ArrayBuffer, Uint8Array};
 use ruffle_core::backend::navigator::{
-    NavigationMethod, NavigatorBackend, OpenURLMode, OwnedFuture, Request, Response,
+    ErrorResponse, NavigationMethod, NavigatorBackend, OpenURLMode, OwnedFuture, Request,
+    SuccessResponse,
 };
 use ruffle_core::config::NetworkingAccessMode;
 use ruffle_core::indexmap::IndexMap;
@@ -205,7 +206,7 @@ impl NavigatorBackend for WebNavigatorBackend {
         };
     }
 
-    fn fetch(&self, request: Request) -> OwnedFuture<Response, Error> {
+    fn fetch(&self, request: Request) -> OwnedFuture<SuccessResponse, ErrorResponse> {
         let url = self.resolve_url(request.url()).into_owned();
 
         Box::pin(async move {
@@ -218,60 +219,81 @@ impl NavigatorBackend for WebNavigatorBackend {
                     &Array::from_iter([Uint8Array::from(data.as_slice()).buffer()]),
                     BlobPropertyBag::new().type_(mime),
                 )
-                .map_err(|_| Error::FetchError("Got JS error".to_string()))?
+                .map_err(|_| ErrorResponse {
+                    url: url.clone(),
+                    error: Error::FetchError("Got JS error".to_string()),
+                })?
                 .dyn_into()
-                .map_err(|_| Error::FetchError("Got JS error".to_string()))?;
+                .map_err(|_| ErrorResponse {
+                    url: url.clone(),
+                    error: Error::FetchError("Got JS error".to_string()),
+                })?;
 
                 init.body(Some(&blob));
             }
 
-            let web_request = WebRequest::new_with_str_and_init(&url, &init)
-                .map_err(|_| Error::FetchError(format!("Unable to create request for {url}")))?;
+            let web_request =
+                WebRequest::new_with_str_and_init(&url, &init).map_err(|_| ErrorResponse {
+                    url: url.clone(),
+                    error: Error::FetchError(format!("Unable to create request for {url}")),
+                })?;
 
             let headers = web_request.headers();
 
             for (header_name, header_val) in request.headers() {
                 headers
                     .set(header_name, header_val)
-                    .map_err(|_| Error::FetchError("Got JS error".to_string()))?;
+                    .map_err(|_| ErrorResponse {
+                        url: url.clone(),
+                        error: Error::FetchError("Got JS error".to_string()),
+                    })?;
             }
 
             let window = web_sys::window().expect("window()");
             let fetchval = JsFuture::from(window.fetch_with_request(&web_request))
                 .await
-                .map_err(|_| Error::FetchError("Got JS error".to_string()))?;
+                .map_err(|_| ErrorResponse {
+                    url: url.clone(),
+                    error: Error::FetchError("Got JS error".to_string()),
+                })?;
 
-            let response: WebResponse = fetchval
-                .dyn_into()
-                .map_err(|_| Error::FetchError("Fetch result wasn't a WebResponse".to_string()))?;
+            let response: WebResponse = fetchval.dyn_into().map_err(|_| ErrorResponse {
+                url: url.clone(),
+                error: Error::FetchError("Fetch result wasn't a WebResponse".to_string()),
+            })?;
+            let url = response.url();
             let status = response.status();
             let redirected = response.redirected();
             if !response.ok() {
-                return Err(Error::HttpNotOk(
+                let error = Error::HttpNotOk(
                     format!("HTTP status is not ok, got {}", response.status_text()),
                     status,
                     redirected,
-                ));
+                );
+                return Err(ErrorResponse { url, error });
             }
 
-            let url = response.url();
-
-            let body: ArrayBuffer = JsFuture::from(
-                response
-                    .array_buffer()
-                    .map_err(|_| Error::FetchError("Got JS error".to_string()))?,
-            )
+            let body: ArrayBuffer = JsFuture::from(response.array_buffer().map_err(|_| {
+                ErrorResponse {
+                    url: url.clone(),
+                    error: Error::FetchError("Got JS error".to_string()),
+                }
+            })?)
             .await
-            .map_err(|_| {
-                Error::FetchError("Could not allocate array buffer for response".to_string())
+            .map_err(|_| ErrorResponse {
+                url: url.clone(),
+                error: Error::FetchError(
+                    "Could not allocate array buffer for response".to_string(),
+                ),
             })?
             .dyn_into()
-            .map_err(|_| {
-                Error::FetchError("array_buffer result wasn't an ArrayBuffer".to_string())
+            .map_err(|_| ErrorResponse {
+                url: url.clone(),
+                error: Error::FetchError("array_buffer result wasn't an ArrayBuffer".to_string()),
             })?;
             let body = Uint8Array::new(&body).to_vec();
 
-            Ok(Response {
+            Ok(SuccessResponse {
                 url,
                 body,
                 status,

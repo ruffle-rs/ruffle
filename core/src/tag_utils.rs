@@ -95,6 +95,22 @@ impl SwfMovie {
         }
     }
 
+    /// Constructs the error state movie stub in which some attributes have certain
+    /// error values to signal that no valid file could be loaded.
+    /// This happens if no file could be loaded or if the loaded content is no valid
+    /// supported content.
+    pub fn error_movie(movie_url: String) -> Self {
+        Self {
+            header: HeaderExt::default_error_header(),
+            data: vec![],
+            url: movie_url,
+            loader_url: None,
+            parameters: Vec::new(),
+            encoding: swf::UTF_8,
+            compressed_len: 0,
+        }
+    }
+
     /// Utility method to construct a movie from a file on disk.
     #[cfg(any(unix, windows, target_os = "redox"))]
     pub fn from_path<P: AsRef<std::path::Path>>(

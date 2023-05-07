@@ -153,8 +153,8 @@ impl Request {
     }
 }
 
-/// A response to a fetch request.
-pub struct Response {
+/// A response to a successful fetch request.
+pub struct SuccessResponse {
     /// The final URL obtained after any redirects.
     pub url: String,
 
@@ -166,6 +166,15 @@ pub struct Response {
 
     /// The field to indicate if the request has been redirected.
     pub redirected: bool,
+}
+
+/// A response to a non-successful fetch request.
+pub struct ErrorResponse {
+    /// The final URL obtained after any redirects.
+    pub url: String,
+
+    /// The error that occurred during the request.
+    pub error: Error,
 }
 
 /// Type alias for pinned, boxed, and owned futures that output a falliable
@@ -204,7 +213,7 @@ pub trait NavigatorBackend {
     );
 
     /// Fetch data and return it some time in the future.
-    fn fetch(&self, request: Request) -> OwnedFuture<Response, Error>;
+    fn fetch(&self, request: Request) -> OwnedFuture<SuccessResponse, ErrorResponse>;
 
     /// Arrange for a future to be run at some point in the... well, future.
     ///
@@ -345,18 +354,24 @@ impl NavigatorBackend for NullNavigatorBackend {
     ) {
     }
 
-    fn fetch(&self, request: Request) -> OwnedFuture<Response, Error> {
+    fn fetch(&self, request: Request) -> OwnedFuture<SuccessResponse, ErrorResponse> {
         let mut path = self.relative_base_path.clone();
         path.push(request.url);
 
         Box::pin(async move {
-            let url = Self::url_from_file_path(&path)
-                .map_err(|()| Error::FetchError("Invalid URL".to_string()))?
+            let url: String = Self::url_from_file_path(&path)
+                .map_err(|()| ErrorResponse {
+                    url: path.to_string_lossy().to_string(),
+                    error: Error::FetchError("Invalid URL".to_string()),
+                })?
                 .into();
 
-            let body = std::fs::read(path).map_err(|e| Error::FetchError(e.to_string()))?;
+            let body = std::fs::read(path).map_err(|e| ErrorResponse {
+                url: url.clone(),
+                error: Error::FetchError(e.to_string()),
+            })?;
 
-            Ok(Response {
+            Ok(SuccessResponse {
                 url,
                 body,
                 status: 0,

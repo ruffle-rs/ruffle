@@ -1,7 +1,8 @@
 use crate::util::runner::TestLogBackend;
 use ruffle_core::backend::log::LogBackend;
 use ruffle_core::backend::navigator::{
-    NavigationMethod, NavigatorBackend, NullExecutor, NullSpawner, OwnedFuture, Request, Response,
+    ErrorResponse, NavigationMethod, NavigatorBackend, NullExecutor, NullSpawner, OwnedFuture,
+    Request, SuccessResponse,
 };
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
@@ -56,7 +57,7 @@ impl NavigatorBackend for TestNavigatorBackend {
         }
     }
 
-    fn fetch(&self, request: Request) -> OwnedFuture<Response, Error> {
+    fn fetch(&self, request: Request) -> OwnedFuture<SuccessResponse, ErrorResponse> {
         // Log request.
         if let Some(log) = &self.log {
             log.avm_trace("Navigator::fetch:");
@@ -86,15 +87,19 @@ impl NavigatorBackend for TestNavigatorBackend {
         let path = self.relative_base_path.clone();
 
         Box::pin(async move {
-            let mut base_url = Self::url_from_file_path(path.as_path())
-                .map_err(|_| Error::FetchError("Invalid base URL".to_string()))?;
+            let mut base_url =
+                Self::url_from_file_path(path.as_path()).map_err(|_| ErrorResponse {
+                    url: request.url().to_string(),
+                    error: Error::FetchError("Invalid base URL".to_string()),
+                })?;
 
             // Make sure we have a trailing slash, so that joining a request url like 'data.txt'
             // gets appended, rather than replacing the last component.
             base_url.path_segments_mut().unwrap().push("");
-            let response_url = base_url
-                .join(request.url())
-                .map_err(|_| Error::FetchError("Invalid URL".to_string()))?;
+            let response_url = base_url.join(request.url()).map_err(|_| ErrorResponse {
+                url: request.url().to_string(),
+                error: Error::FetchError("Invalid URL".to_string()),
+            })?;
 
             // Flash supports query parameters with local urls.
             // SwfMovie takes care of exposing those to ActionScript -
@@ -102,14 +107,17 @@ impl NavigatorBackend for TestNavigatorBackend {
             let mut filesystem_url = response_url.clone();
             filesystem_url.set_query(None);
 
-            let filesystem_path = filesystem_url
-                .to_file_path()
-                .map_err(|_| Error::FetchError("Invalid filesystem URL".to_string()))?;
+            let filesystem_path = filesystem_url.to_file_path().map_err(|_| ErrorResponse {
+                url: response_url.to_string(),
+                error: Error::FetchError("Invalid filesystem URL".to_string()),
+            })?;
 
-            let body =
-                std::fs::read(filesystem_path).map_err(|e| Error::FetchError(e.to_string()))?;
+            let body = std::fs::read(filesystem_path).map_err(|e| ErrorResponse {
+                url: response_url.to_string(),
+                error: Error::FetchError(e.to_string()),
+            })?;
 
-            Ok(Response {
+            Ok(SuccessResponse {
                 url: response_url.to_string(),
                 body,
                 status: 0,
