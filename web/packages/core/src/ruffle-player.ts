@@ -1218,12 +1218,12 @@ export class RufflePlayer extends HTMLElement {
         if (this.fullscreenEnabled) {
             if (this.isFullscreen) {
                 items.push({
-                    text: "Exit fullscreen",
+                    text: text("context-menu-exit-fullscreen"),
                     onClick: () => this.instance?.set_fullscreen(false),
                 });
             } else {
                 items.push({
-                    text: "Enter fullscreen",
+                    text: text("context-menu-enter-fullscreen"),
                     onClick: () => this.instance?.set_fullscreen(true),
                 });
             }
