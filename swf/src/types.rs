@@ -112,6 +112,17 @@ impl HeaderExt {
         }
     }
 
+    /// Returns the header for the error state movie stub which is used if no file
+    /// could be loaded or if the loaded content is no valid supported content.
+    pub fn default_error_header() -> Self {
+        Self {
+            header: Header::default_with_swf_version(0),
+            file_attributes: Default::default(),
+            background_color: None,
+            uncompressed_len: 0, // TODO: This needs to be -1
+        }
+    }
+
     /// Returns the header for a loaded image (JPEG, GIF or PNG).
     pub fn default_with_uncompressed_len(length: u32) -> Self {
         let header = Header {
