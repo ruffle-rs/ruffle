@@ -13,7 +13,7 @@ import {
 import type { MovieMetadata } from "./movie-metadata";
 import { swfFileName } from "./swf-utils";
 import { buildInfo } from "./build-info";
-import { text } from "./i18n";
+import { text, textAsParagraphs } from "./i18n";
 
 const RUFFLE_ORIGIN = "https://ruffle.rs";
 const DIMENSION_REGEX = /^\s*(\d+(\.\d+)?(%)?)/;
@@ -1976,11 +1976,12 @@ export class RufflePlayer extends HTMLElement {
         // TODO: Change link to https://ruffle.rs/faq or similar
         // TODO: Pause content until message is dismissed
         div.innerHTML = `<div class="message">
-            <p>The Ruffle emulator may not yet fully support all of ActionScript 3 used by this content.</p>
-            <p>Some parts of the content may not work as expected.</p>
+            ${textAsParagraphs("message-unsupported-avm2")}
             <div>
-                <a target="_blank" class="more-info-link" href="https://github.com/ruffle-rs/ruffle/wiki/Frequently-Asked-Questions-For-Users">More info</a>
-                <button id="run-anyway-btn">Run anyway</button>
+                <a target="_blank" class="more-info-link" href="https://github.com/ruffle-rs/ruffle/wiki/Frequently-Asked-Questions-For-Users">${text(
+                    "more-info"
+                )}</a>
+                <button id="run-anyway-btn">${text("run-anyway")}</button>
             </div>
         </div>`;
         this.container.prepend(div);

@@ -94,3 +94,30 @@ export function text(
     console.error(`Unknown text key '${id}'`);
     return id;
 }
+
+/**
+ * Gets the localised text for the given text ID, as <p>paragraphs</p> and HTML entities safely encoded.
+ *
+ * The users preferred locales are used, in priority order, to find the given text.
+ *
+ * If no text is found for any preferred locale, en-US will be used.
+ * If en-US does not contain a text for this ID, an error will be logged and the ID itself will be returned.
+ *
+ * @param id ID of the text to retrieve
+ * @param args Any arguments to use when creating the localised text
+ * @returns Localised text with each line in a Paragraph element
+ */
+export function textAsParagraphs(
+    id: string,
+    args?: Record<string, FluentVariable> | null
+): string {
+    const result = document.createElement("div");
+    text(id, args)
+        .split("\n")
+        .forEach((line) => {
+            const p = document.createElement("p");
+            p.innerText = line;
+            result.appendChild(p);
+        });
+    return result.innerHTML;
+}
