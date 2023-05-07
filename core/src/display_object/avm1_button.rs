@@ -43,7 +43,6 @@ pub struct Avm1ButtonData<'gc> {
     object: Option<Object<'gc>>,
     initialized: bool,
     has_focus: bool,
-    use_hand_cursor: bool,
 }
 
 impl<'gc> Avm1Button<'gc> {
@@ -89,7 +88,6 @@ impl<'gc> Avm1Button<'gc> {
                     ButtonTracking::Push
                 },
                 has_focus: false,
-                use_hand_cursor: true,
             },
         ))
     }
@@ -195,31 +193,36 @@ impl<'gc> Avm1Button<'gc> {
         }
     }
 
-    pub fn enabled(self, context: &mut UpdateContext<'_, 'gc>) -> bool {
-        if let Some(object) = self.0.read().object {
+    fn get_boolean_property(
+        self,
+        context: &mut UpdateContext<'_, 'gc>,
+        name: &'static str,
+        default: bool,
+    ) -> bool {
+        if let Value::Object(object) = self.object() {
             let mut activation = Activation::from_stub(
                 context.reborrow(),
-                ActivationIdentifier::root("[AVM1 Button Enabled]"),
+                ActivationIdentifier::root("[AVM1 Boolean Property]"),
             );
-            if let Ok(enabled) = object.get("enabled", &mut activation) {
-                match enabled {
-                    Value::Undefined => true,
-                    _ => enabled.as_bool(activation.swf_version()),
+            if let Ok(value) = object.get(name, &mut activation) {
+                match value {
+                    Value::Undefined => default,
+                    _ => value.as_bool(activation.swf_version()),
                 }
             } else {
-                true
+                default
             }
         } else {
             false
         }
     }
 
-    pub fn use_hand_cursor(self) -> bool {
-        self.0.read().use_hand_cursor
+    fn enabled(self, context: &mut UpdateContext<'_, 'gc>) -> bool {
+        self.get_boolean_property(context, "enabled", true)
     }
 
-    pub fn set_use_hand_cursor(self, context: &mut UpdateContext<'_, 'gc>, use_hand_cursor: bool) {
-        self.0.write(context.gc_context).use_hand_cursor = use_hand_cursor;
+    fn use_hand_cursor(self, context: &mut UpdateContext<'_, 'gc>) -> bool {
+        self.get_boolean_property(context, "useHandCursor", true)
     }
 }
 
@@ -573,7 +576,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
     }
 
     fn mouse_cursor(self, context: &mut UpdateContext<'_, 'gc>) -> MouseCursor {
-        if self.use_hand_cursor() && self.enabled(context) {
+        if self.use_hand_cursor(context) && self.enabled(context) {
             MouseCursor::Hand
         } else {
             MouseCursor::Arrow

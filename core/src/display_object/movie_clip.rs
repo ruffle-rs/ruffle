@@ -114,7 +114,7 @@ pub struct MovieClipData<'gc> {
     avm2_enabled: bool,
 
     /// Show a hand cursor when the clip is in button mode.
-    use_hand_cursor: bool,
+    avm2_use_hand_cursor: bool,
 
     /// A DisplayObject (doesn't need to be visible) to use for hit tests instead of this clip.
     hit_area: Option<DisplayObject<'gc>>,
@@ -155,7 +155,7 @@ impl<'gc> MovieClip<'gc> {
                 drawing: Drawing::new(),
                 has_focus: false,
                 avm2_enabled: true,
-                use_hand_cursor: true,
+                avm2_use_hand_cursor: true,
                 button_mode: false,
                 last_queued_script_frame: None,
                 queued_script_frame: None,
@@ -194,7 +194,7 @@ impl<'gc> MovieClip<'gc> {
                 drawing: Drawing::new(),
                 has_focus: false,
                 avm2_enabled: true,
-                use_hand_cursor: true,
+                avm2_use_hand_cursor: true,
                 button_mode: false,
                 last_queued_script_frame: None,
                 queued_script_frame: None,
@@ -237,7 +237,7 @@ impl<'gc> MovieClip<'gc> {
                 drawing: Drawing::new(),
                 has_focus: false,
                 avm2_enabled: true,
-                use_hand_cursor: true,
+                avm2_use_hand_cursor: true,
                 button_mode: false,
                 last_queued_script_frame: None,
                 queued_script_frame: None,
@@ -302,7 +302,7 @@ impl<'gc> MovieClip<'gc> {
                 drawing: Drawing::new(),
                 has_focus: false,
                 avm2_enabled: true,
-                use_hand_cursor: true,
+                avm2_use_hand_cursor: true,
                 button_mode: false,
                 last_queued_script_frame: None,
                 queued_script_frame: None,
@@ -2208,31 +2208,38 @@ impl<'gc> MovieClip<'gc> {
         Ok(())
     }
 
-    fn enabled(self, context: &mut UpdateContext<'_, 'gc>) -> bool {
-        if !context.is_action_script_3() {
-            self.avm1_enabled(context)
-        } else {
-            self.avm2_enabled()
-        }
-    }
-
-    fn avm1_enabled(self, context: &mut UpdateContext<'_, 'gc>) -> bool {
-        let object = self.object();
-        if let Avm1Value::Object(object) = object {
+    /// Retrieve a named property from the AVM1 object.
+    ///
+    /// This is required as some boolean properties in AVM1 can in fact hold any value.
+    fn get_avm1_boolean_property(
+        self,
+        context: &mut UpdateContext<'_, 'gc>,
+        name: &'static str,
+        default: bool,
+    ) -> bool {
+        if let Avm1Value::Object(object) = self.object() {
             let mut activation = Avm1Activation::from_stub(
                 context.reborrow(),
-                ActivationIdentifier::root("[AVM1 MovieClip Enabled]"),
+                ActivationIdentifier::root("[AVM1 Boolean Property]"),
             );
-            if let Ok(enabled) = object.get("enabled", &mut activation) {
-                match enabled {
-                    Avm1Value::Undefined => true,
-                    _ => enabled.as_bool(activation.swf_version()),
+            if let Ok(value) = object.get(name, &mut activation) {
+                match value {
+                    Avm1Value::Undefined => default,
+                    _ => value.as_bool(activation.swf_version()),
                 }
             } else {
-                true
+                default
             }
         } else {
             false
+        }
+    }
+
+    fn enabled(self, context: &mut UpdateContext<'_, 'gc>) -> bool {
+        if !context.is_action_script_3() {
+            self.get_avm1_boolean_property(context, "enabled", true)
+        } else {
+            self.avm2_enabled()
         }
     }
 
@@ -2244,12 +2251,24 @@ impl<'gc> MovieClip<'gc> {
         self.0.write(context.gc_context).avm2_enabled = enabled;
     }
 
-    pub fn use_hand_cursor(self) -> bool {
-        self.0.read().use_hand_cursor
+    fn use_hand_cursor(self, context: &mut UpdateContext<'_, 'gc>) -> bool {
+        if !context.is_action_script_3() {
+            self.get_avm1_boolean_property(context, "useHandCursor", true)
+        } else {
+            self.avm2_use_hand_cursor()
+        }
     }
 
-    pub fn set_use_hand_cursor(self, context: &mut UpdateContext<'_, 'gc>, use_hand_cursor: bool) {
-        self.0.write(context.gc_context).use_hand_cursor = use_hand_cursor;
+    pub fn avm2_use_hand_cursor(self) -> bool {
+        self.0.read().avm2_use_hand_cursor
+    }
+
+    pub fn set_avm2_use_hand_cursor(
+        self,
+        context: &mut UpdateContext<'_, 'gc>,
+        use_hand_cursor: bool,
+    ) {
+        self.0.write(context.gc_context).avm2_use_hand_cursor = use_hand_cursor;
     }
 
     pub fn hit_area(self) -> Option<DisplayObject<'gc>> {
@@ -2757,20 +2776,11 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     fn is_focusable(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
-        let object = self.object();
-        if let Avm1Value::Object(object) = object {
+        if !context.is_action_script_3() {
             if self.is_button_mode(context) {
                 true
             } else {
-                let mut activation = Avm1Activation::from_stub(
-                    context.reborrow(),
-                    ActivationIdentifier::root("[Focus Tracker]"),
-                );
-                if let Ok(focus_enabled) = object.get("focusEnabled", &mut activation) {
-                    focus_enabled.as_bool(activation.swf_version())
-                } else {
-                    false
-                }
+                self.get_avm1_boolean_property(context, "focusEnabled", false)
             }
         } else {
             false
@@ -3120,7 +3130,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
     }
 
     fn mouse_cursor(self, context: &mut UpdateContext<'_, 'gc>) -> MouseCursor {
-        if self.use_hand_cursor() && self.enabled(context) && self.is_button_mode(context) {
+        if self.is_button_mode(context) && self.use_hand_cursor(context) && self.enabled(context) {
             MouseCursor::Hand
         } else {
             MouseCursor::Arrow

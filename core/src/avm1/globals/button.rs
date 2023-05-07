@@ -39,8 +39,8 @@ macro_rules! button_setter {
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "enabled" => bool(true);
+    "useHandCursor" => bool(true);
     "getDepth" => method(globals::get_depth; DONT_DELETE | READ_ONLY | VERSION_6);
-    "useHandCursor" => property(button_getter!(use_hand_cursor), button_setter!(set_use_hand_cursor));
     "blendMode" => property(button_getter!(blend_mode), button_setter!(set_blend_mode); DONT_DELETE);
 };
 
@@ -61,23 +61,6 @@ pub fn constructor<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(this.into())
-}
-
-fn use_hand_cursor<'gc>(
-    this: Avm1Button<'gc>,
-    _activation: &mut Activation<'_, 'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this.use_hand_cursor().into())
-}
-
-fn set_use_hand_cursor<'gc>(
-    this: Avm1Button<'gc>,
-    activation: &mut Activation<'_, 'gc>,
-    value: Value<'gc>,
-) -> Result<(), Error<'gc>> {
-    let use_hand_cursor = value.as_bool(activation.swf_version());
-    this.set_use_hand_cursor(&mut activation.context, use_hand_cursor);
-    Ok(())
 }
 
 fn blend_mode<'gc>(
