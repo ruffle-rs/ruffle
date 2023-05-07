@@ -3527,7 +3527,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
             .character_by_id(button_colors.id)
         {
             Some(Character::Avm1Button(button)) => {
-                button.set_colors(context.gc_context, &button_colors.color_transforms[..]);
+                button.set_colors(&button_colors.color_transforms);
             }
             Some(_) => {
                 tracing::warn!(
@@ -3558,10 +3558,10 @@ impl<'gc, 'a> MovieClipData<'gc> {
             .character_by_id(button_sounds.id)
         {
             Some(Character::Avm1Button(button)) => {
-                button.set_sounds(context.gc_context, button_sounds);
+                button.set_sounds(button_sounds);
             }
             Some(Character::Avm2Button(button)) => {
-                button.set_sounds(context.gc_context, button_sounds);
+                button.set_sounds(button_sounds);
             }
             Some(_) => {
                 tracing::warn!(

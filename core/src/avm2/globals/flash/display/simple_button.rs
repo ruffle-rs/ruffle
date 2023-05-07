@@ -227,7 +227,7 @@ pub fn get_track_as_menu<'gc>(
 
 /// Implements `trackAsMenu`'s setter
 pub fn set_track_as_menu<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -236,8 +236,8 @@ pub fn set_track_as_menu<'gc>(
         .and_then(|this| this.as_avm2_button())
     {
         match args.get_bool(0) {
-            true => btn.set_button_tracking(&mut activation.context, ButtonTracking::Menu),
-            false => btn.set_button_tracking(&mut activation.context, ButtonTracking::Push),
+            true => btn.set_button_tracking(ButtonTracking::Menu),
+            false => btn.set_button_tracking(ButtonTracking::Push),
         }
     }
 
@@ -294,7 +294,7 @@ pub fn get_use_hand_cursor<'gc>(
 
 /// Implements `useHandCursor`'s setter
 pub fn set_use_hand_cursor<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -302,7 +302,7 @@ pub fn set_use_hand_cursor<'gc>(
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_avm2_button())
     {
-        btn.set_use_hand_cursor(&mut activation.context, args.get_bool(0));
+        btn.set_use_hand_cursor(args.get_bool(0));
     }
 
     Ok(Value::Undefined)
