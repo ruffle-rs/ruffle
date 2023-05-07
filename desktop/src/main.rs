@@ -20,6 +20,7 @@ use anyhow::{anyhow, Context, Error};
 use clap::Parser;
 use isahc::{config::RedirectPolicy, prelude::*, HttpClient};
 use rfd::FileDialog;
+use ruffle_core::backend::audio::AudioBackend;
 use ruffle_core::backend::navigator::OpenURLMode;
 use ruffle_core::{
     config::Letterbox, events::KeyCode, tag_utils::SwfMovie, LoadBehavior, Player, PlayerBuilder,
@@ -44,7 +45,6 @@ use winit::event::{
 };
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
 use winit::window::{Fullscreen, Icon, Window, WindowBuilder};
-use ruffle_core::backend::audio::AudioBackend;
 
 thread_local! {
     static CALLSTACK: RefCell<Option<StaticCallstack>> = RefCell::default();
@@ -325,7 +325,7 @@ impl App {
             Ok(mut audio) => {
                 audio.set_volume(opt.volume);
                 builder = builder.with_audio(audio);
-            },
+            }
             Err(e) => {
                 tracing::error!("Unable to create audio device: {}", e);
             }
