@@ -271,6 +271,7 @@ include "flash/net/XMLSocket.as"
 
 include "flash/profiler/Telemetry.as"
 include "flash/printing/PrintJobOrientation.as"
+include "flash/printing/PrintJobOptions.as"
 
 include "flash/profiler.as"
 
