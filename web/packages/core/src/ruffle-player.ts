@@ -1741,9 +1741,13 @@ export class RufflePlayer extends HTMLElement {
                 issueBody = encodeURIComponent(errorArray.join(""));
             }
             issueLink += issueBody;
-            actionTag = `<a target="_top" href="${issueLink}">Report Bug</a>`;
+            actionTag = `<a target="_top" href="${issueLink}">${text(
+                "report-bug"
+            )}</a>`;
         } else {
-            actionTag = `<a target="_top" href="${RUFFLE_ORIGIN}#downloads">Update Ruffle</a>`;
+            actionTag = `<a target="_top" href="${RUFFLE_ORIGIN}#downloads">${text(
+                "update-ruffle"
+            )}</a>`;
         }
 
         // Clears out any existing content (ie play button or canvas) and replaces it with the error screen
@@ -1757,8 +1761,12 @@ export class RufflePlayer extends HTMLElement {
                     <p>Instead, we invite you to setup a local server or either use the web demo or the desktop application.</p>
                 `;
                 errorFooter = `
-                    <li><a target="_top" href="${RUFFLE_ORIGIN}/demo">Web Demo</a></li>
-                    <li><a target="_top" href="${RUFFLE_ORIGIN}#downloads">Desktop Application</a></li>
+                    <li><a target="_top" href="${RUFFLE_ORIGIN}/demo">${text(
+                    "ruffle-demo"
+                )}</a></li>
+                    <li><a target="_top" href="${RUFFLE_ORIGIN}#downloads">${text(
+                    "ruffle-desktop"
+                )}</a></li>
                 `;
                 break;
             case PanicError.JavascriptConfiguration:
@@ -1769,8 +1777,12 @@ export class RufflePlayer extends HTMLElement {
                     <p>You can also consult the Ruffle wiki for help.</p>
                 `;
                 errorFooter = `
-                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#javascript-api">View Ruffle Wiki</a></li>
-                    <li><a href="#" id="panic-view-details">View Error Details</a></li>
+                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#javascript-api">${text(
+                        "ruffle-wiki"
+                    )}</a></li>
+                    <li><a href="#" id="panic-view-details">${text(
+                        "view-error-details"
+                    )}</a></li>
                 `;
                 break;
             case PanicError.WasmNotFound:
@@ -1781,8 +1793,12 @@ export class RufflePlayer extends HTMLElement {
                     <p>If the issue persists, you may need to use the "publicPath" setting: please consult the Ruffle wiki for help.</p>
                 `;
                 errorFooter = `
-                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configuration-options">View Ruffle Wiki</a></li>
-                    <li><a href="#" id="panic-view-details">View Error Details</a></li>
+                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configuration-options">${text(
+                        "ruffle-wiki"
+                    )}</a></li>
+                    <li><a href="#" id="panic-view-details">${text(
+                        "view-error-details"
+                    )}</a></li>
                 `;
                 break;
             case PanicError.WasmMimeType:
@@ -1793,8 +1809,12 @@ export class RufflePlayer extends HTMLElement {
                     <p>If you are the server administrator, please consult the Ruffle wiki for help.</p>
                 `;
                 errorFooter = `
-                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-webassembly-mime-type">View Ruffle Wiki</a></li>
-                    <li><a href="#" id="panic-view-details">View Error Details</a></li>
+                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-webassembly-mime-type">${text(
+                        "ruffle-wiki"
+                    )}</a></li>
+                    <li><a href="#" id="panic-view-details">${text(
+                        "view-error-details"
+                    )}</a></li>
                 `;
                 break;
             case PanicError.SwfFetchError:
@@ -1804,7 +1824,9 @@ export class RufflePlayer extends HTMLElement {
                     <p>Try contacting the website administrator for help.</p>
                 `;
                 errorFooter = `
-                    <li><a href="#" id="panic-view-details">View Error Details</a></li>
+                    <li><a href="#" id="panic-view-details">${text(
+                        "view-error-details"
+                    )}</a></li>
                 `;
                 break;
             case PanicError.SwfCors:
@@ -1815,8 +1837,12 @@ export class RufflePlayer extends HTMLElement {
                     <p>If you are the server administrator, please consult the Ruffle wiki for help.</p>
                 `;
                 errorFooter = `
-                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-cors-header">View Ruffle Wiki</a></li>
-                    <li><a href="#" id="panic-view-details">View Error Details</a></li>
+                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-cors-header">${text(
+                        "ruffle-wiki"
+                    )}</a></li>
+                    <li><a href="#" id="panic-view-details">${text(
+                        "view-error-details"
+                    )}</a></li>
                 `;
                 break;
             case PanicError.WasmCors:
@@ -1827,8 +1853,12 @@ export class RufflePlayer extends HTMLElement {
                     <p>If you are the server administrator, please consult the Ruffle wiki for help.</p>
                 `;
                 errorFooter = `
-                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-cors-header">View Ruffle Wiki</a></li>
-                    <li><a href="#" id="panic-view-details">View Error Details</a></li>
+                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-cors-header">${text(
+                        "ruffle-wiki"
+                    )}</a></li>
+                    <li><a href="#" id="panic-view-details">${text(
+                        "view-error-details"
+                    )}</a></li>
                 `;
                 break;
             case PanicError.InvalidWasm:
@@ -1839,8 +1869,12 @@ export class RufflePlayer extends HTMLElement {
                     <p>If you are the server administrator, please consult the Ruffle wiki for help.</p>
                 `;
                 errorFooter = `
-                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#addressing-a-compileerror">View Ruffle Wiki</a></li>
-                    <li><a href="#" id="panic-view-details">View Error Details</a></li>
+                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#addressing-a-compileerror">${text(
+                        "ruffle-wiki"
+                    )}</a></li>
+                    <li><a href="#" id="panic-view-details">${text(
+                        "view-error-details"
+                    )}</a></li>
                 `;
                 break;
             case PanicError.WasmDownload:
@@ -1851,7 +1885,9 @@ export class RufflePlayer extends HTMLElement {
                     <p>Otherwise, please contact the website administrator.</p>
                 `;
                 errorFooter = `
-                    <li><a href="#" id="panic-view-details">View Error Details</a></li>
+                    <li><a href="#" id="panic-view-details">${text(
+                        "view-error-details"
+                    )}</a></li>
                 `;
                 break;
             case PanicError.WasmDisabledMicrosoftEdge:
@@ -1864,8 +1900,12 @@ export class RufflePlayer extends HTMLElement {
                     <p>If the issue persists, you might have to use a different browser.</p>
                 `;
                 errorFooter = `
-                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Frequently-Asked-Questions-For-Users#edge-webassembly-error">More Information</a></li>
-                    <li><a href="#" id="panic-view-details">View Error Details</a></li>
+                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Frequently-Asked-Questions-For-Users#edge-webassembly-error">${text(
+                        "more-info"
+                    )}</a></li>
+                    <li><a href="#" id="panic-view-details">${text(
+                        "view-error-details"
+                    )}</a></li>
                 `;
                 break;
             case PanicError.JavascriptConflict:
@@ -1880,7 +1920,9 @@ export class RufflePlayer extends HTMLElement {
                 }
                 errorFooter = `
                     <li>${actionTag}</li>
-                    <li><a href="#" id="panic-view-details">View Error Details</a></li>
+                    <li><a href="#" id="panic-view-details">${text(
+                        "view-error-details"
+                    )}</a></li>
                 `;
                 break;
             case PanicError.CSPConflict:
@@ -1891,8 +1933,12 @@ export class RufflePlayer extends HTMLElement {
                     <p>If you are the server administrator, please consult the Ruffle wiki for help.</p>
                 `;
                 errorFooter = `
-                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-wasm-csp">View Ruffle Wiki</a></li>
-                    <li><a href="#" id="panic-view-details">View Error Details</a></li>
+                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-wasm-csp">${text(
+                        "ruffle-wiki"
+                    )}</a></li>
+                    <li><a href="#" id="panic-view-details">${text(
+                        "view-error-details"
+                    )}</a></li>
                 `;
                 break;
             default:
@@ -1905,13 +1951,15 @@ export class RufflePlayer extends HTMLElement {
                 }
                 errorFooter = `
                     <li>${actionTag}</li>
-                    <li><a href="#" id="panic-view-details">View Error Details</a></li>
+                    <li><a href="#" id="panic-view-details">${text(
+                        "view-error-details"
+                    )}</a></li>
                 `;
                 break;
         }
         this.container.innerHTML = `
             <div id="panic">
-                <div id="panic-title">Something went wrong :(</div>
+                <div id="panic-title">${text("panic-title")}</div>
                 <div id="panic-body">${errorBody}</div>
                 <div id="panic-footer">
                     <ul>${errorFooter}</ul>
@@ -1952,7 +2000,9 @@ export class RufflePlayer extends HTMLElement {
                 <p>Ruffle wasn't able to run the Flash embedded in this page.</p>
                 <p>You can try to open the file in a separate tab, to sidestep this issue.</p>
                 <div>
-                    <a target="_blank" href="${this.swfUrl}">Open in a new tab</a>
+                    <a target="_blank" href="${this.swfUrl}">${text(
+                "open-in-new-tab"
+            )}</a>
                 </div>
             </div>`;
             this.container.prepend(div);
@@ -2002,7 +2052,7 @@ export class RufflePlayer extends HTMLElement {
         div.innerHTML = `<div class="message">
             <p>${message}</p>
             <div>
-                <button id="continue-btn">continue</button>
+                <button id="continue-btn">${text("continue")}</button>
             </div>
         </div>`;
         this.container.prepend(div);
