@@ -44,6 +44,7 @@ use winit::event::{
 };
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
 use winit::window::{Fullscreen, Icon, Window, WindowBuilder};
+use ruffle_core::backend::audio::AudioBackend;
 
 thread_local! {
     static CALLSTACK: RefCell<Option<StaticCallstack>> = RefCell::default();
@@ -108,6 +109,10 @@ struct Opt {
     /// The scale mode of the stage.
     #[clap(long, short, default_value = "show-all")]
     scale: StageScaleMode,
+
+    /// Audio volume
+    #[clap(long, short, default_value = "1.0")]
+    volume: f32,
 
     /// Prevent movies from changing the stage scale mode.
     #[clap(long, action)]
@@ -317,7 +322,10 @@ impl App {
         let mut builder = PlayerBuilder::new();
 
         match audio::CpalAudioBackend::new() {
-            Ok(audio) => builder = builder.with_audio(audio),
+            Ok(mut audio) => {
+                audio.set_volume(opt.volume);
+                builder = builder.with_audio(audio);
+            },
             Err(e) => {
                 tracing::error!("Unable to create audio device: {}", e);
             }
