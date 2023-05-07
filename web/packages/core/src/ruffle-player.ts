@@ -957,9 +957,7 @@ export class RufflePlayer extends HTMLElement {
         if (this.isB64SOL(b64SolData)) {
             if (localStorage[solKey]) {
                 if (!replace) {
-                    const confirmDelete = confirm(
-                        "Are you sure you want to delete this save file?"
-                    );
+                    const confirmDelete = confirm(text("save-delete-prompt"));
                     if (!confirmDelete) {
                         return;
                     }
@@ -971,9 +969,9 @@ export class RufflePlayer extends HTMLElement {
                 const savePath = solKey.split("/").slice(1, -1).join("/");
                 if (swfPath.includes(savePath) && solKey.startsWith(swfHost)) {
                     const confirmReload = confirm(
-                        `The only way to ${
-                            replace ? "replace" : "delete"
-                        } this save file without potential conflict is to reload this content. Do you wish to continue anyway?`
+                        text("save-reload-prompt", {
+                            action: replace ? "replace" : "delete",
+                        })
                     );
                     if (confirmReload && this.loadedConfig) {
                         this.destroy();
@@ -1057,7 +1055,7 @@ export class RufflePlayer extends HTMLElement {
                 keyCol.title = key;
                 const downloadCol = document.createElement("TD");
                 const downloadSpan = document.createElement("SPAN");
-                downloadSpan.textContent = "Download";
+                downloadSpan.textContent = text("save-download");
                 downloadSpan.className = "save-option";
                 downloadSpan.addEventListener("click", () =>
                     this.saveFile(
@@ -1079,7 +1077,7 @@ export class RufflePlayer extends HTMLElement {
                     document.createElement("LABEL")
                 );
                 replaceLabel.htmlFor = "replace-save-" + key;
-                replaceLabel.textContent = "Replace";
+                replaceLabel.textContent = text("save-replace");
                 replaceLabel.className = "save-option";
                 replaceInput.addEventListener("change", (event) =>
                     this.replaceSOL(event, key)
@@ -1088,7 +1086,7 @@ export class RufflePlayer extends HTMLElement {
                 replaceCol.appendChild(replaceLabel);
                 const deleteCol = document.createElement("TD");
                 const deleteSpan = document.createElement("SPAN");
-                deleteSpan.textContent = "Delete";
+                deleteSpan.textContent = text("save-delete");
                 deleteSpan.className = "save-option";
                 deleteSpan.addEventListener("click", () =>
                     this.deleteSave(key)
