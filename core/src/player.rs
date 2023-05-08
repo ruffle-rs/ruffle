@@ -1531,7 +1531,7 @@ impl Player {
                 .root_clip()
                 .and_then(|root| root.as_movie_clip())
             {
-                let was_root_movie_loaded = root.loaded_bytes() == root.total_bytes();
+                let was_root_movie_loaded = root.loaded_bytes() as i32 == root.total_bytes();
                 did_finish = root.preload(context, limit);
 
                 if let Some(loader_info) = root.loader_info().filter(|_| !was_root_movie_loaded) {

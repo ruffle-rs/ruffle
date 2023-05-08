@@ -235,7 +235,7 @@ impl<'gc> LoaderInfoObject<'gc> {
             let should_complete = match self.0.read().loaded_stream {
                 Some(LoaderStream::Swf(_, root)) => root
                     .as_movie_clip()
-                    .map(|mc| mc.loaded_bytes() >= mc.total_bytes())
+                    .map(|mc| mc.loaded_bytes() as i32 >= mc.total_bytes())
                     .unwrap_or(true),
                 _ => false,
             };

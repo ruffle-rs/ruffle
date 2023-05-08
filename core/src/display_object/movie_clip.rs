@@ -1205,13 +1205,13 @@ impl<'gc> MovieClip<'gc> {
         self.0.read().frames_loaded()
     }
 
-    pub fn total_bytes(self) -> u32 {
+    pub fn total_bytes(self) -> i32 {
         // For a loaded SWF, returns the uncompressed size of the SWF.
         // Otherwise, returns the size of the tag list in the clip's DefineSprite tag.
         if self.is_root() {
             self.movie().uncompressed_len()
         } else {
-            self.tag_stream_len() as u32
+            self.tag_stream_len() as i32
         }
     }
 
@@ -1220,10 +1220,10 @@ impl<'gc> MovieClip<'gc> {
         let progress_read = read.static_data.preload_progress.read();
         if progress_read.next_preload_chunk == u64::MAX {
             // u64::MAX is a sentinel for load complete
-            return self.total_bytes();
+            return max(self.total_bytes(), 0) as u32;
         }
 
-        let swf_header_size = self.total_bytes() - self.tag_stream_len() as u32;
+        let swf_header_size = max(self.total_bytes(), 0) as u32 - self.tag_stream_len() as u32;
 
         swf_header_size + progress_read.next_preload_chunk as u32
     }

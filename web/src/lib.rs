@@ -303,7 +303,7 @@ struct MovieMetadata {
     background_color: Option<String>,
     is_action_script_3: bool,
     #[serde(rename = "uncompressedLength")]
-    uncompressed_len: u32,
+    uncompressed_len: i32,
 }
 
 /// An opaque handle to a `RuffleInstance` inside the pool.

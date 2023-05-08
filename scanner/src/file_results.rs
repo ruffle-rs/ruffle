@@ -85,7 +85,7 @@ pub struct FileResults {
 
     /// The uncompressed length of the SWF file.
     #[serde(rename = "Uncompressed Length")]
-    pub uncompressed_len: Option<u32>,
+    pub uncompressed_len: Option<i32>,
 
     /// Any errors encountered while testing.
     #[serde(rename = "Error")]
