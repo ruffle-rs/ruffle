@@ -15,6 +15,7 @@ ruffle-desktop = Desktop Application
 ruffle-wiki = View Ruffle Wiki
 view-error-details = View Error Details
 open-in-new-tab = Open in a new tab
+click-to-unmute = Click to unmute
 error-file-protocol =
     It appears you are running Ruffle on the "file:" protocol.
     This doesn't work as browsers block many features from working for security reasons.

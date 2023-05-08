@@ -7,3 +7,4 @@ save-reload-prompt =
 save-download = Download
 save-replace = Replace
 save-delete = Delete
+save-backup-all = Backup all saves (download all sols)
