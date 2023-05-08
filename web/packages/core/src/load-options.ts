@@ -169,12 +169,6 @@ export const enum ContextMenu {
     RightClickOnly = "rightClickOnly",
 
     /**
-     * The context menu should only appear when long-pressing
-     * the Ruffle instance.
-     */
-    TouchOnly = "touchOnly",
-
-    /**
      * The context menu should not appear when right-clicking or long-pressing
      * the Ruffle instance.
      */

@@ -473,7 +473,7 @@ export class RufflePlayer extends HTMLElement {
             typeof this.loadedConfig.contextMenu === "boolean"
         ) {
             console.warn(
-                'The configuration option contextMenu no longer takes a boolean. Use "on", "off", "rightClickOnly", or "touchOnly".'
+                'The configuration option contextMenu no longer takes a boolean. Use "on", "off", or "rightClickOnly".'
             );
         }
         const ruffleConstructor = await loadRuffle(
@@ -1353,8 +1353,6 @@ export class RufflePlayer extends HTMLElement {
             (this.isTouch &&
                 this.loadedConfig?.contextMenu ===
                     ContextMenu.RightClickOnly) ||
-            (!this.isTouch &&
-                this.loadedConfig?.contextMenu === ContextMenu.TouchOnly) ||
             this.contextMenuForceDisabled
         ) {
             return;
