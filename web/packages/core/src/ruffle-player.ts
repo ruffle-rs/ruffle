@@ -1947,8 +1947,7 @@ export class RufflePlayer extends HTMLElement {
             const div = document.createElement("div");
             div.id = "message_overlay";
             div.innerHTML = `<div class="message">
-                <p>Ruffle wasn't able to run the Flash embedded in this page.</p>
-                <p>You can try to open the file in a separate tab, to sidestep this issue.</p>
+                ${textAsParagraphs("message-cant-embed")}
                 <div>
                     <a target="_blank" href="${this.swfUrl}">${text(
                 "open-in-new-tab"
