@@ -151,7 +151,7 @@ impl<'gc> Stage<'gc> {
             gc_context,
             StageData {
                 base: Default::default(),
-                child: Default::default(),
+                child: ChildContainer::new(movie.clone()),
                 background_color: None,
                 letterbox: Letterbox::Fullscreen,
                 // This is updated when we set the root movie
@@ -640,7 +640,7 @@ impl<'gc> Stage<'gc> {
     fn fire_resize_event(self, context: &mut UpdateContext<'_, 'gc>) {
         // This event fires immediately when scaleMode is changed;
         // it doesn't queue up.
-        if !context.is_action_script_3() {
+        if !self.movie().is_action_script_3() {
             if let Some(root_clip) = self.root_clip() {
                 crate::avm1::Avm1::notify_system_listeners(
                     root_clip,
@@ -670,7 +670,7 @@ impl<'gc> Stage<'gc> {
 
     /// Fires `Stage.onFullScreen` in AVM1 or `Event.FULLSCREEN` in AVM2.
     pub fn fire_fullscreen_event(self, context: &mut UpdateContext<'_, 'gc>) {
-        if !context.is_action_script_3() {
+        if !self.movie().is_action_script_3() {
             if let Some(root_clip) = self.root_clip() {
                 crate::avm1::Avm1::notify_system_listeners(
                     root_clip,

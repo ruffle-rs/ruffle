@@ -58,7 +58,7 @@ pub fn native_instance_init<'gc>(
                         Instantiator::Avm2,
                         false,
                     );
-                    catchup_display_object_to_frame(&mut activation.context, child);
+                    catchup_display_object_to_frame(&mut activation.context, true, child);
                     child.set_placed_by_script(activation.context.gc_context, true);
 
                     // Movie clips created from ActionScript skip the next enterFrame,

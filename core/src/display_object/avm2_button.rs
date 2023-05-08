@@ -232,7 +232,7 @@ impl<'gc> Avm2Button<'gc> {
 
             child.set_parent(context, Some(self.into()));
             child.post_instantiation(context, None, Instantiator::Movie, false);
-            catchup_display_object_to_frame(context, child);
+            catchup_display_object_to_frame(context, true, child);
 
             (child, false)
         } else {
@@ -240,7 +240,7 @@ impl<'gc> Avm2Button<'gc> {
 
             state_sprite.set_avm2_class(context.gc_context, Some(sprite_class));
             state_sprite.set_parent(context, Some(self.into()));
-            catchup_display_object_to_frame(context, state_sprite.into());
+            catchup_display_object_to_frame(context, true, state_sprite.into());
 
             for (child, depth) in children {
                 // `parent` returns `null` for these grandchildren during construction time, even though
@@ -250,7 +250,7 @@ impl<'gc> Avm2Button<'gc> {
                 state_sprite.replace_at_depth(context, child, depth.into());
                 child.set_parent(context, Some(self.into()));
                 child.post_instantiation(context, None, Instantiator::Movie, false);
-                catchup_display_object_to_frame(context, child);
+                catchup_display_object_to_frame(context, true, child);
                 child.set_parent(context, Some(state_sprite.into()));
             }
 

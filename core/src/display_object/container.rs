@@ -9,6 +9,7 @@ use crate::display_object::movie_clip::MovieClip;
 use crate::display_object::stage::Stage;
 use crate::display_object::{Depth, DisplayObject, TDisplayObject, TInteractiveObject};
 use crate::string::WStr;
+use crate::tag_utils::SwfMovie;
 use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
 use ruffle_render::commands::CommandHandler;
@@ -17,6 +18,7 @@ use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::fmt::Debug;
 use std::ops::{Bound, RangeBounds};
+use std::sync::Arc;
 
 /// Dispatch the `removedFromStage` event on a child and all of it's
 /// grandchildren, recursively.
@@ -199,7 +201,7 @@ pub trait TDisplayObjectContainer<'gc>:
         child.set_depth(context.gc_context, depth);
 
         if let Some(removed_child) = removed_child {
-            if !context.is_action_script_3() {
+            if !self.raw_container().movie.is_action_script_3() {
                 removed_child.avm1_unload(context);
             }
             removed_child.set_parent(context, None);
@@ -262,7 +264,7 @@ pub trait TDisplayObjectContainer<'gc>:
 
         child.set_place_frame(context.gc_context, 0);
         child.set_parent(context, Some(this));
-        if !context.is_action_script_3() {
+        if !self.raw_container().movie.is_action_script_3() {
             child.set_avm1_removed(context.gc_context, false);
         }
 
@@ -298,7 +300,7 @@ pub trait TDisplayObjectContainer<'gc>:
         ));
 
         // Check if this child should have delayed removal (AVM1 only)
-        if !context.is_action_script_3() {
+        if !self.raw_container().movie.is_action_script_3() {
             let should_delay_removal = {
                 let mut activation = Activation::from_stub(
                     context.reborrow(),
@@ -344,7 +346,7 @@ pub trait TDisplayObjectContainer<'gc>:
         drop(write);
 
         if removed_from_render_list {
-            if !context.is_action_script_3() {
+            if !self.raw_container().movie.is_action_script_3() {
                 child.avm1_unload(context);
             } else if !matches!(child.object2(), Avm2Value::Null) {
                 //TODO: This is an awful, *awful* hack to deal with the fact
@@ -397,7 +399,7 @@ pub trait TDisplayObjectContainer<'gc>:
 
             drop(write);
 
-            if !context.is_action_script_3() {
+            if !self.raw_container().movie.is_action_script_3() {
                 removed.avm1_unload(context);
             } else if !matches!(removed.object2(), Avm2Value::Null) {
                 removed.set_parent(context, None);
@@ -536,21 +538,19 @@ pub struct ChildContainer<'gc> {
     has_pending_removals: bool,
 
     mouse_children: bool,
-}
 
-impl<'gc> Default for ChildContainer<'gc> {
-    fn default() -> Self {
-        Self::new()
-    }
+    /// The movie this Container belongs to.
+    movie: Arc<SwfMovie>,
 }
 
 impl<'gc> ChildContainer<'gc> {
-    pub fn new() -> Self {
+    pub fn new(movie: Arc<SwfMovie>) -> Self {
         Self {
             render_list: Vec::new(),
             depth_list: BTreeMap::new(),
             has_pending_removals: false,
             mouse_children: true,
+            movie,
         }
     }
 

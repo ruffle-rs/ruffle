@@ -669,7 +669,7 @@ impl<'gc> Loader<'gc> {
             // add the the loaded clip as a child. The frame constructor should see
             // 'this.parent == null' and 'this.stage == null'
             mc.post_instantiation(context, None, Instantiator::Movie, false);
-            catchup_display_object_to_frame(context, mc.into());
+            catchup_display_object_to_frame(context, mc.movie().is_action_script_3(), mc.into());
             // Movie clips created from ActionScript (including from a Loader) skip the next enterFrame,
             // and consequently are observed to have their currentFrame lag one
             // frame behind objects placed by the timeline (even if they were

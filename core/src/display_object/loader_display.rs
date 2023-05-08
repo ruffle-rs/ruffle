@@ -50,7 +50,7 @@ impl<'gc> LoaderDisplay<'gc> {
             activation.context.gc_context,
             LoaderDisplayData {
                 base: Default::default(),
-                container: ChildContainer::new(),
+                container: ChildContainer::new(movie.clone()),
                 avm2_object,
                 movie,
             },
@@ -137,7 +137,7 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
             .set_parent_ignoring_orphan_list(parent);
         let has_parent = self.parent().is_some();
 
-        if context.is_action_script_3() && had_parent && !has_parent {
+        if self.movie().is_action_script_3() && had_parent && !has_parent {
             context.avm2.add_orphan_obj((*self).into())
         }
     }
@@ -180,6 +180,11 @@ impl<'gc> TInteractiveObject<'gc> for LoaderDisplay<'gc> {
         point: Point<Twips>,
         require_button_mode: bool,
     ) -> Option<InteractiveObject<'gc>> {
+        // Don't do anything if run in an AVM2 context.
+        if self.as_displayobject().movie().is_action_script_3() {
+            return None;
+        }
+
         for child in self.iter_render_list().rev() {
             if let Some(int) = child.as_interactive() {
                 if let Some(result) = int.mouse_pick_avm1(context, point, require_button_mode) {
@@ -197,6 +202,11 @@ impl<'gc> TInteractiveObject<'gc> for LoaderDisplay<'gc> {
         point: Point<Twips>,
         require_button_mode: bool,
     ) -> Avm2MousePick<'gc> {
+        // Don't do anything if run in an AVM1 context.
+        if !self.as_displayobject().movie().is_action_script_3() {
+            return Avm2MousePick::NotAvm2;
+        }
+
         // We have at most one child
         if let Some(child) = self.iter_render_list().next() {
             if let Some(int) = child.as_interactive() {

@@ -19,6 +19,8 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 use swf::ButtonActionCondition;
 
+use super::interactive::Avm2MousePick;
+
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct Avm1Button<'gc>(GcCell<'gc, Avm1ButtonData<'gc>>);
@@ -78,7 +80,7 @@ impl<'gc> Avm1Button<'gc> {
             Avm1ButtonData {
                 base: Default::default(),
                 static_data: GcCell::allocate(gc_context, static_data),
-                container: ChildContainer::new(),
+                container: ChildContainer::new(source_movie.movie.clone()),
                 hit_area: BTreeMap::new(),
                 state: self::ButtonState::Up,
                 initialized: false,
@@ -257,7 +259,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
     ) {
         self.set_default_instance_name(context);
 
-        if !context.is_action_script_3() {
+        if !self.movie().is_action_script_3() {
             context
                 .avm1
                 .add_to_exec_list(context.gc_context, (*self).into());
@@ -570,6 +572,15 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
             }
         }
         None
+    }
+
+    fn mouse_pick_avm2(
+        &self,
+        _context: &mut UpdateContext<'_, 'gc>,
+        _point: Point<Twips>,
+        _require_button_mode: bool,
+    ) -> Avm2MousePick<'gc> {
+        Avm2MousePick::NotAvm2
     }
 
     fn mouse_cursor(self, context: &mut UpdateContext<'_, 'gc>) -> MouseCursor {

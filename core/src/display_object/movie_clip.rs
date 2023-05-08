@@ -141,11 +141,14 @@ impl<'gc> MovieClip<'gc> {
             gc_context,
             MovieClipData {
                 base: Default::default(),
-                static_data: Gc::allocate(gc_context, MovieClipStatic::empty(movie, gc_context)),
+                static_data: Gc::allocate(
+                    gc_context,
+                    MovieClipStatic::empty(movie.clone(), gc_context),
+                ),
                 tag_stream_pos: 0,
                 current_frame: 0,
                 audio_stream: None,
-                container: ChildContainer::new(),
+                container: ChildContainer::new(movie.clone()),
                 object: None,
                 clip_event_handlers: Vec::new(),
                 clip_event_flags: ClipEventFlag::empty(),
@@ -180,11 +183,14 @@ impl<'gc> MovieClip<'gc> {
             gc_context,
             MovieClipData {
                 base: Default::default(),
-                static_data: Gc::allocate(gc_context, MovieClipStatic::empty(movie, gc_context)),
+                static_data: Gc::allocate(
+                    gc_context,
+                    MovieClipStatic::empty(movie.clone(), gc_context),
+                ),
                 tag_stream_pos: 0,
                 current_frame: 0,
                 audio_stream: None,
-                container: ChildContainer::new(),
+                container: ChildContainer::new(movie.clone()),
                 object: Some(this.into()),
                 clip_event_handlers: Vec::new(),
                 clip_event_flags: ClipEventFlag::empty(),
@@ -222,12 +228,12 @@ impl<'gc> MovieClip<'gc> {
                 base: Default::default(),
                 static_data: Gc::allocate(
                     gc_context,
-                    MovieClipStatic::with_data(id, swf, num_frames, None, gc_context),
+                    MovieClipStatic::with_data(id, swf.clone(), num_frames, None, gc_context),
                 ),
                 tag_stream_pos: 0,
                 current_frame: 0,
                 audio_stream: None,
-                container: ChildContainer::new(),
+                container: ChildContainer::new(swf.movie),
                 object: None,
                 clip_event_handlers: Vec::new(),
                 clip_event_flags: ClipEventFlag::empty(),
@@ -292,7 +298,7 @@ impl<'gc> MovieClip<'gc> {
                 tag_stream_pos: 0,
                 current_frame: 0,
                 audio_stream: None,
-                container: ChildContainer::new(),
+                container: ChildContainer::new(movie.clone()),
                 object: None,
                 clip_event_handlers: Vec::new(),
                 clip_event_flags: ClipEventFlag::empty(),
@@ -361,7 +367,7 @@ impl<'gc> MovieClip<'gc> {
             context.gc_context,
             MovieClipStatic::with_data(
                 0,
-                movie.into(),
+                movie.clone().into(),
                 total_frames,
                 loader_info.map(|l| l.into()),
                 context.gc_context,
@@ -372,7 +378,7 @@ impl<'gc> MovieClip<'gc> {
         mc.base.base.set_is_root(is_swf);
         mc.current_frame = 0;
         mc.audio_stream = None;
-        mc.container = ChildContainer::new();
+        mc.container = ChildContainer::new(movie);
         drop(mc);
     }
 
@@ -695,7 +701,7 @@ impl<'gc> MovieClip<'gc> {
         reader: &mut SwfStream<'_>,
         tag_len: usize,
     ) -> Result<(), Error> {
-        if context.is_action_script_3() {
+        if self.movie().is_action_script_3() {
             tracing::warn!("DoInitAction tag in AVM2 movie");
             return Ok(());
         }
@@ -727,7 +733,7 @@ impl<'gc> MovieClip<'gc> {
         context: &mut UpdateContext<'_, 'gc>,
         reader: &mut SwfStream<'_>,
     ) -> Result<(), Error> {
-        if !context.is_action_script_3() {
+        if !self.movie().is_action_script_3() {
             tracing::warn!("DoABC tag in AVM1 movie");
             return Ok(());
         }
@@ -762,7 +768,7 @@ impl<'gc> MovieClip<'gc> {
         context: &mut UpdateContext<'_, 'gc>,
         reader: &mut SwfStream<'_>,
     ) -> Result<(), Error> {
-        if !context.is_action_script_3() {
+        if !self.movie().is_action_script_3() {
             tracing::warn!("DoABC2 tag in AVM1 movie");
             return Ok(());
         }
@@ -1018,7 +1024,7 @@ impl<'gc> MovieClip<'gc> {
             } else {
                 self.run_goto(context, frame, false);
             }
-        } else if context.is_action_script_3() {
+        } else if self.movie().is_action_script_3() {
             // Pretend we actually did a goto, but don't do anything.
             self.construct_frame(context);
             self.frame_constructed(context);
@@ -1268,11 +1274,11 @@ impl<'gc> MovieClip<'gc> {
     pub fn frame_label_to_number(
         self,
         frame_label: &WStr,
-        context: &UpdateContext<'_, 'gc>,
+        _context: &UpdateContext<'_, 'gc>,
     ) -> Option<FrameNumber> {
         // In AVM1, frame labels are case insensitive (ASCII).
         // They are case sensitive in AVM2.
-        if context.is_action_script_3() {
+        if self.movie().is_action_script_3() {
             self.0
                 .read()
                 .static_data
@@ -1440,40 +1446,64 @@ impl<'gc> MovieClip<'gc> {
         let tag_callback = |reader: &mut SwfStream<'_>, tag_code, tag_len| {
             match tag_code {
                 TagCode::DoAction => self.do_action(context, reader, tag_len),
-                TagCode::PlaceObject if run_display_actions && !context.is_action_script_3() => {
+                TagCode::PlaceObject
+                    if run_display_actions && !self.movie().is_action_script_3() =>
+                {
                     self.place_object(context, reader, 1)
                 }
-                TagCode::PlaceObject2 if run_display_actions && !context.is_action_script_3() => {
+                TagCode::PlaceObject2
+                    if run_display_actions && !self.movie().is_action_script_3() =>
+                {
                     self.place_object(context, reader, 2)
                 }
-                TagCode::PlaceObject3 if run_display_actions && !context.is_action_script_3() => {
+                TagCode::PlaceObject3
+                    if run_display_actions && !self.movie().is_action_script_3() =>
+                {
                     self.place_object(context, reader, 3)
                 }
-                TagCode::PlaceObject4 if run_display_actions && !context.is_action_script_3() => {
+                TagCode::PlaceObject4
+                    if run_display_actions && !self.movie().is_action_script_3() =>
+                {
                     self.place_object(context, reader, 4)
                 }
-                TagCode::RemoveObject if run_display_actions && !context.is_action_script_3() => {
+                TagCode::RemoveObject
+                    if run_display_actions && !self.movie().is_action_script_3() =>
+                {
                     self.remove_object(context, reader, 1)
                 }
-                TagCode::RemoveObject2 if run_display_actions && !context.is_action_script_3() => {
+                TagCode::RemoveObject2
+                    if run_display_actions && !self.movie().is_action_script_3() =>
+                {
                     self.remove_object(context, reader, 2)
                 }
-                TagCode::PlaceObject if run_display_actions && context.is_action_script_3() => {
+                TagCode::PlaceObject
+                    if run_display_actions && self.movie().is_action_script_3() =>
+                {
                     self.queue_place_object(context, reader, 1)
                 }
-                TagCode::PlaceObject2 if run_display_actions && context.is_action_script_3() => {
+                TagCode::PlaceObject2
+                    if run_display_actions && self.movie().is_action_script_3() =>
+                {
                     self.queue_place_object(context, reader, 2)
                 }
-                TagCode::PlaceObject3 if run_display_actions && context.is_action_script_3() => {
+                TagCode::PlaceObject3
+                    if run_display_actions && self.movie().is_action_script_3() =>
+                {
                     self.queue_place_object(context, reader, 3)
                 }
-                TagCode::PlaceObject4 if run_display_actions && context.is_action_script_3() => {
+                TagCode::PlaceObject4
+                    if run_display_actions && self.movie().is_action_script_3() =>
+                {
                     self.queue_place_object(context, reader, 4)
                 }
-                TagCode::RemoveObject if run_display_actions && context.is_action_script_3() => {
+                TagCode::RemoveObject
+                    if run_display_actions && self.movie().is_action_script_3() =>
+                {
                     self.queue_remove_object(context, reader, 1)
                 }
-                TagCode::RemoveObject2 if run_display_actions && context.is_action_script_3() => {
+                TagCode::RemoveObject2
+                    if run_display_actions && self.movie().is_action_script_3() =>
+                {
                     self.queue_remove_object(context, reader, 2)
                 }
                 TagCode::SetBackgroundColor => self.set_background_color(context, reader),
@@ -1839,7 +1869,7 @@ impl<'gc> MovieClip<'gc> {
                                 params: &GotoPlaceObject<'_>| {
             use swf::PlaceObjectAction;
             let child_entry = clip.child_by_depth(params.depth());
-            if context.is_action_script_3() && is_implicit && child_entry.is_none() {
+            if self.movie().is_action_script_3() && is_implicit && child_entry.is_none() {
                 // Looping gotos do not run their PlaceObject commands at goto
                 // time. They are instead held to frameConstructed like normal
                 // playback.
@@ -2209,7 +2239,7 @@ impl<'gc> MovieClip<'gc> {
     }
 
     fn enabled(self, context: &mut UpdateContext<'_, 'gc>) -> bool {
-        if !context.is_action_script_3() {
+        if !self.movie().is_action_script_3() {
             self.avm1_enabled(context)
         } else {
             self.avm2_enabled()
@@ -2405,7 +2435,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             return;
         }
 
-        if context.is_action_script_3() {
+        if self.movie().is_action_script_3() {
             let is_playing = self.playing();
 
             if is_playing {
@@ -2436,7 +2466,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc>) {
         // AVM1 code expects to execute in line with timeline instructions, so
         // it's exempted from frame construction.
-        if context.is_action_script_3() && self.frames_loaded() >= 1 {
+        if self.movie().is_action_script_3() && self.frames_loaded() >= 1 {
             let is_load_frame = !self.0.read().initialized();
             let needs_construction = if matches!(self.object2(), Avm2Value::Null) {
                 self.allocate_as_avm2_object(context, (*self).into());
@@ -2465,7 +2495,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     fn run_frame_avm1(&self, context: &mut UpdateContext<'_, 'gc>) {
-        if !context.is_action_script_3() {
+        if !self.movie().is_action_script_3() {
             // Run my load/enterFrame clip event.
             let is_load_frame = !self.0.read().flags.contains(MovieClipFlags::INITIALIZED);
             if is_load_frame {
@@ -2666,7 +2696,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     ) {
         self.set_default_instance_name(context);
 
-        if !context.is_action_script_3() {
+        if !self.movie().is_action_script_3() {
             context
                 .avm1
                 .add_to_exec_list(context.gc_context, (*self).into());
@@ -2706,7 +2736,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             .set_parent_ignoring_orphan_list(parent);
         let has_parent = self.parent().is_some();
 
-        if context.is_action_script_3() && had_parent && !has_parent {
+        if self.movie().is_action_script_3() && had_parent && !has_parent {
             context.avm2.add_orphan_obj((*self).into())
         }
     }
@@ -3093,7 +3123,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                     Avm2MousePick::PropagateToParent => {
                         found_propagate = Some(res);
                     }
-                    Avm2MousePick::Miss => {}
+                    Avm2MousePick::Miss | Avm2MousePick::NotAvm2 => {}
                 }
             }
 
@@ -3843,7 +3873,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         reader: &mut SwfStream<'a>,
         cur_frame: FrameNumber,
         static_data: &mut MovieClipStatic<'gc>,
-        context: &UpdateContext<'_, 'gc>,
+        _context: &UpdateContext<'_, 'gc>,
     ) -> Result<(), Error> {
         // This tag is ignored if scene labels exist.
         if !static_data.scene_labels.is_empty() {
@@ -3854,7 +3884,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let mut label = frame_label.label.decode(reader.encoding()).into_owned();
 
         // In AVM1, frame labels are case insensitive (ASCII), but in AVM2 they are case sensitive.
-        if !context.is_action_script_3() {
+        if !self.movie().is_action_script_3() {
             label.make_ascii_lowercase();
         }
 
@@ -3930,7 +3960,7 @@ impl<'gc, 'a> MovieClip<'gc> {
         reader: &mut SwfStream<'a>,
         tag_len: usize,
     ) -> Result<(), Error> {
-        if context.is_action_script_3() {
+        if self.movie().is_action_script_3() {
             tracing::warn!("DoAction tag in AVM2 movie");
             return Ok(());
         }
