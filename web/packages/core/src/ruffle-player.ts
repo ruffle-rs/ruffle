@@ -254,9 +254,22 @@ export class RufflePlayer extends HTMLElement {
                 this.saveManager.classList.add("hidden")
             );
         }
-        const backupSaves = this.saveManager.querySelector("#backup-saves");
+        const backupSaves = <HTMLElement>(
+            this.saveManager.querySelector("#backup-saves")
+        );
         if (backupSaves) {
             backupSaves.addEventListener("click", this.backupSaves.bind(this));
+            backupSaves.innerText = text("save-backup-all");
+        }
+
+        const unmuteSvg = <SVGElement>(
+            this.unmuteOverlay.querySelector("#unmute_overlay_svg")
+        );
+        if (unmuteSvg) {
+            const unmuteText = <SVGTextElement>(
+                unmuteSvg.querySelector("#unmute_text")
+            );
+            unmuteText.textContent = text("click-to-unmute");
         }
 
         this.contextMenuElement = this.shadow.getElementById("context-menu")!;
