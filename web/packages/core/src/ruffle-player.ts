@@ -908,11 +908,8 @@ export class RufflePlayer extends HTMLElement {
     }
 
     private checkIfTouch(event: PointerEvent): void {
-        if (event.pointerType === "touch" || event.pointerType === "pen") {
-            this.isTouch = true;
-        } else {
-            this.isTouch = false;
-        }
+        this.isTouch =
+            event.pointerType === "touch" || event.pointerType === "pen";
     }
 
     private base64ToBlob(bytesBase64: string, mimeString: string): Blob {
