@@ -97,7 +97,7 @@ pub struct HeaderExt {
     pub(crate) header: Header,
     pub(crate) file_attributes: FileAttributes,
     pub(crate) background_color: Option<SetBackgroundColor>,
-    pub(crate) uncompressed_len: u32,
+    pub(crate) uncompressed_len: i32,
 }
 
 impl HeaderExt {
@@ -119,12 +119,12 @@ impl HeaderExt {
             header: Header::default_with_swf_version(0),
             file_attributes: Default::default(),
             background_color: None,
-            uncompressed_len: 0, // TODO: This needs to be -1
+            uncompressed_len: -1,
         }
     }
 
     /// Returns the header for a loaded image (JPEG, GIF or PNG).
-    pub fn default_with_uncompressed_len(length: u32) -> Self {
+    pub fn default_with_uncompressed_len(length: i32) -> Self {
         let header = Header {
             compression: Compression::None,
             version: 0,
@@ -199,7 +199,7 @@ impl HeaderExt {
 
     /// The length of the SWF after decompression.
     #[inline]
-    pub fn uncompressed_len(&self) -> u32 {
+    pub fn uncompressed_len(&self) -> i32 {
         self.uncompressed_len
     }
 

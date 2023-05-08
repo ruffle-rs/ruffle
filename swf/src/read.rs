@@ -166,7 +166,7 @@ pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
             header,
             file_attributes,
             background_color,
-            uncompressed_len,
+            uncompressed_len: uncompressed_len as i32,
         },
         data,
     })

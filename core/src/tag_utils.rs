@@ -150,7 +150,7 @@ impl SwfMovie {
     /// Construct a movie based on a loaded image (JPEG, GIF or PNG).
     pub fn from_loaded_image(url: String, length: usize) -> Self {
         let mut movie = Self {
-            header: HeaderExt::default_with_uncompressed_len(length as u32),
+            header: HeaderExt::default_with_uncompressed_len(length as i32),
             data: vec![],
             url,
             loader_url: None,
@@ -235,7 +235,7 @@ impl SwfMovie {
         self.compressed_len
     }
 
-    pub fn uncompressed_len(&self) -> u32 {
+    pub fn uncompressed_len(&self) -> i32 {
         self.header.uncompressed_len()
     }
 
