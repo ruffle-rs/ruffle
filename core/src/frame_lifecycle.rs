@@ -13,6 +13,7 @@
 
 use crate::avm2::Avm2;
 use crate::context::UpdateContext;
+use crate::display_object::interactive::TInteractiveObject;
 use crate::display_object::{DisplayObject, TDisplayObject};
 use tracing::instrument;
 
@@ -71,6 +72,10 @@ pub enum FramePhase {
 pub fn run_all_phases_avm2(context: &mut UpdateContext<'_, '_>) {
     let stage = context.stage;
 
+    if !stage.as_displayobject().movie().is_action_script_3() {
+        return;
+    }
+
     *context.frame_phase = FramePhase::Enter;
     Avm2::each_orphan_obj(context, |orphan, context| {
         orphan.enter_frame(context);
@@ -112,9 +117,10 @@ pub fn run_all_phases_avm2(context: &mut UpdateContext<'_, '_>) {
 /// This is a no-op on AVM1, which has it's own catch-up logic.
 pub fn catchup_display_object_to_frame<'gc>(
     context: &mut UpdateContext<'_, 'gc>,
+    is_content_as3: bool,
     dobj: DisplayObject<'gc>,
 ) {
-    if !context.is_action_script_3() {
+    if !is_content_as3 {
         return;
     }
 

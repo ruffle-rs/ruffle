@@ -240,7 +240,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         _instantiated_by: Instantiator,
         _run_frame: bool,
     ) {
-        if context.is_action_script_3() {
+        if self.movie().is_action_script_3() {
             let domain = context
                 .library
                 .library_for_movie(self.movie())

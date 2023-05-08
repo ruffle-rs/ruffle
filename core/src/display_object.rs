@@ -26,7 +26,7 @@ mod bitmap;
 mod container;
 mod edit_text;
 mod graphic;
-mod interactive;
+pub mod interactive;
 mod loader_display;
 mod morph_shape;
 mod movie_clip;
@@ -1646,7 +1646,7 @@ pub trait TDisplayObject<'gc>:
         _instantiated_by: Instantiator,
         run_frame: bool,
     ) {
-        if run_frame && !context.is_action_script_3() {
+        if run_frame && !self.movie().is_action_script_3() {
             self.run_frame_avm1(context);
         }
     }
@@ -1759,7 +1759,7 @@ pub trait TDisplayObject<'gc>:
     /// The default root names change based on the AVM configuration of the
     /// clip; AVM2 clips get `rootN` while AVM1 clips get blank strings.
     fn set_default_root_name(&self, context: &mut UpdateContext<'_, 'gc>) {
-        if context.is_action_script_3() {
+        if self.movie().is_action_script_3() {
             let name = AvmString::new_utf8(context.gc_context, format!("root{}", self.depth() + 1));
             self.set_name(context.gc_context, name);
         } else {

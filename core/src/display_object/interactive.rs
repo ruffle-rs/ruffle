@@ -475,6 +475,7 @@ pub trait TInteractiveObject<'gc>:
 pub enum Avm2MousePick<'gc> {
     Hit(InteractiveObject<'gc>),
     PropagateToParent,
+    NotAvm2,
     Miss,
 }
 
@@ -484,6 +485,7 @@ impl<'gc> Debug for Avm2MousePick<'gc> {
             Avm2MousePick::Hit(target) => write!(f, "Hit({:?})", target.as_displayobject().name()),
             Avm2MousePick::PropagateToParent => write!(f, "PropagateToParent"),
             Avm2MousePick::Miss => write!(f, "Miss"),
+            Avm2MousePick::NotAvm2 => write!(f, "NotAvm2"),
         }
     }
 }
@@ -531,6 +533,7 @@ impl<'gc> Avm2MousePick<'gc> {
             }
             // A miss in a child always stays a miss, regardless of parent settings.
             Avm2MousePick::Miss => Avm2MousePick::Miss,
+            Avm2MousePick::NotAvm2 => Avm2MousePick::NotAvm2,
         };
         res
     }
