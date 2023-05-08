@@ -14,6 +14,7 @@ import type { MovieMetadata } from "./movie-metadata";
 import { swfFileName } from "./swf-utils";
 import { buildInfo } from "./build-info";
 import { text, textAsParagraphs } from "./i18n";
+import * as zip from "@zip.js/zip.js";
 
 const RUFFLE_ORIGIN = "https://ruffle.rs";
 const DIMENSION_REGEX = /^\s*(\d+(\.\d+)?(%)?)/;
@@ -897,10 +898,26 @@ export class RufflePlayer extends HTMLElement {
     }
 
     /**
-     * Called when entering / leaving fullscreen
+     * Called when entering / leaving fullscreen.
      */
     private fullScreenChange(): void {
         this.instance?.set_fullscreen(this.isFullscreen);
+    }
+
+    /**
+     * Prompt the user to download a file.
+     *
+     * @param href The content to download.
+     * @param name The name to give the file.
+     */
+    private saveFile(href: string, name: string): void {
+        const link = document.createElement("a");
+        link.href = href;
+        link.style.display = "none";
+        link.download = name;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     }
 
     private base64ToBlob(bytesBase64: string, mimeString: string): Blob {
@@ -912,30 +929,6 @@ export class RufflePlayer extends HTMLElement {
         }
         const blob = new Blob([ab], { type: mimeString });
         return blob;
-    }
-
-    /**
-     * Download base-64 string as file
-     *
-     * @param bytesBase64 The base-64 encoded SOL string
-     * @param mimeType The MIME type
-     * @param fileName The name to give the file
-     */
-    private saveFile(
-        bytesBase64: string,
-        mimeType: string,
-        fileName: string
-    ): void {
-        const blob = this.base64ToBlob(bytesBase64, mimeType);
-        const blobURL = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = blobURL;
-        link.style.display = "none";
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(blobURL);
     }
 
     /**
@@ -1060,13 +1053,15 @@ export class RufflePlayer extends HTMLElement {
                 const downloadSpan = document.createElement("SPAN");
                 downloadSpan.textContent = text("save-download");
                 downloadSpan.className = "save-option";
-                downloadSpan.addEventListener("click", () =>
-                    this.saveFile(
+                downloadSpan.addEventListener("click", () => {
+                    const blob = this.base64ToBlob(
                         solData,
-                        "application/octet-stream",
-                        solName + ".sol"
-                    )
-                );
+                        "application/octet-stream"
+                    );
+                    const blobURL = URL.createObjectURL(blob);
+                    this.saveFile(blobURL, solName + ".sol");
+                    URL.revokeObjectURL(blobURL);
+                });
                 downloadCol.appendChild(downloadSpan);
                 const replaceCol = document.createElement("TD");
                 const replaceInput = <HTMLInputElement>(
@@ -1105,20 +1100,35 @@ export class RufflePlayer extends HTMLElement {
     }
 
     /**
-     * Gets the local save information as SOL files and downloads them.
+     * Gets the local save information as SOL files and downloads them as a single ZIP file.
      */
-    private backupSaves(): void {
+    private async backupSaves(): Promise<void> {
+        const zipWriter = new zip.ZipWriter(
+            new zip.BlobWriter("application/zip"),
+            { bufferedWrite: true }
+        );
+        const duplicateNames: string[] = [];
         Object.keys(localStorage).forEach((key) => {
-            const solName = key.split("/").pop();
+            let solName = String(key.split("/").pop());
             const solData = localStorage.getItem(key);
             if (solData && this.isB64SOL(solData)) {
-                this.saveFile(
+                const blob = this.base64ToBlob(
                     solData,
-                    "application/octet-stream",
-                    solName + ".sol"
+                    "application/octet-stream"
                 );
+                const duplicate = duplicateNames.filter(
+                    (value) => value === solName
+                ).length;
+                duplicateNames.push(solName);
+                if (duplicate > 0) {
+                    solName += ` (${duplicate + 1})`;
+                }
+                zipWriter.add(solName + ".sol", new zip.BlobReader(blob));
             }
         });
+        const blobURL = URL.createObjectURL(await zipWriter.close());
+        this.saveFile(blobURL, "saves.zip");
+        URL.revokeObjectURL(blobURL);
     }
 
     /**
@@ -1141,15 +1151,9 @@ export class RufflePlayer extends HTMLElement {
                     return;
                 }
                 const blob = await response.blob();
-                const blobUrl = URL.createObjectURL(blob);
-                const swfDownloadA = document.createElement("a");
-                swfDownloadA.style.display = "none";
-                swfDownloadA.href = blobUrl;
-                swfDownloadA.download = swfFileName(this.swfUrl);
-                document.body.appendChild(swfDownloadA);
-                swfDownloadA.click();
-                document.body.removeChild(swfDownloadA);
-                URL.revokeObjectURL(blobUrl);
+                const blobURL = URL.createObjectURL(blob);
+                this.saveFile(blobURL, swfFileName(this.swfUrl));
+                URL.revokeObjectURL(blobURL);
             } else {
                 console.error("SWF download failed");
             }
