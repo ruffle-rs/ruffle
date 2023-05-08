@@ -1753,11 +1753,7 @@ export class RufflePlayer extends HTMLElement {
         switch (errorIndex) {
             case PanicError.FileProtocol:
                 // General error: Running on the `file:` protocol
-                errorBody = `
-                    <p>It appears you are running Ruffle on the "file:" protocol.</p>
-                    <p>This doesn't work as browsers block many features from working for security reasons.</p>
-                    <p>Instead, we invite you to setup a local server or either use the web demo or the desktop application.</p>
-                `;
+                errorBody = textAsParagraphs("error-file-protocol");
                 errorFooter = `
                     <li><a target="_top" href="${RUFFLE_ORIGIN}/demo">${text(
                     "ruffle-demo"
@@ -1769,11 +1765,7 @@ export class RufflePlayer extends HTMLElement {
                 break;
             case PanicError.JavascriptConfiguration:
                 // General error: Incorrect JavaScript configuration
-                errorBody = `
-                    <p>Ruffle has encountered a major issue due to an incorrect JavaScript configuration.</p>
-                    <p>If you are the server administrator, we invite you to check the error details to find out which parameter is at fault.</p>
-                    <p>You can also consult the Ruffle wiki for help.</p>
-                `;
+                errorBody = textAsParagraphs("error-javascript-config");
                 errorFooter = `
                     <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#javascript-api">${text(
                         "ruffle-wiki"
@@ -1785,11 +1777,7 @@ export class RufflePlayer extends HTMLElement {
                 break;
             case PanicError.WasmNotFound:
                 // Self hosted: Cannot load `.wasm` file - file not found
-                errorBody = `
-                    <p>Ruffle failed to load the required ".wasm" file component.</p>
-                    <p>If you are the server administrator, please ensure the file has correctly been uploaded.</p>
-                    <p>If the issue persists, you may need to use the "publicPath" setting: please consult the Ruffle wiki for help.</p>
-                `;
+                errorBody = textAsParagraphs("error-wasm-not-found");
                 errorFooter = `
                     <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configuration-options">${text(
                         "ruffle-wiki"
@@ -1801,11 +1789,7 @@ export class RufflePlayer extends HTMLElement {
                 break;
             case PanicError.WasmMimeType:
                 // Self hosted: Cannot load `.wasm` file - incorrect MIME type
-                errorBody = `
-                    <p>Ruffle has encountered a major issue whilst trying to initialize.</p>
-                    <p>This web server is not serving ".wasm" files with the correct MIME type.</p>
-                    <p>If you are the server administrator, please consult the Ruffle wiki for help.</p>
-                `;
+                errorBody = textAsParagraphs("error-wasm-mime-type");
                 errorFooter = `
                     <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-webassembly-mime-type">${text(
                         "ruffle-wiki"
@@ -1816,11 +1800,7 @@ export class RufflePlayer extends HTMLElement {
                 `;
                 break;
             case PanicError.SwfFetchError:
-                errorBody = `
-                    <p>Ruffle failed to load the Flash SWF file.</p>
-                    <p>The most likely reason is that the file no longer exists, so there is nothing for Ruffle to load.</p>
-                    <p>Try contacting the website administrator for help.</p>
-                `;
+                errorBody = textAsParagraphs("error-swf-fetch");
                 errorFooter = `
                     <li><a href="#" id="panic-view-details">${text(
                         "view-error-details"
@@ -1829,11 +1809,7 @@ export class RufflePlayer extends HTMLElement {
                 break;
             case PanicError.SwfCors:
                 // Self hosted: Cannot load SWF file - CORS issues
-                errorBody = `
-                    <p>Ruffle failed to load the Flash SWF file.</p>
-                    <p>Access to fetch has likely been blocked by CORS policy.</p>
-                    <p>If you are the server administrator, please consult the Ruffle wiki for help.</p>
-                `;
+                errorBody = textAsParagraphs("error-swf-cors");
                 errorFooter = `
                     <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-cors-header">${text(
                         "ruffle-wiki"
@@ -1845,11 +1821,7 @@ export class RufflePlayer extends HTMLElement {
                 break;
             case PanicError.WasmCors:
                 // Self hosted: Cannot load `.wasm` file - CORS issues
-                errorBody = `
-                    <p>Ruffle failed to load the required ".wasm" file component.</p>
-                    <p>Access to fetch has likely been blocked by CORS policy.</p>
-                    <p>If you are the server administrator, please consult the Ruffle wiki for help.</p>
-                `;
+                errorBody = textAsParagraphs("error-wasm-cors");
                 errorFooter = `
                     <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-cors-header">${text(
                         "ruffle-wiki"
@@ -1861,11 +1833,7 @@ export class RufflePlayer extends HTMLElement {
                 break;
             case PanicError.InvalidWasm:
                 // Self hosted: Cannot load `.wasm` file - incorrect configuration or missing files
-                errorBody = `
-                    <p>Ruffle has encountered a major issue whilst trying to initialize.</p>
-                    <p>It seems like this page has missing or invalid files for running Ruffle.</p>
-                    <p>If you are the server administrator, please consult the Ruffle wiki for help.</p>
-                `;
+                errorBody = textAsParagraphs("error-wasm-invalid");
                 errorFooter = `
                     <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#addressing-a-compileerror">${text(
                         "ruffle-wiki"
@@ -1877,11 +1845,7 @@ export class RufflePlayer extends HTMLElement {
                 break;
             case PanicError.WasmDownload:
                 // Usually a transient network error or botched deployment
-                errorBody = `
-                    <p>Ruffle has encountered a major issue whilst trying to initialize.</p>
-                    <p>This can often resolve itself, so you can try reloading the page.</p>
-                    <p>Otherwise, please contact the website administrator.</p>
-                `;
+                errorBody = textAsParagraphs("error-wasm-download");
                 errorFooter = `
                     <li><a href="#" id="panic-view-details">${text(
                         "view-error-details"
@@ -1891,12 +1855,7 @@ export class RufflePlayer extends HTMLElement {
             case PanicError.WasmDisabledMicrosoftEdge:
                 // Self hosted: User has disabled WebAssembly in Microsoft Edge through the
                 // "Enhance your Security on the web" setting.
-                errorBody = `
-                    <p>Ruffle failed to load the required ".wasm" file component.</p>
-                    <p>To fix this, try opening your browser's settings, clicking "Privacy, search, and services", scrolling down, and turning off "Enhance your security on the web".</p>
-                    <p>This will allow your browser to load the required ".wasm" files.</p>
-                    <p>If the issue persists, you might have to use a different browser.</p>
-                `;
+                errorBody = textAsParagraphs("error-wasm-disabled-on-edge");
                 errorFooter = `
                     <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Frequently-Asked-Questions-For-Users#edge-webassembly-error">${text(
                         "more-info"
@@ -1908,13 +1867,12 @@ export class RufflePlayer extends HTMLElement {
                 break;
             case PanicError.JavascriptConflict:
                 // Self hosted: Cannot load `.wasm` file - a native object / function is overriden
-                errorBody = `
-                    <p>Ruffle has encountered a major issue whilst trying to initialize.</p>
-                    <p>It seems like this page uses JavaScript code that conflicts with Ruffle.</p>
-                    <p>If you are the server administrator, we invite you to try loading the file on a blank page.</p>
-                `;
+                errorBody = textAsParagraphs("error-javascript-conflict");
                 if (isBuildOutdated) {
-                    errorBody += `<p>You can also try to upload a more recent version of Ruffle that may circumvent the issue (current build is outdated: ${buildInfo.buildDate}).</p>`;
+                    errorBody += textAsParagraphs(
+                        "error-javascript-conflict-outdated",
+                        { buildDate: buildInfo.buildDate }
+                    );
                 }
                 errorFooter = `
                     <li>${actionTag}</li>
@@ -1925,11 +1883,7 @@ export class RufflePlayer extends HTMLElement {
                 break;
             case PanicError.CSPConflict:
                 // General error: Cannot load `.wasm` file - a native object / function is overriden
-                errorBody = `
-                    <p>Ruffle has encountered a major issue whilst trying to initialize.</p>
-                    <p>This web server's Content Security Policy does not allow the required ".wasm" component to run.</p>
-                    <p>If you are the server administrator, please consult the Ruffle wiki for help.</p>
-                `;
+                errorBody = textAsParagraphs("error-csp-conflict");
                 errorFooter = `
                     <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-wasm-csp">${text(
                         "ruffle-wiki"
@@ -1941,12 +1895,10 @@ export class RufflePlayer extends HTMLElement {
                 break;
             default:
                 // Unknown error
-                errorBody = `<p>Ruffle has encountered a major issue whilst trying to display this Flash content.</p>`;
-                if (!isBuildOutdated) {
-                    errorBody += `<p>This isn't supposed to happen, so we'd really appreciate if you could file a bug!</p>`;
-                } else {
-                    errorBody += `<p>If you are the server administrator, please try to upload a more recent version of Ruffle (current build is outdated: ${buildInfo.buildDate}).</p>`;
-                }
+                errorBody = textAsParagraphs("error-unknown", {
+                    buildDate: buildInfo.buildDate,
+                    outdated: String(isBuildOutdated),
+                });
                 errorFooter = `
                     <li>${actionTag}</li>
                     <li><a href="#" id="panic-view-details">${text(
