@@ -110,7 +110,7 @@ struct Opt {
     #[clap(long, short, default_value = "show-all")]
     scale: StageScaleMode,
 
-    /// Audio volume
+    /// Audio volume as a number between 0 (muted) and 1 (full volume)
     #[clap(long, short, default_value = "1.0")]
     volume: f32,
 
