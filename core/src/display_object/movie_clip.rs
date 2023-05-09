@@ -1416,6 +1416,7 @@ impl<'gc> MovieClip<'gc> {
         context: &mut UpdateContext<'_, 'gc>,
         run_display_actions: bool,
         run_sounds: bool,
+        is_action_script_3: bool,
     ) {
         let next_frame = self.determine_next_frame();
         match next_frame {
@@ -1428,7 +1429,7 @@ impl<'gc> MovieClip<'gc> {
                 }
 
                 // AS3 removals need to happen before frame advance (see below)
-                if !context.is_action_script_3() {
+                if !is_action_script_3 {
                     write.current_frame += 1
                 }
             }
@@ -1446,64 +1447,40 @@ impl<'gc> MovieClip<'gc> {
         let tag_callback = |reader: &mut SwfStream<'_>, tag_code, tag_len| {
             match tag_code {
                 TagCode::DoAction => self.do_action(context, reader, tag_len),
-                TagCode::PlaceObject
-                    if run_display_actions && !self.movie().is_action_script_3() =>
-                {
+                TagCode::PlaceObject if run_display_actions && !is_action_script_3 => {
                     self.place_object(context, reader, 1)
                 }
-                TagCode::PlaceObject2
-                    if run_display_actions && !self.movie().is_action_script_3() =>
-                {
+                TagCode::PlaceObject2 if run_display_actions && !is_action_script_3 => {
                     self.place_object(context, reader, 2)
                 }
-                TagCode::PlaceObject3
-                    if run_display_actions && !self.movie().is_action_script_3() =>
-                {
+                TagCode::PlaceObject3 if run_display_actions && !is_action_script_3 => {
                     self.place_object(context, reader, 3)
                 }
-                TagCode::PlaceObject4
-                    if run_display_actions && !self.movie().is_action_script_3() =>
-                {
+                TagCode::PlaceObject4 if run_display_actions && !is_action_script_3 => {
                     self.place_object(context, reader, 4)
                 }
-                TagCode::RemoveObject
-                    if run_display_actions && !self.movie().is_action_script_3() =>
-                {
+                TagCode::RemoveObject if run_display_actions && !is_action_script_3 => {
                     self.remove_object(context, reader, 1)
                 }
-                TagCode::RemoveObject2
-                    if run_display_actions && !self.movie().is_action_script_3() =>
-                {
+                TagCode::RemoveObject2 if run_display_actions && !is_action_script_3 => {
                     self.remove_object(context, reader, 2)
                 }
-                TagCode::PlaceObject
-                    if run_display_actions && self.movie().is_action_script_3() =>
-                {
+                TagCode::PlaceObject if run_display_actions && is_action_script_3 => {
                     self.queue_place_object(context, reader, 1)
                 }
-                TagCode::PlaceObject2
-                    if run_display_actions && self.movie().is_action_script_3() =>
-                {
+                TagCode::PlaceObject2 if run_display_actions && is_action_script_3 => {
                     self.queue_place_object(context, reader, 2)
                 }
-                TagCode::PlaceObject3
-                    if run_display_actions && self.movie().is_action_script_3() =>
-                {
+                TagCode::PlaceObject3 if run_display_actions && is_action_script_3 => {
                     self.queue_place_object(context, reader, 3)
                 }
-                TagCode::PlaceObject4
-                    if run_display_actions && self.movie().is_action_script_3() =>
-                {
+                TagCode::PlaceObject4 if run_display_actions && is_action_script_3 => {
                     self.queue_place_object(context, reader, 4)
                 }
-                TagCode::RemoveObject
-                    if run_display_actions && self.movie().is_action_script_3() =>
-                {
+                TagCode::RemoveObject if run_display_actions && is_action_script_3 => {
                     self.queue_remove_object(context, reader, 1)
                 }
-                TagCode::RemoveObject2
-                    if run_display_actions && self.movie().is_action_script_3() =>
-                {
+                TagCode::RemoveObject2 if run_display_actions && is_action_script_3 => {
                     self.queue_remove_object(context, reader, 2)
                 }
                 TagCode::SetBackgroundColor => self.set_background_color(context, reader),
@@ -1548,7 +1525,7 @@ impl<'gc> MovieClip<'gc> {
             }
         }
 
-        if matches!(next_frame, NextFrame::Next) && context.is_action_script_3() {
+        if matches!(next_frame, NextFrame::Next) && is_action_script_3 {
             write.current_frame += 1;
         }
 
@@ -1950,7 +1927,12 @@ impl<'gc> MovieClip<'gc> {
             // However, if we executed a 'no-op goto' (start and end frames are the same),
             // then do *not* run sounds. Some SWFS (e.g. 'This is the only level too')
             // rely on this behavior.
-            self.run_frame_internal(context, false, frame != frame_before_rewind);
+            self.run_frame_internal(
+                context,
+                false,
+                frame != frame_before_rewind,
+                self.movie().is_action_script_3(),
+            );
         } else {
             self.0.write(context.gc_context).current_frame = clamped_frame;
         }
@@ -2439,7 +2421,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             let is_playing = self.playing();
 
             if is_playing {
-                self.run_frame_internal(context, true, true);
+                self.run_frame_internal(context, true, true, true);
             }
 
             // PlaceObject tags execute at this time.
@@ -2508,7 +2490,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             // Run my SWF tags.
             // In AVM2, SWF tags are processed at enterFrame time.
             if self.playing() {
-                self.run_frame_internal(context, true, true);
+                self.run_frame_internal(context, true, true, false);
             }
         }
     }
