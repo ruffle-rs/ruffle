@@ -24,5 +24,17 @@
     # Even though it's used by other browsers, the schema used is called "chrome" on crowdin
     # https://store.crowdin.com/chrome-json
     "type": "chrome",
-  }
+  },
+  {
+    "source" : "/core/assets/texts/en-US/*.ftl",
+    "translation" : "/core/assets/texts/%locale%/%original_file_name%",
+    "dest": "/core/%original_file_name%",
+    "type": "ftl",
+  },
+  {
+    "source" : "/web/packages/core/texts/en-US/*.ftl",
+    "translation" : "/web/packages/core/texts/%locale%/%original_file_name%",
+    "dest": "/web/core/%original_file_name%",
+    "type": "ftl",
+  },
 ]

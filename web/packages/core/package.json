@@ -35,7 +35,7 @@
         "build:wasm-opt-failed": "echo 'NOTE: Since wasm-opt could not be found (or it failed), the resulting module might not perform that well, but it should still work.' && echo ; [ \"$CI\" != true ] # > nul",
 
         "build": "tsc --build --force",
-        "postbuild": "node tools/set_version.js",
+        "postbuild": "node tools/set_version.js && node tools/bundle_texts.js",
 
         "docs": "typedoc",
         "test": "cross-env TS_NODE_COMPILER_OPTIONS={\\\"module\\\":\\\"commonjs\\\",\\\"verbatimModuleSyntax\\\":false} mocha"
@@ -53,7 +53,9 @@
         "shx": "^0.3.4",
         "ts-node": "^10.9.1",
         "typedoc": "^0.24.0",
-        "typescript": "^5.0.0"
+        "typescript": "^5.0.0",
+        "@fluent/bundle": "^0.18.0",
+        "@fluent/langneg": "^0.7.0"
     },
     "sideEffects": false
 }

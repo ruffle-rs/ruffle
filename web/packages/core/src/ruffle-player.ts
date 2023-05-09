@@ -4,10 +4,16 @@ import { ruffleShadowTemplate } from "./shadow-template";
 import { lookupElement } from "./register-element";
 import { DEFAULT_CONFIG } from "./config";
 import type { DataLoadOptions, URLLoadOptions } from "./load-options";
-import { AutoPlay, UnmuteOverlay, WindowMode } from "./load-options";
+import {
+    AutoPlay,
+    ContextMenu,
+    UnmuteOverlay,
+    WindowMode,
+} from "./load-options";
 import type { MovieMetadata } from "./movie-metadata";
 import { swfFileName } from "./swf-utils";
 import { buildInfo } from "./build-info";
+import { text, textAsParagraphs } from "./i18n";
 
 const RUFFLE_ORIGIN = "https://ruffle.rs";
 const DIMENSION_REGEX = /^\s*(\d+(\.\d+)?(%)?)/;
@@ -248,9 +254,22 @@ export class RufflePlayer extends HTMLElement {
                 this.saveManager.classList.add("hidden")
             );
         }
-        const backupSaves = this.saveManager.querySelector("#backup-saves");
+        const backupSaves = <HTMLElement>(
+            this.saveManager.querySelector("#backup-saves")
+        );
         if (backupSaves) {
             backupSaves.addEventListener("click", this.backupSaves.bind(this));
+            backupSaves.innerText = text("save-backup-all");
+        }
+
+        const unmuteSvg = <SVGElement>(
+            this.unmuteOverlay.querySelector("#unmute_overlay_svg")
+        );
+        if (unmuteSvg) {
+            const unmuteText = <SVGTextElement>(
+                unmuteSvg.querySelector("#unmute_text")
+            );
+            unmuteText.textContent = text("click-to-unmute");
         }
 
         this.contextMenuElement = this.shadow.getElementById("context-menu")!;
@@ -461,6 +480,14 @@ export class RufflePlayer extends HTMLElement {
                 "Configuration: An obsolete format for duration for 'maxExecutionDuration' was used, " +
                     "please use a single number indicating seconds instead. For instance '15' instead of " +
                     "'{secs: 15, nanos: 0}'."
+            );
+        }
+        if (
+            this.loadedConfig &&
+            typeof this.loadedConfig.contextMenu === "boolean"
+        ) {
+            console.warn(
+                'The configuration option contextMenu no longer takes a boolean. Use "on", "off", or "rightClickOnly".'
             );
         }
         const ruffleConstructor = await loadRuffle(
@@ -943,9 +970,7 @@ export class RufflePlayer extends HTMLElement {
         if (this.isB64SOL(b64SolData)) {
             if (localStorage[solKey]) {
                 if (!replace) {
-                    const confirmDelete = confirm(
-                        "Are you sure you want to delete this save file?"
-                    );
+                    const confirmDelete = confirm(text("save-delete-prompt"));
                     if (!confirmDelete) {
                         return;
                     }
@@ -957,9 +982,9 @@ export class RufflePlayer extends HTMLElement {
                 const savePath = solKey.split("/").slice(1, -1).join("/");
                 if (swfPath.includes(savePath) && solKey.startsWith(swfHost)) {
                     const confirmReload = confirm(
-                        `The only way to ${
-                            replace ? "replace" : "delete"
-                        } this save file without potential conflict is to reload this content. Do you wish to continue anyway?`
+                        text("save-reload-prompt", {
+                            action: replace ? "replace" : "delete",
+                        })
                     );
                     if (confirmReload && this.loadedConfig) {
                         this.destroy();
@@ -1043,7 +1068,7 @@ export class RufflePlayer extends HTMLElement {
                 keyCol.title = key;
                 const downloadCol = document.createElement("TD");
                 const downloadSpan = document.createElement("SPAN");
-                downloadSpan.textContent = "Download";
+                downloadSpan.textContent = text("save-download");
                 downloadSpan.className = "save-option";
                 downloadSpan.addEventListener("click", () =>
                     this.saveFile(
@@ -1065,7 +1090,7 @@ export class RufflePlayer extends HTMLElement {
                     document.createElement("LABEL")
                 );
                 replaceLabel.htmlFor = "replace-save-" + key;
-                replaceLabel.textContent = "Replace";
+                replaceLabel.textContent = text("save-replace");
                 replaceLabel.className = "save-option";
                 replaceInput.addEventListener("change", (event) =>
                     this.replaceSOL(event, key)
@@ -1074,7 +1099,7 @@ export class RufflePlayer extends HTMLElement {
                 replaceCol.appendChild(replaceLabel);
                 const deleteCol = document.createElement("TD");
                 const deleteSpan = document.createElement("SPAN");
-                deleteSpan.textContent = "Delete";
+                deleteSpan.textContent = text("save-delete");
                 deleteSpan.className = "save-option";
                 deleteSpan.addEventListener("click", () =>
                     this.deleteSave(key)
@@ -1206,12 +1231,12 @@ export class RufflePlayer extends HTMLElement {
         if (this.fullscreenEnabled) {
             if (this.isFullscreen) {
                 items.push({
-                    text: "Exit fullscreen",
+                    text: text("context-menu-exit-fullscreen"),
                     onClick: () => this.instance?.set_fullscreen(false),
                 });
             } else {
                 items.push({
-                    text: "Enter fullscreen",
+                    text: text("context-menu-enter-fullscreen"),
                     onClick: () => this.instance?.set_fullscreen(true),
                 });
             }
@@ -1225,14 +1250,14 @@ export class RufflePlayer extends HTMLElement {
         ) {
             addSeparator();
             items.push({
-                text: "Download .swf",
+                text: text("context-menu-download-swf"),
                 onClick: this.downloadSwf.bind(this),
             });
         }
 
         if (window.isSecureContext) {
             items.push({
-                text: "Copy debug info",
+                text: text("context-menu-copy-debug-info"),
                 onClick: () =>
                     navigator.clipboard.writeText(this.getPanicData()),
             });
@@ -1241,7 +1266,7 @@ export class RufflePlayer extends HTMLElement {
         const localSaveTable = this.saveManager.querySelector("#local-saves");
         if (localSaveTable && localSaveTable.textContent !== "") {
             items.push({
-                text: "Open Save Manager",
+                text: text("context-menu-open-save-manager"),
                 onClick: this.openSaveManager.bind(this),
             });
         }
@@ -1250,7 +1275,10 @@ export class RufflePlayer extends HTMLElement {
 
         const extensionString = this.isExtension ? "extension" : "";
         items.push({
-            text: `About Ruffle ${extensionString} (${buildInfo.versionName})`,
+            text: text("context-menu-about-ruffle", {
+                flavor: extensionString,
+                version: buildInfo.versionName,
+            }),
             onClick() {
                 window.open(RUFFLE_ORIGIN, "_blank");
             },
@@ -1260,7 +1288,7 @@ export class RufflePlayer extends HTMLElement {
         if (this.isTouch) {
             addSeparator();
             items.push({
-                text: "Hide this menu",
+                text: text("context-menu-hide"),
                 onClick: () => (this.contextMenuForceDisabled = true),
             });
         }
@@ -1334,7 +1362,12 @@ export class RufflePlayer extends HTMLElement {
         }
 
         if (
-            (this.loadedConfig && this.loadedConfig.contextMenu === false) ||
+            [false, ContextMenu.Off].includes(
+                this.loadedConfig?.contextMenu ?? ContextMenu.On
+            ) ||
+            (this.isTouch &&
+                this.loadedConfig?.contextMenu ===
+                    ContextMenu.RightClickOnly) ||
             this.contextMenuForceDisabled
         ) {
             return;
@@ -1719,9 +1752,13 @@ export class RufflePlayer extends HTMLElement {
                 issueBody = encodeURIComponent(errorArray.join(""));
             }
             issueLink += issueBody;
-            actionTag = `<a target="_top" href="${issueLink}">Report Bug</a>`;
+            actionTag = `<a target="_top" href="${issueLink}">${text(
+                "report-bug"
+            )}</a>`;
         } else {
-            actionTag = `<a target="_top" href="${RUFFLE_ORIGIN}#downloads">Update Ruffle</a>`;
+            actionTag = `<a target="_top" href="${RUFFLE_ORIGIN}#downloads">${text(
+                "update-ruffle"
+            )}</a>`;
         }
 
         // Clears out any existing content (ie play button or canvas) and replaces it with the error screen
@@ -1729,167 +1766,163 @@ export class RufflePlayer extends HTMLElement {
         switch (errorIndex) {
             case PanicError.FileProtocol:
                 // General error: Running on the `file:` protocol
-                errorBody = `
-                    <p>It appears you are running Ruffle on the "file:" protocol.</p>
-                    <p>This doesn't work as browsers block many features from working for security reasons.</p>
-                    <p>Instead, we invite you to setup a local server or either use the web demo or the desktop application.</p>
-                `;
+                errorBody = textAsParagraphs("error-file-protocol");
                 errorFooter = `
-                    <li><a target="_top" href="${RUFFLE_ORIGIN}/demo">Web Demo</a></li>
-                    <li><a target="_top" href="${RUFFLE_ORIGIN}#downloads">Desktop Application</a></li>
+                    <li><a target="_top" href="${RUFFLE_ORIGIN}/demo">${text(
+                    "ruffle-demo"
+                )}</a></li>
+                    <li><a target="_top" href="${RUFFLE_ORIGIN}#downloads">${text(
+                    "ruffle-desktop"
+                )}</a></li>
                 `;
                 break;
             case PanicError.JavascriptConfiguration:
                 // General error: Incorrect JavaScript configuration
-                errorBody = `
-                    <p>Ruffle has encountered a major issue due to an incorrect JavaScript configuration.</p>
-                    <p>If you are the server administrator, we invite you to check the error details to find out which parameter is at fault.</p>
-                    <p>You can also consult the Ruffle wiki for help.</p>
-                `;
+                errorBody = textAsParagraphs("error-javascript-config");
                 errorFooter = `
-                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#javascript-api">View Ruffle Wiki</a></li>
-                    <li><a href="#" id="panic-view-details">View Error Details</a></li>
+                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#javascript-api">${text(
+                        "ruffle-wiki"
+                    )}</a></li>
+                    <li><a href="#" id="panic-view-details">${text(
+                        "view-error-details"
+                    )}</a></li>
                 `;
                 break;
             case PanicError.WasmNotFound:
                 // Self hosted: Cannot load `.wasm` file - file not found
-                errorBody = `
-                    <p>Ruffle failed to load the required ".wasm" file component.</p>
-                    <p>If you are the server administrator, please ensure the file has correctly been uploaded.</p>
-                    <p>If the issue persists, you may need to use the "publicPath" setting: please consult the Ruffle wiki for help.</p>
-                `;
+                errorBody = textAsParagraphs("error-wasm-not-found");
                 errorFooter = `
-                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configuration-options">View Ruffle Wiki</a></li>
-                    <li><a href="#" id="panic-view-details">View Error Details</a></li>
+                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configuration-options">${text(
+                        "ruffle-wiki"
+                    )}</a></li>
+                    <li><a href="#" id="panic-view-details">${text(
+                        "view-error-details"
+                    )}</a></li>
                 `;
                 break;
             case PanicError.WasmMimeType:
                 // Self hosted: Cannot load `.wasm` file - incorrect MIME type
-                errorBody = `
-                    <p>Ruffle has encountered a major issue whilst trying to initialize.</p>
-                    <p>This web server is not serving ".wasm" files with the correct MIME type.</p>
-                    <p>If you are the server administrator, please consult the Ruffle wiki for help.</p>
-                `;
+                errorBody = textAsParagraphs("error-wasm-mime-type");
                 errorFooter = `
-                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-webassembly-mime-type">View Ruffle Wiki</a></li>
-                    <li><a href="#" id="panic-view-details">View Error Details</a></li>
+                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-webassembly-mime-type">${text(
+                        "ruffle-wiki"
+                    )}</a></li>
+                    <li><a href="#" id="panic-view-details">${text(
+                        "view-error-details"
+                    )}</a></li>
                 `;
                 break;
             case PanicError.SwfFetchError:
-                errorBody = `
-                    <p>Ruffle failed to load the Flash SWF file.</p>
-                    <p>The most likely reason is that the file no longer exists, so there is nothing for Ruffle to load.</p>
-                    <p>Try contacting the website administrator for help.</p>
-                `;
+                errorBody = textAsParagraphs("error-swf-fetch");
                 errorFooter = `
-                    <li><a href="#" id="panic-view-details">View Error Details</a></li>
+                    <li><a href="#" id="panic-view-details">${text(
+                        "view-error-details"
+                    )}</a></li>
                 `;
                 break;
             case PanicError.SwfCors:
                 // Self hosted: Cannot load SWF file - CORS issues
-                errorBody = `
-                    <p>Ruffle failed to load the Flash SWF file.</p>
-                    <p>Access to fetch has likely been blocked by CORS policy.</p>
-                    <p>If you are the server administrator, please consult the Ruffle wiki for help.</p>
-                `;
+                errorBody = textAsParagraphs("error-swf-cors");
                 errorFooter = `
-                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-cors-header">View Ruffle Wiki</a></li>
-                    <li><a href="#" id="panic-view-details">View Error Details</a></li>
+                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-cors-header">${text(
+                        "ruffle-wiki"
+                    )}</a></li>
+                    <li><a href="#" id="panic-view-details">${text(
+                        "view-error-details"
+                    )}</a></li>
                 `;
                 break;
             case PanicError.WasmCors:
                 // Self hosted: Cannot load `.wasm` file - CORS issues
-                errorBody = `
-                    <p>Ruffle failed to load the required ".wasm" file component.</p>
-                    <p>Access to fetch has likely been blocked by CORS policy.</p>
-                    <p>If you are the server administrator, please consult the Ruffle wiki for help.</p>
-                `;
+                errorBody = textAsParagraphs("error-wasm-cors");
                 errorFooter = `
-                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-cors-header">View Ruffle Wiki</a></li>
-                    <li><a href="#" id="panic-view-details">View Error Details</a></li>
+                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-cors-header">${text(
+                        "ruffle-wiki"
+                    )}</a></li>
+                    <li><a href="#" id="panic-view-details">${text(
+                        "view-error-details"
+                    )}</a></li>
                 `;
                 break;
             case PanicError.InvalidWasm:
                 // Self hosted: Cannot load `.wasm` file - incorrect configuration or missing files
-                errorBody = `
-                    <p>Ruffle has encountered a major issue whilst trying to initialize.</p>
-                    <p>It seems like this page has missing or invalid files for running Ruffle.</p>
-                    <p>If you are the server administrator, please consult the Ruffle wiki for help.</p>
-                `;
+                errorBody = textAsParagraphs("error-wasm-invalid");
                 errorFooter = `
-                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#addressing-a-compileerror">View Ruffle Wiki</a></li>
-                    <li><a href="#" id="panic-view-details">View Error Details</a></li>
+                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#addressing-a-compileerror">${text(
+                        "ruffle-wiki"
+                    )}</a></li>
+                    <li><a href="#" id="panic-view-details">${text(
+                        "view-error-details"
+                    )}</a></li>
                 `;
                 break;
             case PanicError.WasmDownload:
                 // Usually a transient network error or botched deployment
-                errorBody = `
-                    <p>Ruffle has encountered a major issue whilst trying to initialize.</p>
-                    <p>This can often resolve itself, so you can try reloading the page.</p>
-                    <p>Otherwise, please contact the website administrator.</p>
-                `;
+                errorBody = textAsParagraphs("error-wasm-download");
                 errorFooter = `
-                    <li><a href="#" id="panic-view-details">View Error Details</a></li>
+                    <li><a href="#" id="panic-view-details">${text(
+                        "view-error-details"
+                    )}</a></li>
                 `;
                 break;
             case PanicError.WasmDisabledMicrosoftEdge:
                 // Self hosted: User has disabled WebAssembly in Microsoft Edge through the
                 // "Enhance your Security on the web" setting.
-                errorBody = `
-                    <p>Ruffle failed to load the required ".wasm" file component.</p>
-                    <p>To fix this, try opening your browser's settings, clicking "Privacy, search, and services", scrolling down, and turning off "Enhance your security on the web".</p>
-                    <p>This will allow your browser to load the required ".wasm" files.</p>
-                    <p>If the issue persists, you might have to use a different browser.</p>
-                `;
+                errorBody = textAsParagraphs("error-wasm-disabled-on-edge");
                 errorFooter = `
-                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Frequently-Asked-Questions-For-Users#edge-webassembly-error">More Information</a></li>
-                    <li><a href="#" id="panic-view-details">View Error Details</a></li>
+                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Frequently-Asked-Questions-For-Users#edge-webassembly-error">${text(
+                        "more-info"
+                    )}</a></li>
+                    <li><a href="#" id="panic-view-details">${text(
+                        "view-error-details"
+                    )}</a></li>
                 `;
                 break;
             case PanicError.JavascriptConflict:
                 // Self hosted: Cannot load `.wasm` file - a native object / function is overriden
-                errorBody = `
-                    <p>Ruffle has encountered a major issue whilst trying to initialize.</p>
-                    <p>It seems like this page uses JavaScript code that conflicts with Ruffle.</p>
-                    <p>If you are the server administrator, we invite you to try loading the file on a blank page.</p>
-                `;
+                errorBody = textAsParagraphs("error-javascript-conflict");
                 if (isBuildOutdated) {
-                    errorBody += `<p>You can also try to upload a more recent version of Ruffle that may circumvent the issue (current build is outdated: ${buildInfo.buildDate}).</p>`;
+                    errorBody += textAsParagraphs(
+                        "error-javascript-conflict-outdated",
+                        { buildDate: buildInfo.buildDate }
+                    );
                 }
                 errorFooter = `
                     <li>${actionTag}</li>
-                    <li><a href="#" id="panic-view-details">View Error Details</a></li>
+                    <li><a href="#" id="panic-view-details">${text(
+                        "view-error-details"
+                    )}</a></li>
                 `;
                 break;
             case PanicError.CSPConflict:
                 // General error: Cannot load `.wasm` file - a native object / function is overriden
-                errorBody = `
-                    <p>Ruffle has encountered a major issue whilst trying to initialize.</p>
-                    <p>This web server's Content Security Policy does not allow the required ".wasm" component to run.</p>
-                    <p>If you are the server administrator, please consult the Ruffle wiki for help.</p>
-                `;
+                errorBody = textAsParagraphs("error-csp-conflict");
                 errorFooter = `
-                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-wasm-csp">View Ruffle Wiki</a></li>
-                    <li><a href="#" id="panic-view-details">View Error Details</a></li>
+                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-wasm-csp">${text(
+                        "ruffle-wiki"
+                    )}</a></li>
+                    <li><a href="#" id="panic-view-details">${text(
+                        "view-error-details"
+                    )}</a></li>
                 `;
                 break;
             default:
                 // Unknown error
-                errorBody = `<p>Ruffle has encountered a major issue whilst trying to display this Flash content.</p>`;
-                if (!isBuildOutdated) {
-                    errorBody += `<p>This isn't supposed to happen, so we'd really appreciate if you could file a bug!</p>`;
-                } else {
-                    errorBody += `<p>If you are the server administrator, please try to upload a more recent version of Ruffle (current build is outdated: ${buildInfo.buildDate}).</p>`;
-                }
+                errorBody = textAsParagraphs("error-unknown", {
+                    buildDate: buildInfo.buildDate,
+                    outdated: String(isBuildOutdated),
+                });
                 errorFooter = `
                     <li>${actionTag}</li>
-                    <li><a href="#" id="panic-view-details">View Error Details</a></li>
+                    <li><a href="#" id="panic-view-details">${text(
+                        "view-error-details"
+                    )}</a></li>
                 `;
                 break;
         }
         this.container.innerHTML = `
             <div id="panic">
-                <div id="panic-title">Something went wrong :(</div>
+                <div id="panic-title">${text("panic-title")}</div>
                 <div id="panic-body">${errorBody}</div>
                 <div id="panic-footer">
                     <ul>${errorFooter}</ul>
@@ -1927,10 +1960,11 @@ export class RufflePlayer extends HTMLElement {
             const div = document.createElement("div");
             div.id = "message_overlay";
             div.innerHTML = `<div class="message">
-                <p>Ruffle wasn't able to run the Flash embedded in this page.</p>
-                <p>You can try to open the file in a separate tab, to sidestep this issue.</p>
+                ${textAsParagraphs("message-cant-embed")}
                 <div>
-                    <a target="_blank" href="${this.swfUrl}">Open in a new tab</a>
+                    <a target="_blank" href="${this.swfUrl}">${text(
+                "open-in-new-tab"
+            )}</a>
                 </div>
             </div>`;
             this.container.prepend(div);
@@ -1954,11 +1988,12 @@ export class RufflePlayer extends HTMLElement {
         // TODO: Change link to https://ruffle.rs/faq or similar
         // TODO: Pause content until message is dismissed
         div.innerHTML = `<div class="message">
-            <p>The Ruffle emulator may not yet fully support all of ActionScript 3 used by this content.</p>
-            <p>Some parts of the content may not work as expected.</p>
+            ${textAsParagraphs("message-unsupported-avm2")}
             <div>
-                <a target="_blank" class="more-info-link" href="https://github.com/ruffle-rs/ruffle/wiki/Frequently-Asked-Questions-For-Users">More info</a>
-                <button id="run-anyway-btn">Run anyway</button>
+                <a target="_blank" class="more-info-link" href="https://github.com/ruffle-rs/ruffle/wiki/Frequently-Asked-Questions-For-Users">${text(
+                    "more-info"
+                )}</a>
+                <button id="run-anyway-btn">${text("run-anyway")}</button>
             </div>
         </div>`;
         this.container.prepend(div);
@@ -1979,7 +2014,7 @@ export class RufflePlayer extends HTMLElement {
         div.innerHTML = `<div class="message">
             <p>${message}</p>
             <div>
-                <button id="continue-btn">continue</button>
+                <button id="continue-btn">${text("continue")}</button>
             </div>
         </div>`;
         this.container.prepend(div);

@@ -1,5 +1,7 @@
 use super::JavascriptPlayer;
-use ruffle_core::backend::ui::{FullscreenError, MouseCursor, UiBackend};
+use ruffle_core::backend::ui::{
+    FullscreenError, LanguageIdentifier, MouseCursor, UiBackend, US_ENGLISH,
+};
 use ruffle_web_common::JsResult;
 use std::borrow::Cow;
 use wasm_bindgen::JsCast;
@@ -11,15 +13,22 @@ pub struct WebUiBackend {
     canvas: HtmlCanvasElement,
     cursor_visible: bool,
     cursor: MouseCursor,
+    language: LanguageIdentifier,
 }
 
 impl WebUiBackend {
     pub fn new(js_player: JavascriptPlayer, canvas: &HtmlCanvasElement) -> Self {
+        let window = web_sys::window().expect("window()");
+        let preferred_language = window.navigator().language();
+        let language = preferred_language
+            .and_then(|l| l.parse().ok())
+            .unwrap_or_else(|| US_ENGLISH.clone());
         Self {
             js_player,
             canvas: canvas.clone(),
             cursor_visible: true,
             cursor: MouseCursor::Arrow,
+            language,
         }
     }
 
@@ -115,5 +124,9 @@ impl UiBackend for WebUiBackend {
 
     fn open_virtual_keyboard(&self) {
         self.js_player.open_virtual_keyboard()
+    }
+
+    fn language(&self) -> &LanguageIdentifier {
+        &self.language
     }
 }

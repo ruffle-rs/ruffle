@@ -48,6 +48,7 @@ pub mod backend;
 pub mod compatibility_rules;
 pub mod config;
 pub mod external;
+pub mod i18n;
 pub mod stub;
 
 pub use avm1::globals::system::SandboxType;

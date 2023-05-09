@@ -1,6 +1,7 @@
 import type { BaseLoadOptions } from "./load-options";
 import {
     AutoPlay,
+    ContextMenu,
     Letterbox,
     LogLevel,
     OpenURLMode,
@@ -21,7 +22,7 @@ export const DEFAULT_CONFIG: Required<BaseLoadOptions> = {
     warnOnUnsupportedContent: true,
     logLevel: LogLevel.Error,
     showSwfDownload: false,
-    contextMenu: true,
+    contextMenu: ContextMenu.On,
     // Backwards-compatibility option
     preloader: true,
     splashScreen: true,
