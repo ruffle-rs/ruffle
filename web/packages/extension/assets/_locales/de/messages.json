@@ -2,9 +2,6 @@
     "settings_ruffle_enable": {
         "message": "Flash-Inhalte in Ruffle abspielen"
     },
-    "settings_ignore_optout": {
-        "message": "Flash-Inhalte abspielen, auch wenn die Seite Ruffle abgeschaltet hat"
-    },
     "status_init": {
         "message": "Prüfe den aktuellen Tab…"
     },
@@ -17,14 +14,8 @@
     "status_message_init": {
         "message": "Prüfe Status von Ruffle im aktuellen Tab…"
     },
-    "status_result_running": {
-        "message": "Ruffle wurde geladen und spielt den Flashinhalt im aktuellen Tab ab."
-    },
     "status_result_optout": {
         "message": "Ruffle wurde nicht geladen, da die aktuelle Seite sich selbst als inkompatibel markiert hat."
-    },
-    "status_result_disabled": {
-        "message": "Ruffle wurde nicht geladen, da es vom Anwender abgeschaltet wurde."
     },
     "status_result_error": {
         "message": "Es ist ein Fehler beim Abfragen der aktuellen Tab-Instanz von Ruffle aufgetreten."

@@ -17,6 +17,30 @@
     "settings_log_level": {
         "message": "警告等級(用在於開發人員工具裡的主控台)"
     },
+    "settings_log_level_error": {
+        "message": "錯誤"
+    },
+    "settings_log_level_warn": {
+        "message": "警告"
+    },
+    "settings_log_level_info": {
+        "message": "資訊"
+    },
+    "settings_max_execution_duration": {
+        "message": "ActionScript執行時間(秒數)"
+    },
+    "settings_player_version": {
+        "message": "Flash 版本模擬(範圍 1-32)"
+    },
+    "settings_preferred_renderer": {
+        "message": "首選渲染"
+    },
+    "settings_preferred_renderer_auto": {
+        "message": "自動"
+    },
+    "settings_advanced_options": {
+        "message": "進階選項"
+    },
     "status_init": {
         "message": "正在讀取目前標籤頁……"
     },

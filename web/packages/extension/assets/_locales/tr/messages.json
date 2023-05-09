@@ -2,9 +2,6 @@
     "settings_ruffle_enable": {
         "message": "Flash içeriğini Ruffle ile oynat"
     },
-    "settings_ignore_optout": {
-        "message": "Ruffle'a engel olan sitelerde dahi Flash içeriğini oynatmaya çalış"
-    },
     "status_init": {
         "message": "Mevcut sekme okunuyor…"
     },
@@ -17,14 +14,8 @@
     "status_message_init": {
         "message": "Mevcut sekmede Ruffle'ın durumu inceleniyor…"
     },
-    "status_result_running": {
-        "message": "Ruffle yüklendi ve mevcut sekmedeki Flash içeriğini oynatmakta."
-    },
     "status_result_optout": {
         "message": "Ruffle yüklenmedi çünkü mevcut sayfa kendini uyumsuz olarak işaretledi."
-    },
-    "status_result_disabled": {
-        "message": "Ruffle yüklenmedi çünkü kullanıcısınca kapatılmış."
     },
     "status_result_error": {
         "message": "Mevcut sekmedeki Ruffle instanceı sorgulanırken bir hata oluştu."

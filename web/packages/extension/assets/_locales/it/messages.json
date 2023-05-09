@@ -2,11 +2,11 @@
     "settings_ruffle_enable": {
         "message": "Riproduci i contenuti Flash in Ruffle"
     },
-    "settings_ignore_optout": {
-        "message": "Riproduci i contenuti Flash anche in siti che disabilitano Ruffle"
-    },
     "settings_show_swf_download": {
         "message": "Mostra l'opzione per scaricare gli SWF nel menu contestuale"
+    },
+    "settings_log_level": {
+        "message": "Livello di registrazione"
     },
     "status_init": {
         "message": "Lettura tab corrente…"
@@ -20,14 +20,8 @@
     "status_message_init": {
         "message": "Controllo dello stato di Ruffle nella tab corrente…"
     },
-    "status_result_running": {
-        "message": "Ruffle é caricato e sta eseguendo contenuti Flash nella tab corrente."
-    },
     "status_result_optout": {
         "message": "Ruffle non é caricato perché la pagina corrente si é dichiarata incompatibile."
-    },
-    "status_result_disabled": {
-        "message": "Ruffle non é caricato perché é stato disabilitato dall'utente."
     },
     "status_result_error": {
         "message": "C'é stato un errore leggendo lo stato di Ruffle nella tab corrente."

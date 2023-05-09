@@ -2,9 +2,6 @@
     "settings_ruffle_enable": {
         "message": "Spela upp Flash-innehåll i Ruffle"
     },
-    "settings_ignore_optout": {
-        "message": "Spela upp Flash-innehåll även på sidor som inaktiverar Ruffle"
-    },
     "status_init": {
         "message": "Avläser aktuell flik…"
     },
@@ -17,14 +14,8 @@
     "status_message_init": {
         "message": "Kontrollerar Ruffle-status i aktuella fliken…"
     },
-    "status_result_running": {
-        "message": "Ruffle är inläst och spelar upp Flash-innehåll i den aktuella filken."
-    },
     "status_result_optout": {
         "message": "Ruffle är inte inläst för den nuvarande sidan har markerat sig själv som inkompatibel."
-    },
-    "status_result_disabled": {
-        "message": "Ruffle är inte inläst för den stängdes av av användaren."
     },
     "status_result_error": {
         "message": "Ett fel uppstod när den den aktuella flikens instans av Ruffle letades upp."
