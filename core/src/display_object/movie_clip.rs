@@ -2924,6 +2924,11 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
         point: Point<Twips>,
         require_button_mode: bool,
     ) -> Option<InteractiveObject<'gc>> {
+        // Don't do anything if run in an AVM2 context.
+        if self.as_displayobject().movie().is_action_script_3() {
+            return None;
+        }
+
         if self.visible() {
             let this: InteractiveObject<'gc> = (*self).into();
             let Some(local_matrix) = self.global_to_local_matrix() else { return None; };
@@ -3009,6 +3014,11 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
         point: Point<Twips>,
         require_button_mode: bool,
     ) -> Avm2MousePick<'gc> {
+        // Don't do anything if run in an AVM1 context.
+        if !self.as_displayobject().movie().is_action_script_3() {
+            return Avm2MousePick::NotAvm2;
+        }
+
         if self.visible() {
             let this: InteractiveObject<'gc> = (*self).into();
             let Some(local_matrix) = self.global_to_local_matrix() else { return Avm2MousePick::Miss; };
