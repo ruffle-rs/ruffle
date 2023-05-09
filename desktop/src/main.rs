@@ -20,6 +20,7 @@ use anyhow::{anyhow, Context, Error};
 use clap::Parser;
 use isahc::{config::RedirectPolicy, prelude::*, HttpClient};
 use rfd::FileDialog;
+use ruffle_core::backend::audio::AudioBackend;
 use ruffle_core::backend::navigator::OpenURLMode;
 use ruffle_core::{
     config::Letterbox, events::KeyCode, tag_utils::SwfMovie, LoadBehavior, Player, PlayerBuilder,
@@ -108,6 +109,10 @@ struct Opt {
     /// The scale mode of the stage.
     #[clap(long, short, default_value = "show-all")]
     scale: StageScaleMode,
+
+    /// Audio volume as a number between 0 (muted) and 1 (full volume)
+    #[clap(long, short, default_value = "1.0")]
+    volume: f32,
 
     /// Prevent movies from changing the stage scale mode.
     #[clap(long, action)]
@@ -317,7 +322,10 @@ impl App {
         let mut builder = PlayerBuilder::new();
 
         match audio::CpalAudioBackend::new() {
-            Ok(audio) => builder = builder.with_audio(audio),
+            Ok(mut audio) => {
+                audio.set_volume(opt.volume);
+                builder = builder.with_audio(audio);
+            }
             Err(e) => {
                 tracing::error!("Unable to create audio device: {}", e);
             }
