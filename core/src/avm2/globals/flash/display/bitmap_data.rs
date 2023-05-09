@@ -1,7 +1,7 @@
 //! `flash.display.BitmapData` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::error::{argument_error, make_error_2008};
+use crate::avm2::error::{argument_error, make_error_2008, range_error};
 use crate::avm2::filters::FilterAvm2Ext;
 use crate::avm2::object::{BitmapDataObject, ByteArrayObject, Object, TObject, VectorObject};
 use crate::avm2::value::Value;
@@ -1050,7 +1050,7 @@ pub fn apply_filter<'gc>(
             source_rect.width().to_pixels().ceil() as u32,
             source_rect.height().to_pixels().ceil() as u32,
         );
-        let dest_point = args.get_object(activation, 2, "dstPoint")?;
+        let dest_point = args.get_object(activation, 2, "destPoint")?;
         let dest_point = (
             dest_point
                 .get_public_property("x", activation)?
@@ -1123,7 +1123,7 @@ pub fn palette_map<'gc>(
             source_rect.width().to_pixels().ceil() as i32,
             source_rect.height().to_pixels().ceil() as i32,
         );
-        let dest_point = args.get_object(activation, 2, "dstPoint")?;
+        let dest_point = args.get_object(activation, 2, "destPoint")?;
         let dest_point = (
             dest_point
                 .get_public_property("x", activation)?
@@ -1239,7 +1239,7 @@ pub fn threshold<'gc>(
         if !bitmap_data.disposed() {
             let src_bitmap = args.get_object(activation, 0, "sourceBitmapData")?;
             let source_rect = args.get_object(activation, 1, "sourceRect")?;
-            let dest_point = args.get_object(activation, 2, "dstPoint")?;
+            let dest_point = args.get_object(activation, 2, "destPoint")?;
             let dest_point = (
                 dest_point
                     .get_public_property("x", activation)?
@@ -1336,11 +1336,15 @@ pub fn compare<'gc>(
     {
         other_bitmap_data
     } else {
-        // The documentation says that -1 should be returned here, but -2 is actually returned.
+        // The documentation for AVM1 says that -1 should be returned here,
+        // but -2 is actually returned.
+        // TODO: Has this been tested for AVM2?
         return Ok(BITMAP_DISPOSED.into());
     };
     other_bitmap_data.check_valid(activation)?;
 
+    // TODO: Given the above check with `other_bitmap_data.check_valid`, this branch will
+    //   presumably never get executed.
     if other_bitmap_data.disposed() {
         return Ok(BITMAP_DISPOSED.into());
     }
@@ -1368,4 +1372,79 @@ pub fn compare<'gc>(
         }
         None => Ok(EQUIVALENT.into()),
     }
+}
+
+/// Implements `BitmapData.pixelDissolve`.
+pub fn pixel_dissolve<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+        bitmap_data.check_valid(activation)?;
+
+        let src_bitmap_data = args.get_object(activation, 0, "sourceBitmapData")?;
+
+        let source_rect = args.get_object(activation, 1, "sourceRect")?;
+
+        // TODO: `BitmapData.pixelDissolve() might be called frequently. Is this performant,
+        //   and if not, is there a faster alternative?
+        let src_min_x = source_rect
+            .get_public_property("x", activation)?
+            .coerce_to_i32(activation)?;
+        let src_min_y = source_rect
+            .get_public_property("y", activation)?
+            .coerce_to_i32(activation)?;
+        let src_width = source_rect
+            .get_public_property("width", activation)?
+            .coerce_to_i32(activation)?;
+        let src_height = source_rect
+            .get_public_property("height", activation)?
+            .coerce_to_i32(activation)?;
+
+        let dest_point = args.get_object(activation, 2, "destPoint")?;
+        let dest_point = (
+            dest_point
+                .get_public_property("x", activation)?
+                .coerce_to_i32(activation)?,
+            dest_point
+                .get_public_property("y", activation)?
+                .coerce_to_i32(activation)?,
+        );
+
+        let random_seed = args.get_i32(activation, 3)?;
+
+        let num_pixels = args.get_i32(activation, 4)?;
+        if num_pixels < 0 {
+            return Err(Error::AvmError(range_error(
+                activation,
+                &format!("Parameter numPixels must be a non-negative number; got {num_pixels}."),
+                2027,
+            )?));
+        }
+
+        let fill_color = args.get_i32(activation, 5)?;
+
+        // Apparently, if this check fails, a type error for `null` is given.
+        if let Some(src_bitmap_data) = src_bitmap_data.as_bitmap_data() {
+            src_bitmap_data.check_valid(activation)?;
+
+            return Ok(operations::pixel_dissolve(
+                activation.context.gc_context,
+                bitmap_data,
+                src_bitmap_data,
+                (src_min_x, src_min_y, src_width, src_height),
+                dest_point,
+                random_seed,
+                num_pixels,
+                fill_color,
+            )
+            .into());
+        }
+    }
+
+    // TODO: Should it always return `Ok(Value::Undefined)` in this case?
+    //   Can this even be tested for?
+
+    Ok(Value::Undefined)
 }

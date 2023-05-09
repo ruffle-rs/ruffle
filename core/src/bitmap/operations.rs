@@ -14,6 +14,7 @@ use ruffle_render::filters::Filter;
 use ruffle_render::matrix::Matrix;
 use ruffle_render::quality::StageQuality;
 use ruffle_render::transform::Transform;
+use std::cell::{Ref, RefMut};
 use swf::{BlendMode, ColorTransform, Fixed8, Rectangle, Twips};
 
 /// AVM1 and AVM2 have a shared set of operations they can perform on BitmapDatas.
@@ -1615,4 +1616,245 @@ pub fn set_pixels_from_byte_array<'gc>(
     }
 
     Ok(())
+}
+
+/// Returns at least 2. Always returns an even number.
+fn get_feistel_block_size(sequence_length: u32) -> u32 {
+    let sequence_length = sequence_length.max(2);
+
+    // For the given sequence length, figure out the number of bits required to
+    // represent all indices for the sequence. After that, round up to
+    // the nearest even number of bits.
+    // For instance, for a sequence of length 9, 4 bits are required,
+    // and 4 is even, so the result is 4.
+    // For a sequence of length 8, 3 bits are required, but 3 is not
+    // even, so round up to 4.
+
+    let mut bit_number: u32 = 0;
+    let mut num = sequence_length - 1;
+
+    while num > 0 {
+        num /= 2;
+        bit_number += 1;
+    }
+
+    bit_number + (bit_number % 2)
+}
+
+/// Meant to be a bijective function that takes a raw index and gives the corresponding
+/// Feistel index.
+///
+/// # Arguments
+///
+/// * `raw_permutation_index` - Must obey '0 <= permutation_raw_index < permutation_length`.
+/// * `feistel_block_size` - See `get_feistel_block_size()`.
+fn pixel_dissolve_raw_to_feistel_index(raw_permutation_index: u32, feistel_block_size: u32) -> u32 {
+    // Discussion on Feistel networks:
+    // https://github.com/ruffle-rs/ruffle/issues/10962
+
+    // For the simple balanced variant of a Feistel network, an even number of
+    // bits for the block size is required (unbalanced Feistel networks
+    // also exists, but are presumably more complex).
+
+    // Applying a single round of Feistel.
+
+    let feistel_halfpiece_size = feistel_block_size / 2;
+
+    let halfpiece1 = raw_permutation_index >> feistel_halfpiece_size;
+    let halfpiece2 = raw_permutation_index & ((1 << feistel_halfpiece_size) - 1);
+
+    // Apply some function to make the output appear more random.
+    // TODO: Apply some decent but fast PRNG? Or at least some better and less non-random-looking
+    //   function? Can also take `feistel_block_size` as an argument.
+    // This specific function was gotten by trial-and-error on what might make the output look
+    // random.
+    fn f(num: u32) -> u32 {
+        num * num + 1
+    }
+    let result_before_xor = (f(halfpiece2)) % (1 << feistel_halfpiece_size);
+
+    let new_halfpiece1 = halfpiece2;
+    let new_halfpiece2 = halfpiece1 ^ result_before_xor;
+
+    (new_halfpiece2 << feistel_halfpiece_size) | new_halfpiece1
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn pixel_dissolve<'gc>(
+    mc: MutationContext<'gc, '_>,
+    target: BitmapDataWrapper<'gc>,
+    source_bitmap: BitmapDataWrapper<'gc>,
+    src_rect: (i32, i32, i32, i32),
+    dest_point: (i32, i32),
+    random_seed: i32,
+    num_pixels: i32,
+    fill_color: i32,
+) -> i32 {
+    // TODO: What should happen in AVM1 when `num_pixels` is negative?
+
+    // Apparently,
+    // "numPixels:int (default = 0) — The default is 1/30 of the source area (width x height). "
+    // is wrong.
+
+    // TODO: Ensure that the AVM1 version returns -1 (probably in the AVM1 interface layer)
+    //   when:
+    //   "Calls to any method or property of a BitmapData object fail if the BitmapData object is
+    //   invalid (for example, if it has height == 0 and width == 0),
+    //   and upon failing those properties and methods that return Number values return -1. ".
+
+    // Extract points and areas.
+
+    let (src_min_x, src_min_y, src_width, src_height) = src_rect;
+
+    let src_width = src_width.max(0);
+    let src_height = src_height.max(0);
+
+    if src_width == 0 || src_height == 0 {
+        return 0;
+    }
+
+    let (dest_min_x, dest_min_y) = dest_point;
+
+    let transparency = target.transparency();
+
+    let mut source_region =
+        PixelRegion::for_whole_size(source_bitmap.width(), source_bitmap.height());
+    let mut dest_region = PixelRegion::for_whole_size(target.width(), target.height());
+    dest_region.clamp_with_intersection(
+        (dest_min_x, dest_min_y),
+        (src_min_x, src_min_y),
+        (src_width, src_height),
+        &mut source_region,
+    );
+
+    if dest_region.width() == 0 || dest_region.height() == 0 {
+        return 0;
+    }
+
+    let write_offset = (dest_region.x_min, dest_region.y_min);
+    let read_offset = (source_region.x_min, source_region.y_min);
+
+    fn write_pixel(
+        write: &mut RefMut<BitmapData>,
+        different_source_than_target: &Option<Ref<BitmapData>>,
+        fill_color: i32,
+        transparency: bool,
+        base_point: (u32, u32),
+        read_offset: (u32, u32),
+        write_offset: (u32, u32),
+    ) {
+        let read_point = (read_offset.0 + base_point.0, read_offset.1 + base_point.1);
+        let write_point = (write_offset.0 + base_point.0, write_offset.1 + base_point.1);
+
+        match different_source_than_target {
+            None => {
+                write.set_pixel32_raw(
+                    write_point.0,
+                    write_point.1,
+                    Color::from(fill_color).to_premultiplied_alpha(transparency),
+                );
+            }
+            Some(different_source) => {
+                write.set_pixel32_raw(
+                    write_point.0,
+                    write_point.1,
+                    different_source.get_pixel32_raw(read_point.0, read_point.1),
+                );
+            }
+        }
+    }
+
+    let different_source_than_target = if source_bitmap.ptr_eq(target) {
+        None
+    } else {
+        Some(source_bitmap.read_area(source_region))
+    };
+
+    let final_pixel_sequence_length = dest_region.width() * dest_region.height();
+
+    let num_pixels = num_pixels.min(final_pixel_sequence_length as i32);
+
+    // TODO: Should this be `target.sync()`? Or something else?
+    let target = target.sync();
+
+    let mut write = target.write(mc);
+
+    // For compliance with the official Flash Player, we always write the pixel at (0, 0).
+    write_pixel(
+        &mut write,
+        &different_source_than_target,
+        fill_color,
+        transparency,
+        (0, 0),
+        read_offset,
+        write_offset,
+    );
+
+    let feistel_block_size: u32 = get_feistel_block_size(final_pixel_sequence_length);
+    let permutation_length = 1 << feistel_block_size;
+    // Raw permutation index.
+    let mut raw_perm_index = (random_seed % (permutation_length as i32)) as u32;
+
+    for _ in 0..num_pixels {
+        // Feistel permutation index.
+        let mut feistel_perm_index = 0;
+
+        // Safety mechanism, in case there is a bug in the implementation.
+        let mut loop_counter = 0;
+
+        // Find a valid index to write to.
+        // Since the pixel at (0, 0) is always written, we always skip `feistel_perm_index == 0`.
+        while (feistel_perm_index == 0 || feistel_perm_index >= final_pixel_sequence_length)
+            && final_pixel_sequence_length != 1
+        {
+            raw_perm_index = (raw_perm_index + 1) % permutation_length;
+
+            feistel_perm_index =
+                pixel_dissolve_raw_to_feistel_index(raw_perm_index, feistel_block_size);
+
+            loop_counter += 1;
+
+            if loop_counter > permutation_length + 2 {
+                // TODO: Is this the correct way to panic or error?
+                panic!(
+                    "operations::pixel_dissolve() failed:\n\
+                            Using Feistel network permutations:\n\
+                            `raw_perm_index`: {raw_perm_index}\n\
+                            `feistel_perm_index`: {feistel_perm_index}\n\
+                            `permutation_length`: {permutation_length}\n\
+                            `final_pixel_sequence_length`: {final_pixel_sequence_length}\n\
+                            `src_rect`: {}, {}, {}, {}\n\
+                            `dest_region`: {}, {}, {}, {}\n\
+                            `dest_point`: {}, {}.",
+                    src_min_x,
+                    src_min_y,
+                    src_width,
+                    src_height,
+                    dest_region.x_min,
+                    dest_region.y_min,
+                    dest_region.x_max,
+                    dest_region.y_max,
+                    dest_point.0,
+                    dest_point.1
+                );
+            }
+        }
+
+        let base_point = (
+            feistel_perm_index % dest_region.width(),
+            feistel_perm_index / dest_region.width(),
+        );
+
+        write_pixel(
+            &mut write,
+            &different_source_than_target,
+            fill_color,
+            transparency,
+            base_point,
+            read_offset,
+            write_offset,
+        );
+    }
+
+    raw_perm_index as i32
 }
