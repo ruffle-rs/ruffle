@@ -64,6 +64,15 @@
 			for each (var attr in outer.attributes()) {
 				trace("Attr: " + attr.name() + " = " + attr);
 			}
+		
+			delete outer.@name;
+			trace("After delete: outer.@name = " + outer.@name);
+		
+			outer.@myAttr = "First val";
+			outer.@myAttr = "Second val";
+			trace("After replace: outer.@myAttr = " + outer.@myAttr);
+			delete outer.@myAttr
+			trace("After delete: outer.@myAttr = " + outer.@myAttr);
 		}
 	}
 }

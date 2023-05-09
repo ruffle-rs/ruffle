@@ -29,3 +29,6 @@ Attr: newAttr = Some value
 Attr: secondNewAttr = 5
 Attr: thirdNewAttr = sharedAttr
 Attr: name = Custom attr value
+After delete: outer.@name = 
+After replace: outer.@myAttr = Second val
+After delete: outer.@myAttr = 
