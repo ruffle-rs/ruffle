@@ -61,6 +61,10 @@ package flash.display {
             sourceBitmapData:BitmapData, sourceRect:Rectangle, destPoint:Point, operation:String, threshold:uint, color:uint = 0, mask:uint = 0xFFFFFFFF, copySource:Boolean = false
         ):uint;
         public native function compare(otherBitmapData:BitmapData):Object;
+        public native function pixelDissolve(
+            sourceBitmapData:BitmapData, sourceRect:Rectangle, destPoint:Point, randomSeed:int = 0, numPixels:int = 0,
+            fillColor:uint = 0
+        ):int;
 
         public function generateFilterRect(sourceRect:Rectangle, filter:BitmapFilter):Rectangle {
             stub_method("flash.display.BitmapData", "generateFilterRect");
