@@ -3,7 +3,7 @@
         "message": "Ruffle에서 플래시 콘텐츠 재생하기"
     },
     "settings_ignore_optout": {
-        "message": "Ruffle을 비활성화한 사이트에서도 플래시 콘텐츠 재생하기"
+        "message": "Ruffle을 허용하지 않는 사이트에서도 플래시 콘텐츠 실행"
     },
     "settings_show_swf_download": {
         "message": "컨텍스트 메뉴에 SWF 다운로드 버튼 표시"
@@ -16,6 +16,30 @@
     },
     "settings_log_level": {
         "message": "로그 수준"
+    },
+    "settings_log_level_error": {
+        "message": "오류"
+    },
+    "settings_log_level_warn": {
+        "message": "경고"
+    },
+    "settings_log_level_info": {
+        "message": "정보"
+    },
+    "settings_max_execution_duration": {
+        "message": "허용되는 최대 액션스크립트 실행 시간 (초)"
+    },
+    "settings_player_version": {
+        "message": "에뮬레이트 할 플래시 플레이어 버전 번호 (1부터 32까지)"
+    },
+    "settings_preferred_renderer": {
+        "message": "우선되는 렌더러"
+    },
+    "settings_preferred_renderer_auto": {
+        "message": "자동"
+    },
+    "settings_advanced_options": {
+        "message": "고급 설정"
     },
     "status_init": {
         "message": "현재 탭을 읽는 중…"
@@ -30,13 +54,13 @@
         "message": "현재 탭에서 Ruffle의 상태를 확인하는 중…"
     },
     "status_result_running": {
-        "message": "Ruffle이 로드되었으며 현재 탭에서 플래시 콘텐츠를 실행합니다."
+        "message": "Ruffle이 로드되었으며, 현재 탭에서 플래시 콘텐츠를 실행 할 준비가 되었습니다."
     },
     "status_result_optout": {
         "message": "현재 페이지가 호환되지 않는 것으로 표시되었으므로 Ruffle이 로드되지 않았습니다."
     },
     "status_result_disabled": {
-        "message": "사용자에 의해 비활성화되었기 때문에 Ruffle이 로드되지 않았습니다."
+        "message": "Ruffle이 비활성화 되어있으므로 로드되지 않았습니다."
     },
     "status_result_error": {
         "message": "현재 탭의 Ruffle 인스턴스를 쿼리하는 도중 오류가 발생했습니다."

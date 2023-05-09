@@ -2,11 +2,17 @@
     "settings_ruffle_enable": {
         "message": "Ejecutar Flash con Ruffle"
     },
-    "settings_ignore_optout": {
-        "message": "Ejecutar Flash incluso con Ruffle desactivado por la página"
-    },
     "settings_show_swf_download": {
         "message": "Mostrar descarga de SWF en el menú contextual"
+    },
+    "settings_autostart": {
+        "message": "Juegue automáticamente sin la pantalla de presentación (y luego, haga un clic para habilitar el audio)"
+    },
+    "settings_warn_on_unsupported_content": {
+        "message": "Avise sobre contenido no soportado"
+    },
+    "settings_log_level": {
+        "message": "Nivel de log"
     },
     "status_init": {
         "message": "Leyendo la pestaña actual…"
@@ -20,17 +26,11 @@
     "status_message_init": {
         "message": "Comprobando el estado de Ruffle en la pestaña actual…"
     },
-    "status_result_running": {
-        "message": "Ruffle está cargado y ejecutando Flash en la pestaña actual."
-    },
     "status_result_optout": {
-        "message": "Ruffle sin cargar porque la página lo ha desactivado."
-    },
-    "status_result_disabled": {
-        "message": "Ruffle sin cargar porque el usuario lo ha desactivado."
+        "message": "Ruffle no se carga porque la página actual se ha marcado como incompatible."
     },
     "status_result_error": {
-        "message": "Ocurró un error al comprobar el estado de Ruffle en la pestaña actual."
+        "message": "Se ha producido un error al consultar la instancia de Ruffle de la pestaña actual."
     },
     "status_result_protected": {
         "message": "Ruffle no se puede cargar en las páginas protegidas por el navegador."
@@ -45,7 +45,7 @@
         "message": "Página de configuración"
     },
     "description": {
-        "message": "Flash de nuevo en internet, donde debe estar."
+        "message": "¡Devolviendo Flash en la red mundial, donde debe estar!"
     },
     "save_settings": {
         "message": "Grabar configuración"

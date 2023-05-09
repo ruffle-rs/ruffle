@@ -2,9 +2,6 @@
     "settings_ruffle_enable": {
         "message": "使用 Ruffle 播放 Flash 内容"
     },
-    "settings_ignore_optout": {
-        "message": "即便站点禁用了 Ruffle 也播放 Flash 内容"
-    },
     "settings_show_swf_download": {
         "message": "在右键菜单中显示SWF下载选项"
     },
@@ -18,7 +15,7 @@
         "message": "日志级别"
     },
     "status_init": {
-        "message": "正在读取当前标签页……"
+        "message": "正在读取当前标签页…"
     },
     "status_no_tabs": {
         "message": "没有活动的标签页。"
@@ -29,14 +26,8 @@
     "status_message_init": {
         "message": "在此标签页上检查 Ruffle 状态。"
     },
-    "status_result_running": {
-        "message": "Ruffle 已加载并正在当前标签页播放 Flash 内容。"
-    },
     "status_result_optout": {
         "message": "Ruffle 未加载因为当前页面标注自己不兼容。"
-    },
-    "status_result_disabled": {
-        "message": "Ruffle 未加载因为被用户禁用。"
     },
     "status_result_error": {
         "message": "在查询此标签页中的 Ruffle 实例时发生错误。"

@@ -2,8 +2,17 @@
     "settings_ruffle_enable": {
         "message": "Flash tartalom lejátszása Ruffle-lel"
     },
-    "settings_ignore_optout": {
-        "message": "Flash tartalom lejátszása Ruffle-lel azon oldalakon is, amik nem akarják azt"
+    "settings_show_swf_download": {
+        "message": "SWF letöltése opció a helyi menüben"
+    },
+    "settings_autostart": {
+        "message": "Automatikus lejátszás indítóképernyő nélkül (majd hang kattintásra)"
+    },
+    "settings_warn_on_unsupported_content": {
+        "message": "Figyelmeztessen ha a tartalom nem támogatott"
+    },
+    "settings_log_level": {
+        "message": "Naplózási szint"
     },
     "status_init": {
         "message": "Jelenlegi fül olvasása…"
@@ -17,14 +26,8 @@
     "status_message_init": {
         "message": "A Ruffle állapotának ellenőrzése a jelenlegi fülön…"
     },
-    "status_result_running": {
-        "message": "A Ruffle be van töltve és futtat Flash tartalmat a jelenlegi fülön."
-    },
     "status_result_optout": {
         "message": "A Ruffle nincs betöltve, mivel az oldal nem kompatibilisnek jelezte magát."
-    },
-    "status_result_disabled": {
-        "message": "A Ruffle nem töltődött be, mert a felhasználó kikapcsolta."
     },
     "status_result_error": {
         "message": "Hiba történt a Ruffle-lel a jelenlegi fülön."
@@ -48,6 +51,6 @@
         "message": "Beállítások mentése"
     },
     "settings_saved": {
-        "message": "Beállítások mentve"
+        "message": "Beállítások elmentve"
     }
 }

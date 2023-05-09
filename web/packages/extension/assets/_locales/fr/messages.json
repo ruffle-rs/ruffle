@@ -3,22 +3,46 @@
         "message": "Lire du contenu Flash avec Ruffle"
     },
     "settings_ignore_optout": {
-        "message": "Lire du contenu Flash même sur les sites qui désactivent Ruffle"
+        "message": "Lire du contenu Flash même sur les sites qui interdisent Ruffle"
     },
     "settings_show_swf_download": {
-        "message": "Permet le téléchargement des SWFs depuis le menu contextuel"
+        "message": "Permettre le téléchargement des SWFs depuis le menu contextuel"
     },
     "settings_autostart": {
         "message": "Lire automatiquement sans écran de démarrage (requiert un clic pour activer le son)"
     },
     "settings_warn_on_unsupported_content": {
-        "message": "Avertir des contenus non supportés"
+        "message": "Avertir des contenus non pris en charge"
     },
     "settings_log_level": {
         "message": "Niveau des logs"
     },
+    "settings_log_level_error": {
+        "message": "Erreur"
+    },
+    "settings_log_level_warn": {
+        "message": "Avertissement"
+    },
+    "settings_log_level_info": {
+        "message": "Information"
+    },
+    "settings_max_execution_duration": {
+        "message": "Durée maximale d'exécution d'un script ActionScript (en secondes)"
+    },
+    "settings_player_version": {
+        "message": "Version du lecteur Flash à émuler (un nombre entier entre 1 et 32)"
+    },
+    "settings_preferred_renderer": {
+        "message": "Moteur de rendu préféré"
+    },
+    "settings_preferred_renderer_auto": {
+        "message": "Automatique"
+    },
+    "settings_advanced_options": {
+        "message": "Options Avancées"
+    },
     "status_init": {
-        "message": "Lecture de l'onglet actuel"
+        "message": "Lecture de l'onglet actuel…"
     },
     "status_no_tabs": {
         "message": "Il n'y a pas d'onglet actif."
@@ -30,13 +54,13 @@
         "message": "Vérification de l'état de Ruffle dans l'onglet actuel…"
     },
     "status_result_running": {
-        "message": "Ruffle est chargé et exécute Flash dans l'onglet actuel."
+        "message": "Ruffle est chargé et prêt à lire du contenu Flash dans l'onglet actuel."
     },
     "status_result_optout": {
-        "message": "Ruffle n'est pas chargé car la page actuelle s'est signalé comme incompatible."
+        "message": "Ruffle n'est pas chargé car la page actuelle s'est signalée comme incompatible."
     },
     "status_result_disabled": {
-        "message": "Ruffle n'est pas chargé car il a été désactivé par l'utilisateur."
+        "message": "Ruffle n'est pas chargé car il a été désactivé."
     },
     "status_result_error": {
         "message": "Une erreur s'est produite lors d'une requête vers l'instance Ruffle de l'onglet actuel."
