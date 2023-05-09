@@ -303,40 +303,43 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         }
 
         let mc = activation.context.gc_context;
+
+        if name.is_attribute() {
+            self.delete_property_local(activation, name)?;
+            if let Some(obj) = value.as_object() {
+                if obj.as_xml_object().is_some() || obj.as_xml_list_object().is_some() {
+                    return Err(format!(
+                        "Cannot set an XML/XMLList object {:?} as an attribute",
+                        obj
+                    )
+                    .into());
+                }
+            }
+            let Some(local_name) = name.local_name() else {
+                return Err(format!("Cannot set attribute {:?} without a local name", name).into());
+            };
+            let value = value.coerce_to_string(activation)?;
+            let new_attr = E4XNode::attribute(mc, local_name, value);
+
+            let write = self.0.write(mc);
+            let mut kind = write.node.kind_mut(mc);
+            let E4XNodeKind::Element {
+                attributes, ..
+            } = &mut *kind else {
+                return Ok(());
+            };
+
+            attributes.push(new_attr);
+            return Ok(());
+        }
+
         let write = self.0.write(mc);
         let mut kind = write.node.kind_mut(mc);
         let E4XNodeKind::Element {
-            attributes, children
+            children, ..
         } = &mut *kind else {
             return Ok(());
         };
-
-        #[allow(clippy::collapsible_if)]
-        if name.is_attribute() {
-            if !attributes.iter_mut().any(|attr| attr.matches_name(name)) {
-                if let Some(obj) = value.as_object() {
-                    if obj.as_xml_object().is_some() || obj.as_xml_list_object().is_some() {
-                        return Err(format!(
-                            "Cannot set an XML/XMLList object {:?} as an attribute",
-                            obj
-                        )
-                        .into());
-                    }
-                }
-                let Some(local_name) = name.local_name() else {
-                    return Err(format!("Cannot set attribute {:?} without a local name", name).into());
-                };
-                let value = value.coerce_to_string(activation)?;
-                let new_attr = E4XNode::attribute(mc, local_name, value);
-                attributes.push(new_attr);
-                return Ok(());
-            }
-
-            return Err(format!(
-                "Adding a new attribute to XML object is not yet implemented: {name:?} = {value:?}"
-            )
-            .into());
-        }
 
         if value.as_object().map_or(false, |obj| {
             obj.as_xml_object().is_some() || obj.as_xml_list_object().is_some()
@@ -371,5 +374,34 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
             }
             _ => Err(format!("Can not replace multiple elements yet: {name:?} = {value:?}").into()),
         }
+    }
+
+    fn delete_property_local(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        name: &Multiname<'gc>,
+    ) -> Result<bool, Error<'gc>> {
+        if name.has_explicit_namespace() {
+            return Err(format!(
+                "Can not set property {:?} with an explicit namespace yet",
+                name
+            )
+            .into());
+        }
+
+        let mc = activation.context.gc_context;
+        let write = self.0.write(mc);
+        let mut kind = write.node.kind_mut(mc);
+        let E4XNodeKind::Element {
+            attributes,..
+        } = &mut *kind else {
+            return Ok(false);
+        };
+
+        if name.is_attribute() {
+            attributes.retain(|attr| !attr.matches_name(name));
+            return Ok(true);
+        }
+        Err(format!("Can not delete non-attribute XML name {:?} yet", name).into())
     }
 }
