@@ -65,6 +65,11 @@ impl UiBackend for WebUiBackend {
         self.update_mouse_cursor();
     }
 
+    fn clipboard_content(&mut self) -> String {
+        tracing::warn!("get clipboard not implemented");
+        "".to_string()
+    }
+
     fn set_clipboard_content(&mut self, content: String) {
         // We use `document.execCommand("copy")` as `navigator.clipboard.writeText("string")`
         // is available only in secure contexts (HTTPS).

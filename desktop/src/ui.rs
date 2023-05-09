@@ -62,6 +62,12 @@ impl UiBackend for DesktopUiBackend {
         self.window.set_cursor_icon(icon);
     }
 
+    fn clipboard_content(&mut self) -> String {
+        self.clipboard
+            .get_text()
+            .unwrap_or_else(|_| "".to_string())
+    }
+
     fn set_clipboard_content(&mut self, content: String) {
         if let Err(e) = self.clipboard.set_text(content) {
             error!("Couldn't set clipboard contents: {:?}", e);
