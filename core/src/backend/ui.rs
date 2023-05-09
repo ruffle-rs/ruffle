@@ -15,6 +15,9 @@ pub trait UiBackend {
     /// Changes the mouse cursor image.
     fn set_mouse_cursor(&mut self, cursor: MouseCursor);
 
+    /// Get the clipboard content
+    fn clipboard_content(&mut self) -> String;
+
     /// Sets the clipboard to the given content.
     fn set_clipboard_content(&mut self, content: String);
 
@@ -144,6 +147,10 @@ impl UiBackend for NullUiBackend {
     fn set_mouse_visible(&mut self, _visible: bool) {}
 
     fn set_mouse_cursor(&mut self, _cursor: MouseCursor) {}
+
+    fn clipboard_content(&mut self) -> String {
+        "".to_string()
+    }
 
     fn set_clipboard_content(&mut self, _content: String) {}
 
