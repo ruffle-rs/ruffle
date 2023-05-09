@@ -1633,10 +1633,11 @@ pub trait TDisplayObject<'gc>:
         &self,
         _context: &mut UpdateContext<'_, 'gc>,
         point: Point<Twips>,
-        _options: HitTestOptions,
+        options: HitTestOptions,
     ) -> bool {
         // Default to using bounding box.
-        self.hit_test_bounds(point)
+        (!options.contains(HitTestOptions::SKIP_INVISIBLE) || self.visible())
+            && self.hit_test_bounds(point)
     }
 
     fn post_instantiation(
