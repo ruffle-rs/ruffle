@@ -26,7 +26,7 @@ mod bitmap;
 mod container;
 mod edit_text;
 mod graphic;
-pub mod interactive;
+mod interactive;
 mod loader_display;
 mod morph_shape;
 mod movie_clip;
