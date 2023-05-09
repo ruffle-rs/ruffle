@@ -171,9 +171,11 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         &self,
         context: &mut UpdateContext<'_, 'gc>,
         mut point: Point<Twips>,
-        _options: HitTestOptions,
+        options: HitTestOptions,
     ) -> bool {
-        if self.world_bounds().contains(point) {
+        if (!options.contains(HitTestOptions::SKIP_INVISIBLE) || self.visible())
+            && self.world_bounds().contains(point)
+        {
             // Texts using the "Advanced text rendering" always hit test using their bounding box.
             if self.0.read().render_settings.is_advanced() {
                 return true;
