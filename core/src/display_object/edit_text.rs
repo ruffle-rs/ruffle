@@ -17,7 +17,7 @@ use crate::display_object::interactive::{
 };
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
 use crate::drawing::Drawing;
-use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode};
+use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, TextControlCode};
 use crate::font::{round_down_to_pixel, Glyph, TextRenderSettings};
 use crate::html::{BoxBounds, FormatSpans, LayoutBox, LayoutContent, LayoutMetrics, TextFormat};
 use crate::prelude::*;
@@ -1172,6 +1172,84 @@ impl<'gc> EditText<'gc> {
         }
 
         None
+    }
+
+    pub fn text_control_input(
+        self,
+        control_code: TextControlCode,
+        context: &mut UpdateContext<'_, 'gc>,
+    ) {
+        if !self.is_editable() && control_code.is_edit_input() {
+            return;
+        }
+
+        if let Some(selection) = self.selection() {
+            let mut changed = false;
+            let is_selectable = self.is_selectable();
+            match control_code {
+                TextControlCode::SelectAll => {
+                    if is_selectable {
+                        self.set_selection(
+                            Some(TextSelection::for_range(0, self.text().len())),
+                            context.gc_context,
+                        );
+                    }
+                }
+                TextControlCode::Copy => {
+                    if !selection.is_caret() {
+                        let text = &self.text()[selection.start()..selection.end()];
+                        context.ui.set_clipboard_content(text.to_string());
+                    }
+                }
+                TextControlCode::Paste => {
+                    let text = &context.ui.clipboard_content();
+                    self.replace_text(selection.start(), selection.end(), &WString::from_utf8(text), context);
+                    let new_start = selection.start() + text.len();
+                    if is_selectable {
+                        self.set_selection(
+                            Some(TextSelection::for_position(new_start)),
+                            context.gc_context,
+                        );
+                    } else {
+                        self.set_selection(
+                            Some(TextSelection::for_position(self.text().len())),
+                            context.gc_context,
+                        );
+                    }
+                    changed = true;
+                }
+                TextControlCode::Cut => {
+                    if !selection.is_caret() {
+                        let text = &self.text()[selection.start()..selection.end()];
+                        context.ui.set_clipboard_content(text.to_string());
+
+                        self.replace_text(selection.start(), selection.end(), WStr::empty(), context);
+                        if is_selectable {
+                            self.set_selection(
+                                Some(TextSelection::for_position(selection.start())),
+                                context.gc_context,
+                            );
+                        } else {
+                            self.set_selection(
+                                Some(TextSelection::for_position(self.text().len())),
+                                context.gc_context,
+                            );
+                        }
+                        changed = true;
+                    }
+                }
+                _ => {}
+            }
+            if changed {
+                let mut activation = Avm1Activation::from_nothing(
+                    context.reborrow(),
+                    ActivationIdentifier::root("[Propagate Text Binding]"),
+                    self.into(),
+                );
+                self.propagate_text_binding(&mut activation);
+                self.on_changed(&mut activation);
+            }
+        }
     }
 
     pub fn text_input(self, character: char, context: &mut UpdateContext<'_, 'gc>) {

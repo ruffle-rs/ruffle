@@ -1066,6 +1066,11 @@ impl Player {
                         text.text_input(codepoint, context);
                     }
                 }
+                if let PlayerEvent::TextControl { code } = event {
+                    if let Some(text) = context.focus_tracker.get().and_then(|o| o.as_edit_text()) {
+                        text.text_control_input(code, context);
+                    }
+                }
             }
 
             // Propagate clip events.
