@@ -1059,52 +1059,53 @@ impl Player {
                 }
             }
 
-            if context.is_action_script_3() {
-                if let PlayerEvent::KeyDown { key_code, key_char }
-                | PlayerEvent::KeyUp { key_code, key_char } = event
-                {
-                    let ctrl_key = context.input.is_key_down(KeyCode::Control);
-                    let alt_key = context.input.is_key_down(KeyCode::Alt);
-                    let shift_key = context.input.is_key_down(KeyCode::Shift);
+            if let PlayerEvent::KeyDown { key_code, key_char }
+            | PlayerEvent::KeyUp { key_code, key_char } = event
+            {
+                let ctrl_key = context.input.is_key_down(KeyCode::Control);
+                let alt_key = context.input.is_key_down(KeyCode::Alt);
+                let shift_key = context.input.is_key_down(KeyCode::Shift);
 
-                    let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                let mut activation = Avm2Activation::from_nothing(context.reborrow());
 
-                    let event_name = match event {
-                        PlayerEvent::KeyDown { .. } => "keyDown",
-                        PlayerEvent::KeyUp { .. } => "keyUp",
-                        _ => unreachable!(),
-                    };
+                let event_name = match event {
+                    PlayerEvent::KeyDown { .. } => "keyDown",
+                    PlayerEvent::KeyUp { .. } => "keyUp",
+                    _ => unreachable!(),
+                };
 
-                    let keyboardevent_class = activation.avm2().classes().keyboardevent;
-                    let event_name_val: Avm2Value<'_> =
-                        AvmString::new_utf8(activation.context.gc_context, event_name).into();
+                let keyboardevent_class = activation.avm2().classes().keyboardevent;
+                let event_name_val: Avm2Value<'_> =
+                    AvmString::new_utf8(activation.context.gc_context, event_name).into();
 
-                    // TODO: keyLocation should not be a dummy value.
-                    // ctrlKey and controlKey can be different from each other on Mac.
-                    // commandKey should be supported.
-                    let keyboard_event = keyboardevent_class
-                        .construct(
-                            &mut activation,
-                            &[
-                                event_name_val,                          /* type */
-                                true.into(),                             /* bubbles */
-                                false.into(),                            /* cancelable */
-                                key_char.map_or(0, |c| c as u32).into(), /* charCode */
-                                (key_code as u32).into(),                /* keyCode */
-                                0.into(),                                /* keyLocation */
-                                ctrl_key.into(),                         /* ctrlKey */
-                                alt_key.into(),                          /* altKey */
-                                shift_key.into(),                        /* shiftKey */
-                                ctrl_key.into(),                         /* controlKey */
-                            ],
-                        )
-                        .expect("Failed to construct KeyboardEvent");
+                // TODO: keyLocation should not be a dummy value.
+                // ctrlKey and controlKey can be different from each other on Mac.
+                // commandKey should be supported.
+                let keyboard_event = keyboardevent_class
+                    .construct(
+                        &mut activation,
+                        &[
+                            event_name_val,                          /* type */
+                            true.into(),                             /* bubbles */
+                            false.into(),                            /* cancelable */
+                            key_char.map_or(0, |c| c as u32).into(), /* charCode */
+                            (key_code as u32).into(),                /* keyCode */
+                            0.into(),                                /* keyLocation */
+                            ctrl_key.into(),                         /* ctrlKey */
+                            alt_key.into(),                          /* altKey */
+                            shift_key.into(),                        /* shiftKey */
+                            ctrl_key.into(),                         /* controlKey */
+                        ],
+                    )
+                    .expect("Failed to construct KeyboardEvent");
+                let target_object = activation
+                    .context
+                    .focus_tracker
+                    .get()
+                    .unwrap_or_else(|| activation.context.stage.into());
 
-                    let target = activation
-                        .context
-                        .focus_tracker
-                        .get()
-                        .unwrap_or_else(|| activation.context.stage.into())
+                if target_object.movie().is_action_script_3() {
+                    let target = target_object
                         .object2()
                         .coerce_to_object(&mut activation)
                         .expect("DisplayObject is not an object!");
@@ -1221,7 +1222,7 @@ impl Player {
         if let PlayerEvent::MouseWheel { delta } = event {
             self.mutate_with_update_context(|context| {
                 if let Some(over_object) = context.mouse_over_object {
-                    if context.is_action_script_3()
+                    if over_object.as_displayobject().movie().is_action_script_3()
                         || !over_object.as_displayobject().avm1_removed()
                     {
                         over_object.handle_clip_event(context, ClipEvent::MouseWheel { delta });
@@ -1244,10 +1245,9 @@ impl Player {
     /// Update dragged object, if any.
     pub fn update_drag(context: &mut UpdateContext<'_, '_>) {
         let mouse_position = *context.mouse_position;
-        let is_action_script_3 = context.is_action_script_3();
         if let Some(drag_object) = context.drag_object {
             let display_object = drag_object.display_object;
-            if !is_action_script_3 && display_object.avm1_removed() {
+            if !display_object.movie().is_action_script_3() && display_object.avm1_removed() {
                 // Be sure to clear the drag if the object was removed.
                 *context.drag_object = None;
                 return;
@@ -1323,7 +1323,9 @@ impl Player {
             let mut new_over_object_updated = false;
             // Cancel hover if an object is removed from the stage.
             if let Some(hovered) = context.mouse_over_object {
-                if !context.is_action_script_3() && hovered.as_displayobject().avm1_removed() {
+                if !hovered.as_displayobject().movie().is_action_script_3()
+                    && hovered.as_displayobject().avm1_removed()
+                {
                     context.mouse_over_object = None;
                     if let Some(new_object) = new_over_object {
                         if Self::check_display_object_equality(
@@ -1341,7 +1343,9 @@ impl Player {
             }
 
             if let Some(pressed) = context.mouse_down_object {
-                if !context.is_action_script_3() && pressed.as_displayobject().avm1_removed() {
+                if !pressed.as_displayobject().movie().is_action_script_3()
+                    && pressed.as_displayobject().avm1_removed()
+                {
                     context.mouse_down_object = None;
                     let mut display_object = None;
                     if let Some(root_clip) = context.stage.root_clip() {
@@ -1517,7 +1521,7 @@ impl Player {
                     let display_object = object.as_displayobject();
                     if !display_object.avm1_removed() {
                         object.handle_clip_event(context, event);
-                        if context.is_action_script_3() {
+                        if display_object.movie().is_action_script_3() {
                             object.event_dispatch_to_avm2(context, event);
                         }
                     }
@@ -1656,11 +1660,9 @@ impl Player {
         }
 
         self.update(|context| {
-            if context.is_action_script_3() {
-                run_all_phases_avm2(context);
-            } else {
-                Avm1::run_frame(context);
-            }
+            // TODO: Is this order correct?
+            run_all_phases_avm2(context);
+            Avm1::run_frame(context);
             AudioManager::update_sounds(context);
         });
 
@@ -1782,7 +1784,7 @@ impl Player {
         while let Some(action) = context.action_queue.pop_action() {
             // We don't run frame actions if the clip was removed (or scheduled to be removed) after it queued the action.
             if !action.is_unload
-                && (!context.is_action_script_3()
+                && (!action.clip.movie().is_action_script_3()
                     && (action.clip.avm1_removed() || action.clip.avm1_pending_removal()))
             {
                 continue;
@@ -2660,7 +2662,7 @@ fn run_mouse_pick<'gc>(
 ) -> Option<InteractiveObject<'gc>> {
     context.stage.iter_render_list().rev().find_map(|level| {
         level.as_interactive().and_then(|l| {
-            if context.is_action_script_3() {
+            if l.as_displayobject().movie().is_action_script_3() {
                 let mut res = None;
                 if let Avm2MousePick::Hit(target) =
                     l.mouse_pick_avm2(context, *context.mouse_position, require_button_mode)
