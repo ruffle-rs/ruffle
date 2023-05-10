@@ -23,6 +23,26 @@ use ruffle_render::filters::Filter;
 use ruffle_render::transform::Transform;
 use std::str::FromStr;
 
+fn get_rectangle_x_y_width_height<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    rectangle: Object<'gc>,
+) -> Result<(i32, i32, i32, i32), Error<'gc>> {
+    let x = rectangle
+        .get_public_property("x", activation)?
+        .coerce_to_i32(activation)?;
+    let y = rectangle
+        .get_public_property("y", activation)?
+        .coerce_to_i32(activation)?;
+    let width = rectangle
+        .get_public_property("width", activation)?
+        .coerce_to_i32(activation)?;
+    let height = rectangle
+        .get_public_property("height", activation)?
+        .coerce_to_i32(activation)?;
+
+    Ok((x, y, width, height))
+}
+
 /// Copy the static data from a given Bitmap into a new BitmapData.
 ///
 /// `bd` is assumed to be an uninstantiated library symbol, associated with the
@@ -185,18 +205,8 @@ pub fn copy_pixels<'gc>(
 
         let source_rect = args.get_object(activation, 1, "sourceRect")?;
 
-        let src_min_x = source_rect
-            .get_public_property("x", activation)?
-            .coerce_to_i32(activation)?;
-        let src_min_y = source_rect
-            .get_public_property("y", activation)?
-            .coerce_to_i32(activation)?;
-        let src_width = source_rect
-            .get_public_property("width", activation)?
-            .coerce_to_i32(activation)?;
-        let src_height = source_rect
-            .get_public_property("height", activation)?
-            .coerce_to_i32(activation)?;
+        let (src_min_x, src_min_y, src_width, src_height) =
+            get_rectangle_x_y_width_height(activation, source_rect)?;
 
         let dest_point = args.get_object(activation, 2, "destPoint")?;
 
@@ -274,18 +284,7 @@ pub fn get_pixels<'gc>(
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
         bitmap_data.check_valid(activation)?;
         let rectangle = args.get_object(activation, 0, "rect")?;
-        let x = rectangle
-            .get_public_property("x", activation)?
-            .coerce_to_i32(activation)?;
-        let y = rectangle
-            .get_public_property("y", activation)?
-            .coerce_to_i32(activation)?;
-        let width = rectangle
-            .get_public_property("width", activation)?
-            .coerce_to_i32(activation)?;
-        let height = rectangle
-            .get_public_property("height", activation)?
-            .coerce_to_i32(activation)?;
+        let (x, y, width, height) = get_rectangle_x_y_width_height(activation, rectangle)?;
         let bytearray = ByteArrayObject::from_storage(
             activation,
             operations::get_pixels_as_byte_array(bitmap_data, x, y, width, height)?,
@@ -304,18 +303,7 @@ pub fn get_vector<'gc>(
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
         bitmap_data.check_valid(activation)?;
         let rectangle = args.get_object(activation, 0, "rect")?;
-        let x = rectangle
-            .get_public_property("x", activation)?
-            .coerce_to_i32(activation)?;
-        let y = rectangle
-            .get_public_property("y", activation)?
-            .coerce_to_i32(activation)?;
-        let width = rectangle
-            .get_public_property("width", activation)?
-            .coerce_to_i32(activation)?;
-        let height = rectangle
-            .get_public_property("height", activation)?
-            .coerce_to_i32(activation)?;
+        let (x, y, width, height) = get_rectangle_x_y_width_height(activation, rectangle)?;
 
         let pixels = operations::get_vector(bitmap_data, x, y, width, height);
 
@@ -416,18 +404,7 @@ pub fn set_pixels<'gc>(
         .unwrap_or(&Value::Undefined)
         .coerce_to_object(activation)?;
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
-        let x = rectangle
-            .get_public_property("x", activation)?
-            .coerce_to_i32(activation)?;
-        let y = rectangle
-            .get_public_property("y", activation)?
-            .coerce_to_i32(activation)?;
-        let width = rectangle
-            .get_public_property("width", activation)?
-            .coerce_to_i32(activation)?;
-        let height = rectangle
-            .get_public_property("height", activation)?
-            .coerce_to_i32(activation)?;
+        let (x, y, width, height) = get_rectangle_x_y_width_height(activation, rectangle)?;
 
         let mut ba_write = bytearray
             .as_bytearray_mut(activation.context.gc_context)
@@ -478,18 +455,9 @@ pub fn copy_channel<'gc>(
 
         if let Some(source_bitmap) = source_bitmap.as_bitmap_data() {
             //TODO: what if source is disposed
-            let src_min_x = source_rect
-                .get_public_property("x", activation)?
-                .coerce_to_i32(activation)?;
-            let src_min_y = source_rect
-                .get_public_property("y", activation)?
-                .coerce_to_i32(activation)?;
-            let src_width = source_rect
-                .get_public_property("width", activation)?
-                .coerce_to_i32(activation)?;
-            let src_height = source_rect
-                .get_public_property("height", activation)?
-                .coerce_to_i32(activation)?;
+
+            let (src_min_x, src_min_y, src_width, src_height) =
+                get_rectangle_x_y_width_height(activation, source_rect)?;
 
             operations::copy_channel(
                 activation.context.gc_context,
@@ -561,18 +529,7 @@ pub fn color_transform<'gc>(
         if !bitmap_data.disposed() {
             // TODO: Re-use `object_to_rectangle` in `movie_clip.rs`.
             let rectangle = args.get_object(activation, 0, "rect")?;
-            let x = rectangle
-                .get_public_property("x", activation)?
-                .coerce_to_i32(activation)?;
-            let y = rectangle
-                .get_public_property("y", activation)?
-                .coerce_to_i32(activation)?;
-            let width = rectangle
-                .get_public_property("width", activation)?
-                .coerce_to_i32(activation)?;
-            let height = rectangle
-                .get_public_property("height", activation)?
-                .coerce_to_i32(activation)?;
+            let (x, y, width, height) = get_rectangle_x_y_width_height(activation, rectangle)?;
 
             let x_min = x.max(0) as u32;
             let x_max = (x + width) as u32;
@@ -958,18 +915,7 @@ pub fn fill_rect<'gc>(
 
     if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data()) {
         bitmap_data.check_valid(activation)?;
-        let x = rectangle
-            .get_public_property("x", activation)?
-            .coerce_to_i32(activation)?;
-        let y = rectangle
-            .get_public_property("y", activation)?
-            .coerce_to_i32(activation)?;
-        let width = rectangle
-            .get_public_property("width", activation)?
-            .coerce_to_i32(activation)?;
-        let height = rectangle
-            .get_public_property("height", activation)?
-            .coerce_to_i32(activation)?;
+        let (x, y, width, height) = get_rectangle_x_y_width_height(activation, rectangle)?;
 
         operations::fill_rect(
             activation.context.gc_context,
@@ -1264,18 +1210,8 @@ pub fn threshold<'gc>(
                 return Err(null_parameter_error(activation, "operation"));
             };
 
-            let src_min_x = source_rect
-                .get_public_property("x", activation)?
-                .coerce_to_i32(activation)?;
-            let src_min_y = source_rect
-                .get_public_property("y", activation)?
-                .coerce_to_i32(activation)?;
-            let src_width = source_rect
-                .get_public_property("width", activation)?
-                .coerce_to_i32(activation)?;
-            let src_height = source_rect
-                .get_public_property("height", activation)?
-                .coerce_to_i32(activation)?;
+            let (src_min_x, src_min_y, src_width, src_height) =
+                get_rectangle_x_y_width_height(activation, source_rect)?;
 
             if let Some(src_bitmap) = src_bitmap.as_bitmap_data() {
                 src_bitmap.check_valid(activation)?;
@@ -1383,18 +1319,8 @@ pub fn pixel_dissolve<'gc>(
 
         let source_rect = args.get_object(activation, 1, "sourceRect")?;
 
-        let src_min_x = source_rect
-            .get_public_property("x", activation)?
-            .coerce_to_i32(activation)?;
-        let src_min_y = source_rect
-            .get_public_property("y", activation)?
-            .coerce_to_i32(activation)?;
-        let src_width = source_rect
-            .get_public_property("width", activation)?
-            .coerce_to_i32(activation)?;
-        let src_height = source_rect
-            .get_public_property("height", activation)?
-            .coerce_to_i32(activation)?;
+        let (src_min_x, src_min_y, src_width, src_height) =
+            get_rectangle_x_y_width_height(activation, source_rect)?;
 
         let dest_point = args.get_object(activation, 2, "destPoint")?;
         let dest_point = (
