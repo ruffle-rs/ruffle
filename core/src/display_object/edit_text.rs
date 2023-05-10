@@ -2138,6 +2138,11 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
         point: Point<Twips>,
         _require_button_mode: bool,
     ) -> Option<InteractiveObject<'gc>> {
+        // Don't do anything if run in an AVM2 context.
+        if self.as_displayobject().movie().is_action_script_3() {
+            return None;
+        }
+
         // The text is hovered if the mouse is over any child nodes.
         if self.visible()
             && self.mouse_enabled()
@@ -2156,6 +2161,11 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
         point: Point<Twips>,
         _require_button_mode: bool,
     ) -> Avm2MousePick<'gc> {
+        // Don't do anything if run in an AVM1 context.
+        if !self.as_displayobject().movie().is_action_script_3() {
+            return Avm2MousePick::NotAvm2;
+        }
+
         // The text is hovered if the mouse is over any child nodes.
         if self.visible() && self.hit_test_shape(context, point, HitTestOptions::MOUSE_PICK) {
             // Note - for mouse-enabled selectable text, we consider this to be a hit (which
