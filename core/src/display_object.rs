@@ -1685,10 +1685,16 @@ pub trait TDisplayObject<'gc>:
             if root.lock_root() {
                 break;
             }
-            root = match root.avm1_parent() {
-                Some(parent) => parent,
-                None => break,
-            };
+            if let Some(parent) = root.avm1_parent() {
+                if !parent.movie().is_action_script_3() {
+                    root = parent;
+                } else {
+                    // We've traversed upwards into a loader AVM2 movie, so break.
+                    break;
+                }
+            } else {
+                break;
+            }
         }
         root
     }
@@ -1703,6 +1709,11 @@ pub trait TDisplayObject<'gc>:
         while let Some(p) = parent {
             if p.is_root() {
                 return parent;
+            }
+            if let Some(p_parent) = p.parent() {
+                if !p_parent.movie().is_action_script_3() {
+                    return parent;
+                }
             }
             parent = p.parent();
         }

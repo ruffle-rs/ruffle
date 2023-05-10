@@ -188,7 +188,16 @@ impl<'gc> TInteractiveObject<'gc> for LoaderDisplay<'gc> {
         for child in self.iter_render_list().rev() {
             if let Some(int) = child.as_interactive() {
                 if let Some(result) = int.mouse_pick_avm1(context, point, require_button_mode) {
-                    return Some(result);
+                    if int.as_displayobject().movie().is_action_script_3() {
+                        let avm2_result = int.mouse_pick_avm2(context, point, require_button_mode);
+                        if let Avm2MousePick::Hit(result) = avm2_result {
+                            return Some(result);
+                        } else {
+                            return None;
+                        }
+                    } else {
+                        return Some(result);
+                    }
                 }
             }
         }
@@ -210,9 +219,18 @@ impl<'gc> TInteractiveObject<'gc> for LoaderDisplay<'gc> {
         // We have at most one child
         if let Some(child) = self.iter_render_list().next() {
             if let Some(int) = child.as_interactive() {
-                return int
-                    .mouse_pick_avm2(context, point, require_button_mode)
-                    .combine_with_parent((*self).into());
+                if int.as_displayobject().movie().is_action_script_3() {
+                    return int
+                        .mouse_pick_avm2(context, point, require_button_mode)
+                        .combine_with_parent((*self).into());
+                } else {
+                    let avm1_result = int.mouse_pick_avm1(context, point, require_button_mode);
+                    if let Some(result) = avm1_result {
+                        return Avm2MousePick::Hit(result);
+                    } else {
+                        return Avm2MousePick::Miss;
+                    }
+                }
             }
         }
         Avm2MousePick::Miss

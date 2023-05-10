@@ -2978,7 +2978,16 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                     }
                 } else if result.is_none() {
                     if let Some(child) = child.as_interactive() {
-                        result = child.mouse_pick_avm1(context, point, require_button_mode);
+                        result = if !child.as_displayobject().movie().is_action_script_3() {
+                            child.mouse_pick_avm1(context, point, require_button_mode)
+                        } else {
+                            let avm2_result = child.mouse_pick_avm2(context, point, require_button_mode);
+                            if let Avm2MousePick::Hit(result) = avm2_result {
+                                Some(result)
+                            } else {
+                                None
+                            }
+                        }
                     } else if check_non_interactive
                         && self.mouse_enabled()
                         && child.hit_test_shape(context, point, options)
@@ -3075,7 +3084,16 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                 }
 
                 let mut res = if let Some(child) = child.as_interactive() {
-                    child.mouse_pick_avm2(context, point, require_button_mode)
+                    if child.as_displayobject().movie().is_action_script_3() {
+                        child.mouse_pick_avm2(context, point, require_button_mode)
+                    } else {
+                        let avm1_result = child.mouse_pick_avm1(context, point, require_button_mode);
+                        if let Some(result) = avm1_result {
+                            Avm2MousePick::Hit(result)
+                        } else {
+                            Avm2MousePick::Miss
+                        }
+                    }
                 } else if child.as_interactive().is_none()
                     && child.hit_test_shape(context, point, options)
                 {
