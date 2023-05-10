@@ -1,4 +1,4 @@
-use crate::avm2::error::make_error_2008;
+use crate::avm2::error::{error, make_error_2008};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::Activation;
 use crate::avm2::TObject;
@@ -57,6 +57,22 @@ pub fn configure_back_buffer<'gc>(
     if let Some(mut context) = this.and_then(|this| this.as_context_3d()) {
         let width = args.get_u32(activation, 0)?;
         let height = args.get_u32(activation, 1)?;
+
+        if width < 32 || width > 16384 {
+            return Err(Error::AvmError(error(
+                activation,
+                "Error #3780: Requested width of backbuffer is not in allowed range 32 to 16384.",
+                3780,
+            )?));
+        }
+
+        if height < 32 || height > 16384 {
+            return Err(Error::AvmError(error(
+                activation,
+                "Error #3781: Requested height of backbuffer is not in allowed range 32 to 16384.",
+                3781,
+            )?));
+        }
 
         let anti_alias = args.get_u32(activation, 2)?;
         let enable_depth_and_stencil = args.get(3).unwrap_or(&Value::Undefined).coerce_to_boolean();
