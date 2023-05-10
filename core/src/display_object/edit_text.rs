@@ -1785,7 +1785,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
     /// Construct objects placed on this frame.
     fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc>) {
-        if context.is_action_script_3() && matches!(self.object2(), Avm2Value::Null) {
+        if self.movie().is_action_script_3() && matches!(self.object2(), Avm2Value::Null) {
             self.construct_as_avm2_object(context, (*self).into());
             self.on_construction_complete(context);
         }
@@ -1812,7 +1812,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     ) {
         self.set_default_instance_name(context);
 
-        if !context.is_action_script_3() {
+        if !self.movie().is_action_script_3() {
             context
                 .avm1
                 .add_to_exec_list(context.gc_context, (*self).into());

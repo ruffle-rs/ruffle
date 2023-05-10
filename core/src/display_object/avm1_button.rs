@@ -79,7 +79,7 @@ impl<'gc> Avm1Button<'gc> {
             Avm1ButtonData {
                 base: Default::default(),
                 static_data: GcCell::new(gc_context, static_data),
-                container: ChildContainer::new(),
+                container: ChildContainer::new(source_movie.movie.clone()),
                 hit_area: BTreeMap::new(),
                 state: self::ButtonState::Up,
                 initialized: false,
@@ -271,7 +271,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
     ) {
         self.set_default_instance_name(context);
 
-        if !context.is_action_script_3() {
+        if !self.movie().is_action_script_3() {
             context
                 .avm1
                 .add_to_exec_list(context.gc_context, (*self).into());
@@ -469,6 +469,8 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
         context: &mut UpdateContext<'_, 'gc>,
         event: ClipEvent,
     ) -> ClipEventResult {
+        let movie_version = self.as_displayobject().movie().version();
+
         let self_display_object = self.into();
         let is_enabled = self.enabled(context);
 
@@ -528,7 +530,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
 
             // Queue ActionScript-defined event handlers after the SWF defined ones.
             // (e.g., clip.onRelease = foo).
-            if context.swf.version() >= 6 {
+            if movie_version >= 6 {
                 if let Some(name) = event.method_name() {
                     context.action_queue.queue_action(
                         self_display_object,

@@ -12,6 +12,7 @@ use crate::display_object::movie_clip::MovieClip;
 use crate::display_object::stage::Stage;
 use crate::display_object::{Depth, DisplayObject, TDisplayObject, TInteractiveObject};
 use crate::string::WStr;
+use crate::tag_utils::SwfMovie;
 use gc_arena::{Collect, Mutation};
 use ruffle_macros::enum_trait_object;
 use ruffle_render::commands::CommandHandler;
@@ -21,6 +22,7 @@ use std::collections::BTreeMap;
 use std::fmt::Debug;
 use std::ops::{Bound, RangeBounds};
 use std::rc::Rc;
+use std::sync::Arc;
 
 /// Dispatch the `removedFromStage` event on a child and all of it's
 /// grandchildren, recursively.
@@ -200,7 +202,7 @@ pub trait TDisplayObjectContainer<'gc>:
         child.set_depth(context.gc_context, depth);
 
         if let Some(removed_child) = removed_child {
-            if !context.is_action_script_3() {
+            if !self.raw_container().movie().is_action_script_3() {
                 removed_child.avm1_unload(context);
             }
             removed_child.set_parent(context, None);
@@ -268,7 +270,7 @@ pub trait TDisplayObjectContainer<'gc>:
 
         child.set_place_frame(context.gc_context, 0);
         child.set_parent(context, Some(this));
-        if !context.is_action_script_3() {
+        if !self.raw_container().movie().is_action_script_3() {
             child.set_avm1_removed(context.gc_context, false);
         }
 
@@ -301,6 +303,8 @@ pub trait TDisplayObjectContainer<'gc>:
     ///
     /// Will also handle AVM1 delayed clip removal, when a unload listener is present
     fn remove_child(&mut self, context: &mut UpdateContext<'_, 'gc>, child: DisplayObject<'gc>) {
+        let this: DisplayObject<'_> = (*self).into();
+
         // We should always be the parent of this child
         debug_assert!(DisplayObject::ptr_eq(
             child.parent().unwrap(),
@@ -308,11 +312,12 @@ pub trait TDisplayObjectContainer<'gc>:
         ));
 
         // Check if this child should have delayed removal (AVM1 only)
-        if !context.is_action_script_3() {
+        if !self.raw_container().movie().is_action_script_3() {
             let should_delay_removal = {
-                let mut activation = Activation::from_stub(
+                let mut activation = Activation::from_nothing(
                     context.reborrow(),
                     ActivationIdentifier::root("[Unload Handler Check]"),
+                    this.avm1_root(),
                 );
 
                 ChildContainer::should_delay_removal(&mut activation, child)
@@ -334,7 +339,6 @@ pub trait TDisplayObjectContainer<'gc>:
                 raw_container.insert_child_into_depth_list(child.depth(), child);
 
                 drop(raw_container);
-                let this: DisplayObject<'_> = (*self).into();
                 this.invalidate_cached_bitmap(context.gc_context);
 
                 return;
@@ -360,7 +364,7 @@ pub trait TDisplayObjectContainer<'gc>:
             ChildContainer::remove_child_from_render_list(this, child, context);
 
         if removed_from_render_list {
-            if !context.is_action_script_3() {
+            if !self.raw_container().movie.is_action_script_3() {
                 child.avm1_unload(context);
             } else if !matches!(child.object2(), Avm2Value::Null) {
                 //TODO: This is an awful, *awful* hack to deal with the fact
@@ -423,7 +427,7 @@ pub trait TDisplayObjectContainer<'gc>:
             let this: DisplayObjectContainer<'gc> = (*self).into();
             ChildContainer::remove_child_from_render_list(this, removed, context);
 
-            if !context.is_action_script_3() {
+            if !self.raw_container().movie.is_action_script_3() {
                 removed.avm1_unload(context);
             } else if !matches!(removed.object2(), Avm2Value::Null) {
                 removed.set_parent(context, None);
@@ -576,21 +580,19 @@ pub struct ChildContainer<'gc> {
     has_pending_removals: bool,
 
     mouse_children: bool,
-}
 
-impl<'gc> Default for ChildContainer<'gc> {
-    fn default() -> Self {
-        Self::new()
-    }
+    /// The movie this ChildContainer belongs to.
+    movie: Arc<SwfMovie>,
 }
 
 impl<'gc> ChildContainer<'gc> {
-    pub fn new() -> Self {
+    pub fn new(movie: Arc<SwfMovie>) -> Self {
         Self {
             render_list: Rc::new(Vec::new()),
             depth_list: BTreeMap::new(),
             has_pending_removals: false,
             mouse_children: true,
+            movie,
         }
     }
 
@@ -841,6 +843,14 @@ impl<'gc> ChildContainer<'gc> {
 
     pub fn set_mouse_children(&mut self, mouse_children: bool) {
         self.mouse_children = mouse_children;
+    }
+
+    pub fn movie(&self) -> Arc<SwfMovie> {
+        self.movie.clone()
+    }
+
+    pub fn set_movie(&mut self, movie: Arc<SwfMovie>) {
+        self.movie = movie;
     }
 
     /// Insert a child at a given render list position.

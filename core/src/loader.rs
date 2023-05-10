@@ -874,7 +874,7 @@ impl<'gc> Loader<'gc> {
                     .unwrap_or(false);
 
                 if let Some(mut mc) = clip.as_movie_clip() {
-                    if !uc.is_action_script_3() {
+                    if !mc.movie().is_action_script_3() {
                         mc.avm1_unload(uc);
                     }
 
@@ -966,7 +966,7 @@ impl<'gc> Loader<'gc> {
                     .unwrap_or(false);
 
                 if let Some(mc) = clip.as_movie_clip() {
-                    if !uc.is_action_script_3() {
+                    if !mc.movie().is_action_script_3() {
                         mc.avm1_unload(uc);
                     }
                     mc.replace_with_movie(uc, None, false, None);
@@ -1785,39 +1785,48 @@ impl<'gc> Loader<'gc> {
                     )?;
                 }
                 ContentType::Unknown => {
-                    if activation.context.is_action_script_3() {
-                        Loader::movie_loader_progress(
-                            handle,
-                            &mut activation.context,
-                            length,
-                            length,
-                        )?;
-                        Loader::movie_loader_error(
-                            handle,
-                            uc,
-                            AvmString::new_utf8(
-                                uc.gc_context,
-                                &format!("Error #2124: Loaded file is an unknown type. URL: {url}"),
-                            ),
-                            status,
-                            redirected,
-                            url,
-                        )?;
-                    } else {
-                        // If the file is no valid supported file, the MovieClip enters the error state
-                        if let Some(mut mc) = clip.as_movie_clip() {
-                            Loader::load_error_swf(&mut mc, &mut activation.context, url.clone());
-                        }
+                    match vm_data {
+                        MovieLoaderVMData::Avm1 { .. } => {
+                            // If the file is no valid supported file, the MovieClip enters the error state
+                            if let Some(mut mc) = clip.as_movie_clip() {
+                                Loader::load_error_swf(
+                                    &mut mc,
+                                    &mut activation.context,
+                                    url.clone(),
+                                );
+                            }
 
-                        // AVM1 fires the event with the current and total length as 0
-                        Loader::movie_loader_progress(handle, &mut activation.context, 0, 0)?;
-                        Loader::movie_loader_complete(
-                            handle,
-                            &mut activation.context,
-                            None,
-                            status,
-                            redirected,
-                        )?;
+                            // AVM1 fires the event with the current and total length as 0
+                            Loader::movie_loader_progress(handle, &mut activation.context, 0, 0)?;
+                            Loader::movie_loader_complete(
+                                handle,
+                                &mut activation.context,
+                                None,
+                                status,
+                                redirected,
+                            )?;
+                        }
+                        MovieLoaderVMData::Avm2 { .. } => {
+                            Loader::movie_loader_progress(
+                                handle,
+                                &mut activation.context,
+                                length,
+                                length,
+                            )?;
+                            Loader::movie_loader_error(
+                                handle,
+                                uc,
+                                AvmString::new_utf8(
+                                    uc.gc_context,
+                                    &format!(
+                                        "Error #2124: Loaded file is an unknown type. URL: {url}"
+                                    ),
+                                ),
+                                status,
+                                redirected,
+                                url,
+                            )?;
+                        }
                     }
                 }
             }

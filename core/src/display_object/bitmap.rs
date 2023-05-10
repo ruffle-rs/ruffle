@@ -328,7 +328,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         instantiated_by: Instantiator,
         run_frame: bool,
     ) {
-        if context.is_action_script_3() {
+        if self.movie().is_action_script_3() {
             let mut activation = Avm2Activation::from_nothing(context.reborrow());
             if !instantiated_by.is_avm() {
                 let bitmap_cls = self

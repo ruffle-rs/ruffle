@@ -1242,7 +1242,7 @@ fn start_drag<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let lock_center = args
         .get(0)
-        .map(|o| o.as_bool(activation.context.swf.version()))
+        .map(|o| o.as_bool(activation.swf_version()))
         .unwrap_or(false);
 
     let constraint_args = if args.len() > 1 {
