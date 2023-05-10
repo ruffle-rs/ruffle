@@ -13,7 +13,7 @@ use ruffle_core::backend::navigator::OpenURLMode;
 use ruffle_core::compatibility_rules::CompatibilityRules;
 use ruffle_core::config::{Letterbox, NetworkingAccessMode};
 use ruffle_core::context::UpdateContext;
-use ruffle_core::events::{KeyCode, MouseButton, MouseWheelDelta};
+use ruffle_core::events::{KeyCode, MouseButton, MouseWheelDelta, TextControlCode};
 use ruffle_core::external::{
     ExternalInterfaceMethod, ExternalInterfaceProvider, Value as ExternalValue, Value,
 };
@@ -840,9 +840,12 @@ impl Ruffle {
                         let _ = instance.with_core_mut(|core| {
                             let key_code = web_to_ruffle_key_code(&js_event.code());
                             let key_char = web_key_to_codepoint(&js_event.key());
+                            let is_ctrl_cmd = js_event.ctrl_key() || js_event.meta_key();
                             core.handle_event(PlayerEvent::KeyDown { key_code, key_char });
 
-                            if let Some(codepoint) = key_char {
+                            if let Some(control_code) = web_to_text_control(&js_event.key(), is_ctrl_cmd) {
+                                core.handle_event(PlayerEvent::TextControl { code: control_code })
+                            }else if let Some(codepoint) = key_char {
                                 core.handle_event(PlayerEvent::TextInput { codepoint });
                             }
                         });
@@ -1738,5 +1741,28 @@ fn web_key_to_codepoint(key: &str) -> Option<char> {
             "Delete" => Some(127 as char),
             _ => None,
         }
+    }
+}
+
+pub fn web_to_text_control(key: &str, ctrl_key: bool) -> Option<TextControlCode> {
+    let mut chars = key.chars();
+    let (c1, c2) = (chars.next(), chars.next());
+    if c2.is_none() {
+        // Single character.
+        if ctrl_key {
+            match c1 {
+                // TODO: Extend this
+                Some('a') => Some(TextControlCode::SelectAll),
+                Some('c') => Some(TextControlCode::Copy),
+                Some('v') => Some(TextControlCode::Paste),
+                Some('x') => Some(TextControlCode::Cut),
+                _ => None,
+            }
+        } else {
+            None
+        }
+    } else {
+        // TODO: Check for special characters.
+        None
     }
 }

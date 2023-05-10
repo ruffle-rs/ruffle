@@ -23,9 +23,10 @@ use rfd::FileDialog;
 use ruffle_core::backend::audio::AudioBackend;
 use ruffle_core::backend::navigator::OpenURLMode;
 use ruffle_core::{
-    config::Letterbox, events::KeyCode, tag_utils::SwfMovie, LoadBehavior, Player, PlayerBuilder,
+    config::Letterbox, tag_utils::SwfMovie, LoadBehavior, Player, PlayerBuilder,
     PlayerEvent, StageDisplayState, StageScaleMode, StaticCallstack, ViewportDimensions,
 };
+use ruffle_core::events::{KeyCode, TextControlCode};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::quality::StageQuality;
 use ruffle_render_wgpu::backend::WgpuRenderBackend;
@@ -588,7 +589,11 @@ impl App {
                                 let key_char = winit_key_to_char(key, modifiers.shift());
                                 let event = match input.state {
                                     ElementState::Pressed => {
-                                        PlayerEvent::KeyDown { key_code, key_char }
+                                        if let Some(control_code) = winit_to_ruffle_text_control(key, modifiers) {
+                                            PlayerEvent::TextControl { code: control_code }
+                                        } else {
+                                            PlayerEvent::KeyDown { key_code, key_char }
+                                        }
                                     }
                                     ElementState::Released => {
                                         PlayerEvent::KeyUp { key_code, key_char }
@@ -904,6 +909,27 @@ fn winit_key_to_char(key_code: VirtualKeyCode, is_shift_down: bool) -> Option<ch
 
         _ => return None,
     })
+}
+
+/// Converts a `VirtualKeyCode` and `ModifiersState` to a Ruffle `TextControlCode`.
+/// Returns `None` if there is no match.
+fn winit_to_ruffle_text_control(
+    key: VirtualKeyCode,
+    modifiers: ModifiersState,
+) -> Option<TextControlCode> {
+    let ctrl_cmd = modifiers.contains(ModifiersState::CTRL)
+        || (modifiers.contains(ModifiersState::LOGO) && cfg!(target_os = "macos"));
+    if ctrl_cmd {
+        match key {
+            VirtualKeyCode::A => Some(TextControlCode::SelectAll),
+            VirtualKeyCode::C => Some(TextControlCode::Copy),
+            VirtualKeyCode::V => Some(TextControlCode::Paste),
+            VirtualKeyCode::X => Some(TextControlCode::Cut),
+            _ => None,
+        }
+    } else {
+        None
+    }
 }
 
 fn run_timedemo(opt: Opt) -> Result<(), Error> {

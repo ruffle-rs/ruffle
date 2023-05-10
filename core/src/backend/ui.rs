@@ -1,4 +1,4 @@
-use crate::events::{KeyCode, PlayerEvent};
+use crate::events::{KeyCode, PlayerEvent, TextControlCode};
 use fluent_templates::loader::langid;
 pub use fluent_templates::LanguageIdentifier;
 use std::borrow::Cow;
@@ -66,6 +66,7 @@ pub struct InputManager {
     keys_down: HashSet<KeyCode>,
     last_key: KeyCode,
     last_char: Option<char>,
+    last_text_control: Option<TextControlCode>,
 }
 
 impl InputManager {
@@ -74,6 +75,7 @@ impl InputManager {
             keys_down: HashSet::new(),
             last_key: KeyCode::Unknown,
             last_char: None,
+            last_text_control: None,
         }
     }
 
@@ -100,6 +102,10 @@ impl InputManager {
             PlayerEvent::KeyUp { key_code, key_char } => {
                 self.last_char = key_char;
                 self.remove_key(key_code);
+                self.last_text_control = None;
+            }
+            PlayerEvent::TextControl { code } => {
+                self.last_text_control = Some(code);
             }
             PlayerEvent::MouseDown { button, .. } => self.add_key(button.into()),
             PlayerEvent::MouseUp { button, .. } => self.remove_key(button.into()),
@@ -117,6 +123,10 @@ impl InputManager {
 
     pub fn last_key_char(&self) -> Option<char> {
         self.last_char
+    }
+
+    pub fn last_text_control(&self) -> Option<TextControlCode> {
+        self.last_text_control
     }
 
     pub fn is_mouse_down(&self) -> bool {
