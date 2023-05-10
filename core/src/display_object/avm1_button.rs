@@ -20,6 +20,8 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 use swf::ButtonActionCondition;
 
+use super::interactive::Avm2MousePick;
+
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct Avm1Button<'gc>(GcCell<'gc, Avm1ButtonData<'gc>>);
@@ -590,6 +592,15 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
             }
         }
         None
+    }
+
+    fn mouse_pick_avm2(
+        &self,
+        _context: &mut UpdateContext<'_, 'gc>,
+        _point: Point<Twips>,
+        _require_button_mode: bool,
+    ) -> Avm2MousePick<'gc> {
+        Avm2MousePick::NotAvm2
     }
 
     fn mouse_cursor(self, context: &mut UpdateContext<'_, 'gc>) -> MouseCursor {

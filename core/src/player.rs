@@ -2672,8 +2672,10 @@ fn run_mouse_pick<'gc>(
                         res = Some(target);
                     }
                 }
+
                 res
             } else {
+                // Run AVM1 mouse pick
                 l.mouse_pick_avm1(context, *context.mouse_position, require_button_mode)
             }
         })
