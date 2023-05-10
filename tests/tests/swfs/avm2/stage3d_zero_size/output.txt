@@ -1,0 +1,4 @@
+Caught error: Error: Error #3780: Requested width of backbuffer is not in allowed range 32 to 16384.
+Caught error: Error: Error #3781: Requested height of backbuffer is not in allowed range 32 to 16384.
+Caught error: Error: Error #3780: Requested width of backbuffer is not in allowed range 32 to 16384.
+Caught error: Error: Error #3781: Requested height of backbuffer is not in allowed range 32 to 16384.
