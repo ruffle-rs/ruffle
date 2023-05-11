@@ -33,44 +33,39 @@ pub fn calculate_shape_bounds(shape_records: &[swf::ShapeRecord]) -> swf::Rectan
         x_max: Twips::new(i32::MIN),
         y_max: Twips::new(i32::MIN),
     };
-    let mut x = Twips::ZERO;
-    let mut y = Twips::ZERO;
+    let mut cursor = swf::Point::ZERO;
     for record in shape_records {
         match record {
             swf::ShapeRecord::StyleChange(style_change) => {
                 if let Some(move_to) = &style_change.move_to {
-                    x = move_to.x;
-                    y = move_to.y;
-                    bounds.x_min = Twips::min(bounds.x_min, x);
-                    bounds.x_max = Twips::max(bounds.x_max, x);
-                    bounds.y_min = Twips::min(bounds.y_min, y);
-                    bounds.y_max = Twips::max(bounds.y_max, y);
+                    cursor = *move_to;
+                    bounds.x_min = bounds.x_min.min(cursor.x);
+                    bounds.x_max = bounds.x_max.max(cursor.x);
+                    bounds.y_min = bounds.y_min.min(cursor.y);
+                    bounds.y_max = bounds.y_max.max(cursor.y);
                 }
             }
             swf::ShapeRecord::StraightEdge { delta } => {
-                x += delta.dx;
-                y += delta.dy;
-                bounds.x_min = Twips::min(bounds.x_min, x);
-                bounds.x_max = Twips::max(bounds.x_max, x);
-                bounds.y_min = Twips::min(bounds.y_min, y);
-                bounds.y_max = Twips::max(bounds.y_max, y);
+                cursor += *delta;
+                bounds.x_min = bounds.x_min.min(cursor.x);
+                bounds.x_max = bounds.x_max.max(cursor.x);
+                bounds.y_min = bounds.y_min.min(cursor.y);
+                bounds.y_max = bounds.y_max.max(cursor.y);
             }
             swf::ShapeRecord::CurvedEdge {
                 control_delta,
                 anchor_delta,
             } => {
-                x += control_delta.dx;
-                y += control_delta.dy;
-                bounds.x_min = Twips::min(bounds.x_min, x);
-                bounds.x_max = Twips::max(bounds.x_max, x);
-                bounds.y_min = Twips::min(bounds.y_min, y);
-                bounds.y_max = Twips::max(bounds.y_max, y);
-                x += anchor_delta.dx;
-                y += anchor_delta.dy;
-                bounds.x_min = Twips::min(bounds.x_min, x);
-                bounds.x_max = Twips::max(bounds.x_max, x);
-                bounds.y_min = Twips::min(bounds.y_min, y);
-                bounds.y_max = Twips::max(bounds.y_max, y);
+                cursor += *control_delta;
+                bounds.x_min = bounds.x_min.min(cursor.x);
+                bounds.x_max = bounds.x_max.max(cursor.x);
+                bounds.y_min = bounds.y_min.min(cursor.y);
+                bounds.y_max = bounds.y_max.max(cursor.y);
+                cursor += *anchor_delta;
+                bounds.x_min = bounds.x_min.min(cursor.x);
+                bounds.x_max = bounds.x_max.max(cursor.x);
+                bounds.y_min = bounds.y_min.min(cursor.y);
+                bounds.y_max = bounds.y_max.max(cursor.y);
             }
         }
     }
