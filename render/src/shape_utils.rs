@@ -701,16 +701,15 @@ mod tests {
 /// local_matrix is used to calculate the proper stroke widths.
 pub fn shape_hit_test(
     shape: &swf::Shape,
-    (point_x, point_y): (Twips, Twips),
+    test_point: swf::Point<Twips>,
     local_matrix: &Matrix,
 ) -> bool {
-    // Transform point to local space.
-    let mut x = Twips::ZERO;
-    let mut y = Twips::ZERO;
+    let test_point = (test_point.x, test_point.y);
+    let mut cursor = swf::Point::ZERO;
     let mut winding = 0;
 
-    let mut has_fill_style0: bool = false;
-    let mut has_fill_style1: bool = false;
+    let mut has_fill_style0 = false;
+    let mut has_fill_style1 = false;
 
     let min_width = stroke_minimum_width(local_matrix);
     let mut stroke_width = None;
@@ -730,8 +729,7 @@ pub fn shape_hit_test(
                 }
 
                 if let Some(move_to) = &style_change.move_to {
-                    x = move_to.x;
-                    y = move_to.y;
+                    cursor = *move_to;
                 }
 
                 if let Some(i) = style_change.fill_style_0 {
@@ -756,54 +754,66 @@ pub fn shape_hit_test(
                 }
             }
             swf::ShapeRecord::StraightEdge { delta } => {
-                let x1 = x + delta.dx;
-                let y1 = y + delta.dy;
-                // If this edge has a fill style on only one-side, check for a crossing.
-                if has_fill_style1 {
-                    if !has_fill_style0 {
-                        winding += winding_number_line((point_x, point_y), (x, y), (x1, y1));
-                    }
-                } else if has_fill_style0 {
-                    winding += winding_number_line((point_x, point_y), (x1, y1), (x, y));
-                }
-
-                if let Some(width) = stroke_width {
-                    if hit_test_stroke((point_x, point_y), (x, y), (x1, y1), width) {
-                        return true;
-                    }
-                }
-                x = x1;
-                y = y1;
-            }
-            swf::ShapeRecord::CurvedEdge {
-                control_delta,
-                anchor_delta,
-            } => {
-                let x1 = x + control_delta.dx;
-                let y1 = y + control_delta.dy;
-
-                let x2 = x1 + anchor_delta.dx;
-                let y2 = y1 + anchor_delta.dy;
+                let end = cursor + *delta;
 
                 // If this edge has a fill style on only one-side, check for a crossing.
                 if has_fill_style1 {
                     if !has_fill_style0 {
                         winding +=
-                            winding_number_curve((point_x, point_y), (x, y), (x1, y1), (x2, y2));
+                            winding_number_line(test_point, (cursor.x, cursor.y), (end.x, end.y));
                     }
                 } else if has_fill_style0 {
-                    winding += winding_number_curve((point_x, point_y), (x2, y2), (x1, y1), (x, y));
+                    winding +=
+                        winding_number_line(test_point, (end.x, end.y), (cursor.x, cursor.y));
                 }
 
                 if let Some(width) = stroke_width {
-                    if hit_test_stroke_curve((point_x, point_y), (x, y), (x1, y1), (x2, y2), width)
-                    {
+                    if hit_test_stroke(test_point, (cursor.x, cursor.y), (end.x, end.y), width) {
                         return true;
                     }
                 }
 
-                x = x2;
-                y = y2;
+                cursor = end;
+            }
+            swf::ShapeRecord::CurvedEdge {
+                control_delta,
+                anchor_delta,
+            } => {
+                let control = cursor + *control_delta;
+                let anchor = control + *anchor_delta;
+
+                // If this edge has a fill style on only one-side, check for a crossing.
+                if has_fill_style1 {
+                    if !has_fill_style0 {
+                        winding += winding_number_curve(
+                            test_point,
+                            (cursor.x, cursor.y),
+                            (control.x, control.y),
+                            (anchor.x, anchor.y),
+                        );
+                    }
+                } else if has_fill_style0 {
+                    winding += winding_number_curve(
+                        test_point,
+                        (anchor.x, anchor.y),
+                        (control.x, control.y),
+                        (cursor.x, cursor.y),
+                    );
+                }
+
+                if let Some(width) = stroke_width {
+                    if hit_test_stroke_curve(
+                        test_point,
+                        (cursor.x, cursor.y),
+                        (control.x, control.y),
+                        (anchor.x, anchor.y),
+                        width,
+                    ) {
+                        return true;
+                    }
+                }
+
+                cursor = anchor;
             }
         }
     }
