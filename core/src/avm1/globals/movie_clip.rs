@@ -584,20 +584,16 @@ fn curve_to<'gc>(
     activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let (Some(x1), Some(y1), Some(x2), Some(y2)) =
-        (args.get(0), args.get(1), args.get(2), args.get(3))
-    {
-        let x1 = x1.coerce_to_f64(activation)?;
-        let y1 = y1.coerce_to_f64(activation)?;
-        let x2 = x2.coerce_to_f64(activation)?;
-        let y2 = y2.coerce_to_f64(activation)?;
+    if let [control_x, control_y, anchor_x, anchor_y, ..] = args {
+        let control_x = control_x.coerce_to_f64(activation)?;
+        let control_y = control_y.coerce_to_f64(activation)?;
+        let anchor_x = anchor_x.coerce_to_f64(activation)?;
+        let anchor_y = anchor_y.coerce_to_f64(activation)?;
         movie_clip
             .drawing(activation.context.gc_context)
             .draw_command(DrawCommand::CurveTo {
-                x1: Twips::from_pixels(x1),
-                y1: Twips::from_pixels(y1),
-                x2: Twips::from_pixels(x2),
-                y2: Twips::from_pixels(y2),
+                control: Point::from_pixels(control_x, control_y),
+                anchor: Point::from_pixels(anchor_x, anchor_y),
             });
     }
     Ok(Value::Undefined)

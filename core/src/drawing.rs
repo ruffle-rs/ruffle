@@ -431,10 +431,10 @@ fn stretch_bounds(
         DrawCommand::MoveTo(point) | DrawCommand::LineTo(point) => bounds
             .encompass(Point::new(point.x - radius, point.y - radius))
             .encompass(Point::new(point.x + radius, point.y + radius)),
-        DrawCommand::CurveTo { x1, y1, x2, y2 } => bounds
-            .encompass(Point::new(x1 - radius, y1 - radius))
-            .encompass(Point::new(x1 + radius, y1 + radius))
-            .encompass(Point::new(x2 - radius, y2 - radius))
-            .encompass(Point::new(x2 + radius, y2 + radius)),
+        DrawCommand::CurveTo { control, anchor } => bounds
+            .encompass(Point::new(control.x - radius, control.y - radius))
+            .encompass(Point::new(control.x + radius, control.y + radius))
+            .encompass(Point::new(anchor.x - radius, anchor.y - radius))
+            .encompass(Point::new(anchor.x + radius, anchor.y + radius)),
     }
 }

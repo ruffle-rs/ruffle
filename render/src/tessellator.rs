@@ -347,14 +347,11 @@ fn ruffle_path_to_lyon_path(commands: &[DrawCommand], is_closed: bool) -> Path {
                 }
                 builder.line_to(point(*line_to));
             }
-            DrawCommand::CurveTo { x1, y1, x2, y2 } => {
+            DrawCommand::CurveTo { control, anchor } => {
                 if let Some(cursor) = cursor.take() {
                     builder.begin(point(cursor));
                 }
-                builder.quadratic_bezier_to(
-                    point(swf::Point::new(*x1, *y1)),
-                    point(swf::Point::new(*x2, *y2)),
-                );
+                builder.quadratic_bezier_to(point(*control), point(*anchor));
             }
         }
     }
