@@ -121,20 +121,14 @@ impl Drawing {
             self.paths.push(DrawingPath::Line(existing));
             self.current_line = Some(DrawingLine {
                 style,
-                commands: vec![DrawCommand::MoveTo {
-                    x: self.cursor.x,
-                    y: self.cursor.y,
-                }],
+                commands: vec![DrawCommand::MoveTo(self.cursor)],
                 is_closed: false,
             });
         }
         if let Some(style) = style {
             self.current_fill = Some(DrawingFill {
                 style,
-                commands: vec![DrawCommand::MoveTo {
-                    x: self.cursor.x,
-                    y: self.cursor.y,
-                }],
+                commands: vec![DrawCommand::MoveTo(self.cursor)],
             });
         }
         self.fill_start = self.cursor;
@@ -166,10 +160,7 @@ impl Drawing {
         if let Some(style) = style {
             self.current_line = Some(DrawingLine {
                 style,
-                commands: vec![DrawCommand::MoveTo {
-                    x: self.cursor.x,
-                    y: self.cursor.y,
-                }],
+                commands: vec![DrawCommand::MoveTo(self.cursor)],
                 is_closed: false,
             });
         }
@@ -184,10 +175,10 @@ impl Drawing {
     }
 
     pub fn draw_command(&mut self, command: DrawCommand) {
-        let add_to_bounds = if let DrawCommand::MoveTo { x, y } = command {
+        let add_to_bounds = if let DrawCommand::MoveTo(move_to) = &command {
             // Close any pending fills before moving.
             self.close_path();
-            self.fill_start = Point::new(x, y);
+            self.fill_start = *move_to;
             false
         } else {
             true
@@ -209,10 +200,7 @@ impl Drawing {
         if add_to_bounds {
             if self.fill_start == self.cursor {
                 // If this is the initial command after a move, include the starting point.
-                let command = DrawCommand::MoveTo {
-                    x: self.cursor.x,
-                    y: self.cursor.y,
-                };
+                let command = DrawCommand::MoveTo(self.cursor);
                 self.shape_bounds = stretch_bounds(&self.shape_bounds, &command, stroke_width);
                 self.edge_bounds = stretch_bounds(&self.edge_bounds, &command, Twips::ZERO);
             }
@@ -220,8 +208,7 @@ impl Drawing {
             self.edge_bounds = stretch_bounds(&self.edge_bounds, &command, Twips::ZERO);
         }
 
-        let (x, y) = command.end_point();
-        self.cursor = Point::new(x, y);
+        self.cursor = command.end_point();
         self.dirty.set(true);
     }
 
@@ -379,10 +366,7 @@ impl Drawing {
                 && self.cursor != self.fill_start
                 && shape_utils::draw_command_stroke_hit_test(
                     &[
-                        DrawCommand::MoveTo {
-                            x: self.cursor.x,
-                            y: self.cursor.y,
-                        },
+                        DrawCommand::MoveTo(self.cursor),
                         DrawCommand::LineTo {
                             x: self.fill_start.x,
                             y: self.fill_start.y,
@@ -460,9 +444,9 @@ fn stretch_bounds(
     let radius = stroke_width / 2;
     let bounds = bounds.clone();
     match *command {
-        DrawCommand::MoveTo { x, y } => bounds
-            .encompass(Point::new(x - radius, y - radius))
-            .encompass(Point::new(x + radius, y + radius)),
+        DrawCommand::MoveTo(point) => bounds
+            .encompass(Point::new(point.x - radius, point.y - radius))
+            .encompass(Point::new(point.x + radius, point.y + radius)),
         DrawCommand::LineTo { x, y } => bounds
             .encompass(Point::new(x - radius, y - radius))
             .encompass(Point::new(x + radius, y + radius)),

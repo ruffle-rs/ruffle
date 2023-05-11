@@ -122,10 +122,7 @@ impl<'a> From<&'a swf::Shape> for DistilledShape<'a> {
 /// Fills follow the even-odd fill rule, with opposite winding for holes.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DrawCommand {
-    MoveTo {
-        x: Twips,
-        y: Twips,
-    },
+    MoveTo(swf::Point<Twips>),
     LineTo {
         x: Twips,
         y: Twips,
@@ -139,11 +136,12 @@ pub enum DrawCommand {
 }
 
 impl DrawCommand {
-    pub fn end_point(&self) -> (Twips, Twips) {
+    pub fn end_point(&self) -> swf::Point<Twips> {
         match self {
-            DrawCommand::MoveTo { x, y } => (*x, *y),
-            DrawCommand::LineTo { x, y } => (*x, *y),
-            DrawCommand::CurveTo { x2, y2, .. } => (*x2, *y2),
+            DrawCommand::MoveTo(point) => *point,
+            DrawCommand::LineTo { x, y } | DrawCommand::CurveTo { x2: x, y2: y, .. } => {
+                swf::Point::new(*x, *y)
+            }
         }
     }
 }
@@ -153,6 +151,12 @@ struct Point {
     x: Twips,
     y: Twips,
     is_bezier_control: bool,
+}
+
+impl From<Point> for swf::Point<Twips> {
+    fn from(point: Point) -> Self {
+        Self::new(point.x, point.y)
+    }
 }
 
 /// A continuous series of edges in a path.
@@ -218,30 +222,28 @@ impl PathSegment {
         assert!(!self.is_empty());
         let mut i = self.points.iter();
         let first = i.next().expect("Points should not be empty");
-        std::iter::once(DrawCommand::MoveTo {
-            x: first.x,
-            y: first.y,
-        })
-        .chain(std::iter::from_fn(move || match i.next() {
-            Some(&Point {
-                is_bezier_control: false,
-                x,
-                y,
-            }) => Some(DrawCommand::LineTo { x, y }),
-            Some(&Point {
-                is_bezier_control: true,
-                x,
-                y,
-            }) => {
-                let end = i.next().expect("Bezier without endpoint");
-                Some(DrawCommand::CurveTo {
-                    x1: x,
-                    y1: y,
-                    x2: end.x,
-                    y2: end.y,
-                })
+        std::iter::once(DrawCommand::MoveTo((*first).into())).chain(std::iter::from_fn(move || {
+            match i.next() {
+                Some(&Point {
+                    is_bezier_control: false,
+                    x,
+                    y,
+                }) => Some(DrawCommand::LineTo { x, y }),
+                Some(&Point {
+                    is_bezier_control: true,
+                    x,
+                    y,
+                }) => {
+                    let end = i.next().expect("Bezier without endpoint");
+                    Some(DrawCommand::CurveTo {
+                        x1: x,
+                        y1: y,
+                        x2: end.x,
+                        y2: end.y,
+                    })
+                }
+                None => None,
             }
-            None => None,
         }))
     }
 }
@@ -625,10 +627,7 @@ mod tests {
         let expected = vec![DrawPath::Fill {
             style: &FILL_STYLES[0],
             commands: vec![
-                DrawCommand::MoveTo {
-                    x: Twips::from_pixels(100.0),
-                    y: Twips::from_pixels(100.0),
-                },
+                DrawCommand::MoveTo(swf::Point::from_pixels(100.0, 100.0)),
                 DrawCommand::LineTo {
                     x: Twips::from_pixels(200.0),
                     y: Twips::from_pixels(100.0),
@@ -686,10 +685,7 @@ mod tests {
         let expected = vec![DrawPath::Fill {
             style: &FILL_STYLES[0],
             commands: vec![
-                DrawCommand::MoveTo {
-                    x: Twips::from_pixels(100.0),
-                    y: Twips::from_pixels(100.0),
-                },
+                DrawCommand::MoveTo(swf::Point::from_pixels(100.0, 100.0)),
                 DrawCommand::LineTo {
                     x: Twips::from_pixels(200.0),
                     y: Twips::from_pixels(100.0),
@@ -851,30 +847,35 @@ pub fn shape_hit_test(
 
 /// Test whether the given point is contained within the paths specified by the draw commands.
 pub fn draw_command_fill_hit_test(commands: &[DrawCommand], test_point: (Twips, Twips)) -> bool {
-    let mut cursor = (Twips::ZERO, Twips::ZERO);
-    let mut fill_start = (Twips::ZERO, Twips::ZERO);
+    let mut cursor = swf::Point::ZERO;
+    let mut fill_start = swf::Point::ZERO;
     let mut winding = 0;
 
     // Draw command only contains a single fill, so don't have to worry about fill styles.
     for command in commands {
-        match *command {
-            DrawCommand::MoveTo { x: x1, y: y1 } => {
-                cursor = (x1, y1);
-                fill_start = (x1, y1);
+        match command {
+            DrawCommand::MoveTo(move_to) => {
+                cursor = *move_to;
+                fill_start = *move_to;
             }
             DrawCommand::LineTo { x: x1, y: y1 } => {
-                winding += winding_number_line(test_point, cursor, (x1, y1));
-                cursor = (x1, y1);
+                winding += winding_number_line(test_point, (cursor.x, cursor.y), (*x1, *y1));
+                cursor = swf::Point::new(*x1, *y1);
             }
             DrawCommand::CurveTo { x1, y1, x2, y2 } => {
-                winding += winding_number_curve(test_point, cursor, (x1, y1), (x2, y2));
-                cursor = (x2, y2);
+                winding +=
+                    winding_number_curve(test_point, (cursor.x, cursor.y), (*x1, *y1), (*x2, *y2));
+                cursor = swf::Point::new(*x2, *y2);
             }
         }
     }
     if cursor != fill_start {
         // Close fill.
-        winding += winding_number_line(test_point, cursor, fill_start);
+        winding += winding_number_line(
+            test_point,
+            (cursor.x, cursor.y),
+            (fill_start.x, fill_start.y),
+        );
     }
 
     winding & 0b1 != 0
@@ -891,33 +892,34 @@ pub fn draw_command_stroke_hit_test(
     let stroke_min_width = stroke_minimum_width(local_matrix);
     let stroke_width = 0.5 * f64::max(stroke_width.get().into(), stroke_min_width);
     let stroke_widths = (stroke_width, stroke_width * stroke_width);
-    let mut x = Twips::default();
-    let mut y = Twips::default();
+    let mut cursor = swf::Point::ZERO;
     for command in commands {
-        match *command {
-            DrawCommand::MoveTo { x: x1, y: y1 } => {
-                x = x1;
-                y = y1;
+        match command {
+            DrawCommand::MoveTo(move_to) => {
+                cursor = *move_to;
             }
             DrawCommand::LineTo { x: x1, y: y1 } => {
-                if hit_test_stroke((point_x, point_y), (x, y), (x1, y1), stroke_widths) {
-                    return true;
-                }
-                x = x1;
-                y = y1;
-            }
-            DrawCommand::CurveTo { x1, y1, x2, y2 } => {
-                if hit_test_stroke_curve(
+                if hit_test_stroke(
                     (point_x, point_y),
-                    (x, y),
-                    (x1, y1),
-                    (x2, y2),
+                    (cursor.x, cursor.y),
+                    (*x1, *y1),
                     stroke_widths,
                 ) {
                     return true;
                 }
-                x = x2;
-                y = y2;
+                cursor = swf::Point::new(*x1, *y1);
+            }
+            DrawCommand::CurveTo { x1, y1, x2, y2 } => {
+                if hit_test_stroke_curve(
+                    (point_x, point_y),
+                    (cursor.x, cursor.y),
+                    (*x1, *y1),
+                    (*x2, *y2),
+                    stroke_widths,
+                ) {
+                    return true;
+                }
+                cursor = swf::Point::new(*x2, *y2);
             }
         }
     }

@@ -327,36 +327,39 @@ fn swf_bitmap_to_gl_matrix(
 }
 
 fn ruffle_path_to_lyon_path(commands: &[DrawCommand], is_closed: bool) -> Path {
-    fn point(x: swf::Twips, y: swf::Twips) -> lyon::math::Point {
-        lyon::math::Point::new(x.to_pixels() as f32, y.to_pixels() as f32)
+    fn point(point: swf::Point<swf::Twips>) -> lyon::math::Point {
+        lyon::math::Point::new(point.x.to_pixels() as f32, point.y.to_pixels() as f32)
     }
 
     let mut builder = Path::builder();
-    let mut move_to = Some((swf::Twips::default(), swf::Twips::default()));
-    for cmd in commands {
-        match *cmd {
-            DrawCommand::MoveTo { x, y } => {
-                if move_to.is_none() {
+    let mut cursor = Some(swf::Point::ZERO);
+    for command in commands {
+        match command {
+            DrawCommand::MoveTo(move_to) => {
+                if cursor.is_none() {
                     builder.end(false);
                 }
-                move_to = Some((x, y));
+                cursor = Some(*move_to);
             }
             DrawCommand::LineTo { x, y } => {
-                if let Some((x, y)) = move_to.take() {
-                    builder.begin(point(x, y));
+                if let Some(cursor) = cursor.take() {
+                    builder.begin(point(cursor));
                 }
-                builder.line_to(point(x, y));
+                builder.line_to(point(swf::Point::new(*x, *y)));
             }
             DrawCommand::CurveTo { x1, y1, x2, y2 } => {
-                if let Some((x, y)) = move_to.take() {
-                    builder.begin(point(x, y));
+                if let Some(cursor) = cursor.take() {
+                    builder.begin(point(cursor));
                 }
-                builder.quadratic_bezier_to(point(x1, y1), point(x2, y2));
+                builder.quadratic_bezier_to(
+                    point(swf::Point::new(*x1, *y1)),
+                    point(swf::Point::new(*x2, *y2)),
+                );
             }
         }
     }
 
-    if move_to.is_none() {
+    if cursor.is_none() {
         if is_closed {
             builder.close();
         } else {

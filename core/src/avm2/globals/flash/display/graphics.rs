@@ -16,7 +16,7 @@ use ruffle_render::shape_utils::{DrawCommand, GradientType};
 use std::f64::consts::FRAC_1_SQRT_2;
 use swf::{
     Color, FillStyle, Fixed16, Fixed8, Gradient, GradientInterpolation, GradientRecord,
-    GradientSpread, LineCapStyle, LineJoinStyle, LineStyle, Matrix, Twips,
+    GradientSpread, LineCapStyle, LineJoinStyle, LineStyle, Matrix, Point, Twips,
 };
 
 /// Convert an RGB `color` and `alpha` argument pair into a `swf::Color`.
@@ -379,7 +379,7 @@ pub fn move_to<'gc>(
         let y = Twips::from_pixels(args.get_f64(activation, 1)?);
 
         if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
-            draw.draw_command(DrawCommand::MoveTo { x, y });
+            draw.draw_command(DrawCommand::MoveTo(Point::new(x, y)));
         }
     }
 
@@ -399,7 +399,7 @@ pub fn draw_rect<'gc>(
         let height = Twips::from_pixels(args.get_f64(activation, 3)?);
 
         if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
-            draw.draw_command(DrawCommand::MoveTo { x, y });
+            draw.draw_command(DrawCommand::MoveTo(Point::new(x, y)));
             draw.draw_command(DrawCommand::LineTo { x: x + width, y });
             draw.draw_command(DrawCommand::LineTo {
                 x: x + width,
@@ -526,11 +526,9 @@ fn draw_round_rect_internal(
 
     let br_point_x = br_ellipse_center_x + ellipse_width / 2.0 * ucp[2].0;
     let br_point_y = br_ellipse_center_y + ellipse_height / 2.0 * ucp[2].1;
+    let br_point = Point::from_pixels(br_point_x, br_point_y);
 
-    draw.draw_command(DrawCommand::MoveTo {
-        x: Twips::from_pixels(br_point_x),
-        y: Twips::from_pixels(br_point_y),
-    });
+    draw.draw_command(DrawCommand::MoveTo(br_point));
 
     let br_b_curve_x = br_ellipse_center_x + ellipse_width / 2.0 * ucp[3].0;
     let br_b_curve_y = br_ellipse_center_y + ellipse_height / 2.0 * ucp[3].1;
