@@ -574,7 +574,9 @@ impl<'a> NagaBuilder<'a> {
     fn get_vertex_input(&mut self, index: usize) -> Result<Handle<Expression>> {
         if index >= self.vertex_input_expressions.len() {
             self.vertex_input_expressions.resize(index + 1, None);
+        }
 
+        if self.vertex_input_expressions[index].is_none() {
             let ty = self.shader_config.vertex_attributes[index]
                 .as_ref()
                 .ok_or(Error::MissingVertexAttributeData(index))?
