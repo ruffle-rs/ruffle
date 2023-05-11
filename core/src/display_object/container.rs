@@ -370,7 +370,6 @@ pub trait TDisplayObjectContainer<'gc>:
                 //TODO: This is an awful, *awful* hack to deal with the fact
                 //that unloaded AVM1 clips see their parents, while AVM2 clips
                 //don't.
-
                 child.set_parent(context, None);
             }
 
