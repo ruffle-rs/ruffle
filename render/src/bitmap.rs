@@ -247,6 +247,41 @@ impl BitmapFormat {
     }
 }
 
+fn intersection_same_coordinate_system(
+    (r1_x_min, r1_y_min, r1_x_max, r1_y_max): (i32, i32, i32, i32),
+    (r2_x_min, r2_y_min, r2_x_max, r2_y_max): (i32, i32, i32, i32),
+) -> (i32, i32, i32, i32) {
+    // To guard against 'min' being larger than 'max'.
+    let r1_x_min = r1_x_min.min(r1_x_max);
+    let r1_y_min = r1_y_min.min(r1_y_max);
+    let r2_x_min = r2_x_min.min(r2_x_max);
+    let r2_y_min = r2_y_min.min(r2_y_max);
+
+    // First part of intersection.
+    let r3_x_min = r1_x_min.max(r2_x_min);
+    let r3_y_min = r1_y_min.max(r2_y_min);
+    let r3_x_max = r1_x_max.min(r2_x_max);
+    let r3_y_max = r1_y_max.min(r2_y_max);
+
+    // In case of no overlap.
+    let r3_x_min = r3_x_min.min(r3_x_max);
+    let r3_y_min = r3_y_min.min(r3_y_max);
+
+    (r3_x_min, r3_y_min, r3_x_max, r3_y_max)
+}
+
+fn translate_region(
+    (r_x_min, r_y_min, r_x_max, r_y_max): (i32, i32, i32, i32),
+    (trans_x, trans_y): (i32, i32),
+) -> (i32, i32, i32, i32) {
+    (
+        r_x_min + trans_x,
+        r_y_min + trans_y,
+        r_x_max + trans_x,
+        r_y_max + trans_y,
+    )
+}
+
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct PixelRegion {
     pub x_min: u32,
@@ -398,46 +433,54 @@ impl PixelRegion {
         size: (i32, i32),
         other: &mut PixelRegion,
     ) {
-        // First place the ideal overlap box within each region, clamping as needed
-        let self_x_min = self_point.0.max(self.x_min as i32) as u32;
-        let self_y_min = self_point.1.max(self.y_min as i32) as u32;
-        let self_x_max = (self_point.0 + size.0).min(self.x_max as i32).max(0) as u32;
-        let self_y_max = (self_point.1 + size.1).min(self.y_max as i32).max(0) as u32;
+        // Translate both regions to same coordinate system.
 
-        let other_x_min = other_point.0.max(other.x_min as i32) as u32;
-        let other_y_min = other_point.1.max(other.y_min as i32) as u32;
-        let other_x_max = (other_point.0 + size.0).min(other.x_max as i32).max(0) as u32;
-        let other_y_max = (other_point.1 + size.1).min(other.y_max as i32).max(0) as u32;
+        let r1 = (
+            self.x_min as i32,
+            self.y_min as i32,
+            self.x_max as i32,
+            self.y_max as i32,
+        );
+        let r2 = (
+            other.x_min as i32,
+            other.y_min as i32,
+            other.x_max as i32,
+            other.y_max as i32,
+        );
 
-        // `self` and `other` now have `_point` and `size` clamped within their respective regions
-        // But the clamping might have changed the rect size, so now we have to find out the new size
+        let r1_trans = translate_region(r1, (-self_point.0, -self_point.1));
+        let r2_trans = translate_region(r2, (-other_point.0, -other_point.1));
 
-        let x = (self_x_min as i32 - self_point.0)
-            .max(other_x_min as i32 - other_point.0)
-            .max(0);
-        let y = (self_y_min as i32 - self_point.1)
-            .max(other_y_min as i32 - other_point.1)
-            .max(0);
-        let width = ((self_x_max - self_x_min) as i32)
-            .min((other_x_max - other_x_min) as i32)
-            .max(0) as u32;
-        let height = ((self_y_max - self_y_min) as i32)
-            .min((other_y_max - other_y_min) as i32)
-            .max(0) as u32;
+        // Intersection.
 
-        // Now resize the boxes a final time with the new dimensions
-        // It's safe to assume the dimensions fall within the safe area of each box
-        // due to them being calculated using those safe areas
+        let inters = intersection_same_coordinate_system(
+            intersection_same_coordinate_system(r1_trans, r2_trans),
+            (0, 0, size.0, size.1),
+        );
 
-        self.x_min = (self_point.0 + x) as u32;
-        self.y_min = (self_point.1 + y) as u32;
-        self.x_max = self.x_min + width;
-        self.y_max = self.y_min + height;
+        // Translate the intersection back.
 
-        other.x_min = (other_point.0 + x) as u32;
-        other.y_min = (other_point.1 + y) as u32;
-        other.x_max = other.x_min + width;
-        other.y_max = other.y_min + height;
+        let r1_result = translate_region(inters, self_point);
+        let r2_result = translate_region(inters, other_point);
+
+        // Ensure empty results yield (0, 0, 0, 0).
+
+        let is_empty = inters.0 == inters.2 || inters.1 == inters.3;
+
+        let r1_result = if is_empty { (0, 0, 0, 0) } else { r1_result };
+        let r2_result = if is_empty { (0, 0, 0, 0) } else { r2_result };
+
+        // Mutate.
+
+        self.x_min = r1_result.0 as u32;
+        self.y_min = r1_result.1 as u32;
+        self.x_max = r1_result.2 as u32;
+        self.y_max = r1_result.3 as u32;
+
+        other.x_min = r2_result.0 as u32;
+        other.y_min = r2_result.1 as u32;
+        other.x_max = r2_result.2 as u32;
+        other.y_max = r2_result.3 as u32;
     }
 }
 
@@ -521,6 +564,26 @@ mod test {
             (40, 40),
             PixelRegion::for_region_i32(400, 440, 40, 40),
             PixelRegion::for_region_i32(40, 0, 40, 40),
+        );
+
+        test(
+            PixelRegion::for_whole_size(240, 180),
+            PixelRegion::for_whole_size(238, 164),
+            (-1, 0),
+            (0, 0),
+            (240, 180),
+            PixelRegion::for_region_i32(0, 0, 237, 164),
+            PixelRegion::for_region_i32(1, 0, 237, 164),
+        );
+
+        test(
+            PixelRegion::for_whole_size(10, 10),
+            PixelRegion::for_whole_size(10, 10),
+            (15, 0),
+            (0, 15),
+            (100, 100),
+            PixelRegion::for_region_i32(0, 0, 0, 0),
+            PixelRegion::for_region_i32(0, 0, 0, 0),
         );
     }
 }
