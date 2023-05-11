@@ -1318,37 +1318,23 @@ fn blend_and_transform<'gc>(
     dest_region: PixelRegion,
     transform: &ColorTransform,
 ) {
-    if !source.transparency() && source.ptr_eq(dest) && source_region == dest_region {
-        // Copying the same area of opaque self to self, noop
-        return;
-    }
     if source.ptr_eq(dest) {
         let dest = dest.sync();
         let mut write = dest.write(context.gc_context);
 
-        if write.transparency() {
-            for y in 0..dest_region.height() {
-                for x in 0..dest_region.width() {
-                    let mut color =
-                        write.get_pixel32_raw(source_region.x_min + x, source_region.y_min + y);
-                    color = write
-                        .get_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y)
-                        .blend_over(&color);
-                    color =
-                        Color::from(transform * swf::Color::from(color.to_un_multiplied_alpha()))
-                            .to_premultiplied_alpha(true);
-                    write.set_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y, color);
+        for y in 0..dest_region.height() {
+            for x in 0..dest_region.width() {
+                let mut color =
+                    write.get_pixel32_raw(source_region.x_min + x, source_region.y_min + y);
+                color = Color::from(transform * swf::Color::from(color.to_un_multiplied_alpha()))
+                    .to_premultiplied_alpha(true);
+                color = write
+                    .get_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y)
+                    .blend_over(&color);
+                if !write.transparency() {
+                    color = color.with_alpha(255);
                 }
-            }
-        } else {
-            // Can't blend if copying from opaque
-            for y in 0..dest_region.height() {
-                for x in 0..dest_region.width() {
-                    let mut color =
-                        write.get_pixel32_raw(source_region.x_min + x, source_region.y_min + y);
-                    color = Color::from(transform * swf::Color::from(color)).with_alpha(255);
-                    write.set_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y, color);
-                }
+                write.set_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y, color);
             }
         }
 
@@ -1363,10 +1349,10 @@ fn blend_and_transform<'gc>(
             for x in 0..dest_region.width() {
                 let mut color =
                     source_read.get_pixel32_raw(source_region.x_min + x, source_region.y_min + y);
+                color = Color::from(transform * swf::Color::from(color));
                 color = dest_write
                     .get_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y)
                     .blend_over(&color);
-                color = Color::from(transform * swf::Color::from(color));
                 if opaque {
                     color = color.with_alpha(255);
                 }
@@ -1431,7 +1417,7 @@ pub fn draw<'gc>(
                 &mut source_region,
             );
 
-            if transform.color_transform == ColorTransform::default() {
+            if transform.color_transform != ColorTransform::default() {
                 blend_and_transform(
                     context,
                     *source,
