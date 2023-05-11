@@ -123,10 +123,7 @@ impl<'a> From<&'a swf::Shape> for DistilledShape<'a> {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DrawCommand {
     MoveTo(swf::Point<Twips>),
-    LineTo {
-        x: Twips,
-        y: Twips,
-    },
+    LineTo(swf::Point<Twips>),
     CurveTo {
         x1: Twips,
         y1: Twips,
@@ -138,10 +135,8 @@ pub enum DrawCommand {
 impl DrawCommand {
     pub fn end_point(&self) -> swf::Point<Twips> {
         match self {
-            DrawCommand::MoveTo(point) => *point,
-            DrawCommand::LineTo { x, y } | DrawCommand::CurveTo { x2: x, y2: y, .. } => {
-                swf::Point::new(*x, *y)
-            }
+            DrawCommand::MoveTo(point) | DrawCommand::LineTo(point) => *point,
+            DrawCommand::CurveTo { x2: x, y2: y, .. } => swf::Point::new(*x, *y),
         }
     }
 }
@@ -224,11 +219,12 @@ impl PathSegment {
         let first = i.next().expect("Points should not be empty");
         std::iter::once(DrawCommand::MoveTo((*first).into())).chain(std::iter::from_fn(move || {
             match i.next() {
-                Some(&Point {
-                    is_bezier_control: false,
-                    x,
-                    y,
-                }) => Some(DrawCommand::LineTo { x, y }),
+                Some(
+                    point @ Point {
+                        is_bezier_control: false,
+                        ..
+                    },
+                ) => Some(DrawCommand::LineTo((*point).into())),
                 Some(&Point {
                     is_bezier_control: true,
                     x,
@@ -628,22 +624,10 @@ mod tests {
             style: &FILL_STYLES[0],
             commands: vec![
                 DrawCommand::MoveTo(swf::Point::from_pixels(100.0, 100.0)),
-                DrawCommand::LineTo {
-                    x: Twips::from_pixels(200.0),
-                    y: Twips::from_pixels(100.0),
-                },
-                DrawCommand::LineTo {
-                    x: Twips::from_pixels(200.0),
-                    y: Twips::from_pixels(200.0),
-                },
-                DrawCommand::LineTo {
-                    x: Twips::from_pixels(100.0),
-                    y: Twips::from_pixels(200.0),
-                },
-                DrawCommand::LineTo {
-                    x: Twips::from_pixels(100.0),
-                    y: Twips::from_pixels(100.0),
-                },
+                DrawCommand::LineTo(swf::Point::from_pixels(200.0, 100.0)),
+                DrawCommand::LineTo(swf::Point::from_pixels(200.0, 200.0)),
+                DrawCommand::LineTo(swf::Point::from_pixels(100.0, 200.0)),
+                DrawCommand::LineTo(swf::Point::from_pixels(100.0, 100.0)),
             ],
             winding_rule: FillRule::EvenOdd,
         }];
@@ -686,22 +670,10 @@ mod tests {
             style: &FILL_STYLES[0],
             commands: vec![
                 DrawCommand::MoveTo(swf::Point::from_pixels(100.0, 100.0)),
-                DrawCommand::LineTo {
-                    x: Twips::from_pixels(200.0),
-                    y: Twips::from_pixels(100.0),
-                },
-                DrawCommand::LineTo {
-                    x: Twips::from_pixels(200.0),
-                    y: Twips::from_pixels(200.0),
-                },
-                DrawCommand::LineTo {
-                    x: Twips::from_pixels(100.0),
-                    y: Twips::from_pixels(200.0),
-                },
-                DrawCommand::LineTo {
-                    x: Twips::from_pixels(100.0),
-                    y: Twips::from_pixels(100.0),
-                },
+                DrawCommand::LineTo(swf::Point::from_pixels(200.0, 100.0)),
+                DrawCommand::LineTo(swf::Point::from_pixels(200.0, 200.0)),
+                DrawCommand::LineTo(swf::Point::from_pixels(100.0, 200.0)),
+                DrawCommand::LineTo(swf::Point::from_pixels(100.0, 100.0)),
             ],
             winding_rule: FillRule::EvenOdd,
         }];
@@ -858,9 +830,10 @@ pub fn draw_command_fill_hit_test(commands: &[DrawCommand], test_point: (Twips, 
                 cursor = *move_to;
                 fill_start = *move_to;
             }
-            DrawCommand::LineTo { x: x1, y: y1 } => {
-                winding += winding_number_line(test_point, (cursor.x, cursor.y), (*x1, *y1));
-                cursor = swf::Point::new(*x1, *y1);
+            DrawCommand::LineTo(line_to) => {
+                winding +=
+                    winding_number_line(test_point, (cursor.x, cursor.y), (line_to.x, line_to.y));
+                cursor = *line_to;
             }
             DrawCommand::CurveTo { x1, y1, x2, y2 } => {
                 winding +=
@@ -898,16 +871,16 @@ pub fn draw_command_stroke_hit_test(
             DrawCommand::MoveTo(move_to) => {
                 cursor = *move_to;
             }
-            DrawCommand::LineTo { x: x1, y: y1 } => {
+            DrawCommand::LineTo(line_to) => {
                 if hit_test_stroke(
                     (point_x, point_y),
                     (cursor.x, cursor.y),
-                    (*x1, *y1),
+                    (line_to.x, line_to.y),
                     stroke_widths,
                 ) {
                     return true;
                 }
-                cursor = swf::Point::new(*x1, *y1);
+                cursor = *line_to;
             }
             DrawCommand::CurveTo { x1, y1, x2, y2 } => {
                 if hit_test_stroke_curve(
