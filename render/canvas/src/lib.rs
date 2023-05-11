@@ -775,7 +775,9 @@ fn draw_commands_to_path2d(commands: &[DrawCommand], is_closed: bool) -> Path2d 
     let path = Path2d::new().expect("Path2d constructor must succeed");
     for command in commands {
         match command {
-            DrawCommand::MoveTo { x, y } => path.move_to(x.get().into(), y.get().into()),
+            DrawCommand::MoveTo(move_to) => {
+                path.move_to(move_to.x.get().into(), move_to.y.get().into())
+            }
             DrawCommand::LineTo { x, y } => path.line_to(x.get().into(), y.get().into()),
             DrawCommand::CurveTo { x1, y1, x2, y2 } => path.quadratic_curve_to(
                 x1.get().into(),

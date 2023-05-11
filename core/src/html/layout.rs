@@ -11,7 +11,7 @@ use gc_arena::Collect;
 use ruffle_render::shape_utils::DrawCommand;
 use std::cmp::{max, min};
 use std::sync::Arc;
-use swf::Twips;
+use swf::{Point, Twips};
 
 /// Draw an underline on a particular drawing.
 ///
@@ -23,10 +23,10 @@ fn draw_underline(drawing: &mut Drawing, starting_pos: Position<Twips>, width: T
 
     let ending_pos = starting_pos + Position::from((width, Twips::ZERO));
 
-    drawing.draw_command(DrawCommand::MoveTo {
-        x: starting_pos.x(),
-        y: starting_pos.y(),
-    });
+    drawing.draw_command(DrawCommand::MoveTo(Point::new(
+        starting_pos.x(),
+        starting_pos.y(),
+    )));
     drawing.draw_command(DrawCommand::LineTo {
         x: ending_pos.x(),
         y: ending_pos.y(),
