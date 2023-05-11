@@ -216,7 +216,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
                             if glyph_shape.shape_bounds.contains(point)
                                 && ruffle_render::shape_utils::shape_hit_test(
                                     &glyph_shape,
-                                    (point.x, point.y),
+                                    point,
                                     &local_matrix,
                                 )
                             {

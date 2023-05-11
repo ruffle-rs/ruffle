@@ -156,10 +156,9 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         if self.world_bounds().contains(point) {
             if let Some(frame) = self.0.read().static_data.frames.borrow().get(&self.ratio()) {
                 let Some(local_matrix) = self.global_to_local_matrix() else { return false; };
-                let point = local_matrix * point;
                 return ruffle_render::shape_utils::shape_hit_test(
                     &frame.shape,
-                    (point.x, point.y),
+                    local_matrix * point,
                     &local_matrix,
                 );
             } else {
