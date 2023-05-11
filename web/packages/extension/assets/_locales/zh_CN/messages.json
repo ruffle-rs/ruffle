@@ -2,6 +2,9 @@
     "settings_ruffle_enable": {
         "message": "使用 Ruffle 播放 Flash 内容"
     },
+    "settings_ignore_optout": {
+        "message": "即便站点禁用了 Ruffle 也播放 Flash 内容"
+    },
     "settings_show_swf_download": {
         "message": "在右键菜单中显示SWF下载选项"
     },
@@ -13,6 +16,30 @@
     },
     "settings_log_level": {
         "message": "日志级别"
+    },
+    "settings_log_level_error": {
+        "message": "错误"
+    },
+    "settings_log_level_warn": {
+        "message": "警告"
+    },
+    "settings_log_level_info": {
+        "message": "信息"
+    },
+    "settings_max_execution_duration": {
+        "message": "最大允许的操作刻录执行持续时间（以秒为单位）"
+    },
+    "settings_player_version": {
+        "message": "要模拟的 Flash 播放器版本号 (范围 1-32)"
+    },
+    "settings_preferred_renderer": {
+        "message": "首选渲染器"
+    },
+    "settings_preferred_renderer_auto": {
+        "message": "自动"
+    },
+    "settings_advanced_options": {
+        "message": "高级选项"
     },
     "status_init": {
         "message": "正在读取当前标签页…"
@@ -26,8 +53,14 @@
     "status_message_init": {
         "message": "在此标签页上检查 Ruffle 状态。"
     },
+    "status_result_running": {
+        "message": "Ruffle 已经加载并准备在当前标签上运行 Flash 内容。"
+    },
     "status_result_optout": {
         "message": "Ruffle 未加载因为当前页面标注自己不兼容。"
+    },
+    "status_result_disabled": {
+        "message": "规则未加载，因为它已被禁用。"
     },
     "status_result_error": {
         "message": "在查询此标签页中的 Ruffle 实例时发生错误。"
