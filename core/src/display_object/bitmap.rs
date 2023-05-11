@@ -121,10 +121,11 @@ impl<'gc> Bitmap<'gc> {
     /// list. If no data is provided then you are free to add whatever handle
     /// you like.
     pub fn new_with_bitmap_data(
-        context: &mut UpdateContext<'_, 'gc>,
+        mc: &Mutation<'gc>,
         id: CharacterId,
         bitmap_data: BitmapDataWrapper<'gc>,
         smoothing: bool,
+        movie: &Arc<SwfMovie>,
     ) -> Self {
         //NOTE: We do *not* solicit a handle from the `bitmap_data` at this
         //time due to mutable borrowing issues.
@@ -133,7 +134,7 @@ impl<'gc> Bitmap<'gc> {
         let height = bitmap_data.height();
 
         let bitmap = Bitmap(GcCell::new(
-            context.gc_context,
+            mc,
             BitmapGraphicData {
                 base: Default::default(),
                 id,
@@ -144,14 +145,11 @@ impl<'gc> Bitmap<'gc> {
                 pixel_snapping: PixelSnapping::Auto,
                 avm2_object: None,
                 avm2_bitmap_class: BitmapClass::NoSubclass,
-                movie: context.swf.clone(),
+                movie: movie.clone(),
             },
         ));
 
-        bitmap_data.add_display_object(
-            context.gc_context,
-            DisplayObjectWeak::Bitmap(bitmap.downgrade()),
-        );
+        bitmap_data.add_display_object(mc, DisplayObjectWeak::Bitmap(bitmap.downgrade()));
 
         bitmap
     }
@@ -179,10 +177,11 @@ impl<'gc> Bitmap<'gc> {
 
         let smoothing = true;
         Ok(Self::new_with_bitmap_data(
-            context,
+            context.gc_context,
             id,
             BitmapDataWrapper::new(GcCell::new(context.gc_context, bitmap_data)),
             smoothing,
+            context.swf, // TODO: Use the local movie instead of the root movie
         ))
     }
 

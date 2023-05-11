@@ -27,8 +27,14 @@ pub fn bitmap_allocator<'gc>(
     while let Some(class) = class_object {
         if class == bitmap_cls {
             let bitmap_data = BitmapDataWrapper::dummy(activation.context.gc_context);
-            let display_object =
-                Bitmap::new_with_bitmap_data(&mut activation.context, 0, bitmap_data, false).into();
+            let display_object = Bitmap::new_with_bitmap_data(
+                activation.context.gc_context,
+                0,
+                bitmap_data,
+                false,
+                activation.context.swf, // TODO: Use the current movie here
+            )
+            .into();
             return initialize_for_allocator(activation, display_object, orig_class);
         }
 
@@ -55,10 +61,11 @@ pub fn bitmap_allocator<'gc>(
                 new_bitmap_data.init_object2(activation.context.gc_context, bitmap_data_obj);
 
                 let child = Bitmap::new_with_bitmap_data(
-                    &mut activation.context,
+                    activation.context.gc_context,
                     0,
                     new_bitmap_data,
                     false,
+                    activation.context.swf, // TODO: Use the current movie here
                 )
                 .into();
 

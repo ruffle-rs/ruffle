@@ -297,10 +297,11 @@ fn attach_bitmap<'gc>(
 
                 //TODO: do attached BitmapDatas have character ids?
                 let display_object = Bitmap::new_with_bitmap_data(
-                    &mut activation.context,
+                    activation.context.gc_context,
                     0,
                     bitmap_data,
                     smoothing,
+                    &movie_clip.movie(),
                 );
                 movie_clip.replace_at_depth(&mut activation.context, display_object.into(), depth);
                 display_object.post_instantiation(
