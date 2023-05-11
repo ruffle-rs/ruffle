@@ -253,10 +253,7 @@ impl Drawing {
             for line in &self.pending_lines {
                 let mut commands = line.commands.to_owned();
                 let is_closed = if self.current_fill.is_some() {
-                    commands.push(DrawCommand::LineTo {
-                        x: self.fill_start.x,
-                        y: self.fill_start.y,
-                    });
+                    commands.push(DrawCommand::LineTo(self.fill_start));
                     true
                 } else {
                     self.cursor == self.fill_start
@@ -271,10 +268,7 @@ impl Drawing {
             if let Some(line) = &self.current_line {
                 let mut commands = line.commands.to_owned();
                 let is_closed = if self.current_fill.is_some() {
-                    commands.push(DrawCommand::LineTo {
-                        x: self.fill_start.x,
-                        y: self.fill_start.y,
-                    });
+                    commands.push(DrawCommand::LineTo(self.fill_start));
                     true
                 } else {
                     self.cursor == self.fill_start
@@ -367,10 +361,7 @@ impl Drawing {
                 && shape_utils::draw_command_stroke_hit_test(
                     &[
                         DrawCommand::MoveTo(self.cursor),
-                        DrawCommand::LineTo {
-                            x: self.fill_start.x,
-                            y: self.fill_start.y,
-                        },
+                        DrawCommand::LineTo(self.fill_start),
                     ],
                     line.style.width(),
                     (point.x, point.y),
@@ -388,16 +379,9 @@ impl Drawing {
     fn close_path(&mut self) {
         if let Some(fill) = &mut self.current_fill {
             if self.cursor != self.fill_start {
-                fill.commands.push(DrawCommand::LineTo {
-                    x: self.fill_start.x,
-                    y: self.fill_start.y,
-                });
-
+                fill.commands.push(DrawCommand::LineTo(self.fill_start));
                 if let Some(line) = &mut self.current_line {
-                    line.commands.push(DrawCommand::LineTo {
-                        x: self.fill_start.x,
-                        y: self.fill_start.y,
-                    });
+                    line.commands.push(DrawCommand::LineTo(self.fill_start));
                 }
                 self.dirty.set(true);
             }
@@ -444,12 +428,9 @@ fn stretch_bounds(
     let radius = stroke_width / 2;
     let bounds = bounds.clone();
     match *command {
-        DrawCommand::MoveTo(point) => bounds
+        DrawCommand::MoveTo(point) | DrawCommand::LineTo(point) => bounds
             .encompass(Point::new(point.x - radius, point.y - radius))
             .encompass(Point::new(point.x + radius, point.y + radius)),
-        DrawCommand::LineTo { x, y } => bounds
-            .encompass(Point::new(x - radius, y - radius))
-            .encompass(Point::new(x + radius, y + radius)),
         DrawCommand::CurveTo { x1, y1, x2, y2 } => bounds
             .encompass(Point::new(x1 - radius, y1 - radius))
             .encompass(Point::new(x1 + radius, y1 + radius))

@@ -361,7 +361,7 @@ pub fn line_to<'gc>(
         let y = Twips::from_pixels(args.get_f64(activation, 1)?);
 
         if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
-            draw.draw_command(DrawCommand::LineTo { x, y });
+            draw.draw_command(DrawCommand::LineTo(Point::new(x, y)));
         }
     }
 
@@ -400,13 +400,10 @@ pub fn draw_rect<'gc>(
 
         if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
             draw.draw_command(DrawCommand::MoveTo(Point::new(x, y)));
-            draw.draw_command(DrawCommand::LineTo { x: x + width, y });
-            draw.draw_command(DrawCommand::LineTo {
-                x: x + width,
-                y: y + height,
-            });
-            draw.draw_command(DrawCommand::LineTo { x, y: y + height });
-            draw.draw_command(DrawCommand::LineTo { x, y });
+            draw.draw_command(DrawCommand::LineTo(Point::new(x + width, y)));
+            draw.draw_command(DrawCommand::LineTo(Point::new(x + width, y + height)));
+            draw.draw_command(DrawCommand::LineTo(Point::new(x, y + height)));
+            draw.draw_command(DrawCommand::LineTo(Point::new(x, y)));
         }
     }
 
@@ -550,11 +547,9 @@ fn draw_round_rect_internal(
 
     let left_b_point_x = tl_ellipse_center_x + ellipse_width / -2.0 * ucp[4].0;
     let left_b_point_y = br_ellipse_center_y + ellipse_height / 2.0 * ucp[4].1;
+    let left_b_point = Point::from_pixels(left_b_point_x, left_b_point_y);
 
-    draw.draw_command(DrawCommand::LineTo {
-        x: Twips::from_pixels(left_b_point_x),
-        y: Twips::from_pixels(left_b_point_y),
-    });
+    draw.draw_command(DrawCommand::LineTo(left_b_point));
 
     // Bottom-left ellipse
     let b_bl_curve_x = tl_ellipse_center_x + ellipse_width / -2.0 * ucp[3].0;
@@ -586,11 +581,9 @@ fn draw_round_rect_internal(
     // Left side
     let top_l_point_x = tl_ellipse_center_x + ellipse_width / -2.0 * ucp[0].0;
     let top_l_point_y = tl_ellipse_center_y + ellipse_height / -2.0 * ucp[0].1;
+    let top_l_point = Point::from_pixels(top_l_point_x, top_l_point_y);
 
-    draw.draw_command(DrawCommand::LineTo {
-        x: Twips::from_pixels(top_l_point_x),
-        y: Twips::from_pixels(top_l_point_y),
-    });
+    draw.draw_command(DrawCommand::LineTo(top_l_point));
 
     // Top-left ellipse
     let l_tl_curve_x = tl_ellipse_center_x + ellipse_width / -2.0 * ucp[1].0;
@@ -622,11 +615,9 @@ fn draw_round_rect_internal(
     // Top side
     let right_t_point_x = br_ellipse_center_x + ellipse_width / 2.0 * ucp[4].0;
     let right_t_point_y = tl_ellipse_center_y + ellipse_height / -2.0 * ucp[4].1;
+    let right_t_point = Point::from_pixels(right_t_point_x, right_t_point_y);
 
-    draw.draw_command(DrawCommand::LineTo {
-        x: Twips::from_pixels(right_t_point_x),
-        y: Twips::from_pixels(right_t_point_y),
-    });
+    draw.draw_command(DrawCommand::LineTo(right_t_point));
 
     // Top-right ellipse
     let t_tr_curve_x = br_ellipse_center_x + ellipse_width / 2.0 * ucp[3].0;
@@ -658,11 +649,9 @@ fn draw_round_rect_internal(
     // Right side & other half of bottom-right ellipse
     let bottom_r_point_x = br_ellipse_center_x + ellipse_width / 2.0 * ucp[0].0;
     let bottom_r_point_y = br_ellipse_center_y + ellipse_height / 2.0 * ucp[0].1;
+    let bottom_r_point = Point::from_pixels(bottom_r_point_x, bottom_r_point_y);
 
-    draw.draw_command(DrawCommand::LineTo {
-        x: Twips::from_pixels(bottom_r_point_x),
-        y: Twips::from_pixels(bottom_r_point_y),
-    });
+    draw.draw_command(DrawCommand::LineTo(bottom_r_point));
 
     let r_br_curve_x = br_ellipse_center_x + ellipse_width / 2.0 * ucp[1].0;
     let r_br_curve_y = br_ellipse_center_y + ellipse_height / 2.0 * ucp[1].1;

@@ -661,22 +661,16 @@ impl<'gc> EditText<'gc> {
             let width = write.bounds.width();
             let height = write.bounds.height();
             write.drawing.draw_command(DrawCommand::MoveTo(Point::ZERO));
-            write.drawing.draw_command(DrawCommand::LineTo {
-                x: Twips::ZERO,
-                y: height,
-            });
-            write.drawing.draw_command(DrawCommand::LineTo {
-                x: width,
-                y: height,
-            });
-            write.drawing.draw_command(DrawCommand::LineTo {
-                x: width,
-                y: Twips::ZERO,
-            });
-            write.drawing.draw_command(DrawCommand::LineTo {
-                x: Twips::ZERO,
-                y: Twips::ZERO,
-            });
+            write
+                .drawing
+                .draw_command(DrawCommand::LineTo(Point::new(Twips::ZERO, height)));
+            write
+                .drawing
+                .draw_command(DrawCommand::LineTo(Point::new(width, height)));
+            write
+                .drawing
+                .draw_command(DrawCommand::LineTo(Point::new(width, Twips::ZERO)));
+            write.drawing.draw_command(DrawCommand::LineTo(Point::ZERO));
         }
     }
 

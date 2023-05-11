@@ -341,11 +341,11 @@ fn ruffle_path_to_lyon_path(commands: &[DrawCommand], is_closed: bool) -> Path {
                 }
                 cursor = Some(*move_to);
             }
-            DrawCommand::LineTo { x, y } => {
+            DrawCommand::LineTo(line_to) => {
                 if let Some(cursor) = cursor.take() {
                     builder.begin(point(cursor));
                 }
-                builder.line_to(point(swf::Point::new(*x, *y)));
+                builder.line_to(point(*line_to));
             }
             DrawCommand::CurveTo { x1, y1, x2, y2 } => {
                 if let Some(cursor) = cursor.take() {

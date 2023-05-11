@@ -569,15 +569,12 @@ fn line_to<'gc>(
     activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let (Some(x), Some(y)) = (args.get(0), args.get(1)) {
+    if let [x, y, ..] = args {
         let x = x.coerce_to_f64(activation)?;
         let y = y.coerce_to_f64(activation)?;
         movie_clip
             .drawing(activation.context.gc_context)
-            .draw_command(DrawCommand::LineTo {
-                x: Twips::from_pixels(x),
-                y: Twips::from_pixels(y),
-            });
+            .draw_command(DrawCommand::LineTo(Point::from_pixels(x, y)));
     }
     Ok(Value::Undefined)
 }

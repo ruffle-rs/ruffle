@@ -27,10 +27,10 @@ fn draw_underline(drawing: &mut Drawing, starting_pos: Position<Twips>, width: T
         starting_pos.x(),
         starting_pos.y(),
     )));
-    drawing.draw_command(DrawCommand::LineTo {
-        x: ending_pos.x(),
-        y: ending_pos.y(),
-    });
+    drawing.draw_command(DrawCommand::LineTo(Point::new(
+        ending_pos.x(),
+        ending_pos.y(),
+    )));
 }
 
 /// Contains information relating to the current layout operation.
