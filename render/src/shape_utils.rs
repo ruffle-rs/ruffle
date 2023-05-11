@@ -125,18 +125,17 @@ pub enum DrawCommand {
     MoveTo(swf::Point<Twips>),
     LineTo(swf::Point<Twips>),
     CurveTo {
-        x1: Twips,
-        y1: Twips,
-        x2: Twips,
-        y2: Twips,
+        control: swf::Point<Twips>,
+        anchor: swf::Point<Twips>,
     },
 }
 
 impl DrawCommand {
     pub fn end_point(&self) -> swf::Point<Twips> {
         match self {
-            DrawCommand::MoveTo(point) | DrawCommand::LineTo(point) => *point,
-            DrawCommand::CurveTo { x2: x, y2: y, .. } => swf::Point::new(*x, *y),
+            DrawCommand::MoveTo(point)
+            | DrawCommand::LineTo(point)
+            | DrawCommand::CurveTo { anchor: point, .. } => *point,
         }
     }
 }
@@ -225,17 +224,16 @@ impl PathSegment {
                         ..
                     },
                 ) => Some(DrawCommand::LineTo((*point).into())),
-                Some(&Point {
-                    is_bezier_control: true,
-                    x,
-                    y,
-                }) => {
+                Some(
+                    point @ Point {
+                        is_bezier_control: true,
+                        ..
+                    },
+                ) => {
                     let end = i.next().expect("Bezier without endpoint");
                     Some(DrawCommand::CurveTo {
-                        x1: x,
-                        y1: y,
-                        x2: end.x,
-                        y2: end.y,
+                        control: (*point).into(),
+                        anchor: (*end).into(),
                     })
                 }
                 None => None,
@@ -835,10 +833,14 @@ pub fn draw_command_fill_hit_test(commands: &[DrawCommand], test_point: (Twips, 
                     winding_number_line(test_point, (cursor.x, cursor.y), (line_to.x, line_to.y));
                 cursor = *line_to;
             }
-            DrawCommand::CurveTo { x1, y1, x2, y2 } => {
-                winding +=
-                    winding_number_curve(test_point, (cursor.x, cursor.y), (*x1, *y1), (*x2, *y2));
-                cursor = swf::Point::new(*x2, *y2);
+            DrawCommand::CurveTo { control, anchor } => {
+                winding += winding_number_curve(
+                    test_point,
+                    (cursor.x, cursor.y),
+                    (control.x, control.y),
+                    (anchor.x, anchor.y),
+                );
+                cursor = *anchor;
             }
         }
     }
@@ -882,17 +884,17 @@ pub fn draw_command_stroke_hit_test(
                 }
                 cursor = *line_to;
             }
-            DrawCommand::CurveTo { x1, y1, x2, y2 } => {
+            DrawCommand::CurveTo { control, anchor } => {
                 if hit_test_stroke_curve(
                     (point_x, point_y),
                     (cursor.x, cursor.y),
-                    (*x1, *y1),
-                    (*x2, *y2),
+                    (control.x, control.y),
+                    (anchor.x, anchor.y),
                     stroke_widths,
                 ) {
                     return true;
                 }
-                cursor = swf::Point::new(*x2, *y2);
+                cursor = *anchor;
             }
         }
     }
