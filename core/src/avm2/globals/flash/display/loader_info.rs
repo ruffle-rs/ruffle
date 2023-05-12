@@ -403,17 +403,23 @@ pub fn get_bytes<'gc>(
             .and_then(|o| o.as_loader_stream())
         {
             let root = match &*loader_stream {
-                LoaderStream::NotYetLoaded(swf, _, _) => swf,
+                LoaderStream::NotYetLoaded(_, None, _) => {
+                    // If we haven't even started loading yet (we have no root clip),
+                    // then return null. FIXME - we should probably store the ByteArray
+                    // in a field, and initialize it when we start loading.
+                    return Ok(Value::Null);
+                }
+                LoaderStream::NotYetLoaded(swf, Some(_), _) => swf,
                 LoaderStream::Swf(root, _) => root,
             };
 
+            let ba_class = activation.context.avm2.classes().bytearray;
+            let ba = ba_class.construct(activation, &[])?;
+
             if root.data().is_empty() {
-                return Ok(Value::Null);
+                return Ok(ba.into());
             }
 
-            let ba_class = activation.context.avm2.classes().bytearray;
-
-            let ba = ba_class.construct(activation, &[])?;
             let mut ba_write = ba.as_bytearray_mut(activation.context.gc_context).unwrap();
 
             // First, write a fake header corresponding to an
