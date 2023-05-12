@@ -14,9 +14,10 @@ use crate::avm2::{
     Value as Avm2Value,
 };
 use crate::backend::navigator::{OwnedFuture, Request};
+use crate::bitmap::bitmap_data::Color;
 use crate::context::{ActionQueue, ActionType, UpdateContext};
 use crate::display_object::{
-    Bitmap, DisplayObject, TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
+    DisplayObject, TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
 };
 use crate::events::ClipEvent;
 use crate::frame_lifecycle::catchup_display_object_to_frame;
@@ -609,12 +610,9 @@ impl<'gc> Loader<'gc> {
         context: &mut UpdateContext<'_, 'gc>,
         limit: &mut ExecutionLimit,
     ) -> Result<bool, Error> {
-        let (mc, event_handler, movie) = match context.load_manager.get_loader_mut(handle) {
+        let mc = match context.load_manager.get_loader_mut(handle) {
             Some(Self::Movie {
-                target_clip,
-                event_handler,
-                movie,
-                ..
+                target_clip, movie, ..
             }) => {
                 if movie.is_none() {
                     //Non-SWF load or file not loaded yet
@@ -627,7 +625,7 @@ impl<'gc> Loader<'gc> {
                     return Ok(false);
                 }
 
-                (*target_clip, *event_handler, movie.clone().unwrap())
+                *target_clip
             }
             None => return Err(Error::Cancelled),
             Some(_) => panic!("Attempted to preload a non-SWF loader"),
@@ -645,66 +643,7 @@ impl<'gc> Loader<'gc> {
         )?;
 
         if did_finish {
-            let loader_info =
-                if let Some(MovieLoaderEventHandler::Avm2LoaderInfo(loader_info)) = event_handler {
-                    Some(*loader_info.as_loader_info_object().unwrap())
-                } else {
-                    None
-                };
-
-            if let Some(loader_info) = loader_info {
-                // Store the real movie into the `LoaderStream`, so that
-                // 'bytesTotal' starts returning the correct value
-                // (we previously had a fake empty SwfMovie).
-                // However, we still use `LoaderStream::NotYetLoaded`, since
-                // the actual MovieClip display object has not run its first
-                // frame yet.
-                loader_info.set_loader_stream(
-                    LoaderStream::NotYetLoaded(movie, Some(mc.into()), false),
-                    context.gc_context,
-                );
-            }
-
-            // We call these methods after we initialize the `LoaderInfo`, but before the
-            // add the the loaded clip as a child. The frame constructor should see
-            // 'this.parent == null' and 'this.stage == null'
-            mc.post_instantiation(context, None, Instantiator::Movie, false);
-            catchup_display_object_to_frame(context, mc.into());
-            // Movie clips created from ActionScript (including from a Loader) skip the next enterFrame,
-            // and consequently are observed to have their currentFrame lag one
-            // frame behind objects placed by the timeline (even if they were
-            // both placed in the same frame to begin with).
-            mc.base_mut(context.gc_context)
-                .set_skip_next_enter_frame(true);
-
-            if let Some(MovieLoaderEventHandler::Avm2LoaderInfo(loader_info)) = event_handler {
-                let domain = context
-                    .library
-                    .library_for_movie(mc.movie())
-                    .unwrap()
-                    .avm2_domain();
-                let mut activation = Avm2Activation::from_domain(context.reborrow(), domain);
-                let mut loader = loader_info
-                    .get_public_property("loader", &mut activation)
-                    .map_err(|e| Error::Avm2Error(e.to_string()))?
-                    .as_object()
-                    .unwrap()
-                    .as_display_object()
-                    .unwrap()
-                    .as_container()
-                    .unwrap();
-
-                // Note that we do *not* use the 'addChild' method here:
-                // Per the flash docs, our implementation always throws
-                // an 'unsupported' error. Also, the AVM2 side of our movie
-                // clip does not yet exist. Any children added inside the movie
-                // frame constructor will see an 'added' event immediately, and
-                // an 'addedToStage' event *after* the constructor finishes
-                // when we add the movie as a child of the loader.
-                loader.insert_at_index(&mut activation.context, mc.into(), 0);
-            }
-
-            Loader::movie_loader_complete(handle, context)?;
+            Loader::movie_loader_complete(handle, context, Some(mc.into()))?;
         }
 
         Ok(did_finish)
@@ -827,13 +766,13 @@ impl<'gc> Loader<'gc> {
                         &response.body,
                         response.url,
                         loader_url,
-                        false,
                     )?;
                 }
                 Err(e) => {
                     tracing::error!("Error during movie loading: {:?}", e);
                     player.lock().unwrap().update(|uc| -> Result<(), Error> {
-                        Loader::movie_loader_error(handle, uc)
+                        // FIXME - match Flash's error message
+                        Loader::movie_loader_error(handle, uc, "Movie loader error".into())
                     })?;
                 }
             }
@@ -891,7 +830,7 @@ impl<'gc> Loader<'gc> {
                 return Ok(());
             }
 
-            Loader::movie_loader_data(handle, player, &bytes, "file:///".into(), None, true)
+            Loader::movie_loader_data(handle, player, &bytes, "file:///".into(), None)
         })
     }
 
@@ -1114,6 +1053,8 @@ impl<'gc> Loader<'gc> {
 
                 match response {
                     Ok(response) => {
+                        let total_len = response.body.len();
+
                         // FIXME - the "open" event should be fired earlier, just before
                         // we start to fetch the data.
                         // However, the "open" event should not be fired if an IO error
@@ -1127,6 +1068,26 @@ impl<'gc> Loader<'gc> {
                             Avm2EventObject::bare_default_event(&mut activation.context, "open");
                         Avm2::dispatch_event(&mut activation.context, open_evt, target);
                         set_data(response.body, &mut activation, target, data_format);
+
+                        // FIXME - we should fire "progress" events as we receive data, not
+                        // just at the end
+                        let progress_evt = activation
+                            .avm2()
+                            .classes()
+                            .progressevent
+                            .construct(
+                                &mut activation,
+                                &[
+                                    "progress".into(),
+                                    false.into(),
+                                    false.into(),
+                                    total_len.into(),
+                                    total_len.into(),
+                                ],
+                            )
+                            .map_err(|e| Error::Avm2Error(e.to_string()))?;
+
+                        Avm2::dispatch_event(&mut activation.context, progress_evt, target);
 
                         let complete_evt = Avm2EventObject::bare_default_event(
                             &mut activation.context,
@@ -1378,6 +1339,20 @@ impl<'gc> Loader<'gc> {
             }
             Some(MovieLoaderEventHandler::Avm2LoaderInfo(loader_info)) => {
                 let mut activation = Avm2Activation::from_nothing(uc.reborrow());
+
+                // Update the LoadersTream - we still have a fake SwfMovie, but we now have the real target clip.
+                loader_info
+                    .as_loader_info_object()
+                    .unwrap()
+                    .set_loader_stream(
+                        LoaderStream::NotYetLoaded(
+                            Arc::new(SwfMovie::empty(activation.context.swf.version())),
+                            Some(clip),
+                            false,
+                        ),
+                        activation.context.gc_context,
+                    );
+
                 let open_evt = Avm2EventObject::bare_default_event(&mut activation.context, "open");
                 Avm2::dispatch_event(uc, open_evt, loader_info);
             }
@@ -1394,14 +1369,13 @@ impl<'gc> Loader<'gc> {
         data: &[u8],
         url: String,
         loader_url: Option<String>,
-        in_memory: bool,
     ) -> Result<(), Error> {
         let sniffed_type = ContentType::sniff(data);
-        let mut length = data.len();
+        let length = data.len();
 
         if sniffed_type == ContentType::Unknown {
             if let Ok(data) = extract_swz(data) {
-                return Self::movie_loader_data(handle, player, &data, url, loader_url, in_memory);
+                return Self::movie_loader_data(handle, player, &data, url, loader_url);
             }
         }
         player.lock().unwrap().update(|uc| {
@@ -1416,70 +1390,70 @@ impl<'gc> Loader<'gc> {
                 _ => unreachable!(),
             };
 
-            if let ContentType::Unknown = sniffed_type {
-                length = 0;
+            let mut activation = Avm2Activation::from_nothing(uc.reborrow());
+
+            let domain = if let Some(avm2_data) = avm2_data {
+                let domain = avm2_data
+                    .context
+                    .and_then(|o| {
+                        o.get_public_property("applicationDomain", &mut activation)
+                            .ok()
+                    })
+                    .and_then(|v| v.coerce_to_object(&mut activation).ok())
+                    .and_then(|o| o.as_application_domain())
+                    .unwrap_or_else(|| {
+                        let parent_domain = avm2_data.default_domain;
+                        Avm2Domain::movie_domain(&mut activation, parent_domain)
+                    });
+                Some(domain)
+            } else {
+                None
+            };
+
+            let movie = match sniffed_type {
+                ContentType::Swf => Arc::new(SwfMovie::from_data(data, url.clone(), loader_url)?),
+                ContentType::Gif | ContentType::Jpeg | ContentType::Png => {
+                    Arc::new(SwfMovie::from_loaded_image(url.clone(), length))
+                }
+                ContentType::Unknown => Arc::new(SwfMovie::empty(activation.context.swf.version())),
+            };
+
+            match activation.context.load_manager.get_loader_mut(handle) {
+                Some(Loader::Movie {
+                    movie: old,
+                    loader_status,
+                    ..
+                }) => {
+                    *loader_status = LoaderStatus::Parsing;
+                    *old = Some(movie.clone())
+                }
+                _ => unreachable!(),
+            };
+
+            if let Some(MovieLoaderEventHandler::Avm2LoaderInfo(loader_info)) = event_handler {
+                // Update the LoaderStream - we now have a real SWF movie and a real target clip
+                loader_info
+                    .as_loader_info_object()
+                    .unwrap()
+                    .set_loader_stream(
+                        LoaderStream::NotYetLoaded(movie.clone(), Some(clip), false),
+                        activation.context.gc_context,
+                    );
+                // Flash always fires an initial 'progress' event with
+                // bytesLoaded=0 and bytesTotal set to the proper value.
+                // This only seems to happen for an AVM2 event handler
+                Loader::movie_loader_progress(handle, &mut activation.context, 0, length)?;
             }
 
             match sniffed_type {
                 ContentType::Swf => {
-                    let movie = Arc::new(SwfMovie::from_data(data, url, loader_url)?);
+                    let library = activation
+                        .context
+                        .library
+                        .library_for_movie_mut(movie.clone());
 
-                    match uc.load_manager.get_loader_mut(handle) {
-                        Some(Loader::Movie {
-                            movie: old,
-                            loader_status,
-                            ..
-                        }) => {
-                            *loader_status = LoaderStatus::Parsing;
-                            *old = Some(movie.clone())
-                        }
-                        _ => unreachable!(),
-                    };
-
-                    if let Some(MovieLoaderEventHandler::Avm2LoaderInfo(loader_info)) =
-                        event_handler
-                    {
-                        if in_memory {
-                            loader_info
-                                .as_loader_info_object()
-                                .unwrap()
-                                .set_loader_stream(
-                                    LoaderStream::NotYetLoaded(movie.clone(), Some(clip), false),
-                                    uc.gc_context,
-                                );
-                        }
-
-                        // Flash always fires an initial 'progress' event with
-                        // bytesLoaded=0 and bytesTotal set to the proper value.
-                        // This only seems to happen for an AVM2 event handler
-                        Loader::movie_loader_progress(handle, uc, 0, length)?;
-                    }
-
-                    let mut activation = Avm2Activation::from_nothing(uc.reborrow());
-                    if let Some(avm2_data) = avm2_data {
-                        let domain = avm2_data
-                            .context
-                            .and_then(|o| {
-                                o.get_public_property("applicationDomain", &mut activation)
-                                    .ok()
-                            })
-                            .and_then(|v| v.coerce_to_object(&mut activation).ok())
-                            .and_then(|o| o.as_application_domain())
-                            .unwrap_or_else(|| {
-                                let parent_domain = avm2_data.default_domain;
-                                Avm2Domain::movie_domain(&mut activation, parent_domain)
-                            });
-
-                        activation
-                            .context
-                            .library
-                            .library_for_movie_mut(movie.clone())
-                            .set_avm2_domain(domain);
-                    } else {
-                        activation
-                            .context
-                            .library
-                            .library_for_movie_mut(movie.clone());
+                    if let Some(domain) = domain {
+                        library.set_avm2_domain(domain);
                     }
 
                     if let Some(mc) = clip.as_movie_clip() {
@@ -1508,29 +1482,77 @@ impl<'gc> Loader<'gc> {
                     return Ok(());
                 }
                 ContentType::Gif | ContentType::Jpeg | ContentType::Png => {
-                    if let Some(MovieLoaderEventHandler::Avm2LoaderInfo(_)) = event_handler {
-                        // Flash always fires an initial 'progress' event with
-                        // bytesLoaded=0 and bytesTotal set to the proper value.
-                        // This only seems to happen for an AVM2 event handler
-                        Loader::movie_loader_progress(handle, uc, 0, length)?;
+                    let library = activation.context.library.library_for_movie_mut(movie);
+
+                    if let Some(domain) = domain {
+                        library.set_avm2_domain(domain);
                     }
 
-                    let movie = Arc::new(SwfMovie::from_loaded_image(url, length));
-
+                    // This will construct AVM2-side objects even under AVM1, but it doesn't matter,
+                    // since Bitmap and BitmapData never have AVM1-side objects.
                     let bitmap = ruffle_render::utils::decode_define_bits_jpeg(data, None)?;
-                    let bitmap_obj = Bitmap::new(uc, 0, bitmap)?;
 
-                    if let Some(mc) = clip.as_movie_clip() {
-                        let mut activation = Avm2Activation::from_nothing(uc.reborrow());
-                        mc.replace_with_movie(&mut activation.context, Some(movie), None);
-                        mc.replace_at_depth(uc, bitmap_obj.into(), 1);
+                    let bitmapdata_avm2 = activation
+                        .avm2()
+                        .classes()
+                        .bitmapdata
+                        .construct(
+                            &mut activation,
+                            &[bitmap.width().into(), bitmap.height().into(), true.into()],
+                        )
+                        .unwrap();
+
+                    let bitmapdata_wrapper = bitmapdata_avm2.as_bitmap_data().unwrap();
+
+                    bitmapdata_wrapper
+                        .overwrite_cpu_pixels_from_gpu(activation.context.gc_context)
+                        .0
+                        .write(activation.context.gc_context)
+                        .set_pixels(
+                            bitmap.width(),
+                            bitmap.height(),
+                            true,
+                            bitmap.as_colors().map(Color::from).collect(),
+                        );
+
+                    let bitmap_avm2 = activation
+                        .avm2()
+                        .classes()
+                        .bitmap
+                        .construct(&mut activation, &[bitmapdata_avm2.into()])
+                        .unwrap();
+                    let bitmap_obj = bitmap_avm2.as_display_object().unwrap();
+
+                    Loader::movie_loader_progress(handle, &mut activation.context, length, length)?;
+                    Loader::movie_loader_complete(
+                        handle,
+                        &mut activation.context,
+                        Some(bitmap_obj),
+                    )?;
+                }
+                ContentType::Unknown => {
+                    if activation.context.is_action_script_3() {
+                        Loader::movie_loader_progress(
+                            handle,
+                            &mut activation.context,
+                            length,
+                            length,
+                        )?;
+                        Loader::movie_loader_error(
+                            handle,
+                            uc,
+                            AvmString::new_utf8(
+                                uc.gc_context,
+                                &format!("Error #2124: Loaded file is an unknown type. URL: {url}"),
+                            ),
+                        )?;
+                    } else {
+                        // AVM1 fires the event with the current and total length as 0, ignoring the actual values
+                        Loader::movie_loader_progress(handle, &mut activation.context, 0, 0)?;
+                        Loader::movie_loader_complete(handle, &mut activation.context, None)?;
                     }
                 }
-                ContentType::Unknown => {}
             }
-
-            Loader::movie_loader_progress(handle, uc, length, length)?;
-            Loader::movie_loader_complete(handle, uc)?;
 
             Ok(())
         }) //TODO: content sniffing errors need to be reported somehow
@@ -1604,38 +1626,116 @@ impl<'gc> Loader<'gc> {
     }
 
     /// Report a movie loader completion to script code.
-    fn movie_loader_complete(handle: Index, uc: &mut UpdateContext<'_, 'gc>) -> Result<(), Error> {
-        let (clip, event_handler) = match uc.load_manager.get_loader_mut(handle) {
+    fn movie_loader_complete(
+        handle: Index,
+        uc: &mut UpdateContext<'_, 'gc>,
+        dobj: Option<DisplayObject<'gc>>,
+    ) -> Result<(), Error> {
+        let (target_clip, event_handler, movie) = match uc.load_manager.get_loader_mut(handle) {
             Some(Loader::Movie {
                 target_clip,
+                movie,
                 event_handler,
                 ..
-            }) => (*target_clip, *event_handler),
+            }) => (*target_clip, *event_handler, movie.clone()),
             None => return Err(Error::Cancelled),
             _ => unreachable!(),
         };
 
+        let loader_info =
+            if let Some(MovieLoaderEventHandler::Avm2LoaderInfo(loader_info)) = event_handler {
+                Some(*loader_info.as_loader_info_object().unwrap())
+            } else {
+                None
+            };
+
+        if let Some(loader_info) = loader_info {
+            // Store the real movie into the `LoaderStream`, so that
+            // 'bytesTotal' starts returning the correct value
+            // (we previously had a fake empty SwfMovie).
+            // However, we still use `LoaderStream::NotYetLoaded`, since
+            // the actual MovieClip display object has not run its first
+            // frame yet.
+            loader_info.set_loader_stream(
+                LoaderStream::NotYetLoaded(movie.clone().unwrap(), Some(dobj.unwrap()), false),
+                uc.gc_context,
+            );
+        }
+
+        if let Some(dobj) = dobj {
+            if dobj.as_movie_clip().is_some() {
+                // We call these methods after we initialize the `LoaderInfo`, but before
+                // we add the loaded clip as a child. The frame constructor should see
+                // 'this.parent == null' and 'this.stage == null'
+                dobj.post_instantiation(uc, None, Instantiator::Movie, false);
+                catchup_display_object_to_frame(uc, dobj);
+                // Movie clips created from ActionScript (including from a Loader) skip the next enterFrame,
+                // and consequently are observed to have their currentFrame lag one
+                // frame behind objects placed by the timeline (even if they were
+                // both placed in the same frame to begin with).
+                dobj.base_mut(uc.gc_context).set_skip_next_enter_frame(true);
+            }
+        }
+
+        if let Some(MovieLoaderEventHandler::Avm2LoaderInfo(loader_info)) = event_handler {
+            let domain = uc
+                .library
+                .library_for_movie(movie.unwrap())
+                .unwrap()
+                .avm2_domain();
+            let mut activation = Avm2Activation::from_domain(uc.reborrow(), domain);
+            let mut loader = loader_info
+                .get_public_property("loader", &mut activation)
+                .map_err(|e| Error::Avm2Error(e.to_string()))?
+                .as_object()
+                .unwrap()
+                .as_display_object()
+                .unwrap()
+                .as_container()
+                .unwrap();
+
+            // Note that we do *not* use the 'addChild' method here:
+            // Per the flash docs, our implementation always throws
+            // an 'unsupported' error. Also, the AVM2 side of our movie
+            // clip does not yet exist. Any children added inside the movie
+            // frame constructor will see an 'added' event immediately, and
+            // an 'addedToStage' event *after* the constructor finishes
+            // when we add the movie as a child of the loader.
+            loader.insert_at_index(&mut activation.context, dobj.unwrap(), 0);
+        } else if let Some(dobj) = dobj {
+            // This is a load of an image into AVM1 - add it as a child of the target clip.
+            if dobj.as_movie_clip().is_none() {
+                let mc = target_clip.as_movie_clip().unwrap();
+                mc.replace_with_movie(uc, Some(movie.unwrap()), None);
+                mc.replace_at_depth(uc, dobj, 1);
+            }
+        }
+
         match event_handler {
             Some(MovieLoaderEventHandler::Avm1Broadcast(broadcaster)) => {
                 Avm1::run_stack_frame_for_method(
-                    clip,
+                    target_clip,
                     broadcaster,
                     uc,
                     "broadcastMessage".into(),
                     // TODO: Pass an actual httpStatus argument instead of 0.
-                    &["onLoadComplete".into(), clip.object(), 0.into()],
+                    &["onLoadComplete".into(), target_clip.object(), 0.into()],
                 );
             }
             // This is fired after we process the movie's first frame,
             // in `MovieClip.on_exit_frame`
             Some(MovieLoaderEventHandler::Avm2LoaderInfo(loader_info)) => {
-                loader_info
-                    .as_loader_info_object()
-                    .unwrap()
-                    .set_loader_stream(
-                        LoaderStream::Swf(clip.as_movie_clip().unwrap().movie(), clip),
-                        uc.gc_context,
-                    );
+                let loader_info_obj = loader_info.as_loader_info_object().unwrap();
+                loader_info_obj.set_loader_stream(
+                    LoaderStream::Swf(target_clip.as_movie_clip().unwrap().movie(), target_clip),
+                    uc.gc_context,
+                );
+
+                if let Some(dobj) = dobj {
+                    if dobj.as_movie_clip().is_none() {
+                        loader_info_obj.fire_init_and_complete_events(uc);
+                    }
+                }
             }
             None => {}
         }
@@ -1652,7 +1752,11 @@ impl<'gc> Loader<'gc> {
     ///
     /// This is an associated function because we cannot borrow both the update
     /// context and one of it's loaders.
-    fn movie_loader_error(handle: Index, uc: &mut UpdateContext<'_, 'gc>) -> Result<(), Error> {
+    fn movie_loader_error(
+        handle: Index,
+        uc: &mut UpdateContext<'_, 'gc>,
+        msg: AvmString<'gc>,
+    ) -> Result<(), Error> {
         //TODO: Inspect the fetch error.
         //This requires cooperation from the backend to send abstract
         //error types we can actually inspect.
@@ -1694,7 +1798,7 @@ impl<'gc> Loader<'gc> {
                             "ioError".into(),
                             false.into(),
                             false.into(),
-                            "Movie loader error".into(),
+                            msg.into(),
                             0.into(),
                         ],
                     )
