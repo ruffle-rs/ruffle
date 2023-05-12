@@ -15,8 +15,9 @@ package flash.geom {
 		}
 
 		public function Matrix3D(v:Vector.<Number> = null) {
-			this._rawData = v;
-			if (this._rawData == null) {
+			if (v != null && v.length == 16) {
+				this._rawData = v.concat();
+			} else {
 				this.identity();
 			}
 		}

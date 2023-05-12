@@ -21,3 +21,7 @@ mat.transformVector(v):
 3857 4266 4675 5176
 mat.deltaTransformVector(v):
 2332 2576 2820 3120
+Too short: 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1
+Too long: 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1
+Before modification: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+After modification: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
