@@ -59,6 +59,18 @@
 			trace("mat.deltaTransformVector(v):");
 			vOut = mat.deltaTransformVector(v);
 			trace(vOut.x, vOut.y, vOut.z, vOut.w);
+			
+			var tooShort = new Matrix3D(Vector.<Number>([1, 2]));
+			trace("Too short: " + tooShort.rawData);
+			
+			var tooLong = new Matrix3D(Vector.<Number>([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]));
+			trace("Too long: " + tooLong.rawData);
+			
+			var modified = Vector.<Number>([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16])
+			var newMat = new Matrix3D(modified);
+			trace("Before modification: " + newMat.rawData);
+			modified[0] = 99999;
+			trace("After modification: " + newMat.rawData);
 		}
 	}
 }
