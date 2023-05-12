@@ -247,6 +247,7 @@ impl BitmapFormat {
     }
 }
 
+#[inline]
 fn intersection_same_coordinate_system(
     (r1_x_min, r1_y_min, r1_x_max, r1_y_max): (i32, i32, i32, i32),
     (r2_x_min, r2_y_min, r2_x_max, r2_y_max): (i32, i32, i32, i32),
@@ -270,6 +271,7 @@ fn intersection_same_coordinate_system(
     (r3_x_min, r3_y_min, r3_x_max, r3_y_max)
 }
 
+#[inline]
 fn translate_region(
     (r_x_min, r_y_min, r_x_max, r_y_max): (i32, i32, i32, i32),
     (trans_x, trans_y): (i32, i32),
