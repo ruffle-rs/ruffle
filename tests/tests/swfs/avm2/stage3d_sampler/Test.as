@@ -108,6 +108,10 @@
             var redGreenTexture = renderContext.createTexture(size, size, "bgra", false);
             redGreenTexture.uploadFromBitmapData(redGreen);
 
+            // This modification is done after 'redGreenTexture.uploadFromBitmapData(redGreen)',
+            // so it should have no effect.
+            redGreen.fillRect(new Rectangle(0, 0, size, size), 0);
+
             renderContext.setTextureAt(0, redGreenTexture);
 
             // Upload programs to render context

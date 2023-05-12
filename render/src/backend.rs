@@ -410,7 +410,7 @@ pub enum Context3DCommand<'a, 'gc> {
         face: Context3DTriangleFace,
     },
     CopyBitmapToTexture {
-        source: BitmapHandle,
+        source: Bitmap,
         dest: Rc<dyn Texture>,
         layer: u32,
     },

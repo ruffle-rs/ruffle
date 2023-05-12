@@ -6,6 +6,7 @@ use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2_stub_method;
+use crate::bitmap::bitmap_data::BitmapData;
 use crate::context::RenderContext;
 use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_render::backend::{
@@ -13,7 +14,7 @@ use ruffle_render::backend::{
     Context3DTextureFormat, Context3DTriangleFace, Context3DVertexBufferFormat, ProgramType,
     Texture,
 };
-use ruffle_render::bitmap::BitmapHandle;
+use ruffle_render::bitmap::{Bitmap, BitmapFormat};
 use ruffle_render::commands::CommandHandler;
 use std::cell::{Ref, RefMut};
 use std::rc::Rc;
@@ -458,11 +459,12 @@ impl<'gc> Context3DObject<'gc> {
 
     pub(crate) fn copy_bitmap_to_texture(
         &self,
-        source: BitmapHandle,
+        source: GcCell<'gc, BitmapData<'gc>>,
         dest: Rc<dyn Texture>,
         layer: u32,
         activation: &mut Activation<'_, 'gc>,
     ) {
+        let source = source.read();
         self.0
             .write(activation.context.gc_context)
             .render_context
@@ -470,7 +472,12 @@ impl<'gc> Context3DObject<'gc> {
             .unwrap()
             .process_command(
                 Context3DCommand::CopyBitmapToTexture {
-                    source,
+                    source: Bitmap::new(
+                        source.width(),
+                        source.height(),
+                        BitmapFormat::Rgba,
+                        source.pixels_rgba(),
+                    ),
                     dest,
                     layer,
                 },

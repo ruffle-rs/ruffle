@@ -3,20 +3,21 @@ use ruffle_render::backend::{
     Context3DTextureFormat, Context3DVertexBufferFormat, IndexBuffer, ProgramType, ShaderModule,
     VertexBuffer,
 };
-use ruffle_render::bitmap::BitmapHandle;
+use ruffle_render::bitmap::{BitmapFormat, BitmapHandle};
 use ruffle_render::error::Error;
+use std::borrow::Cow;
 use std::cell::Cell;
 
 use wgpu::util::StagingBelt;
 use wgpu::{
-    BindGroup, BufferDescriptor, BufferUsages, ImageCopyTexture, TextureDescriptor,
-    TextureDimension, TextureFormat, TextureUsages, TextureView, COPY_BUFFER_ALIGNMENT,
+    BindGroup, BufferDescriptor, BufferUsages, TextureDescriptor, TextureDimension, TextureFormat,
+    TextureUsages, TextureView, COPY_BUFFER_ALIGNMENT, COPY_BYTES_PER_ROW_ALIGNMENT,
 };
 use wgpu::{CommandEncoder, Extent3d, RenderPass};
 
 use crate::context3d::current_pipeline::{BoundTextureData, AGAL_FLOATS_PER_REGISTER};
 use crate::descriptors::Descriptors;
-use crate::{as_texture, Texture};
+use crate::Texture;
 use gc_arena::{Collect, MutationContext};
 
 use std::num::NonZeroU64;
@@ -952,20 +953,57 @@ impl Context3D for WgpuContext3D {
             } => {
                 let dest = dest.as_any().downcast_ref::<TextureWrapper>().unwrap();
 
-                if dest.format != wgpu::TextureFormat::Rgba8Unorm {
-                    unimplemented!("Trying to copy to texture format {:?}", dest.format);
+                // Unfortunately, we need to copy from the CPU data, rather than using the GPU texture.
+                // The GPU side of a BitmapData can be updated at any time from non-Stage3D code.
+                // If we were to use `self.buffer_command_encoder.copy_texture_to_texture`, the
+                // BitmapData's gpu texture might be modified before we actually submit
+                // `buffer_command_encoder` to the device.
+                let mut image_data = match (source.format(), dest.format) {
+                    (BitmapFormat::Rgba, wgpu::TextureFormat::Rgba8Unorm) => {
+                        Cow::Borrowed(source.data())
+                    }
+                    (source_format, dest_format) => {
+                        unimplemented!("Trying to copy from bitmap format {source_format:?} to texture format {dest_format:?}")
+                    }
+                };
+
+                // Wgpu requires us to pad the image rows to a multiple of COPY_BYTES_PER_ROW_ALIGNMENT
+                if (source.width() * 4) % COPY_BYTES_PER_ROW_ALIGNMENT != 0 {
+                    image_data = Cow::Owned(
+                        image_data
+                            .chunks_exact(source.width() as usize * 4)
+                            .flat_map(|row| {
+                                let padding =
+                                    vec![0; COPY_BYTES_PER_ROW_ALIGNMENT as usize - row.len()];
+                                row.iter().copied().chain(padding.into_iter())
+                            })
+                            .collect(),
+                    )
                 }
 
-                let source_texture = as_texture(&source);
+                let texture_buffer = self.descriptors.device.create_buffer(&BufferDescriptor {
+                    label: None,
+                    size: image_data.len() as u64,
+                    usage: BufferUsages::COPY_SRC,
+                    mapped_at_creation: true,
+                });
 
-                self.buffer_command_encoder.copy_texture_to_texture(
-                    ImageCopyTexture {
-                        texture: &source_texture.texture,
-                        mip_level: 0,
-                        origin: wgpu::Origin3d::ZERO,
-                        aspect: wgpu::TextureAspect::All,
+                let mut texture_buffer_view = texture_buffer.slice(..).get_mapped_range_mut();
+                texture_buffer_view.copy_from_slice(&image_data);
+                drop(texture_buffer_view);
+                texture_buffer.unmap();
+
+                self.buffer_command_encoder.copy_buffer_to_texture(
+                    wgpu::ImageCopyBuffer {
+                        buffer: &texture_buffer,
+                        // The copy source uses the padded image data, with larger rows
+                        layout: wgpu::ImageDataLayout {
+                            offset: 0,
+                            bytes_per_row: Some(image_data.len() as u32 / source.height()),
+                            rows_per_image: Some(source.height()),
+                        },
                     },
-                    ImageCopyTexture {
+                    wgpu::ImageCopyTexture {
                         texture: &dest.texture,
                         mip_level: 0,
                         origin: wgpu::Origin3d {
@@ -975,9 +1013,10 @@ impl Context3D for WgpuContext3D {
                         },
                         aspect: wgpu::TextureAspect::All,
                     },
-                    Extent3d {
-                        width: source_texture.width,
-                        height: source_texture.height,
+                    // The copy size uses the orignal image, with the original row size
+                    wgpu::Extent3d {
+                        width: source.width(),
+                        height: source.height(),
                         depth_or_array_layers: 1,
                     },
                 );

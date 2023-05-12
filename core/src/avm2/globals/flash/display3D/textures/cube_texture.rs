@@ -15,8 +15,7 @@ pub fn upload_from_bitmap_data<'gc>(
             let mip_level = args[2].coerce_to_u32(activation)?;
             if mip_level == 0 {
                 texture.context3d().copy_bitmap_to_texture(
-                    source
-                        .bitmap_handle(activation.context.gc_context, activation.context.renderer),
+                    source.sync(),
                     texture.handle(),
                     // FIXME - is this right?
                     side,
