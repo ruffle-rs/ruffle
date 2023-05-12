@@ -14,7 +14,7 @@ import type { MovieMetadata } from "./movie-metadata";
 import { swfFileName } from "./swf-utils";
 import { buildInfo } from "./build-info";
 import { text, textAsParagraphs } from "./i18n";
-import * as zip from "@zip.js/zip.js";
+import JSZip from "jszip";
 
 const RUFFLE_ORIGIN = "https://ruffle.rs";
 const DIMENSION_REGEX = /^\s*(\d+(\.\d+)?(%)?)/;
@@ -907,17 +907,19 @@ export class RufflePlayer extends HTMLElement {
     /**
      * Prompt the user to download a file.
      *
-     * @param href The content to download.
+     * @param blob The content to download.
      * @param name The name to give the file.
      */
-    private saveFile(href: string, name: string): void {
+    private saveFile(blob: Blob, name: string): void {
+        const blobURL = URL.createObjectURL(blob);
         const link = document.createElement("a");
-        link.href = href;
+        link.href = blobURL;
         link.style.display = "none";
         link.download = name;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        URL.revokeObjectURL(blobURL);
     }
 
     private base64ToBlob(bytesBase64: string, mimeString: string): Blob {
@@ -1058,9 +1060,7 @@ export class RufflePlayer extends HTMLElement {
                         solData,
                         "application/octet-stream"
                     );
-                    const blobURL = URL.createObjectURL(blob);
-                    this.saveFile(blobURL, solName + ".sol");
-                    URL.revokeObjectURL(blobURL);
+                    this.saveFile(blob, solName + ".sol");
                 });
                 downloadCol.appendChild(downloadSpan);
                 const replaceCol = document.createElement("TD");
@@ -1103,10 +1103,7 @@ export class RufflePlayer extends HTMLElement {
      * Gets the local save information as SOL files and downloads them as a single ZIP file.
      */
     private async backupSaves(): Promise<void> {
-        const zipWriter = new zip.ZipWriter(
-            new zip.BlobWriter("application/zip"),
-            { bufferedWrite: true }
-        );
+        const zip = new JSZip();
         const duplicateNames: string[] = [];
         Object.keys(localStorage).forEach((key) => {
             let solName = String(key.split("/").pop());
@@ -1123,12 +1120,11 @@ export class RufflePlayer extends HTMLElement {
                 if (duplicate > 0) {
                     solName += ` (${duplicate + 1})`;
                 }
-                zipWriter.add(solName + ".sol", new zip.BlobReader(blob));
+                zip.file(solName + ".sol", blob);
             }
         });
-        const blobURL = URL.createObjectURL(await zipWriter.close());
-        this.saveFile(blobURL, "saves.zip");
-        URL.revokeObjectURL(blobURL);
+        const blob = await zip.generateAsync({ type: "blob" });
+        this.saveFile(blob, "saves.zip");
     }
 
     /**
@@ -1151,9 +1147,7 @@ export class RufflePlayer extends HTMLElement {
                     return;
                 }
                 const blob = await response.blob();
-                const blobURL = URL.createObjectURL(blob);
-                this.saveFile(blobURL, swfFileName(this.swfUrl));
-                URL.revokeObjectURL(blobURL);
+                this.saveFile(blob, swfFileName(this.swfUrl));
             } else {
                 console.error("SWF download failed");
             }

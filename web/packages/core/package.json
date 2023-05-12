@@ -41,7 +41,7 @@
         "test": "cross-env TS_NODE_COMPILER_OPTIONS={\\\"module\\\":\\\"commonjs\\\",\\\"verbatimModuleSyntax\\\":false} mocha"
     },
     "dependencies": {
-        "@zip.js/zip.js": "^2.7.6",
+        "jszip": "^3.10.1",
         "wasm-feature-detect": "^1.5.1"
     },
     "devDependencies": {
