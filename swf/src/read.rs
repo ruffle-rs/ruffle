@@ -73,6 +73,16 @@ pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
     let version = input.read_u8()?;
     let uncompressed_len = input.read_u32::<LittleEndian>()?;
 
+    // Check whether the SWF version is 0.
+    // Note that the behavior should actually vary, depending on the player version:
+    // - Flash Player 9 and later bail out (the behavior we implement).
+    // - Flash Player 8 loops through all the frames, without running any AS code.
+    // - Flash Player 7 and older don't fail and use the player version instead: a
+    // function like `getSWFVersion()` in AVM1 will then return the player version.
+    if version == 0 {
+        return Err(Error::invalid_data("Invalid SWF version"));
+    }
+
     // Now the SWF switches to a compressed stream.
     let mut decompress_stream: Box<dyn Read> = match compression {
         Compression::None => Box::new(input),
