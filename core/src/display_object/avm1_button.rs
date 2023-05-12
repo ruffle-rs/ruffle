@@ -476,6 +476,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
 
         let self_display_object = self.into();
         let is_enabled = self.enabled(context);
+        let movie_version = self.movie().version();
 
         let mut write = self.0.write(context.gc_context);
 
