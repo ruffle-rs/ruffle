@@ -9,6 +9,7 @@ This document serves as a general guide for contributing to Ruffle. Follow your 
 * [Getting Started](#getting-started)
 * [Ways to Contribute](#ways-to-contribute)
     * [Test your favorite Flash content](#test-your-favorite-flash-content)
+    * [Translate Ruffle to your language](#translate-ruffle-to-your-language)
     * [Improve documentation](#improve-documentation)
     * [Fix interesting issues](#fix-interesting-issues)
     * [Implement missing Flash functionality](#implement-missing-flash-functionality)
