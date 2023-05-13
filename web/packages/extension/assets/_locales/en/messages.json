@@ -56,6 +56,9 @@
     "status_result_running": {
         "message": "Ruffle is loaded and ready to run Flash content on the current tab."
     },
+    "status_result_running_protected": {
+        "message": "Ruffle is loaded and running the Flash content that you requested."
+    },
     "status_result_optout": {
         "message": "Ruffle is not loaded because the current page has marked itself as incompatible."
     },
