@@ -128,12 +128,24 @@ impl Color {
 
     #[must_use]
     pub fn blend_over(&self, source: &Self) -> Self {
-        let sa = source.alpha();
+        let tr = self.red() as u16;
+        let tg = self.green() as u16;
+        let tb = self.blue() as u16;
+        let ta = self.alpha() as u16;
 
-        let r = source.red() + ((self.red() as u16 * (255 - sa as u16)) >> 8) as u8;
-        let g = source.green() + ((self.green() as u16 * (255 - sa as u16)) >> 8) as u8;
-        let b = source.blue() + ((self.blue() as u16 * (255 - sa as u16)) >> 8) as u8;
-        let a = source.alpha() + ((self.alpha() as u16 * (255 - sa as u16)) >> 8) as u8;
+        let sr = source.red() as u16;
+        let sg = source.green() as u16;
+        let sb = source.blue() as u16;
+
+        let sa = source.alpha() as u16;
+        let neg_sa = 255 - source.alpha() as u16;
+
+        // TODO: Best to divide with 256/>>8? Or divide with 255?
+        let r = ((sr * sa + tr * neg_sa) >> 8) as u8;
+        let g = ((sg * sa + tg * neg_sa) >> 8) as u8;
+        let b = ((sb * sa + tb * neg_sa) >> 8) as u8;
+        // TODO: What should be done with alpha here?
+        let a = ((sa * sa + ta * neg_sa) >> 8) as u8;
         Self::argb(a, r, g, b)
     }
 }
