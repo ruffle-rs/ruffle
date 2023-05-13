@@ -323,7 +323,7 @@ impl<'gc> Method<'gc> {
         is_variadic: bool,
         mc: MutationContext<'gc, '_>,
     ) -> Self {
-        Self::Native(Gc::allocate(
+        Self::Native(Gc::new(
             mc,
             NativeMethod {
                 method,
@@ -342,7 +342,7 @@ impl<'gc> Method<'gc> {
         name: &'static str,
         mc: MutationContext<'gc, '_>,
     ) -> Self {
-        Self::Native(Gc::allocate(
+        Self::Native(Gc::new(
             mc,
             NativeMethod {
                 method,

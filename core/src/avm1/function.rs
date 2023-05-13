@@ -381,7 +381,7 @@ impl<'gc> Executable<'gc> {
                 _ => unreachable!(),
             };
             // TODO: It would be nice to avoid these extra Scope allocs.
-            let scope = Gc::allocate(
+            let scope = Gc::new(
                 activation.context.gc_context,
                 Scope::new(
                     activation.context.avm1.global_scope(),
@@ -392,7 +392,7 @@ impl<'gc> Executable<'gc> {
             (swf_version, scope)
         };
 
-        let child_scope = Gc::allocate(
+        let child_scope = Gc::new(
             activation.context.gc_context,
             Scope::new_local_scope(parent_scope, activation.context.gc_context),
         );

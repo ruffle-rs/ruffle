@@ -50,7 +50,7 @@ impl<'gc> PropertyClass<'gc> {
         name: Multiname<'gc>,
         unit: Option<TranslationUnit<'gc>>,
     ) -> Self {
-        PropertyClass::Name(Gc::allocate(mc, (name, unit)))
+        PropertyClass::Name(Gc::new(mc, (name, unit)))
     }
 
     /// Returns `value` coerced to the type of this `PropertyClass`.

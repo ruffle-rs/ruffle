@@ -47,7 +47,7 @@ impl<'gc> MorphShape<'gc> {
             gc_context,
             MorphShapeData {
                 base: Default::default(),
-                static_data: Gc::allocate(gc_context, static_data),
+                static_data: Gc::new(gc_context, static_data),
                 ratio: 0,
                 object: None,
             },

@@ -149,7 +149,7 @@ impl<'gc> Font<'gc> {
             fnv::FnvHashMap::default()
         };
 
-        Font(Gc::allocate(
+        Font(Gc::new(
             gc_context,
             FontData {
                 glyphs,

@@ -25,7 +25,7 @@ impl<'gc> AvmString<'gc> {
             Source::Owned(s) => s,
             Source::Static(s) => {
                 let repr = AvmStringRepr::from_raw(s.into(), false);
-                Gc::allocate(gc_context, repr)
+                Gc::new(gc_context, repr)
             }
         }
     }
@@ -40,7 +40,7 @@ impl<'gc> AvmString<'gc> {
         };
         let repr = AvmStringRepr::from_raw(buf, false);
         Self {
-            source: Source::Owned(Gc::allocate(gc_context, repr)),
+            source: Source::Owned(Gc::new(gc_context, repr)),
         }
     }
 
@@ -52,7 +52,7 @@ impl<'gc> AvmString<'gc> {
     pub fn new<S: Into<WString>>(gc_context: MutationContext<'gc, '_>, string: S) -> Self {
         let repr = AvmStringRepr::from_raw(string.into(), false);
         Self {
-            source: Source::Owned(Gc::allocate(gc_context, repr)),
+            source: Source::Owned(Gc::new(gc_context, repr)),
         }
     }
 

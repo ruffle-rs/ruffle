@@ -24,7 +24,7 @@ enum NamespaceSet<'gc> {
 
 impl<'gc> NamespaceSet<'gc> {
     pub fn multiple(set: Vec<Namespace<'gc>>, mc: MutationContext<'gc, '_>) -> Self {
-        Self::Multiple(Gc::allocate(mc, set))
+        Self::Multiple(Gc::new(mc, set))
     }
     pub fn single(ns: Namespace<'gc>) -> Self {
         Self::Single(ns)

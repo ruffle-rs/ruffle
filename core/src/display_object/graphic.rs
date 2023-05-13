@@ -63,7 +63,7 @@ impl<'gc> Graphic<'gc> {
             context.gc_context,
             GraphicData {
                 base: Default::default(),
-                static_data: gc_arena::Gc::allocate(context.gc_context, static_data),
+                static_data: gc_arena::Gc::new(context.gc_context, static_data),
                 avm2_object: None,
                 drawing: None,
             },
@@ -96,7 +96,7 @@ impl<'gc> Graphic<'gc> {
             context.gc_context,
             GraphicData {
                 base: Default::default(),
-                static_data: gc_arena::Gc::allocate(context.gc_context, static_data),
+                static_data: gc_arena::Gc::new(context.gc_context, static_data),
                 avm2_object: None,
                 drawing: Some(drawing),
             },

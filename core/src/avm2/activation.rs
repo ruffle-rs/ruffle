@@ -764,7 +764,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .pool_maybe_uninitialized_multiname(index, &mut self.borrow_gc())?;
         if name.has_lazy_component() {
             let name = name.fill_with_runtime_params(self)?;
-            Ok(Gc::allocate(self.context.gc_context, name))
+            Ok(Gc::new(self.context.gc_context, name))
         } else {
             Ok(name)
         }

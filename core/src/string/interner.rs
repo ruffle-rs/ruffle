@@ -60,7 +60,7 @@ impl<'gc> AvmStringInterner<'gc> {
 
     fn alloc(mc: MutationContext<'gc, '_>, s: Cow<'_, WStr>) -> Gc<'gc, AvmStringRepr> {
         let repr = AvmStringRepr::from_raw(s.into_owned(), true);
-        Gc::allocate(mc, repr)
+        Gc::new(mc, repr)
     }
 
     #[must_use]

@@ -160,7 +160,7 @@ impl<'gc> TranslationUnit<'gc> {
                     );
                 }
             }
-            Gc::allocate(activation.context.gc_context, bc_method).into()
+            Gc::new(activation.context.gc_context, bc_method).into()
         })();
 
         self.0.write(activation.context.gc_context).methods[method_index.0 as usize] =
@@ -317,7 +317,7 @@ impl<'gc> TranslationUnit<'gc> {
         drop(read);
 
         let multiname = Multiname::from_abc_index(self, multiname_index, context)?;
-        let multiname = Gc::allocate(mc, multiname);
+        let multiname = Gc::new(mc, multiname);
         self.0.write(mc).multinames[multiname_index.0 as usize] = Some(multiname);
 
         Ok(multiname)
@@ -351,7 +351,7 @@ impl<'gc> TranslationUnit<'gc> {
     ) -> Result<Gc<'gc, Multiname<'gc>>, Error<'gc>> {
         if multiname_index.0 == 0 {
             let mc = context.gc_context;
-            Ok(Gc::allocate(mc, Multiname::any(mc)))
+            Ok(Gc::new(mc, Multiname::any(mc)))
         } else {
             self.pool_multiname_static(multiname_index, context)
         }

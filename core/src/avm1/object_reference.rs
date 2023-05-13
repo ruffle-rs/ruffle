@@ -90,7 +90,7 @@ impl<'gc> MovieClipReference<'gc> {
             return None;
         };
 
-        Some(Self(Gc::allocate(
+        Some(Self(Gc::new(
             activation.context.gc_context,
             MovieClipReferenceData {
                 path: MovieClipPath::new_from_path(activation, path),

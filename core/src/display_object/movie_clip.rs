@@ -141,7 +141,7 @@ impl<'gc> MovieClip<'gc> {
             gc_context,
             MovieClipData {
                 base: Default::default(),
-                static_data: Gc::allocate(gc_context, MovieClipStatic::empty(movie, gc_context)),
+                static_data: Gc::new(gc_context, MovieClipStatic::empty(movie, gc_context)),
                 tag_stream_pos: 0,
                 current_frame: 0,
                 audio_stream: None,
@@ -180,7 +180,7 @@ impl<'gc> MovieClip<'gc> {
             gc_context,
             MovieClipData {
                 base: Default::default(),
-                static_data: Gc::allocate(gc_context, MovieClipStatic::empty(movie, gc_context)),
+                static_data: Gc::new(gc_context, MovieClipStatic::empty(movie, gc_context)),
                 tag_stream_pos: 0,
                 current_frame: 0,
                 audio_stream: None,
@@ -220,7 +220,7 @@ impl<'gc> MovieClip<'gc> {
             gc_context,
             MovieClipData {
                 base: Default::default(),
-                static_data: Gc::allocate(
+                static_data: Gc::new(
                     gc_context,
                     MovieClipStatic::with_data(id, swf, num_frames, None, gc_context),
                 ),
@@ -279,7 +279,7 @@ impl<'gc> MovieClip<'gc> {
             activation.context.gc_context,
             MovieClipData {
                 base: Default::default(),
-                static_data: Gc::allocate(
+                static_data: Gc::new(
                     activation.context.gc_context,
                     MovieClipStatic::with_data(
                         0,
@@ -357,7 +357,7 @@ impl<'gc> MovieClip<'gc> {
         );
 
         mc.base.base.reset_for_movie_load();
-        mc.static_data = Gc::allocate(
+        mc.static_data = Gc::new(
             context.gc_context,
             MovieClipStatic::with_data(
                 0,
@@ -682,8 +682,7 @@ impl<'gc> MovieClip<'gc> {
                 .unwrap();
         }
 
-        self.0.write(context.gc_context).static_data =
-            Gc::allocate(context.gc_context, static_data);
+        self.0.write(context.gc_context).static_data = Gc::new(context.gc_context, static_data);
 
         is_finished
     }

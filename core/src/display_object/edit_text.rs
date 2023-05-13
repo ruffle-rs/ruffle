@@ -255,7 +255,7 @@ impl<'gc> EditText<'gc> {
             EditTextData {
                 base,
                 text_spans,
-                static_data: gc_arena::Gc::allocate(
+                static_data: gc_arena::Gc::new(
                     context.gc_context,
                     EditTextStatic {
                         swf: swf_movie,

@@ -357,7 +357,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let clip_obj = active_clip
             .object()
             .coerce_to_object(&mut parent_activation);
-        let child_scope = Gc::allocate(
+        let child_scope = Gc::new(
             parent_activation.context.gc_context,
             Scope::new(
                 parent_activation.scope(),
@@ -395,7 +395,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             Value::Object(o) => o,
             _ => panic!("No script object for display object"),
         };
-        let child_scope = Gc::allocate(
+        let child_scope = Gc::new(
             self.context.gc_context,
             Scope::new(
                 self.context.avm1.global_scope(),
@@ -869,7 +869,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         self.context
             .avm1
-            .set_constant_pool(Gc::allocate(self.context.gc_context, constants));
+            .set_constant_pool(Gc::new(self.context.gc_context, constants));
         self.set_constant_pool(self.context.avm1.constant_pool());
 
         Ok(FrameControl::Continue)
@@ -907,7 +907,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         .into();
         let func_obj = FunctionObject::function(
             self.context.gc_context,
-            Gc::allocate(self.context.gc_context, func),
+            Gc::new(self.context.gc_context, func),
             self.context.avm1.prototypes().function,
             prototype,
         );
@@ -2388,7 +2388,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             value => {
                 // Note that primitives get boxed at this point.
                 let object = value.coerce_to_object(self);
-                let with_scope = Gc::allocate(
+                let with_scope = Gc::new(
                     self.context.gc_context,
                     Scope::new_with_scope(self.scope(), object),
                 );

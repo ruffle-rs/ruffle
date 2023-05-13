@@ -25,7 +25,7 @@ pub fn function_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
-    let dummy = Gc::allocate(
+    let dummy = Gc::new(
         activation.context.gc_context,
         NativeMethod {
             method: |_, _, _| Ok(Value::Undefined),

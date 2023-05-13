@@ -45,7 +45,7 @@ impl<'gc> Text<'gc> {
             context.gc_context,
             TextData {
                 base: Default::default(),
-                static_data: gc_arena::Gc::allocate(
+                static_data: gc_arena::Gc::new(
                     context.gc_context,
                     TextStatic {
                         swf,
