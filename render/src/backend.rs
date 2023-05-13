@@ -373,9 +373,6 @@ impl Context3DTextureFilter {
         }
     }
 }
-
-#[derive(Collect)]
-#[collect(no_drop)]
 pub enum Context3DCommand<'a, 'gc> {
     Clear {
         red: f64,
@@ -403,7 +400,6 @@ pub enum Context3DCommand<'a, 'gc> {
     SetRenderToBackBuffer,
 
     UploadToIndexBuffer {
-        #[collect(require_static)]
         buffer: &'a mut dyn IndexBuffer,
         start_offset: usize,
         data: Vec<u8>,
@@ -475,7 +471,6 @@ pub enum Context3DCommand<'a, 'gc> {
         filter: Context3DTextureFilter,
     },
     SetScissorRectangle {
-        #[collect(require_static)]
         rect: Option<Rectangle<Twips>>,
     },
 }
