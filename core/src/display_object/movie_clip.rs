@@ -137,7 +137,7 @@ pub struct MovieClipData<'gc> {
 
 impl<'gc> MovieClip<'gc> {
     pub fn new(movie: Arc<SwfMovie>, gc_context: MutationContext<'gc, '_>) -> Self {
-        MovieClip(GcCell::allocate(
+        MovieClip(GcCell::new(
             gc_context,
             MovieClipData {
                 base: Default::default(),
@@ -176,7 +176,7 @@ impl<'gc> MovieClip<'gc> {
         class: Avm2ClassObject<'gc>,
         gc_context: MutationContext<'gc, '_>,
     ) -> Self {
-        MovieClip(GcCell::allocate(
+        MovieClip(GcCell::new(
             gc_context,
             MovieClipData {
                 base: Default::default(),
@@ -216,7 +216,7 @@ impl<'gc> MovieClip<'gc> {
         swf: SwfSlice,
         num_frames: u16,
     ) -> Self {
-        MovieClip(GcCell::allocate(
+        MovieClip(GcCell::new(
             gc_context,
             MovieClipData {
                 base: Default::default(),
@@ -275,7 +275,7 @@ impl<'gc> MovieClip<'gc> {
             None
         };
 
-        let mc = MovieClip(GcCell::allocate(
+        let mc = MovieClip(GcCell::new(
             activation.context.gc_context,
             MovieClipData {
                 base: Default::default(),
@@ -2360,7 +2360,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc> {
-        Self(GcCell::allocate(gc_context, self.0.read().clone())).into()
+        Self(GcCell::new(gc_context, self.0.read().clone())).into()
     }
 
     fn as_ptr(&self) -> *const DisplayObjectPtr {
@@ -4276,9 +4276,9 @@ impl<'gc> MovieClipStatic<'gc> {
             scene_labels_map: HashMap::new(),
             audio_stream_info: None,
             audio_stream_handle: None,
-            exported_name: GcCell::allocate(gc_context, None),
+            exported_name: GcCell::new(gc_context, None),
             loader_info,
-            preload_progress: GcCell::allocate(gc_context, Default::default()),
+            preload_progress: GcCell::new(gc_context, Default::default()),
         }
     }
 }

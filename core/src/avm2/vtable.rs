@@ -54,7 +54,7 @@ pub struct ClassBoundMethod<'gc> {
 
 impl<'gc> VTable<'gc> {
     pub fn empty(mc: MutationContext<'gc, '_>) -> Self {
-        VTable(GcCell::allocate(
+        VTable(GcCell::new(
             mc,
             VTableData {
                 defining_class: None,
@@ -74,7 +74,7 @@ impl<'gc> VTable<'gc> {
 
         rt.insert(*vname, Property::Slot { slot_id: 1 });
 
-        let vt = VTable(GcCell::allocate(
+        let vt = VTable(GcCell::new(
             mc,
             VTableData {
                 defining_class: None,
@@ -95,7 +95,7 @@ impl<'gc> VTable<'gc> {
     }
 
     pub fn duplicate(self, mc: MutationContext<'gc, '_>) -> Self {
-        VTable(GcCell::allocate(mc, self.0.read().clone()))
+        VTable(GcCell::new(mc, self.0.read().clone()))
     }
 
     pub fn resolved_traits(&self) -> Ref<'_, PropertyMap<'gc, Property>> {

@@ -27,7 +27,7 @@ pub fn vector_allocator<'gc>(
         .flatten()
         .unwrap_or_else(|| activation.avm2().classes().object);
 
-    Ok(VectorObject(GcCell::allocate(
+    Ok(VectorObject(GcCell::new(
         activation.context.gc_context,
         VectorObjectData {
             base,
@@ -75,7 +75,7 @@ impl<'gc> VectorObject<'gc> {
 
         let applied_class = vector_class.apply(activation, value_type.into())?;
 
-        let mut object: Object<'gc> = VectorObject(GcCell::allocate(
+        let mut object: Object<'gc> = VectorObject(GcCell::new(
             activation.context.gc_context,
             VectorObjectData {
                 base: ScriptObjectData::new(applied_class),

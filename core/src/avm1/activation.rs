@@ -3017,7 +3017,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     pub fn allocate_local_registers(&mut self, num: u8, mc: MutationContext<'gc, '_>) {
         self.local_registers = match num {
             0 => None,
-            num => Some(GcCell::allocate(mc, RegisterSet::new(num))),
+            num => Some(GcCell::new(mc, RegisterSet::new(num))),
         };
     }
 

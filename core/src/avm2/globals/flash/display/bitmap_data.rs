@@ -68,7 +68,7 @@ pub fn fill_bitmap_data_from_symbol<'gc>(
     activation: &mut Activation<'_, 'gc>,
     bd: &Bitmap<'gc>,
 ) -> BitmapDataWrapper<'gc> {
-    let new_bitmap_data = GcCell::allocate(
+    let new_bitmap_data = GcCell::new(
         activation.context.gc_context,
         BitmapData::new_with_pixels(
             Bitmap::width(*bd).into(),
@@ -134,10 +134,7 @@ pub fn init<'gc>(
         }
 
         let new_bitmap_data = BitmapData::new(width, height, transparency, fill_color);
-        BitmapDataWrapper::new(GcCell::allocate(
-            activation.context.gc_context,
-            new_bitmap_data,
-        ))
+        BitmapDataWrapper::new(GcCell::new(activation.context.gc_context, new_bitmap_data))
     };
 
     new_bitmap_data.init_object2(activation.context.gc_context, this);
@@ -1133,10 +1130,7 @@ pub fn clone<'gc>(
             let class = activation.avm2().classes().bitmapdata;
             let new_bitmap_data_object = BitmapDataObject::from_bitmap_data_internal(
                 activation,
-                BitmapDataWrapper::new(GcCell::allocate(
-                    activation.context.gc_context,
-                    new_bitmap_data,
-                )),
+                BitmapDataWrapper::new(GcCell::new(activation.context.gc_context, new_bitmap_data)),
                 class,
             )?;
 
@@ -1398,10 +1392,7 @@ pub fn compare<'gc>(
             let class = activation.avm2().classes().bitmapdata;
             Ok(BitmapDataObject::from_bitmap_data_internal(
                 activation,
-                BitmapDataWrapper::new(GcCell::allocate(
-                    activation.context.gc_context,
-                    bitmap_data,
-                )),
+                BitmapDataWrapper::new(GcCell::new(activation.context.gc_context, bitmap_data)),
                 class,
             )?
             .into())

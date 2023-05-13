@@ -19,7 +19,7 @@ pub fn q_name_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
-    Ok(QNameObject(GcCell::allocate(
+    Ok(QNameObject(GcCell::new(
         activation.context.gc_context,
         QNameObjectData {
             base,
@@ -65,7 +65,7 @@ impl<'gc> QNameObject<'gc> {
         let class = activation.avm2().classes().qname;
         let base = ScriptObjectData::new(class);
 
-        let mut this: Object<'gc> = QNameObject(GcCell::allocate(
+        let mut this: Object<'gc> = QNameObject(GcCell::new(
             activation.context.gc_context,
             QNameObjectData { base, name },
         ))

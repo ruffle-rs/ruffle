@@ -130,7 +130,7 @@ impl<'gc> Video<'gc> {
         mc: MutationContext<'gc, '_>,
     ) -> Self {
         let size = (streamdef.width.into(), streamdef.height.into());
-        let source = GcCell::allocate(
+        let source = GcCell::new(
             mc,
             VideoSource::Swf {
                 streamdef,
@@ -138,7 +138,7 @@ impl<'gc> Video<'gc> {
             },
         );
 
-        Video(GcCell::allocate(
+        Video(GcCell::new(
             mc,
             VideoData {
                 base: Default::default(),
@@ -160,9 +160,9 @@ impl<'gc> Video<'gc> {
         height: i32,
         object: Option<AvmObject<'gc>>,
     ) -> Self {
-        let source = GcCell::allocate(mc, VideoSource::Unconnected);
+        let source = GcCell::new(mc, VideoSource::Unconnected);
 
-        Video(GcCell::allocate(
+        Video(GcCell::new(
             mc,
             VideoData {
                 base: Default::default(),
@@ -187,7 +187,7 @@ impl<'gc> Video<'gc> {
     pub fn attach_netstream(self, context: &mut UpdateContext<'_, 'gc>, stream: NetStream<'gc>) {
         let mut video = self.0.write(context.gc_context);
 
-        video.source = GcCell::allocate(context.gc_context, VideoSource::NetStream { stream });
+        video.source = GcCell::new(context.gc_context, VideoSource::NetStream { stream });
         video.stream = VideoStream::Uninstantiated(0);
         video.keyframes = BTreeSet::new();
     }
@@ -358,7 +358,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
     }
 
     fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc> {
-        Self(GcCell::allocate(gc_context, self.0.read().clone())).into()
+        Self(GcCell::new(gc_context, self.0.read().clone())).into()
     }
 
     fn as_ptr(&self) -> *const DisplayObjectPtr {

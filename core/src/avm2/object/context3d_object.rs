@@ -40,7 +40,7 @@ impl<'gc> Context3DObject<'gc> {
         let class = activation.avm2().classes().context3d;
         let base = ScriptObjectData::new(class);
 
-        let mut this: Object<'gc> = Context3DObject(GcCell::allocate(
+        let mut this: Object<'gc> = Context3DObject(GcCell::new(
             activation.context.gc_context,
             Context3DData {
                 base,
@@ -264,7 +264,7 @@ impl<'gc> Context3DObject<'gc> {
     ) {
         let module = match program {
             Some(program) => program.shader_module_handle(),
-            None => GcCell::allocate(activation.context.gc_context, None),
+            None => GcCell::new(activation.context.gc_context, None),
         };
 
         self.0

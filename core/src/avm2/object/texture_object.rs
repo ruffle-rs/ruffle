@@ -29,7 +29,7 @@ impl<'gc> TextureObject<'gc> {
     ) -> Result<Object<'gc>, Error<'gc>> {
         let base = ScriptObjectData::new(class);
 
-        let mut this: Object<'gc> = TextureObject(GcCell::allocate(
+        let mut this: Object<'gc> = TextureObject(GcCell::new(
             activation.context.gc_context,
             TextureObjectData {
                 base,

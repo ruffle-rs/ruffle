@@ -69,7 +69,7 @@ impl fmt::Debug for ScriptObject<'_> {
 
 impl<'gc> ScriptObject<'gc> {
     pub fn new(gc_context: MutationContext<'gc, '_>, proto: Option<Object<'gc>>) -> Self {
-        let object = Self(GcCell::allocate(
+        let object = Self(GcCell::new(
             gc_context,
             ScriptObjectData {
                 native: NativeObject::None,

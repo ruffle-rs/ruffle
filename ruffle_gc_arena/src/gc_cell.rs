@@ -53,7 +53,7 @@ unsafe impl<'gc, T: ?Sized + 'gc> Collect for GcCell<'gc, T> {
 
 impl<'gc, T: Collect + 'gc> GcCell<'gc, T> {
     #[inline]
-    pub fn allocate(mc: MutationContext<'gc, '_>, t: T) -> GcCell<'gc, T> {
+    pub fn new(mc: MutationContext<'gc, '_>, t: T) -> GcCell<'gc, T> {
         GcCell(Gc::new(
             mc,
             GcRefCell {

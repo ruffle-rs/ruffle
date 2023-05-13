@@ -1573,7 +1573,7 @@ impl<'gc> Loader<'gc> {
                         transparency,
                         bitmap.as_colors().map(Color::from).collect(),
                     );
-                    let bitmapdata_wrapper = BitmapDataWrapper::new(GcCell::allocate(
+                    let bitmapdata_wrapper = BitmapDataWrapper::new(GcCell::new(
                         activation.context.gc_context,
                         bitmap_data,
                     ));

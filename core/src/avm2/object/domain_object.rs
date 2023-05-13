@@ -18,7 +18,7 @@ pub fn application_domain_allocator<'gc>(
     let domain = activation.domain();
     let base = ScriptObjectData::new(class);
 
-    Ok(DomainObject(GcCell::allocate(
+    Ok(DomainObject(GcCell::new(
         activation.context.gc_context,
         DomainObjectData { base, domain },
     ))
@@ -62,7 +62,7 @@ impl<'gc> DomainObject<'gc> {
     ) -> Result<Object<'gc>, Error<'gc>> {
         let class = activation.avm2().classes().application_domain;
         let base = ScriptObjectData::new(class);
-        let mut this: Object<'gc> = DomainObject(GcCell::allocate(
+        let mut this: Object<'gc> = DomainObject(GcCell::new(
             activation.context.gc_context,
             DomainObjectData { base, domain },
         ))

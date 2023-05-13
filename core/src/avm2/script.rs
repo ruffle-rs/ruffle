@@ -90,7 +90,7 @@ impl<'gc> TranslationUnit<'gc> {
         let namespaces = vec![None; abc.constant_pool.namespaces.len() + 1];
         let multinames = vec![None; abc.constant_pool.multinames.len() + 1];
 
-        Self(GcCell::allocate(
+        Self(GcCell::new(
             mc,
             TranslationUnitData {
                 domain,
@@ -404,7 +404,7 @@ impl<'gc> Script<'gc> {
         globals: Object<'gc>,
         domain: Domain<'gc>,
     ) -> Self {
-        Self(GcCell::allocate(
+        Self(GcCell::new(
             mc,
             ScriptData {
                 globals,
@@ -447,7 +447,7 @@ impl<'gc> Script<'gc> {
 
         let init = unit.load_method(script.init_method, false, activation)?;
 
-        Ok(Self(GcCell::allocate(
+        Ok(Self(GcCell::new(
             activation.context.gc_context,
             ScriptData {
                 globals,

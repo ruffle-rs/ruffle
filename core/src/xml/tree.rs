@@ -57,7 +57,7 @@ impl<'gc> XmlNode<'gc> {
         node_type: u8,
         node_value: Option<AvmString<'gc>>,
     ) -> Self {
-        Self(GcCell::allocate(
+        Self(GcCell::new(
             mc,
             XmlNodeData {
                 script_object: None,
@@ -389,7 +389,7 @@ impl<'gc> XmlNode<'gc> {
             attributes.define_value(gc_context, key, value, Attribute::empty());
         }
 
-        let mut clone = Self(GcCell::allocate(
+        let mut clone = Self(GcCell::new(
             gc_context,
             XmlNodeData {
                 script_object: None,

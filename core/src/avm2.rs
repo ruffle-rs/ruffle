@@ -164,7 +164,7 @@ impl<'gc> Avm2<'gc> {
             player_version,
             stack: Vec::new(),
             scope_stack: Vec::new(),
-            call_stack: GcCell::allocate(context.gc_context, CallStack::new()),
+            call_stack: GcCell::new(context.gc_context, CallStack::new()),
             playerglobals_domain,
             stage_domain,
             system_classes: None,

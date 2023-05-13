@@ -2262,8 +2262,8 @@ impl PlayerBuilder {
         let dynamic_root = DynamicRootSet::new(gc_context);
 
         GcRoot {
-            callstack: GcCell::allocate(gc_context, GcCallstack::default()),
-            data: GcCell::allocate(
+            callstack: GcCell::new(gc_context, GcCallstack::default()),
+            data: GcCell::new(
                 gc_context,
                 GcRootData {
                     audio_manager: AudioManager::new(),

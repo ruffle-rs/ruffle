@@ -28,12 +28,12 @@ impl<'gc> Program3DObject<'gc> {
         let class = activation.avm2().classes().program3d;
         let base = ScriptObjectData::new(class);
 
-        let mut this: Object<'gc> = Program3DObject(GcCell::allocate(
+        let mut this: Object<'gc> = Program3DObject(GcCell::new(
             activation.context.gc_context,
             Program3DObjectData {
                 base,
                 context3d,
-                shader_module_handle: GcCell::allocate(activation.context.gc_context, None),
+                shader_module_handle: GcCell::new(activation.context.gc_context, None),
             },
         ))
         .into();

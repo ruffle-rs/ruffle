@@ -59,7 +59,7 @@ impl<'gc> Graphic<'gc> {
             movie,
         };
 
-        Graphic(GcCell::allocate(
+        Graphic(GcCell::new(
             context.gc_context,
             GraphicData {
                 base: Default::default(),
@@ -92,7 +92,7 @@ impl<'gc> Graphic<'gc> {
         };
         let drawing = Drawing::new();
 
-        Graphic(GcCell::allocate(
+        Graphic(GcCell::new(
             context.gc_context,
             GraphicData {
                 base: Default::default(),
@@ -120,7 +120,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
     }
 
     fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc> {
-        Self(GcCell::allocate(gc_context, self.0.read().clone())).into()
+        Self(GcCell::new(gc_context, self.0.read().clone())).into()
     }
 
     fn as_ptr(&self) -> *const DisplayObjectPtr {

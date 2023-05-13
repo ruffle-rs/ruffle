@@ -83,7 +83,7 @@ impl<'gc> XmlObject<'gc> {
     /// Construct a new XML document and object pair.
     pub fn empty(gc_context: MutationContext<'gc, '_>, proto: Object<'gc>) -> Self {
         let mut root = XmlNode::new(gc_context, ELEMENT_NODE, None);
-        let object = Self(GcCell::allocate(
+        let object = Self(GcCell::new(
             gc_context,
             XmlObjectData {
                 base: ScriptObject::new(gc_context, Some(proto)),

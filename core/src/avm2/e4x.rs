@@ -68,7 +68,7 @@ pub enum E4XNodeKind<'gc> {
 
 impl<'gc> E4XNode<'gc> {
     pub fn dummy(mc: MutationContext<'gc, '_>) -> Self {
-        E4XNode(GcCell::allocate(
+        E4XNode(GcCell::new(
             mc,
             E4XNodeData {
                 parent: None,
@@ -82,7 +82,7 @@ impl<'gc> E4XNode<'gc> {
     }
 
     pub fn text(mc: MutationContext<'gc, '_>, text: AvmString<'gc>, parent: Option<Self>) -> Self {
-        E4XNode(GcCell::allocate(
+        E4XNode(GcCell::new(
             mc,
             E4XNodeData {
                 parent,
@@ -93,7 +93,7 @@ impl<'gc> E4XNode<'gc> {
     }
 
     pub fn element(mc: MutationContext<'gc, '_>, name: AvmString<'gc>, parent: Self) -> Self {
-        E4XNode(GcCell::allocate(
+        E4XNode(GcCell::new(
             mc,
             E4XNodeData {
                 parent: Some(parent),
@@ -112,7 +112,7 @@ impl<'gc> E4XNode<'gc> {
         value: AvmString<'gc>,
         parent: E4XNode<'gc>,
     ) -> Self {
-        E4XNode(GcCell::allocate(
+        E4XNode(GcCell::new(
             mc,
             E4XNodeData {
                 parent: Some(parent),
@@ -191,7 +191,7 @@ impl<'gc> E4XNode<'gc> {
             },
         };
 
-        let node = E4XNode(GcCell::allocate(
+        let node = E4XNode(GcCell::new(
             mc,
             E4XNodeData {
                 parent: None,
@@ -360,7 +360,7 @@ impl<'gc> E4XNode<'gc> {
                         text
                     },
                 );
-                let node = E4XNode(GcCell::allocate(
+                let node = E4XNode(GcCell::new(
                     activation.context.gc_context,
                     E4XNodeData {
                         parent: None,
@@ -445,7 +445,7 @@ impl<'gc> E4XNode<'gc> {
                         Event::PI(_) => E4XNodeKind::ProcessingInstruction(text),
                         _ => unreachable!(),
                     };
-                    let node = E4XNode(GcCell::allocate(
+                    let node = E4XNode(GcCell::new(
                         activation.context.gc_context,
                         E4XNodeData {
                             parent: None,
@@ -494,10 +494,7 @@ impl<'gc> E4XNode<'gc> {
                 local_name: Some(key),
                 kind: E4XNodeKind::Attribute(value),
             };
-            let attribute = E4XNode(GcCell::allocate(
-                activation.context.gc_context,
-                attribute_data,
-            ));
+            let attribute = E4XNode(GcCell::new(activation.context.gc_context, attribute_data));
             attribute_nodes.push(attribute);
         }
 
@@ -510,10 +507,7 @@ impl<'gc> E4XNode<'gc> {
             },
         };
 
-        Ok(E4XNode(GcCell::allocate(
-            activation.context.gc_context,
-            data,
-        )))
+        Ok(E4XNode(GcCell::new(activation.context.gc_context, data)))
     }
 
     pub fn local_name(&self) -> Option<AvmString<'gc>> {

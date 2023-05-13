@@ -129,10 +129,7 @@ pub fn constructor<'gc>(
     };
     this.set_native(
         activation.context.gc_context,
-        NativeObject::ColorTransform(GcCell::allocate(
-            activation.context.gc_context,
-            color_transform,
-        )),
+        NativeObject::ColorTransform(GcCell::new(activation.context.gc_context, color_transform)),
     );
     Ok(this.into())
 }

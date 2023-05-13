@@ -71,10 +71,7 @@ fn new_bitmap_data<'gc>(
     }
     object.set_native(
         gc_context,
-        NativeObject::BitmapData(BitmapDataWrapper::new(GcCell::allocate(
-            gc_context,
-            bitmap_data,
-        ))),
+        NativeObject::BitmapData(BitmapDataWrapper::new(GcCell::new(gc_context, bitmap_data))),
     );
     object
 }
@@ -108,7 +105,7 @@ fn constructor<'gc>(
     let bitmap_data = BitmapData::new(width, height, transparency, fill_color);
     this.set_native(
         activation.context.gc_context,
-        NativeObject::BitmapData(BitmapDataWrapper::new(GcCell::allocate(
+        NativeObject::BitmapData(BitmapDataWrapper::new(GcCell::new(
             activation.context.gc_context,
             bitmap_data,
         ))),

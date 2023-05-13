@@ -153,7 +153,7 @@ impl<'gc> BytecodeMethod<'gc> {
                 .clone();
 
             let activation_class = if method.flags.contains(AbcMethodFlags::NEED_ACTIVATION) {
-                Some(GcCell::allocate(activation.context.gc_context, None))
+                Some(GcCell::new(activation.context.gc_context, None))
             } else {
                 None
             };

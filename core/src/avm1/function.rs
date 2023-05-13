@@ -508,7 +508,7 @@ impl<'gc> FunctionObject<'gc> {
     ) -> Self {
         Self {
             base: ScriptObject::new(gc_context, Some(fn_proto)),
-            data: GcCell::allocate(
+            data: GcCell::new(
                 gc_context,
                 FunctionObjectData {
                     function,
@@ -711,7 +711,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     ) -> Result<Object<'gc>, Error<'gc>> {
         Ok(FunctionObject {
             base: ScriptObject::new(activation.context.gc_context, Some(prototype)),
-            data: GcCell::allocate(
+            data: GcCell::new(
                 activation.context.gc_context,
                 FunctionObjectData {
                     function: None,

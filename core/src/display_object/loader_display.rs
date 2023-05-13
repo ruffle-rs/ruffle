@@ -42,7 +42,7 @@ pub struct LoaderDisplayData<'gc> {
 
 impl<'gc> LoaderDisplay<'gc> {
     pub fn empty(activation: &mut Activation<'_, 'gc>, movie: Arc<SwfMovie>) -> Self {
-        let obj = LoaderDisplay(GcCell::allocate(
+        let obj = LoaderDisplay(GcCell::new(
             activation.context.gc_context,
             LoaderDisplayData {
                 base: Default::default(),
@@ -72,7 +72,7 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
     }
 
     fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc> {
-        Self(GcCell::allocate(gc_context, self.0.read().clone())).into()
+        Self(GcCell::new(gc_context, self.0.read().clone())).into()
     }
 
     fn as_ptr(&self) -> *const DisplayObjectPtr {

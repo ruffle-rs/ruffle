@@ -48,7 +48,7 @@ impl<'gc> StageObject<'gc> {
         display_object: DisplayObject<'gc>,
         proto: Object<'gc>,
     ) -> Self {
-        Self(GcCell::allocate(
+        Self(GcCell::new(
             gc_context,
             StageObjectData {
                 base: ScriptObject::new(gc_context, Some(proto)),

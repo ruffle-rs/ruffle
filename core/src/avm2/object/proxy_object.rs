@@ -17,7 +17,7 @@ pub fn proxy_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
-    Ok(ProxyObject(GcCell::allocate(
+    Ok(ProxyObject(GcCell::new(
         activation.context.gc_context,
         ProxyObjectData { base },
     ))

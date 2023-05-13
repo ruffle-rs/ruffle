@@ -19,7 +19,7 @@ pub fn array_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
-    Ok(ArrayObject(GcCell::allocate(
+    Ok(ArrayObject(GcCell::new(
         activation.context.gc_context,
         ArrayObjectData {
             base,
@@ -72,7 +72,7 @@ impl<'gc> ArrayObject<'gc> {
         let class = activation.avm2().classes().array;
         let base = ScriptObjectData::new(class);
 
-        let mut instance: Object<'gc> = ArrayObject(GcCell::allocate(
+        let mut instance: Object<'gc> = ArrayObject(GcCell::new(
             activation.context.gc_context,
             ArrayObjectData { base, array },
         ))

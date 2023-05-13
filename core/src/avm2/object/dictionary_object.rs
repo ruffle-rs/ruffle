@@ -18,7 +18,7 @@ pub fn dictionary_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
-    Ok(DictionaryObject(GcCell::allocate(
+    Ok(DictionaryObject(GcCell::new(
         activation.context.gc_context,
         DictionaryObjectData {
             base,

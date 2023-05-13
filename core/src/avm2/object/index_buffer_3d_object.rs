@@ -28,7 +28,7 @@ impl<'gc> IndexBuffer3DObject<'gc> {
         let class = activation.avm2().classes().indexbuffer3d;
         let base = ScriptObjectData::new(class);
 
-        let mut this: Object<'gc> = IndexBuffer3DObject(GcCell::allocate(
+        let mut this: Object<'gc> = IndexBuffer3DObject(GcCell::new(
             activation.context.gc_context,
             IndexBuffer3DObjectData {
                 base,

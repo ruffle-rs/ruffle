@@ -85,7 +85,7 @@ pub struct GlowFilter<'gc>(GcCell<'gc, GlowFilterData>);
 
 impl<'gc> GlowFilter<'gc> {
     fn new(activation: &mut Activation<'_, 'gc>, args: &[Value<'gc>]) -> Result<Self, Error<'gc>> {
-        let glow_filter = Self(GcCell::allocate(
+        let glow_filter = Self(GcCell::new(
             activation.context.gc_context,
             Default::default(),
         ));
@@ -101,11 +101,11 @@ impl<'gc> GlowFilter<'gc> {
     }
 
     pub fn from_filter(gc_context: MutationContext<'gc, '_>, filter: swf::GlowFilter) -> Self {
-        Self(GcCell::allocate(gc_context, filter.into()))
+        Self(GcCell::new(gc_context, filter.into()))
     }
 
     pub(crate) fn duplicate(&self, gc_context: MutationContext<'gc, '_>) -> Self {
-        Self(GcCell::allocate(gc_context, self.0.read().clone()))
+        Self(GcCell::new(gc_context, self.0.read().clone()))
     }
 
     fn color(&self) -> i32 {

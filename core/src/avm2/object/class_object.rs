@@ -194,7 +194,7 @@ impl<'gc> ClassObject<'gc> {
             .or_else(|| superclass_object.and_then(|c| c.instance_allocator()))
             .unwrap_or(scriptobject_allocator);
 
-        let class_object = ClassObject(GcCell::allocate(
+        let class_object = ClassObject(GcCell::new(
             activation.context.gc_context,
             ClassObjectData {
                 base: ScriptObjectData::custom_new(None, None),
@@ -953,7 +953,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         let native_constructor = self.0.read().native_constructor.clone();
         let call_handler = self.0.read().call_handler.clone();
 
-        let mut class_object = ClassObject(GcCell::allocate(
+        let mut class_object = ClassObject(GcCell::new(
             activation.context.gc_context,
             ClassObjectData {
                 base: ScriptObjectData::new(class_class),

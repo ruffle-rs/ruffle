@@ -112,7 +112,7 @@ impl<'gc> Bitmap<'gc> {
         let width = bitmap_data.width();
         let height = bitmap_data.height();
 
-        Bitmap(GcCell::allocate(
+        Bitmap(GcCell::new(
             context.gc_context,
             BitmapGraphicData {
                 base: Default::default(),
@@ -153,7 +153,7 @@ impl<'gc> Bitmap<'gc> {
         Ok(Self::new_with_bitmap_data(
             context,
             id,
-            BitmapDataWrapper::new(GcCell::allocate(context.gc_context, bitmap_data)),
+            BitmapDataWrapper::new(GcCell::new(context.gc_context, bitmap_data)),
             smoothing,
         ))
     }
@@ -253,7 +253,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
     }
 
     fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc> {
-        Self(GcCell::allocate(gc_context, self.0.read().clone())).into()
+        Self(GcCell::new(gc_context, self.0.read().clone())).into()
     }
 
     fn as_ptr(&self) -> *const DisplayObjectPtr {

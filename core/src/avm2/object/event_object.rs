@@ -22,7 +22,7 @@ pub fn event_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
-    Ok(EventObject(GcCell::allocate(
+    Ok(EventObject(GcCell::new(
         activation.context.gc_context,
         EventObjectData {
             base,
@@ -81,7 +81,7 @@ impl<'gc> EventObject<'gc> {
         event.set_bubbles(bubbles);
         event.set_cancelable(cancelable);
 
-        let event_object = EventObject(GcCell::allocate(
+        let event_object = EventObject(GcCell::new(
             context.gc_context,
             EventObjectData { base, event },
         ));

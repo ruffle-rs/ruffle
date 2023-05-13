@@ -21,7 +21,7 @@ pub fn scriptobject_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
-    Ok(ScriptObject(GcCell::allocate(activation.context.gc_context, base)).into())
+    Ok(ScriptObject(GcCell::new(activation.context.gc_context, base)).into())
 }
 
 /// Default implementation of `avm2::Object`.
@@ -101,11 +101,7 @@ impl<'gc> ScriptObject<'gc> {
         class: Option<ClassObject<'gc>>,
         proto: Option<Object<'gc>>,
     ) -> Object<'gc> {
-        ScriptObject(GcCell::allocate(
-            mc,
-            ScriptObjectData::custom_new(proto, class),
-        ))
-        .into()
+        ScriptObject(GcCell::new(mc, ScriptObjectData::custom_new(proto, class))).into()
     }
 
     /// A special case for `newcatch` implementation. Basically a variable (q)name
@@ -118,7 +114,7 @@ impl<'gc> ScriptObject<'gc> {
         base.set_vtable(vt);
         base.install_instance_slots();
 
-        ScriptObject(GcCell::allocate(mc, base)).into()
+        ScriptObject(GcCell::new(mc, base)).into()
     }
 }
 
