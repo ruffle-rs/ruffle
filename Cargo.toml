@@ -18,6 +18,8 @@ members = [
     "render/wgpu",
     "render/webgl",
 
+    "ruffle_gc_arena",
+
     "video",
     "video/software",
 
@@ -36,7 +38,7 @@ repository = "https://github.com/ruffle-rs/ruffle"
 version = "0.1.0"
 
 [workspace.dependencies]
-gc-arena = { git = "https://github.com/kyren/gc-arena", rev = "63dab12871321e0e5ada10ff1f1de8f4cf1764f9" }
+# gc-arena = { git = "https://github.com/kyren/gc-arena", rev = "63dab12871321e0e5ada10ff1f1de8f4cf1764f9" }
 tracing = "0.1.37"
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
 naga = { version = "0.12.2", features = ["validate", "wgsl-out"] }

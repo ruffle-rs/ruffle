@@ -1,0 +1,12 @@
+[package]
+name = "ruffle_gc_arena"
+version = "0.0.0"
+description = "Temporary, internal gc-arena facade for Ruffle"
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+gc-arena = { git = "https://github.com/kyren/gc-arena", rev = "63dab12871321e0e5ada10ff1f1de8f4cf1764f9" }

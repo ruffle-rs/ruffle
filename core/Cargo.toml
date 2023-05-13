@@ -13,7 +13,7 @@ byteorder = "1.4"
 bitstream-io = "1.6.0"
 flate2 = "1.0.26"
 fnv = "1.0.7"
-gc-arena = { workspace = true }
+gc-arena = { package = "ruffle_gc_arena", path = "../ruffle_gc_arena" }
 generational-arena = "0.2.9"
 indexmap = "2.0.0"
 tracing = { workspace = true }
