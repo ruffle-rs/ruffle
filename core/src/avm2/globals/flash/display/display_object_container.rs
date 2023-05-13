@@ -89,7 +89,7 @@ fn validate_remove_operation<'gc>(
 
     Err(Error::AvmError(argument_error(
         activation,
-        "The supplied DisplayObject must be a child of the caller.",
+        "Error #2025: The supplied DisplayObject must be a child of the caller.",
         2025,
     )?))
 }
