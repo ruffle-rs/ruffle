@@ -33,18 +33,13 @@ impl LehmerRng {
     }
 }
 
-/// An ARGB color value.
+/// This can represent both a premultiplied and an unmultiplied ARGB color value.
 ///
-/// It can be in two forms:
-/// - Pre-multiplied alpha, where the non-alpha values are pre-multiplied with
-///   the alpha value.
-/// - Non-pre-multiplied alpha, where the non-alpha values are not pre-multiplied
-///   with the alpha value.
-/// The type system as of this writing (May 2023) does not differentiate between
-/// the two forms.
-/// Notably, BitmapData stores internally its color values in pre-multiplied alpha form,
-/// while the ActionScript interface uses non-pre-multiplied alpha form for color
-/// values.
+/// Note that most operations only make sense on one of these representations:
+/// For example, blending on premultiplied values, and applying a `ColorTransform` on
+/// unmultiplied values. Make sure to convert the color to the correct form beforehand.
+// TODO: Maybe split the type into `PremultipliedColor(i32)` and
+//   `UnmultipliedColor(i32)`?
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Collect)]
 #[collect(no_drop)]
 pub struct Color(i32);
@@ -140,8 +135,8 @@ impl Color {
 
     /// # Arguments
     ///
-    /// * `self` - Must be in pre-multiplied alpha form.
-    /// * `source` - Must be in pre-multiplied alpha form.
+    /// * `self` - Must be in premultiplied form.
+    /// * `source` - Must be in premultiplied form.
     #[must_use]
     pub fn blend_over(&self, source: &Self) -> Self {
         let sa = source.alpha();
