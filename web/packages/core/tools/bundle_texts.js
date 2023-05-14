@@ -37,7 +37,20 @@ locales.forEach((locale) => {
 const options = {
     files: "dist/**",
     from: [/\{\s*\/\*\s*%BUNDLED_TEXTS%\s*\*\/\s*}/g],
-    to: [JSON.stringify(bundled_texts, null, 2)],
+    to: [
+        JSON.stringify(bundled_texts, null, 2).replace(
+            // Escape most non-ASCII characters to prevent strings from looking broken on non-UTF-8 encoded pages.
+            /[\u{0080}-\u{FFFF}]/gu,
+            (char) => {
+                const code = char.charCodeAt(0);
+                if (code > 0xff) {
+                    return `\\u${code.toString(16).padStart(4, "0")}`;
+                } else {
+                    return `\\x${code.toString(16)}`;
+                }
+            }
+        ),
+    ],
 };
 
 replace.sync(options);
