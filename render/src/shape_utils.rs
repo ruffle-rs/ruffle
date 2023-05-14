@@ -157,21 +157,21 @@ struct PathSegment {
 }
 
 impl PathSegment {
-    fn new(start: (Twips, Twips)) -> Self {
+    fn new(start: swf::Point<Twips>) -> Self {
         Self {
             points: vec![Point {
-                x: start.0,
-                y: start.1,
+                x: start.x,
+                y: start.y,
                 is_bezier_control: false,
             }],
         }
     }
 
-    fn reset(&mut self, start: (Twips, Twips)) {
+    fn reset(&mut self, start: swf::Point<Twips>) {
         self.points.clear();
         self.points.push(Point {
-            x: start.0,
-            y: start.1,
+            x: start.x,
+            y: start.y,
             is_bezier_control: false,
         });
     }
@@ -193,14 +193,12 @@ impl PathSegment {
         self.points.len() <= 1
     }
 
-    fn start(&self) -> Option<(Twips, Twips)> {
-        let pt = &self.points.first()?;
-        Some((pt.x, pt.y))
+    fn start(&self) -> Option<swf::Point<Twips>> {
+        Some((*self.points.first()?).into())
     }
 
-    fn end(&self) -> Option<(Twips, Twips)> {
-        let pt = &self.points.last()?;
-        Some((pt.x, pt.y))
+    fn end(&self) -> Option<swf::Point<Twips>> {
+        Some((*self.points.last()?).into())
     }
 
     fn is_closed(&self) -> bool {
@@ -304,7 +302,7 @@ impl ActivePath {
     fn new() -> Self {
         Self {
             style_id: 0,
-            segment: PathSegment::new(Default::default()),
+            segment: PathSegment::new(swf::Point::ZERO),
         }
     }
 
@@ -312,7 +310,7 @@ impl ActivePath {
         self.segment.add_point(point)
     }
 
-    fn flush_fill(&mut self, start: (Twips, Twips), pending: &mut [PendingPath], flip: bool) {
+    fn flush_fill(&mut self, start: swf::Point<Twips>, pending: &mut [PendingPath], flip: bool) {
         if self.style_id > 0 && !self.segment.is_empty() {
             if flip {
                 self.segment.flip();
@@ -322,7 +320,7 @@ impl ActivePath {
         self.segment.reset(start);
     }
 
-    fn flush_stroke(&mut self, start: (Twips, Twips), pending: &mut [PendingPath]) {
+    fn flush_stroke(&mut self, start: swf::Point<Twips>, pending: &mut [PendingPath]) {
         if self.style_id > 0 && !self.segment.is_empty() {
             pending[self.style_id as usize - 1].push_path(self.segment.clone());
         }
@@ -335,8 +333,7 @@ pub struct ShapeConverter<'a> {
     iter: std::slice::Iter<'a, swf::ShapeRecord>,
 
     // Pen position.
-    x: Twips,
-    y: Twips,
+    cursor: swf::Point<Twips>,
 
     // Fill styles and line styles.
     // These change from StyleChangeRecords, and a flush occurs when these change.
@@ -363,8 +360,7 @@ impl<'a> ShapeConverter<'a> {
         ShapeConverter {
             iter: shape.shape.iter(),
 
-            x: Twips::ZERO,
-            y: Twips::ZERO,
+            cursor: swf::Point::ZERO,
 
             fill_styles: &shape.styles.fill_styles,
             line_styles: &shape.styles.line_styles,
@@ -394,8 +390,7 @@ impl<'a> ShapeConverter<'a> {
             match record {
                 ShapeRecord::StyleChange(style_change) => {
                     if let Some(move_to) = &style_change.move_to {
-                        self.x = move_to.x;
-                        self.y = move_to.y;
+                        self.cursor = *move_to;
                         // We've lifted the pen, so we're starting a new path.
                         // Flush the previous path.
                         self.flush_paths();
@@ -404,8 +399,8 @@ impl<'a> ShapeConverter<'a> {
                     if let Some(styles) = &style_change.new_styles {
                         // A new style list is also used to indicate a new drawing layer.
                         self.flush_layer();
-                        self.fill_styles = &styles.fill_styles[..];
-                        self.line_styles = &styles.line_styles[..];
+                        self.fill_styles = &styles.fill_styles;
+                        self.line_styles = &styles.line_styles;
                         self.fills
                             .resize_with(self.fill_styles.len(), PendingPath::new);
                         self.strokes
@@ -416,7 +411,7 @@ impl<'a> ShapeConverter<'a> {
 
                     if let Some(new_style_id) = style_change.fill_style_1 {
                         self.fill_style1
-                            .flush_fill((self.x, self.y), &mut self.fills[..], false);
+                            .flush_fill(self.cursor, &mut self.fills, false);
                         // Validate in case we index an invalid fill style.
                         // <= because fill ID 0 (no fill) is implicit, so the array is actually 1-based
                         self.fill_style1.style_id = if new_style_id <= num_fill_styles {
@@ -428,7 +423,7 @@ impl<'a> ShapeConverter<'a> {
 
                     if let Some(new_style_id) = style_change.fill_style_0 {
                         self.fill_style0
-                            .flush_fill((self.x, self.y), &mut self.fills[..], true);
+                            .flush_fill(self.cursor, &mut self.fills, true);
                         self.fill_style0.style_id = if new_style_id <= num_fill_styles {
                             new_style_id
                         } else {
@@ -437,8 +432,7 @@ impl<'a> ShapeConverter<'a> {
                     }
 
                     if let Some(new_style_id) = style_change.line_style {
-                        self.line_style
-                            .flush_stroke((self.x, self.y), &mut self.strokes[..]);
+                        self.line_style.flush_stroke(self.cursor, &mut self.strokes);
                         self.line_style.style_id = if new_style_id <= num_line_styles {
                             new_style_id
                         } else {
@@ -446,42 +440,19 @@ impl<'a> ShapeConverter<'a> {
                         }
                     }
                 }
-
                 ShapeRecord::StraightEdge { delta } => {
-                    self.x += delta.dx;
-                    self.y += delta.dy;
-
-                    self.visit_point(Point {
-                        x: self.x,
-                        y: self.y,
-                        is_bezier_control: false,
-                    });
+                    self.cursor += *delta;
+                    self.visit_point(false);
                 }
-
                 ShapeRecord::CurvedEdge {
                     control_delta,
                     anchor_delta,
                 } => {
-                    let x1 = self.x + control_delta.dx;
-                    let y1 = self.y + control_delta.dy;
+                    self.cursor += *control_delta;
+                    self.visit_point(true);
 
-                    self.visit_point(Point {
-                        x: x1,
-                        y: y1,
-                        is_bezier_control: true,
-                    });
-
-                    let x2 = x1 + anchor_delta.dx;
-                    let y2 = y1 + anchor_delta.dy;
-
-                    self.visit_point(Point {
-                        x: x2,
-                        y: y2,
-                        is_bezier_control: false,
-                    });
-
-                    self.x = x2;
-                    self.y = y2;
+                    self.cursor += *anchor_delta;
+                    self.visit_point(false);
                 }
             }
         }
@@ -492,7 +463,12 @@ impl<'a> ShapeConverter<'a> {
     }
 
     /// Adds a point to the current path for the active fills/strokes.
-    fn visit_point(&mut self, point: Point) {
+    fn visit_point(&mut self, is_bezier_control: bool) {
+        let point = Point {
+            x: self.cursor.x,
+            y: self.cursor.y,
+            is_bezier_control,
+        };
         if self.fill_style1.style_id > 0 {
             self.fill_style1.add_point(point);
         }
@@ -508,11 +484,10 @@ impl<'a> ShapeConverter<'a> {
     fn flush_paths(&mut self) {
         // Move the current paths to the active list.
         self.fill_style1
-            .flush_fill((self.x, self.y), &mut self.fills, false);
+            .flush_fill(self.cursor, &mut self.fills, false);
         self.fill_style0
-            .flush_fill((self.x, self.y), &mut self.fills, true);
-        self.line_style
-            .flush_stroke((self.x, self.y), &mut self.strokes);
+            .flush_fill(self.cursor, &mut self.fills, true);
+        self.line_style.flush_stroke(self.cursor, &mut self.strokes);
     }
 
     /// When a new layer starts, all paths are flushed and turned into drawing commands.
@@ -704,7 +679,6 @@ pub fn shape_hit_test(
     test_point: swf::Point<Twips>,
     local_matrix: &Matrix,
 ) -> bool {
-    let test_point = (test_point.x, test_point.y);
     let mut cursor = swf::Point::ZERO;
     let mut winding = 0;
 
@@ -759,16 +733,14 @@ pub fn shape_hit_test(
                 // If this edge has a fill style on only one-side, check for a crossing.
                 if has_fill_style1 {
                     if !has_fill_style0 {
-                        winding +=
-                            winding_number_line(test_point, (cursor.x, cursor.y), (end.x, end.y));
+                        winding += winding_number_line(test_point, cursor, end);
                     }
                 } else if has_fill_style0 {
-                    winding +=
-                        winding_number_line(test_point, (end.x, end.y), (cursor.x, cursor.y));
+                    winding += winding_number_line(test_point, end, cursor);
                 }
 
                 if let Some(width) = stroke_width {
-                    if hit_test_stroke(test_point, (cursor.x, cursor.y), (end.x, end.y), width) {
+                    if hit_test_stroke(test_point, cursor, end, width) {
                         return true;
                     }
                 }
@@ -785,30 +757,14 @@ pub fn shape_hit_test(
                 // If this edge has a fill style on only one-side, check for a crossing.
                 if has_fill_style1 {
                     if !has_fill_style0 {
-                        winding += winding_number_curve(
-                            test_point,
-                            (cursor.x, cursor.y),
-                            (control.x, control.y),
-                            (anchor.x, anchor.y),
-                        );
+                        winding += winding_number_curve(test_point, cursor, control, anchor);
                     }
                 } else if has_fill_style0 {
-                    winding += winding_number_curve(
-                        test_point,
-                        (anchor.x, anchor.y),
-                        (control.x, control.y),
-                        (cursor.x, cursor.y),
-                    );
+                    winding += winding_number_curve(test_point, anchor, control, cursor);
                 }
 
                 if let Some(width) = stroke_width {
-                    if hit_test_stroke_curve(
-                        test_point,
-                        (cursor.x, cursor.y),
-                        (control.x, control.y),
-                        (anchor.x, anchor.y),
-                        width,
-                    ) {
+                    if hit_test_stroke_curve(test_point, cursor, control, anchor, width) {
                         return true;
                     }
                 }
@@ -821,7 +777,7 @@ pub fn shape_hit_test(
 }
 
 /// Test whether the given point is contained within the paths specified by the draw commands.
-pub fn draw_command_fill_hit_test(commands: &[DrawCommand], test_point: (Twips, Twips)) -> bool {
+pub fn draw_command_fill_hit_test(commands: &[DrawCommand], test_point: swf::Point<Twips>) -> bool {
     let mut cursor = swf::Point::ZERO;
     let mut fill_start = swf::Point::ZERO;
     let mut winding = 0;
@@ -834,28 +790,18 @@ pub fn draw_command_fill_hit_test(commands: &[DrawCommand], test_point: (Twips, 
                 fill_start = *move_to;
             }
             DrawCommand::LineTo(line_to) => {
-                winding +=
-                    winding_number_line(test_point, (cursor.x, cursor.y), (line_to.x, line_to.y));
+                winding += winding_number_line(test_point, cursor, *line_to);
                 cursor = *line_to;
             }
             DrawCommand::CurveTo { control, anchor } => {
-                winding += winding_number_curve(
-                    test_point,
-                    (cursor.x, cursor.y),
-                    (control.x, control.y),
-                    (anchor.x, anchor.y),
-                );
+                winding += winding_number_curve(test_point, cursor, *control, *anchor);
                 cursor = *anchor;
             }
         }
     }
     if cursor != fill_start {
         // Close fill.
-        winding += winding_number_line(
-            test_point,
-            (cursor.x, cursor.y),
-            (fill_start.x, fill_start.y),
-        );
+        winding += winding_number_line(test_point, cursor, fill_start);
     }
 
     winding & 0b1 != 0
@@ -866,7 +812,7 @@ pub fn draw_command_fill_hit_test(commands: &[DrawCommand], test_point: (Twips, 
 pub fn draw_command_stroke_hit_test(
     commands: &[DrawCommand],
     stroke_width: Twips,
-    (point_x, point_y): (Twips, Twips),
+    test_point: swf::Point<Twips>,
     local_matrix: &Matrix,
 ) -> bool {
     let stroke_min_width = stroke_minimum_width(local_matrix);
@@ -879,24 +825,13 @@ pub fn draw_command_stroke_hit_test(
                 cursor = *move_to;
             }
             DrawCommand::LineTo(line_to) => {
-                if hit_test_stroke(
-                    (point_x, point_y),
-                    (cursor.x, cursor.y),
-                    (line_to.x, line_to.y),
-                    stroke_widths,
-                ) {
+                if hit_test_stroke(test_point, cursor, *line_to, stroke_widths) {
                     return true;
                 }
                 cursor = *line_to;
             }
             DrawCommand::CurveTo { control, anchor } => {
-                if hit_test_stroke_curve(
-                    (point_x, point_y),
-                    (cursor.x, cursor.y),
-                    (control.x, control.y),
-                    (anchor.x, anchor.y),
-                    stroke_widths,
-                ) {
+                if hit_test_stroke_curve(test_point, cursor, *control, *anchor, stroke_widths) {
                     return true;
                 }
                 cursor = *anchor;
@@ -921,17 +856,17 @@ fn stroke_minimum_width(matrix: &Matrix) -> f64 {
 /// Returns whether the given point is inside the stroked line segment.
 /// `width_sq` should be the squared width of the stroke.
 fn hit_test_stroke(
-    (point_x, point_y): (Twips, Twips),
-    (x0, y0): (Twips, Twips),
-    (x1, y1): (Twips, Twips),
+    test_point: swf::Point<Twips>,
+    begin: swf::Point<Twips>,
+    end: swf::Point<Twips>,
     (stroke_width, stroke_width_sq): (f64, f64),
 ) -> bool {
-    let px = point_x.get() as f64;
-    let py = point_y.get() as f64;
-    let x0 = x0.get() as f64;
-    let y0 = y0.get() as f64;
-    let x1 = x1.get() as f64;
-    let y1 = y1.get() as f64;
+    let px = test_point.x.get() as f64;
+    let py = test_point.y.get() as f64;
+    let x0 = begin.x.get() as f64;
+    let y0 = begin.y.get() as f64;
+    let x1 = end.x.get() as f64;
+    let y1 = end.y.get() as f64;
 
     // Early exit: out of bounds
     let x_min = x0.min(x1);
@@ -945,7 +880,7 @@ fn hit_test_stroke(
         return false;
     }
 
-    // AB is the segment from (x0, y0) to (x1, y1) and P is (point_x, point_y).
+    // AB is the segment from `begin` to `end` and P is `test_point`.
     //  P
     //   .
     //    .
@@ -981,20 +916,20 @@ fn hit_test_stroke(
 /// Returns whether the given point is inside the stroked bezier curve.
 /// `width_sq` should be the squared width of the stroke.
 fn hit_test_stroke_curve(
-    (point_x, point_y): (Twips, Twips),
-    (x0, y0): (Twips, Twips),
-    (x1, y1): (Twips, Twips),
-    (x2, y2): (Twips, Twips),
+    test_point: swf::Point<Twips>,
+    begin: swf::Point<Twips>,
+    control: swf::Point<Twips>,
+    anchor: swf::Point<Twips>,
     (stroke_width, stroke_width_sq): (f64, f64),
 ) -> bool {
-    let px = point_x.get() as f64;
-    let py = point_y.get() as f64;
-    let x0 = x0.get() as f64;
-    let y0 = y0.get() as f64;
-    let x1 = x1.get() as f64;
-    let y1 = y1.get() as f64;
-    let x2 = x2.get() as f64;
-    let y2 = y2.get() as f64;
+    let px = test_point.x.get() as f64;
+    let py = test_point.y.get() as f64;
+    let x0 = begin.x.get() as f64;
+    let y0 = begin.y.get() as f64;
+    let x1 = control.x.get() as f64;
+    let y1 = control.y.get() as f64;
+    let x2 = anchor.x.get() as f64;
+    let y2 = anchor.y.get() as f64;
 
     // Early exit: out of bounds
     // TODO: Since this involves an expensive cubic, probably wortwhile to calculate the tight bounds for the curve:
@@ -1059,34 +994,23 @@ fn hit_test_stroke_curve(
 
 /// Calculates the winding number for a line segment relative to the given point.
 fn winding_number_line(
-    (point_x, point_y): (Twips, Twips),
-    (x0, y0): (Twips, Twips),
-    (x1, y1): (Twips, Twips),
+    test_point: swf::Point<Twips>,
+    begin: swf::Point<Twips>,
+    end: swf::Point<Twips>,
 ) -> i32 {
-    let point_x = point_x.get() as f64;
-    let point_y = point_y.get() as f64;
-    let x0 = x0.get() as f64;
-    let y0 = y0.get() as f64;
-    let x1 = x1.get() as f64;
-    let y1 = y1.get() as f64;
+    let d0 = test_point - begin;
+    let d1 = end - begin;
 
     // Adjust winding number if we are on the left side of the segment.
     // An upward segment (-y) increments the winding number (including the initial endpoint).
     // A downward segment (+y) decrements the winding number (including the final endpoint)
     // Perp-dot indicates which side of the segment the point is on.
-    if y0 < point_y {
-        if y1 >= point_y {
-            let val = (x1 - x0) * (point_y - y0) - (y1 - y0) * (point_x - x0);
-            if val > 0.0 {
-                return 1;
-            }
+    if begin.y < test_point.y {
+        if end.y >= test_point.y && d1.dx.get() * d0.dy.get() > d1.dy.get() * d0.dx.get() {
+            return 1;
         }
-    } else if y1 < point_y {
-        let val = (x1 - x0) * (point_y - y0) - (y1 - y0) * (point_x - x0);
-
-        if val < 0.0 {
-            return -1;
-        }
+    } else if end.y < test_point.y && d1.dx.get() * d0.dy.get() < d1.dy.get() * d0.dx.get() {
+        return -1;
     }
 
     0
@@ -1094,10 +1018,10 @@ fn winding_number_line(
 
 /// Calculates the winding number for a bezier curve around the given point.
 fn winding_number_curve(
-    (point_x, point_y): (Twips, Twips),
-    (ax0, ay0): (Twips, Twips),
-    (ax1, ay1): (Twips, Twips),
-    (ax2, ay2): (Twips, Twips),
+    test_point: swf::Point<Twips>,
+    begin: swf::Point<Twips>,
+    control: swf::Point<Twips>,
+    anchor: swf::Point<Twips>,
 ) -> i32 {
     // Intersect a ray on the +x axis with the quadratic bezier.
     //
@@ -1116,27 +1040,24 @@ fn winding_number_curve(
     //    b) if the subcurve surrounds the ray, we know it has an intersection without having to check if t is in [0, 1]
     //    c) we know the winding of the segment upward/downward based on which root it contains
 
-    let x0 = ax0.get() - point_x.get();
-    let y0 = ay0.get() - point_y.get();
-    let x1 = ax1.get() - point_x.get();
-    let y1 = ay1.get() - point_y.get();
-    let x2 = ax2.get() - point_x.get();
-    let y2 = ay2.get() - point_y.get();
+    let d0 = begin - test_point;
+    let d1 = control - test_point;
+    let d2 = anchor - test_point;
 
     // Early exit: all control points out of bounds.
-    if (y0 < 0 && y1 < 0 && y2 < 0)
-        || (y0 > 0 && y1 > 0 && y2 > 0)
-        || (x0 <= 0 && x1 <= 0 && x2 <= 0)
+    if (d0.dy < Twips::ZERO && d1.dy < Twips::ZERO && d2.dy < Twips::ZERO)
+        || (d0.dy > Twips::ZERO && d1.dy > Twips::ZERO && d2.dy > Twips::ZERO)
+        || (d0.dx <= Twips::ZERO && d1.dx <= Twips::ZERO && d2.dx <= Twips::ZERO)
     {
         return 0;
     }
 
-    let x0 = x0 as f64;
-    let y0 = y0 as f64;
-    let x1 = x1 as f64;
-    let y1 = y1 as f64;
-    let x2 = x2 as f64;
-    let y2 = y2 as f64;
+    let x0 = d0.dx.get() as f64;
+    let y0 = d0.dy.get() as f64;
+    let x1 = d1.dx.get() as f64;
+    let y1 = d1.dy.get() as f64;
+    let x2 = d2.dx.get() as f64;
+    let y2 = d2.dy.get() as f64;
 
     let a = y0 - 2.0 * y1 + y2;
     let b = 2.0 * (y1 - y0);

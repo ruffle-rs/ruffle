@@ -310,7 +310,7 @@ impl Drawing {
         for path in &self.paths {
             match path {
                 DrawingPath::Fill(fill) => {
-                    if shape_utils::draw_command_fill_hit_test(&fill.commands, (point.x, point.y)) {
+                    if shape_utils::draw_command_fill_hit_test(&fill.commands, point) {
                         return true;
                     }
                 }
@@ -318,7 +318,7 @@ impl Drawing {
                     if shape_utils::draw_command_stroke_hit_test(
                         &line.commands,
                         line.style.width(),
-                        (point.x, point.y),
+                        point,
                         local_matrix,
                     ) {
                         return true;
@@ -329,7 +329,7 @@ impl Drawing {
 
         // The pending fill will auto-close.
         if let Some(fill) = &self.current_fill {
-            if shape_utils::draw_command_fill_hit_test(&fill.commands, (point.x, point.y)) {
+            if shape_utils::draw_command_fill_hit_test(&fill.commands, point) {
                 return true;
             }
         }
@@ -338,7 +338,7 @@ impl Drawing {
             if shape_utils::draw_command_stroke_hit_test(
                 &line.commands,
                 line.style.width(),
-                (point.x, point.y),
+                point,
                 local_matrix,
             ) {
                 return true;
@@ -349,7 +349,7 @@ impl Drawing {
             if shape_utils::draw_command_stroke_hit_test(
                 &line.commands,
                 line.style.width(),
-                (point.x, point.y),
+                point,
                 local_matrix,
             ) {
                 return true;
@@ -364,7 +364,7 @@ impl Drawing {
                         DrawCommand::LineTo(self.fill_start),
                     ],
                     line.style.width(),
-                    (point.x, point.y),
+                    point,
                     local_matrix,
                 )
             {
