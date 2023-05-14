@@ -2,6 +2,9 @@
     "settings_ruffle_enable": {
         "message": "Ejecutar Flash con Ruffle"
     },
+    "settings_ignore_optout": {
+        "message": "Ejecutar contenido Flash incluso en sitios que no permiten Ruffle"
+    },
     "settings_show_swf_download": {
         "message": "Mostrar descarga de SWF en el menú contextual"
     },
@@ -13,6 +16,30 @@
     },
     "settings_log_level": {
         "message": "Nivel de log"
+    },
+    "settings_log_level_error": {
+        "message": "Errores"
+    },
+    "settings_log_level_warn": {
+        "message": "Advertencias"
+    },
+    "settings_log_level_info": {
+        "message": "Info"
+    },
+    "settings_max_execution_duration": {
+        "message": "Duración máxima de ejecución de ActionScript (en segundos)"
+    },
+    "settings_player_version": {
+        "message": "Versión de Flash Player a emular (rango 1-32)"
+    },
+    "settings_preferred_renderer": {
+        "message": "Renderizador preferido"
+    },
+    "settings_preferred_renderer_auto": {
+        "message": "Automático"
+    },
+    "settings_advanced_options": {
+        "message": "Opciones Avanzadas"
     },
     "status_init": {
         "message": "Leyendo la pestaña actual…"
@@ -26,8 +53,14 @@
     "status_message_init": {
         "message": "Comprobando el estado de Ruffle en la pestaña actual…"
     },
+    "status_result_running": {
+        "message": "Ruffle está cargado y listo para ejecutar contenido Flash en la pestaña actual."
+    },
     "status_result_optout": {
         "message": "Ruffle no se carga porque la página actual se ha marcado como incompatible."
+    },
+    "status_result_disabled": {
+        "message": "Ruffle no fue cargado porque está deshabilitado."
     },
     "status_result_error": {
         "message": "Se ha producido un error al consultar la instancia de Ruffle de la pestaña actual."

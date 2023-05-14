@@ -7,4 +7,3 @@ save-reload-prompt =
 save-download = Descărcare
 save-replace = Înlocuiește
 save-delete = Ștergere
-save-backup-all = Copie de rezervă toate salvările (descarcă toate sols?)

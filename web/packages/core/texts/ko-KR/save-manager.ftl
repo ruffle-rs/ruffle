@@ -7,4 +7,4 @@ save-reload-prompt =
 save-download = 다운로드
 save-replace = 교체
 save-delete = 삭제
-save-backup-all = 모든 저장 데이터 백업 (모든 sol 다운로드)
+save-backup-all = 모든 저장 파일 다운로드
