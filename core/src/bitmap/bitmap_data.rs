@@ -33,6 +33,18 @@ impl LehmerRng {
     }
 }
 
+/// An ARGB color value.
+///
+/// It can be in two forms:
+/// - Pre-multiplied alpha, where the non-alpha values are pre-multiplied with
+///   the alpha value.
+/// - Non-pre-multiplied alpha, where the non-alpha values are not pre-multiplied
+///   with the alpha value.
+/// The type system as of this writing (May 2023) does not differentiate between
+/// the two forms.
+/// Notably, BitmapData stores internally its color values in pre-multiplied alpha form,
+/// while the ActionScript interface uses non-pre-multiplied alpha form for color
+/// values.
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Collect)]
 #[collect(no_drop)]
 pub struct Color(i32);
@@ -126,6 +138,10 @@ impl Color {
         Self::argb(alpha, self.red(), self.green(), self.blue())
     }
 
+    /// # Arguments
+    ///
+    /// * `self` - Must be in pre-multiplied alpha form.
+    /// * `source` - Must be in pre-multiplied alpha form.
     #[must_use]
     pub fn blend_over(&self, source: &Self) -> Self {
         let sa = source.alpha();
