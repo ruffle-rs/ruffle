@@ -135,3 +135,26 @@ fn test_complex_fractal() {
         ShaderType::Fragment
     );
 }
+
+#[test]
+fn test_relative_load() {
+    // mov vt0, vc[va0.x+5]
+    // mov vt1, vc[va1.y+6]
+    // add op, vt0, vt1
+    const RELATIVE_VERTEX: &[u8] = include!("relative_vertex.agal");
+
+    test_shader!(
+        RELATIVE_VERTEX,
+        &[
+            Some(VertexAttributeFormat::Float4),
+            Some(VertexAttributeFormat::Float4),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None
+        ],
+        ShaderType::Vertex
+    );
+}
