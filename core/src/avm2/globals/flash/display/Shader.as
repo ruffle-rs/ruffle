@@ -15,6 +15,7 @@ package flash.display {
 
         public function set byteCode(code:ByteArray):void {
             stub_setter("flash.display.Shader", "byteCode");
+            this._data = new ShaderData(code);
         }
 
         public function get data():ShaderData {
