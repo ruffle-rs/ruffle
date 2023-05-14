@@ -789,43 +789,115 @@ impl<'a> NagaBuilder<'a> {
         extend_to_vec4: bool,
         output: VectorSize,
     ) -> Result<Handle<Expression>> {
-        let (mut base_expr, source_type) = match source.register_type {
-            // We can use a function argument directly - we don't need
-            // a separate Expression::Load
-            RegisterType::Attribute => (
-                self.get_vertex_input(source.reg_num as usize)?,
-                self.shader_config.vertex_attributes[source.reg_num as usize]
-                    .ok_or(Error::MissingVertexAttributeData(source.reg_num as usize))?,
-            ),
-            RegisterType::Varying => (
-                self.emit_varying_load(source.reg_num as usize)?,
-                VertexAttributeFormat::Float4,
-            ),
-            RegisterType::Constant => (
-                self.emit_const_register_load(source.reg_num as usize)?,
-                // Constants are always a vec4<f32>
-                VertexAttributeFormat::Float4,
-            ),
-            RegisterType::Temporary => {
-                let temp = self.get_temporary_register(source.reg_num as usize)?;
-                (
-                    self.evaluate_expr(Expression::Load { pointer: temp }),
+        let mut load_register = |register_type: &RegisterType, reg_num| {
+            match register_type {
+                // We can use a function argument directly - we don't need
+                // a separate Expression::Load
+                RegisterType::Attribute => Ok((
+                    self.get_vertex_input(reg_num)?,
+                    self.shader_config.vertex_attributes[reg_num]
+                        .ok_or(Error::MissingVertexAttributeData(reg_num))?,
+                )),
+                RegisterType::Varying => Ok((
+                    self.emit_varying_load(reg_num)?,
                     VertexAttributeFormat::Float4,
-                )
-            }
-            _ => {
-                return Err(Error::Unimplemented(format!(
+                )),
+                RegisterType::Constant => Ok((
+                    self.emit_const_register_load(reg_num)?,
+                    // Constants are always a vec4<f32>
+                    VertexAttributeFormat::Float4,
+                )),
+                RegisterType::Temporary => Ok({
+                    let temp = self.get_temporary_register(reg_num)?;
+                    (
+                        self.evaluate_expr(Expression::Load { pointer: temp }),
+                        VertexAttributeFormat::Float4,
+                    )
+                }),
+                _ => Err(Error::Unimplemented(format!(
                     "Unimplemented source reg type {:?}",
                     source.register_type
-                )))
+                ))),
             }
         };
 
-        if matches!(source.direct_mode, DirectMode::Indirect) {
-            return Err(Error::Unimplemented(
-                "Indirect addressing not implemented".to_string(),
-            ));
-        }
+        let (mut base_expr, source_type) = match source.direct_mode {
+            DirectMode::Direct => load_register(&source.register_type, source.reg_num as usize)?,
+            DirectMode::Indirect => {
+                // Handle an indirect register load, e.g. `vc[va0.x + offset]`
+                // Indirect loads allow loading from a dynamically computed register index.
+                // This dynamic index is computed as 'regN.X + offset', where 'regN' is a normal
+                // register (e.g. 'va0'), and 'X' is a component ('X, 'Y', Z', or 'W').
+                // Currently, we only support this when the 'outer' (non-index) register is
+                // a constant register, since we always access constant registers through
+                // an array access.
+                match source.register_type {
+                    RegisterType::Constant => {
+                        // Load the index register (e.g. 'va0') as normal, and access the component
+                        // given by 'index_select' (e.g. 'x'). This is 'va0.x' in the above example.
+                        let (base_index, _format) =
+                            load_register(&source.index_type, source.reg_num as usize)?;
+                        let index_expr = self.evaluate_expr(Expression::AccessIndex {
+                            base: base_index,
+                            index: source.index_select as u32,
+                        });
+
+                        // Convert to an integer, since we're going to be indexing an array
+                        let index_integer = self.evaluate_expr(Expression::As {
+                            expr: index_expr,
+                            kind: ScalarKind::Uint,
+                            convert: Some(4),
+                        });
+
+                        let offset_constant = self.module.constants.append(
+                            Constant {
+                                name: None,
+                                specialization: None,
+                                inner: ConstantInner::Scalar {
+                                    width: 4,
+                                    value: ScalarValue::Uint(source.indirect_offset as u64),
+                                },
+                            },
+                            Span::UNDEFINED,
+                        );
+                        let offset_constant = self
+                            .func
+                            .expressions
+                            .append(Expression::Constant(offset_constant), Span::UNDEFINED);
+
+                        // Add the offset to the loaded value. THis gives us `va0.x + offset` in the above example.
+                        let index_with_offset = self.evaluate_expr(Expression::Binary {
+                            op: BinaryOperator::Add,
+                            left: index_integer,
+                            right: offset_constant,
+                        });
+
+                        let register_pointer = self.func.expressions.append(
+                            Expression::Access {
+                                base: self.constant_registers,
+                                index: index_with_offset,
+                            },
+                            Span::UNDEFINED,
+                        );
+
+                        // Perform the actual load, giving us 'vc[va0.x + offset]' in the above example.
+                        (
+                            self.evaluate_expr(Expression::Load {
+                                pointer: register_pointer,
+                            }),
+                            // Constants are always a vec4<f32>
+                            VertexAttributeFormat::Float4,
+                        )
+                    }
+                    _ => {
+                        return Err(Error::Unimplemented(format!(
+                            "Unimplemented register type in indirect mode {:?}",
+                            source.register_type
+                        )))
+                    }
+                }
+            }
+        };
 
         if extend_to_vec4 && source_type != VertexAttributeFormat::Float4 {
             base_expr = source_type.extend_to_float4(base_expr, self)?;

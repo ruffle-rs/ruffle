@@ -1,0 +1,29 @@
+---
+source: render/naga-agal/tests/wgsl.rs
+assertion_line: 143
+expression: output
+---
+struct VertexOutput {
+    @builtin(position) member: vec4<f32>,
+}
+
+@group(0) @binding(0) 
+var<uniform> constant_registers: array<vec4<f32>,128u>;
+
+@vertex 
+fn main(@location(0) param: vec4<f32>, @location(1) param_1: vec4<f32>) -> VertexOutput {
+    var dest_temp: vec4<f32>;
+    var temporary0_: vec4<f32>;
+    var temporary1_: vec4<f32>;
+
+    let _e8: vec4<f32> = constant_registers[(u32(param.x) + 5u)];
+    temporary0_ = _e8;
+    let _e16: vec4<f32> = constant_registers[(u32(param_1.y) + 6u)];
+    temporary1_ = _e16;
+    let _e18: vec4<f32> = temporary0_;
+    let _e19: vec4<f32> = temporary1_;
+    dest_temp = (_e18 + _e19);
+    let _e21: vec4<f32> = dest_temp;
+    return VertexOutput(_e21);
+}
+
