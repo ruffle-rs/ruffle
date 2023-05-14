@@ -7,3 +7,4 @@ save-reload-prompt =
 save-download = Télécharger
 save-replace = Remplacer
 save-delete = Supprimer
+save-backup-all = Télécharger tous les fichiers de sauvegarde
