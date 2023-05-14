@@ -1,5 +1,6 @@
 Event.OPEN with:  [object URLLoader]
 Got data: undefined
+Event.PROGRESS: [ProgressEvent type="progress" bubbles=false cancelable=false eventPhase=2 bytesLoaded=19 bytesTotal=19]
 Event.COMPLETE with: [object URLLoader]
 bytesTotal: 19
 Loaded text: Fetched from disk!
@@ -7,6 +8,7 @@ Loaded text: Fetched from disk!
 Event.OPEN with:  [object URLLoader]
 Got data: Fetched from disk!
 
+Event.PROGRESS: [ProgressEvent type="progress" bubbles=false cancelable=false eventPhase=2 bytesLoaded=4 bytesTotal=4]
 Event.COMPLETE with: [object URLLoader]
 bytesTotal: 4
 Loaded binary with length: 4
