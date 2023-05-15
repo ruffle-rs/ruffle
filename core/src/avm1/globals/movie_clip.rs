@@ -1358,7 +1358,7 @@ fn load_variables<'gc>(
 }
 
 fn unload_movie<'gc>(
-    mut target: MovieClip<'gc>,
+    target: MovieClip<'gc>,
     activation: &mut Activation<'_, 'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
