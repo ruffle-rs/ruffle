@@ -33,6 +33,13 @@ impl LehmerRng {
     }
 }
 
+/// This can represent both a premultiplied and an unmultiplied ARGB color value.
+///
+/// Note that most operations only make sense on one of these representations:
+/// For example, blending on premultiplied values, and applying a `ColorTransform` on
+/// unmultiplied values. Make sure to convert the color to the correct form beforehand.
+// TODO: Maybe split the type into `PremultipliedColor(i32)` and
+//   `UnmultipliedColor(i32)`?
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Collect)]
 #[collect(no_drop)]
 pub struct Color(i32);
@@ -126,6 +133,10 @@ impl Color {
         Self::argb(alpha, self.red(), self.green(), self.blue())
     }
 
+    /// # Arguments
+    ///
+    /// * `self` - Must be in premultiplied form.
+    /// * `source` - Must be in premultiplied form.
     #[must_use]
     pub fn blend_over(&self, source: &Self) -> Self {
         let sa = source.alpha();

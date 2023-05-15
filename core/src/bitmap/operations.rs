@@ -1349,7 +1349,8 @@ fn blend_and_transform<'gc>(
             for x in 0..dest_region.width() {
                 let mut color =
                     source_read.get_pixel32_raw(source_region.x_min + x, source_region.y_min + y);
-                color = Color::from(transform * swf::Color::from(color));
+                color = Color::from(transform * swf::Color::from(color.to_un_multiplied_alpha()))
+                    .to_premultiplied_alpha(true);
                 color = dest_write
                     .get_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y)
                     .blend_over(&color);
