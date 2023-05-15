@@ -3,17 +3,19 @@
 use super::matrix::object_to_matrix;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::globals::color_transform::ColorTransformObject;
-use crate::avm1::object::bitmap_data::BitmapDataObject;
+use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Activation, Error, Object, TObject, Value};
+use crate::avm1::{Activation, Attribute, Error, Object, ScriptObject, TObject, Value};
+use crate::bitmap::bitmap_data::{BitmapData, BitmapDataWrapper};
 use crate::bitmap::bitmap_data::{BitmapDataDrawError, IBitmapDrawable};
 use crate::bitmap::bitmap_data::{ChannelOptions, ThresholdOperation};
 use crate::bitmap::{is_size_valid, operations};
 use crate::character::Character;
 use crate::context::GcContext;
-use crate::display_object::TDisplayObject;
+use crate::display_object::DisplayObject;
 use crate::swf::BlendMode;
 use crate::{avm1_stub, avm_error};
+use gc_arena::{GcCell, MutationContext};
 use ruffle_render::transform::Transform;
 use std::str::FromStr;
 
@@ -52,93 +54,117 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "loadBitmap" => method(load_bitmap);
 };
 
-pub fn constructor<'gc>(
+fn new_bitmap_data<'gc>(
+    gc_context: MutationContext<'gc, '_>,
+    proto: Option<Value<'gc>>,
+    bitmap_data: BitmapData<'gc>,
+) -> ScriptObject<'gc> {
+    let object = ScriptObject::new(gc_context, None);
+    // Set `__proto__` manually since `ScriptObject::new()` doesn't support primitive prototypes.
+    // TODO: Pass `proto` to `ScriptObject::new()` once possible.
+    if let Some(proto) = proto {
+        object.define_value(
+            gc_context,
+            "__proto__",
+            proto,
+            Attribute::DONT_ENUM | Attribute::DONT_DELETE,
+        );
+    }
+    object.set_native(
+        gc_context,
+        NativeObject::BitmapData(BitmapDataWrapper::new(GcCell::allocate(
+            gc_context,
+            bitmap_data,
+        ))),
+    );
+    object
+}
+
+fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let width = args.get(0).unwrap_or(&0.into()).coerce_to_i32(activation)? as u32;
-
-    let height = args.get(1).unwrap_or(&0.into()).coerce_to_i32(activation)? as u32;
-
-    let transparency = args
-        .get(2)
-        .unwrap_or(&true.into())
-        .as_bool(activation.swf_version());
-
-    let fill_color = args
-        .get(3)
-        .unwrap_or(&(-1).into())
-        .coerce_to_i32(activation)?;
+    let (width, height) = match args {
+        [width, height, ..] => (
+            width.coerce_to_u32(activation)?,
+            height.coerce_to_u32(activation)?,
+        ),
+        [] | [_] => return Ok(Value::Undefined),
+    };
+    let transparency = match args.get(2) {
+        Some(transparency) => transparency.as_bool(activation.swf_version()),
+        None => true,
+    };
+    let fill_color = match args.get(3) {
+        Some(fill_color) => fill_color.coerce_to_i32(activation)?,
+        None => -1,
+    };
 
     if !is_size_valid(activation.swf_version(), width, height) {
         tracing::warn!("Invalid BitmapData size: {}x{}", width, height);
         return Ok(Value::Undefined);
     }
 
-    if let Some(bitmap_data) = this.as_bitmap_data_object() {
-        let (sync, _) = bitmap_data
-            .bitmap_data()
-            .overwrite_cpu_pixels_from_gpu(activation.context.gc_context);
-        sync.write(activation.context.gc_context).init_pixels(
-            width,
-            height,
-            transparency,
-            fill_color,
-        );
-    }
-
+    let bitmap_data = BitmapData::new(width, height, transparency, fill_color);
+    this.set_native(
+        activation.context.gc_context,
+        NativeObject::BitmapData(BitmapDataWrapper::new(GcCell::allocate(
+            activation.context.gc_context,
+            bitmap_data,
+        ))),
+    );
     Ok(this.into())
 }
 
-pub fn height<'gc>(
+fn height<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.as_bitmap_data_object() {
+    if let NativeObject::BitmapData(bitmap_data) = this.native() {
         if !bitmap_data.disposed() {
-            return Ok(bitmap_data.bitmap_data().height().into());
+            return Ok(bitmap_data.height().into());
         }
     }
 
     Ok((-1).into())
 }
 
-pub fn width<'gc>(
+fn width<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.as_bitmap_data_object() {
+    if let NativeObject::BitmapData(bitmap_data) = this.native() {
         if !bitmap_data.disposed() {
-            return Ok(bitmap_data.bitmap_data().width().into());
+            return Ok(bitmap_data.width().into());
         }
     }
 
     Ok((-1).into())
 }
 
-pub fn get_transparent<'gc>(
+fn get_transparent<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.as_bitmap_data_object() {
+    if let NativeObject::BitmapData(bitmap_data) = this.native() {
         if !bitmap_data.disposed() {
-            return Ok(bitmap_data.bitmap_data().transparency().into());
+            return Ok(bitmap_data.transparency().into());
         }
     }
 
     Ok((-1).into())
 }
 
-pub fn get_rectangle<'gc>(
+fn get_rectangle<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.as_bitmap_data_object() {
+    if let NativeObject::BitmapData(bitmap_data) = this.native() {
         if !bitmap_data.disposed() {
             let proto = activation.context.avm1.prototypes().rectangle_constructor;
             let rect = proto.construct(
@@ -157,17 +183,17 @@ pub fn get_rectangle<'gc>(
     Ok((-1).into())
 }
 
-pub fn get_pixel<'gc>(
+fn get_pixel<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.as_bitmap_data_object() {
+    if let NativeObject::BitmapData(bitmap_data) = this.native() {
         if !bitmap_data.disposed() {
             if let (Some(x_val), Some(y_val)) = (args.get(0), args.get(1)) {
                 let x = x_val.coerce_to_u32(activation)?;
                 let y = y_val.coerce_to_u32(activation)?;
-                let col = operations::get_pixel(bitmap_data.bitmap_data(), x, y);
+                let col = operations::get_pixel(bitmap_data, x, y);
                 return Ok(col.into());
             }
         }
@@ -176,17 +202,17 @@ pub fn get_pixel<'gc>(
     Ok((-1).into())
 }
 
-pub fn get_pixel32<'gc>(
+fn get_pixel32<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.as_bitmap_data_object() {
+    if let NativeObject::BitmapData(bitmap_data) = this.native() {
         if !bitmap_data.disposed() {
             if let (Some(x_val), Some(y_val)) = (args.get(0), args.get(1)) {
                 let x = x_val.coerce_to_u32(activation)?;
                 let y = y_val.coerce_to_u32(activation)?;
-                let col = operations::get_pixel32(bitmap_data.bitmap_data(), x, y);
+                let col = operations::get_pixel32(bitmap_data, x, y);
                 return Ok(col.into());
             }
         }
@@ -195,12 +221,12 @@ pub fn get_pixel32<'gc>(
     Ok((-1).into())
 }
 
-pub fn set_pixel<'gc>(
+fn set_pixel<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.as_bitmap_data_object() {
+    if let NativeObject::BitmapData(bitmap_data) = this.native() {
         if !bitmap_data.disposed() {
             if let (Some(x_val), Some(y_val), Some(color_val)) =
                 (args.get(0), args.get(1), args.get(2))
@@ -211,7 +237,7 @@ pub fn set_pixel<'gc>(
 
                 operations::set_pixel(
                     activation.context.gc_context,
-                    bitmap_data.bitmap_data(),
+                    bitmap_data,
                     x,
                     y,
                     color.into(),
@@ -225,12 +251,12 @@ pub fn set_pixel<'gc>(
     Ok((-1).into())
 }
 
-pub fn set_pixel32<'gc>(
+fn set_pixel32<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.as_bitmap_data_object() {
+    if let NativeObject::BitmapData(bitmap_data) = this.native() {
         if !bitmap_data.disposed() {
             if let (Some(x_val), Some(y_val), Some(color_val)) =
                 (args.get(0), args.get(1), args.get(2))
@@ -239,13 +265,7 @@ pub fn set_pixel32<'gc>(
                 let y = y_val.coerce_to_u32(activation)?;
                 let color = color_val.coerce_to_i32(activation)?;
 
-                operations::set_pixel32(
-                    activation.context.gc_context,
-                    bitmap_data.bitmap_data(),
-                    x,
-                    y,
-                    color,
-                );
+                operations::set_pixel32(activation.context.gc_context, bitmap_data, x, y, color);
             }
 
             return Ok(Value::Undefined);
@@ -255,7 +275,7 @@ pub fn set_pixel32<'gc>(
     Ok((-1).into())
 }
 
-pub fn copy_channel<'gc>(
+fn copy_channel<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -285,9 +305,9 @@ pub fn copy_channel<'gc>(
         .unwrap_or(&Value::Undefined)
         .coerce_to_i32(activation)?;
 
-    if let Some(bitmap_data) = this.as_bitmap_data_object() {
+    if let NativeObject::BitmapData(bitmap_data) = this.native() {
         if !bitmap_data.disposed() {
-            if let Some(source_bitmap) = source_bitmap.as_bitmap_data_object() {
+            if let NativeObject::BitmapData(source_bitmap) = source_bitmap.native() {
                 //TODO: what if source is disposed
                 let min_x = dest_point.get("x", activation)?.coerce_to_i32(activation)?;
                 let min_y = dest_point.get("y", activation)?.coerce_to_i32(activation)?;
@@ -307,10 +327,10 @@ pub fn copy_channel<'gc>(
 
                 operations::copy_channel(
                     activation.context.gc_context,
-                    bitmap_data.bitmap_data(),
+                    bitmap_data,
                     (min_x, min_y),
                     (src_min_x, src_min_y, src_width, src_height),
-                    source_bitmap.bitmap_data(),
+                    source_bitmap,
                     source_channel,
                     dest_channel,
                 );
@@ -323,7 +343,7 @@ pub fn copy_channel<'gc>(
     Ok((-1).into())
 }
 
-pub fn fill_rect<'gc>(
+fn fill_rect<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -333,7 +353,7 @@ pub fn fill_rect<'gc>(
         .unwrap_or(&Value::Undefined)
         .coerce_to_object(activation);
 
-    if let Some(bitmap_data) = this.as_bitmap_data_object() {
+    if let NativeObject::BitmapData(bitmap_data) = this.native() {
         if !bitmap_data.disposed() {
             if let Some(color_val) = args.get(1) {
                 let color = color_val.coerce_to_i32(activation)?;
@@ -349,7 +369,7 @@ pub fn fill_rect<'gc>(
 
                 operations::fill_rect(
                     activation.context.gc_context,
-                    bitmap_data.bitmap_data(),
+                    bitmap_data,
                     x,
                     y,
                     width,
@@ -364,35 +384,33 @@ pub fn fill_rect<'gc>(
     Ok((-1).into())
 }
 
-pub fn clone<'gc>(
+fn clone<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.as_bitmap_data_object() {
+    if let NativeObject::BitmapData(bitmap_data) = this.native() {
         if !bitmap_data.disposed() {
-            let new_bitmap_data = operations::clone(bitmap_data.bitmap_data());
-            let new_bitmap_data = BitmapDataObject::with_bitmap_data(
+            return Ok(new_bitmap_data(
                 activation.context.gc_context,
-                activation.context.avm1.prototypes().bitmap_data,
-                new_bitmap_data,
-            );
-
-            return Ok(new_bitmap_data.into());
+                this.get_local_stored("__proto__", activation),
+                operations::clone(bitmap_data),
+            )
+            .into());
         }
     }
 
     Ok((-1).into())
 }
 
-pub fn dispose<'gc>(
+fn dispose<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.as_bitmap_data_object() {
+    if let NativeObject::BitmapData(bitmap_data) = this.native() {
         if !bitmap_data.disposed() {
-            bitmap_data.dispose(&mut activation.context);
+            bitmap_data.dispose(activation.context.gc_context);
             return Ok(Value::Undefined);
         }
     }
@@ -400,12 +418,12 @@ pub fn dispose<'gc>(
     Ok((-1).into())
 }
 
-pub fn flood_fill<'gc>(
+fn flood_fill<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.as_bitmap_data_object() {
+    if let NativeObject::BitmapData(bitmap_data) = this.native() {
         if !bitmap_data.disposed() {
             if let (Some(x_val), Some(y_val), Some(color_val)) =
                 (args.get(0), args.get(1), args.get(2))
@@ -414,13 +432,7 @@ pub fn flood_fill<'gc>(
                 let y = y_val.coerce_to_u32(activation)?;
                 let color = color_val.coerce_to_i32(activation)?;
 
-                operations::flood_fill(
-                    activation.context.gc_context,
-                    bitmap_data.bitmap_data(),
-                    x,
-                    y,
-                    color,
-                );
+                operations::flood_fill(activation.context.gc_context, bitmap_data, x, y, color);
             }
             return Ok(Value::Undefined);
         }
@@ -429,7 +441,7 @@ pub fn flood_fill<'gc>(
     Ok((-1).into())
 }
 
-pub fn noise<'gc>(
+fn noise<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -452,13 +464,13 @@ pub fn noise<'gc>(
         .unwrap_or(&false.into())
         .as_bool(activation.swf_version());
 
-    if let Some(bitmap_data) = this.as_bitmap_data_object() {
+    if let NativeObject::BitmapData(bitmap_data) = this.native() {
         if !bitmap_data.disposed() {
             if let Some(random_seed_val) = args.get(0) {
                 let random_seed = random_seed_val.coerce_to_i32(activation)?;
                 operations::noise(
                     activation.context.gc_context,
-                    bitmap_data.bitmap_data(),
+                    bitmap_data,
                     random_seed,
                     low,
                     high.max(low),
@@ -474,12 +486,12 @@ pub fn noise<'gc>(
     Ok((-1).into())
 }
 
-pub fn draw<'gc>(
+fn draw<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.as_bitmap_data_object() {
+    if let NativeObject::BitmapData(bitmap_data) = this.native() {
         if !bitmap_data.disposed() {
             let matrix = args
                 .get(1)
@@ -521,8 +533,8 @@ pub fn draw<'gc>(
                 .coerce_to_object(activation);
             let source = if let Some(source_object) = source.as_display_object() {
                 IBitmapDrawable::DisplayObject(source_object)
-            } else if let Some(source_bitmap) = source.as_bitmap_data_object() {
-                IBitmapDrawable::BitmapData(source_bitmap.bitmap_data())
+            } else if let NativeObject::BitmapData(source_bitmap) = source.native() {
+                IBitmapDrawable::BitmapData(source_bitmap)
             } else {
                 avm_error!(
                     activation,
@@ -538,7 +550,7 @@ pub fn draw<'gc>(
             let quality = activation.context.stage.quality();
             match operations::draw(
                 &mut activation.context,
-                bitmap_data.bitmap_data(),
+                bitmap_data,
                 source,
                 Transform {
                     matrix,
@@ -564,7 +576,7 @@ pub fn draw<'gc>(
     Ok((-1).into())
 }
 
-pub fn apply_filter<'gc>(
+fn apply_filter<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -573,12 +585,12 @@ pub fn apply_filter<'gc>(
     Ok((-1).into())
 }
 
-pub fn generate_filter_rect<'gc>(
+fn generate_filter_rect<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.as_bitmap_data_object() {
+    if let NativeObject::BitmapData(bitmap_data) = this.native() {
         if !bitmap_data.disposed() {
             avm1_stub!(activation, "BitmapData", "generateFilterRect");
             return Ok(Value::Undefined);
@@ -588,12 +600,12 @@ pub fn generate_filter_rect<'gc>(
     Ok((-1).into())
 }
 
-pub fn color_transform<'gc>(
+fn color_transform<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.as_bitmap_data_object() {
+    if let NativeObject::BitmapData(bitmap_data) = this.native() {
         if !bitmap_data.disposed() {
             if let [rectangle, color_transform, ..] = args {
                 // TODO: Re-use `object_to_rectangle` in `movie_clip.rs`.
@@ -619,7 +631,7 @@ pub fn color_transform<'gc>(
 
                 operations::color_transform(
                     activation.context.gc_context,
-                    bitmap_data.bitmap_data(),
+                    bitmap_data,
                     x_min,
                     y_min,
                     x_max,
@@ -633,12 +645,12 @@ pub fn color_transform<'gc>(
     Ok((-1).into())
 }
 
-pub fn get_color_bounds_rect<'gc>(
+fn get_color_bounds_rect<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.as_bitmap_data_object() {
+    if let NativeObject::BitmapData(bitmap_data) = this.native() {
         if !bitmap_data.disposed() {
             let find_color = args
                 .get(2)
@@ -649,12 +661,8 @@ pub fn get_color_bounds_rect<'gc>(
                 let mask = mask_val.coerce_to_i32(activation)?;
                 let color = color_val.coerce_to_i32(activation)?;
 
-                let (x, y, w, h) = operations::color_bounds_rect(
-                    bitmap_data.bitmap_data(),
-                    find_color,
-                    mask,
-                    color,
-                );
+                let (x, y, w, h) =
+                    operations::color_bounds_rect(bitmap_data, find_color, mask, color);
 
                 let proto = activation.context.avm1.prototypes().rectangle_constructor;
                 let rect =
@@ -667,12 +675,12 @@ pub fn get_color_bounds_rect<'gc>(
     Ok((-1).into())
 }
 
-pub fn perlin_noise<'gc>(
+fn perlin_noise<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.as_bitmap_data_object() {
+    if let NativeObject::BitmapData(bitmap_data) = this.native() {
         if !bitmap_data.disposed() {
             let base_x = args
                 .get(0)
@@ -727,7 +735,7 @@ pub fn perlin_noise<'gc>(
 
             operations::perlin_noise(
                 activation.context.gc_context,
-                bitmap_data.bitmap_data(),
+                bitmap_data,
                 (base_x, base_y),
                 num_octaves,
                 seed,
@@ -743,12 +751,12 @@ pub fn perlin_noise<'gc>(
     Ok((-1).into())
 }
 
-pub fn hit_test<'gc>(
+fn hit_test<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.as_bitmap_data_object() {
+    if let NativeObject::BitmapData(bitmap_data) = this.native() {
         if !bitmap_data.disposed() {
             let first_point = args
                 .get(0)
@@ -776,7 +784,7 @@ pub fn hit_test<'gc>(
 
             // Overload based on the object we are hit-testing against.
             // BitmapData vs. BitmapData
-            if let Some(other_bmd) = compare_object.as_bitmap_data_object() {
+            if let NativeObject::BitmapData(other_bmd) = compare_object.native() {
                 if other_bmd.disposed() {
                     return Ok((-3).into());
                 }
@@ -801,10 +809,10 @@ pub fn hit_test<'gc>(
                     .clamp(0, u8::MAX.into()) as u8;
 
                 let result = operations::hit_test_bitmapdata(
-                    bitmap_data.bitmap_data(),
+                    bitmap_data,
                     top_left,
                     source_threshold,
-                    other_bmd.bitmap_data(),
+                    other_bmd,
                     second_point,
                     second_threshold,
                 );
@@ -826,7 +834,7 @@ pub fn hit_test<'gc>(
                             test_y.coerce_to_i32(activation)? - top_left.1,
                         );
                         return Ok(Value::Bool(operations::hit_test_point(
-                            bitmap_data.bitmap_data(),
+                            bitmap_data,
                             source_threshold,
                             test_point,
                         )));
@@ -843,7 +851,7 @@ pub fn hit_test<'gc>(
                             test_height.coerce_to_i32(activation)?,
                         );
                         return Ok(Value::Bool(operations::hit_test_rectangle(
-                            bitmap_data.bitmap_data(),
+                            bitmap_data,
                             source_threshold,
                             test_point,
                             size,
@@ -863,12 +871,12 @@ pub fn hit_test<'gc>(
     Ok((-1).into())
 }
 
-pub fn copy_pixels<'gc>(
+fn copy_pixels<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.as_bitmap_data_object() {
+    if let NativeObject::BitmapData(bitmap_data) = this.native() {
         if !bitmap_data.disposed() {
             let source_bitmap = args
                 .get(0)
@@ -901,7 +909,7 @@ pub fn copy_pixels<'gc>(
             let dest_x = dest_point.get("x", activation)?.coerce_to_f64(activation)? as i32;
             let dest_y = dest_point.get("y", activation)?.coerce_to_f64(activation)? as i32;
 
-            if let Some(src_bitmap) = source_bitmap.as_bitmap_data_object() {
+            if let NativeObject::BitmapData(src_bitmap) = source_bitmap.native() {
                 if !src_bitmap.disposed() {
                     let merge_alpha = if args.len() >= 6 {
                         Some(
@@ -918,7 +926,7 @@ pub fn copy_pixels<'gc>(
                         .unwrap_or(&Value::Undefined)
                         .coerce_to_object(activation);
 
-                    if let Some(alpha_bitmap) = alpha_bitmap.as_bitmap_data_object() {
+                    if let NativeObject::BitmapData(alpha_bitmap) = alpha_bitmap.native() {
                         if !alpha_bitmap.disposed() {
                             let alpha_point = args
                                 .get(4)
@@ -937,11 +945,11 @@ pub fn copy_pixels<'gc>(
 
                             operations::copy_pixels_with_alpha_source(
                                 &mut activation.context,
-                                bitmap_data.bitmap_data(),
-                                src_bitmap.bitmap_data(),
+                                bitmap_data,
+                                src_bitmap,
                                 (src_min_x, src_min_y, src_width, src_height),
                                 (dest_x, dest_y),
-                                alpha_bitmap.bitmap_data(),
+                                alpha_bitmap,
                                 (alpha_x, alpha_y),
                                 merge_alpha.unwrap_or(true),
                             );
@@ -949,8 +957,8 @@ pub fn copy_pixels<'gc>(
                     } else {
                         operations::copy_pixels(
                             &mut activation.context,
-                            bitmap_data.bitmap_data(),
-                            src_bitmap.bitmap_data(),
+                            bitmap_data,
+                            src_bitmap,
                             (src_min_x, src_min_y, src_width, src_height),
                             (dest_x, dest_y),
                             // Despite what the docs claim, mergeAlpa appears to be treated as 'false'
@@ -968,12 +976,12 @@ pub fn copy_pixels<'gc>(
     Ok((-1).into())
 }
 
-pub fn merge<'gc>(
+fn merge<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.as_bitmap_data_object() {
+    if let NativeObject::BitmapData(bitmap_data) = this.native() {
         if !bitmap_data.disposed() {
             let source_bitmap = args
                 .get(0)
@@ -1026,12 +1034,12 @@ pub fn merge<'gc>(
                 .unwrap_or(&Value::Undefined)
                 .coerce_to_i32(activation)?;
 
-            if let Some(src_bitmap) = source_bitmap.as_bitmap_data_object() {
+            if let NativeObject::BitmapData(src_bitmap) = source_bitmap.native() {
                 if !src_bitmap.disposed() {
                     operations::merge(
                         activation.context.gc_context,
-                        bitmap_data.bitmap_data(),
-                        src_bitmap.bitmap_data(),
+                        bitmap_data,
+                        src_bitmap,
                         (src_min_x, src_min_y, src_width, src_height),
                         (dest_x, dest_y),
                         (red_mult, green_mult, blue_mult, alpha_mult),
@@ -1046,12 +1054,12 @@ pub fn merge<'gc>(
     Ok((-1).into())
 }
 
-pub fn palette_map<'gc>(
+fn palette_map<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.as_bitmap_data_object() {
+    if let NativeObject::BitmapData(bitmap_data) = this.native() {
         if !bitmap_data.disposed() {
             let source_bitmap = args
                 .get(0)
@@ -1105,12 +1113,12 @@ pub fn palette_map<'gc>(
             let blue_array = get_channel(5, 0)?;
             let alpha_array = get_channel(6, 24)?;
 
-            if let Some(src_bitmap) = source_bitmap.as_bitmap_data_object() {
+            if let NativeObject::BitmapData(src_bitmap) = source_bitmap.native() {
                 if !src_bitmap.disposed() {
                     operations::palette_map(
                         activation.context.gc_context,
-                        bitmap_data.bitmap_data(),
-                        src_bitmap.bitmap_data(),
+                        bitmap_data,
+                        src_bitmap,
                         (src_min_x, src_min_y, src_width, src_height),
                         (dest_x, dest_y),
                         (red_array, green_array, blue_array, alpha_array),
@@ -1125,12 +1133,12 @@ pub fn palette_map<'gc>(
     Ok((-1).into())
 }
 
-pub fn pixel_dissolve<'gc>(
+fn pixel_dissolve<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.as_bitmap_data_object() {
+    if let NativeObject::BitmapData(bitmap_data) = this.native() {
         if !bitmap_data.disposed() {
             let src_bitmap_data = args
                 .get(0)
@@ -1159,7 +1167,7 @@ pub fn pixel_dissolve<'gc>(
                     return Ok((-4).into());
                 };
 
-            if let Some(src_bitmap_data) = src_bitmap_data.as_bitmap_data_object() {
+            if let NativeObject::BitmapData(src_bitmap_data) = src_bitmap_data.native() {
                 if !src_bitmap_data.disposed() {
                     let dest_point = args
                         .get(2)
@@ -1186,8 +1194,8 @@ pub fn pixel_dissolve<'gc>(
 
                     return Ok(operations::pixel_dissolve(
                         activation.context.gc_context,
-                        bitmap_data.bitmap_data(),
-                        src_bitmap_data.bitmap_data(),
+                        bitmap_data,
+                        src_bitmap_data,
                         (src_min_x, src_min_y, src_width, src_height),
                         dest_point,
                         random_seed,
@@ -1203,12 +1211,12 @@ pub fn pixel_dissolve<'gc>(
     Ok((-1).into())
 }
 
-pub fn scroll<'gc>(
+fn scroll<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.as_bitmap_data_object() {
+    if let NativeObject::BitmapData(bitmap_data) = this.native() {
         if !bitmap_data.disposed() {
             let x = args
                 .get(0)
@@ -1219,12 +1227,7 @@ pub fn scroll<'gc>(
                 .unwrap_or(&Value::Undefined)
                 .coerce_to_i32(activation)?;
 
-            operations::scroll(
-                activation.context.gc_context,
-                bitmap_data.bitmap_data(),
-                x,
-                y,
-            );
+            operations::scroll(activation.context.gc_context, bitmap_data, x, y);
 
             return Ok(Value::Undefined);
         }
@@ -1233,12 +1236,12 @@ pub fn scroll<'gc>(
     Ok((-1).into())
 }
 
-pub fn threshold<'gc>(
+fn threshold<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.as_bitmap_data_object() {
+    if let NativeObject::BitmapData(bitmap_data) = this.native() {
         if !bitmap_data.disposed() {
             let source_bitmap = args
                 .get(0)
@@ -1298,12 +1301,12 @@ pub fn threshold<'gc>(
                 .unwrap_or(&false.into())
                 .as_bool(activation.swf_version());
 
-            if let Some(src_bitmap) = source_bitmap.as_bitmap_data_object() {
+            if let NativeObject::BitmapData(src_bitmap) = source_bitmap.native() {
                 if !src_bitmap.disposed() {
                     let modified_count = operations::threshold(
                         activation.context.gc_context,
-                        bitmap_data.bitmap_data(),
-                        src_bitmap.bitmap_data(),
+                        bitmap_data,
+                        src_bitmap,
                         (src_min_x, src_min_y, src_width, src_height),
                         (dest_x, dest_y),
                         operation,
@@ -1324,7 +1327,7 @@ pub fn threshold<'gc>(
     Ok((-1).into())
 }
 
-pub fn compare<'gc>(
+fn compare<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -1335,11 +1338,7 @@ pub fn compare<'gc>(
     const DIFFERENT_WIDTHS: i32 = -3;
     const DIFFERENT_HEIGHTS: i32 = -4;
 
-    let this_bitmap_data = if let Some(bitmap_data) = this.as_bitmap_data_object() {
-        bitmap_data
-    } else {
-        return Ok(NOT_BITMAP.into());
-    };
+    let NativeObject::BitmapData(this_bitmap_data) = this.native() else { return Ok(NOT_BITMAP.into()); };
 
     if this_bitmap_data.disposed() {
         // The documentation says that -2 should be returned here, but -1 is actually returned.
@@ -1351,9 +1350,7 @@ pub fn compare<'gc>(
         .unwrap_or(&Value::Undefined)
         .coerce_to_object(activation);
 
-    let other_bitmap_data = if let Some(other_bitmap_data) = other.as_bitmap_data_object() {
-        other_bitmap_data
-    } else {
+    let NativeObject::BitmapData(other_bitmap_data) = other.native() else {
         // The documentation says that -1 should be returned here, but -2 is actually returned.
         return Ok(BITMAP_DISPOSED.into());
     };
@@ -1361,9 +1358,6 @@ pub fn compare<'gc>(
     if other_bitmap_data.disposed() {
         return Ok(BITMAP_DISPOSED.into());
     }
-
-    let this_bitmap_data = this_bitmap_data.bitmap_data();
-    let other_bitmap_data = other_bitmap_data.bitmap_data();
 
     if this_bitmap_data.width() != other_bitmap_data.width() {
         return Ok(DIFFERENT_WIDTHS.into());
@@ -1374,9 +1368,9 @@ pub fn compare<'gc>(
     }
 
     match operations::compare(this_bitmap_data, other_bitmap_data) {
-        Some(bitmap_data) => Ok(BitmapDataObject::with_bitmap_data(
+        Some(bitmap_data) => Ok(new_bitmap_data(
             activation.context.gc_context,
-            activation.context.avm1.prototypes().bitmap_data,
+            this.get_local_stored("__proto__", activation),
             bitmap_data,
         )
         .into()),
@@ -1384,20 +1378,9 @@ pub fn compare<'gc>(
     }
 }
 
-pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let bitmap_data_object = BitmapDataObject::empty_object(context.gc_context, proto);
-    let object = bitmap_data_object.raw_script_object();
-    define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    bitmap_data_object.into()
-}
-
-pub fn load_bitmap<'gc>(
+fn load_bitmap<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let name = args
@@ -1407,50 +1390,47 @@ pub fn load_bitmap<'gc>(
 
     let library = &*activation.context.library;
 
-    let movie = activation.target_clip_or_root().movie();
+    let movie = <DisplayObject as crate::display_object::TDisplayObject>::movie(
+        &activation.target_clip_or_root(),
+    );
 
     let character = library
         .library_for_movie(movie)
         .and_then(|l| l.character_by_export_name(name));
 
-    if let Some(Character::Bitmap(bitmap)) = character {
-        let new_bitmap_data = BitmapDataObject::empty_object(
-            activation.context.gc_context,
-            activation.context.avm1.prototypes().bitmap_data,
-        );
+    let Some(Character::Bitmap(bitmap)) = character else { return Ok(Value::Undefined); };
 
-        let width = bitmap.width() as u32;
-        let height = bitmap.height() as u32;
-
-        let pixels: Vec<_> = bitmap.bitmap_data().read().pixels().to_vec();
-        let (sync, _) = new_bitmap_data
-            .as_bitmap_data_object()
-            .unwrap()
-            .bitmap_data()
-            .overwrite_cpu_pixels_from_gpu(activation.context.gc_context);
-
-        sync.write(activation.context.gc_context)
-            .set_pixels(width, height, true, pixels);
-
-        return Ok(new_bitmap_data.into());
-    }
-
-    Ok(Value::Undefined)
+    let transparency = true;
+    let bitmap_data = BitmapData::new_with_pixels(
+        bitmap.width().into(),
+        bitmap.height().into(),
+        transparency,
+        bitmap.bitmap_data().read().pixels().to_vec(),
+    );
+    Ok(new_bitmap_data(
+        activation.context.gc_context,
+        this.get_local_stored("prototype", activation),
+        bitmap_data,
+    )
+    .into())
 }
 
-pub fn create_bitmap_data_object<'gc>(
+pub fn create_constructor<'gc>(
     context: &mut GcContext<'_, 'gc>,
-    bitmap_data_proto: Object<'gc>,
+    proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let bitmap_data = FunctionObject::constructor(
+    let bitmap_data_proto = ScriptObject::new(context.gc_context, Some(proto));
+    define_properties_on(PROTO_DECLS, context, bitmap_data_proto, fn_proto);
+
+    let bitmap_data_constructor = FunctionObject::constructor(
         context.gc_context,
         Executable::Native(constructor),
         constructor_to_fn!(constructor),
         fn_proto,
-        bitmap_data_proto,
+        bitmap_data_proto.into(),
     );
-    let object = bitmap_data.raw_script_object();
+    let object = bitmap_data_constructor.raw_script_object();
     define_properties_on(OBJECT_DECLS, context, object, fn_proto);
-    bitmap_data
+    bitmap_data_constructor
 }

@@ -5,7 +5,7 @@ use crate::avm2::{
     Activation as Avm2Activation, ClassObject as Avm2ClassObject, Object as Avm2Object,
     StageObject as Avm2StageObject, Value as Avm2Value,
 };
-use crate::bitmap::bitmap_data::BitmapDataWrapper;
+use crate::bitmap::bitmap_data::{BitmapData, BitmapDataWrapper};
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
 use crate::prelude::*;
@@ -135,30 +135,24 @@ impl<'gc> Bitmap<'gc> {
     ) -> Result<Self, ruffle_render::error::Error> {
         let width = bitmap.width();
         let height = bitmap.height();
+        let transparency = match bitmap.format() {
+            BitmapFormat::Rgba => true,
+            BitmapFormat::Rgb => false,
+            _ => unreachable!(
+                "Bitmap objects can only be constructed from RGB or RGBA source bitmaps"
+            ),
+        };
         let pixels: Vec<_> = bitmap
             .as_colors()
             .map(crate::bitmap::bitmap_data::Color::from)
             .collect();
-        let mut bitmap_data = crate::bitmap::bitmap_data::BitmapData::default();
-        bitmap_data.set_pixels(
-            width,
-            height,
-            match bitmap.format() {
-                BitmapFormat::Rgba => true,
-                BitmapFormat::Rgb => false,
-                _ => unreachable!(
-                    "Bitmap objects can only be constructed from RGB or RGBA source bitmaps"
-                ),
-            },
-            pixels,
-        );
-        let bitmap_data = GcCell::allocate(context.gc_context, bitmap_data);
+        let bitmap_data = BitmapData::new_with_pixels(width, height, transparency, pixels);
 
         let smoothing = true;
         Ok(Self::new_with_bitmap_data(
             context,
             id,
-            BitmapDataWrapper::new(bitmap_data),
+            BitmapDataWrapper::new(GcCell::allocate(context.gc_context, bitmap_data)),
             smoothing,
         ))
     }
@@ -179,7 +173,7 @@ impl<'gc> Bitmap<'gc> {
     }
 
     /// Retrieve the bitmap data associated with this `Bitmap`.
-    pub fn bitmap_data(self) -> GcCell<'gc, crate::bitmap::bitmap_data::BitmapData<'gc>> {
+    pub fn bitmap_data(self) -> GcCell<'gc, BitmapData<'gc>> {
         self.0.read().bitmap_data.sync()
     }
 

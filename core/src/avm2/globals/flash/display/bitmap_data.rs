@@ -3,7 +3,9 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{argument_error, make_error_2008, range_error};
 use crate::avm2::filters::FilterAvm2Ext;
+pub use crate::avm2::object::bitmap_data_allocator;
 use crate::avm2::object::{BitmapDataObject, ByteArrayObject, Object, TObject, VectorObject};
+use crate::avm2::parameters::{null_parameter_error, ParametersExt};
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
@@ -14,34 +16,29 @@ use crate::bitmap::bitmap_data::{BitmapDataDrawError, IBitmapDrawable};
 use crate::bitmap::{is_size_valid, operations};
 use crate::character::Character;
 use crate::display_object::Bitmap;
+use crate::display_object::TDisplayObject;
 use crate::swf::BlendMode;
-use gc_arena::GcCell;
+use gc_arena::{GcCell, MutationContext};
 use ruffle_render::filters::Filter;
 use ruffle_render::transform::Transform;
 use std::str::FromStr;
-
-pub use crate::avm2::object::bitmap_data_allocator;
-use crate::avm2::parameters::{null_parameter_error, ParametersExt};
-use crate::display_object::TDisplayObject;
 
 /// Copy the static data from a given Bitmap into a new BitmapData.
 ///
 /// `bd` is assumed to be an uninstantiated library symbol, associated with the
 /// class named by `name`.
 pub fn fill_bitmap_data_from_symbol<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    bd: Bitmap<'gc>,
+    gc_context: MutationContext<'gc, '_>,
+    bitmap: Bitmap<'gc>,
 ) -> BitmapDataWrapper<'gc> {
-    let new_bitmap_data = GcCell::allocate(activation.context.gc_context, BitmapData::default());
-    new_bitmap_data
-        .write(activation.context.gc_context)
-        .set_pixels(
-            bd.width().into(),
-            bd.height().into(),
-            true,
-            bd.bitmap_data().read().pixels().to_vec(),
-        );
-    BitmapDataWrapper::new(new_bitmap_data)
+    let transparency = true;
+    let bitmap_data = BitmapData::new_with_pixels(
+        bitmap.width().into(),
+        bitmap.height().into(),
+        transparency,
+        bitmap.bitmap_data().read().pixels().to_vec(),
+    );
+    BitmapDataWrapper::new(GcCell::allocate(gc_context, bitmap_data))
 }
 
 /// Implements `flash.display.BitmapData`'s 'init' method (invoked from the AS3 constructor)
@@ -75,11 +72,8 @@ pub fn init<'gc>(
 
             let new_bitmap_data = if let Some(Character::Bitmap(bitmap)) = character {
                 // Instantiating BitmapData from an Animate-style bitmap asset
-                fill_bitmap_data_from_symbol(activation, bitmap)
+                fill_bitmap_data_from_symbol(activation.context.gc_context, bitmap)
             } else {
-                let new_bitmap_data =
-                    GcCell::allocate(activation.context.gc_context, BitmapData::default());
-
                 if character.is_some() {
                     //TODO: Determine if mismatched symbols will still work as a
                     //regular BitmapData subclass, or if this should throw
@@ -92,7 +86,7 @@ pub fn init<'gc>(
                 let width = args.get_u32(activation, 0)?;
                 let height = args.get_u32(activation, 1)?;
                 let transparency = args.get_bool(2);
-                let fill_color = args.get_u32(activation, 3)?;
+                let fill_color = args.get_i32(activation, 3)?;
 
                 if !is_size_valid(activation.context.swf.version(), width, height) {
                     return Err(Error::AvmError(argument_error(
@@ -102,10 +96,11 @@ pub fn init<'gc>(
                     )?));
                 }
 
-                new_bitmap_data
-                    .write(activation.context.gc_context)
-                    .init_pixels(width, height, transparency, fill_color as i32);
-                BitmapDataWrapper::new(new_bitmap_data)
+                let new_bitmap_data = BitmapData::new(width, height, transparency, fill_color);
+                BitmapDataWrapper::new(GcCell::allocate(
+                    activation.context.gc_context,
+                    new_bitmap_data,
+                ))
             };
 
             new_bitmap_data.init_object2(activation.context.gc_context, this);

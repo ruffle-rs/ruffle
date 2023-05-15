@@ -4,6 +4,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::clamp::Clamp;
 use crate::avm1::error::Error;
 use crate::avm1::object::displacement_map_filter::DisplacementMapFilterObject;
+use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, TObject, Value};
 use crate::context::GcContext;
@@ -169,14 +170,11 @@ pub fn set_map_bitmap<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let bitmap = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation);
-
     if let Some(object) = this.as_displacement_map_filter_object() {
-        if bitmap.as_bitmap_data_object().is_some() {
-            object.set_map_bitmap(activation.context.gc_context, Some(bitmap));
+        if let [Value::Object(map_bitmap), ..] = args {
+            if let NativeObject::BitmapData(_) = map_bitmap.native() {
+                object.set_map_bitmap(activation.context.gc_context, Some(*map_bitmap));
+            }
         }
     }
 
