@@ -34,7 +34,7 @@ version = "0.3.28"
 
 # wasm
 [target.'cfg(target_family = "wasm")'.dependencies.web-sys]
-version = "0.3.61"
+version = "0.3.62"
 features = ["HtmlCanvasElement"]
 
 [features]

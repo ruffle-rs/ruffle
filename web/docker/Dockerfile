@@ -20,7 +20,7 @@ RUN wget 'https://sh.rustup.rs' --quiet -O- | sh -s -- -y
 ENV PATH="/root/.cargo/bin:$PATH"
 RUN rustup update
 RUN rustup target add wasm32-unknown-unknown
-RUN cargo install wasm-bindgen-cli --version 0.2.84
+RUN cargo install wasm-bindgen-cli --version 0.2.85
 COPY . ruffle
 WORKDIR ruffle/web
 RUN npm install
