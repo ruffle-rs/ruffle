@@ -801,7 +801,7 @@ impl<'gc> Loader<'gc> {
                     .map(|root| DisplayObject::ptr_eq(clip, root))
                     .unwrap_or(false);
 
-                if let Some(mut mc) = clip.as_movie_clip() {
+                if let Some(mc) = clip.as_movie_clip() {
                     if !uc.is_action_script_3() {
                         mc.avm1_unload(uc);
                     }
@@ -871,7 +871,7 @@ impl<'gc> Loader<'gc> {
                     .map(|root| DisplayObject::ptr_eq(clip, root))
                     .unwrap_or(false);
 
-                if let Some(mut mc) = clip.as_movie_clip() {
+                if let Some(mc) = clip.as_movie_clip() {
                     if !uc.is_action_script_3() {
                         mc.avm1_unload(uc);
                     }
@@ -1482,7 +1482,7 @@ impl<'gc> Loader<'gc> {
                             .library_for_movie_mut(movie.clone());
                     }
 
-                    if let Some(mut mc) = clip.as_movie_clip() {
+                    if let Some(mc) = clip.as_movie_clip() {
                         let loader_info =
                             if let Some(MovieLoaderEventHandler::Avm2LoaderInfo(loader_info)) =
                                 event_handler
@@ -1520,7 +1520,7 @@ impl<'gc> Loader<'gc> {
                     let bitmap = ruffle_render::utils::decode_define_bits_jpeg(data, None)?;
                     let bitmap_obj = Bitmap::new(uc, 0, bitmap)?;
 
-                    if let Some(mut mc) = clip.as_movie_clip() {
+                    if let Some(mc) = clip.as_movie_clip() {
                         let mut activation = Avm2Activation::from_nothing(uc.reborrow());
                         mc.replace_with_movie(&mut activation.context, Some(movie), None);
                         mc.replace_at_depth(uc, bitmap_obj.into(), 1);

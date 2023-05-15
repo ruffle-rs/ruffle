@@ -342,7 +342,7 @@ impl<'gc> MovieClip<'gc> {
     /// If no movie is provided, then the movie clip will be replaced with an
     /// empty movie of the same SWF version.
     pub fn replace_with_movie(
-        &mut self,
+        self,
         context: &mut UpdateContext<'_, 'gc>,
         movie: Option<Arc<SwfMovie>>,
         loader_info: Option<LoaderInfoObject<'gc>>,
