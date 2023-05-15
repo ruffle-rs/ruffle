@@ -63,9 +63,7 @@ impl UiBackend for DesktopUiBackend {
     }
 
     fn clipboard_content(&mut self) -> String {
-        self.clipboard
-            .get_text()
-            .unwrap_or_else(|_| "".to_string())
+        self.clipboard.get_text().unwrap_or_else(|_| "".to_string())
     }
 
     fn set_clipboard_content(&mut self, content: String) {

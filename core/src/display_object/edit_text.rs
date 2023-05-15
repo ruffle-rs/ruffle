@@ -17,7 +17,7 @@ use crate::display_object::interactive::{
 };
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
 use crate::drawing::Drawing;
-use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, TextControlCode};
+use crate::events::{ClipEvent, ClipEventResult, TextControlCode};
 use crate::font::{round_down_to_pixel, Glyph, TextRenderSettings};
 use crate::html::{BoxBounds, FormatSpans, LayoutBox, LayoutContent, LayoutMetrics, TextFormat};
 use crate::prelude::*;
@@ -1203,6 +1203,46 @@ impl<'gc> EditText<'gc> {
             let mut changed = false;
             let is_selectable = self.is_selectable();
             match control_code {
+                TextControlCode::MoveLeft => {
+                    let new_pos = if selection.is_caret() && selection.to > 0 {
+                        string_utils::prev_char_boundary(&self.text(), selection.to)
+                    } else {
+                        selection.start()
+                    };
+                    self.set_selection(
+                        Some(TextSelection::for_position(new_pos)),
+                        context.gc_context,
+                    );
+                }
+                TextControlCode::MoveRight => {
+                    let new_pos = if selection.is_caret() && selection.to < self.text().len() {
+                        string_utils::next_char_boundary(&self.text(), selection.to)
+                    } else {
+                        selection.end()
+                    };
+                    self.set_selection(
+                        Some(TextSelection::for_position(new_pos)),
+                        context.gc_context,
+                    );
+                }
+                TextControlCode::SelectLeft => {
+                    if is_selectable && selection.to > 0 {
+                        let new_pos = string_utils::prev_char_boundary(&self.text(), selection.to);
+                        self.set_selection(
+                            Some(TextSelection::for_range(selection.from, new_pos)),
+                            context.gc_context,
+                        );
+                    }
+                }
+                TextControlCode::SelectRight => {
+                    if is_selectable && selection.to < self.text().len() {
+                        let new_pos = string_utils::next_char_boundary(&self.text(), selection.to);
+                        self.set_selection(
+                            Some(TextSelection::for_range(selection.from, new_pos)),
+                            context.gc_context,
+                        )
+                    }
+                }
                 TextControlCode::SelectAll => {
                     if is_selectable {
                         self.set_selection(
@@ -1222,11 +1262,16 @@ impl<'gc> EditText<'gc> {
                     // TODO: To match Flash Player, we should truncate pasted text that is longer than max_chars
                     // instead of canceling the paste action entirely
                     if text.len() <= self.available_chars() {
-                        self.replace_text(selection.start(), selection.end(), &WString::from_utf8(text), context);
-                        let new_start = selection.start() + text.len();
+                        self.replace_text(
+                            selection.start(),
+                            selection.end(),
+                            &WString::from_utf8(text),
+                            context,
+                        );
+                        let new_pos = selection.start() + text.len();
                         if is_selectable {
                             self.set_selection(
-                                Some(TextSelection::for_position(new_start)),
+                                Some(TextSelection::for_position(new_pos)),
                                 context.gc_context,
                             );
                         } else {
@@ -1243,7 +1288,12 @@ impl<'gc> EditText<'gc> {
                         let text = &self.text()[selection.start()..selection.end()];
                         context.ui.set_clipboard_content(text.to_string());
 
-                        self.replace_text(selection.start(), selection.end(), WStr::empty(), context);
+                        self.replace_text(
+                            selection.start(),
+                            selection.end(),
+                            WStr::empty(),
+                            context,
+                        );
                         if is_selectable {
                             self.set_selection(
                                 Some(TextSelection::for_position(selection.start())),
@@ -1322,9 +1372,9 @@ impl<'gc> EditText<'gc> {
                             &WString::from_char(character),
                             context,
                         );
-                        let new_start = selection.start() + character.len_utf8();
+                        let new_pos = selection.start() + character.len_utf8();
                         self.set_selection(
-                            Some(TextSelection::for_position(new_start)),
+                            Some(TextSelection::for_position(new_pos)),
                             context.gc_context,
                         );
                         changed = true;
@@ -1343,61 +1393,6 @@ impl<'gc> EditText<'gc> {
                 self.on_changed(&mut activation);
             }
         }
-    }
-
-    /// Listens for keyboard text control commands.
-    ///
-    /// TODO: Add explicit text control events (#4452).
-    pub fn handle_text_control_event(
-        self,
-        context: &mut UpdateContext<'_, 'gc>,
-        event: ClipEvent,
-    ) -> ClipEventResult {
-        if let ClipEvent::KeyPress { key_code } = event {
-            let mut edit_text = self.0.write(context.gc_context);
-            let selection = edit_text.selection;
-            if let Some(mut selection) = selection {
-                let text = edit_text.text_spans.text();
-                let length = text.len();
-                match key_code {
-                    ButtonKeyCode::Left => {
-                        if (context.input.is_key_down(KeyCode::Shift) || selection.is_caret())
-                            && selection.to > 0
-                        {
-                            selection.to = string_utils::prev_char_boundary(text, selection.to);
-                            if !context.input.is_key_down(KeyCode::Shift) {
-                                selection.from = selection.to;
-                            }
-                        } else if !context.input.is_key_down(KeyCode::Shift) {
-                            selection.to = selection.start();
-                            selection.from = selection.to;
-                        }
-                        selection.clamp(length);
-                        edit_text.selection = Some(selection);
-                        return ClipEventResult::Handled;
-                    }
-                    ButtonKeyCode::Right => {
-                        if (context.input.is_key_down(KeyCode::Shift) || selection.is_caret())
-                            && selection.to < length
-                        {
-                            selection.to = string_utils::next_char_boundary(text, selection.to);
-                            if !context.input.is_key_down(KeyCode::Shift) {
-                                selection.from = selection.to;
-                            }
-                        } else if !context.input.is_key_down(KeyCode::Shift) {
-                            selection.to = selection.end();
-                            selection.from = selection.to;
-                        }
-                        selection.clamp(length);
-                        edit_text.selection = Some(selection);
-                        return ClipEventResult::Handled;
-                    }
-                    _ => (),
-                }
-            }
-        }
-
-        ClipEventResult::NotHandled
     }
 
     fn initialize_as_broadcaster(&self, activation: &mut Avm1Activation<'_, 'gc>) {
@@ -2043,7 +2038,7 @@ impl TextSelection {
         self.from.min(self.to)
     }
 
-    /// The "end" part of the range is the smallest (closest to 0) part of this selection range.
+    /// The "end" part of the range is the largest (farthest from 0) part of this selection range.
     pub fn end(&self) -> usize {
         self.from.max(self.to)
     }
