@@ -1762,7 +1762,10 @@ pub fn web_to_text_control(key: &str, ctrl_key: bool) -> Option<TextControlCode>
             None
         }
     } else {
-        // TODO: Check for special characters.
-        None
+        match key {
+            "Delete" => Some(TextControlCode::Delete),
+            "Backspace" => Some(TextControlCode::Backspace),
+            _ => None,
+        }
     }
 }

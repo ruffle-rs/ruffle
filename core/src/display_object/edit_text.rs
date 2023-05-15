@@ -1174,6 +1174,22 @@ impl<'gc> EditText<'gc> {
         None
     }
 
+    fn available_chars(self) -> usize {
+        let read = self.0.read();
+        let max_chars = read.max_chars;
+        if max_chars == 0 {
+            usize::MAX
+        } else {
+            let text_len = read.text_spans.text().len();
+            let selection_len = if let Some(selection) = self.selection() {
+                selection.end() - selection.start()
+            } else {
+                0
+            };
+            max_chars.max(0) as usize - (text_len - selection_len)
+        }
+    }
+
     pub fn text_control_input(
         self,
         control_code: TextControlCode,
@@ -1203,20 +1219,24 @@ impl<'gc> EditText<'gc> {
                 }
                 TextControlCode::Paste => {
                     let text = &context.ui.clipboard_content();
-                    self.replace_text(selection.start(), selection.end(), &WString::from_utf8(text), context);
-                    let new_start = selection.start() + text.len();
-                    if is_selectable {
-                        self.set_selection(
-                            Some(TextSelection::for_position(new_start)),
-                            context.gc_context,
-                        );
-                    } else {
-                        self.set_selection(
-                            Some(TextSelection::for_position(self.text().len())),
-                            context.gc_context,
-                        );
+                    // TODO: To match Flash Player, we should truncate pasted text that is longer than max_chars
+                    // instead of canceling the paste action entirely
+                    if text.len() <= self.available_chars() {
+                        self.replace_text(selection.start(), selection.end(), &WString::from_utf8(text), context);
+                        let new_start = selection.start() + text.len();
+                        if is_selectable {
+                            self.set_selection(
+                                Some(TextSelection::for_position(new_start)),
+                                context.gc_context,
+                            );
+                        } else {
+                            self.set_selection(
+                                Some(TextSelection::for_position(self.text().len())),
+                                context.gc_context,
+                            );
+                        }
+                        changed = true;
                     }
-                    changed = true;
                 }
                 TextControlCode::Cut => {
                     if !selection.is_caret() {
@@ -1235,6 +1255,40 @@ impl<'gc> EditText<'gc> {
                                 context.gc_context,
                             );
                         }
+                        changed = true;
+                    }
+                }
+                TextControlCode::Backspace | TextControlCode::Delete if !selection.is_caret() => {
+                    // Backspace or delete with multiple characters selected
+                    self.replace_text(selection.start(), selection.end(), WStr::empty(), context);
+                    self.set_selection(
+                        Some(TextSelection::for_position(selection.start())),
+                        context.gc_context,
+                    );
+                    changed = true;
+                }
+                TextControlCode::Backspace => {
+                    // Backspace with caret
+                    if selection.start() > 0 {
+                        // Delete previous character
+                        let text = self.text();
+                        let start = string_utils::prev_char_boundary(&text, selection.start());
+                        self.replace_text(start, selection.start(), WStr::empty(), context);
+                        self.set_selection(
+                            Some(TextSelection::for_position(start)),
+                            context.gc_context,
+                        );
+                        changed = true;
+                    }
+                }
+                TextControlCode::Delete => {
+                    // Delete with caret
+                    if selection.end() < self.text_length() {
+                        // Delete next character
+                        let text = self.text();
+                        let end = string_utils::next_char_boundary(&text, selection.start());
+                        self.replace_text(selection.start(), end, WStr::empty(), context);
+                        // No need to change selection
                         changed = true;
                     }
                 }
@@ -1260,52 +1314,8 @@ impl<'gc> EditText<'gc> {
         if let Some(selection) = self.selection() {
             let mut changed = false;
             match character as u8 {
-                8 | 127 if !selection.is_caret() => {
-                    // Backspace or delete with multiple characters selected
-                    self.replace_text(selection.start(), selection.end(), WStr::empty(), context);
-                    self.set_selection(
-                        Some(TextSelection::for_position(selection.start())),
-                        context.gc_context,
-                    );
-                    changed = true;
-                }
-                8 => {
-                    // Backspace with caret
-                    if selection.start() > 0 {
-                        // Delete previous character
-                        let text = self.text();
-                        let start = string_utils::prev_char_boundary(&text, selection.start());
-                        self.replace_text(start, selection.start(), WStr::empty(), context);
-                        self.set_selection(
-                            Some(TextSelection::for_position(start)),
-                            context.gc_context,
-                        );
-                        changed = true;
-                    }
-                }
-                127 => {
-                    // Delete with caret
-                    if selection.end() < self.text_length() {
-                        // Delete next character
-                        let text = self.text();
-                        let end = string_utils::next_char_boundary(&text, selection.start());
-                        self.replace_text(selection.start(), end, WStr::empty(), context);
-                        // No need to change selection
-                        changed = true;
-                    }
-                }
                 code if !(code as char).is_control() => {
-                    let can_insert = {
-                        let read = self.0.read();
-                        let max_chars = read.max_chars;
-                        if max_chars == 0 {
-                            true
-                        } else {
-                            let text_len = read.text_spans.text().len();
-                            text_len < max_chars.max(0) as usize
-                        }
-                    };
-                    if can_insert {
+                    if self.available_chars() > 0 {
                         self.replace_text(
                             selection.start(),
                             selection.end(),

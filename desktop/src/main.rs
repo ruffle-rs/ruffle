@@ -928,7 +928,11 @@ fn winit_to_ruffle_text_control(
             _ => None,
         }
     } else {
-        None
+        match key {
+            VirtualKeyCode::Back => Some(TextControlCode::Backspace),
+            VirtualKeyCode::Delete => Some(TextControlCode::Delete),
+            _ => None,
+        }
     }
 }
 
