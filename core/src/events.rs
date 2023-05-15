@@ -33,7 +33,7 @@ pub enum PlayerEvent {
         codepoint: char,
     },
     TextControl {
-        code: TextControlCode
+        code: TextControlCode,
     },
 }
 
@@ -337,6 +337,10 @@ impl<'gc> ClipEvent<'gc> {
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum TextControlCode {
     // TODO: Extend this
+    MoveLeft,
+    MoveRight,
+    SelectLeft,
+    SelectRight,
     SelectAll,
     Copy,
     Paste,

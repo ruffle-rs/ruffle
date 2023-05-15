@@ -991,16 +991,6 @@ impl Player {
                     if state == ClipEventResult::Handled {
                         key_press_handled = true;
                         break;
-                    } else if let Some(text) =
-                        context.focus_tracker.get().and_then(|o| o.as_edit_text())
-                    {
-                        // Text fields listen for arrow key presses, etc.
-                        if text.handle_text_control_event(context, button_event)
-                            == ClipEventResult::Handled
-                        {
-                            key_press_handled = true;
-                            break;
-                        }
                     }
                 }
             }
