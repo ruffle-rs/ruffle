@@ -4306,6 +4306,7 @@ dependencies = [
  "smallvec",
  "swf",
  "thiserror",
+ "tiny-skia-path 0.11.2",
  "tracing",
  "wasm-bindgen",
  "wgpu",
@@ -5160,7 +5161,7 @@ dependencies = [
  "bytemuck",
  "cfg-if",
  "png",
- "tiny-skia-path",
+ "tiny-skia-path 0.8.4",
 ]
 
 [[package]]
@@ -5168,6 +5169,17 @@ name = "tiny-skia-path"
 version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "adbfb5d3f3dd57a0e11d12f4f13d4ebbbc1b5c15b7ab0a156d030b21da5f677c"
+dependencies = [
+ "arrayref",
+ "bytemuck",
+ "strict-num",
+]
+
+[[package]]
+name = "tiny-skia-path"
+version = "0.11.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6ac3865b9708fc7e1961a65c3a4fa55e984272f33092d3c859929f887fceb647"
 dependencies = [
  "arrayref",
  "bytemuck",
