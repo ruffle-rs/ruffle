@@ -472,8 +472,6 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
         context: &mut UpdateContext<'_, 'gc>,
         event: ClipEvent,
     ) -> ClipEventResult {
-        let movie_version = self.as_displayobject().movie().version();
-
         let self_display_object = self.into();
         let is_enabled = self.enabled(context);
         let movie_version = self.movie().version();

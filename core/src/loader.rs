@@ -1705,6 +1705,11 @@ impl<'gc> Loader<'gc> {
 
                     if let Some(domain) = domain {
                         library.set_avm2_domain(domain);
+                    } else {
+                        // This is in case the MovieLoaderData is AVM1, but loaded an AVM2 SWF (mixed AVM).
+                        // TODO: What if AVM2 loads AVM1, and that loads AVM2? What happens to the innermost SWF's domain?
+                        let stage_domain = activation.context.avm2.stage_domain();
+                        library.set_avm2_domain(stage_domain);
                     }
 
                     if let Some(mc) = clip.as_movie_clip() {
@@ -1742,6 +1747,9 @@ impl<'gc> Loader<'gc> {
 
                     if let Some(domain) = domain {
                         library.set_avm2_domain(domain);
+                    } else {
+                        let stage_domain = activation.context.avm2.stage_domain();
+                        library.set_avm2_domain(stage_domain);
                     }
 
                     // This will construct AVM2-side objects even under AVM1, but it doesn't matter,
