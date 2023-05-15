@@ -508,7 +508,6 @@ pub struct SystemPrototypes<'gc> {
     pub gradient_glow_filter: Object<'gc>,
     pub gradient_glow_filter_constructor: Object<'gc>,
     pub date_constructor: Object<'gc>,
-    pub bitmap_data: Object<'gc>,
     pub bitmap_data_constructor: Object<'gc>,
     pub video: Object<'gc>,
     pub video_constructor: Object<'gc>,
@@ -863,9 +862,7 @@ pub fn create_globals<'gc>(
         Attribute::empty(),
     );
 
-    let bitmap_data_proto = bitmap_data::create_proto(context, object_proto, function_proto);
-    let bitmap_data =
-        bitmap_data::create_bitmap_data_object(context, bitmap_data_proto, function_proto);
+    let bitmap_data = bitmap_data::create_constructor(context, object_proto, function_proto);
 
     display.define_value(
         gc_context,
@@ -1130,7 +1127,6 @@ pub fn create_globals<'gc>(
             gradient_glow_filter: gradient_glow_filter_proto,
             gradient_glow_filter_constructor: gradient_glow_filter,
             date_constructor: date,
-            bitmap_data: bitmap_data_proto,
             bitmap_data_constructor: bitmap_data,
             video: video_proto,
             video_constructor: video,

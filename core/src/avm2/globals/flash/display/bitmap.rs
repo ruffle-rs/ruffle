@@ -55,7 +55,8 @@ pub fn init<'gc>(
                         .character_by_id(symbol_id)
                         .cloned()
                     {
-                        let new_bitmap_data = fill_bitmap_data_from_symbol(activation, bitmap);
+                        let new_bitmap_data =
+                            fill_bitmap_data_from_symbol(activation.context.gc_context, bitmap);
                         BitmapDataObject::from_bitmap_data(
                             activation,
                             new_bitmap_data,

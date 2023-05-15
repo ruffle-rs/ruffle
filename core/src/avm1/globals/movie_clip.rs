@@ -4,6 +4,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::matrix::gradient_object_to_matrix;
 use crate::avm1::globals::{self, AVM_DEPTH_BIAS, AVM_MAX_DEPTH};
+use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{self, Object, ScriptObject, TObject, Value};
 use crate::avm_error;
@@ -17,7 +18,6 @@ use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::prelude::*;
 use crate::string::AvmString;
 use crate::vminterface::Instantiator;
-
 use ruffle_render::shape_utils::DrawCommand;
 use std::str::FromStr;
 use swf::{
@@ -243,12 +243,8 @@ fn attach_bitmap<'gc>(
     activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap) = args.get(0) {
-        if let Some(bitmap_data) = bitmap
-            .coerce_to_object(activation)
-            .as_bitmap_data_object()
-            .map(|bd| bd.bitmap_data())
-        {
+    if let [Value::Object(bitmap_data), ..] = args {
+        if let NativeObject::BitmapData(bitmap_data) = bitmap_data.native() {
             if let Some(depth) = args.get(1) {
                 let depth = depth
                     .coerce_to_i32(activation)?
@@ -395,55 +391,54 @@ fn begin_bitmap_fill<'gc>(
     activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = args
-        .get(0)
-        .and_then(|val| val.coerce_to_object(activation).as_bitmap_data_object())
-    {
-        // Register the bitmap data with the drawing.
-        let bitmap_data = bitmap_data.bitmap_data();
-        let handle =
-            bitmap_data.bitmap_handle(activation.context.gc_context, activation.context.renderer);
-        let bitmap = ruffle_render::bitmap::BitmapInfo {
-            handle,
-            width: bitmap_data.width() as u16,
-            height: bitmap_data.height() as u16,
-        };
-        let id = movie_clip
-            .drawing(activation.context.gc_context)
-            .add_bitmap(bitmap);
+    let fill_style = if let [Value::Object(bitmap_data), ..] = args {
+        if let NativeObject::BitmapData(bitmap_data) = bitmap_data.native() {
+            // Register the bitmap data with the drawing.
+            let handle = bitmap_data
+                .bitmap_handle(activation.context.gc_context, activation.context.renderer);
+            let bitmap = ruffle_render::bitmap::BitmapInfo {
+                handle,
+                width: bitmap_data.width() as u16,
+                height: bitmap_data.height() as u16,
+            };
+            let id = movie_clip
+                .drawing(activation.context.gc_context)
+                .add_bitmap(bitmap);
 
-        let mut matrix = avm1::globals::matrix::object_to_matrix_or_default(
-            args.get(1)
-                .unwrap_or(&Value::Undefined)
-                .coerce_to_object(activation),
-            activation,
-        )?;
-        // Flash matrix is in pixels. Scale from pixels to twips.
-        matrix *= Matrix::scale(Twips::TWIPS_PER_PIXEL as f32, Twips::TWIPS_PER_PIXEL as f32);
+            let mut matrix = avm1::globals::matrix::object_to_matrix_or_default(
+                args.get(1)
+                    .unwrap_or(&Value::Undefined)
+                    .coerce_to_object(activation),
+                activation,
+            )?;
+            // Flash matrix is in pixels. Scale from pixels to twips.
+            matrix *= Matrix::scale(Twips::TWIPS_PER_PIXEL as f32, Twips::TWIPS_PER_PIXEL as f32);
 
-        // `repeating` defaults to true, `smoothed` to false.
-        // `smoothed` parameter may not be listed in some documentation.
-        let is_repeating = args
-            .get(2)
-            .unwrap_or(&true.into())
-            .as_bool(activation.swf_version());
-        let is_smoothed = args
-            .get(3)
-            .unwrap_or(&false.into())
-            .as_bool(activation.swf_version());
-        movie_clip
-            .drawing(activation.context.gc_context)
-            .set_fill_style(Some(FillStyle::Bitmap {
+            // `repeating` defaults to true, `smoothed` to false.
+            // `smoothed` parameter may not be listed in some documentation.
+            let is_repeating = args
+                .get(2)
+                .unwrap_or(&true.into())
+                .as_bool(activation.swf_version());
+            let is_smoothed = args
+                .get(3)
+                .unwrap_or(&false.into())
+                .as_bool(activation.swf_version());
+            Some(FillStyle::Bitmap {
                 id,
                 matrix: matrix.into(),
                 is_smoothed,
                 is_repeating,
-            }));
+            })
+        } else {
+            None
+        }
     } else {
-        movie_clip
-            .drawing(activation.context.gc_context)
-            .set_fill_style(None);
-    }
+        None
+    };
+    movie_clip
+        .drawing(activation.context.gc_context)
+        .set_fill_style(fill_style);
     Ok(Value::Undefined)
 }
 

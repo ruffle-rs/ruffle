@@ -199,7 +199,7 @@ bitflags! {
     }
 }
 
-#[derive(Clone, Collect, Default)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct BitmapData<'gc> {
     /// The pixels in the bitmap, stored as a array of pre-multiplied ARGB colour values
@@ -229,14 +229,15 @@ pub struct BitmapData<'gc> {
     dirty_state: DirtyState,
 }
 
-#[derive(Clone, Collect, Default, Debug)]
+#[derive(Clone, Collect, Debug)]
 #[collect(require_static)]
 enum DirtyState {
     // Both the CPU and GPU pixels are up to date. We do not need to wait for any syncs to complete
-    #[default]
     Clean,
+
     // The CPU pixels have been modified, and need to be synced to the GPU via `update_dirty_texture`
     CpuModified(PixelRegion),
+
     // The GPU pixels have been modified, and need to be synced to the CPU via `BitmapDataWrapper::sync`
     GpuModified(Box<dyn SyncHandle>, PixelRegion),
 }
@@ -483,15 +484,20 @@ impl fmt::Debug for BitmapData<'_> {
 }
 
 impl<'gc> BitmapData<'gc> {
-    pub fn init_pixels(&mut self, width: u32, height: u32, transparency: bool, fill_color: i32) {
-        self.width = width;
-        self.height = height;
-        self.transparency = transparency;
-        self.pixels = vec![
-            Color(fill_color).to_premultiplied_alpha(self.transparency());
-            width as usize * height as usize
-        ];
-        self.set_cpu_dirty(PixelRegion::for_whole_size(width, height));
+    pub fn new(width: u32, height: u32, transparency: bool, fill_color: i32) -> Self {
+        Self {
+            pixels: vec![
+                Color(fill_color).to_premultiplied_alpha(transparency);
+                width as usize * height as usize
+            ],
+            width,
+            height,
+            transparency,
+            disposed: false,
+            bitmap_handle: None,
+            avm2_object: None,
+            dirty_state: DirtyState::Clean,
+        }
     }
 
     pub fn new_with_pixels(
@@ -566,14 +572,6 @@ impl<'gc> BitmapData<'gc> {
 
     pub fn pixels(&self) -> &[Color] {
         &self.pixels
-    }
-
-    pub fn set_pixels(&mut self, width: u32, height: u32, transparency: bool, pixels: Vec<Color>) {
-        self.width = width;
-        self.height = height;
-        self.transparency = transparency;
-        self.pixels = pixels;
-        self.set_cpu_dirty(PixelRegion::for_whole_size(width, height));
     }
 
     pub fn pixels_rgba(&self) -> Vec<u8> {

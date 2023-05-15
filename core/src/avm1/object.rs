@@ -9,7 +9,6 @@ use crate::avm1::globals::date::Date;
 use crate::avm1::globals::drop_shadow_filter::DropShadowFilter;
 use crate::avm1::globals::glow_filter::GlowFilter;
 use crate::avm1::object::array_object::ArrayObject;
-use crate::avm1::object::bitmap_data::BitmapDataObject;
 use crate::avm1::object::convolution_filter::ConvolutionFilterObject;
 use crate::avm1::object::displacement_map_filter::DisplacementMapFilterObject;
 use crate::avm1::object::gradient_bevel_filter::GradientBevelFilterObject;
@@ -21,6 +20,7 @@ use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::object::xml_node_object::XmlNodeObject;
 use crate::avm1::object::xml_object::XmlObject;
 use crate::avm1::{Activation, Attribute, Error, ScriptObject, SoundObject, StageObject, Value};
+use crate::bitmap::bitmap_data::BitmapDataWrapper;
 use crate::display_object::DisplayObject;
 use crate::display_object::TDisplayObject;
 use crate::html::TextFormat;
@@ -32,7 +32,6 @@ use ruffle_macros::enum_trait_object;
 use std::fmt::Debug;
 
 pub mod array_object;
-pub mod bitmap_data;
 pub mod convolution_filter;
 mod custom_object;
 pub mod displacement_map_filter;
@@ -61,6 +60,7 @@ pub enum NativeObject<'gc> {
     ColorTransform(GcCell<'gc, ColorTransformObject>),
     TextFormat(GcCell<'gc, TextFormat>),
     NetStream(NetStream<'gc>),
+    BitmapData(BitmapDataWrapper<'gc>),
 }
 
 /// Represents an object that can be directly interacted with by the AVM
@@ -85,7 +85,6 @@ pub enum NativeObject<'gc> {
         ConvolutionFilterObject(ConvolutionFilterObject<'gc>),
         GradientBevelFilterObject(GradientBevelFilterObject<'gc>),
         GradientGlowFilterObject(GradientGlowFilterObject<'gc>),
-        BitmapData(BitmapDataObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
@@ -624,11 +623,6 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
 
     /// Get the underlying `GradientGlowFilterObject`, if it exists
     fn as_gradient_glow_filter_object(&self) -> Option<GradientGlowFilterObject<'gc>> {
-        None
-    }
-
-    /// Get the underlying `BitmapDataObject`, if it exists
-    fn as_bitmap_data_object(&self) -> Option<BitmapDataObject<'gc>> {
         None
     }
 

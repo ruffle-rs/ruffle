@@ -5,16 +5,16 @@ use crate::avm1::ExecutionReason;
 use crate::avm1::{Activation, ActivationIdentifier};
 use crate::avm1::{Object, SoundObject, TObject, Value};
 use crate::avm2::bytearray::ByteArrayStorage;
-use crate::avm2::object::ByteArrayObject;
-use crate::avm2::object::EventObject as Avm2EventObject;
-use crate::avm2::object::LoaderStream;
-use crate::avm2::object::TObject as _;
+use crate::avm2::object::{
+    BitmapDataObject, ByteArrayObject, EventObject as Avm2EventObject, LoaderStream, TObject as _,
+};
 use crate::avm2::{
     Activation as Avm2Activation, Avm2, Domain as Avm2Domain, Object as Avm2Object,
     Value as Avm2Value,
 };
 use crate::backend::navigator::{OwnedFuture, Request};
 use crate::bitmap::bitmap_data::Color;
+use crate::bitmap::bitmap_data::{BitmapData, BitmapDataWrapper};
 use crate::context::{ActionQueue, ActionType, UpdateContext};
 use crate::display_object::{
     DisplayObject, TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
@@ -28,7 +28,7 @@ use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use encoding_rs::UTF_8;
-use gc_arena::{Collect, CollectionContext};
+use gc_arena::{Collect, CollectionContext, GcCell};
 use generational_arena::{Arena, Index};
 use ruffle_render::utils::{determine_jpeg_tag_format, JpegTagFormat};
 use std::fmt;
@@ -1492,28 +1492,24 @@ impl<'gc> Loader<'gc> {
                     // since Bitmap and BitmapData never have AVM1-side objects.
                     let bitmap = ruffle_render::utils::decode_define_bits_jpeg(data, None)?;
 
-                    let bitmapdata_avm2 = activation
-                        .avm2()
-                        .classes()
-                        .bitmapdata
-                        .construct(
-                            &mut activation,
-                            &[bitmap.width().into(), bitmap.height().into(), true.into()],
-                        )
-                        .unwrap();
-
-                    let bitmapdata_wrapper = bitmapdata_avm2.as_bitmap_data().unwrap();
-
-                    bitmapdata_wrapper
-                        .overwrite_cpu_pixels_from_gpu(activation.context.gc_context)
-                        .0
-                        .write(activation.context.gc_context)
-                        .set_pixels(
-                            bitmap.width(),
-                            bitmap.height(),
-                            true,
-                            bitmap.as_colors().map(Color::from).collect(),
-                        );
+                    let transparency = true;
+                    let bitmap_data = BitmapData::new_with_pixels(
+                        bitmap.width(),
+                        bitmap.height(),
+                        transparency,
+                        bitmap.as_colors().map(Color::from).collect(),
+                    );
+                    let bitmapdata_wrapper = BitmapDataWrapper::new(GcCell::allocate(
+                        activation.context.gc_context,
+                        bitmap_data,
+                    ));
+                    let bitmapdata_class = activation.context.avm2.classes().bitmapdata;
+                    let bitmapdata_avm2 = BitmapDataObject::from_bitmap_data(
+                        &mut activation,
+                        bitmapdata_wrapper,
+                        bitmapdata_class,
+                    )
+                    .unwrap();
 
                     let bitmap_avm2 = activation
                         .avm2()
