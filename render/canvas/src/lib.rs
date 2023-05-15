@@ -213,11 +213,7 @@ impl WebCanvasRenderBackend {
         let _ = js_sys::Reflect::set(
             &context_options,
             &"alpha".into(),
-            &if is_transparent {
-                wasm_bindgen::JsValue::TRUE
-            } else {
-                wasm_bindgen::JsValue::FALSE
-            },
+            &JsValue::from_bool(is_transparent),
         );
         let context: CanvasRenderingContext2d = canvas
             .get_context_with_context_options("2d", &context_options)
