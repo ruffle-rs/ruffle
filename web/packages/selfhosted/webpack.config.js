@@ -3,6 +3,7 @@
 const path = require("path");
 const json5 = require("json5");
 const CopyPlugin = require("copy-webpack-plugin");
+const TerserPlugin = require("terser-webpack-plugin");
 
 function transformPackage(content) {
     const package = json5.parse(content);
@@ -43,6 +44,17 @@ module.exports = (_env, _argv) => {
         performance: {
             assetFilter: (assetFilename) =>
                 !/\.(map|wasm)$/i.test(assetFilename),
+        },
+        optimization: {
+            minimizer: [
+                new TerserPlugin({
+                    terserOptions: {
+                        output: {
+                            ascii_only: true,
+                        },
+                    },
+                }),
+            ],
         },
         devtool: "source-map",
         plugins: [
