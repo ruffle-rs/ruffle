@@ -174,22 +174,15 @@ impl WebGlRenderBackend {
         // Create WebGL context.
         let options = [
             ("stencil", JsValue::TRUE),
-            (
-                "alpha",
-                if is_transparent {
-                    JsValue::TRUE
-                } else {
-                    JsValue::FALSE
-                },
-            ),
+            ("alpha", JsValue::from_bool(is_transparent)),
             ("antialias", JsValue::FALSE),
             ("depth", JsValue::FALSE),
             ("failIfMajorPerformanceCaveat", JsValue::TRUE), // fail if no GPU available
             ("premultipliedAlpha", JsValue::TRUE),
         ];
         let context_options = js_sys::Object::new();
-        for (name, value) in options.iter() {
-            js_sys::Reflect::set(&context_options, &JsValue::from(*name), value).warn_on_error();
+        for (name, value) in options.into_iter() {
+            js_sys::Reflect::set(&context_options, &JsValue::from(name), &value).warn_on_error();
         }
 
         // Attempt to create a WebGL2 context, but fall back to WebGL1 if unavailable.
