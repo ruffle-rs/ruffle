@@ -1952,13 +1952,22 @@ export class RufflePlayer extends HTMLElement {
             this.isExtension &&
             window.location.origin !== this.swfUrl!.origin
         ) {
+            const url = new URL(this.swfUrl!);
+            if (this.loadedConfig?.parameters) {
+                const parameters = sanitizeParameters(
+                    this.loadedConfig.parameters
+                );
+                Object.entries(parameters).forEach(([key, value]) => {
+                    url.searchParams.set(key, value);
+                });
+            }
             this.hideSplashScreen();
             const div = document.createElement("div");
             div.id = "message_overlay";
             div.innerHTML = `<div class="message">
                 ${textAsParagraphs("message-cant-embed")}
                 <div>
-                    <a target="_blank" href="${this.swfUrl}">${text(
+                    <a target="_blank" href="${url}">${text(
                 "open-in-new-tab"
             )}</a>
                 </div>
