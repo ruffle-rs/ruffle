@@ -336,7 +336,7 @@ impl<'gc> ClipEvent<'gc> {
 /// Control inputs to a text field
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum TextControlCode {
-    // TODO: Extend this
+    // TODO: Add control codes for Ctrl+Arrows and Home/End keys
     MoveLeft,
     MoveRight,
     SelectLeft,

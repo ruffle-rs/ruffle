@@ -1174,19 +1174,21 @@ impl<'gc> EditText<'gc> {
         None
     }
 
+    /// The number of characters that currently can be inserted, considering `TextField.maxChars`
+    /// constraint, current text length, and current text selection length.
     fn available_chars(self) -> usize {
         let read = self.0.read();
         let max_chars = read.max_chars;
         if max_chars == 0 {
             usize::MAX
         } else {
-            let text_len = read.text_spans.text().len();
+            let text_len = read.text_spans.text().len() as i32;
             let selection_len = if let Some(selection) = self.selection() {
-                selection.end() - selection.start()
+                (selection.end() - selection.start()) as i32
             } else {
                 0
             };
-            max_chars.max(0) as usize - (text_len - selection_len)
+            0.max(max_chars.max(0) - (text_len - selection_len)) as usize
         }
     }
 

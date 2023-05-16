@@ -843,12 +843,12 @@ impl Ruffle {
                             let is_ctrl_cmd = js_event.ctrl_key() || js_event.meta_key();
                             core.handle_event(PlayerEvent::KeyDown { key_code, key_char });
 
-                            if let Some(control_code) = web_to_text_control(
+                            if let Some(control_code) = web_to_ruffle_text_control(
                                 &js_event.key(),
                                 is_ctrl_cmd,
                                 js_event.shift_key(),
                             ) {
-                                core.handle_event(PlayerEvent::TextControl { code: control_code })
+                                core.handle_event(PlayerEvent::TextControl { code: control_code });
                             } else if let Some(codepoint) = key_char {
                                 core.handle_event(PlayerEvent::TextInput { codepoint });
                             }
@@ -1748,14 +1748,20 @@ fn web_key_to_codepoint(key: &str) -> Option<char> {
     }
 }
 
-pub fn web_to_text_control(key: &str, ctrl_key: bool, shift_key: bool) -> Option<TextControlCode> {
+/// Convert a web `KeyboardEvent.key` value to a Ruffle `TextControlCode`,
+/// given the states of the modifier keys. Return `None` if there is no match.
+/// TODO: Handle Ctrl+Arrows and Home/End keys
+pub fn web_to_ruffle_text_control(
+    key: &str,
+    ctrl_key: bool,
+    shift_key: bool,
+) -> Option<TextControlCode> {
     let mut chars = key.chars();
     let (c1, c2) = (chars.next(), chars.next());
     if c2.is_none() {
         // Single character.
         if ctrl_key {
             match c1 {
-                // TODO: Extend this
                 Some('a') => Some(TextControlCode::SelectAll),
                 Some('c') => Some(TextControlCode::Copy),
                 Some('v') => Some(TextControlCode::Paste),
