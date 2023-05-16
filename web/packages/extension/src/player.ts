@@ -29,9 +29,10 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     player.load({
         ...options,
-        // Override default value for 'letterbox' when playing in the extension player page.
-        letterbox: "on" as Letterbox,
         url: swfUrl,
         base: swfUrl.substring(0, swfUrl.lastIndexOf("/") + 1),
+        // Override some default values when playing in the extension player page.
+        letterbox: "on" as Letterbox,
+        forceScale: true,
     });
 });
