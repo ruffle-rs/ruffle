@@ -1,16 +1,9 @@
 # To use the crowdin-cli, set an access token in CROWDIN_PERSONAL_TOKEN or a ~/.crowdin.yml
 # File structure documentation can be found at: https://developer.crowdin.com/configuration-file/
 
+"api_token_env": "CROWDIN_PERSONAL_TOKEN"
 "project_id": 582621 # This is https://crowdin.com/project/ruffle
 "preserve_hierarchy": true # Keep the directory structure so that we know, for example, "messages.json" belongs to the extension
-
-# Github integration
-"pull_request_title": "Update text translations"
-"pull_request_labels": [
-  "localization"
-]
-"commit_message": "chore: Updates translations in %original_file_name% from Crowdin"
-"append_commit_message": false
 
 # Files we want to translate
 "files": [
