@@ -14,6 +14,7 @@ pub struct WebUiBackend {
     cursor_visible: bool,
     cursor: MouseCursor,
     language: LanguageIdentifier,
+    clipboard_content: String,
 }
 
 impl WebUiBackend {
@@ -29,6 +30,7 @@ impl WebUiBackend {
             cursor_visible: true,
             cursor: MouseCursor::Arrow,
             language,
+            clipboard_content: "".into(),
         }
     }
 
@@ -66,11 +68,13 @@ impl UiBackend for WebUiBackend {
     }
 
     fn clipboard_content(&mut self) -> String {
-        tracing::warn!("get clipboard not implemented");
-        "".to_string()
+        // On web, clipboard content is not directly accessible due to security restrictions,
+        // but pasting from the clipboard is supported via the JS `paste` event
+        self.clipboard_content.to_owned()
     }
 
     fn set_clipboard_content(&mut self, content: String) {
+        self.clipboard_content = content.to_owned();
         // We use `document.execCommand("copy")` as `navigator.clipboard.writeText("string")`
         // is available only in secure contexts (HTTPS).
         if let Some(element) = self.canvas.parent_element() {
@@ -86,6 +90,7 @@ impl UiBackend for WebUiBackend {
                 .dyn_into()
                 .expect("create_element(\"textarea\") didn't give us a textarea");
 
+            let editing_text = self.js_player.is_virtual_keyboard_focused();
             textarea.set_value(&content);
             let _ = element.append_child(&textarea);
             textarea.select();
@@ -102,6 +107,10 @@ impl UiBackend for WebUiBackend {
             }
 
             let _ = element.remove_child(&textarea);
+            if editing_text {
+                // Return focus to the text area
+                self.js_player.open_virtual_keyboard();
+            }
         }
     }
 

@@ -159,7 +159,7 @@ impl UiBackend for NullUiBackend {
     fn set_mouse_cursor(&mut self, _cursor: MouseCursor) {}
 
     fn clipboard_content(&mut self) -> String {
-        "".to_string()
+        "".into()
     }
 
     fn set_clipboard_content(&mut self, _content: String) {}
