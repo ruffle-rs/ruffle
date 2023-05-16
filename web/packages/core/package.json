@@ -48,7 +48,7 @@
         "@tsconfig/strictest": "^2.0.0",
         "@types/mocha": "^10.0.1",
         "eslint": "^8.36.0",
-        "eslint-plugin-jsdoc": "^43.0.0",
+        "eslint-plugin-jsdoc": "^44.0.0",
         "mocha": "^10.2.0",
         "replace-in-file": "^6.3.5",
         "shx": "^0.3.4",
