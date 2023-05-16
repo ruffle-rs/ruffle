@@ -1038,7 +1038,9 @@ export class RufflePlayer extends HTMLElement {
             return;
         }
         try {
-            localStorage;
+            if (localStorage === null) {
+                return;
+            }
         } catch (e: unknown) {
             return;
         }
