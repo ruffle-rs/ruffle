@@ -915,6 +915,7 @@ fn winit_key_to_char(key_code: VirtualKeyCode, is_shift_down: bool) -> Option<ch
 
 /// Converts a `VirtualKeyCode` and `ModifiersState` to a Ruffle `TextControlCode`.
 /// Returns `None` if there is no match.
+/// TODO: Handle Ctrl+Arrows and Home/End keys
 fn winit_to_ruffle_text_control(
     key: VirtualKeyCode,
     modifiers: ModifiersState,
