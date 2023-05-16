@@ -1,0 +1,33 @@
+name: Download translations from Crowdin
+
+on:
+  schedule:
+    - cron: '0 21 * * *'
+
+jobs:
+  crowdin:
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Crowdin push
+        uses: crowdin/github-action@v1
+        with:
+          config: 'crowdin.yml'
+          upload_sources: false
+          upload_translations: false
+          download_translations: true
+          localization_branch_name: l10n_crowdin_translations
+
+          create_pull_request: true
+          pull_request_title: 'chore: Update translations'
+          pull_request_body: 'New Crowdin pull request with translations'
+          pull_request_labels: 'localization'
+          pull_request_base_branch_name: 'master'
+          commit_message: 'chore: Update translations from Crowdin'
+        env:
+          CROWDIN_PERSONAL_TOKEN: ${{ secrets.CROWDIN_PERSONAL_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
