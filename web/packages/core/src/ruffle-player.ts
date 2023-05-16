@@ -1183,6 +1183,9 @@ export class RufflePlayer extends HTMLElement {
             this.virtualKeyboard.focus({ preventScroll: true });
         }
     }
+    protected isVirtualKeyboardFocused(): boolean {
+        return this.shadow.activeElement === this.virtualKeyboard;
+    }
 
     private contextMenuItems(isTouch: boolean): Array<ContextMenuItem | null> {
         const CHECKMARK = String.fromCharCode(0x2713);

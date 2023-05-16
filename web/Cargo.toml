@@ -60,8 +60,8 @@ version = "0.3.63"
 features = [
     "AddEventListenerOptions", "AudioBuffer", "AudioBufferSourceNode", "AudioContext",
     "AudioDestinationNode", "AudioNode", "AudioParam", "Blob", "BlobPropertyBag",
-    "ChannelMergerNode", "ChannelSplitterNode", "Element", "Event", "EventTarget", "GainNode",
-    "HtmlCanvasElement", "HtmlDocument", "HtmlElement", "HtmlFormElement", "HtmlInputElement",
-    "HtmlTextAreaElement", "KeyboardEvent", "Location", "PointerEvent", "Request", "RequestInit",
-    "Response", "Storage", "WheelEvent", "Window",
+    "ChannelMergerNode", "ChannelSplitterNode", "ClipboardEvent", "DataTransfer", "Element", "Event",
+    "EventTarget", "GainNode", "HtmlCanvasElement", "HtmlDocument", "HtmlElement", "HtmlFormElement", 
+    "HtmlInputElement", "HtmlTextAreaElement", "KeyboardEvent", "Location", "PointerEvent", 
+    "Request", "RequestInit", "Response", "Storage", "WheelEvent", "Window",
 ]

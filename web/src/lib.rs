@@ -38,8 +38,8 @@ use tracing_wasm::{WASMLayer, WASMLayerConfigBuilder};
 use url::Url;
 use wasm_bindgen::{prelude::*, JsCast, JsValue};
 use web_sys::{
-    AddEventListenerOptions, Element, Event, EventTarget, HtmlCanvasElement, HtmlElement,
-    KeyboardEvent, PointerEvent, WheelEvent, Window,
+    AddEventListenerOptions, ClipboardEvent, Element, Event, EventTarget, HtmlCanvasElement,
+    HtmlElement, KeyboardEvent, PointerEvent, WheelEvent, Window,
 };
 
 static RUFFLE_GLOBAL_PANIC: Once = Once::new();
@@ -78,6 +78,7 @@ struct RuffleInstance {
     mouse_wheel_callback: Option<Closure<dyn FnMut(WheelEvent)>>,
     key_down_callback: Option<Closure<dyn FnMut(KeyboardEvent)>>,
     key_up_callback: Option<Closure<dyn FnMut(KeyboardEvent)>>,
+    paste_callback: Option<Closure<dyn FnMut(ClipboardEvent)>>,
     unload_callback: Option<Closure<dyn FnMut(Event)>>,
     has_focus: bool,
     trace_observer: Arc<RefCell<JsValue>>,
@@ -119,6 +120,9 @@ extern "C" {
 
     #[wasm_bindgen(method, js_name = "openVirtualKeyboard")]
     fn open_virtual_keyboard(this: &JavascriptPlayer);
+
+    #[wasm_bindgen(method, js_name = "isVirtualKeyboardFocused")]
+    fn is_virtual_keyboard_focused(this: &JavascriptPlayer) -> bool;
 }
 
 struct JavascriptInterface {
@@ -619,6 +623,7 @@ impl Ruffle {
             mouse_wheel_callback: None,
             key_down_callback: None,
             key_up_callback: None,
+            paste_callback: None,
             unload_callback: None,
             timestamp: None,
             has_focus: false,
@@ -837,6 +842,7 @@ impl Ruffle {
             let key_down_callback = Closure::new(move |js_event: KeyboardEvent| {
                 let _ = ruffle.with_instance(|instance| {
                     if instance.has_focus {
+                        let mut paste_event = false;
                         let _ = instance.with_core_mut(|core| {
                             let key_code = web_to_ruffle_key_code(&js_event.code());
                             let key_char = web_key_to_codepoint(&js_event.key());
@@ -848,13 +854,23 @@ impl Ruffle {
                                 is_ctrl_cmd,
                                 js_event.shift_key(),
                             ) {
-                                core.handle_event(PlayerEvent::TextControl { code: control_code });
+                                paste_event = control_code == TextControlCode::Paste;
+                                // The JS paste event fires separately and the clipboard text is not available until then,
+                                // so we need to wait before handling it
+                                if !paste_event {
+                                    core.handle_event(PlayerEvent::TextControl {
+                                        code: control_code,
+                                    });
+                                }
                             } else if let Some(codepoint) = key_char {
                                 core.handle_event(PlayerEvent::TextInput { codepoint });
                             }
                         });
 
-                        js_event.prevent_default();
+                        // Don't prevent the JS paste event from firing
+                        if !paste_event {
+                            js_event.prevent_default();
+                        }
                     }
                 });
             });
@@ -866,6 +882,31 @@ impl Ruffle {
                 )
                 .warn_on_error();
             instance.key_down_callback = Some(key_down_callback);
+
+            let paste_callback = Closure::new(move |js_event: ClipboardEvent| {
+                let _ = ruffle.with_instance(|instance| {
+                    if instance.has_focus {
+                        let _ = instance.with_core_mut(|core| {
+                            let clipboard_content = if let Some(content) = js_event.clipboard_data()
+                            {
+                                content.get_data("text/plain").unwrap_or_default()
+                            } else {
+                                "".into()
+                            };
+                            core.ui_mut().set_clipboard_content(clipboard_content);
+                            core.handle_event(PlayerEvent::TextControl {
+                                code: TextControlCode::Paste,
+                            });
+                        });
+                        js_event.prevent_default();
+                    }
+                });
+            });
+
+            window
+                .add_event_listener_with_callback("paste", paste_callback.as_ref().unchecked_ref())
+                .warn_on_error();
+            instance.paste_callback = Some(paste_callback);
 
             // Create keyup event handler.
             let key_up_callback = Closure::new(move |js_event: KeyboardEvent| {
@@ -1255,6 +1296,14 @@ impl Drop for RuffleInstance {
                 .remove_event_listener_with_callback(
                     "keydown",
                     key_down_callback.as_ref().unchecked_ref(),
+                )
+                .warn_on_error();
+        }
+        if let Some(paste_callback) = self.paste_callback.take() {
+            self.window
+                .remove_event_listener_with_callback(
+                    "paste",
+                    paste_callback.as_ref().unchecked_ref(),
                 )
                 .warn_on_error();
         }
