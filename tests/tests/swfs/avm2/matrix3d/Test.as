@@ -71,6 +71,18 @@
 			trace("Before modification: " + newMat.rawData);
 			modified[0] = 99999;
 			trace("After modification: " + newMat.rawData);
+			
+			var newMat = new Matrix3D(Vector.<Number>([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]));
+			var col = new Vector3D();
+			for each (var i in [0, 1, 2, 3]) {
+				newMat.copyColumnTo(i, col);
+				trace("Column: " + col + " w=" + col.w);
+			}
+			try {
+				newMat.copyColumnTo(4, col);
+			} catch (e) {
+				trace("Column 4: " + e);
+			}
 		}
 	}
 }

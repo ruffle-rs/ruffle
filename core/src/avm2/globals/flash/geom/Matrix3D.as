@@ -1,6 +1,8 @@
 // Based on the MIT-licensed OpenFL code https://github.com/openfl/openfl/blob/develop/src/openfl/geom/Matrix3D.hx
 
 package flash.geom {
+	import __ruffle__.stub_method;
+
 	public class Matrix3D {
 
 		// The 4x4 matrix data, stored in column-major order
@@ -17,7 +19,8 @@ package flash.geom {
 		public function Matrix3D(v:Vector.<Number> = null) {
 			if (v != null && v.length == 16) {
 				this._rawData = v.concat();
-			} else {
+			}
+			else {
 				this.identity();
 			}
 		}
@@ -292,7 +295,304 @@ package flash.geom {
 		}
 
 		public function copyToMatrix3D(other:Matrix3D):void {
-			other.rawData = rawData
+			other.rawData = rawData;
 		}
+
+		// Based on OpenFL: https://github.com/openfl/openfl/blob/971a4c9e43b5472fd84d73920a2b7c1b3d8d9257/src/openfl/geom/Matrix3D.hx#L1437
+		public function recompose(components:Vector.<Vector3D>, orientationStyle:String = "eulerAngles"):Boolean {
+			checkOrientation(orientationStyle);
+
+			if (orientationStyle == Orientation3D.QUATERNION) {
+				// Flash throws exceptions from 'recompose' certain values of 'components',
+				// which we need to reproduce. See the 'matrix3d_compose' test
+				stub_method("flash.geom.Matrix3D", "recompose", "Orientation3D.QUATERNION");
+			}
+			// RUFFLE - unlike in OpenFL, we continue on even if some of the 'scale' components are 0
+			if (components.length < 3) {
+				return false;
+			}
+
+			identity();
+
+			var scale = [];
+			scale[0] = scale[1] = scale[2] = components[2].x;
+			scale[4] = scale[5] = scale[6] = components[2].y;
+			scale[8] = scale[9] = scale[10] = components[2].z;
+
+			switch (orientationStyle) {
+				case Orientation3D.EULER_ANGLES:
+					var cx = Math.cos(components[1].x);
+					var cy = Math.cos(components[1].y);
+					var cz = Math.cos(components[1].z);
+					var sx = Math.sin(components[1].x);
+					var sy = Math.sin(components[1].y);
+					var sz = Math.sin(components[1].z);
+
+					_rawData[0] = cy * cz * scale[0];
+					_rawData[1] = cy * sz * scale[1];
+					_rawData[2] = -sy * scale[2];
+					_rawData[3] = 0;
+					_rawData[4] = (sx * sy * cz - cx * sz) * scale[4];
+					_rawData[5] = (sx * sy * sz + cx * cz) * scale[5];
+					_rawData[6] = sx * cy * scale[6];
+					_rawData[7] = 0;
+					_rawData[8] = (cx * sy * cz + sx * sz) * scale[8];
+					_rawData[9] = (cx * sy * sz - sx * cz) * scale[9];
+					_rawData[10] = cx * cy * scale[10];
+					_rawData[11] = 0;
+					_rawData[12] = components[0].x;
+					_rawData[13] = components[0].y;
+					_rawData[14] = components[0].z;
+					_rawData[15] = 1;
+					break;
+
+				default:
+					var x = components[1].x;
+					var y = components[1].y;
+					var z = components[1].z;
+					var w = components[1].w;
+
+					if (orientationStyle == Orientation3D.AXIS_ANGLE) {
+						x *= Math.sin(w / 2);
+						y *= Math.sin(w / 2);
+						z *= Math.sin(w / 2);
+						w = Math.cos(w / 2);
+					}
+
+					_rawData[0] = (1 - 2 * y * y - 2 * z * z) * scale[0];
+					_rawData[1] = (2 * x * y + 2 * w * z) * scale[1];
+					_rawData[2] = (2 * x * z - 2 * w * y) * scale[2];
+					_rawData[3] = 0;
+					_rawData[4] = (2 * x * y - 2 * w * z) * scale[4];
+					_rawData[5] = (1 - 2 * x * x - 2 * z * z) * scale[5];
+					_rawData[6] = (2 * y * z + 2 * w * x) * scale[6];
+					_rawData[7] = 0;
+					_rawData[8] = (2 * x * z + 2 * w * y) * scale[8];
+					_rawData[9] = (2 * y * z - 2 * w * x) * scale[9];
+					_rawData[10] = (1 - 2 * x * x - 2 * y * y) * scale[10];
+					_rawData[11] = 0;
+					_rawData[12] = components[0].x;
+					_rawData[13] = components[0].y;
+					_rawData[14] = components[0].z;
+					_rawData[15] = 1;
+			}
+
+			if (components[2].x == 0) {
+				_rawData[0] = 1e-15;
+			}
+
+			if (components[2].y == 0) {
+				_rawData[5] = 1e-15;
+			}
+
+			if (components[2].z == 0) {
+				_rawData[10] = 1e-15;
+			}
+
+			return !(components[2].x == 0 || components[2].y == 0 || components[2].y == 0);
+		}
+		public function copyColumnTo(column:uint, vector3D:Vector3D):void {
+			if (column > 3) {
+				throw new ArgumentError("Error #2004: One of the parameters is invalid.", 2004);
+			}
+			switch (column) {
+				case 0:
+					vector3D.x = _rawData[0];
+					vector3D.y = _rawData[1];
+					vector3D.z = _rawData[2];
+					vector3D.w = _rawData[3];
+					break;
+
+				case 1:
+					vector3D.x = _rawData[4];
+					vector3D.y = _rawData[5];
+					vector3D.z = _rawData[6];
+					vector3D.w = _rawData[7];
+					break;
+
+				case 2:
+					vector3D.x = _rawData[8];
+					vector3D.y = _rawData[9];
+					vector3D.z = _rawData[10];
+					vector3D.w = _rawData[11];
+					break;
+
+				case 3:
+					vector3D.x = _rawData[12];
+					vector3D.y = _rawData[13];
+					vector3D.z = _rawData[14];
+					vector3D.w = _rawData[15];
+					break;
+
+				default:
+			}
+		}
+
+		public function decompose(orientationStyle:String = "eulerAngles"):Vector.<Vector3D> {
+			checkOrientation(orientationStyle);
+
+			var vec = new Vector.<Vector3D>([]);
+			var m = clone();
+			var mr = m.rawData;
+
+			var pos = new Vector3D(mr[12], mr[13], mr[14]);
+			mr[12] = 0;
+			mr[13] = 0;
+			mr[14] = 0;
+
+			var scale = new Vector3D();
+
+			scale.x = Math.sqrt(mr[0] * mr[0] + mr[1] * mr[1] + mr[2] * mr[2]);
+			scale.y = Math.sqrt(mr[4] * mr[4] + mr[5] * mr[5] + mr[6] * mr[6]);
+			scale.z = Math.sqrt(mr[8] * mr[8] + mr[9] * mr[9] + mr[10] * mr[10]);
+
+			if (mr[0] * (mr[5] * mr[10] - mr[6] * mr[9]) - mr[1] * (mr[4] * mr[10] - mr[6] * mr[8]) + mr[2] * (mr[4] * mr[9] - mr[5] * mr[8]) < 0) {
+				scale.z = -scale.z;
+			}
+
+			mr[0] /= scale.x;
+			mr[1] /= scale.x;
+			mr[2] /= scale.x;
+			mr[4] /= scale.y;
+			mr[5] /= scale.y;
+			mr[6] /= scale.y;
+			mr[8] /= scale.z;
+			mr[9] /= scale.z;
+			mr[10] /= scale.z;
+
+			var rot = new Vector3D();
+
+			switch (orientationStyle) {
+				case Orientation3D.AXIS_ANGLE:
+					rot.w = Math.acos((mr[0] + mr[5] + mr[10] - 1) / 2);
+
+					var len = Math.sqrt((mr[6] - mr[9]) * (mr[6] - mr[9]) + (mr[8] - mr[2]) * (mr[8] - mr[2]) + (mr[1] - mr[4]) * (mr[1] - mr[4]));
+
+					if (len != 0) {
+						rot.x = (mr[6] - mr[9]) / len;
+						rot.y = (mr[8] - mr[2]) / len;
+						rot.z = (mr[1] - mr[4]) / len;
+					}
+					else {
+						rot.x = rot.y = rot.z = 0;
+					}
+					break;
+
+				case Orientation3D.QUATERNION:
+					var tr = mr[0] + mr[5] + mr[10];
+
+					if (tr > 0) {
+						rot.w = Math.sqrt(1 + tr) / 2;
+
+						rot.x = (mr[6] - mr[9]) / (4 * rot.w);
+						rot.y = (mr[8] - mr[2]) / (4 * rot.w);
+						rot.z = (mr[1] - mr[4]) / (4 * rot.w);
+					}
+					else if ((mr[0] > mr[5]) && (mr[0] > mr[10])) {
+						rot.x = Math.sqrt(1 + mr[0] - mr[5] - mr[10]) / 2;
+
+						rot.w = (mr[6] - mr[9]) / (4 * rot.x);
+						rot.y = (mr[1] + mr[4]) / (4 * rot.x);
+						rot.z = (mr[8] + mr[2]) / (4 * rot.x);
+					}
+					else if (mr[5] > mr[10]) {
+						rot.y = Math.sqrt(1 + mr[5] - mr[0] - mr[10]) / 2;
+
+						rot.x = (mr[1] + mr[4]) / (4 * rot.y);
+						rot.w = (mr[8] - mr[2]) / (4 * rot.y);
+						rot.z = (mr[6] + mr[9]) / (4 * rot.y);
+					}
+					else {
+						rot.z = Math.sqrt(1 + mr[10] - mr[0] - mr[5]) / 2;
+
+						rot.x = (mr[8] + mr[2]) / (4 * rot.z);
+						rot.y = (mr[6] + mr[9]) / (4 * rot.z);
+						rot.w = (mr[1] - mr[4]) / (4 * rot.z);
+					}
+					break;
+
+				case Orientation3D.EULER_ANGLES:
+					rot.y = Math.asin(-mr[2]);
+
+					if (mr[2] != 1 && mr[2] != -1) {
+						rot.x = Math.atan2(mr[6], mr[10]);
+						rot.z = Math.atan2(mr[1], mr[0]);
+					}
+					else {
+						rot.z = 0;
+						rot.x = Math.atan2(mr[4], mr[5]);
+					}
+					break;
+			}
+
+			vec.push(pos);
+			vec.push(rot);
+			vec.push(scale);
+
+			return vec;
+		}
+
+		public function invert():Boolean {
+			var d = determinant;
+			var invertable = Math.abs(d) > 0.00000000001;
+
+			if (invertable) {
+				d = 1 / d;
+
+				var m11:Number = _rawData[0];
+				var m21:Number = _rawData[4];
+				var m31:Number = _rawData[8];
+				var m41:Number = _rawData[12];
+				var m12:Number = _rawData[1];
+				var m22:Number = _rawData[5];
+				var m32:Number = _rawData[9];
+				var m42:Number = _rawData[13];
+				var m13:Number = _rawData[2];
+				var m23:Number = _rawData[6];
+				var m33:Number = _rawData[10];
+				var m43:Number = _rawData[14];
+				var m14:Number = _rawData[3];
+				var m24:Number = _rawData[7];
+				var m34:Number = _rawData[11];
+				var m44:Number = _rawData[15];
+
+				_rawData[0] = d * (m22 * (m33 * m44 - m43 * m34) - m32 * (m23 * m44 - m43 * m24) + m42 * (m23 * m34 - m33 * m24));
+				_rawData[1] = -d * (m12 * (m33 * m44 - m43 * m34) - m32 * (m13 * m44 - m43 * m14) + m42 * (m13 * m34 - m33 * m14));
+				_rawData[2] = d * (m12 * (m23 * m44 - m43 * m24) - m22 * (m13 * m44 - m43 * m14) + m42 * (m13 * m24 - m23 * m14));
+				_rawData[3] = -d * (m12 * (m23 * m34 - m33 * m24) - m22 * (m13 * m34 - m33 * m14) + m32 * (m13 * m24 - m23 * m14));
+				_rawData[4] = -d * (m21 * (m33 * m44 - m43 * m34) - m31 * (m23 * m44 - m43 * m24) + m41 * (m23 * m34 - m33 * m24));
+				_rawData[5] = d * (m11 * (m33 * m44 - m43 * m34) - m31 * (m13 * m44 - m43 * m14) + m41 * (m13 * m34 - m33 * m14));
+				_rawData[6] = -d * (m11 * (m23 * m44 - m43 * m24) - m21 * (m13 * m44 - m43 * m14) + m41 * (m13 * m24 - m23 * m14));
+				_rawData[7] = d * (m11 * (m23 * m34 - m33 * m24) - m21 * (m13 * m34 - m33 * m14) + m31 * (m13 * m24 - m23 * m14));
+				_rawData[8] = d * (m21 * (m32 * m44 - m42 * m34) - m31 * (m22 * m44 - m42 * m24) + m41 * (m22 * m34 - m32 * m24));
+				_rawData[9] = -d * (m11 * (m32 * m44 - m42 * m34) - m31 * (m12 * m44 - m42 * m14) + m41 * (m12 * m34 - m32 * m14));
+				_rawData[10] = d * (m11 * (m22 * m44 - m42 * m24) - m21 * (m12 * m44 - m42 * m14) + m41 * (m12 * m24 - m22 * m14));
+				_rawData[11] = -d * (m11 * (m22 * m34 - m32 * m24) - m21 * (m12 * m34 - m32 * m14) + m31 * (m12 * m24 - m22 * m14));
+				_rawData[12] = -d * (m21 * (m32 * m43 - m42 * m33) - m31 * (m22 * m43 - m42 * m23) + m41 * (m22 * m33 - m32 * m23));
+				_rawData[13] = d * (m11 * (m32 * m43 - m42 * m33) - m31 * (m12 * m43 - m42 * m13) + m41 * (m12 * m33 - m32 * m13));
+				_rawData[14] = -d * (m11 * (m22 * m43 - m42 * m23) - m21 * (m12 * m43 - m42 * m13) + m41 * (m12 * m23 - m22 * m13));
+				_rawData[15] = d * (m11 * (m22 * m33 - m32 * m23) - m21 * (m12 * m33 - m32 * m13) + m31 * (m12 * m23 - m22 * m13));
+			}
+
+			return invertable;
+		}
+
+		public function get determinant():Number {
+			return 1 * ((_rawData[0] * _rawData[5] - _rawData[4] * _rawData[1]) * (_rawData[10] * _rawData[15] - _rawData[14] * _rawData[11])
+				- (_rawData[0] * _rawData[9] - _rawData[8] * _rawData[1]) * (_rawData[6] * _rawData[15] - _rawData[14] * _rawData[7])
+				+ (_rawData[0] * _rawData[13] - _rawData[12] * _rawData[1]) * (_rawData[6] * _rawData[11] - _rawData[10] * _rawData[7])
+				+ (_rawData[4] * _rawData[9] - _rawData[8] * _rawData[5]) * (_rawData[2] * _rawData[15] - _rawData[14] * _rawData[3])
+				- (_rawData[4] * _rawData[13] - _rawData[12] * _rawData[5]) * (_rawData[2] * _rawData[11] - _rawData[10] * _rawData[3])
+				+ (_rawData[8] * _rawData[13] - _rawData[12] * _rawData[9]) * (_rawData[2] * _rawData[7] - _rawData[6] * _rawData[3]));
+		}
+
+	}
+}
+
+import flash.geom.Orientation3D;
+
+function checkOrientation(orientationStyle:String) {
+	if (!(orientationStyle == Orientation3D.AXIS_ANGLE || orientationStyle == Orientation3D.EULER_ANGLES || orientationStyle == Orientation3D.QUATERNION)) {
+		throw new Error("Error #2187: Invalid orientation style " +  orientationStyle + ".  Value must be one of 'Orientation3D.EULER_ANGLES', 'Orientation3D.AXIS_ANGLE', or 'Orientation3D.QUATERNION'.", 2187);
 	}
 }

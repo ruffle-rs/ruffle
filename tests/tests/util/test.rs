@@ -117,8 +117,8 @@ impl Test {
                                     .expect("Failed to parse 'expected' capture group as float");
                                 approximations.compare(actual_num, expected_num);
                             }
-                            let modified_actual = pattern.replace(actual, "");
-                            let modified_expected = pattern.replace(expected, "");
+                            let modified_actual = pattern.replace_all(actual, "");
+                            let modified_expected = pattern.replace_all(expected, "");
 
                             assert_eq!(modified_actual, modified_expected);
                             break;
