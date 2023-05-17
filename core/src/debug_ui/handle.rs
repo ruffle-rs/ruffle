@@ -9,7 +9,7 @@ use std::hash::{Hash, Hasher};
 // TODO: Make this generic somehow
 #[derive(Clone)]
 pub struct DisplayObjectHandle {
-    root: DynamicRoot<Rootable![DisplayObject<'gc>]>,
+    root: DynamicRoot<Rootable![DisplayObject<'_>]>,
     ptr: *const DisplayObjectPtr,
 }
 
@@ -59,7 +59,7 @@ impl Eq for DisplayObjectHandle {}
 
 #[derive(Clone)]
 pub struct AVM1ObjectHandle {
-    root: DynamicRoot<Rootable![crate::avm1::Object<'gc>]>,
+    root: DynamicRoot<Rootable![crate::avm1::Object<'_>]>,
     ptr: *const crate::avm1::ObjectPtr,
 }
 
@@ -102,7 +102,7 @@ impl Eq for AVM1ObjectHandle {}
 
 #[derive(Clone)]
 pub struct AVM2ObjectHandle {
-    root: DynamicRoot<Rootable![crate::avm2::Object<'gc>]>,
+    root: DynamicRoot<Rootable![crate::avm2::Object<'_>]>,
     ptr: *const crate::avm2::object::ObjectPtr,
 }
 

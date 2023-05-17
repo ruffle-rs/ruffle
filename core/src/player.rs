@@ -211,7 +211,7 @@ impl<'gc> GcRootData<'gc> {
     }
 }
 
-type GcArena = gc_arena::Arena<Rootable![GcRoot<'gc>]>;
+type GcArena = gc_arena::Arena<Rootable![GcRoot<'_>]>;
 
 type Audio = Box<dyn AudioBackend>;
 type Navigator = Box<dyn NavigatorBackend>;
