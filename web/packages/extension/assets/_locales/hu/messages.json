@@ -56,6 +56,9 @@
     "status_result_running": {
         "message": "A Ruffle be van töltve és Flash tartalom futtatására kész a jelenlegi fülön."
     },
+    "status_result_running_protected": {
+        "message": "A Ruffle be van töltve és futtatja a kért Flash tartalmat."
+    },
     "status_result_optout": {
         "message": "A Ruffle nincs betöltve, mivel az oldal nem kompatibilisnek jelezte magát."
     },

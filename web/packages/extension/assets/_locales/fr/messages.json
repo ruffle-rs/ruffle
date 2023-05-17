@@ -56,6 +56,9 @@
     "status_result_running": {
         "message": "Ruffle est chargé et prêt à lire du contenu Flash dans l'onglet actuel."
     },
+    "status_result_running_protected": {
+        "message": "Ruffle est chargé et exécute le contenu Flash que vous avez demandé."
+    },
     "status_result_optout": {
         "message": "Ruffle n'est pas chargé car la page actuelle s'est signalée comme incompatible."
     },
