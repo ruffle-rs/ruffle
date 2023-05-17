@@ -889,10 +889,15 @@ fn winding_number_line(
     // A downward segment (+y) decrements the winding number (including the final endpoint)
     // Perp-dot indicates which side of the segment the point is on.
     if begin.y < test_point.y {
-        if end.y >= test_point.y && d1.dx.get() * d0.dy.get() > d1.dy.get() * d0.dx.get() {
+        if end.y >= test_point.y
+            && (d1.dx.get() as i64) * (d0.dy.get() as i64)
+                > (d1.dy.get() as i64) * (d0.dx.get() as i64)
+        {
             return 1;
         }
-    } else if end.y < test_point.y && d1.dx.get() * d0.dy.get() < d1.dy.get() * d0.dx.get() {
+    } else if end.y < test_point.y
+        && (d1.dx.get() as i64) * (d0.dy.get() as i64) < (d1.dy.get() as i64) * (d0.dx.get() as i64)
+    {
         return -1;
     }
 
