@@ -532,123 +532,6 @@ impl<'a> ShapeConverter<'a> {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use swf::PointDelta;
-
-    const FILL_STYLES: [FillStyle; 1] = [FillStyle::Color(swf::Color {
-        r: 255,
-        g: 0,
-        b: 0,
-        a: 255,
-    })];
-
-    const LINE_STYLES: [LineStyle; 0] = [];
-
-    /// Convenience method to quickly make a shape,
-    fn build_shape(records: Vec<ShapeRecord>) -> swf::Shape {
-        let bounds = calculate_shape_bounds(&records);
-        swf::Shape {
-            version: 2,
-            id: 1,
-            shape_bounds: bounds.clone(),
-            edge_bounds: bounds,
-            flags: swf::ShapeFlag::HAS_SCALING_STROKES,
-            styles: swf::ShapeStyles {
-                fill_styles: FILL_STYLES.to_vec(),
-                line_styles: LINE_STYLES.to_vec(),
-            },
-            shape: records,
-        }
-    }
-
-    /// A simple solid square.
-    #[test]
-    fn basic_shape() {
-        let shape = build_shape(vec![
-            ShapeRecord::StyleChange(Box::new(swf::StyleChangeData {
-                move_to: Some(swf::Point::from_pixels(100.0, 100.0)),
-                fill_style_0: None,
-                fill_style_1: Some(1),
-                line_style: None,
-                new_styles: None,
-            })),
-            ShapeRecord::StraightEdge {
-                delta: PointDelta::from_pixels(100.0, 0.0),
-            },
-            ShapeRecord::StraightEdge {
-                delta: PointDelta::from_pixels(0.0, 100.0),
-            },
-            ShapeRecord::StraightEdge {
-                delta: PointDelta::from_pixels(-100.0, 0.0),
-            },
-            ShapeRecord::StraightEdge {
-                delta: PointDelta::from_pixels(0.0, -100.0),
-            },
-        ]);
-        let commands = ShapeConverter::from_shape(&shape).into_commands();
-        let expected = vec![DrawPath::Fill {
-            style: &FILL_STYLES[0],
-            commands: vec![
-                DrawCommand::MoveTo(swf::Point::from_pixels(100.0, 100.0)),
-                DrawCommand::LineTo(swf::Point::from_pixels(200.0, 100.0)),
-                DrawCommand::LineTo(swf::Point::from_pixels(200.0, 200.0)),
-                DrawCommand::LineTo(swf::Point::from_pixels(100.0, 200.0)),
-                DrawCommand::LineTo(swf::Point::from_pixels(100.0, 100.0)),
-            ],
-            winding_rule: FillRule::EvenOdd,
-        }];
-        assert_eq!(commands, expected);
-    }
-
-    /// A solid square with one edge flipped (fillstyle0 instead of fillstyle1).
-    #[test]
-    fn flipped_edges() {
-        let shape = build_shape(vec![
-            ShapeRecord::StyleChange(Box::new(swf::StyleChangeData {
-                move_to: Some(swf::Point::from_pixels(100.0, 100.0)),
-                fill_style_0: None,
-                fill_style_1: Some(1),
-                line_style: None,
-                new_styles: None,
-            })),
-            ShapeRecord::StraightEdge {
-                delta: PointDelta::from_pixels(100.0, 0.0),
-            },
-            ShapeRecord::StraightEdge {
-                delta: PointDelta::from_pixels(0.0, 100.0),
-            },
-            ShapeRecord::StraightEdge {
-                delta: PointDelta::from_pixels(-100.0, 0.0),
-            },
-            ShapeRecord::StyleChange(Box::new(swf::StyleChangeData {
-                move_to: Some(swf::Point::from_pixels(100.0, 100.0)),
-                fill_style_0: Some(1),
-                fill_style_1: Some(0),
-                line_style: None,
-                new_styles: None,
-            })),
-            ShapeRecord::StraightEdge {
-                delta: PointDelta::from_pixels(0.0, 100.0),
-            },
-        ]);
-        let commands = ShapeConverter::from_shape(&shape).into_commands();
-        let expected = vec![DrawPath::Fill {
-            style: &FILL_STYLES[0],
-            commands: vec![
-                DrawCommand::MoveTo(swf::Point::from_pixels(100.0, 100.0)),
-                DrawCommand::LineTo(swf::Point::from_pixels(200.0, 100.0)),
-                DrawCommand::LineTo(swf::Point::from_pixels(200.0, 200.0)),
-                DrawCommand::LineTo(swf::Point::from_pixels(100.0, 200.0)),
-                DrawCommand::LineTo(swf::Point::from_pixels(100.0, 100.0)),
-            ],
-            winding_rule: FillRule::EvenOdd,
-        }];
-        assert_eq!(commands, expected);
-    }
-}
-
 /* SHAPEFLAG HITTEST (point-in-contour)
  *
  * To determine whether a point is inside a shape, we shoot a ray on the +x axis and calculate a winding number based
@@ -1281,5 +1164,151 @@ impl<'a> LineScales<'a> {
         // Flash draws all strokes with a minimum width of 1 pixel.
         // This usually occurs in "hairline" strokes (exported with width of 1 twip).
         scaled_width.max(1.0)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use swf::PointDelta;
+
+    const FILL_STYLES: [FillStyle; 1] = [FillStyle::Color(swf::Color {
+        r: 255,
+        g: 0,
+        b: 0,
+        a: 255,
+    })];
+
+    const LINE_STYLES: [LineStyle; 0] = [];
+
+    /// Convenience method to quickly make a shape,
+    fn build_shape(records: Vec<ShapeRecord>) -> swf::Shape {
+        let bounds = calculate_shape_bounds(&records);
+        swf::Shape {
+            version: 2,
+            id: 1,
+            shape_bounds: bounds.clone(),
+            edge_bounds: bounds,
+            flags: swf::ShapeFlag::HAS_SCALING_STROKES,
+            styles: swf::ShapeStyles {
+                fill_styles: FILL_STYLES.to_vec(),
+                line_styles: LINE_STYLES.to_vec(),
+            },
+            shape: records,
+        }
+    }
+
+    /// A simple solid square.
+    #[test]
+    fn basic_shape() {
+        let shape = build_shape(vec![
+            ShapeRecord::StyleChange(Box::new(swf::StyleChangeData {
+                move_to: Some(swf::Point::from_pixels(100.0, 100.0)),
+                fill_style_0: None,
+                fill_style_1: Some(1),
+                line_style: None,
+                new_styles: None,
+            })),
+            ShapeRecord::StraightEdge {
+                delta: PointDelta::from_pixels(100.0, 0.0),
+            },
+            ShapeRecord::StraightEdge {
+                delta: PointDelta::from_pixels(0.0, 100.0),
+            },
+            ShapeRecord::StraightEdge {
+                delta: PointDelta::from_pixels(-100.0, 0.0),
+            },
+            ShapeRecord::StraightEdge {
+                delta: PointDelta::from_pixels(0.0, -100.0),
+            },
+        ]);
+        let commands = ShapeConverter::from_shape(&shape).into_commands();
+        let expected = vec![DrawPath::Fill {
+            style: &FILL_STYLES[0],
+            commands: vec![
+                DrawCommand::MoveTo(swf::Point::from_pixels(100.0, 100.0)),
+                DrawCommand::LineTo(swf::Point::from_pixels(200.0, 100.0)),
+                DrawCommand::LineTo(swf::Point::from_pixels(200.0, 200.0)),
+                DrawCommand::LineTo(swf::Point::from_pixels(100.0, 200.0)),
+                DrawCommand::LineTo(swf::Point::from_pixels(100.0, 100.0)),
+            ],
+            winding_rule: FillRule::EvenOdd,
+        }];
+        assert_eq!(commands, expected);
+    }
+
+    /// A solid square with one edge flipped (fillstyle0 instead of fillstyle1).
+    #[test]
+    fn flipped_edges() {
+        let shape = build_shape(vec![
+            ShapeRecord::StyleChange(Box::new(swf::StyleChangeData {
+                move_to: Some(swf::Point::from_pixels(100.0, 100.0)),
+                fill_style_0: None,
+                fill_style_1: Some(1),
+                line_style: None,
+                new_styles: None,
+            })),
+            ShapeRecord::StraightEdge {
+                delta: PointDelta::from_pixels(100.0, 0.0),
+            },
+            ShapeRecord::StraightEdge {
+                delta: PointDelta::from_pixels(0.0, 100.0),
+            },
+            ShapeRecord::StraightEdge {
+                delta: PointDelta::from_pixels(-100.0, 0.0),
+            },
+            ShapeRecord::StyleChange(Box::new(swf::StyleChangeData {
+                move_to: Some(swf::Point::from_pixels(100.0, 100.0)),
+                fill_style_0: Some(1),
+                fill_style_1: Some(0),
+                line_style: None,
+                new_styles: None,
+            })),
+            ShapeRecord::StraightEdge {
+                delta: PointDelta::from_pixels(0.0, 100.0),
+            },
+        ]);
+        let commands = ShapeConverter::from_shape(&shape).into_commands();
+        let expected = vec![DrawPath::Fill {
+            style: &FILL_STYLES[0],
+            commands: vec![
+                DrawCommand::MoveTo(swf::Point::from_pixels(100.0, 100.0)),
+                DrawCommand::LineTo(swf::Point::from_pixels(200.0, 100.0)),
+                DrawCommand::LineTo(swf::Point::from_pixels(200.0, 200.0)),
+                DrawCommand::LineTo(swf::Point::from_pixels(100.0, 200.0)),
+                DrawCommand::LineTo(swf::Point::from_pixels(100.0, 100.0)),
+            ],
+            winding_rule: FillRule::EvenOdd,
+        }];
+        assert_eq!(commands, expected);
+    }
+
+    use swf::Twips;
+
+    #[test]
+    fn test_winding_number_line() {
+        fn test(
+            test_point: swf::Point<Twips>,
+            begin: swf::Point<Twips>,
+            end: swf::Point<Twips>,
+            expected: i32,
+        ) {
+            let result = winding_number_line(test_point, begin, end);
+
+            assert_eq!(
+                expected, result,
+                "result (winding number line) should match"
+            );
+        }
+
+        // Test data taken from a real-world case:
+        // https://github.com/ruffle-rs/ruffle/issues/11077
+        // Overflow bugs can make this test case fail.
+        test(
+            swf::Point::new(Twips::new(0), Twips::new(-665)),
+            swf::Point::new(Twips::new(44868), Twips::new(-41726)),
+            swf::Point::new(Twips::new(44868), Twips::new(8275)),
+            1,
+        );
     }
 }
