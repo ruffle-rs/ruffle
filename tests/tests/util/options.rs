@@ -196,7 +196,26 @@ impl ImageComparison {
     ) -> Result<()> {
         use anyhow::Context;
 
-        assert_eq!(expected_image.len(), actual_image.len());
+        let suffix = format!("{}-{:?}", std::env::consts::OS, adapter_info.backend);
+
+        let save_actual_image = || {
+            actual_image
+                .save(test_path.join(format!("actual-{suffix}.png")))
+                .context("Couldn't save actual image")
+        };
+
+        if actual_image.width() != expected_image.width()
+            || actual_image.height() != expected_image.height()
+        {
+            save_actual_image()?;
+            return Err(anyhow!(
+                "Image is not the right size. Expected = {}x{}, actual = {}x{}.",
+                expected_image.width(),
+                expected_image.height(),
+                actual_image.width(),
+                actual_image.height()
+            ));
+        }
 
         let difference_data: Vec<u8> = expected_image
             .as_raw()
@@ -229,8 +248,6 @@ impl ImageComparison {
             .unwrap();
 
         if outliers > self.max_outliers {
-            let suffix = format!("{}-{:?}", std::env::consts::OS, adapter_info.backend);
-
             image::RgbaImage::from_raw(
                 expected_image.width(),
                 expected_image.height(),
@@ -239,9 +256,8 @@ impl ImageComparison {
             .context("Couldn't create difference image")?
             .save(test_path.join(format!("difference-{suffix}.png")))
             .context("Couldn't save difference image")?;
-            actual_image
-                .save(test_path.join(format!("actual-{suffix}.png")))
-                .context("Couldn't save actual image")?;
+
+            save_actual_image()?;
 
             return Err(anyhow!(
                 "Number of outliers ({}) is bigger than allowed limit of {}. Max difference is {}",
