@@ -197,3 +197,7 @@ export async function bindOptions(
         onChange(options);
     }
 }
+
+export async function resetOptions(): Promise<void> {
+    utils.storage.sync.clear();
+}

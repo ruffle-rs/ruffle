@@ -13,6 +13,7 @@ export let i18n: {
 };
 
 interface StorageArea {
+    clear: () => Promise<void>;
     get: (keys?: string[]) => Promise<Record<string, unknown>>;
     remove: (keys: string[]) => Promise<void>;
     set: (items: Record<string, unknown>) => Promise<void>;
@@ -82,6 +83,7 @@ function promisifyStorageArea(
     storage: chrome.storage.StorageArea
 ): StorageArea {
     return {
+        clear: () => promisify((cb) => storage.clear(cb)),
         get: (keys?: string[]) =>
             promisify((cb) => storage.get(keys || null, cb)),
         remove: (keys: string[]) => promisify((cb) => storage.remove(keys, cb)),

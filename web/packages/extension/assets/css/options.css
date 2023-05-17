@@ -12,6 +12,10 @@ details > .options {
     padding-top: 10px;
 }
 
+details > .options.special {
+    padding-top: 30px;
+}
+
 details > summary {
     cursor: pointer;
 }
