@@ -2341,10 +2341,6 @@ impl PlayerBuilder {
         // Finalize configuration and load the movie.
         let mut player_lock = player.lock().unwrap();
         player_lock.mutate_with_update_context(|context| {
-            // Instantiate an empty root before the main movie loads.
-            let fake_root = MovieClip::new(fake_movie, context.gc_context);
-            fake_root.post_instantiation(context, None, Instantiator::Movie, false);
-            context.stage.replace_at_depth(context, fake_root.into(), 0);
             Avm2::load_player_globals(context).expect("Unable to load AVM2 globals");
             let stage = context.stage;
             stage.set_scale_mode(context, self.scale_mode);
