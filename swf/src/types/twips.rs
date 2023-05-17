@@ -9,6 +9,12 @@
 ///
 /// [`from_pixels`]: Twips::from_pixels
 /// [`to_pixels`]: Twips::to_pixels
+///
+/// Please be careful when using twips for calculations to avoid overflows.
+/// As an example, since it takes 20 twips to get 1 pixel, 2,000 pixels are
+/// 40,000 twips, or `4*10^4` . If you then have two such numbers,
+/// multiplying them as part of calculations yields `16*10^8`, which is
+/// relatively close to the upper limit of `i32` at about `2*10^9`.
 #[derive(Clone, Copy, Debug, Default, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Twips(i32);
 
