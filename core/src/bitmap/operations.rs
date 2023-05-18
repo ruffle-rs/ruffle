@@ -1690,17 +1690,9 @@ pub fn pixel_dissolve<'gc>(
     num_pixels: i32,
     fill_color: i32,
 ) -> i32 {
-    // TODO: What should happen in AVM1 when `num_pixels` is negative?
-
     // Apparently,
     // "numPixels:int (default = 0) — The default is 1/30 of the source area (width x height). "
     // is wrong.
-
-    // TODO: Ensure that the AVM1 version returns -1 (probably in the AVM1 interface layer)
-    //   when:
-    //   "Calls to any method or property of a BitmapData object fail if the BitmapData object is
-    //   invalid (for example, if it has height == 0 and width == 0),
-    //   and upon failing those properties and methods that return Number values return -1. ".
 
     // Extract points and areas.
 

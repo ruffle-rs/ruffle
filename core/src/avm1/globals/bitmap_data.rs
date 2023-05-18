@@ -1128,12 +1128,75 @@ pub fn palette_map<'gc>(
 pub fn pixel_dissolve<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.as_bitmap_data_object() {
         if !bitmap_data.disposed() {
-            avm1_stub!(activation, "BitmapData", "pixelDissolve");
-            return Ok(Value::Undefined);
+            let src_bitmap_data = args
+                .get(0)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_object(activation);
+
+            let source_rect = args
+                .get(1)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_object(activation);
+            let (src_min_x, src_min_y, src_width, src_height) =
+                if let (Some(x), Some(y), Some(width), Some(height)) = (
+                    source_rect.get_local_stored("x", activation),
+                    source_rect.get_local_stored("y", activation),
+                    source_rect.get_local_stored("width", activation),
+                    source_rect.get_local_stored("height", activation),
+                ) {
+                    (
+                        x.coerce_to_f64(activation)? as i32,
+                        y.coerce_to_f64(activation)? as i32,
+                        width.coerce_to_f64(activation)? as i32,
+                        height.coerce_to_f64(activation)? as i32,
+                    )
+                } else {
+                    // Invalid `sourceRect`.
+                    return Ok((-4).into());
+                };
+
+            if let Some(src_bitmap_data) = src_bitmap_data.as_bitmap_data_object() {
+                if !src_bitmap_data.disposed() {
+                    let dest_point = args
+                        .get(2)
+                        .unwrap_or(&Value::Undefined)
+                        .coerce_to_object(activation);
+                    let dest_x = dest_point.get("x", activation)?.coerce_to_f64(activation)? as i32;
+                    let dest_y = dest_point.get("y", activation)?.coerce_to_f64(activation)? as i32;
+                    let dest_point = (dest_x, dest_y);
+
+                    let random_seed = match args.get(3) {
+                        Some(random_seed) => random_seed.coerce_to_i32(activation)?,
+                        None => 0,
+                    };
+
+                    let num_pixels = match args.get(4) {
+                        Some(num_pixels) => num_pixels.coerce_to_i32(activation)?,
+                        None => return Ok(0.into()),
+                    };
+
+                    let fill_color = match args.get(5) {
+                        Some(fill_color) => fill_color.coerce_to_i32(activation)?,
+                        None => 0,
+                    };
+
+                    return Ok(operations::pixel_dissolve(
+                        activation.context.gc_context,
+                        bitmap_data.bitmap_data(),
+                        src_bitmap_data.bitmap_data(),
+                        (src_min_x, src_min_y, src_width, src_height),
+                        dest_point,
+                        random_seed,
+                        num_pixels,
+                        fill_color,
+                    )
+                    .into());
+                }
+            }
         }
     }
 
