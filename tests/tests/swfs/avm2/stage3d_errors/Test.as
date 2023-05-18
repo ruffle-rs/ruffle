@@ -31,6 +31,16 @@
 					trace("Caught error: " + e);
 				}
 			
+				stage3d.context3D.setVertexBufferAt(0, null, 0, "Dummy format");
+				var buffer = stage3d.context3D.createVertexBuffer(1, 1);
+				try {
+					stage3d.context3D.setVertexBufferAt(0, buffer, 0, "Bad format");
+				} catch (e) {
+					trace("Caught error: " + e);
+				}
+			
+				trace("Done")
+			
 			})
 			main.stage.stage3Ds[0].requestContext3D();
 		}

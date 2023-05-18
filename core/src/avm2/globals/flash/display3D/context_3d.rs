@@ -1,4 +1,4 @@
-use crate::avm2::error::{error, make_error_2008};
+use crate::avm2::error::{argument_error, error, make_error_2008};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::Activation;
 use crate::avm2::TObject;
@@ -120,34 +120,40 @@ pub fn set_vertex_buffer_at<'gc>(
         let buffer = if matches!(args[1], Value::Null) {
             None
         } else {
-            Some(
+            // Note - we only check the format string if the buffer is non-null
+            let format = args.get_string(activation, 3)?;
+
+            let format = if &*format == b"float4" {
+                Context3DVertexBufferFormat::Float4
+            } else if &*format == b"float3" {
+                Context3DVertexBufferFormat::Float3
+            } else if &*format == b"float2" {
+                Context3DVertexBufferFormat::Float2
+            } else if &*format == b"float1" {
+                Context3DVertexBufferFormat::Float1
+            } else if &*format == b"bytes4" {
+                Context3DVertexBufferFormat::Bytes4
+            } else {
+                return Err(Error::AvmError(argument_error(
+                    activation,
+                    "Error #2008: Parameter vertexStreamFormat must be one of the accepted values.",
+                    2008,
+                )?));
+            };
+
+            Some((
                 args.get(1)
                     .unwrap_or(&Value::Undefined)
                     .coerce_to_object(activation)?
                     .as_vertex_buffer()
                     .unwrap(),
-            )
+                format,
+            ))
         };
 
         let buffer_offset = args.get_u32(activation, 2)?;
 
-        let format = args.get_string(activation, 3)?;
-
-        let format = if &*format == b"float4" {
-            Context3DVertexBufferFormat::Float4
-        } else if &*format == b"float3" {
-            Context3DVertexBufferFormat::Float3
-        } else if &*format == b"float2" {
-            Context3DVertexBufferFormat::Float2
-        } else if &*format == b"float1" {
-            Context3DVertexBufferFormat::Float1
-        } else if &*format == b"bytes4" {
-            Context3DVertexBufferFormat::Bytes4
-        } else {
-            panic!("Unknown vertex format {format:?}");
-        };
-
-        context.set_vertex_buffer_at(index, buffer, buffer_offset, format, activation);
+        context.set_vertex_buffer_at(index, buffer, buffer_offset, activation);
     }
     Ok(Value::Undefined)
 }
