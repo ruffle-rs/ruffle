@@ -861,21 +861,14 @@ impl Context3D for WgpuContext3D {
                 index,
                 buffer,
                 buffer_offset,
-                format,
             } => {
-                let buffer = if let Some(buffer) = buffer {
-                    Some(
-                        buffer
-                            .clone()
-                            .into_any_rc()
-                            .downcast::<VertexBufferWrapper>()
-                            .unwrap(),
-                    )
-                } else {
-                    None
-                };
+                let info = if let Some((buffer, format)) = buffer {
+                    let buffer = buffer
+                        .clone()
+                        .into_any_rc()
+                        .downcast::<VertexBufferWrapper>()
+                        .unwrap();
 
-                let info = if let Some(buffer) = buffer {
                     Some(VertexAttributeInfo {
                         buffer,
                         offset_in_32bit_units: buffer_offset as u64,

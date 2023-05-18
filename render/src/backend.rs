@@ -386,9 +386,8 @@ pub enum Context3DCommand<'a, 'gc> {
 
     SetVertexBufferAt {
         index: u32,
-        buffer: Option<Rc<dyn VertexBuffer>>,
+        buffer: Option<(Rc<dyn VertexBuffer>, Context3DVertexBufferFormat)>,
         buffer_offset: u32,
-        format: Context3DVertexBufferFormat,
     },
 
     UploadShaders {

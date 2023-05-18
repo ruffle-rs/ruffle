@@ -201,9 +201,8 @@ impl<'gc> Context3DObject<'gc> {
     pub fn set_vertex_buffer_at(
         &self,
         index: u32,
-        buffer: Option<VertexBuffer3DObject<'gc>>,
+        buffer: Option<(VertexBuffer3DObject<'gc>, Context3DVertexBufferFormat)>,
         buffer_offset: u32,
-        buffer_format: Context3DVertexBufferFormat,
         activation: &mut Activation<'_, 'gc>,
     ) {
         self.0
@@ -214,9 +213,8 @@ impl<'gc> Context3DObject<'gc> {
             .process_command(
                 Context3DCommand::SetVertexBufferAt {
                     index,
-                    buffer: buffer.map(|b| b.handle()),
+                    buffer: buffer.map(|(b, format)| (b.handle(), format)),
                     buffer_offset,
-                    format: buffer_format,
                 },
                 activation.context.gc_context,
             );
