@@ -7,6 +7,9 @@
 		public function Test(main:MovieClip) {
 			main.stage.stage3Ds[0].addEventListener(Event.CONTEXT3D_CREATE, function(event) {
 				var stage3d : Stage3D = event.target as Stage3D;
+
+				stage3d.context3D.setProgram(null);
+
 				try {
 					stage3d.context3D.configureBackBuffer(0, 200, 0);
 				} catch (e) {

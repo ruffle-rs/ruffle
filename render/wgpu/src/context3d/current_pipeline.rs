@@ -133,24 +133,14 @@ impl CurrentPipeline {
             sampler_override: [None; 8],
         }
     }
-    pub fn set_vertex_shader(&mut self, shader: Rc<ShaderModuleAgal>) {
-        if let Some(old_shader) = &self.vertex_shader {
-            // If we change the shader, we need to recompile the pipeline.
-            if !Rc::ptr_eq(old_shader, &shader) {
-                self.dirty.set(true);
-            }
-        }
-        self.vertex_shader = Some(shader);
+    pub fn set_vertex_shader(&mut self, shader: Option<Rc<ShaderModuleAgal>>) {
+        self.dirty.set(true);
+        self.vertex_shader = shader;
     }
 
-    pub fn set_fragment_shader(&mut self, shader: Rc<ShaderModuleAgal>) {
-        if let Some(old_shader) = &self.fragment_shader {
-            // If we change the shader, we need to recompile the pipeline.
-            if !Rc::ptr_eq(old_shader, &shader) {
-                self.dirty.set(true);
-            }
-        }
-        self.fragment_shader = Some(shader);
+    pub fn set_fragment_shader(&mut self, shader: Option<Rc<ShaderModuleAgal>>) {
+        self.dirty.set(true);
+        self.fragment_shader = shader;
     }
 
     pub fn update_texture_at(&mut self, index: usize, texture: Option<BoundTextureData>) {

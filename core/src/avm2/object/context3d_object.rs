@@ -252,7 +252,22 @@ impl<'gc> Context3DObject<'gc> {
             );
     }
 
-    pub fn set_program(&self, activation: &mut Activation<'_, 'gc>, program: Program3DObject<'gc>) {
+    pub fn set_program(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        program: Option<Program3DObject<'gc>>,
+    ) {
+        let (vertex_shader, fragment_shader) = match program {
+            Some(program) => (
+                program.vertex_shader_handle(),
+                program.fragment_shader_handle(),
+            ),
+            None => (
+                GcCell::allocate(activation.context.gc_context, None),
+                GcCell::allocate(activation.context.gc_context, None),
+            ),
+        };
+
         self.0
             .write(activation.context.gc_context)
             .render_context
@@ -260,8 +275,8 @@ impl<'gc> Context3DObject<'gc> {
             .unwrap()
             .process_command(
                 Context3DCommand::SetShaders {
-                    vertex_shader: program.vertex_shader_handle(),
-                    fragment_shader: program.fragment_shader_handle(),
+                    vertex_shader,
+                    fragment_shader,
                 },
                 activation.context.gc_context,
             );
