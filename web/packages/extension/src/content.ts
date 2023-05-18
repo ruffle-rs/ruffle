@@ -64,6 +64,7 @@ function injectScriptURL(url: string): Promise<void> {
         script.addEventListener("load", () => resolve());
         script.addEventListener("error", (e) => reject(e));
     });
+    script.charset = "utf-8";
     script.src = url;
     (document.head || document.documentElement).append(script);
     return promise;
