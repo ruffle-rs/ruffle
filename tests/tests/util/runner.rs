@@ -22,26 +22,18 @@ use std::time::Duration;
 
 pub struct TestAudioBackend {
     mixer: AudioMixer,
+    buffer: Vec<f32>,
 }
 
 impl TestAudioBackend {
+    const NUM_CHANNELS: u8 = 2;
+    const SAMPLE_RATE: u32 = 44100;
+
     pub fn new() -> Self {
-        const NUM_CHANNELS: u8 = 2;
-        const SAMPLE_RATE: u32 = 44100;
-        const BUFFER_SIZE: usize = 1024;
-
-        let mixer = AudioMixer::new(NUM_CHANNELS, SAMPLE_RATE);
-        let mixer_proxy = mixer.proxy();
-
-        std::thread::spawn(move || loop {
-            let mut buffer = [0f32; NUM_CHANNELS as usize * BUFFER_SIZE];
-            mixer_proxy.mix::<f32>(&mut buffer);
-            std::thread::sleep(std::time::Duration::from_secs_f32(
-                BUFFER_SIZE as f32 / SAMPLE_RATE as f32,
-            ));
-        });
-
-        Self { mixer }
+        Self {
+            mixer: AudioMixer::new(Self::NUM_CHANNELS, Self::SAMPLE_RATE),
+            buffer: vec![],
+        }
     }
 }
 
@@ -49,6 +41,16 @@ impl AudioBackend for TestAudioBackend {
     impl_audio_mixer_backend!(mixer);
     fn play(&mut self) {}
     fn pause(&mut self) {}
+
+    fn set_frame_rate(&mut self, frame_rate: f64) {
+        let new_buffer_size =
+            ((Self::NUM_CHANNELS as u32 * Self::SAMPLE_RATE) as f64 / frame_rate).round() as usize;
+        self.buffer.resize(new_buffer_size, 0.0);
+    }
+    fn tick(&mut self) {
+        debug_assert!(!self.buffer.is_empty());
+        self.mixer.mix::<f32>(self.buffer.as_mut());
+    }
 }
 
 #[derive(Clone)]
@@ -142,6 +144,7 @@ pub fn run_swf(
 
         player.lock().unwrap().run_frame();
         player.lock().unwrap().update_timers(frame_time);
+        player.lock().unwrap().audio_mut().tick();
         executor.run();
 
         injector.next(|evt, _btns_down| {
