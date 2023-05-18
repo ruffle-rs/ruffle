@@ -158,3 +158,43 @@ fn test_relative_load() {
         ShaderType::Vertex
     );
 }
+
+#[test]
+fn test_misc_opcodes() {
+    // log vt0, va0
+    // exp vt1, vt0
+    // pow vt2, vt1, va0
+    // sge vt3, vt2, va0
+    // m33 vt4, vc0, vt3
+    // m34 vt5, vc2, vt3
+    // min vt6, vt5, vt4
+    // rsq op, vt6
+    const MISC_OPCODES_VERTEX: &[u8] = include!("misc_opcodes_vertex.agal");
+
+    // ddx ft0, v0
+    // ddy ft1, ft0
+    // kil ft1.x
+    // mov oc, ft0
+    const MISC_OPCODES_FRAGMENT: &[u8] = include!("misc_opcodes_fragment.agal");
+
+    test_shader!(
+        MISC_OPCODES_VERTEX,
+        &[
+            Some(VertexAttributeFormat::Float4),
+            Some(VertexAttributeFormat::Float4),
+            Some(VertexAttributeFormat::Float4),
+            Some(VertexAttributeFormat::Float4),
+            Some(VertexAttributeFormat::Float4),
+            Some(VertexAttributeFormat::Float4),
+            Some(VertexAttributeFormat::Float4),
+            Some(VertexAttributeFormat::Float4),
+        ],
+        ShaderType::Vertex
+    );
+
+    test_shader!(
+        MISC_OPCODES_FRAGMENT,
+        &[None, None, None, None, None, None, None, None],
+        ShaderType::Fragment
+    );
+}

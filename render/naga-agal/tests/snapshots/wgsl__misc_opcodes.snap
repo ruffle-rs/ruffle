@@ -1,0 +1,51 @@
+---
+source: render/naga-agal/tests/wgsl.rs
+assertion_line: 144
+expression: output
+---
+struct VertexOutput {
+    @builtin(position) member: vec4<f32>,
+}
+
+@group(0) @binding(0) 
+var<uniform> constant_registers: array<vec4<f32>,128u>;
+
+@vertex 
+fn main(@location(0) param: vec4<f32>) -> VertexOutput {
+    var dest_temp: vec4<f32>;
+    var temporary0_: vec4<f32>;
+    var temporary1_: vec4<f32>;
+    var temporary2_: vec4<f32>;
+    var temporary3_: vec4<f32>;
+    var temporary4_: vec4<f32>;
+    var temporary5_: vec4<f32>;
+    var temporary6_: vec4<f32>;
+
+    temporary0_ = log2(param);
+    let _e5: vec4<f32> = temporary0_;
+    temporary1_ = exp2(_e5);
+    let _e8: vec4<f32> = temporary1_;
+    temporary2_ = pow(_e8, param);
+    let _e11: vec4<f32> = temporary2_;
+    temporary3_ = vec4<f32>((_e11 >= param));
+    let _e15: vec4<f32> = temporary3_;
+    let _e18: vec4<f32> = temporary4_;
+    let _e21: vec4<f32> = temporary5_;
+    let _e27: vec4<f32> = constant_registers[0u];
+    let _e29: vec3<f32> = (transpose(mat3x3<f32>(_e15.xyz, _e18.xyz, _e21.xyz)) * _e27.xyz);
+    temporary4_ = vec4<f32>(_e29.x, _e29.y, _e29.z, 1.0);
+    let _e35: vec4<f32> = temporary3_;
+    let _e36: vec4<f32> = temporary4_;
+    let _e37: vec4<f32> = temporary5_;
+    let _e42: vec4<f32> = constant_registers[2u];
+    let _e43: vec3<f32> = (transpose(mat3x4<f32>(_e35, _e36, _e37)) * _e42);
+    temporary5_ = vec4<f32>(_e43.x, _e43.y, _e43.z, 1.0);
+    let _e49: vec4<f32> = temporary5_;
+    let _e50: vec4<f32> = temporary4_;
+    temporary6_ = min(_e49, _e50);
+    let _e53: vec4<f32> = temporary6_;
+    dest_temp = inverseSqrt(_e53);
+    let _e55: vec4<f32> = dest_temp;
+    return VertexOutput(_e55);
+}
+
