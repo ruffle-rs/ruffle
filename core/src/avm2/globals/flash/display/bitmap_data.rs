@@ -1338,7 +1338,8 @@ pub fn compare<'gc>(
     } else {
         // The documentation for AVM1 says that -1 should be returned here,
         // but -2 is actually returned.
-        // TODO: Has this been tested for AVM2?
+        // TODO: For AVM2, this branch should never get reached, since
+        //   AVM2 checks types.
         return Ok(BITMAP_DISPOSED.into());
     };
     other_bitmap_data.check_valid(activation)?;
@@ -1387,8 +1388,6 @@ pub fn pixel_dissolve<'gc>(
 
         let source_rect = args.get_object(activation, 1, "sourceRect")?;
 
-        // TODO: `BitmapData.pixelDissolve() might be called frequently. Is this performant,
-        //   and if not, is there a faster alternative?
         let src_min_x = source_rect
             .get_public_property("x", activation)?
             .coerce_to_i32(activation)?;
@@ -1442,9 +1441,6 @@ pub fn pixel_dissolve<'gc>(
             .into());
         }
     }
-
-    // TODO: Should it always return `Ok(Value::Undefined)` in this case?
-    //   Can this even be tested for?
 
     Ok(Value::Undefined)
 }
