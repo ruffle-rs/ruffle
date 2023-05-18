@@ -900,17 +900,12 @@ impl Context3D for WgpuContext3D {
                 let vertex_module = vertex_shader
                     .read()
                     .clone()
-                    .unwrap()
-                    .into_any_rc()
-                    .downcast::<ShaderModuleAgal>()
-                    .unwrap();
+                    .map(|shader| shader.into_any_rc().downcast::<ShaderModuleAgal>().unwrap());
+
                 let fragment_module = fragment_shader
                     .read()
                     .clone()
-                    .unwrap()
-                    .into_any_rc()
-                    .downcast::<ShaderModuleAgal>()
-                    .unwrap();
+                    .map(|shader| shader.into_any_rc().downcast::<ShaderModuleAgal>().unwrap());
 
                 self.current_pipeline.set_vertex_shader(vertex_module);
                 self.current_pipeline.set_fragment_shader(fragment_module);

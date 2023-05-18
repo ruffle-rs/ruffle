@@ -176,12 +176,8 @@ pub fn set_program<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(context) = this.and_then(|this| this.as_context_3d()) {
         let program = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_object(activation)?
-            .as_program_3d()
-            .unwrap();
-
+            .try_get_object(activation, 0)
+            .map(|p| p.as_program_3d().unwrap());
         context.set_program(activation, program);
     }
     Ok(Value::Undefined)
