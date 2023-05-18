@@ -163,15 +163,30 @@ impl VertexAttributeFormat {
         builder: &mut NagaBuilder,
     ) -> Result<Handle<Expression>> {
         Ok(match self {
-            // This does 'vec3f(my_vec2, 0.0, 1.0)
-            VertexAttributeFormat::Float2 => {
+            // This does 'vec4f(my_vec1, 0.0, 0.0, 1.0)', 'vec4f(my_vec2, 0.0, 1.0)',
+            // or 'vec4f(my_vec3, 1.0)'
+            VertexAttributeFormat::Float1
+            | VertexAttributeFormat::Float2
+            | VertexAttributeFormat::Float3 => {
+                let num_components = match self {
+                    VertexAttributeFormat::Float1 => 1,
+                    VertexAttributeFormat::Float2 => 2,
+                    VertexAttributeFormat::Float3 => 3,
+                    _ => unreachable!(),
+                };
+
                 let mut components = vec![];
-                for i in 0..2 {
-                    components.push(builder.evaluate_expr(Expression::AccessIndex {
-                        base: base_expr,
-                        index: i,
-                    }));
+                if num_components == 1 {
+                    components.push(base_expr);
+                } else {
+                    for i in 0..num_components {
+                        components.push(builder.evaluate_expr(Expression::AccessIndex {
+                            base: base_expr,
+                            index: i,
+                        }));
+                    }
                 }
+
                 let constant_zero = builder.module.constants.append(
                     Constant {
                         name: None,
@@ -183,12 +198,15 @@ impl VertexAttributeFormat {
                     },
                     Span::UNDEFINED,
                 );
-                components.push(
-                    builder
-                        .func
-                        .expressions
-                        .append(Expression::Constant(constant_zero), Span::UNDEFINED),
-                );
+
+                for _ in num_components..3 {
+                    components.push(
+                        builder
+                            .func
+                            .expressions
+                            .append(Expression::Constant(constant_zero), Span::UNDEFINED),
+                    );
+                }
                 let constant_one = builder.module.constants.append(
                     Constant {
                         name: None,
@@ -211,47 +229,10 @@ impl VertexAttributeFormat {
                     components,
                 })
             }
-            // This does 'vec4f(my_vec3, 1.0)'
-            VertexAttributeFormat::Float3 => {
-                let expr = base_expr;
-                let mut components = vec![];
-                for i in 0..3 {
-                    components.push(builder.evaluate_expr(Expression::AccessIndex {
-                        base: expr,
-                        index: i,
-                    }));
-                }
-                let constant = builder.module.constants.append(
-                    Constant {
-                        name: None,
-                        specialization: None,
-                        inner: ConstantInner::Scalar {
-                            width: 4,
-                            value: ScalarValue::Float(1.0),
-                        },
-                    },
-                    Span::UNDEFINED,
-                );
-                components.push(
-                    builder
-                        .func
-                        .expressions
-                        .append(Expression::Constant(constant), Span::UNDEFINED),
-                );
-                builder.evaluate_expr(Expression::Compose {
-                    ty: builder.vec4f,
-                    components,
-                })
-            }
             VertexAttributeFormat::Float4 => base_expr,
             // The conversion is done by wgpu, since we specify
             // `wgpu::VertexFormat::Unorm8x4` in `CurrentPipeline::rebuild_pipeline`
             VertexAttributeFormat::Bytes4 => base_expr,
-            _ => {
-                return Err(Error::Unimplemented(format!(
-                    "Unsupported conversion from {self:?} to float4",
-                )))
-            }
         })
     }
 }
