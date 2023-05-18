@@ -43,9 +43,8 @@
         "open_in_tab": true,
     },
     "permissions": [
-        "<all_urls>",
         "storage",
-        "tabs",
+        "<all_urls>",
         "webRequest",
         "webRequestBlocking",
     ],

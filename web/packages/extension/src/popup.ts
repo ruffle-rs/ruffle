@@ -14,15 +14,14 @@ let reloadButton: HTMLButtonElement;
 // prettier-ignore
 const STATUS_COLORS = {
     "status_init": "gray",
-    "status_message_init": "gray",
     "status_no_tabs": "red",
-    "status_result_disabled": "gray",
-    "status_result_error": "red",
-    "status_result_optout": "gray",
-    "status_result_protected": "gray",
-    "status_result_running": "green",
-    "status_result_running_protected": "green",
     "status_tabs_error": "red",
+    "status_message_init": "gray",
+    "status_result_protected": "gray",
+    "status_result_error": "red",
+    "status_result_running": "green",
+    "status_result_optout": "gray",
+    "status_result_disabled": "gray",
 };
 
 async function queryTabStatus(
@@ -53,17 +52,6 @@ async function queryTabStatus(
     }
 
     activeTab = tabs[0]!;
-
-    const url = activeTab.url ? new URL(activeTab.url) : null;
-    if (
-        url &&
-        url.origin === window.location.origin &&
-        url.pathname === "/player.html"
-    ) {
-        listener("status_result_running_protected");
-        return;
-    }
-
     listener("status_message_init");
 
     let response;
