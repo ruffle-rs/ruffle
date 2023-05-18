@@ -54,6 +54,8 @@ async function queryTabStatus(
 
     activeTab = tabs[0]!;
 
+    // FIXME: `activeTab.url` returns `undefined` on Chrome as it requires the `tabs`
+    // permission, which we don't set in `manifest.json5` because of #11098.
     const url = activeTab.url ? new URL(activeTab.url) : null;
     if (
         url &&
