@@ -238,6 +238,7 @@ pub trait TInteractiveObject<'gc>:
                     self.as_displayobject(),
                     None,
                     0,
+                    true,
                 );
 
                 Avm2::dispatch_event(&mut activation.context, avm2_event, target);
@@ -251,6 +252,7 @@ pub trait TInteractiveObject<'gc>:
                     self.as_displayobject(),
                     None,
                     0,
+                    true,
                 );
 
                 Avm2::dispatch_event(&mut activation.context, avm2_event, target);
@@ -278,6 +280,7 @@ pub trait TInteractiveObject<'gc>:
                         self.as_displayobject(),
                         None,
                         0,
+                        true,
                     );
 
                     Avm2::dispatch_event(&mut activation.context, avm2_event, target);
@@ -290,6 +293,7 @@ pub trait TInteractiveObject<'gc>:
                         self.as_displayobject(),
                         None,
                         0,
+                        true,
                     );
 
                     Avm2::dispatch_event(&mut activation.context, avm2_event, target);
@@ -306,6 +310,7 @@ pub trait TInteractiveObject<'gc>:
                     self.as_displayobject(),
                     None,
                     0,
+                    true,
                 );
 
                 Avm2::dispatch_event(&mut activation.context, avm2_event, target);
@@ -321,6 +326,7 @@ pub trait TInteractiveObject<'gc>:
                     self.as_displayobject(),
                     to,
                     0,
+                    true,
                 );
 
                 Avm2::dispatch_event(&mut activation.context, avm2_event, target);
@@ -338,7 +344,7 @@ pub trait TInteractiveObject<'gc>:
                     }
 
                     let avm2_event =
-                        Avm2EventObject::mouse_event(&mut activation, "rollOut", tgt, to, 0);
+                        Avm2EventObject::mouse_event(&mut activation, "rollOut", tgt, to, 0, false);
 
                     if let Avm2Value::Object(avm2_target) = tgt.object2() {
                         Avm2::dispatch_event(&mut activation.context, avm2_event, avm2_target);
@@ -364,8 +370,14 @@ pub trait TInteractiveObject<'gc>:
                         break;
                     }
 
-                    let avm2_event =
-                        Avm2EventObject::mouse_event(&mut activation, "rollOver", tgt, from, 0);
+                    let avm2_event = Avm2EventObject::mouse_event(
+                        &mut activation,
+                        "rollOver",
+                        tgt,
+                        from,
+                        0,
+                        false,
+                    );
 
                     if let Avm2Value::Object(avm2_target) = tgt.object2() {
                         Avm2::dispatch_event(&mut activation.context, avm2_event, avm2_target);
@@ -380,6 +392,7 @@ pub trait TInteractiveObject<'gc>:
                     self.as_displayobject(),
                     from,
                     0,
+                    true,
                 );
 
                 Avm2::dispatch_event(&mut activation.context, avm2_event, target);
@@ -393,6 +406,7 @@ pub trait TInteractiveObject<'gc>:
                     self.as_displayobject(),
                     None,
                     delta.lines() as i32,
+                    true,
                 );
 
                 Avm2::dispatch_event(&mut activation.context, avm2_event, target);
@@ -406,6 +420,7 @@ pub trait TInteractiveObject<'gc>:
                     self.as_displayobject(),
                     None,
                     0,
+                    true,
                 );
 
                 Avm2::dispatch_event(&mut activation.context, avm2_event, target);

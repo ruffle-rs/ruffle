@@ -95,6 +95,7 @@ impl<'gc> EventObject<'gc> {
         target: DisplayObject<'gc>,
         related_object: Option<InteractiveObject<'gc>>,
         delta: i32,
+        bubbles: bool,
     ) -> Object<'gc>
     where
         S: Into<AvmString<'gc>>,
@@ -110,7 +111,7 @@ impl<'gc> EventObject<'gc> {
                 &[
                     event_type.into(),
                     // bubbles
-                    true.into(),
+                    bubbles.into(),
                     // cancellable
                     false.into(),
                     // localX
