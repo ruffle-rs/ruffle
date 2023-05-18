@@ -1856,5 +1856,7 @@ pub fn pixel_dissolve<'gc>(
         );
     }
 
+    write.set_cpu_dirty(dest_region);
+
     raw_perm_index as i32
 }
