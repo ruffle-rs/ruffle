@@ -1026,7 +1026,7 @@ Default parameters.
 
 
 ------------------------------------------
-`null` `sourceBitmapData`.
+Wrong type for `sourceBitmapData`.
 
 `sourceBitmapData` being the wrong type should result in error: TypeError: Error #2007: Parameter sourceBitmapData must be non-null.
 
