@@ -56,6 +56,9 @@
     "status_result_running": {
         "message": "Ruffle이 로드되었으며, 현재 탭에서 플래시 콘텐츠를 실행 할 준비가 되었습니다."
     },
+    "status_result_running_protected": {
+        "message": "Ruffle이 로드되었으며 요청한 플래시 콘텐츠가 실행 중입니다."
+    },
     "status_result_optout": {
         "message": "현재 페이지가 호환되지 않는 것으로 표시되었으므로 Ruffle이 로드되지 않았습니다."
     },

@@ -56,6 +56,9 @@
     "status_result_running": {
         "message": "Ruffle 已经加载并准备在当前标签上运行 Flash 内容。"
     },
+    "status_result_running_protected": {
+        "message": "Ruffle 已加载并运行您请求的 Flash 内容。"
+    },
     "status_result_optout": {
         "message": "Ruffle 未加载因为当前页面标注自己不兼容。"
     },

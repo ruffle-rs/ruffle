@@ -15,7 +15,7 @@
         "message": "警告未支援項目"
     },
     "settings_log_level": {
-        "message": "警告等級(用在於開發人員工具裡的主控台)"
+        "message": "日誌層級(用在於開發人員工具裡的主控台)"
     },
     "settings_log_level_error": {
         "message": "錯誤"
@@ -55,6 +55,9 @@
     },
     "status_result_running": {
         "message": "Ruffle 已加載並正在目前標籤頁播放 Flash 内容。"
+    },
+    "status_result_running_protected": {
+        "message": "Ruffle 已加載並正在播放 Flash 内容。"
     },
     "status_result_optout": {
         "message": "Ruffle 未加載因為目前頁面標註自己不相容。"
