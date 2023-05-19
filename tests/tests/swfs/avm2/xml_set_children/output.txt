@@ -13,3 +13,5 @@ after: <a>xxx<foo>yyy</foo>zzz<b>abc</b></a>
 before: <a/>
 xml.name: abc
 after: <a><name>abc</name></a>
+before: <a><b/></a>
+after: <a><b><hello>world</hello></b></a>

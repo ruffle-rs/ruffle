@@ -40,3 +40,9 @@ trace("before: " + xml.toXMLString());
 xml.name = "abc";
 trace("xml.name: " + xml.name);
 trace("after: " + xml.toXMLString());
+
+var xml = <a><b></b></a>
+trace("before: " + xml.toXMLString());
+var xml_list: XMLList = xml.b;
+xml_list.hello = "world";
+trace("after: " + xml.toXMLString());
