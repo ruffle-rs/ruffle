@@ -1664,8 +1664,9 @@ fn pixel_dissolve_raw_to_feistel_index(raw_permutation_index: u32, feistel_block
     let halfpiece2 = raw_permutation_index & ((1 << feistel_halfpiece_size) - 1);
 
     // Apply some function to make the output appear more random.
-    // TODO: Apply some decent but fast PRNG? Or at least some better and less non-random-looking
-    //   function? Can also take `feistel_block_size` as an argument.
+    // TODO: It would be good to test and improve this heuristic function for creating
+    //   random-looking output. One possibility is some decent but fast PRNG. The function can
+    //   also take `feistel_block_size` as an argument.
     // This specific function was gotten by trial-and-error on what might make the output look
     // random.
     fn f(num: u32) -> u32 {
@@ -1766,9 +1767,7 @@ pub fn pixel_dissolve<'gc>(
 
     let num_pixels = num_pixels.min(final_pixel_sequence_length as i32);
 
-    // TODO: Should this be `target.sync()`? Or something else?
     let target = target.sync();
-
     let mut write = target.write(mc);
 
     // For compliance with the official Flash Player, we always write the pixel at (0, 0).
@@ -1807,28 +1806,10 @@ pub fn pixel_dissolve<'gc>(
             loop_counter += 1;
 
             if loop_counter > permutation_length + 2 {
-                // TODO: Is this the correct way to panic or error?
-                panic!(
-                    "operations::pixel_dissolve() failed:\n\
-                            Using Feistel network permutations:\n\
-                            `raw_perm_index`: {raw_perm_index}\n\
-                            `feistel_perm_index`: {feistel_perm_index}\n\
-                            `permutation_length`: {permutation_length}\n\
-                            `final_pixel_sequence_length`: {final_pixel_sequence_length}\n\
-                            `src_rect`: {}, {}, {}, {}\n\
-                            `dest_region`: {}, {}, {}, {}\n\
-                            `dest_point`: {}, {}.",
-                    src_min_x,
-                    src_min_y,
-                    src_width,
-                    src_height,
-                    dest_region.x_min,
-                    dest_region.y_min,
-                    dest_region.x_max,
-                    dest_region.y_max,
-                    dest_point.0,
-                    dest_point.1
-                );
+                // Should never occur, but inserted as a safety mechanism, and the worst possible
+                // issue from this is lack of writing all pixels as well as potentially
+                // poorer performance.
+                break;
             }
         }
 
