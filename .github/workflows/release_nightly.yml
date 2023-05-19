@@ -20,7 +20,7 @@ jobs:
       tag_name: nightly-${{ steps.current_time_dashes.outputs.formattedTime }}
 
     # Only run the scheduled workflows on the main repo.
-    if: github.repository == 'ruffle-rs/ruffle'
+    if: github.repository == 'ruffle-rs/ruffle' || github.event_name == 'repository_dispatch' || github.event_name == 'workflow_dispatch'
 
     steps:
       - uses: actions/checkout@v3
@@ -53,13 +53,12 @@ jobs:
       - name: Create release
         if: steps.activity.outputs.is_active == 'true'
         id: create_release
-        uses: actions/create-release@v1
+        run: |
+          tag_name="nightly-${{ steps.current_time_dashes.outputs.formattedTime }}"
+          release_name="Nightly ${{ steps.current_time_dashes.outputs.formattedTime }}"
+          gh release create "$tag_name" --title "$release_name" --generate-notes --prerelease
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: nightly-${{ steps.current_time_dashes.outputs.formattedTime }}
-          release_name: Nightly ${{ steps.current_time_dashes.outputs.formattedTime }}
-          prerelease: true
 
   build:
     name: Build ${{ matrix.build_name }}
@@ -144,14 +143,9 @@ jobs:
 
       - name: Upload package
         if: runner.os != 'macOS'
-        uses: actions/upload-release-asset@v1
+        run: gh release upload "${{ needs.create-nightly-release.outputs.tag_name }}" "${{ env.PACKAGE_FILE }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-nightly-release.outputs.upload_url }}
-          asset_path: ./${{ env.PACKAGE_FILE }}
-          asset_name: ${{ env.PACKAGE_FILE }}
-          asset_content_type: ${{ endsWith(env.PACKAGE_FILE, 'tar.gz') && 'application/gzip' || 'application/zip' }}
 
       - name: Build Safari Web Extension stub binary
         if: runner.os == 'macOS'
@@ -264,14 +258,9 @@ jobs:
           tar -czvf ../${{ env.PACKAGE_FILE }} *
 
       - name: Upload package
-        uses: actions/upload-release-asset@v1
+        run: gh release upload "${{ needs.create-nightly-release.outputs.tag_name }}" "${{ env.PACKAGE_FILE }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-nightly-release.outputs.upload_url }}
-          asset_path: ./${{ env.PACKAGE_FILE }}
-          asset_name: ${{ env.PACKAGE_FILE }}
-          asset_content_type: application/gzip
 
   build-web:
     name: Build web${{ matrix.demo && ' demo' || '' }}
@@ -338,7 +327,10 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
-        run: gh release upload "${{ needs.create-nightly-release.outputs.tag_name }}" "${{ needs.create-nightly-release.outputs.package_prefix }}-reproducible-source.zip"
+        run: |
+          tag_name="${{ needs.create-nightly-release.outputs.tag_name }}"
+          package_file="${{ needs.create-nightly-release.outputs.package_prefix }}-reproducible-source.zip"
+          gh release upload "$tag_name" "$package_file"
 
       - name: Build web
         env:
@@ -363,30 +355,29 @@ jobs:
 
       - name: Package selfhosted
         if: ${{ !matrix.demo }}
-        run: zip -r release.zip .
+        run: zip -r "${{ needs.create-nightly-release.outputs.package_prefix }}-web-selfhosted.zip" .
         working-directory: web/packages/selfhosted/dist
 
       - name: Upload selfhosted
         if: ${{ !matrix.demo }}
-        uses: actions/upload-release-asset@v1
+        run: |
+          tag_name="${{ needs.create-nightly-release.outputs.tag_name }}"
+          package_file="${{ needs.create-nightly-release.outputs.package_prefix }}-web-selfhosted.zip"
+          gh release upload "$tag_name" "$package_file"
+        working-directory: web/packages/selfhosted/dist
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-nightly-release.outputs.upload_url }}
-          asset_path: ./web/packages/selfhosted/dist/release.zip
-          asset_name: ${{ needs.create-nightly-release.outputs.package_prefix }}-web-selfhosted.zip
-          asset_content_type: application/zip
 
       - name: Upload generic extension
         if: ${{ !matrix.demo }}
-        uses: actions/upload-release-asset@v1
+        run: |
+          tag_name="${{ needs.create-nightly-release.outputs.tag_name }}"
+          package_file="${{ needs.create-nightly-release.outputs.package_prefix }}-web-extension.zip"
+          cp "./web/packages/extension/dist/ruffle_extension.zip" "$package_file"
+          gh release upload "$tag_name" "$package_file"
+          rm "$package_file"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-nightly-release.outputs.upload_url }}
-          asset_path: ./web/packages/extension/dist/ruffle_extension.zip
-          asset_name: ${{ needs.create-nightly-release.outputs.package_prefix }}-web-extension.zip
-          asset_content_type: application/zip
 
       - name: Upload Safari build artifact
         uses: actions/upload-artifact@v3
@@ -396,14 +387,14 @@ jobs:
 
       - name: Upload Firefox extension (unsigned)
         if: ${{ !matrix.demo }}
-        uses: actions/upload-release-asset@v1
+        run: |
+          tag_name="${{ needs.create-nightly-release.outputs.tag_name }}"
+          package_file="${{ needs.create-nightly-release.outputs.package_prefix }}-web-extension-firefox-unsigned.xpi"
+          cp "./web/packages/extension/dist/firefox_unsigned.xpi" "$package_file"
+          gh release upload "$tag_name" "$package_file"
+          rm "$package_file" 
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-nightly-release.outputs.upload_url }}
-          asset_path: ./web/packages/extension/dist/firefox_unsigned.xpi
-          asset_name: ${{ needs.create-nightly-release.outputs.package_prefix }}-web-extension-firefox-unsigned.xpi
-          asset_content_type: application/x-xpinstall
 
       - name: Publish Chrome extension
         if: env.CHROME_EXTENSION_ID != '' && !matrix.demo
