@@ -225,7 +225,7 @@ package
             trace("");
             trace("");
             trace("------------------------------------------");
-            trace("`null` `sourceBitmapData`.");
+            trace("Wrong type for `sourceBitmapData`.");
             trace("");
             var bmd3:BitmapData = new BitmapData(10, 10, false, 0xFFCCCCCC);
             try {
