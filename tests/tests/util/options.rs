@@ -217,11 +217,17 @@ impl ImageComparison {
             ));
         }
 
+        let mut is_alpha_different = false;
+
         let difference_data: Vec<u8> = expected_image
             .as_raw()
             .chunks_exact(4)
             .zip(actual_image.as_raw().chunks_exact(4))
             .flat_map(|(cmp_chunk, data_chunk)| {
+                if cmp_chunk[3] != data_chunk[3] {
+                    is_alpha_different = true;
+                }
+
                 [
                     calc_difference(cmp_chunk[0], data_chunk[0]),
                     calc_difference(cmp_chunk[1], data_chunk[1]),
@@ -248,16 +254,41 @@ impl ImageComparison {
             .unwrap();
 
         if outliers > self.max_outliers {
-            image::RgbaImage::from_raw(
-                expected_image.width(),
-                expected_image.height(),
-                difference_data,
-            )
-            .context("Couldn't create difference image")?
-            .save(test_path.join(format!("difference-{suffix}.png")))
-            .context("Couldn't save difference image")?;
-
             save_actual_image()?;
+
+            let mut difference_color = Vec::with_capacity(
+                actual_image.width() as usize * actual_image.height() as usize * 3,
+            );
+            for p in difference_data.chunks_exact(4) {
+                difference_color.extend_from_slice(&p[..3]);
+            }
+
+            image::RgbImage::from_raw(
+                actual_image.width(),
+                actual_image.height(),
+                difference_color,
+            )
+            .context("Couldn't create color difference image")?
+            .save(test_path.join(format!("difference-color-{suffix}.png")))
+            .context("Couldn't save color difference image")?;
+
+            if is_alpha_different {
+                let mut difference_alpha = Vec::with_capacity(
+                    actual_image.width() as usize * actual_image.height() as usize,
+                );
+                for p in difference_data.chunks_exact(4) {
+                    difference_alpha.push(p[3])
+                }
+
+                image::GrayImage::from_raw(
+                    actual_image.width(),
+                    actual_image.height(),
+                    difference_alpha,
+                )
+                .context("Couldn't create alpha difference image")?
+                .save(test_path.join(format!("difference-alpha-{suffix}.png")))
+                .context("Couldn't save alpha difference image")?;
+            }
 
             return Err(anyhow!(
                 "Number of outliers ({}) is bigger than allowed limit of {}. Max difference is {}",
