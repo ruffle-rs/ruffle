@@ -12,6 +12,7 @@ use ruffle_render_wgpu::descriptors::Descriptors;
 use ruffle_render_wgpu::target::TextureTarget;
 use ruffle_render_wgpu::wgpu;
 use std::fs::create_dir_all;
+use std::io::{self, Write};
 use std::panic::catch_unwind;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -238,7 +239,21 @@ fn capture_single_swf(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()> {
     }
 
     if frames.len() == 1 {
-        frames.get(0).unwrap().save(&output)?;
+        let image = frames.get(0).unwrap();
+        if opt.output_path == Some(PathBuf::from("-")) {
+            let mut bytes: Vec<u8> = Vec::new();
+            image
+                .write_to(
+                    &mut io::Cursor::new(&mut bytes),
+                    image::ImageOutputFormat::Png,
+                )
+                .expect("Encoding failed");
+            io::stdout()
+                .write_all(bytes.as_slice())
+                .expect("Writing to stdout failed");
+        } else {
+            image.save(&output)?;
+        }
     } else {
         for (frame, image) in frames.iter().enumerate() {
             let mut path: PathBuf = (&output).into();
@@ -248,24 +263,30 @@ fn capture_single_swf(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()> {
     }
 
     let message = if frames.len() == 1 {
-        format!(
-            "Saved first frame of {} to {}",
-            opt.swf.to_string_lossy(),
-            output.to_string_lossy()
-        )
+        if !opt.silent {
+            Some(format!(
+                "Saved first frame of {} to {}",
+                opt.swf.to_string_lossy(),
+                output.to_string_lossy()
+            ))
+        } else {
+            None
+        }
     } else {
-        format!(
+        Some(format!(
             "Saved first {} frames of {} to {}",
             frames.len(),
             opt.swf.to_string_lossy(),
             output.to_string_lossy()
-        )
+        ))
     };
 
-    if let Some(progress) = progress {
-        progress.finish_with_message(message);
-    } else {
-        println!("{message}");
+    if let Some(message) = message {
+        if let Some(progress) = progress {
+            progress.finish_with_message(message);
+        } else {
+            println!("{message}");
+        }
     }
 
     Ok(())
