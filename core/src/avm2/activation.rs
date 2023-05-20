@@ -43,7 +43,7 @@ pub struct RegisterSet<'gc>(SmallVec<[Value<'gc>; 8]>);
 
 unsafe impl<'gc> gc_arena::Collect for RegisterSet<'gc> {
     #[inline]
-    fn trace(&self, cc: gc_arena::CollectionContext) {
+    fn trace(&self, cc: &gc_arena::Collection) {
         for register in &self.0 {
             register.trace(cc);
         }

@@ -5,7 +5,7 @@ use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use fnv::FnvBuildHasher;
-use gc_arena::{Collect, CollectionContext};
+use gc_arena::Collect;
 use smallvec::SmallVec;
 use std::collections::HashMap;
 use std::mem::swap;
@@ -34,7 +34,7 @@ where
     V: Collect,
 {
     #[inline]
-    fn trace(&self, cc: CollectionContext) {
+    fn trace(&self, cc: &gc_arena::Collection) {
         for (key, value) in self.0.iter() {
             key.trace(cc);
             for (ns, v) in value.iter() {

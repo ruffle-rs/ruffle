@@ -49,7 +49,7 @@ pub struct Avm2ClassRegistry<'gc> {
 }
 
 unsafe impl Collect for Avm2ClassRegistry<'_> {
-    fn trace(&self, cc: gc_arena::CollectionContext) {
+    fn trace(&self, cc: &gc_arena::Collection) {
         for (k, _) in self.class_map.iter() {
             k.trace(cc);
         }
@@ -394,7 +394,7 @@ pub struct Library<'gc> {
 
 unsafe impl<'gc> gc_arena::Collect for Library<'gc> {
     #[inline]
-    fn trace(&self, cc: gc_arena::CollectionContext) {
+    fn trace(&self, cc: &gc_arena::Collection) {
         for (_, val) in self.movie_libraries.iter() {
             val.trace(cc);
         }

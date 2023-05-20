@@ -28,7 +28,7 @@ use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use encoding_rs::UTF_8;
-use gc_arena::{Collect, CollectionContext, GcCell};
+use gc_arena::{Collect, GcCell};
 use generational_arena::{Arena, Index};
 use ruffle_render::utils::{determine_jpeg_tag_format, JpegTagFormat};
 use std::fmt;
@@ -192,7 +192,7 @@ impl From<crate::avm1::Error<'_>> for Error {
 pub struct LoadManager<'gc>(Arena<Loader<'gc>>);
 
 unsafe impl<'gc> Collect for LoadManager<'gc> {
-    fn trace(&self, cc: CollectionContext) {
+    fn trace(&self, cc: &gc_arena::Collection) {
         for (_, loader) in self.0.iter() {
             loader.trace(cc)
         }

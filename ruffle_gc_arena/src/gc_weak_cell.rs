@@ -1,5 +1,5 @@
-use crate::{Collect, Collection, GcCell, GcWeak, Mutation};
 use crate::lock::RefLock;
+use crate::{Collect, Collection, GcCell, GcWeak, Mutation};
 
 use core::fmt::{self, Debug};
 

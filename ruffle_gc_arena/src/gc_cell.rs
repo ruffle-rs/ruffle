@@ -1,8 +1,8 @@
 use core::cell::{BorrowError, BorrowMutError, Ref, RefMut};
 use core::fmt::{self, Debug, Pointer};
 
-use crate::{Collect, Collection, Gc, GcWeakCell, Mutation};
 use crate::lock::RefLock;
+use crate::{Collect, Collection, Gc, GcWeakCell, Mutation};
 
 /// TODO: replace all usages by `Gc<RefLock<T>>`, `Gc<Lock<T>>`, or similar.
 pub struct GcCell<'gc, T: ?Sized + 'gc>(pub(crate) Gc<'gc, RefLock<T>>);
@@ -76,10 +76,7 @@ impl<'gc, T: ?Sized + 'gc> GcCell<'gc, T> {
     }
 
     #[inline]
-    pub fn try_write<'a>(
-        &'a self,
-        mc: &Mutation<'gc>,
-    ) -> Result<RefMut<'a, T>, BorrowMutError> {
+    pub fn try_write<'a>(&'a self, mc: &Mutation<'gc>) -> Result<RefMut<'a, T>, BorrowMutError> {
         self.0.try_borrow_mut(mc)
     }
 
