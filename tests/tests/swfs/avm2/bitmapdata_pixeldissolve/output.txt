@@ -115,7 +115,7 @@ Dissolving for 4 rounds, with data: width: 10, height: 10, sourceRect: [own], de
 (4) Overwritten pixel count: 1
 
 Dissolving for 4 rounds, with data: width: 10, height: 10, sourceRect: [own], destPoint: (x=0, y=0), numPixels: -1
-Negative `numPixels` should error.
+Negative `numPixels` should error: RangeError: Error #2027: Parameter numPixels must be a non-negative number; got -1.
 Dissolving for 35 rounds, with data: width: 10, height: 10, sourceRect: [own], destPoint: (x=0, y=0), numPixels: 3
 (1) Overwritten pixel count: 4
 (2) Overwritten pixel count: 7

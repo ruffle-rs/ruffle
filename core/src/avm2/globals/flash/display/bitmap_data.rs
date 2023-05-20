@@ -1417,7 +1417,7 @@ pub fn pixel_dissolve<'gc>(
         if num_pixels < 0 {
             return Err(Error::AvmError(range_error(
                 activation,
-                &format!("Parameter numPixels must be a non-negative number; got {num_pixels}."),
+                &format!("Error #2027: Parameter numPixels must be a non-negative number; got {num_pixels}."),
                 2027,
             )?));
         }
