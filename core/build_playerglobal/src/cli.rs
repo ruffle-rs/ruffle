@@ -9,5 +9,4 @@ pub(crate) struct Cli {
 #[derive(Subcommand)]
 pub(crate) enum Commands {
     Compile { out_dir: String },
-    Lint,
 }
