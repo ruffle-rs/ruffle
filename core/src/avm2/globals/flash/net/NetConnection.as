@@ -7,7 +7,7 @@ package flash.net {
 
         public static var defaultObjectEncoding:uint = 3;
 
-        public var objectEncoding:uint = NetConnection.defaultObjectEncoding; // NOPMD WronglyNamedVariable
+        public var objectEncoding:uint = NetConnection.defaultObjectEncoding;
 
 
         public function connect(command:String, ... arguments):void {

@@ -13,7 +13,7 @@ package flash.utils {
         function writeFloat(value:Number):void;
         function writeInt(value:int):void;
         function writeMultiByte(value:String, charSet:String):void;
-        function writeObject(object:*):void; // NOPMD WronglyNamedVariable
+        function writeObject(object:*):void;
         function writeShort(value:int):void;
         function writeUnsignedInt(value:uint):void;
         function writeUTF(value:String):void;

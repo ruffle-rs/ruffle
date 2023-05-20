@@ -43,7 +43,7 @@ package flash.xml
          var children = _xml.children();
          var nodes = new Array();
          for (var i = 0; i < children.length(); i++) {
-            var node = new XMLNode(0, children[i].toXMLString()); // NOPMD AvoidInstanciationInLoop
+            var node = new XMLNode(0, children[i].toXMLString());
             node._parent = this;
             node._index = i;
             nodes.push(node);

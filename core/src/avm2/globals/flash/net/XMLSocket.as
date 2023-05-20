@@ -16,7 +16,7 @@ package flash.net {
             stub_method("flash.net.XMLSocket", "connect");
         }
 
-        public function send(object: *): void { // NOPMD WronglyNamedVariable
+        public function send(object: *): void {
             stub_method("flash.net.XMLSocket", "send");
         }
     }
