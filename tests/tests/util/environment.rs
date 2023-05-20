@@ -1,7 +1,6 @@
 use once_cell::sync::Lazy;
-use ruffle_render_wgpu::backend::WgpuRenderBackend;
+use ruffle_render_wgpu::backend::request_adapter_and_device;
 use ruffle_render_wgpu::descriptors::Descriptors;
-use ruffle_render_wgpu::target::TextureTarget;
 use ruffle_render_wgpu::wgpu;
 use std::sync::Arc;
 
@@ -18,7 +17,7 @@ use std::sync::Arc;
 */
 
 fn create_wgpu_device() -> Option<(wgpu::Adapter, wgpu::Device, wgpu::Queue)> {
-    futures::executor::block_on(WgpuRenderBackend::<TextureTarget>::request_device(
+    futures::executor::block_on(request_adapter_and_device(
         wgpu::Backends::all(),
         wgpu::Instance::new(Default::default()),
         None,

@@ -6,7 +6,7 @@ use rayon::prelude::*;
 use ruffle_core::limits::ExecutionLimit;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::PlayerBuilder;
-use ruffle_render_wgpu::backend::WgpuRenderBackend;
+use ruffle_render_wgpu::backend::{request_adapter_and_device, WgpuRenderBackend};
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use ruffle_render_wgpu::descriptors::Descriptors;
 use ruffle_render_wgpu::target::TextureTarget;
@@ -405,15 +405,14 @@ fn main() -> Result<()> {
         backends: opt.graphics.into(),
         dx12_shader_compiler: wgpu::Dx12Compiler::default(),
     });
-    let (adapter, device, queue) =
-        futures::executor::block_on(WgpuRenderBackend::<TextureTarget>::request_device(
-            opt.graphics.into(),
-            instance,
-            None,
-            opt.power.into(),
-            trace_path(&opt),
-        ))
-        .map_err(|e| anyhow!(e.to_string()))?;
+    let (adapter, device, queue) = futures::executor::block_on(request_adapter_and_device(
+        opt.graphics.into(),
+        instance,
+        None,
+        opt.power.into(),
+        trace_path(&opt),
+    ))
+    .map_err(|e| anyhow!(e.to_string()))?;
 
     let descriptors = Arc::new(Descriptors::new(adapter, device, queue));
 

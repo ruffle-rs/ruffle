@@ -60,7 +60,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
             dx12_shader_compiler: wgpu::Dx12Compiler::default(),
         });
         let surface = instance.create_surface_from_canvas(canvas)?;
-        let (adapter, device, queue) = Self::request_device(
+        let (adapter, device, queue) = request_adapter_and_device(
             wgpu::Backends::BROWSER_WEBGPU | wgpu::Backends::GL,
             instance,
             Some(&surface),
@@ -95,7 +95,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
             dx12_shader_compiler: wgpu::Dx12Compiler::default(),
         });
         let surface = unsafe { instance.create_surface(window) }?;
-        let (adapter, device, queue) = futures::executor::block_on(Self::request_device(
+        let (adapter, device, queue) = futures::executor::block_on(request_adapter_and_device(
             backend,
             instance,
             Some(&surface),
@@ -126,7 +126,7 @@ impl WgpuRenderBackend<crate::target::TextureTarget> {
             backends: backend,
             dx12_shader_compiler: wgpu::Dx12Compiler::default(),
         });
-        let (adapter, device, queue) = futures::executor::block_on(Self::request_device(
+        let (adapter, device, queue) = futures::executor::block_on(request_adapter_and_device(
             backend,
             instance,
             None,
@@ -208,33 +208,6 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             offscreen_buffer_pool: Arc::new(offscreen_buffer_pool),
             external_render_callback: None,
         })
-    }
-
-    pub async fn request_device(
-        backend: wgpu::Backends,
-        instance: wgpu::Instance,
-        surface: Option<&wgpu::Surface>,
-        power_preference: wgpu::PowerPreference,
-        trace_path: Option<&Path>,
-    ) -> Result<(wgpu::Adapter, wgpu::Device, wgpu::Queue), Error> {
-        let adapter = instance.request_adapter(&wgpu::RequestAdapterOptions {
-            power_preference,
-            compatible_surface: surface,
-            force_fallback_adapter: false,
-        }).await
-            .ok_or_else(|| {
-                let names = get_backend_names(backend);
-                if names.is_empty() {
-                    "Ruffle requires hardware acceleration, but no compatible graphics device was found (no backend provided?)".to_string()
-                } else if cfg!(any(windows, target_os = "macos")) {
-                    format!("Ruffle does not support OpenGL on {}.", if cfg!(windows) { "Windows" } else { "macOS" })
-                } else {
-                    format!("Ruffle requires hardware acceleration, but no compatible graphics device was found supporting {}", format_list(&names, "or"))
-                }
-            })?;
-
-        let (device, queue) = request_device(&adapter, trace_path).await?;
-        Ok((adapter, device, queue))
     }
 
     fn register_shape_internal(
@@ -798,6 +771,33 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             }) => unreachable!("Buffer must be Borrowed as it was set to be Borrowed earlier"),
         }
     }
+}
+
+pub async fn request_adapter_and_device(
+    backend: wgpu::Backends,
+    instance: wgpu::Instance,
+    surface: Option<&wgpu::Surface>,
+    power_preference: wgpu::PowerPreference,
+    trace_path: Option<&Path>,
+) -> Result<(wgpu::Adapter, wgpu::Device, wgpu::Queue), Error> {
+    let adapter = instance.request_adapter(&wgpu::RequestAdapterOptions {
+        power_preference,
+        compatible_surface: surface,
+        force_fallback_adapter: false,
+    }).await
+        .ok_or_else(|| {
+            let names = get_backend_names(backend);
+            if names.is_empty() {
+                "Ruffle requires hardware acceleration, but no compatible graphics device was found (no backend provided?)".to_string()
+            } else if cfg!(any(windows, target_os = "macos")) {
+                format!("Ruffle does not support OpenGL on {}.", if cfg!(windows) { "Windows" } else { "macOS" })
+            } else {
+                format!("Ruffle requires hardware acceleration, but no compatible graphics device was found supporting {}", format_list(&names, "or"))
+            }
+        })?;
+
+    let (device, queue) = request_device(&adapter, trace_path).await?;
+    Ok((adapter, device, queue))
 }
 
 // We try to request the highest limits we can get away with

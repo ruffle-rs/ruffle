@@ -26,7 +26,7 @@ pub use wgpu;
 type Error = Box<dyn std::error::Error>;
 
 #[macro_use]
-mod utils;
+pub mod utils;
 
 mod bitmaps;
 mod context3d;
