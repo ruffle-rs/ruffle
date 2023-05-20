@@ -33,6 +33,7 @@ use ruffle_render::backend::RenderBackend;
 use ruffle_render::quality::StageQuality;
 use ruffle_render_wgpu::backend::WgpuRenderBackend;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
+use ruffle_render_wgpu::target::TextureTarget;
 use std::cell::RefCell;
 use std::io::Read;
 use std::panic::PanicInfo;
@@ -338,18 +339,6 @@ impl App {
             opt.open_url_mode,
         );
 
-        let viewport_size = window.inner_size();
-        let mut renderer = WgpuRenderBackend::for_window(
-            &window,
-            (viewport_size.width, viewport_size.height),
-            opt.graphics.into(),
-            opt.power.into(),
-            trace_path(&opt),
-        )
-        .map_err(|e| anyhow!(e.to_string()))
-        .context("Couldn't create wgpu rendering backend")?;
-        RENDER_INFO.with(|i| *i.borrow_mut() = Some(renderer.debug_info().to_string()));
-
         let window = Rc::new(window);
 
         if cfg!(feature = "software_video") {
@@ -357,18 +346,26 @@ impl App {
                 builder.with_video(ruffle_video_software::backend::SoftwareVideoBackend::new());
         }
 
-        let gui = Arc::new(Mutex::new(GuiController::new(
-            &renderer,
+        let gui = GuiController::new(
             window.clone(),
             &event_loop,
-        )));
-        {
-            let gui = gui.clone();
-            renderer.set_render_callback(Some(Box::new(move |render_ctx| {
-                let mut gui = gui.lock().expect("Gui lock");
-                gui.render(render_ctx)
-            })));
-        }
+            trace_path(&opt),
+            opt.graphics.into(),
+            opt.power.into(),
+        )?;
+
+        let viewport_size = window.inner_size();
+        let renderer = WgpuRenderBackend::new(
+            gui.descriptors().clone(),
+            TextureTarget::new(
+                &gui.descriptors().device,
+                (viewport_size.width, viewport_size.height),
+            )
+            .map_err(|e| anyhow!(e.to_string()))?,
+        )
+        .map_err(|e| anyhow!(e.to_string()))
+        .context("Couldn't create wgpu rendering backend")?;
+        RENDER_INFO.with(|i| *i.borrow_mut() = Some(renderer.debug_info().to_string()));
 
         builder = builder
             .with_navigator(navigator)
@@ -399,7 +396,7 @@ impl App {
             event_loop_proxy: event_loop.create_proxy(),
             event_loop: Some(event_loop),
             executor,
-            gui,
+            gui: Arc::new(Mutex::new(gui)),
             player,
             min_window_size,
             max_window_size,
@@ -491,7 +488,16 @@ impl App {
                 winit::event::Event::RedrawRequested(_) => {
                     // Don't render when minimized to avoid potential swap chain errors in `wgpu`.
                     if !minimized {
-                        self.player.lock().expect("Cannot reenter").render();
+                        let mut player = self.player.lock().expect("Cannot reenter");
+                        player.render();
+                        let renderer = player
+                            .renderer_mut()
+                            .downcast_mut::<WgpuRenderBackend<TextureTarget>>()
+                            .expect("Renderer must be correct type");
+                        self.gui
+                            .lock()
+                            .expect("Gui lock")
+                            .render(&renderer.target().texture);
                         #[cfg(feature = "tracy")]
                         tracing_tracy::client::Client::running()
                             .expect("tracy client must be running")
