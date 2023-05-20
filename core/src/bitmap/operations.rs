@@ -1618,68 +1618,6 @@ pub fn set_pixels_from_byte_array<'gc>(
     Ok(())
 }
 
-/// Returns at least 2. Always returns an even number.
-fn get_feistel_block_size(sequence_length: u32) -> u32 {
-    let sequence_length = sequence_length.max(2);
-
-    // For the given sequence length, figure out the number of bits required to
-    // represent all indices for the sequence. After that, round up to
-    // the nearest even number of bits.
-    // For instance, for a sequence of length 9, 4 bits are required,
-    // and 4 is even, so the result is 4.
-    // For a sequence of length 8, 3 bits are required, but 3 is not
-    // even, so round up to 4.
-
-    let mut bit_number: u32 = 0;
-    let mut num = sequence_length - 1;
-
-    while num > 0 {
-        num /= 2;
-        bit_number += 1;
-    }
-
-    bit_number + (bit_number % 2)
-}
-
-/// Meant to be a bijective function that takes a raw index and gives the corresponding
-/// Feistel index.
-///
-/// # Arguments
-///
-/// * `raw_permutation_index` - Must obey '0 <= permutation_raw_index < permutation_length`.
-/// * `feistel_block_size` - See `get_feistel_block_size()`.
-fn pixel_dissolve_raw_to_feistel_index(raw_permutation_index: u32, feistel_block_size: u32) -> u32 {
-    // Discussion on Feistel networks:
-    // https://github.com/ruffle-rs/ruffle/issues/10962
-
-    // For the simple balanced variant of a Feistel network, an even number of
-    // bits for the block size is required (unbalanced Feistel networks
-    // also exists, but are presumably more complex).
-
-    // Applying a single round of Feistel.
-
-    let feistel_halfpiece_size = feistel_block_size / 2;
-
-    let halfpiece1 = raw_permutation_index >> feistel_halfpiece_size;
-    let halfpiece2 = raw_permutation_index & ((1 << feistel_halfpiece_size) - 1);
-
-    // Apply some function to make the output appear more random.
-    // TODO: It would be good to test and improve this heuristic function for creating
-    //   random-looking output. One possibility is some decent but fast PRNG. The function can
-    //   also take `feistel_block_size` as an argument.
-    // This specific function was gotten by trial-and-error on what might make the output look
-    // random.
-    fn f(num: u32) -> u32 {
-        num * num + 1
-    }
-    let result_before_xor = (f(halfpiece2)) % (1 << feistel_halfpiece_size);
-
-    let new_halfpiece1 = halfpiece2;
-    let new_halfpiece2 = halfpiece1 ^ result_before_xor;
-
-    (new_halfpiece2 << feistel_halfpiece_size) | new_halfpiece1
-}
-
 #[allow(clippy::too_many_arguments)]
 pub fn pixel_dissolve<'gc>(
     mc: MutationContext<'gc, '_>,
@@ -1691,6 +1629,101 @@ pub fn pixel_dissolve<'gc>(
     num_pixels: i32,
     fill_color: i32,
 ) -> i32 {
+    /// Returns at least 2. Always returns an even number.
+    fn get_feistel_block_size(sequence_length: u32) -> u32 {
+        let sequence_length = sequence_length.max(2);
+
+        // For the given sequence length, figure out the number of bits required to
+        // represent all indices for the sequence. After that, round up to
+        // the nearest even number of bits.
+        // For instance, for a sequence of length 9, 4 bits are required,
+        // and 4 is even, so the result is 4.
+        // For a sequence of length 8, 3 bits are required, but 3 is not
+        // even, so round up to 4.
+
+        let mut bit_number: u32 = 0;
+        let mut num = sequence_length - 1;
+
+        while num > 0 {
+            num /= 2;
+            bit_number += 1;
+        }
+
+        bit_number + (bit_number % 2)
+    }
+
+    /// Meant to be a bijective function that takes a raw index and gives the corresponding
+    /// Feistel index.
+    ///
+    /// # Arguments
+    ///
+    /// * `raw_permutation_index` - Must obey '0 <= permutation_raw_index < permutation_length`.
+    /// * `feistel_block_size` - See `get_feistel_block_size()`.
+    fn pixel_dissolve_raw_to_feistel_index(
+        raw_permutation_index: u32,
+        feistel_block_size: u32,
+    ) -> u32 {
+        // Discussion on Feistel networks:
+        // https://github.com/ruffle-rs/ruffle/issues/10962
+
+        // For the simple balanced variant of a Feistel network, an even number of
+        // bits for the block size is required (unbalanced Feistel networks
+        // also exists, but are presumably more complex).
+
+        // Applying a single round of Feistel.
+
+        let feistel_halfpiece_size = feistel_block_size / 2;
+
+        let halfpiece1 = raw_permutation_index >> feistel_halfpiece_size;
+        let halfpiece2 = raw_permutation_index & ((1 << feistel_halfpiece_size) - 1);
+
+        // Apply some function to make the output appear more random.
+        // TODO: It would be good to test and improve this heuristic function for creating
+        //   random-looking output. One possibility is some decent but fast PRNG. The function can
+        //   also take `feistel_block_size` as an argument.
+        // This specific function was gotten by trial-and-error on what might make the output look
+        // random.
+        fn f(num: u32) -> u32 {
+            num * num + 1
+        }
+        let result_before_xor = (f(halfpiece2)) % (1 << feistel_halfpiece_size);
+
+        let new_halfpiece1 = halfpiece2;
+        let new_halfpiece2 = halfpiece1 ^ result_before_xor;
+
+        (new_halfpiece2 << feistel_halfpiece_size) | new_halfpiece1
+    }
+
+    fn write_pixel(
+        write: &mut RefMut<BitmapData>,
+        different_source_than_target: &Option<Ref<BitmapData>>,
+        fill_color: i32,
+        transparency: bool,
+        base_point: (u32, u32),
+        read_offset: (u32, u32),
+        write_offset: (u32, u32),
+    ) {
+        let read_point = (read_offset.0 + base_point.0, read_offset.1 + base_point.1);
+        let write_point = (write_offset.0 + base_point.0, write_offset.1 + base_point.1);
+
+        match different_source_than_target {
+            None => {
+                write.set_pixel32_raw(
+                    write_point.0,
+                    write_point.1,
+                    Color::from(fill_color).to_premultiplied_alpha(transparency),
+                );
+            }
+            Some(different_source) => {
+                write.set_pixel32_raw(
+                    write_point.0,
+                    write_point.1,
+                    different_source.get_pixel32_raw(read_point.0, read_point.1),
+                );
+            }
+        }
+    }
+
     // Apparently,
     // "numPixels:int (default = 0) — The default is 1/30 of the source area (width x height). "
     // is wrong.
@@ -1726,36 +1759,6 @@ pub fn pixel_dissolve<'gc>(
 
     let write_offset = (dest_region.x_min, dest_region.y_min);
     let read_offset = (source_region.x_min, source_region.y_min);
-
-    fn write_pixel(
-        write: &mut RefMut<BitmapData>,
-        different_source_than_target: &Option<Ref<BitmapData>>,
-        fill_color: i32,
-        transparency: bool,
-        base_point: (u32, u32),
-        read_offset: (u32, u32),
-        write_offset: (u32, u32),
-    ) {
-        let read_point = (read_offset.0 + base_point.0, read_offset.1 + base_point.1);
-        let write_point = (write_offset.0 + base_point.0, write_offset.1 + base_point.1);
-
-        match different_source_than_target {
-            None => {
-                write.set_pixel32_raw(
-                    write_point.0,
-                    write_point.1,
-                    Color::from(fill_color).to_premultiplied_alpha(transparency),
-                );
-            }
-            Some(different_source) => {
-                write.set_pixel32_raw(
-                    write_point.0,
-                    write_point.1,
-                    different_source.get_pixel32_raw(read_point.0, read_point.1),
-                );
-            }
-        }
-    }
 
     let different_source_than_target = if source_bitmap.ptr_eq(target) {
         None
