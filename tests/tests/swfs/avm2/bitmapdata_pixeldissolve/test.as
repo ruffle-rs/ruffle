@@ -112,7 +112,7 @@ package
                 dissolveRounds_1(4, 10, 10, -1);
             }
             catch (e:Error) {
-                trace("Negative `numPixels` should error.");
+                trace("Negative `numPixels` should error: " + e);
             }
             dissolveRounds_1(35, 10, 10, 3);
 
