@@ -19,15 +19,13 @@ mod time_demo;
 mod ui;
 mod util;
 
-use anyhow::{anyhow, Error};
+use anyhow::Error;
 use app::App;
 use clap::Parser;
 use cli::Opt;
-use rfd::FileDialog;
 use ruffle_core::StaticCallstack;
 use std::cell::RefCell;
 use std::panic::PanicInfo;
-use std::path::{Path, PathBuf};
 use url::Url;
 
 thread_local! {
@@ -42,27 +40,6 @@ static GLOBAL: tracing_tracy::client::ProfiledAllocator<std::alloc::System> =
     tracing_tracy::client::ProfiledAllocator::new(std::alloc::System, 0);
 
 static RUFFLE_VERSION: &str = include_str!(concat!(env!("OUT_DIR"), "/version-info.txt"));
-
-fn parse_url(path: &Path) -> Result<Url, Error> {
-    if path.exists() {
-        let absolute_path = path.canonicalize().unwrap_or_else(|_| path.to_owned());
-        Url::from_file_path(absolute_path)
-            .map_err(|_| anyhow!("Path must be absolute and cannot be a URL"))
-    } else {
-        Url::parse(path.to_str().unwrap_or_default())
-            .ok()
-            .filter(|url| url.host().is_some() || url.scheme() == "file")
-            .ok_or_else(|| anyhow!("Input path is not a file and could not be parsed as a URL."))
-    }
-}
-
-fn pick_file() -> Option<PathBuf> {
-    FileDialog::new()
-        .add_filter("Flash Files", &["swf", "spl"])
-        .add_filter("All Files", &["*"])
-        .set_title("Load a Flash File")
-        .pick_file()
-}
 
 fn init() {
     // When linked with the windows subsystem windows won't automatically attach

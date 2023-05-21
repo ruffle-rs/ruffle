@@ -33,7 +33,7 @@ pub struct App {
 impl App {
     pub fn new(opt: Opt) -> Result<Self, Error> {
         let movie_url = if let Some(path) = &opt.input_path {
-            Some(crate::parse_url(path).context("Couldn't load specified path")?)
+            Some(crate::util::parse_url(path).context("Couldn't load specified path")?)
         } else {
             None
         };
@@ -482,9 +482,10 @@ impl App {
                 }
 
                 winit::event::Event::UserEvent(RuffleEvent::OpenFile) => {
-                    if let Some(path) = crate::pick_file() {
+                    if let Some(path) = crate::util::pick_file() {
                         // TODO: Show dialog on error.
-                        let url = crate::parse_url(&path).expect("Couldn't load specified path");
+                        let url =
+                            crate::util::parse_url(&path).expect("Couldn't load specified path");
                         let _ = self.load_swf(url);
                         self.gui.lock().expect("Gui lock").set_ui_visible(false);
                     }

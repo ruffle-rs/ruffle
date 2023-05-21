@@ -48,7 +48,7 @@ pub fn run_timedemo(opt: Opt) -> Result<(), Error> {
         .input_path
         .as_ref()
         .ok_or_else(|| anyhow!("Input file necessary for timedemo"))?;
-    let movie_url = crate::parse_url(path)?;
+    let movie_url = crate::util::parse_url(path)?;
     let movie = load_movie(&movie_url, &opt).context("Couldn't load movie")?;
     let movie_frames = Some(movie.num_frames());
 
