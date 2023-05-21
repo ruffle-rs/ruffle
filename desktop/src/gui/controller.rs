@@ -1,5 +1,5 @@
 use crate::custom_event::RuffleEvent;
-use crate::gui::movie::MovieView;
+use crate::gui::movie::{MovieView, MovieViewRenderer};
 use crate::gui::RuffleGui;
 use anyhow::anyhow;
 use egui::Context;
@@ -25,7 +25,7 @@ pub struct GuiController {
     repaint_after: Duration,
     surface: wgpu::Surface,
     surface_format: wgpu::TextureFormat,
-    movie_view: MovieView,
+    movie_view_renderer: Arc<MovieViewRenderer>,
 }
 
 impl GuiController {
@@ -67,7 +67,8 @@ impl GuiController {
             .cloned()
             .expect("At least one format should be supported");
 
-        let game_view = MovieView::new(&descriptors.device, surface_format);
+        let movie_view_renderer =
+            Arc::new(MovieViewRenderer::new(&descriptors.device, surface_format));
         let egui_renderer = egui_wgpu::Renderer::new(&descriptors.device, surface_format, None, 1);
         let event_loop = event_loop.create_proxy();
         let gui = RuffleGui::new(event_loop);
@@ -82,7 +83,7 @@ impl GuiController {
             repaint_after: Duration::ZERO,
             surface,
             surface_format,
-            movie_view: game_view,
+            movie_view_renderer,
         })
     }
 
@@ -113,7 +114,17 @@ impl GuiController {
         response.consumed
     }
 
-    pub fn render(&mut self, movie: &wgpu::Texture) {
+    pub fn create_movie_view(&self) -> MovieView {
+        let size = self.window.inner_size();
+        MovieView::new(
+            self.movie_view_renderer.clone(),
+            &self.descriptors.device,
+            size.width,
+            size.height,
+        )
+    }
+
+    pub fn render(&mut self, movie: &MovieView) {
         let surface_texture = self
             .surface
             .get_current_texture()
@@ -166,23 +177,20 @@ impl GuiController {
         {
             let surface_view = surface_texture.texture.create_view(&Default::default());
 
-            // First draw the movie - this also clears the surface
-            self.movie_view
-                .render(&self.descriptors.device, &mut encoder, movie, &surface_view);
-
-            // Then any UI
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &surface_view,
                     resolve_target: None,
                     ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Load,
+                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                         store: true,
                     },
                 })],
                 depth_stencil_attachment: None,
                 label: Some("egui_render"),
             });
+
+            movie.render(&self.movie_view_renderer, &mut render_pass);
 
             self.egui_renderer
                 .render(&mut render_pass, &clipped_primitives, &screen_descriptor);

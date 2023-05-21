@@ -1,7 +1,10 @@
+use ruffle_render_wgpu::target::{RenderTarget, RenderTargetFrame};
 use std::borrow::Cow;
+use std::sync::Arc;
 use wgpu::util::DeviceExt;
 
-pub struct MovieView {
+#[derive(Debug)]
+pub struct MovieViewRenderer {
     bind_group_layout: wgpu::BindGroupLayout,
     pipeline: wgpu::RenderPipeline,
     sampler: wgpu::Sampler,
@@ -18,7 +21,7 @@ const BLIT_VERTICES: [[f32; 4]; 6] = [
     [-1.0, 1.0, 0.0, 0.0],  // tl
 ];
 
-impl MovieView {
+impl MovieViewRenderer {
     pub fn new(device: &wgpu::Device, surface_format: wgpu::TextureFormat) -> Self {
         let module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: None,
@@ -113,45 +116,115 @@ impl MovieView {
             vertices,
         }
     }
+}
 
-    pub fn render(
-        &self,
+#[derive(Debug)]
+pub struct MovieView {
+    renderer: Arc<MovieViewRenderer>,
+    texture: wgpu::Texture,
+    bind_group: wgpu::BindGroup,
+}
+
+impl MovieView {
+    pub fn new(
+        renderer: Arc<MovieViewRenderer>,
         device: &wgpu::Device,
-        encoder: &mut wgpu::CommandEncoder,
-        movie: &wgpu::Texture,
-        surface_view: &wgpu::TextureView,
-    ) {
-        let movie_view = movie.create_view(&Default::default());
-        let blit_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        width: u32,
+        height: u32,
+    ) -> Self {
+        let texture = device.create_texture(&wgpu::TextureDescriptor {
             label: None,
-            layout: &self.bind_group_layout,
+            size: wgpu::Extent3d {
+                width,
+                height,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8Unorm,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+            view_formats: &[],
+        });
+        let view = texture.create_view(&Default::default());
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: None,
+            layout: &renderer.bind_group_layout,
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: wgpu::BindingResource::TextureView(&movie_view),
+                    resource: wgpu::BindingResource::TextureView(&view),
                 },
                 wgpu::BindGroupEntry {
                     binding: 1,
-                    resource: wgpu::BindingResource::Sampler(&self.sampler),
+                    resource: wgpu::BindingResource::Sampler(&renderer.sampler),
                 },
             ],
         });
-        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: surface_view,
-                resolve_target: None,
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                    store: true,
-                },
-            })],
-            depth_stencil_attachment: None,
-            label: Some("egui_render"),
-        });
+        Self {
+            renderer,
+            texture,
+            bind_group,
+        }
+    }
 
-        render_pass.set_pipeline(&self.pipeline);
-        render_pass.set_bind_group(0, &blit_bind_group, &[]);
-        render_pass.set_vertex_buffer(0, self.vertices.slice(..));
+    pub fn render<'pass, 'global: 'pass>(
+        &'pass self,
+        renderer: &'global MovieViewRenderer,
+        render_pass: &mut wgpu::RenderPass<'pass>,
+    ) {
+        render_pass.set_pipeline(&renderer.pipeline);
+        render_pass.set_bind_group(0, &self.bind_group, &[]);
+        render_pass.set_vertex_buffer(0, renderer.vertices.slice(..));
         render_pass.draw(0..6, 0..1);
+    }
+}
+
+impl RenderTarget for MovieView {
+    type Frame = MovieViewFrame;
+
+    fn resize(&mut self, device: &wgpu::Device, width: u32, height: u32) {
+        *self = MovieView::new(self.renderer.clone(), device, width, height);
+    }
+
+    fn format(&self) -> wgpu::TextureFormat {
+        self.texture.format()
+    }
+
+    fn width(&self) -> u32 {
+        self.texture.width()
+    }
+
+    fn height(&self) -> u32 {
+        self.texture.height()
+    }
+
+    fn get_next_texture(&mut self) -> Result<Self::Frame, wgpu::SurfaceError> {
+        Ok(MovieViewFrame(
+            self.texture.create_view(&Default::default()),
+        ))
+    }
+
+    fn submit<I: IntoIterator<Item = wgpu::CommandBuffer>>(
+        &self,
+        _device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        command_buffers: I,
+        _frame: Self::Frame,
+    ) -> wgpu::SubmissionIndex {
+        queue.submit(command_buffers)
+    }
+}
+
+#[derive(Debug)]
+pub struct MovieViewFrame(wgpu::TextureView);
+
+impl RenderTargetFrame for MovieViewFrame {
+    fn into_view(self) -> wgpu::TextureView {
+        self.0
+    }
+
+    fn view(&self) -> &wgpu::TextureView {
+        &self.0
     }
 }
