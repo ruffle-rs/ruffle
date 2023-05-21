@@ -17,6 +17,7 @@ mod ui;
 
 use crate::custom_event::RuffleEvent;
 use crate::executor::GlutinAsyncExecutor;
+use crate::gui::MovieView;
 use anyhow::{anyhow, Context, Error};
 use clap::Parser;
 use gui::GuiController;
@@ -33,7 +34,6 @@ use ruffle_render::backend::RenderBackend;
 use ruffle_render::quality::StageQuality;
 use ruffle_render_wgpu::backend::WgpuRenderBackend;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
-use ruffle_render_wgpu::target::TextureTarget;
 use std::cell::RefCell;
 use std::io::Read;
 use std::panic::PanicInfo;
@@ -354,17 +354,9 @@ impl App {
             opt.power.into(),
         )?;
 
-        let viewport_size = window.inner_size();
-        let renderer = WgpuRenderBackend::new(
-            gui.descriptors().clone(),
-            TextureTarget::new(
-                &gui.descriptors().device,
-                (viewport_size.width, viewport_size.height),
-            )
-            .map_err(|e| anyhow!(e.to_string()))?,
-        )
-        .map_err(|e| anyhow!(e.to_string()))
-        .context("Couldn't create wgpu rendering backend")?;
+        let renderer = WgpuRenderBackend::new(gui.descriptors().clone(), gui.create_movie_view())
+            .map_err(|e| anyhow!(e.to_string()))
+            .context("Couldn't create wgpu rendering backend")?;
         RENDER_INFO.with(|i| *i.borrow_mut() = Some(renderer.debug_info().to_string()));
 
         builder = builder
@@ -492,12 +484,9 @@ impl App {
                         player.render();
                         let renderer = player
                             .renderer_mut()
-                            .downcast_mut::<WgpuRenderBackend<TextureTarget>>()
+                            .downcast_mut::<WgpuRenderBackend<MovieView>>()
                             .expect("Renderer must be correct type");
-                        self.gui
-                            .lock()
-                            .expect("Gui lock")
-                            .render(&renderer.target().texture);
+                        self.gui.lock().expect("Gui lock").render(renderer.target());
                         #[cfg(feature = "tracy")]
                         tracing_tracy::client::Client::running()
                             .expect("tracy client must be running")

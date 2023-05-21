@@ -7,6 +7,7 @@ use std::time::{Duration, Instant};
 use winit::event_loop::EventLoopProxy;
 
 pub use controller::GuiController;
+pub use movie::MovieView;
 
 /// The main controller for the Ruffle GUI.
 pub struct RuffleGui {
