@@ -7,6 +7,7 @@
 #![windows_subsystem = "windows"]
 
 mod audio;
+mod cli;
 mod custom_event;
 mod executor;
 mod gui;
@@ -20,20 +21,18 @@ use crate::executor::GlutinAsyncExecutor;
 use crate::gui::MovieView;
 use anyhow::{anyhow, Context, Error};
 use clap::Parser;
+use cli::Opt;
 use gui::GuiController;
 use isahc::{config::RedirectPolicy, prelude::*, HttpClient};
 use rfd::FileDialog;
 use ruffle_core::backend::audio::AudioBackend;
-use ruffle_core::backend::navigator::OpenURLMode;
-use ruffle_core::events::{KeyCode, TextControlCode};
+use ruffle_core::events::TextControlCode;
 use ruffle_core::{
-    config::Letterbox, tag_utils::SwfMovie, LoadBehavior, Player, PlayerBuilder, PlayerEvent,
-    StageDisplayState, StageScaleMode, StaticCallstack, ViewportDimensions,
+    events::KeyCode, tag_utils::SwfMovie, Player, PlayerBuilder, PlayerEvent, StageDisplayState,
+    StaticCallstack, ViewportDimensions,
 };
 use ruffle_render::backend::RenderBackend;
-use ruffle_render::quality::StageQuality;
 use ruffle_render_wgpu::backend::WgpuRenderBackend;
-use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use std::cell::RefCell;
 use std::io::Read;
 use std::panic::PanicInfo;
@@ -62,113 +61,6 @@ static GLOBAL: tracing_tracy::client::ProfiledAllocator<std::alloc::System> =
     tracing_tracy::client::ProfiledAllocator::new(std::alloc::System, 0);
 
 static RUFFLE_VERSION: &str = include_str!(concat!(env!("OUT_DIR"), "/version-info.txt"));
-
-#[derive(Parser, Debug)]
-#[clap(
-    name = "Ruffle",
-    author,
-    version = RUFFLE_VERSION,
-)]
-struct Opt {
-    /// Path or URL of a Flash movie (SWF) to play.
-    #[clap(name = "FILE")]
-    input_path: Option<PathBuf>,
-
-    /// A "flashvars" parameter to provide to the movie.
-    /// This can be repeated multiple times, for example -Pkey=value -Pfoo=bar.
-    #[clap(short = 'P', action = clap::ArgAction::Append)]
-    parameters: Vec<String>,
-
-    /// Type of graphics backend to use. Not all options may be supported by your current system.
-    /// Default will attempt to pick the most supported graphics backend.
-    #[clap(long, short, default_value = "default")]
-    graphics: GraphicsBackend,
-
-    /// Power preference for the graphics device used. High power usage tends to prefer dedicated GPUs,
-    /// whereas a low power usage tends prefer integrated GPUs.
-    #[clap(long, short, default_value = "high")]
-    power: PowerPreference,
-
-    /// Width of window in pixels.
-    #[clap(long, display_order = 1)]
-    width: Option<f64>,
-
-    /// Height of window in pixels.
-    #[clap(long, display_order = 2)]
-    height: Option<f64>,
-
-    /// Maximum number of seconds a script can run before scripting is disabled.
-    #[clap(long, short, default_value = "15.0")]
-    max_execution_duration: f64,
-
-    /// Base directory or URL used to resolve all relative path statements in the SWF file.
-    /// The default is the current directory.
-    #[clap(long)]
-    base: Option<Url>,
-
-    /// Default quality of the movie.
-    #[clap(long, short, default_value = "high")]
-    quality: StageQuality,
-
-    /// The scale mode of the stage.
-    #[clap(long, short, default_value = "show-all")]
-    scale: StageScaleMode,
-
-    /// Audio volume as a number between 0 (muted) and 1 (full volume)
-    #[clap(long, short, default_value = "1.0")]
-    volume: f32,
-
-    /// Prevent movies from changing the stage scale mode.
-    #[clap(long, action)]
-    force_scale: bool,
-
-    /// Location to store a wgpu trace output
-    #[clap(long)]
-    #[cfg(feature = "render_trace")]
-    trace_path: Option<PathBuf>,
-
-    /// Proxy to use when loading movies via URL.
-    #[clap(long)]
-    proxy: Option<Url>,
-
-    /// Replace all embedded HTTP URLs with HTTPS.
-    #[clap(long, action)]
-    upgrade_to_https: bool,
-
-    /// Start application in fullscreen.
-    #[clap(long, action)]
-    fullscreen: bool,
-
-    #[clap(long, action)]
-    timedemo: bool,
-
-    /// Start application without ActionScript 3 warning.
-    #[clap(long, action)]
-    dont_warn_on_unsupported_content: bool,
-
-    #[clap(long, default_value = "streaming")]
-    load_behavior: LoadBehavior,
-
-    /// Specify how Ruffle should handle areas outside the movie stage.
-    #[clap(long, default_value = "on")]
-    letterbox: Letterbox,
-
-    /// Spoofs the root SWF URL provided to ActionScript.
-    #[clap(long, value_parser)]
-    spoof_url: Option<Url>,
-
-    /// The version of the player to emulate
-    #[clap(long)]
-    player_version: Option<u8>,
-
-    /// Set and lock the player's frame rate, overriding the movie's frame rate.
-    #[clap(long)]
-    frame_rate: Option<f64>,
-
-    /// The handling mode of links opening a new website.
-    #[clap(long, default_value = "allow")]
-    open_url_mode: OpenURLMode,
-}
 
 #[cfg(feature = "render_trace")]
 fn trace_path(opt: &Opt) -> Option<&Path> {
