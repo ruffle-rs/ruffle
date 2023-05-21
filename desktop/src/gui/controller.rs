@@ -124,7 +124,7 @@ impl GuiController {
         )
     }
 
-    pub fn render(&mut self, movie: &MovieView) {
+    pub fn render(&mut self, movie: Option<&MovieView>) {
         let surface_texture = self
             .surface
             .get_current_texture()
@@ -190,7 +190,9 @@ impl GuiController {
                 label: Some("egui_render"),
             });
 
-            movie.render(&self.movie_view_renderer, &mut render_pass);
+            if let Some(movie) = movie {
+                movie.render(&self.movie_view_renderer, &mut render_pass);
+            }
 
             self.egui_renderer
                 .render(&mut render_pass, &clipped_primitives, &screen_descriptor);
