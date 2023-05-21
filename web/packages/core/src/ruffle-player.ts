@@ -130,6 +130,7 @@ export class RufflePlayer extends HTMLElement {
     private readonly virtualKeyboard: HTMLInputElement;
     private readonly saveManager: HTMLDivElement;
 
+    private readonly contextMenuOverlay: HTMLElement;
     // Firefox has a read-only "contextMenu" property,
     // so avoid shadowing it.
     private readonly contextMenuElement: HTMLElement;
@@ -270,6 +271,9 @@ export class RufflePlayer extends HTMLElement {
             unmuteText.textContent = text("click-to-unmute");
         }
 
+        this.contextMenuOverlay = this.shadow.getElementById(
+            "context-menu-overlay"
+        )!;
         this.contextMenuElement = this.shadow.getElementById("context-menu")!;
         this.addEventListener("contextmenu", this.showContextMenu.bind(this));
         this.container.addEventListener(
@@ -1197,7 +1201,7 @@ export class RufflePlayer extends HTMLElement {
             }
         };
 
-        if (this.instance) {
+        if (this.instance && this.isPlaying) {
             const customItems: {
                 readonly caption: string;
                 readonly checked: boolean;
@@ -1338,6 +1342,10 @@ export class RufflePlayer extends HTMLElement {
     }
 
     private showContextMenu(event: MouseEvent | PointerEvent): void {
+        if (this.panicked || !this.saveManager.classList.contains("hidden")) {
+            return;
+        }
+
         event.preventDefault();
 
         if (event.type === "contextmenu") {
@@ -1353,6 +1361,7 @@ export class RufflePlayer extends HTMLElement {
             );
             event.stopPropagation();
         }
+
         const isTouch =
             event instanceof PointerEvent &&
             (event.pointerType === "touch" || event.pointerType === "pen");
@@ -1406,7 +1415,7 @@ export class RufflePlayer extends HTMLElement {
         // its `clientWidth` and `clientHeight` are not clamped.
         this.contextMenuElement.style.left = "0";
         this.contextMenuElement.style.top = "0";
-        this.contextMenuElement.style.display = "block";
+        this.contextMenuOverlay.classList.remove("hidden");
 
         const rect = this.getBoundingClientRect();
         const x = event.clientX - rect.x;
@@ -1422,7 +1431,7 @@ export class RufflePlayer extends HTMLElement {
 
     private hideContextMenu(): void {
         this.instance?.clear_custom_menu_items();
-        this.contextMenuElement.style.display = "none";
+        this.contextMenuOverlay.classList.add("hidden");
     }
 
     /**
