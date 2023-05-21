@@ -41,6 +41,12 @@
     "settings_advanced_options": {
         "message": "Options Avancées"
     },
+    "settings_reset": {
+        "message": "Réinitialiser les paramètres"
+    },
+    "settings_reset_confirm": {
+        "message": "Voulez-vous vraiment restaurer les paramètres de Ruffle à leurs valeurs par défaut ?"
+    },
     "status_init": {
         "message": "Lecture de l'onglet actuel…"
     },
