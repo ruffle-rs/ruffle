@@ -13,6 +13,7 @@ mod custom_event;
 mod executor;
 mod gui;
 mod navigator;
+mod player;
 mod storage;
 mod task;
 mod time_demo;

@@ -2,6 +2,7 @@ use crate::cli::Opt;
 use crate::custom_event::RuffleEvent;
 use crate::executor::GlutinAsyncExecutor;
 use crate::gui::{GuiController, MovieView};
+use crate::player::PlayerController;
 use crate::util::{
     get_screen_size, parse_url, pick_file, winit_key_to_char, winit_to_ruffle_key_code,
     winit_to_ruffle_text_control,
@@ -9,7 +10,7 @@ use crate::util::{
 use crate::{audio, navigator, storage, ui, CALLSTACK, RENDER_INFO, SWF_INFO};
 use anyhow::{anyhow, Context, Error};
 use ruffle_core::backend::audio::AudioBackend;
-use ruffle_core::{Player, PlayerBuilder, PlayerEvent, StageDisplayState};
+use ruffle_core::{PlayerBuilder, PlayerEvent, StageDisplayState};
 use ruffle_render::backend::{RenderBackend, ViewportDimensions};
 use ruffle_render_wgpu::backend::WgpuRenderBackend;
 use std::rc::Rc;
@@ -28,7 +29,7 @@ pub struct App {
     event_loop_proxy: EventLoopProxy<RuffleEvent>,
     executor: Arc<Mutex<GlutinAsyncExecutor>>,
     gui: Arc<Mutex<GuiController>>,
-    player: Arc<Mutex<Player>>,
+    player: PlayerController,
     min_window_size: LogicalSize<u32>,
     max_window_size: PhysicalSize<u32>,
 }
@@ -121,10 +122,10 @@ impl App {
             .with_player_version(opt.player_version)
             .with_frame_rate(opt.frame_rate);
 
-        let player = builder.build();
+        let player = PlayerController::new(builder.build());
 
         CALLSTACK.with(|callstack| {
-            *callstack.borrow_mut() = Some(player.lock().expect("Cannot reenter").callstack());
+            *callstack.borrow_mut() = Some(player.get().callstack());
         });
 
         let mut app = Self {
@@ -162,11 +163,9 @@ impl App {
 
         let mut parameters: Vec<(String, String)> = url.query_pairs().into_owned().collect();
         parameters.extend(self.opt.parameters());
-        self.player.lock().expect("Player lock").fetch_root_movie(
-            url.to_string(),
-            parameters,
-            Box::new(on_metadata),
-        );
+        self.player
+            .get()
+            .fetch_root_movie(url.to_string(), parameters, Box::new(on_metadata));
 
         Ok(())
     }
@@ -198,10 +197,7 @@ impl App {
             let mut check_redraw = false;
             match event {
                 winit::event::Event::LoopDestroyed => {
-                    self.player
-                        .lock()
-                        .expect("Cannot reenter")
-                        .flush_shared_objects();
+                    self.player.get().flush_shared_objects();
                     crate::shutdown();
                     return;
                 }
@@ -214,7 +210,7 @@ impl App {
                     let dt = new_time.duration_since(time).as_micros();
                     if dt > 0 {
                         time = new_time;
-                        let mut player_lock = self.player.lock().expect("Cannot reenter");
+                        let mut player_lock = self.player.get();
                         player_lock.tick(dt as f64 / 1000.0);
                         next_frame_time = new_time + player_lock.time_til_next_frame();
                         check_redraw = true;
@@ -225,7 +221,7 @@ impl App {
                 winit::event::Event::RedrawRequested(_) => {
                     // Don't render when minimized to avoid potential swap chain errors in `wgpu`.
                     if !minimized {
-                        let mut player = self.player.lock().expect("Cannot reenter");
+                        let mut player = self.player.get();
                         player.render();
                         let renderer = player
                             .renderer_mut()
@@ -257,7 +253,7 @@ impl App {
                             minimized = size.width == 0 && size.height == 0;
 
                             let viewport_scale_factor = self.window.scale_factor();
-                            let mut player_lock = self.player.lock().expect("Cannot reenter");
+                            let mut player_lock = self.player.get();
                             player_lock.set_viewport_dimensions(ViewportDimensions {
                                 width: size.width,
                                 height: size.height,
@@ -273,7 +269,7 @@ impl App {
                                 return;
                             }
 
-                            let mut player_lock = self.player.lock().expect("Cannot reenter");
+                            let mut player_lock = self.player.get();
                             mouse_pos = position;
                             let event = PlayerEvent::MouseMove {
                                 x: position.x,
@@ -289,7 +285,7 @@ impl App {
 
                             use ruffle_core::events::MouseButton as RuffleMouseButton;
                             use winit::event::MouseButton;
-                            let mut player_lock = self.player.lock().expect("Cannot reenter");
+                            let mut player_lock = self.player.get();
                             let x = mouse_pos.x;
                             let y = mouse_pos.y;
                             let button = match button {
@@ -318,7 +314,7 @@ impl App {
                         WindowEvent::MouseWheel { delta, .. } => {
                             use ruffle_core::events::MouseWheelDelta;
                             use winit::event::MouseScrollDelta;
-                            let mut player_lock = self.player.lock().expect("Cannot reenter");
+                            let mut player_lock = self.player.get();
                             let delta = match delta {
                                 MouseScrollDelta::LineDelta(_, dy) => {
                                     MouseWheelDelta::Lines(dy.into())
@@ -330,14 +326,14 @@ impl App {
                             check_redraw = true;
                         }
                         WindowEvent::CursorEntered { .. } => {
-                            let mut player_lock = self.player.lock().expect("Cannot reenter");
+                            let mut player_lock = self.player.get();
                             player_lock.set_mouse_in_stage(true);
                             if player_lock.needs_render() {
                                 self.window.request_redraw();
                             }
                         }
                         WindowEvent::CursorLeft { .. } => {
-                            let mut player_lock = self.player.lock().expect("Cannot reenter");
+                            let mut player_lock = self.player.get();
                             player_lock.set_mouse_in_stage(false);
                             player_lock.handle_event(PlayerEvent::MouseLeave);
                             check_redraw = true;
@@ -354,7 +350,7 @@ impl App {
                                     ..
                                 } if modifiers.alt() => {
                                     if !fullscreen_down {
-                                        self.player.lock().expect("Cannot reenter").update(|uc| {
+                                        self.player.get().update(|uc| {
                                             uc.stage.toggle_display_state(uc);
                                         });
                                     }
@@ -372,13 +368,13 @@ impl App {
                                     state: ElementState::Pressed,
                                     virtual_keycode: Some(VirtualKeyCode::Escape),
                                     ..
-                                } => self.player.lock().expect("Cannot reenter").update(|uc| {
+                                } => self.player.get().update(|uc| {
                                     uc.stage.set_display_state(uc, StageDisplayState::Normal);
                                 }),
                                 _ => (),
                             }
 
-                            let mut player_lock = self.player.lock().expect("Cannot reenter");
+                            let mut player_lock = self.player.get();
                             if let Some(key) = input.virtual_keycode {
                                 let key_code = winit_to_ruffle_key_code(key);
                                 let key_char = winit_key_to_char(key, modifiers.shift());
@@ -407,7 +403,7 @@ impl App {
                             }
                         }
                         WindowEvent::ReceivedCharacter(codepoint) => {
-                            let mut player_lock = self.player.lock().expect("Cannot reenter");
+                            let mut player_lock = self.player.get();
                             let event = PlayerEvent::TextInput { codepoint };
                             player_lock.handle_event(event);
                             check_redraw = true;
@@ -468,7 +464,7 @@ impl App {
                     }
 
                     let viewport_scale_factor = self.window.scale_factor();
-                    let mut player_lock = self.player.lock().expect("Cannot reenter");
+                    let mut player_lock = self.player.get();
                     player_lock.set_viewport_dimensions(ViewportDimensions {
                         width: viewport_size.width,
                         height: viewport_size.height,
@@ -477,10 +473,7 @@ impl App {
                 }
 
                 winit::event::Event::UserEvent(RuffleEvent::ContextMenuItemClicked(index)) => {
-                    self.player
-                        .lock()
-                        .expect("Cannot reenter")
-                        .run_context_menu_callback(index);
+                    self.player.get().run_context_menu_callback(index);
                 }
 
                 winit::event::Event::UserEvent(RuffleEvent::OpenFile) => {
@@ -507,7 +500,7 @@ impl App {
 
             // Check for a redraw request.
             if check_redraw {
-                let player = self.player.lock().expect("Player lock");
+                let player = self.player.get();
                 let gui = self.gui.lock().expect("Gui lock");
                 if player.needs_render() || gui.needs_render() {
                     self.window.request_redraw();
