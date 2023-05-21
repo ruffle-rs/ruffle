@@ -1198,6 +1198,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     if url.is_empty() {
                         //Blank URL on movie loads = unload!
                         if let Some(mc) = level.as_movie_clip() {
+                            mc.avm1_unload(&mut self.context);
                             mc.replace_with_movie(&mut self.context, None, None)
                         }
                     } else {
@@ -1324,6 +1325,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 if url.is_empty() {
                     // Blank URL on movie loads = unload!
                     if let Some(mc) = clip_target.as_movie_clip() {
+                        mc.avm1_unload(&mut self.context);
                         mc.replace_with_movie(&mut self.context, None, None)
                     }
                 } else {
@@ -1349,6 +1351,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 if url.is_empty() {
                     // Blank URL on movie loads = unload!
                     if let Some(mc) = clip_target.as_movie_clip() {
+                        mc.avm1_unload(&mut self.context);
                         mc.replace_with_movie(&mut self.context, None, None)
                     }
                 } else {
