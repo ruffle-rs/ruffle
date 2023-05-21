@@ -2,7 +2,7 @@ use crate::cli::Opt;
 use crate::custom_event::RuffleEvent;
 use crate::executor::GlutinAsyncExecutor;
 use crate::gui::MovieView;
-use crate::RENDER_INFO;
+use crate::{CALLSTACK, RENDER_INFO, SWF_INFO};
 use anyhow::anyhow;
 use ruffle_core::backend::audio::AudioBackend;
 use ruffle_core::{Player, PlayerBuilder};
@@ -16,16 +16,16 @@ use url::Url;
 use winit::event_loop::EventLoopProxy;
 use winit::window::Window;
 
-pub struct PlayerController {
+struct ActivePlayer {
     player: Arc<Mutex<Player>>,
     executor: Arc<Mutex<GlutinAsyncExecutor>>,
 }
 
-impl PlayerController {
+impl ActivePlayer {
     pub fn new(
         opt: &Opt,
         event_loop: EventLoopProxy<RuffleEvent>,
-        movie_url: Option<Url>,
+        movie_url: Url,
         window: Rc<Window>,
         descriptors: Arc<Descriptors>,
         movie_view: MovieView,
@@ -44,11 +44,9 @@ impl PlayerController {
 
         let (executor, channel) = GlutinAsyncExecutor::new(event_loop.clone());
         let navigator = crate::navigator::ExternalNavigatorBackend::new(
-            opt.base.to_owned().unwrap_or(
-                movie_url.unwrap_or_else(|| Url::parse("file:///empty").expect("Dummy Url")),
-            ),
+            opt.base.to_owned().unwrap_or_else(|| movie_url.clone()),
             channel,
-            event_loop,
+            event_loop.clone(),
             opt.proxy.clone(),
             opt.upgrade_to_https,
             opt.open_url_mode,
@@ -70,7 +68,10 @@ impl PlayerController {
             .with_storage(
                 crate::storage::DiskStorageBackend::new().expect("Couldn't create storage backend"),
             )
-            .with_ui(crate::ui::DesktopUiBackend::new(window).expect("Couldn't create ui backend"))
+            .with_ui(
+                crate::ui::DesktopUiBackend::new(window.clone())
+                    .expect("Couldn't create ui backend"),
+            )
             .with_autoplay(true)
             .with_letterbox(opt.letterbox)
             .with_max_execution_duration(Duration::from_secs_f64(opt.max_execution_duration))
@@ -82,26 +83,89 @@ impl PlayerController {
             .with_spoofed_url(opt.spoof_url.clone().map(|url| url.to_string()))
             .with_player_version(opt.player_version)
             .with_frame_rate(opt.frame_rate);
+        let player = builder.build();
 
+        let name = movie_url
+            .path_segments()
+            .and_then(|segments| segments.last())
+            .unwrap_or_else(|| movie_url.as_str())
+            .to_string();
+
+        window.set_title(&format!("Ruffle - {name}"));
+
+        SWF_INFO.with(|i| *i.borrow_mut() = Some(name.clone()));
+
+        let on_metadata = move |swf_header: &ruffle_core::swf::HeaderExt| {
+            let _ = event_loop.send_event(RuffleEvent::OnMetadata(swf_header.clone()));
+        };
+
+        let mut parameters: Vec<(String, String)> = movie_url.query_pairs().into_owned().collect();
+        parameters.extend(opt.parameters());
+
+        {
+            let mut player_lock = player.lock().expect("Player lock must be available");
+            CALLSTACK.with(|callstack| {
+                *callstack.borrow_mut() = Some(player_lock.callstack());
+            });
+            player_lock.fetch_root_movie(movie_url.to_string(), parameters, Box::new(on_metadata));
+        }
+
+        Self { player, executor }
+    }
+}
+
+pub struct PlayerController {
+    player: Option<ActivePlayer>,
+    event_loop: EventLoopProxy<RuffleEvent>,
+    window: Rc<Window>,
+    descriptors: Arc<Descriptors>,
+}
+
+impl PlayerController {
+    pub fn new(
+        event_loop: EventLoopProxy<RuffleEvent>,
+        window: Rc<Window>,
+        descriptors: Arc<Descriptors>,
+    ) -> Self {
         Self {
-            player: builder.build(),
-            executor,
+            player: None,
+            event_loop,
+            window,
+            descriptors,
         }
     }
 
+    pub fn create(&mut self, opt: &Opt, movie_url: Url, movie_view: MovieView) {
+        self.player = Some(ActivePlayer::new(
+            opt,
+            self.event_loop.clone(),
+            movie_url,
+            self.window.clone(),
+            self.descriptors.clone(),
+            movie_view,
+        ));
+    }
+
     pub fn get(&self) -> Option<MutexGuard<Player>> {
-        // We don't want to return None when the lock fails to grab as that's a fatal error, not a lack of player
-        Some(
-            self.player
-                .try_lock()
-                .expect("Player lock must be available"),
-        )
+        match &self.player {
+            None => None,
+            // We don't want to return None when the lock fails to grab as that's a fatal error, not a lack of player
+            Some(player) => Some(
+                player
+                    .player
+                    .try_lock()
+                    .expect("Player lock must be available"),
+            ),
+        }
     }
 
     pub fn poll(&self) {
-        self.executor
-            .lock()
-            .expect("active executor reference")
-            .poll_all()
+        if let Some(player) = &self.player {
+            player
+                .executor
+                .lock()
+                .expect("Executor lock must be available")
+                .poll_all()
+        }
     }
 }

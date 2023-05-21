@@ -6,7 +6,6 @@ use crate::util::{
     get_screen_size, parse_url, pick_file, winit_key_to_char, winit_to_ruffle_key_code,
     winit_to_ruffle_text_control,
 };
-use crate::{CALLSTACK, SWF_INFO};
 use anyhow::{Context, Error};
 use ruffle_core::{PlayerEvent, StageDisplayState};
 use ruffle_render::backend::ViewportDimensions;
@@ -14,17 +13,15 @@ use ruffle_render_wgpu::backend::WgpuRenderBackend;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
-use url::Url;
 use winit::dpi::{LogicalSize, PhysicalPosition, PhysicalSize, Size};
 use winit::event::{ElementState, KeyboardInput, ModifiersState, VirtualKeyCode, WindowEvent};
-use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder, EventLoopProxy};
+use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
 use winit::window::{Fullscreen, Icon, Window, WindowBuilder};
 
 pub struct App {
     opt: Opt,
     window: Rc<Window>,
     event_loop: Option<EventLoop<RuffleEvent>>,
-    event_loop_proxy: EventLoopProxy<RuffleEvent>,
     gui: Arc<Mutex<GuiController>>,
     player: PlayerController,
     min_window_size: LogicalSize<u32>,
@@ -65,61 +62,25 @@ impl App {
             opt.power.into(),
         )?;
 
-        let player = PlayerController::new(
-            &opt,
+        let mut player = PlayerController::new(
             event_loop.create_proxy(),
-            movie_url.clone(),
             window.clone(),
             gui.descriptors().clone(),
-            gui.create_movie_view(),
         );
 
-        let mut app = Self {
+        if let Some(movie_url) = movie_url {
+            player.create(&opt, movie_url, gui.create_movie_view());
+        }
+
+        Ok(Self {
             opt,
             window,
-            event_loop_proxy: event_loop.create_proxy(),
             event_loop: Some(event_loop),
             gui: Arc::new(Mutex::new(gui)),
             player,
             min_window_size,
             max_window_size,
-        };
-
-        if let Some(movie_url) = movie_url {
-            app.load_swf(movie_url)?;
-        }
-
-        Ok(app)
-    }
-
-    fn load_swf(&mut self, url: Url) -> Result<(), Error> {
-        let filename = url
-            .path_segments()
-            .and_then(|segments| segments.last())
-            .unwrap_or_else(|| url.as_str());
-        let title = format!("Ruffle - {filename}");
-        self.window.set_title(&title);
-        SWF_INFO.with(|i| *i.borrow_mut() = Some(filename.to_string()));
-
-        let event_loop_proxy = self.event_loop_proxy.clone();
-        let on_metadata = move |swf_header: &ruffle_core::swf::HeaderExt| {
-            let _ = event_loop_proxy.send_event(RuffleEvent::OnMetadata(swf_header.clone()));
-        };
-
-        let mut parameters: Vec<(String, String)> = url.query_pairs().into_owned().collect();
-        parameters.extend(self.opt.parameters());
-
-        if let Some(mut player) = self.player.get() {
-            CALLSTACK.with(|callstack| {
-                *callstack.borrow_mut() = Some(player.callstack());
-            });
-
-            player.fetch_root_movie(url.to_string(), parameters, Box::new(on_metadata));
-        } else {
-            unimplemented!("TODO: get_or_create player");
-        }
-
-        Ok(())
+        })
     }
 
     pub fn run(mut self) -> ! {
@@ -457,13 +418,21 @@ impl App {
                     if let Some(path) = pick_file() {
                         // TODO: Show dialog on error.
                         let url = parse_url(&path).expect("Couldn't load specified path");
-                        let _ = self.load_swf(url);
+                        self.player.create(
+                            &self.opt,
+                            url,
+                            self.gui.lock().expect("Gui lock").create_movie_view(),
+                        );
                         self.gui.lock().expect("Gui lock").set_ui_visible(false);
                     }
                 }
 
                 winit::event::Event::UserEvent(RuffleEvent::OpenURL(url)) => {
-                    let _ = self.load_swf(url);
+                    self.player.create(
+                        &self.opt,
+                        url,
+                        self.gui.lock().expect("Gui lock").create_movie_view(),
+                    );
                     self.gui.lock().expect("Gui lock").set_ui_visible(false);
                 }
 
