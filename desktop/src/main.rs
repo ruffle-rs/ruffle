@@ -62,21 +62,6 @@ static GLOBAL: tracing_tracy::client::ProfiledAllocator<std::alloc::System> =
 
 static RUFFLE_VERSION: &str = include_str!(concat!(env!("OUT_DIR"), "/version-info.txt"));
 
-#[cfg(feature = "render_trace")]
-fn trace_path(opt: &Opt) -> Option<&Path> {
-    if let Some(path) = &opt.trace_path {
-        let _ = std::fs::create_dir_all(path);
-        Some(path)
-    } else {
-        None
-    }
-}
-
-#[cfg(not(feature = "render_trace"))]
-fn trace_path(_opt: &Opt) -> Option<&Path> {
-    None
-}
-
 fn parse_url(path: &Path) -> Result<Url, Error> {
     if path.exists() {
         let absolute_path = path.canonicalize().unwrap_or_else(|_| path.to_owned());
@@ -88,17 +73,6 @@ fn parse_url(path: &Path) -> Result<Url, Error> {
             .filter(|url| url.host().is_some() || url.scheme() == "file")
             .ok_or_else(|| anyhow!("Input path is not a file and could not be parsed as a URL."))
     }
-}
-
-fn parse_parameters(opt: &Opt) -> impl '_ + Iterator<Item = (String, String)> {
-    opt.parameters.iter().map(|parameter| {
-        let mut split = parameter.splitn(2, '=');
-        if let (Some(key), Some(value)) = (split.next(), split.next()) {
-            (key.to_owned(), value.to_owned())
-        } else {
-            (parameter.clone(), "".to_string())
-        }
-    })
 }
 
 fn pick_file() -> Option<PathBuf> {
@@ -138,7 +112,7 @@ fn load_movie(url: &Url, opt: &Opt) -> Result<SwfMovie, Error> {
             .context("Couldn't load swf")?
     };
 
-    movie.append_parameters(parse_parameters(opt));
+    movie.append_parameters(opt.parameters());
 
     Ok(movie)
 }
@@ -241,7 +215,7 @@ impl App {
         let gui = GuiController::new(
             window.clone(),
             &event_loop,
-            trace_path(&opt),
+            opt.trace_path(),
             opt.graphics.into(),
             opt.power.into(),
         )?;
@@ -308,7 +282,7 @@ impl App {
         };
 
         let mut parameters: Vec<(String, String)> = url.query_pairs().into_owned().collect();
-        parameters.extend(parse_parameters(&self.opt));
+        parameters.extend(self.opt.parameters());
         self.player.lock().expect("Player lock").fetch_root_movie(
             url.to_string(),
             parameters,
@@ -952,7 +926,7 @@ fn run_timedemo(opt: Opt) -> Result<(), Error> {
         (viewport_width, viewport_height),
         opt.graphics.into(),
         opt.power.into(),
-        trace_path(&opt),
+        opt.trace_path(),
     )
     .map_err(|e| anyhow!(e.to_string()))
     .context("Couldn't create wgpu rendering backend")?;
