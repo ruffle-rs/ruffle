@@ -91,7 +91,7 @@ impl<'gc> Domain<'gc> {
         self.0.read().parent
     }
 
-    /// Determine if something has been defined within the current domain.
+    /// Determine if something has been defined within the current domain (including parents)
     pub fn has_definition(self, name: QName<'gc>) -> bool {
         let read = self.0.read();
 
@@ -101,6 +101,21 @@ impl<'gc> Domain<'gc> {
 
         if let Some(parent) = read.parent {
             return parent.has_definition(name);
+        }
+
+        false
+    }
+
+    /// Determine if a class has been defined within the current domain (including parents)
+    pub fn has_class(self, name: QName<'gc>) -> bool {
+        let read = self.0.read();
+
+        if read.classes.contains_key(name) {
+            return true;
+        }
+
+        if let Some(parent) = read.parent {
+            return parent.has_class(name);
         }
 
         false
@@ -230,7 +245,7 @@ impl<'gc> Domain<'gc> {
 
     /// Export a definition from a script into the current application domain.
     ///
-    /// This does nothing if the definition already exists.
+    /// This does nothing if the definition already exists in this domain or a parent.
     pub fn export_definition(
         &mut self,
         name: QName<'gc>,
@@ -244,8 +259,11 @@ impl<'gc> Domain<'gc> {
         self.0.write(mc).defs.insert(name, script);
     }
 
+    /// Export a class into the current application domain.
+    ///
+    /// This does nothing if the definition already exists in this domain or a parent.
     pub fn export_class(&self, class: GcCell<'gc, Class<'gc>>, mc: MutationContext<'gc, '_>) {
-        if self.0.read().classes.contains_key(class.read().name()) {
+        if self.has_class(class.read().name()) {
             return;
         }
         self.0.write(mc).classes.insert(class.read().name(), class);
