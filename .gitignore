@@ -10,3 +10,7 @@ target/
 
 # Flash recovery files
 RECOVER_*.fla
+
+tests/**/actual.txt
+tests/**/actual-*.png
+tests/**/difference-*.png

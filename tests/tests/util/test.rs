@@ -65,6 +65,9 @@ impl Test {
 
     pub fn compare_output(&self, actual_output: &str) -> Result<()> {
         let expected_output = std::fs::read_to_string(&self.output_path)?.replace("\r\n", "\n");
+        let mut actual_path = self.output_path.clone();
+        actual_path.set_file_name("actual.txt");
+        std::fs::write(actual_path, actual_output)?;
 
         if let Some(approximations) = &self.options.approximations {
             std::assert_eq!(
