@@ -1,21 +1,19 @@
 use crate::cli::Opt;
 use crate::custom_event::RuffleEvent;
-use crate::executor::GlutinAsyncExecutor;
 use crate::gui::{GuiController, MovieView};
 use crate::player::PlayerController;
 use crate::util::{
     get_screen_size, parse_url, pick_file, winit_key_to_char, winit_to_ruffle_key_code,
     winit_to_ruffle_text_control,
 };
-use crate::{audio, navigator, storage, ui, CALLSTACK, RENDER_INFO, SWF_INFO};
-use anyhow::{anyhow, Context, Error};
-use ruffle_core::backend::audio::AudioBackend;
-use ruffle_core::{PlayerBuilder, PlayerEvent, StageDisplayState};
-use ruffle_render::backend::{RenderBackend, ViewportDimensions};
+use crate::{CALLSTACK, SWF_INFO};
+use anyhow::{Context, Error};
+use ruffle_core::{PlayerEvent, StageDisplayState};
+use ruffle_render::backend::ViewportDimensions;
 use ruffle_render_wgpu::backend::WgpuRenderBackend;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant};
+use std::time::Instant;
 use url::Url;
 use winit::dpi::{LogicalSize, PhysicalPosition, PhysicalSize, Size};
 use winit::event::{ElementState, KeyboardInput, ModifiersState, VirtualKeyCode, WindowEvent};
@@ -27,7 +25,6 @@ pub struct App {
     window: Rc<Window>,
     event_loop: Option<EventLoop<RuffleEvent>>,
     event_loop_proxy: EventLoopProxy<RuffleEvent>,
-    executor: Arc<Mutex<GlutinAsyncExecutor>>,
     gui: Arc<Mutex<GuiController>>,
     player: PlayerController,
     min_window_size: LogicalSize<u32>,
@@ -58,39 +55,7 @@ impl App {
             .with_min_inner_size(min_window_size)
             .with_max_inner_size(max_window_size)
             .build(&event_loop)?;
-
-        let mut builder = PlayerBuilder::new();
-
-        match audio::CpalAudioBackend::new() {
-            Ok(mut audio) => {
-                audio.set_volume(opt.volume);
-                builder = builder.with_audio(audio);
-            }
-            Err(e) => {
-                tracing::error!("Unable to create audio device: {}", e);
-            }
-        };
-
-        let (executor, channel) = GlutinAsyncExecutor::new(event_loop.create_proxy());
-        let navigator = navigator::ExternalNavigatorBackend::new(
-            opt.base.to_owned().unwrap_or(
-                movie_url
-                    .clone()
-                    .unwrap_or_else(|| Url::parse("file:///empty").expect("Dummy Url")),
-            ),
-            channel,
-            event_loop.create_proxy(),
-            opt.proxy.clone(),
-            opt.upgrade_to_https,
-            opt.open_url_mode,
-        );
-
         let window = Rc::new(window);
-
-        if cfg!(feature = "software_video") {
-            builder =
-                builder.with_video(ruffle_video_software::backend::SoftwareVideoBackend::new());
-        }
 
         let gui = GuiController::new(
             window.clone(),
@@ -100,36 +65,20 @@ impl App {
             opt.power.into(),
         )?;
 
-        let renderer = WgpuRenderBackend::new(gui.descriptors().clone(), gui.create_movie_view())
-            .map_err(|e| anyhow!(e.to_string()))
-            .context("Couldn't create wgpu rendering backend")?;
-        RENDER_INFO.with(|i| *i.borrow_mut() = Some(renderer.debug_info().to_string()));
-
-        builder = builder
-            .with_navigator(navigator)
-            .with_renderer(renderer)
-            .with_storage(storage::DiskStorageBackend::new()?)
-            .with_ui(ui::DesktopUiBackend::new(window.clone())?)
-            .with_autoplay(true)
-            .with_letterbox(opt.letterbox)
-            .with_max_execution_duration(Duration::from_secs_f64(opt.max_execution_duration))
-            .with_quality(opt.quality)
-            .with_warn_on_unsupported_content(!opt.dont_warn_on_unsupported_content)
-            .with_scale_mode(opt.scale, opt.force_scale)
-            .with_fullscreen(opt.fullscreen)
-            .with_load_behavior(opt.load_behavior)
-            .with_spoofed_url(opt.spoof_url.clone().map(|url| url.to_string()))
-            .with_player_version(opt.player_version)
-            .with_frame_rate(opt.frame_rate);
-
-        let player = PlayerController::new(builder.build());
+        let player = PlayerController::new(
+            &opt,
+            event_loop.create_proxy(),
+            movie_url.clone(),
+            window.clone(),
+            gui.descriptors().clone(),
+            gui.create_movie_view(),
+        );
 
         let mut app = Self {
             opt,
             window,
             event_loop_proxy: event_loop.create_proxy(),
             event_loop: Some(event_loop),
-            executor,
             gui: Arc::new(Mutex::new(gui)),
             player,
             min_window_size,
@@ -440,11 +389,7 @@ impl App {
                         _ => (),
                     }
                 }
-                winit::event::Event::UserEvent(RuffleEvent::TaskPoll) => self
-                    .executor
-                    .lock()
-                    .expect("active executor reference")
-                    .poll_all(),
+                winit::event::Event::UserEvent(RuffleEvent::TaskPoll) => self.player.poll(),
                 winit::event::Event::UserEvent(RuffleEvent::OnMetadata(swf_header)) => {
                     let movie_width = swf_header.stage_size().width().to_pixels();
                     let movie_height = swf_header.stage_size().height().to_pixels();
