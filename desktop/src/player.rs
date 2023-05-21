@@ -10,9 +10,12 @@ impl PlayerController {
         Self { player }
     }
 
-    pub fn get(&self) -> MutexGuard<Player> {
-        self.player
-            .try_lock()
-            .expect("Player lock must be available")
+    pub fn get(&self) -> Option<MutexGuard<Player>> {
+        // We don't want to return None when the lock fails to grab as that's a fatal error, not a lack of player
+        Some(
+            self.player
+                .try_lock()
+                .expect("Player lock must be available"),
+        )
     }
 }
