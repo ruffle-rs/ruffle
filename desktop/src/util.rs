@@ -1,5 +1,9 @@
 use crate::custom_event::RuffleEvent;
+use anyhow::{anyhow, Error};
+use rfd::FileDialog;
 use ruffle_core::events::{KeyCode, TextControlCode};
+use std::path::{Path, PathBuf};
+use url::Url;
 use winit::dpi::PhysicalSize;
 use winit::event::{ModifiersState, VirtualKeyCode};
 use winit::event_loop::EventLoop;
@@ -291,4 +295,25 @@ pub fn get_screen_size(event_loop: &EventLoop<RuffleEvent>) -> PhysicalSize<u32>
     }
 
     (width, height).into()
+}
+
+pub fn parse_url(path: &Path) -> Result<Url, Error> {
+    if path.exists() {
+        let absolute_path = path.canonicalize().unwrap_or_else(|_| path.to_owned());
+        Url::from_file_path(absolute_path)
+            .map_err(|_| anyhow!("Path must be absolute and cannot be a URL"))
+    } else {
+        Url::parse(path.to_str().unwrap_or_default())
+            .ok()
+            .filter(|url| url.host().is_some() || url.scheme() == "file")
+            .ok_or_else(|| anyhow!("Input path is not a file and could not be parsed as a URL."))
+    }
+}
+
+pub fn pick_file() -> Option<PathBuf> {
+    FileDialog::new()
+        .add_filter("Flash Files", &["swf", "spl"])
+        .add_filter("All Files", &["*"])
+        .set_title("Load a Flash File")
+        .pick_file()
 }
