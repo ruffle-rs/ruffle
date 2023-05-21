@@ -2,9 +2,8 @@ use crate::cli::Opt;
 use crate::custom_event::RuffleEvent;
 use crate::executor::GlutinAsyncExecutor;
 use crate::gui::{GuiController, MovieView};
-use crate::{
-    audio, navigator, storage, ui, winit_to_ruffle_text_control, CALLSTACK, RENDER_INFO, SWF_INFO,
-};
+use crate::util::winit_to_ruffle_text_control;
+use crate::{audio, navigator, storage, ui, CALLSTACK, RENDER_INFO, SWF_INFO};
 use anyhow::{anyhow, Context, Error};
 use ruffle_core::backend::audio::AudioBackend;
 use ruffle_core::{Player, PlayerBuilder, PlayerEvent, StageDisplayState};
@@ -46,7 +45,7 @@ impl App {
         let event_loop = EventLoopBuilder::with_user_event().build();
 
         let min_window_size = (16, 16).into();
-        let max_window_size = crate::get_screen_size(&event_loop);
+        let max_window_size = crate::util::get_screen_size(&event_loop);
 
         let window = WindowBuilder::new()
             .with_visible(false)
@@ -378,8 +377,9 @@ impl App {
 
                             let mut player_lock = self.player.lock().expect("Cannot reenter");
                             if let Some(key) = input.virtual_keycode {
-                                let key_code = crate::winit_to_ruffle_key_code(key);
-                                let key_char = crate::winit_key_to_char(key, modifiers.shift());
+                                let key_code = crate::util::winit_to_ruffle_key_code(key);
+                                let key_char =
+                                    crate::util::winit_key_to_char(key, modifiers.shift());
                                 match input.state {
                                     ElementState::Pressed => {
                                         player_lock.handle_event(PlayerEvent::KeyDown {
