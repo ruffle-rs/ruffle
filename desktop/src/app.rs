@@ -2,7 +2,10 @@ use crate::cli::Opt;
 use crate::custom_event::RuffleEvent;
 use crate::executor::GlutinAsyncExecutor;
 use crate::gui::{GuiController, MovieView};
-use crate::util::winit_to_ruffle_text_control;
+use crate::util::{
+    get_screen_size, parse_url, pick_file, winit_key_to_char, winit_to_ruffle_key_code,
+    winit_to_ruffle_text_control,
+};
 use crate::{audio, navigator, storage, ui, CALLSTACK, RENDER_INFO, SWF_INFO};
 use anyhow::{anyhow, Context, Error};
 use ruffle_core::backend::audio::AudioBackend;
@@ -33,7 +36,7 @@ pub struct App {
 impl App {
     pub fn new(opt: Opt) -> Result<Self, Error> {
         let movie_url = if let Some(path) = &opt.input_path {
-            Some(crate::util::parse_url(path).context("Couldn't load specified path")?)
+            Some(parse_url(path).context("Couldn't load specified path")?)
         } else {
             None
         };
@@ -45,7 +48,7 @@ impl App {
         let event_loop = EventLoopBuilder::with_user_event().build();
 
         let min_window_size = (16, 16).into();
-        let max_window_size = crate::util::get_screen_size(&event_loop);
+        let max_window_size = get_screen_size(&event_loop);
 
         let window = WindowBuilder::new()
             .with_visible(false)
@@ -377,9 +380,8 @@ impl App {
 
                             let mut player_lock = self.player.lock().expect("Cannot reenter");
                             if let Some(key) = input.virtual_keycode {
-                                let key_code = crate::util::winit_to_ruffle_key_code(key);
-                                let key_char =
-                                    crate::util::winit_key_to_char(key, modifiers.shift());
+                                let key_code = winit_to_ruffle_key_code(key);
+                                let key_char = winit_key_to_char(key, modifiers.shift());
                                 match input.state {
                                     ElementState::Pressed => {
                                         player_lock.handle_event(PlayerEvent::KeyDown {
@@ -482,10 +484,9 @@ impl App {
                 }
 
                 winit::event::Event::UserEvent(RuffleEvent::OpenFile) => {
-                    if let Some(path) = crate::util::pick_file() {
+                    if let Some(path) = pick_file() {
                         // TODO: Show dialog on error.
-                        let url =
-                            crate::util::parse_url(&path).expect("Couldn't load specified path");
+                        let url = parse_url(&path).expect("Couldn't load specified path");
                         let _ = self.load_swf(url);
                         self.gui.lock().expect("Gui lock").set_ui_visible(false);
                     }
