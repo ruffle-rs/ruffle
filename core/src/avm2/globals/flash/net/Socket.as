@@ -192,7 +192,7 @@ package flash.net {
         }
 
         public function writeUTF(value:String):void {
-            stub_method("flash.net.Socket", "writeString");
+            stub_method("flash.net.Socket", "writeUTF");
         }
 
         public function writeUTFBytes(value:String):void {
