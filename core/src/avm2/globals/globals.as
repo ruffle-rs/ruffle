@@ -294,6 +294,7 @@ include "flash/system/SecurityPanel.as"
 include "flash/system/System.as"
 include "flash/system/SystemUpdaterType.as"
 include "flash/system/TouchscreenType.as"
+include "flash/system/Worker.as"
 include "flash/system/WorkerDomain.as"
 include "flash/system/WorkerState.as"
 
