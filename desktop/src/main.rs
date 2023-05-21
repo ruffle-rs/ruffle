@@ -486,7 +486,10 @@ impl App {
                             .renderer_mut()
                             .downcast_mut::<WgpuRenderBackend<MovieView>>()
                             .expect("Renderer must be correct type");
-                        self.gui.lock().expect("Gui lock").render(renderer.target());
+                        self.gui
+                            .lock()
+                            .expect("Gui lock")
+                            .render(Some(renderer.target()));
                         #[cfg(feature = "tracy")]
                         tracing_tracy::client::Client::running()
                             .expect("tracy client must be running")
