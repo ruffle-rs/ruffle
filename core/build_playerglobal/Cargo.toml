@@ -9,11 +9,11 @@ version.workspace = true
 
 [dependencies]
 convert_case = "0.6.0"
-proc-macro2 = "1.0.56"
-quote = "1.0.26"
+proc-macro2 = "1.0.58"
+quote = "1.0.27"
 swf = { path = "../../swf" }
-clap = {version = "4.2.4", features = ["derive"]}
-serde = {version = "1.0.160", features = ["derive"]}
+clap = {version = "4.3.0", features = ["derive"]}
+serde = {version = "1.0.163", features = ["derive"]}
 serde-xml-rs = "0.6.0"
 colored = "2.0.0"
 regex = "1.8.1"
