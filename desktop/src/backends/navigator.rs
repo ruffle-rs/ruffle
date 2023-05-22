@@ -7,15 +7,15 @@ use isahc::{
 };
 use rfd::{MessageButtons, MessageDialog, MessageLevel};
 use ruffle_core::backend::navigator::{
-    ErrorResponse, NavigationMethod, NavigatorBackend, OpenURLMode, OwnedFuture, Request,
-    SuccessResponse,
+    async_return, create_fetch_error, create_specific_fetch_error, ErrorResponse, NavigationMethod,
+    NavigatorBackend, OpenURLMode, OwnedFuture, Request, SuccessResponse,
 };
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
 use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::mpsc::Sender;
-use url::Url;
+use url::{ParseError, Url};
 use winit::event_loop::EventLoopProxy;
 
 /// Implementation of `NavigatorBackend` for non-web environments that can call
@@ -83,7 +83,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
 
         //NOTE: Flash desktop players / projectors ignore the window parameter,
         //      unless it's a `_layer`, and we shouldn't handle that anyway.
-        let mut parsed_url = match self.base_url.join(url) {
+        let mut parsed_url = match self.resolve_url(url) {
             Ok(parsed_url) => parsed_url,
             Err(e) => {
                 tracing::error!(
@@ -111,9 +111,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
             None => parsed_url,
         };
 
-        let processed_url = self.pre_process_url(modified_url);
-
-        if processed_url.scheme() == "javascript" {
+        if modified_url.scheme() == "javascript" {
             tracing::warn!(
                 "SWF tried to run a script on desktop, but javascript calls are not allowed"
             );
@@ -121,7 +119,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
         }
 
         if self.open_url_mode == OpenURLMode::Confirm {
-            let message = format!("The SWF file wants to open the website {}", processed_url);
+            let message = format!("The SWF file wants to open the website {}", modified_url);
             // TODO: Add a checkbox with a GUI toolkit
             let confirm = MessageDialog::new()
                 .set_title("Open website?")
@@ -139,25 +137,25 @@ impl NavigatorBackend for ExternalNavigatorBackend {
         }
 
         // If the user confirmed or if in Allow mode, open the website
-        match webbrowser::open(processed_url.as_ref()) {
+
+        // TODO: This opens local files in the browser while flash opens them
+        // in the default program for the respective filetype.
+        // This especially includes mailto links. Ruffle opens the browser which opens
+        // the preferred program while flash opens the preferred program directly.
+        match webbrowser::open(modified_url.as_ref()) {
             Ok(_output) => {}
-            Err(e) => tracing::error!("Could not open URL {}: {}", processed_url.as_str(), e),
+            Err(e) => tracing::error!("Could not open URL {}: {}", modified_url.as_str(), e),
         };
     }
 
     fn fetch(&self, request: Request) -> OwnedFuture<SuccessResponse, ErrorResponse> {
         // TODO: honor sandbox type (local-with-filesystem, local-with-network, remote, ...)
-        let full_url = match self.base_url.join(request.url()) {
+        let mut processed_url = match self.resolve_url(request.url()) {
             Ok(url) => url,
             Err(e) => {
-                let msg = format!("Invalid URL {}: {e}", request.url());
-                let error = Error::FetchError(msg);
-                let url = request.url().to_string();
-                return Box::pin(async move { Err(ErrorResponse { url, error }) });
+                return async_return(create_fetch_error(request.url(), e));
             }
         };
-
-        let mut processed_url = self.pre_process_url(full_url);
 
         let client = self.client.clone();
 
@@ -171,9 +169,18 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                 // when we actually load a filesystem url, strip them out.
                 processed_url.set_query(None);
 
-                let path = processed_url.to_file_path().unwrap_or_default();
+                let path = match processed_url.to_file_path() {
+                    Ok(path) => path,
+                    Err(_) => {
+                        return create_specific_fetch_error(
+                            "Unable to create path out of URL",
+                            response_url.as_str(),
+                            "",
+                        )
+                    }
+                };
 
-                let body = std::fs::read(&path).or_else(|e| {
+                let body = match std::fs::read(&path).or_else(|e| {
                     if cfg!(feature = "sandbox") {
                         use rfd::FileDialog;
                         use std::io::ErrorKind;
@@ -194,7 +201,10 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                     }
 
                     Err(e)
-                }).map_err(|e| ErrorResponse { url: response_url.to_string(), error: Error::FetchError(e.to_string()) })?;
+                }) {
+                    Ok(body) => body,
+                    Err(e) => return create_specific_fetch_error("Can't open file", response_url.as_str(), e)
+                };
 
                 Ok(SuccessResponse {
                     url: response_url.to_string(),
@@ -272,6 +282,13 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                     redirected,
                 })
             }),
+        }
+    }
+
+    fn resolve_url(&self, url: &str) -> Result<Url, ParseError> {
+        match self.base_url.join(url) {
+            Ok(url) => Ok(self.pre_process_url(url)),
+            Err(error) => Err(error),
         }
     }
 

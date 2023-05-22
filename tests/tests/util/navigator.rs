@@ -1,13 +1,13 @@
 use crate::util::runner::TestLogBackend;
 use ruffle_core::backend::log::LogBackend;
 use ruffle_core::backend::navigator::{
-    ErrorResponse, NavigationMethod, NavigatorBackend, NullExecutor, NullSpawner, OwnedFuture,
-    Request, SuccessResponse,
+    fetch_path, resolve_url_with_relative_base_path, ErrorResponse, NavigationMethod,
+    NavigatorBackend, NullExecutor, NullSpawner, OwnedFuture, Request, SuccessResponse,
 };
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
 use std::path::{Path, PathBuf};
-use url::Url;
+use url::{ParseError, Url};
 
 /// A `NavigatorBackend` used by tests that supports logging fetch requests.
 ///
@@ -29,10 +29,6 @@ impl TestNavigatorBackend {
             relative_base_path: path.canonicalize()?,
             log,
         })
-    }
-
-    fn url_from_file_path(path: &Path) -> Result<Url, ()> {
-        Url::from_file_path(path)
     }
 }
 
@@ -84,46 +80,11 @@ impl NavigatorBackend for TestNavigatorBackend {
             }
         }
 
-        let path = self.relative_base_path.clone();
+        fetch_path(self, "TestNavigatorBackend", request.url())
+    }
 
-        Box::pin(async move {
-            let mut base_url =
-                Self::url_from_file_path(path.as_path()).map_err(|_| ErrorResponse {
-                    url: request.url().to_string(),
-                    error: Error::FetchError("Invalid base URL".to_string()),
-                })?;
-
-            // Make sure we have a trailing slash, so that joining a request url like 'data.txt'
-            // gets appended, rather than replacing the last component.
-            base_url.path_segments_mut().unwrap().push("");
-            let response_url = base_url.join(request.url()).map_err(|_| ErrorResponse {
-                url: request.url().to_string(),
-                error: Error::FetchError("Invalid URL".to_string()),
-            })?;
-
-            // Flash supports query parameters with local urls.
-            // SwfMovie takes care of exposing those to ActionScript -
-            // when we actually load a filesystem url, strip them out.
-            let mut filesystem_url = response_url.clone();
-            filesystem_url.set_query(None);
-
-            let filesystem_path = filesystem_url.to_file_path().map_err(|_| ErrorResponse {
-                url: response_url.to_string(),
-                error: Error::FetchError("Invalid filesystem URL".to_string()),
-            })?;
-
-            let body = std::fs::read(filesystem_path).map_err(|e| ErrorResponse {
-                url: response_url.to_string(),
-                error: Error::FetchError(e.to_string()),
-            })?;
-
-            Ok(SuccessResponse {
-                url: response_url.to_string(),
-                body,
-                status: 0,
-                redirected: false,
-            })
-        })
+    fn resolve_url(&self, url: &str) -> Result<Url, ParseError> {
+        resolve_url_with_relative_base_path(self, self.relative_base_path.clone(), url)
     }
 
     fn spawn_future(&mut self, future: OwnedFuture<(), Error>) {

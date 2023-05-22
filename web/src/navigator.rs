@@ -1,18 +1,17 @@
 //! Navigator backend for web
 use js_sys::{Array, ArrayBuffer, Uint8Array};
 use ruffle_core::backend::navigator::{
-    ErrorResponse, NavigationMethod, NavigatorBackend, OpenURLMode, OwnedFuture, Request,
-    SuccessResponse,
+    async_return, create_fetch_error, create_specific_fetch_error, ErrorResponse, NavigationMethod,
+    NavigatorBackend, OpenURLMode, OwnedFuture, Request, SuccessResponse,
 };
 use ruffle_core::config::NetworkingAccessMode;
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
-use std::borrow::Cow;
 use std::sync::Arc;
 use tracing_subscriber::layer::Layered;
 use tracing_subscriber::Registry;
 use tracing_wasm::WASMLayer;
-use url::Url;
+use url::{ParseError, Url};
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::{spawn_local, JsFuture};
 use web_sys::{
@@ -80,16 +79,6 @@ impl WebNavigatorBackend {
             open_url_mode,
         }
     }
-
-    fn resolve_url<'a>(&self, url: &'a str) -> Cow<'a, str> {
-        if let Some(base_url) = &self.base_url {
-            if let Ok(url) = base_url.join(url) {
-                return self.pre_process_url(url).to_string().into();
-            }
-        }
-
-        url.into()
-    }
 }
 
 impl NavigatorBackend for WebNavigatorBackend {
@@ -104,7 +93,27 @@ impl NavigatorBackend for WebNavigatorBackend {
             return;
         }
 
-        let url = self.resolve_url(url);
+        let url = match self.resolve_url(url) {
+            Ok(url) => {
+                if url.scheme() == "file" {
+                    tracing::error!(
+                        "Can't open the local URL {} on WASM target",
+                        url.to_string()
+                    );
+                    return;
+                } else {
+                    url
+                }
+            }
+            Err(e) => {
+                tracing::error!(
+                    "Could not parse URL because of {}, the corrupt URL was: {}",
+                    e,
+                    url
+                );
+                return;
+            }
+        };
 
         // If `allowNetworking` is set to `internal` or `none`, block all `navigate_to_url` calls.
         if self.allow_networking != NetworkingAccessMode::All {
@@ -114,30 +123,24 @@ impl NavigatorBackend for WebNavigatorBackend {
 
         // If `allowScriptAccess` is disabled, reject the `javascript:` scheme.
         // Also reject any attempt to open a URL when `target` is a keyword that affects the current tab.
-        let is_javascript_call = if let Ok(url) = Url::parse(&url) {
-            let is_javascript_scheme = url.scheme() == "javascript";
-            if !self.allow_script_access {
-                if is_javascript_scheme {
-                    tracing::warn!("SWF tried to run a script, but script access is not allowed");
-                    return;
-                } else {
-                    match target.to_lowercase().as_str() {
-                        "_parent" | "_self" | "_top" | "" => {
-                            tracing::warn!("SWF tried to open a URL, but opening URLs in the current tab is prevented by script access");
-                            return;
-                        }
-                        _ => (),
+        if !self.allow_script_access {
+            if url.scheme() == "javascript" {
+                tracing::warn!("SWF tried to run a script, but script access is not allowed");
+                return;
+            } else {
+                match target.to_lowercase().as_str() {
+                    "_parent" | "_self" | "_top" | "" => {
+                        tracing::warn!("SWF tried to open a URL, but opening URLs in the current tab is prevented by script access");
+                        return;
                     }
+                    _ => (),
                 }
             }
-            is_javascript_scheme
-        } else {
-            false
-        };
+        }
 
         let window = window().expect("window()");
 
-        if !is_javascript_call {
+        if url.scheme() != "javascript" {
             if self.open_url_mode == OpenURLMode::Confirm {
                 let message = format!("The SWF file wants to open the website {}", &url);
                 // TODO: Add a checkbox with a GUI toolkit
@@ -173,7 +176,7 @@ impl NavigatorBackend for WebNavigatorBackend {
                     .expect("create_element(\"form\") didn't give us a form");
 
                 form.set_method(&navmethod.to_string());
-                form.set_action(&url);
+                form.set_action(url.as_str());
 
                 if !target.is_empty() {
                     form.set_target(target);
@@ -198,16 +201,31 @@ impl NavigatorBackend for WebNavigatorBackend {
             }
             None => {
                 if target.is_empty() {
-                    let _ = window.location().assign(&url);
+                    let _ = window.location().assign(url.as_str());
                 } else {
-                    let _ = window.open_with_url_and_target(&url, target);
+                    let _ = window.open_with_url_and_target(url.as_str(), target);
                 }
             }
         };
     }
 
     fn fetch(&self, request: Request) -> OwnedFuture<SuccessResponse, ErrorResponse> {
-        let url = self.resolve_url(request.url()).into_owned();
+        let url = match self.resolve_url(request.url()) {
+            Ok(url) => {
+                if url.scheme() == "file" {
+                    return async_return(create_specific_fetch_error(
+                        "WASM target can't fetch local URL",
+                        url.as_str(),
+                        "",
+                    ));
+                } else {
+                    url
+                }
+            }
+            Err(e) => {
+                return async_return(create_fetch_error(request.url(), e));
+            }
+        };
 
         Box::pin(async move {
             let mut init = RequestInit::new();
@@ -220,23 +238,28 @@ impl NavigatorBackend for WebNavigatorBackend {
                     BlobPropertyBag::new().type_(mime),
                 )
                 .map_err(|_| ErrorResponse {
-                    url: url.clone(),
+                    url: url.to_string(),
                     error: Error::FetchError("Got JS error".to_string()),
                 })?
                 .dyn_into()
                 .map_err(|_| ErrorResponse {
-                    url: url.clone(),
+                    url: url.to_string(),
                     error: Error::FetchError("Got JS error".to_string()),
                 })?;
 
                 init.body(Some(&blob));
             }
 
-            let web_request =
-                WebRequest::new_with_str_and_init(&url, &init).map_err(|_| ErrorResponse {
-                    url: url.clone(),
-                    error: Error::FetchError(format!("Unable to create request for {url}")),
-                })?;
+            let web_request = match WebRequest::new_with_str_and_init(url.as_str(), &init) {
+                Ok(web_request) => web_request,
+                Err(_) => {
+                    return create_specific_fetch_error(
+                        "Unable to create request for",
+                        url.as_str(),
+                        "",
+                    )
+                }
+            };
 
             let headers = web_request.headers();
 
@@ -244,7 +267,7 @@ impl NavigatorBackend for WebNavigatorBackend {
                 headers
                     .set(header_name, header_val)
                     .map_err(|_| ErrorResponse {
-                        url: url.clone(),
+                        url: url.to_string(),
                         error: Error::FetchError("Got JS error".to_string()),
                     })?;
             }
@@ -253,12 +276,12 @@ impl NavigatorBackend for WebNavigatorBackend {
             let fetchval = JsFuture::from(window.fetch_with_request(&web_request))
                 .await
                 .map_err(|_| ErrorResponse {
-                    url: url.clone(),
+                    url: url.to_string(),
                     error: Error::FetchError("Got JS error".to_string()),
                 })?;
 
             let response: WebResponse = fetchval.dyn_into().map_err(|_| ErrorResponse {
-                url: url.clone(),
+                url: url.to_string(),
                 error: Error::FetchError("Fetch result wasn't a WebResponse".to_string()),
             })?;
             let url = response.url();
@@ -300,6 +323,20 @@ impl NavigatorBackend for WebNavigatorBackend {
                 redirected,
             })
         })
+    }
+
+    fn resolve_url(&self, url: &str) -> Result<Url, ParseError> {
+        if let Some(base_url) = &self.base_url {
+            match base_url.join(url) {
+                Ok(full_url) => Ok(self.pre_process_url(full_url)),
+                Err(error) => Err(error),
+            }
+        } else {
+            match Url::parse(url) {
+                Ok(parsed_url) => Ok(self.pre_process_url(parsed_url)),
+                Err(error) => Err(error),
+            }
+        }
     }
 
     fn spawn_future(&mut self, future: OwnedFuture<(), Error>) {
