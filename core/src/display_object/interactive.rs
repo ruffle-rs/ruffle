@@ -222,6 +222,16 @@ pub trait TInteractiveObject<'gc>:
         context: &mut UpdateContext<'_, 'gc>,
         event: ClipEvent<'gc>,
     ) -> ClipEventResult {
+        // Flash appears to not fire events *at all* for a targeted EditText
+        // that was originally created by the timeline. Normally, one of the ancestors
+        // of the TextField would get targeted, but instead, the event isn't fired
+        // (not even the Stage receives the event)
+        if let Some(text) = self.as_displayobject().as_edit_text() {
+            if text.is_selectable() && text.was_static() {
+                return ClipEventResult::NotHandled;
+            }
+        }
+
         let target = if let Avm2Value::Object(target) = self.as_displayobject().object2() {
             target
         } else {

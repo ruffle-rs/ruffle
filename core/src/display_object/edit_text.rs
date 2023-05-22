@@ -1932,14 +1932,15 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
         _require_button_mode: bool,
     ) -> Avm2MousePick<'gc> {
         // The text is hovered if the mouse is over any child nodes.
-        if self.visible()
-            && self.mouse_enabled()
-            && self.hit_test_shape(context, point, HitTestOptions::MOUSE_PICK)
-        {
-            if self.was_static() {
-                Avm2MousePick::PropagateToParent
-            } else {
+        if self.visible() && self.hit_test_shape(context, point, HitTestOptions::MOUSE_PICK) {
+            // Note - for mouse-enabled selectable text, we consider this to be a hit (which
+            // will cause us to show the proper cursor on mouse over).
+            // However, in `Interactive::event_dispatch_to_avm2`, we will prevent mouse events
+            // from being fired at all if the text is selectable and 'was_static()'.
+            if self.mouse_enabled() && (self.is_selectable() || !self.was_static()) {
                 Avm2MousePick::Hit((*self).into())
+            } else {
+                Avm2MousePick::PropagateToParent
             }
         } else {
             Avm2MousePick::Miss

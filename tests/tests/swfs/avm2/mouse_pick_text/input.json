@@ -1,0 +1,117 @@
+[
+    {
+        "type": "MouseMove",
+        "pos": [
+            208.45,
+            139.05
+        ]
+    },
+    {
+        "type": "MouseDown",
+        "pos": [
+            208.45,
+            139.05
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseUp",
+        "pos": [
+            208.45,
+            139.05
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseMove",
+        "pos": [
+            202.45,
+            171.05
+        ]
+    },
+    {
+        "type": "MouseDown",
+        "pos": [
+            202.45,
+            171.05
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseUp",
+        "pos": [
+            202.45,
+            171.05
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseMove",
+        "pos": [
+            208.45,
+            266.05
+        ]
+    },
+    {
+        "type": "MouseDown",
+        "pos": [
+            208.45,
+            266.05
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseUp",
+        "pos": [
+            208.45,
+            266.05
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseMove",
+        "pos": [
+            211,
+            373
+        ]
+    },
+    {
+        "type": "MouseDown",
+        "pos": [
+            211,
+            373
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseUp",
+        "pos": [
+            211,
+            373
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseMove",
+        "pos": [
+            375.45,
+            267.05
+        ]
+    },
+    {
+        "type": "MouseDown",
+        "pos": [
+            375.45,
+            267.05
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseUp",
+        "pos": [
+            375.45,
+            267.05
+        ],
+        "btn": "Left"
+    } 
+]
