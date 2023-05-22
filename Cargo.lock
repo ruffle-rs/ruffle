@@ -3741,6 +3741,7 @@ dependencies = [
  "tracing-tracy",
  "unic-langid",
  "url",
+ "vergen",
  "webbrowser",
  "wgpu",
  "winapi",
@@ -4966,6 +4967,17 @@ name = "vec_map"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f1bddf1187be692e79c5ffeab891132dfb0f236ed36a43c7ed39f1165ee20191"
+
+[[package]]
+name = "vergen"
+version = "8.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3e884903ddba094df9bcdeb43b41170658bb4c2001ca8c47df7368244f4210ee"
+dependencies = [
+ "anyhow",
+ "rustversion",
+ "time",
+]
 
 [[package]]
 name = "version-compare"
