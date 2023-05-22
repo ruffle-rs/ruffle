@@ -3719,6 +3719,7 @@ dependencies = [
  "anyhow",
  "arboard",
  "bytemuck",
+ "chrono",
  "clap",
  "cpal",
  "dirs",

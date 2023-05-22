@@ -2,6 +2,7 @@ mod controller;
 mod movie;
 
 use crate::custom_event::RuffleEvent;
+use chrono::DateTime;
 use egui::*;
 use std::time::{Duration, Instant};
 use winit::event_loop::EventLoopProxy;
@@ -160,9 +161,61 @@ impl RuffleGui {
                     ui.label(
                         RichText::new("Ruffle")
                             .color(Color32::from_rgb(0xFF, 0xAD, 0x33))
-                            .size(24.0),
+                            .size(32.0),
                     );
-                    ui.label(crate::RUFFLE_VERSION);
+                    Grid::new("about_ruffle_version_info")
+                        .striped(true)
+                        .show(ui, |ui| {
+                            ui.label("Version");
+                            ui.label(env!("CARGO_PKG_VERSION"));
+                            ui.end_row();
+
+                            ui.label("Channel");
+                            ui.label(env!("CFG_RELEASE_CHANNEL"));
+                            ui.end_row();
+
+                            ui.label("Build Time");
+                            ui.label(
+                                DateTime::parse_from_rfc3339(env!("VERGEN_BUILD_TIMESTAMP"))
+                                    .map(|t| t.format("%c").to_string())
+                                    .unwrap_or_else(|_| env!("VERGEN_BUILD_TIMESTAMP").to_string()),
+                            );
+                            ui.end_row();
+
+                            ui.label("Commit ref");
+                            ui.hyperlink_to(
+                                env!("VERGEN_GIT_SHA"),
+                                format!(
+                                    "https://github.com/ruffle-rs/ruffle/commit/{}",
+                                    env!("VERGEN_GIT_SHA")
+                                ),
+                            );
+                            ui.end_row();
+
+                            ui.label("Commit date");
+                            ui.label(
+                                DateTime::parse_from_rfc3339(env!("VERGEN_GIT_COMMIT_TIMESTAMP"))
+                                    .map(|t| t.format("%c").to_string())
+                                    .unwrap_or_else(|_| {
+                                        env!("VERGEN_GIT_COMMIT_TIMESTAMP").to_string()
+                                    }),
+                            );
+                            ui.end_row();
+
+                            ui.label("Build Features");
+                            ui.horizontal_wrapped(|ui| {
+                                ui.label(env!("VERGEN_CARGO_FEATURES").replace(',', ", "));
+                            });
+                            ui.end_row();
+                        });
+
+                    ui.horizontal(|ui| {
+                        ui.hyperlink_to("Website", "https://ruffle.rs");
+                        ui.hyperlink_to("Github", "https://github.com/ruffle-rs/ruffle/");
+                        ui.hyperlink_to("Discord", "https://discord.gg/ruffle");
+                        ui.hyperlink_to("Sponsor", "https://opencollective.com/ruffle/");
+                        ui.shrink_width_to_current();
+                    });
                 })
             });
     }

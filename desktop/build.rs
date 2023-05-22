@@ -5,9 +5,11 @@ use vergen::EmitBuilder;
 fn main() -> Result<(), Box<dyn Error>> {
     // Emit version info, and "rerun-if-changed" for relevant files, including build.rs
     EmitBuilder::builder()
-        .all_build()
-        .all_cargo()
-        .all_git()
+        .build_timestamp()
+        .cargo_features()
+        .git_sha(false)
+        .git_commit_timestamp()
+        .git_commit_date()
         .emit()?;
 
     // Embed resource file w/ icon on windows
