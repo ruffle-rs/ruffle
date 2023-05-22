@@ -1,0 +1,8 @@
+// flash.system.Capabilities.screenResolutionX
+1536
+// flash.system.Capabilities.screenResolutionY
+864
+// flash.system.Capabilities.pixelAspectRatio
+1
+// flash.system.Capabilities.screenDPI
+72

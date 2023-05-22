@@ -6,7 +6,7 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::runtime::Avm1;
 use crate::avm1::{ScriptObject, TObject, Value};
 use crate::avm1_stub;
-use crate::context::GcContext;
+use crate::context::{GcContext, UpdateContext};
 use bitflags::bitflags;
 use core::fmt;
 
@@ -274,14 +274,12 @@ pub struct SystemProperties {
     pub player_type: PlayerType,
     /// The type of screen available to the player
     pub screen_color: ScreenColor,
-    /// The language of the host os
-    pub language: Language,
-    /// The resolution of the available screen
-    pub screen_resolution: (u32, u32),
     /// The aspect ratio of the screens pixels
-    pub aspect_ratio: f32,
+    pub pixel_aspect_ratio: f32,
     /// The dpi of the screen
     pub dpi: f32,
+    /// The language of the host os
+    pub language: Language
     /// The manufacturer of the player
     pub manufacturer: Manufacturer,
     /// The os of the host
@@ -306,9 +304,8 @@ impl SystemProperties {
             screen_color: ScreenColor::Color,
             // TODO: note for fp <7 this should be the locale and the ui lang for >= 7, on windows
             language: Language::English,
-            screen_resolution: (0, 0),
-            aspect_ratio: 1_f32,
-            dpi: 1_f32,
+            pixel_aspect_ratio: 1_f32,
+            dpi: 72_f32,
             manufacturer: Manufacturer::Linux,
             os: OperatingSystem::Linux,
             sandbox_type,
@@ -348,7 +345,8 @@ impl SystemProperties {
         percent_encoding::utf8_percent_encode(s, percent_encoding::NON_ALPHANUMERIC).to_string()
     }
 
-    pub fn get_server_string(&self, avm: &mut Avm1) -> String {
+    pub fn get_server_string(&self, context: &UpdateContext) -> String {
+		let viewport_dimensions = context.renderer.viewport_dimensions();
         url::form_urlencoded::Serializer::new(String::new())
             .append_pair("A", self.encode_capability(SystemCapabilities::AUDIO))
             .append_pair(
@@ -390,18 +388,22 @@ impl SystemProperties {
                 "M",
                 &self.encode_string(
                     self.manufacturer
-                        .get_manufacturer_string(avm.player_version())
+                        .get_manufacturer_string(context.avm1.player_version())
                         .as_str(),
                 ),
             )
             .append_pair(
                 "R",
-                &format!("{}x{}", self.screen_resolution.0, self.screen_resolution.1),
+                &format!("{}x{}", viewport_dimensions.width, viewport_dimensions.height),
             )
             .append_pair("COL", &self.screen_color.to_string())
-            .append_pair("AR", &self.aspect_ratio.to_string())
+            .append_pair("AR", &self.pixel_aspect_ratio.to_string())
             .append_pair("OS", &self.encode_string(&self.os.to_string()))
-            .append_pair("L", self.language.get_language_code(avm.player_version()))
+            .append_pair(
+                "L",
+                self.language
+                    .get_language_code(context.avm1.player_version()),
+            )
             .append_pair("IME", self.encode_capability(SystemCapabilities::IME))
             .append_pair("PT", &self.player_type.to_string())
             .append_pair(
@@ -528,5 +530,6 @@ pub fn create<'gc>(
         capabilities.into(),
         Attribute::empty(),
     );
+
     system.into()
 }

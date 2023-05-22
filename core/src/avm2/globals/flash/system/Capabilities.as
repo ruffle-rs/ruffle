@@ -9,6 +9,14 @@ package flash.system {
         public native static function get playerType(): String;
         
         public native static function get version(): String;
+		
+		public native static function get screenResolutionX():Number;
+		
+		public native static function get screenResolutionY():Number;
+		
+		public native static function get pixelAspectRatio():Number;
+		
+		public native static function get screenDPI():Number;
         
         public static function get manufacturer(): String {
             stub_getter("flash.system.Capabilities", "manufacturer");
@@ -21,5 +29,6 @@ package flash.system {
         public static function get isDebugger(): Boolean {
             return false
         }
+		
     }
 }
