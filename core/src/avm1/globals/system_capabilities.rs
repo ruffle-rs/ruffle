@@ -143,7 +143,7 @@ pub fn get_screen_resolution_x<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-	let viewport_dimensions = context.renderer.viewport_dimensions();
+    let viewport_dimensions = activation.context.renderer.viewport_dimensions();
     Ok(viewport_dimensions.width.into())
 }
 
@@ -152,7 +152,7 @@ pub fn get_screen_resolution_y<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-	let viewport_dimensions = context.renderer.viewport_dimensions();
+    let viewport_dimensions = activation.context.renderer.viewport_dimensions();
     Ok(viewport_dimensions.height.into())
 }
 
@@ -161,11 +161,7 @@ pub fn get_pixel_aspect_ratio<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(activation
-        .context
-        .system
-        .aspect_ratio
-        .into())
+    Ok(activation.context.system.pixel_aspect_ratio.into())
 }
 
 pub fn get_screen_dpi<'gc>(

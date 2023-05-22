@@ -1,0 +1,8 @@
+// System.Capabilities.screenResolutionX
+1920
+// System.Capabilities.screenResolutionY
+1080
+// System.Capabilities.pixelAspectRatio
+1
+// System.Capabilities.screenDPI
+72

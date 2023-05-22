@@ -279,7 +279,7 @@ pub struct SystemProperties {
     /// The dpi of the screen
     pub dpi: f32,
     /// The language of the host os
-    pub language: Language
+    pub language: Language,
     /// The manufacturer of the player
     pub manufacturer: Manufacturer,
     /// The os of the host
@@ -346,7 +346,7 @@ impl SystemProperties {
     }
 
     pub fn get_server_string(&self, context: &UpdateContext) -> String {
-		let viewport_dimensions = context.renderer.viewport_dimensions();
+        let viewport_dimensions = context.renderer.viewport_dimensions();
         url::form_urlencoded::Serializer::new(String::new())
             .append_pair("A", self.encode_capability(SystemCapabilities::AUDIO))
             .append_pair(
@@ -394,7 +394,10 @@ impl SystemProperties {
             )
             .append_pair(
                 "R",
-                &format!("{}x{}", viewport_dimensions.width, viewport_dimensions.height),
+                &format!(
+                    "{}x{}",
+                    viewport_dimensions.width, viewport_dimensions.height
+                ),
             )
             .append_pair("COL", &self.screen_color.to_string())
             .append_pair("AR", &self.pixel_aspect_ratio.to_string())

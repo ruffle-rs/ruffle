@@ -58,7 +58,7 @@ pub fn get_screen_resolution_y<'gc>(
 
 /// Implements `flash.system.Capabilities.pixelAspectRatio`
 pub fn get_pixel_aspect_ratio<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
