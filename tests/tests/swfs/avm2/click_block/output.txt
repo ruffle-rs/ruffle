@@ -1,4 +1,5 @@
-Clicked at 522, 27
-Clicked at 26, 373
-Clicked at 477, 343
-Clicked at 276, 197
+Clicked at 21, 24 target: [object MovieClip] instance2
+Clicked at 522, 27 target: [object MovieClip] click_mc
+Clicked at 26, 373 target: [object MovieClip] click_mc
+Clicked at 477, 343 target: [object MovieClip] click_mc
+Clicked at 276, 197 target: [object MovieClip] click_mc
