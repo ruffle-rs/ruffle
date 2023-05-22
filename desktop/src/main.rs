@@ -587,21 +587,27 @@ impl App {
                             if let Some(key) = input.virtual_keycode {
                                 let key_code = winit_to_ruffle_key_code(key);
                                 let key_char = winit_key_to_char(key, modifiers.shift());
-                                let event = match input.state {
+                                match input.state {
                                     ElementState::Pressed => {
+                                        player_lock.handle_event(PlayerEvent::KeyDown {
+                                            key_code,
+                                            key_char,
+                                        });
                                         if let Some(control_code) =
                                             winit_to_ruffle_text_control(key, modifiers)
                                         {
-                                            PlayerEvent::TextControl { code: control_code }
-                                        } else {
-                                            PlayerEvent::KeyDown { key_code, key_char }
+                                            player_lock.handle_event(PlayerEvent::TextControl {
+                                                code: control_code,
+                                            });
                                         }
                                     }
                                     ElementState::Released => {
-                                        PlayerEvent::KeyUp { key_code, key_char }
+                                        player_lock.handle_event(PlayerEvent::KeyUp {
+                                            key_code,
+                                            key_char,
+                                        });
                                     }
-                                };
-                                player_lock.handle_event(event);
+                                }
                                 if player_lock.needs_render() {
                                     self.window.request_redraw();
                                 }
