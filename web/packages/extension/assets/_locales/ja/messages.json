@@ -41,6 +41,12 @@
     "settings_advanced_options": {
         "message": "詳細設定"
     },
+    "settings_reset": {
+        "message": "設定をリセット"
+    },
+    "settings_reset_confirm": {
+        "message": "Ruffleの設定をデフォルトの状態に復元します。よろしいですか？"
+    },
     "status_init": {
         "message": "現在のタブを読み込み中..."
     },
