@@ -503,8 +503,11 @@ impl<'gc> Avm2<'gc> {
         }
         let mut value = value.into();
         if let Value::Object(o) = value {
-            if let Some(prim) = o.as_primitive() {
-                value = *prim;
+            // this is hot, so let's avoid a non-inlined call here
+            if let Object::PrimitiveObject(_) = o {
+                if let Some(prim) = o.as_primitive() {
+                    value = *prim;
+                }
             }
         }
 
