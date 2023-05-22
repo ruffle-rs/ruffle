@@ -1189,7 +1189,9 @@ impl<'gc> MovieClip<'gc> {
 
     /// This helps making the MovieClip enter the error state in which some attributes
     /// have certain error values to signal that no valid file could be loaded.
+    ///
     /// It sets cur_preload_frame to 0 (which results in _currentframe being -1).
+    ///
     /// This happens if no file could be loaded or if the loaded content is no valid
     /// supported content.
     pub fn movie_not_available(self, gc_context: MutationContext<'gc, '_>) {
