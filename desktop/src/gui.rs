@@ -35,8 +35,11 @@ impl RuffleGui {
     }
 
     /// Renders all of the main Ruffle UI, including the main menu and context menus.
-    fn update(&mut self, egui_ctx: &egui::Context, has_movie: bool) {
-        self.main_menu_bar(egui_ctx, has_movie);
+    fn update(&mut self, egui_ctx: &egui::Context, show_menu: bool, has_movie: bool) {
+        if show_menu {
+            self.main_menu_bar(egui_ctx, has_movie);
+        }
+
         self.about_window(egui_ctx);
         self.open_url_prompt(egui_ctx);
 

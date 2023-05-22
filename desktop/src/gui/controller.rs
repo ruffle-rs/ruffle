@@ -70,6 +70,7 @@ impl GuiController {
         let movie_view_renderer = Arc::new(MovieViewRenderer::new(
             &descriptors.device,
             surface_format,
+            window.fullscreen().is_none(),
             window.inner_size().height,
         ));
         let egui_renderer = egui_wgpu::Renderer::new(&descriptors.device, surface_format, None, 1);
@@ -109,8 +110,11 @@ impl GuiController {
                     view_formats: Default::default(),
                 },
             );
-            self.movie_view_renderer
-                .update_resolution(&self.descriptors, size.height);
+            self.movie_view_renderer.update_resolution(
+                &self.descriptors,
+                self.window.fullscreen().is_none(),
+                size.height,
+            );
         }
         let response = self.egui_winit.on_event(&self.egui_ctx, event);
         if response.repaint {
@@ -137,7 +141,8 @@ impl GuiController {
 
         let raw_input = self.egui_winit.take_egui_input(&self.window);
         let full_output = self.egui_ctx.run(raw_input, |context| {
-            self.gui.update(context, movie.is_some());
+            self.gui
+                .update(context, self.window.fullscreen().is_none(), movie.is_some());
         });
         self.repaint_after = full_output.repaint_after;
 
