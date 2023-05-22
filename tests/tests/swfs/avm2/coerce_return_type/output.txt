@@ -1,0 +1,40 @@
+returnInt(1) = 1
+returnBool(1) = true
+returnNumber(1) = 1
+returnString(1) = 1
+returnMyClass(1) threw error: TypeError: Error #1034: Type Coercion failed: cannot convert 1 to MyClass.
+returnInt(true) = 1
+returnBool(true) = true
+returnNumber(true) = 1
+returnString(true) = true
+returnMyClass(true) threw error: TypeError: Error #1034: Type Coercion failed: cannot convert true to MyClass.
+returnInt(false) = 0
+returnBool(false) = false
+returnNumber(false) = 0
+returnString(false) = false
+returnMyClass(false) threw error: TypeError: Error #1034: Type Coercion failed: cannot convert false to MyClass.
+returnInt(null) = 0
+returnBool(null) = false
+returnNumber(null) = 0
+returnString(null) = null
+returnMyClass(null) = null
+returnInt(undefined) = 0
+returnBool(undefined) = false
+returnNumber(undefined) = NaN
+returnString(undefined) = null
+returnMyClass(undefined) = null
+returnInt(Hello) = 0
+returnBool(Hello) = true
+returnNumber(Hello) = NaN
+returnString(Hello) = Hello
+returnMyClass(Hello) threw error: TypeError: Error #1034: Type Coercion failed: cannot convert "Hello" to MyClass.
+returnInt([object MyClass]) = 0
+returnBool([object MyClass]) = true
+returnNumber([object MyClass]) = NaN
+returnString([object MyClass]) = [object MyClass]
+returnMyClass([object MyClass]) = [object MyClass]
+returnInt(Custom toString) = 0
+returnBool(Custom toString) = true
+returnNumber(Custom toString) = NaN
+returnString(Custom toString) = Custom toString
+returnMyClass(Custom toString) threw error: TypeError: Error #1034: Type Coercion failed: cannot convert MyOtherClass@00000000000 to MyClass.

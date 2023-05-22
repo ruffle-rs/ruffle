@@ -1048,7 +1048,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::CallSuperVoid { index, num_args } => {
                     self.op_call_super_void(method, index, num_args)
                 }
-                Op::ReturnValue => self.op_return_value(),
+                Op::ReturnValue => self.op_return_value(method),
                 Op::ReturnVoid => self.op_return_void(),
                 Op::GetProperty { index } => self.op_get_property(method, index),
                 Op::SetProperty { index } => self.op_set_property(method, index),
@@ -1498,10 +1498,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn op_return_value(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn op_return_value(
+        &mut self,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
+    ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let return_value = self.pop_stack();
-
-        Ok(FrameControl::Return(return_value))
+        let coerced = return_value.coerce_to_type_name(self, &method.return_type)?;
+        Ok(FrameControl::Return(coerced))
     }
 
     fn op_return_void(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
