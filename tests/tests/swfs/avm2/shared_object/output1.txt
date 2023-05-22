@@ -10,4 +10,6 @@ otherObj.data.props:
 5 = -5.1 type number
 6 = elem0,,,,elem4 type object
 7 = 1,2,3 type object
-8 = (UTC)  Sun Jan 25 20:31:23 1970 UTC
+8 =  type object
+val.aPropertyThatIsNotANumber: strange property
+9 = (UTC)  Sun Jan 25 20:31:23 1970 UTC

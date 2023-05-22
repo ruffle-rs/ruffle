@@ -38,13 +38,16 @@ pub fn serialize_value<'gc>(
                 None
             } else if o.as_display_object().is_some() {
                 Some(AmfValue::Undefined)
-            } else if let Some(array) = o.as_array_storage() {
+            } else if o.as_array_storage().is_some() {
                 let mut values = Vec::new();
                 recursive_serialize(activation, o, &mut values, amf_version).unwrap();
 
                 let mut dense = vec![];
                 let mut sparse = vec![];
-                for (i, elem) in (0..array.length()).zip(values.into_iter()) {
+                // ActionScript `Array`s can have non-number properties, and these properties
+                // are confirmed and tested to also be serialized, so do not limit the values
+                // iterated over by the length of the internal array data.
+                for (i, elem) in values.into_iter().enumerate() {
                     if elem.name == i.to_string() {
                         dense.push(elem.value.clone());
                     } else {
