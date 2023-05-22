@@ -40,7 +40,16 @@ thread_local! {
 static GLOBAL: tracing_tracy::client::ProfiledAllocator<std::alloc::System> =
     tracing_tracy::client::ProfiledAllocator::new(std::alloc::System, 0);
 
-static RUFFLE_VERSION: &str = include_str!(concat!(env!("OUT_DIR"), "/version-info.txt"));
+static RUFFLE_VERSION: &str = concat!(
+    env!("CARGO_PKG_VERSION"),
+    "-",
+    env!("CFG_RELEASE_CHANNEL"),
+    " (",
+    env!("VERGEN_GIT_SHA"),
+    " ",
+    env!("VERGEN_GIT_COMMIT_DATE"),
+    ")"
+);
 
 fn init() {
     // When linked with the windows subsystem windows won't automatically attach
