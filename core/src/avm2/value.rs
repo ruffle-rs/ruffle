@@ -1049,9 +1049,23 @@ impl<'gc> Value<'gc> {
             .name()
             .to_qualified_name_err_message(activation.context.gc_context);
 
+        let debug_str = match self {
+            Value::Object(obj) if obj.as_primitive().is_none() => {
+                // Flash prints the class name (ignoring the toString() impl on the object),
+                // followed by something that looks like an address (it varies between executions).
+                // For now, we just set the "address" to all zeroes, on the off chance that some
+                // application is trying to parse the error message.
+                format!(
+                    "{}@00000000000",
+                    obj.instance_of_class_name(activation.context.gc_context)
+                )
+            }
+            _ => self.coerce_to_debug_string(activation)?.to_string(),
+        };
+
         Err(Error::AvmError(type_error(
             activation,
-            &format!("Error #1034: Type Coercion failed: cannot convert {self:?} to {name}."),
+            &format!("Error #1034: Type Coercion failed: cannot convert {debug_str} to {name}.",),
             1034,
         )?))
     }
