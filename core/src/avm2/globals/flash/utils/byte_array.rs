@@ -688,9 +688,16 @@ pub fn read_multi_byte<'gc>(
                 .get(1)
                 .unwrap_or(&"UTF-8".into())
                 .coerce_to_string(activation)?;
-            let bytes = bytearray
+            let mut bytes = bytearray
                 .read_bytes(len as usize)
                 .map_err(|e| e.to_avm(activation))?;
+
+            // Flash cuts off the string at the first null byte (after checking that
+            // the original length fits in the ByteArray)
+            if let Some(null) = bytes.iter().position(|b| *b == b'\0') {
+                bytes = &bytes[..null];
+            }
+
             let encoder =
                 Encoding::for_label(charset_label.to_utf8_lossy().as_bytes()).unwrap_or(UTF_8);
             let (decoded_str, _, _) = encoder.decode(bytes);
