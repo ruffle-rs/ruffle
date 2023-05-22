@@ -41,6 +41,12 @@
     "settings_advanced_options": {
         "message": "高级选项"
     },
+    "settings_reset": {
+        "message": "重置设置"
+    },
+    "settings_reset_confirm": {
+        "message": "是否确实要将 Ruffle 设置恢复为原始默认值？"
+    },
     "status_init": {
         "message": "正在读取当前标签页…"
     },
