@@ -146,6 +146,10 @@ impl PlayerController {
         ));
     }
 
+    pub fn destroy(&mut self) {
+        self.player = None;
+    }
+
     pub fn get(&self) -> Option<MutexGuard<Player>> {
         match &self.player {
             None => None,

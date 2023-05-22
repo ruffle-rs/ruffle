@@ -438,6 +438,10 @@ impl App {
                     );
                 }
 
+                winit::event::Event::UserEvent(RuffleEvent::CloseFile) => {
+                    self.player.destroy();
+                }
+
                 winit::event::Event::UserEvent(RuffleEvent::ExitRequested) => {
                     *control_flow = ControlFlow::Exit;
                     return;

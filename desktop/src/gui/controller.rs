@@ -137,7 +137,7 @@ impl GuiController {
 
         let raw_input = self.egui_winit.take_egui_input(&self.window);
         let full_output = self.egui_ctx.run(raw_input, |context| {
-            self.gui.update(context);
+            self.gui.update(context, movie.is_some());
         });
         self.repaint_after = full_output.repaint_after;
 
