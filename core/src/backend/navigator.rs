@@ -5,11 +5,12 @@ use crate::string::WStr;
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use std::fmt;
+use std::fmt::Display;
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use swf::avm1::types::SendVarsMethod;
-use url::Url;
+use url::{ParseError, Url};
 
 /// Enumerates all possible navigation methods.
 #[derive(Copy, Clone)]
@@ -215,6 +216,13 @@ pub trait NavigatorBackend {
     /// Fetch data and return it some time in the future.
     fn fetch(&self, request: Request) -> OwnedFuture<SuccessResponse, ErrorResponse>;
 
+    /// Take a URL string and resolve it to the actual URL from which a file
+    /// can be fetched. This includes handling of relative links and pre-processing.
+    ///
+    /// If the URL is local, this equals the URL returned by fetch. Otherwise,
+    /// fetch may return a different URL, e.g. considering redirections.
+    fn resolve_url(&self, url: &str) -> Result<Url, ParseError>;
+
     /// Arrange for a future to be run at some point in the... well, future.
     ///
     /// This function must be called to ensure a future is actually computed.
@@ -327,16 +335,6 @@ impl NullNavigatorBackend {
             relative_base_path: path.canonicalize()?,
         })
     }
-
-    #[cfg(any(unix, windows, target_os = "redox"))]
-    fn url_from_file_path(path: &Path) -> Result<Url, ()> {
-        Url::from_file_path(path)
-    }
-
-    #[cfg(not(any(unix, windows, target_os = "redox")))]
-    fn url_from_file_path(_path: &Path) -> Result<Url, ()> {
-        Err(())
-    }
 }
 
 impl Default for NullNavigatorBackend {
@@ -355,29 +353,11 @@ impl NavigatorBackend for NullNavigatorBackend {
     }
 
     fn fetch(&self, request: Request) -> OwnedFuture<SuccessResponse, ErrorResponse> {
-        let mut path = self.relative_base_path.clone();
-        path.push(request.url);
+        fetch_path(self, "NullNavigatorBackend", request.url())
+    }
 
-        Box::pin(async move {
-            let url: String = Self::url_from_file_path(&path)
-                .map_err(|()| ErrorResponse {
-                    url: path.to_string_lossy().to_string(),
-                    error: Error::FetchError("Invalid URL".to_string()),
-                })?
-                .into();
-
-            let body = std::fs::read(path).map_err(|e| ErrorResponse {
-                url: url.clone(),
-                error: Error::FetchError(e.to_string()),
-            })?;
-
-            Ok(SuccessResponse {
-                url,
-                body,
-                status: 0,
-                redirected: false,
-            })
-        })
+    fn resolve_url(&self, url: &str) -> Result<Url, ParseError> {
+        resolve_url_with_relative_base_path(self, self.relative_base_path.clone(), url)
     }
 
     fn spawn_future(&mut self, future: OwnedFuture<(), Error>) {
@@ -387,4 +367,158 @@ impl NavigatorBackend for NullNavigatorBackend {
     fn pre_process_url(&self, url: Url) -> Url {
         url
     }
+}
+
+// The following functions are helper functions used in different
+// NavigatorBackend implementations.
+// To avoid duplicated code, they are placed here as public functions.
+
+/// Converts a given result into an OwnedFuture and returns it.
+pub fn async_return<SuccessType: 'static, ErrorType: 'static>(
+    return_value: Result<SuccessType, ErrorType>,
+) -> OwnedFuture<SuccessType, ErrorType> {
+    Box::pin(async move { return_value })
+}
+
+/// This creates and returns the generic ErrorResponse for an invalid URL
+/// used in the NavigatorBackend fetch methods.
+pub fn create_fetch_error<ErrorType: Display>(
+    url: &str,
+    error: ErrorType,
+) -> Result<SuccessResponse, ErrorResponse> {
+    create_specific_fetch_error("Invalid URL", url, error)
+}
+
+/// This creates and returns a specific ErrorResponse with a given reason
+/// used in the NavigatorBackend fetch methods.
+pub fn create_specific_fetch_error<ErrorType: Display>(
+    reason: &str,
+    url: &str,
+    error: ErrorType,
+) -> Result<SuccessResponse, ErrorResponse> {
+    let message = if error.to_string() == "" {
+        format!("{reason} {url}")
+    } else {
+        format!("{reason} {url}: {error}")
+    };
+    let error = Error::FetchError(message);
+    Err(ErrorResponse {
+        url: url.to_string(),
+        error,
+    })
+}
+
+// Url doesn't implement from_file_path and to_file_path for WASM targets.
+// Therefore, we need to use cfg to make Ruffle compile for all targets.
+
+#[cfg(any(unix, windows, target_os = "redox"))]
+fn url_from_file_path(path: &Path) -> Result<Url, ()> {
+    Url::from_file_path(path)
+}
+
+#[cfg(not(any(unix, windows, target_os = "redox")))]
+fn url_from_file_path(_path: &Path) -> Result<Url, ()> {
+    Err(())
+}
+
+#[cfg(any(unix, windows, target_os = "redox"))]
+fn url_to_file_path(url: &Url) -> Result<PathBuf, ()> {
+    Url::to_file_path(url)
+}
+
+#[cfg(not(any(unix, windows, target_os = "redox")))]
+fn url_to_file_path(_path: &Url) -> Result<PathBuf, ()> {
+    Err(())
+}
+
+// The following functions are implementations used in multiple places.
+// To avoid duplicated code, they are placed here as public functions.
+
+/// This is the resolve implementation for the TestNavigatorBackend and the
+/// NullNavigatorBackend.
+///
+/// It resolves the given URL with the given relative base path.
+pub fn resolve_url_with_relative_base_path<NavigatorType: NavigatorBackend>(
+    navigator: &NavigatorType,
+    base_path: PathBuf,
+    url: &str,
+) -> Result<Url, ParseError> {
+    /// This is a helper function used to resolve just the request url.
+    /// It is used if the base url and the request url can't be combined.
+    fn resolve_request_url<NavigatorType: NavigatorBackend>(
+        url: &str,
+        navigator: &NavigatorType,
+    ) -> Result<Url, ParseError> {
+        match Url::parse(url) {
+            Ok(parsed_url) => Ok(navigator.pre_process_url(parsed_url)),
+            Err(error) => Err(error),
+        }
+    }
+
+    if let Ok(mut base_url) = url_from_file_path(base_path.as_path()) {
+        // Make sure we have a trailing slash, so that joining a request url like 'data.txt'
+        // gets appended, rather than replacing the last component.
+        base_url.path_segments_mut().unwrap().push("");
+        if let Ok(parsed_url) = base_url.join(url) {
+            Ok(navigator.pre_process_url(parsed_url))
+        } else {
+            resolve_request_url(url, navigator)
+        }
+    } else {
+        resolve_request_url(url, navigator)
+    }
+}
+
+/// This is the fetch implementation for the TestNavigatorBackend and the
+/// NullNavigatorBackend.
+///
+/// It tries to fetch the given URL as a local path and read and return
+/// its content. It returns an ErrorResponse if the URL is not valid, not
+/// local or a local path that can't be read.
+pub fn fetch_path<NavigatorType: NavigatorBackend>(
+    navigator: &NavigatorType,
+    navigator_name: &str,
+    url: &str,
+) -> OwnedFuture<SuccessResponse, ErrorResponse> {
+    let url = match navigator.resolve_url(url) {
+        Ok(url) => url,
+        Err(e) => return async_return(create_fetch_error(url, e)),
+    };
+    let path = if url.scheme() == "file" {
+        // Flash supports query parameters with local urls.
+        // SwfMovie takes care of exposing those to ActionScript -
+        // when we actually load a filesystem url, strip them out.
+        let mut filesystem_url = url.clone();
+        filesystem_url.set_query(None);
+
+        match url_to_file_path(&filesystem_url) {
+            Ok(path) => path,
+            Err(_) => {
+                return async_return(create_specific_fetch_error(
+                    "Unable to create path out of URL",
+                    url.as_str(),
+                    "",
+                ))
+            }
+        }
+    } else {
+        return async_return(create_specific_fetch_error(
+            &format!("{navigator_name} can't fetch non-local URL"),
+            url.as_str(),
+            "",
+        ));
+    };
+
+    Box::pin(async move {
+        let body = match std::fs::read(path) {
+            Ok(body) => body,
+            Err(e) => return create_specific_fetch_error("Can't open file", url.as_str(), e),
+        };
+        Ok(SuccessResponse {
+            url: url.to_string(),
+            body,
+            status: 0,
+            redirected: false,
+        })
+    })
 }
