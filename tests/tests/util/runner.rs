@@ -220,5 +220,9 @@ pub fn run_swf(
     executor.run();
 
     let trace = log.trace_output();
-    Ok(trace)
+    // Null bytes are invisible, and interfere with constructing
+    // the expected output.txt file. Any tests dealing with null
+    // bytes should explicitly test for them in ActionScript.
+    let normalized_trace = trace.replace('\0', "");
+    Ok(normalized_trace)
 }
