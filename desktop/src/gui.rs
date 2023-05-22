@@ -152,6 +152,7 @@ impl RuffleGui {
     fn about_window(&mut self, egui_ctx: &egui::Context) {
         egui::Window::new("About Ruffle")
             .collapsible(false)
+            .resizable(false)
             .anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO)
             .open(&mut self.is_about_visible)
             .show(egui_ctx, |ui| {
@@ -214,6 +215,7 @@ impl RuffleGui {
         egui::Window::new("Open URL")
             .anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO)
             .collapsible(false)
+            .resizable(false)
             .open(&mut self.is_open_url_prompt_visible)
             .show(egui_ctx, |ui| {
                 ui.vertical_centered(|ui| {
