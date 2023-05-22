@@ -35,8 +35,8 @@ impl RuffleGui {
     }
 
     /// Renders all of the main Ruffle UI, including the main menu and context menus.
-    fn update(&mut self, egui_ctx: &egui::Context) {
-        self.main_menu_bar(egui_ctx);
+    fn update(&mut self, egui_ctx: &egui::Context, has_movie: bool) {
+        self.main_menu_bar(egui_ctx, has_movie);
         self.about_window(egui_ctx);
         self.open_url_prompt(egui_ctx);
 
@@ -54,7 +54,7 @@ impl RuffleGui {
     }
 
     /// Renders the main menu bar at the top of the window.
-    fn main_menu_bar(&mut self, egui_ctx: &egui::Context) {
+    fn main_menu_bar(&mut self, egui_ctx: &egui::Context, has_movie: bool) {
         egui::TopBottomPanel::top("menu_bar").show(egui_ctx, |ui| {
             // TODO(mike): Make some MenuItem struct with shortcut info to handle this more cleanly.
             if ui.ctx().input_mut(|input| {
@@ -83,6 +83,10 @@ impl RuffleGui {
 
                     if Button::new("Open URL...").ui(ui).clicked() {
                         self.show_open_url_prompt(ui);
+                    }
+
+                    if ui.add_enabled(has_movie, Button::new("Close")).clicked() {
+                        self.close_movie(ui);
                     }
 
                     ui.separator();
@@ -219,6 +223,11 @@ impl RuffleGui {
 
     fn open_file(&mut self, ui: &mut egui::Ui) {
         let _ = self.event_loop.send_event(RuffleEvent::OpenFile);
+        ui.close_menu();
+    }
+
+    fn close_movie(&mut self, ui: &mut egui::Ui) {
+        let _ = self.event_loop.send_event(RuffleEvent::CloseFile);
         ui.close_menu();
     }
 
