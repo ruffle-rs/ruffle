@@ -36,7 +36,7 @@ use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
 use swf::read::{extract_swz, read_compression_type};
 use thiserror::Error;
-use url::form_urlencoded;
+use url::{form_urlencoded, ParseError, Url};
 
 pub type Handle = Index;
 
@@ -721,6 +721,9 @@ impl<'gc> Loader<'gc> {
             .expect("Could not upgrade weak reference to player");
 
         Box::pin(async move {
+            let request_url = request.url().to_string();
+            let resolved_url = player.lock().unwrap().navigator().resolve_url(&request_url);
+
             let fetch = player.lock().unwrap().navigator().fetch(request);
 
             let mut replacing_root_movie = false;
@@ -737,12 +740,13 @@ impl<'gc> Loader<'gc> {
                     .map(|root| DisplayObject::ptr_eq(clip, root))
                     .unwrap_or(false);
 
-                if let Some(mc) = clip.as_movie_clip() {
+                if let Some(mut mc) = clip.as_movie_clip() {
                     if !uc.is_action_script_3() {
                         mc.avm1_unload(uc);
                     }
 
-                    mc.replace_with_movie(uc, None, None);
+                    // Before the actual SWF is loaded, an initial loading state is entered.
+                    Loader::load_initial_loading_swf(&mut mc, uc, &request_url, resolved_url);
                 }
 
                 Loader::movie_loader_start(handle, uc)
@@ -1940,14 +1944,70 @@ impl<'gc> Loader<'gc> {
         Ok(())
     }
 
+    /// This makes the MovieClip enter the initial loading state in which some
+    /// attributes have certain initial loading values to signal that the file is
+    /// currently being loaded and neither an error has occurred nor the first frame
+    /// has been successfully loaded yet.
+    fn load_initial_loading_swf(
+        mc: &mut MovieClip<'gc>,
+        uc: &mut UpdateContext<'_, 'gc>,
+        request_url: &str,
+        resolved_url: Result<Url, ParseError>,
+    ) {
+        match resolved_url {
+            Err(_) => {
+                Loader::load_error_swf(mc, uc, request_url.to_string());
+            }
+            Ok(url) => {
+                // If the loaded SWF is a local file, the initial loading state equals the error state.
+                if url.scheme() == "file" {
+                    Loader::load_error_swf(mc, uc, url.to_string());
+                } else {
+                    // Replacing the movie sets total_frames and and frames_loaded correctly.
+                    // The movie just needs to be the default empty movie with the correct URL.
+                    // In this loading state, the URL is the URL of the parent movie / doesn't change.
+
+                    let current_movie = mc.movie();
+                    let current_version = current_movie.version();
+                    let current_url = current_movie.url();
+                    let mut initial_loading_movie = SwfMovie::empty(current_version);
+                    initial_loading_movie.set_url(current_url.to_string());
+
+                    mc.replace_with_movie(uc, Some(Arc::new(initial_loading_movie)), None);
+
+                    // Maybe this (keeping the current URL) should be the default behaviour
+                    // of replace_with_movie?
+                    // TODO: See where it gets invoked without a movie as well and what the
+                    // correct URL result is in these cases.
+                }
+            }
+        }
+    }
+
     /// This makes the MovieClip enter the error state in which some attributes have
     /// certain error values to signal that no valid file could be loaded.
     /// An error state movie stub which provides the correct values is created and
     /// loaded.
+    ///
     /// This happens if no file could be loaded or if the loaded content is no valid
     /// supported content.
+    ///
     /// swf_url is always the final URL obtained after any redirects.
-    fn load_error_swf(mc: &mut MovieClip<'gc>, uc: &mut UpdateContext<'_, 'gc>, swf_url: String) {
+    fn load_error_swf(
+        mc: &mut MovieClip<'gc>,
+        uc: &mut UpdateContext<'_, 'gc>,
+        mut swf_url: String,
+    ) {
+        // If a local URL is fetched using the flash plugin, the _url property
+        // won't be changed => It keeps being the parent SWF URL.
+        if cfg!(target_family = "wasm") {
+            if let Ok(url) = Url::parse(&swf_url) {
+                if url.scheme() == "file" {
+                    swf_url = mc.movie().url().to_string();
+                }
+            }
+        };
+
         let error_movie = SwfMovie::error_movie(swf_url);
         // This also sets total_frames correctly
         mc.replace_with_movie(uc, Some(Arc::new(error_movie)), None);
