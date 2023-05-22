@@ -1,3 +1,5 @@
+use crate::gui::MENU_HEIGHT;
+use ruffle_render_wgpu::descriptors::Descriptors;
 use ruffle_render_wgpu::target::{RenderTarget, RenderTargetFrame};
 use std::borrow::Cow;
 use std::sync::Arc;
@@ -11,18 +13,21 @@ pub struct MovieViewRenderer {
     vertices: wgpu::Buffer,
 }
 
-// x y u v
-const BLIT_VERTICES: [[f32; 4]; 6] = [
-    [-1.0, 1.0, 0.0, 0.0],  // tl
-    [1.0, 1.0, 1.0, 0.0],   // tr
-    [1.0, -1.0, 1.0, 1.0],  // br
-    [1.0, -1.0, 1.0, 1.0],  // br
-    [-1.0, -1.0, 0.0, 1.0], // bl
-    [-1.0, 1.0, 0.0, 0.0],  // tl
-];
+fn get_vertices(height: u32) -> [[f32; 4]; 6] {
+    let top = 1.0 - ((MENU_HEIGHT as f32 / height as f32) * 2.0);
+    // x y u v
+    [
+        [-1.0, top, 0.0, 0.0],  // tl
+        [1.0, top, 1.0, 0.0],   // tr
+        [1.0, -1.0, 1.0, 1.0],  // br
+        [1.0, -1.0, 1.0, 1.0],  // br
+        [-1.0, -1.0, 0.0, 1.0], // bl
+        [-1.0, top, 0.0, 0.0],  // tl
+    ]
+}
 
 impl MovieViewRenderer {
-    pub fn new(device: &wgpu::Device, surface_format: wgpu::TextureFormat) -> Self {
+    pub fn new(device: &wgpu::Device, surface_format: wgpu::TextureFormat, height: u32) -> Self {
         let module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: None,
             source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("blit.wgsl"))),
@@ -105,8 +110,8 @@ impl MovieViewRenderer {
         });
         let vertices = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
-            contents: bytemuck::cast_slice(&BLIT_VERTICES),
-            usage: wgpu::BufferUsages::VERTEX,
+            contents: bytemuck::cast_slice(&get_vertices(height)),
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
         });
 
         Self {
@@ -115,6 +120,14 @@ impl MovieViewRenderer {
             sampler,
             vertices,
         }
+    }
+
+    pub fn update_resolution(&self, descriptors: &Descriptors, height: u32) {
+        descriptors.queue.write_buffer(
+            &self.vertices,
+            0,
+            bytemuck::cast_slice(&get_vertices(height)),
+        );
     }
 }
 

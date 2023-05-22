@@ -67,8 +67,11 @@ impl GuiController {
             .cloned()
             .expect("At least one format should be supported");
 
-        let movie_view_renderer =
-            Arc::new(MovieViewRenderer::new(&descriptors.device, surface_format));
+        let movie_view_renderer = Arc::new(MovieViewRenderer::new(
+            &descriptors.device,
+            surface_format,
+            window.inner_size().height,
+        ));
         let egui_renderer = egui_wgpu::Renderer::new(&descriptors.device, surface_format, None, 1);
         let event_loop = event_loop.create_proxy();
         let gui = RuffleGui::new(event_loop);
@@ -106,6 +109,8 @@ impl GuiController {
                     view_formats: Default::default(),
                 },
             );
+            self.movie_view_renderer
+                .update_resolution(&self.descriptors, size.height);
         }
         let response = self.egui_winit.on_event(&self.egui_ctx, event);
         if response.repaint {
@@ -205,10 +210,6 @@ impl GuiController {
         command_buffers.push(encoder.finish());
         self.descriptors.queue.submit(command_buffers);
         surface_texture.present();
-    }
-
-    pub fn set_ui_visible(&mut self, value: bool) {
-        self.gui.set_ui_visible(value);
     }
 
     pub fn show_context_menu(&mut self, menu: Vec<ruffle_core::ContextMenuItem>) {

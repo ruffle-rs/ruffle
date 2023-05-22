@@ -4,19 +4,20 @@ mod movie;
 use crate::custom_event::RuffleEvent;
 use chrono::DateTime;
 use egui::*;
-use std::time::{Duration, Instant};
 use winit::event_loop::EventLoopProxy;
 
 pub use controller::GuiController;
 pub use movie::MovieView;
 
+/// Size of the top menu bar in pixels.
+/// This is the offset at which the movie will be shown,
+/// and added to the window size if trying to match a movie.
+pub const MENU_HEIGHT: u32 = 24;
+
 /// The main controller for the Ruffle GUI.
 pub struct RuffleGui {
     event_loop: EventLoopProxy<RuffleEvent>,
-    esc_start_time: Option<Instant>,
     open_url_text: String,
-    is_esc_down: bool,
-    is_ui_visible: bool,
     is_about_visible: bool,
     is_open_url_prompt_visible: bool,
     context_menu: Vec<ruffle_core::ContextMenuItem>,
@@ -26,10 +27,7 @@ impl RuffleGui {
     fn new(event_loop: EventLoopProxy<RuffleEvent>) -> Self {
         Self {
             event_loop,
-            esc_start_time: None,
             open_url_text: String::new(),
-            is_esc_down: false,
-            is_ui_visible: false,
             is_about_visible: false,
             is_open_url_prompt_visible: false,
             context_menu: vec![],
@@ -38,52 +36,13 @@ impl RuffleGui {
 
     /// Renders all of the main Ruffle UI, including the main menu and context menus.
     fn update(&mut self, egui_ctx: &egui::Context) {
-        egui_ctx.input_mut(|input| {
-            // Listen for Esc press to toggle GUI.
-            let mut esc_this_frame = false;
-            if input.key_down(Key::Escape) {
-                if !self.is_esc_down {
-                    esc_this_frame = true;
-                }
-                self.is_esc_down = true;
-            } else {
-                self.is_esc_down = false;
-            }
-
-            if self.is_ui_visible {
-                if esc_this_frame {
-                    self.set_ui_visible(false);
-                }
-            } else if self.is_esc_down {
-                // Require holding Esc to show the UI to avoid interfering with games that use Esc.
-                if esc_this_frame {
-                    self.esc_start_time = Some(Instant::now());
-                }
-
-                if let Some(esc_start_time) = self.esc_start_time {
-                    let esc_duration = Instant::now().duration_since(esc_start_time);
-                    const HOLD_ESCAPE_TIME: f32 = 0.5;
-                    if esc_duration >= Duration::from_secs_f32(HOLD_ESCAPE_TIME) {
-                        self.set_ui_visible(true);
-                    }
-                }
-            }
-        });
-
-        if self.is_ui_visible {
-            self.main_menu_bar(egui_ctx);
-            self.about_window(egui_ctx);
-            self.open_url_prompt(egui_ctx);
-        }
+        self.main_menu_bar(egui_ctx);
+        self.about_window(egui_ctx);
+        self.open_url_prompt(egui_ctx);
 
         if !self.context_menu.is_empty() {
             self.context_menu(egui_ctx);
         }
-    }
-
-    pub fn set_ui_visible(&mut self, value: bool) {
-        self.is_ui_visible = value;
-        self.esc_start_time = None;
     }
 
     pub fn show_context_menu(&mut self, menu: Vec<ruffle_core::ContextMenuItem>) {

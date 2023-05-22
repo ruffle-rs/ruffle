@@ -1,6 +1,6 @@
 use crate::cli::Opt;
 use crate::custom_event::RuffleEvent;
-use crate::gui::{GuiController, MovieView};
+use crate::gui::{GuiController, MovieView, MENU_HEIGHT};
 use crate::player::PlayerController;
 use crate::util::{
     get_screen_size, parse_url, pick_file, winit_key_to_char, winit_to_ruffle_key_code,
@@ -42,7 +42,7 @@ impl App {
 
         let event_loop = EventLoopBuilder::with_user_event().build();
 
-        let min_window_size = (16, 16).into();
+        let min_window_size = (16, MENU_HEIGHT + 16).into();
         let max_window_size = get_screen_size(&event_loop);
 
         let window = WindowBuilder::new()
@@ -100,7 +100,6 @@ impl App {
         if self.opt.input_path.is_none() {
             // No SWF provided on command line; show window with dummy movie immediately.
             self.window.set_visible(true);
-            self.gui.lock().expect("Gui lock").set_ui_visible(true);
             loaded = LoadingState::Loaded;
         }
 
@@ -175,7 +174,7 @@ impl App {
                                 let viewport_scale_factor = self.window.scale_factor();
                                 player.set_viewport_dimensions(ViewportDimensions {
                                     width: size.width,
-                                    height: size.height,
+                                    height: size.height - MENU_HEIGHT,
                                     scale_factor: viewport_scale_factor,
                                 });
                             }
@@ -193,7 +192,7 @@ impl App {
                                 mouse_pos = position;
                                 let event = PlayerEvent::MouseMove {
                                     x: position.x,
-                                    y: position.y,
+                                    y: position.y - MENU_HEIGHT as f64,
                                 };
                                 player.handle_event(event);
                             }
@@ -208,7 +207,7 @@ impl App {
                             use winit::event::MouseButton;
                             if let Some(mut player) = self.player.get() {
                                 let x = mouse_pos.x;
-                                let y = mouse_pos.y;
+                                let y = mouse_pos.y - MENU_HEIGHT as f64;
                                 let button = match button {
                                     MouseButton::Left => RuffleMouseButton::Left,
                                     MouseButton::Right => RuffleMouseButton::Right,
@@ -356,19 +355,24 @@ impl App {
                     let movie_height = swf_header.stage_size().height().to_pixels();
 
                     let window_size: Size = match (self.opt.width, self.opt.height) {
-                        (None, None) => LogicalSize::new(movie_width, movie_height).into(),
+                        (None, None) => {
+                            LogicalSize::new(movie_width, movie_height + MENU_HEIGHT as f64).into()
+                        }
                         (Some(width), None) => {
                             let scale = width / movie_width;
                             let height = movie_height * scale;
-                            PhysicalSize::new(width.max(1.0), height.max(1.0)).into()
+                            PhysicalSize::new(width.max(1.0), height.max(1.0) + MENU_HEIGHT as f64)
+                                .into()
                         }
                         (None, Some(height)) => {
                             let scale = height / movie_height;
                             let width = movie_width * scale;
-                            PhysicalSize::new(width.max(1.0), height.max(1.0)).into()
+                            PhysicalSize::new(width.max(1.0), height.max(1.0) + MENU_HEIGHT as f64)
+                                .into()
                         }
                         (Some(width), Some(height)) => {
-                            PhysicalSize::new(width.max(1.0), height.max(1.0)).into()
+                            PhysicalSize::new(width.max(1.0), height.max(1.0) + MENU_HEIGHT as f64)
+                                .into()
                         }
                     };
 
@@ -402,7 +406,7 @@ impl App {
                     if let Some(mut player) = self.player.get() {
                         player.set_viewport_dimensions(ViewportDimensions {
                             width: viewport_size.width,
-                            height: viewport_size.height,
+                            height: viewport_size.height - MENU_HEIGHT,
                             scale_factor: viewport_scale_factor,
                         });
                     }
@@ -423,7 +427,6 @@ impl App {
                             url,
                             self.gui.lock().expect("Gui lock").create_movie_view(),
                         );
-                        self.gui.lock().expect("Gui lock").set_ui_visible(false);
                     }
                 }
 
@@ -433,7 +436,6 @@ impl App {
                         url,
                         self.gui.lock().expect("Gui lock").create_movie_view(),
                     );
-                    self.gui.lock().expect("Gui lock").set_ui_visible(false);
                 }
 
                 winit::event::Event::UserEvent(RuffleEvent::ExitRequested) => {
