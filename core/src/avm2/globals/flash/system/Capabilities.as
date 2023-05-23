@@ -5,7 +5,7 @@ package flash.system {
             stub_getter("flash.system.Capabilities", "os");
             return "Linux 5.10.49"
         }
-        
+    
         public native static function get playerType(): String;
         
         public native static function get version(): String;
