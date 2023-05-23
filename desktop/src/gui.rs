@@ -1,13 +1,49 @@
 mod controller;
 mod movie;
 
+pub use controller::GuiController;
+pub use movie::MovieView;
+use std::borrow::Cow;
+
 use crate::custom_event::RuffleEvent;
 use chrono::DateTime;
 use egui::*;
+use fluent_templates::fluent_bundle::FluentValue;
+use fluent_templates::{static_loader, Loader};
+use ruffle_core::backend::ui::US_ENGLISH;
+use std::collections::HashMap;
+use sys_locale::get_locale;
+use unic_langid::LanguageIdentifier;
 use winit::event_loop::EventLoopProxy;
 
-pub use controller::GuiController;
-pub use movie::MovieView;
+static_loader! {
+    static TEXTS = {
+        locales: "./assets/texts",
+        fallback_language: "en-US"
+    };
+}
+
+pub fn text<'a>(locale: &LanguageIdentifier, id: &'a str) -> Cow<'a, str> {
+    TEXTS.lookup(locale, id).map(Cow::Owned).unwrap_or_else(|| {
+        tracing::error!("Unknown desktop text id '{id}'");
+        Cow::Borrowed(id)
+    })
+}
+
+#[allow(dead_code)]
+pub fn text_with_args<'a, T: AsRef<str>>(
+    locale: &LanguageIdentifier,
+    id: &'a str,
+    args: &HashMap<T, FluentValue>,
+) -> Cow<'a, str> {
+    TEXTS
+        .lookup_with_args(locale, id, args)
+        .map(Cow::Owned)
+        .unwrap_or_else(|| {
+            tracing::error!("Unknown desktop text id '{id}'");
+            Cow::Borrowed(id)
+        })
+}
 
 /// Size of the top menu bar in pixels.
 /// This is the offset at which the movie will be shown,
@@ -21,16 +57,26 @@ pub struct RuffleGui {
     is_about_visible: bool,
     is_open_url_prompt_visible: bool,
     context_menu: Vec<ruffle_core::ContextMenuItem>,
+    locale: LanguageIdentifier,
 }
 
 impl RuffleGui {
     fn new(event_loop: EventLoopProxy<RuffleEvent>) -> Self {
+        // TODO: language negotiation + https://github.com/1Password/sys-locale/issues/14
+        // This should also be somewhere else so it can be supplied through UiBackend too
+
+        let preferred_locale = get_locale();
+        let locale = preferred_locale
+            .and_then(|l| l.parse().ok())
+            .unwrap_or_else(|| US_ENGLISH.clone());
+
         Self {
             event_loop,
             open_url_text: String::new(),
             is_about_visible: false,
             is_open_url_prompt_visible: false,
             context_menu: vec![],
+            locale,
         }
     }
 
@@ -72,11 +118,11 @@ impl RuffleGui {
             }
 
             menu::bar(ui, |ui| {
-                menu::menu_button(ui, "File", |ui| {
+                menu::menu_button(ui, text(&self.locale, "file-menu"), |ui| {
                     let mut shortcut;
                     shortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::O);
 
-                    if Button::new("Open File...")
+                    if Button::new(text(&self.locale, "file-menu-open-file"))
                         .shortcut_text(ui.ctx().format_shortcut(&shortcut))
                         .ui(ui)
                         .clicked()
@@ -84,18 +130,18 @@ impl RuffleGui {
                         self.open_file(ui);
                     }
 
-                    if Button::new("Open URL...").ui(ui).clicked() {
+                    if Button::new(text(&self.locale, "file-menu-open-url")).ui(ui).clicked() {
                         self.show_open_url_prompt(ui);
                     }
 
-                    if ui.add_enabled(has_movie, Button::new("Close")).clicked() {
+                    if ui.add_enabled(has_movie, Button::new(text(&self.locale, "file-menu-close"))).clicked() {
                         self.close_movie(ui);
                     }
 
                     ui.separator();
 
                     shortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::Q);
-                    if Button::new("Exit")
+                    if Button::new(text(&self.locale, "file-menu-exit"))
                         .shortcut_text(ui.ctx().format_shortcut(&shortcut))
                         .ui(ui)
                         .clicked()
@@ -103,21 +149,21 @@ impl RuffleGui {
                         self.request_exit(ui);
                     }
                 });
-                menu::menu_button(ui, "Help", |ui| {
-                    if ui.button("Join Discord").clicked() {
+                menu::menu_button(ui, text(&self.locale, "help-menu"), |ui| {
+                    if ui.button(text(&self.locale, "help-menu-join-discord")).clicked() {
                         self.launch_website(ui, "https://discord.gg/ruffle");
                     }
-                    if ui.button("Report a Bug").clicked() {
+                    if ui.button(text(&self.locale, "help-menu-report-a-bug")).clicked() {
                         self.launch_website(ui, "https://github.com/ruffle-rs/ruffle/issues/new?assignees=&labels=bug&projects=&template=bug_report.yml");
                     }
-                    if ui.button("Sponsor Development").clicked() {
+                    if ui.button(text(&self.locale, "help-menu-sponsor-development")).clicked() {
                         self.launch_website(ui, "https://opencollective.com/ruffle/");
                     }
-                    if ui.button("Translate Ruffle").clicked() {
+                    if ui.button(text(&self.locale, "help-menu-translate-ruffle")).clicked() {
                         self.launch_website(ui, "https://crowdin.com/project/ruffle");
                     }
                     ui.separator();
-                    if ui.button("About Ruffle...").clicked() {
+                    if ui.button(text(&self.locale, "help-menu-about")).clicked() {
                         self.show_about_screen(ui);
                     }
                 })
@@ -126,7 +172,7 @@ impl RuffleGui {
     }
 
     fn about_window(&mut self, egui_ctx: &egui::Context) {
-        egui::Window::new("About Ruffle")
+        egui::Window::new(text(&self.locale, "about-ruffle"))
             .collapsible(false)
             .resizable(false)
             .anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO)
@@ -141,15 +187,15 @@ impl RuffleGui {
                     Grid::new("about_ruffle_version_info")
                         .striped(true)
                         .show(ui, |ui| {
-                            ui.label("Version");
+                            ui.label(text(&self.locale, "about-ruffle-version"));
                             ui.label(env!("CARGO_PKG_VERSION"));
                             ui.end_row();
 
-                            ui.label("Channel");
+                            ui.label(text(&self.locale, "about-ruffle-channel"));
                             ui.label(env!("CFG_RELEASE_CHANNEL"));
                             ui.end_row();
 
-                            ui.label("Build Time");
+                            ui.label(text(&self.locale, "about-ruffle-build-time"));
                             ui.label(
                                 DateTime::parse_from_rfc3339(env!("VERGEN_BUILD_TIMESTAMP"))
                                     .map(|t| t.format("%c").to_string())
@@ -157,7 +203,7 @@ impl RuffleGui {
                             );
                             ui.end_row();
 
-                            ui.label("Commit ref");
+                            ui.label(text(&self.locale, "about-ruffle-commit-ref"));
                             ui.hyperlink_to(
                                 env!("VERGEN_GIT_SHA"),
                                 format!(
@@ -167,7 +213,7 @@ impl RuffleGui {
                             );
                             ui.end_row();
 
-                            ui.label("Commit date");
+                            ui.label(text(&self.locale, "about-ruffle-commit-time"));
                             ui.label(
                                 DateTime::parse_from_rfc3339(env!("VERGEN_GIT_COMMIT_TIMESTAMP"))
                                     .map(|t| t.format("%c").to_string())
@@ -177,7 +223,7 @@ impl RuffleGui {
                             );
                             ui.end_row();
 
-                            ui.label("Build Features");
+                            ui.label(text(&self.locale, "about-ruffle-build-features"));
                             ui.horizontal_wrapped(|ui| {
                                 ui.label(env!("VERGEN_CARGO_FEATURES").replace(',', ", "));
                             });
@@ -185,10 +231,22 @@ impl RuffleGui {
                         });
 
                     ui.horizontal(|ui| {
-                        ui.hyperlink_to("Website", "https://ruffle.rs");
-                        ui.hyperlink_to("Github", "https://github.com/ruffle-rs/ruffle/");
-                        ui.hyperlink_to("Discord", "https://discord.gg/ruffle");
-                        ui.hyperlink_to("Sponsor", "https://opencollective.com/ruffle/");
+                        ui.hyperlink_to(
+                            text(&self.locale, "about-ruffle-visit-website"),
+                            "https://ruffle.rs",
+                        );
+                        ui.hyperlink_to(
+                            text(&self.locale, "about-ruffle-visit-github"),
+                            "https://github.com/ruffle-rs/ruffle/",
+                        );
+                        ui.hyperlink_to(
+                            text(&self.locale, "about-ruffle-visit-discord"),
+                            "https://discord.gg/ruffle",
+                        );
+                        ui.hyperlink_to(
+                            text(&self.locale, "about-ruffle-visit-sponsor"),
+                            "https://opencollective.com/ruffle/",
+                        );
                         ui.shrink_width_to_current();
                     });
                 })
@@ -245,7 +303,7 @@ impl RuffleGui {
 
     fn open_url_prompt(&mut self, egui_ctx: &egui::Context) {
         let mut close_prompt = false;
-        egui::Window::new("Open URL")
+        egui::Window::new(text(&self.locale, "open-url"))
             .anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO)
             .collapsible(false)
             .resizable(false)
@@ -260,7 +318,7 @@ impl RuffleGui {
                     });
                     ui.text_edit_singleline(&mut self.open_url_text);
                     ui.horizontal(|ui| {
-                        if ui.button("OK").clicked() || enter_pressed {
+                        if ui.button(text(&self.locale, "dialog-ok")).clicked() || enter_pressed {
                             if let Ok(url) = url::Url::parse(&self.open_url_text) {
                                 let _ = self.event_loop.send_event(RuffleEvent::OpenURL(url));
                             } else {
@@ -269,7 +327,7 @@ impl RuffleGui {
                             }
                             close_prompt = true;
                         }
-                        if ui.button("Cancel").clicked() || esc_pressed {
+                        if ui.button(text(&self.locale, "dialog-cancel")).clicked() || esc_pressed {
                             close_prompt = true;
                         }
                     });
