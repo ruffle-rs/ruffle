@@ -1,7 +1,6 @@
 package flash.ui
 {
     import flash.display.NativeMenu;
-    import __ruffle__.stub_getter;
     import __ruffle__.stub_setter;
 
     public final class ContextMenu extends NativeMenu
@@ -19,7 +18,6 @@ package flash.ui
         private var _builtInItems: ContextMenuBuiltInItems = new ContextMenuBuiltInItems();
 
         public function get builtInItems(): ContextMenuBuiltInItems {
-            stub_getter("flash.ui.ContextMenu", "builtInItems");
             return this._builtInItems;
         }
 
