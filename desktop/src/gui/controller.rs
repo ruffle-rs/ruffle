@@ -55,17 +55,29 @@ impl GuiController {
             trace_path,
         ))
         .map_err(|e| anyhow!(e.to_string()))?;
+        let surface_format = surface
+            .get_capabilities(&adapter)
+            .formats
+            .first()
+            .cloned()
+            .expect("At least one format should be supported");
+        surface.configure(
+            &device,
+            &wgpu::SurfaceConfiguration {
+                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+                format: surface_format,
+                width: window.inner_size().width,
+                height: window.inner_size().height,
+                present_mode: Default::default(),
+                alpha_mode: Default::default(),
+                view_formats: Default::default(),
+            },
+        );
         let descriptors = Descriptors::new(adapter, device, queue);
         let egui_ctx = Context::default();
         let mut egui_winit = egui_winit::State::new(event_loop);
         egui_winit.set_pixels_per_point(window.scale_factor() as f32);
         egui_winit.set_max_texture_side(descriptors.limits.max_texture_dimension_2d as usize);
-        let surface_format = surface
-            .get_capabilities(&descriptors.adapter)
-            .formats
-            .first()
-            .cloned()
-            .expect("At least one format should be supported");
 
         let movie_view_renderer = Arc::new(MovieViewRenderer::new(
             &descriptors.device,
