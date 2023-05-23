@@ -1058,8 +1058,93 @@ fn start_drag<'gc>(
     activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    crate::avm1::activation::start_drag(movie_clip.into(), activation, args);
+    let lock_center = args
+        .get(0)
+        .map(|o| o.as_bool(activation.context.swf.version()))
+        .unwrap_or(false);
+
+    let constraint_args = if args.len() > 1 {
+        let x_min = args
+            .get(1)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_f64(activation)?;
+        let y_min = args
+            .get(2)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_f64(activation)?;
+        let x_max = args
+            .get(3)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_f64(activation)?;
+        let y_max = args
+            .get(4)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_f64(activation)?;
+        Some([x_min, y_min, x_max, y_max])
+    } else {
+        None
+    };
+
+    start_drag_impl(movie_clip.into(), activation, lock_center, constraint_args);
+
     Ok(Value::Undefined)
+}
+
+pub fn start_drag_impl<'gc>(
+    display_object: DisplayObject<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    lock_center: bool,
+    constraint_args: Option<[f64; 4]>,
+) {
+    let constraint = if let Some(constraint_args) = constraint_args {
+        // Invalid values turn into 0.
+        let mut x_min = Twips::from_pixels(if constraint_args[0].is_finite() {
+            constraint_args[0]
+        } else {
+            0.0
+        });
+        let mut y_min = Twips::from_pixels(if constraint_args[1].is_finite() {
+            constraint_args[1]
+        } else {
+            0.0
+        });
+        let mut x_max = Twips::from_pixels(if constraint_args[2].is_finite() {
+            constraint_args[2]
+        } else {
+            0.0
+        });
+        let mut y_max = Twips::from_pixels(if constraint_args[3].is_finite() {
+            constraint_args[3]
+        } else {
+            0.0
+        });
+
+        // Normalize the bounds.
+        if x_max.get() < x_min.get() {
+            std::mem::swap(&mut x_min, &mut x_max);
+        }
+        if y_max.get() < y_min.get() {
+            std::mem::swap(&mut y_min, &mut y_max);
+        }
+
+        Rectangle {
+            x_min,
+            y_min,
+            x_max,
+            y_max,
+        }
+    } else {
+        // No constraints.
+        Default::default()
+    };
+
+    let drag_object = crate::player::DragObject {
+        display_object,
+        last_mouse_position: *activation.context.mouse_position,
+        lock_center,
+        constraint,
+    };
+    *activation.context.drag_object = Some(drag_object);
 }
 
 fn stop<'gc>(
@@ -1078,9 +1163,9 @@ fn stop_drag<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     // It doesn't matter which clip we call this on; it simply stops any active drag.
 
-    // we might not have had an opportunity to call `update_drag`
-    // if AS did `startDrag(mc);stopDrag();` in one go
-    // so let's do it here
+    // We might not have had an opportunity to call `update_drag`
+    // if AS did `startDrag(mc); stopDrag();` in one go,
+    // so let's do it here.
     crate::player::Player::update_drag(&mut activation.context);
 
     *activation.context.drag_object = None;

@@ -25,7 +25,7 @@ mod value;
 #[cfg(test)]
 mod tests;
 
-pub use activation::{start_drag, Activation, ActivationIdentifier};
+pub use activation::{Activation, ActivationIdentifier};
 pub use debug::VariableDumper;
 pub use error::Error;
 pub use function::ExecutionReason;

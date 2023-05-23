@@ -9,7 +9,7 @@ use crate::avm1::{fscommand, globals, scope, ArrayObject, ScriptObject, Value};
 use crate::backend::navigator::{NavigationMethod, Request};
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer};
-use crate::ecma_conversions::f64_to_wrapping_u32;
+use crate::ecma_conversions::{f64_to_wrapping_i32, f64_to_wrapping_u32};
 use crate::string::{AvmString, SwfStrExt as _, WStr, WString};
 use crate::tag_utils::SwfSlice;
 use crate::vminterface::Instantiator;
@@ -24,7 +24,6 @@ use std::cmp::min;
 use std::fmt;
 use swf::avm1::read::Reader;
 use swf::avm1::types::*;
-use swf::{Rectangle, Twips};
 use url::form_urlencoded;
 
 use super::object_reference::MovieClipReference;
@@ -1004,9 +1003,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn action_end_drag(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        // we might not have had an opportunity to call `update_drag`
-        // if AS did `startDrag(mc);stopDrag();` in one go
-        // so let's do it here
+        // We might not have had an opportunity to call `update_drag`
+        // if AS did `startDrag(mc); stopDrag();` in one go,
+        // so let's do it here.
         crate::player::Player::update_drag(&mut self.context);
 
         *self.context.drag_object = None;
@@ -1126,21 +1125,38 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn action_get_property(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let prop_value = self.context.avm1.pop();
-        let prop_index = prop_value.coerce_to_f64(self)?;
+        let prop_index = self.context.avm1.pop().coerce_to_f64(self)?;
         let path = self.context.avm1.pop();
-        let result = if prop_index.is_nan() || prop_index <= -1.0 {
-            avm_warn!(self, "GetProperty: Invalid property {:?}", prop_value);
-            Value::Undefined
-        } else if let Some(target) = self.target_clip() {
-            let prop_index = prop_index as usize;
-            if let Some(clip) = self.resolve_target_display_object(target, path, true)? {
-                let display_properties = self.context.avm1.display_properties();
-                let props = display_properties.read();
-                if let Some(property) = props.get_by_index(prop_index) {
+
+        let (target, clip) = if let Some(target) = self.target_clip() {
+            (
+                Some(target),
+                self.resolve_target_display_object(target, path, true)?,
+            )
+        } else {
+            // `path` must be coerced even if the target is invalid.
+            let _ = path.coerce_to_string(self)?;
+            (None, None)
+        };
+
+        let property = if !prop_index.is_finite() || prop_index <= -1.0 {
+            None
+        } else {
+            let display_properties = self.context.avm1.display_properties();
+            let properties = display_properties.read();
+            if let Some(property) = properties.get_by_index(prop_index as usize) {
+                Some(*property)
+            } else {
+                None
+            }
+        };
+
+        let result = if target.is_some() {
+            if let Some(clip) = clip {
+                if let Some(property) = property {
                     property.get(self, clip)
                 } else {
-                    avm_warn!(self, "GetProperty: Invalid property index {}", prop_index);
+                    avm_warn!(self, "GetProperty: Invalid property {}", prop_index);
                     Value::Undefined
                 }
             } else {
@@ -1151,6 +1167,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             avm_warn!(self, "GetProperty: Invalid base clip");
             Value::Undefined
         };
+
         self.stack_push(result);
         Ok(FrameControl::Continue)
     }
@@ -1191,7 +1208,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     let level = self.resolve_level(level_id);
 
                     if url.is_empty() {
-                        //Blank URL on movie loads = unload!
+                        // Blank URL on movie loads = unload!
                         if let Some(mc) = level.as_movie_clip() {
                             mc.avm1_unload(&mut self.context);
                             mc.replace_with_movie(&mut self.context, None, None)
@@ -1644,9 +1661,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn action_multiply(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let a = self.context.avm1.pop().coerce_to_f64(self)?;
-        let b = self.context.avm1.pop().coerce_to_f64(self)?;
-        let result = b * a;
+        let a = self.context.avm1.pop();
+        let b = self.context.avm1.pop();
+        let result = b.coerce_to_f64(self)? * a.coerce_to_f64(self)?;
         self.context.avm1.push(result.into());
         Ok(FrameControl::Continue)
     }
@@ -1878,22 +1895,57 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn action_set_property(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let value = self.context.avm1.pop();
-        let prop_index = self.context.avm1.pop().coerce_to_u32(self)? as usize;
+        let prop_value = self.context.avm1.pop();
+        let prop_index = self.context.avm1.pop().coerce_to_f64(self)?;
         let path = self.context.avm1.pop();
-        if let Some(target) = self.target_clip() {
-            if let Some(clip) = self.resolve_target_display_object(target, path, true)? {
-                let display_properties = self.context.avm1.display_properties();
-                let props = display_properties.read();
-                if let Some(property) = props.get_by_index(prop_index) {
-                    property.set(self, clip, value)?;
+
+        let (target, clip) = if let Some(target) = self.target_clip() {
+            (
+                Some(target),
+                self.resolve_target_display_object(target, path, true)?,
+            )
+        } else {
+            // `path` must be coerced even if the target is invalid.
+            let _ = path.coerce_to_string(self)?;
+            (None, None)
+        };
+
+        let property = if !prop_index.is_finite() || prop_index <= -1.0 {
+            None
+        } else {
+            let display_properties = self.context.avm1.display_properties();
+            let properties = display_properties.read();
+            if let Some(property) = properties.get_by_index(prop_index as usize) {
+                if clip.is_none() || property.is_read_only() {
+                    // `prop_value` must be coerced even if the target is invalid or the property is read-only.
+                    // This behavior is consistent since Flash Player 21. Previous versions usually only coerce
+                    // when valid data is provided, but Flash Player 19 and 20 make no coercion *at all*.
+                    let _ = crate::avm1::object::stage_object::action_property_coerce(
+                        self,
+                        prop_index as usize,
+                        prop_value,
+                    );
+                }
+                Some(*property)
+            } else {
+                None
+            }
+        };
+
+        if target.is_some() {
+            if let Some(clip) = clip {
+                if let Some(property) = property {
+                    property.set(self, clip, prop_value)?;
+                } else {
+                    avm_warn!(self, "SetProperty: Invalid property {}", prop_index);
                 }
             } else {
-                avm_warn!(self, "SetProperty: Invalid target");
+                avm_warn!(self, "SetProperty: Invalid target {:?}", path);
             }
         } else {
             avm_warn!(self, "SetProperty: Invalid base clip");
-        }
+        };
+
         Ok(FrameControl::Continue)
     }
 
@@ -1988,21 +2040,30 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let target = self.context.avm1.pop();
         let start_clip = self.target_clip_or_root();
         let display_object = self.resolve_target_display_object(start_clip, target, true)?;
+
+        let lock_center = self.context.avm1.pop().coerce_to_i32(self)? == 1;
+        let constrain = self.context.avm1.pop().coerce_to_i32(self)? == 1;
+        let constraint_args = if constrain {
+            let y_max = self.context.avm1.pop().coerce_to_f64(self)?;
+            let x_max = self.context.avm1.pop().coerce_to_f64(self)?;
+            let y_min = self.context.avm1.pop().coerce_to_f64(self)?;
+            let x_min = self.context.avm1.pop().coerce_to_f64(self)?;
+            Some([x_min, y_min, x_max, y_max])
+        } else {
+            None
+        };
+
         if let Some(display_object) = display_object {
-            let lock_center = self.context.avm1.pop();
-            let constrain = self.context.avm1.pop().as_bool(self.swf_version());
-            if constrain {
-                let y2 = self.context.avm1.pop();
-                let x2 = self.context.avm1.pop();
-                let y1 = self.context.avm1.pop();
-                let x1 = self.context.avm1.pop();
-                start_drag(display_object, self, &[lock_center, x1, y1, x2, y2]);
-            } else {
-                start_drag(display_object, self, &[lock_center]);
-            };
+            globals::movie_clip::start_drag_impl(
+                display_object,
+                self,
+                lock_center,
+                constraint_args,
+            );
         } else {
             avm_warn!(self, "StartDrag: Invalid target");
         }
+
         Ok(FrameControl::Continue)
     }
 
@@ -2038,22 +2099,18 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn action_string_add(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // SWFv4 string concatenation
         // TODO(Herschel): Result with non-string operands?
-        let a = self.context.avm1.pop();
-        let b = self.context.avm1.pop();
-        let s = AvmString::concat(
-            self.context.gc_context,
-            b.coerce_to_string(self)?,
-            a.coerce_to_string(self)?,
-        );
+        let a = self.context.avm1.pop().coerce_to_string(self)?;
+        let b = self.context.avm1.pop().coerce_to_string(self)?;
+        let s = AvmString::concat(self.context.gc_context, b, a);
         self.context.avm1.push(s.into());
         Ok(FrameControl::Continue)
     }
 
     fn action_string_equals(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // AS1 strcmp
-        let a = self.context.avm1.pop();
-        let b = self.context.avm1.pop();
-        let result = b.coerce_to_string(self)? == a.coerce_to_string(self)?;
+        let a = self.context.avm1.pop().coerce_to_string(self)?;
+        let b = self.context.avm1.pop().coerce_to_string(self)?;
+        let result = b == a;
         self.context.avm1.push(result.into()); // Diverges from spec: returns a boolean even in SWF 4
         Ok(FrameControl::Continue)
     }
@@ -2102,9 +2159,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn action_string_less(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // AS1 strcmp
-        let a = self.context.avm1.pop();
-        let b = self.context.avm1.pop();
-        let result = b.coerce_to_string(self)?.lt(&a.coerce_to_string(self)?);
+        let a = self.context.avm1.pop().coerce_to_string(self)?;
+        let b = self.context.avm1.pop().coerce_to_string(self)?;
+        let result = b.lt(&a);
         self.context.avm1.push(result.into()); // Diverges from spec: returns a boolean even in SWF 4
         Ok(FrameControl::Continue)
     }
@@ -2277,17 +2334,38 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         action: WaitForFrame2,
         r: &mut Reader<'_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let frame_num = self.context.avm1.pop().coerce_to_f64(self)? as u16;
-        let loaded = self
-            .target_clip()
-            .and_then(|dobj| dobj.as_movie_clip())
-            .map(|mc| mc.frames_loaded() > min(frame_num, mc.total_frames() - 1))
-            .unwrap_or(true);
+        let frame_val = self.context.avm1.pop();
+        let frame_num = match frame_val {
+            Value::Number(n) if n.fract() == 0.0 => f64_to_wrapping_i32(n),
+            val => {
+                // The SWF19 spec says that the frame is evaluated in the same way as `Action::GotoFrame2`.
+                // Though this may be true, this doesn't seem to work in practice for things like a label
+                // name, as it is not possible to verify its existence if the related frame is not loaded
+                // yet. In this situation, this action will consider the frame as loaded.
+                let frame_str = val.coerce_to_string(self)?;
+                match frame_str.parse::<f64>() {
+                    Ok(n) if n.fract() == 0.0 => f64_to_wrapping_i32(n),
+                    _ => 0,
+                }
+            }
+        };
+
+        let loaded = if frame_num > 16001 {
+            // Exceeded maximum number of frames.
+            false
+        } else {
+            self.target_clip()
+                .and_then(|dobj| dobj.as_movie_clip())
+                .map(|mc| mc.frames_loaded() > min(frame_num as u16, mc.total_frames() - 1))
+                .unwrap_or(true)
+        };
+
         if !loaded {
             // Note that the offset is given in # of actions, NOT in bytes.
             // Read the actions and toss them away.
             skip_actions(r, action.num_actions_to_skip);
         }
+
         Ok(FrameControl::Continue)
     }
 
@@ -3029,74 +3107,4 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         ));
         Ok(FrameControl::Continue)
     }
-}
-
-/// Starts dragging this display object, making it follow the cursor.
-/// Runs via the `startDrag` method or `StartDrag` AVM1 action.
-pub fn start_drag<'gc>(
-    display_object: DisplayObject<'gc>,
-    activation: &mut Activation<'_, 'gc>,
-    args: &[Value<'gc>],
-) {
-    let lock_center = args
-        .get(0)
-        .map(|o| o.as_bool(activation.context.swf.version()))
-        .unwrap_or(false);
-
-    let constraint = if args.len() > 1 {
-        // Invalid values turn into 0.
-        let mut x_min = args
-            .get(1)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_f64(activation)
-            .map(|n| if n.is_finite() { n } else { 0.0 })
-            .map(Twips::from_pixels)
-            .unwrap_or_default();
-        let mut y_min = args
-            .get(2)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_f64(activation)
-            .map(|n| if n.is_finite() { n } else { 0.0 })
-            .map(Twips::from_pixels)
-            .unwrap_or_default();
-        let mut x_max = args
-            .get(3)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_f64(activation)
-            .map(|n| if n.is_finite() { n } else { 0.0 })
-            .map(Twips::from_pixels)
-            .unwrap_or_default();
-        let mut y_max = args
-            .get(4)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_f64(activation)
-            .map(|n| if n.is_finite() { n } else { 0.0 })
-            .map(Twips::from_pixels)
-            .unwrap_or_default();
-
-        // Normalize the bounds.
-        if x_max.get() < x_min.get() {
-            std::mem::swap(&mut x_min, &mut x_max);
-        }
-        if y_max.get() < y_min.get() {
-            std::mem::swap(&mut y_min, &mut y_max);
-        }
-        Rectangle {
-            x_min,
-            y_min,
-            x_max,
-            y_max,
-        }
-    } else {
-        // No constraints.
-        Default::default()
-    };
-
-    let drag_object = crate::player::DragObject {
-        display_object,
-        last_mouse_position: *activation.context.mouse_position,
-        lock_center,
-        constraint,
-    };
-    *activation.context.drag_object = Some(drag_object);
 }
