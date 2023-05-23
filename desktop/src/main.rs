@@ -7,17 +7,14 @@
 #![windows_subsystem = "windows"]
 
 mod app;
-mod audio;
+mod backends;
 mod cli;
 mod custom_event;
 mod executor;
 mod gui;
-mod navigator;
 mod player;
-mod storage;
 mod task;
 mod time_demo;
-mod ui;
 mod util;
 
 use anyhow::Error;

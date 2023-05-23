@@ -1,3 +1,6 @@
+use crate::backends::{
+    CpalAudioBackend, DesktopUiBackend, DiskStorageBackend, ExternalNavigatorBackend,
+};
 use crate::cli::Opt;
 use crate::custom_event::RuffleEvent;
 use crate::executor::GlutinAsyncExecutor;
@@ -32,7 +35,7 @@ impl ActivePlayer {
     ) -> Self {
         let mut builder = PlayerBuilder::new();
 
-        match crate::audio::CpalAudioBackend::new() {
+        match CpalAudioBackend::new() {
             Ok(mut audio) => {
                 audio.set_volume(opt.volume);
                 builder = builder.with_audio(audio);
@@ -43,7 +46,7 @@ impl ActivePlayer {
         };
 
         let (executor, channel) = GlutinAsyncExecutor::new(event_loop.clone());
-        let navigator = crate::navigator::ExternalNavigatorBackend::new(
+        let navigator = ExternalNavigatorBackend::new(
             opt.base.to_owned().unwrap_or_else(|| movie_url.clone()),
             channel,
             event_loop.clone(),
@@ -65,13 +68,8 @@ impl ActivePlayer {
         builder = builder
             .with_navigator(navigator)
             .with_renderer(renderer)
-            .with_storage(
-                crate::storage::DiskStorageBackend::new().expect("Couldn't create storage backend"),
-            )
-            .with_ui(
-                crate::ui::DesktopUiBackend::new(window.clone())
-                    .expect("Couldn't create ui backend"),
-            )
+            .with_storage(DiskStorageBackend::new().expect("Couldn't create storage backend"))
+            .with_ui(DesktopUiBackend::new(window.clone()).expect("Couldn't create ui backend"))
             .with_autoplay(true)
             .with_letterbox(opt.letterbox)
             .with_max_execution_duration(Duration::from_secs_f64(opt.max_execution_duration))
