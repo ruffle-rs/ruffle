@@ -10,6 +10,7 @@ use std::path::Path;
 use std::rc::Rc;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
+use winit::dpi::PhysicalSize;
 use winit::event_loop::EventLoop;
 use winit::window::Window;
 
@@ -26,6 +27,7 @@ pub struct GuiController {
     surface: wgpu::Surface,
     surface_format: wgpu::TextureFormat,
     movie_view_renderer: Arc<MovieViewRenderer>,
+    last_size: PhysicalSize<u32>,
 }
 
 impl GuiController {
@@ -61,13 +63,14 @@ impl GuiController {
             .first()
             .cloned()
             .expect("At least one format should be supported");
+        let size = window.inner_size();
         surface.configure(
             &device,
             &wgpu::SurfaceConfiguration {
                 usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
                 format: surface_format,
-                width: window.inner_size().width,
-                height: window.inner_size().height,
+                width: size.width,
+                height: size.height,
                 present_mode: Default::default(),
                 alpha_mode: Default::default(),
                 view_formats: Default::default(),
@@ -83,7 +86,7 @@ impl GuiController {
             &descriptors.device,
             surface_format,
             window.fullscreen().is_none(),
-            window.inner_size().height,
+            size.height,
         ));
         let egui_renderer = egui_wgpu::Renderer::new(&descriptors.device, surface_format, None, 1);
         let event_loop = event_loop.create_proxy();
@@ -100,6 +103,7 @@ impl GuiController {
             surface,
             surface_format,
             movie_view_renderer,
+            last_size: size,
         })
     }
 
@@ -110,18 +114,6 @@ impl GuiController {
     #[must_use]
     pub fn handle_event(&mut self, event: &winit::event::WindowEvent) -> bool {
         if let winit::event::WindowEvent::Resized(size) = &event {
-            self.surface.configure(
-                &self.descriptors.device,
-                &wgpu::SurfaceConfiguration {
-                    usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-                    format: self.surface_format,
-                    width: size.width,
-                    height: size.height,
-                    present_mode: Default::default(),
-                    alpha_mode: Default::default(),
-                    view_formats: Default::default(),
-                },
-            );
             self.movie_view_renderer.update_resolution(
                 &self.descriptors,
                 self.window.fullscreen().is_none(),
@@ -146,6 +138,21 @@ impl GuiController {
     }
 
     pub fn render(&mut self, movie: Option<&MovieView>) {
+        if self.window.inner_size() != self.last_size {
+            self.surface.configure(
+                &self.descriptors.device,
+                &wgpu::SurfaceConfiguration {
+                    usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+                    format: self.surface_format,
+                    width: self.window.inner_size().width,
+                    height: self.window.inner_size().height,
+                    present_mode: Default::default(),
+                    alpha_mode: Default::default(),
+                    view_formats: Default::default(),
+                },
+            );
+            self.last_size = self.window.inner_size();
+        }
         let surface_texture = self
             .surface
             .get_current_texture()
