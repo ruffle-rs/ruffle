@@ -104,8 +104,17 @@ impl RuffleGui {
                     }
                 });
                 menu::menu_button(ui, "Help", |ui| {
-                    if ui.button("Discord").clicked() {
-                        self.launch_discord(ui);
+                    if ui.button("Join Discord").clicked() {
+                        self.launch_website(ui, "https://discord.gg/ruffle");
+                    }
+                    if ui.button("Report a Bug").clicked() {
+                        self.launch_website(ui, "https://github.com/ruffle-rs/ruffle/issues/new?assignees=&labels=bug&projects=&template=bug_report.yml");
+                    }
+                    if ui.button("Sponsor Development").clicked() {
+                        self.launch_website(ui, "https://opencollective.com/ruffle/");
+                    }
+                    if ui.button("Translate Ruffle").clicked() {
+                        self.launch_website(ui, "https://crowdin.com/project/ruffle");
                     }
                     ui.separator();
                     if ui.button("About Ruffle...").clicked() {
@@ -276,9 +285,8 @@ impl RuffleGui {
         ui.close_menu();
     }
 
-    fn launch_discord(&mut self, ui: &mut egui::Ui) {
-        const RUFFLE_DISCORD_URL: &str = "https://discord.gg/ruffle";
-        let _ = webbrowser::open(RUFFLE_DISCORD_URL);
+    fn launch_website(&mut self, ui: &mut egui::Ui, url: &str) {
+        let _ = webbrowser::open(url);
         ui.close_menu();
     }
 
