@@ -1,8 +1,8 @@
-// flash.system.Capabilities.screenResolutionX
+// System.Capabilities.screenResolutionX
 1536
-// flash.system.Capabilities.screenResolutionY
+// System.Capabilities.screenResolutionY
 864
-// flash.system.Capabilities.pixelAspectRatio
+// System.Capabilities.pixelAspectRatio
 1
-// flash.system.Capabilities.screenDPI
+// System.Capabilities.screenDPI
 72
