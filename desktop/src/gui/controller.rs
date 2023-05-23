@@ -2,7 +2,7 @@ use crate::custom_event::RuffleEvent;
 use crate::gui::movie::{MovieView, MovieViewRenderer};
 use crate::gui::RuffleGui;
 use anyhow::anyhow;
-use egui::{Context, Pos2, Rect, Vec2};
+use egui::Context;
 use ruffle_render_wgpu::backend::request_adapter_and_device;
 use ruffle_render_wgpu::descriptors::Descriptors;
 use ruffle_render_wgpu::utils::{format_list, get_backend_names};
@@ -27,7 +27,9 @@ pub struct GuiController {
     surface: wgpu::Surface,
     surface_format: wgpu::TextureFormat,
     movie_view_renderer: Arc<MovieViewRenderer>,
-    last_size: PhysicalSize<u32>,
+    // Note that `window.get_inner_size` can change at any point on x11, even between two lines of code.
+    // Use this instead.
+    size: PhysicalSize<u32>,
 }
 
 impl GuiController {
@@ -103,7 +105,7 @@ impl GuiController {
             surface,
             surface_format,
             movie_view_renderer,
-            last_size: size,
+            size,
         })
     }
 
@@ -114,11 +116,24 @@ impl GuiController {
     #[must_use]
     pub fn handle_event(&mut self, event: &winit::event::WindowEvent) -> bool {
         if let winit::event::WindowEvent::Resized(size) = &event {
+            self.surface.configure(
+                &self.descriptors.device,
+                &wgpu::SurfaceConfiguration {
+                    usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+                    format: self.surface_format,
+                    width: size.width,
+                    height: size.height,
+                    present_mode: Default::default(),
+                    alpha_mode: Default::default(),
+                    view_formats: Default::default(),
+                },
+            );
             self.movie_view_renderer.update_resolution(
                 &self.descriptors,
                 self.window.fullscreen().is_none(),
                 size.height,
             );
+            self.size = *size;
         }
         let response = self.egui_winit.on_event(&self.egui_ctx, event);
         if response.repaint {
@@ -128,45 +143,21 @@ impl GuiController {
     }
 
     pub fn create_movie_view(&self) -> MovieView {
-        let size = self.window.inner_size();
         MovieView::new(
             self.movie_view_renderer.clone(),
             &self.descriptors.device,
-            size.width,
-            size.height,
+            self.size.width,
+            self.size.height,
         )
     }
 
     pub fn render(&mut self, movie: Option<&MovieView>) {
-        let mut raw_input = self.egui_winit.take_egui_input(&self.window);
-
-        if self.window.inner_size() != self.last_size {
-            self.surface.configure(
-                &self.descriptors.device,
-                &wgpu::SurfaceConfiguration {
-                    usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-                    format: self.surface_format,
-                    width: self.window.inner_size().width,
-                    height: self.window.inner_size().height,
-                    present_mode: Default::default(),
-                    alpha_mode: Default::default(),
-                    view_formats: Default::default(),
-                },
-            );
-            raw_input.screen_rect = Some(Rect::from_min_size(
-                Pos2::ZERO,
-                Vec2::new(
-                    self.window.inner_size().width as f32,
-                    self.window.inner_size().height as f32,
-                ),
-            ));
-            self.last_size = self.window.inner_size();
-        }
         let surface_texture = self
             .surface
             .get_current_texture()
             .expect("Surface became unavailable");
 
+        let raw_input = self.egui_winit.take_egui_input(&self.window);
         let full_output = self.egui_ctx.run(raw_input, |context| {
             self.gui
                 .update(context, self.window.fullscreen().is_none(), movie.is_some());
@@ -180,10 +171,9 @@ impl GuiController {
         );
         let clipped_primitives = self.egui_ctx.tessellate(full_output.shapes);
 
-        let size = self.window.inner_size();
         let scale_factor = self.window.scale_factor() as f32;
         let screen_descriptor = egui_wgpu::renderer::ScreenDescriptor {
-            size_in_pixels: [size.width, size.height],
+            size_in_pixels: [self.size.width, self.size.height],
             pixels_per_point: scale_factor,
         };
 
