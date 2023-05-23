@@ -2,7 +2,7 @@ use crate::custom_event::RuffleEvent;
 use crate::gui::movie::{MovieView, MovieViewRenderer};
 use crate::gui::RuffleGui;
 use anyhow::anyhow;
-use egui::Context;
+use egui::{Context, Pos2, Rect, Vec2};
 use ruffle_render_wgpu::backend::request_adapter_and_device;
 use ruffle_render_wgpu::descriptors::Descriptors;
 use ruffle_render_wgpu::utils::{format_list, get_backend_names};
@@ -138,6 +138,8 @@ impl GuiController {
     }
 
     pub fn render(&mut self, movie: Option<&MovieView>) {
+        let mut raw_input = self.egui_winit.take_egui_input(&self.window);
+
         if self.window.inner_size() != self.last_size {
             self.surface.configure(
                 &self.descriptors.device,
@@ -151,6 +153,13 @@ impl GuiController {
                     view_formats: Default::default(),
                 },
             );
+            raw_input.screen_rect = Some(Rect::from_min_size(
+                Pos2::ZERO,
+                Vec2::new(
+                    self.window.inner_size().width as f32,
+                    self.window.inner_size().height as f32,
+                ),
+            ));
             self.last_size = self.window.inner_size();
         }
         let surface_texture = self
@@ -158,7 +167,6 @@ impl GuiController {
             .get_current_texture()
             .expect("Surface became unavailable");
 
-        let raw_input = self.egui_winit.take_egui_input(&self.window);
         let full_output = self.egui_ctx.run(raw_input, |context| {
             self.gui
                 .update(context, self.window.fullscreen().is_none(), movie.is_some());
