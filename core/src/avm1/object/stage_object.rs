@@ -391,6 +391,10 @@ impl<'gc> DisplayProperty {
         }
         Ok(())
     }
+
+    pub fn is_read_only(&self) -> bool {
+        self.set.is_none()
+    }
 }
 
 /// The map from key/index to function pointers for special display object properties.
@@ -790,7 +794,35 @@ fn property_coerce_to_number<'gc>(
             return Ok(Some(n));
         }
     }
-
     // Invalid value; do not set.
     Ok(None)
+}
+
+/// Coerces a value according to the property index.
+/// Used by `SetProperty`.
+pub fn action_property_coerce<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    index: usize,
+    value: Value<'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(match index {
+        // Coerce to a number. This affects the following properties (including some which have no setter):
+        // _x, _y, _xscale, _yscale, _currentframe, _totalframes, _alpha, _visible, _width, _height, _rotation, _framesloaded.
+        0..=10 | 12 => {
+            if let Some(value_to_number) = property_coerce_to_number(activation, value)? {
+                value_to_number.into()
+            } else {
+                value
+            }
+        }
+        // Coerce to a f64. This affects the following properties (including some which have no setter):
+        // _highquality, _soundbuftime, _xmouse, _ymouse.
+        16 | 18 | 20..=21 => value.coerce_to_f64(activation)?.into(),
+        // Coerce to a string. This affects the following properties:
+        // _name, _quality.
+        13 | 19 => value.coerce_to_string(activation)?.into(),
+        // No coercion. This affects the following properties:
+        // _target, _droptarget, _url, _focusrect.
+        _ => value,
+    })
 }
