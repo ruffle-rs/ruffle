@@ -3727,6 +3727,7 @@ dependencies = [
  "egui-wgpu",
  "egui-winit",
  "embed-resource",
+ "fluent-templates",
  "futures",
  "generational-arena",
  "isahc",

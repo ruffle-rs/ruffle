@@ -25,6 +25,12 @@
     "type": "ftl",
   },
   {
+    "source" : "/desktop/assets/texts/en-US/*.ftl",
+    "translation" : "/desktop/assets/texts/%locale%/%original_file_name%",
+    "dest": "/desktop/%original_file_name%",
+    "type": "ftl",
+  },
+  {
     "source" : "/web/packages/core/texts/en-US/*.ftl",
     "translation" : "/web/packages/core/texts/%locale%/%original_file_name%",
     "dest": "/web/core/%original_file_name%",
