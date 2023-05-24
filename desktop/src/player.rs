@@ -19,6 +19,8 @@ use url::Url;
 use winit::event_loop::EventLoopProxy;
 use winit::window::Window;
 
+/// Represents a current Player and any associated state with that player,
+/// which may be lost when this Player is closed (dropped)
 struct ActivePlayer {
     player: Arc<Mutex<Player>>,
     executor: Arc<Mutex<GlutinAsyncExecutor>>,
@@ -112,6 +114,8 @@ impl ActivePlayer {
     }
 }
 
+/// Owner of a Ruffle Player (via ActivePlayer),
+/// responsible for either creating, destroying or communicating with that player.
 pub struct PlayerController {
     player: Option<ActivePlayer>,
     event_loop: EventLoopProxy<RuffleEvent>,
