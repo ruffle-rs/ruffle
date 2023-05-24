@@ -41,6 +41,12 @@
     "settings_advanced_options": {
         "message": "Opciones Avanzadas"
     },
+    "settings_reset": {
+        "message": "Resetear Configuración"
+    },
+    "settings_reset_confirm": {
+        "message": "¿Está seguro de que desea restaurar la configuración de Ruffle a sus valores predeterminados originales?"
+    },
     "status_init": {
         "message": "Leyendo la pestaña actual…"
     },
@@ -55,6 +61,9 @@
     },
     "status_result_running": {
         "message": "Ruffle está cargado y listo para ejecutar contenido Flash en la pestaña actual."
+    },
+    "status_result_running_protected": {
+        "message": "Ruffle está cargado y ejecutando el contenido de Flash que usted pido."
     },
     "status_result_optout": {
         "message": "Ruffle no se carga porque la página actual se ha marcado como incompatible."
