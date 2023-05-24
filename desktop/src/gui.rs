@@ -16,6 +16,8 @@ use sys_locale::get_locale;
 use unic_langid::LanguageIdentifier;
 use winit::event_loop::EventLoopProxy;
 
+const VERGEN_UNKNOWN: &str = "VERGEN_IDEMPOTENT_OUTPUT";
+
 static_loader! {
     static TEXTS = {
         locales: "./assets/texts",
@@ -195,33 +197,37 @@ impl RuffleGui {
                             ui.label(env!("CFG_RELEASE_CHANNEL"));
                             ui.end_row();
 
-                            ui.label(text(&self.locale, "about-ruffle-build-time"));
-                            ui.label(
-                                DateTime::parse_from_rfc3339(env!("VERGEN_BUILD_TIMESTAMP"))
-                                    .map(|t| t.format("%c").to_string())
-                                    .unwrap_or_else(|_| env!("VERGEN_BUILD_TIMESTAMP").to_string()),
-                            );
-                            ui.end_row();
+                            let build_time = env!("VERGEN_BUILD_TIMESTAMP");
+                            if build_time != VERGEN_UNKNOWN {
+                                ui.label(text(&self.locale, "about-ruffle-build-time"));
+                                ui.label(
+                                    DateTime::parse_from_rfc3339(build_time)
+                                        .map(|t| t.format("%c").to_string())
+                                        .unwrap_or_else(|_| build_time.to_string()),
+                                );
+                                ui.end_row();
+                            }
 
-                            ui.label(text(&self.locale, "about-ruffle-commit-ref"));
-                            ui.hyperlink_to(
-                                env!("VERGEN_GIT_SHA"),
-                                format!(
-                                    "https://github.com/ruffle-rs/ruffle/commit/{}",
-                                    env!("VERGEN_GIT_SHA")
-                                ),
-                            );
-                            ui.end_row();
+                            let sha = env!("VERGEN_GIT_SHA");
+                            if sha != VERGEN_UNKNOWN {
+                                ui.label(text(&self.locale, "about-ruffle-commit-ref"));
+                                ui.hyperlink_to(
+                                    sha,
+                                    format!("https://github.com/ruffle-rs/ruffle/commit/{}", sha),
+                                );
+                                ui.end_row();
+                            }
 
-                            ui.label(text(&self.locale, "about-ruffle-commit-time"));
-                            ui.label(
-                                DateTime::parse_from_rfc3339(env!("VERGEN_GIT_COMMIT_TIMESTAMP"))
-                                    .map(|t| t.format("%c").to_string())
-                                    .unwrap_or_else(|_| {
-                                        env!("VERGEN_GIT_COMMIT_TIMESTAMP").to_string()
-                                    }),
-                            );
-                            ui.end_row();
+                            let commit_time = env!("VERGEN_GIT_COMMIT_TIMESTAMP");
+                            if sha != VERGEN_UNKNOWN {
+                                ui.label(text(&self.locale, "about-ruffle-commit-time"));
+                                ui.label(
+                                    DateTime::parse_from_rfc3339(commit_time)
+                                        .map(|t| t.format("%c").to_string())
+                                        .unwrap_or_else(|_| commit_time.to_string()),
+                                );
+                                ui.end_row();
+                            }
 
                             ui.label(text(&self.locale, "about-ruffle-build-features"));
                             ui.horizontal_wrapped(|ui| {
