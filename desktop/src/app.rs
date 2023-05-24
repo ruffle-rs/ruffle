@@ -203,6 +203,13 @@ impl App {
                             }
                             check_redraw = true;
                         }
+                        WindowEvent::DroppedFile(file) => {
+                            if let Ok(url) = parse_url(&file) {
+                                let movie_view =
+                                    self.gui.lock().expect("Gui lock").create_movie_view();
+                                self.player.create(&self.opt, url, movie_view);
+                            }
+                        }
                         WindowEvent::MouseInput { button, state, .. } => {
                             if self.gui.lock().expect("Gui lock").is_context_menu_visible() {
                                 return;
