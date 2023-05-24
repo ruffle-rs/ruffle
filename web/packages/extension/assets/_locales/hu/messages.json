@@ -41,6 +41,12 @@
     "settings_advanced_options": {
         "message": "Haladó beállítások"
     },
+    "settings_reset": {
+        "message": "Alapbeállítások"
+    },
+    "settings_reset_confirm": {
+        "message": "Biztos, hogy vissza szeretnéd állítani a Ruffle beállításait az eredeti értékeikre?"
+    },
     "status_init": {
         "message": "Jelenlegi fül olvasása…"
     },
