@@ -14,7 +14,7 @@ use std::borrow::Cow;
 use std::fmt::Debug;
 use std::rc::Rc;
 use std::sync::Arc;
-use swf;
+use swf::{self, Rectangle, Twips};
 
 pub trait RenderBackend: Downcast {
     fn viewport_dimensions(&self) -> ViewportDimensions;
@@ -437,6 +437,10 @@ pub enum Context3DCommand<'a, 'gc> {
         sampler: u32,
         wrap: Context3DWrapMode,
         filter: Context3DTextureFilter,
+    },
+    SetScissorRectangle {
+        #[collect(require_static)]
+        rect: Option<Rectangle<Twips>>,
     },
 }
 

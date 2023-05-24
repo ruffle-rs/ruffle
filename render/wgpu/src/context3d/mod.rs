@@ -7,6 +7,7 @@ use ruffle_render::bitmap::{BitmapFormat, BitmapHandle};
 use ruffle_render::error::Error;
 use std::borrow::Cow;
 use std::cell::Cell;
+use swf::{Rectangle, Twips};
 
 use wgpu::util::StagingBelt;
 use wgpu::{
@@ -56,10 +57,12 @@ pub struct WgpuContext3D {
     buffer_staging_belt: StagingBelt,
 
     current_texture_view: Option<Rc<wgpu::TextureView>>,
+    current_texture_size: Option<Extent3d>,
     current_depth_texture_view: Option<Rc<wgpu::TextureView>>,
     current_texture_resolve_view: Option<Rc<wgpu::TextureView>>,
 
     back_buffer_sample_count: u32,
+    back_buffer_size: Option<Extent3d>,
     back_buffer_texture_view: Option<Rc<wgpu::TextureView>>,
     back_buffer_depth_texture_view: Option<Rc<wgpu::TextureView>>,
     back_buffer_resolve_texture_view: Option<Rc<wgpu::TextureView>>,
@@ -91,6 +94,8 @@ pub struct WgpuContext3D {
     // seen a `Context3DCommand::Clear` so far. Note that this is separate from
     // `clear_color`, which may be `None` even if we've seen a `Clear` command.
     seen_clear_command: bool,
+
+    scissor_rectangle: Option<Rectangle<Twips>>,
 }
 
 impl WgpuContext3D {
@@ -148,10 +153,12 @@ impl WgpuContext3D {
             vertex_attributes: std::array::from_fn(|_| None),
 
             current_texture_view: None,
+            current_texture_size: None,
             current_depth_texture_view: None,
             current_texture_resolve_view: None,
 
             back_buffer_sample_count: 1,
+            back_buffer_size: None,
             back_buffer_texture_view: None,
             back_buffer_depth_texture_view: None,
             back_buffer_resolve_texture_view: None,
@@ -163,6 +170,7 @@ impl WgpuContext3D {
             buffer_command_encoder,
             clear_color: None,
             seen_clear_command: false,
+            scissor_rectangle: None,
         }
     }
 
@@ -197,6 +205,7 @@ impl WgpuContext3D {
     // from ActionScript via Context3D.setRenderToBackBuffer(), or automatically
     // when calling Context3D.present()
     fn set_render_to_back_buffer(&mut self) {
+        self.current_texture_size = self.back_buffer_size;
         self.current_texture_view = self.back_buffer_texture_view.clone();
         self.current_texture_resolve_view = self.back_buffer_resolve_texture_view.clone();
         self.current_depth_texture_view = self.back_buffer_depth_texture_view.clone();
@@ -286,6 +295,29 @@ impl WgpuContext3D {
                 .as_ref()
                 .expect("Missing compiled pipeline"),
         );
+        if let Some(rect) = &self.scissor_rectangle {
+            let current_size = self.current_texture_size.unwrap();
+            if rect.x_min.to_pixels() < 0.0
+                || rect.y_min.to_pixels() < 0.0
+                || rect.x_max.to_pixels() as u32 > current_size.width
+                || rect.y_max.to_pixels() as u32 > current_size.height
+            {
+                // FIXME - throw an error when Context3D.enableErrorChecking is set
+                tracing::error!(
+                    "Invalid scissor rectangle {:?} for texture size {:?}",
+                    rect,
+                    current_size
+                );
+                self.scissor_rectangle = None;
+            } else {
+                pass.set_scissor_rect(
+                    rect.x_min.to_pixels() as u32,
+                    rect.y_min.to_pixels() as u32,
+                    rect.width().to_pixels() as u32,
+                    rect.height().to_pixels() as u32,
+                );
+            }
+        }
 
         let mut seen = Vec::new();
 
@@ -591,6 +623,12 @@ impl Context3D for WgpuContext3D {
                 // Keep track of the texture/depth views, so that we can later
                 // restore them in `set_render_to_back_buffer`
                 self.back_buffer_sample_count = sample_count;
+                self.back_buffer_size = Some(Extent3d {
+                    width,
+                    height,
+                    depth_or_array_layers: 1,
+                });
+                self.current_texture_size = self.back_buffer_size;
                 self.back_buffer_texture_view = self.current_texture_view.clone();
                 self.back_buffer_resolve_texture_view = back_buffer_resolve_texture
                     .as_ref()
@@ -739,6 +777,11 @@ impl Context3D for WgpuContext3D {
                 }
 
                 let texture_wrapper = texture.as_any().downcast_ref::<TextureWrapper>().unwrap();
+                self.current_texture_size = Some(Extent3d {
+                    width: texture_wrapper.texture.width(),
+                    height: texture_wrapper.texture.height(),
+                    depth_or_array_layers: 1,
+                });
 
                 if sample_count != 1 {
                     let texture_label = create_debug_label!("Render target texture MSAA");
@@ -1148,6 +1191,9 @@ impl Context3D for WgpuContext3D {
             } => {
                 self.current_pipeline
                     .update_sampler_state_at(sampler as usize, wrap, filter);
+            }
+            Context3DCommand::SetScissorRectangle { rect } => {
+                self.scissor_rectangle = rect;
             }
         }
     }

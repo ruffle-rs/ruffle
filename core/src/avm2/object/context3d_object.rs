@@ -18,6 +18,7 @@ use ruffle_render::bitmap::{Bitmap, BitmapFormat};
 use ruffle_render::commands::CommandHandler;
 use std::cell::{Ref, RefMut};
 use std::rc::Rc;
+use swf::{Rectangle, Twips};
 
 use super::program_3d_object::Program3DObject;
 use super::texture_object::TextureObject;
@@ -598,6 +599,22 @@ impl<'gc> Context3DObject<'gc> {
                     wrap,
                     filter,
                 },
+                activation.context.gc_context,
+            )
+    }
+
+    pub(crate) fn set_scissor_rectangle(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        rect: Option<Rectangle<Twips>>,
+    ) {
+        self.0
+            .write(activation.context.gc_context)
+            .render_context
+            .as_mut()
+            .unwrap()
+            .process_command(
+                Context3DCommand::SetScissorRectangle { rect },
                 activation.context.gc_context,
             )
     }
