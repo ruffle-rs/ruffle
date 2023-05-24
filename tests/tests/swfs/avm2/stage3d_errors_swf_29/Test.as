@@ -13,31 +13,31 @@
 				try {
 					stage3d.context3D.configureBackBuffer(0, 0, 0, false);
 				} catch (e) {
-					trace("Caught error with all 0 or false: " + e);
+					trace("Caught error with all 0 or false: " + e + " errorID: " + e.errorID);
 				}
 
 				try {
 					stage3d.context3D.configureBackBuffer(0, 200, 0);
 				} catch (e) {
-					trace("Caught error: " + e);
+					trace("Caught error: " + e + " errorID: " + e.errorID);
 				}
 			
 				try {
 					stage3d.context3D.configureBackBuffer(200, 0, 0);
 				} catch (e) {
-					trace("Caught error: " + e);
+					trace("Caught error: " + e + " errorID: " + e.errorID);
 				}
 			
 				try {
 					stage3d.context3D.configureBackBuffer(999999999, 200, 0);
 				} catch (e) {
-					trace("Caught error: " + e);
+					trace("Caught error: " + e + " errorID: " + e.errorID);
 				}
 			
 				try {
 					stage3d.context3D.configureBackBuffer(200, 999999999, 0);
 				} catch (e) {
-					trace("Caught error: " + e);
+					trace("Caught error: " + e + " errorID: " + e.errorID);
 				}
 			
 				stage3d.context3D.setVertexBufferAt(0, null, 0, "Dummy format");
@@ -45,7 +45,7 @@
 				try {
 					stage3d.context3D.setVertexBufferAt(0, buffer, 0, "Bad format");
 				} catch (e) {
-					trace("Caught error: " + e);
+					trace("Caught error: " + e + " errorID: " + e.errorID);
 				}
 			
 				trace("Done")
