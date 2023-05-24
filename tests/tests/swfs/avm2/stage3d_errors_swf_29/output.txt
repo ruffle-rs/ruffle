@@ -1,0 +1,6 @@
+Caught error: Error: Error #3669: Bad input size. errorID: 3669
+Caught error: Error: Error #3669: Bad input size. errorID: 3669
+Caught error: Error: Error #3669: Bad input size. errorID: 3669
+Caught error: Error: Error #3669: Bad input size. errorID: 3669
+Caught error: ArgumentError: Error #2008: Parameter vertexStreamFormat must be one of the accepted values. errorID: 2008
+Done

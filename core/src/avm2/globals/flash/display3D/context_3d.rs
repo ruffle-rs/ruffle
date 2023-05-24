@@ -57,25 +57,39 @@ pub fn configure_back_buffer<'gc>(
     if let Some(mut context) = this.and_then(|this| this.as_context_3d()) {
         let width = args.get_u32(activation, 0)?;
         let height = args.get_u32(activation, 1)?;
+        let anti_alias = args.get_u32(activation, 2)?;
+        let enable_depth_and_stencil = args.get_bool(3);
+
+        let old_swf = activation.context.swf.version() < 30;
+
+        if old_swf && width == 0 && height == 0 && anti_alias == 0 && !enable_depth_and_stencil {
+            return Ok(Value::Undefined);
+        }
 
         if width < 32 || width > 16384 {
             return Err(Error::AvmError(error(
                 activation,
-                "Error #3780: Requested width of backbuffer is not in allowed range 32 to 16384.",
-                3780,
+                if old_swf {
+                    "Error #3669: Bad input size."
+                } else {
+                    "Error #3780: Requested width of backbuffer is not in allowed range 32 to 16384."
+                },
+                if old_swf { 3669 } else { 3780 },
             )?));
         }
 
         if height < 32 || height > 16384 {
             return Err(Error::AvmError(error(
                 activation,
-                "Error #3781: Requested height of backbuffer is not in allowed range 32 to 16384.",
-                3781,
+                if old_swf {
+                    "Error #3669: Bad input size."
+                } else {
+                    "Error #3781: Requested height of backbuffer is not in allowed range 32 to 16384."
+                },
+                if old_swf { 3669 } else { 3781 },
             )?));
         }
 
-        let anti_alias = args.get_u32(activation, 2)?;
-        let enable_depth_and_stencil = args.get(3).unwrap_or(&Value::Undefined).coerce_to_boolean();
         let wants_best_resolution = args.get(4).unwrap_or(&Value::Undefined).coerce_to_boolean();
         let wants_best_resolution_on_browser_zoom =
             args.get(5).unwrap_or(&Value::Undefined).coerce_to_boolean();
