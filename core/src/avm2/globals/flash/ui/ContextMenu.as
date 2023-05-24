@@ -1,6 +1,7 @@
 package flash.ui
 {
     import flash.display.NativeMenu;
+    import __ruffle__.stub_setter;
 
     public final class ContextMenu extends NativeMenu
     {
@@ -18,6 +19,11 @@ package flash.ui
 
         public function get builtInItems(): ContextMenuBuiltInItems {
             return this._builtInItems;
+        }
+
+        public function set builtInItems(value:ContextMenuBuiltInItems):void {
+            this._builtInItems = value;
+            stub_setter("flash.ui.ContextMenu", "builtInItems");
         }
 
         public static function get isSupported() : Boolean
