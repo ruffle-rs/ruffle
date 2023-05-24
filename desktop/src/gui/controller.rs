@@ -117,25 +117,27 @@ impl GuiController {
     #[must_use]
     pub fn handle_event(&mut self, event: &winit::event::WindowEvent) -> bool {
         if let winit::event::WindowEvent::Resized(size) = &event {
-            self.surface.configure(
-                &self.descriptors.device,
-                &wgpu::SurfaceConfiguration {
-                    usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-                    format: self.surface_format,
-                    width: size.width,
-                    height: size.height,
-                    present_mode: Default::default(),
-                    alpha_mode: Default::default(),
-                    view_formats: Default::default(),
-                },
-            );
-            self.movie_view_renderer.update_resolution(
-                &self.descriptors,
-                self.window.fullscreen().is_none(),
-                size.height,
-                self.window.scale_factor(),
-            );
-            self.size = *size;
+            if size.width > 0 && size.height > 0 {
+                self.surface.configure(
+                    &self.descriptors.device,
+                    &wgpu::SurfaceConfiguration {
+                        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+                        format: self.surface_format,
+                        width: size.width,
+                        height: size.height,
+                        present_mode: Default::default(),
+                        alpha_mode: Default::default(),
+                        view_formats: Default::default(),
+                    },
+                );
+                self.movie_view_renderer.update_resolution(
+                    &self.descriptors,
+                    self.window.fullscreen().is_none(),
+                    size.height,
+                    self.window.scale_factor(),
+                );
+                self.size = *size;
+            }
         }
         let response = self.egui_winit.on_event(&self.egui_ctx, event);
         if response.repaint {
