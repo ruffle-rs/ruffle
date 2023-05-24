@@ -11,6 +11,7 @@ use ruffle_render::backend::{
     BufferUsage, Context3DBlendFactor, Context3DCompareMode, Context3DTextureFormat,
     Context3DTriangleFace, Context3DVertexBufferFormat, ProgramType,
 };
+use swf::{Rectangle, Twips};
 
 pub fn create_index_buffer<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -682,5 +683,39 @@ pub fn set_sampler_state_at<'gc>(
 
         context.set_sampler_state_at(activation, sampler, wrap, filter);
     }
+    Ok(Value::Undefined)
+}
+
+pub fn set_scissor_rectangle<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let context3d = this.unwrap().as_context_3d().unwrap();
+    let rectangle = args.try_get_object(activation, 0);
+    let rectangle = if let Some(rectangle) = rectangle {
+        let x = rectangle
+            .get_public_property("x", activation)?
+            .coerce_to_number(activation)?;
+        let y = rectangle
+            .get_public_property("y", activation)?
+            .coerce_to_number(activation)?;
+        let width = rectangle
+            .get_public_property("width", activation)?
+            .coerce_to_number(activation)?;
+        let height = rectangle
+            .get_public_property("height", activation)?
+            .coerce_to_number(activation)?;
+        Some(Rectangle {
+            x_min: Twips::from_pixels(x),
+            y_min: Twips::from_pixels(y),
+            x_max: Twips::from_pixels(x + width),
+            y_max: Twips::from_pixels(y + height),
+        })
+    } else {
+        None
+    };
+
+    context3d.set_scissor_rectangle(activation, rectangle);
     Ok(Value::Undefined)
 }

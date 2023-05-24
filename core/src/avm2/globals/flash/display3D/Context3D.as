@@ -40,9 +40,7 @@ package flash.display3D {
         public native function setColorMask(red:Boolean, green:Boolean, blue:Boolean, alpha:Boolean):void;
 
         public native function setDepthTest(depthMask:Boolean, passCompareMode:String):void;
-        public function setScissorRectangle(rectangle:Rectangle):void {
-            stub_method("flash.display3D.Context3D", "setScissorRectangle");
-        }
+        public native function setScissorRectangle(rectangle:Rectangle):void;
 
         public native function setRenderToBackBuffer():void;
         public native function setBlendFactors(sourceFactor:String, destinationFactor:String):void;
