@@ -21,6 +21,7 @@ pub fn stage_3d_allocator<'gc>(
         Stage3DObjectData {
             base,
             context3d: None,
+            visible: true,
         },
     ))
     .into())
@@ -46,6 +47,14 @@ impl<'gc> Stage3DObject<'gc> {
     pub fn set_context3d(self, context3d: Object<'gc>, mc: MutationContext<'gc, '_>) {
         self.0.write(mc).context3d = Some(context3d);
     }
+
+    pub fn visible(self) -> bool {
+        self.0.read().visible
+    }
+
+    pub fn set_visible(self, visible: bool, mc: MutationContext<'gc, '_>) {
+        self.0.write(mc).visible = visible;
+    }
 }
 
 #[derive(Clone, Collect)]
@@ -57,6 +66,8 @@ pub struct Stage3DObjectData<'gc> {
     /// The context3D object associated with this Stage3D object,
     /// if it's been created with `requestContext3D`
     context3d: Option<Object<'gc>>,
+
+    visible: bool,
 }
 
 impl<'gc> TObject<'gc> for Stage3DObject<'gc> {

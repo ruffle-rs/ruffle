@@ -24,5 +24,8 @@ package flash.display {
         // FIXME - actually implement this
         public var x:Number;
         public var y:Number;
+
+        public native function get visible():Boolean;
+        public native function set visible(value:Boolean):void;
     }
 }

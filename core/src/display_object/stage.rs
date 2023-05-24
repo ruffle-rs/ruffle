@@ -795,8 +795,11 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         // Note that the stage background color is actually the lowest possible layer,
         // and get applied when we start the frame (before `render` is called).
         for stage3d in self.stage3ds().iter() {
-            if let Some(context3d) = stage3d.as_stage_3d().unwrap().context3d() {
-                context3d.as_context_3d().unwrap().render(context);
+            let stage3d = stage3d.as_stage_3d().unwrap();
+            if stage3d.visible() {
+                if let Some(context3d) = stage3d.context3d() {
+                    context3d.as_context_3d().unwrap().render(context);
+                }
             }
         }
 
