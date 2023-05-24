@@ -162,9 +162,9 @@ impl App {
                         return;
                     }
                     let height_offset = if self.window.fullscreen().is_some() {
-                        0
+                        0.0
                     } else {
-                        MENU_HEIGHT
+                        MENU_HEIGHT as f64 * self.window.scale_factor()
                     };
                     match event {
                         WindowEvent::CloseRequested => {
@@ -179,7 +179,7 @@ impl App {
                                 let viewport_scale_factor = self.window.scale_factor();
                                 player.set_viewport_dimensions(ViewportDimensions {
                                     width: size.width,
-                                    height: size.height - height_offset,
+                                    height: size.height - height_offset as u32,
                                     scale_factor: viewport_scale_factor,
                                 });
                             }
@@ -197,7 +197,7 @@ impl App {
                                 mouse_pos = position;
                                 let event = PlayerEvent::MouseMove {
                                     x: position.x,
-                                    y: position.y - height_offset as f64,
+                                    y: position.y - height_offset,
                                 };
                                 player.handle_event(event);
                             }
@@ -212,7 +212,7 @@ impl App {
                             use winit::event::MouseButton;
                             if let Some(mut player) = self.player.get() {
                                 let x = mouse_pos.x;
-                                let y = mouse_pos.y - height_offset as f64;
+                                let y = mouse_pos.y - height_offset;
                                 let button = match button {
                                     MouseButton::Left => RuffleMouseButton::Left,
                                     MouseButton::Right => RuffleMouseButton::Right,
@@ -359,22 +359,21 @@ impl App {
                     let movie_width = swf_header.stage_size().width().to_pixels();
                     let movie_height = swf_header.stage_size().height().to_pixels();
                     let height_offset = if self.window.fullscreen().is_some() {
-                        0
+                        0.0
                     } else {
-                        MENU_HEIGHT
+                        MENU_HEIGHT as f64
                     };
 
                     let window_size: Size = match (self.opt.width, self.opt.height) {
                         (None, None) => {
-                            LogicalSize::new(movie_width, movie_height + height_offset as f64)
-                                .into()
+                            LogicalSize::new(movie_width, movie_height + height_offset).into()
                         }
                         (Some(width), None) => {
                             let scale = width / movie_width;
                             let height = movie_height * scale;
                             PhysicalSize::new(
                                 width.max(1.0),
-                                height.max(1.0) + height_offset as f64,
+                                height.max(1.0) + height_offset * self.window.scale_factor(),
                             )
                             .into()
                         }
@@ -383,13 +382,13 @@ impl App {
                             let width = movie_width * scale;
                             PhysicalSize::new(
                                 width.max(1.0),
-                                height.max(1.0) + height_offset as f64,
+                                height.max(1.0) + height_offset * self.window.scale_factor(),
                             )
                             .into()
                         }
                         (Some(width), Some(height)) => PhysicalSize::new(
                             width.max(1.0),
-                            height.max(1.0) + height_offset as f64,
+                            height.max(1.0) + height_offset * self.window.scale_factor(),
                         )
                         .into(),
                     };
@@ -424,7 +423,7 @@ impl App {
                     if let Some(mut player) = self.player.get() {
                         player.set_viewport_dimensions(ViewportDimensions {
                             width: viewport_size.width,
-                            height: viewport_size.height - height_offset,
+                            height: viewport_size.height - height_offset as u32,
                             scale_factor: viewport_scale_factor,
                         });
                     }

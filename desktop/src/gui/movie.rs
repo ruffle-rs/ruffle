@@ -13,9 +13,10 @@ pub struct MovieViewRenderer {
     vertices: wgpu::Buffer,
 }
 
-fn get_vertices(has_menu: bool, height: u32) -> [[f32; 4]; 6] {
+fn get_vertices(has_menu: bool, height: u32, scale_factor: f64) -> [[f32; 4]; 6] {
     let top = if has_menu {
-        1.0 - ((MENU_HEIGHT as f32 / height as f32) * 2.0)
+        let menu_height = MENU_HEIGHT as f64 * scale_factor;
+        1.0 - ((menu_height / height as f64) * 2.0) as f32
     } else {
         1.0
     };
@@ -36,6 +37,7 @@ impl MovieViewRenderer {
         surface_format: wgpu::TextureFormat,
         has_menu: bool,
         height: u32,
+        scale_factor: f64,
     ) -> Self {
         let module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: None,
@@ -119,7 +121,7 @@ impl MovieViewRenderer {
         });
         let vertices = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
-            contents: bytemuck::cast_slice(&get_vertices(has_menu, height)),
+            contents: bytemuck::cast_slice(&get_vertices(has_menu, height, scale_factor)),
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
         });
 
@@ -131,11 +133,17 @@ impl MovieViewRenderer {
         }
     }
 
-    pub fn update_resolution(&self, descriptors: &Descriptors, has_menu: bool, height: u32) {
+    pub fn update_resolution(
+        &self,
+        descriptors: &Descriptors,
+        has_menu: bool,
+        height: u32,
+        scale_factor: f64,
+    ) {
         descriptors.queue.write_buffer(
             &self.vertices,
             0,
-            bytemuck::cast_slice(&get_vertices(has_menu, height)),
+            bytemuck::cast_slice(&get_vertices(has_menu, height, scale_factor)),
         );
     }
 }

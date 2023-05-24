@@ -89,6 +89,7 @@ impl GuiController {
             surface_format,
             window.fullscreen().is_none(),
             size.height,
+            window.scale_factor(),
         ));
         let egui_renderer = egui_wgpu::Renderer::new(&descriptors.device, surface_format, None, 1);
         let event_loop = event_loop.create_proxy();
@@ -132,6 +133,7 @@ impl GuiController {
                 &self.descriptors,
                 self.window.fullscreen().is_none(),
                 size.height,
+                self.window.scale_factor(),
             );
             self.size = *size;
         }
