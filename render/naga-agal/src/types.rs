@@ -127,20 +127,20 @@ impl SourceField {
     }
 }
 
-#[derive(FromPrimitive, Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(FromPrimitive, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Filter {
     Nearest = 0,
     Linear = 1,
 }
 
-#[derive(FromPrimitive, Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(FromPrimitive, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Mipmap {
     Disable = 0,
     Nearest = 1,
     Linear = 2,
 }
 
-#[derive(FromPrimitive, Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(FromPrimitive, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Wrapping {
     Clamp = 0,
     Repeat = 1,
@@ -181,7 +181,7 @@ pub struct SamplerField {
     pub reg_type: RegisterType,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct SamplerOverride {
     pub wrapping: Wrapping,
     pub filter: Filter,
