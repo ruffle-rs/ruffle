@@ -53,13 +53,7 @@ impl App {
             .build(&event_loop)?;
         let window = Rc::new(window);
 
-        let gui = GuiController::new(
-            window.clone(),
-            &event_loop,
-            opt.trace_path(),
-            opt.graphics.into(),
-            opt.power.into(),
-        )?;
+        let gui = GuiController::new(window.clone(), &event_loop, &opt)?;
 
         let mut player = PlayerController::new(
             event_loop.create_proxy(),
@@ -435,21 +429,21 @@ impl App {
                     }
                 }
 
-                winit::event::Event::UserEvent(RuffleEvent::OpenFile) => {
+                winit::event::Event::UserEvent(RuffleEvent::OpenFile(options)) => {
                     if let Some(path) = pick_file() {
                         // TODO: Show dialog on error.
                         let url = parse_url(&path).expect("Couldn't load specified path");
                         self.player.create(
-                            &PlayerOptions::from(&self.opt),
+                            &options,
                             url,
                             self.gui.lock().expect("Gui lock").create_movie_view(),
                         );
                     }
                 }
 
-                winit::event::Event::UserEvent(RuffleEvent::OpenURL(url)) => {
+                winit::event::Event::UserEvent(RuffleEvent::OpenURL(url, options)) => {
                     self.player.create(
-                        &PlayerOptions::from(&self.opt),
+                        &options,
                         url,
                         self.gui.lock().expect("Gui lock").create_movie_view(),
                     );

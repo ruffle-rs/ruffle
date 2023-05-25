@@ -24,10 +24,9 @@ use winit::window::Window;
 
 /// Options used when creating a Player (& passed through to a PlayerBuilder).
 /// These may be primed by command line arguments.
+#[derive(Debug, Clone)]
 pub struct PlayerOptions {
     pub parameters: Vec<(String, String)>,
-    pub width: Option<f64>,
-    pub height: Option<f64>,
     pub max_execution_duration: f64,
     pub base: Option<Url>,
     pub quality: StageQuality,
@@ -37,7 +36,6 @@ pub struct PlayerOptions {
     pub proxy: Option<Url>,
     pub upgrade_to_https: bool,
     pub fullscreen: bool,
-    pub timedemo: bool,
     pub dont_warn_on_unsupported_content: bool,
     pub load_behavior: LoadBehavior,
     pub letterbox: Letterbox,
@@ -51,8 +49,6 @@ impl From<&Opt> for PlayerOptions {
     fn from(value: &Opt) -> Self {
         Self {
             parameters: value.parameters().collect(),
-            width: value.width,
-            height: value.height,
             max_execution_duration: value.max_execution_duration,
             base: value.base.clone(),
             quality: value.quality,
@@ -62,7 +58,6 @@ impl From<&Opt> for PlayerOptions {
             proxy: value.proxy.clone(),
             upgrade_to_https: value.upgrade_to_https,
             fullscreen: value.fullscreen,
-            timedemo: value.timedemo,
             dont_warn_on_unsupported_content: value.dont_warn_on_unsupported_content,
             load_behavior: value.load_behavior,
             letterbox: value.letterbox,
