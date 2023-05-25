@@ -1,5 +1,7 @@
 //! Custom event type for desktop ruffle
 
+use crate::player::PlayerOptions;
+
 /// User-defined events.
 pub enum RuffleEvent {
     /// Indicates that one or more tasks are ready to poll on our executor.
@@ -9,10 +11,10 @@ pub enum RuffleEvent {
     OnMetadata(ruffle_core::swf::HeaderExt),
 
     /// The user requested to open a new local SWF.
-    OpenFile,
+    OpenFile(PlayerOptions),
 
     /// The user requested to open a URL.
-    OpenURL(url::Url),
+    OpenURL(url::Url, PlayerOptions),
 
     /// The user requested to close the current SWF.
     CloseFile,

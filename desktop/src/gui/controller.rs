@@ -1,13 +1,14 @@
+use crate::cli::Opt;
 use crate::custom_event::RuffleEvent;
 use crate::gui::movie::{MovieView, MovieViewRenderer};
 use crate::gui::RuffleGui;
+use crate::player::PlayerOptions;
 use anyhow::anyhow;
 use egui::Context;
 use ruffle_core::Player;
 use ruffle_render_wgpu::backend::{request_adapter_and_device, WgpuRenderBackend};
 use ruffle_render_wgpu::descriptors::Descriptors;
 use ruffle_render_wgpu::utils::{format_list, get_backend_names};
-use std::path::Path;
 use std::rc::Rc;
 use std::sync::{Arc, MutexGuard};
 use std::time::{Duration, Instant};
@@ -37,10 +38,9 @@ impl GuiController {
     pub fn new(
         window: Rc<Window>,
         event_loop: &EventLoop<RuffleEvent>,
-        trace_path: Option<&Path>,
-        backend: wgpu::Backends,
-        power_preference: wgpu::PowerPreference,
+        opt: &Opt,
     ) -> anyhow::Result<Self> {
+        let backend: wgpu::Backends = opt.graphics.into();
         if wgpu::Backends::SECONDARY.contains(backend) {
             tracing::warn!(
                 "{} graphics backend support may not be fully supported.",
@@ -56,8 +56,8 @@ impl GuiController {
             backend,
             instance,
             Some(&surface),
-            power_preference,
-            trace_path,
+            opt.power.into(),
+            opt.trace_path(),
         ))
         .map_err(|e| anyhow!(e.to_string()))?;
         let surface_format = surface
@@ -94,7 +94,7 @@ impl GuiController {
         ));
         let egui_renderer = egui_wgpu::Renderer::new(&descriptors.device, surface_format, None, 1);
         let event_loop = event_loop.create_proxy();
-        let gui = RuffleGui::new(event_loop);
+        let gui = RuffleGui::new(event_loop, PlayerOptions::from(opt));
         Ok(Self {
             descriptors: Arc::new(descriptors),
             egui_ctx,

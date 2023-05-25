@@ -6,6 +6,7 @@ pub use movie::MovieView;
 use std::borrow::Cow;
 
 use crate::custom_event::RuffleEvent;
+use crate::player::PlayerOptions;
 use chrono::DateTime;
 use egui::*;
 use fluent_templates::fluent_bundle::FluentValue;
@@ -61,10 +62,11 @@ pub struct RuffleGui {
     is_open_url_prompt_visible: bool,
     context_menu: Vec<ruffle_core::ContextMenuItem>,
     locale: LanguageIdentifier,
+    default_player_options: PlayerOptions,
 }
 
 impl RuffleGui {
-    fn new(event_loop: EventLoopProxy<RuffleEvent>) -> Self {
+    fn new(event_loop: EventLoopProxy<RuffleEvent>, default_player_options: PlayerOptions) -> Self {
         // TODO: language negotiation + https://github.com/1Password/sys-locale/issues/14
         // This should also be somewhere else so it can be supplied through UiBackend too
 
@@ -80,6 +82,7 @@ impl RuffleGui {
             is_open_url_prompt_visible: false,
             context_menu: vec![],
             locale,
+            default_player_options,
         }
     }
 
@@ -329,7 +332,9 @@ impl RuffleGui {
     }
 
     fn open_file(&mut self, ui: &mut egui::Ui) {
-        let _ = self.event_loop.send_event(RuffleEvent::OpenFile);
+        let _ = self
+            .event_loop
+            .send_event(RuffleEvent::OpenFile(self.default_player_options.clone()));
         ui.close_menu();
     }
 
@@ -357,7 +362,10 @@ impl RuffleGui {
                     ui.horizontal(|ui| {
                         if ui.button(text(&self.locale, "dialog-ok")).clicked() || enter_pressed {
                             if let Ok(url) = url::Url::parse(&self.open_url_text) {
-                                let _ = self.event_loop.send_event(RuffleEvent::OpenURL(url));
+                                let _ = self.event_loop.send_event(RuffleEvent::OpenURL(
+                                    url,
+                                    self.default_player_options.clone(),
+                                ));
                             } else {
                                 // TODO: Show error prompt.
                                 tracing::error!("Invalid URL: {}", self.open_url_text);
