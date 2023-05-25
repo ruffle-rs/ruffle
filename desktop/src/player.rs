@@ -8,8 +8,11 @@ use crate::gui::MovieView;
 use crate::{CALLSTACK, RENDER_INFO, SWF_INFO};
 use anyhow::anyhow;
 use ruffle_core::backend::audio::AudioBackend;
-use ruffle_core::{Player, PlayerBuilder, PlayerEvent};
+use ruffle_core::backend::navigator::OpenURLMode;
+use ruffle_core::config::Letterbox;
+use ruffle_core::{LoadBehavior, Player, PlayerBuilder, PlayerEvent, StageScaleMode};
 use ruffle_render::backend::RenderBackend;
+use ruffle_render::quality::StageQuality;
 use ruffle_render_wgpu::backend::WgpuRenderBackend;
 use ruffle_render_wgpu::descriptors::Descriptors;
 use std::rc::Rc;
@@ -18,6 +21,58 @@ use std::time::Duration;
 use url::Url;
 use winit::event_loop::EventLoopProxy;
 use winit::window::Window;
+
+/// Options used when creating a Player (& passed through to a PlayerBuilder).
+/// These may be primed by command line arguments.
+pub struct PlayerOptions {
+    pub parameters: Vec<(String, String)>,
+    pub width: Option<f64>,
+    pub height: Option<f64>,
+    pub max_execution_duration: f64,
+    pub base: Option<Url>,
+    pub quality: StageQuality,
+    pub scale: StageScaleMode,
+    pub volume: f32,
+    pub force_scale: bool,
+    pub proxy: Option<Url>,
+    pub upgrade_to_https: bool,
+    pub fullscreen: bool,
+    pub timedemo: bool,
+    pub dont_warn_on_unsupported_content: bool,
+    pub load_behavior: LoadBehavior,
+    pub letterbox: Letterbox,
+    pub spoof_url: Option<Url>,
+    pub player_version: Option<u8>,
+    pub frame_rate: Option<f64>,
+    pub open_url_mode: OpenURLMode,
+}
+
+impl From<&Opt> for PlayerOptions {
+    fn from(value: &Opt) -> Self {
+        Self {
+            parameters: value.parameters().collect(),
+            width: value.width,
+            height: value.height,
+            max_execution_duration: value.max_execution_duration,
+            base: value.base.clone(),
+            quality: value.quality,
+            scale: value.scale,
+            volume: value.volume,
+            force_scale: value.force_scale,
+            proxy: value.proxy.clone(),
+            upgrade_to_https: value.upgrade_to_https,
+            fullscreen: value.fullscreen,
+            timedemo: value.timedemo,
+            dont_warn_on_unsupported_content: value.dont_warn_on_unsupported_content,
+            load_behavior: value.load_behavior,
+            letterbox: value.letterbox,
+            spoof_url: value.spoof_url.clone(),
+            player_version: value.player_version,
+            frame_rate: value.frame_rate,
+            open_url_mode: value.open_url_mode,
+        }
+    }
+}
 
 /// Represents a current Player and any associated state with that player,
 /// which may be lost when this Player is closed (dropped)
@@ -28,7 +83,7 @@ struct ActivePlayer {
 
 impl ActivePlayer {
     pub fn new(
-        opt: &Opt,
+        opt: &PlayerOptions,
         event_loop: EventLoopProxy<RuffleEvent>,
         movie_url: Url,
         window: Rc<Window>,
@@ -100,7 +155,7 @@ impl ActivePlayer {
         };
 
         let mut parameters: Vec<(String, String)> = movie_url.query_pairs().into_owned().collect();
-        parameters.extend(opt.parameters());
+        parameters.extend(opt.parameters.to_owned());
 
         {
             let mut player_lock = player.lock().expect("Player lock must be available");
@@ -137,7 +192,7 @@ impl PlayerController {
         }
     }
 
-    pub fn create(&mut self, opt: &Opt, movie_url: Url, movie_view: MovieView) {
+    pub fn create(&mut self, opt: &PlayerOptions, movie_url: Url, movie_view: MovieView) {
         self.player = Some(ActivePlayer::new(
             opt,
             self.event_loop.clone(),
