@@ -1,7 +1,7 @@
 use crate::cli::Opt;
 use crate::custom_event::RuffleEvent;
 use crate::gui::{GuiController, MENU_HEIGHT};
-use crate::player::PlayerController;
+use crate::player::{PlayerController, PlayerOptions};
 use crate::util::{
     get_screen_size, parse_url, pick_file, winit_key_to_char, winit_to_ruffle_key_code,
     winit_to_ruffle_text_control,
@@ -68,7 +68,11 @@ impl App {
         );
 
         if let Some(movie_url) = movie_url {
-            player.create(&opt, movie_url, gui.create_movie_view());
+            player.create(
+                &PlayerOptions::from(&opt),
+                movie_url,
+                gui.create_movie_view(),
+            );
         }
 
         Ok(Self {
@@ -199,7 +203,11 @@ impl App {
                             if let Ok(url) = parse_url(&file) {
                                 let movie_view =
                                     self.gui.lock().expect("Gui lock").create_movie_view();
-                                self.player.create(&self.opt, url, movie_view);
+                                self.player.create(
+                                    &PlayerOptions::from(&self.opt),
+                                    url,
+                                    movie_view,
+                                );
                             }
                         }
                         WindowEvent::MouseInput { button, state, .. } => {
@@ -432,7 +440,7 @@ impl App {
                         // TODO: Show dialog on error.
                         let url = parse_url(&path).expect("Couldn't load specified path");
                         self.player.create(
-                            &self.opt,
+                            &PlayerOptions::from(&self.opt),
                             url,
                             self.gui.lock().expect("Gui lock").create_movie_view(),
                         );
@@ -441,7 +449,7 @@ impl App {
 
                 winit::event::Event::UserEvent(RuffleEvent::OpenURL(url)) => {
                     self.player.create(
-                        &self.opt,
+                        &PlayerOptions::from(&self.opt),
                         url,
                         self.gui.lock().expect("Gui lock").create_movie_view(),
                     );
