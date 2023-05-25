@@ -8,6 +8,6 @@ about-ruffle-commit-ref = Commit Ref
 about-ruffle-commit-time = Commit Time
 
 about-ruffle-visit-website = Website
-about-ruffle-visit-github = Github
+about-ruffle-visit-github = GitHub
 about-ruffle-visit-discord = Discord
 about-ruffle-visit-sponsor = Sponsor
