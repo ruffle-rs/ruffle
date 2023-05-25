@@ -2573,6 +2573,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "lru"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "03f1160296536f10c833a82dca22267d5486734230d47bf00bf435885814ba1e"
+dependencies = [
+ "hashbrown 0.13.2",
+]
+
+[[package]]
 name = "lyon"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3775,6 +3784,7 @@ dependencies = [
  "gif",
  "h263-rs-yuv",
  "jpeg-decoder",
+ "lru",
  "lyon",
  "png",
  "ruffle_wstr",
@@ -3832,6 +3842,7 @@ dependencies = [
  "futures",
  "gc-arena",
  "image",
+ "lru",
  "naga",
  "naga-agal",
  "naga_oil",
