@@ -18,7 +18,7 @@ use ruffle_render::quality::StageQuality;
 use ruffle_video::error::Error;
 use ruffle_video::frame::EncodedFrame;
 use ruffle_video::VideoStreamHandle;
-use std::borrow::{Borrow, BorrowMut};
+use std::borrow::BorrowMut;
 use std::cell::{Ref, RefMut};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
@@ -242,8 +242,7 @@ impl<'gc> Video<'gc> {
             let prev_keyframe_id = read
                 .keyframes
                 .range(..=frame_id)
-                .rev()
-                .next()
+                .next_back()
                 .copied()
                 .unwrap_or(0);
 
@@ -458,14 +457,14 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
     }
 
     fn id(&self) -> CharacterId {
-        match (*self.0.read().source.read()).borrow() {
+        match &*self.0.read().source.read() {
             VideoSource::Swf { streamdef, .. } => streamdef.id,
             VideoSource::NetStream { .. } => 0,
         }
     }
 
     fn self_bounds(&self) -> Rectangle<Twips> {
-        match (*self.0.read().source.read()).borrow() {
+        match &*self.0.read().source.read() {
             VideoSource::Swf { streamdef, .. } => Rectangle {
                 x_min: Twips::ZERO,
                 y_min: Twips::ZERO,

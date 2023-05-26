@@ -21,7 +21,7 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum Error {
-    #[cfg(all(feature = "mp3"))]
+    #[cfg(feature = "mp3")]
     #[error("Couldn't decode MP3")]
     InvalidMp3(#[from] mp3::Error),
 
