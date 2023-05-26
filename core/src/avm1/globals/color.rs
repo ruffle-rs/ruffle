@@ -139,7 +139,7 @@ fn set_rgb<'gc>(
         let [b, g, r, _] = rgb.to_le_bytes();
 
         let mut base = target.base_mut(activation.context.gc_context);
-        let mut color_transform = base.color_transform_mut();
+        let color_transform = base.color_transform_mut();
         color_transform.r_multiply = Fixed8::ZERO;
         color_transform.g_multiply = Fixed8::ZERO;
         color_transform.b_multiply = Fixed8::ZERO;

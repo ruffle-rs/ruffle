@@ -282,7 +282,7 @@ impl<'gc> DisplayObjectBase<'gc> {
         let sin_x = f64::sin(degrees.into_radians());
         let cos_y = f64::cos(degrees.into_radians() + self.skew);
         let sin_y = f64::sin(degrees.into_radians() + self.skew);
-        let mut matrix = &mut self.transform.matrix;
+        let matrix = &mut self.transform.matrix;
         matrix.a = (self.scale_x.unit() * cos_x) as f32;
         matrix.b = (self.scale_x.unit() * sin_x) as f32;
         matrix.c = (self.scale_y.unit() * -sin_y) as f32;
@@ -308,7 +308,7 @@ impl<'gc> DisplayObjectBase<'gc> {
 
         let cos = f64::cos(self.rotation.into_radians());
         let sin = f64::sin(self.rotation.into_radians());
-        let mut matrix = &mut self.transform.matrix;
+        let matrix = &mut self.transform.matrix;
         matrix.a = (cos * value.unit()) as f32;
         matrix.b = (sin * value.unit()) as f32;
     }
@@ -332,7 +332,7 @@ impl<'gc> DisplayObjectBase<'gc> {
 
         let cos = f64::cos(self.rotation.into_radians() + self.skew);
         let sin = f64::sin(self.rotation.into_radians() + self.skew);
-        let mut matrix = &mut self.transform.matrix;
+        let matrix = &mut self.transform.matrix;
         matrix.c = (-sin * value.unit()) as f32;
         matrix.d = (cos * value.unit()) as f32;
     }

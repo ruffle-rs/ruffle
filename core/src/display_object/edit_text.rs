@@ -320,7 +320,7 @@ impl<'gc> EditText<'gc> {
         // Set position.
         {
             let mut base = text_field.base_mut(context.gc_context);
-            let mut matrix = base.matrix_mut();
+            let matrix = base.matrix_mut();
             matrix.tx = Twips::from_pixels(x);
             matrix.ty = Twips::from_pixels(y);
         }

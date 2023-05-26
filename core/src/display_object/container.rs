@@ -848,7 +848,7 @@ impl<'gc> ChildContainer<'gc> {
                 .unwrap();
             self.render_list.remove(old_position);
 
-            if let Some((_, below_child)) = self.depth_list.range(..depth).rev().next() {
+            if let Some((_, below_child)) = self.depth_list.range(..depth).next_back() {
                 let new_position = self
                     .render_list
                     .iter()
