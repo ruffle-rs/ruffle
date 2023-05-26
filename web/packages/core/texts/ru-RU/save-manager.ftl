@@ -7,3 +7,4 @@ save-reload-prompt =
 save-download = Скачать
 save-replace = Заменить
 save-delete = Удалить
+save-backup-all = Скачать все сохранения
