@@ -1,0 +1,11 @@
+about-ruffle = À propos de Ruffle
+about-ruffle-version = Version
+about-ruffle-channel = Canal
+about-ruffle-build-time = Date de compilation
+about-ruffle-build-features = Fonctionnalités
+about-ruffle-commit-ref = Réf. du commit
+about-ruffle-commit-time = Date du commit
+about-ruffle-visit-website = Site web
+about-ruffle-visit-github = GitHub
+about-ruffle-visit-discord = Discord
+about-ruffle-visit-sponsor = Sponsor

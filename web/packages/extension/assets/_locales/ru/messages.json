@@ -41,6 +41,12 @@
     "settings_advanced_options": {
         "message": "Расширенные настройки"
     },
+    "settings_reset": {
+        "message": "Сбросить настройки"
+    },
+    "settings_reset_confirm": {
+        "message": "Вы уверены, что хотите восстановить настройки Ruffle по умолчанию?"
+    },
     "status_init": {
         "message": "Чтение текущей вкладки…"
     },
@@ -55,6 +61,9 @@
     },
     "status_result_running": {
         "message": "Ruffle запущен и готов к запуску Flash-контента в текущей вкладке."
+    },
+    "status_result_running_protected": {
+        "message": "Ruffle проигрывает Flash-контент в текущей вкладке."
     },
     "status_result_optout": {
         "message": "Ruffle отключён, так как текущая страница помечена владельцем как несовместимая."

@@ -27,7 +27,7 @@
         "message": "信息"
     },
     "settings_max_execution_duration": {
-        "message": "最大允许的操作刻录执行持续时间（以秒为单位）"
+        "message": "允许的 ActionScript 执行时间上限(秒)"
     },
     "settings_player_version": {
         "message": "要模拟的 Flash 播放器版本号 (范围 1-32)"
@@ -69,7 +69,7 @@
         "message": "Ruffle 未加载因为当前页面标注自己不兼容。"
     },
     "status_result_disabled": {
-        "message": "规则未加载，因为它已被禁用。"
+        "message": "Ruffle 未加载，因为它已被禁用。"
     },
     "status_result_error": {
         "message": "在查询此标签页中的 Ruffle 实例时发生错误。"

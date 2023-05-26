@@ -41,6 +41,12 @@
     "settings_advanced_options": {
         "message": "고급 설정"
     },
+    "settings_reset": {
+        "message": "설정 초기화"
+    },
+    "settings_reset_confirm": {
+        "message": "정말로 Ruffle의 설정을 기본값으로 복원하시겠습니까?"
+    },
     "status_init": {
         "message": "현재 탭을 읽는 중…"
     },

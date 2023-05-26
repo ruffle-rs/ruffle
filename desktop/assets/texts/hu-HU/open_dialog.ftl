@@ -1,0 +1,1 @@
+open-url = URL megnyitása
