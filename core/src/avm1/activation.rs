@@ -650,19 +650,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn action_clone_sprite(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let depth = self.context.avm1.pop();
-        let target = self.context.avm1.pop();
+        let depth = self.context.avm1.pop().coerce_to_i32(self)?;
+        let target = self.context.avm1.pop().coerce_to_string(self)?;
         let source = self.context.avm1.pop();
         let start_clip = self.target_clip_or_root();
         let source_clip = self.resolve_target_display_object(start_clip, source, true)?;
 
         if let Some(movie_clip) = source_clip.and_then(|o| o.as_movie_clip()) {
-            let _ = globals::movie_clip::duplicate_movie_clip_with_bias(
-                movie_clip,
-                self,
-                &[target, depth],
-                0,
-            );
+            globals::movie_clip::clone_sprite(movie_clip, &mut self.context, target, depth, None);
         } else {
             avm_warn!(self, "CloneSprite: Source is not a movie clip");
         }

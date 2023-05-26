@@ -10,7 +10,7 @@ use crate::avm1::{self, Object, ScriptObject, TObject, Value};
 use crate::avm_error;
 use crate::avm_warn;
 use crate::backend::navigator::NavigationMethod;
-use crate::context::GcContext;
+use crate::context::{GcContext, UpdateContext};
 use crate::display_object::{
     Bitmap, DisplayObject, EditText, MovieClip, TDisplayObject, TDisplayObjectContainer,
 };
@@ -761,22 +761,9 @@ fn duplicate_movie_clip<'gc>(
     activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    // duplicateMovieClip method uses biased depth compared to CloneSprite
-    duplicate_movie_clip_with_bias(movie_clip, activation, args, AVM_DEPTH_BIAS)
-}
-
-pub fn duplicate_movie_clip_with_bias<'gc>(
-    movie_clip: MovieClip<'gc>,
-    activation: &mut Activation<'_, 'gc>,
-    args: &[Value<'gc>],
-    depth_bias: i32,
-) -> Result<Value<'gc>, Error<'gc>> {
-    let (new_instance_name, depth) = match &args.get(0..2) {
-        Some([new_instance_name, depth]) => (
-            new_instance_name.coerce_to_string(activation)?,
-            depth.coerce_to_i32(activation)?.wrapping_add(depth_bias),
-        ),
-        _ => {
+    let name = match args.get(0) {
+        Some(name) => name.coerce_to_string(activation)?,
+        None => {
             avm_error!(
                 activation,
                 "MovieClip.duplicateMovieClip: Too few parameters"
@@ -784,63 +771,82 @@ pub fn duplicate_movie_clip_with_bias<'gc>(
             return Ok(Value::Undefined);
         }
     };
-    let init_object = args.get(2);
+    let depth = match args.get(1) {
+        Some(depth) => depth.coerce_to_i32(activation)?,
+        None => 0,
+    };
+    // Despite the docs say the `initObject` parameter is supported in Flash Player 6 and later,
+    // it's not version-gated.
+    let init_object = args.get(2).map(|v| v.coerce_to_object(activation));
 
-    // Can't duplicate the root!
-    let parent = if let Some(parent) = movie_clip.avm1_parent().and_then(|o| o.as_movie_clip()) {
-        parent
-    } else {
+    // `duplicateMovieClip` method uses biased depth compared to `CloneSprite`.
+    let depth = depth.wrapping_add(AVM_DEPTH_BIAS);
+
+    let new_clip = clone_sprite(
+        movie_clip,
+        &mut activation.context,
+        name,
+        depth,
+        init_object,
+    );
+
+    // On SWF<6 undefined is returned.
+    if activation.swf_version() < 6 {
         return Ok(Value::Undefined);
+    }
+
+    Ok(new_clip.map_or(Value::Undefined, |clip| clip.object()))
+}
+
+pub fn clone_sprite<'gc>(
+    movie_clip: MovieClip<'gc>,
+    context: &mut UpdateContext<'_, 'gc>,
+    target: AvmString<'gc>,
+    depth: Depth,
+    init_object: Option<Object<'gc>>,
+) -> Option<MovieClip<'gc>> {
+    let Some(parent) = movie_clip.avm1_parent().and_then(|o| o.as_movie_clip()) else {
+        // Can't duplicate the root!
+        return None;
     };
 
     // TODO: What is the derivation of this max value? It shows up a few times in the AVM...
     // 2^31 - 16777220
     if depth < 0 || depth > AVM_MAX_DEPTH {
-        return Ok(Value::Undefined);
+        return None;
     }
 
     let movie = parent.movie();
     let new_clip = if movie_clip.id() != 0 {
         // Clip from SWF; instantiate a new copy.
-        let library = activation.context.library.library_for_movie(movie).unwrap();
+        let library = context.library.library_for_movie(movie).unwrap();
         library
-            .instantiate_by_id(movie_clip.id(), activation.context.gc_context)
+            .instantiate_by_id(movie_clip.id(), context.gc_context)
             .unwrap()
             .as_movie_clip()
             .unwrap()
     } else {
         // Dynamically created clip; create a new empty movie clip.
-        MovieClip::new(movie, activation.context.gc_context)
+        MovieClip::new(movie, context.gc_context)
     };
 
     // Set name and attach to parent.
-    new_clip.set_name(activation.context.gc_context, new_instance_name);
-    parent.replace_at_depth(&mut activation.context, new_clip.into(), depth);
+    new_clip.set_name(context.gc_context, target);
+    parent.replace_at_depth(context, new_clip.into(), depth);
 
     // Copy display properties from previous clip to new clip.
-    let matrix = *movie_clip.base().matrix();
-    new_clip.set_matrix(activation.context.gc_context, matrix);
+    new_clip.set_matrix(context.gc_context, *movie_clip.base().matrix());
+    new_clip.set_color_transform(context.gc_context, *movie_clip.base().color_transform());
 
-    let color_transform = *movie_clip.base().color_transform();
-    new_clip.set_color_transform(activation.context.gc_context, color_transform);
+    new_clip.set_clip_event_handlers(context.gc_context, movie_clip.clip_actions().to_vec());
 
-    let clip_actions = movie_clip.clip_actions().to_vec();
-    new_clip.set_clip_event_handlers(activation.context.gc_context, clip_actions);
-
-    *new_clip.drawing(activation.context.gc_context) =
-        movie_clip.drawing(activation.context.gc_context).clone();
+    *new_clip.drawing(context.gc_context) = movie_clip.drawing(context.gc_context).clone();
     // TODO: Any other properties we should copy...?
     // Definitely not ScriptObject properties.
 
-    let init_object = init_object.map(|v| v.coerce_to_object(activation));
-    new_clip.post_instantiation(
-        &mut activation.context,
-        init_object,
-        Instantiator::Avm1,
-        true,
-    );
+    new_clip.post_instantiation(context, init_object, Instantiator::Avm1, true);
 
-    Ok(new_clip.object())
+    Some(new_clip)
 }
 
 fn get_bytes_loaded<'gc>(
