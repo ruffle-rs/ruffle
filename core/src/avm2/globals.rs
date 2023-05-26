@@ -36,6 +36,7 @@ mod string;
 mod toplevel;
 mod r#uint;
 mod vector;
+mod void;
 mod xml;
 mod xml_list;
 
@@ -52,6 +53,7 @@ pub struct SystemClasses<'gc> {
     pub number: ClassObject<'gc>,
     pub int: ClassObject<'gc>,
     pub uint: ClassObject<'gc>,
+    pub void: ClassObject<'gc>,
     pub namespace: ClassObject<'gc>,
     pub array: ClassObject<'gc>,
     pub movieclip: ClassObject<'gc>,
@@ -175,6 +177,7 @@ impl<'gc> SystemClasses<'gc> {
             number: object,
             int: object,
             uint: object,
+            void: object,
             namespace: object,
             array: object,
             movieclip: object,
@@ -547,6 +550,10 @@ pub fn load_player_globals<'gc>(
         script
     );
     avm2_system_class!(array, activation, array::create_class(activation), script);
+
+    // TODO: this should _not_ be exposed as a ClassObject, getDefinitionByName etc.
+    // it should only be visible as an type for typecheck/cast purposes.
+    avm2_system_class!(void, activation, void::create_class(activation), script);
 
     function(activation, "", "trace", toplevel::trace, script)?;
     function(

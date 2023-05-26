@@ -1014,6 +1014,12 @@ impl<'gc> Value<'gc> {
         }
 
         if matches!(self, Value::Undefined) || matches!(self, Value::Null) {
+            if GcCell::ptr_eq(
+                class,
+                activation.avm2().classes().void.inner_class_definition(),
+            ) {
+                return Ok(Value::Undefined);
+            }
             return Ok(Value::Null);
         }
 
@@ -1118,6 +1124,15 @@ impl<'gc> Value<'gc> {
             activation.avm2().classes().int.inner_class_definition(),
         ) {
             return self.is_i32();
+        }
+
+        if let Value::Undefined = self {
+            if GcCell::ptr_eq(
+                type_object,
+                activation.avm2().classes().void.inner_class_definition(),
+            ) {
+                return true;
+            }
         }
 
         if let Ok(o) = self.coerce_to_object(activation) {
