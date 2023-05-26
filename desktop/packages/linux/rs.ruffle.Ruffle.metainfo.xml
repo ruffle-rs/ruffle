@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2023 Doomsdayrs -->
+<component type="desktop-application">
+  <id>rs.ruffle.Ruffle</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <name>Ruffle</name>
+  <summary>Flash Player emulator</summary>
+  <launchable type="desktop-id">rs.ruffle.Ruffle.desktop</launchable>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/ruffle-rs/ruffle/master/desktop/packages/linux/launcher.png</image>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/ruffle-rs/ruffle/master/desktop/packages/linux/btd.png</image>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/ruffle-rs/ruffle/master/desktop/packages/linux/ltf.png</image>
+    </screenshot>
+  </screenshots>
+  <description>
+    <p>
+    Ruffle is a Flash Player emulator written in Rust. Ruffle runs natively on all modern operating systems as a standalone application, and on all modern browsers through the use of WebAssembly. Leveraging the safety of the modern browser sandbox and the memory safety guarantees of Rust, we can confidently avoid all the security pitfalls that Flash had a reputation for. Ruffle puts Flash back on the web, where it belongs - including browsers on iOS and Android!
+    </p>
+    <p>
+    Designed to be easy to use and install, users or website owners may install the web version of Ruffle and existing flash content will "just work", with no extra configuration required. Ruffle will detect all existing Flash content on a website and automatically "polyfill" it into a Ruffle player, allowing seamless and transparent upgrading of websites that still rely on Flash content.
+    </p>
+    <p>
+     Ruffle is an entirely open source project maintained by volunteers. We're all passionate about the preservation of internet history, and we were drawn to working on this project to help preserve the many websites and plethora of content that will no longer be accessible when users can no longer run the official Flash Player. If you would like to help support this project, we welcome all contributions of any kind - even if it's just playing some old games and seeing how well they run.
+    </p>
+  </description>
+  <categories>
+    <category>Game</category>
+    <category>Utility</category>
+    <category>AudioVideo</category>
+  </categories>
+  <keywords>
+    <keyword>flash</keyword>
+    <keyword>swf</keyword>
+  </keywords>
+  <url type="homepage">https://ruffle.rs</url>
+  <url type="bugtracker">https://github.com/ruffle-rs/ruffle/issues</url>
+  <url type="faq">https://discord.gg/ruffle</url>
+  <url type="help">https://discord.gg/ruffle</url>
+  <url type="donation">https://opencollective.com/ruffle</url>
+  <url type="contact">https://discord.gg/ruffle</url>
+  <url type="vcs-browser">https://github.com/ruffle-rs/ruffle</url>
+  <url type="contribute">https://github.com/ruffle-rs/ruffle/blob/master/CONTRIBUTING.md</url>
+  <releases>
+    <release version="2024_02_13" date="2024-02-13"/>
+  </releases>
+  <provides>
+    <mediatype>application/x-shockwave-flash</mediatype>
+    <mediatype>application/vnd.adobe.flash.movie</mediatype>
+  </provides>
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+    <control>gamepad</control>
+  </supports>
+  <project_license>MIT OR Apache-2.0</project_license>  
+  <developer_name>ruffle-rs</developer_name>
+  <content_rating type="oars-1.1">
+  </content_rating>
+  <update_contact>doomsdayrs@gmail.com</update_contact> <!-- Helped setup the flatpak -->
+  <branding>
+    <color type="primary" scheme_preference="light">#37528c</color>
+    <color type="primary" scheme_preference="dark">#31497d</color>
+  </branding>
+  <custom>
+    <value key="rs.ruffle.Ruffle::app_color">#37528c</value>
+  </custom>
+</component>
+
