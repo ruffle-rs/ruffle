@@ -24,7 +24,7 @@ pub(crate) mod color_matrix_filter;
 pub(crate) mod color_transform;
 pub(crate) mod context_menu;
 pub(crate) mod context_menu_item;
-pub mod convolution_filter;
+pub(crate) mod convolution_filter;
 pub(crate) mod date;
 pub(crate) mod displacement_map_filter;
 pub(crate) mod drop_shadow_filter;
@@ -499,8 +499,6 @@ pub struct SystemPrototypes<'gc> {
     pub context_menu_item_constructor: Object<'gc>,
     pub bitmap_filter: Object<'gc>,
     pub bitmap_filter_constructor: Object<'gc>,
-    pub convolution_filter: Object<'gc>,
-    pub convolution_filter_constructor: Object<'gc>,
     pub gradient_bevel_filter: Object<'gc>,
     pub gradient_bevel_filter_constructor: Object<'gc>,
     pub gradient_glow_filter: Object<'gc>,
@@ -761,15 +759,8 @@ pub fn create_globals<'gc>(
     let displacement_map_filter =
         displacement_map_filter::create_constructor(context, bitmap_filter_proto, function_proto);
 
-    let convolution_filter_proto =
-        convolution_filter::create_proto(context, bitmap_filter_proto, function_proto);
-    let convolution_filter = FunctionObject::constructor(
-        gc_context,
-        Executable::Native(convolution_filter::constructor),
-        constructor_to_fn!(convolution_filter::constructor),
-        function_proto,
-        convolution_filter_proto,
-    );
+    let convolution_filter =
+        convolution_filter::create_constructor(context, bitmap_filter_proto, function_proto);
 
     let gradient_bevel_filter_proto =
         gradient_bevel_filter::create_proto(context, bitmap_filter_proto, function_proto);
@@ -1110,8 +1101,6 @@ pub fn create_globals<'gc>(
             context_menu_item_constructor: context_menu_item,
             bitmap_filter: bitmap_filter_proto,
             bitmap_filter_constructor: bitmap_filter,
-            convolution_filter: convolution_filter_proto,
-            convolution_filter_constructor: convolution_filter,
             gradient_bevel_filter: gradient_bevel_filter_proto,
             gradient_bevel_filter_constructor: gradient_bevel_filter,
             gradient_glow_filter: gradient_glow_filter_proto,
