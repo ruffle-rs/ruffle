@@ -1806,6 +1806,10 @@ impl<'gc> Loader<'gc> {
                 let mc = target_clip.as_movie_clip().unwrap();
                 mc.replace_with_movie(uc, Some(movie.unwrap()), None);
                 mc.replace_at_depth(uc, dobj, 1);
+
+                // This sets the MovieClip image state correctly.
+                mc.set_current_frame(uc.gc_context, 1);
+                mc.set_cur_preload_frame(uc.gc_context, 2);
             }
         }
 
@@ -2011,7 +2015,7 @@ impl<'gc> Loader<'gc> {
         let error_movie = SwfMovie::error_movie(swf_url);
         // This also sets total_frames correctly
         mc.replace_with_movie(uc, Some(Arc::new(error_movie)), None);
-        mc.movie_not_available(uc.gc_context);
+        mc.set_cur_preload_frame(uc.gc_context, 0);
     }
 
     /// Event handler morally equivalent to `onLoad` on a movie clip.
