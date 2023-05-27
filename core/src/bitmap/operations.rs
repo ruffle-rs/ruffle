@@ -31,7 +31,7 @@ pub fn fill_rect<'gc>(
     y: i32,
     width: i32,
     height: i32,
-    color: i32,
+    color: u32,
 ) {
     let mut rect = PixelRegion::for_region_i32(x, y, width, height);
     rect.clamp(target.width(), target.height());
@@ -63,7 +63,7 @@ pub fn set_pixel32<'gc>(
     target: BitmapDataWrapper<'gc>,
     x: u32,
     y: u32,
-    color: i32,
+    color: u32,
 ) {
     if x >= target.width() || y >= target.height() {
         return;
@@ -79,7 +79,7 @@ pub fn set_pixel32<'gc>(
     write.set_cpu_dirty(PixelRegion::for_pixel(x, y));
 }
 
-pub fn get_pixel32(target: BitmapDataWrapper, x: u32, y: u32) -> i32 {
+pub fn get_pixel32(target: BitmapDataWrapper, x: u32, y: u32) -> u32 {
     if x >= target.width() || y >= target.height() {
         return 0;
     }
@@ -110,7 +110,7 @@ pub fn set_pixel<'gc>(
     write.set_cpu_dirty(PixelRegion::for_whole_size(x, y));
 }
 
-pub fn get_pixel(target: BitmapDataWrapper, x: u32, y: u32) -> i32 {
+pub fn get_pixel(target: BitmapDataWrapper, x: u32, y: u32) -> u32 {
     if x >= target.width() || y >= target.height() {
         return 0;
     }
@@ -133,7 +133,7 @@ pub fn flood_fill<'gc>(
     target: BitmapDataWrapper<'gc>,
     x: u32,
     y: u32,
-    color: i32,
+    color: u32,
 ) {
     if x >= target.width() || y >= target.height() {
         return;
@@ -434,7 +434,7 @@ pub fn copy_channel<'gc>(
             write.set_pixel32_raw(
                 dst_x,
                 dst_y,
-                Color::from(result_color as i32).to_premultiplied_alpha(transparency),
+                Color::from(result_color).to_premultiplied_alpha(transparency),
             );
         }
     }
@@ -503,7 +503,7 @@ pub fn threshold<'gc>(
     dest_point: (i32, i32),
     operation: ThresholdOperation,
     threshold: u32,
-    colour: i32,
+    colour: u32,
     mask: u32,
     copy_source: bool,
 ) -> u32 {
@@ -560,7 +560,7 @@ pub fn threshold<'gc>(
             };
 
             // If the test, as defined by the operation pass then set to input colour
-            if operation.matches(i32::from(source_color) as u32 & mask, masked_threshold) {
+            if operation.matches(u32::from(source_color) & mask, masked_threshold) {
                 modified_count += 1;
                 write.set_pixel32_raw(dest_x, dest_y, Color::from(colour));
             } else {
@@ -697,7 +697,7 @@ pub fn palette_map<'gc>(
             let a = channel_arrays.3[source_color.alpha() as usize];
 
             let sum = u32::wrapping_add(u32::wrapping_add(r, g), u32::wrapping_add(b, a));
-            let mix_color = Color::from(sum as i32).to_premultiplied_alpha(true);
+            let mix_color = Color::from(sum).to_premultiplied_alpha(true);
 
             write.set_pixel32_raw(dest_x, dest_y, mix_color);
         }
@@ -855,8 +855,8 @@ pub fn hit_test_bitmapdata<'gc>(
 pub fn color_bounds_rect(
     target: BitmapDataWrapper,
     find_color: bool,
-    mask: i32,
-    color: i32,
+    mask: u32,
+    color: u32,
 ) -> (u32, u32, u32, u32) {
     let mut min_x = target.width();
     let mut max_x = 0;
@@ -868,7 +868,7 @@ pub fn color_bounds_rect(
 
     for x in 0..read.width() {
         for y in 0..read.height() {
-            let pixel_raw: i32 = read.get_pixel32_raw(x, y).into();
+            let pixel_raw: u32 = read.get_pixel32_raw(x, y).into();
             let color_matches = if find_color {
                 (pixel_raw & mask) == color
             } else {
@@ -1570,7 +1570,7 @@ pub fn get_pixels_as_byte_array<'gc>(
     for y in region.y_min..region.y_max {
         for x in region.x_min..region.x_max {
             let color = read.get_pixel32_raw(x, y);
-            result.write_int(color.to_un_multiplied_alpha().into())?;
+            result.write_unsigned_int(color.to_un_multiplied_alpha().into())?;
         }
     }
 
@@ -1603,7 +1603,7 @@ pub fn set_pixels_from_byte_array<'gc>(
         for y in region.y_min..region.y_max {
             for x in region.x_min..region.x_max {
                 // Copy data from bytearray until EOFError or finished
-                let color = bytearray.read_int()?;
+                let color = bytearray.read_unsigned_int()?;
                 write.set_pixel32_raw(
                     x,
                     y,
@@ -1627,7 +1627,7 @@ pub fn pixel_dissolve<'gc>(
     dest_point: (i32, i32),
     random_seed: i32,
     num_pixels: i32,
-    fill_color: i32,
+    fill_color: u32,
 ) -> i32 {
     /// Returns at least 2. Always returns an even number.
     fn get_feistel_block_size(sequence_length: u32) -> u32 {
@@ -1697,7 +1697,7 @@ pub fn pixel_dissolve<'gc>(
     fn write_pixel(
         write: &mut RefMut<BitmapData>,
         different_source_than_target: &Option<Ref<BitmapData>>,
-        fill_color: i32,
+        fill_color: u32,
         transparency: bool,
         base_point: (u32, u32),
         read_offset: (u32, u32),
