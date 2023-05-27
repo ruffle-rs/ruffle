@@ -11,6 +11,7 @@ use egui::*;
 use fluent_templates::fluent_bundle::FluentValue;
 use fluent_templates::{static_loader, Loader};
 use ruffle_core::backend::ui::US_ENGLISH;
+use ruffle_core::Player;
 use std::collections::HashMap;
 use sys_locale::get_locale;
 use unic_langid::LanguageIdentifier;
@@ -83,9 +84,15 @@ impl RuffleGui {
     }
 
     /// Renders all of the main Ruffle UI, including the main menu and context menus.
-    fn update(&mut self, egui_ctx: &egui::Context, show_menu: bool, has_movie: bool) {
+    fn update(
+        &mut self,
+        egui_ctx: &egui::Context,
+        show_menu: bool,
+        has_movie: bool,
+        player: &mut Option<&mut Player>,
+    ) {
         if show_menu {
-            self.main_menu_bar(egui_ctx, has_movie);
+            self.main_menu_bar(egui_ctx, has_movie, player);
         }
 
         self.about_window(egui_ctx);
@@ -105,7 +112,12 @@ impl RuffleGui {
     }
 
     /// Renders the main menu bar at the top of the window.
-    fn main_menu_bar(&mut self, egui_ctx: &egui::Context, has_movie: bool) {
+    fn main_menu_bar(
+        &mut self,
+        egui_ctx: &egui::Context,
+        has_movie: bool,
+        player: &mut Option<&mut Player>,
+    ) {
         egui::TopBottomPanel::top("menu_bar").show(egui_ctx, |ui| {
             // TODO(mike): Make some MenuItem struct with shortcut info to handle this more cleanly.
             if ui.ctx().input_mut(|input| {
@@ -117,6 +129,13 @@ impl RuffleGui {
                 input.consume_shortcut(&KeyboardShortcut::new(Modifiers::COMMAND, Key::Q))
             }) {
                 self.request_exit(ui);
+            }
+            if ui.ctx().input_mut(|input| {
+                input.consume_shortcut(&KeyboardShortcut::new(Modifiers::COMMAND, Key::P))
+            }) {
+                if let Some(player) = player {
+                    player.set_is_playing(!player.is_playing());
+                }
             }
 
             menu::bar(ui, |ui| {
@@ -151,6 +170,18 @@ impl RuffleGui {
                         self.request_exit(ui);
                     }
                 });
+                menu::menu_button(ui, text(&self.locale, "controls-menu"), |ui| {
+                    ui.add_enabled_ui(player.is_some(), |ui| {
+                        let playing = player.as_ref().map(|p| p.is_playing()).unwrap_or_default();
+                        let pause_shortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::P);
+                        if Button::new(text(&self.locale, if playing { "controls-menu-suspend" } else { "controls-menu-resume" })).shortcut_text(ui.ctx().format_shortcut(&pause_shortcut)).ui(ui).clicked() {
+                            ui.close_menu();
+                            if let Some(player) = player {
+                                player.set_is_playing(!player.is_playing());
+                            }
+                        }
+                    });
+                });
                 menu::menu_button(ui, text(&self.locale, "help-menu"), |ui| {
                     if ui.button(text(&self.locale, "help-menu-join-discord")).clicked() {
                         self.launch_website(ui, "https://discord.gg/ruffle");
@@ -168,7 +199,7 @@ impl RuffleGui {
                     if ui.button(text(&self.locale, "help-menu-about")).clicked() {
                         self.show_about_screen(ui);
                     }
-                })
+                });
             });
         });
     }
