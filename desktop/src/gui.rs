@@ -157,7 +157,8 @@ impl RuffleGui {
                     }
 
                     if Button::new(text(&self.locale, "file-menu-open-advanced")).ui(ui).clicked() {
-                        self.open_file_advanced(ui);
+                        ui.close_menu();
+                        self.open_file_advanced();
                     }
 
                     if ui.add_enabled(has_movie, Button::new(text(&self.locale, "file-menu-close"))).clicked() {
@@ -344,9 +345,7 @@ impl RuffleGui {
         }
     }
 
-    fn open_file_advanced(&mut self, ui: &mut egui::Ui) {
-        ui.close_menu();
-
+    fn open_file_advanced(&mut self) {
         self.open_dialog = Some(OpenDialog::new(
             self.default_player_options.clone(),
             self.event_loop.clone(),
