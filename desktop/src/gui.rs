@@ -1,12 +1,15 @@
 mod controller;
 mod movie;
+mod open_dialog;
 
 pub use controller::GuiController;
 pub use movie::MovieView;
 use std::borrow::Cow;
 
 use crate::custom_event::RuffleEvent;
+use crate::gui::open_dialog::OpenDialog;
 use crate::player::PlayerOptions;
+use crate::util::pick_file;
 use chrono::DateTime;
 use egui::*;
 use fluent_templates::fluent_bundle::FluentValue;
@@ -16,6 +19,7 @@ use ruffle_core::Player;
 use std::collections::HashMap;
 use sys_locale::get_locale;
 use unic_langid::LanguageIdentifier;
+use url::Url;
 use winit::event_loop::EventLoopProxy;
 
 const VERGEN_UNKNOWN: &str = "VERGEN_IDEMPOTENT_OUTPUT";
@@ -57,12 +61,11 @@ pub const MENU_HEIGHT: u32 = 24;
 /// The main controller for the Ruffle GUI.
 pub struct RuffleGui {
     event_loop: EventLoopProxy<RuffleEvent>,
-    open_url_text: String,
     is_about_visible: bool,
-    is_open_url_prompt_visible: bool,
     context_menu: Vec<ruffle_core::ContextMenuItem>,
     locale: LanguageIdentifier,
     default_player_options: PlayerOptions,
+    open_dialog: Option<OpenDialog>,
 }
 
 impl RuffleGui {
@@ -77,12 +80,11 @@ impl RuffleGui {
 
         Self {
             event_loop,
-            open_url_text: String::new(),
             is_about_visible: false,
-            is_open_url_prompt_visible: false,
             context_menu: vec![],
             locale,
             default_player_options,
+            open_dialog: None,
         }
     }
 
@@ -99,7 +101,7 @@ impl RuffleGui {
         }
 
         self.about_window(egui_ctx);
-        self.open_url_prompt(egui_ctx);
+        self.open_dialog(egui_ctx);
 
         if !self.context_menu.is_empty() {
             self.context_menu(egui_ctx);
@@ -146,7 +148,7 @@ impl RuffleGui {
                     let mut shortcut;
                     shortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::O);
 
-                    if Button::new(text(&self.locale, "file-menu-open-file"))
+                    if Button::new(text(&self.locale, "file-menu-open-quick"))
                         .shortcut_text(ui.ctx().format_shortcut(&shortcut))
                         .ui(ui)
                         .clicked()
@@ -154,8 +156,8 @@ impl RuffleGui {
                         self.open_file(ui);
                     }
 
-                    if Button::new(text(&self.locale, "file-menu-open-url")).ui(ui).clicked() {
-                        self.show_open_url_prompt(ui);
+                    if Button::new(text(&self.locale, "file-menu-open-advanced")).ui(ui).clicked() {
+                        self.open_file_advanced(ui);
                     }
 
                     if ui.add_enabled(has_movie, Button::new(text(&self.locale, "file-menu-close"))).clicked() {
@@ -332,10 +334,24 @@ impl RuffleGui {
     }
 
     fn open_file(&mut self, ui: &mut egui::Ui) {
-        let _ = self
-            .event_loop
-            .send_event(RuffleEvent::OpenFile(self.default_player_options.clone()));
         ui.close_menu();
+
+        if let Some(url) = pick_file().and_then(|p| Url::from_file_path(p).ok()) {
+            let _ = self.event_loop.send_event(RuffleEvent::OpenURL(
+                url,
+                Box::new(self.default_player_options.clone()),
+            ));
+        }
+    }
+
+    fn open_file_advanced(&mut self, ui: &mut egui::Ui) {
+        ui.close_menu();
+
+        self.open_dialog = Some(OpenDialog::new(
+            self.default_player_options.clone(),
+            self.event_loop.clone(),
+            self.locale.clone(),
+        ));
     }
 
     fn close_movie(&mut self, ui: &mut egui::Ui) {
@@ -343,43 +359,14 @@ impl RuffleGui {
         ui.close_menu();
     }
 
-    fn open_url_prompt(&mut self, egui_ctx: &egui::Context) {
-        let mut close_prompt = false;
-        egui::Window::new(text(&self.locale, "open-url"))
-            .anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO)
-            .collapsible(false)
-            .resizable(false)
-            .open(&mut self.is_open_url_prompt_visible)
-            .show(egui_ctx, |ui| {
-                ui.vertical_centered(|ui| {
-                    let (enter_pressed, esc_pressed) = ui.ctx().input_mut(|input| {
-                        (
-                            input.consume_key(Modifiers::NONE, Key::Enter),
-                            input.consume_key(Modifiers::NONE, Key::Escape),
-                        )
-                    });
-                    ui.text_edit_singleline(&mut self.open_url_text);
-                    ui.horizontal(|ui| {
-                        if ui.button(text(&self.locale, "dialog-ok")).clicked() || enter_pressed {
-                            if let Ok(url) = url::Url::parse(&self.open_url_text) {
-                                let _ = self.event_loop.send_event(RuffleEvent::OpenURL(
-                                    url,
-                                    self.default_player_options.clone(),
-                                ));
-                            } else {
-                                // TODO: Show error prompt.
-                                tracing::error!("Invalid URL: {}", self.open_url_text);
-                            }
-                            close_prompt = true;
-                        }
-                        if ui.button(text(&self.locale, "dialog-cancel")).clicked() || esc_pressed {
-                            close_prompt = true;
-                        }
-                    });
-                });
-            });
-        if close_prompt {
-            self.is_open_url_prompt_visible = false;
+    fn open_dialog(&mut self, egui_ctx: &egui::Context) {
+        let keep_open = self
+            .open_dialog
+            .as_mut()
+            .map(|d| d.show(egui_ctx))
+            .unwrap_or_default();
+        if !keep_open {
+            self.open_dialog = None;
         }
     }
 
@@ -395,11 +382,6 @@ impl RuffleGui {
 
     fn show_about_screen(&mut self, ui: &mut egui::Ui) {
         self.is_about_visible = true;
-        ui.close_menu();
-    }
-
-    fn show_open_url_prompt(&mut self, ui: &mut egui::Ui) {
-        self.is_open_url_prompt_visible = true;
         ui.close_menu();
     }
 }

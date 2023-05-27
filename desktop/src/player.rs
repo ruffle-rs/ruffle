@@ -36,11 +36,11 @@ pub struct PlayerOptions {
     pub proxy: Option<Url>,
     pub upgrade_to_https: bool,
     pub fullscreen: bool,
-    pub dont_warn_on_unsupported_content: bool,
+    pub warn_on_unsupported_content: bool,
     pub load_behavior: LoadBehavior,
     pub letterbox: Letterbox,
     pub spoof_url: Option<Url>,
-    pub player_version: Option<u8>,
+    pub player_version: u8,
     pub frame_rate: Option<f64>,
     pub open_url_mode: OpenURLMode,
 }
@@ -58,11 +58,11 @@ impl From<&Opt> for PlayerOptions {
             proxy: value.proxy.clone(),
             upgrade_to_https: value.upgrade_to_https,
             fullscreen: value.fullscreen,
-            dont_warn_on_unsupported_content: value.dont_warn_on_unsupported_content,
+            warn_on_unsupported_content: !value.dont_warn_on_unsupported_content,
             load_behavior: value.load_behavior,
             letterbox: value.letterbox,
             spoof_url: value.spoof_url.clone(),
-            player_version: value.player_version,
+            player_version: value.player_version.unwrap_or(32),
             frame_rate: value.frame_rate,
             open_url_mode: value.open_url_mode,
         }
@@ -126,12 +126,12 @@ impl ActivePlayer {
             .with_letterbox(opt.letterbox)
             .with_max_execution_duration(Duration::from_secs_f64(opt.max_execution_duration))
             .with_quality(opt.quality)
-            .with_warn_on_unsupported_content(!opt.dont_warn_on_unsupported_content)
+            .with_warn_on_unsupported_content(opt.warn_on_unsupported_content)
             .with_scale_mode(opt.scale, opt.force_scale)
             .with_fullscreen(opt.fullscreen)
             .with_load_behavior(opt.load_behavior)
             .with_spoofed_url(opt.spoof_url.clone().map(|url| url.to_string()))
-            .with_player_version(opt.player_version)
+            .with_player_version(Some(opt.player_version))
             .with_frame_rate(opt.frame_rate);
         let player = builder.build();
 

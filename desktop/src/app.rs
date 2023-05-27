@@ -3,7 +3,7 @@ use crate::custom_event::RuffleEvent;
 use crate::gui::{GuiController, MENU_HEIGHT};
 use crate::player::{PlayerController, PlayerOptions};
 use crate::util::{
-    get_screen_size, parse_url, pick_file, winit_key_to_char, winit_to_ruffle_key_code,
+    get_screen_size, parse_url, winit_key_to_char, winit_to_ruffle_key_code,
     winit_to_ruffle_text_control,
 };
 use anyhow::{Context, Error};
@@ -426,18 +426,6 @@ impl App {
                 winit::event::Event::UserEvent(RuffleEvent::ContextMenuItemClicked(index)) => {
                     if let Some(mut player) = self.player.get() {
                         player.run_context_menu_callback(index);
-                    }
-                }
-
-                winit::event::Event::UserEvent(RuffleEvent::OpenFile(options)) => {
-                    if let Some(path) = pick_file() {
-                        // TODO: Show dialog on error.
-                        let url = parse_url(&path).expect("Couldn't load specified path");
-                        self.player.create(
-                            &options,
-                            url,
-                            self.gui.lock().expect("Gui lock").create_movie_view(),
-                        );
                     }
                 }
 

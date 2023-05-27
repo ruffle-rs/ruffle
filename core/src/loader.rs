@@ -42,7 +42,7 @@ pub type Handle = Index;
 
 /// How Ruffle should load movies.
 #[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum LoadBehavior {
     /// Allow movies to execute before they have finished loading.
     ///

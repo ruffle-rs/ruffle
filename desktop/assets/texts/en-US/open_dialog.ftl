@@ -1,1 +1,6 @@
-open-url = Open URL
+open-dialog = Open File or URL
+
+open-dialog-path = File or URL
+
+open-dialog-add-parameter = Add
+open-dialog-delete-parameter = Delete
