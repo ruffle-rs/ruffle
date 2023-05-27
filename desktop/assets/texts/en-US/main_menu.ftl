@@ -13,6 +13,10 @@ file-menu-open-url = Open URL...
 file-menu-close = Close
 file-menu-exit = Exit
 
+controls-menu = Controls
+controls-menu-suspend = Suspend
+controls-menu-resume = Resume
+
 help-menu = Help
 help-menu-join-discord = Join Discord
 help-menu-report-a-bug = Report a Bug...

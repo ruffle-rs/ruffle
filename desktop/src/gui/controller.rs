@@ -3,12 +3,13 @@ use crate::gui::movie::{MovieView, MovieViewRenderer};
 use crate::gui::RuffleGui;
 use anyhow::anyhow;
 use egui::Context;
-use ruffle_render_wgpu::backend::request_adapter_and_device;
+use ruffle_core::Player;
+use ruffle_render_wgpu::backend::{request_adapter_and_device, WgpuRenderBackend};
 use ruffle_render_wgpu::descriptors::Descriptors;
 use ruffle_render_wgpu::utils::{format_list, get_backend_names};
 use std::path::Path;
 use std::rc::Rc;
-use std::sync::Arc;
+use std::sync::{Arc, MutexGuard};
 use std::time::{Duration, Instant};
 use winit::dpi::PhysicalSize;
 use winit::event_loop::EventLoop;
@@ -155,7 +156,7 @@ impl GuiController {
         )
     }
 
-    pub fn render(&mut self, movie: Option<&MovieView>) {
+    pub fn render(&mut self, mut player: Option<MutexGuard<Player>>) {
         let surface_texture = self
             .surface
             .get_current_texture()
@@ -163,8 +164,12 @@ impl GuiController {
 
         let raw_input = self.egui_winit.take_egui_input(&self.window);
         let full_output = self.egui_ctx.run(raw_input, |context| {
-            self.gui
-                .update(context, self.window.fullscreen().is_none(), movie.is_some());
+            self.gui.update(
+                context,
+                self.window.fullscreen().is_none(),
+                player.is_some(),
+                &mut player.as_deref_mut(),
+            );
         });
         self.repaint_after = full_output.repaint_after;
 
@@ -205,6 +210,16 @@ impl GuiController {
             &screen_descriptor,
         );
 
+        let movie_view = if let Some(player) = player.as_deref_mut() {
+            let renderer = player
+                .renderer_mut()
+                .downcast_mut::<WgpuRenderBackend<MovieView>>()
+                .expect("Renderer must be correct type");
+            Some(renderer.target())
+        } else {
+            None
+        };
+
         {
             let surface_view = surface_texture.texture.create_view(&Default::default());
 
@@ -221,8 +236,8 @@ impl GuiController {
                 label: Some("egui_render"),
             });
 
-            if let Some(movie) = movie {
-                movie.render(&self.movie_view_renderer, &mut render_pass);
+            if let Some(movie_view) = movie_view {
+                movie_view.render(&self.movie_view_renderer, &mut render_pass);
             }
 
             self.egui_renderer
