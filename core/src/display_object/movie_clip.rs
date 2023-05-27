@@ -1187,20 +1187,28 @@ impl<'gc> MovieClip<'gc> {
             .unwrap_or_default()
     }
 
-    /// This helps making the MovieClip enter the error state in which some attributes
-    /// have certain error values to signal that no valid file could be loaded.
-    ///
-    /// It sets cur_preload_frame to 0 (which results in _currentframe being -1).
-    ///
-    /// This happens if no file could be loaded or if the loaded content is no valid
-    /// supported content.
-    pub fn movie_not_available(self, gc_context: MutationContext<'gc, '_>) {
+    /// This sets the current preload frame of this MovieClipto a given number (resulting
+    /// in the _framesloaded / framesLoaded property being the given number - 1).
+    pub fn set_cur_preload_frame(
+        self,
+        gc_context: MutationContext<'gc, '_>,
+        cur_preload_frame: u16,
+    ) {
         self.0
             .read()
             .static_data
             .preload_progress
             .write(gc_context)
-            .cur_preload_frame = 0;
+            .cur_preload_frame = cur_preload_frame;
+    }
+
+    /// This sets the current frame of this MovieClip to a given number.
+    pub fn set_current_frame(
+        self,
+        gc_context: MutationContext<'gc, '_>,
+        current_frame: FrameNumber,
+    ) {
+        self.0.write(gc_context).current_frame = current_frame;
     }
 
     pub fn frames_loaded(self) -> i32 {
