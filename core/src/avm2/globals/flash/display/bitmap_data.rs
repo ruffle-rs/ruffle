@@ -10,7 +10,7 @@ use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
 use crate::bitmap::bitmap_data::{
-    BitmapData, BitmapDataWrapper, ChannelOptions, ThresholdOperation,
+    BitmapData, BitmapDataWrapper, ChannelOptions, ThresholdOperation, Color,
 };
 use crate::bitmap::bitmap_data::{BitmapDataDrawError, IBitmapDrawable};
 use crate::bitmap::{is_size_valid, operations};
@@ -425,7 +425,7 @@ pub fn set_pixels<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements `BitmapData.setPixels`.
+/// Implements `BitmapData.setVector`.
 pub fn set_vector<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
@@ -477,6 +477,7 @@ pub fn set_vector<'gc>(
 
         let bitmap_data = bitmap_data.sync();
         let mut bitmap_data = bitmap_data.write(activation.context.gc_context);
+        let transparency = bitmap_data.transparency();
         let mut iter = vec_read.iter();
         for y in y_min..y_max {
             for x in x_min..x_max {
@@ -485,7 +486,7 @@ pub fn set_vector<'gc>(
                     .expect("BitmapData.setVector: Expected element")
                     .as_u32(activation.context.gc_context)
                     .expect("BitmapData.setVector: Expected uint vector");
-                bitmap_data.set_pixel32_raw(x, y, color.into());
+                bitmap_data.set_pixel32_raw(x, y, Color::from(color).to_premultiplied_alpha(transparency));
             }
         }
     }
