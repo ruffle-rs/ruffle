@@ -310,6 +310,22 @@ pub fn parse_url(path: &Path) -> Result<Url, Error> {
     }
 }
 
+// [NA] Horrible hacky workaround for https://github.com/rust-windowing/winit/issues/2291
+#[cfg(windows)]
+pub fn pick_file() -> Option<PathBuf> {
+    std::thread::spawn(|| {
+        FileDialog::new()
+            .add_filter("Flash Files", &["swf", "spl"])
+            .add_filter("All Files", &["*"])
+            .set_title("Load a Flash File")
+            .pick_file()
+    })
+    .join()
+    .ok()
+    .flatten()
+}
+
+#[cfg(not(windows))]
 pub fn pick_file() -> Option<PathBuf> {
     FileDialog::new()
         .add_filter("Flash Files", &["swf", "spl"])

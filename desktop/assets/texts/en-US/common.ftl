@@ -1,0 +1,2 @@
+start = Start
+browse = Browse
