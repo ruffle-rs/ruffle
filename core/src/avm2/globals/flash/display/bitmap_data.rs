@@ -107,7 +107,7 @@ pub fn init<'gc>(
             let width = args.get_u32(activation, 0)?;
             let height = args.get_u32(activation, 1)?;
             let transparency = args.get_bool(2);
-            let fill_color = args.get_i32(activation, 3)?;
+            let fill_color = args.get_u32(activation, 3)?;
 
             if !is_size_valid(activation.context.swf.version(), width, height) {
                 return Err(Error::AvmError(argument_error(
@@ -344,7 +344,7 @@ pub fn get_pixel32<'gc>(
         let x = args.get_u32(activation, 0)?;
         let y = args.get_u32(activation, 1)?;
         let pixel = operations::get_pixel32(bitmap_data, x, y);
-        return Ok((pixel as u32).into());
+        return Ok(pixel.into());
     }
 
     Ok(Value::Undefined)
@@ -359,7 +359,7 @@ pub fn set_pixel<'gc>(
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
         let x = args.get_u32(activation, 0)?;
         let y = args.get_u32(activation, 1)?;
-        let color = args.get_i32(activation, 2)?;
+        let color = args.get_u32(activation, 2)?;
         operations::set_pixel(
             activation.context.gc_context,
             bitmap_data,
@@ -383,7 +383,7 @@ pub fn set_pixel32<'gc>(
 
         let x = args.get_u32(activation, 0)?;
         let y = args.get_u32(activation, 1)?;
-        let color = args.get_i32(activation, 2)?;
+        let color = args.get_u32(activation, 2)?;
 
         operations::set_pixel32(activation.context.gc_context, bitmap_data, x, y, color);
     }
@@ -482,7 +482,7 @@ pub fn flood_fill<'gc>(
         if !bitmap_data.disposed() {
             let x = args.get_u32(activation, 0)?;
             let y = args.get_u32(activation, 1)?;
-            let color = args.get_i32(activation, 2)?;
+            let color = args.get_u32(activation, 2)?;
 
             operations::flood_fill(activation.context.gc_context, bitmap_data, x, y, color);
         }
@@ -567,8 +567,8 @@ pub fn get_color_bounds_rect<'gc>(
         if !bitmap_data.disposed() {
             let find_color = args.get_bool(2);
 
-            let mask = args.get_i32(activation, 0)?;
-            let color = args.get_i32(activation, 1)?;
+            let mask = args.get_u32(activation, 0)?;
+            let color = args.get_u32(activation, 1)?;
 
             let (x, y, w, h) = operations::color_bounds_rect(bitmap_data, find_color, mask, color);
 
@@ -911,7 +911,7 @@ pub fn fill_rect<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let rectangle = args.get_object(activation, 0, "rect")?;
 
-    let color = args.get_i32(activation, 1)?;
+    let color = args.get_u32(activation, 1)?;
 
     if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data()) {
         bitmap_data.check_valid(activation)?;
@@ -1191,7 +1191,7 @@ pub fn threshold<'gc>(
             );
             let operation = args.try_get_string(activation, 3)?;
             let threshold = args.get_u32(activation, 4)?;
-            let color = args.get_i32(activation, 5)?;
+            let color = args.get_u32(activation, 5)?;
             let mask = args.get_u32(activation, 6)?;
             let copy_source = args.get_bool(7);
 
@@ -1343,7 +1343,7 @@ pub fn pixel_dissolve<'gc>(
             )?));
         }
 
-        let fill_color = args.get_i32(activation, 5)?;
+        let fill_color = args.get_u32(activation, 5)?;
 
         // Apparently, if this check fails, a type error for `null` is given.
         if let Some(src_bitmap_data) = src_bitmap_data.as_bitmap_data() {

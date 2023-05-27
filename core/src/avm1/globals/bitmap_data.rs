@@ -97,8 +97,8 @@ fn constructor<'gc>(
         None => true,
     };
     let fill_color = match args.get(3) {
-        Some(fill_color) => fill_color.coerce_to_i32(activation)?,
-        None => -1,
+        Some(fill_color) => fill_color.coerce_to_u32(activation)?,
+        None => u32::MAX,
     };
 
     if !is_size_valid(activation.swf_version(), width, height) {
@@ -193,7 +193,8 @@ fn get_pixel<'gc>(
             if let (Some(x_val), Some(y_val)) = (args.get(0), args.get(1)) {
                 let x = x_val.coerce_to_u32(activation)?;
                 let y = y_val.coerce_to_u32(activation)?;
-                let col = operations::get_pixel(bitmap_data, x, y);
+                // AVM1 returns a signed int, so we need to convert it.
+                let col = operations::get_pixel(bitmap_data, x, y) as i32;
                 return Ok(col.into());
             }
         }
@@ -212,7 +213,8 @@ fn get_pixel32<'gc>(
             if let (Some(x_val), Some(y_val)) = (args.get(0), args.get(1)) {
                 let x = x_val.coerce_to_u32(activation)?;
                 let y = y_val.coerce_to_u32(activation)?;
-                let col = operations::get_pixel32(bitmap_data, x, y);
+                // AVM1 returns a signed int, so we need to convert it.
+                let col = operations::get_pixel32(bitmap_data, x, y) as i32;
                 return Ok(col.into());
             }
         }
@@ -233,7 +235,7 @@ fn set_pixel<'gc>(
             {
                 let x = x_val.coerce_to_u32(activation)?;
                 let y = y_val.coerce_to_u32(activation)?;
-                let color = color_val.coerce_to_i32(activation)?;
+                let color = color_val.coerce_to_u32(activation)?;
 
                 operations::set_pixel(
                     activation.context.gc_context,
@@ -263,7 +265,7 @@ fn set_pixel32<'gc>(
             {
                 let x = x_val.coerce_to_u32(activation)?;
                 let y = y_val.coerce_to_u32(activation)?;
-                let color = color_val.coerce_to_i32(activation)?;
+                let color = color_val.coerce_to_u32(activation)?;
 
                 operations::set_pixel32(activation.context.gc_context, bitmap_data, x, y, color);
             }
@@ -356,7 +358,7 @@ fn fill_rect<'gc>(
     if let NativeObject::BitmapData(bitmap_data) = this.native() {
         if !bitmap_data.disposed() {
             if let Some(color_val) = args.get(1) {
-                let color = color_val.coerce_to_i32(activation)?;
+                let color = color_val.coerce_to_u32(activation)?;
 
                 let x = rectangle.get("x", activation)?.coerce_to_i32(activation)?;
                 let y = rectangle.get("y", activation)?.coerce_to_i32(activation)?;
@@ -430,7 +432,7 @@ fn flood_fill<'gc>(
             {
                 let x = x_val.coerce_to_u32(activation)?;
                 let y = y_val.coerce_to_u32(activation)?;
-                let color = color_val.coerce_to_i32(activation)?;
+                let color = color_val.coerce_to_u32(activation)?;
 
                 operations::flood_fill(activation.context.gc_context, bitmap_data, x, y, color);
             }
@@ -658,8 +660,8 @@ fn get_color_bounds_rect<'gc>(
                 .as_bool(activation.swf_version());
 
             if let (Some(mask_val), Some(color_val)) = (args.get(0), args.get(1)) {
-                let mask = mask_val.coerce_to_i32(activation)?;
-                let color = color_val.coerce_to_i32(activation)?;
+                let mask = mask_val.coerce_to_u32(activation)?;
+                let color = color_val.coerce_to_u32(activation)?;
 
                 let (x, y, w, h) =
                     operations::color_bounds_rect(bitmap_data, find_color, mask, color);
@@ -1188,7 +1190,7 @@ fn pixel_dissolve<'gc>(
                     };
 
                     let fill_color = match args.get(5) {
-                        Some(fill_color) => fill_color.coerce_to_i32(activation)?,
+                        Some(fill_color) => fill_color.coerce_to_u32(activation)?,
                         None => 0,
                     };
 
@@ -1289,7 +1291,7 @@ fn threshold<'gc>(
                 .unwrap_or(&Value::Undefined)
                 .coerce_to_u32(activation)?;
 
-            let colour = args.get(5).unwrap_or(&0.into()).coerce_to_i32(activation)?;
+            let colour = args.get(5).unwrap_or(&0.into()).coerce_to_u32(activation)?;
 
             let mask = args
                 .get(6)

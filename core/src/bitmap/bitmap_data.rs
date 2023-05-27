@@ -38,11 +38,11 @@ impl LehmerRng {
 /// Note that most operations only make sense on one of these representations:
 /// For example, blending on premultiplied values, and applying a `ColorTransform` on
 /// unmultiplied values. Make sure to convert the color to the correct form beforehand.
-// TODO: Maybe split the type into `PremultipliedColor(i32)` and
-//   `UnmultipliedColor(i32)`?
+// TODO: Maybe split the type into `PremultipliedColor(u32)` and
+//   `UnmultipliedColor(u32)`?
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Collect)]
 #[collect(no_drop)]
-pub struct Color(i32);
+pub struct Color(u32);
 
 #[derive(Debug, Clone)]
 pub enum BitmapDataDrawError {
@@ -125,7 +125,7 @@ impl Color {
 
     #[must_use]
     pub fn argb(alpha: u8, red: u8, green: u8, blue: u8) -> Self {
-        Self(i32::from_le_bytes([blue, green, red, alpha]))
+        Self(u32::from_le_bytes([blue, green, red, alpha]))
     }
 
     #[must_use]
@@ -155,20 +155,14 @@ impl std::fmt::Display for Color {
     }
 }
 
-impl From<Color> for i32 {
+impl From<Color> for u32 {
     fn from(c: Color) -> Self {
         c.0
     }
 }
 
-impl From<Color> for u32 {
-    fn from(c: Color) -> Self {
-        c.0 as u32
-    }
-}
-
-impl From<i32> for Color {
-    fn from(i: i32) -> Self {
+impl From<u32> for Color {
+    fn from(i: u32) -> Self {
         Color(i)
     }
 }
@@ -483,7 +477,7 @@ impl std::fmt::Debug for BitmapData<'_> {
 }
 
 impl<'gc> BitmapData<'gc> {
-    pub fn new(width: u32, height: u32, transparency: bool, fill_color: i32) -> Self {
+    pub fn new(width: u32, height: u32, transparency: bool, fill_color: u32) -> Self {
         Self {
             pixels: vec![
                 Color(fill_color).to_premultiplied_alpha(transparency);

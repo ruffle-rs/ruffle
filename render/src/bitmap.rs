@@ -199,7 +199,7 @@ impl Bitmap {
         &mut self.data
     }
 
-    pub fn as_colors(&self) -> impl Iterator<Item = i32> + '_ {
+    pub fn as_colors(&self) -> impl Iterator<Item = u32> + '_ {
         let chunks = match self.format {
             BitmapFormat::Rgb => self.data.chunks_exact(3),
             BitmapFormat::Rgba => self.data.chunks_exact(4),
@@ -212,7 +212,7 @@ impl Bitmap {
             let green = chunk[1];
             let blue = chunk[2];
             let alpha = chunk.get(3).copied().unwrap_or(0xFF);
-            i32::from_le_bytes([blue, green, red, alpha])
+            u32::from_le_bytes([blue, green, red, alpha])
         })
     }
 }
