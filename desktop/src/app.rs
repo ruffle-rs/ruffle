@@ -53,7 +53,7 @@ impl App {
             .build(&event_loop)?;
         let window = Rc::new(window);
 
-        let gui = GuiController::new(window.clone(), &event_loop, &opt)?;
+        let mut gui = GuiController::new(window.clone(), &event_loop, &opt)?;
 
         let mut player = PlayerController::new(
             event_loop.create_proxy(),
@@ -67,6 +67,8 @@ impl App {
                 movie_url,
                 gui.create_movie_view(),
             );
+        } else {
+            gui.show_open_dialog();
         }
 
         Ok(Self {
