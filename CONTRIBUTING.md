@@ -157,13 +157,29 @@ Specific warnings and clippy lints can be allowed when appropriate using attribu
 
 ## Test Guidelines
 
-Most tests are SWF-based, with the SWFs stored in `tests/tests/swfs/`. They are configured in `tests/tests/regression_tests.rs`. To add a new test, create an `.swf` that runs `trace()` statements. You can do this in several ways, listed below.
+Most tests are SWF-based, with the SWFs stored in `tests/tests/swfs/`. They are configured in `tests/tests/regression_tests.rs`. Most test SWFs include `trace()` statements, the output of which is compared to the expected output from Flash Player. To view the output from Flash Player, first download the [debug Flash Player](https://web.archive.org/web/20220401020702/https://www.adobe.com/support/flashplayer/debug_downloads.html) for your platform. Then create a plain text file called `mm.cfg` with the following contents:
+```
+ErrorReportingEnable=1
+TraceOutputFileEnable=1
+```
+Place the file at the following location:
+* Windows: `%USERPROFILE%`
+* MacOS: `/Library/Application Support/Macromedia/`
+* Linux: `$HOME`
 
-Once you have an `.swf`, run it in Flash Player and create a file `output.txt` with the contents of the trace statements. Add the `output.txt`, `test.swf` and either the `test.as` or `test.fla` file to a directory under `tests/tests/swfs/avm1` (or `avm2`) named after what your test tests.
+When you run a test SWF, trace output will appear in a file called `flashlog.txt` at the following location:
+* Windows: `%APPDATA%\Macromedia\Flash Player\Logs\`
+* MacOS: `~/Library/Preferences/Macromedia/Flash Player/Logs/`
+* Linux: `$HOME/.macromedia/Flash_Player/Logs/`
 
-Finally, add a `test.toml` in the same directory to control how the test is run - such as how many frames it should take or if we should compare the image it generates. See [tests/README.md](tests/README.md) for information on how the test.toml should look like.
+There are several ways to create your own test SWFs, which are listed in the sections below. 
+Once you have an `.swf`, run it in the debug Flash Player and copy the output of the trace statements into a file called `output.txt`. Add the `output.txt`, `test.swf` and either the `test.as` or `test.fla` file to a directory under `tests/tests/swfs/avm1` (or `avm2`) named after what your test tests.
 
-Running `cargo test --all [your test]` will run the `.swf` in Ruffle and compare the `trace()` output against `output.txt`.
+Finally, add a `test.toml` in the same directory to control how the test is run - such as how many frames it should take or if we should compare the image it generates. See [tests/README.md](tests/README.md) for information on what the test.toml should look like.
+
+Running `cargo test [your test]` from within the `tests` folder will run the `.swf` in Ruffle and compare the `trace()` output against `output.txt`. To run all of the tests in all workspaces, run `cargo test --all`.
+
+Some tests also compare Ruffle's visual output to an expected image. To properly run these tests, add the argument `--features imgtests`.
 
 Heavily algorithmic code may benefit from unit tests in Rust: create a module `mod tests` conditionally compiled with `#[cfg(test)]`, and add your tests in there.
 
