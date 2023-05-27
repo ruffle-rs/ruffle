@@ -432,8 +432,9 @@ pub fn set_vector<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let rectangle = args.get_object(activation, 0, "rect")?;
-    let vec = args.get_object(activation, 1, "inputVector")?;
-    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data_wrapper()) {
+    // Note - flash player misspells this as 'imputVector'.
+    let vec = args.get_object(activation, 1, "imputVector")?;
+    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
         let x = rectangle
             .get_public_property("x", activation)?
             .coerce_to_number(activation)?;
