@@ -17,30 +17,45 @@ use crate::bitmap::{is_size_valid, operations};
 use crate::character::Character;
 use crate::display_object::Bitmap;
 use crate::display_object::TDisplayObject;
+use crate::ecma_conversions::round_to_even;
 use crate::swf::BlendMode;
 use gc_arena::GcCell;
 use ruffle_render::filters::Filter;
 use ruffle_render::transform::Transform;
 use std::str::FromStr;
 
+// Computes the integer x,y,width,height values from
+// the given `Rectangle`. This method performs `x + width`
+// and `y + height` as floating point operations before
+// `round_to_even`, which is needed to match Flash Player's
+// rounding behavior.
 fn get_rectangle_x_y_width_height<'gc>(
     activation: &mut Activation<'_, 'gc>,
     rectangle: Object<'gc>,
 ) -> Result<(i32, i32, i32, i32), Error<'gc>> {
     let x = rectangle
         .get_public_property("x", activation)?
-        .coerce_to_i32(activation)?;
+        .coerce_to_number(activation)?;
     let y = rectangle
         .get_public_property("y", activation)?
-        .coerce_to_i32(activation)?;
+        .coerce_to_number(activation)?;
     let width = rectangle
         .get_public_property("width", activation)?
-        .coerce_to_i32(activation)?;
+        .coerce_to_number(activation)?;
     let height = rectangle
         .get_public_property("height", activation)?
-        .coerce_to_i32(activation)?;
+        .coerce_to_number(activation)?;
 
-    Ok((x, y, width, height))
+    let x_max = round_to_even(x + width);
+    let y_max = round_to_even(y + height);
+
+    let x_int = round_to_even(x);
+    let y_int = round_to_even(y);
+
+    let width_int = x_max - x_int;
+    let height_int = y_max - y_int;
+
+    Ok((x_int, y_int, width_int, height_int))
 }
 
 /// Copy the static data from a given Bitmap into a new BitmapData.

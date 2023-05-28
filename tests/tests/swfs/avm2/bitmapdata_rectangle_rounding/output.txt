@@ -1,0 +1,16 @@
+First fillRect
+0 0 0 0 0 
+0 0 0 0 0 
+0 0 ffffffff 0 0 
+0 0 ffffffff 0 0 
+0 0 0 0 0 
+
+Second fillRect
+ffaabbcc ffaabbcc 0 0 0 
+ffaabbcc ffaabbcc 0 0 0 
+0 0 ffffffff 0 0 
+0 0 ffffffff 0 0 
+0 0 0 0 0 
+
+Bytes len: 36
+Bytes: ffaabbcc ffaabbcc 0 ffaabbcc ffaabbcc 0 0 0 ffffffff 
