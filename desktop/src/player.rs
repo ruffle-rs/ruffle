@@ -8,7 +8,7 @@ use crate::gui::MovieView;
 use crate::{CALLSTACK, RENDER_INFO, SWF_INFO};
 use anyhow::anyhow;
 use ruffle_core::backend::audio::AudioBackend;
-use ruffle_core::{Player, PlayerBuilder};
+use ruffle_core::{Player, PlayerBuilder, PlayerEvent};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render_wgpu::backend::WgpuRenderBackend;
 use ruffle_render_wgpu::descriptors::Descriptors;
@@ -162,6 +162,14 @@ impl PlayerController {
                     .try_lock()
                     .expect("Player lock must be available"),
             ),
+        }
+    }
+
+    pub fn handle_event(&self, event: PlayerEvent) {
+        if let Some(mut player) = self.get() {
+            if player.is_playing() {
+                player.handle_event(event);
+            }
         }
     }
 

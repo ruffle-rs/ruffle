@@ -187,16 +187,12 @@ impl App {
                                 return;
                             }
 
-                            if let Some(mut player) = self.player.get() {
-                                if player.is_playing() {
-                                    mouse_pos = position;
-                                    let event = PlayerEvent::MouseMove {
-                                        x: position.x,
-                                        y: position.y - height_offset,
-                                    };
-                                    player.handle_event(event);
-                                }
-                            }
+                            mouse_pos = position;
+                            let event = PlayerEvent::MouseMove {
+                                x: position.x,
+                                y: position.y - height_offset,
+                            };
+                            self.player.handle_event(event);
                             check_redraw = true;
                         }
                         WindowEvent::DroppedFile(file) => {
@@ -213,76 +209,59 @@ impl App {
 
                             use ruffle_core::events::MouseButton as RuffleMouseButton;
                             use winit::event::MouseButton;
-                            if let Some(mut player) = self.player.get() {
-                                if player.is_playing() {
-                                    let x = mouse_pos.x;
-                                    let y = mouse_pos.y - height_offset;
-                                    let button = match button {
-                                        MouseButton::Left => RuffleMouseButton::Left,
-                                        MouseButton::Right => RuffleMouseButton::Right,
-                                        MouseButton::Middle => RuffleMouseButton::Middle,
-                                        MouseButton::Other(_) => RuffleMouseButton::Unknown,
-                                    };
-                                    let event = match state {
-                                        ElementState::Pressed => {
-                                            PlayerEvent::MouseDown { x, y, button }
-                                        }
-                                        ElementState::Released => {
-                                            PlayerEvent::MouseUp { x, y, button }
-                                        }
-                                    };
-                                    if state == ElementState::Pressed
-                                        && button == RuffleMouseButton::Right
-                                    {
-                                        // Show context menu.
-                                        // TODO: Should be squelched if player consumes the right click event.
-                                        let context_menu = player.prepare_context_menu();
-                                        self.gui
-                                            .lock()
-                                            .expect("Gui lock")
-                                            .show_context_menu(context_menu);
-                                    }
-                                    player.handle_event(event);
+                            let x = mouse_pos.x;
+                            let y = mouse_pos.y - height_offset;
+                            let button = match button {
+                                MouseButton::Left => RuffleMouseButton::Left,
+                                MouseButton::Right => RuffleMouseButton::Right,
+                                MouseButton::Middle => RuffleMouseButton::Middle,
+                                MouseButton::Other(_) => RuffleMouseButton::Unknown,
+                            };
+                            let event = match state {
+                                ElementState::Pressed => PlayerEvent::MouseDown { x, y, button },
+                                ElementState::Released => PlayerEvent::MouseUp { x, y, button },
+                            };
+                            if state == ElementState::Pressed && button == RuffleMouseButton::Right
+                            {
+                                // Show context menu.
+                                // TODO: Should be squelched if player consumes the right click event.
+                                if let Some(mut player) = self.player.get() {
+                                    let context_menu = player.prepare_context_menu();
+                                    self.gui
+                                        .lock()
+                                        .expect("Gui lock")
+                                        .show_context_menu(context_menu);
                                 }
                             }
+                            self.player.handle_event(event);
                             check_redraw = true;
                         }
                         WindowEvent::MouseWheel { delta, .. } => {
                             use ruffle_core::events::MouseWheelDelta;
                             use winit::event::MouseScrollDelta;
-                            if let Some(mut player) = self.player.get() {
-                                if player.is_playing() {
-                                    let delta = match delta {
-                                        MouseScrollDelta::LineDelta(_, dy) => {
-                                            MouseWheelDelta::Lines(dy.into())
-                                        }
-                                        MouseScrollDelta::PixelDelta(pos) => {
-                                            MouseWheelDelta::Pixels(pos.y)
-                                        }
-                                    };
-                                    let event = PlayerEvent::MouseWheel { delta };
-                                    player.handle_event(event);
+                            let delta = match delta {
+                                MouseScrollDelta::LineDelta(_, dy) => {
+                                    MouseWheelDelta::Lines(dy.into())
                                 }
-                            }
+                                MouseScrollDelta::PixelDelta(pos) => MouseWheelDelta::Pixels(pos.y),
+                            };
+                            let event = PlayerEvent::MouseWheel { delta };
+                            self.player.handle_event(event);
                             check_redraw = true;
                         }
                         WindowEvent::CursorEntered { .. } => {
                             if let Some(mut player) = self.player.get() {
-                                if player.is_playing() {
-                                    player.set_mouse_in_stage(true);
-                                    if player.needs_render() {
-                                        self.window.request_redraw();
-                                    }
+                                player.set_mouse_in_stage(true);
+                                if player.needs_render() {
+                                    self.window.request_redraw();
                                 }
                             }
                         }
                         WindowEvent::CursorLeft { .. } => {
                             if let Some(mut player) = self.player.get() {
-                                if player.is_playing() {
-                                    player.set_mouse_in_stage(false);
-                                    player.handle_event(PlayerEvent::MouseLeave);
-                                }
+                                player.set_mouse_in_stage(false);
                             }
+                            self.player.handle_event(PlayerEvent::MouseLeave);
                             check_redraw = true;
                         }
                         WindowEvent::ModifiersChanged(new_modifiers) => {
@@ -332,44 +311,36 @@ impl App {
                                 _ => (),
                             }
 
-                            if let Some(mut player) = self.player.get() {
-                                if player.is_playing() {
-                                    if let Some(key) = input.virtual_keycode {
-                                        let key_code = winit_to_ruffle_key_code(key);
-                                        let key_char = winit_key_to_char(key, modifiers.shift());
-                                        match input.state {
-                                            ElementState::Pressed => {
-                                                player.handle_event(PlayerEvent::KeyDown {
-                                                    key_code,
-                                                    key_char,
-                                                });
-                                                if let Some(control_code) =
-                                                    winit_to_ruffle_text_control(key, modifiers)
-                                                {
-                                                    player.handle_event(PlayerEvent::TextControl {
-                                                        code: control_code,
-                                                    });
-                                                }
-                                            }
-                                            ElementState::Released => {
-                                                player.handle_event(PlayerEvent::KeyUp {
-                                                    key_code,
-                                                    key_char,
-                                                });
-                                            }
-                                        };
-                                        check_redraw = true;
+                            if let Some(key) = input.virtual_keycode {
+                                let key_code = winit_to_ruffle_key_code(key);
+                                let key_char = winit_key_to_char(key, modifiers.shift());
+                                match input.state {
+                                    ElementState::Pressed => {
+                                        self.player.handle_event(PlayerEvent::KeyDown {
+                                            key_code,
+                                            key_char,
+                                        });
+                                        if let Some(control_code) =
+                                            winit_to_ruffle_text_control(key, modifiers)
+                                        {
+                                            self.player.handle_event(PlayerEvent::TextControl {
+                                                code: control_code,
+                                            });
+                                        }
                                     }
-                                }
+                                    ElementState::Released => {
+                                        self.player.handle_event(PlayerEvent::KeyUp {
+                                            key_code,
+                                            key_char,
+                                        });
+                                    }
+                                };
+                                check_redraw = true;
                             }
                         }
                         WindowEvent::ReceivedCharacter(codepoint) => {
-                            if let Some(mut player) = self.player.get() {
-                                if player.is_playing() {
-                                    let event = PlayerEvent::TextInput { codepoint };
-                                    player.handle_event(event);
-                                }
-                            }
+                            let event = PlayerEvent::TextInput { codepoint };
+                            self.player.handle_event(event);
                             check_redraw = true;
                         }
                         _ => (),
