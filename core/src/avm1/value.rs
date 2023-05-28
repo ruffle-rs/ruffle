@@ -29,8 +29,9 @@ pub enum Value<'gc> {
 }
 
 // This type is used very frequently, so make sure it doesn't unexpectedly grow.
+// On 32-bit x86 Android, it's 12 bytes. On most other 32-bit platforms it's 16.
 #[cfg(target_pointer_width = "32")]
-const _: () = assert!(size_of::<Value<'_>>() == 16);
+const _: () = assert!(size_of::<Value<'_>>() <= 16);
 
 #[cfg(target_pointer_width = "64")]
 const _: () = assert!(size_of::<Value<'_>>() == 24);
