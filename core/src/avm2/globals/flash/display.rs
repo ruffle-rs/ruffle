@@ -10,6 +10,8 @@ pub mod loader;
 pub mod loader_info;
 pub mod morph_shape;
 pub mod movie_clip;
+pub mod shader_data;
+pub mod shader_parameter;
 pub mod shape;
 pub mod simple_button;
 pub mod sprite;
