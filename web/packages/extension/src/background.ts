@@ -23,11 +23,7 @@ function isSwf(
         .match(/^\s*(.*?)\s*(?:;.*)?$/)![1]!;
 
     // Some sites (e.g. swfchan.net) might (wrongly?) send octet-stream, so check file extension too.
-    if (mimeType.endsWith("octet-stream")) {
-        return isSwfFilename(details.url);
-    } else {
-        return isSwfMimeType(mimeType);
-    }
+    return isSwfMimeType(mimeType, isSwfFilename(details.url));
 }
 
 function onHeadersReceived(

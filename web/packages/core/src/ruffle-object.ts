@@ -223,13 +223,14 @@ export class RuffleObject extends RufflePlayer {
      * Checks if the given element may be polyfilled with this one.
      *
      * @param elem Element to check.
-     * @returns True if the element looks like a flash object.
+     * @returns True if the element looks like a Flash object.
      */
     static isInterdictable(elem: Element): boolean {
         // Don't polyfill if the element is inside a specific node.
         if (isFallbackElement(elem)) {
             return false;
         }
+
         // Don't polyfill if there's already a <ruffle-object> or a <ruffle-embed> inside the <object>.
         if (
             elem.getElementsByTagName("ruffle-object").length > 0 ||
@@ -238,31 +239,30 @@ export class RuffleObject extends RufflePlayer {
             return false;
         }
 
-        // Don't polyfill if no movie specified.
         const data = elem.attributes.getNamedItem("data")?.value.toLowerCase();
         const params = paramsOf(elem);
         let isSwf;
         // Check for SWF file.
         if (data) {
-            // Don't polyfill when the file is a Youtube Flash source.
+            // Don't polyfill when the file is a YouTube Flash source.
             if (isYoutubeFlashSource(data)) {
-                // Workaround YouTube mixed content; this isn't what browsers do automatically, but while we're here, we may as well
+                // Workaround YouTube mixed content; this isn't what browsers do automatically, but while we're here, we may as well.
                 workaroundYoutubeMixedContent(elem, "data");
                 return false;
             }
             isSwf = isSwfFilename(data);
         } else if (params && params["movie"]) {
-            // Don't polyfill when the file is a Youtube Flash source.
+            // Don't polyfill when the file is a YouTube Flash source.
             if (isYoutubeFlashSource(params["movie"])) {
-                // Workaround YouTube mixed content; this isn't what browsers do automatically, but while we're here, we may as well
-                const movie_elem = elem.querySelector("param[name='movie']");
-                if (movie_elem) {
-                    workaroundYoutubeMixedContent(movie_elem, "value");
-                    // The data attribute needs to be set for the re-fetch to happen
-                    // It also needs to be set on Firefox for the YouTube object rewrite to work, regardless of mixed content
-                    const movie_src = movie_elem.getAttribute("value");
-                    if (movie_src) {
-                        elem.setAttribute("data", movie_src);
+                // Workaround YouTube mixed content; this isn't what browsers do automatically, but while we're here, we may as well.
+                const movieElem = elem.querySelector("param[name='movie']");
+                if (movieElem) {
+                    workaroundYoutubeMixedContent(movieElem, "value");
+                    // The data attribute needs to be set for the re-fetch to happen.
+                    // It also needs to be set on Firefox for the YouTube object rewrite to work, regardless of mixed content.
+                    const movieSrc = movieElem.getAttribute("value");
+                    if (movieSrc) {
+                        elem.setAttribute("data", movieSrc);
                     }
                 }
                 return false;
@@ -301,7 +301,7 @@ export class RuffleObject extends RufflePlayer {
             // If no MIME type is specified, polyfill if movie is an SWF file.
             return isSwf;
         } else {
-            return isSwfMimeType(type.value);
+            return isSwfMimeType(type.value, isSwf);
         }
     }
 

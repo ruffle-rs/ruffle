@@ -6,10 +6,10 @@ import {
 } from "./flash-identifiers";
 
 /**
- * Returns whether the given filename ends in a known flash extension.
+ * Returns whether the given filename ends in a known Flash extension.
  *
  * @param filename The filename to test.
- * @returns True if the filename is a flash movie (swf or spl).
+ * @returns True if the filename is a Flash movie (swf or spl).
  */
 export function isSwfFilename(filename: string | null): boolean {
     if (filename) {
@@ -31,21 +31,33 @@ export function isSwfFilename(filename: string | null): boolean {
 }
 
 /**
- * Returns whether the given MIME type is a known flash type.
+ * Returns whether the given MIME type is a known Flash type.
  *
  * @param mimeType The MIME type to test.
- * @returns True if the MIME type is a flash MIME type.
+ * @param allowExtraMimes Whether the polyfill should allow extra MIME types.
+ * @returns True if the MIME type is a Flash MIME type.
  */
-export function isSwfMimeType(mimeType: string): boolean {
-    switch (mimeType.toLowerCase()) {
+export function isSwfMimeType(
+    mimeType: string,
+    allowExtraMimes: boolean
+): boolean {
+    mimeType = mimeType.toLowerCase();
+    switch (mimeType) {
         case FLASH_MIMETYPE.toLowerCase():
         case FUTURESPLASH_MIMETYPE.toLowerCase():
         case FLASH7_AND_8_MIMETYPE.toLowerCase():
         case FLASH_MOVIE_MIMETYPE.toLowerCase():
             return true;
         default:
-            return false;
+            if (allowExtraMimes) {
+                switch (mimeType) {
+                    case "application/octet-stream":
+                    case "binary/octet-stream":
+                        return true;
+                }
+            }
     }
+    return false;
 }
 
 /**

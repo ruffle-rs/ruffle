@@ -133,31 +133,36 @@ export class RuffleEmbed extends RufflePlayer {
      * Checks if the given element may be polyfilled with this one.
      *
      * @param elem Element to check.
-     * @returns True if the element looks like a flash embed.
+     * @returns True if the element looks like a Flash embed.
      */
     static isInterdictable(elem: Element): boolean {
+        const src = elem.getAttribute("src");
+        const type = elem.getAttribute("type");
+
+        // Don't polyfill when no file is specified.
+        if (!src) {
+            return false;
+        }
+
         // Don't polyfill if the element is inside a specific node.
         if (isFallbackElement(elem)) {
             return false;
         }
-        // Don't polyfill when no file is specified.
-        if (!elem.getAttribute("src")) {
-            return false;
-        }
-        // Don't polyfill when the file is a Youtube Flash source.
-        if (isYoutubeFlashSource(elem.getAttribute("src"))) {
-            // Workaround YouTube mixed content; this isn't what browsers do automatically, but while we're here, we may as well
+
+        // Don't polyfill when the file is a YouTube Flash source.
+        if (isYoutubeFlashSource(src)) {
+            // Workaround YouTube mixed content; this isn't what browsers do automatically, but while we're here, we may as well.
             workaroundYoutubeMixedContent(elem, "src");
             return false;
         }
 
         // Check for MIME type.
-        const type = elem.getAttribute("type");
+        const isSwf = isSwfFilename(src);
         if (!type) {
             // If no MIME type is specified, polyfill if movie is an SWF file.
-            return isSwfFilename(elem.getAttribute("src"));
+            return isSwf;
         } else {
-            return isSwfMimeType(type);
+            return isSwfMimeType(type, isSwf);
         }
     }
 
