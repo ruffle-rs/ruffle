@@ -973,8 +973,9 @@ impl Context3D for WgpuContext3D {
                         image_data
                             .chunks_exact(source.width() as usize * 4)
                             .flat_map(|row| {
-                                let padding =
-                                    vec![0; COPY_BYTES_PER_ROW_ALIGNMENT as usize - row.len()];
+                                let padding_len = COPY_BYTES_PER_ROW_ALIGNMENT as usize
+                                    - (row.len() % COPY_BYTES_PER_ROW_ALIGNMENT as usize);
+                                let padding = vec![0; padding_len];
                                 row.iter().copied().chain(padding.into_iter())
                             })
                             .collect(),
