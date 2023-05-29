@@ -18,7 +18,7 @@ ruffle_render = { path = "../render", features = ["clap"] }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
 ruffle_video_software = { path = "../video/software", optional = true }
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
-generational-arena = "0.2.8"
+generational-arena = "0.2.9"
 tracing = "0.1.37"
 winit = "0.28.6"
 webbrowser = "0.8.10"
@@ -32,7 +32,7 @@ bytemuck = "1.13.1"
 os_info = { version = "3", default-features = false }
 unic-langid = "0.9.1"
 sys-locale = "0.3.0"
-wgpu = { version = "0.16.0" }
+wgpu = { version = "0.16.1" }
 futures = "0.3.28"
 chrono = { version = "0.4", default-features = false, features = [] }
 fluent-templates = "0.8.0"
@@ -45,7 +45,7 @@ winapi = "0.3.9"
 
 [build-dependencies]
 embed-resource = "2"
-vergen = { version = "8.2.0", features = ["build", "git", "gitcl", "cargo"] }
+vergen = { version = "8.2.1", features = ["build", "git", "gitcl", "cargo"] }
 
 [features]
 default = ["software_video"]

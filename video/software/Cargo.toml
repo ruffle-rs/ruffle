@@ -11,7 +11,7 @@ version.workspace = true
 ruffle_render = { path = "../../render" }
 ruffle_video = { path = ".." }
 swf = { path = "../../swf" }
-generational-arena = "0.2.8"
+generational-arena = "0.2.9"
 thiserror = "1.0"
 flate2 = "1.0.26"
 log = "0.4"

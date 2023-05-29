@@ -10,7 +10,7 @@ version.workspace = true
 [dependencies]
 swf = { path = "../swf" }
 ruffle_render = { path = "../render" }
-generational-arena = "0.2.8"
+generational-arena = "0.2.9"
 thiserror = "1.0"
 
 [features]
