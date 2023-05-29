@@ -4,7 +4,7 @@ use crate::gui::movie::{MovieView, MovieViewRenderer};
 use crate::gui::RuffleGui;
 use crate::player::PlayerOptions;
 use anyhow::anyhow;
-use egui::Context;
+use egui::{Context, FontData, FontDefinitions, FontFamily};
 use ruffle_core::Player;
 use ruffle_render_wgpu::backend::{request_adapter_and_device, WgpuRenderBackend};
 use ruffle_render_wgpu::descriptors::Descriptors;
@@ -81,6 +81,34 @@ impl GuiController {
         );
         let descriptors = Descriptors::new(adapter, device, queue);
         let egui_ctx = Context::default();
+        let mut fonts = FontDefinitions::default();
+        fonts.font_data.insert(
+            "Noto Sans Korean".to_owned(),
+            FontData::from_static(include_bytes!("../../assets/fonts/NotoSansKR-Regular.otf")),
+        );
+        fonts.font_data.insert(
+            "Noto Sans Japanese".to_owned(),
+            FontData::from_static(include_bytes!("../../assets/fonts/NotoSansJP-Regular.ttf")),
+        );
+        fonts.font_data.insert(
+            "Noto Sans Simplified Chinese".to_owned(),
+            FontData::from_static(include_bytes!("../../assets/fonts/NotoSansSC-Regular.otf")),
+        );
+        fonts.font_data.insert(
+            "Noto Sans Traditional Chinese".to_owned(),
+            FontData::from_static(include_bytes!("../../assets/fonts/NotoSansTC-Regular.otf")),
+        );
+        fonts
+            .families
+            .entry(FontFamily::Proportional)
+            .or_default()
+            .append(&mut vec![
+                "Noto Sans Korean".to_owned(),
+                "Noto Sans Japanese".to_owned(),
+                "Noto Sans Simplified Chinese".to_owned(),
+                "Noto Sans Traditional Chinese".to_owned(),
+            ]);
+        egui_ctx.set_fonts(fonts);
         let mut egui_winit = egui_winit::State::new(event_loop);
         egui_winit.set_pixels_per_point(window.scale_factor() as f32);
         egui_winit.set_max_texture_side(descriptors.limits.max_texture_dimension_2d as usize);
