@@ -28,7 +28,7 @@ profiling = []
 
 [dependencies]
 console_error_panic_hook = { version = "0.1.7", optional = true }
-generational-arena = "0.2.8"
+generational-arena = "0.2.9"
 js-sys = "0.3.63"
 tracing = { version = "0.1.37", features = ["log"] }
 tracing-subscriber = { version = "0.3.17", default-features = false, features = ["registry"] }
@@ -48,7 +48,7 @@ chrono = { version = "0.4", default-features = false, features = ["wasmbind", "c
 getrandom = { version = "0.2", features = ["js"] }
 serde = { version = "1.0.163", features = ["derive"] }
 thiserror = "1.0"
-base64 = "0.21.1"
+base64 = "0.21.2"
 
 [dependencies.ruffle_core]
 path = "../core"
