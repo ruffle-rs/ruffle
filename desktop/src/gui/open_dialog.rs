@@ -423,7 +423,7 @@ impl PathOrUrlField {
     pub fn ui(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) -> &mut Self {
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             if ui.button(text(locale, "browse")).clicked() {
-                if let Some(path) = pick_file() {
+                if let Some(path) = pick_file(true) {
                     self.value = path.to_string_lossy().to_string();
                 }
             }
