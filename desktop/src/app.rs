@@ -3,7 +3,7 @@ use crate::custom_event::RuffleEvent;
 use crate::gui::{GuiController, MENU_HEIGHT};
 use crate::player::{PlayerController, PlayerOptions};
 use crate::util::{
-    get_screen_size, parse_url, winit_key_to_char, winit_to_ruffle_key_code,
+    get_screen_size, parse_url, pick_file, winit_key_to_char, winit_to_ruffle_key_code,
     winit_to_ruffle_text_control,
 };
 use anyhow::{Context, Error};
@@ -12,6 +12,7 @@ use ruffle_render::backend::ViewportDimensions;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
+use url::Url;
 use winit::dpi::{LogicalSize, PhysicalPosition, PhysicalSize, Size};
 use winit::event::{ElementState, KeyboardInput, ModifiersState, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
@@ -428,6 +429,16 @@ impl App {
                 winit::event::Event::UserEvent(RuffleEvent::ContextMenuItemClicked(index)) => {
                     if let Some(mut player) = self.player.get() {
                         player.run_context_menu_callback(index);
+                    }
+                }
+
+                winit::event::Event::UserEvent(RuffleEvent::BrowseAndOpen(options)) => {
+                    if let Some(url) = pick_file(false).and_then(|p| Url::from_file_path(p).ok()) {
+                        self.player.create(
+                            &options,
+                            url,
+                            self.gui.lock().expect("Gui lock").create_movie_view(),
+                        );
                     }
                 }
 

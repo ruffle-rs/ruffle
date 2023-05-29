@@ -310,26 +310,27 @@ pub fn parse_url(path: &Path) -> Result<Url, Error> {
     }
 }
 
-// [NA] Horrible hacky workaround for https://github.com/rust-windowing/winit/issues/2291
-#[cfg(windows)]
-pub fn pick_file() -> Option<PathBuf> {
-    std::thread::spawn(|| {
-        FileDialog::new()
-            .add_filter("Flash Files", &["swf", "spl"])
-            .add_filter("All Files", &["*"])
-            .set_title("Load a Flash File")
-            .pick_file()
-    })
-    .join()
-    .ok()
-    .flatten()
-}
-
-#[cfg(not(windows))]
-pub fn pick_file() -> Option<PathBuf> {
+fn actually_pick_file() -> Option<PathBuf> {
     FileDialog::new()
         .add_filter("Flash Files", &["swf", "spl"])
         .add_filter("All Files", &["*"])
         .set_title("Load a Flash File")
         .pick_file()
+}
+
+// [NA] Horrible hacky workaround for https://github.com/rust-windowing/winit/issues/2291
+// We only need the workaround from within UI code, not when executing custom events
+// The workaround causes Ruffle to show as "not responding" on windows, so we don't use it if we don't need to
+#[cfg(windows)]
+pub fn pick_file(in_ui: bool) -> Option<PathBuf> {
+    if in_ui {
+        std::thread::spawn(actually_pick_file).join().ok().flatten()
+    } else {
+        actually_pick_file()
+    }
+}
+
+#[cfg(not(windows))]
+pub fn pick_file(_in_ui: bool) -> Option<PathBuf> {
+    actually_pick_file()
 }

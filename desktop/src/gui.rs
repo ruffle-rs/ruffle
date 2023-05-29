@@ -9,7 +9,6 @@ use std::borrow::Cow;
 use crate::custom_event::RuffleEvent;
 use crate::gui::open_dialog::OpenDialog;
 use crate::player::PlayerOptions;
-use crate::util::pick_file;
 use chrono::DateTime;
 use egui::*;
 use fluent_templates::fluent_bundle::FluentValue;
@@ -19,7 +18,6 @@ use ruffle_core::Player;
 use std::collections::HashMap;
 use sys_locale::get_locale;
 use unic_langid::LanguageIdentifier;
-use url::Url;
 use winit::event_loop::EventLoopProxy;
 
 const VERGEN_UNKNOWN: &str = "VERGEN_IDEMPOTENT_OUTPUT";
@@ -337,12 +335,11 @@ impl RuffleGui {
     fn open_file(&mut self, ui: &mut egui::Ui) {
         ui.close_menu();
 
-        if let Some(url) = pick_file().and_then(|p| Url::from_file_path(p).ok()) {
-            let _ = self.event_loop.send_event(RuffleEvent::OpenURL(
-                url,
-                Box::new(self.default_player_options.clone()),
-            ));
-        }
+        let _ = self
+            .event_loop
+            .send_event(RuffleEvent::BrowseAndOpen(Box::new(
+                self.default_player_options.clone(),
+            )));
     }
 
     fn open_file_advanced(&mut self) {
