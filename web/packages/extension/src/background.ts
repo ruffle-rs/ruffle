@@ -1,12 +1,12 @@
 import * as utils from "./utils";
-import { isSwfFilename, isSwfMimeType } from "ruffle-core";
+import { isSwf as isSwfCore } from "ruffle-core";
 
 function isSwf(
     details:
         | chrome.webRequest.WebResponseHeadersDetails
         | browser.webRequest._OnHeadersReceivedDetails
 ) {
-    // TypeScript doesn't compile without this explicit type delaration.
+    // TypeScript doesn't compile without this explicit type declaration.
     const headers: (
         | chrome.webRequest.HttpHeader
         | browser.webRequest._HttpHeaders
@@ -22,8 +22,7 @@ function isSwf(
         .value!.toLowerCase()
         .match(/^\s*(.*?)\s*(?:;.*)?$/)![1]!;
 
-    // Some sites (e.g. swfchan.net) might (wrongly?) send octet-stream, so check file extension too.
-    return isSwfMimeType(mimeType, isSwfFilename(details.url));
+    return isSwfCore(details.url, mimeType);
 }
 
 function onHeadersReceived(

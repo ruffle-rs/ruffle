@@ -10,7 +10,7 @@ import { FLASH_ACTIVEX_CLASSID } from "./flash-identifiers";
 import { registerElement } from "./register-element";
 import type { URLLoadOptions, WindowMode } from "./load-options";
 import { RuffleEmbed } from "./ruffle-embed";
-import { isSwfFilename, isSwfMimeType } from "./swf-utils";
+import { isSwf } from "./swf-utils";
 import { NetworkingAccessMode } from "./load-options";
 
 /**
@@ -240,9 +240,11 @@ export class RuffleObject extends RufflePlayer {
         }
 
         const data = elem.attributes.getNamedItem("data")?.value.toLowerCase();
+        const type = elem.attributes.getNamedItem("type")?.value ?? null;
         const params = paramsOf(elem);
-        let isSwf;
+
         // Check for SWF file.
+        let filename;
         if (data) {
             // Don't polyfill when the file is a YouTube Flash source.
             if (isYoutubeFlashSource(data)) {
@@ -250,7 +252,7 @@ export class RuffleObject extends RufflePlayer {
                 workaroundYoutubeMixedContent(elem, "data");
                 return false;
             }
-            isSwf = isSwfFilename(data);
+            filename = data;
         } else if (params && params["movie"]) {
             // Don't polyfill when the file is a YouTube Flash source.
             if (isYoutubeFlashSource(params["movie"])) {
@@ -267,7 +269,7 @@ export class RuffleObject extends RufflePlayer {
                 }
                 return false;
             }
-            isSwf = isSwfFilename(params["movie"]);
+            filename = params["movie"];
         } else {
             // Don't polyfill when no file is specified.
             return false;
@@ -295,14 +297,7 @@ export class RuffleObject extends RufflePlayer {
             return false;
         }
 
-        // Check for MIME type.
-        const type = elem.attributes.getNamedItem("type");
-        if (!type) {
-            // If no MIME type is specified, polyfill if movie is an SWF file.
-            return isSwf;
-        } else {
-            return isSwfMimeType(type.value, isSwf);
-        }
+        return isSwf(filename, type);
     }
 
     /**

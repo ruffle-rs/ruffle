@@ -8,7 +8,7 @@ import {
 } from "./ruffle-player";
 import { NetworkingAccessMode, WindowMode } from "./load-options";
 import { registerElement } from "./register-element";
-import { isSwfFilename, isSwfMimeType } from "./swf-utils";
+import { isSwf } from "./swf-utils";
 
 /**
  * A polyfill html element.
@@ -156,14 +156,7 @@ export class RuffleEmbed extends RufflePlayer {
             return false;
         }
 
-        // Check for MIME type.
-        const isSwf = isSwfFilename(src);
-        if (!type) {
-            // If no MIME type is specified, polyfill if movie is an SWF file.
-            return isSwf;
-        } else {
-            return isSwfMimeType(type, isSwf);
-        }
+        return isSwf(src, type);
     }
 
     /**
