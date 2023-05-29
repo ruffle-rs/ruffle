@@ -1,0 +1,125 @@
+<type name="Described" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="Described">
+      <accessor name="onlyGetter" access="readonly" type="Number" declaredBy="Described">
+          <metadata name="some_metadata"/>
+    </accessor>
+      <accessor name="onlySetter" access="writeonly" type="Number" declaredBy="Described">
+          <metadata name="meta_meta_data"/>
+    </accessor>
+      <accessor name="toBeOverriddenOnlySetter" access="writeonly" type="Number" declaredBy="Described">
+          <metadata name="meta_meta_meta_data">
+              <arg key="recur" value="sion"/>
+      </metadata>
+    </accessor>
+      <accessor name="virtual" access="readwrite" type="Number" declaredBy="Described">
+          <metadata name="key_value_metadata">
+              <arg key="metadata" value="fun"/>
+              <arg key="more_key" value="some_value"/>
+      </metadata>
+          <metadata name="more_metadata"/>
+          <metadata name="some_more_metadata"/>
+    </accessor>
+      <extendsClass type="Object"/>
+      <method name="noop" declaredBy="Described" returnType="void">
+          <metadata name="fn_metadata"/>
+          <metadata name="more">
+              <arg key="" value="metadata"/>
+      </metadata>
+    </method>
+      <variable name="something" type="Number">
+          <metadata name="md"/>
+          <metadata name="mda">
+              <arg key="" value="abcd"/>
+      </metadata>
+          <metadata name="mdb">
+              <arg key="key" value="value"/>
+              <arg key="lastkey" value="lastvalue"/>
+              <arg key="otherkey" value="othervalue"/>
+              <arg key="thirdkey" value="thirdvalue"/>
+      </metadata>
+    </variable>
+      <variable name="somethingElse" type="String"/>
+  </factory>
+</type>
+<type name="ExtendedDescribed" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <constant name="const_prop" type="*">
+      <metadata name="some_me"/>
+      <metadata name="ta_d">
+          <arg key="" value="ata"/>
+    </metadata>
+  </constant>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="ExtendedDescribed">
+      <accessor name="onlyGetter" access="readonly" type="Number" declaredBy="Described">
+          <metadata name="some_metadata"/>
+    </accessor>
+      <accessor name="onlySetter" access="writeonly" type="Number" declaredBy="Described">
+          <metadata name="meta_meta_data"/>
+    </accessor>
+      <accessor name="toBeOverriddenOnlySetter" access="writeonly" type="Number" declaredBy="ExtendedDescribed">
+          <metadata name="meta">
+              <arg key="dat" value="a"/>
+      </metadata>
+          <metadata name="over"/>
+          <metadata name="ridde">
+              <arg key="" value="n"/>
+      </metadata>
+    </accessor>
+      <accessor name="virtual" access="readwrite" type="Number" declaredBy="ExtendedDescribed">
+          <metadata name="d">
+              <arg key="a" value="ta"/>
+      </metadata>
+          <metadata name="more">
+              <arg key="" value="meta"/>
+      </metadata>
+          <metadata name="some"/>
+          <metadata name="some_more_metadata"/>
+    </accessor>
+      <constant name="const_prop" type="*">
+          <metadata name="some_me_s"/>
+          <metadata name="ta_d_s">
+              <arg key="" value="ataB"/>
+      </metadata>
+    </constant>
+      <extendsClass type="Described"/>
+      <extendsClass type="Object"/>
+      <method name="noop" declaredBy="ExtendedDescribed" returnType="void">
+          <metadata name="last_metadata"/>
+    </method>
+      <method name="noop2" declaredBy="ExtendedDescribed" returnType="Number">
+          <metadata name="metadata_here">
+              <arg key="" value="hello!"/>
+      </metadata>
+    </method>
+      <variable name="something" type="Number">
+          <metadata name="md"/>
+          <metadata name="mda">
+              <arg key="" value="abcd"/>
+      </metadata>
+          <metadata name="mdb">
+              <arg key="key" value="value"/>
+              <arg key="lastkey" value="lastvalue"/>
+              <arg key="otherkey" value="othervalue"/>
+              <arg key="thirdkey" value="thirdvalue"/>
+      </metadata>
+    </variable>
+      <variable name="somethingElse" type="String"/>
+      <variable name="var_prop" type="*">
+          <metadata name="some_me_s2"/>
+          <metadata name="ta_d_s2">
+              <arg key="" value="ataQ"/>
+      </metadata>
+    </variable>
+  </factory>
+  <variable name="var_prop" type="*">
+      <metadata name="some_me2"/>
+      <metadata name="ta_d2">
+          <arg key="" value="ata"/>
+    </metadata>
+  </variable>
+</type>
