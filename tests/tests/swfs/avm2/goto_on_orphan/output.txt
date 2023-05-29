@@ -1,0 +1,15 @@
+Main - frameConstructed
+Orphan frame exectuion
+Main - enterFrame in frame 2
+Main Children: 2
+0: null
+1: null
+Running self.myOrphan.gotoAndStop(3)
+Main - frameConstructed
+Main framescript 2
+Orphan frame 3
+Finished self.myOrphan.gotoAndStop(3)
+Main Children: 2
+0: [object Shape]
+1: [object TextField]
+Main - frameConstructed
