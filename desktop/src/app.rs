@@ -92,7 +92,7 @@ impl App {
         let mut loaded = LoadingState::Loading;
         let mut mouse_pos = PhysicalPosition::new(0.0, 0.0);
         let mut time = Instant::now();
-        let mut next_frame_time = Instant::now();
+        let mut next_frame_time = None;
         let mut minimized = false;
         let mut modifiers = ModifiersState::empty();
         let mut fullscreen_down = false;
@@ -126,7 +126,9 @@ impl App {
                         time = new_time;
                         if let Some(mut player) = self.player.get() {
                             player.tick(dt as f64 / 1000.0);
-                            next_frame_time = new_time + player.time_til_next_frame();
+                            next_frame_time = Some(new_time + player.time_til_next_frame());
+                        } else {
+                            next_frame_time = None;
                         }
                         check_redraw = true;
                     }
@@ -473,7 +475,11 @@ impl App {
 
             // After polling events, sleep the event loop until the next event or the next frame.
             *control_flow = if matches!(loaded, LoadingState::Loaded) {
-                ControlFlow::WaitUntil(next_frame_time)
+                if let Some(next_frame_time) = next_frame_time {
+                    ControlFlow::WaitUntil(next_frame_time)
+                } else {
+                    ControlFlow::Wait
+                }
             } else {
                 ControlFlow::Wait
             };
