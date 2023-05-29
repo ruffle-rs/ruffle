@@ -46,10 +46,7 @@ impl<'a> Reader<'a> {
         }
 
         let len = self.read_u30()?;
-        let mut metadata = Vec::with_capacity(len as usize);
-        for _ in 0..len {
-            metadata.push(self.read_metadata()?);
-        }
+        let metadata = self.read_metadata(len)?;
 
         let len = self.read_u30()?;
         let mut instances = Vec::with_capacity(len as usize);
@@ -333,17 +330,31 @@ impl<'a> Reader<'a> {
         }
     }
 
-    fn read_metadata(&mut self) -> Result<Metadata> {
-        let name = self.read_index()?;
-        let num_items = self.read_u30()?;
-        let mut items = Vec::with_capacity(num_items as usize);
-        for _ in 0..num_items {
-            items.push(MetadataItem {
-                key: self.read_index()?,
-                value: self.read_index()?,
-            })
+    fn read_metadata(&mut self, len: u32) -> Result<Vec<Metadata>> {
+        let mut metadata = Vec::with_capacity(len as usize);
+        for _ in 0..len {
+            let name = self.read_index()?;
+            let num_items = self.read_u30()?;
+            let mut key_value_data = Vec::with_capacity(num_items as usize * 2);
+
+            // Data includes the keys and values
+            for _ in 0..num_items * 2 {
+                key_value_data.push(self.read_index()?);
+            }
+
+            // Split them up here
+            let mut items = Vec::with_capacity(num_items as usize);
+            for i in 0..num_items {
+                items.push(MetadataItem {
+                    key: key_value_data[i as usize],
+                    value: key_value_data[(num_items + i) as usize],
+                })
+            }
+
+            metadata.push(Metadata { name, items });
         }
-        Ok(Metadata { name, items })
+
+        Ok(metadata)
     }
 
     fn read_instance(&mut self) -> Result<Instance> {

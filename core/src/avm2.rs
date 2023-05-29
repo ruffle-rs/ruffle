@@ -38,6 +38,7 @@ mod events;
 mod filters;
 mod function;
 pub mod globals;
+mod metadata;
 mod method;
 mod multiname;
 mod namespace;
