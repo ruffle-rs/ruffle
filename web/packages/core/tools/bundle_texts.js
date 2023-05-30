@@ -1,7 +1,7 @@
 const replace = require("replace-in-file");
 const fs = require("fs");
 
-const bundled_texts = {};
+const bundledTexts = {};
 const locales = [];
 
 fs.readdirSync("texts", { withFileTypes: true }).forEach((entry) => {
@@ -25,9 +25,9 @@ locales.forEach((locale) => {
     );
     files.sort();
     if (files.length > 0) {
-        bundled_texts[locale] = {};
+        bundledTexts[locale] = {};
         files.forEach((filename) => {
-            bundled_texts[locale][filename] = fs
+            bundledTexts[locale][filename] = fs
                 .readFileSync("texts/" + locale + "/" + filename, "utf8")
                 .replaceAll("\r\n", "\n");
         });
@@ -37,7 +37,7 @@ locales.forEach((locale) => {
 const options = {
     files: "dist/**",
     from: [/\{\s*\/\*\s*%BUNDLED_TEXTS%\s*\*\/\s*}/g],
-    to: [JSON.stringify(bundled_texts, null, 2)],
+    to: [JSON.stringify(bundledTexts, null, 2)],
 };
 
 replace.sync(options);

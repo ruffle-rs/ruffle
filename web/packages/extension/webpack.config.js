@@ -16,21 +16,21 @@ function transformManifest(content, env) {
     let packageVersion = process.env["npm_package_version"];
     let versionChannel = process.env["CFG_RELEASE_CHANNEL"] || "nightly";
     let buildDate = new Date().toISOString().substring(0, 10);
-    let build_id = process.env["BUILD_ID"];
-    let firefox_extension_id =
+    let buildId = process.env["BUILD_ID"];
+    let firefoxExtensionId =
         process.env["FIREFOX_EXTENSION_ID"] || "ruffle@ruffle.rs";
 
     if (process.env["ENABLE_VERSION_SEAL"] === "true") {
         if (fs.existsSync("../../version_seal.json")) {
-            const version_seal = JSON.parse(
+            const versionSeal = JSON.parse(
                 fs.readFileSync("../../version_seal.json", "utf8")
             );
 
-            packageVersion = version_seal.version_number;
-            versionChannel = version_seal.version_channel;
-            buildDate = version_seal.build_date.substring(0, 10);
-            build_id = version_seal.build_id;
-            firefox_extension_id = version_seal.firefox_extension_id;
+            packageVersion = versionSeal.version_number;
+            versionChannel = versionSeal.version_channel;
+            buildDate = versionSeal.build_date.substring(0, 10);
+            buildId = versionSeal.build_id;
+            firefoxExtensionId = versionSeal.firefox_extension_id;
         } else {
             throw new Error(
                 "Version seal requested but not found. Please run web/packages/core/tools/set_version.js with ENABLE_VERSION_SEAL to generate it."
@@ -45,14 +45,14 @@ function transformManifest(content, env) {
 
     // The extension marketplaces require the version to monotonically increase,
     // so append the build number onto the end of the manifest version.
-    manifest.version = build_id
-        ? `${packageVersion}.${build_id}`
+    manifest.version = buildId
+        ? `${packageVersion}.${buildId}`
         : packageVersion;
 
     if (env["firefox"]) {
         manifest.browser_specific_settings = {
             gecko: {
-                id: firefox_extension_id,
+                id: firefoxExtensionId,
             },
         };
     } else {

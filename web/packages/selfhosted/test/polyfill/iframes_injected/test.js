@@ -1,4 +1,4 @@
-const { open_test, inject_ruffle_and_wait } = require("../../utils");
+const { openTest, injectRuffleAndWait } = require("../../utils");
 const { expect, use } = require("chai");
 const chaiHtml = require("chai-html");
 const fs = require("fs");
@@ -7,11 +7,11 @@ use(chaiHtml);
 
 describe("Flash inside iframe with injected ruffle", () => {
     it("loads the test", async () => {
-        await open_test(browser, __dirname);
+        await openTest(browser, __dirname);
     });
 
     it("polyfills inside an iframe", async () => {
-        await inject_ruffle_and_wait(browser);
+        await injectRuffleAndWait(browser);
         await browser.switchToFrame(await browser.$("#test-frame"));
         await browser.$("<ruffle-object />").waitForExist();
 
