@@ -184,13 +184,14 @@ export class PublicAPI {
      * Look up a specific Ruffle version (or any version satisfying a given set
      * of requirements) and return it's API.
      *
-     * @param ver_requirement A set of semantic version requirement
+     * @param requirementString A set of semantic version requirement
      * strings that the player version must satisfy.
      * @returns An instance of the Source API, if one or more
      * sources satisfied the requirement.
      */
-    satisfying(ver_requirement: string): typeof SourceAPI | null {
-        const requirement = VersionRange.fromRequirementString(ver_requirement);
+    satisfying(requirementString: string): typeof SourceAPI | null {
+        const requirement =
+            VersionRange.fromRequirementString(requirementString);
         let valid = null;
 
         for (const k in this.sources) {

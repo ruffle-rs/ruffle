@@ -2145,20 +2145,19 @@ export function isBuiltInContextMenuVisible(menu: string | null): boolean {
 export function isYoutubeFlashSource(filename: string | null): boolean {
     if (filename) {
         let pathname = "";
-        let cleaned_hostname = "";
+        let hostname = "";
         try {
             // A base URL is required if `filename` is a relative URL, but we don't need to detect the real URL origin.
             const url = new URL(filename, RUFFLE_ORIGIN);
             pathname = url.pathname;
-            cleaned_hostname = url.hostname.replace("www.", "");
+            hostname = url.hostname.replace("www.", "");
         } catch (err) {
             // Some invalid filenames, like `///`, could raise a TypeError. Let's fail silently in this situation.
         }
         // See https://wiki.mozilla.org/QA/Youtube_Embedded_Rewrite
         if (
             pathname.startsWith("/v/") &&
-            (cleaned_hostname === "youtube.com" ||
-                cleaned_hostname === "youtube-nocookie.com")
+            (hostname === "youtube.com" || hostname === "youtube-nocookie.com")
         ) {
             return true;
         }
@@ -2176,16 +2175,16 @@ export function workaroundYoutubeMixedContent(
     elem: Element,
     attr: string
 ): void {
-    const elem_attr = elem.getAttribute(attr);
-    const window_config = window.RufflePlayer?.config ?? {};
-    if (elem_attr) {
+    const value = elem.getAttribute(attr);
+    const config = window.RufflePlayer?.config ?? {};
+    if (value) {
         try {
-            const url = new URL(elem_attr);
+            const url = new URL(value);
             if (
                 url.protocol === "http:" &&
                 window.location.protocol === "https:" &&
-                (!("upgradeToHttps" in window_config) ||
-                    window_config.upgradeToHttps !== false)
+                (!("upgradeToHttps" in config) ||
+                    config.upgradeToHttps !== false)
             ) {
                 url.protocol = "https:";
                 elem.setAttribute(attr, url.toString());

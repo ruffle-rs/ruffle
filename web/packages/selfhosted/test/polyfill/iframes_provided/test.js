@@ -1,4 +1,4 @@
-const { open_test } = require("../../utils");
+const { openTest } = require("../../utils");
 const { expect, use } = require("chai");
 const chaiHtml = require("chai-html");
 const fs = require("fs");
@@ -7,7 +7,7 @@ use(chaiHtml);
 
 describe("Flash inside iframe with provided ruffle", () => {
     it("loads the test", async () => {
-        await open_test(browser, __dirname);
+        await openTest(browser, __dirname);
     });
 
     it("polyfills inside an iframe", async () => {
