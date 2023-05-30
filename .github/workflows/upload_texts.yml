@@ -7,6 +7,9 @@ on:
 jobs:
   crowdin:
     runs-on: ubuntu-latest
+
+    if: github.repository == 'ruffle-rs/ruffle'
+
     strategy:
       max-parallel: 1 # Should be 1 to avoid parallel builds
     steps:
