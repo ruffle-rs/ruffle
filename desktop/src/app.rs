@@ -11,7 +11,7 @@ use ruffle_core::{PlayerEvent, StageDisplayState};
 use ruffle_render::backend::ViewportDimensions;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
-use std::time::Instant;
+use std::time::{Duration, Instant};
 use url::Url;
 use winit::dpi::{LogicalSize, PhysicalPosition, PhysicalSize, Size};
 use winit::event::{ElementState, KeyboardInput, ModifiersState, VirtualKeyCode, WindowEvent};
@@ -478,7 +478,9 @@ impl App {
                 if let Some(next_frame_time) = next_frame_time {
                     ControlFlow::WaitUntil(next_frame_time)
                 } else {
-                    ControlFlow::Wait
+                    // prevent 100% cpu use
+                    // TODO: use set_request_repaint_callback to correctly get egui repaint requests.
+                    ControlFlow::WaitUntil(Instant::now() + Duration::from_millis(10))
                 }
             } else {
                 ControlFlow::Wait
