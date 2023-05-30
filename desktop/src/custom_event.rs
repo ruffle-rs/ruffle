@@ -24,4 +24,6 @@ pub enum RuffleEvent {
 
     /// The user selected an item in the right-click context menu.
     ContextMenuItemClicked(usize),
+
+    DisplayUnsupportedMessage,
 }

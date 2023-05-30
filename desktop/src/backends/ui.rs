@@ -1,3 +1,4 @@
+use crate::custom_event::RuffleEvent;
 use anyhow::{Context, Error};
 use arboard::Clipboard;
 use rfd::{MessageButtons, MessageDialog, MessageLevel};
@@ -7,9 +8,11 @@ use ruffle_core::backend::ui::{
 use std::rc::Rc;
 use sys_locale::get_locale;
 use tracing::error;
+use winit::event_loop::EventLoopProxy;
 use winit::window::{Fullscreen, Window};
 
 pub struct DesktopUiBackend {
+    event_loop: EventLoopProxy<RuffleEvent>,
     window: Rc<Window>,
     cursor_visible: bool,
     clipboard: Clipboard,
@@ -17,12 +20,13 @@ pub struct DesktopUiBackend {
 }
 
 impl DesktopUiBackend {
-    pub fn new(window: Rc<Window>) -> Result<Self, Error> {
+    pub fn new(event_loop: EventLoopProxy<RuffleEvent>, window: Rc<Window>) -> Result<Self, Error> {
         let preferred_language = get_locale();
         let language = preferred_language
             .and_then(|l| l.parse().ok())
             .unwrap_or_else(|| US_ENGLISH.clone());
         Ok(Self {
+            event_loop,
             window,
             cursor_visible: true,
             clipboard: Clipboard::new().context("Couldn't get platform clipboard")?,
@@ -30,14 +34,6 @@ impl DesktopUiBackend {
         })
     }
 }
-
-// TODO: Move link to https://ruffle.rs/faq or similar
-const UNSUPPORTED_CONTENT_MESSAGE: &str = "\
-The Ruffle emulator may not yet fully support all of ActionScript 3 used by this content.
-Some parts of the content may not work as expected.
-
-See the following link for more info:
-https://github.com/ruffle-rs/ruffle/wiki/Frequently-Asked-Questions-For-Users";
 
 const DOWNLOAD_FAILED_MESSAGE: &str = "Ruffle failed to open or download this file.";
 
@@ -82,12 +78,9 @@ impl UiBackend for DesktopUiBackend {
     }
 
     fn display_unsupported_message(&self) {
-        let dialog = MessageDialog::new()
-            .set_level(MessageLevel::Warning)
-            .set_title("Ruffle - Unsupported content")
-            .set_description(UNSUPPORTED_CONTENT_MESSAGE)
-            .set_buttons(MessageButtons::Ok);
-        dialog.show();
+        let _ = self
+            .event_loop
+            .send_event(RuffleEvent::DisplayUnsupportedMessage);
     }
 
     fn display_root_movie_download_failed_message(&self) {
