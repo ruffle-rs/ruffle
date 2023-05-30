@@ -14,7 +14,7 @@ use std::sync::{Arc, MutexGuard};
 use std::time::{Duration, Instant};
 use winit::dpi::PhysicalSize;
 use winit::event_loop::EventLoop;
-use winit::window::Window;
+use winit::window::{Theme, Window};
 
 /// Integration layer connecting wgpu+winit to egui.
 pub struct GuiController {
@@ -81,6 +81,10 @@ impl GuiController {
         );
         let descriptors = Descriptors::new(adapter, device, queue);
         let egui_ctx = Context::default();
+        if let Some(Theme::Light) = window.theme() {
+            egui_ctx.set_visuals(egui::Visuals::light());
+        }
+
         let mut egui_winit = egui_winit::State::new(event_loop);
         egui_winit.set_pixels_per_point(window.scale_factor() as f32);
         egui_winit.set_max_texture_side(descriptors.limits.max_texture_dimension_2d as usize);
@@ -140,6 +144,15 @@ impl GuiController {
                 self.size = *size;
             }
         }
+
+        if let winit::event::WindowEvent::ThemeChanged(theme) = &event {
+            let visuals = match theme {
+                Theme::Dark => egui::Visuals::dark(),
+                Theme::Light => egui::Visuals::light(),
+            };
+            self.egui_ctx.set_visuals(visuals);
+        }
+
         let response = self.egui_winit.on_event(&self.egui_ctx, event);
         if response.repaint {
             self.window.request_redraw();
