@@ -1,0 +1,11 @@
+about-ruffle = Om Ruffle
+about-ruffle-version = Version
+about-ruffle-channel = Kanal
+about-ruffle-build-time = Bygg tid
+about-ruffle-build-features = Bygg funktioner
+about-ruffle-commit-ref = Begå Ref
+about-ruffle-commit-time = Begå tid
+about-ruffle-visit-website = Hemsida
+about-ruffle-visit-github = GitHub
+about-ruffle-visit-discord = Discord
+about-ruffle-visit-sponsor = Sponsor

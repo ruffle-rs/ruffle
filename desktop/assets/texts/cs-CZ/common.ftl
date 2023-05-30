@@ -1,0 +1,2 @@
+start = Spustit
+browse = Procházet

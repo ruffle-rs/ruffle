@@ -9,8 +9,6 @@
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
 file-menu = 파일
-file-menu-open-file = 파일 열기...
-file-menu-open-url = URL 열기...
 file-menu-close = 닫기
 file-menu-exit = 종료
 help-menu = 도움말

@@ -1,0 +1,2 @@
+start = Starten
+browse = Durchsuchen

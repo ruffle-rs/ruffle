@@ -1,0 +1,2 @@
+start = Beginnen
+browse = Bladeren

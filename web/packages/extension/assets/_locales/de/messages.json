@@ -2,6 +2,51 @@
     "settings_ruffle_enable": {
         "message": "Flash-Inhalte in Ruffle abspielen"
     },
+    "settings_ignore_optout": {
+        "message": "Flash-Inhalte auch auf Seiten abspielen, die Ruffle nicht zulassen"
+    },
+    "settings_show_swf_download": {
+        "message": "SWF-Download im Kontextmenü anzeigen"
+    },
+    "settings_autostart": {
+        "message": "Automatisch ohne Splash-Screen abspielen (zum Entstummen klicken)"
+    },
+    "settings_warn_on_unsupported_content": {
+        "message": "Bei nicht unterstützten Inhalten warnen"
+    },
+    "settings_log_level": {
+        "message": "Protokoll-Stufe"
+    },
+    "settings_log_level_error": {
+        "message": "Fehler"
+    },
+    "settings_log_level_warn": {
+        "message": "Warnungen"
+    },
+    "settings_log_level_info": {
+        "message": "Information"
+    },
+    "settings_max_execution_duration": {
+        "message": "Maximal zulässige ActionScript Ausführungsdauer (in Sekunden)"
+    },
+    "settings_player_version": {
+        "message": "Flash-Player-Versionsnummer für Emulation (Bereich 1-32)"
+    },
+    "settings_preferred_renderer": {
+        "message": "Bevorzugter Renderer"
+    },
+    "settings_preferred_renderer_auto": {
+        "message": "Automatisch"
+    },
+    "settings_advanced_options": {
+        "message": "Erweiterte Einstellungen"
+    },
+    "settings_reset": {
+        "message": "Einstellungen zurücksetzen"
+    },
+    "settings_reset_confirm": {
+        "message": "Bist du sicher, dass du alle DNS-Einträge auf ihre ursprünglichen Werte zurücksetzen möchten?"
+    },
     "status_init": {
         "message": "Prüfe den aktuellen Tab…"
     },
@@ -14,8 +59,17 @@
     "status_message_init": {
         "message": "Prüfe Status von Ruffle im aktuellen Tab…"
     },
+    "status_result_running": {
+        "message": "Ruffle wurde geladen und spielt den Flashinhalt im aktuellen Tab ab."
+    },
+    "status_result_running_protected": {
+        "message": "Ruffle wurde geladen und spielt den Flashinhalt im aktuellen Tab ab."
+    },
     "status_result_optout": {
         "message": "Ruffle wurde nicht geladen, da die aktuelle Seite sich selbst als inkompatibel markiert hat."
+    },
+    "status_result_disabled": {
+        "message": "Ruffle wurde nicht geladen, da es vom Anwender abgeschaltet wurde."
     },
     "status_result_error": {
         "message": "Es ist ein Fehler beim Abfragen der aktuellen Tab-Instanz von Ruffle aufgetreten."

@@ -1,0 +1,2 @@
+start = Démarrer
+browse = Parcourir

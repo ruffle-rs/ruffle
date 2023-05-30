@@ -1,0 +1,1 @@
+dialog-cancel = الغاء

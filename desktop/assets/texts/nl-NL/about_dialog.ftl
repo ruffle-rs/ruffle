@@ -1,0 +1,11 @@
+about-ruffle = Over Ruffle
+about-ruffle-version = Versie
+about-ruffle-channel = Kanaal
+about-ruffle-build-time = Tijd van bouwen
+about-ruffle-build-features = Gebouwde functionaliteit
+about-ruffle-commit-ref = Commit ref
+about-ruffle-commit-time = Commit tijd
+about-ruffle-visit-website = Website
+about-ruffle-visit-github = GitHub
+about-ruffle-visit-discord = Discord
+about-ruffle-visit-sponsor = Sponsoren
