@@ -9,10 +9,13 @@
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
 file-menu = 文件
-file-menu-open-file = 打开文件...
-file-menu-open-url = 打开地址...
+file-menu-open-quick = 打开...
+file-menu-open-advanced = 高级打开...
 file-menu-close = 关闭
 file-menu-exit = 退出
+controls-menu = 控制
+controls-menu-suspend = 暂停
+controls-menu-resume = 继续
 help-menu = 帮助
 help-menu-join-discord = 加入 Discord 服务器
 help-menu-report-a-bug = 反馈问题

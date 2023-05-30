@@ -1,0 +1,2 @@
+start = Indítás
+browse = Tallózás

@@ -1,0 +1,11 @@
+about-ruffle = O Ruffle
+about-ruffle-version = Verze
+about-ruffle-channel = Kanál
+about-ruffle-build-time = Build - čas
+about-ruffle-build-features = Build - funkce
+about-ruffle-commit-ref = Commit - ref
+about-ruffle-commit-time = Commit - čas
+about-ruffle-visit-website = Webová stránka
+about-ruffle-visit-github = GitHub
+about-ruffle-visit-discord = Discord
+about-ruffle-visit-sponsor = Sponzor

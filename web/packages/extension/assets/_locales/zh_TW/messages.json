@@ -30,7 +30,7 @@
         "message": "ActionScript執行時間(秒數)"
     },
     "settings_player_version": {
-        "message": "Flash 版本模擬(範圍 1-32)"
+        "message": "播放器版本模擬(範圍 1-32)"
     },
     "settings_preferred_renderer": {
         "message": "首選渲染"

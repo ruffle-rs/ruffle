@@ -9,8 +9,6 @@
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
 file-menu = Файл
-file-menu-open-file = Открыть файл...
-file-menu-open-url = Открыть URL...
 file-menu-close = Закрыть
 file-menu-exit = Выход
 help-menu = Помощь

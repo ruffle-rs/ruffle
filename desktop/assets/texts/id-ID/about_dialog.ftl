@@ -1,0 +1,11 @@
+about-ruffle = Tentang Ruffle
+about-ruffle-version = Versi
+about-ruffle-channel = Saluran
+about-ruffle-build-time = Waktu Pembuatan
+about-ruffle-build-features = Fitur-fitur Program
+about-ruffle-commit-ref = Versi Komit
+about-ruffle-commit-time = Waktu Komit
+about-ruffle-visit-website = Situs Web
+about-ruffle-visit-github = GitHub
+about-ruffle-visit-discord = Discord
+about-ruffle-visit-sponsor = Sponsor

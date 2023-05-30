@@ -1,0 +1,2 @@
+start = Starta
+browse = Bläddra

@@ -1,6 +1,6 @@
 about-ruffle = 關於 Ruffle...
 about-ruffle-version = 版本
-about-ruffle-channel = 頻道
+about-ruffle-channel = 分支
 about-ruffle-build-time = 建置時間
 about-ruffle-build-features = 建置特點
 about-ruffle-commit-ref = 提交參考

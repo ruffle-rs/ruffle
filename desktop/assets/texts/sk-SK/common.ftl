@@ -1,0 +1,2 @@
+start = Spustiť
+browse = Prehľadávať

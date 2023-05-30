@@ -2,17 +2,50 @@
     "settings_ruffle_enable": {
         "message": "Flash-inhoud afspelen in Ruffle"
     },
+    "settings_ignore_optout": {
+        "message": "Toch Flash-inhoud afspelen op sites die Ruffle niet toestaan"
+    },
     "settings_show_swf_download": {
         "message": "SWF download in contextmenu weergeven"
     },
     "settings_autostart": {
-        "message": "Automatisch afspelen zonder splash screen (daarna klikken om dempen op te heffen)"
+        "message": "Automatisch afspelen zonder startscherm (daarna klikken om dempen op te heffen)"
     },
     "settings_warn_on_unsupported_content": {
         "message": "Waarschuw bij niet ondersteunde inhoud"
     },
     "settings_log_level": {
-        "message": "Registratie niveau"
+        "message": "Logniveau"
+    },
+    "settings_log_level_error": {
+        "message": "Fouten"
+    },
+    "settings_log_level_warn": {
+        "message": "Waarschuwingen"
+    },
+    "settings_log_level_info": {
+        "message": "Informatie"
+    },
+    "settings_max_execution_duration": {
+        "message": "Maximum toegestane ActionScript uitvoeringsduur (in seconden)"
+    },
+    "settings_player_version": {
+        "message": "Flash speler versienummer om na te bootsen (bereik 1-32)"
+    },
+    "settings_preferred_renderer": {
+        "message": "Voorkeursrenderer"
+    },
+    "settings_preferred_renderer_auto": {
+        "message": "Automatisch"
+    },
+    "settings_advanced_options": {
+        "message": "Geavanceerde opties"
+    },
+    "settings_reset": {
+        "message": "Instellingen herstellen"
+    },
+    "settings_reset_confirm": {
+        "message": "Weet je zeker dat je alle Ruffle instellingen terug naar hun standaardwaarde wilt zetten?"
     },
     "status_init": {
         "message": "Huidig tabblad lezen…"
@@ -26,20 +59,29 @@
     "status_message_init": {
         "message": "Status van Ruffle op huidig tabblad controleren…"
     },
+    "status_result_running": {
+        "message": "Ruffle is geladen en klaar om Flash-inhoud af te spelen op het huidige tabblad."
+    },
+    "status_result_running_protected": {
+        "message": "Ruffle is geladen en de Flash-inhoud waar je om vroeg aan het draaien."
+    },
     "status_result_optout": {
         "message": "Ruffle is niet geladen omdat de huidige pagina zichzelf als niet compatibel heeft gemarkeerd."
     },
+    "status_result_disabled": {
+        "message": "Ruffle is uitgeschakeld en daarom niet geladen."
+    },
     "status_result_error": {
-        "message": "Er is een fout opgetreden bij het opvragen van het Ruffle-exemplaar van het huidige tabblad."
+        "message": "Er is een fout opgetreden bij het opvragen van de Ruffle-instantie van het huidige tabblad."
     },
     "status_result_protected": {
         "message": "Ruffle kan niet geladen worden op beschermde browserpagina's."
     },
     "action_reload": {
-        "message": "Tabblad vernieuwen om wijzigingen toe te passen"
+        "message": "Vernieuw het tabblad om wijzigingen toe te passen"
     },
     "open_settings_page": {
-        "message": "Instellingenpagina Openen"
+        "message": "Instellingenpagina openen"
     },
     "settings_page": {
         "message": "Instellingenpagina"
@@ -48,9 +90,9 @@
         "message": "Zet Flash terug op het web waar het thuishoort."
     },
     "save_settings": {
-        "message": "Instellingen Opslaan"
+        "message": "Instellingen opslaan"
     },
     "settings_saved": {
-        "message": "Instellingen Opgeslagen"
+        "message": "Instellingen opgeslagen"
     }
 }

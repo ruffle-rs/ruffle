@@ -1,0 +1,98 @@
+{
+    "settings_ruffle_enable": {
+        "message": "Spustiť Flash obsah v Ruffle"
+    },
+    "settings_ignore_optout": {
+        "message": "Spustiť Flash obsah aj na stránkach, ktoré nepovoľujú Ruffle"
+    },
+    "settings_show_swf_download": {
+        "message": "Zobraziť možnosť stiahnuť SWF v kontextovej ponuke"
+    },
+    "settings_autostart": {
+        "message": "Spustiť automaticky bez úvodnej obrazovky (potom kliknutím zrušíte stlmenie)"
+    },
+    "settings_warn_on_unsupported_content": {
+        "message": "Upozorniť na nepodporovaný obsah"
+    },
+    "settings_log_level": {
+        "message": "Úroveň logu"
+    },
+    "settings_log_level_error": {
+        "message": "Chyby"
+    },
+    "settings_log_level_warn": {
+        "message": "Varovania"
+    },
+    "settings_log_level_info": {
+        "message": "Info"
+    },
+    "settings_max_execution_duration": {
+        "message": "Maximálne povolené trvanie spustenia ActionScript (v sekundách)"
+    },
+    "settings_player_version": {
+        "message": "Číslo verzie prehrávača Flash na emuláciu (rozsah 1-32)"
+    },
+    "settings_preferred_renderer": {
+        "message": "Preferovaný vykresľovací modul"
+    },
+    "settings_preferred_renderer_auto": {
+        "message": "Automatický"
+    },
+    "settings_advanced_options": {
+        "message": "Pokročilé nastavenia"
+    },
+    "settings_reset": {
+        "message": "Obnoviť nastavenia"
+    },
+    "settings_reset_confirm": {
+        "message": "Naozaj chcete obnoviť nastavenia Ruffle na pôvodné predvolené hodnoty?"
+    },
+    "status_init": {
+        "message": "Číta sa aktuálna karta…"
+    },
+    "status_no_tabs": {
+        "message": "Neexistuje žiadna aktívna karta."
+    },
+    "status_tabs_error": {
+        "message": "Pri prezeraní aktuálnej karty sa vyskytla chyba."
+    },
+    "status_message_init": {
+        "message": "Kontroluje sa stav Ruffle na aktuálnej karte…"
+    },
+    "status_result_running": {
+        "message": "Ruffle je načítaný a pripravený na spustenie Flash obsahu na aktuálnej karte."
+    },
+    "status_result_running_protected": {
+        "message": "Ruffle je načítaný a spúšťa Flash obsah, ktorý ste požadovali."
+    },
+    "status_result_optout": {
+        "message": "Ruffle sa nenačítal, pretože aktuálna stránka sa označila ako nekompatibilná."
+    },
+    "status_result_disabled": {
+        "message": "Ruffle nie je načítaný, pretože je vypnutý."
+    },
+    "status_result_error": {
+        "message": "Pri dotazovaní na inštanciu Ruffle na aktuálnej karte sa vyskytla chyba."
+    },
+    "status_result_protected": {
+        "message": "Ruffle sa nemôže načítať na chránených stránkach prehliadača."
+    },
+    "action_reload": {
+        "message": "Ak chcete použiť zmeny, znova načítajte kartu"
+    },
+    "open_settings_page": {
+        "message": "Otvoriť stránku s nastaveniami"
+    },
+    "settings_page": {
+        "message": "Stránka s nastaveniami"
+    },
+    "description": {
+        "message": "Vrátiť Flash späť na web, kam patrí."
+    },
+    "save_settings": {
+        "message": "Uložiť nastavenia"
+    },
+    "settings_saved": {
+        "message": "Nastavenia uložené"
+    }
+}
