@@ -452,6 +452,13 @@ impl App {
                     );
                 }
 
+                winit::event::Event::UserEvent(RuffleEvent::DisplayUnsupportedMessage) => {
+                    self.gui
+                        .lock()
+                        .expect("Gui lock")
+                        .display_unsupported_message();
+                }
+
                 winit::event::Event::UserEvent(RuffleEvent::CloseFile) => {
                     self.player.destroy();
                 }
