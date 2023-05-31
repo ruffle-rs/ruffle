@@ -10,7 +10,7 @@ version.workspace = true
 [dependencies]
 ruffle_wstr = { path = "../wstr" }
 swf = { path = "../swf"}
-tracing = "0.1.37"
+tracing = { workspace = true }
 gif = "0.12.0"
 png = { version = "0.17.9" }
 flate2 = "1.0.26"
