@@ -17,9 +17,9 @@ ruffle_core = { path = "../core", features = ["audio", "clap", "mp3", "nellymose
 ruffle_render = { path = "../render", features = ["clap"] }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
 ruffle_video_software = { path = "../video/software", optional = true }
-tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
+tracing = { workspace = true}
+tracing-subscriber = { workspace = true }
 generational-arena = "0.2.9"
-tracing = "0.1.37"
 winit = "0.28.6"
 webbrowser = "0.8.10"
 url = "2.4.0"
