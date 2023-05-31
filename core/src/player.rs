@@ -46,8 +46,8 @@ use crate::stub::StubCollection;
 use crate::tag_utils::SwfMovie;
 use crate::timer::Timers;
 use crate::vminterface::Instantiator;
-use gc_arena::MutationContext;
 use gc_arena::{ArenaParameters, Collect, GcCell};
+use gc_arena::{MutationContext, Rootable};
 use instant::Instant;
 use rand::{rngs::SmallRng, SeedableRng};
 use ruffle_render::backend::{null::NullRenderer, RenderBackend, ViewportDimensions};
@@ -207,7 +207,7 @@ impl<'gc> GcRootData<'gc> {
     }
 }
 
-type GcArena = gc_arena::Arena<gc_arena::Rootable![GcRoot<'gc>]>;
+type GcArena = gc_arena::Arena<Rootable![GcRoot<'gc>]>;
 
 type Audio = Box<dyn AudioBackend>;
 type Navigator = Box<dyn NavigatorBackend>;

@@ -366,6 +366,7 @@ pub enum Context3DCommand<'a, 'gc> {
     SetRenderToBackBuffer,
 
     UploadToIndexBuffer {
+        #[collect(require_static)]
         buffer: &'a mut dyn IndexBuffer,
         start_offset: usize,
         data: Vec<u8>,
