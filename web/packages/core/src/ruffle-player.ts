@@ -2150,14 +2150,16 @@ export function isYoutubeFlashSource(filename: string | null): boolean {
             // A base URL is required if `filename` is a relative URL, but we don't need to detect the real URL origin.
             const url = new URL(filename, RUFFLE_ORIGIN);
             pathname = url.pathname;
-            hostname = url.hostname.replace("www.", "");
+            hostname = url.hostname;
         } catch (err) {
             // Some invalid filenames, like `///`, could raise a TypeError. Let's fail silently in this situation.
         }
         // See https://wiki.mozilla.org/QA/Youtube_Embedded_Rewrite
         if (
             pathname.startsWith("/v/") &&
-            (hostname === "youtube.com" || hostname === "youtube-nocookie.com")
+            /^(?:(?:www\.|m\.)?youtube(?:-nocookie)?\.com)|(?:youtu\.be)$/i.test(
+                hostname
+            )
         ) {
             return true;
         }
