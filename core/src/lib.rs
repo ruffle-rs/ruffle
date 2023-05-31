@@ -48,6 +48,8 @@ mod xml;
 pub mod backend;
 pub mod compatibility_rules;
 pub mod config;
+#[cfg(feature = "egui")]
+pub mod debug_ui;
 pub mod external;
 pub mod i18n;
 pub mod stub;

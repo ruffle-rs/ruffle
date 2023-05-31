@@ -46,7 +46,7 @@ use crate::stub::StubCollection;
 use crate::tag_utils::SwfMovie;
 use crate::timer::Timers;
 use crate::vminterface::Instantiator;
-use gc_arena::{ArenaParameters, Collect, GcCell};
+use gc_arena::{ArenaParameters, Collect, DynamicRootSet, GcCell};
 use gc_arena::{MutationContext, Rootable};
 use instant::Instant;
 use rand::{rngs::SmallRng, SeedableRng};
@@ -160,6 +160,9 @@ struct GcRootData<'gc> {
 
     /// List of actively playing streams to decode.
     stream_manager: StreamManager<'gc>,
+
+    /// Dynamic root for allowing handles to GC objects to exist outside of the GC.
+    dynamic_root: DynamicRootSet<'gc>,
 }
 
 impl<'gc> GcRootData<'gc> {
@@ -185,6 +188,7 @@ impl<'gc> GcRootData<'gc> {
         &mut ExternalInterface<'gc>,
         &mut AudioManager<'gc>,
         &mut StreamManager<'gc>,
+        &mut DynamicRootSet<'gc>,
     ) {
         (
             self.stage,
@@ -203,6 +207,7 @@ impl<'gc> GcRootData<'gc> {
             &mut self.external_interface,
             &mut self.audio_manager,
             &mut self.stream_manager,
+            &mut self.dynamic_root,
         )
     }
 }
@@ -313,6 +318,10 @@ pub struct Player {
 
     /// Any compatibility rules to apply for this movie.
     compatibility_rules: CompatibilityRules,
+
+    /// Debug UI windows
+    #[cfg(feature = "egui")]
+    debug_ui: Rc<RefCell<crate::debug_ui::DebugUi>>,
 }
 
 impl Player {
@@ -1750,6 +1759,7 @@ impl Player {
                 external_interface,
                 audio_manager,
                 stream_manager,
+                dynamic_root,
             ) = root_data.update_context_params();
 
             let mut update_context = UpdateContext {
@@ -1799,6 +1809,7 @@ impl Player {
                 frame_phase: &mut self.frame_phase,
                 stub_tracker: &mut self.stub_tracker,
                 stream_manager,
+                dynamic_root,
             };
 
             let prev_frame_rate = *update_context.frame_rate;
@@ -1843,6 +1854,23 @@ impl Player {
                 .expect("Built-in font should compile"),
             reader.encoding(),
         )
+    }
+
+    #[cfg(feature = "egui")]
+    pub fn show_debug_ui(&mut self, egui_ctx: &egui::Context) {
+        // To allow using `mutate_with_update_context` and passing the context inside the debug ui,
+        // we avoid borrowing directly from self here.
+        // This method should only be called once and it will panic if it tries to recursively render.
+        let debug_ui = self.debug_ui.clone();
+        let mut debug_ui = debug_ui.borrow_mut();
+        self.mutate_with_update_context(|context| {
+            debug_ui.show(egui_ctx, context);
+        });
+    }
+
+    #[cfg(feature = "egui")]
+    pub fn debug_ui_message(&mut self, message: crate::debug_ui::Message) {
+        self.debug_ui.borrow_mut().queue_message(message)
     }
 
     /// Update the current state of the player.
@@ -2203,6 +2231,7 @@ impl PlayerBuilder {
             gc_context,
             interner: &mut interner,
         };
+        let dynamic_root = DynamicRootSet::new(gc_context);
 
         GcRoot {
             callstack: GcCell::allocate(gc_context, GcCallstack::default()),
@@ -2228,6 +2257,7 @@ impl PlayerBuilder {
                     timers: Timers::new(),
                     unbound_text_fields: Vec::new(),
                     stream_manager: StreamManager::new(),
+                    dynamic_root,
                 },
             ),
         }
@@ -2317,6 +2347,8 @@ impl PlayerBuilder {
                 spoofed_url: self.spoofed_url.clone(),
                 compatibility_rules: self.compatibility_rules.clone(),
                 stub_tracker: StubCollection::new(),
+                #[cfg(feature = "egui")]
+                debug_ui: Default::default(),
 
                 // GC data
                 gc_arena: Rc::new(RefCell::new(GcArena::new(

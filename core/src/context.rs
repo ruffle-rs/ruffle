@@ -26,7 +26,7 @@ use crate::stub::StubCollection;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::timer::Timers;
 use core::fmt;
-use gc_arena::{Collect, MutationContext};
+use gc_arena::{Collect, DynamicRootSet, MutationContext};
 use instant::Instant;
 use rand::rngs::SmallRng;
 use ruffle_render::backend::RenderBackend;
@@ -216,6 +216,9 @@ pub struct UpdateContext<'a, 'gc> {
 
     /// Manager of in-progress media streams.
     pub stream_manager: &'a mut StreamManager<'gc>,
+
+    /// Dynamic root for allowing handles to GC objects to exist outside of the GC.
+    pub dynamic_root: &'a mut DynamicRootSet<'gc>,
 }
 
 /// Convenience methods for controlling audio.
@@ -373,6 +376,7 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
             actions_since_timeout_check: self.actions_since_timeout_check,
             frame_phase: self.frame_phase,
             stream_manager: self.stream_manager,
+            dynamic_root: self.dynamic_root,
         }
     }
 
