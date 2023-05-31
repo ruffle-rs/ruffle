@@ -14,6 +14,7 @@ use egui::*;
 use fluent_templates::fluent_bundle::FluentValue;
 use fluent_templates::{static_loader, Loader};
 use ruffle_core::backend::ui::US_ENGLISH;
+use ruffle_core::debug_ui::Message as DebugMessage;
 use ruffle_core::Player;
 use std::collections::HashMap;
 use sys_locale::get_locale;
@@ -105,6 +106,10 @@ impl RuffleGui {
 
         self.as3_warning(egui_ctx);
 
+        if let Some(player) = player {
+            player.show_debug_ui(egui_ctx);
+        }
+
         if !self.context_menu.is_empty() {
             self.context_menu(egui_ctx);
         }
@@ -190,6 +195,16 @@ impl RuffleGui {
                             ui.close_menu();
                             if let Some(player) = player {
                                 player.set_is_playing(!player.is_playing());
+                            }
+                        }
+                    });
+                });
+                menu::menu_button(ui, text(&self.locale, "debug-menu"), |ui| {
+                    ui.add_enabled_ui(player.is_some(), |ui| {
+                        if Button::new(text(&self.locale, "debug-menu-open-stage")).ui(ui).clicked() {
+                            ui.close_menu();
+                            if let Some(player) = player {
+                                player.debug_ui_message(DebugMessage::TrackStage);
                             }
                         }
                     });

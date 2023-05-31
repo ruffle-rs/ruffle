@@ -17,6 +17,7 @@ use ruffle_macros::enum_trait_object;
 use ruffle_render::transform::Transform;
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
+use std::hash::Hash;
 use std::sync::Arc;
 use swf::{BlendMode, ColorTransform, Fixed8};
 

@@ -1,4 +1,5 @@
 use crate::{types::point::Coordinate as PointCoordinate, Point, Twips};
+use std::fmt::{Display, Formatter};
 
 pub trait Coordinate: PointCoordinate + Ord {
     const INVALID: Self;
@@ -125,5 +126,18 @@ impl<T: Coordinate> Rectangle<T> {
 impl<T: Coordinate> Default for Rectangle<T> {
     fn default() -> Self {
         Self::INVALID
+    }
+}
+
+impl<T> Display for Rectangle<T>
+where
+    T: Display + Coordinate,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}, {} to {}, {}",
+            self.x_min, self.y_min, self.x_max, self.y_max
+        )
     }
 }

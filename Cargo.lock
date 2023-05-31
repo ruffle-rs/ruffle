@@ -3696,6 +3696,7 @@ dependencies = [
  "clap",
  "dasp",
  "downcast-rs",
+ "egui",
  "encoding_rs",
  "enumset",
  "flash-lso",
