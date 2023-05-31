@@ -1663,6 +1663,7 @@ pub trait TDisplayObject<'gc>:
     /// Since we construct AVM2 display objects after they are allocated and
     /// placed on the render list, these steps have to be done by the child
     /// object to signal to its parent that it was added.
+    #[inline(never)]
     fn on_construction_complete(&self, context: &mut UpdateContext<'_, 'gc>) {
         if !self.placed_by_script() {
             // Since we construct AVM2 display objects after they are
