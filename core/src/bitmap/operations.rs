@@ -1390,6 +1390,13 @@ pub fn draw<'gc>(
     // - We aren't using impactful blend modes
     // - We don't have a scale component of the transform matrix
     if let IBitmapDrawable::BitmapData(source) = &source {
+        // This seems to do nothing in Flash, regardless of the pixel contents
+        // of the source BitmapData. Note - this is different from drawing a 'Bitmap'
+        // with the same underlying 'BitmapData'
+        if blend_mode == BlendMode::Alpha || blend_mode == BlendMode::Erase {
+            return Ok(());
+        }
+
         if (blend_mode == BlendMode::Normal || blend_mode == BlendMode::Layer)
             && transform.matrix.a == 1.0
             && transform.matrix.b == 0.0

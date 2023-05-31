@@ -153,6 +153,9 @@ impl Surface {
         nearest_layer: LayerRef<'frame>,
         texture_pool: &mut TexturePool,
     ) -> CommandTarget {
+        let render_mode_existing_texture =
+            matches!(render_target_mode, RenderTargetMode::ExistingTexture(_));
+
         let target = CommandTarget::new(
             descriptors,
             texture_pool,
@@ -228,8 +231,13 @@ impl Surface {
                     let parent = match blend_mode {
                         ComplexBlend::Alpha | ComplexBlend::Erase => match nearest_layer {
                             LayerRef::None => {
-                                // An Alpha or Erase with no Layer above it should be ignored
-                                continue;
+                                if render_mode_existing_texture {
+                                    &target
+                                } else {
+                                    // An Alpha or Erase with no Layer above it (and no existing texture
+                                    // to blend over) should be ignored
+                                    continue;
+                                }
                             }
                             LayerRef::Current => &target,
                             LayerRef::Parent(layer) => layer,
