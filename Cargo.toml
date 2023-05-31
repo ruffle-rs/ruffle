@@ -35,7 +35,7 @@ repository = "https://github.com/ruffle-rs/ruffle"
 version = "0.1.0"
 
 [workspace.dependencies]
-gc-arena = { git = "https://github.com/kyren/gc-arena", rev = "fcc8764362d25f8724912dd7f09f2405779ec053" }
+gc-arena = { git = "https://github.com/kyren/gc-arena", rev = "63dab12871321e0e5ada10ff1f1de8f4cf1764f9" }
 
 # Don't optimize build scripts and macros.
 [profile.release.build-override]
