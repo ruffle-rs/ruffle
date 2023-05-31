@@ -12,7 +12,6 @@ use crate::avm2::{ClassObject, Error};
 use crate::avm2::{Multiname, StageObject};
 use crate::display_object::{DisplayObject, HitTestOptions, TDisplayObject};
 use crate::ecma_conversions::round_to_even;
-use crate::frame_lifecycle::catchup_display_object_to_frame;
 use crate::prelude::*;
 use crate::string::AvmString;
 use crate::types::{Degrees, Percent};
@@ -50,7 +49,8 @@ pub fn initialize_for_allocator<'gc>(
 
     // [NA] Should these run for everything?
     dobj.post_instantiation(&mut activation.context, None, Instantiator::Avm2, false);
-    catchup_display_object_to_frame(&mut activation.context, dobj);
+    dobj.enter_frame(&mut activation.context);
+    dobj.construct_frame(&mut activation.context);
 
     // Movie clips created from ActionScript skip the next enterFrame,
     // and consequently are observed to have their currentFrame lag one
