@@ -1499,7 +1499,7 @@ pub trait TDisplayObject<'gc>:
         self.base().avm1_removed()
     }
 
-    // Sets whethe this object has been removed. Only applies to AVM1
+    // Sets whether this object has been removed. Only applies to AVM1
     fn set_avm1_removed(&self, gc_context: MutationContext<'gc, '_>, value: bool) {
         self.base_mut(gc_context).set_avm1_removed(value)
     }
@@ -1684,7 +1684,11 @@ pub trait TDisplayObject<'gc>:
     fn set_has_explicit_name(&self, gc_context: MutationContext<'gc, '_>, value: bool) {
         self.base_mut(gc_context).set_has_explicit_name(value);
     }
-
+    fn state(&self) -> Option<ButtonState> {
+        None
+    }
+    fn set_state(self, _context: &mut crate::context::UpdateContext<'_, 'gc>, _state: ButtonState) {
+    }
     /// Run any start-of-frame actions for this display object.
     ///
     /// When fired on `Stage`, this also emits the AVM2 `enterFrame` broadcast.

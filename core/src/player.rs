@@ -1253,15 +1253,59 @@ impl Player {
                 ));
             }
 
+            let mut new_over_object_updated = false;
             // Cancel hover if an object is removed from the stage.
             if let Some(hovered) = context.mouse_over_object {
                 if !context.is_action_script_3() && hovered.as_displayobject().avm1_removed() {
                     context.mouse_over_object = None;
+                    if let Some(new_object) = new_over_object {
+                        if new_object.as_displayobject().id() == hovered.as_displayobject().id()
+                            && new_object.as_displayobject().depth()
+                                == hovered.as_displayobject().depth()
+                            && Arc::ptr_eq(
+                                &new_object.as_displayobject().movie(),
+                                &hovered.as_displayobject().movie(),
+                            )
+                        {
+                            if let Some(state) = hovered.as_displayobject().state() {
+                                new_object.as_displayobject().set_state(context, state);
+                            }
+                            context.mouse_over_object = Some(new_object);
+                            new_over_object_updated = true;
+                        }
+                    }
                 }
             }
-            if let Some(pressed) = context.mouse_down_object {
-                if !context.is_action_script_3() && pressed.as_displayobject().avm1_removed() {
+            if let Some(down_object) = context.mouse_down_object {
+                if !context.is_action_script_3() && down_object.as_displayobject().avm1_removed() {
                     context.mouse_down_object = None;
+                    let mut display_object = None;
+
+                    if let Some(root_clip) = context.stage.root_clip() {
+                        display_object = Self::find_first_character_instance(
+                            root_clip,
+                            &down_object.as_displayobject().id(),
+                        );
+                    }
+
+                    if let Some(new_object) = display_object {
+                        if new_object.id() == down_object.as_displayobject().id()
+                            && new_object.depth() == new_object.depth()
+                            && Arc::ptr_eq(
+                                &new_object.movie(),
+                                &down_object.as_displayobject().movie(),
+                            )
+                        {
+                            if let Some(state) = down_object.as_displayobject().state() {
+                                new_object.set_state(context, state);
+                            }
+                            context.mouse_down_object = if display_object.is_some() {
+                                new_object.as_interactive()
+                            } else {
+                                None
+                            };
+                        }
+                    }
                 }
             }
 
@@ -1346,8 +1390,9 @@ impl Player {
                     }
                 }
             }
-            context.mouse_over_object = new_over_object;
-
+            if !new_over_object_updated {
+                context.mouse_over_object = new_over_object;
+            }
             // Handle presses and releases.
             if is_mouse_button_changed {
                 if context.input.is_mouse_down() {
@@ -1365,10 +1410,18 @@ impl Player {
                         events.push((context.stage.into(), ClipEvent::MouseUpInside));
                     }
 
-                    let released_inside = InteractiveObject::option_ptr_eq(
+                    let mut released_inside = InteractiveObject::option_ptr_eq(
                         context.mouse_down_object,
                         context.mouse_over_object,
                     );
+                    if let Some(down) = context.mouse_down_object {
+                        if let Some(over) = context.mouse_over_object {
+                            if !released_inside {
+                                released_inside =
+                                    down.as_displayobject().id() == over.as_displayobject().id();
+                            }
+                        }
+                    }
                     if released_inside {
                         // Released inside the clicked object.
                         if let Some(down_object) = context.mouse_down_object {
@@ -1440,6 +1493,27 @@ impl Player {
         self.mouse_cursor_needs_check = mouse_cursor_needs_check;
 
         needs_render
+    }
+
+    ///This searches for a display object by it's id
+    //TODO: is there a better place to place next two functions
+    fn find_first_character_instance<'gc>(
+        obj: DisplayObject<'gc>,
+        character_id: &CharacterId,
+    ) -> Option<DisplayObject<'gc>> {
+        if let Some(parent) = obj.as_container() {
+            for child in parent.iter_render_list() {
+                if &child.id() == character_id && Arc::ptr_eq(&child.movie(), &obj.movie()) {
+                    return Some(child);
+                }
+
+                let display_object = Self::find_first_character_instance(child, character_id);
+                if display_object.is_some() {
+                    return display_object;
+                }
+            }
+        }
+        None
     }
 
     /// Preload all pending movies in the player, including the root movie.
