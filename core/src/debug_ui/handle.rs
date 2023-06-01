@@ -1,6 +1,6 @@
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, DisplayObjectPtr, TDisplayObject};
-use gc_arena::{DynamicRoot, Rootable};
+use gc_arena::{DynamicRoot, DynamicRootSet, Rootable};
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 
@@ -23,8 +23,8 @@ impl DisplayObjectHandle {
         }
     }
 
-    pub fn fetch<'gc>(&self, context: &mut UpdateContext<'_, 'gc>) -> DisplayObject<'gc> {
-        *context.dynamic_root.fetch(&self.root)
+    pub fn fetch<'gc>(&self, dynamic_root_set: DynamicRootSet<'gc>) -> DisplayObject<'gc> {
+        *dynamic_root_set.fetch(&self.root)
     }
 }
 

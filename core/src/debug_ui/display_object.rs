@@ -2,9 +2,22 @@ use crate::context::UpdateContext;
 use crate::debug_ui::handle::DisplayObjectHandle;
 use crate::debug_ui::Message;
 use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
-use egui::{CollapsingHeader, ComboBox, Grid, Id, Ui, Window};
+use egui::{Checkbox, CollapsingHeader, ComboBox, Grid, Id, Ui, Widget, Window};
 use std::borrow::Cow;
 use swf::{BlendMode, ColorTransform, Fixed8};
+
+const DEFAULT_DEBUG_COLORS: [[f32; 3]; 10] = [
+    [0.00, 0.39, 0.00], // "darkgreen" / #006400
+    [0.00, 0.00, 0.55], // "darkblue" / #00008b
+    [0.69, 0.19, 0.38], // "maroon3" / #b03060
+    [1.00, 0.27, 0.00], // "orangered" / #ff4500
+    [1.00, 1.00, 0.00], // "yellow" / #ffff00
+    [0.00, 1.00, 0.00], // "lime" / #00ff00
+    [0.00, 1.00, 1.00], // "aqua" / #00ffff
+    [1.00, 0.00, 1.00], // "fuchsia" / #ff00ff
+    [0.39, 0.58, 0.93], // "cornflower" / #6495ed
+    [1.00, 0.87, 0.68], // "navajowhite" / #ffdead
+];
 
 const ALL_BLEND_MODES: [BlendMode; 14] = [
     BlendMode::Normal,
@@ -31,12 +44,42 @@ enum Panel {
     Children,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct DisplayObjectWindow {
     open_panel: Panel,
+    debug_rect_color: [f32; 3],
+    debug_rect_visible: bool,
+}
+
+impl Default for DisplayObjectWindow {
+    fn default() -> Self {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        static COUNT: AtomicUsize = AtomicUsize::new(0);
+        let index = COUNT.fetch_add(1, Ordering::Relaxed);
+        let debug_rect_color = DEFAULT_DEBUG_COLORS[index % DEFAULT_DEBUG_COLORS.len()];
+
+        Self {
+            open_panel: Default::default(),
+            debug_rect_color,
+            debug_rect_visible: false,
+        }
+    }
 }
 
 impl DisplayObjectWindow {
+    pub fn debug_rect_color(&self) -> Option<swf::Color> {
+        if self.debug_rect_visible {
+            Some(swf::Color {
+                r: (self.debug_rect_color[0] * 255.0) as u8,
+                g: (self.debug_rect_color[1] * 255.0) as u8,
+                b: (self.debug_rect_color[2] * 255.0) as u8,
+                a: 255,
+            })
+        } else {
+            None
+        }
+    }
+
     pub fn show<'gc>(
         &mut self,
         egui_ctx: &egui::Context,
@@ -100,6 +143,13 @@ impl DisplayObjectWindow {
                     display_object_button(ui, context, messages, other);
                     ui.end_row();
                 }
+
+                ui.label("Debug Rect");
+                ui.horizontal(|ui| {
+                    Checkbox::without_text(&mut self.debug_rect_visible).ui(ui);
+                    ui.color_edit_button_rgb(&mut self.debug_rect_color);
+                });
+                ui.end_row();
 
                 let was_visible = object.visible();
                 let mut is_visible = was_visible;

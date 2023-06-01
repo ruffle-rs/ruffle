@@ -188,7 +188,7 @@ impl<'gc> GcRootData<'gc> {
         &mut ExternalInterface<'gc>,
         &mut AudioManager<'gc>,
         &mut StreamManager<'gc>,
-        &mut DynamicRootSet<'gc>,
+        DynamicRootSet<'gc>,
     ) {
         (
             self.stage,
@@ -207,7 +207,7 @@ impl<'gc> GcRootData<'gc> {
             &mut self.external_interface,
             &mut self.audio_manager,
             &mut self.stream_manager,
-            &mut self.dynamic_root,
+            self.dynamic_root,
         )
     }
 }
@@ -1569,6 +1569,14 @@ impl Player {
             };
 
             stage.render(&mut render_context);
+
+            #[cfg(feature = "egui")]
+            {
+                let debug_ui = self.debug_ui.clone();
+                debug_ui
+                    .borrow_mut()
+                    .draw_debug_rects(&mut render_context, root_data.dynamic_root);
+            }
 
             background_color =
                 if stage.window_mode() != WindowMode::Transparent || stage.is_fullscreen() {
