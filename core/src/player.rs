@@ -1750,6 +1750,8 @@ impl Player {
             let mouse_hovered_object = root_data.mouse_hovered_object;
             let mouse_pressed_object = root_data.mouse_pressed_object;
             let focus_tracker = root_data.focus_tracker;
+
+            #[allow(unused_variables)]
             let (
                 stage,
                 library,
@@ -1817,6 +1819,7 @@ impl Player {
                 frame_phase: &mut self.frame_phase,
                 stub_tracker: &mut self.stub_tracker,
                 stream_manager,
+                #[cfg(feature = "egui")]
                 dynamic_root,
             };
 
