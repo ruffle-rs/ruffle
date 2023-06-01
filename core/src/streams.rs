@@ -297,8 +297,10 @@ impl<'gc> NetStream<'gc> {
                         }
                     }
                 }
-                Some(_) => {
+                Some(magic) => {
                     //Unrecognized signature
+                    //TODO: Fire an error event to AS & stop playing too
+                    tracing::error!("Unrecognized file signature: {:?}", magic);
                     write.preload_offset = 3;
                     return;
                 }
