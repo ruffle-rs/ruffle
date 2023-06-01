@@ -310,6 +310,7 @@ impl<'gc> NetStream<'gc> {
 
         let end_time = write.stream_time + dt;
         let mut end_of_video = false;
+        let mut error = false;
 
         //At this point we should know our stream type.
         if matches!(write.stream_type, Some(NetStreamType::Flv { .. })) {
@@ -323,9 +324,8 @@ impl<'gc> NetStream<'gc> {
                         end_of_video = true;
                     } else {
                         //Corrupt tag or out of data
-                        //TODO: Stop the stream so we don't repeatedly yield the same error
-                        //and fire an error event to AS
                         tracing::error!("FLV tag parsing failed: {}", e);
+                        error = true;
                     }
 
                     break;
@@ -558,6 +558,11 @@ impl<'gc> NetStream<'gc> {
                 context,
                 &[("code", "NetStream.Buffer.Empty"), ("level", "status")],
             );
+            self.pause(context);
+        }
+
+        if error {
+            //TODO: Fire an error event at AS.
             self.pause(context);
         }
     }
