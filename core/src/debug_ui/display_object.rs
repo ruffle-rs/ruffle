@@ -4,7 +4,7 @@ use crate::debug_ui::Message;
 use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
 use egui::{CollapsingHeader, ComboBox, Grid, Id, Ui, Window};
 use std::borrow::Cow;
-use swf::BlendMode;
+use swf::{BlendMode, ColorTransform, Fixed8};
 
 const ALL_BLEND_MODES: [BlendMode; 14] = [
     BlendMode::Normal,
@@ -116,6 +116,11 @@ impl DisplayObjectWindow {
                 if new_blend != old_blend {
                     object.set_blend_mode(context.gc_context, new_blend);
                 }
+
+                let color_transform = *object.base().color_transform();
+                ui.label("Color Transform");
+                ui.label(summary_color_transform(color_transform));
+                ui.end_row();
             });
     }
 
@@ -129,6 +134,10 @@ impl DisplayObjectWindow {
                 ui.text_edit_singleline(&mut object.name().to_string());
                 ui.end_row();
 
+                ui.label("Depth");
+                ui.label(object.depth().to_string());
+                ui.end_row();
+
                 ui.label("World Bounds");
                 ui.label(object.world_bounds().to_string());
                 ui.end_row();
@@ -137,8 +146,7 @@ impl DisplayObjectWindow {
                 ui.label(object.local_bounds().to_string());
                 ui.end_row();
 
-                let base = object.base();
-                let matrix = base.matrix();
+                let matrix = *object.base().matrix();
                 ui.label("Local Position");
                 ui.label(format!("{}, {}", matrix.tx, matrix.ty));
                 ui.end_row();
@@ -190,7 +198,54 @@ pub fn show_display_tree<'gc>(
         });
 }
 
-fn summary_name(object: DisplayObject) -> Cow<str> {
+fn summary_color_transform(ct: ColorTransform) -> Cow<'static, str> {
+    let mut lines = vec![];
+
+    if ct.r_multiply == ct.g_multiply
+        && ct.g_multiply == ct.b_multiply
+        && ct.r_add == ct.g_add
+        && ct.g_add == ct.b_add
+    {
+        // All color values are the same, no need to list them 3 times
+        if let Some(entry) = summary_color_transform_entry("C", ct.r_multiply, ct.r_add) {
+            lines.push(entry);
+        }
+        if let Some(entry) = summary_color_transform_entry("A", ct.a_multiply, ct.a_add) {
+            lines.push(entry);
+        }
+    } else {
+        if let Some(entry) = summary_color_transform_entry("R", ct.r_multiply, ct.r_add) {
+            lines.push(entry);
+        }
+        if let Some(entry) = summary_color_transform_entry("G", ct.g_multiply, ct.g_add) {
+            lines.push(entry);
+        }
+        if let Some(entry) = summary_color_transform_entry("B", ct.b_multiply, ct.b_add) {
+            lines.push(entry);
+        }
+        if let Some(entry) = summary_color_transform_entry("A", ct.a_multiply, ct.a_add) {
+            lines.push(entry);
+        }
+    }
+
+    if lines.is_empty() {
+        Cow::Borrowed("Default")
+    } else {
+        Cow::Owned(lines.join("\n"))
+    }
+}
+
+fn summary_color_transform_entry(name: &str, mult: Fixed8, add: i16) -> Option<String> {
+    match (mult, add) {
+        (Fixed8::ONE, 0) => None,
+        (Fixed8::ONE, _) => Some(format!("{name} = {name} + {add}")),
+        (Fixed8::ZERO, _) => Some(format!("{name} = {add}")),
+        (_, 0) => Some(format!("{name} = {name} * {mult}")),
+        _ => Some(format!("{name} = {name} * {mult} + {add}")),
+    }
+}
+
+fn summary_name(object: DisplayObject) -> Cow<'static, str> {
     let do_type = match object {
         DisplayObject::Stage(_) => "Stage",
         DisplayObject::Bitmap(_) => "Bitmap",
