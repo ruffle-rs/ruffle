@@ -49,6 +49,7 @@ pub struct DisplayObjectWindow {
     open_panel: Panel,
     debug_rect_color: [f32; 3],
     debug_rect_visible: bool,
+    hovered_debug_rect: Option<DisplayObjectHandle>,
 }
 
 impl Default for DisplayObjectWindow {
@@ -62,6 +63,7 @@ impl Default for DisplayObjectWindow {
             open_panel: Default::default(),
             debug_rect_color,
             debug_rect_visible: false,
+            hovered_debug_rect: None,
         }
     }
 }
@@ -80,6 +82,10 @@ impl DisplayObjectWindow {
         }
     }
 
+    pub fn hovered_debug_rect(&self) -> Option<DisplayObjectHandle> {
+        self.hovered_debug_rect.clone()
+    }
+
     pub fn show<'gc>(
         &mut self,
         egui_ctx: &egui::Context,
@@ -88,6 +94,8 @@ impl DisplayObjectWindow {
         messages: &mut Vec<Message>,
     ) -> bool {
         let mut keep_open = true;
+        self.hovered_debug_rect = None;
+
         Window::new(summary_name(object))
             .id(Id::new(object.as_ptr()))
             .open(&mut keep_open)
@@ -128,19 +136,19 @@ impl DisplayObjectWindow {
             .show(ui, |ui| {
                 if let Some(other) = object.parent() {
                     ui.label("Parent");
-                    display_object_button(ui, context, messages, other);
+                    self.display_object_button(ui, context, messages, other);
                     ui.end_row();
                 }
 
                 if let Some(other) = object.masker() {
                     ui.label("Masker");
-                    display_object_button(ui, context, messages, other);
+                    self.display_object_button(ui, context, messages, other);
                     ui.end_row();
                 }
 
                 if let Some(other) = object.maskee() {
                     ui.label("Maskee");
-                    display_object_button(ui, context, messages, other);
+                    self.display_object_button(ui, context, messages, other);
                     ui.end_row();
                 }
 
@@ -236,32 +244,58 @@ impl DisplayObjectWindow {
     ) {
         if let Some(ctr) = object.as_container() {
             for child in ctr.iter_render_list() {
-                show_display_tree(ui, context, child, messages);
+                self.show_display_tree(ui, context, child, messages);
             }
         }
     }
-}
 
-pub fn show_display_tree<'gc>(
-    ui: &mut Ui,
-    context: &mut UpdateContext<'_, 'gc>,
-    object: DisplayObject<'gc>,
-    messages: &mut Vec<Message>,
-) {
-    CollapsingHeader::new(summary_name(object))
-        .id_source(ui.id().with(object.as_ptr()))
-        .show(ui, |ui| {
-            if ui.button("Track").clicked() {
-                messages.push(Message::TrackDisplayObject(DisplayObjectHandle::new(
-                    context, object,
-                )));
-            }
-            if let Some(ctr) = object.as_container() {
-                for child in ctr.iter_render_list() {
-                    show_display_tree(ui, context, child, messages);
+    pub fn show_display_tree<'gc>(
+        &mut self,
+        ui: &mut Ui,
+        context: &mut UpdateContext<'_, 'gc>,
+        object: DisplayObject<'gc>,
+        messages: &mut Vec<Message>,
+    ) {
+        let response = CollapsingHeader::new(summary_name(object))
+            .id_source(ui.id().with(object.as_ptr()))
+            .show(ui, |ui| {
+                let button_response = ui.button("Track");
+                if button_response.hovered() {
+                    self.hovered_debug_rect = Some(DisplayObjectHandle::new(context, object));
                 }
-            }
-        });
+                if button_response.clicked() {
+                    messages.push(Message::TrackDisplayObject(DisplayObjectHandle::new(
+                        context, object,
+                    )));
+                }
+                if let Some(ctr) = object.as_container() {
+                    for child in ctr.iter_render_list() {
+                        self.show_display_tree(ui, context, child, messages);
+                    }
+                }
+            });
+        if response.header_response.hovered() {
+            self.hovered_debug_rect = Some(DisplayObjectHandle::new(context, object));
+        };
+    }
+
+    fn display_object_button<'gc>(
+        &mut self,
+        ui: &mut Ui,
+        context: &mut UpdateContext<'_, 'gc>,
+        messages: &mut Vec<Message>,
+        object: DisplayObject<'gc>,
+    ) {
+        let response = ui.button(summary_name(object));
+        if response.hovered() {
+            self.hovered_debug_rect = Some(DisplayObjectHandle::new(context, object));
+        }
+        if response.clicked() {
+            messages.push(Message::TrackDisplayObject(DisplayObjectHandle::new(
+                context, object,
+            )));
+        }
+    }
 }
 
 fn summary_color_transform(ct: ColorTransform) -> Cow<'static, str> {
@@ -350,18 +384,5 @@ fn blend_mode_name(mode: BlendMode) -> &'static str {
         BlendMode::Erase => "Erase",
         BlendMode::Overlay => "Overlay",
         BlendMode::HardLight => "HardLight",
-    }
-}
-
-fn display_object_button<'gc>(
-    ui: &mut Ui,
-    context: &mut UpdateContext<'_, 'gc>,
-    messages: &mut Vec<Message>,
-    object: DisplayObject<'gc>,
-) {
-    if ui.button(summary_name(object)).clicked() {
-        messages.push(Message::TrackDisplayObject(DisplayObjectHandle::new(
-            context, object,
-        )));
     }
 }

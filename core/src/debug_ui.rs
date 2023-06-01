@@ -9,10 +9,7 @@ use gc_arena::DynamicRootSet;
 use hashbrown::HashMap;
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::matrix::Matrix;
-use swf::Twips;
-
-const DEBUG_RECT_THICKNESS_PIXELS: f32 = 3.0;
-const DEBUG_RECT_THICKNESS_TWIPS: Twips = Twips::from_pixels_i32(3);
+use swf::{Color, Rectangle, Twips};
 
 #[derive(Default)]
 pub struct DebugUi {
@@ -62,54 +59,60 @@ impl DebugUi {
             if let Some(color) = window.debug_rect_color() {
                 let object = object.fetch(dynamic_root_set);
                 let bounds = world_matrix * object.world_bounds();
-                let width = bounds.width().to_pixels() as f32;
-                let height = bounds.height().to_pixels() as f32;
 
-                // Top
-                context.commands.draw_rect(
-                    color.clone(),
-                    Matrix::create_box(
-                        width,
-                        DEBUG_RECT_THICKNESS_PIXELS,
-                        0.0,
-                        bounds.x_min,
-                        bounds.y_min - DEBUG_RECT_THICKNESS_TWIPS,
-                    ),
-                );
-                // Bottom
-                context.commands.draw_rect(
-                    color.clone(),
-                    Matrix::create_box(
-                        width,
-                        DEBUG_RECT_THICKNESS_PIXELS,
-                        0.0,
-                        bounds.x_min,
-                        bounds.y_max,
-                    ),
-                );
-                // Left
-                context.commands.draw_rect(
-                    color.clone(),
-                    Matrix::create_box(
-                        DEBUG_RECT_THICKNESS_PIXELS,
-                        height,
-                        0.0,
-                        bounds.x_min - DEBUG_RECT_THICKNESS_TWIPS,
-                        bounds.y_min,
-                    ),
-                );
-                // Right
-                context.commands.draw_rect(
-                    color,
-                    Matrix::create_box(
-                        DEBUG_RECT_THICKNESS_PIXELS,
-                        height,
-                        0.0,
-                        bounds.x_max,
-                        bounds.y_min,
-                    ),
-                );
+                draw_debug_rect(context, color, bounds, 3.0);
+            }
+
+            if let Some(object) = window.hovered_debug_rect() {
+                let object = object.fetch(dynamic_root_set);
+                let bounds = world_matrix * object.world_bounds();
+
+                draw_debug_rect(context, swf::Color::RED, bounds, 5.0);
             }
         }
     }
+}
+
+fn draw_debug_rect(
+    context: &mut RenderContext,
+    color: Color,
+    bounds: Rectangle<Twips>,
+    thickness: f32,
+) {
+    let width = bounds.width().to_pixels() as f32;
+    let height = bounds.height().to_pixels() as f32;
+    let thickness_twips = Twips::from_pixels(thickness as f64);
+
+    // Top
+    context.commands.draw_rect(
+        color.clone(),
+        Matrix::create_box(
+            width,
+            thickness,
+            0.0,
+            bounds.x_min,
+            bounds.y_min - thickness_twips,
+        ),
+    );
+    // Bottom
+    context.commands.draw_rect(
+        color.clone(),
+        Matrix::create_box(width, thickness, 0.0, bounds.x_min, bounds.y_max),
+    );
+    // Left
+    context.commands.draw_rect(
+        color.clone(),
+        Matrix::create_box(
+            thickness,
+            height,
+            0.0,
+            bounds.x_min - thickness_twips,
+            bounds.y_min,
+        ),
+    );
+    // Right
+    context.commands.draw_rect(
+        color,
+        Matrix::create_box(thickness, height, 0.0, bounds.x_max, bounds.y_min),
+    );
 }
