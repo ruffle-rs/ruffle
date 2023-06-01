@@ -139,9 +139,8 @@ impl App {
                     // Don't render when minimized to avoid potential swap chain errors in `wgpu`.
                     if !minimized {
                         if let Some(mut player) = self.player.get() {
-                            if player.is_playing() {
-                                player.render();
-                            }
+                            // Even if the movie is paused, user interaction with debug tools can change the render output
+                            player.render();
                             self.gui.lock().expect("Gui lock").render(Some(player));
                         } else {
                             self.gui.lock().expect("Gui lock").render(None);

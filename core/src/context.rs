@@ -218,7 +218,7 @@ pub struct UpdateContext<'a, 'gc> {
     pub stream_manager: &'a mut StreamManager<'gc>,
 
     /// Dynamic root for allowing handles to GC objects to exist outside of the GC.
-    pub dynamic_root: &'a mut DynamicRootSet<'gc>,
+    pub dynamic_root: DynamicRootSet<'gc>,
 }
 
 /// Convenience methods for controlling audio.

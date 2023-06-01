@@ -200,6 +200,11 @@ impl<'gc> Stage<'gc> {
             .unwrap_or(Matrix::ZERO)
     }
 
+    #[allow(dead_code)]
+    pub fn view_matrix(self) -> Matrix {
+        self.0.read().viewport_matrix
+    }
+
     pub fn letterbox(self) -> Letterbox {
         self.0.read().letterbox
     }
