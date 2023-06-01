@@ -8,8 +8,6 @@ pub fn init<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
-        activation.super_init(this, &[])?;
-
         if this.as_display_object().is_none() {
             let width = args
                 .get(0)
