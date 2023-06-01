@@ -83,13 +83,21 @@ impl DisplayObjectWindow {
         Grid::new(ui.id().with("display"))
             .num_columns(2)
             .show(ui, |ui| {
-                if let Some(parent) = object.parent() {
+                if let Some(other) = object.parent() {
                     ui.label("Parent");
-                    if ui.button(summary_name(parent)).clicked() {
-                        messages.push(Message::TrackDisplayObject(DisplayObjectHandle::new(
-                            context, parent,
-                        )));
-                    }
+                    display_object_button(ui, context, messages, other);
+                    ui.end_row();
+                }
+
+                if let Some(other) = object.masker() {
+                    ui.label("Masker");
+                    display_object_button(ui, context, messages, other);
+                    ui.end_row();
+                }
+
+                if let Some(other) = object.maskee() {
+                    ui.label("Maskee");
+                    display_object_button(ui, context, messages, other);
                     ui.end_row();
                 }
 
@@ -140,6 +148,10 @@ impl DisplayObjectWindow {
 
                 ui.label("Depth");
                 ui.label(object.depth().to_string());
+                ui.end_row();
+
+                ui.label("Clip Depth");
+                ui.label(object.clip_depth().to_string());
                 ui.end_row();
 
                 ui.label("World Bounds");
@@ -288,5 +300,18 @@ fn blend_mode_name(mode: BlendMode) -> &'static str {
         BlendMode::Erase => "Erase",
         BlendMode::Overlay => "Overlay",
         BlendMode::HardLight => "HardLight",
+    }
+}
+
+fn display_object_button<'gc>(
+    ui: &mut Ui,
+    context: &mut UpdateContext<'_, 'gc>,
+    messages: &mut Vec<Message>,
+    object: DisplayObject<'gc>,
+) {
+    if ui.button(summary_name(object)).clicked() {
+        messages.push(Message::TrackDisplayObject(DisplayObjectHandle::new(
+            context, object,
+        )));
     }
 }
