@@ -123,7 +123,7 @@ impl<'gc> Avm1Button<'gc> {
     ///
     /// This function instantiates children and thus must not be called whilst
     /// the caller is holding a write lock on the button data.
-    fn set_state(
+    pub fn set_state(
         mut self,
         context: &mut crate::context::UpdateContext<'_, 'gc>,
         state: ButtonState,
@@ -191,6 +191,10 @@ impl<'gc> Avm1Button<'gc> {
                 dispatch_removed_event(removed_child, context);
             }
         }
+    }
+
+    pub fn state(&self) -> Option<ButtonState> {
+        Some(self.0.read().state)
     }
 
     fn get_boolean_property(
