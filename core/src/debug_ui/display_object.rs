@@ -134,6 +134,10 @@ impl DisplayObjectWindow {
                 ui.text_edit_singleline(&mut object.name().to_string());
                 ui.end_row();
 
+                ui.label("AVM1 Path");
+                ui.text_edit_singleline(&mut object.path().to_string());
+                ui.end_row();
+
                 ui.label("Depth");
                 ui.label(object.depth().to_string());
                 ui.end_row();
