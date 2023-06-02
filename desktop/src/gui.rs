@@ -5,6 +5,7 @@ mod open_dialog;
 pub use controller::GuiController;
 pub use movie::MovieView;
 use std::borrow::Cow;
+use url::Url;
 
 use crate::custom_event::RuffleEvent;
 use crate::gui::open_dialog::OpenDialog;
@@ -62,14 +63,19 @@ pub struct RuffleGui {
     event_loop: EventLoopProxy<RuffleEvent>,
     is_about_visible: bool,
     is_as3_warning_visible: bool,
+    is_open_dialog_visible: bool,
     context_menu: Vec<ruffle_core::ContextMenuItem>,
+    open_dialog: OpenDialog,
     locale: LanguageIdentifier,
     default_player_options: PlayerOptions,
-    open_dialog: Option<OpenDialog>,
 }
 
 impl RuffleGui {
-    fn new(event_loop: EventLoopProxy<RuffleEvent>, default_player_options: PlayerOptions) -> Self {
+    fn new(
+        event_loop: EventLoopProxy<RuffleEvent>,
+        default_path: Option<Url>,
+        default_player_options: PlayerOptions,
+    ) -> Self {
         // TODO: language negotiation + https://github.com/1Password/sys-locale/issues/14
         // This should also be somewhere else so it can be supplied through UiBackend too
 
@@ -79,13 +85,21 @@ impl RuffleGui {
             .unwrap_or_else(|| US_ENGLISH.clone());
 
         Self {
-            event_loop,
             is_about_visible: false,
             is_as3_warning_visible: false,
+            is_open_dialog_visible: false,
+
             context_menu: vec![],
+            open_dialog: OpenDialog::new(
+                default_player_options.clone(),
+                default_path,
+                event_loop.clone(),
+                locale.clone(),
+            ),
+
+            event_loop,
             locale,
             default_player_options,
-            open_dialog: None,
         }
     }
 
@@ -386,6 +400,7 @@ impl RuffleGui {
 
     fn open_file(&mut self, ui: &mut egui::Ui) {
         ui.close_menu();
+        self.is_open_dialog_visible = false;
 
         let _ = self
             .event_loop
@@ -395,11 +410,7 @@ impl RuffleGui {
     }
 
     fn open_file_advanced(&mut self) {
-        self.open_dialog = Some(OpenDialog::new(
-            self.default_player_options.clone(),
-            self.event_loop.clone(),
-            self.locale.clone(),
-        ));
+        self.is_open_dialog_visible = true;
     }
 
     fn close_movie(&mut self, ui: &mut egui::Ui) {
@@ -408,13 +419,9 @@ impl RuffleGui {
     }
 
     fn open_dialog(&mut self, egui_ctx: &egui::Context) {
-        let keep_open = self
-            .open_dialog
-            .as_mut()
-            .map(|d| d.show(egui_ctx))
-            .unwrap_or_default();
-        if !keep_open {
-            self.open_dialog = None;
+        if self.is_open_dialog_visible {
+            let keep_open = self.open_dialog.show(egui_ctx);
+            self.is_open_dialog_visible = keep_open;
         }
     }
 
