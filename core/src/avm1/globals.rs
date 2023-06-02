@@ -32,8 +32,7 @@ pub(crate) mod error;
 mod external_interface;
 mod function;
 pub(crate) mod glow_filter;
-pub(crate) mod gradient_bevel_filter;
-pub mod gradient_glow_filter;
+pub(crate) mod gradient_filter;
 mod key;
 mod load_vars;
 mod local_connection;
@@ -497,10 +496,6 @@ pub struct SystemPrototypes<'gc> {
     pub context_menu_constructor: Object<'gc>,
     pub context_menu_item: Object<'gc>,
     pub context_menu_item_constructor: Object<'gc>,
-    pub bitmap_filter: Object<'gc>,
-    pub bitmap_filter_constructor: Object<'gc>,
-    pub gradient_glow_filter: Object<'gc>,
-    pub gradient_glow_filter_constructor: Object<'gc>,
     pub date_constructor: Object<'gc>,
     pub bitmap_data: Object<'gc>,
     pub video: Object<'gc>,
@@ -761,17 +756,10 @@ pub fn create_globals<'gc>(
         convolution_filter::create_constructor(context, bitmap_filter_proto, function_proto);
 
     let gradient_bevel_filter =
-        gradient_bevel_filter::create_constructor(context, bitmap_filter_proto, function_proto);
+        gradient_filter::create_bevel_constructor(context, bitmap_filter_proto, function_proto);
 
-    let gradient_glow_filter_proto =
-        gradient_glow_filter::create_proto(context, bitmap_filter_proto, function_proto);
-    let gradient_glow_filter = FunctionObject::constructor(
-        gc_context,
-        Executable::Native(gradient_glow_filter::constructor),
-        constructor_to_fn!(gradient_glow_filter::constructor),
-        function_proto,
-        gradient_glow_filter_proto,
-    );
+    let gradient_glow_filter =
+        gradient_filter::create_glow_constructor(context, bitmap_filter_proto, function_proto);
 
     filters.define_value(
         gc_context,
@@ -1090,10 +1078,6 @@ pub fn create_globals<'gc>(
             context_menu_constructor: context_menu,
             context_menu_item: context_menu_item_proto,
             context_menu_item_constructor: context_menu_item,
-            bitmap_filter: bitmap_filter_proto,
-            bitmap_filter_constructor: bitmap_filter,
-            gradient_glow_filter: gradient_glow_filter_proto,
-            gradient_glow_filter_constructor: gradient_glow_filter,
             date_constructor: date,
             bitmap_data: bitmap_data_proto.into(),
             video: video_proto,

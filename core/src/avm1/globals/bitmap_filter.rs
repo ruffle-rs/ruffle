@@ -53,56 +53,25 @@ pub fn clone<'gc>(
                 gradient_bevel_filter.duplicate(activation.context.gc_context),
             )
         }
-        _ => NativeObject::None,
+        NativeObject::GradientGlowFilter(gradient_glow_filter) => NativeObject::GradientGlowFilter(
+            gradient_glow_filter.duplicate(activation.context.gc_context),
+        ),
+        _ => return Ok(Value::Undefined),
     };
-    if !matches!(native, NativeObject::None) {
-        let proto = this.get_local_stored("__proto__", activation);
-        let cloned = ScriptObject::new(activation.context.gc_context, None);
-        // Set `__proto__` manually since `ScriptObject::new()` doesn't support primitive prototypes.
-        // TODO: Pass `proto` to `ScriptObject::new()` once possible.
-        if let Some(proto) = proto {
-            cloned.define_value(
-                activation.context.gc_context,
-                "__proto__",
-                proto,
-                Attribute::DONT_ENUM | Attribute::DONT_DELETE,
-            );
-        }
-        cloned.set_native(activation.context.gc_context, native);
-        return Ok(cloned.into());
+    let proto = this.get_local_stored("__proto__", activation);
+    let cloned = ScriptObject::new(activation.context.gc_context, None);
+    // Set `__proto__` manually since `ScriptObject::new()` doesn't support primitive prototypes.
+    // TODO: Pass `proto` to `ScriptObject::new()` once possible.
+    if let Some(proto) = proto {
+        cloned.define_value(
+            activation.context.gc_context,
+            "__proto__",
+            proto,
+            Attribute::DONT_ENUM | Attribute::DONT_DELETE,
+        );
     }
-
-    if let Some(this) = this.as_gradient_glow_filter_object() {
-        let proto = activation
-            .context
-            .avm1
-            .prototypes()
-            .gradient_glow_filter_constructor;
-
-        let distance = this.get("distance", activation)?;
-        let angle = this.get("angle", activation)?;
-        let colors = this.get("colors", activation)?;
-        let alphas = this.get("alphas", activation)?;
-        let ratios = this.get("ratios", activation)?;
-        let blur_x = this.get("blurX", activation)?;
-        let blur_y = this.get("blurY", activation)?;
-        let strength = this.get("strength", activation)?;
-        let quality = this.get("quality", activation)?;
-        let type_ = this.get("type", activation)?;
-        let knockout = this.get("knockout", activation)?;
-
-        let cloned = proto.construct(
-            activation,
-            &[
-                distance, angle, colors, alphas, ratios, blur_x, blur_y, strength, quality, type_,
-                knockout,
-            ],
-        )?;
-
-        return Ok(cloned);
-    }
-
-    Ok(Value::Undefined)
+    cloned.set_native(activation.context.gc_context, native);
+    Ok(cloned.into())
 }
 
 pub fn create_proto<'gc>(
