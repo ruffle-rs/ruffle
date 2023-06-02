@@ -500,8 +500,16 @@ jobs:
         with:
           format: YYYY.MM.DD
 
+      - name: Download Linux x86_64 binary
+        uses: actions/download-artifact@v3
+        with:
+          name: linux-x86_64
+
       - name: Update PKGBUILD
-        run: sed -e "s/@VERSION@/${{ steps.current_time_dots.outputs.formattedTime }}/" -i ./PKGBUILD
+        run: >
+          sed -i ./PKGBUILD
+          -e "s/@VERSION@/${{ steps.current_time_dots.outputs.formattedTime }}/"
+          -e "s/@SHA512SUM@/$(sha512sum ${{ needs.build.needs.create-nightly-release.outputs.package_prefix }}-linux-x86_64.tar.gz | cut -d' ' -f1)/"
 
       - name: Publish AUR package
         uses: KSXGitHub/github-actions-deploy-aur@v2.7.0
