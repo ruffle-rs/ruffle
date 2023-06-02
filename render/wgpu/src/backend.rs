@@ -2,7 +2,7 @@ use crate::buffer_builder::BufferBuilder;
 use crate::buffer_pool::{BufferPool, TexturePool};
 use crate::context3d::WgpuContext3D;
 use crate::mesh::{Mesh, PendingDraw};
-use crate::surface::Surface;
+use crate::surface::{LayerRef, Surface};
 use crate::target::{MaybeOwnedBuffer, TextureTarget};
 use crate::target::{RenderTargetFrame, TextureBufferInfo};
 use crate::uniform_buffer::BufferStorage;
@@ -450,6 +450,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             &mut self.color_buffers_storage,
             &self.meshes,
             commands,
+            LayerRef::None,
             &mut self.texture_pool,
         );
 
@@ -624,6 +625,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             &mut self.color_buffers_storage,
             &self.meshes,
             commands,
+            LayerRef::Current,
             &mut self.offscreen_texture_pool,
         );
         let index = target.submit(
