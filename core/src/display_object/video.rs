@@ -167,6 +167,10 @@ impl<'gc> Video<'gc> {
         ))
     }
 
+    pub fn set_size(self, mc: MutationContext<'gc, '_>, width: i32, height: i32) {
+        self.0.write(mc).size = (width, height);
+    }
+
     /// Convert this Video into a NetStream sourced video.
     ///
     /// Existing video state related to the old video stream will be dropped.
