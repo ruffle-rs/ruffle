@@ -71,6 +71,7 @@ pub use crate::avm2::object::{
 pub use crate::avm2::qname::QName;
 pub use crate::avm2::value::Value;
 
+use self::object::WeakObject;
 use self::scope::Scope;
 
 const BROADCAST_WHITELIST: [&str; 4] = ["enterFrame", "exitFrame", "frameConstructed", "render"];
@@ -125,10 +126,7 @@ pub struct Avm2<'gc> {
     /// Certain types of events are "broadcast events" that are emitted on all
     /// constructed objects in order of their creation, whether or not they are
     /// currently present on the display list. This list keeps track of that.
-    ///
-    /// TODO: These should be weak object pointers, but our current garbage
-    /// collector does not support weak references.
-    broadcast_list: FnvHashMap<AvmString<'gc>, Vec<Object<'gc>>>,
+    broadcast_list: FnvHashMap<AvmString<'gc>, Vec<WeakObject<'gc>>>,
 
     /// The list of 'orphan' objects - these objects have no parent,
     /// so we need to manually run their frames in `run_all_phases_avm2` to match
@@ -358,11 +356,15 @@ impl<'gc> Avm2<'gc> {
 
         let bucket = context.avm2.broadcast_list.entry(event_name).or_default();
 
-        if bucket.iter().any(|x| Object::ptr_eq(*x, object)) {
-            return;
+        for entry in bucket.iter() {
+            if let Some(obj) = entry.upgrade(context.gc_context) {
+                if Object::ptr_eq(obj, object) {
+                    return;
+                }
+            }
         }
 
-        bucket.push(object);
+        bucket.push(object.downgrade());
     }
 
     /// Dispatch an event on all objects in the current execution list.
@@ -409,7 +411,7 @@ impl<'gc> Avm2<'gc> {
                 .get(i)
                 .copied();
 
-            if let Some(object) = object {
+            if let Some(object) = object.and_then(|obj| obj.upgrade(context.gc_context)) {
                 let mut activation = Activation::from_nothing(context.reborrow());
 
                 if object.is_of_type(on_type, &mut activation.context) {
@@ -424,6 +426,13 @@ impl<'gc> Avm2<'gc> {
                 }
             }
         }
+        // Once we're done iterating, remove dead weak references from the list.
+        context
+            .avm2
+            .broadcast_list
+            .entry(event_name)
+            .or_default()
+            .retain(|x| x.upgrade(context.gc_context).is_some());
     }
 
     pub fn run_stack_frame_for_callable(
