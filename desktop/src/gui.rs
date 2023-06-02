@@ -156,6 +156,11 @@ impl RuffleGui {
                 self.open_file(ui);
             }
             if ui.ctx().input_mut(|input| {
+                input.consume_shortcut(&KeyboardShortcut::new(Modifiers::COMMAND | Modifiers::SHIFT, Key::O))
+            }) {
+                self.open_file_advanced();
+            }
+            if ui.ctx().input_mut(|input| {
                 input.consume_shortcut(&KeyboardShortcut::new(Modifiers::COMMAND, Key::Q))
             }) {
                 self.request_exit(ui);
@@ -171,8 +176,8 @@ impl RuffleGui {
             menu::bar(ui, |ui| {
                 menu::menu_button(ui, text(&self.locale, "file-menu"), |ui| {
                     let mut shortcut;
-                    shortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::O);
 
+                    shortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::O);
                     if Button::new(text(&self.locale, "file-menu-open-quick"))
                         .shortcut_text(ui.ctx().format_shortcut(&shortcut))
                         .ui(ui)
@@ -181,7 +186,10 @@ impl RuffleGui {
                         self.open_file(ui);
                     }
 
-                    if Button::new(text(&self.locale, "file-menu-open-advanced")).ui(ui).clicked() {
+                    shortcut = KeyboardShortcut::new(Modifiers::COMMAND | Modifiers::SHIFT, Key::O);
+                    if Button::new(text(&self.locale, "file-menu-open-advanced"))
+                        .shortcut_text(ui.ctx().format_shortcut(&shortcut))
+                        .ui(ui).clicked() {
                         ui.close_menu();
                         self.open_file_advanced();
                     }
