@@ -5,8 +5,17 @@
     "settings_ignore_optout": {
         "message": "تشغيل محتوى فلاش حتى في المواقع التي لا تسمح برفل"
     },
+    "settings_show_swf_download": {
+        "message": "إظهار تحميل SWF في قائمة السياق"
+    },
+    "settings_autostart": {
+        "message": "التشغيل تلقائيًا دون شاشة البداية (ثم انقر لإلغاء الكتم)"
+    },
     "settings_warn_on_unsupported_content": {
         "message": "التحذير على المحتوى الغير مدعوم"
+    },
+    "settings_log_level": {
+        "message": "مستوى السجل"
     },
     "settings_log_level_error": {
         "message": "الأخطاء"
@@ -17,8 +26,14 @@
     "settings_log_level_info": {
         "message": "المعلومات"
     },
+    "settings_max_execution_duration": {
+        "message": "الحد الأقصى المسموح به لتنفيذ أكشن سكريبت (بالثواني)"
+    },
     "settings_player_version": {
         "message": "إصدار فلاش للمحاكاة (من 1-32)"
+    },
+    "settings_preferred_renderer": {
+        "message": "العارض المفضل"
     },
     "settings_preferred_renderer_auto": {
         "message": "تلقائي"
@@ -56,6 +71,9 @@
     "status_result_disabled": {
         "message": "لم يتم تحميل رفل لأنه غير مفعل."
     },
+    "status_result_error": {
+        "message": "حدث خطأ عند الاستعلام عن مثيل التبويب الحالي من رفل."
+    },
     "status_result_protected": {
         "message": "لا يمكن تحميل رفل على صفحات المتصفح المحمية."
     },
@@ -67,6 +85,9 @@
     },
     "settings_page": {
         "message": "صفحة الإعدادات"
+    },
+    "description": {
+        "message": "يضع الفلاش مرة أخرى على الويب حيث تنتمي."
     },
     "save_settings": {
         "message": "حفظ الإعدادات"

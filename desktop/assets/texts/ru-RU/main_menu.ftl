@@ -9,8 +9,13 @@
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
 file-menu = Файл
+file-menu-open-quick = Открыть...
+file-menu-open-advanced = Меню параметров
 file-menu-close = Закрыть
 file-menu-exit = Выход
+controls-menu = Управление
+controls-menu-suspend = Приостановить
+controls-menu-resume = Возобновить
 help-menu = Помощь
 help-menu-join-discord = Наш Discord
 help-menu-report-a-bug = Сообщить об ошибке...
