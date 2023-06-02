@@ -5,7 +5,7 @@ use crate::backend::RenderTargetMode;
 use crate::blend::ComplexBlend;
 use crate::buffer_pool::TexturePool;
 use crate::mesh::Mesh;
-use crate::surface::commands::{chunk_blends, Chunk, CommandRenderer, LayerRef};
+use crate::surface::commands::{chunk_blends, Chunk, CommandRenderer};
 use crate::uniform_buffer::BufferStorage;
 use crate::utils::{remove_srgb, supported_sample_count};
 use crate::{
@@ -22,6 +22,8 @@ use tracing::instrument;
 use wgpu::util::DeviceExt;
 
 use self::commands::run_copy_pipeline;
+
+pub use crate::surface::commands::LayerRef;
 
 #[derive(Debug)]
 pub struct Surface {
@@ -72,6 +74,7 @@ impl Surface {
         color_buffers_storage: &mut BufferStorage<ColorAdjustments>,
         meshes: &Vec<Mesh>,
         commands: CommandList,
+        layer: LayerRef,
         texture_pool: &mut TexturePool,
     ) -> Vec<wgpu::CommandBuffer> {
         let uniform_encoder_label = create_debug_label!("Uniform upload command encoder");
@@ -100,7 +103,7 @@ impl Surface {
             &mut color_buffer,
             &mut uniform_encoder,
             &mut draw_encoder,
-            LayerRef::None,
+            layer,
             texture_pool,
         );
 
@@ -153,9 +156,6 @@ impl Surface {
         nearest_layer: LayerRef<'frame>,
         texture_pool: &mut TexturePool,
     ) -> CommandTarget {
-        let render_mode_existing_texture =
-            matches!(render_target_mode, RenderTargetMode::ExistingTexture(_));
-
         let target = CommandTarget::new(
             descriptors,
             texture_pool,
@@ -231,13 +231,8 @@ impl Surface {
                     let parent = match blend_mode {
                         ComplexBlend::Alpha | ComplexBlend::Erase => match nearest_layer {
                             LayerRef::None => {
-                                if render_mode_existing_texture {
-                                    &target
-                                } else {
-                                    // An Alpha or Erase with no Layer above it (and no existing texture
-                                    // to blend over) should be ignored
-                                    continue;
-                                }
+                                // An Alpha or Erase with no Layer above it should be ignored
+                                continue;
                             }
                             LayerRef::Current => &target,
                             LayerRef::Parent(layer) => layer,
