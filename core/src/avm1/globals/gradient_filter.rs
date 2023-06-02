@@ -1,4 +1,4 @@
-//! flash.filters.GradientBevelFilter object
+//! flash.filters.GradientBevelFilter and flash.filters.GradientGlowFilter objects
 
 use crate::avm1::clamp::Clamp;
 use crate::avm1::function::{Executable, FunctionObject};
@@ -15,7 +15,7 @@ const MAX_COLORS: usize = 16;
 
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
-struct GradientBevelFilterData {
+struct GradientFilterData {
     distance: f64,
     // TODO: Introduce `Angle<Radians>` struct.
     angle: f64,
@@ -31,7 +31,7 @@ struct GradientBevelFilterData {
     knockout: bool,
 }
 
-impl Default for GradientBevelFilterData {
+impl Default for GradientFilterData {
     #[allow(clippy::approx_constant)]
     fn default() -> Self {
         Self {
@@ -53,9 +53,9 @@ impl Default for GradientBevelFilterData {
 #[derive(Clone, Debug, Collect)]
 #[collect(no_drop)]
 #[repr(transparent)]
-pub struct GradientBevelFilter<'gc>(GcCell<'gc, GradientBevelFilterData>);
+pub struct GradientFilter<'gc>(GcCell<'gc, GradientFilterData>);
 
-impl<'gc> GradientBevelFilter<'gc> {
+impl<'gc> GradientFilter<'gc> {
     fn new(activation: &mut Activation<'_, 'gc>, args: &[Value<'gc>]) -> Result<Self, Error<'gc>> {
         let gradient_bevel_filter = Self(GcCell::allocate(
             activation.context.gc_context,
@@ -198,17 +198,15 @@ impl<'gc> GradientBevelFilter<'gc> {
                 .num_colors
                 .min(object.length(activation)? as usize);
             self.0.write(activation.context.gc_context).num_colors = num_colors;
-            self.0.write(activation.context.gc_context).ratios = Vec::with_capacity(num_colors);
-            for i in 0..num_colors {
-                let ratio = object
-                    .get_element(activation, i as i32)
-                    .coerce_to_i32(activation)?
-                    .clamp(0, u8::MAX.into()) as u8;
-                self.0
-                    .write(activation.context.gc_context)
-                    .ratios
-                    .push(ratio);
-            }
+            let ratios: Result<Vec<_>, Error<'gc>> = (0..num_colors)
+                .map(|i| {
+                    Ok(object
+                        .get_element(activation, i as i32)
+                        .coerce_to_i32(activation)?
+                        .clamp(0, u8::MAX.into()) as u8)
+                })
+                .collect();
+            self.0.write(activation.context.gc_context).ratios = ratios?;
         }
         Ok(())
     }
@@ -310,24 +308,24 @@ impl<'gc> GradientBevelFilter<'gc> {
     }
 }
 
-macro_rules! gradient_bevel_filter_method {
+macro_rules! gradient_filter_method {
     ($index:literal) => {
         |activation, this, args| method(activation, this, args, $index)
     };
 }
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "distance" => property(gradient_bevel_filter_method!(1), gradient_bevel_filter_method!(2); VERSION_8);
-    "angle" => property(gradient_bevel_filter_method!(3), gradient_bevel_filter_method!(4); VERSION_8);
-    "colors" => property(gradient_bevel_filter_method!(5), gradient_bevel_filter_method!(6); VERSION_8);
-    "alphas" => property(gradient_bevel_filter_method!(7), gradient_bevel_filter_method!(8); VERSION_8);
-    "ratios" => property(gradient_bevel_filter_method!(9), gradient_bevel_filter_method!(10); VERSION_8);
-    "blurX" => property(gradient_bevel_filter_method!(11), gradient_bevel_filter_method!(12); VERSION_8);
-    "blurY" => property(gradient_bevel_filter_method!(13), gradient_bevel_filter_method!(14); VERSION_8);
-    "quality" => property(gradient_bevel_filter_method!(15), gradient_bevel_filter_method!(16); VERSION_8);
-    "strength" => property(gradient_bevel_filter_method!(17), gradient_bevel_filter_method!(18); VERSION_8);
-    "knockout" => property(gradient_bevel_filter_method!(19), gradient_bevel_filter_method!(20); VERSION_8);
-    "type" => property(gradient_bevel_filter_method!(21), gradient_bevel_filter_method!(22); VERSION_8);
+    "distance" => property(gradient_filter_method!(1), gradient_filter_method!(2); VERSION_8);
+    "angle" => property(gradient_filter_method!(3), gradient_filter_method!(4); VERSION_8);
+    "colors" => property(gradient_filter_method!(5), gradient_filter_method!(6); VERSION_8);
+    "alphas" => property(gradient_filter_method!(7), gradient_filter_method!(8); VERSION_8);
+    "ratios" => property(gradient_filter_method!(9), gradient_filter_method!(10); VERSION_8);
+    "blurX" => property(gradient_filter_method!(11), gradient_filter_method!(12); VERSION_8);
+    "blurY" => property(gradient_filter_method!(13), gradient_filter_method!(14); VERSION_8);
+    "quality" => property(gradient_filter_method!(15), gradient_filter_method!(16); VERSION_8);
+    "strength" => property(gradient_filter_method!(17), gradient_filter_method!(18); VERSION_8);
+    "knockout" => property(gradient_filter_method!(19), gradient_filter_method!(20); VERSION_8);
+    "type" => property(gradient_filter_method!(21), gradient_filter_method!(22); VERSION_8);
 };
 
 fn method<'gc>(
@@ -336,7 +334,7 @@ fn method<'gc>(
     args: &[Value<'gc>],
     index: u16,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    const CONSTRUCTOR: u16 = 1000;
+    const GLOW_CONSTRUCTOR: u16 = 0;
     const GET_DISTANCE: u16 = 1;
     const SET_DISTANCE: u16 = 2;
     const GET_ANGLE: u16 = 3;
@@ -359,18 +357,28 @@ fn method<'gc>(
     const SET_KNOCKOUT: u16 = 20;
     const GET_TYPE: u16 = 21;
     const SET_TYPE: u16 = 22;
+    const BEVEL_CONSTRUCTOR: u16 = 1000;
 
-    if index == CONSTRUCTOR {
-        let gradient_bevel_filter = GradientBevelFilter::new(activation, args)?;
+    if index == BEVEL_CONSTRUCTOR {
+        let gradient_bevel_filter = GradientFilter::new(activation, args)?;
         this.set_native(
             activation.context.gc_context,
             NativeObject::GradientBevelFilter(gradient_bevel_filter),
         );
         return Ok(this.into());
     }
+    if index == GLOW_CONSTRUCTOR {
+        let gradient_glow_filter = GradientFilter::new(activation, args)?;
+        this.set_native(
+            activation.context.gc_context,
+            NativeObject::GradientGlowFilter(gradient_glow_filter),
+        );
+        return Ok(this.into());
+    }
 
     let this = match this.native() {
         NativeObject::GradientBevelFilter(gradient_bevel_filter) => gradient_bevel_filter,
+        NativeObject::GradientGlowFilter(gradient_glow_filter) => gradient_glow_filter,
         _ => return Ok(Value::Undefined),
     };
 
@@ -437,7 +445,7 @@ fn method<'gc>(
     })
 }
 
-pub fn create_constructor<'gc>(
+pub fn create_bevel_constructor<'gc>(
     context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
@@ -446,8 +454,24 @@ pub fn create_constructor<'gc>(
     define_properties_on(PROTO_DECLS, context, gradient_bevel_filter_proto, fn_proto);
     FunctionObject::constructor(
         context.gc_context,
-        Executable::Native(gradient_bevel_filter_method!(1000)),
-        constructor_to_fn!(gradient_bevel_filter_method!(1000)),
+        Executable::Native(gradient_filter_method!(1000)),
+        constructor_to_fn!(gradient_filter_method!(1000)),
+        fn_proto,
+        gradient_bevel_filter_proto.into(),
+    )
+}
+
+pub fn create_glow_constructor<'gc>(
+    context: &mut GcContext<'_, 'gc>,
+    proto: Object<'gc>,
+    fn_proto: Object<'gc>,
+) -> Object<'gc> {
+    let gradient_bevel_filter_proto = ScriptObject::new(context.gc_context, Some(proto));
+    define_properties_on(PROTO_DECLS, context, gradient_bevel_filter_proto, fn_proto);
+    FunctionObject::constructor(
+        context.gc_context,
+        Executable::Native(gradient_filter_method!(0)),
+        constructor_to_fn!(gradient_filter_method!(0)),
         fn_proto,
         gradient_bevel_filter_proto.into(),
     )

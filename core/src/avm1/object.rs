@@ -10,9 +10,8 @@ use crate::avm1::globals::date::Date;
 use crate::avm1::globals::displacement_map_filter::DisplacementMapFilter;
 use crate::avm1::globals::drop_shadow_filter::DropShadowFilter;
 use crate::avm1::globals::glow_filter::GlowFilter;
-use crate::avm1::globals::gradient_bevel_filter::GradientBevelFilter;
+use crate::avm1::globals::gradient_filter::GradientFilter;
 use crate::avm1::object::array_object::ArrayObject;
-use crate::avm1::object::gradient_glow_filter::GradientGlowFilterObject;
 use crate::avm1::object::shared_object::SharedObject;
 use crate::avm1::object::super_object::SuperObject;
 use crate::avm1::object::transform_object::TransformObject;
@@ -33,7 +32,6 @@ use std::fmt::Debug;
 
 pub mod array_object;
 mod custom_object;
-pub mod gradient_glow_filter;
 pub mod script_object;
 pub mod shared_object;
 pub mod sound_object;
@@ -56,7 +54,8 @@ pub enum NativeObject<'gc> {
     ColorMatrixFilter(ColorMatrixFilter<'gc>),
     DisplacementMapFilter(DisplacementMapFilter<'gc>),
     ConvolutionFilter(ConvolutionFilter<'gc>),
-    GradientBevelFilter(GradientBevelFilter<'gc>),
+    GradientBevelFilter(GradientFilter<'gc>),
+    GradientGlowFilter(GradientFilter<'gc>),
     ColorTransform(GcCell<'gc, ColorTransformObject>),
     TextFormat(GcCell<'gc, TextFormat>),
     NetStream(NetStream<'gc>),
@@ -81,7 +80,6 @@ pub enum NativeObject<'gc> {
         FunctionObject(FunctionObject<'gc>),
         SharedObject(SharedObject<'gc>),
         TransformObject(TransformObject<'gc>),
-        GradientGlowFilterObject(GradientGlowFilterObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
@@ -600,11 +598,6 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
 
     /// Get the underlying `TransformObject`, if it exists
     fn as_transform_object(&self) -> Option<TransformObject<'gc>> {
-        None
-    }
-
-    /// Get the underlying `GradientGlowFilterObject`, if it exists
-    fn as_gradient_glow_filter_object(&self) -> Option<GradientGlowFilterObject<'gc>> {
         None
     }
 
