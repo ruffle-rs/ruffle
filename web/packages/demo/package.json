@@ -12,8 +12,8 @@
         "ruffle-core": "^0.1.0"
     },
     "devDependencies": {
-        "css-loader": "^6.7.3",
-        "style-loader": "^3.3.1",
-        "webpack-cli": "^5.0.1"
+        "css-loader": "^6.8.1",
+        "style-loader": "^3.3.3",
+        "webpack-cli": "^5.1.1"
     }
 }
