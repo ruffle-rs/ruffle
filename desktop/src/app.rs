@@ -423,7 +423,9 @@ impl App {
                 }
 
                 winit::event::Event::UserEvent(RuffleEvent::BrowseAndOpen(options)) => {
-                    if let Some(url) = pick_file(false).and_then(|p| Url::from_file_path(p).ok()) {
+                    if let Some(url) =
+                        pick_file(false, None).and_then(|p| Url::from_file_path(p).ok())
+                    {
                         self.gui.lock().expect("Gui lock").create_movie(
                             &mut self.player,
                             *options,
