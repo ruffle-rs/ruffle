@@ -2,7 +2,8 @@ package flash.media
 {
     import flash.display.DisplayObject
     import flash.net.NetStream
-
+    
+    [Ruffle(InstanceAllocator)]
     public class Video extends DisplayObject
     {
         private var _deblocking: int;
