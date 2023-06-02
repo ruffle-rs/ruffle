@@ -32,7 +32,7 @@ pub(crate) mod error;
 mod external_interface;
 mod function;
 pub(crate) mod glow_filter;
-pub mod gradient_bevel_filter;
+pub(crate) mod gradient_bevel_filter;
 pub mod gradient_glow_filter;
 mod key;
 mod load_vars;
@@ -499,8 +499,6 @@ pub struct SystemPrototypes<'gc> {
     pub context_menu_item_constructor: Object<'gc>,
     pub bitmap_filter: Object<'gc>,
     pub bitmap_filter_constructor: Object<'gc>,
-    pub gradient_bevel_filter: Object<'gc>,
-    pub gradient_bevel_filter_constructor: Object<'gc>,
     pub gradient_glow_filter: Object<'gc>,
     pub gradient_glow_filter_constructor: Object<'gc>,
     pub date_constructor: Object<'gc>,
@@ -762,15 +760,8 @@ pub fn create_globals<'gc>(
     let convolution_filter =
         convolution_filter::create_constructor(context, bitmap_filter_proto, function_proto);
 
-    let gradient_bevel_filter_proto =
-        gradient_bevel_filter::create_proto(context, bitmap_filter_proto, function_proto);
-    let gradient_bevel_filter = FunctionObject::constructor(
-        gc_context,
-        Executable::Native(gradient_bevel_filter::constructor),
-        constructor_to_fn!(gradient_bevel_filter::constructor),
-        function_proto,
-        gradient_bevel_filter_proto,
-    );
+    let gradient_bevel_filter =
+        gradient_bevel_filter::create_constructor(context, bitmap_filter_proto, function_proto);
 
     let gradient_glow_filter_proto =
         gradient_glow_filter::create_proto(context, bitmap_filter_proto, function_proto);
@@ -1101,8 +1092,6 @@ pub fn create_globals<'gc>(
             context_menu_item_constructor: context_menu_item,
             bitmap_filter: bitmap_filter_proto,
             bitmap_filter_constructor: bitmap_filter,
-            gradient_bevel_filter: gradient_bevel_filter_proto,
-            gradient_bevel_filter_constructor: gradient_bevel_filter,
             gradient_glow_filter: gradient_glow_filter_proto,
             gradient_glow_filter_constructor: gradient_glow_filter,
             date_constructor: date,
