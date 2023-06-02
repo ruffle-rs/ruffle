@@ -98,7 +98,7 @@ impl GuiController {
         ));
         let egui_renderer = egui_wgpu::Renderer::new(&descriptors.device, surface_format, None, 1);
         let event_loop = event_loop.create_proxy();
-        let gui = RuffleGui::new(event_loop, PlayerOptions::from(opt));
+        let gui = RuffleGui::new(event_loop, opt.movie_url.clone(), PlayerOptions::from(opt));
         Ok(Self {
             descriptors: Arc::new(descriptors),
             egui_ctx,

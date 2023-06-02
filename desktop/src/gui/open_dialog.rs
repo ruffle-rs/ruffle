@@ -17,7 +17,6 @@ pub struct OpenDialog {
     options: PlayerOptions,
     event_loop: EventLoopProxy<RuffleEvent>,
     locale: LanguageIdentifier,
-    should_close: bool,
 
     // These are outside of PlayerOptions as it can be an invalid value (ie URL) during typing,
     // and we don't want to clear the value if the user, ie, toggles the checkbox.
@@ -33,18 +32,18 @@ pub struct OpenDialog {
 impl OpenDialog {
     pub fn new(
         defaults: PlayerOptions,
+        default_url: Option<Url>,
         event_loop: EventLoopProxy<RuffleEvent>,
         locale: LanguageIdentifier,
     ) -> Self {
         let spoof_url = OptionalUrlField::new(&defaults.spoof_url, "https://example.org/game.swf");
         let base_url = OptionalUrlField::new(&defaults.spoof_url, "https://example.org");
         let proxy_url = OptionalUrlField::new(&defaults.spoof_url, "socks5://localhost:8080");
-        let path = PathOrUrlField::new(None, "path/to/movie.swf");
+        let path = PathOrUrlField::new(default_url, "path/to/movie.swf");
         Self {
             options: defaults,
             event_loop,
             locale,
-            should_close: false,
             spoof_url,
             base_url,
             proxy_url,
@@ -78,6 +77,7 @@ impl OpenDialog {
 
     pub fn show(&mut self, egui_ctx: &egui::Context) -> bool {
         let mut keep_open = true;
+        let mut should_close = false;
         let mut is_valid = true;
 
         Window::new(text(&self.locale, "open-dialog"))
@@ -115,12 +115,13 @@ impl OpenDialog {
                             .add_enabled(is_valid, Button::new(text(&self.locale, "start")))
                             .clicked()
                         {
-                            self.should_close = self.start();
+                            should_close = self.start();
                         }
                     })
                 });
             });
-        keep_open && !self.should_close
+
+        keep_open && !should_close
     }
 
     fn network_settings(&mut self, ui: &mut Ui) -> bool {

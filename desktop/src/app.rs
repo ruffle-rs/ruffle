@@ -30,12 +30,7 @@ pub struct App {
 
 impl App {
     pub fn new(opt: Opt) -> Result<Self, Error> {
-        let movie_url = if let Some(path) = &opt.input_path {
-            Some(parse_url(path).context("Couldn't load specified path")?)
-        } else {
-            None
-        };
-
+        let movie_url = opt.movie_url.clone();
         let icon_bytes = include_bytes!("../assets/favicon-32.rgba");
         let icon =
             Icon::from_rgba(icon_bytes.to_vec(), 32, 32).context("Couldn't load app icon")?;
@@ -97,7 +92,7 @@ impl App {
         let mut modifiers = ModifiersState::empty();
         let mut fullscreen_down = false;
 
-        if self.opt.input_path.is_none() {
+        if self.opt.movie_url.is_none() {
             // No SWF provided on command line; show window with dummy movie immediately.
             self.window.set_visible(true);
             loaded = LoadingState::Loaded;

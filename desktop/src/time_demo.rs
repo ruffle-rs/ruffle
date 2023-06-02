@@ -43,12 +43,11 @@ fn load_movie(url: &Url, opt: &Opt) -> Result<SwfMovie, Error> {
     Ok(movie)
 }
 
-pub fn run_timedemo(opt: Opt) -> Result<(), Error> {
-    let path = opt
-        .input_path
-        .as_ref()
+pub fn run_timedemo(mut opt: Opt) -> Result<(), Error> {
+    let movie_url = opt
+        .movie_url
+        .take()
         .ok_or_else(|| anyhow!("Input file necessary for timedemo"))?;
-    let movie_url = crate::util::parse_url(path)?;
     let movie = load_movie(&movie_url, &opt).context("Couldn't load movie")?;
     let movie_frames = Some(movie.num_frames());
 
@@ -80,7 +79,7 @@ pub fn run_timedemo(opt: Opt) -> Result<(), Error> {
 
     let mut player_lock = player.lock().expect("Cannot reenter");
 
-    println!("Running {}...", path.to_string_lossy());
+    println!("Running {}...", movie_url);
 
     let start = Instant::now();
     let mut num_frames = 0;
