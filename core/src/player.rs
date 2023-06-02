@@ -1284,6 +1284,7 @@ impl Player {
                         display_object = Self::find_first_character_instance(
                             root_clip,
                             &down_object.as_displayobject().id(),
+                            &down_object.as_displayobject().movie(),
                         );
                     }
 
@@ -1494,19 +1495,23 @@ impl Player {
         needs_render
     }
 
-    ///This searches for a display object by it's id
-    //TODO: is there a better place to place next two functions
+    ///This searches for a display object by it's id.
+    ///When a button is being held down but the mouse stops hovering over the object
+    ///we need to know if th button is still there after goto.
+    //TODO: is there a better place to place next two functions?
     fn find_first_character_instance<'gc>(
         obj: DisplayObject<'gc>,
         character_id: &CharacterId,
+        needed_movie: &Arc<SwfMovie>,
     ) -> Option<DisplayObject<'gc>> {
         if let Some(parent) = obj.as_container() {
             for child in parent.iter_render_list() {
-                if &child.id() == character_id && Arc::ptr_eq(&child.movie(), &obj.movie()) {
+                if &child.id() == character_id && Arc::ptr_eq(&child.movie(), needed_movie) {
                     return Some(child);
                 }
 
-                let display_object = Self::find_first_character_instance(child, character_id);
+                let display_object =
+                    Self::find_first_character_instance(child, character_id, needed_movie);
                 if display_object.is_some() {
                     return display_object;
                 }
