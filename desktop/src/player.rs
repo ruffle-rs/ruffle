@@ -80,7 +80,7 @@ impl ActivePlayer {
     pub fn new(
         opt: &PlayerOptions,
         event_loop: EventLoopProxy<RuffleEvent>,
-        movie_url: Url,
+        movie_url: &Url,
         window: Rc<Window>,
         descriptors: Arc<Descriptors>,
         movie_view: MovieView,
@@ -190,7 +190,7 @@ impl PlayerController {
         }
     }
 
-    pub fn create(&mut self, opt: &PlayerOptions, movie_url: Url, movie_view: MovieView) {
+    pub fn create(&mut self, opt: &PlayerOptions, movie_url: &Url, movie_view: MovieView) {
         self.player = Some(ActivePlayer::new(
             opt,
             self.event_loop.clone(),

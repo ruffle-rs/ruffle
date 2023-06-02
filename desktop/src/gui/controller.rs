@@ -2,7 +2,7 @@ use crate::cli::Opt;
 use crate::custom_event::RuffleEvent;
 use crate::gui::movie::{MovieView, MovieViewRenderer};
 use crate::gui::RuffleGui;
-use crate::player::PlayerOptions;
+use crate::player::{PlayerController, PlayerOptions};
 use anyhow::anyhow;
 use egui::Context;
 use ruffle_core::Player;
@@ -12,6 +12,7 @@ use ruffle_render_wgpu::utils::{format_list, get_backend_names};
 use std::rc::Rc;
 use std::sync::{Arc, MutexGuard};
 use std::time::{Duration, Instant};
+use url::Url;
 use winit::dpi::PhysicalSize;
 use winit::event_loop::EventLoop;
 use winit::window::{Theme, Window};
@@ -160,13 +161,20 @@ impl GuiController {
         response.consumed
     }
 
-    pub fn create_movie_view(&self) -> MovieView {
-        MovieView::new(
+    pub fn create_movie(
+        &mut self,
+        player: &mut PlayerController,
+        opt: PlayerOptions,
+        movie_url: Url,
+    ) {
+        let movie_view = MovieView::new(
             self.movie_view_renderer.clone(),
             &self.descriptors.device,
             self.size.width,
             self.size.height,
-        )
+        );
+        player.create(&opt, &movie_url, movie_view);
+        self.gui.on_player_created(opt, movie_url);
     }
 
     pub fn display_unsupported_message(&mut self) {
