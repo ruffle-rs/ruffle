@@ -183,7 +183,7 @@ pub fn run_swf(
     // FIXME: Determine how we want to compare against on on-disk image
     #[cfg(feature = "imgtests")]
     if let Some(image_comparison) = &test.options.image_comparison {
-        if crate::util::environment::WGPU.is_some() {
+        if crate::util::environment::wgpu_descriptors().is_some() {
             use anyhow::Context;
             use ruffle_render_wgpu::backend::WgpuRenderBackend;
             use ruffle_render_wgpu::target::TextureTarget;
