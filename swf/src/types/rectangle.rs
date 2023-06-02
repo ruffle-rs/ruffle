@@ -136,7 +136,7 @@ where
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{}, {} to {}, {}",
+            "{:.2}, {:.2} to {:.2}, {:.2}",
             self.x_min, self.y_min, self.x_max, self.y_max
         )
     }

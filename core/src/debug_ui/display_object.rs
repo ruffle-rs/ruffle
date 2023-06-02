@@ -223,7 +223,7 @@ impl DisplayObjectWindow {
 
                 let matrix = *object.base().matrix();
                 ui.label("Local Position");
-                ui.label(format!("{}, {}", matrix.tx, matrix.ty));
+                ui.label(format!("{:.2}, {:.2}", matrix.tx, matrix.ty));
                 ui.end_row();
 
                 ui.label("Local Rotation");

@@ -194,6 +194,6 @@ impl std::ops::Neg for Twips {
 impl std::fmt::Display for Twips {
     #[inline]
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.to_pixels())
+        std::fmt::Display::fmt(&self.to_pixels(), f)
     }
 }
