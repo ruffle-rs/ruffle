@@ -1191,6 +1191,16 @@ impl<'gc> MovieClip<'gc> {
         self.0.read().static_data.total_frames
     }
 
+    #[allow(dead_code)]
+    pub fn has_frame_script(self, frame: FrameNumber) -> bool {
+        self.0
+            .read()
+            .frame_scripts
+            .get(frame as usize)
+            .map(|v| v.is_some())
+            .unwrap_or_default()
+    }
+
     pub fn frames_loaded(self) -> FrameNumber {
         self.0
             .read()

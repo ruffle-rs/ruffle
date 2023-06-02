@@ -1,9 +1,9 @@
 use crate::context::UpdateContext;
 use crate::debug_ui::handle::DisplayObjectHandle;
 use crate::debug_ui::Message;
-use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
+use crate::display_object::{DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer};
 use egui::collapsing_header::CollapsingState;
-use egui::{Checkbox, ComboBox, Grid, Id, Ui, Widget, Window};
+use egui::{Button, Checkbox, CollapsingHeader, ComboBox, Grid, Id, Ui, Widget, Window};
 use std::borrow::Cow;
 use swf::{BlendMode, ColorTransform, Fixed8};
 
@@ -43,6 +43,7 @@ enum Panel {
     Position,
     Display,
     Children,
+    TypeSpecific,
 }
 
 #[derive(Debug)]
@@ -104,6 +105,13 @@ impl DisplayObjectWindow {
                 ui.horizontal(|ui| {
                     ui.selectable_value(&mut self.open_panel, Panel::Position, "Position");
                     ui.selectable_value(&mut self.open_panel, Panel::Display, "Display");
+                    if has_type_specific_tab(object) {
+                        ui.selectable_value(
+                            &mut self.open_panel,
+                            Panel::TypeSpecific,
+                            display_object_type(object),
+                        );
+                    }
                     if let Some(ctr) = object.as_container() {
                         if !ctr.is_empty() {
                             ui.selectable_value(
@@ -120,9 +128,127 @@ impl DisplayObjectWindow {
                     Panel::Position => self.show_position(ui, object),
                     Panel::Display => self.show_display(ui, context, object, messages),
                     Panel::Children => self.show_children(ui, context, object, messages),
+                    Panel::TypeSpecific => {
+                        if let DisplayObject::MovieClip(object) = object {
+                            self.show_movieclip(ui, context, object)
+                        }
+                    }
                 }
             });
         keep_open
+    }
+
+    pub fn show_movieclip<'gc>(
+        &mut self,
+        ui: &mut Ui,
+        context: &mut UpdateContext<'_, 'gc>,
+        object: MovieClip<'gc>,
+    ) {
+        Grid::new(ui.id().with("movieclip"))
+            .num_columns(2)
+            .show(ui, |ui| {
+                let label = object.current_label();
+                ui.label("Current Frame");
+                if let Some((label, label_frame)) = label {
+                    ui.label(format!(
+                        "{} ({} from frame {})",
+                        object.current_frame(),
+                        label,
+                        label_frame,
+                    ));
+                } else {
+                    ui.label(object.current_frame().to_string());
+                }
+                ui.end_row();
+
+                ui.label("Total Frames");
+                ui.label(object.total_frames().to_string());
+                ui.end_row();
+
+                ui.label("Flags");
+                ui.add_enabled_ui(false, |ui| {
+                    ui.vertical(|ui| {
+                        ui.checkbox(&mut object.initialized(), "Initialized");
+                        ui.checkbox(&mut object.playing(), "Playing");
+                        ui.checkbox(
+                            &mut object.programmatically_played(),
+                            "Programmatically Played",
+                        );
+                    });
+                });
+                ui.end_row();
+
+                ui.label("Controls");
+                ui.horizontal(|ui| {
+                    if ui.button("Play").clicked() {
+                        object.play(context);
+                    }
+                    if ui.button("Stop").clicked() {
+                        object.stop(context);
+                    }
+                    if ui.button("Prev").clicked() {
+                        object.prev_frame(context);
+                    }
+                    if ui.button("Next").clicked() {
+                        object.next_frame(context);
+                    }
+                });
+                ui.end_row();
+            });
+
+        CollapsingHeader::new("Frame List")
+            .id_source(ui.id().with("frames"))
+            .show(ui, |ui| {
+                Grid::new(ui.id().with("frames"))
+                    .num_columns(4)
+                    .show(ui, |ui| {
+                        let num_frames = object.total_frames();
+                        let scenes = object.scenes();
+
+                        ui.label("#");
+                        ui.label("Scene");
+                        ui.label("Label");
+                        ui.label("Has Script");
+                        ui.label("Goto-and-");
+                        ui.end_row();
+
+                        for frame in 1..=num_frames {
+                            ui.label(frame.to_string());
+                            ui.label(
+                                scenes
+                                    .iter()
+                                    .find(|s| s.start <= frame && (s.start + s.length) > frame)
+                                    .map(|s| s.name.to_string())
+                                    .unwrap_or_default(),
+                            );
+                            ui.label(
+                                object
+                                    .labels_in_range(frame, frame + 1)
+                                    .first()
+                                    .map(|(l, _)| l.to_string())
+                                    .unwrap_or_default(),
+                            );
+                            if object.has_frame_script(frame) {
+                                ui.add_enabled(false, Button::new("AVM2 Script"));
+                            } else {
+                                ui.label("");
+                            }
+                            if object.current_frame() != frame {
+                                ui.horizontal(|ui| {
+                                    if ui.button("Stop").clicked() {
+                                        object.goto_frame(context, frame, true);
+                                    }
+                                    if ui.button("Play").clicked() {
+                                        object.goto_frame(context, frame, false);
+                                    }
+                                });
+                            } else {
+                                ui.label("(current)");
+                            }
+                            ui.end_row();
+                        }
+                    });
+            });
     }
 
     pub fn show_display<'gc>(
@@ -338,8 +464,23 @@ fn summary_color_transform_entry(name: &str, mult: Fixed8, add: i16) -> Option<S
     }
 }
 
+fn has_type_specific_tab(object: DisplayObject) -> bool {
+    matches!(object, DisplayObject::MovieClip(_))
+}
+
 fn summary_name(object: DisplayObject) -> Cow<'static, str> {
-    let do_type = match object {
+    let do_type = display_object_type(object);
+    let name = object.name();
+
+    if name.is_empty() {
+        Cow::Borrowed(do_type)
+    } else {
+        Cow::Owned(format!("{do_type} \"{name}\""))
+    }
+}
+
+fn display_object_type(object: DisplayObject) -> &'static str {
+    match object {
         DisplayObject::Stage(_) => "Stage",
         DisplayObject::Bitmap(_) => "Bitmap",
         DisplayObject::Avm1Button(_) => "Avm1Button",
@@ -351,13 +492,6 @@ fn summary_name(object: DisplayObject) -> Cow<'static, str> {
         DisplayObject::Text(_) => "Text",
         DisplayObject::Video(_) => "Video",
         DisplayObject::LoaderDisplay(_) => "LoaderDisplay",
-    };
-
-    let name = object.name();
-    if name.is_empty() {
-        Cow::Borrowed(do_type)
-    } else {
-        Cow::Owned(format!("{do_type} \"{name}\""))
     }
 }
 
