@@ -360,6 +360,16 @@ impl OpenDialog {
                     .parameters
                     .push((Default::default(), Default::default()));
             }
+
+            if ui
+                .add_enabled(
+                    !self.options.parameters.is_empty(),
+                    Button::new(text(&self.locale, "open-dialog-clear-parameters")),
+                )
+                .clicked()
+            {
+                self.options.parameters.clear();
+            }
         });
 
         Grid::new("open-file-params")
