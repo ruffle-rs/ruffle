@@ -2,7 +2,8 @@ use crate::context::UpdateContext;
 use crate::debug_ui::handle::DisplayObjectHandle;
 use crate::debug_ui::Message;
 use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
-use egui::{Checkbox, CollapsingHeader, ComboBox, Grid, Id, Ui, Widget, Window};
+use egui::collapsing_header::CollapsingState;
+use egui::{Checkbox, ComboBox, Grid, Id, Ui, Widget, Window};
 use std::borrow::Cow;
 use swf::{BlendMode, ColorTransform, Fixed8};
 
@@ -256,27 +257,19 @@ impl DisplayObjectWindow {
         object: DisplayObject<'gc>,
         messages: &mut Vec<Message>,
     ) {
-        let response = CollapsingHeader::new(summary_name(object))
-            .id_source(ui.id().with(object.as_ptr()))
-            .show(ui, |ui| {
-                let button_response = ui.button("Track");
-                if button_response.hovered() {
-                    self.hovered_debug_rect = Some(DisplayObjectHandle::new(context, object));
-                }
-                if button_response.clicked() {
-                    messages.push(Message::TrackDisplayObject(DisplayObjectHandle::new(
-                        context, object,
-                    )));
-                }
-                if let Some(ctr) = object.as_container() {
+        if let Some(ctr) = object.as_container() {
+            CollapsingState::load_with_default_open(ui.ctx(), ui.id().with(object.as_ptr()), false)
+                .show_header(ui, |ui| {
+                    self.display_object_button(ui, context, messages, object);
+                })
+                .body(|ui| {
                     for child in ctr.iter_render_list() {
                         self.show_display_tree(ui, context, child, messages);
                     }
-                }
-            });
-        if response.header_response.hovered() {
-            self.hovered_debug_rect = Some(DisplayObjectHandle::new(context, object));
-        };
+                });
+        } else {
+            self.display_object_button(ui, context, messages, object);
+        }
     }
 
     fn display_object_button<'gc>(
