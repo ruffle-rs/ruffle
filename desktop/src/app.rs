@@ -58,11 +58,7 @@ impl App {
         );
 
         if let Some(movie_url) = movie_url {
-            player.create(
-                &PlayerOptions::from(&opt),
-                movie_url,
-                gui.create_movie_view(),
-            );
+            gui.create_movie(&mut player, PlayerOptions::from(&opt), movie_url);
         } else {
             gui.show_open_dialog();
         }
@@ -194,12 +190,10 @@ impl App {
                         }
                         WindowEvent::DroppedFile(file) => {
                             if let Ok(url) = parse_url(&file) {
-                                let movie_view =
-                                    self.gui.lock().expect("Gui lock").create_movie_view();
-                                self.player.create(
-                                    &PlayerOptions::from(&self.opt),
+                                self.gui.lock().expect("Gui lock").create_movie(
+                                    &mut self.player,
+                                    PlayerOptions::from(&self.opt),
                                     url,
-                                    movie_view,
                                 );
                             }
                         }
@@ -430,19 +424,19 @@ impl App {
 
                 winit::event::Event::UserEvent(RuffleEvent::BrowseAndOpen(options)) => {
                     if let Some(url) = pick_file(false).and_then(|p| Url::from_file_path(p).ok()) {
-                        self.player.create(
-                            &options,
+                        self.gui.lock().expect("Gui lock").create_movie(
+                            &mut self.player,
+                            *options,
                             url,
-                            self.gui.lock().expect("Gui lock").create_movie_view(),
                         );
                     }
                 }
 
                 winit::event::Event::UserEvent(RuffleEvent::OpenURL(url, options)) => {
-                    self.player.create(
-                        &options,
+                    self.gui.lock().expect("Gui lock").create_movie(
+                        &mut self.player,
+                        *options,
                         url,
-                        self.gui.lock().expect("Gui lock").create_movie_view(),
                     );
                 }
 

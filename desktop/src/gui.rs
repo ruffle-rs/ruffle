@@ -141,6 +141,18 @@ impl RuffleGui {
         self.is_as3_warning_visible = true;
     }
 
+    /// Notifies the GUI that a new player was created.
+    fn on_player_created(&mut self, opt: PlayerOptions, movie_url: Url) {
+        // Update dialog state to reflect the newly-opened movie's options.
+        self.is_open_dialog_visible = false;
+        self.open_dialog = OpenDialog::new(
+            opt,
+            Some(movie_url),
+            self.event_loop.clone(),
+            self.locale.clone(),
+        );
+    }
+
     /// Renders the main menu bar at the top of the window.
     fn main_menu_bar(
         &mut self,
@@ -408,7 +420,6 @@ impl RuffleGui {
 
     fn open_file(&mut self, ui: &mut egui::Ui) {
         ui.close_menu();
-        self.is_open_dialog_visible = false;
 
         let _ = self
             .event_loop
