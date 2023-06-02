@@ -5,8 +5,7 @@ use crate::globals::Globals;
 use crate::surface::commands::run_copy_pipeline;
 use crate::utils::create_buffer_with_data;
 use crate::Transforms;
-use once_cell::race::OnceBool;
-use once_cell::sync::OnceCell;
+use std::cell::OnceCell;
 use std::sync::Arc;
 
 #[derive(Debug)]
@@ -199,7 +198,7 @@ pub struct CommandTarget {
     format: wgpu::TextureFormat,
     sample_count: u32,
     whole_frame_bind_group: OnceCell<(wgpu::Buffer, wgpu::BindGroup)>,
-    color_needs_clear: OnceBool,
+    color_needs_clear: OnceCell<bool>,
     render_target_mode: RenderTargetMode,
 }
 
@@ -296,7 +295,7 @@ impl CommandTarget {
             format,
             sample_count,
             whole_frame_bind_group,
-            color_needs_clear: OnceBool::new(),
+            color_needs_clear: OnceCell::new(),
             render_target_mode,
         }
     }

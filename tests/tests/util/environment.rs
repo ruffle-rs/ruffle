@@ -1,8 +1,7 @@
-use once_cell::sync::Lazy;
 use ruffle_render_wgpu::backend::request_adapter_and_device;
 use ruffle_render_wgpu::descriptors::Descriptors;
 use ruffle_render_wgpu::wgpu;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 
 /*
    It can be expensive to construct WGPU, much less Descriptors, so we put it off as long as we can
@@ -35,4 +34,8 @@ fn build_wgpu_descriptors() -> Option<Arc<Descriptors>> {
     }
 }
 
-pub static WGPU: Lazy<Option<Arc<Descriptors>>> = Lazy::new(build_wgpu_descriptors);
+pub fn wgpu_descriptors() -> Option<&'static Arc<Descriptors>> {
+    // TODO: Use `std::sync::LazyLock` once it's stabilized?
+    static WGPU: OnceLock<Option<Arc<Descriptors>>> = OnceLock::new();
+    WGPU.get_or_init(build_wgpu_descriptors).as_ref()
+}

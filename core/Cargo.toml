@@ -48,7 +48,6 @@ enumset = "1.1.2"
 bytemuck = "1.13.1"
 clap = { version = "4.3.0", features = ["derive"], optional=true }
 realfft = "3.3.0"
-once_cell = "1.17.1"
 hashbrown = { version = "0.13.2", features = ["raw"] }
 scopeguard = "1.1.0"
 fluent-templates = "0.8.0"

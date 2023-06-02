@@ -14,11 +14,10 @@ use crate::utils::{
 use bytemuck::{Pod, Zeroable};
 use descriptors::Descriptors;
 use enum_map::Enum;
-use once_cell::sync::OnceCell;
 use ruffle_render::bitmap::{BitmapHandle, BitmapHandleImpl, PixelRegion, RgbaBufRead, SyncHandle};
 use ruffle_render::shape_utils::GradientType;
 use ruffle_render::tessellator::{Gradient as TessGradient, Vertex as TessVertex};
-use std::cell::Cell;
+use std::cell::{Cell, OnceCell};
 use std::sync::Arc;
 use swf::GradientSpread;
 pub use wgpu;

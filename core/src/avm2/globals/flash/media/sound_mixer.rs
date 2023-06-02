@@ -1,17 +1,13 @@
 //! `flash.media.SoundMixer` builtin/prototype
 
-use std::cell::RefMut;
-use std::sync::Arc;
-
 use crate::avm2::activation::Activation;
-use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::object::Object;
 use crate::avm2::object::TObject;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2_stub_getter;
 use crate::display_object::SoundTransform;
-use once_cell::sync::Lazy;
+use std::sync::{Arc, OnceLock};
 
 /// Implements `soundTransform`'s getter
 ///
@@ -109,7 +105,7 @@ pub fn compute_spectrum<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let arg0 = args[0].as_object().unwrap();
-    let mut bytearray: RefMut<ByteArrayStorage> = arg0
+    let mut bytearray = arg0
         .as_bytearray_mut(activation.context.gc_context)
         .unwrap();
     let mut hist = activation.context.audio.get_sample_history();
@@ -122,11 +118,11 @@ pub fn compute_spectrum<'gc>(
     };
 
     if fft {
-        // Flash Player appears to do a 2048-long FFT with only the first 512 samples filled in...
-        static FFT: Lazy<Arc<dyn realfft::RealToComplex<f32>>> =
-            Lazy::new(|| realfft::RealFftPlanner::new().plan_fft_forward(2048));
+        // TODO: Use `std::sync::LazyLock` once it's stabilized?
+        static FFT: OnceLock<Arc<dyn realfft::RealToComplex<f32>>> = OnceLock::new();
 
-        let fft = FFT.as_ref();
+        // Flash Player appears to do a 2048-long FFT with only the first 512 samples filled in...
+        let fft = FFT.get_or_init(|| realfft::RealFftPlanner::new().plan_fft_forward(2048));
 
         let mut in_left = fft.make_input_vec();
         let mut in_right = fft.make_input_vec();
