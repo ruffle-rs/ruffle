@@ -1,4 +1,4 @@
-about-ruffle = אודות ruffle
+about-ruffle = אודות Ruffle
 about-ruffle-version = גרסה
 about-ruffle-channel = ערוץ
 about-ruffle-build-time = זמן הגרסה

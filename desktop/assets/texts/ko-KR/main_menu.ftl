@@ -9,8 +9,13 @@
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
 file-menu = 파일
+file-menu-open-quick = 열기...
+file-menu-open-advanced = 고급 열기...
 file-menu-close = 닫기
 file-menu-exit = 종료
+controls-menu = 컨트롤
+controls-menu-suspend = 일시 정지
+controls-menu-resume = 재개
 help-menu = 도움말
 help-menu-join-discord = 디스코드 참여
 help-menu-report-a-bug = 버그 제보...
