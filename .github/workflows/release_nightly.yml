@@ -482,7 +482,7 @@ jobs:
 
   publish-aur-package:
     name: Publish AUR package
-    needs: build
+    needs: [create-nightly-release, build]
     runs-on: ubuntu-22.04
     if: github.repository == 'ruffle-rs/ruffle'
     steps:
@@ -500,16 +500,16 @@ jobs:
         with:
           format: YYYY.MM.DD
 
-      - name: Download Linux x86_64 binary
-        uses: actions/download-artifact@v3
-        with:
-          name: linux-x86_64
+      - name: Download package
+        run: gh release download "${{ needs.create-nightly-release.outputs.tag_name }}" --pattern "${{ needs.create-nightly-release.outputs.package_prefix }}-linux-x86_64.tar.gz"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Update PKGBUILD
         run: >
           sed -i ./PKGBUILD
           -e "s/@VERSION@/${{ steps.current_time_dots.outputs.formattedTime }}/"
-          -e "s/@SHA512SUM@/$(sha512sum ${{ needs.build.needs.create-nightly-release.outputs.package_prefix }}-linux-x86_64.tar.gz | cut -d' ' -f1)/"
+          -e "s/@SHA512SUM@/$(sha512sum ${{ needs.create-nightly-release.outputs.package_prefix }}-linux-x86_64.tar.gz | cut -d' ' -f1)/"
 
       - name: Publish AUR package
         uses: KSXGitHub/github-actions-deploy-aur@v2.7.0
