@@ -1283,8 +1283,7 @@ impl Player {
                     if let Some(root_clip) = context.stage.root_clip() {
                         display_object = Self::find_first_character_instance(
                             root_clip,
-                            &down_object.as_displayobject().id(),
-                            &down_object.as_displayobject().movie(),
+                            down_object.as_displayobject(),
                         );
                     }
 
@@ -1501,17 +1500,19 @@ impl Player {
     //TODO: is there a better place to place next two functions?
     fn find_first_character_instance<'gc>(
         obj: DisplayObject<'gc>,
-        character_id: &CharacterId,
-        needed_movie: &Arc<SwfMovie>,
+        previous_object: DisplayObject<'gc>,
     ) -> Option<DisplayObject<'gc>> {
         if let Some(parent) = obj.as_container() {
+            let character_id = previous_object.id();
             for child in parent.iter_render_list() {
-                if &child.id() == character_id && Arc::ptr_eq(&child.movie(), needed_movie) {
+                if child.id() == character_id
+                    && child.depth() == previous_object.depth()
+                    && Arc::ptr_eq(&child.movie(), &previous_object.movie())
+                {
                     return Some(child);
                 }
 
-                let display_object =
-                    Self::find_first_character_instance(child, character_id, needed_movie);
+                let display_object = Self::find_first_character_instance(child, previous_object);
                 if display_object.is_some() {
                     return display_object;
                 }
