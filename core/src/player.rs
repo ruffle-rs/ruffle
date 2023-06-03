@@ -1504,9 +1504,8 @@ impl Player {
         previous_object: DisplayObject<'gc>,
     ) -> Option<DisplayObject<'gc>> {
         if let Some(parent) = obj.as_container() {
-            let character_id = previous_object.id();
             for child in parent.iter_render_list() {
-                if child.id() == character_id
+                if child.id() == previous_object.id()
                     && child.depth() == previous_object.depth()
                     && Arc::ptr_eq(&child.movie(), &previous_object.movie())
                 {
