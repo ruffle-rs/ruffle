@@ -192,8 +192,7 @@ impl GuiController {
             self.gui.update(
                 context,
                 self.window.fullscreen().is_none(),
-                player.is_some(),
-                &mut player.as_deref_mut(),
+                player.as_deref_mut(),
             );
         });
         self.repaint_after = full_output.repaint_after;
