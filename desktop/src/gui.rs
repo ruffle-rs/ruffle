@@ -68,6 +68,7 @@ pub struct RuffleGui {
     open_dialog: OpenDialog,
     locale: LanguageIdentifier,
     default_player_options: PlayerOptions,
+    currently_opened: Option<(Url, PlayerOptions)>,
 }
 
 impl RuffleGui {
@@ -100,6 +101,7 @@ impl RuffleGui {
             event_loop,
             locale,
             default_player_options,
+            currently_opened: None,
         }
     }
 
@@ -108,11 +110,10 @@ impl RuffleGui {
         &mut self,
         egui_ctx: &egui::Context,
         show_menu: bool,
-        has_movie: bool,
-        player: &mut Option<&mut Player>,
+        mut player: Option<&mut Player>,
     ) {
         if show_menu {
-            self.main_menu_bar(egui_ctx, has_movie, player);
+            self.main_menu_bar(egui_ctx, player.as_deref_mut());
         }
 
         self.about_window(egui_ctx);
@@ -143,6 +144,8 @@ impl RuffleGui {
 
     /// Notifies the GUI that a new player was created.
     fn on_player_created(&mut self, opt: PlayerOptions, movie_url: Url) {
+        self.currently_opened = Some((movie_url.clone(), opt.clone()));
+
         // Update dialog state to reflect the newly-opened movie's options.
         self.is_open_dialog_visible = false;
         self.open_dialog = OpenDialog::new(
@@ -154,12 +157,7 @@ impl RuffleGui {
     }
 
     /// Renders the main menu bar at the top of the window.
-    fn main_menu_bar(
-        &mut self,
-        egui_ctx: &egui::Context,
-        has_movie: bool,
-        player: &mut Option<&mut Player>,
-    ) {
+    fn main_menu_bar(&mut self, egui_ctx: &egui::Context, mut player: Option<&mut Player>) {
         egui::TopBottomPanel::top("menu_bar").show(egui_ctx, |ui| {
             // TODO(mike): Make some MenuItem struct with shortcut info to handle this more cleanly.
             if ui.ctx().input_mut(|input| {
@@ -180,7 +178,7 @@ impl RuffleGui {
             if ui.ctx().input_mut(|input| {
                 input.consume_shortcut(&KeyboardShortcut::new(Modifiers::COMMAND, Key::P))
             }) {
-                if let Some(player) = player {
+                if let Some(player) = &mut player {
                     player.set_is_playing(!player.is_playing());
                 }
             }
@@ -206,7 +204,11 @@ impl RuffleGui {
                         self.open_file_advanced();
                     }
 
-                    if ui.add_enabled(has_movie, Button::new(text(&self.locale, "file-menu-close"))).clicked() {
+                    if ui.add_enabled(player.is_some(), Button::new(text(&self.locale, "file-menu-reload"))).clicked() {
+                        self.reload_movie(ui);
+                    }
+
+                    if ui.add_enabled(player.is_some(), Button::new(text(&self.locale, "file-menu-close"))).clicked() {
                         self.close_movie(ui);
                     }
 
@@ -227,7 +229,7 @@ impl RuffleGui {
                         let pause_shortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::P);
                         if Button::new(text(&self.locale, if playing { "controls-menu-suspend" } else { "controls-menu-resume" })).shortcut_text(ui.ctx().format_shortcut(&pause_shortcut)).ui(ui).clicked() {
                             ui.close_menu();
-                            if let Some(player) = player {
+                            if let Some(player) = &mut player {
                                 player.set_is_playing(!player.is_playing());
                             }
                         }
@@ -434,6 +436,17 @@ impl RuffleGui {
 
     fn close_movie(&mut self, ui: &mut egui::Ui) {
         let _ = self.event_loop.send_event(RuffleEvent::CloseFile);
+        self.currently_opened = None;
+        ui.close_menu();
+    }
+
+    fn reload_movie(&mut self, ui: &mut egui::Ui) {
+        let _ = self.event_loop.send_event(RuffleEvent::CloseFile);
+        if let Some((movie_url, opts)) = self.currently_opened.take() {
+            let _ = self
+                .event_loop
+                .send_event(RuffleEvent::OpenURL(movie_url, opts.into()));
+        }
         ui.close_menu();
     }
 
