@@ -59,7 +59,6 @@ use std::cell::RefCell;
 use std::collections::{HashMap, VecDeque};
 use std::ops::DerefMut;
 use std::rc::{Rc, Weak as RcWeak};
-use std::str::FromStr;
 use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
 use tracing::{info, instrument};
@@ -826,17 +825,13 @@ impl Player {
 
     pub fn set_show_menu(&mut self, show_menu: bool) {
         self.mutate_with_update_context(|context| {
-            let stage = context.stage;
-            stage.set_show_menu(context, show_menu);
+            context.stage.set_show_menu(context, show_menu);
         })
     }
 
-    pub fn set_stage_align(&mut self, stage_align: &str) {
+    pub fn set_stage_align(&mut self, stage_align: StageAlign) {
         self.mutate_with_update_context(|context| {
-            let stage = context.stage;
-            if let Ok(stage_align) = StageAlign::from_str(stage_align) {
-                stage.set_align(context, stage_align);
-            }
+            context.stage.set_align(context, stage_align);
         })
     }
 
@@ -846,12 +841,9 @@ impl Player {
         })
     }
 
-    pub fn set_window_mode(&mut self, window_mode: &str) {
+    pub fn set_window_mode(&mut self, window_mode: WindowMode) {
         self.mutate_with_update_context(|context| {
-            let stage = context.stage;
-            if let Ok(window_mode) = WindowMode::from_str(window_mode) {
-                stage.set_window_mode(context, window_mode);
-            }
+            context.stage.set_window_mode(context, window_mode);
         })
     }
 
