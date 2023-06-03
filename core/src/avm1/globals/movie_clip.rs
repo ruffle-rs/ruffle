@@ -18,7 +18,7 @@ use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::prelude::*;
 use crate::string::AvmString;
 use crate::vminterface::Instantiator;
-use ruffle_render::shape_utils::DrawCommand;
+use ruffle_render::shape_utils::{DrawCommand, GradientType};
 use swf::{
     FillStyle, Fixed8, Gradient, GradientInterpolation, GradientRecord, GradientSpread,
     LineCapStyle, LineJoinStyle, LineStyle, Rectangle, Twips,
@@ -65,10 +65,17 @@ macro_rules! mc_setter {
 }
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
+    "attachBitmap" => method(mc_method!(attach_bitmap); DONT_ENUM | DONT_DELETE | VERSION_8);
     "attachMovie" => method(mc_method!(attach_movie); DONT_ENUM | DONT_DELETE);
+    "beginFill" => method(mc_method!(begin_fill); DONT_ENUM | DONT_DELETE | VERSION_6);
+    "beginBitmapFill" => method(mc_method!(begin_bitmap_fill); DONT_ENUM | DONT_DELETE | VERSION_8);
+    "beginGradientFill" => method(mc_method!(begin_gradient_fill); DONT_ENUM | DONT_DELETE | VERSION_6);
+    "clear" => method(mc_method!(clear); DONT_ENUM | DONT_DELETE | VERSION_6);
     "createEmptyMovieClip" => method(mc_method!(create_empty_movie_clip); DONT_ENUM | DONT_DELETE | VERSION_6);
     "createTextField" => method(mc_method!(create_text_field); DONT_ENUM | DONT_DELETE);
+    "curveTo" => method(mc_method!(curve_to); DONT_ENUM | DONT_DELETE | VERSION_6);
     "duplicateMovieClip" => method(mc_method!(duplicate_movie_clip); DONT_ENUM | DONT_DELETE);
+    "endFill" => method(mc_method!(end_fill); DONT_ENUM | DONT_DELETE | VERSION_6);
     "getBounds" => method(mc_method!(get_bounds); DONT_ENUM | DONT_DELETE);
     "getBytesLoaded" => method(mc_method!(get_bytes_loaded); DONT_ENUM | DONT_DELETE);
     "getBytesTotal" => method(mc_method!(get_bytes_total); DONT_ENUM | DONT_DELETE);
@@ -82,35 +89,30 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "gotoAndPlay" => method(mc_method!(goto_and_play); DONT_ENUM | DONT_DELETE);
     "gotoAndStop" => method(mc_method!(goto_and_stop); DONT_ENUM | DONT_DELETE);
     "hitTest" => method(mc_method!(hit_test); DONT_ENUM | DONT_DELETE);
+    "lineGradientStyle" => method(mc_method!(line_gradient_style); DONT_ENUM | DONT_DELETE | VERSION_8);
+    "lineStyle" => method(mc_method!(line_style); DONT_ENUM | DONT_DELETE | VERSION_6);
+    "lineTo" => method(mc_method!(line_to); DONT_ENUM | DONT_DELETE | VERSION_6);
     "loadMovie" => method(mc_method!(load_movie); DONT_ENUM | DONT_DELETE);
     "loadVariables" => method(mc_method!(load_variables); DONT_ENUM | DONT_DELETE);
     "localToGlobal" => method(mc_method!(local_to_global); DONT_ENUM | DONT_DELETE);
+    "moveTo" => method(mc_method!(move_to); DONT_ENUM | DONT_DELETE | VERSION_6);
     "nextFrame" => method(mc_method!(next_frame); DONT_ENUM | DONT_DELETE);
     "play" => method(mc_method!(play); DONT_ENUM | DONT_DELETE);
     "prevFrame" => method(mc_method!(prev_frame); DONT_ENUM | DONT_DELETE);
+    "removeMovieClip" => method(remove_movie_clip; DONT_ENUM | DONT_DELETE);
     "setMask" => method(mc_method!(set_mask); DONT_ENUM | DONT_DELETE | VERSION_6);
     "startDrag" => method(mc_method!(start_drag); DONT_ENUM | DONT_DELETE);
     "stop" => method(mc_method!(stop); DONT_ENUM | DONT_DELETE);
     "stopDrag" => method(mc_method!(stop_drag); DONT_ENUM | DONT_DELETE);
     "swapDepths" => method(mc_method!(swap_depths); DONT_ENUM | DONT_DELETE);
     "unloadMovie" => method(mc_method!(unload_movie); DONT_ENUM | DONT_DELETE);
-    "beginFill" => method(mc_method!(begin_fill); DONT_ENUM | DONT_DELETE | VERSION_6);
-    "beginBitmapFill" => method(mc_method!(begin_bitmap_fill); DONT_ENUM | DONT_DELETE | VERSION_8);
-    "beginGradientFill" => method(mc_method!(begin_gradient_fill); DONT_ENUM | DONT_DELETE | VERSION_6);
-    "moveTo" => method(mc_method!(move_to); DONT_ENUM | DONT_DELETE | VERSION_6);
-    "lineTo" => method(mc_method!(line_to); DONT_ENUM | DONT_DELETE | VERSION_6);
-    "curveTo" => method(mc_method!(curve_to); DONT_ENUM | DONT_DELETE | VERSION_6);
-    "endFill" => method(mc_method!(end_fill); DONT_ENUM | DONT_DELETE | VERSION_6);
-    "lineStyle" => method(mc_method!(line_style); DONT_ENUM | DONT_DELETE | VERSION_6);
-    "clear" => method(mc_method!(clear); DONT_ENUM | DONT_DELETE | VERSION_6);
-    "attachBitmap" => method(mc_method!(attach_bitmap); DONT_ENUM | DONT_DELETE | VERSION_8);
-    "removeMovieClip" => method(remove_movie_clip; DONT_ENUM | DONT_DELETE);
-    "enabled" => bool(true; DONT_ENUM);
-    "useHandCursor" => bool(true; DONT_ENUM);
-    "transform" => property(mc_getter!(transform), mc_setter!(set_transform); DONT_ENUM | VERSION_8);
-    "_lockroot" => property(mc_getter!(lock_root), mc_setter!(set_lock_root); DONT_DELETE | DONT_ENUM);
+
     "blendMode" => property(mc_getter!(blend_mode), mc_setter!(set_blend_mode); DONT_DELETE | DONT_ENUM | VERSION_8);
+    "enabled" => bool(true; DONT_ENUM);
+    "_lockroot" => property(mc_getter!(lock_root), mc_setter!(set_lock_root); DONT_DELETE | DONT_ENUM);
     "scrollRect" => property(mc_getter!(scroll_rect), mc_setter!(set_scroll_rect); DONT_DELETE | DONT_ENUM | VERSION_8);
+    "transform" => property(mc_getter!(transform), mc_setter!(set_transform); DONT_ENUM | VERSION_8);
+    "useHandCursor" => bool(true; DONT_ENUM);
     // NOTE: `focusEnabled` is not a built-in property of MovieClip.
 };
 
@@ -360,6 +362,160 @@ fn line_style<'gc>(
     Ok(Value::Undefined)
 }
 
+fn line_gradient_style<'gc>(
+    movie_clip: MovieClip<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let (Some(gradient_type), Some(colors), Some(alphas), Some(ratios), Some(matrix)) = (
+        args.get(0),
+        args.get(1),
+        args.get(2),
+        args.get(3),
+        args.get(4),
+    ) {
+        if args.len() > 8 {
+            // Silently fail if too many arguments are passed.
+            return Ok(Value::Undefined);
+        }
+        let gradient_type = if let Some(gradient) =
+            parse_gradient_type(gradient_type.coerce_to_string(activation)?)
+        {
+            gradient
+        } else {
+            avm_warn!(
+                activation,
+                "lineGradientStyle() received invalid fill type {:?}",
+                gradient_type
+            );
+            return Ok(Value::Undefined);
+        };
+        let colors = colors.coerce_to_object(activation);
+        let alphas = alphas.coerce_to_object(activation);
+        let ratios = ratios.coerce_to_object(activation);
+        let records = if let Some(records) =
+            build_gradient_records(activation, "lineGradientStyle()", &colors, &alphas, &ratios)?
+        {
+            records
+        } else {
+            return Ok(Value::Undefined);
+        };
+        let matrix = matrix.coerce_to_object(activation);
+        let matrix = gradient_object_to_matrix(matrix, activation)?;
+        let spread = parse_spread_method(
+            args.get(5)
+                .and_then(|v| v.coerce_to_string(activation).ok()),
+        );
+        let interpolation = parse_interpolation_method(
+            args.get(6)
+                .and_then(|v| v.coerce_to_string(activation).ok()),
+        );
+        let focal_point = args
+            .get(7)
+            .and_then(|v| v.coerce_to_f64(activation).ok())
+            .unwrap_or_default();
+        let style = match gradient_type {
+            GradientType::Linear => FillStyle::LinearGradient(Gradient {
+                matrix: matrix.into(),
+                spread,
+                interpolation,
+                records,
+            }),
+            GradientType::Radial if focal_point == 0.0 => FillStyle::RadialGradient(Gradient {
+                matrix: matrix.into(),
+                spread,
+                interpolation,
+                records,
+            }),
+            _ => FillStyle::FocalGradient {
+                gradient: Gradient {
+                    matrix: matrix.into(),
+                    spread,
+                    interpolation,
+                    records,
+                },
+                focal_point: Fixed8::from_f64(focal_point),
+            },
+        };
+        movie_clip
+            .drawing(activation.context.gc_context)
+            .set_line_fill_style(style);
+    }
+    Ok(Value::Undefined)
+}
+
+fn build_gradient_records<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    fname: &str,
+    colors: &Object<'gc>,
+    alphas: &Object<'gc>,
+    ratios: &Object<'gc>,
+) -> Result<Option<Vec<GradientRecord>>, Error<'gc>> {
+    let colors_length = colors.length(activation)?;
+    let alphas_length = alphas.length(activation)?;
+    let ratios_length = ratios.length(activation)?;
+    if colors_length != alphas_length || colors_length != ratios_length {
+        avm_warn!(
+            activation,
+            "{} received different sized arrays for colors, alphas and ratios",
+            fname
+        );
+        return Ok(None);
+    }
+    let mut records = Vec::with_capacity(colors_length as usize);
+    for i in 0..colors_length {
+        let color = colors
+            .get_element(activation, i)
+            .coerce_to_u32(activation)?;
+        let alpha = alphas
+            .get_element(activation, i)
+            .coerce_to_f64(activation)?
+            .clamp(0.0, 100.0);
+        let ratio = ratios
+            .get_element(activation, i)
+            .coerce_to_f64(activation)?;
+        if ratio <= -1.0 || ratio >= 256.0 {
+            avm_warn!(
+                activation,
+                "{} received an invalid ratio value {}",
+                fname,
+                ratio
+            );
+            return Ok(None);
+        }
+        records.push(GradientRecord {
+            ratio: ratio as u8,
+            color: Color::from_rgb(color, (alpha / 100.0 * 255.0) as u8),
+        });
+    }
+    Ok(Some(records))
+}
+
+fn parse_gradient_type(gradient_type: AvmString) -> Option<GradientType> {
+    if &gradient_type == b"linear" {
+        Some(GradientType::Linear)
+    } else if &gradient_type == b"radial" {
+        Some(GradientType::Radial)
+    } else {
+        None
+    }
+}
+
+fn parse_spread_method(spread_method: Option<AvmString>) -> GradientSpread {
+    match spread_method.as_deref() {
+        Some(v) if v == b"reflect" => GradientSpread::Reflect,
+        Some(v) if v == b"repeat" => GradientSpread::Repeat,
+        _ => GradientSpread::Pad,
+    }
+}
+
+fn parse_interpolation_method(interpolation_method: Option<AvmString>) -> GradientInterpolation {
+    match interpolation_method.as_deref() {
+        Some(v) if v == b"linearRGB" => GradientInterpolation::LinearRgb,
+        _ => GradientInterpolation::Rgb,
+    }
+}
+
 fn begin_fill<'gc>(
     movie_clip: MovieClip<'gc>,
     activation: &mut Activation<'_, 'gc>,
@@ -446,66 +602,58 @@ fn begin_gradient_fill<'gc>(
     activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let (Some(method), Some(colors), Some(alphas), Some(ratios), Some(matrix)) = (
+    if Value::Undefined == *args.get(0).unwrap_or(&Value::Undefined) {
+        // The path has no fill if the first parameter is `undefined`, or if no parameters are passed.
+        movie_clip
+            .drawing(activation.context.gc_context)
+            .set_fill_style(None);
+    } else if let (Some(gradient_type), Some(colors), Some(alphas), Some(ratios), Some(matrix)) = (
         args.get(0),
         args.get(1),
         args.get(2),
         args.get(3),
         args.get(4),
     ) {
-        let method = method.coerce_to_string(activation)?;
-        let colors_object = colors.coerce_to_object(activation);
-        let colors_length = colors_object.length(activation)?;
-        let alphas_object = alphas.coerce_to_object(activation);
-        let alphas_length = alphas_object.length(activation)?;
-        let ratios_object = ratios.coerce_to_object(activation);
-        let ratios_length = ratios_object.length(activation)?;
-        let matrix_object = matrix.coerce_to_object(activation);
-        if colors_length != alphas_length || colors_length != ratios_length {
-            avm_warn!(
-                activation,
-                "beginGradientFill() received different sized arrays for colors, alphas and ratios"
-            );
+        if (args.len() > 8) || (args.len() > 5 && activation.swf_version() < 8) {
+            // Silently fail if too many arguments are passed.
             return Ok(Value::Undefined);
         }
-        let records: Result<Vec<_>, Error<'gc>> = (0..colors_length)
-            .map(|i| {
-                let ratio = ratios_object
-                    .get_element(activation, i)
-                    .coerce_to_f64(activation)?
-                    .clamp(0.0, 255.0) as u8;
-                let rgb = colors_object
-                    .get_element(activation, i)
-                    .coerce_to_u32(activation)?;
-                let alpha = alphas_object
-                    .get_element(activation, i)
-                    .coerce_to_f64(activation)?
-                    .clamp(0.0, 100.0);
-                Ok(GradientRecord {
-                    ratio,
-                    color: Color::from_rgb(rgb, (alpha / 100.0 * 255.0) as u8),
-                })
-            })
-            .collect();
-        let records = records?;
-        let matrix = gradient_object_to_matrix(matrix_object, activation)?;
-        let spread = match args
-            .get(5)
-            .and_then(|v| v.coerce_to_string(activation).ok())
-            .as_deref()
+        let gradient_type = if let Some(gradient) =
+            parse_gradient_type(gradient_type.coerce_to_string(activation)?)
         {
-            Some(v) if v == b"reflect" => GradientSpread::Reflect,
-            Some(v) if v == b"repeat" => GradientSpread::Repeat,
-            _ => GradientSpread::Pad,
+            gradient
+        } else {
+            avm_warn!(
+                activation,
+                "beginGradientFill() received invalid fill type {:?}",
+                gradient_type
+            );
+            return Ok(Value::Undefined);
         };
-        let interpolation = match args
-            .get(6)
-            .and_then(|v| v.coerce_to_string(activation).ok())
-            .as_deref()
+        let colors = colors.coerce_to_object(activation);
+        let alphas = alphas.coerce_to_object(activation);
+        let ratios = ratios.coerce_to_object(activation);
+        let records = if let Some(records) =
+            build_gradient_records(activation, "beginGradientFill()", &colors, &alphas, &ratios)?
         {
-            Some(v) if v == b"linearRGB" => GradientInterpolation::LinearRgb,
-            _ => GradientInterpolation::Rgb,
+            records
+        } else {
+            return Ok(Value::Undefined);
         };
+        let matrix = matrix.coerce_to_object(activation);
+        let matrix = gradient_object_to_matrix(matrix, activation)?;
+        let spread = parse_spread_method(
+            args.get(5)
+                .and_then(|v| v.coerce_to_string(activation).ok()),
+        );
+        let interpolation = parse_interpolation_method(
+            args.get(6)
+                .and_then(|v| v.coerce_to_string(activation).ok()),
+        );
+        let focal_point = args
+            .get(7)
+            .and_then(|v| v.coerce_to_f64(activation).ok())
+            .unwrap_or_default();
 
         let gradient = Gradient {
             matrix: matrix.into(),
@@ -513,32 +661,17 @@ fn begin_gradient_fill<'gc>(
             interpolation,
             records,
         };
-        let style = if &method == b"linear" {
-            FillStyle::LinearGradient(gradient)
-        } else if &method == b"radial" {
-            if let Some(focal_point) = args.get(7) {
-                FillStyle::FocalGradient {
-                    gradient,
-                    focal_point: Fixed8::from_f64(focal_point.coerce_to_f64(activation)?),
-                }
-            } else {
-                FillStyle::RadialGradient(gradient)
-            }
-        } else {
-            avm_warn!(
-                activation,
-                "beginGradientFill() received invalid fill type {:?}",
-                method
-            );
-            return Ok(Value::Undefined);
+        let style = match gradient_type {
+            GradientType::Linear => FillStyle::LinearGradient(gradient),
+            GradientType::Radial if focal_point == 0.0 => FillStyle::RadialGradient(gradient),
+            _ => FillStyle::FocalGradient {
+                gradient,
+                focal_point: Fixed8::from_f64(focal_point),
+            },
         };
         movie_clip
             .drawing(activation.context.gc_context)
             .set_fill_style(Some(style));
-    } else {
-        movie_clip
-            .drawing(activation.context.gc_context)
-            .set_fill_style(None);
     }
     Ok(Value::Undefined)
 }
