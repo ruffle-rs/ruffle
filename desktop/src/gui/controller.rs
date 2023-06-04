@@ -311,7 +311,7 @@ fn load_system_fonts() -> anyhow::Result<egui::FontDefinitions> {
     let (name, src, index) = font_database
         .face(id)
         .map(|f| (f.post_script_name.clone(), f.source.clone(), f.index))
-        .unwrap();
+        .expect("id not found in font database");
 
     let mut fontdata = match src {
         Source::File(path) => {
@@ -330,8 +330,8 @@ fn load_system_fonts() -> anyhow::Result<egui::FontDefinitions> {
     fd.font_data.insert(name.clone(), fontdata);
     fd.families
         .get_mut(&egui::FontFamily::Proportional)
-        .unwrap()
-        .push(name.clone());
+        .expect("font family not found")
+        .push(name);
 
     Ok(fd)
 }
