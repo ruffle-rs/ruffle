@@ -27,3 +27,4 @@ help-menu-about = About Ruffle
 
 debug-menu = Debug Tools
 debug-menu-open-stage = View Stage Info
+debug-menu-open-movie = View Movie

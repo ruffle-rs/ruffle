@@ -239,8 +239,14 @@ impl RuffleGui {
                     ui.add_enabled_ui(player.is_some(), |ui| {
                         if Button::new(text(&self.locale, "debug-menu-open-stage")).ui(ui).clicked() {
                             ui.close_menu();
-                            if let Some(player) = player {
+                            if let Some(player) = &mut player {
                                 player.debug_ui_message(DebugMessage::TrackStage);
+                            }
+                        }
+                        if Button::new(text(&self.locale, "debug-menu-open-movie")).ui(ui).clicked() {
+                            ui.close_menu();
+                            if let Some(player) = &mut player {
+                                player.debug_ui_message(DebugMessage::TrackTopLevelMovie);
                             }
                         }
                     });

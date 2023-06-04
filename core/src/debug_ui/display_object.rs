@@ -1,5 +1,6 @@
 use crate::context::UpdateContext;
 use crate::debug_ui::handle::DisplayObjectHandle;
+use crate::debug_ui::movie::open_movie_button;
 use crate::debug_ui::Message;
 use crate::display_object::{DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer};
 use egui::collapsing_header::CollapsingState;
@@ -126,7 +127,7 @@ impl DisplayObjectWindow {
                 ui.separator();
 
                 match self.open_panel {
-                    Panel::Position => self.show_position(ui, object),
+                    Panel::Position => self.show_position(ui, object, messages),
                     Panel::Display => self.show_display(ui, context, object, messages),
                     Panel::Children => self.show_children(ui, context, object, messages),
                     Panel::TypeSpecific => {
@@ -201,7 +202,7 @@ impl DisplayObjectWindow {
             .id_source(ui.id().with("frames"))
             .show(ui, |ui| {
                 Grid::new(ui.id().with("frames"))
-                    .num_columns(4)
+                    .num_columns(5)
                     .show(ui, |ui| {
                         let num_frames = object.total_frames();
                         let scenes = object.scenes();
@@ -318,7 +319,12 @@ impl DisplayObjectWindow {
             });
     }
 
-    pub fn show_position(&mut self, ui: &mut Ui, object: DisplayObject<'_>) {
+    pub fn show_position(
+        &mut self,
+        ui: &mut Ui,
+        object: DisplayObject<'_>,
+        messages: &mut Vec<Message>,
+    ) {
         Grid::new(ui.id().with("position"))
             .num_columns(2)
             .show(ui, |ui| {
@@ -326,6 +332,10 @@ impl DisplayObjectWindow {
                 // &mut of a temporary thing because we don't want to actually be able to change this
                 // If we disable it, the user can't highlight or interact with it, so this makes it readonly but enabled
                 ui.text_edit_singleline(&mut object.name().to_string());
+                ui.end_row();
+
+                ui.label("Movie");
+                open_movie_button(ui, &object.movie(), messages);
                 ui.end_row();
 
                 ui.label("AVM1 Path");
