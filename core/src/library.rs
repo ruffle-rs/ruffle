@@ -1,4 +1,4 @@
-use crate::avm1::PropertyMap as Avm1PropertyMap;
+use crate::avm1::{PropertyMap as Avm1PropertyMap, PropertyMap};
 use crate::avm2::{ClassObject as Avm2ClassObject, Domain as Avm2Domain};
 use crate::backend::audio::SoundHandle;
 use crate::character::Character;
@@ -158,6 +158,16 @@ impl<'gc> MovieLibrary<'gc> {
     /// This character will then be instantiable from AVM1.
     pub fn register_export(&mut self, id: CharacterId, export_name: AvmString<'gc>) {
         self.export_characters.insert(export_name, id, false);
+    }
+
+    #[allow(dead_code)]
+    pub fn characters(&self) -> &HashMap<CharacterId, Character<'gc>> {
+        &self.characters
+    }
+
+    #[allow(dead_code)]
+    pub fn export_characters(&self) -> &PropertyMap<'gc, CharacterId> {
+        &self.export_characters
     }
 
     pub fn contains_character(&self, id: CharacterId) -> bool {

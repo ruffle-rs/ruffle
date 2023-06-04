@@ -1,40 +1,59 @@
 mod display_object;
 mod handle;
+mod movie;
 
 use crate::context::{RenderContext, UpdateContext};
 use crate::debug_ui::display_object::DisplayObjectWindow;
 use crate::debug_ui::handle::DisplayObjectHandle;
+use crate::debug_ui::movie::MovieWindow;
 use crate::display_object::TDisplayObject;
+use crate::tag_utils::SwfMovie;
 use gc_arena::DynamicRootSet;
 use hashbrown::HashMap;
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::matrix::Matrix;
+use std::sync::{Arc, Weak};
 use swf::{Color, Rectangle, Twips};
+use weak_table::PtrWeakKeyHashMap;
 
 #[derive(Default)]
 pub struct DebugUi {
     display_objects: HashMap<DisplayObjectHandle, DisplayObjectWindow>,
+    movies: PtrWeakKeyHashMap<Weak<SwfMovie>, MovieWindow>,
     queued_messages: Vec<Message>,
 }
 
 #[derive(Debug)]
 pub enum Message {
     TrackDisplayObject(DisplayObjectHandle),
+    TrackMovie(Arc<SwfMovie>),
     TrackStage,
+    TrackTopLevelMovie,
 }
 
 impl DebugUi {
     pub fn show(&mut self, egui_ctx: &egui::Context, context: &mut UpdateContext) {
         let mut messages = std::mem::take(&mut self.queued_messages);
+
         self.display_objects.retain(|object, window| {
             let object = object.fetch(context.dynamic_root);
             window.show(egui_ctx, context, object, &mut messages)
         });
+
+        self.movies
+            .retain(|movie, window| window.show(egui_ctx, context, movie));
+
         for message in messages {
             match message {
                 Message::TrackDisplayObject(object) => self.track_display_object(object),
                 Message::TrackStage => {
                     self.track_display_object(DisplayObjectHandle::new(context, context.stage))
+                }
+                Message::TrackMovie(movie) => {
+                    self.movies.insert(movie, Default::default());
+                }
+                Message::TrackTopLevelMovie => {
+                    self.movies.insert(context.swf.clone(), Default::default());
                 }
             }
         }
