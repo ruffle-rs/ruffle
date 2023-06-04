@@ -2,6 +2,8 @@
 description: A shader that does nothing, but does it well. (String)
 name: DoNothing (String)
 namespace: Adobe::Example (String)
+otherSrc: [object ShaderInput] (flash.display::ShaderInput)
+ name: otherSrc (String)
 radius: [object ShaderParameter] (flash.display::ShaderParameter)
  defaultValue: 25 (Array)
   0: 25 (int)

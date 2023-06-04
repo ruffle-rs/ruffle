@@ -212,6 +212,18 @@ pub enum Operation {
     If {
         src: u32,
     },
+    SampleNearest {
+        dst: u16,
+        src: u32,
+        mask: u8,
+        tf: u8,
+    },
+    SampleLinear {
+        dst: u16,
+        src: u32,
+        mask: u8,
+        tf: u8,
+    },
     Else,
     EndIf,
 }
@@ -367,11 +379,30 @@ fn read_op<R: Read>(
                     .push(Operation::LoadFloat { dst, mask, val })
             }
         }
+        Opcode::SampleNearest | Opcode::SampleLinear => {
+            let dst = data.read_u16::<LittleEndian>()?;
+            let mask = data.read_u8()?;
+            let src = read_uint24(data)?;
+            let tf = data.read_u8()?;
+            match opcode {
+                Opcode::SampleNearest => {
+                    shader
+                        .operations
+                        .push(Operation::SampleNearest { dst, mask, src, tf })
+                }
+                Opcode::SampleLinear => {
+                    shader
+                        .operations
+                        .push(Operation::SampleLinear { dst, mask, src, tf })
+                }
+                _ => unreachable!(),
+            }
+        }
         _ => {
             let dst = data.read_u16::<LittleEndian>()?;
             let mask = data.read_u8()?;
             let src = read_uint24(data)?;
-            assert_eq!(data.read_u8()?, 0);
+            assert_eq!(data.read_u8()?, 0, "Unexpected u8 for opcode {opcode:?}");
             shader.operations.push(Operation::Normal {
                 opcode,
                 dst,
