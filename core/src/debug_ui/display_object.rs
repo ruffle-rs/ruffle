@@ -127,7 +127,7 @@ impl DisplayObjectWindow {
                 ui.separator();
 
                 match self.open_panel {
-                    Panel::Position => self.show_position(ui, object, messages),
+                    Panel::Position => self.show_position(ui, context, object, messages),
                     Panel::Display => self.show_display(ui, context, object, messages),
                     Panel::Children => self.show_children(ui, context, object, messages),
                     Panel::TypeSpecific => {
@@ -322,7 +322,8 @@ impl DisplayObjectWindow {
     pub fn show_position(
         &mut self,
         ui: &mut Ui,
-        object: DisplayObject<'_>,
+        context: &mut UpdateContext,
+        object: DisplayObject,
         messages: &mut Vec<Message>,
     ) {
         Grid::new(ui.id().with("position"))
@@ -332,6 +333,28 @@ impl DisplayObjectWindow {
                 // &mut of a temporary thing because we don't want to actually be able to change this
                 // If we disable it, the user can't highlight or interact with it, so this makes it readonly but enabled
                 ui.text_edit_singleline(&mut object.name().to_string());
+                ui.end_row();
+
+                ui.label("Character");
+                let id = object.id();
+                if let Some(name) =
+                    context
+                        .library
+                        .library_for_movie(object.movie())
+                        .and_then(|l| {
+                            l.export_characters().iter().find_map(|(k, v)| {
+                                if *v == id {
+                                    Some(k)
+                                } else {
+                                    None
+                                }
+                            })
+                        })
+                {
+                    ui.label(format!("{id} {name}"));
+                } else {
+                    ui.label(id.to_string());
+                }
                 ui.end_row();
 
                 ui.label("Movie");
