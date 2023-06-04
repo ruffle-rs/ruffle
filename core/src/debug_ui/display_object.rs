@@ -4,7 +4,8 @@ use crate::debug_ui::movie::open_movie_button;
 use crate::debug_ui::Message;
 use crate::display_object::{DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer};
 use egui::collapsing_header::CollapsingState;
-use egui::{Button, Checkbox, CollapsingHeader, ComboBox, Grid, Id, Ui, Widget, Window};
+use egui::{Button, Checkbox, CollapsingHeader, ComboBox, Grid, Id, TextEdit, Ui, Widget, Window};
+use ruffle_wstr::{WStr, WString};
 use std::borrow::Cow;
 use swf::{BlendMode, ColorTransform, Fixed8};
 
@@ -53,6 +54,7 @@ pub struct DisplayObjectWindow {
     debug_rect_color: [f32; 3],
     debug_rect_visible: bool,
     hovered_debug_rect: Option<DisplayObjectHandle>,
+    search: String,
 }
 
 impl Default for DisplayObjectWindow {
@@ -67,6 +69,7 @@ impl Default for DisplayObjectWindow {
             debug_rect_color,
             debug_rect_visible: false,
             hovered_debug_rect: None,
+            search: Default::default(),
         }
     }
 }
@@ -431,9 +434,15 @@ impl DisplayObjectWindow {
         object: DisplayObject<'gc>,
         messages: &mut Vec<Message>,
     ) {
+        TextEdit::singleline(&mut self.search)
+            .hint_text("Search")
+            .show(ui);
+        // Let's search ascii-insensitive for QOL
+        let search = WString::from_utf8(&self.search).to_ascii_lowercase();
+
         if let Some(ctr) = object.as_container() {
             for child in ctr.iter_render_list() {
-                self.show_display_tree(ui, context, child, messages);
+                self.show_display_tree(ui, context, child, messages, &search);
             }
         }
     }
@@ -444,7 +453,11 @@ impl DisplayObjectWindow {
         context: &mut UpdateContext<'_, 'gc>,
         object: DisplayObject<'gc>,
         messages: &mut Vec<Message>,
+        search: &WStr,
     ) {
+        if !matches_search(object, search) {
+            return;
+        }
         if let Some(ctr) = object.as_container() {
             CollapsingState::load_with_default_open(ui.ctx(), ui.id().with(object.as_ptr()), false)
                 .show_header(ui, |ui| {
@@ -452,7 +465,7 @@ impl DisplayObjectWindow {
                 })
                 .body(|ui| {
                     for child in ctr.iter_render_list() {
-                        self.show_display_tree(ui, context, child, messages);
+                        self.show_display_tree(ui, context, child, messages, search);
                     }
                 });
         } else {
@@ -477,6 +490,22 @@ impl DisplayObjectWindow {
             )));
         }
     }
+}
+
+fn matches_search(object: DisplayObject, search: &WStr) -> bool {
+    if object.name().to_ascii_lowercase().contains(search) {
+        return true;
+    }
+
+    if let Some(ctr) = object.as_container() {
+        for child in ctr.iter_render_list() {
+            if matches_search(child, search) {
+                return true;
+            }
+        }
+    }
+
+    false
 }
 
 fn summary_color_transform(ct: ColorTransform) -> Cow<'static, str> {
