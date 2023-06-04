@@ -5,6 +5,7 @@ use crate::gui::RuffleGui;
 use crate::player::PlayerOptions;
 use anyhow::anyhow;
 use egui::Context;
+use fontdb::{Database, Family, Query, Source};
 use ruffle_core::Player;
 use ruffle_render_wgpu::backend::{request_adapter_and_device, WgpuRenderBackend};
 use ruffle_render_wgpu::descriptors::Descriptors;
@@ -80,7 +81,9 @@ impl GuiController {
             },
         );
         let descriptors = Descriptors::new(adapter, device, queue);
+        let system_fonts = load_system_fonts().unwrap_or_default();
         let egui_ctx = Context::default();
+        egui_ctx.set_fonts(system_fonts);
         if let Some(Theme::Light) = window.theme() {
             egui_ctx.set_visuals(egui::Visuals::light());
         }
@@ -285,4 +288,50 @@ impl GuiController {
     pub fn show_open_dialog(&mut self) {
         self.gui.open_file_advanced()
     }
+}
+
+// try to load known unicode supporting fonts to draw cjk characters in egui
+fn load_system_fonts() -> anyhow::Result<egui::FontDefinitions> {
+    let mut font_database = Database::default();
+    font_database.load_system_fonts();
+
+    let system_unicode_fonts = Query {
+        families: &[
+            Family::Name("MS UI Gothic"),     // windows
+            Family::Name("Arial Unicode MS"), // macos
+            Family::Name("Noto Sans"),        // linux
+            Family::SansSerif,
+        ],
+        ..Query::default()
+    };
+
+    let id = font_database
+        .query(&system_unicode_fonts)
+        .ok_or(anyhow!("no unicode fonts found!"))?;
+    let (name, src, index) = font_database
+        .face(id)
+        .map(|f| (f.post_script_name.clone(), f.source.clone(), f.index))
+        .unwrap();
+
+    let mut fontdata = match src {
+        Source::File(path) => {
+            let data = std::fs::read(path)?;
+            egui::FontData::from_owned(data)
+        }
+        Source::Binary(bin) | Source::SharedFile(_, bin) => {
+            let data = bin.as_ref().as_ref().to_vec();
+            egui::FontData::from_owned(data)
+        }
+    };
+    fontdata.index = index;
+    tracing::info!("loaded cjk fallback font \"{}\"", name);
+
+    let mut fd = egui::FontDefinitions::default();
+    fd.font_data.insert(name.clone(), fontdata);
+    fd.families
+        .get_mut(&egui::FontFamily::Proportional)
+        .unwrap()
+        .push(name.clone());
+
+    Ok(fd)
 }
