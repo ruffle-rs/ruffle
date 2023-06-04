@@ -374,11 +374,39 @@ impl DisplayObjectWindow {
                 ui.end_row();
 
                 ui.label("World Bounds");
-                ui.label(object.world_bounds().to_string());
+                if object.world_bounds().is_valid() {
+                    ui.label(object.world_bounds().to_string());
+                } else {
+                    ui.colored_label(ui.style().visuals.error_fg_color, "Invalid");
+                }
                 ui.end_row();
 
                 ui.label("Local Bounds");
-                ui.label(object.local_bounds().to_string());
+                if object.local_bounds().is_valid() {
+                    ui.label(object.local_bounds().to_string());
+                } else {
+                    ui.colored_label(ui.style().visuals.error_fg_color, "Invalid");
+                }
+                ui.end_row();
+
+                ui.label("Self Bounds");
+                if object.self_bounds().is_valid() {
+                    ui.label(object.self_bounds().to_string());
+                } else {
+                    ui.colored_label(ui.style().visuals.error_fg_color, "Invalid");
+                }
+                ui.end_row();
+
+                ui.label("Scroll Rect");
+                if let Some(scroll_rect) = object.scroll_rect() {
+                    if scroll_rect.is_valid() {
+                        ui.label(scroll_rect.to_string());
+                    } else {
+                        ui.colored_label(ui.style().visuals.error_fg_color, "Invalid");
+                    }
+                } else {
+                    ui.label("None");
+                }
                 ui.end_row();
 
                 let matrix = *object.base().matrix();
