@@ -19,9 +19,8 @@ use crate::prelude::*;
 use crate::string::AvmString;
 use crate::vminterface::Instantiator;
 use ruffle_render::shape_utils::DrawCommand;
-use std::str::FromStr;
 use swf::{
-    BlendMode, FillStyle, Fixed8, Gradient, GradientInterpolation, GradientRecord, GradientSpread,
+    FillStyle, Fixed8, Gradient, GradientInterpolation, GradientRecord, GradientSpread,
     LineCapStyle, LineJoinStyle, LineStyle, Rectangle, Twips,
 };
 
@@ -1430,13 +1429,11 @@ fn set_blend_mode<'gc>(
     activation: &mut Activation<'_, 'gc>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    // No-op if value is not a string.
-    if let Value::String(mode) = value {
-        if let Ok(mode) = BlendMode::from_str(&mode.to_string()) {
-            this.set_blend_mode(activation.context.gc_context, mode);
-        } else {
-            tracing::error!("Unknown blend mode {}", mode);
-        };
+    // No-op if value is not a valid blend mode.
+    if let Some(mode) = value.as_blend_mode() {
+        this.set_blend_mode(activation.context.gc_context, mode);
+    } else {
+        tracing::error!("Unknown blend mode {value:?}");
     }
     Ok(())
 }
