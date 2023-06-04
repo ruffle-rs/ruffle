@@ -183,12 +183,11 @@ fn simple_shader() {
                 src: 19,
                 other: 0,
             },
-            Operation::Normal {
-                opcode: Opcode::SampleNearest,
+            Operation::SampleNearest {
                 dst: 3,
                 mask: 241,
                 src: 16,
-                other: 0,
+                tf: 0,
             },
             Operation::LoadFloat {
                 dst: 4,

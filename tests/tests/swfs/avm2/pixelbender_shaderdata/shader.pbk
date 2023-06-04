@@ -29,10 +29,13 @@
              maxValue: 50.0;
              defaultValue: 25.0;
          >;
+         
+         input image4 otherSrc;
      
          void evaluatePixel()
          {
              float2 one = (radius / radius) * (size / size);
+             float4 two = sampleLinear(otherSrc, float2(1.0, 2.0));
              dst = sampleNearest(src, outCoord()) + float4(100.0, 0.0, 100.0, 1.0);
          }
      }
