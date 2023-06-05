@@ -1532,12 +1532,26 @@ impl<'gc> MovieClip<'gc> {
             write.current_frame += 1;
         }
 
-        write.queued_script_frame = Some(write.current_frame);
-        if write.last_queued_script_frame != Some(write.current_frame) {
-            // We explicitly clear this variable since AS3 may later GOTO back
-            // to the already-ran frame. Since the frame number *has* changed
-            // in the meantime, it should absolutely run again.
-            write.last_queued_script_frame = None;
+        if context.is_action_script_3() {
+            let current_frame = write.current_frame;
+            if let Some(old_queued) = write.queued_script_frame.replace(current_frame) {
+                drop(write);
+                // We should have called `run_frame_scripts` by now.
+                panic!(
+                    "Queued script frame {} was not run for ({:?} {:?} {:?}) - now at frame {:?}",
+                    old_queued,
+                    self,
+                    self.name(),
+                    self.id(),
+                    current_frame
+                )
+            }
+            if write.last_queued_script_frame != Some(write.current_frame) {
+                // We explicitly clear this variable since AS3 may later GOTO back
+                // to the already-ran frame. Since the frame number *has* changed
+                // in the meantime, it should absolutely run again.
+                write.last_queued_script_frame = None;
+            }
         }
     }
 
@@ -1701,9 +1715,17 @@ impl<'gc> MovieClip<'gc> {
             self.assert_expected_tag_start();
         }
 
-        let frame_before_rewind = self.current_frame();
+        // A 'goto' deliberately skips the queued frame script -
+        // this method is only called for gotos to a different frame
+        // (no-op gotos are handled earlier).
+        self.0.write(context.gc_context).queued_script_frame = None;
+        // This counts as an 'enterFrame' for the purposes of skipping a frame
+        // (even though we don't call the 'enter_frame' method as we advance
+        // frames in the goto loop below)
         self.base_mut(context.gc_context)
             .set_skip_next_enter_frame(false);
+
+        let frame_before_rewind = self.current_frame();
 
         // Flash gotos are tricky:
         // 1) Conceptually, a goto should act like the playhead is advancing forward or
@@ -2523,27 +2545,29 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         let mut write = self.0.write(context.gc_context);
         let avm2_object = write.object.and_then(|o| o.as_avm2_object());
 
-        if let Some(avm2_object) = avm2_object {
-            if let Some(frame_id) = write.queued_script_frame {
-                // If we are already executing frame scripts, then we shouldn't
-                // run frame scripts recursively. This is because AVM2 can run
-                // gotos, which will both queue and run frame scripts for the
-                // whole movie again. If a goto is attempting to queue frame
-                // scripts on us AGAIN, we should allow the current stack to
-                // wind down before handling that.
-                if !write
-                    .flags
-                    .contains(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT)
-                {
-                    let is_fresh_frame =
-                        write.queued_script_frame != write.last_queued_script_frame;
+        if let Some(frame_id) = write.queued_script_frame {
+            // If we are already executing frame scripts, then we shouldn't
+            // run frame scripts recursively. This is because AVM2 can run
+            // gotos, which will both queue and run frame scripts for the
+            // whole movie again. If a goto is attempting to queue frame
+            // scripts on us AGAIN, we should allow the current stack to
+            // wind down before handling that.
+            if !write
+                .flags
+                .contains(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT)
+            {
+                let is_fresh_frame = write.queued_script_frame != write.last_queued_script_frame;
 
-                    if is_fresh_frame {
+                if is_fresh_frame {
+                    // We've now processed this queued frame script,
+                    // even if there was nothing registered for it.
+                    write.queued_script_frame = None;
+
+                    if let Some(avm2_object) = avm2_object {
                         if let Some(Some(callable)) =
                             write.frame_scripts.get(frame_id as usize).cloned()
                         {
                             write.last_queued_script_frame = Some(frame_id);
-                            write.queued_script_frame = None;
                             write
                                 .flags
                                 .insert(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT);

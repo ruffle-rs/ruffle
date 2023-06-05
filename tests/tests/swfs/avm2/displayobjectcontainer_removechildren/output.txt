@@ -1,3 +1,7 @@
+Children: 3
+Initializing: [object SymbolA_1]
+Initializing: [object SymbolB_2]
+Initializing: [object SymbolC_3]
 //var chx = this.getChildAt(0)
 //var chy = this.getChildAt(1)
 //var chz = this.getChildAt(2)
@@ -38,3 +42,37 @@ true
 //this.removeChildren(0, 0)
 //this.numChildren
 0
+Framescript counts:
+[object SymbolA_1]
+framescript 1: this.currentFrame: 1
+framescript 2: this.currentFrame: 2
+framescript 1: this.currentFrame: 1
+framescript 1: this.currentFrame: 1
+framescript 2: this.currentFrame: 2
+framescript 2: this.currentFrame: 2
+framescript 1: this.currentFrame: 1
+framescript 1: this.currentFrame: 1
+framescript 1: this.currentFrame: 1
+
+[object SymbolB_2]
+framescript 1: this.currentFrame: 1
+framescript 2: this.currentFrame: 2
+framescript 1: this.currentFrame: 1
+framescript 1: this.currentFrame: 1
+framescript 2: this.currentFrame: 2
+framescript 2: this.currentFrame: 2
+framescript 1: this.currentFrame: 1
+framescript 1: this.currentFrame: 1
+framescript 1: this.currentFrame: 1
+
+[object SymbolC_3]
+framescript 1: this.currentFrame: 1
+framescript 2: this.currentFrame: 2
+framescript 1: this.currentFrame: 1
+framescript 1: this.currentFrame: 1
+framescript 2: this.currentFrame: 2
+framescript 2: this.currentFrame: 2
+framescript 1: this.currentFrame: 1
+framescript 1: this.currentFrame: 1
+framescript 1: this.currentFrame: 1
+
