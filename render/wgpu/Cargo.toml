@@ -13,7 +13,7 @@ tracing = "0.1.37"
 ruffle_render = { path = "..", features = ["tessellator"] }
 bytemuck = { version = "1.13.1", features = ["derive"] }
 raw-window-handle = "0.5"
-clap = { version = "4.3.0", features = ["derive"], optional = true }
+clap = { version = "4.3.1", features = ["derive"], optional = true }
 enum-map = "2.5.0"
 fnv = "1.0.7"
 swf = { path = "../../swf" }
@@ -25,7 +25,7 @@ gc-arena = { workspace = true }
 naga-agal = { path = "../naga-agal" }
 downcast-rs = "1.2.0"
 profiling = { version = "1.0", default-features = false, optional = true }
-naga = { version = "0.12.1", features = ["validate", "wgsl-out"] }
+naga = { version = "0.12.2", features = ["validate", "wgsl-out"] }
 
 # desktop
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
