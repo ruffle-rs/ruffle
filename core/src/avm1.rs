@@ -28,7 +28,7 @@ mod tests;
 pub use activation::{Activation, ActivationIdentifier};
 pub use debug::VariableDumper;
 pub use error::Error;
-pub use function::ExecutionReason;
+pub use function::{Executable, ExecutionReason};
 pub use globals::context_menu::make_context_menu_state;
 pub use globals::shared_object::flush;
 pub use globals::sound::start as start_sound;

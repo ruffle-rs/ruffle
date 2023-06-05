@@ -1,5 +1,6 @@
+use crate::avm1::TObject;
 use crate::context::UpdateContext;
-use crate::debug_ui::handle::DisplayObjectHandle;
+use crate::debug_ui::handle::{AVM1ObjectHandle, DisplayObjectHandle};
 use crate::debug_ui::movie::open_movie_button;
 use crate::debug_ui::Message;
 use crate::display_object::{DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer};
@@ -268,19 +269,37 @@ impl DisplayObjectWindow {
             .show(ui, |ui| {
                 if let Some(other) = object.parent() {
                     ui.label("Parent");
-                    self.display_object_button(ui, context, messages, other);
+                    open_display_object_button(
+                        ui,
+                        context,
+                        messages,
+                        other,
+                        &mut self.hovered_debug_rect,
+                    );
                     ui.end_row();
                 }
 
                 if let Some(other) = object.masker() {
                     ui.label("Masker");
-                    self.display_object_button(ui, context, messages, other);
+                    open_display_object_button(
+                        ui,
+                        context,
+                        messages,
+                        other,
+                        &mut self.hovered_debug_rect,
+                    );
                     ui.end_row();
                 }
 
                 if let Some(other) = object.maskee() {
                     ui.label("Maskee");
-                    self.display_object_button(ui, context, messages, other);
+                    open_display_object_button(
+                        ui,
+                        context,
+                        messages,
+                        other,
+                        &mut self.hovered_debug_rect,
+                    );
                     ui.end_row();
                 }
 
@@ -322,11 +341,11 @@ impl DisplayObjectWindow {
             });
     }
 
-    pub fn show_position(
+    pub fn show_position<'gc>(
         &mut self,
         ui: &mut Ui,
-        context: &mut UpdateContext,
-        object: DisplayObject,
+        context: &mut UpdateContext<'_, 'gc>,
+        object: DisplayObject<'gc>,
         messages: &mut Vec<Message>,
     ) {
         Grid::new(ui.id().with("position"))
@@ -337,6 +356,16 @@ impl DisplayObjectWindow {
                 // If we disable it, the user can't highlight or interact with it, so this makes it readonly but enabled
                 ui.text_edit_singleline(&mut object.name().to_string());
                 ui.end_row();
+
+                if let crate::avm1::Value::Object(object) = object.object() {
+                    ui.label("AVM1 Object");
+                    if ui.button(format!("{:p}", object.as_ptr())).clicked() {
+                        messages.push(Message::TrackAVM1Object(AVM1ObjectHandle::new(
+                            context, object,
+                        )));
+                    }
+                    ui.end_row();
+                }
 
                 ui.label("Character");
                 let id = object.id();
@@ -461,7 +490,13 @@ impl DisplayObjectWindow {
         if let Some(ctr) = object.as_container() {
             CollapsingState::load_with_default_open(ui.ctx(), ui.id().with(object.as_ptr()), false)
                 .show_header(ui, |ui| {
-                    self.display_object_button(ui, context, messages, object);
+                    open_display_object_button(
+                        ui,
+                        context,
+                        messages,
+                        object,
+                        &mut self.hovered_debug_rect,
+                    );
                 })
                 .body(|ui| {
                     for child in ctr.iter_render_list() {
@@ -469,25 +504,7 @@ impl DisplayObjectWindow {
                     }
                 });
         } else {
-            self.display_object_button(ui, context, messages, object);
-        }
-    }
-
-    fn display_object_button<'gc>(
-        &mut self,
-        ui: &mut Ui,
-        context: &mut UpdateContext<'_, 'gc>,
-        messages: &mut Vec<Message>,
-        object: DisplayObject<'gc>,
-    ) {
-        let response = ui.button(summary_name(object));
-        if response.hovered() {
-            self.hovered_debug_rect = Some(DisplayObjectHandle::new(context, object));
-        }
-        if response.clicked() {
-            messages.push(Message::TrackDisplayObject(DisplayObjectHandle::new(
-                context, object,
-            )));
+            open_display_object_button(ui, context, messages, object, &mut self.hovered_debug_rect);
         }
     }
 }
@@ -602,5 +619,23 @@ fn blend_mode_name(mode: BlendMode) -> &'static str {
         BlendMode::Erase => "Erase",
         BlendMode::Overlay => "Overlay",
         BlendMode::HardLight => "HardLight",
+    }
+}
+
+pub fn open_display_object_button<'gc>(
+    ui: &mut Ui,
+    context: &mut UpdateContext<'_, 'gc>,
+    messages: &mut Vec<Message>,
+    object: DisplayObject<'gc>,
+    hover: &mut Option<DisplayObjectHandle>,
+) {
+    let response = ui.button(summary_name(object));
+    if response.hovered() {
+        *hover = Some(DisplayObjectHandle::new(context, object));
+    }
+    if response.clicked() {
+        messages.push(Message::TrackDisplayObject(DisplayObjectHandle::new(
+            context, object,
+        )));
     }
 }
