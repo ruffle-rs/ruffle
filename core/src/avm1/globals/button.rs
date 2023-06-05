@@ -39,7 +39,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "enabled" => bool(true);
     "useHandCursor" => bool(true);
     "getDepth" => method(globals::get_depth; DONT_DELETE | READ_ONLY | VERSION_6);
-    "blendMode" => property(button_getter!(blend_mode), button_setter!(set_blend_mode); DONT_DELETE);
+    "blendMode" => property(button_getter!(blend_mode), button_setter!(set_blend_mode); DONT_DELETE | VERSION_8);
 };
 
 pub fn create_proto<'gc>(
