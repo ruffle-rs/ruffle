@@ -1022,12 +1022,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         match object {
             Value::MovieClip(_) => {
                 let ob = object.coerce_to_object(self);
-                for k in ob.get_keys(self).into_iter().rev() {
+                for k in ob.get_keys(self, false).into_iter().rev() {
                     self.stack_push(k.into());
                 }
             }
             Value::Object(ob) => {
-                for k in ob.get_keys(self).into_iter().rev() {
+                for k in ob.get_keys(self, false).into_iter().rev() {
                     self.stack_push(k.into());
                 }
             }
@@ -1044,11 +1044,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         if let Value::MovieClip(_) = value {
             let object = value.coerce_to_object(self);
-            for k in object.get_keys(self).into_iter().rev() {
+            for k in object.get_keys(self, false).into_iter().rev() {
                 self.stack_push(k.into());
             }
         } else if let Value::Object(object) = value {
-            for k in object.get_keys(self).into_iter().rev() {
+            for k in object.get_keys(self, false).into_iter().rev() {
                 self.stack_push(k.into());
             }
         } else {
@@ -2445,7 +2445,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// WARNING: This does not support user defined virtual properties!
     pub fn object_into_form_values(&mut self, object: Object<'gc>) -> IndexMap<String, String> {
         let mut form_values = IndexMap::new();
-        let keys = object.get_keys(self);
+        let keys = object.get_keys(self, false);
 
         for k in keys {
             let v = object.get(k, self);

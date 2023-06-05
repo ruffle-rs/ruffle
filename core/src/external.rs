@@ -141,7 +141,7 @@ impl Value {
                         .collect();
                     Value::List(values?)
                 } else {
-                    let keys = object.get_keys(activation);
+                    let keys = object.get_keys(activation, false);
                     let mut values = BTreeMap::new();
                     for key in keys {
                         let value = object.get(key, activation)?;

@@ -119,7 +119,7 @@ impl<'a> VariableDumper<'a> {
         object: &Object<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) {
-        let keys = object.get_keys(activation);
+        let keys = object.get_keys(activation, false);
         if keys.is_empty() {
             self.output.push_str(" {}");
         } else {
@@ -166,7 +166,7 @@ impl<'a> VariableDumper<'a> {
         object: &Object<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) {
-        let keys = object.get_keys(activation);
+        let keys = object.get_keys(activation, false);
         if keys.is_empty() {
             return;
         }

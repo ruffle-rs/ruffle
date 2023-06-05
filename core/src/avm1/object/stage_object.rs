@@ -330,11 +330,15 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         false
     }
 
-    fn get_keys(&self, activation: &mut Activation<'_, 'gc>) -> Vec<AvmString<'gc>> {
+    fn get_keys(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        include_hidden: bool,
+    ) -> Vec<AvmString<'gc>> {
         // Keys from the underlying object are listed first, followed by
         // child display objects in order from highest depth to lowest depth.
         let obj = self.0.read();
-        let mut keys = obj.base.get_keys(activation);
+        let mut keys = obj.base.get_keys(activation, include_hidden);
 
         if let Some(ctr) = obj.display_object.as_container() {
             // Button/MovieClip children are included in key list.
