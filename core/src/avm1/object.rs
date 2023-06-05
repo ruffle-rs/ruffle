@@ -477,8 +477,13 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
     }
 
     /// Enumerate the object.
-    fn get_keys(&self, activation: &mut Activation<'_, 'gc>) -> Vec<AvmString<'gc>> {
-        self.raw_script_object().get_keys(activation)
+    fn get_keys(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        include_hidden: bool,
+    ) -> Vec<AvmString<'gc>> {
+        self.raw_script_object()
+            .get_keys(activation, include_hidden)
     }
 
     /// Enumerate all interfaces implemented by this object.

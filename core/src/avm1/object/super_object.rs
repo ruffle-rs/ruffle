@@ -223,7 +223,11 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         false
     }
 
-    fn get_keys(&self, _activation: &mut Activation<'_, 'gc>) -> Vec<AvmString<'gc>> {
+    fn get_keys(
+        &self,
+        _activation: &mut Activation<'_, 'gc>,
+        _include_hidden: bool,
+    ) -> Vec<AvmString<'gc>> {
         vec![]
     }
 

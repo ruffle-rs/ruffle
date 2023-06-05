@@ -1980,7 +1980,11 @@ impl<'gc> MovieClip<'gc> {
                     if let Some(init_object) = init_object {
                         // AVM1 sets keys in reverse order (compared to enumeration order).
                         // This behavior is visible to setters, and some SWFs depend on it.
-                        for key in init_object.get_keys(&mut activation).into_iter().rev() {
+                        for key in init_object
+                            .get_keys(&mut activation, false)
+                            .into_iter()
+                            .rev()
+                        {
                             if let Ok(value) = init_object.get(key, &mut activation) {
                                 let _ = object.set(key, value, &mut activation);
                             }
@@ -2011,7 +2015,7 @@ impl<'gc> MovieClip<'gc> {
                     self.into(),
                 );
 
-                for key in init_object.get_keys(&mut activation) {
+                for key in init_object.get_keys(&mut activation, false) {
                     if let Ok(value) = init_object.get(key, &mut activation) {
                         let _ = object.set(key, value, &mut activation);
                     }

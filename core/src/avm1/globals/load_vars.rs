@@ -171,7 +171,7 @@ fn send<'gc>(
     use indexmap::IndexMap;
 
     let mut form_values = IndexMap::new();
-    let keys = this.get_keys(activation);
+    let keys = this.get_keys(activation, false);
 
     for k in keys {
         let v = this.get(k, activation);
@@ -226,7 +226,7 @@ fn to_string<'gc>(
     use indexmap::IndexMap;
 
     let mut form_values = IndexMap::new();
-    let keys = this.get_keys(activation);
+    let keys = this.get_keys(activation, false);
 
     for k in keys {
         let v = this.get(k, activation);
