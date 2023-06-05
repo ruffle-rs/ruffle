@@ -352,6 +352,12 @@ pub fn remove_children<'gc>(
             let from = args.get_i32(activation, 0)?;
             let to = args.get_i32(activation, 1)?;
 
+            if from == 0 && to == i32::MAX && ctr.is_empty() {
+                // Flash specialcases these params (the defaults) to not error if the list is empty
+                // https://github.com/ruffle-rs/ruffle/issues/11382
+                return Ok(Value::Undefined);
+            }
+
             if from >= ctr.num_children() as i32 || from < 0 {
                 // Flash error message: The supplied index is out of bounds.
                 return Err(Error::AvmError(range_error(
