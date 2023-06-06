@@ -4439,7 +4439,12 @@ impl QueuedTagList {
     fn queue_add(&mut self, add_tag: QueuedTag) {
         let new = match self {
             QueuedTagList::None => QueuedTagList::Add(add_tag),
-            QueuedTagList::Add(_) => QueuedTagList::Add(add_tag),
+            QueuedTagList::Add(existing) => {
+                // Flash player traces "Warning: Failed to place object at depth 1.",
+                // so let's log a warning too.
+                tracing::warn!("Ignoring queued tag {add_tag:?} at same depth as {existing:?}");
+                QueuedTagList::Add(*existing)
+            }
             QueuedTagList::Remove(r) => QueuedTagList::RemoveThenAdd(*r, add_tag),
             QueuedTagList::RemoveThenAdd(r, _) => QueuedTagList::RemoveThenAdd(*r, add_tag),
         };
