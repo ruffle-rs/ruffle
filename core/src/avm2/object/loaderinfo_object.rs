@@ -214,7 +214,12 @@ impl<'gc> LoaderInfoObject<'gc> {
         return self.0.read().uncaught_error_events;
     }
 
-    pub fn fire_init_and_complete_events(&self, context: &mut UpdateContext<'_, 'gc>) {
+    pub fn fire_init_and_complete_events(
+        &self,
+        context: &mut UpdateContext<'_, 'gc>,
+        status: u16,
+        redirected: bool,
+    ) {
         if !self.0.read().init_event_fired {
             self.0.write(context.gc_context).init_event_fired = true;
 
@@ -236,6 +241,25 @@ impl<'gc> LoaderInfoObject<'gc> {
             };
 
             if should_complete {
+                let mut activation = Activation::from_nothing(context.reborrow());
+                let http_status_evt = activation
+                    .avm2()
+                    .classes()
+                    .httpstatusevent
+                    .construct(
+                        &mut activation,
+                        &[
+                            "httpStatus".into(),
+                            false.into(),
+                            false.into(),
+                            status.into(),
+                            redirected.into(),
+                        ],
+                    )
+                    .unwrap();
+
+                Avm2::dispatch_event(context, http_status_evt, (*self).into());
+
                 self.0.write(context.gc_context).complete_event_fired = true;
                 let complete_evt = EventObject::bare_default_event(context, "complete");
                 Avm2::dispatch_event(context, complete_evt, (*self).into());

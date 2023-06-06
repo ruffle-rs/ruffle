@@ -7,6 +7,7 @@
 	import flash.display.Sprite;
 	import flash.events.Event;
 	import flash.events.ProgressEvent;
+	import flash.events.HTTPStatusEvent;
 			
 	public class Test {
 		var orphanLoader:Loader;
@@ -65,6 +66,10 @@
 				dump(e);
 			});
 
+			loader.contentLoaderInfo.addEventListener(HTTPStatusEvent.HTTP_STATUS, function(e) {
+				dump(e);
+			});
+			
 			loader.contentLoaderInfo.addEventListener(Event.COMPLETE, function(e) {
 				dump(e);
 				done();

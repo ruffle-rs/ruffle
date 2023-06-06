@@ -153,6 +153,9 @@ pub enum Error {
     #[error("Non-NetStream loader spawned as NetStream loader")]
     NotNetStreamLoader,
 
+    #[error("HTTP Status is not OK: {0} redirected: {1}")]
+    HttpNotOk(String, u16, bool),
+
     #[error("Could not fetch: {0}")]
     FetchError(String),
 
@@ -439,7 +442,7 @@ impl<'gc> LoadManager<'gc> {
             };
 
             if matches!(status, Some(LoaderStatus::Parsing)) {
-                match Loader::preload_tick(handle, context, limit) {
+                match Loader::preload_tick(handle, context, limit, 0, false) {
                     Ok(f) => did_finish = did_finish && f,
                     Err(e) => tracing::error!("Error encountered while preloading movie: {}", e),
                 }
@@ -609,6 +612,8 @@ impl<'gc> Loader<'gc> {
         handle: Handle,
         context: &mut UpdateContext<'_, 'gc>,
         limit: &mut ExecutionLimit,
+        status: u16,
+        redirected: bool,
     ) -> Result<bool, Error> {
         let mc = match context.load_manager.get_loader_mut(handle) {
             Some(Self::Movie {
@@ -643,7 +648,7 @@ impl<'gc> Loader<'gc> {
         )?;
 
         if did_finish {
-            Loader::movie_loader_complete(handle, context, Some(mc.into()))?;
+            Loader::movie_loader_complete(handle, context, Some(mc.into()), status, redirected)?;
         }
 
         Ok(did_finish)
@@ -765,6 +770,8 @@ impl<'gc> Loader<'gc> {
                         player,
                         &response.body,
                         response.url,
+                        response.status,
+                        response.redirected,
                         loader_url,
                     )?;
                 }
@@ -772,7 +779,20 @@ impl<'gc> Loader<'gc> {
                     tracing::error!("Error during movie loading: {:?}", e);
                     player.lock().unwrap().update(|uc| -> Result<(), Error> {
                         // FIXME - match Flash's error message
-                        Loader::movie_loader_error(handle, uc, "Movie loader error".into())
+
+                        let (status_code, redirected) =
+                            if let Error::HttpNotOk(_, status_code, redirected) = e {
+                                (status_code, redirected)
+                            } else {
+                                (0, false)
+                            };
+                        Loader::movie_loader_error(
+                            handle,
+                            uc,
+                            "Movie loader error".into(),
+                            status_code,
+                            redirected,
+                        )
                     })?;
                 }
             }
@@ -830,7 +850,7 @@ impl<'gc> Loader<'gc> {
                 return Ok(());
             }
 
-            Loader::movie_loader_data(handle, player, &bytes, "file:///".into(), None)
+            Loader::movie_loader_data(handle, player, &bytes, "file:///".into(), 0, false, None)
         })
     }
 
@@ -940,7 +960,7 @@ impl<'gc> Loader<'gc> {
 
                         let _ = that.call_method(
                             "onHTTPStatus".into(),
-                            &[200.into()],
+                            &[response.status.into()],
                             &mut activation,
                             ExecutionReason::Special,
                         );
@@ -963,13 +983,18 @@ impl<'gc> Loader<'gc> {
                             ExecutionReason::Special,
                         );
                     }
-                    Err(_) => {
+                    Err(err) => {
                         // TODO: Log "Error opening URL" trace similar to the Flash Player?
-                        // Simulate 404 HTTP status. This should probably be fired elsewhere
-                        // because a failed local load doesn't fire a 404.
+
+                        let status_code = if let Error::HttpNotOk(_, status_code, _) = err {
+                            status_code
+                        } else {
+                            0
+                        };
+
                         let _ = that.call_method(
                             "onHTTPStatus".into(),
-                            &[404.into()],
+                            &[status_code.into()],
                             &mut activation,
                             ExecutionReason::Special,
                         );
@@ -1089,17 +1114,59 @@ impl<'gc> Loader<'gc> {
 
                         Avm2::dispatch_event(&mut activation.context, progress_evt, target);
 
+                        let http_status_evt = activation
+                            .avm2()
+                            .classes()
+                            .httpstatusevent
+                            .construct(
+                                &mut activation,
+                                &[
+                                    "httpStatus".into(),
+                                    false.into(),
+                                    false.into(),
+                                    response.status.into(),
+                                    response.redirected.into(),
+                                ],
+                            )
+                            .map_err(|e| Error::Avm2Error(e.to_string()))?;
+
+                        Avm2::dispatch_event(&mut activation.context, http_status_evt, target);
+
                         let complete_evt = Avm2EventObject::bare_default_event(
                             &mut activation.context,
                             "complete",
                         );
                         Avm2::dispatch_event(uc, complete_evt, target);
                     }
-                    Err(_err) => {
+                    Err(err) => {
                         // Testing with Flash shoes that the 'data' property is cleared
                         // when an error occurs
 
                         set_data(Vec::new(), &mut activation, target, data_format);
+
+                        let (status_code, redirected) =
+                            if let Error::HttpNotOk(_, status_code, redirected) = err {
+                                (status_code, redirected)
+                            } else {
+                                (0, false)
+                            };
+                        let http_status_evt = activation
+                            .avm2()
+                            .classes()
+                            .httpstatusevent
+                            .construct(
+                                &mut activation,
+                                &[
+                                    "httpStatus".into(),
+                                    false.into(),
+                                    false.into(),
+                                    status_code.into(),
+                                    redirected.into(),
+                                ],
+                            )
+                            .map_err(|e| Error::Avm2Error(e.to_string()))?;
+
+                        Avm2::dispatch_event(&mut activation.context, http_status_evt, target);
 
                         // FIXME - Match the exact error message generated by Flash
 
@@ -1368,6 +1435,8 @@ impl<'gc> Loader<'gc> {
         player: Arc<Mutex<Player>>,
         data: &[u8],
         url: String,
+        status: u16,
+        redirected: bool,
         loader_url: Option<String>,
     ) -> Result<(), Error> {
         let sniffed_type = ContentType::sniff(data);
@@ -1375,7 +1444,9 @@ impl<'gc> Loader<'gc> {
 
         if sniffed_type == ContentType::Unknown {
             if let Ok(data) = extract_swz(data) {
-                return Self::movie_loader_data(handle, player, &data, url, loader_url);
+                return Self::movie_loader_data(
+                    handle, player, &data, url, status, redirected, loader_url,
+                );
             }
         }
         player.lock().unwrap().update(|uc| {
@@ -1477,6 +1548,8 @@ impl<'gc> Loader<'gc> {
                         handle,
                         uc,
                         &mut ExecutionLimit::with_max_ops_and_time(10000, Duration::from_millis(1)),
+                        status,
+                        redirected,
                     )?;
 
                     return Ok(());
@@ -1524,6 +1597,8 @@ impl<'gc> Loader<'gc> {
                         handle,
                         &mut activation.context,
                         Some(bitmap_obj),
+                        status,
+                        redirected,
                     )?;
                 }
                 ContentType::Unknown => {
@@ -1541,11 +1616,19 @@ impl<'gc> Loader<'gc> {
                                 uc.gc_context,
                                 &format!("Error #2124: Loaded file is an unknown type. URL: {url}"),
                             ),
+                            status,
+                            redirected,
                         )?;
                     } else {
                         // AVM1 fires the event with the current and total length as 0, ignoring the actual values
                         Loader::movie_loader_progress(handle, &mut activation.context, 0, 0)?;
-                        Loader::movie_loader_complete(handle, &mut activation.context, None)?;
+                        Loader::movie_loader_complete(
+                            handle,
+                            &mut activation.context,
+                            None,
+                            status,
+                            redirected,
+                        )?;
                     }
                 }
             }
@@ -1626,6 +1709,8 @@ impl<'gc> Loader<'gc> {
         handle: Index,
         uc: &mut UpdateContext<'_, 'gc>,
         dobj: Option<DisplayObject<'gc>>,
+        status: u16,
+        redirected: bool,
     ) -> Result<(), Error> {
         let (target_clip, event_handler, movie) = match uc.load_manager.get_loader_mut(handle) {
             Some(Loader::Movie {
@@ -1729,7 +1814,7 @@ impl<'gc> Loader<'gc> {
 
                 if let Some(dobj) = dobj {
                     if dobj.as_movie_clip().is_none() {
-                        loader_info_obj.fire_init_and_complete_events(uc);
+                        loader_info_obj.fire_init_and_complete_events(uc, status, redirected);
                     }
                 }
             }
@@ -1752,6 +1837,8 @@ impl<'gc> Loader<'gc> {
         handle: Index,
         uc: &mut UpdateContext<'_, 'gc>,
         msg: AvmString<'gc>,
+        status: u16,
+        redirected: bool,
     ) -> Result<(), Error> {
         //TODO: Inspect the fetch error.
         //This requires cooperation from the backend to send abstract
@@ -1784,6 +1871,25 @@ impl<'gc> Loader<'gc> {
             }
             Some(MovieLoaderEventHandler::Avm2LoaderInfo(loader_info)) => {
                 let mut activation = Avm2Activation::from_nothing(uc.reborrow());
+
+                let http_status_evt = activation
+                    .avm2()
+                    .classes()
+                    .httpstatusevent
+                    .construct(
+                        &mut activation,
+                        &[
+                            "httpStatus".into(),
+                            false.into(),
+                            false.into(),
+                            status.into(),
+                            redirected.into(),
+                        ],
+                    )
+                    .map_err(|e| Error::Avm2Error(e.to_string()))?;
+
+                Avm2::dispatch_event(&mut activation.context, http_status_evt, loader_info);
+
                 // FIXME - Match the exact error message generated by Flash
 
                 let io_error_evt_cls = activation.avm2().classes().ioerrorevent;
