@@ -11,10 +11,12 @@ package {
 
 function enumerate(x) {
 	trace("enumerating: " + x)
+    var out = [];
 	for (var name in x) {
-		trace(name);
-		trace(x[name]);
+        out.push(name + " = " + x[name])
 	}
+    out.sort();
+    trace(out);
 }
 var x = {"key": "value", "key2": "value2"};
 

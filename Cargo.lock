@@ -1896,6 +1896,7 @@ version = "0.3.3"
 source = "git+https://github.com/kyren/gc-arena?rev=efd89fc683c6bb456af3e226c33763cb822645e9#efd89fc683c6bb456af3e226c33763cb822645e9"
 dependencies = [
  "gc-arena-derive",
+ "hashbrown 0.14.2",
  "sptr",
 ]
 

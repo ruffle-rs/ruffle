@@ -34,6 +34,7 @@ pub mod bytearray;
 mod call_stack;
 mod class;
 mod domain;
+mod dynamic_map;
 mod e4x;
 pub mod error;
 mod events;
