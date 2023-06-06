@@ -76,35 +76,19 @@ impl<'gc> QName<'gc> {
     /// NAMESPACE::LOCAL_NAME
     /// NAMESPACE.LOCAL_NAME (Where the LAST dot is used to split the namespace & local_name)
     /// LOCAL_NAME (Use the public namespace)
+    ///
+    /// This does *not* handle `Vector.<SomeTypeParam>` - use `get_defined_value_handling_vector` for that
     pub fn from_qualified_name(name: AvmString<'gc>, activation: &mut Activation<'_, 'gc>) -> Self {
-        // If we have a type like 'some::namespace::Vector.<other::namespace::MyType>',
-        // we want to look at 'some::namespace::Vector' when splitting out the namespace
-        let before_type_param = if let Some(type_param_start) = name.find(WStr::from_units(b".<")) {
-            &name[..type_param_start]
-        } else {
-            &name
-        };
-
-        // We unfortunately can't use 'rsplit' here, because we would need to split
-        // the entire string, but only before the first '.<'
-        //
-        // Get the last '::' or '.', only considering the string before '.<' (if any).
-        // This will ignore any namespaces that are part of a type parameter (e.g 'Vector.<other::namespace::MyType>').
-        // The type parameter will stay combined with the type name (so we'll have 'Vector.<other::namespace::MyType>')
-        // in some namespace, depending on whether or not anything comes before 'Vector')
-        let parts = if let Some(last_separator) = before_type_param.rfind(WStr::from_units(b"::")) {
-            Some((&name[..last_separator], &name[(last_separator + 2)..]))
-        } else if let Some(last_separator) = before_type_param.rfind(b".".as_slice()) {
-            Some((&name[..last_separator], &name[(last_separator + 1)..]))
-        } else {
-            None
-        };
+        let parts = name
+            .rsplit_once(WStr::from_units(b"::"))
+            .or_else(|| name.rsplit_once(WStr::from_units(b".")));
 
         if let Some((package_name, local_name)) = parts {
             let mut context = activation.borrow_gc();
             let package_name = context
                 .interner
                 .intern_wstr(context.gc_context, package_name);
+
             Self {
                 ns: Namespace::package(package_name, &mut context),
                 name: AvmString::new(context.gc_context, local_name),

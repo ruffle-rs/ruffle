@@ -5,7 +5,6 @@ use crate::avm2::object::{DomainObject, Object, TObject, VectorObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
-use crate::avm2::QName;
 use crate::avm2::{Domain, Error};
 
 pub use crate::avm2::object::application_domain_allocator;
@@ -72,7 +71,6 @@ pub fn get_definition<'gc>(
             .cloned()
             .unwrap_or_else(|| "".into())
             .coerce_to_string(activation)?;
-        let name = QName::from_qualified_name(name, activation);
         return appdomain.get_defined_value_handling_vector(activation, name);
     }
 
@@ -92,10 +90,8 @@ pub fn has_definition<'gc>(
             .unwrap_or_else(|| "".into())
             .coerce_to_string(activation)?;
 
-        let qname = QName::from_qualified_name(name, activation);
-
         return Ok(appdomain
-            .get_defined_value_handling_vector(activation, qname)
+            .get_defined_value_handling_vector(activation, name)
             .is_ok()
             .into());
     }
