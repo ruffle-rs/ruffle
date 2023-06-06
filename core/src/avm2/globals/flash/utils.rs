@@ -3,8 +3,8 @@
 use crate::avm2::method::Method;
 use crate::avm2::object::TObject;
 use crate::avm2::property::Property;
+use crate::avm2::ClassObject;
 use crate::avm2::{Activation, Error, Object, Value};
-use crate::avm2::{ClassObject, QName};
 use crate::string::AvmString;
 use crate::string::WString;
 use instant::Instant;
@@ -261,8 +261,7 @@ pub fn get_definition_by_name<'gc>(
         .get(0)
         .unwrap_or(&Value::Undefined)
         .coerce_to_string(activation)?;
-    let qname = QName::from_qualified_name(name, activation);
-    appdomain.get_defined_value_handling_vector(activation, qname)
+    appdomain.get_defined_value_handling_vector(activation, name)
 }
 
 // Implements `flash.utils.describeType`

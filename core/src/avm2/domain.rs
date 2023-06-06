@@ -9,6 +9,7 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::QName;
 use gc_arena::{Collect, GcCell, MutationContext};
+use ruffle_wstr::WStr;
 
 use super::class::Class;
 use super::string::AvmString;
@@ -201,24 +202,25 @@ impl<'gc> Domain<'gc> {
     pub fn get_defined_value_handling_vector(
         self,
         activation: &mut Activation<'_, 'gc>,
-        mut name: QName<'gc>,
+        mut name: AvmString<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         // Special-case lookups of `Vector.<SomeType>` - these get internally converted
         // to a lookup of `Vector,` a lookup of `SomeType`, and `vector_class.apply(some_type_class)`
         let mut type_name = None;
-        if (name.namespace() == activation.avm2().vector_public_namespace
-            || name.namespace() == activation.avm2().vector_internal_namespace
-            || name.namespace() == activation.avm2().public_namespace)
-            && (name.local_name().starts_with(b"Vector.<".as_slice())
-                && name.local_name().ends_with(b">".as_slice()))
+        if (name.starts_with(WStr::from_units(b"__AS3__.vec::Vector.<"))
+            || name.starts_with(WStr::from_units(b"Vector.<")))
+            && name.ends_with(WStr::from_units(b">"))
         {
-            let local_name = name.local_name();
+            let start = name.find(WStr::from_units(b".<")).unwrap();
+
             type_name = Some(AvmString::new(
                 activation.context.gc_context,
-                &local_name["Vector.<".len()..(local_name.len() - 1)],
+                &name[(start + 2)..(name.len() - 1)],
             ));
-            name = QName::new(activation.avm2().vector_public_namespace, "Vector");
+            name = "__AS3__.vec::Vector".into();
         }
+        let name = QName::from_qualified_name(name, activation);
+
         let res = self.get_defined_value(activation, name);
 
         if let Some(type_name) = type_name {
