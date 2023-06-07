@@ -1,12 +1,14 @@
 mod avm1;
+mod avm2;
 mod display_object;
 mod handle;
 mod movie;
 
 use crate::context::{RenderContext, UpdateContext};
 use crate::debug_ui::avm1::Avm1ObjectWindow;
+use crate::debug_ui::avm2::Avm2ObjectWindow;
 use crate::debug_ui::display_object::DisplayObjectWindow;
-use crate::debug_ui::handle::{AVM1ObjectHandle, DisplayObjectHandle};
+use crate::debug_ui::handle::{AVM1ObjectHandle, AVM2ObjectHandle, DisplayObjectHandle};
 use crate::debug_ui::movie::MovieWindow;
 use crate::display_object::TDisplayObject;
 use crate::tag_utils::SwfMovie;
@@ -23,6 +25,7 @@ pub struct DebugUi {
     display_objects: HashMap<DisplayObjectHandle, DisplayObjectWindow>,
     movies: PtrWeakKeyHashMap<Weak<SwfMovie>, MovieWindow>,
     avm1_objects: HashMap<AVM1ObjectHandle, Avm1ObjectWindow>,
+    avm2_objects: HashMap<AVM2ObjectHandle, Avm2ObjectWindow>,
     queued_messages: Vec<Message>,
 }
 
@@ -31,6 +34,7 @@ pub enum Message {
     TrackDisplayObject(DisplayObjectHandle),
     TrackMovie(Arc<SwfMovie>),
     TrackAVM1Object(AVM1ObjectHandle),
+    TrackAVM2Object(AVM2ObjectHandle),
     TrackStage,
     TrackTopLevelMovie,
 }
@@ -45,6 +49,11 @@ impl DebugUi {
         });
 
         self.avm1_objects.retain(|object, window| {
+            let object = object.fetch(context.dynamic_root);
+            window.show(egui_ctx, context, object, &mut messages)
+        });
+
+        self.avm2_objects.retain(|object, window| {
             let object = object.fetch(context.dynamic_root);
             window.show(egui_ctx, context, object, &mut messages)
         });
@@ -66,6 +75,9 @@ impl DebugUi {
                 }
                 Message::TrackAVM1Object(object) => {
                     self.avm1_objects.insert(object, Default::default());
+                }
+                Message::TrackAVM2Object(object) => {
+                    self.avm2_objects.insert(object, Default::default());
                 }
             }
         }
@@ -103,6 +115,15 @@ impl DebugUi {
         }
 
         for (_object, window) in self.avm1_objects.iter() {
+            if let Some(object) = window.hovered_debug_rect() {
+                let object = object.fetch(dynamic_root_set);
+                let bounds = world_matrix * object.world_bounds();
+
+                draw_debug_rect(context, swf::Color::RED, bounds, 5.0);
+            }
+        }
+
+        for (_object, window) in self.avm2_objects.iter() {
             if let Some(object) = window.hovered_debug_rect() {
                 let object = object.fetch(dynamic_root_set);
                 let bounds = world_matrix * object.world_bounds();

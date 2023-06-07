@@ -1,6 +1,7 @@
-use crate::avm1::TObject;
+use crate::avm1::TObject as _;
+use crate::avm2::object::TObject as _;
 use crate::context::UpdateContext;
-use crate::debug_ui::handle::{AVM1ObjectHandle, DisplayObjectHandle};
+use crate::debug_ui::handle::{AVM1ObjectHandle, AVM2ObjectHandle, DisplayObjectHandle};
 use crate::debug_ui::movie::open_movie_button;
 use crate::debug_ui::Message;
 use crate::display_object::{DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer};
@@ -361,6 +362,16 @@ impl DisplayObjectWindow {
                     ui.label("AVM1 Object");
                     if ui.button(format!("{:p}", object.as_ptr())).clicked() {
                         messages.push(Message::TrackAVM1Object(AVM1ObjectHandle::new(
+                            context, object,
+                        )));
+                    }
+                    ui.end_row();
+                }
+
+                if let crate::avm2::Value::Object(object) = object.object2() {
+                    ui.label("AVM2 Object");
+                    if ui.button(format!("{:p}", object.as_ptr())).clicked() {
+                        messages.push(Message::TrackAVM2Object(AVM2ObjectHandle::new(
                             context, object,
                         )));
                     }
