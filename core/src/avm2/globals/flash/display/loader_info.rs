@@ -136,23 +136,13 @@ pub fn get_bytes_loaded<'gc>(
 
 /// `content` getter
 pub fn get_content<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
-        if let Some(loader_stream) = this
-            .as_loader_info_object()
-            .and_then(|o| o.as_loader_stream())
-        {
-            match &*loader_stream {
-                LoaderStream::Swf(_, root) | LoaderStream::NotYetLoaded(_, Some(root), _) => {
-                    return Ok(root.object2());
-                }
-                _ => {
-                    return Ok(Value::Null);
-                }
-            }
+        if let Some(loader) = this.as_loader_info_object().and_then(|o| o.loader()) {
+            return loader.get_public_property("content", activation);
         }
     }
 
