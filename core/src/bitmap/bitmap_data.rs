@@ -451,6 +451,21 @@ mod wrapper {
             }
         }
 
+        #[cfg(feature = "egui")]
+        pub fn debug_sync_status(&self) -> std::borrow::Cow<'static, str> {
+            match self.0.read().dirty_state {
+                DirtyState::Clean => std::borrow::Cow::Borrowed("Clean"),
+                DirtyState::CpuModified(area) => std::borrow::Cow::Owned(format!(
+                    "CPU modified from {}, {} to {}, {}",
+                    area.x_min, area.y_min, area.x_max, area.y_max
+                )),
+                DirtyState::GpuModified(_, area) => std::borrow::Cow::Owned(format!(
+                    "GPU modified from {}, {} to {}, {}",
+                    area.x_min, area.y_min, area.x_max, area.y_max
+                )),
+            }
+        }
+
         pub fn is_point_in_bounds(&self, x: i32, y: i32) -> bool {
             x >= 0 && x < self.width() as i32 && y >= 0 && y < self.height() as i32
         }

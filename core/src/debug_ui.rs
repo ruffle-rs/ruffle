@@ -16,6 +16,7 @@ use gc_arena::DynamicRootSet;
 use hashbrown::HashMap;
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::matrix::Matrix;
+use std::fmt::{Debug, Formatter};
 use std::sync::{Arc, Weak};
 use swf::{Color, Rectangle, Twips};
 use weak_table::PtrWeakKeyHashMap;
@@ -27,6 +28,7 @@ pub struct DebugUi {
     avm1_objects: HashMap<AVM1ObjectHandle, Avm1ObjectWindow>,
     avm2_objects: HashMap<AVM2ObjectHandle, Avm2ObjectWindow>,
     queued_messages: Vec<Message>,
+    items_to_save: Vec<ItemToSave>,
 }
 
 #[derive(Debug)]
@@ -37,10 +39,11 @@ pub enum Message {
     TrackAVM2Object(AVM2ObjectHandle),
     TrackStage,
     TrackTopLevelMovie,
+    SaveFile(ItemToSave),
 }
 
 impl DebugUi {
-    pub fn show(&mut self, egui_ctx: &egui::Context, context: &mut UpdateContext) {
+    pub(crate) fn show(&mut self, egui_ctx: &egui::Context, context: &mut UpdateContext) {
         let mut messages = std::mem::take(&mut self.queued_messages);
 
         self.display_objects.retain(|object, window| {
@@ -59,13 +62,15 @@ impl DebugUi {
         });
 
         self.movies
-            .retain(|movie, window| window.show(egui_ctx, context, movie));
+            .retain(|movie, window| window.show(egui_ctx, context, movie, &mut messages));
 
         for message in messages {
             match message {
-                Message::TrackDisplayObject(object) => self.track_display_object(object),
+                Message::TrackDisplayObject(object) => {
+                    self.track_display_object(object);
+                }
                 Message::TrackStage => {
-                    self.track_display_object(DisplayObjectHandle::new(context, context.stage))
+                    self.track_display_object(DisplayObjectHandle::new(context, context.stage));
                 }
                 Message::TrackMovie(movie) => {
                     self.movies.insert(movie, Default::default());
@@ -79,8 +84,15 @@ impl DebugUi {
                 Message::TrackAVM2Object(object) => {
                     self.avm2_objects.insert(object, Default::default());
                 }
+                Message::SaveFile(file) => {
+                    self.items_to_save.push(file);
+                }
             }
         }
+    }
+
+    pub fn items_to_save(&mut self) -> Vec<ItemToSave> {
+        std::mem::take(&mut self.items_to_save)
     }
 
     pub fn queue_message(&mut self, message: Message) {
@@ -131,6 +143,20 @@ impl DebugUi {
                 draw_debug_rect(context, swf::Color::RED, bounds, 5.0);
             }
         }
+    }
+}
+
+pub struct ItemToSave {
+    pub suggested_name: String,
+    pub data: Vec<u8>,
+}
+
+impl Debug for ItemToSave {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ItemToSave")
+            .field("suggested_name", &self.suggested_name)
+            .field("data", &self.data.len())
+            .finish()
     }
 }
 

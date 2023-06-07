@@ -3728,6 +3728,7 @@ dependencies = [
  "num-derive",
  "num-traits",
  "percent-encoding",
+ "png",
  "quick-xml",
  "rand",
  "realfft",

@@ -14,10 +14,12 @@ use chrono::DateTime;
 use egui::*;
 use fluent_templates::fluent_bundle::FluentValue;
 use fluent_templates::{static_loader, Loader};
+use rfd::FileDialog;
 use ruffle_core::backend::ui::US_ENGLISH;
 use ruffle_core::debug_ui::Message as DebugMessage;
 use ruffle_core::Player;
 use std::collections::HashMap;
+use std::fs;
 use sys_locale::get_locale;
 use unic_langid::LanguageIdentifier;
 use winit::event_loop::EventLoopProxy;
@@ -123,6 +125,21 @@ impl RuffleGui {
 
         if let Some(player) = player {
             player.show_debug_ui(egui_ctx);
+            for item in player.debug_ui().items_to_save() {
+                std::thread::spawn(move || {
+                    if let Some(path) = FileDialog::new()
+                        .set_file_name(&item.suggested_name)
+                        .save_file()
+                    {
+                        if let Err(e) = fs::write(&path, item.data) {
+                            tracing::error!(
+                                "Couldn't save {} to {path:?}: {e}",
+                                item.suggested_name,
+                            );
+                        }
+                    }
+                });
+            }
         }
 
         if !self.context_menu.is_empty() {
@@ -240,13 +257,13 @@ impl RuffleGui {
                         if Button::new(text(&self.locale, "debug-menu-open-stage")).ui(ui).clicked() {
                             ui.close_menu();
                             if let Some(player) = &mut player {
-                                player.debug_ui_message(DebugMessage::TrackStage);
+                                player.debug_ui().queue_message(DebugMessage::TrackStage);
                             }
                         }
                         if Button::new(text(&self.locale, "debug-menu-open-movie")).ui(ui).clicked() {
                             ui.close_menu();
                             if let Some(player) = &mut player {
-                                player.debug_ui_message(DebugMessage::TrackTopLevelMovie);
+                                player.debug_ui().queue_message(DebugMessage::TrackTopLevelMovie);
                             }
                         }
                     });
