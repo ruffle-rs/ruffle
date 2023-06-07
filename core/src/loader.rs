@@ -260,16 +260,14 @@ impl<'gc> LoadManager<'gc> {
         target_clip: DisplayObject<'gc>,
         request: Request,
         loader_url: Option<String>,
-        event_handler: Option<MovieLoaderEventHandler<'gc>>,
-        avm2_data: Option<Avm2LoaderData<'gc>>,
+        vm_data: MovieLoaderVMData<'gc>,
     ) -> OwnedFuture<(), Error> {
         let loader = Loader::Movie {
             self_handle: None,
             target_clip,
-            event_handler,
+            vm_data,
             loader_status: LoaderStatus::Pending,
             movie: None,
-            avm2_data,
         };
         let handle = self.add_loader(loader);
         let loader = self.get_loader_mut(handle).unwrap();
@@ -284,16 +282,14 @@ impl<'gc> LoadManager<'gc> {
         player: Weak<Mutex<Player>>,
         target_clip: DisplayObject<'gc>,
         bytes: Vec<u8>,
-        event_handler: Option<MovieLoaderEventHandler<'gc>>,
-        avm2_data: Option<Avm2LoaderData<'gc>>,
+        vm_data: MovieLoaderVMData<'gc>,
     ) -> OwnedFuture<(), Error> {
         let loader = Loader::Movie {
             self_handle: None,
             target_clip,
-            event_handler,
+            vm_data,
             loader_status: LoaderStatus::Pending,
             movie: None,
-            avm2_data,
         };
         let handle = self.add_loader(loader);
         let loader = self.get_loader_mut(handle).unwrap();
@@ -472,19 +468,19 @@ pub enum LoaderStatus {
 
 #[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
-pub enum MovieLoaderEventHandler<'gc> {
-    Avm1Broadcast(Object<'gc>),
-    Avm2LoaderInfo(Avm2Object<'gc>),
-}
+pub enum MovieLoaderVMData<'gc> {
+    Avm1 {
+        broadcaster: Option<Object<'gc>>,
+    },
+    Avm2 {
+        loader_info: Avm2Object<'gc>,
 
-#[derive(Collect, Clone, Copy)]
-#[collect(no_drop)]
-pub struct Avm2LoaderData<'gc> {
-    /// The context of the SWF being loaded.
-    pub context: Option<Avm2Object<'gc>>,
+        /// The context of the SWF being loaded.
+        context: Option<Avm2Object<'gc>>,
 
-    /// The default domain this SWF will use.
-    pub default_domain: Avm2Domain<'gc>,
+        /// The default domain this SWF will use.
+        default_domain: Avm2Domain<'gc>,
+    },
 }
 
 /// A struct that holds garbage-collected pointers for asynchronous code.
@@ -507,9 +503,8 @@ pub enum Loader<'gc> {
         /// The target movie clip to load the movie into.
         target_clip: DisplayObject<'gc>,
 
-        /// Event broadcaster (typically a `MovieClipLoader`) to fire events
-        /// into.
-        event_handler: Option<MovieLoaderEventHandler<'gc>>,
+        // Virtual-machine specific data (AVM1 or AVM2)
+        vm_data: MovieLoaderVMData<'gc>,
 
         /// Indicates the completion status of this loader.
         ///
@@ -527,9 +522,6 @@ pub enum Loader<'gc> {
         /// completed and we expect the Player to periodically tick preload
         /// until loading completes.
         movie: Option<Arc<SwfMovie>>,
-
-        /// AVM2 specific data for this SWF.
-        avm2_data: Option<Avm2LoaderData<'gc>>,
     },
 
     /// Loader that is loading form data into an AVM1 object scope.
@@ -1318,26 +1310,28 @@ impl<'gc> Loader<'gc> {
 
         let me = me.unwrap();
 
-        let (clip, event_handler) = match me {
+        let (clip, vm_data) = match me {
             Loader::Movie {
                 target_clip,
-                event_handler,
+                vm_data,
                 ..
-            } => (*target_clip, *event_handler),
+            } => (*target_clip, *vm_data),
             _ => unreachable!(),
         };
 
-        match event_handler {
-            Some(MovieLoaderEventHandler::Avm1Broadcast(broadcaster)) => {
-                Avm1::run_stack_frame_for_method(
-                    clip,
-                    broadcaster,
-                    uc,
-                    "broadcastMessage".into(),
-                    &["onLoadStart".into(), clip.object()],
-                );
+        match vm_data {
+            MovieLoaderVMData::Avm1 { broadcaster } => {
+                if let Some(broadcaster) = broadcaster {
+                    Avm1::run_stack_frame_for_method(
+                        clip,
+                        broadcaster,
+                        uc,
+                        "broadcastMessage".into(),
+                        &["onLoadStart".into(), clip.object()],
+                    );
+                }
             }
-            Some(MovieLoaderEventHandler::Avm2LoaderInfo(loader_info)) => {
+            MovieLoaderVMData::Avm2 { loader_info, .. } => {
                 let mut activation = Avm2Activation::from_nothing(uc.reborrow());
 
                 // Update the LoadersTream - we still have a fake SwfMovie, but we now have the real target clip.
@@ -1356,7 +1350,6 @@ impl<'gc> Loader<'gc> {
                 let open_evt = Avm2EventObject::bare_default_event(&mut activation.context, "open");
                 Avm2::dispatch_event(uc, open_evt, loader_info);
             }
-            None => {}
         }
 
         Ok(())
@@ -1379,22 +1372,25 @@ impl<'gc> Loader<'gc> {
             }
         }
         player.lock().unwrap().update(|uc| {
-            let (clip, event_handler, avm2_data) = match uc.load_manager.get_loader(handle) {
+            let (clip, vm_data) = match uc.load_manager.get_loader(handle) {
                 Some(Loader::Movie {
                     target_clip,
-                    event_handler,
-                    avm2_data,
+                    vm_data,
                     ..
-                }) => (*target_clip, *event_handler, *avm2_data),
+                }) => (*target_clip, *vm_data),
                 None => return Err(Error::Cancelled),
                 _ => unreachable!(),
             };
 
             let mut activation = Avm2Activation::from_nothing(uc.reborrow());
 
-            let domain = if let Some(avm2_data) = avm2_data {
-                let domain = avm2_data
-                    .context
+            let domain = if let MovieLoaderVMData::Avm2 {
+                context,
+                default_domain,
+                ..
+            } = vm_data
+            {
+                let domain = context
                     .and_then(|o| {
                         o.get_public_property("applicationDomain", &mut activation)
                             .ok()
@@ -1402,7 +1398,7 @@ impl<'gc> Loader<'gc> {
                     .and_then(|v| v.coerce_to_object(&mut activation).ok())
                     .and_then(|o| o.as_application_domain())
                     .unwrap_or_else(|| {
-                        let parent_domain = avm2_data.default_domain;
+                        let parent_domain = default_domain;
                         Avm2Domain::movie_domain(&mut activation, parent_domain)
                     });
                 Some(domain)
@@ -1430,7 +1426,7 @@ impl<'gc> Loader<'gc> {
                 _ => unreachable!(),
             };
 
-            if let Some(MovieLoaderEventHandler::Avm2LoaderInfo(loader_info)) = event_handler {
+            if let MovieLoaderVMData::Avm2 { loader_info, .. } = vm_data {
                 // Update the LoaderStream - we now have a real SWF movie and a real target clip
                 loader_info
                     .as_loader_info_object()
@@ -1458,9 +1454,7 @@ impl<'gc> Loader<'gc> {
 
                     if let Some(mc) = clip.as_movie_clip() {
                         let loader_info =
-                            if let Some(MovieLoaderEventHandler::Avm2LoaderInfo(loader_info)) =
-                                event_handler
-                            {
+                            if let MovieLoaderVMData::Avm2 { loader_info, .. } = vm_data {
                                 Some(*loader_info.as_loader_info_object().unwrap())
                             } else {
                                 None
@@ -1570,31 +1564,33 @@ impl<'gc> Loader<'gc> {
 
         let me = me.unwrap();
 
-        let (clip, event_handler) = match me {
+        let (clip, vm_data) = match me {
             Loader::Movie {
                 target_clip,
-                event_handler,
+                vm_data,
                 ..
-            } => (*target_clip, *event_handler),
+            } => (*target_clip, *vm_data),
             _ => unreachable!(),
         };
 
-        match event_handler {
-            Some(MovieLoaderEventHandler::Avm1Broadcast(broadcaster)) => {
-                Avm1::run_stack_frame_for_method(
-                    clip,
-                    broadcaster,
-                    uc,
-                    "broadcastMessage".into(),
-                    &[
-                        "onLoadProgress".into(),
-                        clip.object(),
-                        cur_len.into(),
-                        total_len.into(),
-                    ],
-                );
+        match vm_data {
+            MovieLoaderVMData::Avm1 { broadcaster } => {
+                if let Some(broadcaster) = broadcaster {
+                    Avm1::run_stack_frame_for_method(
+                        clip,
+                        broadcaster,
+                        uc,
+                        "broadcastMessage".into(),
+                        &[
+                            "onLoadProgress".into(),
+                            clip.object(),
+                            cur_len.into(),
+                            total_len.into(),
+                        ],
+                    );
+                }
             }
-            Some(MovieLoaderEventHandler::Avm2LoaderInfo(loader_info)) => {
+            MovieLoaderVMData::Avm2 { loader_info, .. } => {
                 let mut activation = Avm2Activation::from_nothing(uc.reborrow());
 
                 let progress_evt = activation
@@ -1615,7 +1611,6 @@ impl<'gc> Loader<'gc> {
 
                 Avm2::dispatch_event(uc, progress_evt, loader_info);
             }
-            None => {}
         }
 
         Ok(())
@@ -1627,23 +1622,22 @@ impl<'gc> Loader<'gc> {
         uc: &mut UpdateContext<'_, 'gc>,
         dobj: Option<DisplayObject<'gc>>,
     ) -> Result<(), Error> {
-        let (target_clip, event_handler, movie) = match uc.load_manager.get_loader_mut(handle) {
+        let (target_clip, vm_data, movie) = match uc.load_manager.get_loader_mut(handle) {
             Some(Loader::Movie {
                 target_clip,
                 movie,
-                event_handler,
+                vm_data,
                 ..
-            }) => (*target_clip, *event_handler, movie.clone()),
+            }) => (*target_clip, *vm_data, movie.clone()),
             None => return Err(Error::Cancelled),
             _ => unreachable!(),
         };
 
-        let loader_info =
-            if let Some(MovieLoaderEventHandler::Avm2LoaderInfo(loader_info)) = event_handler {
-                Some(*loader_info.as_loader_info_object().unwrap())
-            } else {
-                None
-            };
+        let loader_info = if let MovieLoaderVMData::Avm2 { loader_info, .. } = vm_data {
+            Some(*loader_info.as_loader_info_object().unwrap())
+        } else {
+            None
+        };
 
         if let Some(loader_info) = loader_info {
             // Store the real movie into the `LoaderStream`, so that
@@ -1673,7 +1667,7 @@ impl<'gc> Loader<'gc> {
             }
         }
 
-        if let Some(MovieLoaderEventHandler::Avm2LoaderInfo(loader_info)) = event_handler {
+        if let MovieLoaderVMData::Avm2 { loader_info, .. } = vm_data {
             let domain = uc
                 .library
                 .library_for_movie(movie.unwrap())
@@ -1707,23 +1701,25 @@ impl<'gc> Loader<'gc> {
             }
         }
 
-        match event_handler {
-            Some(MovieLoaderEventHandler::Avm1Broadcast(broadcaster)) => {
-                Avm1::run_stack_frame_for_method(
-                    target_clip,
-                    broadcaster,
-                    uc,
-                    "broadcastMessage".into(),
-                    // TODO: Pass an actual httpStatus argument instead of 0.
-                    &["onLoadComplete".into(), target_clip.object(), 0.into()],
-                );
+        match vm_data {
+            MovieLoaderVMData::Avm1 { broadcaster } => {
+                if let Some(broadcaster) = broadcaster {
+                    Avm1::run_stack_frame_for_method(
+                        target_clip,
+                        broadcaster,
+                        uc,
+                        "broadcastMessage".into(),
+                        // TODO: Pass an actual httpStatus argument instead of 0.
+                        &["onLoadComplete".into(), target_clip.object(), 0.into()],
+                    );
+                }
             }
             // This is fired after we process the movie's first frame,
             // in `MovieClip.on_exit_frame`
-            Some(MovieLoaderEventHandler::Avm2LoaderInfo(loader_info)) => {
+            MovieLoaderVMData::Avm2 { loader_info, .. } => {
                 let loader_info_obj = loader_info.as_loader_info_object().unwrap();
                 loader_info_obj.set_loader_stream(
-                    LoaderStream::Swf(target_clip.as_movie_clip().unwrap().movie(), target_clip),
+                    LoaderStream::Swf(target_clip.as_movie_clip().unwrap().movie(), dobj.unwrap()),
                     uc.gc_context,
                 );
 
@@ -1733,7 +1729,6 @@ impl<'gc> Loader<'gc> {
                     }
                 }
             }
-            None => {}
         }
 
         if let Loader::Movie { loader_status, .. } = uc.load_manager.get_loader_mut(handle).unwrap()
@@ -1758,31 +1753,33 @@ impl<'gc> Loader<'gc> {
         //error types we can actually inspect.
         //This also can get errors from decoding an invalid SWF file,
         //too. We should distinguish those to player code.
-        let (clip, event_handler) = match uc.load_manager.get_loader_mut(handle) {
+        let (clip, vm_data) = match uc.load_manager.get_loader_mut(handle) {
             Some(Loader::Movie {
                 target_clip,
-                event_handler,
+                vm_data,
                 ..
-            }) => (*target_clip, *event_handler),
+            }) => (*target_clip, *vm_data),
             None => return Err(Error::Cancelled),
             _ => unreachable!(),
         };
 
-        match event_handler {
-            Some(MovieLoaderEventHandler::Avm1Broadcast(broadcaster)) => {
-                Avm1::run_stack_frame_for_method(
-                    clip,
-                    broadcaster,
-                    uc,
-                    "broadcastMessage".into(),
-                    &[
-                        "onLoadError".into(),
-                        clip.object(),
-                        "LoadNeverCompleted".into(),
-                    ],
-                );
+        match vm_data {
+            MovieLoaderVMData::Avm1 { broadcaster } => {
+                if let Some(broadcaster) = broadcaster {
+                    Avm1::run_stack_frame_for_method(
+                        clip,
+                        broadcaster,
+                        uc,
+                        "broadcastMessage".into(),
+                        &[
+                            "onLoadError".into(),
+                            clip.object(),
+                            "LoadNeverCompleted".into(),
+                        ],
+                    );
+                }
             }
-            Some(MovieLoaderEventHandler::Avm2LoaderInfo(loader_info)) => {
+            MovieLoaderVMData::Avm2 { loader_info, .. } => {
                 let mut activation = Avm2Activation::from_nothing(uc.reborrow());
                 // FIXME - Match the exact error message generated by Flash
 
@@ -1802,7 +1799,6 @@ impl<'gc> Loader<'gc> {
 
                 Avm2::dispatch_event(uc, io_error_evt, loader_info);
             }
-            None => {}
         }
 
         if let Loader::Movie { loader_status, .. } = uc.load_manager.get_loader_mut(handle).unwrap()
@@ -1819,13 +1815,13 @@ impl<'gc> Loader<'gc> {
     ///
     /// Used to fire listener events on clips and terminate completed loaders.
     fn movie_clip_loaded(&mut self, queue: &mut ActionQueue<'gc>) -> bool {
-        let (clip, event_handler, loader_status) = match self {
+        let (clip, vm_data, loader_status) = match self {
             Loader::Movie {
                 target_clip,
-                event_handler,
+                vm_data,
                 loader_status,
                 ..
-            } => (*target_clip, *event_handler, *loader_status),
+            } => (*target_clip, *vm_data, *loader_status),
             _ => return false,
         };
 
@@ -1835,7 +1831,10 @@ impl<'gc> Loader<'gc> {
             LoaderStatus::Failed => true,
             LoaderStatus::Succeeded => {
                 // AVM2 is handled separately
-                if let Some(MovieLoaderEventHandler::Avm1Broadcast(broadcaster)) = event_handler {
+                if let MovieLoaderVMData::Avm1 {
+                    broadcaster: Some(broadcaster),
+                } = vm_data
+                {
                     queue.queue_action(
                         clip,
                         ActionType::Method {
