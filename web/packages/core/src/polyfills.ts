@@ -21,6 +21,18 @@ let objects: HTMLCollectionOf<HTMLObjectElement>;
 let embeds: HTMLCollectionOf<HTMLEmbedElement>;
 
 /**
+ * Check if this browser has pre-existing Flash support.
+ *
+ * @returns Whether this browser has a plugin indicating pre-existing Flash support
+ */
+function isFlashEnabledBrowser(): boolean {
+    return (
+        (navigator.plugins.namedItem("Shockwave Flash")?.filename ??
+            "ruffle.js") !== "ruffle.js"
+    );
+}
+
+/**
  *
  */
 function polyfillFlashInstances(): void {
@@ -190,7 +202,9 @@ function initMutationObserver(): void {
  * Polyfills the detection of Flash plugins in the browser.
  */
 export function pluginPolyfill(): void {
-    installPlugin(FLASH_PLUGIN);
+    if (!isFlashEnabledBrowser()) {
+        installPlugin(FLASH_PLUGIN);
+    }
 }
 
 /**
@@ -203,7 +217,7 @@ export function polyfill(isExt: boolean): void {
     const usingExtension =
         navigator.plugins.namedItem("Ruffle Extension")?.filename ===
         "ruffle.js";
-    if (isExtension || !usingExtension) {
+    if (isExtension || (!isFlashEnabledBrowser() && !usingExtension)) {
         polyfillFlashInstances();
         polyfillFrames();
         initMutationObserver();
