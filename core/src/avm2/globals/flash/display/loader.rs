@@ -15,7 +15,7 @@ use crate::avm2_stub_method;
 use crate::backend::navigator::{NavigationMethod, Request};
 use crate::display_object::LoaderDisplay;
 use crate::display_object::MovieClip;
-use crate::loader::{Avm2LoaderData, MovieLoaderEventHandler};
+use crate::loader::MovieLoaderVMData;
 use crate::tag_utils::SwfMovie;
 use std::sync::Arc;
 
@@ -87,13 +87,13 @@ pub fn load<'gc>(
             content.into(),
             request,
             Some(url),
-            Some(MovieLoaderEventHandler::Avm2LoaderInfo(loader_info)),
-            Some(Avm2LoaderData {
+            MovieLoaderVMData::Avm2 {
+                loader_info,
                 context,
                 default_domain: activation
                     .caller_domain()
                     .expect("Missing caller domain in Loader.load"),
-            }),
+            },
         );
         activation.context.navigator.spawn_future(future);
     }
@@ -218,13 +218,13 @@ pub fn load_bytes<'gc>(
             activation.context.player.clone(),
             content.into(),
             bytearray.bytes().to_vec(),
-            Some(MovieLoaderEventHandler::Avm2LoaderInfo(loader_info)),
-            Some(Avm2LoaderData {
+            MovieLoaderVMData::Avm2 {
+                loader_info,
                 context,
                 default_domain: activation
                     .caller_domain()
                     .expect("Missing caller domain in Loader.loadBytes"),
-            }),
+            },
         );
         activation.context.navigator.spawn_future(future);
     }

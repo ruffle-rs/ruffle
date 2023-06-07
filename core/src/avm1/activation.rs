@@ -10,6 +10,7 @@ use crate::backend::navigator::{NavigationMethod, Request};
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer};
 use crate::ecma_conversions::{f64_to_wrapping_i32, f64_to_wrapping_u32};
+use crate::loader::MovieLoaderVMData;
 use crate::string::{AvmString, SwfStrExt as _, WStr, WString};
 use crate::tag_utils::SwfSlice;
 use crate::vminterface::Instantiator;
@@ -1209,8 +1210,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                             level,
                             Request::get(url.to_string()),
                             None,
-                            None,
-                            None,
+                            MovieLoaderVMData::Avm1 { broadcaster: None },
                         );
                         self.context.navigator.spawn_future(future);
                     }
@@ -1340,8 +1340,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                         clip_target,
                         request,
                         None,
-                        None,
-                        None,
+                        MovieLoaderVMData::Avm1 { broadcaster: None },
                     );
                     self.context.navigator.spawn_future(future);
                 }
@@ -1362,8 +1361,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                         clip_target,
                         Request::get(url.to_utf8_lossy().into_owned()),
                         None,
-                        None,
-                        None,
+                        MovieLoaderVMData::Avm1 { broadcaster: None },
                     );
                     self.context.navigator.spawn_future(future);
                 }

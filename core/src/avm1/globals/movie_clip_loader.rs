@@ -11,7 +11,7 @@ use crate::avm1::{ArrayObject, Object, Value};
 use crate::backend::navigator::Request;
 use crate::context::GcContext;
 use crate::display_object::{TDisplayObject, TDisplayObjectContainer};
-use crate::loader::MovieLoaderEventHandler;
+use crate::loader::MovieLoaderVMData;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "loadClip" => method(load_clip; DONT_ENUM | DONT_DELETE);
@@ -65,8 +65,9 @@ fn load_clip<'gc>(
                     target,
                     Request::get(url.to_utf8_lossy().into_owned()),
                     None,
-                    Some(MovieLoaderEventHandler::Avm1Broadcast(this)),
-                    None,
+                    MovieLoaderVMData::Avm1 {
+                        broadcaster: Some(this),
+                    },
                 );
                 activation.context.navigator.spawn_future(future);
 
