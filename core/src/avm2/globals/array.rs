@@ -200,7 +200,11 @@ pub fn concat<'gc>(
         .unwrap_or_else(|| ArrayStorage::new(0));
 
     for arg in args {
-        if let Some(other_array) = arg.coerce_to_object(activation)?.as_array_storage() {
+        if let Some(other_array) = arg
+            .as_object()
+            .as_ref()
+            .and_then(|obj| obj.as_array_storage())
+        {
             base_array.append(&other_array);
         } else {
             base_array.push(*arg);
