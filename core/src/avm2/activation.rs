@@ -1713,7 +1713,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_in(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let obj = self.pop_stack().coerce_to_object(self)?;
+        let obj = self.pop_stack().coerce_to_object_or_typeerror(self, None)?;
         let name_value = self.pop_stack();
 
         if let Some(dictionary) = obj.as_dictionary_object() {
@@ -1760,14 +1760,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_push_scope(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let object = self.pop_stack().coerce_to_object(self)?;
+        let object = self.pop_stack().coerce_to_object_or_typeerror(self, None)?;
         self.push_scope(Scope::new(object));
 
         Ok(FrameControl::Continue)
     }
 
     fn op_push_with(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let object = self.pop_stack().coerce_to_object(self)?;
+        let object = self.pop_stack().coerce_to_object_or_typeerror(self, None)?;
         self.push_scope(Scope::new_with(object));
 
         Ok(FrameControl::Continue)
@@ -2172,7 +2172,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_check_filter(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let xml = self.avm2().classes().xml;
         let xml_list = self.avm2().classes().xml_list;
-        let value = self.pop_stack().coerce_to_object(self)?;
+        let value = self.pop_stack().coerce_to_object_or_typeerror(self, None)?;
 
         if value.is_of_type(xml, &mut self.context) || value.is_of_type(xml_list, &mut self.context)
         {
@@ -2898,34 +2898,62 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_as_type_late(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let class = self
-            .pop_stack()
-            .as_object()
-            .and_then(|c| c.as_class_object())
-            .ok_or("Cannot coerce a value to a type that is null, undefined, or not a class")?;
-        let value = self.pop_stack();
+        let class = self.pop_stack();
 
-        if value.is_of_type(self, class) {
-            self.push_stack(value);
-        } else {
-            self.push_stack(Value::Null);
+        if matches!(class, Value::Undefined) {
+            return Err(make_null_or_undefined_error(self, class, None));
         }
 
-        Ok(FrameControl::Continue)
+        if let Some(class) = class.as_object() {
+            let class = class.as_class_object().ok_or(Error::AvmError(type_error(
+                self,
+                "Error #1041: The right-hand side of operator must be a class.",
+                1041,
+            )?))?;
+            let value = self.pop_stack();
+
+            if value.is_of_type(self, class) {
+                self.push_stack(value);
+            } else {
+                self.push_stack(Value::Null);
+            }
+
+            Ok(FrameControl::Continue)
+        } else {
+            // Primitive values and null both throw this error
+            Err(make_null_or_undefined_error(self, Value::Null, None))
+        }
     }
 
     fn op_instance_of(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let type_object = self
             .pop_stack()
             .as_object()
-            .ok_or("Cannot check if value is of a type that is null, undefined, or not a class")?;
-        let value = self.pop_stack().coerce_to_object(self).ok();
+            .ok_or(Error::AvmError(type_error(
+                self,
+                "Error #1040: The right-hand side of instanceof must be a class or function.",
+                1040,
+            )?))?;
 
-        if let Some(value) = value {
+        if type_object.as_class_object().is_none() && type_object.as_function_object().is_none() {
+            return Err(Error::AvmError(type_error(
+                self,
+                "Error #1040: The right-hand side of instanceof must be a class or function.",
+                1040,
+            )?));
+        };
+
+        let value = self.pop_stack();
+
+        if let Ok(value) = value.coerce_to_object(self) {
             let is_instance_of = value.is_instance_of(self, type_object)?;
 
             self.push_stack(is_instance_of);
+        } else if matches!(value, Value::Undefined) {
+            // undefined
+            return Err(make_null_or_undefined_error(self, value, None));
         } else {
+            // null
             self.push_stack(false);
         }
 
