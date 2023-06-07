@@ -274,7 +274,7 @@ impl<'gc> Multiname<'gc> {
             ns,
             name,
             params: self.params.clone(),
-            flags: Default::default(),
+            flags: self.flags & MultinameFlags::ATTRIBUTE,
         })
     }
 
