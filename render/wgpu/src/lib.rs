@@ -31,6 +31,7 @@ mod bitmaps;
 mod context3d;
 mod globals;
 mod pipelines;
+mod pixel_bender;
 pub mod target;
 mod uniform_buffer;
 

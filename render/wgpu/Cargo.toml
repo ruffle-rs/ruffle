@@ -23,10 +23,12 @@ ouroboros = "0.15.6"
 typed-arena = "2.0.2"
 gc-arena = { workspace = true }
 naga-agal = { path = "../naga-agal" }
+naga-pixelbender = { path = "../naga-pixelbender" }
 downcast-rs = "1.2.0"
 profiling = { version = "1.0", default-features = false, optional = true }
-naga = { version = "0.12.2", features = ["validate", "wgsl-out"] }
 lru = "0.10.0"
+naga = { workspace = true }
+indexmap = "1.9.3"
 
 # desktop
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]

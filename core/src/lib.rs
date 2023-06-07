@@ -34,7 +34,7 @@ mod library;
 pub mod limits;
 pub mod loader;
 mod locale;
-mod pixel_bender;
+pub mod pixel_bender;
 mod player;
 mod prelude;
 mod streams;

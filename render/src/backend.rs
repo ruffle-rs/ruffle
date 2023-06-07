@@ -4,6 +4,7 @@ use crate::bitmap::{Bitmap, BitmapHandle, BitmapSource, PixelRegion, SyncHandle}
 use crate::commands::CommandList;
 use crate::error::Error;
 use crate::filters::Filter;
+use crate::pixel_bender::{PixelBenderShader, PixelBenderShaderArgument, PixelBenderShaderHandle};
 use crate::quality::StageQuality;
 use crate::shape_utils::DistilledShape;
 use downcast_rs::{impl_downcast, Downcast};
@@ -75,6 +76,18 @@ pub trait RenderBackend: Downcast {
     fn name(&self) -> &'static str;
 
     fn set_quality(&mut self, quality: StageQuality);
+
+    fn compile_pixelbender_shader(
+        &mut self,
+        shader: PixelBenderShader,
+    ) -> Result<PixelBenderShaderHandle, Error>;
+
+    fn run_pixelbender_shader(
+        &mut self,
+        handle: PixelBenderShaderHandle,
+        arguments: &[PixelBenderShaderArgument],
+        target: BitmapHandle,
+    ) -> Result<Box<dyn SyncHandle>, Error>;
 }
 impl_downcast!(RenderBackend);
 

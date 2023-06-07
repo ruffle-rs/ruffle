@@ -25,6 +25,9 @@ serde = { version = "1.0.164", features = ["derive"] }
 clap = { version = "4.3.3", features = ["derive"], optional = true }
 h263-rs-yuv = { git = "https://github.com/ruffle-rs/h263-rs", rev = "d5d78eb251c1ce1f1da57c63db14f0fdc77a4b36"}
 lru = "0.10.0"
+num-traits = "0.2"
+num-derive = "0.3"
+byteorder = "1.4"
 
 [dependencies.jpeg-decoder]
 version = "0.3.0"

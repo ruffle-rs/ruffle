@@ -1,6 +1,7 @@
 use crate::pixel_bender::{
     Opcode, Operation, PixelBenderMetadata, PixelBenderParam, PixelBenderParamQualifier,
-    PixelBenderShader, PixelBenderType, PixelBenderTypeOpcode,
+    PixelBenderReg, PixelBenderRegChannel, PixelBenderRegKind, PixelBenderShader, PixelBenderType,
+    PixelBenderTypeOpcode,
 };
 
 use super::parse_shader;
@@ -42,8 +43,11 @@ fn simple_shader() {
             PixelBenderParam::Normal {
                 qualifier: PixelBenderParamQualifier::Input,
                 param_type: PixelBenderTypeOpcode::TFloat2,
-                reg: 0,
-                mask: 12,
+                reg: PixelBenderReg {
+                    index: 0,
+                    channels: vec![PixelBenderRegChannel::R, PixelBenderRegChannel::G],
+                    kind: PixelBenderRegKind::Float,
+                },
                 name: "_OutCoord".to_string(),
                 metadata: vec![],
             },
@@ -55,16 +59,22 @@ fn simple_shader() {
             PixelBenderParam::Normal {
                 qualifier: PixelBenderParamQualifier::Output,
                 param_type: PixelBenderTypeOpcode::TFloat4,
-                reg: 1,
-                mask: 15,
+                reg: PixelBenderReg {
+                    index: 1,
+                    channels: PixelBenderRegChannel::RGBA.to_vec(),
+                    kind: PixelBenderRegKind::Float,
+                },
                 name: "dst".to_string(),
                 metadata: vec![],
             },
             PixelBenderParam::Normal {
                 qualifier: PixelBenderParamQualifier::Input,
                 param_type: PixelBenderTypeOpcode::TFloat2,
-                reg: 0,
-                mask: 3,
+                reg: PixelBenderReg {
+                    index: 0,
+                    channels: vec![PixelBenderRegChannel::B, PixelBenderRegChannel::A],
+                    kind: PixelBenderRegKind::Float,
+                },
                 name: "size".to_string(),
                 metadata: vec![
                     PixelBenderMetadata {
@@ -90,8 +100,11 @@ fn simple_shader() {
             PixelBenderParam::Normal {
                 qualifier: PixelBenderParamQualifier::Input,
                 param_type: PixelBenderTypeOpcode::TFloat,
-                reg: 2,
-                mask: 8,
+                reg: PixelBenderReg {
+                    index: 2,
+                    channels: vec![PixelBenderRegChannel::R],
+                    kind: PixelBenderRegKind::Float,
+                },
                 name: "radius".to_string(),
                 metadata: vec![
                     PixelBenderMetadata {
@@ -136,103 +149,197 @@ fn simple_shader() {
         operations: vec![
             Operation::Normal {
                 opcode: Opcode::Rcp,
-                dst: 2,
-                mask: 64,
-                src: 2,
-                other: 0,
+                dst: PixelBenderReg {
+                    index: 2,
+                    channels: vec![PixelBenderRegChannel::G],
+                    kind: PixelBenderRegKind::Float,
+                },
+                src: PixelBenderReg {
+                    index: 2,
+                    channels: vec![PixelBenderRegChannel::R],
+                    kind: PixelBenderRegKind::Float,
+                },
             },
             Operation::Normal {
                 opcode: Opcode::Mul,
-                dst: 2,
-                mask: 64,
-                src: 2,
-                other: 0,
+                dst: PixelBenderReg {
+                    index: 2,
+                    channels: vec![PixelBenderRegChannel::G],
+                    kind: PixelBenderRegKind::Float,
+                },
+                src: PixelBenderReg {
+                    index: 2,
+                    channels: vec![PixelBenderRegChannel::R],
+                    kind: PixelBenderRegKind::Float,
+                },
             },
             Operation::Normal {
                 opcode: Opcode::Rcp,
-                dst: 2,
-                mask: 49,
-                src: 176,
-                other: 0,
+                dst: PixelBenderReg {
+                    index: 2,
+                    channels: vec![PixelBenderRegChannel::B, PixelBenderRegChannel::A],
+                    kind: PixelBenderRegKind::Float,
+                },
+                src: PixelBenderReg {
+                    index: 0,
+                    channels: vec![PixelBenderRegChannel::B, PixelBenderRegChannel::A],
+                    kind: PixelBenderRegKind::Float,
+                },
             },
             Operation::Normal {
                 opcode: Opcode::Mul,
-                dst: 2,
-                mask: 49,
-                src: 176,
-                other: 0,
+                dst: PixelBenderReg {
+                    index: 2,
+                    channels: vec![PixelBenderRegChannel::B, PixelBenderRegChannel::A],
+                    kind: PixelBenderRegKind::Float,
+                },
+                src: PixelBenderReg {
+                    index: 0,
+                    channels: vec![PixelBenderRegChannel::B, PixelBenderRegChannel::A],
+                    kind: PixelBenderRegKind::Float,
+                },
             },
             Operation::Normal {
                 opcode: Opcode::Mov,
-                dst: 3,
-                mask: 193,
-                src: 82,
-                other: 0,
+                dst: PixelBenderReg {
+                    index: 3,
+                    channels: vec![PixelBenderRegChannel::R, PixelBenderRegChannel::G],
+                    kind: PixelBenderRegKind::Float,
+                },
+                src: PixelBenderReg {
+                    index: 2,
+                    channels: vec![PixelBenderRegChannel::G, PixelBenderRegChannel::G],
+                    kind: PixelBenderRegKind::Float,
+                },
             },
             Operation::Normal {
                 opcode: Opcode::Mul,
-                dst: 3,
-                mask: 193,
-                src: 178,
-                other: 0,
+                dst: PixelBenderReg {
+                    index: 3,
+                    channels: vec![PixelBenderRegChannel::R, PixelBenderRegChannel::G],
+                    kind: PixelBenderRegKind::Float,
+                },
+                src: PixelBenderReg {
+                    index: 2,
+                    channels: vec![PixelBenderRegChannel::B, PixelBenderRegChannel::A],
+                    kind: PixelBenderRegKind::Float,
+                },
             },
             Operation::Normal {
                 opcode: Opcode::Mov,
-                dst: 2,
-                mask: 97,
-                src: 19,
-                other: 0,
+                dst: PixelBenderReg {
+                    index: 2,
+                    channels: vec![PixelBenderRegChannel::G, PixelBenderRegChannel::B],
+                    kind: PixelBenderRegKind::Float,
+                },
+                src: PixelBenderReg {
+                    index: 3,
+                    channels: vec![PixelBenderRegChannel::R, PixelBenderRegChannel::G],
+                    kind: PixelBenderRegKind::Float,
+                },
             },
             Operation::SampleNearest {
-                dst: 3,
-                mask: 241,
-                src: 16,
+                dst: PixelBenderReg {
+                    index: 3,
+                    channels: PixelBenderRegChannel::RGBA.to_vec(),
+                    kind: PixelBenderRegKind::Float,
+                },
+                src: PixelBenderReg {
+                    index: 0,
+                    channels: vec![PixelBenderRegChannel::R, PixelBenderRegChannel::G],
+                    kind: PixelBenderRegKind::Float,
+                },
                 tf: 0,
             },
             Operation::LoadFloat {
-                dst: 4,
-                mask: 128,
+                dst: PixelBenderReg {
+                    index: 4,
+                    channels: vec![PixelBenderRegChannel::R],
+                    kind: PixelBenderRegKind::Float,
+                },
                 val: 100.0,
             },
             Operation::LoadFloat {
-                dst: 4,
-                mask: 64,
+                dst: PixelBenderReg {
+                    index: 4,
+                    channels: vec![PixelBenderRegChannel::G],
+                    kind: PixelBenderRegKind::Float,
+                },
                 val: 0.0,
             },
             Operation::LoadFloat {
-                dst: 4,
-                mask: 32,
+                dst: PixelBenderReg {
+                    index: 4,
+                    channels: vec![PixelBenderRegChannel::B],
+                    kind: PixelBenderRegKind::Float,
+                },
                 val: 100.0,
             },
             Operation::LoadFloat {
-                dst: 4,
-                mask: 16,
+                dst: PixelBenderReg {
+                    index: 4,
+                    channels: vec![PixelBenderRegChannel::A],
+                    kind: PixelBenderRegKind::Float,
+                },
                 val: 1.0,
             },
             Operation::Normal {
                 opcode: Opcode::Mov,
-                dst: 5,
-                mask: 243,
-                src: 30,
-                other: 0,
+                dst: PixelBenderReg {
+                    index: 5,
+                    channels: vec![
+                        PixelBenderRegChannel::R,
+                        PixelBenderRegChannel::G,
+                        PixelBenderRegChannel::B,
+                        PixelBenderRegChannel::A,
+                    ],
+                    kind: PixelBenderRegKind::Float,
+                },
+                src: PixelBenderReg {
+                    index: 3,
+                    channels: vec![
+                        PixelBenderRegChannel::R,
+                        PixelBenderRegChannel::G,
+                        PixelBenderRegChannel::B,
+                        PixelBenderRegChannel::A,
+                    ],
+                    kind: PixelBenderRegKind::Float,
+                },
             },
             Operation::Normal {
                 opcode: Opcode::Add,
-                dst: 5,
-                mask: 243,
-                src: 31,
-                other: 0,
+                dst: PixelBenderReg {
+                    index: 5,
+                    channels: vec![
+                        PixelBenderRegChannel::R,
+                        PixelBenderRegChannel::G,
+                        PixelBenderRegChannel::B,
+                        PixelBenderRegChannel::A,
+                    ],
+                    kind: PixelBenderRegKind::Float,
+                },
+                src: PixelBenderReg {
+                    index: 4,
+                    channels: PixelBenderRegChannel::RGBA.to_vec(),
+                    kind: PixelBenderRegKind::Float,
+                },
             },
             Operation::Normal {
                 opcode: Opcode::Mov,
-                dst: 1,
-                mask: 243,
-                src: 32,
-                other: 0,
+                dst: PixelBenderReg {
+                    index: 1,
+                    channels: PixelBenderRegChannel::RGBA.to_vec(),
+                    kind: PixelBenderRegKind::Float,
+                },
+                src: PixelBenderReg {
+                    index: 5,
+                    channels: PixelBenderRegChannel::RGBA.to_vec(),
+                    kind: PixelBenderRegKind::Float,
+                },
             },
         ],
     };
 
-    let shader = parse_shader(shader);
+    let shader = parse_shader(shader).expect("Failed to parse shader");
     assert_eq!(shader, expected, "Shader parsed incorrectly!");
 }

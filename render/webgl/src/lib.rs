@@ -1099,6 +1099,24 @@ impl RenderBackend for WebGlRenderBackend {
     }
 
     fn set_quality(&mut self, _quality: StageQuality) {}
+
+    fn compile_pixelbender_shader(
+        &mut self,
+        _shader: ruffle_render::pixel_bender::PixelBenderShader,
+    ) -> Result<ruffle_render::pixel_bender::PixelBenderShaderHandle, BitmapError> {
+        Err(BitmapError::Unimplemented(
+            "compile_pixelbender_shader".into(),
+        ))
+    }
+
+    fn run_pixelbender_shader(
+        &mut self,
+        _handle: ruffle_render::pixel_bender::PixelBenderShaderHandle,
+        _arguments: &[ruffle_render::pixel_bender::PixelBenderShaderArgument],
+        _target: BitmapHandle,
+    ) -> Result<Box<dyn SyncHandle>, BitmapError> {
+        Err(BitmapError::Unimplemented("run_pixelbender_shader".into()))
+    }
 }
 
 impl CommandHandler for WebGlRenderBackend {
