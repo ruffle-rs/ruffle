@@ -1,5 +1,7 @@
 //! ActionScript Virtual Machine 2 (AS3) support
 
+use std::rc::Rc;
+
 use crate::avm2::class::AllocatorFn;
 use crate::avm2::function::Executable;
 use crate::avm2::globals::SystemClasses;
@@ -137,7 +139,7 @@ pub struct Avm2<'gc> {
     /// alive if they would otherwise be garbage-collected. The movie will
     /// stop ticking whenever garbage collection runs if there are no more
     /// strong references around (this matches Flash's behavior).
-    orphan_objects: Vec<DisplayObjectWeak<'gc>>,
+    orphan_objects: Rc<Vec<DisplayObjectWeak<'gc>>>,
 
     #[cfg(feature = "avm_debug")]
     pub debug_output: bool,
@@ -176,7 +178,7 @@ impl<'gc> Avm2<'gc> {
             native_call_handler_table: Default::default(),
             broadcast_list: Default::default(),
 
-            orphan_objects: Vec::new(),
+            orphan_objects: Default::default(),
 
             #[cfg(feature = "avm_debug")]
             debug_output: false,
@@ -237,6 +239,10 @@ impl<'gc> Avm2<'gc> {
         Ok(())
     }
 
+    fn orphan_objects_mut(&mut self) -> &mut Vec<DisplayObjectWeak<'gc>> {
+        Rc::make_mut(&mut self.orphan_objects)
+    }
+
     /// Adds a `MovieClip` to the orphan list. In AVM2, movies advance their
     /// frames even when they are not on a display list. Unfortunately,
     /// mutliple SWFS rely on this behavior, so we need to match Flash's
@@ -248,7 +254,7 @@ impl<'gc> Avm2<'gc> {
             .iter()
             .all(|d| d.as_ptr() != dobj.as_ptr())
         {
-            self.orphan_objects.push(dobj.downgrade());
+            self.orphan_objects_mut().push(dobj.downgrade());
         }
     }
 
@@ -256,16 +262,16 @@ impl<'gc> Avm2<'gc> {
         context: &mut UpdateContext<'_, 'gc>,
         mut f: impl FnMut(DisplayObject<'gc>, &mut UpdateContext<'_, 'gc>),
     ) {
-        let mut i = 0;
-        // FIXME - should we handle movies added while we're looping?
-        let total = context.avm2.orphan_objects.len();
+        // Clone the Rc before iterating over it. Any modifications must go through
+        // `Rc::make_mut` in `orphan_objects_mut`, which will leave this `Rc` unmodified.
+        // This ensures that any orphan additions/removals done by `f` will not affect
+        // the iteration in this method.
+        let orphan_objs: Rc<_> = context.avm2.orphan_objects.clone();
 
-        // We cannot use an iterator, as it would conflict with the mutable borrow of `context`.
-        while i < total {
-            if let Some(dobj) = valid_orphan(context.avm2.orphan_objects[i], context.gc_context) {
+        for orphan in orphan_objs.iter() {
+            if let Some(dobj) = valid_orphan(*orphan, context.gc_context) {
                 f(dobj, context);
             }
-            i += 1;
         }
     }
 
@@ -273,7 +279,7 @@ impl<'gc> Avm2<'gc> {
     /// that have been garbage collected, or are no longer orphans
     /// (they've since acquired a parent).
     pub fn cleanup_dead_orphans(context: &mut UpdateContext<'_, 'gc>) {
-        context.avm2.orphan_objects.retain(|d| {
+        context.avm2.orphan_objects_mut().retain(|d| {
             if let Some(dobj) = valid_orphan(*d, context.gc_context) {
                 // All clips that become orphaned (have their parent removed, or start out with no parent)
                 // get added to the orphan list. However, there's a distinction between clips
