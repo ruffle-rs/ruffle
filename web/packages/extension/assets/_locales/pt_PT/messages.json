@@ -2,6 +2,9 @@
     "settings_ruffle_enable": {
         "message": "Reproduzir conteúdo Flash no Ruffle"
     },
+    "settings_ignore_optout": {
+        "message": "Reproduzir conteúdo em Flash até em sites que não permitem o Ruffle"
+    },
     "settings_show_swf_download": {
         "message": "Permitir o download de SWFs pelo menu de contexto"
     },
@@ -14,7 +17,43 @@
     "settings_log_level": {
         "message": "Nível do log"
     },
+    "settings_log_level_error": {
+        "message": "Erros"
+    },
+    "settings_log_level_warn": {
+        "message": "Avisos"
+    },
+    "settings_log_level_info": {
+        "message": "Informação"
+    },
+    "settings_max_execution_duration": {
+        "message": "Duração máxima permitida para execução de ActionScript (em segundos)"
+    },
+    "settings_player_version": {
+        "message": "Versão do Flash Player para emular (entre 1-32)"
+    },
+    "settings_preferred_renderer": {
+        "message": "Renderizador preferido"
+    },
+    "settings_preferred_renderer_auto": {
+        "message": "Automático"
+    },
+    "settings_advanced_options": {
+        "message": "Opções Avançadas"
+    },
+    "settings_reset": {
+        "message": "Redefinir opções"
+    },
+    "settings_reset_confirm": {
+        "message": "Tem a certeza que quer redefinir as definições do Ruffle para os seus valores originais?"
+    },
     "status_init": {
         "message": "Lendo o separador atual…"
+    },
+    "status_no_tabs": {
+        "message": "Ainda não há um separador ativo."
+    },
+    "status_tabs_error": {
+        "message": "Um erro ocorreu durante a procura do separador atual."
     }
 }
