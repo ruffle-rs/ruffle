@@ -1,5 +1,7 @@
 package flash.external
 {
+   import __ruffle__.stub_getter;
+
    public final class ExternalInterface
    {
       public static native function get available(): Boolean;
@@ -7,5 +9,10 @@ package flash.external
       public static native function addCallback(functionName: String, closure: Function) : void;
       
       public static native function call(functionName: String, ... arguments) : *;
+
+      public static function get objectID():String {
+         stub_getter("flash.external.ExternalInterface", "objectID");
+         return null;
+      }
    }
 }

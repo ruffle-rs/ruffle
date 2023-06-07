@@ -1,0 +1,7 @@
+Caught exception from ExternalInterface.call
+Error: Error #2067: The ExternalInterface is not available in this container. ExternalInterface requires Internet Explorer ActiveX, Firefox, Mozilla 1.7.5 and greater, or other browsers that support NPRuntime.
+2067
+Caught exception from ExternalInterface.addCallback
+Error: Error #2067: The ExternalInterface is not available in this container. ExternalInterface requires Internet Explorer ActiveX, Firefox, Mozilla 1.7.5 and greater, or other browsers that support NPRuntime.
+2067
+ExternalInterface.objectID: null

@@ -1,3 +1,4 @@
+use crate::avm2::error::error;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Object, Value};
 use crate::external::{Callback, Value as ExternalValue};
@@ -8,6 +9,8 @@ pub fn call<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let name = args.get_string(activation, 0)?;
+    check_available(activation)?;
+
     if let Some(method) = activation
         .context
         .external_interface
@@ -25,6 +28,17 @@ pub fn call<'gc>(
     }
 }
 
+fn check_available<'gc>(activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
+    if !activation.context.external_interface.available() {
+        return Err(Error::AvmError(error(
+            activation,
+            "Error #2067: The ExternalInterface is not available in this container. ExternalInterface requires Internet Explorer ActiveX, Firefox, Mozilla 1.7.5 and greater, or other browsers that support NPRuntime.",
+            2067,
+        )?));
+    }
+    Ok(())
+}
+
 pub fn get_available<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
@@ -40,6 +54,8 @@ pub fn add_callback<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let name = args.get_string(activation, 0)?;
     let method = args.get_object(activation, 1, "closure")?;
+
+    check_available(activation)?;
 
     activation
         .context
