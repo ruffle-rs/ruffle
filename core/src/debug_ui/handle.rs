@@ -1,4 +1,5 @@
-use crate::avm1::TObject;
+use crate::avm1::TObject as _;
+use crate::avm2::object::TObject as _;
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, DisplayObjectPtr, TDisplayObject};
 use gc_arena::{DynamicRoot, DynamicRootSet, Rootable};
@@ -94,3 +95,46 @@ impl Hash for AVM1ObjectHandle {
 }
 
 impl Eq for AVM1ObjectHandle {}
+
+#[derive(Clone)]
+pub struct AVM2ObjectHandle {
+    root: DynamicRoot<Rootable![crate::avm2::Object<'gc>]>,
+    ptr: *const crate::avm2::object::ObjectPtr,
+}
+
+impl AVM2ObjectHandle {
+    pub fn new<'gc>(
+        context: &mut UpdateContext<'_, 'gc>,
+        object: crate::avm2::Object<'gc>,
+    ) -> Self {
+        Self {
+            root: context.dynamic_root.stash(context.gc_context, object),
+            ptr: object.as_ptr(),
+        }
+    }
+
+    pub fn fetch<'gc>(&self, dynamic_root_set: DynamicRootSet<'gc>) -> crate::avm2::Object<'gc> {
+        *dynamic_root_set.fetch(&self.root)
+    }
+}
+
+impl Debug for AVM2ObjectHandle {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("AVM2ObjectHandle").field(&self.ptr).finish()
+    }
+}
+
+impl PartialEq<AVM2ObjectHandle> for AVM2ObjectHandle {
+    #[inline(always)]
+    fn eq(&self, other: &AVM2ObjectHandle) -> bool {
+        self.ptr == other.ptr
+    }
+}
+
+impl Hash for AVM2ObjectHandle {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.ptr.hash(state);
+    }
+}
+
+impl Eq for AVM2ObjectHandle {}
