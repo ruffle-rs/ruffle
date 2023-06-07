@@ -1870,8 +1870,8 @@ impl Player {
     }
 
     #[cfg(feature = "egui")]
-    pub fn debug_ui_message(&mut self, message: crate::debug_ui::Message) {
-        self.debug_ui.borrow_mut().queue_message(message)
+    pub fn debug_ui(&mut self) -> core::cell::RefMut<'_, crate::debug_ui::DebugUi> {
+        self.debug_ui.borrow_mut()
     }
 
     /// Update the current state of the player.

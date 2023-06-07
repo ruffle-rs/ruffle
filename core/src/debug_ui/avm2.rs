@@ -1,13 +1,22 @@
 use crate::avm2::property::Property;
-use crate::avm2::{Activation, Error, Namespace, Object, TObject, Value};
+use crate::avm2::{Activation, ClassObject, Error, Namespace, Object, TObject, Value};
 use crate::context::UpdateContext;
+use crate::debug_ui::display_object::open_display_object_button;
 use crate::debug_ui::handle::{AVM2ObjectHandle, DisplayObjectHandle};
-use crate::debug_ui::Message;
-use egui::{Align, Id, Layout, TextEdit, Ui, Widget, Window};
-use egui_extras::{Column, TableBuilder};
+use crate::debug_ui::{ItemToSave, Message};
+use egui::{Align, Checkbox, Grid, Id, Layout, TextEdit, Ui, Window};
+use egui_extras::{Column, TableBody, TableBuilder, TableRow};
 use fnv::FnvHashMap;
 use gc_arena::MutationContext;
 use std::borrow::Cow;
+
+#[derive(Debug, Eq, PartialEq, Hash, Default, Copy, Clone)]
+enum Panel {
+    Information,
+    #[default]
+    Properties,
+    Class,
+}
 
 #[derive(Debug, Default)]
 pub struct Avm2ObjectWindow {
@@ -16,6 +25,7 @@ pub struct Avm2ObjectWindow {
     call_getters: bool,
     getter_values: FnvHashMap<(String, String), Option<ValueWidget>>,
     search: String,
+    open_panel: Panel,
 }
 
 impl Avm2ObjectWindow {
@@ -36,11 +46,176 @@ impl Avm2ObjectWindow {
         Window::new(object_name(activation.context.gc_context, object))
             .id(Id::new(object.as_ptr()))
             .open(&mut keep_open)
-            .scroll2([false, false]) // Table will provide its own scrolling
+            .scroll2([true, true])
             .show(egui_ctx, |ui| {
-                self.show_properties(object, messages, &mut activation, ui);
+                ui.horizontal(|ui| {
+                    ui.selectable_value(&mut self.open_panel, Panel::Information, "Information");
+                    ui.selectable_value(&mut self.open_panel, Panel::Properties, "Properties");
+                    if object.as_class_object().is_some() {
+                        ui.selectable_value(&mut self.open_panel, Panel::Class, "Class Info");
+                    }
+                });
+                ui.separator();
+
+                match self.open_panel {
+                    Panel::Information => {
+                        self.show_information(object, messages, &mut activation, ui)
+                    }
+                    Panel::Properties => {
+                        self.show_properties(object, messages, &mut activation, ui)
+                    }
+                    Panel::Class => {
+                        if let Some(class) = object.as_class_object() {
+                            self.show_class(class, messages, &mut activation, ui)
+                        }
+                    }
+                }
             });
         keep_open
+    }
+
+    fn show_information<'gc>(
+        &mut self,
+        object: Object<'gc>,
+        messages: &mut Vec<Message>,
+        activation: &mut Activation<'_, 'gc>,
+        ui: &mut Ui,
+    ) {
+        Grid::new(ui.id().with("info"))
+            .num_columns(2)
+            .striped(true)
+            .show(ui, |ui| {
+                if let Some(class) = object.instance_of() {
+                    ui.label("Instance Of");
+                    ValueWidget::new(activation, Ok(class.into())).show(ui, messages);
+                    ui.end_row();
+                }
+
+                if let Some(object) = object.as_display_object() {
+                    ui.label("Display Object");
+                    open_display_object_button(
+                        ui,
+                        &mut activation.context,
+                        messages,
+                        object,
+                        &mut self.hovered_debug_rect,
+                    );
+                    ui.end_row();
+                }
+
+                if let Some(bmd) = object.as_bitmap_data() {
+                    ui.label("Bitmap Data Size");
+                    ui.label(format!("{} x {}", bmd.width(), bmd.height()));
+                    ui.end_row();
+
+                    ui.label("Bitmap Data Status");
+                    if bmd.disposed() {
+                        ui.label("Disposed");
+                    } else {
+                        ui.horizontal(|ui| {
+                            ui.label("Alive");
+                            ui.add_space(10.0);
+                            if ui.button("Save File...").clicked() {
+                                let mut data = Vec::new();
+                                let mut encoder =
+                                    png::Encoder::new(&mut data, bmd.width(), bmd.height());
+                                encoder.set_color(png::ColorType::Rgba);
+                                encoder.set_depth(png::BitDepth::Eight);
+                                if let Err(e) = encoder.write_header().and_then(|mut w| {
+                                    w.write_image_data(&bmd.sync().read().pixels_rgba())
+                                }) {
+                                    tracing::error!("Couldn't create png: {e}");
+                                } else {
+                                    messages.push(Message::SaveFile(ItemToSave {
+                                        suggested_name: format!("{:p}.png", object.as_ptr()),
+                                        data,
+                                    }));
+                                }
+                            }
+                        });
+                    }
+                    ui.end_row();
+
+                    ui.label("Bitmap Data Transparency");
+                    ui.add_enabled(false, Checkbox::new(&mut bmd.transparency(), "Transparent"));
+                    ui.end_row();
+
+                    ui.label("Bitmap Data Sync");
+                    ui.label(bmd.debug_sync_status());
+                    ui.end_row();
+                }
+
+                if let Some(ba) = object.as_bytearray() {
+                    ui.label("Byte Array");
+
+                    if ba.len() > 0 {
+                        ui.horizontal(|ui| {
+                            ui.label(format!("{} bytes", ba.len()));
+                            ui.add_space(10.0);
+                            if ui.button("Sync & Save PNG...").clicked() {
+                                messages.push(Message::SaveFile(ItemToSave {
+                                    suggested_name: format!("{:p}.png", object.as_ptr()),
+                                    data: ba.bytes().to_vec(),
+                                }));
+                            }
+                        });
+                    } else {
+                        ui.label("0 bytes");
+                    }
+
+                    ui.end_row();
+                }
+            });
+    }
+
+    fn show_class<'gc>(
+        &mut self,
+        class: ClassObject<'gc>,
+        messages: &mut Vec<Message>,
+        activation: &mut Activation<'_, 'gc>,
+        ui: &mut Ui,
+    ) {
+        Grid::new(ui.id().with("class"))
+            .num_columns(2)
+            .striped(true)
+            .spacing([8.0, 8.0])
+            .show(ui, |ui| {
+                let definition = class.inner_class_definition();
+                let name = definition.read().name();
+
+                ui.label("Namespace");
+                ui.text_edit_singleline(&mut name.namespace().as_uri().to_string().as_str());
+                ui.end_row();
+
+                ui.label("Name");
+                ui.text_edit_singleline(&mut name.local_name().to_string().as_str());
+                ui.end_row();
+
+                ui.label("Super Chain");
+                ui.vertical(|ui| {
+                    let mut superclass = Some(class);
+                    while let Some(class) = superclass {
+                        ValueWidget::new(activation, Ok(class.into())).show(ui, messages);
+                        superclass = class.superclass_object();
+                    }
+                });
+                ui.end_row();
+
+                ui.label("Interfaces");
+                ui.vertical(|ui| {
+                    for interface in class.interfaces() {
+                        ui.text_edit_singleline(
+                            &mut interface
+                                .read()
+                                .name()
+                                .to_qualified_name_err_message(activation.context.gc_context)
+                                .to_string()
+                                .as_str(),
+                        );
+                    }
+                });
+                ui.end_row();
+            });
     }
 
     fn show_properties<'gc>(
@@ -59,13 +234,15 @@ impl Avm2ObjectWindow {
         }
         entries.sort_by(|a, b| a.0.cmp(&b.0));
 
-        // [NA] Adding these on the same line seems to break the width of the table :(
-        TextEdit::singleline(&mut self.search)
-            .hint_text("Search...")
-            .ui(ui);
         ui.horizontal(|ui| {
-            ui.checkbox(&mut self.show_private_items, "Show Private Items");
-            ui.checkbox(&mut self.call_getters, "Call Getters");
+            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                ui.checkbox(&mut self.show_private_items, "Show Private Items");
+                ui.checkbox(&mut self.call_getters, "Call Getters");
+                ui.add_sized(
+                    ui.available_size(),
+                    TextEdit::singleline(&mut self.search).hint_text("Search..."),
+                );
+            });
         });
 
         let search = self.search.to_ascii_lowercase();
@@ -91,62 +268,76 @@ impl Avm2ObjectWindow {
             })
             .body(|mut body| {
                 for (name, ns, prop) in entries {
-                    if (ns.is_public() || self.show_private_items)
+                    if (self.show_private_items || ns.is_public())
                         && name.to_ascii_lowercase().contains(&search)
                     {
-                        match prop {
-                            Property::Slot { slot_id } | Property::ConstSlot { slot_id } => {
-                                body.row(18.0, |mut row| {
-                                    row.col(|ui| {
-                                        ui.label(&name).on_hover_ui(|ui| {
-                                            ui.label(format!("{ns:?}"));
-                                        });
-                                    });
-                                    row.col(|ui| {
-                                        let value = object.get_slot(slot_id);
-                                        ValueWidget::new(activation, value).show(ui, messages);
-                                    });
-                                    row.col(|_| {});
-                                });
-                            }
-                            Property::Virtual { get: Some(get), .. } => {
-                                let key = (ns.as_uri().to_string(), name.clone());
-                                body.row(18.0, |mut row| {
-                                    row.col(|ui| {
-                                        ui.label(&name).on_hover_ui(|ui| {
-                                            ui.label(format!("{ns:?}"));
-                                        });
-                                    });
-                                    row.col(|ui| {
-                                        if self.call_getters {
-                                            let value = object.call_method(get, &[], activation);
-                                            ValueWidget::new(activation, value).show(ui, messages);
-                                        } else {
-                                            let value = self.getter_values.get_mut(&key);
-                                            if let Some(value) = value {
-                                                // Empty entry means we want to refresh it,
-                                                // so let's do that now
-                                                let widget = value.get_or_insert_with(|| {
-                                                    let value =
-                                                        object.call_method(get, &[], activation);
-                                                    ValueWidget::new(activation, value)
-                                                });
-                                                widget.show(ui, messages);
-                                            }
-                                        }
-                                    });
-                                    row.col(|ui| {
-                                        if ui.button("Call Getter").clicked() {
-                                            self.getter_values.insert(key, None);
-                                        }
-                                    });
-                                });
-                            }
-                            _ => {}
-                        }
+                        self.show_property(
+                            object, messages, activation, &mut body, &name, ns, prop,
+                        );
                     }
                 }
             });
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn show_property<'gc>(
+        &mut self,
+        object: Object<'gc>,
+        messages: &mut Vec<Message>,
+        activation: &mut Activation<'_, 'gc>,
+        body: &mut TableBody,
+        name: &str,
+        ns: Namespace<'gc>,
+        prop: Property,
+    ) {
+        let label_col = |row: &mut TableRow| {
+            row.col(|ui| {
+                ui.label(name).on_hover_ui(|ui| {
+                    ui.label(format!("{ns:?}"));
+                });
+            });
+        };
+        match prop {
+            Property::Slot { slot_id } | Property::ConstSlot { slot_id } => {
+                body.row(18.0, |mut row| {
+                    label_col(&mut row);
+                    row.col(|ui| {
+                        let value = object.get_slot(slot_id);
+                        ValueWidget::new(activation, value).show(ui, messages);
+                    });
+                    row.col(|_| {});
+                });
+            }
+            Property::Virtual { get: Some(get), .. } => {
+                let key = (ns.as_uri().to_string(), name.to_string());
+                body.row(18.0, |mut row| {
+                    label_col(&mut row);
+                    row.col(|ui| {
+                        if self.call_getters {
+                            let value = object.call_method(get, &[], activation);
+                            ValueWidget::new(activation, value).show(ui, messages);
+                        } else {
+                            let value = self.getter_values.get_mut(&key);
+                            if let Some(value) = value {
+                                // Empty entry means we want to refresh it,
+                                // so let's do that now
+                                let widget = value.get_or_insert_with(|| {
+                                    let value = object.call_method(get, &[], activation);
+                                    ValueWidget::new(activation, value)
+                                });
+                                widget.show(ui, messages);
+                            }
+                        }
+                    });
+                    row.col(|ui| {
+                        if ui.button("Call Getter").clicked() {
+                            self.getter_values.insert(key, None);
+                        }
+                    });
+                });
+            }
+            _ => {}
+        }
     }
 }
 
@@ -174,7 +365,7 @@ impl ValueWidget {
                 AVM2ObjectHandle::new(&mut activation.context, value),
                 object_name(activation.context.gc_context, value),
             ),
-            Err(e) => ValueWidget::Error(e.to_string()),
+            Err(e) => ValueWidget::Error(format!("{e:?}")),
         }
     }
 
@@ -200,9 +391,18 @@ impl ValueWidget {
 }
 
 fn object_name<'gc>(mc: MutationContext<'gc, '_>, object: Object<'gc>) -> String {
-    let name = object
-        .instance_of_class_definition()
-        .map(|r| Cow::Owned(r.read().name().to_qualified_name(mc).to_string()))
-        .unwrap_or(Cow::Borrowed("Object"));
-    format!("{} {:p}", name, object.as_ptr())
+    if let Some(class) = object.as_class_object() {
+        class
+            .inner_class_definition()
+            .read()
+            .name()
+            .to_qualified_name_err_message(mc)
+            .to_string()
+    } else {
+        let name = object
+            .instance_of_class_definition()
+            .map(|r| Cow::Owned(r.read().name().local_name().to_string()))
+            .unwrap_or(Cow::Borrowed("Object"));
+        format!("{} {:p}", name, object.as_ptr())
+    }
 }
