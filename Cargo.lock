@@ -1313,6 +1313,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "egui_extras"
+version = "0.22.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9278f4337b526f0d57e5375e5a7340a311fa6ee8f9fcc75721ac50af13face02"
+dependencies = [
+ "egui",
+ "serde",
+]
+
+[[package]]
 name = "either"
 version = "1.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3699,6 +3709,7 @@ dependencies = [
  "dasp",
  "downcast-rs",
  "egui",
+ "egui_extras",
  "encoding_rs",
  "enumset",
  "flash-lso",
