@@ -1799,8 +1799,7 @@ impl<'gc> Loader<'gc> {
                     broadcaster,
                     uc,
                     "broadcastMessage".into(),
-                    // TODO: Pass an actual httpStatus argument instead of 0.
-                    &["onLoadComplete".into(), target_clip.object(), 0.into()],
+                    &["onLoadComplete".into(), target_clip.object(), status.into()],
                 );
             }
             // This is fired after we process the movie's first frame,
