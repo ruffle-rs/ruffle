@@ -1128,15 +1128,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let prop_index = self.context.avm1.pop().coerce_to_f64(self)?;
         let path = self.context.avm1.pop();
 
-        let (target, clip) = if let Some(target) = self.target_clip() {
-            (
-                Some(target),
-                self.resolve_target_display_object(target, path, true)?,
-            )
+        let clip = if let Some(target) = self.target_clip() {
+            self.resolve_target_display_object(target, path, true)?
         } else {
-            // `path` must be coerced even if the target is invalid.
-            let _ = path.coerce_to_string(self)?;
-            (None, None)
+            self.resolve_target_display_object(self.base_clip(), path, false)?
         };
 
         let property = if !prop_index.is_finite() || prop_index <= -1.0 {
@@ -1151,20 +1146,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             }
         };
 
-        let result = if target.is_some() {
-            if let Some(clip) = clip {
-                if let Some(property) = property {
-                    property.get(self, clip)
-                } else {
-                    avm_warn!(self, "GetProperty: Invalid property {}", prop_index);
-                    Value::Undefined
-                }
+        let result = if let Some(clip) = clip {
+            if let Some(property) = property {
+                property.get(self, clip)
             } else {
-                avm_warn!(self, "GetProperty: Invalid target {:?}", path);
+                avm_warn!(self, "GetProperty: Invalid property {}", prop_index);
                 Value::Undefined
             }
         } else {
-            avm_warn!(self, "GetProperty: Invalid base clip");
+            avm_warn!(self, "GetProperty: Invalid target {:?}", path);
             Value::Undefined
         };
 
@@ -1899,15 +1889,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let prop_index = self.context.avm1.pop().coerce_to_f64(self)?;
         let path = self.context.avm1.pop();
 
-        let (target, clip) = if let Some(target) = self.target_clip() {
-            (
-                Some(target),
-                self.resolve_target_display_object(target, path, true)?,
-            )
+        let clip = if let Some(target) = self.target_clip() {
+            self.resolve_target_display_object(target, path, true)?
         } else {
-            // `path` must be coerced even if the target is invalid.
-            let _ = path.coerce_to_string(self)?;
-            (None, None)
+            self.resolve_target_display_object(self.base_clip(), path, false)?
         };
 
         let property = if !prop_index.is_finite() || prop_index <= -1.0 {
@@ -1932,18 +1917,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             }
         };
 
-        if target.is_some() {
-            if let Some(clip) = clip {
-                if let Some(property) = property {
-                    property.set(self, clip, prop_value)?;
-                } else {
-                    avm_warn!(self, "SetProperty: Invalid property {}", prop_index);
-                }
+        if let Some(clip) = clip {
+            if let Some(property) = property {
+                property.set(self, clip, prop_value)?;
             } else {
-                avm_warn!(self, "SetProperty: Invalid target {:?}", path);
+                avm_warn!(self, "SetProperty: Invalid property {}", prop_index);
             }
         } else {
-            avm_warn!(self, "SetProperty: Invalid base clip");
+            avm_warn!(self, "SetProperty: Invalid target {:?}", path);
         };
 
         Ok(FrameControl::Continue)
