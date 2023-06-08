@@ -320,6 +320,13 @@ impl OpenDialog {
                 );
                 ui.end_row();
 
+                ui.label(text(&self.locale, "dummy-external-interface"));
+                ui.checkbox(
+                    &mut self.options.dummy_external_interface,
+                    text(&self.locale, "dummy-external-interface-check"),
+                );
+                ui.end_row();
+
                 // TODO: This should probably be a global setting somewhere, not per load
                 ui.label(text(&self.locale, "warn-if-unsupported"));
                 ui.checkbox(

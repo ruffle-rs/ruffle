@@ -50,3 +50,6 @@ player-version = Player Version
 
 custom-framerate = Custom Framerate
 custom-framerate-suffix = {" "} fps
+
+dummy-external-interface = Dummy External Interface
+dummy-external-interface-check = Enable
