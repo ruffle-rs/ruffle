@@ -339,8 +339,11 @@ pub struct ExternalInterface<'gc> {
 }
 
 impl<'gc> ExternalInterface<'gc> {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(providers: Vec<Box<dyn ExternalInterfaceProvider>>) -> Self {
+        Self {
+            providers,
+            ..Default::default()
+        }
     }
 
     pub fn add_provider(&mut self, provider: Box<dyn ExternalInterfaceProvider>) {
