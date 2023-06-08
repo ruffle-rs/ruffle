@@ -2032,6 +2032,7 @@ pub struct PlayerBuilder {
     quality: StageQuality,
     sandbox_type: SandboxType,
     frame_rate: Option<f64>,
+    external_interface_providers: Vec<Box<dyn ExternalInterfaceProvider>>,
 }
 
 impl PlayerBuilder {
@@ -2074,6 +2075,7 @@ impl PlayerBuilder {
             quality: StageQuality::High,
             sandbox_type: SandboxType::LocalTrusted,
             frame_rate: None,
+            external_interface_providers: vec![],
         }
     }
 
@@ -2231,11 +2233,18 @@ impl PlayerBuilder {
         self
     }
 
+    /// Adds an External Interface provider for movies to communicate with
+    pub fn with_external_interface(mut self, provider: Box<dyn ExternalInterfaceProvider>) -> Self {
+        self.external_interface_providers.push(provider);
+        self
+    }
+
     fn create_gc_root<'gc>(
         gc_context: MutationContext<'gc, '_>,
         player_version: u8,
         fullscreen: bool,
         fake_movie: Arc<SwfMovie>,
+        external_interface_providers: Vec<Box<dyn ExternalInterfaceProvider>>,
     ) -> GcRoot<'gc> {
         let mut interner = AvmStringInterner::new();
         let mut init = GcContext {
@@ -2256,7 +2265,7 @@ impl PlayerBuilder {
                     interner,
                     current_context_menu: None,
                     drag_object: None,
-                    external_interface: ExternalInterface::new(),
+                    external_interface: ExternalInterface::new(external_interface_providers),
                     focus_tracker: FocusTracker::new(gc_context),
                     library: Library::empty(),
                     load_manager: LoadManager::new(),
@@ -2370,6 +2379,7 @@ impl PlayerBuilder {
                             player_version,
                             self.fullscreen,
                             fake_movie.clone(),
+                            self.external_interface_providers,
                         )
                     },
                 ))),
