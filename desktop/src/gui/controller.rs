@@ -1,3 +1,4 @@
+use crate::backends::DesktopUiBackend;
 use crate::cli::Opt;
 use crate::custom_event::RuffleEvent;
 use crate::gui::movie::{MovieView, MovieViewRenderer};
@@ -188,7 +189,7 @@ impl GuiController {
             .expect("Surface became unavailable");
 
         let raw_input = self.egui_winit.take_egui_input(&self.window);
-        let full_output = self.egui_ctx.run(raw_input, |context| {
+        let mut full_output = self.egui_ctx.run(raw_input, |context| {
             self.gui.update(
                 context,
                 self.window.fullscreen().is_none(),
@@ -197,11 +198,22 @@ impl GuiController {
         });
         self.repaint_after = full_output.repaint_after;
 
+        // If we're not in a UI, tell egui which cursor we prefer to use instead
+        if !self.egui_ctx.wants_pointer_input() {
+            if let Some(player) = player.as_deref() {
+                full_output.platform_output.cursor_icon = player
+                    .ui()
+                    .downcast_ref::<DesktopUiBackend>()
+                    .unwrap_or_else(|| panic!("UI Backend should be DesktopUiBackend"))
+                    .cursor();
+            }
+        }
         self.egui_winit.handle_platform_output(
             &self.window,
             &self.egui_ctx,
             full_output.platform_output,
         );
+
         let clipped_primitives = self.egui_ctx.tessellate(full_output.shapes);
 
         let scale_factor = self.window.scale_factor() as f32;
