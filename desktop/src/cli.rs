@@ -114,6 +114,12 @@ pub struct Opt {
     /// The handling mode of links opening a new website.
     #[clap(long, default_value = "allow")]
     pub open_url_mode: OpenURLMode,
+
+    /// Provide a dummy (completely empty) External Interface to the movie.
+    /// This may break some movies that expect an External Interface to be functional,
+    /// but may fix others that always require an External Interface.
+    #[clap(long)]
+    pub dummy_external_interface: bool,
 }
 
 fn parse_movie_file_or_url(path: &str) -> Result<Url, Error> {
