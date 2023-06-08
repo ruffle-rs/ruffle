@@ -1,4 +1,5 @@
 use crate::events::{KeyCode, PlayerEvent, TextControlCode};
+use downcast_rs::Downcast;
 use fluent_templates::loader::langid;
 pub use fluent_templates::LanguageIdentifier;
 use std::borrow::Cow;
@@ -7,7 +8,7 @@ use std::collections::HashSet;
 pub type FullscreenError = Cow<'static, str>;
 pub static US_ENGLISH: LanguageIdentifier = langid!("en-US");
 
-pub trait UiBackend {
+pub trait UiBackend: Downcast {
     fn mouse_visible(&self) -> bool;
 
     fn set_mouse_visible(&mut self, visible: bool);
@@ -40,6 +41,7 @@ pub trait UiBackend {
 
     fn language(&self) -> &LanguageIdentifier;
 }
+impl_downcast!(UiBackend);
 
 /// A mouse cursor icon displayed by the Flash Player.
 /// Communicated from the core to the UI backend via `UiBackend::set_mouse_cursor`.
