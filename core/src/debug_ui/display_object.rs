@@ -268,8 +268,8 @@ impl DisplayObjectWindow {
         Grid::new(ui.id().with("display"))
             .num_columns(2)
             .show(ui, |ui| {
+                ui.label("Parent");
                 if let Some(other) = object.parent() {
-                    ui.label("Parent");
                     open_display_object_button(
                         ui,
                         context,
@@ -277,8 +277,42 @@ impl DisplayObjectWindow {
                         other,
                         &mut self.hovered_debug_rect,
                     );
-                    ui.end_row();
+                } else {
+                    ui.colored_label(ui.style().visuals.error_fg_color, "Orphaned");
                 }
+                ui.end_row();
+
+                ui.label("AVM1 Root");
+                if object.avm1_root().as_ptr() != object.as_ptr() {
+                    open_display_object_button(
+                        ui,
+                        context,
+                        messages,
+                        object.avm1_root(),
+                        &mut self.hovered_debug_rect,
+                    );
+                } else {
+                    ui.label("Self");
+                }
+                ui.end_row();
+
+                ui.label("AVM2 Root");
+                if let Some(other) = object.avm2_root() {
+                    if object.as_ptr() != object.as_ptr() {
+                        open_display_object_button(
+                            ui,
+                            context,
+                            messages,
+                            other,
+                            &mut self.hovered_debug_rect,
+                        );
+                    } else {
+                        ui.label("Self");
+                    }
+                } else {
+                    ui.colored_label(ui.style().visuals.error_fg_color, "None");
+                }
+                ui.end_row();
 
                 if let Some(other) = object.masker() {
                     ui.label("Masker");
