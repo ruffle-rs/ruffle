@@ -528,13 +528,13 @@ pub fn get_parent<'gc>(
 
 /// Implements `root`.
 pub fn get_root<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
         return Ok(dobj
-            .avm2_root(&mut activation.context)
+            .avm2_root()
             .map(|root| root.object2())
             .unwrap_or(Value::Null));
     }
@@ -628,7 +628,7 @@ pub fn hit_test_point<'gc>(
         // Transform the coordinates from root to world space.
         let local = Point::from_pixels(x, y);
         let global = dobj
-            .avm2_root(&mut activation.context)
+            .avm2_root()
             .map_or(local, |root| root.local_to_global(local));
 
         if shape_flag {
@@ -668,7 +668,7 @@ pub fn hit_test_object<'gc>(
 
 /// Implements `loaderInfo` getter
 pub fn get_loader_info<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -677,7 +677,7 @@ pub fn get_loader_info<'gc>(
         // Flash Player defines 'loaderInfo' for non-root DisplayObjects.
         // It always returns the LoaderInfo from the root object.
         if let Some(loader_info) = dobj
-            .avm2_root(&mut activation.context)
+            .avm2_root()
             .and_then(|root_dobj| root_dobj.loader_info())
         {
             return Ok(loader_info.into());
