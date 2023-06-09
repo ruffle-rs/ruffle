@@ -1699,7 +1699,7 @@ pub trait TDisplayObject<'gc>:
     ///
     /// This function implements the AVM2 concept of root clips. For the AVM1
     /// version, see `avm1_root`.
-    fn avm2_root(&self, _context: &mut UpdateContext<'_, 'gc>) -> Option<DisplayObject<'gc>> {
+    fn avm2_root(&self) -> Option<DisplayObject<'gc>> {
         let mut parent = Some((*self).into());
         while let Some(p) = parent {
             if p.is_root() {
