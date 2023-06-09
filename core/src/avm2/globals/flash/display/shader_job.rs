@@ -27,6 +27,8 @@ pub fn start<'gc>(
         "async execution and non-BitmapData inputs"
     );
 
+    // FIXME - determine what errors Flash Player throws here
+    // instead of using `expect`
     let shader = this
         .get_public_property("shader", activation)?
         .as_object()

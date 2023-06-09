@@ -1,5 +1,5 @@
 //! Pixel bender bytecode parsing code.
-//! This is heavling based on https://github.com/jamesward/pbjas and https://github.com/HaxeFoundation/format/tree/master/format/pbj
+//! This is heavily based on https://github.com/jamesward/pbjas and https://github.com/HaxeFoundation/format/tree/master/format/pbj
 
 #[cfg(test)]
 mod tests;
