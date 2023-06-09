@@ -169,7 +169,7 @@ impl<'gc> MovieClipReference<'gc> {
         // Should correctly find the child. As `this` is Value::MovieClip("_level0.child"), we don't want to try and find `123.child`!
 
         // Get the level
-        let mut start = Some(activation.resolve_level(self.0.path.level));
+        let mut start = Some(activation.get_or_create_level(self.0.path.level));
 
         // Keep traversing to find the target DisplayObject
         for part in self.0.path.path_segments.iter() {
