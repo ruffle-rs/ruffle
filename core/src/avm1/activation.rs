@@ -1196,15 +1196,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         if target.starts_with(WStr::from_units(b"_level")) && target.len() > 6 {
             match target[6..].parse::<i32>() {
                 Ok(level_id) => {
-                    let level = self.resolve_level(level_id);
-
                     if url.is_empty() {
+                        let level = self.try_resolve_level(level_id);
                         // Blank URL on movie loads = unload!
-                        if let Some(mc) = level.as_movie_clip() {
+                        if let Some(mc) = level.and_then(|o| o.as_movie_clip()) {
                             mc.avm1_unload(&mut self.context);
                             mc.replace_with_movie(&mut self.context, None, None)
                         }
                     } else {
+                        let level = self.resolve_level(level_id);
                         let future = self.context.load_manager.load_movie_into_clip(
                             self.context.player.clone(),
                             level,
@@ -1268,8 +1268,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             -1
         };
 
-        let clip_target: Option<DisplayObject<'gc>> = if level_target > -1 {
-            Some(self.resolve_level(level_target))
+        let mut clip_target: Option<DisplayObject<'gc>> = if level_target > -1 {
+            self.try_resolve_level(level_target)
         } else if action.is_load_vars() || action.is_target_sprite() {
             if let Value::Object(target) = target_val {
                 target.as_display_object()
@@ -1323,14 +1323,19 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             }
         } else if action.is_target_sprite() {
             // `loadMovie`, `unloadMovie` or `unloadMovieNum` call.
-            if let Some(clip_target) = clip_target {
-                if url.is_empty() {
-                    // Blank URL on movie loads = unload!
-                    if let Some(mc) = clip_target.as_movie_clip() {
-                        mc.avm1_unload(&mut self.context);
-                        mc.replace_with_movie(&mut self.context, None, None)
-                    }
-                } else {
+            if url.is_empty() {
+                // Blank URL on movie loads = unload!
+                if let Some(mc) = clip_target.and_then(|o| o.as_movie_clip()) {
+                    mc.avm1_unload(&mut self.context);
+                    mc.replace_with_movie(&mut self.context, None, None)
+                }
+            } else {
+                if clip_target.is_none() && level_target > -1 {
+                    // Ensure the level exists
+                    // [NA] TODO: This should actually create the level in the future when it's loaded
+                    clip_target = Some(self.resolve_level(level_target));
+                }
+                if let Some(clip_target) = clip_target {
                     let request = self.locals_into_request(
                         url,
                         NavigationMethod::from_send_vars_method(action.send_vars_method()),
@@ -1348,6 +1353,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             return Ok(FrameControl::Continue);
         } else if level_target > -1 {
             // `loadMovieNum` call.
+            if clip_target.is_none() && level_target > -1 {
+                // Ensure the level exists
+                // [NA] TODO: This should actually create the level in the future when it's loaded
+                clip_target = Some(self.resolve_level(level_target));
+            }
             if let Some(clip_target) = clip_target {
                 if url.is_empty() {
                     // Blank URL on movie loads = unload!
@@ -2841,7 +2851,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// If the level does not exist, then it will be created and instantiated
     /// with a script object.
     pub fn resolve_level(&mut self, level_id: i32) -> DisplayObject<'gc> {
-        if let Some(level) = self.context.stage.child_by_depth(level_id) {
+        if let Some(level) = self.try_resolve_level(level_id) {
             level
         } else {
             let level: DisplayObject<'_> =
@@ -2856,6 +2866,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
             level
         }
+    }
+
+    /// Tries to resolve a level by ID. Returns None if it does not exist.
+    pub fn try_resolve_level(&mut self, level_id: i32) -> Option<DisplayObject<'gc>> {
+        self.context.stage.child_by_depth(level_id)
     }
 
     /// The current target clip of the executing code.
