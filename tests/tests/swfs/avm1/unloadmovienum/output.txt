@@ -1,3 +1,13 @@
+// level1
+undefined
+// unloadMovieNum(1) (before it's loaded)
+// level1
+undefined
 Loading movie
 Child movie loaded!
-Unloading movie
+// level1 before unload
+_level1
+// unloadMovieNum(1)
+// level1
+_level1
+Next frame
