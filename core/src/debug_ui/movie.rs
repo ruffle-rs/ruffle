@@ -1,6 +1,6 @@
 use crate::character::Character;
 use crate::context::UpdateContext;
-use crate::debug_ui::{ItemToSave, Message};
+use crate::debug_ui::Message;
 use crate::tag_utils::SwfMovie;
 use egui::{CollapsingHeader, Grid, Id, TextEdit, Ui, Window};
 use std::sync::Arc;
@@ -25,7 +25,6 @@ impl MovieWindow {
         egui_ctx: &egui::Context,
         context: &mut UpdateContext,
         movie: Arc<SwfMovie>,
-        messages: &mut Vec<Message>,
     ) -> bool {
         let mut keep_open = true;
 
@@ -50,7 +49,7 @@ impl MovieWindow {
                 ui.separator();
 
                 match self.open_panel {
-                    Panel::Information => self.show_information(ui, &movie, messages),
+                    Panel::Information => self.show_information(ui, &movie),
                     Panel::Characters => self.show_characters(ui, context, &movie),
                 }
             });
@@ -102,24 +101,7 @@ impl MovieWindow {
             });
     }
 
-    fn show_information(
-        &mut self,
-        ui: &mut Ui,
-        movie: &Arc<SwfMovie>,
-        messages: &mut Vec<Message>,
-    ) {
-        if !movie.data().is_empty() && ui.button("Save File...").clicked() {
-            let suggested_name = movie
-                .url()
-                .rsplit_once('.')
-                .map(|(_left, right)| right.to_string())
-                .unwrap_or_else(|| format!("{:p}.swf", Arc::as_ptr(movie)));
-            messages.push(Message::SaveFile(ItemToSave {
-                suggested_name,
-                data: movie.data().to_vec(),
-            }));
-        }
-
+    fn show_information(&mut self, ui: &mut Ui, movie: &Arc<SwfMovie>) {
         Grid::new(ui.id().with("information"))
             .num_columns(2)
             .show(ui, |ui| {
