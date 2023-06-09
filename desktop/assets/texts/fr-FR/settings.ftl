@@ -37,3 +37,5 @@ warn-if-unsupported-check = Avertir
 player-version = Version du lecteur
 custom-framerate = Fréquence d'images personnalisée
 custom-framerate-suffix = { " " } fps
+dummy-external-interface = Interface externe factice
+dummy-external-interface-check = Activer
