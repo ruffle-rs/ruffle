@@ -40,13 +40,13 @@ ruffle_render = { path = "../render" }
 ruffle_render_webgl = { path = "../render/webgl", optional = true }
 ruffle_render_wgpu = { path = "../render/wgpu", optional = true }
 ruffle_video_software = { path = "../video/software" }
-url = "2.3.1"
+url = "2.4.0"
 wasm-bindgen = "=0.2.86"
 wasm-bindgen-futures = "0.4.36"
 serde-wasm-bindgen = "0.5.0"
 chrono = { version = "0.4", default-features = false, features = ["wasmbind", "clock"] }
 getrandom = { version = "0.2", features = ["js"] }
-serde = { version = "1.0.163", features = ["derive"] }
+serde = { version = "1.0.164", features = ["derive"] }
 thiserror = "1.0"
 base64 = "0.21.2"
 
