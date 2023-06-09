@@ -1197,14 +1197,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             match target[6..].parse::<i32>() {
                 Ok(level_id) => {
                     if url.is_empty() {
-                        let level = self.try_resolve_level(level_id);
+                        let level = self.get_level(level_id);
                         // Blank URL on movie loads = unload!
                         if let Some(mc) = level.and_then(|o| o.as_movie_clip()) {
                             mc.avm1_unload(&mut self.context);
                             mc.replace_with_movie(&mut self.context, None, None)
                         }
                     } else {
-                        let level = self.resolve_level(level_id);
+                        let level = self.get_or_create_level(level_id);
                         let future = self.context.load_manager.load_movie_into_clip(
                             self.context.player.clone(),
                             level,
@@ -1269,7 +1269,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         };
 
         let mut clip_target: Option<DisplayObject<'gc>> = if level_target > -1 {
-            self.try_resolve_level(level_target)
+            self.get_level(level_target)
         } else if action.is_load_vars() || action.is_target_sprite() {
             if let Value::Object(target) = target_val {
                 target.as_display_object()
@@ -1333,7 +1333,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 if clip_target.is_none() && level_target > -1 {
                     // Ensure the level exists
                     // [NA] TODO: This should actually create the level in the future when it's loaded
-                    clip_target = Some(self.resolve_level(level_target));
+                    clip_target = Some(self.get_or_create_level(level_target));
                 }
                 if let Some(clip_target) = clip_target {
                     let request = self.locals_into_request(
@@ -1356,7 +1356,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             if clip_target.is_none() && level_target > -1 {
                 // Ensure the level exists
                 // [NA] TODO: This should actually create the level in the future when it's loaded
-                clip_target = Some(self.resolve_level(level_target));
+                clip_target = Some(self.get_or_create_level(level_target));
             }
             if let Some(clip_target) = clip_target {
                 if url.is_empty() {
@@ -2850,8 +2850,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ///
     /// If the level does not exist, then it will be created and instantiated
     /// with a script object.
-    pub fn resolve_level(&mut self, level_id: i32) -> DisplayObject<'gc> {
-        if let Some(level) = self.try_resolve_level(level_id) {
+    pub fn get_or_create_level(&mut self, level_id: i32) -> DisplayObject<'gc> {
+        if let Some(level) = self.get_level(level_id) {
             level
         } else {
             let level: DisplayObject<'_> =
@@ -2869,7 +2869,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     /// Tries to resolve a level by ID. Returns None if it does not exist.
-    pub fn try_resolve_level(&mut self, level_id: i32) -> Option<DisplayObject<'gc>> {
+    pub fn get_level(&mut self, level_id: i32) -> Option<DisplayObject<'gc>> {
         self.context.stage.child_by_depth(level_id)
     }
 
