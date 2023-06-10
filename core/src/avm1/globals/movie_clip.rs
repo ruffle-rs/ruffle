@@ -1600,8 +1600,8 @@ fn set_transform<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Value::Object(object) = value {
-        if let Some(transform) = object.as_transform_object() {
-            if let Some(clip) = transform.clip() {
+        if let NativeObject::Transform(transform) = object.native() {
+            if let Some(clip) = transform.clip(activation) {
                 let matrix = *clip.base().matrix();
                 this.set_matrix(activation.context.gc_context, matrix);
 
