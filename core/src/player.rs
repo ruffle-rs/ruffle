@@ -1205,20 +1205,24 @@ impl Player {
             let global_to_local_matrix = local_to_global_matrix.inverse().unwrap_or_default();
 
             let new_position = if drag_object.lock_center {
-                global_to_local_matrix * mouse_position
+                let new_position = global_to_local_matrix * mouse_position;
+                drag_object.constraint.clamp(new_position)
             } else {
-                let mouse_delta = mouse_position - drag_object.last_mouse_position;
                 // TODO: Introduce `DisplayObject::position()`?
                 let position = Point::new(display_object.x(), display_object.y());
-                position + global_to_local_matrix * mouse_delta
-            };
+                let mouse_delta = mouse_position - drag_object.last_mouse_position;
+                let new_position = position + global_to_local_matrix * mouse_delta;
+                let new_position = drag_object.constraint.clamp(new_position);
 
-            let new_position = drag_object.constraint.clamp(new_position);
+                let mouse_delta = local_to_global_matrix * (new_position - position);
+                drag_object.last_mouse_position += mouse_delta;
+
+                new_position
+            };
 
             // TODO: Introduce `DisplayObject::set_position()`?
             display_object.set_x(context.gc_context, new_position.x);
             display_object.set_y(context.gc_context, new_position.y);
-            drag_object.last_mouse_position = mouse_position;
 
             // Update `_droptarget` property of dragged object.
             if let Some(movie_clip) = display_object.as_movie_clip() {
