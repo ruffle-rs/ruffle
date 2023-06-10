@@ -187,7 +187,12 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                     Err(e)
                 }).map_err(|e| Error::FetchError(e.to_string()))?;
 
-                Ok(Response { url, body })
+                Ok(Response {
+                    url,
+                    body,
+                    status: 0,
+                    redirected: false,
+                })
             }),
             _ => Box::pin(async move {
                 let client =
@@ -218,11 +223,14 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                     .await
                     .map_err(|e| Error::FetchError(e.to_string()))?;
 
+                let status = response.status().as_u16();
+                let redirected = response.effective_uri().is_some();
                 if !response.status().is_success() {
-                    return Err(Error::FetchError(format!(
-                        "HTTP status is not ok, got {}",
-                        response.status()
-                    )));
+                    return Err(Error::HttpNotOk(
+                        format!("HTTP status is not ok, got {}", response.status()),
+                        status,
+                        redirected,
+                    ));
                 }
 
                 let url = if let Some(uri) = response.effective_uri() {
@@ -237,7 +245,12 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                     .await
                     .map_err(|e| Error::FetchError(e.to_string()))?;
 
-                Ok(Response { url, body })
+                Ok(Response {
+                    url,
+                    body,
+                    status,
+                    redirected,
+                })
             }),
         }
     }

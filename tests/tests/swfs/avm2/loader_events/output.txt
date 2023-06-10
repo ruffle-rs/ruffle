@@ -15,6 +15,7 @@ Event.ADDED_TO_STAGE: circle.parent =[object LoadableMainTimeline] circle.stage=
 loader.contentLoaderInfo === loader.content.loaderInfo : true
 loader.contentLoaderInfo.content === loader.content : true
 Event [Event type="init" bubbles=false cancelable=false eventPhase=2]: loader.numChildren = 1, loader.content = [object LoadableMainTimeline], loader.contentLoaderInfo.bytesLoaded = 893, loader.contentLoaderInfo.bytesTotal = 893, loader.contentLoaderInfo.url = file:///
+Event [HTTPStatusEvent type="httpStatus" bubbles=false cancelable=false eventPhase=2 status=0 redirected=false responseURL=null]: loader.numChildren = 1, loader.content = [object LoadableMainTimeline], loader.contentLoaderInfo.bytesLoaded = 893, loader.contentLoaderInfo.bytesTotal = 893, loader.contentLoaderInfo.url = file:///
 Event [Event type="complete" bubbles=false cancelable=false eventPhase=2]: loader.numChildren = 1, loader.content = [object LoadableMainTimeline], loader.contentLoaderInfo.bytesLoaded = 893, loader.contentLoaderInfo.bytesTotal = 893, loader.contentLoaderInfo.url = file:///
 Starting orphan Loader
 loader.content = null
@@ -33,4 +34,5 @@ Added circle
 loader.contentLoaderInfo === loader.content.loaderInfo : true
 loader.contentLoaderInfo.content === loader.content : true
 Event [Event type="init" bubbles=false cancelable=false eventPhase=2]: loader.numChildren = 1, loader.content = [object LoadableMainTimeline], loader.contentLoaderInfo.bytesLoaded = 893, loader.contentLoaderInfo.bytesTotal = 893, loader.contentLoaderInfo.url = file:///
+Event [HTTPStatusEvent type="httpStatus" bubbles=false cancelable=false eventPhase=2 status=0 redirected=false responseURL=null]: loader.numChildren = 1, loader.content = [object LoadableMainTimeline], loader.contentLoaderInfo.bytesLoaded = 893, loader.contentLoaderInfo.bytesTotal = 893, loader.contentLoaderInfo.url = file:///
 Event [Event type="complete" bubbles=false cancelable=false eventPhase=2]: loader.numChildren = 1, loader.content = [object LoadableMainTimeline], loader.contentLoaderInfo.bytesLoaded = 893, loader.contentLoaderInfo.bytesTotal = 893, loader.contentLoaderInfo.url = file:///

@@ -93,7 +93,12 @@ impl NavigatorBackend for TestNavigatorBackend {
 
             let body = std::fs::read(path).map_err(|e| Error::FetchError(e.to_string()))?;
 
-            Ok(Response { url, body })
+            Ok(Response {
+                url,
+                body,
+                status: 0,
+                redirected: false,
+            })
         })
     }
 

@@ -2590,7 +2590,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 .as_ref()
                 .and_then(|o| o.as_loader_info_object())
             {
-                loader_info.fire_init_and_complete_events(context);
+                loader_info.fire_init_and_complete_events(context, 0, false);
             }
         }
 

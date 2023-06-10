@@ -232,11 +232,14 @@ impl NavigatorBackend for WebNavigatorBackend {
             let response: WebResponse = fetchval
                 .dyn_into()
                 .map_err(|_| Error::FetchError("Fetch result wasn't a WebResponse".to_string()))?;
+            let status = response.status();
+            let redirected = response.redirected();
             if !response.ok() {
-                return Err(Error::FetchError(format!(
-                    "HTTP status is not ok, got {}",
-                    response.status_text()
-                )));
+                return Err(Error::HttpNotOk(
+                    format!("HTTP status is not ok, got {}", response.status_text()),
+                    status,
+                    redirected,
+                ));
             }
 
             let url = response.url();
@@ -256,7 +259,12 @@ impl NavigatorBackend for WebNavigatorBackend {
             })?;
             let body = Uint8Array::new(&body).to_vec();
 
-            Ok(Response { url, body })
+            Ok(Response {
+                url,
+                body,
+                status,
+                redirected,
+            })
         })
     }
 
