@@ -64,6 +64,15 @@ pub fn serialize_value<'gc>(
             } else if let Some(date) = o.as_date_object() {
                 date.date_time()
                     .map(|date_time| AmfValue::Date(date_time.timestamp_millis() as f64, None))
+            } else if let Some(xml) = o.as_xml_object() {
+                // `is_string` is `true` for the AS3 XML class
+                Some(AmfValue::XML(
+                    xml.node()
+                        .xml_to_xml_string(activation)
+                        .expect("Failed to stringify XML")
+                        .to_string(),
+                    true,
+                ))
             } else {
                 let is_object = o
                     .instance_of()
