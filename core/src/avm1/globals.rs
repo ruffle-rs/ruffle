@@ -57,7 +57,7 @@ pub(crate) mod system_ime;
 pub(crate) mod system_security;
 pub(crate) mod text_field;
 mod text_format;
-mod transform;
+pub(crate) mod transform;
 mod video;
 mod xml;
 mod xml_node;
@@ -486,7 +486,6 @@ pub struct SystemPrototypes<'gc> {
     pub point_constructor: Object<'gc>,
     pub rectangle: Object<'gc>,
     pub rectangle_constructor: Object<'gc>,
-    pub transform: Object<'gc>,
     pub transform_constructor: Object<'gc>,
     pub shared_object: Object<'gc>,
     pub shared_object_constructor: Object<'gc>,
@@ -547,7 +546,6 @@ pub fn create_globals<'gc>(
     let rectangle_proto = rectangle::create_proto(context, object_proto, function_proto);
     let color_transform_proto =
         color_transform::create_proto(context, object_proto, function_proto);
-    let transform_proto = transform::create_proto(context, object_proto, function_proto);
     let external_interface_proto = external_interface::create_proto(context, object_proto);
     let selection_proto = selection::create_proto(context, object_proto);
 
@@ -688,13 +686,7 @@ pub fn create_globals<'gc>(
         function_proto,
         color_transform_proto,
     );
-    let transform = FunctionObject::constructor(
-        gc_context,
-        Executable::Native(transform::constructor),
-        constructor_to_fn!(transform::constructor),
-        function_proto,
-        transform_proto,
-    );
+    let transform = transform::create_constructor(context, object_proto, function_proto);
     let video = FunctionObject::constructor(
         gc_context,
         Executable::Native(video::constructor),
@@ -1068,7 +1060,6 @@ pub fn create_globals<'gc>(
             point_constructor: point,
             rectangle: rectangle_proto,
             rectangle_constructor: rectangle,
-            transform: transform_proto,
             transform_constructor: transform,
             shared_object: shared_object_proto,
             shared_object_constructor: shared_obj,

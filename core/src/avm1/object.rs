@@ -11,10 +11,10 @@ use crate::avm1::globals::displacement_map_filter::DisplacementMapFilter;
 use crate::avm1::globals::drop_shadow_filter::DropShadowFilter;
 use crate::avm1::globals::glow_filter::GlowFilter;
 use crate::avm1::globals::gradient_filter::GradientFilter;
+use crate::avm1::globals::transform::TransformObject;
 use crate::avm1::object::array_object::ArrayObject;
 use crate::avm1::object::shared_object::SharedObject;
 use crate::avm1::object::super_object::SuperObject;
-use crate::avm1::object::transform_object::TransformObject;
 use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::object::xml_node_object::XmlNodeObject;
 use crate::avm1::object::xml_object::XmlObject;
@@ -37,7 +37,6 @@ pub mod shared_object;
 pub mod sound_object;
 pub mod stage_object;
 pub mod super_object;
-pub mod transform_object;
 pub mod value_object;
 pub mod xml_node_object;
 pub mod xml_object;
@@ -57,6 +56,7 @@ pub enum NativeObject<'gc> {
     GradientBevelFilter(GradientFilter<'gc>),
     GradientGlowFilter(GradientFilter<'gc>),
     ColorTransform(GcCell<'gc, ColorTransformObject>),
+    Transform(TransformObject<'gc>),
     TextFormat(GcCell<'gc, TextFormat>),
     NetStream(NetStream<'gc>),
     BitmapData(BitmapDataWrapper<'gc>),
@@ -79,7 +79,6 @@ pub enum NativeObject<'gc> {
         ValueObject(ValueObject<'gc>),
         FunctionObject(FunctionObject<'gc>),
         SharedObject(SharedObject<'gc>),
-        TransformObject(TransformObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
@@ -593,11 +592,6 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
 
     /// Get the underlying `SharedObject`, if it exists
     fn as_shared_object(&self) -> Option<SharedObject<'gc>> {
-        None
-    }
-
-    /// Get the underlying `TransformObject`, if it exists
-    fn as_transform_object(&self) -> Option<TransformObject<'gc>> {
         None
     }
 

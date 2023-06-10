@@ -144,8 +144,8 @@ pub fn object_to_matrix_or_default<'gc>(
     Ok(Matrix { a, b, c, d, tx, ty })
 }
 
-pub fn matrix_to_object<'gc>(
-    matrix: Matrix,
+pub fn matrix_to_value<'gc>(
+    matrix: &Matrix,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let args = [
