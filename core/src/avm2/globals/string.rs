@@ -575,6 +575,20 @@ fn substr<'gc>(
             .unwrap_or(&Value::Number(0x7fffffff as f64))
             .coerce_to_number(activation)?;
 
+        let len = if len < 0. {
+            if len.is_infinite() {
+                0.
+            } else {
+                let wrapped_around = this.len() as f64 + len;
+                if wrapped_around as usize + start_index >= this.len() {
+                    return Ok("".into());
+                };
+                wrapped_around
+            }
+        } else {
+            len
+        };
+
         let end_index = if len == f64::INFINITY {
             this.len()
         } else {
