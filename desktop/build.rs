@@ -24,6 +24,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
     println!("cargo:rustc-env=CFG_RELEASE_CHANNEL={channel}");
 
+    // Some SWFS have a large amount of recursion (particularly
+    // around `goto`s). Increase the stack size on Windows
+    // accommodate this (the default on Linux is high enough). We
+    // do the same thing for wasm in web/build.rs.
+    if std::env::var("TARGET").unwrap().contains("windows") {
+        println!("cargo:rustc-link-arg=/STACK:4000000");
+    }
+
     Ok(())
 }
 

@@ -30,12 +30,7 @@ pub struct App {
 
 impl App {
     pub fn new(opt: Opt) -> Result<Self, Error> {
-        let movie_url = if let Some(path) = &opt.input_path {
-            Some(parse_url(path).context("Couldn't load specified path")?)
-        } else {
-            None
-        };
-
+        let movie_url = opt.movie_url.clone();
         let icon_bytes = include_bytes!("../assets/favicon-32.rgba");
         let icon =
             Icon::from_rgba(icon_bytes.to_vec(), 32, 32).context("Couldn't load app icon")?;
@@ -63,11 +58,7 @@ impl App {
         );
 
         if let Some(movie_url) = movie_url {
-            player.create(
-                &PlayerOptions::from(&opt),
-                movie_url,
-                gui.create_movie_view(),
-            );
+            gui.create_movie(&mut player, PlayerOptions::from(&opt), movie_url);
         } else {
             gui.show_open_dialog();
         }
@@ -97,7 +88,7 @@ impl App {
         let mut modifiers = ModifiersState::empty();
         let mut fullscreen_down = false;
 
-        if self.opt.input_path.is_none() {
+        if self.opt.movie_url.is_none() {
             // No SWF provided on command line; show window with dummy movie immediately.
             self.window.set_visible(true);
             loaded = LoadingState::Loaded;
@@ -199,12 +190,10 @@ impl App {
                         }
                         WindowEvent::DroppedFile(file) => {
                             if let Ok(url) = parse_url(&file) {
-                                let movie_view =
-                                    self.gui.lock().expect("Gui lock").create_movie_view();
-                                self.player.create(
-                                    &PlayerOptions::from(&self.opt),
+                                self.gui.lock().expect("Gui lock").create_movie(
+                                    &mut self.player,
+                                    PlayerOptions::from(&self.opt),
                                     url,
-                                    movie_view,
                                 );
                             }
                         }
@@ -434,20 +423,22 @@ impl App {
                 }
 
                 winit::event::Event::UserEvent(RuffleEvent::BrowseAndOpen(options)) => {
-                    if let Some(url) = pick_file(false).and_then(|p| Url::from_file_path(p).ok()) {
-                        self.player.create(
-                            &options,
+                    if let Some(url) =
+                        pick_file(false, None).and_then(|p| Url::from_file_path(p).ok())
+                    {
+                        self.gui.lock().expect("Gui lock").create_movie(
+                            &mut self.player,
+                            *options,
                             url,
-                            self.gui.lock().expect("Gui lock").create_movie_view(),
                         );
                     }
                 }
 
                 winit::event::Event::UserEvent(RuffleEvent::OpenURL(url, options)) => {
-                    self.player.create(
-                        &options,
+                    self.gui.lock().expect("Gui lock").create_movie(
+                        &mut self.player,
+                        *options,
                         url,
-                        self.gui.lock().expect("Gui lock").create_movie_view(),
                     );
                 }
 

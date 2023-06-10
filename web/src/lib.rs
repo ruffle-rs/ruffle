@@ -554,6 +554,12 @@ impl Ruffle {
             StageQuality::High
         };
 
+        // Create the external interface.
+        if allow_script_access && allow_networking == NetworkingAccessMode::All {
+            builder = builder
+                .with_external_interface(Box::new(JavascriptInterface::new(js_player.clone())));
+        }
+
         let trace_observer = Arc::new(RefCell::new(JsValue::UNDEFINED));
         let core = builder
             .with_log(log_adapter::WebLogBackend::new(trace_observer.clone()))
@@ -593,11 +599,6 @@ impl Ruffle {
             core.set_show_menu(config.show_menu);
             core.set_stage_align(config.salign.as_deref().unwrap_or(""));
             core.set_window_mode(config.wmode.as_deref().unwrap_or("window"));
-
-            // Create the external interface.
-            if allow_script_access && allow_networking == NetworkingAccessMode::All {
-                core.add_external_interface(Box::new(JavascriptInterface::new(js_player.clone())));
-            }
             callstack = Some(core.callstack());
         }
 

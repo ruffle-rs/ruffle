@@ -11,6 +11,7 @@ file-menu = File
 file-menu-open-quick = Open...
 file-menu-open-advanced = Open Advanced...
 file-menu-close = Close
+file-menu-reload = Reload
 file-menu-exit = Exit
 
 controls-menu = Controls

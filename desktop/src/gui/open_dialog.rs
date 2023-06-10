@@ -17,7 +17,6 @@ pub struct OpenDialog {
     options: PlayerOptions,
     event_loop: EventLoopProxy<RuffleEvent>,
     locale: LanguageIdentifier,
-    should_close: bool,
 
     // These are outside of PlayerOptions as it can be an invalid value (ie URL) during typing,
     // and we don't want to clear the value if the user, ie, toggles the checkbox.
@@ -33,18 +32,18 @@ pub struct OpenDialog {
 impl OpenDialog {
     pub fn new(
         defaults: PlayerOptions,
+        default_url: Option<Url>,
         event_loop: EventLoopProxy<RuffleEvent>,
         locale: LanguageIdentifier,
     ) -> Self {
         let spoof_url = OptionalUrlField::new(&defaults.spoof_url, "https://example.org/game.swf");
         let base_url = OptionalUrlField::new(&defaults.spoof_url, "https://example.org");
         let proxy_url = OptionalUrlField::new(&defaults.spoof_url, "socks5://localhost:8080");
-        let path = PathOrUrlField::new(None, "path/to/movie.swf");
+        let path = PathOrUrlField::new(default_url, "path/to/movie.swf");
         Self {
             options: defaults,
             event_loop,
             locale,
-            should_close: false,
             spoof_url,
             base_url,
             proxy_url,
@@ -78,6 +77,7 @@ impl OpenDialog {
 
     pub fn show(&mut self, egui_ctx: &egui::Context) -> bool {
         let mut keep_open = true;
+        let mut should_close = false;
         let mut is_valid = true;
 
         Window::new(text(&self.locale, "open-dialog"))
@@ -115,12 +115,13 @@ impl OpenDialog {
                             .add_enabled(is_valid, Button::new(text(&self.locale, "start")))
                             .clicked()
                         {
-                            self.should_close = self.start();
+                            should_close = self.start();
                         }
                     })
                 });
             });
-        keep_open && !self.should_close
+
+        keep_open && !should_close
     }
 
     fn network_settings(&mut self, ui: &mut Ui) -> bool {
@@ -319,6 +320,13 @@ impl OpenDialog {
                 );
                 ui.end_row();
 
+                ui.label(text(&self.locale, "dummy-external-interface"));
+                ui.checkbox(
+                    &mut self.options.dummy_external_interface,
+                    text(&self.locale, "dummy-external-interface-check"),
+                );
+                ui.end_row();
+
                 // TODO: This should probably be a global setting somewhere, not per load
                 ui.label(text(&self.locale, "warn-if-unsupported"));
                 ui.checkbox(
@@ -358,6 +366,16 @@ impl OpenDialog {
                 self.options
                     .parameters
                     .push((Default::default(), Default::default()));
+            }
+
+            if ui
+                .add_enabled(
+                    !self.options.parameters.is_empty(),
+                    Button::new(text(&self.locale, "open-dialog-clear-parameters")),
+                )
+                .clicked()
+            {
+                self.options.parameters.clear();
             }
         });
 
@@ -423,7 +441,17 @@ impl PathOrUrlField {
     pub fn ui(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) -> &mut Self {
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             if ui.button(text(locale, "browse")).clicked() {
-                if let Some(path) = pick_file(true) {
+                let dir = self
+                    .result
+                    .as_ref()
+                    .filter(|url| url.scheme() == "file")
+                    .and_then(|url| url.to_file_path().ok())
+                    .map(|mut path| {
+                        path.pop();
+                        path
+                    });
+
+                if let Some(path) = pick_file(true, dir) {
                     self.value = path.to_string_lossy().to_string();
                 }
             }

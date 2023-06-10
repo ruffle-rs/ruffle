@@ -9,6 +9,7 @@ use crate::avm2::{
 };
 use crate::backend::audio::{SoundHandle, SoundInstanceHandle};
 use crate::backend::ui::MouseCursor;
+use crate::frame_lifecycle::run_inner_goto_frame;
 use bitflags::bitflags;
 
 use crate::avm1::Avm1;
@@ -1020,13 +1021,7 @@ impl<'gc> MovieClip<'gc> {
             }
         } else if context.is_action_script_3() {
             // Pretend we actually did a goto, but don't do anything.
-            self.construct_frame(context);
-            self.frame_constructed(context);
-            self.avm2_root(context)
-                .unwrap_or_else(|| self.into())
-                .run_frame_scripts(context);
-
-            self.exit_frame(context);
+            run_inner_goto_frame(context, &[]);
         }
     }
 
@@ -1948,17 +1943,7 @@ impl<'gc> MovieClip<'gc> {
         //
         // Our queued place tags will now run at this time, too.
         if !is_implicit {
-            self.construct_frame(context);
-            self.frame_constructed(context);
-            self.avm2_root(context)
-                .unwrap_or_else(|| self.into())
-                .run_frame_scripts(context);
-
-            for child in removed_frame_scripts {
-                child.run_frame_scripts(context);
-            }
-
-            self.exit_frame(context);
+            run_inner_goto_frame(context, &removed_frame_scripts);
         }
 
         self.assert_expected_tag_end(context, hit_target_frame);

@@ -85,7 +85,8 @@ pub fn gradient_object_to_matrix<'gc>(
             Twips::from_pixels(ty),
         ))
     } else {
-        // TODO: You can apparently pass a 3x3 matrix here. Did anybody actually? How does it work?
+        // TODO: You can also pass a 3x3 matrix here. How does it work?
+        // For instance: {a:200, b:0, c:0, d:0, e:200, f:0, g:200, h:200, i:1}
         object_to_matrix(object, activation)
     }
 }

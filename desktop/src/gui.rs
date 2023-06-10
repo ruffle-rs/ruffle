@@ -5,6 +5,7 @@ mod open_dialog;
 pub use controller::GuiController;
 pub use movie::MovieView;
 use std::borrow::Cow;
+use url::Url;
 
 use crate::custom_event::RuffleEvent;
 use crate::gui::open_dialog::OpenDialog;
@@ -62,14 +63,20 @@ pub struct RuffleGui {
     event_loop: EventLoopProxy<RuffleEvent>,
     is_about_visible: bool,
     is_as3_warning_visible: bool,
+    is_open_dialog_visible: bool,
     context_menu: Vec<ruffle_core::ContextMenuItem>,
+    open_dialog: OpenDialog,
     locale: LanguageIdentifier,
     default_player_options: PlayerOptions,
-    open_dialog: Option<OpenDialog>,
+    currently_opened: Option<(Url, PlayerOptions)>,
 }
 
 impl RuffleGui {
-    fn new(event_loop: EventLoopProxy<RuffleEvent>, default_player_options: PlayerOptions) -> Self {
+    fn new(
+        event_loop: EventLoopProxy<RuffleEvent>,
+        default_path: Option<Url>,
+        default_player_options: PlayerOptions,
+    ) -> Self {
         // TODO: language negotiation + https://github.com/1Password/sys-locale/issues/14
         // This should also be somewhere else so it can be supplied through UiBackend too
 
@@ -79,13 +86,22 @@ impl RuffleGui {
             .unwrap_or_else(|| US_ENGLISH.clone());
 
         Self {
-            event_loop,
             is_about_visible: false,
             is_as3_warning_visible: false,
+            is_open_dialog_visible: false,
+
             context_menu: vec![],
+            open_dialog: OpenDialog::new(
+                default_player_options.clone(),
+                default_path,
+                event_loop.clone(),
+                locale.clone(),
+            ),
+
+            event_loop,
             locale,
             default_player_options,
-            open_dialog: None,
+            currently_opened: None,
         }
     }
 
@@ -94,11 +110,10 @@ impl RuffleGui {
         &mut self,
         egui_ctx: &egui::Context,
         show_menu: bool,
-        has_movie: bool,
-        player: &mut Option<&mut Player>,
+        mut player: Option<&mut Player>,
     ) {
         if show_menu {
-            self.main_menu_bar(egui_ctx, has_movie, player);
+            self.main_menu_bar(egui_ctx, player.as_deref_mut());
         }
 
         self.about_window(egui_ctx);
@@ -127,19 +142,33 @@ impl RuffleGui {
         self.is_as3_warning_visible = true;
     }
 
+    /// Notifies the GUI that a new player was created.
+    fn on_player_created(&mut self, opt: PlayerOptions, movie_url: Url) {
+        self.currently_opened = Some((movie_url.clone(), opt.clone()));
+
+        // Update dialog state to reflect the newly-opened movie's options.
+        self.is_open_dialog_visible = false;
+        self.open_dialog = OpenDialog::new(
+            opt,
+            Some(movie_url),
+            self.event_loop.clone(),
+            self.locale.clone(),
+        );
+    }
+
     /// Renders the main menu bar at the top of the window.
-    fn main_menu_bar(
-        &mut self,
-        egui_ctx: &egui::Context,
-        has_movie: bool,
-        player: &mut Option<&mut Player>,
-    ) {
+    fn main_menu_bar(&mut self, egui_ctx: &egui::Context, mut player: Option<&mut Player>) {
         egui::TopBottomPanel::top("menu_bar").show(egui_ctx, |ui| {
             // TODO(mike): Make some MenuItem struct with shortcut info to handle this more cleanly.
             if ui.ctx().input_mut(|input| {
                 input.consume_shortcut(&KeyboardShortcut::new(Modifiers::COMMAND, Key::O))
             }) {
                 self.open_file(ui);
+            }
+            if ui.ctx().input_mut(|input| {
+                input.consume_shortcut(&KeyboardShortcut::new(Modifiers::COMMAND | Modifiers::SHIFT, Key::O))
+            }) {
+                self.open_file_advanced();
             }
             if ui.ctx().input_mut(|input| {
                 input.consume_shortcut(&KeyboardShortcut::new(Modifiers::COMMAND, Key::Q))
@@ -149,7 +178,7 @@ impl RuffleGui {
             if ui.ctx().input_mut(|input| {
                 input.consume_shortcut(&KeyboardShortcut::new(Modifiers::COMMAND, Key::P))
             }) {
-                if let Some(player) = player {
+                if let Some(player) = &mut player {
                     player.set_is_playing(!player.is_playing());
                 }
             }
@@ -157,8 +186,8 @@ impl RuffleGui {
             menu::bar(ui, |ui| {
                 menu::menu_button(ui, text(&self.locale, "file-menu"), |ui| {
                     let mut shortcut;
-                    shortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::O);
 
+                    shortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::O);
                     if Button::new(text(&self.locale, "file-menu-open-quick"))
                         .shortcut_text(ui.ctx().format_shortcut(&shortcut))
                         .ui(ui)
@@ -167,12 +196,19 @@ impl RuffleGui {
                         self.open_file(ui);
                     }
 
-                    if Button::new(text(&self.locale, "file-menu-open-advanced")).ui(ui).clicked() {
+                    shortcut = KeyboardShortcut::new(Modifiers::COMMAND | Modifiers::SHIFT, Key::O);
+                    if Button::new(text(&self.locale, "file-menu-open-advanced"))
+                        .shortcut_text(ui.ctx().format_shortcut(&shortcut))
+                        .ui(ui).clicked() {
                         ui.close_menu();
                         self.open_file_advanced();
                     }
 
-                    if ui.add_enabled(has_movie, Button::new(text(&self.locale, "file-menu-close"))).clicked() {
+                    if ui.add_enabled(player.is_some(), Button::new(text(&self.locale, "file-menu-reload"))).clicked() {
+                        self.reload_movie(ui);
+                    }
+
+                    if ui.add_enabled(player.is_some(), Button::new(text(&self.locale, "file-menu-close"))).clicked() {
                         self.close_movie(ui);
                     }
 
@@ -193,7 +229,7 @@ impl RuffleGui {
                         let pause_shortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::P);
                         if Button::new(text(&self.locale, if playing { "controls-menu-suspend" } else { "controls-menu-resume" })).shortcut_text(ui.ctx().format_shortcut(&pause_shortcut)).ui(ui).clicked() {
                             ui.close_menu();
-                            if let Some(player) = player {
+                            if let Some(player) = &mut player {
                                 player.set_is_playing(!player.is_playing());
                             }
                         }
@@ -395,26 +431,29 @@ impl RuffleGui {
     }
 
     fn open_file_advanced(&mut self) {
-        self.open_dialog = Some(OpenDialog::new(
-            self.default_player_options.clone(),
-            self.event_loop.clone(),
-            self.locale.clone(),
-        ));
+        self.is_open_dialog_visible = true;
     }
 
     fn close_movie(&mut self, ui: &mut egui::Ui) {
         let _ = self.event_loop.send_event(RuffleEvent::CloseFile);
+        self.currently_opened = None;
+        ui.close_menu();
+    }
+
+    fn reload_movie(&mut self, ui: &mut egui::Ui) {
+        let _ = self.event_loop.send_event(RuffleEvent::CloseFile);
+        if let Some((movie_url, opts)) = self.currently_opened.take() {
+            let _ = self
+                .event_loop
+                .send_event(RuffleEvent::OpenURL(movie_url, opts.into()));
+        }
         ui.close_menu();
     }
 
     fn open_dialog(&mut self, egui_ctx: &egui::Context) {
-        let keep_open = self
-            .open_dialog
-            .as_mut()
-            .map(|d| d.show(egui_ctx))
-            .unwrap_or_default();
-        if !keep_open {
-            self.open_dialog = None;
+        if self.is_open_dialog_visible {
+            let keep_open = self.open_dialog.show(egui_ctx);
+            self.is_open_dialog_visible = keep_open;
         }
     }
 

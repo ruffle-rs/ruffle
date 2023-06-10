@@ -1,0 +1,9 @@
+In frame 1 - running this.gotoAndStop(2) - this.getChildAt(0)['text'] = Frame 1 text object
+
+Frame 1 - finished this.gotoAndStop(2)
+In frame 2 - running this.gotoAndStop(3) - this.getChildAt(0)['text'] = Frame 2 text object
+
+Frame 2 - finished this.gotoAndStop(3)
+In frame 3 - running goto - this.getChildAt(0)['text'] = Frame 3 text object
+
+Frame 3 - Finished gotoAndStop

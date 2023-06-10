@@ -1,5 +1,6 @@
 use crate::backends::{
-    CpalAudioBackend, DesktopUiBackend, DiskStorageBackend, ExternalNavigatorBackend,
+    CpalAudioBackend, DesktopExternalInterfaceProvider, DesktopUiBackend, DiskStorageBackend,
+    ExternalNavigatorBackend,
 };
 use crate::cli::Opt;
 use crate::custom_event::RuffleEvent;
@@ -43,6 +44,7 @@ pub struct PlayerOptions {
     pub player_version: u8,
     pub frame_rate: Option<f64>,
     pub open_url_mode: OpenURLMode,
+    pub dummy_external_interface: bool,
 }
 
 impl From<&Opt> for PlayerOptions {
@@ -65,6 +67,7 @@ impl From<&Opt> for PlayerOptions {
             player_version: value.player_version.unwrap_or(32),
             frame_rate: value.frame_rate,
             open_url_mode: value.open_url_mode,
+            dummy_external_interface: value.dummy_external_interface,
         }
     }
 }
@@ -80,7 +83,7 @@ impl ActivePlayer {
     pub fn new(
         opt: &PlayerOptions,
         event_loop: EventLoopProxy<RuffleEvent>,
-        movie_url: Url,
+        movie_url: &Url,
         window: Rc<Window>,
         descriptors: Arc<Descriptors>,
         movie_view: MovieView,
@@ -116,6 +119,11 @@ impl ActivePlayer {
             .map_err(|e| anyhow!(e.to_string()))
             .expect("Couldn't create wgpu rendering backend");
         RENDER_INFO.with(|i| *i.borrow_mut() = Some(renderer.debug_info().to_string()));
+
+        if opt.dummy_external_interface {
+            builder =
+                builder.with_external_interface(Box::<DesktopExternalInterfaceProvider>::default());
+        }
 
         builder = builder
             .with_navigator(navigator)
@@ -190,7 +198,7 @@ impl PlayerController {
         }
     }
 
-    pub fn create(&mut self, opt: &PlayerOptions, movie_url: Url, movie_view: MovieView) {
+    pub fn create(&mut self, opt: &PlayerOptions, movie_url: &Url, movie_view: MovieView) {
         self.player = Some(ActivePlayer::new(
             opt,
             self.event_loop.clone(),

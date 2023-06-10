@@ -236,7 +236,7 @@ impl<'gc> LoaderInfoObject<'gc> {
                 Some(LoaderStream::Swf(_, root)) => root
                     .as_movie_clip()
                     .map(|mc| mc.loaded_bytes() >= mc.total_bytes())
-                    .unwrap_or(false),
+                    .unwrap_or(true),
                 _ => false,
             };
 
