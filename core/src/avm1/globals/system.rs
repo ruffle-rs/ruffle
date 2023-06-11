@@ -304,7 +304,9 @@ impl SystemProperties {
             screen_color: ScreenColor::Color,
             // TODO: note for fp <7 this should be the locale and the ui lang for >= 7, on windows
             language: Language::English,
+			// source: https://web.archive.org/web/20230611050355/https://flylib.com/books/en/4.13.1.272/1/
             pixel_aspect_ratio: 1_f32,
+			// source: https://tracker.adobe.com/#/view/FP-3949775
             dpi: 72_f32,
             manufacturer: Manufacturer::Linux,
             os: OperatingSystem::Linux,

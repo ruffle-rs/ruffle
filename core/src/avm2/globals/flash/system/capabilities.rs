@@ -62,6 +62,7 @@ pub fn get_pixel_aspect_ratio<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+	// source: https://web.archive.org/web/20230611050355/https://flylib.com/books/en/4.13.1.272/1/
     Ok(1.into())
 }
 
@@ -71,5 +72,6 @@ pub fn get_screen_dpi<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    // source: https://tracker.adobe.com/#/view/FP-3949775
     Ok(72.into())
 }
