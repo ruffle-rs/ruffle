@@ -23,7 +23,7 @@ pub struct Avm2ObjectWindow {
     hovered_debug_rect: Option<DisplayObjectHandle>,
     show_private_items: bool,
     call_getters: bool,
-    getter_values: FnvHashMap<(String, String), Option<ValueWidget>>,
+    getter_values: FnvHashMap<(String, String), Option<ValueResultWidget>>,
     search: String,
     open_panel: Panel,
 }
@@ -87,7 +87,7 @@ impl Avm2ObjectWindow {
             .show(ui, |ui| {
                 if let Some(class) = object.instance_of() {
                     ui.label("Instance Of");
-                    ValueWidget::new(activation, Ok(class.into())).show(ui, messages);
+                    show_avm2_value(ui, &mut activation.context, class.into(), messages);
                     ui.end_row();
                 }
 
@@ -195,7 +195,7 @@ impl Avm2ObjectWindow {
                 ui.vertical(|ui| {
                     let mut superclass = Some(class);
                     while let Some(class) = superclass {
-                        ValueWidget::new(activation, Ok(class.into())).show(ui, messages);
+                        show_avm2_value(ui, &mut activation.context, class.into(), messages);
                         superclass = class.superclass_object();
                     }
                 });
@@ -303,7 +303,7 @@ impl Avm2ObjectWindow {
                     label_col(&mut row);
                     row.col(|ui| {
                         let value = object.get_slot(slot_id);
-                        ValueWidget::new(activation, value).show(ui, messages);
+                        ValueResultWidget::new(activation, value).show(ui, messages);
                     });
                     row.col(|_| {});
                 });
@@ -315,7 +315,7 @@ impl Avm2ObjectWindow {
                     row.col(|ui| {
                         if self.call_getters {
                             let value = object.call_method(get, &[], activation);
-                            ValueWidget::new(activation, value).show(ui, messages);
+                            ValueResultWidget::new(activation, value).show(ui, messages);
                         } else {
                             let value = self.getter_values.get_mut(&key);
                             if let Some(value) = value {
@@ -323,7 +323,7 @@ impl Avm2ObjectWindow {
                                 // so let's do that now
                                 let widget = value.get_or_insert_with(|| {
                                     let value = object.call_method(get, &[], activation);
-                                    ValueWidget::new(activation, value)
+                                    ValueResultWidget::new(activation, value)
                                 });
                                 widget.show(ui, messages);
                             }
@@ -346,26 +346,21 @@ enum ValueWidget {
     String(String),
     Object(AVM2ObjectHandle, String),
     Other(Cow<'static, str>),
-    Error(String),
 }
 
 impl ValueWidget {
-    fn new<'gc>(
-        activation: &mut Activation<'_, 'gc>,
-        value: Result<Value<'gc>, Error<'gc>>,
-    ) -> Self {
+    fn new<'gc>(context: &mut UpdateContext<'_, 'gc>, value: Value<'gc>) -> Self {
         match value {
-            Ok(Value::Undefined) => ValueWidget::Other(Cow::Borrowed("Undefined")),
-            Ok(Value::Null) => ValueWidget::Other(Cow::Borrowed("Null")),
-            Ok(Value::Bool(value)) => ValueWidget::Other(Cow::Owned(value.to_string())),
-            Ok(Value::Number(value)) => ValueWidget::Other(Cow::Owned(value.to_string())),
-            Ok(Value::Integer(value)) => ValueWidget::Other(Cow::Owned(value.to_string())),
-            Ok(Value::String(value)) => ValueWidget::String(value.to_string()),
-            Ok(Value::Object(value)) => ValueWidget::Object(
-                AVM2ObjectHandle::new(&mut activation.context, value),
-                object_name(activation.context.gc_context, value),
+            Value::Undefined => ValueWidget::Other(Cow::Borrowed("Undefined")),
+            Value::Null => ValueWidget::Other(Cow::Borrowed("Null")),
+            Value::Bool(value) => ValueWidget::Other(Cow::Owned(value.to_string())),
+            Value::Number(value) => ValueWidget::Other(Cow::Owned(value.to_string())),
+            Value::Integer(value) => ValueWidget::Other(Cow::Owned(value.to_string())),
+            Value::String(value) => ValueWidget::String(value.to_string()),
+            Value::Object(value) => ValueWidget::Object(
+                AVM2ObjectHandle::new(context, value),
+                object_name(context.gc_context, value),
             ),
-            Err(e) => ValueWidget::Error(format!("{e:?}")),
         }
     }
 
@@ -383,11 +378,46 @@ impl ValueWidget {
             ValueWidget::Other(value) => {
                 ui.label(value.as_ref());
             }
-            ValueWidget::Error(value) => {
-                ui.colored_label(ui.style().visuals.error_fg_color, value);
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+enum ValueResultWidget {
+    Value(ValueWidget),
+    Error(String),
+}
+
+impl ValueResultWidget {
+    fn new<'gc>(
+        activation: &mut Activation<'_, 'gc>,
+        value: Result<Value<'gc>, Error<'gc>>,
+    ) -> Self {
+        match value {
+            Ok(value) => Self::Value(ValueWidget::new(&mut activation.context, value)),
+            Err(error) => Self::Error(format!("{error:?})")),
+        }
+    }
+
+    fn show(&self, ui: &mut Ui, messages: &mut Vec<Message>) {
+        match self {
+            Self::Value(value) => {
+                value.show(ui, messages);
+            }
+            Self::Error(error) => {
+                ui.colored_label(ui.style().visuals.error_fg_color, error);
             }
         }
     }
+}
+
+pub fn show_avm2_value<'gc>(
+    ui: &mut Ui,
+    context: &mut UpdateContext<'_, 'gc>,
+    value: Value<'gc>,
+    messages: &mut Vec<Message>,
+) {
+    ValueWidget::new(context, value).show(ui, messages)
 }
 
 fn object_name<'gc>(mc: MutationContext<'gc, '_>, object: Object<'gc>) -> String {
