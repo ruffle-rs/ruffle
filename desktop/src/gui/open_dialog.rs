@@ -37,8 +37,8 @@ impl OpenDialog {
         locale: LanguageIdentifier,
     ) -> Self {
         let spoof_url = OptionalUrlField::new(&defaults.spoof_url, "https://example.org/game.swf");
-        let base_url = OptionalUrlField::new(&defaults.spoof_url, "https://example.org");
-        let proxy_url = OptionalUrlField::new(&defaults.spoof_url, "socks5://localhost:8080");
+        let base_url = OptionalUrlField::new(&defaults.base, "https://example.org");
+        let proxy_url = OptionalUrlField::new(&defaults.proxy, "socks5://localhost:8080");
         let path = PathOrUrlField::new(default_url, "path/to/movie.swf");
         Self {
             options: defaults,
