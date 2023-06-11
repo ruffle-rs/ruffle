@@ -37,3 +37,5 @@ warn-if-unsupported-check = 警告
 player-version = 播放器版本
 custom-framerate = 自定义帧率
 custom-framerate-suffix = { " " } fps
+dummy-external-interface = 虚拟外部接口
+dummy-external-interface-check = 启用

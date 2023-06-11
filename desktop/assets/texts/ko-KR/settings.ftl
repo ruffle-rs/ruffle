@@ -37,3 +37,5 @@ warn-if-unsupported-check = 경고
 player-version = 플레이어 버전
 custom-framerate = 사용자 지정 프레임레이트
 custom-framerate-suffix = { " " } fps
+dummy-external-interface = 더미 외부 인터페이스
+dummy-external-interface-check = 활성화

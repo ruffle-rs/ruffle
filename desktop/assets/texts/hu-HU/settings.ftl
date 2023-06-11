@@ -37,3 +37,5 @@ warn-if-unsupported-check = Figyelmeztetés
 player-version = Lejátszó verziója
 custom-framerate = Egyéni képkockasebesség
 custom-framerate-suffix = { " " } FPS
+dummy-external-interface = Színlelt külső interfész
+dummy-external-interface-check = Engedélyezés
