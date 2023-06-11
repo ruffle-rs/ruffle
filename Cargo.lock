@@ -1545,6 +1545,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "float-cmp"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "98de4bbd547a563b716d8dfa9aad1cb19bfab00f4fa09a6a4ed21dbcf44ce9c4"
+dependencies = [
+ "num-traits",
+]
+
+[[package]]
 name = "float_next_after"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3672,6 +3681,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "renderdoc"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "272da9ec1e28b0ef17df4dcefad820b13f098ebe9c82697111fc57ccff621e12"
+dependencies = [
+ "bitflags 1.3.2",
+ "float-cmp",
+ "libloading 0.7.4",
+ "once_cell",
+ "renderdoc-sys",
+ "winapi",
+ "wio",
+]
+
+[[package]]
 name = "renderdoc-sys"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3849,6 +3873,7 @@ dependencies = [
  "num-derive",
  "num-traits",
  "png",
+ "renderdoc",
  "ruffle_wstr",
  "serde",
  "smallvec",
@@ -5649,6 +5674,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "76a1a57ff50e9b408431e8f97d5456f2807f8eb2a2cd79b06068fc87f8ecf189"
 dependencies = [
  "cfg-if",
+ "winapi",
+]
+
+[[package]]
+name = "wio"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5d129932f4644ac2396cb456385cbf9e63b5b30c6e8dc4820bdca4eb082037a5"
+dependencies = [
  "winapi",
 ]
 
