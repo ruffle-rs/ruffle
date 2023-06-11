@@ -12,6 +12,7 @@ file-menu = 文件
 file-menu-open-quick = 打开...
 file-menu-open-advanced = 高级打开...
 file-menu-close = 关闭
+file-menu-reload = 重新加载
 file-menu-exit = 退出
 controls-menu = 控制
 controls-menu-suspend = 暂停

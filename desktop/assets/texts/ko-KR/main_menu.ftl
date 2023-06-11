@@ -12,6 +12,7 @@ file-menu = 파일
 file-menu-open-quick = 열기...
 file-menu-open-advanced = 고급 열기...
 file-menu-close = 닫기
+file-menu-reload = 다시 로드
 file-menu-exit = 종료
 controls-menu = 컨트롤
 controls-menu-suspend = 일시 정지

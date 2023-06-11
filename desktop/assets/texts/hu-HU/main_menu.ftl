@@ -12,6 +12,7 @@ file-menu = Fájl
 file-menu-open-quick = Megnyitás...
 file-menu-open-advanced = Haladó megnyitás...
 file-menu-close = Bezárás
+file-menu-reload = Újratöltés
 file-menu-exit = Kilépés
 controls-menu = Vezérlők
 controls-menu-suspend = Felfüggesztés
