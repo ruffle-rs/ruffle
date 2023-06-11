@@ -2305,16 +2305,23 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         action: WaitForFrame,
         r: &mut Reader<'_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let loaded = self
-            .target_clip()
-            .and_then(|dobj| dobj.as_movie_clip())
-            .map(|mc| mc.frames_loaded() > min(action.frame, mc.total_frames() - 1))
-            .unwrap_or(true);
+        let frame_num = action.frame;
+        let loaded = if frame_num > 16000 {
+            // Exceeded maximum number of frames.
+            false
+        } else {
+            self.target_clip()
+                .and_then(|dobj| dobj.as_movie_clip())
+                .map(|mc| mc.frames_loaded() >= min(frame_num, mc.total_frames()))
+                .unwrap_or(true)
+        };
+
         if !loaded {
             // Note that the offset is given in # of actions, NOT in bytes.
             // Read the actions and toss them away.
             skip_actions(r, action.num_actions_to_skip);
         }
+
         Ok(FrameControl::Continue)
     }
 
@@ -2338,14 +2345,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 }
             }
         };
+        let frame_num = frame_num.wrapping_sub(1);
+        let frame_num = frame_num.saturating_add(1);
 
         let loaded = if frame_num > 16001 {
-            // Exceeded maximum number of frames.
+            // Exceeded maximum number of frames (off-by-one).
             false
         } else {
+            // `ifFrameLoaded(_framesloaded + 1)` always evaluates to true (off-by-one).
             self.target_clip()
                 .and_then(|dobj| dobj.as_movie_clip())
-                .map(|mc| mc.frames_loaded() > min(frame_num as u16, mc.total_frames() - 1))
+                .map(|mc| mc.frames_loaded() + 1 >= min(frame_num as u16, mc.total_frames()))
                 .unwrap_or(true)
         };
 
