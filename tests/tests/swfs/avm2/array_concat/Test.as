@@ -1,6 +1,11 @@
-﻿package {
-	public class Test {
-	}
+﻿// compiled with mxmlc
+
+package {
+    import flash.display.MovieClip;
+    public class Test extends MovieClip {
+        public function Test() {
+        }
+    }
 }
 
 function assert_array(a: Array) {
@@ -34,3 +39,8 @@ trace("//a.concat(b, b);");
 var f = a.concat(b, b);
 
 assert_array(f);
+
+trace("//a.concat(null, undefined);");
+var g = a.concat(null, undefined);
+
+assert_array(g);
