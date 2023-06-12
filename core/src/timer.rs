@@ -156,10 +156,7 @@ impl<'gc> Timers<'gc> {
                     match closure.call(None, &params, &mut avm2_activation) {
                         Ok(v) => v.coerce_to_boolean(),
                         Err(e) => {
-                            tracing::error!(
-                                "Unhandled AVM2 error in timer callback: {}",
-                                e.detailed_message(&mut avm2_activation)
-                            );
+                            tracing::error!("Unhandled AVM2 error in timer callback: {e:?}",);
                             false
                         }
                     }

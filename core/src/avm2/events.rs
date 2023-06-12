@@ -417,10 +417,10 @@ pub fn dispatch_event_to_target<'gc>(
 
         if let Err(err) = handler.call(object, &[event.into()], activation) {
             tracing::error!(
-                "Error dispatching event {:?} to handler {:?} : {}",
+                "Error dispatching event {:?} to handler {:?} : {:?}",
                 event,
                 handler,
-                err.detailed_message(activation)
+                err,
             );
         }
     }
