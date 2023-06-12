@@ -19,6 +19,7 @@ export const DEFAULT_CONFIG: Required<BaseLoadOptions> = {
     unmuteOverlay: UnmuteOverlay.Visible,
     upgradeToHttps: true,
     compatibilityRules: true,
+    favorFlash: true,
     warnOnUnsupportedContent: true,
     logLevel: LogLevel.Error,
     showSwfDownload: false,

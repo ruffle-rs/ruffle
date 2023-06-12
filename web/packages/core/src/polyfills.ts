@@ -23,9 +23,14 @@ let embeds: HTMLCollectionOf<HTMLEmbedElement>;
 /**
  * Check if this browser has pre-existing Flash support.
  *
- * @returns Whether this browser has a plugin indicating pre-existing Flash support
+ * @returns Whether this browser has a plugin indicating pre-existing Flash support.
  */
 function isFlashEnabledBrowser(): boolean {
+    // If the user sets a configuration value not to favor Flash, pretend the browser does not support Flash so Ruffle takes effect.
+    if ("favorFlash" in globalConfig && globalConfig["favorFlash"] === false) {
+        return false;
+    }
+    // Otherwise, check for pre-exisiting Flash support.
     return (
         (navigator.plugins.namedItem("Shockwave Flash")?.filename ??
             "ruffle.js") !== "ruffle.js"

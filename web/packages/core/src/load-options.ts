@@ -331,6 +331,13 @@ export interface BaseLoadOptions {
     compatibilityRules?: boolean;
 
     /**
+     * Favor using the real Adobe Flash Player over Ruffle if the browser supports it.
+     *
+     * @default true
+     */
+    favorFlash?: boolean;
+
+    /**
      * Whether or not to display an overlay with a warning when
      * loading a movie with unsupported content.
      *
