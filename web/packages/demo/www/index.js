@@ -32,6 +32,7 @@ const defaultConfig = {
     letterbox: "on",
     logLevel: "warn",
     forceScale: true,
+    forceAlign: true,
 };
 
 const swfToFlashVersion = {

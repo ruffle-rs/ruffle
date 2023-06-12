@@ -31,6 +31,7 @@ export const DEFAULT_CONFIG: Required<BaseLoadOptions> = {
     base: null,
     menu: true,
     salign: "",
+    forceAlign: false,
     quality: "high",
     scale: "showAll",
     forceScale: false,

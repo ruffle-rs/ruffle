@@ -11,7 +11,7 @@ use anyhow::anyhow;
 use ruffle_core::backend::audio::AudioBackend;
 use ruffle_core::backend::navigator::OpenURLMode;
 use ruffle_core::config::Letterbox;
-use ruffle_core::{LoadBehavior, Player, PlayerBuilder, PlayerEvent, StageScaleMode};
+use ruffle_core::{LoadBehavior, Player, PlayerBuilder, PlayerEvent, StageAlign, StageScaleMode};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::quality::StageQuality;
 use ruffle_render_wgpu::backend::WgpuRenderBackend;
@@ -31,6 +31,8 @@ pub struct PlayerOptions {
     pub max_execution_duration: f64,
     pub base: Option<Url>,
     pub quality: StageQuality,
+    pub align: StageAlign,
+    pub force_align: bool,
     pub scale: StageScaleMode,
     pub volume: f32,
     pub force_scale: bool,
@@ -54,6 +56,8 @@ impl From<&Opt> for PlayerOptions {
             max_execution_duration: value.max_execution_duration,
             base: value.base.clone(),
             quality: value.quality,
+            align: value.align.unwrap_or_default(),
+            force_align: value.force_align,
             scale: value.scale,
             volume: value.volume,
             force_scale: value.force_scale,
@@ -138,6 +142,7 @@ impl ActivePlayer {
             .with_max_execution_duration(Duration::from_secs_f64(opt.max_execution_duration))
             .with_quality(opt.quality)
             .with_warn_on_unsupported_content(opt.warn_on_unsupported_content)
+            .with_align(opt.align, opt.force_align)
             .with_scale_mode(opt.scale, opt.force_scale)
             .with_fullscreen(opt.fullscreen)
             .with_load_behavior(opt.load_behavior)

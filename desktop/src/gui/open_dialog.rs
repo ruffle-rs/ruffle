@@ -6,7 +6,7 @@ use egui::{
     Align2, Button, Checkbox, ComboBox, DragValue, Grid, Slider, TextEdit, Ui, Widget, Window,
 };
 use ruffle_core::backend::navigator::OpenURLMode;
-use ruffle_core::{LoadBehavior, StageScaleMode};
+use ruffle_core::{LoadBehavior, StageAlign, StageScaleMode};
 use ruffle_render::quality::StageQuality;
 use std::path::Path;
 use unic_langid::LanguageIdentifier;
@@ -281,43 +281,119 @@ impl OpenDialog {
                     });
                 ui.end_row();
 
-                ui.label(text(&self.locale, "scale-mode"));
-                ComboBox::from_id_source("open-file-advanced-options-scale")
-                    .selected_text(match self.options.scale {
-                        StageScaleMode::ExactFit => text(&self.locale, "scale-mode-exactfit"),
-                        StageScaleMode::NoBorder => text(&self.locale, "scale-mode-noborder"),
-                        StageScaleMode::NoScale => text(&self.locale, "scale-mode-noscale"),
-                        StageScaleMode::ShowAll => text(&self.locale, "scale-mode-showall"),
-                    })
-                    .show_ui(ui, |ui| {
-                        ui.selectable_value(
-                            &mut self.options.scale,
-                            StageScaleMode::ExactFit,
-                            text(&self.locale, "scale-mode-exactfit"),
-                        );
-                        ui.selectable_value(
-                            &mut self.options.scale,
-                            StageScaleMode::NoBorder,
-                            text(&self.locale, "scale-mode-noborder"),
-                        );
-                        ui.selectable_value(
-                            &mut self.options.scale,
-                            StageScaleMode::NoScale,
-                            text(&self.locale, "scale-mode-noscale"),
-                        );
-                        ui.selectable_value(
-                            &mut self.options.scale,
-                            StageScaleMode::ShowAll,
-                            text(&self.locale, "scale-mode-showall"),
-                        );
-                    });
+                ui.label(text(&self.locale, "align"));
+                ui.horizontal(|ui| {
+                    ComboBox::from_id_source("open-file-advanced-options-align")
+                        .selected_text(match self.options.align {
+                            StageAlign::TOP => text(&self.locale, "align-top"),
+                            StageAlign::BOTTOM => text(&self.locale, "align-bottom"),
+                            StageAlign::LEFT => text(&self.locale, "align-left"),
+                            StageAlign::RIGHT => text(&self.locale, "align-right"),
+                            _ => {
+                                let align = self.options.align;
+                                if align == StageAlign::TOP | StageAlign::LEFT {
+                                    text(&self.locale, "align-top-left")
+                                } else if align == StageAlign::TOP | StageAlign::RIGHT {
+                                    text(&self.locale, "align-top-right")
+                                } else if align == StageAlign::BOTTOM | StageAlign::LEFT {
+                                    text(&self.locale, "align-bottom-left")
+                                } else if align == StageAlign::BOTTOM | StageAlign::RIGHT {
+                                    text(&self.locale, "align-bottom-right")
+                                } else {
+                                    text(&self.locale, "align-center")
+                                }
+                            }
+                        })
+                        .show_ui(ui, |ui| {
+                            ui.selectable_value(
+                                &mut self.options.align,
+                                StageAlign::default(),
+                                text(&self.locale, "align-center"),
+                            );
+                            ui.selectable_value(
+                                &mut self.options.align,
+                                StageAlign::TOP,
+                                text(&self.locale, "align-top"),
+                            );
+                            ui.selectable_value(
+                                &mut self.options.align,
+                                StageAlign::BOTTOM,
+                                text(&self.locale, "align-bottom"),
+                            );
+                            ui.selectable_value(
+                                &mut self.options.align,
+                                StageAlign::LEFT,
+                                text(&self.locale, "align-left"),
+                            );
+                            ui.selectable_value(
+                                &mut self.options.align,
+                                StageAlign::RIGHT,
+                                text(&self.locale, "align-right"),
+                            );
+                            ui.selectable_value(
+                                &mut self.options.align,
+                                StageAlign::TOP | StageAlign::LEFT,
+                                text(&self.locale, "align-top-left"),
+                            );
+                            ui.selectable_value(
+                                &mut self.options.align,
+                                StageAlign::TOP | StageAlign::RIGHT,
+                                text(&self.locale, "align-top-right"),
+                            );
+                            ui.selectable_value(
+                                &mut self.options.align,
+                                StageAlign::BOTTOM | StageAlign::LEFT,
+                                text(&self.locale, "align-bottom-left"),
+                            );
+                            ui.selectable_value(
+                                &mut self.options.align,
+                                StageAlign::BOTTOM | StageAlign::RIGHT,
+                                text(&self.locale, "align-bottom-right"),
+                            );
+                        });
+                    ui.checkbox(
+                        &mut self.options.force_align,
+                        text(&self.locale, "align-force"),
+                    );
+                });
                 ui.end_row();
 
-                ui.label(text(&self.locale, "force-scale-mode"));
-                ui.checkbox(
-                    &mut self.options.force_scale,
-                    text(&self.locale, "force-scale-mode-check"),
-                );
+                ui.label(text(&self.locale, "scale-mode"));
+                ui.horizontal(|ui| {
+                    ComboBox::from_id_source("open-file-advanced-options-scale")
+                        .selected_text(match self.options.scale {
+                            StageScaleMode::ExactFit => text(&self.locale, "scale-mode-exactfit"),
+                            StageScaleMode::NoBorder => text(&self.locale, "scale-mode-noborder"),
+                            StageScaleMode::NoScale => text(&self.locale, "scale-mode-noscale"),
+                            StageScaleMode::ShowAll => text(&self.locale, "scale-mode-showall"),
+                        })
+                        .show_ui(ui, |ui| {
+                            ui.selectable_value(
+                                &mut self.options.scale,
+                                StageScaleMode::ExactFit,
+                                text(&self.locale, "scale-mode-exactfit"),
+                            );
+                            ui.selectable_value(
+                                &mut self.options.scale,
+                                StageScaleMode::NoBorder,
+                                text(&self.locale, "scale-mode-noborder"),
+                            );
+                            ui.selectable_value(
+                                &mut self.options.scale,
+                                StageScaleMode::NoScale,
+                                text(&self.locale, "scale-mode-noscale"),
+                            );
+                            ui.selectable_value(
+                                &mut self.options.scale,
+                                StageScaleMode::ShowAll,
+                                text(&self.locale, "scale-mode-showall"),
+                            );
+                        });
+                    ui.checkbox(
+                        &mut self.options.force_scale,
+                        text(&self.locale, "scale-mode-force"),
+                    );
+                });
                 ui.end_row();
 
                 ui.label(text(&self.locale, "dummy-external-interface"));

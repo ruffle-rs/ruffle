@@ -840,15 +840,6 @@ impl Player {
         })
     }
 
-    pub fn set_stage_align(&mut self, stage_align: &str) {
-        self.mutate_with_update_context(|context| {
-            let stage = context.stage;
-            if let Ok(stage_align) = StageAlign::from_str(stage_align) {
-                stage.set_align(context, stage_align);
-            }
-        })
-    }
-
     pub fn set_quality(&mut self, quality: StageQuality) {
         self.mutate_with_update_context(|context| {
             context.stage.set_quality(context, quality);
@@ -2020,6 +2011,8 @@ pub struct PlayerBuilder {
 
     // Misc. player configuration
     autoplay: bool,
+    align: StageAlign,
+    forced_align: bool,
     scale_mode: StageScaleMode,
     forced_scale_mode: bool,
     fullscreen: bool,
@@ -2058,7 +2051,9 @@ impl PlayerBuilder {
             video: None,
 
             autoplay: false,
-            scale_mode: StageScaleMode::ShowAll,
+            align: StageAlign::default(),
+            forced_align: false,
+            scale_mode: StageScaleMode::default(),
             forced_scale_mode: false,
             fullscreen: false,
             // Disable script timeout in debug builds by default.
@@ -2136,6 +2131,14 @@ impl PlayerBuilder {
     #[inline]
     pub fn with_video(mut self, video: impl 'static + VideoBackend) -> Self {
         self.video = Some(Box::new(video));
+        self
+    }
+
+    /// Sets the stage scale mode and optionally prevents movies from changing it.
+    #[inline]
+    pub fn with_align(mut self, align: StageAlign, force: bool) -> Self {
+        self.align = align;
+        self.forced_align = force;
         self
     }
 
@@ -2395,6 +2398,8 @@ impl PlayerBuilder {
         player_lock.mutate_with_update_context(|context| {
             Avm2::load_player_globals(context).expect("Unable to load AVM2 globals");
             let stage = context.stage;
+            stage.set_align(context, self.align);
+            stage.set_forced_align(context, self.forced_align);
             stage.set_scale_mode(context, self.scale_mode);
             stage.set_forced_scale_mode(context, self.forced_scale_mode);
             stage.post_instantiation(context, None, Instantiator::Movie, false);
