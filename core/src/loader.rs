@@ -715,6 +715,7 @@ impl<'gc> Loader<'gc> {
             Loader::Movie { self_handle, .. } => self_handle.expect("Loader not self-introduced"),
             _ => return Box::pin(async { Err(Error::NotMovieLoader) }),
         };
+        let request_url = request.url().to_string();
 
         let player = player
             .upgrade()
@@ -768,7 +769,7 @@ impl<'gc> Loader<'gc> {
                     )?;
                 }
                 Err(e) => {
-                    tracing::error!("Error during movie loading: {:?}", e);
+                    tracing::error!("Error during movie loading of {request_url:?}: {e:?}");
                     player.lock().unwrap().update(|uc| -> Result<(), Error> {
                         // FIXME - match Flash's error message
 
