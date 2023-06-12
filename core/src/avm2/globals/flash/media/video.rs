@@ -1,4 +1,5 @@
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, ClassObject, Error, Object, TObject, Value};
 use crate::display_object::{TDisplayObject, Video};
 
@@ -45,16 +46,8 @@ pub fn init<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(video) = this.as_display_object().and_then(|dobj| dobj.as_video()) {
-            let width = args
-                .get(0)
-                .cloned()
-                .unwrap_or(Value::Undefined)
-                .coerce_to_i32(activation)?;
-            let height = args
-                .get(1)
-                .cloned()
-                .unwrap_or(Value::Undefined)
-                .coerce_to_i32(activation)?;
+            let width = args.get_i32(activation, 0)?;
+            let height = args.get_i32(activation, 1)?;
 
             video.set_size(activation.context.gc_context, width, height);
             video.set_object2(&mut activation.context, this);
