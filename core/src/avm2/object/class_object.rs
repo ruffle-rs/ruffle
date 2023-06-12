@@ -448,24 +448,34 @@ impl<'gc> ClassObject<'gc> {
     /// interface we are checking against this class.
     ///
     /// To test if a class *instance* is of a given type, see is_of_type.
-    pub fn has_class_in_chain(self, test_class: ClassObject<'gc>) -> bool {
+    pub fn has_class_in_chain(self, test_class: GcCell<'gc, Class<'gc>>) -> bool {
         let mut my_class = Some(self);
 
         while let Some(class) = my_class {
-            if Object::ptr_eq(class, test_class) {
+            if GcCell::ptr_eq(class.inner_class_definition(), test_class) {
                 return true;
             }
 
-            if let (Some(my_param), Some(test_param)) =
-                (class.as_class_params(), test_class.as_class_params())
+            let test_class_read = test_class.read();
+            if let (Some(Some(my_param)), Some(other_single_param)) =
+                (class.as_class_params(), test_class_read.param())
             {
-                let are_all_params_coercible = match (my_param, test_param) {
-                    (Some(my_param), Some(test_param)) => my_param.has_class_in_chain(test_param),
-                    (None, Some(_)) => false,
-                    _ => true,
-                };
+                // The only parameterized class that exists is `__AS3__.vec::Vector`
+                // (users cannot create their own parameterized classes). As a sanity check,
+                // we make sure that both classes are in the same namespace (i.e. `__AS3__.vec`).
+                // We cannot directly compare the class names, as they include the parameter.
+                assert_eq!(
+                    class.inner_class_definition().read().name().namespace(),
+                    test_class_read.name().namespace(),
+                    "Parameterized classes should both be Vector, but are in different namespaces"
+                );
+                assert_eq!(
+                    &*test_class_read.name().namespace().as_uri(),
+                    b"__AS3__.vec",
+                    "Parameterized class should be a Vector"
+                );
 
-                if are_all_params_coercible {
+                if my_param.has_class_in_chain(*other_single_param) {
                     return true;
                 }
             }
@@ -478,9 +488,9 @@ impl<'gc> ClassObject<'gc> {
         // Therefore, we only need to check interfaces once, and we can skip
         // checking them when we processing superclasses in the `while`
         // further down in this method.
-        if test_class.inner_class_definition().read().is_interface() {
+        if test_class.read().is_interface() {
             for interface in self.interfaces() {
-                if GcCell::ptr_eq(interface, test_class.inner_class_definition()) {
+                if GcCell::ptr_eq(interface, test_class) {
                     return true;
                 }
             }
@@ -851,7 +861,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
                 .get(0)
                 .cloned()
                 .unwrap_or(Value::Undefined)
-                .coerce_to_type(activation, self)
+                .coerce_to_type(activation, self.inner_class_definition())
         }
     }
 

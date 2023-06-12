@@ -119,7 +119,10 @@ impl<'gc> PropertyClass<'gc> {
         };
 
         if let Some(class) = class {
-            Ok((value.coerce_to_type(activation, class)?, changed))
+            Ok((
+                value.coerce_to_type(activation, class.inner_class_definition())?,
+                changed,
+            ))
         } else {
             // We have a type of '*' ("any"), so don't
             // perform any coercions

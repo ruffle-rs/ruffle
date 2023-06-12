@@ -77,7 +77,7 @@ fn class_call<'gc>(
 
     while let Some(r) = iter.next(activation) {
         let (_, item) = r?;
-        let coerced_item = item.coerce_to_type(activation, value_type)?;
+        let coerced_item = item.coerce_to_type(activation, value_type.inner_class_definition())?;
         new_storage.push(coerced_item, activation)?;
     }
 
@@ -310,7 +310,7 @@ pub fn concat<'gc>(
     let my_class = this
         .instance_of()
         .ok_or("TypeError: Tried to concat into a bare object")?;
-    let val_class = new_vector_storage.value_type();
+    let val_class = new_vector_storage.value_type().inner_class_definition();
 
     for arg in args {
         let arg_obj = arg
@@ -319,7 +319,7 @@ pub fn concat<'gc>(
         let arg_class = arg_obj
             .instance_of_class_definition()
             .ok_or("TypeError: Tried to concat from a bare object")?;
-        if !arg.is_of_type(activation, my_class) {
+        if !arg.is_of_type(activation, my_class.inner_class_definition()) {
             return Err(format!(
                 "TypeError: Cannot coerce argument of type {:?} to argument of type {:?}",
                 arg_class.read().name(),
@@ -344,7 +344,7 @@ pub fn concat<'gc>(
                     return Err(format!(
                         "TypeError: Cannot coerce Vector value of type {:?} to type {:?}",
                         other_val_class.read().name(),
-                        val_class.inner_class_definition().read().name()
+                        val_class.read().name()
                     )
                     .into());
                 }
@@ -641,7 +641,8 @@ pub fn map<'gc>(
         let (i, item) = r?;
 
         let new_item = callback.call(receiver, &[item, i.into(), this.into()], activation)?;
-        let coerced_item = new_item.coerce_to_type(activation, value_type)?;
+        let coerced_item =
+            new_item.coerce_to_type(activation, value_type.inner_class_definition())?;
 
         new_storage.push(coerced_item, activation)?;
     }
@@ -669,7 +670,7 @@ pub fn push<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
-        let value_type = vs.value_type();
+        let value_type = vs.value_type().inner_class_definition();
 
         for arg in args {
             let coerced_arg = arg.coerce_to_type(activation, value_type)?;
@@ -703,7 +704,7 @@ pub fn unshift<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
-        let value_type = vs.value_type();
+        let value_type = vs.value_type().inner_class_definition();
 
         for arg in args.iter().rev() {
             let coerced_arg = arg.coerce_to_type(activation, value_type)?;
@@ -729,7 +730,7 @@ pub fn insert_at<'gc>(
             .cloned()
             .unwrap_or(Value::Undefined)
             .coerce_to_i32(activation)?;
-        let value_type = vs.value_type();
+        let value_type = vs.value_type().inner_class_definition();
         let value = args
             .get(1)
             .cloned()
@@ -930,7 +931,7 @@ pub fn splice<'gc>(
         let mut to_coerce = Vec::new();
 
         for value in args[2..].iter() {
-            to_coerce.push(value.coerce_to_type(activation, value_type)?);
+            to_coerce.push(value.coerce_to_type(activation, value_type.inner_class_definition())?);
         }
 
         let new_vs =

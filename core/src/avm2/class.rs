@@ -473,7 +473,7 @@ impl<'gc> Class<'gc> {
                 }
 
                 if instance_trait.is_override() && !did_override {
-                    return Err(format!("VerifyError: Trait {} in class {} marked as override, does not override any other trait", instance_trait.name().local_name(), self.name().local_name()).into());
+                    return Err(format!("VerifyError: Trait {} in class {:?} marked as override, does not override any other trait", instance_trait.name().local_name(), self.name()).into());
                 }
             }
         }

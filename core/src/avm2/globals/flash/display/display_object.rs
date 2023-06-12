@@ -264,7 +264,9 @@ pub fn set_filters<'gc>(
                         Namespace::package("flash.filters", &mut activation.borrow_gc());
                     let filter_class = Multiname::new(filters_namespace, "BitmapFilter");
 
-                    let filter_class_object = activation.resolve_class(&filter_class)?;
+                    let filter_class_object = activation
+                        .resolve_class(&filter_class)?
+                        .inner_class_definition();
                     let mut filter_vec = Vec::with_capacity(filters_storage.length());
 
                     for filter in filters_storage.iter().flatten() {

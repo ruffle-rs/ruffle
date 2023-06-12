@@ -700,8 +700,12 @@ pub fn hit_test<'gc>(
             );
             let source_threshold = args.get_u32(activation, 1)?.clamp(0, u8::MAX.into()) as u8;
             let compare_object = args.get_object(activation, 2, "secondObject")?;
-            let point_class = activation.avm2().classes().point;
-            let rectangle_class = activation.avm2().classes().rectangle;
+            let point_class = activation.avm2().classes().point.inner_class_definition();
+            let rectangle_class = activation
+                .avm2()
+                .classes()
+                .rectangle
+                .inner_class_definition();
 
             if compare_object.is_of_type(point_class, &mut activation.context) {
                 let test_point = (

@@ -219,9 +219,13 @@ impl<'gc> Bitmap<'gc> {
         context: &mut UpdateContext<'_, 'gc>,
         class: Avm2ClassObject<'gc>,
     ) {
-        let bitmap_class = if class.has_class_in_chain(context.avm2.classes().bitmap) {
+        let bitmap_class = if class
+            .has_class_in_chain(context.avm2.classes().bitmap.inner_class_definition())
+        {
             BitmapClass::Bitmap(class)
-        } else if class.has_class_in_chain(context.avm2.classes().bitmapdata) {
+        } else if class
+            .has_class_in_chain(context.avm2.classes().bitmapdata.inner_class_definition())
+        {
             BitmapClass::BitmapData(class)
         } else {
             return tracing::error!("Associated class {:?} for symbol {} must extend flash.display.Bitmap or BitmapData, does neither", class.inner_class_definition().read().name(), self.id());
