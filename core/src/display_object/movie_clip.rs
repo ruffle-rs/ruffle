@@ -746,11 +746,7 @@ impl<'gc> MovieClip<'gc> {
                 swf::DoAbc2Flag::LAZY_INITIALIZE,
                 domain,
             ) {
-                let mut activation = Avm2Activation::from_nothing(context.reborrow());
-                tracing::warn!(
-                    "Error loading ABC file: {}",
-                    e.detailed_message(&mut activation)
-                );
+                tracing::warn!("Error loading ABC file: {e:?}");
             }
         }
 
@@ -775,11 +771,7 @@ impl<'gc> MovieClip<'gc> {
             let name = AvmString::new(context.gc_context, do_abc.name.decode(reader.encoding()));
 
             if let Err(e) = Avm2::do_abc(context, do_abc.data, Some(name), do_abc.flags, domain) {
-                let mut activation = Avm2Activation::from_nothing(context.reborrow());
-                tracing::warn!(
-                    "Error loading ABC file: {}",
-                    e.detailed_message(&mut activation)
-                );
+                tracing::warn!("Error loading ABC file: {e:?}");
             }
         }
 
@@ -869,8 +861,8 @@ impl<'gc> MovieClip<'gc> {
                     }
                 }
                 Err(e) => tracing::warn!(
-                    "Got AVM2 error {} when attempting to assign symbol class {}",
-                    e.detailed_message(&mut activation),
+                    "Got AVM2 error {:?} when attempting to assign symbol class {}",
+                    e,
                     class_name
                 ),
             }
@@ -2121,11 +2113,9 @@ impl<'gc> MovieClip<'gc> {
             let result: Result<(), Avm2Error> = constr_thing();
 
             if let Err(e) = result {
-                let mut activation = Avm2Activation::from_nothing(context.reborrow());
-
                 tracing::error!(
-                    "Got \"{}\" when constructing AVM2 side of movie clip of type {}",
-                    e.detailed_message(&mut activation),
+                    "Got \"{:?}\" when constructing AVM2 side of movie clip of type {}",
+                    e,
                     class_object
                         .try_inner_class_definition()
                         .map(|c| c.read().name().to_qualified_name(context.gc_context))

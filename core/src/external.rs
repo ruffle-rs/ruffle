@@ -298,8 +298,8 @@ impl<'gc> Callback<'gc> {
                     Ok(result) => Value::from_avm2(result),
                     Err(e) => {
                         tracing::error!(
-                            "Unhandled error in External Interface callback {name}: {}",
-                            e.detailed_message(&mut activation)
+                            "Unhandled error in External Interface callback {name}: {:?}",
+                            e
                         );
                         Value::Null
                     }

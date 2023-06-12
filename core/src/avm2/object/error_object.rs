@@ -60,34 +60,49 @@ pub struct ErrorObjectData<'gc> {
 }
 
 impl<'gc> ErrorObject<'gc> {
-    pub fn display(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<AvmString<'gc>, Error<'gc>> {
-        let name = self
-            .get_public_property("name", activation)?
-            .coerce_to_string(activation)?;
-        let message = self
-            .get_public_property("message", activation)?
-            .coerce_to_string(activation)?;
+    pub fn display(&self) -> Result<WString, Error<'gc>> {
+        // FIXME - we should have a safer way of accessing properties without
+        // an `Activation`. For now, we just access the 'name' and 'message' fields
+        // by hardcoded slot id. Our `Error` class definition should fully match
+        // Flash Player, and we have lots of test coverage around error, so
+        // there should be very little risk to doing this.
+        let name = match self.base().get_slot(1)? {
+            Value::String(string) => string,
+            Value::Null => "null".into(),
+            Value::Undefined => "undefined".into(),
+            name => {
+                return Err(Error::RustError(
+                    format!("Error.name {name:?} is not a string on error object {self:?}",).into(),
+                ))
+            }
+        };
+        let message = match self.base().get_slot(2)? {
+            Value::String(string) => string,
+            Value::Null => "null".into(),
+            Value::Undefined => "undefined".into(),
+            message => {
+                return Err(Error::RustError(
+                    format!("Error.message {message:?} is not a string on error object {self:?}")
+                        .into(),
+                ))
+            }
+        };
         if message.is_empty() {
-            return Ok(name);
+            return Ok(name.as_wstr().to_owned());
         }
+
         let mut output = WString::new();
         output.push_str(&name);
         output.push_utf8(": ");
         output.push_str(&message);
-        Ok(AvmString::new(activation.context.gc_context, output))
+        Ok(output)
     }
 
-    pub fn display_full(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<AvmString<'gc>, Error<'gc>> {
+    pub fn display_full(&self) -> Result<WString, Error<'gc>> {
         let mut output = WString::new();
-        output.push_str(&self.display(activation)?);
+        output.push_str(&self.display()?);
         self.call_stack().display(&mut output);
-        Ok(AvmString::new(activation.context.gc_context, output))
+        Ok(output)
     }
 
     fn call_stack(&self) -> Ref<CallStack<'gc>> {
@@ -125,7 +140,7 @@ impl<'gc> TObject<'gc> for ErrorObject<'gc> {
     }
 
     fn to_string(&self, activation: &mut Activation<'_, 'gc>) -> Result<Value<'gc>, Error<'gc>> {
-        Ok(self.display(activation)?.into())
+        Ok(AvmString::new(activation.context.gc_context, self.display()?).into())
     }
 
     fn as_error_object(&self) -> Option<ErrorObject<'gc>> {

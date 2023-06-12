@@ -3,12 +3,12 @@ use crate::avm2::Activation;
 use crate::avm2::AvmString;
 use crate::avm2::Multiname;
 use crate::avm2::Value;
+use std::fmt::Debug;
 use std::mem::size_of;
 
 use super::ClassObject;
 
 /// An error generated while handling AVM2 logic
-#[derive(Debug)]
 pub enum Error<'gc> {
     /// A thrown error. This can be produced by an explicit 'throw'
     /// opcode, or by a native implementation that throws an exception.
@@ -20,17 +20,22 @@ pub enum Error<'gc> {
     RustError(Box<dyn std::error::Error>),
 }
 
-impl<'gc> Error<'gc> {
-    pub fn detailed_message(&self, activation: &mut Activation<'_, 'gc>) -> String {
+impl<'gc> Debug for Error<'gc> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if let Error::AvmError(error) = self {
             if let Some(error) = error.as_object().and_then(|obj| obj.as_error_object()) {
-                if let Ok(text) = error.display_full(activation) {
-                    return text.to_string();
-                }
+                return write!(
+                    f,
+                    "{}",
+                    error.display_full().expect("Failed to display error")
+                );
             }
         }
 
-        self.to_string()
+        match self {
+            Error::AvmError(error) => write!(f, "AvmError({:?})", error),
+            Error::RustError(error) => write!(f, "RustError({:?})", error),
+        }
     }
 }
 
