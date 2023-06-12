@@ -3,7 +3,7 @@ use anyhow::Error;
 use clap::Parser;
 use ruffle_core::backend::navigator::OpenURLMode;
 use ruffle_core::config::Letterbox;
-use ruffle_core::{LoadBehavior, StageScaleMode};
+use ruffle_core::{LoadBehavior, StageAlign, StageScaleMode};
 use ruffle_render::quality::StageQuality;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use std::path::Path;
@@ -55,6 +55,14 @@ pub struct Opt {
     /// Default quality of the movie.
     #[clap(long, short, default_value = "high")]
     pub quality: StageQuality,
+
+    /// The alignment of the stage.
+    #[clap(long, short)]
+    pub align: Option<StageAlign>,
+
+    /// Prevent movies from changing the stage alignment.
+    #[clap(long, action)]
+    pub force_align: bool,
 
     /// The scale mode of the stage.
     #[clap(long, short, default_value = "show-all")]

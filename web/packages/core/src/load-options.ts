@@ -415,6 +415,13 @@ export interface BaseLoadOptions {
     salign?: string;
 
     /**
+     * If set to true, movies are prevented from changing the stage alignment.
+     *
+     * @default false
+     */
+    forceAlign?: boolean;
+
+    /**
      * This is equivalent to Stage.quality.
      *
      * @default "high"

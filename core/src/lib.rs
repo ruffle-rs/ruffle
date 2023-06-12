@@ -3,7 +3,7 @@
 
 #[macro_use]
 mod display_object;
-pub use display_object::{StageDisplayState, StageScaleMode};
+pub use display_object::{StageAlign, StageDisplayState, StageScaleMode};
 
 #[macro_use]
 extern crate smallvec;

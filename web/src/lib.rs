@@ -19,8 +19,8 @@ use ruffle_core::external::{
 };
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{
-    Color, Player, PlayerBuilder, PlayerEvent, SandboxType, StageScaleMode, StaticCallstack,
-    ViewportDimensions,
+    Color, Player, PlayerBuilder, PlayerEvent, SandboxType, StageAlign, StageScaleMode,
+    StaticCallstack, ViewportDimensions,
 };
 use ruffle_render::quality::StageQuality;
 use ruffle_video_software::backend::SoftwareVideoBackend;
@@ -260,6 +260,8 @@ struct Config {
     show_menu: bool,
 
     salign: Option<String>,
+
+    force_align: bool,
 
     quality: Option<String>,
 
@@ -580,11 +582,18 @@ impl Ruffle {
                     .and_then(|q| StageQuality::from_str(&q).ok())
                     .unwrap_or(default_quality),
             )
+            .with_align(
+                config
+                    .salign
+                    .and_then(|s| StageAlign::from_str(&s).ok())
+                    .unwrap_or_default(),
+                config.force_align,
+            )
             .with_scale_mode(
                 config
                     .scale
                     .and_then(|s| StageScaleMode::from_str(&s).ok())
-                    .unwrap_or(StageScaleMode::ShowAll),
+                    .unwrap_or_default(),
                 config.force_scale,
             )
             .with_frame_rate(config.frame_rate)
@@ -597,7 +606,6 @@ impl Ruffle {
             // Set config parameters.
             core.set_background_color(config.background_color);
             core.set_show_menu(config.show_menu);
-            core.set_stage_align(config.salign.as_deref().unwrap_or(""));
             core.set_window_mode(config.wmode.as_deref().unwrap_or("window"));
             callstack = Some(core.callstack());
         }
