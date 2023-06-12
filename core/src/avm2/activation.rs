@@ -2901,17 +2901,23 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let class = self
             .pop_stack()
             .as_object()
-            .and_then(|c| c.as_class_object())
-            .ok_or("Cannot coerce a value to a type that is null, undefined, or not a class")?;
+            .and_then(|c| c.as_class_object());
         let value = self.pop_stack();
 
-        if value.is_of_type(self, class) {
-            self.push_stack(value);
+        if let Some(class) = class {
+            if value.is_of_type(self, class) {
+                self.push_stack(value);
+            } else {
+                self.push_stack(Value::Null);
+            }
+            Ok(FrameControl::Continue)
         } else {
-            self.push_stack(Value::Null);
+            return Err(Error::AvmError(type_error(
+                self,
+                "Error #1009: Cannot access a property or method of a null object reference.",
+                1009,
+            )?));
         }
-
-        Ok(FrameControl::Continue)
     }
 
     fn op_instance_of(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
