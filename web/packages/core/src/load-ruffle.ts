@@ -69,7 +69,8 @@ async function fetchRuffle(
         : new URL("../dist/ruffle_web_bg.wasm", import.meta.url);
     const wasmResponse = await fetch(wasmUrl);
     if (progressCallback) {
-        const contentLength = wasmResponse.headers.get("content-length") || "";
+        const contentLength =
+            wasmResponse?.headers?.get("content-length") || "";
         let bytesLoaded = 0;
         // Use parseInt rather than Number so the empty string is coerced to NaN instead of 0
         const bytesTotal = parseInt(contentLength);
