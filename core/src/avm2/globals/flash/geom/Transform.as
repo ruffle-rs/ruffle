@@ -1,5 +1,7 @@
 package flash.geom {
 	import flash.display.DisplayObject;
+	import flash.geom.Matrix3D;
+	import flash.geom.PerspectiveProjection;
 	import __ruffle__.stub_getter;
 	import __ruffle__.stub_method;
 	import __ruffle__.stub_setter;
@@ -23,7 +25,7 @@ package flash.geom {
 
 		public function get matrix3D():Matrix3D {
 			stub_getter("flash.geom.Transform", "matrix3D");
-			return null;
+			return new Matrix3D();
 		}
 
 		public function set matrix3D(m:Matrix3D):void {
@@ -32,7 +34,7 @@ package flash.geom {
 
 		public function get perspectiveProjection():PerspectiveProjection {
 			stub_getter("flash.geom.Transform", "perspectiveProjection");
-			return null;
+			return new PerspectiveProjection();
 		}
 
 		public function set perspectiveProjection(val: PerspectiveProjection):void {
@@ -41,7 +43,7 @@ package flash.geom {
 
 		public function getRelativeMatrix3D(relativeTo:DisplayObject):Matrix3D {
 			stub_method("flash.geom.Transform", "getRelativeMatrix3D");
-			return null;
+			return new Matrix3D();
 		}
 	}
 }
