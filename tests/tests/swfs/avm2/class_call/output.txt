@@ -21,3 +21,12 @@ string
 /asdf/gi
 //RegExp(regexp)
 /asdf/gi
+
+//Array().length
+0
+//Array(5)
+,,,,
+//Array("5")
+5
+//Array("a", "b", "c")
+a,b,c

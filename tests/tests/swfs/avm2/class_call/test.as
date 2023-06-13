@@ -51,4 +51,12 @@ trace("//RegExp(regexp)")
 pat = cls(pat);
 trace(pat);
 
-
+trace()
+trace("//Array().length")
+trace(Array().length)
+trace("//Array(5)")
+trace(Array(5))
+trace("//Array(\"5\")")
+trace(Array("5"))
+trace("//Array(\"a\", \"b\", \"c\")")
+trace(Array("a", "b", "c"))
