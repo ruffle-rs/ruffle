@@ -3,6 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::class::Class;
+use crate::avm2::error::range_error;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{array_allocator, ArrayObject, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
@@ -78,8 +79,12 @@ pub fn instance_init<'gc>(
                     .get(0)
                     .and_then(|v| v.as_number(activation.context.gc_context).ok())
                 {
-                    if expected_len < 0.0 || expected_len.is_nan() {
-                        return Err("Length must be a positive integer".into());
+                    if expected_len < 0.0 || expected_len.is_nan() || expected_len.fract() != 0.0 {
+                        return Err(Error::AvmError(range_error(
+                            activation,
+                            &format!("Error #1005: Array index is not a positive integer ({expected_len})"),
+                            1005,
+                        )?));
                     }
 
                     array.set_length(expected_len as usize);
