@@ -33,8 +33,7 @@ impl<'gc> Program3DObject<'gc> {
             Program3DObjectData {
                 base,
                 context3d,
-                vertex_shader_handle: GcCell::allocate(activation.context.gc_context, None),
-                fragment_shader_handle: GcCell::allocate(activation.context.gc_context, None),
+                shader_module_handle: GcCell::allocate(activation.context.gc_context, None),
             },
         ))
         .into();
@@ -45,12 +44,8 @@ impl<'gc> Program3DObject<'gc> {
         Ok(this)
     }
 
-    pub fn vertex_shader_handle(&self) -> GcCell<'gc, Option<Rc<dyn ShaderModule>>> {
-        self.0.read().vertex_shader_handle
-    }
-
-    pub fn fragment_shader_handle(&self) -> GcCell<'gc, Option<Rc<dyn ShaderModule>>> {
-        self.0.read().fragment_shader_handle
+    pub fn shader_module_handle(&self) -> GcCell<'gc, Option<Rc<dyn ShaderModule>>> {
+        self.0.read().shader_module_handle
     }
 
     pub fn context3d(&self) -> Context3DObject<'gc> {
@@ -66,9 +61,7 @@ pub struct Program3DObjectData<'gc> {
 
     context3d: Context3DObject<'gc>,
 
-    vertex_shader_handle: GcCell<'gc, Option<Rc<dyn ShaderModule>>>,
-
-    fragment_shader_handle: GcCell<'gc, Option<Rc<dyn ShaderModule>>>,
+    shader_module_handle: GcCell<'gc, Option<Rc<dyn ShaderModule>>>,
 }
 
 impl<'gc> TObject<'gc> for Program3DObject<'gc> {

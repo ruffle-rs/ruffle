@@ -429,15 +429,13 @@ pub enum Context3DCommand<'a, 'gc> {
     },
 
     UploadShaders {
-        vertex_shader: GcCell<'gc, Option<Rc<dyn ShaderModule>>>,
+        module: GcCell<'gc, Option<Rc<dyn ShaderModule>>>,
         vertex_shader_agal: Vec<u8>,
-        fragment_shader: GcCell<'gc, Option<Rc<dyn ShaderModule>>>,
         fragment_shader_agal: Vec<u8>,
     },
 
     SetShaders {
-        vertex_shader: GcCell<'gc, Option<Rc<dyn ShaderModule>>>,
-        fragment_shader: GcCell<'gc, Option<Rc<dyn ShaderModule>>>,
+        module: GcCell<'gc, Option<Rc<dyn ShaderModule>>>,
     },
     SetProgramConstantsFromVector {
         program_type: ProgramType,
