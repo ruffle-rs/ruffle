@@ -1,5 +1,6 @@
 package {
     [Ruffle(InstanceAllocator)]
+    [Ruffle(CallHandler)]
     public final dynamic class XMLList {
 
         public function XMLList(value:* = undefined) {

@@ -56,6 +56,19 @@ pub fn init<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn call_handler<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(activation
+        .avm2()
+        .classes()
+        .xml_list
+        .construct(activation, args)?
+        .into())
+}
+
 pub fn has_complex_content<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,

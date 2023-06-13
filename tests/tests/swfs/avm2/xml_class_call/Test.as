@@ -10,6 +10,9 @@
 			trace("From complex string:")
 			trace(complexXML.children().length());
 			trace(complexXML.name());
+			
+			trace("XMLList from string:");
+			trace(XMLList("<p>First element</p><p>Second element</p>"));
 		}
 	}
 }
