@@ -37,3 +37,5 @@ warn-if-unsupported-check = Предупреждать
 player-version = Версия Flash Player'а
 custom-framerate = Польз. частота кадров
 custom-framerate-suffix = { " " } FPS
+dummy-external-interface = Фиктивный внешний интерфейс
+dummy-external-interface-check = Включить
