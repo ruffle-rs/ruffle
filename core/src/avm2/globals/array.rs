@@ -102,6 +102,19 @@ pub fn instance_init<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn class_call<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(activation
+        .avm2()
+        .classes()
+        .array
+        .construct(activation, args)?
+        .into())
+}
+
 /// Implements `Array`'s class initializer.
 pub fn class_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -1272,6 +1285,7 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
     let mut write = class.write(mc);
 
     write.set_instance_allocator(array_allocator);
+    write.set_call_handler(Method::from_builtin(class_call, "<Array call handler>", mc));
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(
         &str,
