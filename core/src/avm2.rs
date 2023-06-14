@@ -555,7 +555,7 @@ impl<'gc> Avm2<'gc> {
             .get(self.stack.len() - index - 1)
             .copied()
             .unwrap_or_else(|| {
-                tracing::warn!("Avm1::pop: Stack underflow");
+                tracing::warn!("Avm2::peek: Stack underflow");
                 Value::Undefined
             });
 
