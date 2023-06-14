@@ -944,7 +944,7 @@ pub fn draw_with_quality<'gc>(
                 Err(_) => {
                     return Err(Error::AvmError(argument_error(
                         activation,
-                        "One of the parameters is invalid.",
+                        "Error #2004: One of the parameters is invalid.",
                         2004,
                     )?));
                 }
