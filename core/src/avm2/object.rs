@@ -683,7 +683,15 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     self.delete_property_local(activation, multiname)
                 }
             }
-            _ => Ok(false),
+            _ => {
+                // Similar to the get_property special case for XML/XMLList.
+                if (self.as_xml_object().is_some() || self.as_xml_list_object().is_some())
+                    && multiname.contains_public_namespace()
+                {
+                    return self.delete_property_local(activation, multiname);
+                }
+                Ok(false)
+            }
         }
     }
 

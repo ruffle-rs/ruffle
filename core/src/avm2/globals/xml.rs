@@ -22,7 +22,7 @@ pub fn init<'gc>(
 
     let node = match nodes.as_slice() {
         // XML defaults to an empty text node when nothing was parsed
-        [] => E4XNode::text(activation.context.gc_context, AvmString::default()),
+        [] => E4XNode::text(activation.context.gc_context, AvmString::default(), None),
         [node] => *node,
         _ => {
             return Err(Error::RustError(
@@ -286,16 +286,20 @@ pub fn append_child<'gc>(
     let xml = this.as_xml_object().unwrap();
 
     let child = args.get_object(activation, 0, "child")?;
-    let child = if let Some(child) = child.as_xml_object() {
-        child
+    if let Some(child) = child.as_xml_object() {
+        xml.node()
+            .append_child(activation.context.gc_context, *child.node())?;
+    } else if let Some(list) = child.as_xml_list_object() {
+        if list.target().is_some() {
+            return Err("Cannot append XMLList with target".into());
+        }
+        for child in &*list.children() {
+            xml.node()
+                .append_child(activation.context.gc_context, *child.node())?;
+        }
     } else {
-        return Err(format!("XML.appendChild is not yet implemented for {child:?}").into());
+        return Err(format!("Cannot append non-XML value {child:?}").into());
     };
-
-    let child = child.node();
-
-    xml.node()
-        .append_child(activation.context.gc_context, *child)?;
     Ok(Value::Undefined)
 }
 

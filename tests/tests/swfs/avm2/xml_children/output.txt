@@ -34,3 +34,10 @@ sameName.child.@attr = Inner
 weirdXMl.split(' ') = Weird,content
 emptyList.name() threw: TypeError: Error #1086: The name method only works on lists containing one item.
 multiList.name() threw: TypeError: Error #1086: The name method only works on lists containing one item.
+Before delete: <child name="First child"/>
+<child name="Second child"/>
+childList[0].parent().name() = outer
+After delete: <child name="First child"/>
+<child name="Second child"/>
+childList[0].parent() = undefined
+multiChild after delete: <outer><inner name="Hi"/></outer>
