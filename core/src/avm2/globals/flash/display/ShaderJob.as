@@ -42,7 +42,6 @@ package flash.display {
 
         public function set shader(value:Shader):void {
             this._shader = value;
-            stub_setter("flash.display.ShaderJob", "shader");
         }
 
         public function get target():Object {
@@ -51,7 +50,6 @@ package flash.display {
 
         public function set target(value:Object):void {
             this._target = value;
-            stub_setter("flash.display.ShaderJob", "target");
         }
     }
 }

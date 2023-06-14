@@ -39,7 +39,6 @@ fluent-templates = "0.8.0"
 
 # Deliberately held back to match tracy client used by profiling crate
 tracing-tracy = { version = "=0.10.0", optional = true }
-env_logger = "0.10.0"
 
 [target.'cfg(windows)'.dependencies]
 winapi = "0.3.9"

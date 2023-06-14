@@ -3758,7 +3758,6 @@ dependencies = [
  "egui-wgpu",
  "egui-winit",
  "embed-resource",
- "env_logger",
  "fluent-templates",
  "futures",
  "generational-arena",

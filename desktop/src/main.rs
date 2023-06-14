@@ -68,8 +68,6 @@ fn init() {
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .finish();
 
-    env_logger::init();
-
     #[cfg(feature = "tracy")]
     let subscriber = {
         use tracing_subscriber::layer::SubscriberExt;
