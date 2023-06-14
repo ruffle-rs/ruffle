@@ -150,7 +150,7 @@ impl<'gc> Timers<'gc> {
                     }
                 }
                 TimerCallback::Avm2Callback { closure, params } => {
-                    let domain = context.avm2.global_domain();
+                    let domain = context.avm2.stage_domain();
                     let mut avm2_activation =
                         Avm2Activation::from_domain(context.reborrow(), domain);
                     match closure.call(None, &params, &mut avm2_activation) {

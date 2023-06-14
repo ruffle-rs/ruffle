@@ -92,8 +92,13 @@ pub struct Avm2<'gc> {
     /// The current call stack of the player.
     call_stack: GcCell<'gc, CallStack<'gc>>,
 
-    /// Global scope object.
-    globals: Domain<'gc>,
+    /// This domain is used exclusively for classes from playerglobals
+    playerglobals_domain: Domain<'gc>,
+
+    /// The domain associated with 'stage.loaderInfo.applicationDomain'.
+    /// Note that this is a parent of the root movie clip's domain
+    /// (which can be observed from ActionScript)
+    stage_domain: Domain<'gc>,
 
     /// System classes.
     system_classes: Option<SystemClasses<'gc>>,
@@ -147,14 +152,17 @@ pub struct Avm2<'gc> {
 impl<'gc> Avm2<'gc> {
     /// Construct a new AVM interpreter.
     pub fn new(context: &mut GcContext<'_, 'gc>, player_version: u8) -> Self {
-        let globals = Domain::global_domain(context.gc_context);
+        let playerglobals_domain = Domain::uninitialized_domain(context.gc_context, None);
+        let stage_domain =
+            Domain::uninitialized_domain(context.gc_context, Some(playerglobals_domain));
 
         Self {
             player_version,
             stack: Vec::new(),
             scope_stack: Vec::new(),
             call_stack: GcCell::allocate(context.gc_context, CallStack::new()),
-            globals,
+            playerglobals_domain,
+            stage_domain,
             system_classes: None,
 
             public_namespace: Namespace::package("", context),
@@ -186,7 +194,7 @@ impl<'gc> Avm2<'gc> {
     }
 
     pub fn load_player_globals(context: &mut UpdateContext<'_, 'gc>) -> Result<(), Error<'gc>> {
-        let globals = context.avm2.globals;
+        let globals = context.avm2.playerglobals_domain;
         let mut activation = Activation::from_domain(context.reborrow(), globals);
         globals::load_player_globals(&mut activation, globals)
     }
@@ -489,8 +497,8 @@ impl<'gc> Avm2<'gc> {
         Ok(())
     }
 
-    pub fn global_domain(&self) -> Domain<'gc> {
-        self.globals
+    pub fn stage_domain(&self) -> Domain<'gc> {
+        self.stage_domain
     }
 
     /// Pushes an executable on the call stack

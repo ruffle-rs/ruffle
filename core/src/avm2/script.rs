@@ -132,7 +132,7 @@ impl<'gc> TranslationUnit<'gc> {
             return Ok(method.clone());
         }
 
-        let is_global = read.domain.is_avm2_global_domain(activation);
+        let is_global = read.domain.is_playerglobals_domain(activation);
         drop(read);
 
         let bc_method =
@@ -145,6 +145,10 @@ impl<'gc> TranslationUnit<'gc> {
                 if let Some((name, native)) =
                     activation.avm2().native_method_table[method_index.0 as usize]
                 {
+                    assert_eq!(
+                        bc_method.abc_method_body, None,
+                        "Method in native method table has a bytecode body!"
+                    );
                     let variadic = bc_method.is_variadic();
                     // Set the method name and function pointer from the table.
                     return Method::from_builtin_and_params(

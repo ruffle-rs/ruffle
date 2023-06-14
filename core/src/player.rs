@@ -8,7 +8,7 @@ use crate::avm1::{Activation, ActivationIdentifier};
 use crate::avm1::{ScriptObject, TObject, Value};
 use crate::avm2::{
     object::LoaderInfoObject, object::TObject as _, Activation as Avm2Activation, Avm2, CallStack,
-    Domain as Avm2Domain, Object as Avm2Object,
+    Object as Avm2Object,
 };
 use crate::backend::{
     audio::{AudioBackend, AudioManager},
@@ -377,19 +377,14 @@ impl Player {
                 .stage
                 .set_movie(context.gc_context, context.swf.clone());
 
-            let global_domain = context.avm2.global_domain();
-            let mut global_activation =
-                Avm2Activation::from_domain(context.reborrow(), global_domain);
-            let domain = Avm2Domain::movie_domain(&mut global_activation, global_domain);
-
-            let mut activation =
-                Avm2Activation::from_domain(global_activation.context.reborrow(), domain);
+            let stage_domain = context.avm2.stage_domain();
+            let mut activation = Avm2Activation::from_domain(context.reborrow(), stage_domain);
 
             activation
                 .context
                 .library
                 .library_for_movie_mut(activation.context.swf.clone())
-                .set_avm2_domain(domain);
+                .set_avm2_domain(stage_domain);
             activation.context.ui.set_mouse_visible(true);
 
             let swf = activation.context.swf.clone();

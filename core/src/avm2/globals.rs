@@ -743,5 +743,9 @@ fn load_playerglobal<'gc>(
 
     // Domain memory must be initialized after playerglobals is loaded because it relies on ByteArray.
     domain.init_default_domain_memory(activation)?;
+    activation
+        .avm2()
+        .stage_domain()
+        .init_default_domain_memory(activation)?;
     Ok(())
 }
