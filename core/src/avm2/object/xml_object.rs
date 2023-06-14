@@ -323,7 +323,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
                 return Err(format!("Cannot set attribute {:?} without a local name", name).into());
             };
             let value = value.coerce_to_string(activation)?;
-            let new_attr = E4XNode::attribute(mc, local_name, value);
+            let new_attr = E4XNode::attribute(mc, local_name, value, *self.node());
 
             let write = self.0.write(mc);
             let mut kind = write.node.kind_mut(mc);
@@ -337,6 +337,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
             return Ok(());
         }
 
+        let self_node = *self.node();
         let write = self.0.write(mc);
         let mut kind = write.node.kind_mut(mc);
         let E4XNodeKind::Element {
@@ -367,13 +368,13 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
             [] => {
                 let element_with_text =
                     E4XNode::element(mc, name.local_name().unwrap(), write.node);
-                element_with_text.append_child(mc, E4XNode::text(mc, text))?;
+                element_with_text.append_child(mc, E4XNode::text(mc, text, Some(self_node)))?;
                 children.push(element_with_text);
                 Ok(())
             }
             [child] => {
                 child.remove_all_children(mc);
-                child.append_child(mc, E4XNode::text(mc, text))?;
+                child.append_child(mc, E4XNode::text(mc, text, Some(self_node)))?;
                 Ok(())
             }
             _ => Err(format!("Can not replace multiple elements yet: {name:?} = {value:?}").into()),
@@ -397,15 +398,26 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         let write = self.0.write(mc);
         let mut kind = write.node.kind_mut(mc);
         let E4XNodeKind::Element {
+            children,
             attributes,..
         } = &mut *kind else {
             return Ok(false);
         };
 
+        let retain_non_matching = |node: &E4XNode<'gc>| {
+            if node.matches_name(name) {
+                node.set_parent(None, mc);
+                false
+            } else {
+                true
+            }
+        };
+
         if name.is_attribute() {
-            attributes.retain(|attr| !attr.matches_name(name));
-            return Ok(true);
+            attributes.retain(retain_non_matching);
+        } else {
+            children.retain(retain_non_matching);
         }
-        Err(format!("Can not delete non-attribute XML name {:?} yet", name).into())
+        Ok(true)
     }
 }

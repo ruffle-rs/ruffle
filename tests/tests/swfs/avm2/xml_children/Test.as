@@ -3,6 +3,8 @@
 	
 	public class Test {
 		public static function test() {
+			XML.prettyPrinting = false;
+			
 			var outer = <outer>
 				<child kind="A">First Child</child>
 				<child kind="B">Second Child</child>
@@ -96,6 +98,19 @@
 				// Uncomment this when it does
 				//trace("Caught exception: " + e);
 			}
+		
+			var multiChild = <outer>
+				<child name="First child"/>
+				<inner name ="Hi"/>
+				<child name ="Second child"/>
+			</outer>;
+			var childList = multiChild.child;
+			trace("Before delete: " + childList);
+			trace("childList[0].parent().name() = " + childList[0].parent().name());
+			delete multiChild.child;
+			trace("After delete: " + childList);
+			trace("childList[0].parent() = " + childList[0].parent());
+			trace("multiChild after delete: " + multiChild);
 		}
 	}
 }
