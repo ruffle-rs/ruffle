@@ -46,25 +46,28 @@ impl<'gc> Domain<'gc> {
     /// Create a new domain with no parent.
     ///
     /// This is intended exclusively for creating the player globals domain,
-    /// hence the name.
+    /// and stage domain, which are created before ByteArray is available.
     ///
     /// Note: the global domain will be created without valid domain memory.
     /// You must initialize domain memory later on after the ByteArray class is
     /// instantiated but before user code runs.
-    pub fn global_domain(mc: MutationContext<'gc, '_>) -> Domain<'gc> {
+    pub fn uninitialized_domain(
+        mc: MutationContext<'gc, '_>,
+        parent: Option<Domain<'gc>>,
+    ) -> Domain<'gc> {
         Self(GcCell::allocate(
             mc,
             DomainData {
                 defs: PropertyMap::new(),
                 classes: PropertyMap::new(),
-                parent: None,
+                parent,
                 domain_memory: None,
             },
         ))
     }
 
-    pub fn is_avm2_global_domain(&self, activation: &mut Activation<'_, 'gc>) -> bool {
-        activation.avm2().global_domain().0.as_ptr() == self.0.as_ptr()
+    pub fn is_playerglobals_domain(&self, activation: &mut Activation<'_, 'gc>) -> bool {
+        activation.avm2().playerglobals_domain.0.as_ptr() == self.0.as_ptr()
     }
 
     /// Create a new domain with a given parent.

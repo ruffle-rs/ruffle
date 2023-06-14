@@ -18,7 +18,7 @@ pub fn init<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         let parent_domain = if matches!(args[0], Value::Null) {
-            activation.avm2().global_domain()
+            activation.avm2().stage_domain()
         } else {
             args.get_object(activation, 0, "parentDomain")?
                 .as_application_domain()
@@ -52,6 +52,9 @@ pub fn get_parent_domain<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(appdomain) = this.and_then(|this| this.as_application_domain()) {
         if let Some(parent_domain) = appdomain.parent_domain() {
+            if parent_domain.is_playerglobals_domain(activation) {
+                return Ok(Value::Null);
+            }
             return Ok(DomainObject::from_domain(activation, parent_domain)?.into());
         }
     }

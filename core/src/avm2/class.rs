@@ -313,7 +313,7 @@ impl<'gc> Class<'gc> {
 
         // When loading a class from our playerglobal, grab the corresponding native
         // allocator function from the table (which may be `None`)
-        if unit.domain().is_avm2_global_domain(activation) {
+        if unit.domain().is_playerglobals_domain(activation) {
             instance_allocator = activation.avm2().native_instance_allocator_table
                 [class_index as usize]
                 .map(|(_name, ptr)| Allocator(ptr));
