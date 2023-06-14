@@ -99,6 +99,7 @@ pub struct Avm2<'gc> {
     system_classes: Option<SystemClasses<'gc>>,
 
     pub public_namespace: Namespace<'gc>,
+    pub internal_namespace: Namespace<'gc>,
     pub as3_namespace: Namespace<'gc>,
     pub vector_public_namespace: Namespace<'gc>,
     pub vector_internal_namespace: Namespace<'gc>,
@@ -157,6 +158,7 @@ impl<'gc> Avm2<'gc> {
             system_classes: None,
 
             public_namespace: Namespace::package("", context),
+            internal_namespace: Namespace::internal("", context),
             as3_namespace: Namespace::package("http://adobe.com/AS3/2006/builtin", context),
             vector_public_namespace: Namespace::package("__AS3__.vec", context),
             vector_internal_namespace: Namespace::internal("__AS3__.vec", context),

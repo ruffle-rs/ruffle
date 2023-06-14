@@ -271,6 +271,15 @@ pub fn set_property_is_enumerable<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Undocumented `Object.init`, which is a no-op
+pub fn init<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(Value::Undefined)
+}
+
 /// Construct `Object`'s class.
 pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
     let gc_context = activation.context.gc_context;
@@ -291,7 +300,7 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
     write.define_class_trait(Trait::from_const(
         QName::new(activation.avm2().public_namespace, "length"),
         Multiname::new(activation.avm2().public_namespace, "int"),
-        None,
+        Some(1.into()),
     ));
 
     // Fixed traits (in AS3 namespace)
@@ -304,6 +313,13 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
         gc_context,
         activation.avm2().as3_namespace,
         AS3_INSTANCE_METHODS,
+    );
+
+    const INTERNAL_INIT_METHOD: &[(&str, NativeMethodImpl)] = &[("init", init)];
+    write.define_builtin_class_methods(
+        gc_context,
+        activation.avm2().internal_namespace,
+        INTERNAL_INIT_METHOD,
     );
 
     object_class
