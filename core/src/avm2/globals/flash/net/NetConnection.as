@@ -14,6 +14,10 @@ package flash.net {
             stub_method("flash.net.NetConnection", "connect");
         }
 
+        public function addHeader(operation:String, mustUnderstand:Boolean = false, param:Object = null):void {
+            stub_method("flash.net.NetConnection", "addHeader");
+        }
+
         public function call(command:String, responder:Responder, ... arguments):void {
             stub_method("flash.net.NetConnection", "call");
         }
