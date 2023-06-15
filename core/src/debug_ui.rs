@@ -62,7 +62,7 @@ impl DebugUi {
         });
 
         self.movies
-            .retain(|movie, window| window.show(egui_ctx, context, movie));
+            .retain(|movie, window| window.show(egui_ctx, context, movie, &mut messages));
 
         for message in messages {
             match message {
