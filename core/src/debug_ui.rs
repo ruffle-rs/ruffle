@@ -9,7 +9,7 @@ use crate::debug_ui::avm1::Avm1ObjectWindow;
 use crate::debug_ui::avm2::Avm2ObjectWindow;
 use crate::debug_ui::display_object::DisplayObjectWindow;
 use crate::debug_ui::handle::{AVM1ObjectHandle, AVM2ObjectHandle, DisplayObjectHandle};
-use crate::debug_ui::movie::MovieWindow;
+use crate::debug_ui::movie::{MovieListWindow, MovieWindow};
 use crate::display_object::TDisplayObject;
 use crate::tag_utils::SwfMovie;
 use gc_arena::DynamicRootSet;
@@ -29,6 +29,7 @@ pub struct DebugUi {
     avm2_objects: HashMap<AVM2ObjectHandle, Avm2ObjectWindow>,
     queued_messages: Vec<Message>,
     items_to_save: Vec<ItemToSave>,
+    movie_list: Option<MovieListWindow>,
 }
 
 #[derive(Debug)]
@@ -39,6 +40,7 @@ pub enum Message {
     TrackAVM2Object(AVM2ObjectHandle),
     TrackStage,
     TrackTopLevelMovie,
+    ShowKnownMovies,
     SaveFile(ItemToSave),
 }
 
@@ -64,6 +66,12 @@ impl DebugUi {
         self.movies
             .retain(|movie, window| window.show(egui_ctx, context, movie, &mut messages));
 
+        if let Some(mut movie_list) = self.movie_list.take() {
+            if movie_list.show(egui_ctx, context, &mut messages) {
+                self.movie_list = Some(movie_list);
+            }
+        }
+
         for message in messages {
             match message {
                 Message::TrackDisplayObject(object) => {
@@ -86,6 +94,9 @@ impl DebugUi {
                 }
                 Message::SaveFile(file) => {
                     self.items_to_save.push(file);
+                }
+                Message::ShowKnownMovies => {
+                    self.movie_list = Some(Default::default());
                 }
             }
         }

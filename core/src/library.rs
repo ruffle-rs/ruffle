@@ -422,6 +422,10 @@ impl<'gc> Library<'gc> {
             .or_insert_with(MovieLibrary::new)
     }
 
+    pub fn known_movies(&self) -> Vec<Arc<SwfMovie>> {
+        self.movie_libraries.keys().collect()
+    }
+
     /// Returns the device font for use when a font is unavailable.
     pub fn device_font(&self) -> Option<Font<'gc>> {
         self.device_font

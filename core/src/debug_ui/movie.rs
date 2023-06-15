@@ -5,12 +5,61 @@ use crate::tag_utils::SwfMovie;
 use egui::{CollapsingHeader, Grid, Id, TextEdit, Ui, Window};
 use std::sync::Arc;
 use swf::CharacterId;
+use url::Url;
 
 #[derive(Debug, Eq, PartialEq, Hash, Default, Copy, Clone)]
 enum Panel {
     #[default]
     Information,
     Characters,
+}
+
+#[derive(Debug, Default)]
+pub struct MovieListWindow {}
+
+impl MovieListWindow {
+    pub fn show(
+        &mut self,
+        egui_ctx: &egui::Context,
+        context: &mut UpdateContext,
+        messages: &mut Vec<Message>,
+    ) -> bool {
+        let mut keep_open = true;
+
+        Window::new("Known Movie List")
+            .open(&mut keep_open)
+            .scroll2([true, true])
+            .show(egui_ctx, |ui| {
+                let movies = context.library.known_movies();
+
+                Grid::new("known_movie_list").num_columns(3).show(ui, |ui| {
+                    ui.strong("Name");
+                    ui.strong("URL");
+                    ui.strong("AVM");
+                    ui.strong("Size");
+                    ui.strong("Save");
+                    ui.end_row();
+
+                    for movie in movies {
+                        open_movie_button(ui, &movie, messages);
+                        ui.label(movie.url());
+                        if movie.is_action_script_3() {
+                            ui.label("AVM 2");
+                        } else {
+                            ui.label("AVM 1");
+                        }
+                        ui.label(movie.uncompressed_len().to_string());
+                        if movie.data().is_empty() {
+                            ui.weak("(Empty)");
+                        } else if ui.button("Save File...").clicked() {
+                            save_swf(&movie, messages);
+                        }
+                        ui.end_row();
+                    }
+                });
+            });
+        keep_open
+    }
 }
 
 #[derive(Debug, Default)]
@@ -109,22 +158,7 @@ impl MovieWindow {
         messages: &mut Vec<Message>,
     ) {
         if !movie.data().is_empty() && ui.button("Save File...").clicked() {
-            let suggested_name = movie
-                .url()
-                .rsplit_once('.')
-                .map(|(_left, right)| right.to_string())
-                .unwrap_or_else(|| format!("{:p}.swf", Arc::as_ptr(movie)));
-            let mut data = Vec::new();
-            if let Err(e) =
-                swf::write::write_swf_raw_tags(movie.header().swf_header(), movie.data(), &mut data)
-            {
-                tracing::error!("Couldn't write swf: {e}");
-            } else {
-                messages.push(Message::SaveFile(ItemToSave {
-                    suggested_name,
-                    data,
-                }));
-            }
+            save_swf(movie, messages);
         }
 
         Grid::new(ui.id().with("information"))
@@ -261,4 +295,26 @@ pub fn open_character_button(ui: &mut Ui, character: &Character) {
             ui.label("BinaryData");
         }
     };
+}
+
+fn save_swf(movie: &Arc<SwfMovie>, messages: &mut Vec<Message>) {
+    let suggested_name = if let Ok(url) = Url::parse(movie.url()) {
+        url.path_segments()
+            .and_then(|segments| segments.last())
+            .map(|str| str.to_string())
+    } else {
+        None
+    };
+    let mut data = Vec::new();
+    if let Err(e) =
+        swf::write::write_swf_raw_tags(movie.header().swf_header(), movie.data(), &mut data)
+    {
+        tracing::error!("Couldn't write swf: {e}");
+    } else {
+        messages.push(Message::SaveFile(ItemToSave {
+            suggested_name: suggested_name
+                .unwrap_or_else(|| format!("{:p}.swf", Arc::as_ptr(movie))),
+            data,
+        }));
+    }
 }
