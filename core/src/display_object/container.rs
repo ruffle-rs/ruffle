@@ -642,11 +642,11 @@ impl<'gc> ChildContainer<'gc> {
                                     &mut activation,
                                 );
                                 if let Err(e) = res {
-                                    tracing::error!("Failed to set child {} ({:?}) to null on parent obj {:?}: {:?}", child.name(), child, parent_obj, e.detailed_message(&mut activation));
+                                    tracing::error!("Failed to set child {} ({:?}) to null on parent obj {:?}: {:?}", child.name(), child, parent_obj, e);
                                 }
                             }
                             Err(e) => {
-                                tracing::error!("Failed to get current value of child {} ({:?}) on parent obj {:?}: {:?}", child.name(), child, parent_obj, e.detailed_message(&mut activation));
+                                tracing::error!("Failed to get current value of child {} ({:?}) on parent obj {:?}: {:?}", child.name(), child, parent_obj, e);
                             }
                         }
                     }

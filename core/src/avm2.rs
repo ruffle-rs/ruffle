@@ -335,9 +335,9 @@ impl<'gc> Avm2<'gc> {
         let mut activation = Activation::from_nothing(context.reborrow());
         if let Err(err) = events::dispatch_event(&mut activation, target, event) {
             tracing::error!(
-                "Encountered AVM2 error when dispatching `{}` event: {}",
+                "Encountered AVM2 error when dispatching `{}` event: {:?}",
                 event_name,
-                err.detailed_message(&mut activation),
+                err,
             );
             // TODO: push the error onto `loaderInfo.uncaughtErrorEvents`
         }
@@ -427,9 +427,9 @@ impl<'gc> Avm2<'gc> {
                 if object.is_of_type(on_type, &mut activation.context) {
                     if let Err(err) = events::dispatch_event(&mut activation, object, event) {
                         tracing::error!(
-                            "Encountered AVM2 error when broadcasting `{}` event: {}",
+                            "Encountered AVM2 error when broadcasting `{}` event: {:?}",
                             event_name,
-                            err.detailed_message(&mut activation),
+                            err,
                         );
                         // TODO: push the error onto `loaderInfo.uncaughtErrorEvents`
                     }
@@ -455,7 +455,7 @@ impl<'gc> Avm2<'gc> {
         let mut evt_activation = Activation::from_domain(context.reborrow(), domain);
         callable
             .call(receiver, args, &mut evt_activation)
-            .map_err(|e| e.detailed_message(&mut evt_activation))?;
+            .map_err(|e| format!("{e:?}"))?;
 
         Ok(())
     }

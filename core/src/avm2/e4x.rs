@@ -71,11 +71,11 @@ impl<'gc> E4XNode<'gc> {
         ))
     }
 
-    pub fn text(mc: MutationContext<'gc, '_>, text: AvmString<'gc>) -> Self {
+    pub fn text(mc: MutationContext<'gc, '_>, text: AvmString<'gc>, parent: Option<Self>) -> Self {
         E4XNode(GcCell::allocate(
             mc,
             E4XNodeData {
-                parent: None,
+                parent,
                 local_name: None,
                 kind: E4XNodeKind::Text(text),
             },
@@ -100,11 +100,12 @@ impl<'gc> E4XNode<'gc> {
         mc: MutationContext<'gc, '_>,
         name: AvmString<'gc>,
         value: AvmString<'gc>,
+        parent: E4XNode<'gc>,
     ) -> Self {
         E4XNode(GcCell::allocate(
             mc,
             E4XNodeData {
-                parent: None,
+                parent: Some(parent),
                 local_name: Some(name),
                 kind: E4XNodeKind::Attribute(value),
             },
@@ -510,6 +511,10 @@ impl<'gc> E4XNode<'gc> {
 
     pub fn local_name(&self) -> Option<AvmString<'gc>> {
         self.0.read().local_name
+    }
+
+    pub fn set_parent(&self, parent: Option<E4XNode<'gc>>, mc: MutationContext<'gc, '_>) {
+        self.0.write(mc).parent = parent;
     }
 
     pub fn parent(&self) -> Option<E4XNode<'gc>> {

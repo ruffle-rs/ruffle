@@ -55,5 +55,44 @@
     },
     "status_tabs_error": {
         "message": "Um erro ocorreu durante a procura do separador atual."
+    },
+    "status_message_init": {
+        "message": "Verificando o estado do Ruffle na página atual…"
+    },
+    "status_result_running": {
+        "message": "O Ruffle está carregado e pronto para executar o conteúdo Flash na página atual."
+    },
+    "status_result_running_protected": {
+        "message": "O Ruffle está carregado e executando o conteúdo Flash solicitado."
+    },
+    "status_result_optout": {
+        "message": "O Ruffle não foi carregado porque a página atual marcou-se como incompatível."
+    },
+    "status_result_disabled": {
+        "message": "O Ruffle não está carregado porque está desativado."
+    },
+    "status_result_error": {
+        "message": "Ocorreu um erro ao consultar a página atual do Ruffle."
+    },
+    "status_result_protected": {
+        "message": "O Ruffle não pode carregar em páginas protegidas do navegador."
+    },
+    "action_reload": {
+        "message": "Recarregue a página para aplicar as alterações"
+    },
+    "open_settings_page": {
+        "message": "Abrir página de configurações"
+    },
+    "settings_page": {
+        "message": "Página de Configurações"
+    },
+    "description": {
+        "message": "Coloca o Flash de volta no site que ele pertence."
+    },
+    "save_settings": {
+        "message": "Salvar configurações"
+    },
+    "settings_saved": {
+        "message": "Configurações salvas"
     }
 }

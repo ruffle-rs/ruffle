@@ -21,6 +21,7 @@ outer.attribute('secondNewAttr') = 5
 outer.@thirdNewAttr = sharedAttr
 outer.attribute('thirdNewAttr') = sharedAttr
 outer.@name = Custom attr value
+outer.@name.parent().name() = outer
 outer.attribute('name') = Custom attr value
 outer.name() = outer
 Attr: firstAttr = Hello
@@ -29,6 +30,6 @@ Attr: newAttr = Some value
 Attr: secondNewAttr = 5
 Attr: thirdNewAttr = sharedAttr
 Attr: name = Custom attr value
-After delete: outer.@name = 
+After delete: outer.@name =  outerName.parent() = undefined
 After replace: outer.@myAttr = Second val
 After delete: outer.@myAttr = 
