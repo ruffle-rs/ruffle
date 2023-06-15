@@ -105,26 +105,38 @@ impl NavigatorBackend for WebNavigatorBackend {
 
         let url = self.resolve_url(url);
 
-        // If allowNetworking is set to internal or none, block all navigate_to_url calls.
+        // If `allowNetworking` is set to `internal` or `none`, block all `navigate_to_url` calls.
         if self.allow_networking != NetworkingAccessMode::All {
             tracing::warn!("SWF tried to open a URL, but opening URLs is not allowed");
             return;
         }
 
         // If `allowScriptAccess` is disabled, reject the `javascript:` scheme.
-        let js_call = if let Ok(url) = Url::parse(&url) {
-            if !self.allow_script_access && url.scheme() == "javascript" {
-                tracing::warn!("SWF tried to run a script, but script access is not allowed");
-                return;
+        // Also reject any attempt to open a URL when `target` is a keyword that affects the current tab.
+        let is_javascript_call = if let Ok(url) = Url::parse(&url) {
+            let is_javascript_scheme = url.scheme() == "javascript";
+            if !self.allow_script_access {
+                if is_javascript_scheme {
+                    tracing::warn!("SWF tried to run a script, but script access is not allowed");
+                    return;
+                } else {
+                    match target.to_lowercase().as_str() {
+                        "_parent" | "_self" | "_top" | "" => {
+                            tracing::warn!("SWF tried to open a URL, but opening URLs in the current tab is prevented by script access");
+                            return;
+                        }
+                        _ => (),
+                    }
+                }
             }
-            url.scheme() == "javascript"
+            is_javascript_scheme
         } else {
             false
         };
 
         let window = window().expect("window()");
 
-        if !js_call {
+        if !is_javascript_call {
             if self.open_url_mode == OpenURLMode::Confirm {
                 let message = format!("The SWF file wants to open the website {}", &url);
                 // TODO: Add a checkbox with a GUI toolkit
@@ -141,7 +153,7 @@ impl NavigatorBackend for WebNavigatorBackend {
                 tracing::warn!("SWF tried to open a website, but opening a website is not allowed");
                 return;
             }
-            // If the user confirmed or if in Allow mode, open the website
+            // If the user confirmed or if in `Allow` mode, open the website.
         }
 
         // TODO: Should we return a result for failed opens? Does Flash care?
