@@ -6,8 +6,13 @@ package flash.display {
     import flash.events.EventDispatcher;
 
     public class ShaderJob extends EventDispatcher {
+
+        private var _shader:Shader;
+        private var _target:Object;
         
         public function ShaderJob(shader:Shader = null, target:Object = null, width:int = 0, height:int = 0) {
+            this._shader = shader;
+            this._target = target;
             stub_constructor("flash.display.ShaderJob");
         }
 
@@ -15,9 +20,7 @@ package flash.display {
             stub_method("flash.display.ShaderJob", "cancel")
         }
 
-        public function start(waitForCompletion:Boolean = false):void {
-            stub_method("flash.display.ShaderJob", "start")
-        }
+        public native function start(waitForCompletion:Boolean = false):void;
 
         public function get height():int {
             stub_getter("flash.display.ShaderJob", "height");
@@ -34,12 +37,19 @@ package flash.display {
         }
 
         public function get shader():Shader {
-            stub_getter("flash.display.ShaderJob", "shader");
-            return null;
+            return this._shader;
         }
 
         public function set shader(value:Shader):void {
-            stub_setter("flash.display.ShaderJob", "shader");
+            this._shader = value;
+        }
+
+        public function get target():Object {
+            return this._target;
+        }
+
+        public function set target(value:Object):void {
+            this._target = value;
         }
     }
 }

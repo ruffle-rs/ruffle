@@ -1,0 +1,98 @@
+<languageVersion : 1.0;>
+kernel Donut
+<   
+	namespace : "8bitavenue";
+    	vendor : "8bitavenue";
+    	version : 1;
+>
+
+{
+	//Donut density
+	parameter float BlockCount
+	<
+		minValue: 1.0;
+		maxValue: 100.0;
+		defaultValue: 5.0;
+	>;
+
+	//Inner circle
+	parameter float Min
+	<
+		minValue: 0.0;
+		maxValue: 1.0;
+		defaultValue: 0.25;
+	>;
+
+	//Outer circle
+	parameter float Max
+	<
+		minValue: 0.0;
+		maxValue: 1.0;
+		defaultValue: 0.45;
+	>;
+
+	//Scale width
+	parameter float Width
+	<
+		minValue: 1.0;
+		maxValue: 1000.0;
+		defaultValue: 100.0;
+	>;
+
+	//Scale height
+	parameter float Height
+	<
+		minValue: 1.0;
+		maxValue: 1000.0;
+		defaultValue: 100.0;
+	>;
+
+	//Background color
+	parameter pixel4 color
+	<
+		minValue: float4(0.0,0.0,0.0,0.0);
+		maxValue: float4(1.0,1.0,1.0,1.0);
+		defaultValue: float4(0.2, 0.2, 0.2, 1.0);
+	>;
+
+	//Input image
+	input image4 src;
+
+	//Output image
+	output pixel4 dst;
+
+	//Apply this filter
+	void evaluatePixel()
+	{
+		//Calculate block size
+   		float myblockcount = BlockCount/5.0;
+		float BlockSize = 1.0/myblockcount;
+        
+   		float2 temp = outCoord();
+   		temp.x = temp.x/Width;
+   		temp.y = temp.y/Height;
+
+		//Calculate block position and center
+   		float2 blockPos = floor(temp * myblockcount);
+   		float2 blockCenter = blockPos * BlockSize + BlockSize * 0.5;
+
+		//Pixel distance from center
+		float dist = length(temp - blockCenter) * myblockcount;
+
+		//If pixel is inside inner circle
+		//or outside outer circle then color 
+		//it with background color
+		//otherwise color it with the color
+		//of the pixel at the center
+   		if(dist < Min || dist > Max)
+   		{
+      			dst = color;
+   		}
+		else
+		{
+			blockCenter.x = blockCenter.x * Width;
+			blockCenter.y = blockCenter.y * Height;
+			dst = sampleNearest(src, blockCenter);
+		}
+	}
+}

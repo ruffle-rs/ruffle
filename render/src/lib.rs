@@ -5,6 +5,7 @@ pub mod bitmap;
 pub mod error;
 pub mod filters;
 pub mod matrix;
+pub mod pixel_bender;
 pub mod shape_utils;
 pub mod transform;
 pub mod utils;

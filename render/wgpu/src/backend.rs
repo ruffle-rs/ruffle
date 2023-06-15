@@ -20,6 +20,9 @@ use ruffle_render::bitmap::{
 use ruffle_render::commands::CommandList;
 use ruffle_render::error::Error as BitmapError;
 use ruffle_render::filters::Filter;
+use ruffle_render::pixel_bender::{
+    PixelBenderShader, PixelBenderShaderArgument, PixelBenderShaderHandle,
+};
 use ruffle_render::quality::StageQuality;
 use ruffle_render::shape_utils::DistilledShape;
 use ruffle_render::tessellator::ShapeTessellator;
@@ -36,7 +39,7 @@ use tracing::instrument;
 const TEXTURE_READS_BEFORE_PROMOTION: u8 = 5;
 
 pub struct WgpuRenderBackend<T: RenderTarget> {
-    descriptors: Arc<Descriptors>,
+    pub(crate) descriptors: Arc<Descriptors>,
     uniform_buffers_storage: BufferStorage<Transforms>,
     color_buffers_storage: BufferStorage<ColorAdjustments>,
     target: T,
@@ -48,7 +51,7 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
     viewport_scale_factor: f64,
     texture_pool: TexturePool,
     offscreen_texture_pool: TexturePool,
-    offscreen_buffer_pool: Arc<BufferPool<wgpu::Buffer, BufferDimensions>>,
+    pub(crate) offscreen_buffer_pool: Arc<BufferPool<wgpu::Buffer, BufferDimensions>>,
 }
 
 impl WgpuRenderBackend<SwapChainTarget> {
@@ -757,6 +760,22 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 ..
             }) => unreachable!("Buffer must be Borrowed as it was set to be Borrowed earlier"),
         }
+    }
+
+    fn compile_pixelbender_shader(
+        &mut self,
+        shader: PixelBenderShader,
+    ) -> Result<PixelBenderShaderHandle, BitmapError> {
+        self.compile_pixelbender_shader_impl(shader)
+    }
+
+    fn run_pixelbender_shader(
+        &mut self,
+        shader: PixelBenderShaderHandle,
+        arguments: &[PixelBenderShaderArgument],
+        target_handle: BitmapHandle,
+    ) -> Result<Box<dyn SyncHandle>, BitmapError> {
+        self.run_pixelbender_shader_impl(shader, arguments, target_handle)
     }
 }
 

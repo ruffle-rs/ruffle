@@ -7,6 +7,7 @@ use crate::bitmap::{
 };
 use crate::commands::CommandList;
 use crate::error::Error;
+use crate::pixel_bender::{PixelBenderShader, PixelBenderShaderArgument, PixelBenderShaderHandle};
 use crate::quality::StageQuality;
 use crate::shape_utils::DistilledShape;
 use swf::Color;
@@ -98,4 +99,22 @@ impl RenderBackend for NullRenderer {
     }
 
     fn set_quality(&mut self, _quality: StageQuality) {}
+
+    fn run_pixelbender_shader(
+        &mut self,
+        _shader: PixelBenderShaderHandle,
+        _arguments: &[PixelBenderShaderArgument],
+        _target: BitmapHandle,
+    ) -> Result<Box<dyn SyncHandle>, Error> {
+        Err(Error::Unimplemented("Pixel bender shader".into()))
+    }
+
+    fn compile_pixelbender_shader(
+        &mut self,
+        _shader: PixelBenderShader,
+    ) -> Result<PixelBenderShaderHandle, Error> {
+        Err(Error::Unimplemented(
+            "Pixel bender shader compilation".into(),
+        ))
+    }
 }

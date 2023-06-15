@@ -1,0 +1,36 @@
+     <languageVersion : 1.0;>
+     
+     kernel DoNothing
+     <
+         namespace: "Adobe::Example";
+         vendor: "Adobe examples";
+         version: 1;
+         description: "A shader that does nothing, but does it well.";
+     >
+     {
+     
+         output pixel4 dst;
+         
+         parameter float radius
+         <
+             description: "The radius of the effect";
+             minValue: 0.0;
+             maxValue: 50.0;
+             defaultValue: 25.0;
+         >;
+         
+        parameter float otherParam
+         <
+             description: "Other param";
+             minValue: 0.0;
+             maxValue: 255.0;
+             defaultValue: 25.0;
+         >;
+         
+         input image4 src;
+     
+         void evaluatePixel()
+         {
+             dst = float4((otherParam + radius) / 255.0, 0.0, 0.0, 1.0);
+         }
+     }

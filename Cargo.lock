@@ -2811,6 +2811,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "naga-pixelbender"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bitflags 2.3.1",
+ "naga",
+ "ruffle_render",
+]
+
+[[package]]
 name = "naga_oil"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3793,6 +3803,7 @@ name = "ruffle_render"
 version = "0.1.0"
 dependencies = [
  "approx",
+ "byteorder",
  "clap",
  "downcast-rs",
  "enum-map",
@@ -3803,6 +3814,8 @@ dependencies = [
  "jpeg-decoder",
  "lru",
  "lyon",
+ "num-derive",
+ "num-traits",
  "png",
  "ruffle_wstr",
  "serde",
@@ -3859,9 +3872,11 @@ dependencies = [
  "futures",
  "gc-arena",
  "image",
+ "indexmap",
  "lru",
  "naga",
  "naga-agal",
+ "naga-pixelbender",
  "naga_oil",
  "ouroboros",
  "profiling",

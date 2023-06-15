@@ -67,6 +67,7 @@ fn init() {
     let subscriber = tracing_subscriber::fmt::Subscriber::builder()
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .finish();
+
     #[cfg(feature = "tracy")]
     let subscriber = {
         use tracing_subscriber::layer::SubscriberExt;
