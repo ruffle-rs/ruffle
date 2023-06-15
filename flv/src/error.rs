@@ -1,7 +1,7 @@
-use std::io::Error as IoError;
+use std::io::{Error as IoError, ErrorKind as IoErrorKind};
 use thiserror::Error;
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, Clone)]
 pub enum Error {
     #[error("the FLV parser ran out of data")]
     EndOfData,
@@ -51,13 +51,13 @@ pub enum Error {
     #[error("the FLV contains a tag with unknown type {0}")]
     UnknownTagType(u8),
 
-    #[error("IO error ({0})")]
-    IoError(IoError),
+    #[error("IO error ({0}, {1})")]
+    IoError(IoErrorKind, String),
 }
 
 impl From<IoError> for Error {
     fn from(error: IoError) -> Self {
-        Self::IoError(error)
+        Self::IoError(error.kind(), error.to_string())
     }
 }
 
@@ -80,36 +80,8 @@ impl PartialEq for Error {
             (Self::UnknownVideoCommandType(s), Self::UnknownVideoCommandType(o)) => s == o,
             (Self::UnknownAvcPacketType(s), Self::UnknownAvcPacketType(o)) => s == o,
             (Self::UnknownTagType(s), Self::UnknownTagType(o)) => s == o,
-            (Self::IoError(s), Self::IoError(o)) => s.kind() == o.kind(),
+            (Self::IoError(sk, ss), Self::IoError(ok, os)) => sk == ok && ss == os,
             _ => false,
-        }
-    }
-}
-
-impl Clone for Error {
-    fn clone(&self) -> Self {
-        match self {
-            Self::EndOfData => Self::EndOfData,
-            Self::PointerTooBig => Self::PointerTooBig,
-            Self::WrongMagic => Self::WrongMagic,
-            Self::UnknownValueType => Self::UnknownValueType,
-            Self::ShortAudioBlock => Self::ShortAudioBlock,
-            Self::UnknownAudioFormatType(unk) => Self::UnknownAudioFormatType(*unk),
-            Self::UnknownAudioRate(unk) => Self::UnknownAudioRate(*unk),
-            Self::UnknownAudioSampleSize(unk) => Self::UnknownAudioSampleSize(*unk),
-            Self::UnknownAudioChannelCount(unk) => Self::UnknownAudioChannelCount(*unk),
-            Self::UnknownAacPacketType(unk) => Self::UnknownAacPacketType(*unk),
-            Self::ShortVideoBlock => Self::ShortVideoBlock,
-            Self::UnknownVideoFrameType(unk) => Self::UnknownVideoFrameType(*unk),
-            Self::UnknownVideoCodec(unk) => Self::UnknownVideoCodec(*unk),
-            Self::UnknownVideoCommandType(unk) => Self::UnknownVideoCommandType(*unk),
-            Self::UnknownAvcPacketType(unk) => Self::UnknownAvcPacketType(*unk),
-            Self::UnknownTagType(unk) => Self::UnknownTagType(*unk),
-
-            // IOError cannot be cloned, since you can attach arbitrary error
-            // types to it. Instead, cloned FLV errors contain only the error
-            // kind and text, which can be cloned.
-            Self::IoError(ioe) => Self::IoError(IoError::new(ioe.kind(), ioe.to_string())),
         }
     }
 }
