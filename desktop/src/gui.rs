@@ -266,6 +266,12 @@ impl RuffleGui {
                                 player.debug_ui().queue_message(DebugMessage::TrackTopLevelMovie);
                             }
                         }
+                        if Button::new(text(&self.locale, "debug-menu-open-movie-list")).ui(ui).clicked() {
+                            ui.close_menu();
+                            if let Some(player) = &mut player {
+                                player.debug_ui().queue_message(DebugMessage::ShowKnownMovies);
+                            }
+                        }
                     });
                 });
                 menu::menu_button(ui, text(&self.locale, "help-menu"), |ui| {
