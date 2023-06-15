@@ -37,7 +37,7 @@
         "webpack-cli": "^5.1.3"
     },
     "optionalDependencies": {
-        "chromedriver": "^113.0.0"
+        "chromedriver": "^114.0.0"
     },
     "scripts": {
         "build": "npm run build --workspace=ruffle-core && npm run build --workspace=ruffle-demo --workspace=ruffle-extension --workspace=ruffle-selfhosted",
