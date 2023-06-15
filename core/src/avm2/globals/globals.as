@@ -199,6 +199,7 @@ include "flash/filters/DisplacementMapFilterMode.as"
 include "flash/filters/DropShadowFilter.as"
 include "flash/filters/GlowFilter.as"
 include "flash/filters/GradientGlowFilter.as"
+include "flash/filters/ShaderFilter.as"
 
 include "flash/geom/ColorTransform.as"
 include "flash/geom/Matrix.as"
