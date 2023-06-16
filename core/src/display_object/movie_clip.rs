@@ -2377,10 +2377,6 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         self.0.read().movie()
     }
 
-    fn swf_version(&self) -> u8 {
-        self.0.read().movie().version()
-    }
-
     fn enter_frame(&self, context: &mut UpdateContext<'_, 'gc>) {
         let skip_frame = self.base().should_skip_next_enter_frame();
         //Child removals from looping gotos appear to resolve in reverse order.
