@@ -12,6 +12,7 @@ file-menu = קובץ
 file-menu-open-quick = פתח...
 file-menu-open-advanced = פתיחה מתקדמת...
 file-menu-close = סגירה
+file-menu-reload = רענון
 file-menu-exit = יציאה
 controls-menu = פקדים
 controls-menu-suspend = השעייה
