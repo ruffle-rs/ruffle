@@ -655,6 +655,7 @@ impl<'gc> Value<'gc> {
         });
 
         match self {
+            Value::Object(Object::PrimitiveObject(o)) => o.value_of(activation.context.gc_context),
             Value::Object(o) if hint == Hint::String => {
                 let mut prim = *self;
                 let object = *o;
