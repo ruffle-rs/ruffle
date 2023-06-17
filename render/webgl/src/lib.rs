@@ -150,7 +150,8 @@ pub struct WebGlRenderBackend {
 #[derive(Debug)]
 struct RegistryData {
     gl: Gl,
-    bitmap: Bitmap,
+    width: u32,
+    height: u32,
     texture: WebGlTexture,
 }
 
@@ -1018,7 +1019,8 @@ impl RenderBackend for WebGlRenderBackend {
 
         Ok(BitmapHandle(Arc::new(RegistryData {
             gl: self.gl.clone(),
-            bitmap,
+            width: bitmap.width(),
+            height: bitmap.height(),
             texture,
         })))
     }
@@ -1134,10 +1136,7 @@ impl CommandHandler for WebGlRenderBackend {
 
         // Scale the quad to the bitmap's dimensions.
         let matrix = transform.matrix
-            * ruffle_render::matrix::Matrix::scale(
-                entry.bitmap.width() as f32,
-                entry.bitmap.height() as f32,
-            );
+            * ruffle_render::matrix::Matrix::scale(entry.width as f32, entry.height as f32);
 
         let world_matrix = [
             [matrix.a, matrix.b, 0.0, 0.0],
