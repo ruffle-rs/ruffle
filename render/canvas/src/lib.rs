@@ -163,6 +163,11 @@ impl BitmapData {
         Self::with_image_data(image_data)
     }
 
+    fn empty(width: u32, height: u32) -> Result<Self, JsValue> {
+        let image_data = ImageData::new_with_sw(width, height).into_js_result()?;
+        Self::with_image_data(image_data)
+    }
+
     fn with_image_data(image_data: ImageData) -> Result<Self, JsValue> {
         let window = web_sys::window().expect("window()");
         let document = window.document().expect("document()");
@@ -447,6 +452,7 @@ impl RenderBackend for WebCanvasRenderBackend {
         _commands: CommandList,
         _quality: StageQuality,
         _bounds: PixelRegion,
+        _clear: Option<Color>,
     ) -> Option<Box<dyn SyncHandle>> {
         None
     }
@@ -503,6 +509,11 @@ impl RenderBackend for WebCanvasRenderBackend {
         _target: BitmapHandle,
     ) -> Result<Box<dyn SyncHandle>, Error> {
         Err(Error::Unimplemented("run_pixelbender_shader".into()))
+    }
+
+    fn create_empty_texture(&mut self, width: u32, height: u32) -> Result<BitmapHandle, Error> {
+        let bitmap_data = BitmapData::empty(width, height).map_err(Error::JavascriptError)?;
+        Ok(BitmapHandle(Arc::new(bitmap_data)))
     }
 }
 

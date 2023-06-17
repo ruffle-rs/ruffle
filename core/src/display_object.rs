@@ -13,7 +13,7 @@ use crate::vminterface::Instantiator;
 use bitflags::bitflags;
 use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
-use ruffle_render::transform::Transform;
+use ruffle_render::transform::{Transform, TransformStack};
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 use std::hash::Hash;
@@ -48,13 +48,108 @@ pub use interactive::{Avm2MousePick, InteractiveObject, TInteractiveObject};
 pub use loader_display::LoaderDisplay;
 pub use morph_shape::{MorphShape, MorphShapeStatic};
 pub use movie_clip::{MovieClip, MovieClipWeak, Scene};
-use ruffle_render::commands::CommandHandler;
+use ruffle_render::backend::RenderBackend;
+use ruffle_render::bitmap::{BitmapHandle, BitmapInfo, PixelRegion};
+use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::filters::Filter;
 pub use stage::{Stage, StageAlign, StageDisplayState, StageScaleMode, WindowMode};
 pub use text::Text;
 pub use video::Video;
 
 use self::loader_display::LoaderDisplayWeak;
+
+/// If a `DisplayObject` is marked `cacheAsBitmap` (via tag or AS),
+/// this struct keeps the information required to uphold that cache.
+/// A cached Display Object must have its bitmap invalidated when
+/// any "visual" change happens, which can include:
+/// - Changing the rotation
+/// - Changing the scale
+/// - Changing the alpha
+/// - Changing the color transform
+/// - Any "visual" change to children, **including** position changes
+///
+/// Position changes to the cached Display Object does not regenerate the cache,
+/// allowing Display Objects to move freely without being regenerated.
+///
+/// Flash isn't very good at always recognising when it should be invalidated,
+/// and there's cases such as changing the blend mode which don't always trigger it.
+///
+#[derive(Clone, Debug, Default)]
+pub struct BitmapCache {
+    /// The transform that was used when this cache was last generated.
+    /// Aside from `transform.matrix.tx` and `transform.matrix.ty`,
+    /// any other changes needs to cause an invalidation.
+    transform: Transform,
+    bitmap: Option<BitmapInfo>,
+}
+
+impl BitmapCache {
+    /// Forcefully make this BitmapCache invalid and require regeneration.
+    /// This should be used for changes that aren't automatically detected, such as children.
+    pub fn make_dirty(&mut self) {
+        // Setting the old transform to something invalid is a cheap way of making it invalid,
+        // without reserving an extra field for.
+        self.transform.matrix = Matrix::ZERO;
+    }
+
+    fn is_dirty(&self, other: &Transform, width: u16, height: u16) -> bool {
+        if self.transform.color_transform != other.color_transform {
+            return true;
+        }
+        if self.transform.matrix.a != other.matrix.a
+            || self.transform.matrix.b != other.matrix.b
+            || self.transform.matrix.c != other.matrix.c
+            || self.transform.matrix.d != other.matrix.d
+        {
+            return true;
+        }
+        if let Some(bitmap) = &self.bitmap {
+            if bitmap.width != width || bitmap.height != height {
+                return true;
+            }
+        } else {
+            return true;
+        }
+        false
+    }
+
+    /// Clears any dirtiness and ensure there's an appropriately sized texture allocated
+    fn update(
+        &mut self,
+        renderer: &mut dyn RenderBackend,
+        transform: Transform,
+        width: u16,
+        height: u16,
+    ) {
+        self.transform = transform;
+        if let Some(current) = &mut self.bitmap {
+            if current.width == width && current.height == height {
+                return; // No need to resize it
+            }
+        }
+        if renderer.is_offscreen_supported() && width > 0 && height > 0 {
+            let handle = renderer.create_empty_texture(width as u32, height as u32);
+            self.bitmap = handle.ok().map(|handle| BitmapInfo {
+                width,
+                height,
+                handle,
+            });
+        } else {
+            self.bitmap = None;
+        }
+    }
+
+    /// Explicitly clears the cached value and drops any resources.
+    /// This should only be used in situations where you can't render to the cache and it needs to be
+    /// temporarily disabled.
+    fn clear(&mut self) {
+        self.bitmap = None;
+    }
+
+    fn handle(&self) -> Option<BitmapHandle> {
+        self.bitmap.as_ref().map(|b| b.handle.clone())
+    }
+}
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
@@ -120,6 +215,11 @@ pub struct DisplayObjectBase<'gc> {
     /// changes immediately (without needing wait for a render)
     #[collect(require_static)]
     next_scroll_rect: Rectangle<Twips>,
+
+    /// If this Display Object should cacheAsBitmap - and if so, the cache itself.
+    /// None means not cached, Some means cached.
+    #[collect(require_static)]
+    cache: Option<BitmapCache>,
 }
 
 impl<'gc> Default for DisplayObjectBase<'gc> {
@@ -145,6 +245,7 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
             flags: DisplayObjectFlags::VISIBLE,
             scroll_rect: None,
             next_scroll_rect: Default::default(),
+            cache: None,
         }
     }
 }
@@ -351,6 +452,7 @@ impl<'gc> DisplayObjectBase<'gc> {
 
     fn set_filters(&mut self, filters: Vec<Filter>) {
         self.filters = filters;
+        self.recheck_cache_as_bitmap();
     }
 
     fn alpha(&self) -> f64 {
@@ -500,6 +602,20 @@ impl<'gc> DisplayObjectBase<'gc> {
 
     fn set_is_bitmap_cached(&mut self, value: bool) {
         self.flags.set(DisplayObjectFlags::CACHE_AS_BITMAP, value);
+        self.recheck_cache_as_bitmap();
+    }
+
+    fn bitmap_cache_mut(&mut self) -> Option<&mut BitmapCache> {
+        self.cache.as_mut()
+    }
+
+    fn recheck_cache_as_bitmap(&mut self) {
+        let should_cache = self.is_bitmap_cached() || !self.filters.is_empty();
+        if should_cache && self.cache.is_none() {
+            self.cache = Some(Default::default());
+        } else if !should_cache && self.cache.is_some() {
+            self.cache = None;
+        }
     }
 
     fn instantiated_by_timeline(&self) -> bool {
@@ -557,6 +673,97 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
         None
     };
 
+    let mut cache_info: Option<(BitmapHandle, Option<(u32, u32)>)> = None;
+    let base_transform = context.transform_stack.transform();
+    let bounds: Rectangle<Twips> = this.bounds_with_transform(&base_transform.matrix);
+
+    if let Some(cache) = this.base_mut(context.gc_context).bitmap_cache_mut() {
+        let width = bounds.width().to_pixels().ceil().max(0.0);
+        let height = bounds.height().to_pixels().ceil().max(0.0);
+        if width <= u16::MAX as f64 && height <= u16::MAX as f64 {
+            let width = width as u16;
+            let height = height as u16;
+            if cache.is_dirty(&base_transform, width, height) {
+                cache.update(context.renderer, base_transform.clone(), width, height);
+                cache_info = cache
+                    .handle()
+                    .map(|handle| (handle, Some((width as u32, height as u32))));
+            } else {
+                cache_info = cache.handle().map(|handle| (handle, None));
+            }
+        } else {
+            tracing::warn!(
+                "Skipping cacheAsBitmap for incredibly large object at {:?} ({width} x {height})",
+                this.path()
+            );
+            cache.clear();
+            cache_info = None;
+        }
+    }
+
+    // We can't hold `cache` (which will hold `base`), so this is split up
+    if let Some((handle, dirty)) = cache_info {
+        // In order to render an object to a texture, we need to draw its entire bounds.
+        // Calculate the offset from tx/ty in order to accommodate any drawings that extend the bounds
+        // negatively
+        let offset_x = bounds.x_min - base_transform.matrix.tx;
+        let offset_y = bounds.y_min - base_transform.matrix.ty;
+
+        if let Some((width, height)) = dirty {
+            let mut transform_stack = TransformStack::new();
+            transform_stack.push(&Transform {
+                color_transform: base_transform.color_transform,
+                matrix: Matrix {
+                    tx: -offset_x,
+                    ty: -offset_y,
+                    ..base_transform.matrix
+                },
+            });
+            let mut offscreen_context = RenderContext {
+                renderer: context.renderer,
+                commands: CommandList::new(),
+                gc_context: context.gc_context,
+                library: context.library,
+                transform_stack: &mut transform_stack,
+                is_offscreen: true,
+                stage: context.stage,
+            };
+            render_base_inner(this, &mut offscreen_context);
+            offscreen_context.renderer.render_offscreen(
+                handle.clone(),
+                offscreen_context.commands,
+                offscreen_context.stage.quality(),
+                PixelRegion::for_whole_size(width, height),
+                Some(Color::from_rgb(0, 0)),
+            );
+        }
+
+        // When rendering it back, ensure we're only keeping transform - scale/rotation is within the image already
+        context.commands.render_bitmap(
+            handle,
+            Transform {
+                matrix: Matrix {
+                    tx: base_transform.matrix.tx + offset_x,
+                    ty: base_transform.matrix.ty + offset_y,
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+            true,
+        );
+    } else {
+        render_base_inner(this, context);
+    }
+
+    if let Some(original_commands) = original_commands {
+        let sub_commands = std::mem::replace(&mut context.commands, original_commands);
+        context.commands.blend(sub_commands, blend_mode);
+    }
+
+    context.transform_stack.pop();
+}
+
+pub fn render_base_inner<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_, 'gc>) {
     let scroll_rect_matrix = if let Some(rect) = this.scroll_rect() {
         let cur_transform = context.transform_stack.transform();
         // The matrix we use for actually drawing a rectangle for cropping purposes
@@ -628,17 +835,10 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
         context.commands.pop_mask();
     }
 
-    if let Some(original_commands) = original_commands {
-        let sub_commands = std::mem::replace(&mut context.commands, original_commands);
-        context.commands.blend(sub_commands, blend_mode);
-    }
-
     if scroll_rect_matrix.is_some() {
         // Remove the translation that we pushed
         context.transform_stack.pop();
     }
-
-    context.transform_stack.pop();
 }
 
 #[enum_trait_object(
@@ -1000,7 +1200,8 @@ pub trait TDisplayObject<'gc>:
     }
 
     fn set_filters(&self, gc_context: MutationContext<'gc, '_>, filters: Vec<Filter>) {
-        self.base_mut(gc_context).set_filters(filters)
+        self.base_mut(gc_context).set_filters(filters);
+        self.invalidate_cached_bitmap(gc_context);
     }
 
     /// Returns the dot-syntax path to this display object, e.g. `_level0.foo.clip`
@@ -1782,6 +1983,17 @@ pub trait TDisplayObject<'gc>:
             } else {
                 i += 1;
             }
+        }
+    }
+
+    /// Inform this object and its ancestors that it has visually changed and must be redrawn.
+    /// If this object or any ancestor is marked as cacheAsBitmap, it will invalidate that cache.
+    fn invalidate_cached_bitmap(&self, mc: MutationContext<'gc, '_>) {
+        if let Some(cache) = self.base_mut(mc).bitmap_cache_mut() {
+            cache.make_dirty();
+        }
+        if let Some(parent) = self.parent() {
+            parent.invalidate_cached_bitmap(mc);
         }
     }
 }

@@ -915,6 +915,7 @@ impl RenderBackend for WebGlRenderBackend {
         _commands: CommandList,
         _quality: StageQuality,
         _bounds: PixelRegion,
+        _clear: Option<Color>,
     ) -> Option<Box<dyn SyncHandle>> {
         None
     }
@@ -1118,6 +1119,35 @@ impl RenderBackend for WebGlRenderBackend {
         _target: BitmapHandle,
     ) -> Result<Box<dyn SyncHandle>, BitmapError> {
         Err(BitmapError::Unimplemented("run_pixelbender_shader".into()))
+    }
+
+    fn create_empty_texture(
+        &mut self,
+        width: u32,
+        height: u32,
+    ) -> Result<BitmapHandle, BitmapError> {
+        let texture = self
+            .gl
+            .create_texture()
+            .ok_or_else(|| BitmapError::JavascriptError("Unable to create texture".into()))?;
+        self.gl.bind_texture(Gl::TEXTURE_2D, Some(&texture));
+
+        // You must set the texture parameters for non-power-of-2 textures to function in WebGL1.
+        self.gl
+            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_WRAP_S, Gl::CLAMP_TO_EDGE as i32);
+        self.gl
+            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_WRAP_T, Gl::CLAMP_TO_EDGE as i32);
+        self.gl
+            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MIN_FILTER, Gl::LINEAR as i32);
+        self.gl
+            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MAG_FILTER, Gl::LINEAR as i32);
+
+        Ok(BitmapHandle(Arc::new(RegistryData {
+            gl: self.gl.clone(),
+            width,
+            height,
+            texture,
+        })))
     }
 }
 

@@ -579,6 +579,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         commands: CommandList,
         quality: StageQuality,
         bounds: PixelRegion,
+        clear: Option<Color>,
     ) -> Option<Box<dyn SyncHandle>> {
         let texture = as_texture(&handle);
 
@@ -622,7 +623,16 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         );
         let command_buffers = surface.draw_commands_to(
             frame_output.view(),
-            RenderTargetMode::ExistingTexture(target.get_texture()),
+            if let Some(color) = clear {
+                RenderTargetMode::FreshBuffer(wgpu::Color {
+                    r: f64::from(color.r) / 255.0,
+                    g: f64::from(color.g) / 255.0,
+                    b: f64::from(color.b) / 255.0,
+                    a: f64::from(color.a) / 255.0,
+                })
+            } else {
+                RenderTargetMode::ExistingTexture(target.get_texture())
+            },
             &self.descriptors,
             &mut self.uniform_buffers_storage,
             &mut self.color_buffers_storage,
@@ -665,6 +675,10 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
     fn is_filter_supported(&self, filter: &Filter) -> bool {
         matches!(filter, Filter::BlurFilter(_) | Filter::ColorMatrixFilter(_))
+    }
+
+    fn is_offscreen_supported(&self) -> bool {
+        true
     }
 
     fn apply_filter(
@@ -776,6 +790,44 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         target_handle: BitmapHandle,
     ) -> Result<Box<dyn SyncHandle>, BitmapError> {
         self.run_pixelbender_shader_impl(shader, arguments, target_handle)
+    }
+
+    fn create_empty_texture(
+        &mut self,
+        width: u32,
+        height: u32,
+    ) -> Result<BitmapHandle, BitmapError> {
+        let extent = wgpu::Extent3d {
+            width,
+            height,
+            depth_or_array_layers: 1,
+        };
+
+        let texture_label = create_debug_label!("Bitmap");
+        let texture = self
+            .descriptors
+            .device
+            .create_texture(&wgpu::TextureDescriptor {
+                label: texture_label.as_deref(),
+                size: extent,
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: wgpu::TextureDimension::D2,
+                format: wgpu::TextureFormat::Rgba8Unorm,
+                view_formats: &[wgpu::TextureFormat::Rgba8Unorm],
+                usage: wgpu::TextureUsages::TEXTURE_BINDING
+                    | wgpu::TextureUsages::COPY_DST
+                    | wgpu::TextureUsages::RENDER_ATTACHMENT
+                    | wgpu::TextureUsages::COPY_SRC,
+            });
+        Ok(BitmapHandle(Arc::new(Texture {
+            texture: Arc::new(texture),
+            bind_linear: Default::default(),
+            bind_nearest: Default::default(),
+            width,
+            height,
+            copy_count: Cell::new(0),
+        })))
     }
 }
 

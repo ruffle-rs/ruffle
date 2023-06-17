@@ -15,7 +15,7 @@ use std::borrow::Cow;
 use std::fmt::Debug;
 use std::rc::Rc;
 use std::sync::Arc;
-use swf::{self, Rectangle, Twips};
+use swf::{self, Color, Rectangle, Twips};
 
 pub trait RenderBackend: Downcast {
     fn viewport_dimensions(&self) -> ViewportDimensions;
@@ -34,6 +34,7 @@ pub trait RenderBackend: Downcast {
         commands: CommandList,
         quality: StageQuality,
         bounds: PixelRegion,
+        clear: Option<Color>,
     ) -> Option<Box<dyn SyncHandle>>;
 
     /// Applies the given filter with a `BitmapHandle` source onto a destination `BitmapHandle`.
@@ -58,7 +59,13 @@ pub trait RenderBackend: Downcast {
         false
     }
 
+    fn is_offscreen_supported(&self) -> bool {
+        false
+    }
+
     fn submit_frame(&mut self, clear: swf::Color, commands: CommandList);
+
+    fn create_empty_texture(&mut self, width: u32, height: u32) -> Result<BitmapHandle, Error>;
 
     fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, Error>;
     fn update_texture(

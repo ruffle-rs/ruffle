@@ -64,6 +64,7 @@ impl RenderBackend for NullRenderer {
         _commands: CommandList,
         _quality: StageQuality,
         _bounds: PixelRegion,
+        _clear: Option<Color>,
     ) -> Option<Box<dyn SyncHandle>> {
         None
     }
@@ -116,5 +117,9 @@ impl RenderBackend for NullRenderer {
         Err(Error::Unimplemented(
             "Pixel bender shader compilation".into(),
         ))
+    }
+
+    fn create_empty_texture(&mut self, _width: u32, _height: u32) -> Result<BitmapHandle, Error> {
+        Ok(BitmapHandle(Arc::new(NullBitmapHandle)))
     }
 }
