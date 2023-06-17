@@ -19,7 +19,7 @@ fnv = "1.0.7"
 swf = { path = "../../swf" }
 image = { version = "0.24.6", default-features = false }
 naga_oil = "0.7.0"
-ouroboros = "0.15.6"
+ouroboros = "0.17.0"
 typed-arena = "2.0.2"
 gc-arena = { workspace = true }
 naga-agal = { path = "../naga-agal" }
