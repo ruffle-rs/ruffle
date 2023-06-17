@@ -141,7 +141,6 @@ struct CanvasBitmap {
 #[allow(dead_code)]
 #[derive(Debug)]
 struct BitmapData {
-    bitmap: Bitmap,
     image_data: ImageData,
     canvas: HtmlCanvasElement,
     context: CanvasRenderingContext2d,
@@ -180,7 +179,6 @@ impl BitmapData {
             .put_image_data(&image_data, 0.0, 0.0)
             .into_js_result()?;
         Ok(BitmapData {
-            bitmap,
             image_data,
             canvas,
             context,
