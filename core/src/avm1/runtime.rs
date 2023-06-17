@@ -12,7 +12,7 @@ use crate::prelude::*;
 use crate::string::AvmString;
 use crate::tag_utils::SwfSlice;
 use crate::{avm1, avm_debug};
-use gc_arena::{Collect, Gc, GcCell, MutationContext};
+use gc_arena::{Collect, Gc, MutationContext};
 use std::borrow::Cow;
 use swf::avm1::read::Reader;
 use tracing::instrument;
@@ -37,7 +37,7 @@ pub struct Avm1<'gc> {
     broadcaster_functions: BroadcasterFunctions<'gc>,
 
     /// DisplayObject property map.
-    display_properties: GcCell<'gc, stage_object::DisplayPropertyMap<'gc>>,
+    display_properties: stage_object::DisplayPropertyMap<'gc>,
 
     /// The operand stack (shared across functions).
     stack: Vec<Value<'gc>>,
@@ -83,7 +83,7 @@ impl<'gc> Avm1<'gc> {
             global_scope: Gc::allocate(gc_context, Scope::from_global_object(globals)),
             prototypes,
             broadcaster_functions,
-            display_properties: stage_object::DisplayPropertyMap::new(gc_context),
+            display_properties: stage_object::DisplayPropertyMap::new(),
             stack: vec![],
             registers: [
                 Value::Undefined,
@@ -364,8 +364,8 @@ impl<'gc> Avm1<'gc> {
     }
 
     /// DisplayObject property map.
-    pub fn display_properties(&self) -> GcCell<'gc, stage_object::DisplayPropertyMap<'gc>> {
-        self.display_properties
+    pub fn display_properties(&self) -> &stage_object::DisplayPropertyMap<'gc> {
+        &self.display_properties
     }
 
     pub fn max_recursion_depth(&self) -> u16 {
