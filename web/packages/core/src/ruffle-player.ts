@@ -740,10 +740,6 @@ export class RufflePlayer extends HTMLElement {
                 ...options,
             };
 
-            // `allowScriptAccess` can only be set in `options`.
-            this.loadedConfig.allowScriptAccess =
-                options.allowScriptAccess === true;
-
             // Pre-emptively set background color of container while Ruffle/SWF loads.
             if (
                 this.loadedConfig.backgroundColor &&
