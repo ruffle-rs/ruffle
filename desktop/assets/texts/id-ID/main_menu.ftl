@@ -12,6 +12,7 @@ file-menu = Berkas
 file-menu-open-quick = Buka...
 file-menu-open-advanced = Buka dengan opsi lanjutan...
 file-menu-close = Tutup
+file-menu-reload = Muat ulang
 file-menu-exit = Keluar
 controls-menu = Kontrol
 controls-menu-suspend = Tunda
