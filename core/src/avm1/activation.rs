@@ -1138,13 +1138,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let property = if !prop_index.is_finite() || prop_index <= -1.0 {
             None
         } else {
-            let display_properties = self.context.avm1.display_properties();
-            let properties = display_properties.read();
-            if let Some(property) = properties.get_by_index(prop_index as usize) {
-                Some(*property)
-            } else {
-                None
-            }
+            self.context
+                .avm1
+                .display_properties()
+                .get_by_index(prop_index as usize)
+                .copied()
         };
 
         let result = if let Some(clip) = clip {
@@ -1905,24 +1903,26 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         let property = if !prop_index.is_finite() || prop_index <= -1.0 {
             None
-        } else {
-            let display_properties = self.context.avm1.display_properties();
-            let properties = display_properties.read();
-            if let Some(property) = properties.get_by_index(prop_index as usize) {
-                if clip.is_none() || property.is_read_only() {
-                    // `prop_value` must be coerced even if the target is invalid or the property is read-only.
-                    // This behavior is consistent since Flash Player 21. Previous versions usually only coerce
-                    // when valid data is provided, but Flash Player 19 and 20 make no coercion *at all*.
-                    let _ = crate::avm1::object::stage_object::action_property_coerce(
-                        self,
-                        prop_index as usize,
-                        prop_value,
-                    );
-                }
-                Some(*property)
-            } else {
-                None
+        } else if let Some(property) = self
+            .context
+            .avm1
+            .display_properties()
+            .get_by_index(prop_index as usize)
+            .copied()
+        {
+            if clip.is_none() || property.is_read_only() {
+                // `prop_value` must be coerced even if the target is invalid or the property is read-only.
+                // This behavior is consistent since Flash Player 21. Previous versions usually only coerce
+                // when valid data is provided, but Flash Player 19 and 20 make no coercion *at all*.
+                let _ = crate::avm1::object::stage_object::action_property_coerce(
+                    self,
+                    prop_index as usize,
+                    prop_value,
+                );
             }
+            Some(property)
+        } else {
+            None
         };
 
         if let Some(clip) = clip {

@@ -196,7 +196,6 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
     ) -> Option<Value<'gc>> {
         let name = name.into();
         let obj = self.0.read();
-        let props = activation.context.avm1.display_properties();
 
         // Property search order for DisplayObjects:
         // 1) Actual properties on the underlying object
@@ -223,7 +222,13 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
 
         // 4) Display object properties such as `_x`, `_y` (never case sensitive)
         if magic_property {
-            if let Some(property) = props.read().get_by_name(name) {
+            if let Some(property) = activation
+                .context
+                .avm1
+                .display_properties()
+                .get_by_name(name)
+                .copied()
+            {
                 return Some(property.get(activation, obj.display_object));
             }
         }
@@ -239,7 +244,6 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         this: Object<'gc>,
     ) -> Result<(), Error<'gc>> {
         let obj = self.0.read();
-        let props = activation.context.avm1.display_properties();
 
         // Check if a text field is bound to this property and update the text if so.
         let case_sensitive = activation.is_case_sensitive();
@@ -263,10 +267,15 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         if base.has_own_property(activation, name) {
             // 1) Actual properties on the underlying object
             base.set_local(name, value, activation, this)
-        } else if let Some(property) = props.read().get_by_name(name) {
+        } else if let Some(property) = activation
+            .context
+            .avm1
+            .display_properties()
+            .get_by_name(name)
+            .copied()
+        {
             // 2) Display object properties such as _x, _y
-            property.set(activation, display_object, value)?;
-            Ok(())
+            property.set(activation, display_object, value)
         } else {
             // 3) TODO: Prototype
             base.set_local(name, value, activation, this)
@@ -296,7 +305,6 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
                 .context
                 .avm1
                 .display_properties()
-                .read()
                 .get_by_name(name)
                 .is_some()
         {
@@ -404,8 +412,8 @@ pub struct DisplayPropertyMap<'gc>(PropertyMap<'gc, DisplayProperty>);
 
 impl<'gc> DisplayPropertyMap<'gc> {
     /// Creates the display property map.
-    pub fn new(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, DisplayPropertyMap<'gc>> {
-        let mut property_map = DisplayPropertyMap(PropertyMap::new());
+    pub fn new() -> Self {
+        let mut property_map = Self(PropertyMap::new());
 
         // Order is important:
         // should match the SWF specs for GetProperty/SetProperty.
@@ -436,7 +444,7 @@ impl<'gc> DisplayPropertyMap<'gc> {
         property_map.add_property("_xmouse".into(), x_mouse, None);
         property_map.add_property("_ymouse".into(), y_mouse, None);
 
-        GcCell::allocate(gc_context, property_map)
+        property_map
     }
 
     /// Gets a property slot by name.
@@ -463,6 +471,12 @@ impl<'gc> DisplayPropertyMap<'gc> {
     ) {
         let prop = DisplayProperty { get, set };
         self.0.insert(name, prop, false);
+    }
+}
+
+impl Default for DisplayPropertyMap<'_> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
