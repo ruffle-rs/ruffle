@@ -155,20 +155,23 @@ fn as_bitmap_data(handle: &BitmapHandle) -> &BitmapData {
 
 impl BitmapData {
     /// Puts the image data into a newly created <canvas>, and caches it.
-    fn new(bitmap: Bitmap) -> Result<Self, JsValue> {
+    fn with_bitmap(bitmap: Bitmap) -> Result<Self, JsValue> {
         let bitmap = bitmap.to_rgba();
         let image_data =
             ImageData::new_with_u8_clamped_array(Clamped(bitmap.data()), bitmap.width())
                 .into_js_result()?;
+        Self::with_image_data(image_data)
+    }
 
+    fn with_image_data(image_data: ImageData) -> Result<Self, JsValue> {
         let window = web_sys::window().expect("window()");
         let document = window.document().expect("document()");
         let canvas: HtmlCanvasElement = document
             .create_element("canvas")
             .into_js_result()?
             .unchecked_into();
-        canvas.set_width(bitmap.width());
-        canvas.set_height(bitmap.height());
+        canvas.set_width(image_data.width());
+        canvas.set_height(image_data.height());
 
         let context: CanvasRenderingContext2d = canvas
             .get_context("2d")?
@@ -454,7 +457,7 @@ impl RenderBackend for WebCanvasRenderBackend {
     }
 
     fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, Error> {
-        let bitmap_data = BitmapData::new(bitmap).map_err(Error::JavascriptError)?;
+        let bitmap_data = BitmapData::with_bitmap(bitmap).map_err(Error::JavascriptError)?;
         Ok(BitmapHandle(Arc::new(bitmap_data)))
     }
 
