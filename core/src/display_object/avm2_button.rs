@@ -227,6 +227,8 @@ impl<'gc> Avm2Button<'gc> {
             }
         }
 
+        self.invalidate_cached_bitmap(context.gc_context);
+
         // We manually call `construct_frame` for `child` and `state_sprite` - normally
         // this would be done in the `DisplayObject` constructor, but SimpleButton does
         // not have children in the normal DisplayObjectContainer sense.

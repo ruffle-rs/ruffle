@@ -191,6 +191,8 @@ impl<'gc> Avm1Button<'gc> {
                 dispatch_removed_event(removed_child, context);
             }
         }
+
+        self.invalidate_cached_bitmap(context.gc_context);
     }
 
     fn get_boolean_property(
