@@ -209,6 +209,9 @@ pub trait TDisplayObjectContainer<'gc>:
             removed_child.set_parent(context, None);
         }
 
+        let this: DisplayObject<'_> = self.into();
+        this.invalidate_cached_bitmap(context.gc_context);
+
         removed_child
     }
 
@@ -233,6 +236,8 @@ pub trait TDisplayObjectContainer<'gc>:
 
         self.raw_container_mut(context.gc_context)
             .swap_at_depth(context, this, child, depth);
+
+        this.invalidate_cached_bitmap(context.gc_context);
     }
 
     /// Insert a child display object into the container at a specific position
@@ -276,6 +281,8 @@ pub trait TDisplayObjectContainer<'gc>:
         if parent_changed {
             dispatch_added_event(this, child, child_was_on_stage, context);
         }
+
+        this.invalidate_cached_bitmap(context.gc_context);
     }
 
     /// Swap two children in the render list.
@@ -289,6 +296,8 @@ pub trait TDisplayObjectContainer<'gc>:
     ) {
         self.raw_container_mut(context.gc_context)
             .swap_at_id(index1, index2);
+        let this: DisplayObject<'_> = (*self).into();
+        this.invalidate_cached_bitmap(context.gc_context);
     }
 
     /// Remove (and unloads) a child display object from this container's render and depth lists.
@@ -327,6 +336,10 @@ pub trait TDisplayObjectContainer<'gc>:
                 // Re-Insert the child at the new depth
                 raw_container.insert_child_into_depth_list(child.depth(), child);
 
+                drop(raw_container);
+                let this: DisplayObject<'_> = (*self).into();
+                this.invalidate_cached_bitmap(context.gc_context);
+
                 return;
             }
         }
@@ -359,6 +372,9 @@ pub trait TDisplayObjectContainer<'gc>:
 
                 child.set_parent(context, None);
             }
+
+            let this: DisplayObject<'_> = (*self).into();
+            this.invalidate_cached_bitmap(context.gc_context);
         }
     }
 
@@ -375,6 +391,9 @@ pub trait TDisplayObjectContainer<'gc>:
 
         self.raw_container_mut(context.gc_context)
             .remove_child_from_depth_list(child);
+
+        let this: DisplayObject<'_> = (*self).into();
+        this.invalidate_cached_bitmap(context.gc_context);
     }
 
     /// Remove a set of children identified by their render list indicies from
@@ -415,6 +434,10 @@ pub trait TDisplayObjectContainer<'gc>:
 
             write = self.raw_container_mut(context.gc_context);
         }
+
+        drop(write);
+        let this: DisplayObject<'_> = (*self).into();
+        this.invalidate_cached_bitmap(context.gc_context);
     }
 
     /// Determine if the container is empty.
