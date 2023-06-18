@@ -671,6 +671,9 @@ impl<'gc> EditText<'gc> {
                 .drawing
                 .draw_command(DrawCommand::LineTo(Point::new(width, Twips::ZERO)));
             write.drawing.draw_command(DrawCommand::LineTo(Point::ZERO));
+
+            drop(write);
+            self.invalidate_cached_bitmap(gc_context);
         }
     }
 
@@ -737,6 +740,9 @@ impl<'gc> EditText<'gc> {
             edit_text.bounds.set_height(height);
             drop(edit_text);
             self.redraw_border(context.gc_context);
+        } else {
+            drop(edit_text);
+            self.invalidate_cached_bitmap(context.gc_context);
         }
     }
 

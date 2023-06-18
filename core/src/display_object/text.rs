@@ -66,7 +66,8 @@ impl<'gc> Text<'gc> {
         gc_context: MutationContext<'gc, '_>,
         settings: TextRenderSettings,
     ) {
-        self.0.write(gc_context).render_settings = settings
+        self.0.write(gc_context).render_settings = settings;
+        self.invalidate_cached_bitmap(gc_context);
     }
 }
 
@@ -105,6 +106,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         } else {
             tracing::warn!("PlaceObject: expected text at character ID {}", id);
         }
+        self.invalidate_cached_bitmap(context.gc_context);
     }
 
     fn run_frame_avm1(&self, _context: &mut UpdateContext) {
