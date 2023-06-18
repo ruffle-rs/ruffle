@@ -173,6 +173,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         } else {
             tracing::warn!("PlaceObject: expected Graphic at character ID {}", id);
         }
+        self.invalidate_cached_bitmap(context.gc_context);
     }
 
     fn run_frame_avm1(&self, _context: &mut UpdateContext) {
