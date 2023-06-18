@@ -941,10 +941,16 @@ pub trait TDisplayObject<'gc>:
         self.base_mut(gc_context).set_place_frame(frame)
     }
 
+    /// Sets the matrix of this object.
+    /// This does NOT invalidate the cache, as it's often used with other operations.
+    /// It is the callers responsibility to do so.
     fn set_matrix(&self, gc_context: MutationContext<'gc, '_>, matrix: Matrix) {
         self.base_mut(gc_context).set_matrix(matrix);
     }
 
+    /// Sets the color transform of this object.
+    /// This does NOT invalidate the cache, as it's often used with other operations.
+    /// It is the callers responsibility to do so.
     fn set_color_transform(
         &self,
         gc_context: MutationContext<'gc, '_>,
@@ -1184,8 +1190,13 @@ pub trait TDisplayObject<'gc>:
     /// Sets the opacity of this display object.
     /// 1 is fully opaque.
     /// Set by the `_alpha`/`alpha` ActionScript properties.
+    /// This invalidates any cacheAsBitmap automatically.
     fn set_alpha(&self, gc_context: MutationContext<'gc, '_>, value: f64) {
-        self.base_mut(gc_context).set_alpha(value)
+        self.base_mut(gc_context).set_alpha(value);
+        if let Some(parent) = self.parent() {
+            // Self-transform changes are automatically handled
+            parent.invalidate_cached_bitmap(gc_context);
+        }
     }
 
     fn name(&self) -> AvmString<'gc> {
@@ -1765,9 +1776,15 @@ pub trait TDisplayObject<'gc>:
         if !self.transformed_by_script() {
             if let Some(matrix) = place_object.matrix {
                 self.set_matrix(context.gc_context, matrix.into());
+                if let Some(parent) = self.parent() {
+                    // Self-transform changes are automatically handled,
+                    // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
+                    parent.invalidate_cached_bitmap(context.gc_context);
+                }
             }
             if let Some(color_transform) = &place_object.color_transform {
                 self.set_color_transform(context.gc_context, *color_transform);
+                self.invalidate_cached_bitmap(context.gc_context);
             }
             if let Some(ratio) = place_object.ratio {
                 if let Some(mut morph_shape) = self.as_morph_shape() {

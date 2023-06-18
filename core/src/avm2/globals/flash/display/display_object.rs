@@ -731,6 +731,12 @@ pub fn set_transform<'gc>(
         let mut write = dobj.base_mut(activation.context.gc_context);
         write.set_matrix(matrix);
         write.set_color_transform(color_transform);
+        drop(write);
+        if let Some(parent) = dobj.parent() {
+            // Self-transform changes are automatically handled,
+            // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
+            parent.invalidate_cached_bitmap(activation.context.gc_context);
+        }
     }
     Ok(Value::Undefined)
 }
