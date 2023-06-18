@@ -4,7 +4,7 @@ use crate::backends::{
 };
 use crate::cli::Opt;
 use crate::custom_event::RuffleEvent;
-use crate::executor::GlutinAsyncExecutor;
+use crate::executor::WinitAsyncExecutor;
 use crate::gui::MovieView;
 use crate::{CALLSTACK, RENDER_INFO, SWF_INFO};
 use anyhow::anyhow;
@@ -80,7 +80,7 @@ impl From<&Opt> for PlayerOptions {
 /// which may be lost when this Player is closed (dropped)
 struct ActivePlayer {
     player: Arc<Mutex<Player>>,
-    executor: Arc<Mutex<GlutinAsyncExecutor>>,
+    executor: Arc<Mutex<WinitAsyncExecutor>>,
 }
 
 impl ActivePlayer {
@@ -104,7 +104,7 @@ impl ActivePlayer {
             }
         };
 
-        let (executor, channel) = GlutinAsyncExecutor::new(event_loop.clone());
+        let (executor, channel) = WinitAsyncExecutor::new(event_loop.clone());
         let navigator = ExternalNavigatorBackend::new(
             opt.base.to_owned().unwrap_or_else(|| movie_url.clone()),
             channel,
