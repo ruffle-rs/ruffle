@@ -202,6 +202,10 @@ impl<'gc> Video<'gc> {
     /// from that keyframe up to the (wrapped) requested frame are decoded in
     /// order. This matches Flash Player behavior.
     pub fn seek(self, context: &mut UpdateContext<'_, 'gc>, mut frame_id: u32) {
+        // Technically we might not need to invalidate...
+        // but if you're caching a video, this is the least of the efficiency concerns
+        self.invalidate_cached_bitmap(context.gc_context);
+
         let read = self.0.read();
         if let VideoStream::Uninstantiated(_) = &read.stream {
             drop(read);
