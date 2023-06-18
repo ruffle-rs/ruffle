@@ -1024,8 +1024,14 @@ pub trait TDisplayObject<'gc>:
 
     /// Sets the `x` position in pixels of this display object in local space.
     /// Set by the `_x`/`x` ActionScript properties.
+    /// This invalidates any ancestors cacheAsBitmap automatically.
     fn set_x(&self, gc_context: MutationContext<'gc, '_>, x: Twips) {
         self.base_mut(gc_context).set_x(x);
+        if let Some(parent) = self.parent() {
+            // Self-transform changes are automatically handled,
+            // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
+            parent.invalidate_cached_bitmap(gc_context);
+        }
     }
 
     /// The `y` position in pixels of this display object in local space.
@@ -1036,8 +1042,14 @@ pub trait TDisplayObject<'gc>:
 
     /// Sets the `y` position in pixels of this display object in local space.
     /// Set by the `_y`/`y` ActionScript properties.
+    /// This invalidates any ancestors cacheAsBitmap automatically.
     fn set_y(&self, gc_context: MutationContext<'gc, '_>, y: Twips) {
         self.base_mut(gc_context).set_y(y);
+        if let Some(parent) = self.parent() {
+            // Self-transform changes are automatically handled,
+            // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
+            parent.invalidate_cached_bitmap(gc_context);
+        }
     }
 
     /// The rotation in degrees this display object in local space.
@@ -1050,9 +1062,15 @@ pub trait TDisplayObject<'gc>:
 
     /// Sets the rotation in degrees this display object in local space.
     /// Set by the `_rotation`/`rotation` ActionScript properties.
+    /// This invalidates any ancestors cacheAsBitmap automatically.
     fn set_rotation(&self, gc_context: MutationContext<'gc, '_>, radians: Degrees) {
         self.base_mut(gc_context).set_rotation(radians);
         self.set_scale_rotation_cached(gc_context);
+        if let Some(parent) = self.parent() {
+            // Self-transform changes are automatically handled,
+            // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
+            parent.invalidate_cached_bitmap(gc_context);
+        }
     }
 
     /// The X axis scale for this display object in local space.
@@ -1065,9 +1083,15 @@ pub trait TDisplayObject<'gc>:
 
     /// Sets the X axis scale for this display object in local space.
     /// Set by the `_xscale`/`scaleX` ActionScript properties.
+    /// This invalidates any ancestors cacheAsBitmap automatically.
     fn set_scale_x(&self, gc_context: MutationContext<'gc, '_>, value: Percent) {
         self.base_mut(gc_context).set_scale_x(value);
         self.set_scale_rotation_cached(gc_context);
+        if let Some(parent) = self.parent() {
+            // Self-transform changes are automatically handled,
+            // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
+            parent.invalidate_cached_bitmap(gc_context);
+        }
     }
 
     /// The Y axis scale for this display object in local space.
@@ -1080,9 +1104,15 @@ pub trait TDisplayObject<'gc>:
 
     /// Sets the Y axis scale for this display object in local space.
     /// Returned by the `_yscale`/`scaleY` ActionScript properties.
+    /// This invalidates any ancestors cacheAsBitmap automatically.
     fn set_scale_y(&self, gc_context: MutationContext<'gc, '_>, value: Percent) {
         self.base_mut(gc_context).set_scale_y(value);
         self.set_scale_rotation_cached(gc_context);
+        if let Some(parent) = self.parent() {
+            // Self-transform changes are automatically handled,
+            // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
+            parent.invalidate_cached_bitmap(gc_context);
+        }
     }
 
     /// Gets the pixel width of the AABB containing this display object in local space.
@@ -1319,6 +1349,7 @@ pub trait TDisplayObject<'gc>:
             }
         }
         self.base_mut(gc_context).set_masker(node);
+        self.invalidate_cached_bitmap(gc_context);
     }
     fn maskee(&self) -> Option<DisplayObject<'gc>> {
         self.base().maskee()
@@ -1335,6 +1366,7 @@ pub trait TDisplayObject<'gc>:
             }
         }
         self.base_mut(gc_context).set_maskee(node);
+        self.invalidate_cached_bitmap(gc_context);
     }
 
     fn scroll_rect(&self) -> Option<Rectangle<Twips>> {
@@ -1380,6 +1412,7 @@ pub trait TDisplayObject<'gc>:
     /// Returned by the `_visible`/`visible` ActionScript properties.
     fn set_visible(&self, gc_context: MutationContext<'gc, '_>, value: bool) {
         self.base_mut(gc_context).set_visible(value);
+        self.invalidate_cached_bitmap(gc_context);
     }
 
     /// The blend mode used when rendering this display object.
@@ -1392,6 +1425,7 @@ pub trait TDisplayObject<'gc>:
     /// Values other than the default `BlendMode::Normal` implicitly cause cache-as-bitmap behavior.
     fn set_blend_mode(&self, gc_context: MutationContext<'gc, '_>, value: BlendMode) {
         self.base_mut(gc_context).set_blend_mode(value);
+        self.invalidate_cached_bitmap(gc_context);
     }
 
     /// The opaque background color of this display object.
@@ -1405,6 +1439,7 @@ pub trait TDisplayObject<'gc>:
     /// is ignored.
     fn set_opaque_background(&self, gc_context: MutationContext<'gc, '_>, value: Option<Color>) {
         self.base_mut(gc_context).set_opaque_background(value);
+        self.invalidate_cached_bitmap(gc_context);
     }
 
     /// Whether this display object represents the root of loaded content.
