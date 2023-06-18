@@ -2285,6 +2285,8 @@ impl<'gc> MovieClip<'gc> {
     }
 
     pub fn drawing(&self, gc_context: MutationContext<'gc, '_>) -> RefMut<'_, Drawing> {
+        // We're about to change graphics, so invalidate on the next frame
+        self.invalidate_cached_bitmap(gc_context);
         RefMut::map(self.0.write(gc_context), |s| &mut s.drawing)
     }
 
