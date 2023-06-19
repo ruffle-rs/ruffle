@@ -1,7 +1,9 @@
 use std::borrow::Cow;
 use std::sync::Arc;
 
-use crate::backend::{RenderBackend, ShapeHandle, ShapeHandleImpl, ViewportDimensions};
+use crate::backend::{
+    BitmapCacheEntry, RenderBackend, ShapeHandle, ShapeHandleImpl, ViewportDimensions,
+};
 use crate::bitmap::{
     Bitmap, BitmapHandle, BitmapHandleImpl, BitmapSize, BitmapSource, PixelRegion, SyncHandle,
 };
@@ -68,16 +70,13 @@ impl RenderBackend for NullRenderer {
         None
     }
 
-    fn render_offscreen_for_cache(
+    fn submit_frame(
         &mut self,
-        _handle: BitmapHandle,
-        _commands: CommandList,
         _clear: Color,
+        _commands: CommandList,
+        _cache_entries: Vec<BitmapCacheEntry>,
     ) {
-        unimplemented!()
     }
-
-    fn submit_frame(&mut self, _clear: Color, _commands: CommandList) {}
     fn register_bitmap(&mut self, _bitmap: Bitmap) -> Result<BitmapHandle, Error> {
         Ok(BitmapHandle(Arc::new(NullBitmapHandle)))
     }

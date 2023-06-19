@@ -12,7 +12,7 @@ use crate::{
     QueueSyncHandle, RenderTarget, SwapChainTarget, Texture, Transforms,
 };
 use image::imageops::FilterType;
-use ruffle_render::backend::Context3D;
+use ruffle_render::backend::{BitmapCacheEntry, Context3D};
 use ruffle_render::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
 use ruffle_render::bitmap::{
     Bitmap, BitmapFormat, BitmapHandle, BitmapSource, PixelRegion, SyncHandle,
@@ -425,7 +425,12 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     }
 
     #[instrument(level = "debug", skip_all)]
-    fn submit_frame(&mut self, clear: Color, commands: CommandList) {
+    fn submit_frame(
+        &mut self,
+        clear: Color,
+        commands: CommandList,
+        cache_entries: Vec<BitmapCacheEntry>,
+    ) {
         let frame_output = match self.target.get_next_texture() {
             Ok(frame) => frame,
             Err(e) => {
@@ -440,7 +445,55 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             }
         };
 
-        let command_buffers = self.surface.draw_commands_and_copy_to(
+        let uniform_encoder_label = create_debug_label!("Uniform upload command encoder");
+        let mut uniform_buffer = UniformBuffer::new(&mut self.uniform_buffers_storage);
+        let mut color_buffer = UniformBuffer::new(&mut self.color_buffers_storage);
+        let mut uniform_encoder =
+            self.descriptors
+                .device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: uniform_encoder_label.as_deref(),
+                });
+        let label = create_debug_label!("Draw encoder");
+        let mut draw_encoder =
+            self.descriptors
+                .device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: label.as_deref(),
+                });
+
+        for entry in cache_entries {
+            let texture = as_texture(&entry.handle);
+            let mut surface = Surface::new(
+                &self.descriptors,
+                self.surface.quality(),
+                texture.width,
+                texture.height,
+                wgpu::TextureFormat::Rgba8Unorm,
+            );
+            surface.draw_commands(
+                RenderTargetMode::ExistingWithColor(
+                    texture.texture.clone(),
+                    wgpu::Color {
+                        r: f64::from(entry.clear.r) / 255.0,
+                        g: f64::from(entry.clear.g) / 255.0,
+                        b: f64::from(entry.clear.b) / 255.0,
+                        a: f64::from(entry.clear.a) / 255.0,
+                    },
+                ),
+                &self.descriptors,
+                &self.meshes,
+                entry.commands,
+                &mut uniform_buffer,
+                &mut color_buffer,
+                &mut uniform_encoder,
+                &mut draw_encoder,
+                LayerRef::None,
+                &mut self.offscreen_texture_pool,
+            );
+        }
+
+        self.surface.draw_commands_and_copy_to(
             frame_output.view(),
             RenderTargetMode::FreshWithColor(wgpu::Color {
                 r: f64::from(clear.r) / 255.0,
@@ -449,18 +502,22 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 a: f64::from(clear.a) / 255.0,
             }),
             &self.descriptors,
-            &mut self.uniform_buffers_storage,
-            &mut self.color_buffers_storage,
+            &mut uniform_buffer,
+            &mut color_buffer,
+            &mut uniform_encoder,
+            &mut draw_encoder,
             &self.meshes,
             commands,
             LayerRef::None,
             &mut self.texture_pool,
         );
+        uniform_buffer.finish();
+        color_buffer.finish();
 
         self.target.submit(
             &self.descriptors.device,
             &self.descriptors.queue,
-            command_buffers,
+            vec![uniform_encoder.finish(), draw_encoder.finish()],
             frame_output,
         );
         self.uniform_buffers_storage.recall();
@@ -620,21 +677,41 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             texture.height,
             wgpu::TextureFormat::Rgba8Unorm,
         );
-        let command_buffers = surface.draw_commands_and_copy_to(
+        let uniform_encoder_label = create_debug_label!("Uniform upload command encoder");
+        let mut uniform_buffer = UniformBuffer::new(&mut self.uniform_buffers_storage);
+        let mut color_buffer = UniformBuffer::new(&mut self.color_buffers_storage);
+        let mut uniform_encoder =
+            self.descriptors
+                .device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: uniform_encoder_label.as_deref(),
+                });
+        let label = create_debug_label!("Draw encoder");
+        let mut draw_encoder =
+            self.descriptors
+                .device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: label.as_deref(),
+                });
+        surface.draw_commands_and_copy_to(
             frame_output.view(),
             RenderTargetMode::FreshWithTexture(target.get_texture()),
             &self.descriptors,
-            &mut self.uniform_buffers_storage,
-            &mut self.color_buffers_storage,
+            &mut uniform_buffer,
+            &mut color_buffer,
+            &mut uniform_encoder,
+            &mut draw_encoder,
             &self.meshes,
             commands,
             LayerRef::Current,
             &mut self.offscreen_texture_pool,
         );
+        uniform_buffer.finish();
+        color_buffer.finish();
         let index = target.submit(
             &self.descriptors.device,
             &self.descriptors.queue,
-            command_buffers,
+            vec![uniform_encoder.finish(), draw_encoder.finish()],
             frame_output,
         );
         self.uniform_buffers_storage.recall();
@@ -661,64 +738,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 ..
             }) => unreachable!("Buffer must be Borrowed as it was set to be Borrowed earlier"),
         }
-    }
-
-    fn render_offscreen_for_cache(
-        &mut self,
-        handle: BitmapHandle,
-        commands: CommandList,
-        clear: Color,
-    ) {
-        let clear = wgpu::Color {
-            r: f64::from(clear.r) / 255.0,
-            g: f64::from(clear.g) / 255.0,
-            b: f64::from(clear.b) / 255.0,
-            a: f64::from(clear.a) / 255.0,
-        };
-        let texture = as_texture(&handle);
-
-        let uniform_encoder_label = create_debug_label!("Uniform upload command encoder");
-        let mut uniform_buffer = UniformBuffer::new(&mut self.uniform_buffers_storage);
-        let mut color_buffer = UniformBuffer::new(&mut self.color_buffers_storage);
-        let mut uniform_encoder =
-            self.descriptors
-                .device
-                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                    label: uniform_encoder_label.as_deref(),
-                });
-        let label = create_debug_label!("Draw encoder");
-        let mut draw_encoder =
-            self.descriptors
-                .device
-                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                    label: label.as_deref(),
-                });
-
-        let mut surface = Surface::new(
-            &self.descriptors,
-            self.surface.quality(),
-            texture.width,
-            texture.height,
-            wgpu::TextureFormat::Rgba8Unorm,
-        );
-        surface.draw_commands(
-            RenderTargetMode::ExistingWithColor(texture.texture.clone(), clear),
-            &self.descriptors,
-            &self.meshes,
-            commands,
-            &mut uniform_buffer,
-            &mut color_buffer,
-            &mut uniform_encoder,
-            &mut draw_encoder,
-            LayerRef::None,
-            &mut self.offscreen_texture_pool,
-        );
-
-        self.descriptors
-            .queue
-            .submit(vec![uniform_encoder.finish(), draw_encoder.finish()]);
-        self.uniform_buffers_storage.recall();
-        self.color_buffers_storage.recall();
     }
 
     fn is_filter_supported(&self, filter: &Filter) -> bool {

@@ -6,7 +6,6 @@ use crate::blend::ComplexBlend;
 use crate::buffer_pool::TexturePool;
 use crate::mesh::Mesh;
 use crate::surface::commands::{chunk_blends, Chunk, CommandRenderer};
-use crate::uniform_buffer::BufferStorage;
 use crate::utils::{remove_srgb, supported_sample_count};
 use crate::{
     ColorAdjustments, Descriptors, MaskState, Pipelines, PushConstants, Texture, TextureTransforms,
@@ -65,61 +64,33 @@ impl Surface {
 
     #[allow(clippy::too_many_arguments)]
     #[instrument(level = "debug", skip_all)]
-    pub fn draw_commands_and_copy_to(
+    pub fn draw_commands_and_copy_to<'frame, 'global: 'frame>(
         &mut self,
         frame_view: &wgpu::TextureView,
         render_target_mode: RenderTargetMode,
-        descriptors: &Descriptors,
-        uniform_buffers_storage: &mut BufferStorage<Transforms>,
-        color_buffers_storage: &mut BufferStorage<ColorAdjustments>,
-        meshes: &Vec<Mesh>,
+        descriptors: &'global Descriptors,
+        uniform_buffers: &'frame mut UniformBuffer<'global, Transforms>,
+        color_buffers: &'frame mut UniformBuffer<'global, ColorAdjustments>,
+        uniform_encoder: &'frame mut wgpu::CommandEncoder,
+        draw_encoder: &'frame mut wgpu::CommandEncoder,
+        meshes: &'global Vec<Mesh>,
         commands: CommandList,
         layer: LayerRef,
         texture_pool: &mut TexturePool,
-    ) -> Vec<wgpu::CommandBuffer> {
-        let uniform_encoder_label = create_debug_label!("Uniform upload command encoder");
-        let mut uniform_buffer = UniformBuffer::new(uniform_buffers_storage);
-        let mut color_buffer = UniformBuffer::new(color_buffers_storage);
-        let mut uniform_encoder =
-            descriptors
-                .device
-                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                    label: uniform_encoder_label.as_deref(),
-                });
-        let label = create_debug_label!("Draw encoder");
-        let mut draw_encoder =
-            descriptors
-                .device
-                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                    label: label.as_deref(),
-                });
-
+    ) {
         let target = self.draw_commands(
             render_target_mode,
             descriptors,
             meshes,
             commands,
-            &mut uniform_buffer,
-            &mut color_buffer,
-            &mut uniform_encoder,
-            &mut draw_encoder,
+            uniform_buffers,
+            color_buffers,
+            uniform_encoder,
+            draw_encoder,
             layer,
             texture_pool,
         );
 
-        // We're about to perform a copy, so make sure that we've applied
-        // a clear (in case no other draw commands were issued, we still need
-        // the background clear color applied)
-        target.ensure_cleared(&mut draw_encoder);
-
-        let mut buffers = vec![draw_encoder.finish()];
-
-        let mut copy_encoder =
-            descriptors
-                .device
-                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                    label: create_debug_label!("Frame copy command encoder").as_deref(),
-                });
         run_copy_pipeline(
             descriptors,
             self.format,
@@ -130,70 +101,8 @@ impl Surface {
             target.whole_frame_bind_group(descriptors),
             target.globals(),
             1,
-            &mut copy_encoder,
+            draw_encoder,
         );
-        buffers.push(copy_encoder.finish());
-
-        buffers.insert(0, uniform_encoder.finish());
-        uniform_buffer.finish();
-        color_buffer.finish();
-
-        buffers
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    #[instrument(level = "debug", skip_all)]
-    pub fn draw_commands_onto(
-        &mut self,
-        render_target_mode: RenderTargetMode,
-        descriptors: &Descriptors,
-        uniform_buffers_storage: &mut BufferStorage<Transforms>,
-        color_buffers_storage: &mut BufferStorage<ColorAdjustments>,
-        meshes: &Vec<Mesh>,
-        commands: CommandList,
-        layer: LayerRef,
-        texture_pool: &mut TexturePool,
-    ) -> Vec<wgpu::CommandBuffer> {
-        let uniform_encoder_label = create_debug_label!("Uniform upload command encoder");
-        let mut uniform_buffer = UniformBuffer::new(uniform_buffers_storage);
-        let mut color_buffer = UniformBuffer::new(color_buffers_storage);
-        let mut uniform_encoder =
-            descriptors
-                .device
-                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                    label: uniform_encoder_label.as_deref(),
-                });
-        let label = create_debug_label!("Draw encoder");
-        let mut draw_encoder =
-            descriptors
-                .device
-                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                    label: label.as_deref(),
-                });
-
-        let target = self.draw_commands(
-            render_target_mode,
-            descriptors,
-            meshes,
-            commands,
-            &mut uniform_buffer,
-            &mut color_buffer,
-            &mut uniform_encoder,
-            &mut draw_encoder,
-            layer,
-            texture_pool,
-        );
-
-        // If we didn't end up drawing anything, ensure it's cleared before returning
-        target.ensure_cleared(&mut draw_encoder);
-
-        let mut buffers = vec![draw_encoder.finish()];
-
-        buffers.insert(0, uniform_encoder.finish());
-        uniform_buffer.finish();
-        color_buffer.finish();
-
-        buffers
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -412,6 +321,9 @@ impl Surface {
                 }
             }
         }
+
+        // If nothing happened, ensure it's cleared so we don't operate on garbage data
+        target.ensure_cleared(draw_encoder);
 
         target
     }

@@ -17,6 +17,12 @@ use std::rc::Rc;
 use std::sync::Arc;
 use swf::{self, Color, Rectangle, Twips};
 
+pub struct BitmapCacheEntry {
+    pub handle: BitmapHandle,
+    pub commands: CommandList,
+    pub clear: Color,
+}
+
 pub trait RenderBackend: Downcast {
     fn viewport_dimensions(&self) -> ViewportDimensions;
     // Do not call this method directly - use `player.set_viewport_dimensions`,
@@ -35,13 +41,6 @@ pub trait RenderBackend: Downcast {
         quality: StageQuality,
         bounds: PixelRegion,
     ) -> Option<Box<dyn SyncHandle>>;
-
-    fn render_offscreen_for_cache(
-        &mut self,
-        handle: BitmapHandle,
-        commands: CommandList,
-        clear: Color,
-    );
 
     /// Applies the given filter with a `BitmapHandle` source onto a destination `BitmapHandle`.
     /// The `destination_rect` must be calculated by the caller and is assumed to be correct.
@@ -69,7 +68,12 @@ pub trait RenderBackend: Downcast {
         false
     }
 
-    fn submit_frame(&mut self, clear: swf::Color, commands: CommandList);
+    fn submit_frame(
+        &mut self,
+        clear: swf::Color,
+        commands: CommandList,
+        cache_entries: Vec<BitmapCacheEntry>,
+    );
 
     fn create_empty_texture(&mut self, width: u32, height: u32) -> Result<BitmapHandle, Error>;
 

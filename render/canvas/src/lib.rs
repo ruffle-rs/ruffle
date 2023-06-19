@@ -1,7 +1,7 @@
 #![deny(clippy::unwrap_used)]
 
 use ruffle_render::backend::{
-    Context3D, RenderBackend, ShapeHandle, ShapeHandleImpl, ViewportDimensions,
+    BitmapCacheEntry, Context3D, RenderBackend, ShapeHandle, ShapeHandleImpl, ViewportDimensions,
 };
 use ruffle_render::bitmap::{
     Bitmap, BitmapHandle, BitmapHandleImpl, BitmapSource, PixelRegion, SyncHandle,
@@ -456,16 +456,15 @@ impl RenderBackend for WebCanvasRenderBackend {
         None
     }
 
-    fn render_offscreen_for_cache(
+    fn submit_frame(
         &mut self,
-        _handle: BitmapHandle,
-        _commands: CommandList,
-        _clear: Color,
+        clear: Color,
+        commands: CommandList,
+        cache_entries: Vec<BitmapCacheEntry>,
     ) {
-        unimplemented!()
-    }
-
-    fn submit_frame(&mut self, clear: Color, commands: CommandList) {
+        if !cache_entries.is_empty() {
+            panic!("Bitmap caching is unavailable on the canvas backend");
+        }
         self.begin_frame(clear);
         commands.execute(self);
     }

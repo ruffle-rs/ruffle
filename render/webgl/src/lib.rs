@@ -2,7 +2,7 @@
 
 use bytemuck::{Pod, Zeroable};
 use ruffle_render::backend::{
-    Context3D, RenderBackend, ShapeHandle, ShapeHandleImpl, ViewportDimensions,
+    BitmapCacheEntry, Context3D, RenderBackend, ShapeHandle, ShapeHandleImpl, ViewportDimensions,
 };
 use ruffle_render::bitmap::{
     Bitmap, BitmapFormat, BitmapHandle, BitmapHandleImpl, BitmapSource, PixelRegion, SyncHandle,
@@ -919,15 +919,6 @@ impl RenderBackend for WebGlRenderBackend {
         None
     }
 
-    fn render_offscreen_for_cache(
-        &mut self,
-        _handle: BitmapHandle,
-        _commands: CommandList,
-        _clear: Color,
-    ) {
-        unimplemented!()
-    }
-
     fn viewport_dimensions(&self) -> ViewportDimensions {
         ViewportDimensions {
             width: self.renderbuffer_width as u32,
@@ -984,7 +975,15 @@ impl RenderBackend for WebGlRenderBackend {
         ShapeHandle(Arc::new(mesh))
     }
 
-    fn submit_frame(&mut self, clear: Color, commands: CommandList) {
+    fn submit_frame(
+        &mut self,
+        clear: Color,
+        commands: CommandList,
+        cache_entries: Vec<BitmapCacheEntry>,
+    ) {
+        if !cache_entries.is_empty() {
+            panic!("Bitmap caching is unavailable on the webgl backend");
+        }
         self.begin_frame(clear);
         commands.execute(self);
         self.end_frame();
