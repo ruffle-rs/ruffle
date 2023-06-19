@@ -494,6 +494,9 @@ pub struct RenderContext<'a, 'gc> {
     /// Whether we're rendering offscreen. This can disable some logic like Ruffle-side render culling
     pub is_offscreen: bool,
 
+    /// Whether or not to use cacheAsBitmap, vs drawing everything explicitly
+    pub use_bitmap_cache: bool,
+
     /// The current player's stage (including all loaded levels)
     pub stage: Stage<'gc>,
 }

@@ -1463,6 +1463,7 @@ pub fn draw<'gc>(
         library: context.library,
         transform_stack: &mut transform_stack,
         is_offscreen: true,
+        use_bitmap_cache: false,
         stage: context.stage,
     };
 
@@ -1528,6 +1529,10 @@ pub fn draw<'gc>(
         dirty_region.union(old);
     }
 
+    assert!(
+        cache_draws.is_empty(),
+        "BitmapData.draw() should not use cacheAsBitmap"
+    );
     let image = context
         .renderer
         .render_offscreen(handle, commands, quality, dirty_region);

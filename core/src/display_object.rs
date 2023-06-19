@@ -670,34 +670,43 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
         None
     };
 
-    let mut cache_info: Option<(BitmapHandle, bool)> = None;
-    let base_transform = context.transform_stack.transform();
-    let bounds: Rectangle<Twips> = this.bounds_with_transform(&base_transform.matrix);
+    let cache_info = if context.use_bitmap_cache {
+        let mut cache_info: Option<(BitmapHandle, bool, Transform, Rectangle<Twips>)> = None;
+        let base_transform = context.transform_stack.transform();
+        let bounds: Rectangle<Twips> = this.bounds_with_transform(&base_transform.matrix);
 
-    if let Some(cache) = this.base_mut(context.gc_context).bitmap_cache_mut() {
-        let width = bounds.width().to_pixels().ceil().max(0.0);
-        let height = bounds.height().to_pixels().ceil().max(0.0);
-        if width <= u16::MAX as f64 && height <= u16::MAX as f64 {
-            let width = width as u16;
-            let height = height as u16;
-            if cache.is_dirty(&base_transform.matrix, width, height) {
-                cache.update(context.renderer, base_transform.matrix, width, height);
-                cache_info = cache.handle().map(|handle| (handle, true));
+        if let Some(cache) = this.base_mut(context.gc_context).bitmap_cache_mut() {
+            let width = bounds.width().to_pixels().ceil().max(0.0);
+            let height = bounds.height().to_pixels().ceil().max(0.0);
+            if width <= u16::MAX as f64 && height <= u16::MAX as f64 {
+                let width = width as u16;
+                let height = height as u16;
+                if cache.is_dirty(&base_transform.matrix, width, height) {
+                    cache.update(context.renderer, base_transform.matrix, width, height);
+                    cache_info = cache
+                        .handle()
+                        .map(|handle| (handle, true, base_transform, bounds));
+                } else {
+                    cache_info = cache
+                        .handle()
+                        .map(|handle| (handle, false, base_transform, bounds));
+                }
             } else {
-                cache_info = cache.handle().map(|handle| (handle, false));
-            }
-        } else {
-            tracing::warn!(
+                tracing::warn!(
                 "Skipping cacheAsBitmap for incredibly large object at {:?} ({width} x {height})",
                 this.path()
             );
-            cache.clear();
-            cache_info = None;
+                cache.clear();
+                cache_info = None;
+            }
         }
-    }
+        cache_info
+    } else {
+        None
+    };
 
     // We can't hold `cache` (which will hold `base`), so this is split up
-    if let Some((handle, dirty)) = cache_info {
+    if let Some((handle, dirty, base_transform, bounds)) = cache_info {
         // In order to render an object to a texture, we need to draw its entire bounds.
         // Calculate the offset from tx/ty in order to accommodate any drawings that extend the bounds
         // negatively
@@ -722,6 +731,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
                 library: context.library,
                 transform_stack: &mut transform_stack,
                 is_offscreen: true,
+                use_bitmap_cache: true,
                 stage: context.stage,
             };
             render_base_inner(this, &mut offscreen_context);
