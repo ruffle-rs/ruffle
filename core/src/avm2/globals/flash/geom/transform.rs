@@ -55,7 +55,9 @@ pub fn set_color_transform<'gc>(
     let ct = object_to_color_transform(args.get_object(activation, 0, "value")?, activation)?;
     let dobj = get_display_object(this, activation)?;
     dobj.set_color_transform(activation.context.gc_context, ct);
-    dobj.invalidate_cached_bitmap(activation.context.gc_context);
+    if let Some(parent) = dobj.parent() {
+        parent.invalidate_cached_bitmap(activation.context.gc_context);
+    }
     Ok(Value::Undefined)
 }
 
