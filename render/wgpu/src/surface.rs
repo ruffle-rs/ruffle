@@ -65,7 +65,7 @@ impl Surface {
 
     #[allow(clippy::too_many_arguments)]
     #[instrument(level = "debug", skip_all)]
-    pub fn draw_commands_to(
+    pub fn draw_commands_and_copy_to(
         &mut self,
         frame_view: &wgpu::TextureView,
         render_target_mode: RenderTargetMode,

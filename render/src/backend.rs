@@ -34,8 +34,14 @@ pub trait RenderBackend: Downcast {
         commands: CommandList,
         quality: StageQuality,
         bounds: PixelRegion,
-        clear: Option<Color>,
     ) -> Option<Box<dyn SyncHandle>>;
+
+    fn render_offscreen_for_cache(
+        &mut self,
+        handle: BitmapHandle,
+        commands: CommandList,
+        clear: Color,
+    );
 
     /// Applies the given filter with a `BitmapHandle` source onto a destination `BitmapHandle`.
     /// The `destination_rect` must be calculated by the caller and is assumed to be correct.

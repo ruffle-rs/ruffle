@@ -49,7 +49,7 @@ pub use loader_display::LoaderDisplay;
 pub use morph_shape::{MorphShape, MorphShapeStatic};
 pub use movie_clip::{MovieClip, MovieClipWeak, Scene};
 use ruffle_render::backend::RenderBackend;
-use ruffle_render::bitmap::{BitmapHandle, BitmapInfo, PixelRegion};
+use ruffle_render::bitmap::{BitmapHandle, BitmapInfo};
 use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::filters::Filter;
 pub use stage::{Stage, StageAlign, StageDisplayState, StageScaleMode, WindowMode};
@@ -670,7 +670,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
         None
     };
 
-    let mut cache_info: Option<(BitmapHandle, Option<(u32, u32)>)> = None;
+    let mut cache_info: Option<(BitmapHandle, bool)> = None;
     let base_transform = context.transform_stack.transform();
     let bounds: Rectangle<Twips> = this.bounds_with_transform(&base_transform.matrix);
 
@@ -682,11 +682,9 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
             let height = height as u16;
             if cache.is_dirty(&base_transform.matrix, width, height) {
                 cache.update(context.renderer, base_transform.matrix, width, height);
-                cache_info = cache
-                    .handle()
-                    .map(|handle| (handle, Some((width as u32, height as u32))));
+                cache_info = cache.handle().map(|handle| (handle, true));
             } else {
-                cache_info = cache.handle().map(|handle| (handle, None));
+                cache_info = cache.handle().map(|handle| (handle, false));
             }
         } else {
             tracing::warn!(
@@ -706,7 +704,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
         let offset_x = bounds.x_min - base_transform.matrix.tx;
         let offset_y = bounds.y_min - base_transform.matrix.ty;
 
-        if let Some((width, height)) = dirty {
+        if dirty {
             let mut transform_stack = TransformStack::new();
             transform_stack.push(&Transform {
                 color_transform: Default::default(),
@@ -726,12 +724,10 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
                 stage: context.stage,
             };
             render_base_inner(this, &mut offscreen_context);
-            offscreen_context.renderer.render_offscreen(
+            offscreen_context.renderer.render_offscreen_for_cache(
                 handle.clone(),
                 offscreen_context.commands,
-                offscreen_context.stage.quality(),
-                PixelRegion::for_whole_size(width, height),
-                Some(Color::from_rgb(0, 0)),
+                Color::from_rgb(0, 0),
             );
         }
 

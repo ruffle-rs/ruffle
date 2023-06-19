@@ -440,7 +440,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             }
         };
 
-        let command_buffers = self.surface.draw_commands_to(
+        let command_buffers = self.surface.draw_commands_and_copy_to(
             frame_output.view(),
             RenderTargetMode::FreshBuffer(wgpu::Color {
                 r: f64::from(clear.r) / 255.0,
@@ -579,7 +579,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         commands: CommandList,
         quality: StageQuality,
         bounds: PixelRegion,
-        clear: Option<Color>,
     ) -> Option<Box<dyn SyncHandle>> {
         let texture = as_texture(&handle);
 
@@ -621,18 +620,9 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             texture.height,
             wgpu::TextureFormat::Rgba8Unorm,
         );
-        let command_buffers = surface.draw_commands_to(
+        let command_buffers = surface.draw_commands_and_copy_to(
             frame_output.view(),
-            if let Some(color) = clear {
-                RenderTargetMode::FreshBuffer(wgpu::Color {
-                    r: f64::from(color.r) / 255.0,
-                    g: f64::from(color.g) / 255.0,
-                    b: f64::from(color.b) / 255.0,
-                    a: f64::from(color.a) / 255.0,
-                })
-            } else {
-                RenderTargetMode::ExistingTexture(target.get_texture())
-            },
+            RenderTargetMode::ExistingTexture(target.get_texture()),
             &self.descriptors,
             &mut self.uniform_buffers_storage,
             &mut self.color_buffers_storage,
@@ -671,6 +661,43 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 ..
             }) => unreachable!("Buffer must be Borrowed as it was set to be Borrowed earlier"),
         }
+    }
+
+    fn render_offscreen_for_cache(
+        &mut self,
+        handle: BitmapHandle,
+        commands: CommandList,
+        clear: Color,
+    ) {
+        let clear = wgpu::Color {
+            r: f64::from(clear.r) / 255.0,
+            g: f64::from(clear.g) / 255.0,
+            b: f64::from(clear.b) / 255.0,
+            a: f64::from(clear.a) / 255.0,
+        };
+        let texture = as_texture(&handle);
+
+        let mut surface = Surface::new(
+            &self.descriptors,
+            self.surface.quality(),
+            texture.width,
+            texture.height,
+            wgpu::TextureFormat::Rgba8Unorm,
+        );
+        let command_buffers = surface.draw_commands_and_copy_to(
+            &texture.texture.create_view(&Default::default()),
+            RenderTargetMode::FreshBuffer(clear),
+            &self.descriptors,
+            &mut self.uniform_buffers_storage,
+            &mut self.color_buffers_storage,
+            &self.meshes,
+            commands,
+            LayerRef::Current,
+            &mut self.offscreen_texture_pool,
+        );
+        self.descriptors.queue.submit(command_buffers);
+        self.uniform_buffers_storage.recall();
+        self.color_buffers_storage.recall();
     }
 
     fn is_filter_supported(&self, filter: &Filter) -> bool {
