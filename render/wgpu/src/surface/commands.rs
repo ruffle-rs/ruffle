@@ -478,7 +478,7 @@ pub fn chunk_blends<'a>(
                 );
                 let clear_color = BlendType::from(blend_mode).default_color();
                 let target = surface.draw_commands(
-                    RenderTargetMode::FreshBuffer(clear_color),
+                    RenderTargetMode::FreshWithColor(clear_color),
                     descriptors,
                     meshes,
                     commands,

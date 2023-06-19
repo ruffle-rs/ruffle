@@ -5,7 +5,7 @@ use crate::mesh::{Mesh, PendingDraw};
 use crate::surface::{LayerRef, Surface};
 use crate::target::{MaybeOwnedBuffer, TextureTarget};
 use crate::target::{RenderTargetFrame, TextureBufferInfo};
-use crate::uniform_buffer::BufferStorage;
+use crate::uniform_buffer::{BufferStorage, UniformBuffer};
 use crate::utils::BufferDimensions;
 use crate::{
     as_texture, format_list, get_backend_names, ColorAdjustments, Descriptors, Error,
@@ -442,7 +442,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
         let command_buffers = self.surface.draw_commands_and_copy_to(
             frame_output.view(),
-            RenderTargetMode::FreshBuffer(wgpu::Color {
+            RenderTargetMode::FreshWithColor(wgpu::Color {
                 r: f64::from(clear.r) / 255.0,
                 g: f64::from(clear.g) / 255.0,
                 b: f64::from(clear.b) / 255.0,
@@ -622,7 +622,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         );
         let command_buffers = surface.draw_commands_and_copy_to(
             frame_output.view(),
-            RenderTargetMode::ExistingTexture(target.get_texture()),
+            RenderTargetMode::FreshWithTexture(target.get_texture()),
             &self.descriptors,
             &mut self.uniform_buffers_storage,
             &mut self.color_buffers_storage,
@@ -677,6 +677,23 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         };
         let texture = as_texture(&handle);
 
+        let uniform_encoder_label = create_debug_label!("Uniform upload command encoder");
+        let mut uniform_buffer = UniformBuffer::new(&mut self.uniform_buffers_storage);
+        let mut color_buffer = UniformBuffer::new(&mut self.color_buffers_storage);
+        let mut uniform_encoder =
+            self.descriptors
+                .device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: uniform_encoder_label.as_deref(),
+                });
+        let label = create_debug_label!("Draw encoder");
+        let mut draw_encoder =
+            self.descriptors
+                .device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: label.as_deref(),
+                });
+
         let mut surface = Surface::new(
             &self.descriptors,
             self.surface.quality(),
@@ -684,18 +701,22 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             texture.height,
             wgpu::TextureFormat::Rgba8Unorm,
         );
-        let command_buffers = surface.draw_commands_and_copy_to(
-            &texture.texture.create_view(&Default::default()),
-            RenderTargetMode::FreshBuffer(clear),
+        surface.draw_commands(
+            RenderTargetMode::ExistingWithColor(texture.texture.clone(), clear),
             &self.descriptors,
-            &mut self.uniform_buffers_storage,
-            &mut self.color_buffers_storage,
             &self.meshes,
             commands,
-            LayerRef::Current,
+            &mut uniform_buffer,
+            &mut color_buffer,
+            &mut uniform_encoder,
+            &mut draw_encoder,
+            LayerRef::None,
             &mut self.offscreen_texture_pool,
         );
-        self.descriptors.queue.submit(command_buffers);
+
+        self.descriptors
+            .queue
+            .submit(vec![uniform_encoder.finish(), draw_encoder.finish()]);
         self.uniform_buffers_storage.recall();
         self.color_buffers_storage.recall();
     }
@@ -933,10 +954,22 @@ pub enum RenderTargetMode {
     // This is used when rendering to the actual display,
     // or when applying a filter. In both cases, we have a fixed background color,
     // and don't need to blend with anything else
-    FreshBuffer(wgpu::Color),
-    // Use the provided texture as our frame buffer. During rendering,
+    FreshWithColor(wgpu::Color),
+    // Construct a new frame buffer, cleared with an existing texture.
     // we will blend with the previous contents of the texture.
     // This is used in `render_offscreen`, as we need to blend with the previous
     // contents of our `BitmapData` texture
-    ExistingTexture(Arc<wgpu::Texture>),
+    FreshWithTexture(Arc<wgpu::Texture>),
+    // Use the provided texture as our frame buffer, and clear it with the given color.
+    ExistingWithColor(Arc<wgpu::Texture>, wgpu::Color),
+}
+
+impl RenderTargetMode {
+    pub fn color(&self) -> Option<wgpu::Color> {
+        match self {
+            RenderTargetMode::FreshWithColor(color) => Some(*color),
+            RenderTargetMode::FreshWithTexture(_) => None,
+            RenderTargetMode::ExistingWithColor(_, color) => Some(*color),
+        }
+    }
 }
