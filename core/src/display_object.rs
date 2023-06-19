@@ -77,9 +77,9 @@ use self::loader_display::LoaderDisplayWeak;
 #[derive(Clone, Debug, Default)]
 pub struct BitmapCache {
     /// The transform that was used when this cache was last generated.
-    /// Aside from `transform.matrix.tx` and `transform.matrix.ty`,
+    /// Aside from `matrix.tx` and `matrix.ty`,
     /// any other changes needs to cause an invalidation.
-    transform: Transform,
+    matrix: Matrix,
     bitmap: Option<BitmapInfo>,
 }
 
@@ -89,17 +89,14 @@ impl BitmapCache {
     pub fn make_dirty(&mut self) {
         // Setting the old transform to something invalid is a cheap way of making it invalid,
         // without reserving an extra field for.
-        self.transform.matrix = Matrix::ZERO;
+        self.matrix = Matrix::ZERO;
     }
 
-    fn is_dirty(&self, other: &Transform, width: u16, height: u16) -> bool {
-        if self.transform.color_transform != other.color_transform {
-            return true;
-        }
-        if self.transform.matrix.a != other.matrix.a
-            || self.transform.matrix.b != other.matrix.b
-            || self.transform.matrix.c != other.matrix.c
-            || self.transform.matrix.d != other.matrix.d
+    fn is_dirty(&self, other: &Matrix, width: u16, height: u16) -> bool {
+        if self.matrix.a != other.a
+            || self.matrix.b != other.b
+            || self.matrix.c != other.c
+            || self.matrix.d != other.d
         {
             return true;
         }
@@ -117,11 +114,11 @@ impl BitmapCache {
     fn update(
         &mut self,
         renderer: &mut dyn RenderBackend,
-        transform: Transform,
+        matrix: Matrix,
         width: u16,
         height: u16,
     ) {
-        self.transform = transform;
+        self.matrix = matrix;
         if let Some(current) = &mut self.bitmap {
             if current.width == width && current.height == height {
                 return; // No need to resize it
@@ -683,8 +680,8 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
         if width <= u16::MAX as f64 && height <= u16::MAX as f64 {
             let width = width as u16;
             let height = height as u16;
-            if cache.is_dirty(&base_transform, width, height) {
-                cache.update(context.renderer, base_transform.clone(), width, height);
+            if cache.is_dirty(&base_transform.matrix, width, height) {
+                cache.update(context.renderer, base_transform.matrix, width, height);
                 cache_info = cache
                     .handle()
                     .map(|handle| (handle, Some((width as u32, height as u32))));
@@ -712,7 +709,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
         if let Some((width, height)) = dirty {
             let mut transform_stack = TransformStack::new();
             transform_stack.push(&Transform {
-                color_transform: base_transform.color_transform,
+                color_transform: Default::default(),
                 matrix: Matrix {
                     tx: -offset_x,
                     ty: -offset_y,
@@ -747,7 +744,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
                     ty: base_transform.matrix.ty + offset_y,
                     ..Default::default()
                 },
-                ..Default::default()
+                color_transform: base_transform.color_transform,
             },
             true,
         );
@@ -1819,7 +1816,9 @@ pub trait TDisplayObject<'gc>:
             }
             if let Some(color_transform) = &place_object.color_transform {
                 self.set_color_transform(context.gc_context, *color_transform);
-                self.invalidate_cached_bitmap(context.gc_context);
+                if let Some(parent) = self.parent() {
+                    parent.invalidate_cached_bitmap(context.gc_context);
+                }
             }
             if let Some(ratio) = place_object.ratio {
                 if let Some(mut morph_shape) = self.as_morph_shape() {
