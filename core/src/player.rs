@@ -1557,6 +1557,7 @@ impl Player {
                 library: &root_data.library,
                 transform_stack: &mut self.transform_stack,
                 is_offscreen: false,
+                use_bitmap_cache: true,
                 stage,
             };
 
