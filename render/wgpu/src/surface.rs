@@ -143,6 +143,61 @@ impl Surface {
 
     #[allow(clippy::too_many_arguments)]
     #[instrument(level = "debug", skip_all)]
+    pub fn draw_commands_onto(
+        &mut self,
+        render_target_mode: RenderTargetMode,
+        descriptors: &Descriptors,
+        uniform_buffers_storage: &mut BufferStorage<Transforms>,
+        color_buffers_storage: &mut BufferStorage<ColorAdjustments>,
+        meshes: &Vec<Mesh>,
+        commands: CommandList,
+        layer: LayerRef,
+        texture_pool: &mut TexturePool,
+    ) -> Vec<wgpu::CommandBuffer> {
+        let uniform_encoder_label = create_debug_label!("Uniform upload command encoder");
+        let mut uniform_buffer = UniformBuffer::new(uniform_buffers_storage);
+        let mut color_buffer = UniformBuffer::new(color_buffers_storage);
+        let mut uniform_encoder =
+            descriptors
+                .device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: uniform_encoder_label.as_deref(),
+                });
+        let label = create_debug_label!("Draw encoder");
+        let mut draw_encoder =
+            descriptors
+                .device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: label.as_deref(),
+                });
+
+        let target = self.draw_commands(
+            render_target_mode,
+            descriptors,
+            meshes,
+            commands,
+            &mut uniform_buffer,
+            &mut color_buffer,
+            &mut uniform_encoder,
+            &mut draw_encoder,
+            layer,
+            texture_pool,
+        );
+
+        // If we didn't end up drawing anything, ensure it's cleared before returning
+        target.ensure_cleared(&mut draw_encoder);
+
+        let mut buffers = vec![draw_encoder.finish()];
+
+        buffers.insert(0, uniform_encoder.finish());
+        uniform_buffer.finish();
+        color_buffer.finish();
+
+        buffers
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    #[instrument(level = "debug", skip_all)]
     pub fn draw_commands<'frame, 'global: 'frame>(
         &mut self,
         render_target_mode: RenderTargetMode,
@@ -471,7 +526,7 @@ impl Surface {
             },
             self.format,
             self.sample_count,
-            RenderTargetMode::FreshBuffer(wgpu::Color::TRANSPARENT),
+            RenderTargetMode::FreshWithColor(wgpu::Color::TRANSPARENT),
             draw_encoder,
         );
         let texture_transform =
@@ -582,7 +637,7 @@ impl Surface {
                 },
                 self.format,
                 self.sample_count,
-                RenderTargetMode::FreshBuffer(wgpu::Color::TRANSPARENT),
+                RenderTargetMode::FreshWithColor(wgpu::Color::TRANSPARENT),
                 draw_encoder,
             ),
             CommandTarget::new(
@@ -595,7 +650,7 @@ impl Surface {
                 },
                 self.format,
                 self.sample_count,
-                RenderTargetMode::FreshBuffer(wgpu::Color::TRANSPARENT),
+                RenderTargetMode::FreshWithColor(wgpu::Color::TRANSPARENT),
                 draw_encoder,
             ),
         ];
