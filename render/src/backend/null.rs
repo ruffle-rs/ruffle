@@ -64,9 +64,17 @@ impl RenderBackend for NullRenderer {
         _commands: CommandList,
         _quality: StageQuality,
         _bounds: PixelRegion,
-        _clear: Option<Color>,
     ) -> Option<Box<dyn SyncHandle>> {
         None
+    }
+
+    fn render_offscreen_for_cache(
+        &mut self,
+        _handle: BitmapHandle,
+        _commands: CommandList,
+        _clear: Color,
+    ) {
+        unimplemented!()
     }
 
     fn submit_frame(&mut self, _clear: Color, _commands: CommandList) {}

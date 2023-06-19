@@ -1528,7 +1528,7 @@ pub fn draw<'gc>(
 
     let image = context
         .renderer
-        .render_offscreen(handle, commands, quality, dirty_region, None);
+        .render_offscreen(handle, commands, quality, dirty_region);
 
     match image {
         Some(sync_handle) => {
