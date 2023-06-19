@@ -48,7 +48,7 @@ pub use interactive::{Avm2MousePick, InteractiveObject, TInteractiveObject};
 pub use loader_display::LoaderDisplay;
 pub use morph_shape::{MorphShape, MorphShapeStatic};
 pub use movie_clip::{MovieClip, MovieClipWeak, Scene};
-use ruffle_render::backend::RenderBackend;
+use ruffle_render::backend::{BitmapCacheEntry, RenderBackend};
 use ruffle_render::bitmap::{BitmapHandle, BitmapInfo};
 use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::filters::Filter;
@@ -717,6 +717,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
             let mut offscreen_context = RenderContext {
                 renderer: context.renderer,
                 commands: CommandList::new(),
+                cache_draws: context.cache_draws,
                 gc_context: context.gc_context,
                 library: context.library,
                 transform_stack: &mut transform_stack,
@@ -724,11 +725,11 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
                 stage: context.stage,
             };
             render_base_inner(this, &mut offscreen_context);
-            offscreen_context.renderer.render_offscreen_for_cache(
-                handle.clone(),
-                offscreen_context.commands,
-                Color::from_rgb(0, 0),
-            );
+            offscreen_context.cache_draws.push(BitmapCacheEntry {
+                handle: handle.clone(),
+                commands: offscreen_context.commands,
+                clear: Color::from_rgb(0, 0),
+            });
         }
 
         // When rendering it back, ensure we're only keeping transform - scale/rotation is within the image already

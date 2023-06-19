@@ -1454,9 +1454,11 @@ pub fn draw<'gc>(
     let mut transform_stack = ruffle_render::transform::TransformStack::new();
     transform_stack.push(&transform);
 
+    let mut cache_draws = vec![];
     let mut render_context = RenderContext {
         renderer: context.renderer,
         commands: CommandList::new(),
+        cache_draws: &mut cache_draws,
         gc_context: context.gc_context,
         library: context.library,
         transform_stack: &mut transform_stack,
