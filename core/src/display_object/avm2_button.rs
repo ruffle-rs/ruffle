@@ -617,7 +617,8 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         // Add the bounds of the child, dictated by current state
         let state = self.0.read().state;
         if let Some(child) = self.get_state_child(state.into()) {
-            let child_bounds = child.bounds_with_transform(matrix);
+            let matrix = *matrix * *child.base().matrix();
+            let child_bounds = child.bounds_with_transform(&matrix);
             bounds = bounds.union(&child_bounds);
         }
 
