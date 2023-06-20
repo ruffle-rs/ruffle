@@ -1,0 +1,2 @@
+start = Başlat
+browse = Gözat
