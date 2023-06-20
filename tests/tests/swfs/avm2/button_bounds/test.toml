@@ -1,0 +1,5 @@
+num_frames = 1
+
+[approximations]
+number_patterns = ["\\(x=(.+?), y=(.+?), w=(.+?), h=(.+?)\\)"]
+epsilon = 0.01
