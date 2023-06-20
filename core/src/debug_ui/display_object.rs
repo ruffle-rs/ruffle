@@ -454,7 +454,7 @@ impl DisplayObjectWindow {
                 if object.world_bounds().is_valid() {
                     ui.label(object.world_bounds().to_string());
                 } else {
-                    ui.colored_label(ui.style().visuals.error_fg_color, "Invalid");
+                    ui.weak("Invalid");
                 }
                 ui.end_row();
 
@@ -462,7 +462,7 @@ impl DisplayObjectWindow {
                 if object.local_bounds().is_valid() {
                     ui.label(object.local_bounds().to_string());
                 } else {
-                    ui.colored_label(ui.style().visuals.error_fg_color, "Invalid");
+                    ui.weak("Invalid");
                 }
                 ui.end_row();
 
@@ -470,7 +470,7 @@ impl DisplayObjectWindow {
                 if object.self_bounds().is_valid() {
                     ui.label(object.self_bounds().to_string());
                 } else {
-                    ui.colored_label(ui.style().visuals.error_fg_color, "Invalid");
+                    ui.weak("Invalid");
                 }
                 ui.end_row();
 
@@ -479,7 +479,7 @@ impl DisplayObjectWindow {
                     if scroll_rect.is_valid() {
                         ui.label(scroll_rect.to_string());
                     } else {
-                        ui.colored_label(ui.style().visuals.error_fg_color, "Invalid");
+                        ui.weak("Invalid");
                     }
                 } else {
                     ui.label("None");
