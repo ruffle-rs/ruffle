@@ -1351,9 +1351,9 @@ pub trait TDisplayObject<'gc>:
             if let Some(old_masker) = self.base().masker() {
                 old_masker.set_maskee(gc_context, None, false);
             }
+            self.invalidate_cached_bitmap(gc_context);
         }
         self.base_mut(gc_context).set_masker(node);
-        self.invalidate_cached_bitmap(gc_context);
     }
     fn maskee(&self) -> Option<DisplayObject<'gc>> {
         self.base().maskee()
@@ -1368,9 +1368,9 @@ pub trait TDisplayObject<'gc>:
             if let Some(old_maskee) = self.base().maskee() {
                 old_maskee.set_masker(gc_context, None, false);
             }
+            self.invalidate_cached_bitmap(gc_context);
         }
         self.base_mut(gc_context).set_maskee(node);
-        self.invalidate_cached_bitmap(gc_context);
     }
 
     fn scroll_rect(&self) -> Option<Rectangle<Twips>> {
