@@ -1687,8 +1687,7 @@ pub trait TDisplayObject<'gc>:
     fn state(&self) -> Option<ButtonState> {
         None
     }
-    fn set_state(self, _context: &mut crate::context::UpdateContext<'_, 'gc>, _state: ButtonState) {
-    }
+    fn set_state(self, _context: &mut UpdateContext<'_, 'gc>, _state: ButtonState) {}
     /// Run any start-of-frame actions for this display object.
     ///
     /// When fired on `Stage`, this also emits the AVM2 `enterFrame` broadcast.

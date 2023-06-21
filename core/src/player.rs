@@ -1259,14 +1259,13 @@ impl Player {
                 if !context.is_action_script_3() && hovered.as_displayobject().avm1_removed() {
                     context.mouse_over_object = None;
                     if let Some(new_object) = new_over_object {
-                        if new_object.as_displayobject().id() == hovered.as_displayobject().id()
-                            && new_object.as_displayobject().depth()
-                                == hovered.as_displayobject().depth()
-                            && Arc::ptr_eq(
-                                &new_object.as_displayobject().movie(),
-                                &hovered.as_displayobject().movie(),
-                            )
-                        {
+                        if Self::check_display_object_equality(
+                            new_object.as_displayobject(),
+                            hovered.as_displayobject(),
+                        ) && Arc::ptr_eq(
+                            &new_object.as_displayobject().movie(),
+                            &hovered.as_displayobject().movie(),
+                        ) {
                             if let Some(state) = hovered.as_displayobject().state() {
                                 new_object.as_displayobject().set_state(context, state);
                             }
@@ -1288,19 +1287,18 @@ impl Player {
                         );
                     }
 
-                    if let Some(new_object) = display_object {
-                        if new_object.id() == down_object.as_displayobject().id()
-                            && new_object.depth() == new_object.depth()
+                    if let Some(new_down_object) = display_object {
+                        if new_down_object.depth() == new_down_object.depth()
                             && Arc::ptr_eq(
-                                &new_object.movie(),
+                                &new_down_object.movie(),
                                 &down_object.as_displayobject().movie(),
                             )
                         {
                             if let Some(state) = down_object.as_displayobject().state() {
-                                new_object.set_state(context, state);
+                                new_down_object.set_state(context, state);
                             }
                             context.mouse_down_object = if display_object.is_some() {
-                                new_object.as_interactive()
+                                new_down_object.as_interactive()
                             } else {
                                 None
                             };
@@ -1495,6 +1493,10 @@ impl Player {
         needs_render
     }
 
+    //Checks if two displayObjects have the same depth and id
+    fn check_display_object_equality(object1: DisplayObject, object2: DisplayObject) -> bool {
+        object1.depth() == object2.depth() && object1.id() == object2.id()
+    }
     ///This searches for a display object by it's id.
     ///When a button is being held down but the mouse stops hovering over the object
     ///we need to know if th button is still there after goto.
@@ -1505,8 +1507,7 @@ impl Player {
     ) -> Option<DisplayObject<'gc>> {
         if let Some(parent) = obj.as_container() {
             for child in parent.iter_render_list() {
-                if child.id() == previous_object.id()
-                    && child.depth() == previous_object.depth()
+                if Self::check_display_object_equality(child, previous_object)
                     && Arc::ptr_eq(&child.movie(), &previous_object.movie())
                 {
                     return Some(child);
