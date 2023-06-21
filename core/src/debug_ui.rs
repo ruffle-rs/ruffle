@@ -7,7 +7,7 @@ mod movie;
 use crate::context::{RenderContext, UpdateContext};
 use crate::debug_ui::avm1::Avm1ObjectWindow;
 use crate::debug_ui::avm2::Avm2ObjectWindow;
-use crate::debug_ui::display_object::DisplayObjectWindow;
+use crate::debug_ui::display_object::{DisplayObjectSearchWindow, DisplayObjectWindow};
 use crate::debug_ui::handle::{AVM1ObjectHandle, AVM2ObjectHandle, DisplayObjectHandle};
 use crate::debug_ui::movie::{MovieListWindow, MovieWindow};
 use crate::display_object::TDisplayObject;
@@ -30,6 +30,7 @@ pub struct DebugUi {
     queued_messages: Vec<Message>,
     items_to_save: Vec<ItemToSave>,
     movie_list: Option<MovieListWindow>,
+    display_object_search: Option<DisplayObjectSearchWindow>,
 }
 
 #[derive(Debug)]
@@ -42,10 +43,16 @@ pub enum Message {
     TrackTopLevelMovie,
     ShowKnownMovies,
     SaveFile(ItemToSave),
+    SearchForDisplayObject,
 }
 
 impl DebugUi {
-    pub(crate) fn show(&mut self, egui_ctx: &egui::Context, context: &mut UpdateContext) {
+    pub(crate) fn show(
+        &mut self,
+        egui_ctx: &egui::Context,
+        context: &mut UpdateContext,
+        movie_offset: f64,
+    ) {
         let mut messages = std::mem::take(&mut self.queued_messages);
 
         self.display_objects.retain(|object, window| {
@@ -69,6 +76,12 @@ impl DebugUi {
         if let Some(mut movie_list) = self.movie_list.take() {
             if movie_list.show(egui_ctx, context, &mut messages) {
                 self.movie_list = Some(movie_list);
+            }
+        }
+
+        if let Some(mut search) = self.display_object_search.take() {
+            if search.show(egui_ctx, context, &mut messages, movie_offset) {
+                self.display_object_search = Some(search);
             }
         }
 
@@ -98,8 +111,15 @@ impl DebugUi {
                 Message::ShowKnownMovies => {
                     self.movie_list = Some(Default::default());
                 }
+                Message::SearchForDisplayObject => {
+                    self.display_object_search = Some(Default::default());
+                }
             }
         }
+    }
+
+    pub fn should_suspend_player(&self) -> bool {
+        self.display_object_search.is_some()
     }
 
     pub fn items_to_save(&mut self) -> Vec<ItemToSave> {
@@ -134,6 +154,15 @@ impl DebugUi {
                 let bounds = world_matrix * object.world_bounds();
 
                 draw_debug_rect(context, swf::Color::RED, bounds, 5.0);
+            }
+        }
+
+        if let Some(window) = &self.display_object_search {
+            for (color, object) in window.hovered_debug_rects() {
+                let object = object.fetch(dynamic_root_set);
+                let bounds = world_matrix * object.world_bounds();
+
+                draw_debug_rect(context, color, bounds, 5.0);
             }
         }
 

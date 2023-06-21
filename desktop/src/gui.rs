@@ -71,6 +71,7 @@ pub struct RuffleGui {
     locale: LanguageIdentifier,
     default_player_options: PlayerOptions,
     currently_opened: Option<(Url, PlayerOptions)>,
+    was_suspended_before_debug: bool,
 }
 
 impl RuffleGui {
@@ -91,6 +92,7 @@ impl RuffleGui {
             is_about_visible: false,
             is_as3_warning_visible: false,
             is_open_dialog_visible: false,
+            was_suspended_before_debug: false,
 
             context_menu: vec![],
             open_dialog: OpenDialog::new(
@@ -113,6 +115,7 @@ impl RuffleGui {
         egui_ctx: &egui::Context,
         show_menu: bool,
         mut player: Option<&mut Player>,
+        menu_height_offset: f64,
     ) {
         if show_menu {
             self.main_menu_bar(egui_ctx, player.as_deref_mut());
@@ -124,7 +127,16 @@ impl RuffleGui {
         self.as3_warning(egui_ctx);
 
         if let Some(player) = player {
-            player.show_debug_ui(egui_ctx);
+            let was_suspended = player.debug_ui().should_suspend_player();
+            player.show_debug_ui(egui_ctx, menu_height_offset);
+            if was_suspended != player.debug_ui().should_suspend_player() {
+                if player.debug_ui().should_suspend_player() {
+                    self.was_suspended_before_debug = !player.is_playing();
+                    player.set_is_playing(false);
+                } else {
+                    player.set_is_playing(!self.was_suspended_before_debug);
+                }
+            }
             for item in player.debug_ui().items_to_save() {
                 std::thread::spawn(move || {
                     if let Some(path) = FileDialog::new()
@@ -270,6 +282,12 @@ impl RuffleGui {
                             ui.close_menu();
                             if let Some(player) = &mut player {
                                 player.debug_ui().queue_message(DebugMessage::ShowKnownMovies);
+                            }
+                        }
+                        if Button::new(text(&self.locale, "debug-menu-search-display-objects")).ui(ui).clicked() {
+                            ui.close_menu();
+                            if let Some(player) = &mut player {
+                                player.debug_ui().queue_message(DebugMessage::SearchForDisplayObject);
                             }
                         }
                     });
