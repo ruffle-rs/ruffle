@@ -8,4 +8,4 @@ about-ruffle-commit-time = İşleme Tarihi
 about-ruffle-visit-website = İnt. Sitesi
 about-ruffle-visit-github = GitHub
 about-ruffle-visit-discord = Discord
-about-ruffle-visit-sponsor = Destekçi
+about-ruffle-visit-sponsor = Destekle
