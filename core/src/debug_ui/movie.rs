@@ -257,44 +257,21 @@ pub fn open_movie_button(ui: &mut Ui, movie: &Arc<SwfMovie>, messages: &mut Vec<
 }
 
 pub fn open_character_button(ui: &mut Ui, character: &Character) {
-    match character {
-        Character::EditText(_) => {
-            ui.label("EditText");
-        }
-        Character::Graphic(_) => {
-            ui.label("Graphic");
-        }
-        Character::MovieClip(_) => {
-            ui.label("MovieClip");
-        }
-        Character::Bitmap(_) => {
-            ui.label("Bitmap");
-        }
-        Character::Avm1Button(_) => {
-            ui.label("Avm1Button");
-        }
-        Character::Avm2Button(_) => {
-            ui.label("Avm2Button");
-        }
-        Character::Font(_) => {
-            ui.label("Font");
-        }
-        Character::MorphShape(_) => {
-            ui.label("MorphShape");
-        }
-        Character::Text(_) => {
-            ui.label("Text");
-        }
-        Character::Sound(_) => {
-            ui.label("Sound");
-        }
-        Character::Video(_) => {
-            ui.label("Video");
-        }
-        Character::BinaryData(_) => {
-            ui.label("BinaryData");
-        }
+    let name = match character {
+        Character::EditText(_) => "EditText",
+        Character::Graphic(_) => "Graphic",
+        Character::MovieClip(_) => "MovieClip",
+        Character::Bitmap(_) => "Bitmap",
+        Character::Avm1Button(_) => "Avm1Button",
+        Character::Avm2Button(_) => "Avm2Button",
+        Character::Font(_) => "Font",
+        Character::MorphShape(_) => "MorphShape",
+        Character::Text(_) => "Text",
+        Character::Sound(_) => "Sound",
+        Character::Video(_) => "Video",
+        Character::BinaryData(_) => "BinaryData",
     };
+    ui.label(name);
 }
 
 fn save_swf(movie: &Arc<SwfMovie>, messages: &mut Vec<Message>) {
