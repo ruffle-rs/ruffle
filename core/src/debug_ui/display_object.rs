@@ -338,6 +338,23 @@ impl DisplayObjectWindow {
                     ui.end_row();
                 }
 
+                ui.label("Cache as Bitmap");
+                ui.horizontal(|ui| {
+                    if object.filters().is_empty() {
+                        let mut enabled = object.is_bitmap_cached();
+                        Checkbox::new(&mut enabled, "Enabled").ui(ui);
+                        if enabled != object.is_bitmap_cached() {
+                            object.set_is_bitmap_cached(context.gc_context, enabled);
+                        }
+                    } else {
+                        ui.label("Forced due to filters");
+                    }
+                    if ui.button("Invalidate").clicked() {
+                        object.invalidate_cached_bitmap(context.gc_context);
+                    }
+                });
+                ui.end_row();
+
                 ui.label("Debug Rect");
                 ui.horizontal(|ui| {
                     Checkbox::without_text(&mut self.debug_rect_visible).ui(ui);
