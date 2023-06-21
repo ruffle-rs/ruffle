@@ -424,13 +424,21 @@ pub fn for_each<'gc>(
             .cloned()
             .unwrap_or(Value::Undefined)
             .as_callable(activation, None, None)?;
-        let receiver = args.get(1).cloned().unwrap_or(Value::Null).as_object();
+        let receiver = args.get(1).cloned().unwrap_or(Value::Null);
+
+        let object_receiver = if let Ok(receiver) = receiver.coerce_to_object(activation) {
+            Some(receiver)
+        } else {
+            // If the second argument is `null` or `undefined`, the function is called with `this` being the global scope.
+            activation.global_scope()
+        };
+
         let mut iter = ArrayIter::new(activation, this)?;
 
         while let Some(r) = iter.next(activation) {
             let (i, item) = r?;
 
-            callback.call(receiver, &[item, i.into(), this.into()], activation)?;
+            callback.call(object_receiver, &[item, i.into(), this.into()], activation)?;
         }
     }
 

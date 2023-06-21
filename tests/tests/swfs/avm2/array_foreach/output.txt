@@ -16,3 +16,14 @@ abc
 1
 //array === a
 true
+//b.forEach(function (...) { trace(this); }, [various values])
+//this = undefined
+[object global]
+//this = ""
+
+//this = null
+[object global]
+//this = this
+[object Test]
+//this = 300
+300
