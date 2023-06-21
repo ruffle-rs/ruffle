@@ -4,6 +4,7 @@ use swf::BlendMode;
 
 #[derive(Enum, Debug, Copy, Clone)]
 pub enum ComplexBlend {
+    Multiply,   // Can't be trivial, 0 alpha is special case
     Lighten,    // Might be trivial but I can't reproduce the right colors
     Darken,     // Might be trivial but I can't reproduce the right colors
     Difference, // Can't be trivial, relies on abs operation
@@ -28,7 +29,7 @@ impl BlendType {
         match mode {
             BlendMode::Normal => BlendType::Trivial(TrivialBlend::Normal),
             BlendMode::Layer => BlendType::Trivial(TrivialBlend::Normal),
-            BlendMode::Multiply => BlendType::Trivial(TrivialBlend::Multiply),
+            BlendMode::Multiply => BlendType::Complex(ComplexBlend::Multiply),
             BlendMode::Screen => BlendType::Trivial(TrivialBlend::Screen),
             BlendMode::Lighten => BlendType::Complex(ComplexBlend::Lighten),
             BlendMode::Darken => BlendType::Complex(ComplexBlend::Darken),
@@ -44,10 +45,7 @@ impl BlendType {
     }
 
     pub fn default_color(&self) -> wgpu::Color {
-        match self {
-            BlendType::Trivial(TrivialBlend::Multiply) => wgpu::Color::WHITE,
-            _ => wgpu::Color::TRANSPARENT,
-        }
+        wgpu::Color::TRANSPARENT
     }
 }
 
@@ -57,7 +55,6 @@ pub enum TrivialBlend {
     Add,
     Subtract,
     Screen,
-    Multiply,
 }
 
 impl TrivialBlend {
@@ -65,14 +62,6 @@ impl TrivialBlend {
         // out = <src_factor> * src <operation> <dst_factor> * dst
         match self {
             TrivialBlend::Normal => wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING,
-            TrivialBlend::Multiply => wgpu::BlendState {
-                color: wgpu::BlendComponent {
-                    src_factor: wgpu::BlendFactor::Dst,
-                    dst_factor: wgpu::BlendFactor::Zero,
-                    operation: wgpu::BlendOperation::Add,
-                },
-                alpha: wgpu::BlendComponent::OVER,
-            },
             TrivialBlend::Add => wgpu::BlendState {
                 color: wgpu::BlendComponent {
                     src_factor: wgpu::BlendFactor::One,
