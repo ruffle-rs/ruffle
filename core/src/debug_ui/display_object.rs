@@ -1,3 +1,7 @@
+mod search;
+
+pub use search::DisplayObjectSearchWindow;
+
 use crate::avm1::TObject as _;
 use crate::avm2::object::TObject as _;
 use crate::context::UpdateContext;

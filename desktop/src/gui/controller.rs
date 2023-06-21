@@ -2,7 +2,7 @@ use crate::backends::DesktopUiBackend;
 use crate::cli::Opt;
 use crate::custom_event::RuffleEvent;
 use crate::gui::movie::{MovieView, MovieViewRenderer};
-use crate::gui::RuffleGui;
+use crate::gui::{RuffleGui, MENU_HEIGHT};
 use crate::player::{PlayerController, PlayerOptions};
 use anyhow::anyhow;
 use egui::Context;
@@ -189,11 +189,17 @@ impl GuiController {
             .expect("Surface became unavailable");
 
         let raw_input = self.egui_winit.take_egui_input(&self.window);
+        let show_menu = self.window.fullscreen().is_none();
         let mut full_output = self.egui_ctx.run(raw_input, |context| {
             self.gui.update(
                 context,
-                self.window.fullscreen().is_none(),
+                show_menu,
                 player.as_deref_mut(),
+                if show_menu {
+                    MENU_HEIGHT as f64 * self.window.scale_factor()
+                } else {
+                    0.0
+                },
             );
         });
         self.repaint_after = full_output.repaint_after;

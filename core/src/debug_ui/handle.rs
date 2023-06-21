@@ -28,6 +28,10 @@ impl DisplayObjectHandle {
     pub fn fetch<'gc>(&self, dynamic_root_set: DynamicRootSet<'gc>) -> DisplayObject<'gc> {
         *dynamic_root_set.fetch(&self.root)
     }
+
+    pub fn as_ptr(&self) -> *const DisplayObjectPtr {
+        self.ptr
+    }
 }
 
 impl Debug for DisplayObjectHandle {
