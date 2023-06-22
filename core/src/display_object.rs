@@ -606,6 +606,26 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.cache.as_mut()
     }
 
+    /// Invalidates a cached bitmap, if it exists.
+    /// This may only be called once per frame - the first call will return true, regardless of
+    /// if there was a cache.
+    /// Any subsequent calls will return false, indicating that you do not need to invalidate the ancestors.
+    /// This is reset during rendering.
+    fn invalidate_cached_bitmap(&mut self) -> bool {
+        if self.flags.contains(DisplayObjectFlags::CACHE_INVALIDATED) {
+            return false;
+        }
+        if let Some(cache) = &mut self.cache {
+            cache.make_dirty();
+        }
+        self.flags.insert(DisplayObjectFlags::CACHE_INVALIDATED);
+        true
+    }
+
+    fn clear_invalidate_flag(&mut self) {
+        self.flags.remove(DisplayObjectFlags::CACHE_INVALIDATED);
+    }
+
     fn recheck_cache_as_bitmap(&mut self) {
         let should_cache = self.is_bitmap_cached_preference() || !self.filters.is_empty();
         if should_cache && self.cache.is_none() {
@@ -1727,6 +1747,7 @@ pub trait TDisplayObject<'gc>:
     /// (as long as the child is still on a render list)
     fn pre_render(&self, context: &mut RenderContext<'_, 'gc>) {
         let mut this = self.base_mut(context.gc_context);
+        this.clear_invalidate_flag();
         this.scroll_rect = this
             .has_scroll_rect()
             .then(|| this.next_scroll_rect.clone());
@@ -2073,11 +2094,11 @@ pub trait TDisplayObject<'gc>:
     /// Inform this object and its ancestors that it has visually changed and must be redrawn.
     /// If this object or any ancestor is marked as cacheAsBitmap, it will invalidate that cache.
     fn invalidate_cached_bitmap(&self, mc: MutationContext<'gc, '_>) {
-        if let Some(cache) = self.base_mut(mc).bitmap_cache_mut() {
-            cache.make_dirty();
-        }
-        if let Some(parent) = self.parent() {
-            parent.invalidate_cached_bitmap(mc);
+        if self.base_mut(mc).invalidate_cached_bitmap() {
+            // Don't inform ancestors if we've already done so this frame
+            if let Some(parent) = self.parent() {
+                parent.invalidate_cached_bitmap(mc);
+            }
         }
     }
 }
@@ -2152,6 +2173,9 @@ bitflags! {
         /// which are observed to lag behind objects placed by the timeline
         /// (even if they are both placed in the same frame)
         const SKIP_NEXT_ENTER_FRAME          = 1 << 11;
+
+        /// If this object has already had `invalidate_cached_bitmap` called this frame
+        const CACHE_INVALIDATED          = 1 << 12;
     }
 }
 
