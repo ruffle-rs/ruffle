@@ -593,11 +593,11 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.flags.set(DisplayObjectFlags::PLACED_BY_SCRIPT, value);
     }
 
-    fn is_bitmap_cached(&self) -> bool {
+    fn is_bitmap_cached_preference(&self) -> bool {
         self.flags.contains(DisplayObjectFlags::CACHE_AS_BITMAP)
     }
 
-    fn set_is_bitmap_cached(&mut self, value: bool) {
+    fn set_bitmap_cached_preference(&mut self, value: bool) {
         self.flags.set(DisplayObjectFlags::CACHE_AS_BITMAP, value);
         self.recheck_cache_as_bitmap();
     }
@@ -607,7 +607,7 @@ impl<'gc> DisplayObjectBase<'gc> {
     }
 
     fn recheck_cache_as_bitmap(&mut self) {
-        let should_cache = self.is_bitmap_cached() || !self.filters.is_empty();
+        let should_cache = self.is_bitmap_cached_preference() || !self.filters.is_empty();
         if should_cache && self.cache.is_none() {
             self.cache = Some(Default::default());
         } else if !should_cache && self.cache.is_some() {
@@ -1495,17 +1495,23 @@ pub trait TDisplayObject<'gc>:
         self.base_mut(gc_context).set_transformed_by_script(value)
     }
 
-    /// Whether this display object is cached into a bitmap rendering.
-    /// This is set implicitly when a filter or blend mode is applied, or explicitly by the user
-    /// via the `cacheAsBitmap` property.
-    fn is_bitmap_cached(&self) -> bool {
-        self.base().is_bitmap_cached()
+    /// Whether this display object prefers to be cached into a bitmap rendering.
+    /// This is the PlaceObject `cacheAsBitmap` flag - and may be overriden if filters are applied.
+    /// Consider `is_bitmap_cached` for if a bitmap cache is actually in use.
+    fn is_bitmap_cached_preference(&self) -> bool {
+        self.base().is_bitmap_cached_preference()
     }
 
-    /// Explicilty sets this display object to be cached into a bitmap rendering.
-    /// Note that the object will still be bitmap cached if a filter or blend mode is active.
-    fn set_is_bitmap_cached(&self, gc_context: MutationContext<'gc, '_>, value: bool) {
-        self.base_mut(gc_context).set_is_bitmap_cached(value)
+    /// Whether this display object is using a bitmap cache, whether by preference or necessity.
+    fn is_bitmap_cached(&self) -> bool {
+        self.base().cache.is_some()
+    }
+
+    /// Explicitly sets the preference of this display object to be cached into a bitmap rendering.
+    /// Note that the object will still be bitmap cached if a filter is active.
+    fn set_bitmap_cached_preference(&self, gc_context: MutationContext<'gc, '_>, value: bool) {
+        self.base_mut(gc_context)
+            .set_bitmap_cached_preference(value)
     }
 
     /// Whether this display object has a scroll rectangle applied.
@@ -1839,7 +1845,7 @@ pub trait TDisplayObject<'gc>:
                 }
             }
             if let Some(is_bitmap_cached) = place_object.is_bitmap_cached {
-                self.set_is_bitmap_cached(context.gc_context, is_bitmap_cached);
+                self.set_bitmap_cached_preference(context.gc_context, is_bitmap_cached);
             }
             if let Some(blend_mode) = place_object.blend_mode {
                 self.set_blend_mode(context.gc_context, blend_mode);
