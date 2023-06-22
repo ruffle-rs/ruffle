@@ -73,6 +73,8 @@ pub fn serialize_value<'gc>(
                         .to_string(),
                     true,
                 ))
+            } else if let Some(bytearray) = o.as_bytearray() {
+                Some(AmfValue::ByteArray(bytearray.bytes().to_vec()))
             } else {
                 let is_object = o
                     .instance_of()
