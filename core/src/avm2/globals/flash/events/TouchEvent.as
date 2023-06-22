@@ -36,6 +36,9 @@ public class TouchEvent extends Event {
     public var ctrlKey: Boolean; // On Windows or Linux, indicates whether the Ctrl key is active (true) or inactive (false).
     public var altKey: Boolean; // Indicates whether the Alt key is active (true) or inactive (false).
     public var shiftKey: Boolean; // Indicates whether the Shift key is active (true) or inactive (false).
+    public var isRelatedObjectInaccessible: Boolean; // If true, the relatedObject property is set to null for reasons related to security sandboxes.
+    private var _stageX: Number; // [read-only] The horizontal coordinate at which the event occurred in global Stage coordinates.
+    private var _stageY: Number; // [read-only] The vertical coordinate at which the event occurred in global Stage coordinates.
 
     public function TouchEvent(type: String, bubbles: Boolean = true, cancelable: Boolean = false, touchPointID: int = 0,
                                isPrimaryTouchPoint: Boolean = false, localX: Number = NaN, localY: Number = NaN,
