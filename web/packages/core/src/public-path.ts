@@ -1,5 +1,5 @@
 import type { DataLoadOptions, URLLoadOptions } from "./load-options";
-import { currentScriptURL } from "./current-script";
+import { currentScriptURL, isExtension } from "./current-script";
 
 /**
  * Attempt to discover the public path of the current Ruffle source. This can
@@ -24,6 +24,7 @@ export function publicPath(
     // Default to the directory where this script resides.
     let path = currentScriptURL;
     if (
+        !isExtension &&
         "publicPath" in config &&
         config.publicPath !== null &&
         config.publicPath !== undefined
