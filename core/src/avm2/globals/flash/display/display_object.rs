@@ -1006,7 +1006,7 @@ pub fn set_cache_as_bitmap<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.and_then(|this| this.as_display_object()) {
         let cache = args.get(0).unwrap_or(&Value::Undefined).coerce_to_boolean();
-        this.set_is_bitmap_cached(activation.context.gc_context, cache);
+        this.set_bitmap_cached_preference(activation.context.gc_context, cache);
     }
     Ok(Value::Undefined)
 }

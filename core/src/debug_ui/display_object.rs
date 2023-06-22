@@ -341,10 +341,10 @@ impl DisplayObjectWindow {
                 ui.label("Cache as Bitmap");
                 ui.horizontal(|ui| {
                     if object.filters().is_empty() {
-                        let mut enabled = object.is_bitmap_cached();
+                        let mut enabled = object.is_bitmap_cached_preference();
                         Checkbox::new(&mut enabled, "Enabled").ui(ui);
-                        if enabled != object.is_bitmap_cached() {
-                            object.set_is_bitmap_cached(context.gc_context, enabled);
+                        if enabled != object.is_bitmap_cached_preference() {
+                            object.set_bitmap_cached_preference(context.gc_context, enabled);
                         }
                     } else {
                         ui.label("Forced due to filters");
