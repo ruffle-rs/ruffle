@@ -738,7 +738,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
             offscreen_context.cache_draws.push(BitmapCacheEntry {
                 handle: handle.clone(),
                 commands: offscreen_context.commands,
-                clear: Color::from_rgb(0, 0),
+                clear: this.opaque_background().unwrap_or_default(),
             });
         }
 
@@ -756,6 +756,22 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
             true,
         );
     } else {
+        if let Some(background) = this.opaque_background() {
+            // This is intended for use with cacheAsBitmap, but can be set for non-cached objects too
+            // It wants the entire bounding box to be cleared before any draws happen
+            let bounds: Rectangle<Twips> =
+                this.bounds_with_transform(&context.transform_stack.transform().matrix);
+            context.commands.draw_rect(
+                background,
+                Matrix::create_box(
+                    bounds.width().to_pixels() as f32,
+                    bounds.height().to_pixels() as f32,
+                    0.0,
+                    bounds.x_min,
+                    bounds.y_min,
+                ),
+            );
+        }
         render_base_inner(this, context);
     }
 
