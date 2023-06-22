@@ -108,6 +108,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "unloadMovie" => method(mc_method!(unload_movie); DONT_ENUM | DONT_DELETE);
 
     "blendMode" => property(mc_getter!(blend_mode), mc_setter!(set_blend_mode); DONT_DELETE | DONT_ENUM | VERSION_8);
+    "cacheAsBitmap" => property(mc_getter!(cache_as_bitmap), mc_setter!(set_cache_as_bitmap); DONT_DELETE | DONT_ENUM | VERSION_8);
     "enabled" => bool(true; DONT_ENUM);
     "_lockroot" => property(mc_getter!(lock_root), mc_setter!(set_lock_root); DONT_DELETE | DONT_ENUM);
     "scrollRect" => property(mc_getter!(scroll_rect), mc_setter!(set_scroll_rect); DONT_DELETE | DONT_ENUM | VERSION_8);
@@ -1658,5 +1659,26 @@ fn set_blend_mode<'gc>(
     } else {
         tracing::error!("Unknown blend mode {value:?}");
     }
+    Ok(())
+}
+
+fn cache_as_bitmap<'gc>(
+    this: MovieClip<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    // Note that the *getter* returns actual, and *setter* is preference
+    Ok(this.is_bitmap_cached().into())
+}
+
+fn set_cache_as_bitmap<'gc>(
+    this: MovieClip<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    // Note that the *getter* returns actual, and *setter* is preference
+    this.set_bitmap_cached_preference(
+        activation.context.gc_context,
+        value.as_bool(activation.swf_version()),
+    );
     Ok(())
 }
