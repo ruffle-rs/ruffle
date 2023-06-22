@@ -22,7 +22,6 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     const player = ruffle.createPlayer();
     player.id = "player";
-    player.setIsExtension(true);
     document.getElementById("main")!.append(player);
 
     const options = await utils.getOptions();

@@ -15,6 +15,7 @@ import { swfFileName } from "./swf-utils";
 import { buildInfo } from "./build-info";
 import { text, textAsParagraphs } from "./i18n";
 import JSZip from "jszip";
+import { isExtension } from "./current-script";
 
 const RUFFLE_ORIGIN = "https://ruffle.rs";
 const DIMENSION_REGEX = /^\s*(\d+(\.\d+)?(%)?)/;
@@ -155,7 +156,7 @@ export class RufflePlayer extends HTMLElement {
     private panicked = false;
     private rendererDebugInfo = "";
 
-    private isExtension = false;
+    private isExtension = isExtension;
     private longPressTimer: ReturnType<typeof setTimeout> | null = null;
     private pointerDownPosition: Point | null = null;
     private pointerMoveMaxDistance = 0;
@@ -2060,10 +2061,6 @@ export class RufflePlayer extends HTMLElement {
         this.dispatchEvent(new Event(RufflePlayer.LOADED_METADATA));
         // TODO: Move this to whatever function changes the ReadyState to Loaded when we have streaming support.
         this.dispatchEvent(new Event(RufflePlayer.LOADED_DATA));
-    }
-
-    setIsExtension(isExtension: boolean): void {
-        this.isExtension = isExtension;
     }
 }
 
