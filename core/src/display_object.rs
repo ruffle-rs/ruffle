@@ -762,7 +762,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
             });
         }
 
-        // When rendering it back, ensure we're only keeping transform - scale/rotation is within the image already
+        // When rendering it back, ensure we're only keeping the translation - scale/rotation is within the image already
         context.commands.render_bitmap(
             handle,
             Transform {
@@ -1469,6 +1469,9 @@ pub trait TDisplayObject<'gc>:
     /// Values other than the default `BlendMode::Normal` implicitly cause cache-as-bitmap behavior.
     fn set_blend_mode(&self, gc_context: MutationContext<'gc, '_>, value: BlendMode) {
         self.base_mut(gc_context).set_blend_mode(value);
+
+        // Note that Flash does not always invalidate on changing the blend mode;
+        // but that's a bug we don't need to copy :)
         self.invalidate_cached_bitmap(gc_context);
     }
 
