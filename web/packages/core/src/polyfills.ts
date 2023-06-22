@@ -3,8 +3,8 @@ import { RuffleEmbed } from "./ruffle-embed";
 import { installPlugin, FLASH_PLUGIN } from "./plugin-polyfill";
 import { publicPath } from "./public-path";
 import type { DataLoadOptions, URLLoadOptions } from "./load-options";
+import { isExtension } from "./current-script";
 
-let isExtension: boolean;
 const globalConfig: DataLoadOptions | URLLoadOptions | object =
     window.RufflePlayer?.config ?? {};
 const jsScriptUrl = publicPath(globalConfig) + "ruffle.js";
@@ -50,14 +50,12 @@ function polyfillFlashInstances(): void {
         for (const elem of Array.from(objects)) {
             if (RuffleObject.isInterdictable(elem)) {
                 const ruffleObject = RuffleObject.fromNativeObjectElement(elem);
-                ruffleObject.setIsExtension(isExtension);
                 elem.replaceWith(ruffleObject);
             }
         }
         for (const elem of Array.from(embeds)) {
             if (RuffleEmbed.isInterdictable(elem)) {
                 const ruffleEmbed = RuffleEmbed.fromNativeEmbedElement(elem);
-                ruffleEmbed.setIsExtension(isExtension);
                 elem.replaceWith(ruffleEmbed);
             }
         }
@@ -214,11 +212,8 @@ export function pluginPolyfill(): void {
 
 /**
  * Polyfills legacy Flash content on the page.
- *
- * @param isExt Whether or not Ruffle is running as a browser's extension.
  */
-export function polyfill(isExt: boolean): void {
-    isExtension = isExt;
+export function polyfill(): void {
     const usingExtension =
         navigator.plugins.namedItem("Ruffle Extension")?.filename ===
         "ruffle.js";
