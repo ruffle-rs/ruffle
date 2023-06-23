@@ -768,6 +768,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
                 handle: handle.clone(),
                 commands: offscreen_context.commands,
                 clear: this.opaque_background().unwrap_or_default(),
+                filters: this.filters(),
             });
         }
 

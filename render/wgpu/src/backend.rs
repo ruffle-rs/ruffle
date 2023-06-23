@@ -6,7 +6,7 @@ use crate::surface::{LayerRef, Surface};
 use crate::target::{MaybeOwnedBuffer, TextureTarget};
 use crate::target::{RenderTargetFrame, TextureBufferInfo};
 use crate::uniform_buffer::{BufferStorage, UniformBuffer};
-use crate::utils::BufferDimensions;
+use crate::utils::{run_copy_pipeline, BufferDimensions};
 use crate::{
     as_texture, format_list, get_backend_names, ColorAdjustments, Descriptors, Error,
     QueueSyncHandle, RenderTarget, SwapChainTarget, Texture, Transforms,
@@ -471,26 +471,69 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 texture.height,
                 wgpu::TextureFormat::Rgba8Unorm,
             );
-            surface.draw_commands(
-                RenderTargetMode::ExistingWithColor(
-                    texture.texture.clone(),
-                    wgpu::Color {
+            if entry.filters.is_empty() {
+                surface.draw_commands(
+                    RenderTargetMode::ExistingWithColor(
+                        texture.texture.clone(),
+                        wgpu::Color {
+                            r: f64::from(entry.clear.r) / 255.0,
+                            g: f64::from(entry.clear.g) / 255.0,
+                            b: f64::from(entry.clear.b) / 255.0,
+                            a: f64::from(entry.clear.a) / 255.0,
+                        },
+                    ),
+                    &self.descriptors,
+                    &self.meshes,
+                    entry.commands,
+                    &mut uniform_buffer,
+                    &mut color_buffer,
+                    &mut uniform_encoder,
+                    &mut draw_encoder,
+                    LayerRef::None,
+                    &mut self.offscreen_texture_pool,
+                );
+            } else {
+                let mut target = surface.draw_commands(
+                    RenderTargetMode::FreshWithColor(wgpu::Color {
                         r: f64::from(entry.clear.r) / 255.0,
                         g: f64::from(entry.clear.g) / 255.0,
                         b: f64::from(entry.clear.b) / 255.0,
                         a: f64::from(entry.clear.a) / 255.0,
-                    },
-                ),
-                &self.descriptors,
-                &self.meshes,
-                entry.commands,
-                &mut uniform_buffer,
-                &mut color_buffer,
-                &mut uniform_encoder,
-                &mut draw_encoder,
-                LayerRef::None,
-                &mut self.offscreen_texture_pool,
-            );
+                    }),
+                    &self.descriptors,
+                    &self.meshes,
+                    entry.commands,
+                    &mut uniform_buffer,
+                    &mut color_buffer,
+                    &mut uniform_encoder,
+                    &mut draw_encoder,
+                    LayerRef::None,
+                    &mut self.offscreen_texture_pool,
+                );
+                for filter in entry.filters {
+                    target = surface.apply_filter(
+                        &self.descriptors,
+                        &mut draw_encoder,
+                        &mut self.offscreen_texture_pool,
+                        target.color_texture(),
+                        (0, 0),
+                        (target.width(), target.height()),
+                        filter,
+                    );
+                }
+                run_copy_pipeline(
+                    &self.descriptors,
+                    target.color_texture().format(),
+                    texture.texture.format(),
+                    target.color_texture().size(),
+                    &texture.texture.create_view(&Default::default()),
+                    target.color_view(),
+                    target.whole_frame_bind_group(&self.descriptors),
+                    target.globals(),
+                    target.color_texture().sample_count(),
+                    &mut draw_encoder,
+                );
+            }
         }
 
         self.surface.draw_commands_and_copy_to(
