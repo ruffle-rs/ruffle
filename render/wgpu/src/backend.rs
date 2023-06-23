@@ -806,7 +806,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             &self.descriptors,
             &mut draw_encoder,
             &mut self.offscreen_texture_pool,
-            source_texture,
+            &source_texture.texture,
             source_point,
             source_size,
             filter,

@@ -8,7 +8,7 @@ use crate::mesh::Mesh;
 use crate::surface::commands::{chunk_blends, Chunk, CommandRenderer};
 use crate::utils::{remove_srgb, supported_sample_count};
 use crate::{
-    ColorAdjustments, Descriptors, MaskState, Pipelines, PushConstants, Texture, TextureTransforms,
+    ColorAdjustments, Descriptors, MaskState, Pipelines, PushConstants, TextureTransforms,
     Transforms, UniformBuffer, DEFAULT_COLOR_ADJUSTMENTS,
 };
 use ruffle_render::commands::CommandList;
@@ -346,7 +346,7 @@ impl Surface {
         descriptors: &Descriptors,
         draw_encoder: &mut wgpu::CommandEncoder,
         texture_pool: &mut TexturePool,
-        source_texture: &Texture,
+        source_texture: &wgpu::Texture,
         source_point: (u32, u32),
         source_size: (u32, u32),
         filter: Filter,
@@ -398,7 +398,7 @@ impl Surface {
         descriptors: &Descriptors,
         texture_pool: &mut TexturePool,
         draw_encoder: &mut wgpu::CommandEncoder,
-        source_texture: &Texture,
+        source_texture: &wgpu::Texture,
         source_point: (u32, u32),
         source_size: (u32, u32),
         filter: &ColorMatrixFilter,
@@ -418,7 +418,7 @@ impl Surface {
         );
         let texture_transform =
             make_texture_transform(descriptors, source_size, source_point, source_texture);
-        let source_view = source_texture.texture.create_view(&Default::default());
+        let source_view = source_texture.create_view(&Default::default());
         let bitmap_group = descriptors
             .device
             .create_bind_group(&wgpu::BindGroupDescriptor {
@@ -507,7 +507,7 @@ impl Surface {
         descriptors: &Descriptors,
         texture_pool: &mut TexturePool,
         draw_encoder: &mut wgpu::CommandEncoder,
-        source_texture: &Texture,
+        source_texture: &wgpu::Texture,
         source_point: (u32, u32),
         source_size: (u32, u32),
         filter: &BlurFilter,
@@ -544,7 +544,7 @@ impl Surface {
 
         let texture_transform =
             make_texture_transform(descriptors, source_size, source_point, source_texture);
-        let source_view = source_texture.texture.create_view(&Default::default());
+        let source_view = source_texture.create_view(&Default::default());
         for i in 0..2 {
             let blur_x = (filter.blur_x.to_f32() - 1.0).max(0.0);
             let blur_y = (filter.blur_y.to_f32() - 1.0).max(0.0);
@@ -553,8 +553,8 @@ impl Surface {
                 (
                     &source_view,
                     texture_transform.as_entire_binding(),
-                    source_texture.width as f32,
-                    source_texture.height as f32,
+                    source_texture.width() as f32,
+                    source_texture.height() as f32,
                 )
             } else {
                 let previous = &targets[(i - 1) % 2];
@@ -661,7 +661,7 @@ fn make_texture_transform(
     descriptors: &Descriptors,
     source_size: (u32, u32),
     source_point: (u32, u32),
-    source_texture: &Texture,
+    source_texture: &wgpu::Texture,
 ) -> wgpu::Buffer {
     descriptors
         .device
@@ -675,14 +675,14 @@ fn make_texture_transform(
                         // the full source texture, then the scale factor will be less than 1.
                         // This will produce U-V coordinates that do not extend to the full [0, 1]
                         // range, which makes us sample just the source region.
-                        source_size.0 as f32 / source_texture.width as f32,
+                        source_size.0 as f32 / source_texture.width() as f32,
                         0.0,
                         0.0,
                         0.0,
                     ],
                     [
                         0.0,
-                        source_size.1 as f32 / source_texture.height as f32,
+                        source_size.1 as f32 / source_texture.height() as f32,
                         0.0,
                         0.0,
                     ],
@@ -690,8 +690,8 @@ fn make_texture_transform(
                     // Offset to 'source_point'. Note that we divide by the full texture size,
                     // since that's what the UV coordinates are sampling from.
                     [
-                        source_point.0 as f32 / source_texture.width as f32,
-                        source_point.1 as f32 / source_texture.height as f32,
+                        source_point.0 as f32 / source_texture.width() as f32,
+                        source_point.1 as f32 / source_texture.height() as f32,
                         0.0,
                         0.0,
                     ],
