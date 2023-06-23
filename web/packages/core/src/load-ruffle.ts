@@ -68,6 +68,9 @@ async function fetchRuffle(
         ? new URL("../dist/ruffle_web-wasm_extensions_bg.wasm", import.meta.url)
         : new URL("../dist/ruffle_web_bg.wasm", import.meta.url);
     const wasmResponse = await fetch(wasmUrl);
+    // The Pale Moon browser currently lacks support for ReadableStream.
+    // Unfortunately, currently it also lacks a sufficient WASM runtime.
+    // If this becomes the last thing Pale Moon lacks, allow Ruffle to work.
     const readableStreamDefined = (() => {
         try {
             return typeof new ReadableStream() === "object";
