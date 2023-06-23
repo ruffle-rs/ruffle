@@ -21,6 +21,7 @@ pub struct BitmapCacheEntry {
     pub handle: BitmapHandle,
     pub commands: CommandList,
     pub clear: Color,
+    pub filters: Vec<Filter>,
 }
 
 pub trait RenderBackend: Downcast {
