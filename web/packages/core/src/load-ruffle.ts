@@ -68,7 +68,14 @@ async function fetchRuffle(
         ? new URL("../dist/ruffle_web-wasm_extensions_bg.wasm", import.meta.url)
         : new URL("../dist/ruffle_web_bg.wasm", import.meta.url);
     const wasmResponse = await fetch(wasmUrl);
-    if (progressCallback) {
+    const readableStreamDefined = (() => {
+        try {
+            return typeof new ReadableStream() === "object";
+        } catch (e: unknown) {
+            return false;
+        }
+    })();
+    if (progressCallback && readableStreamDefined) {
         const contentLength =
             wasmResponse?.headers?.get("content-length") || "";
         let bytesLoaded = 0;
