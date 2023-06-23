@@ -115,25 +115,25 @@ package flash.geom {
 					vector3D.y = rawData[4];
 					vector3D.z = rawData[8];
 					vector3D.w = rawData[12];
-
+					break;
 				case 1:
 					vector3D.x = rawData[1];
 					vector3D.y = rawData[5];
 					vector3D.z = rawData[9];
 					vector3D.w = rawData[13];
-
+					break;
 				case 2:
 					vector3D.x = rawData[2];
 					vector3D.y = rawData[6];
 					vector3D.z = rawData[10];
 					vector3D.w = rawData[14];
-
+					break;
 				case 3:
 					vector3D.x = rawData[3];
 					vector3D.y = rawData[7];
 					vector3D.z = rawData[11];
 					vector3D.w = rawData[15];
-
+					break;
 				default:
 			}
 		}
@@ -147,26 +147,26 @@ package flash.geom {
 					rawData[4] = vector3D.y;
 					rawData[8] = vector3D.z;
 					rawData[12] = vector3D.w;
-
+					break;
 				case 1:
 					rawData[1] = vector3D.x;
 					rawData[5] = vector3D.y;
 					rawData[9] = vector3D.z;
 					rawData[13] = vector3D.w;
-
+					break;
 				case 2:
 					rawData[2] = vector3D.x;
 					rawData[6] = vector3D.y;
 					rawData[10] = vector3D.z;
 					rawData[14] = vector3D.w;
-
+					break;
 				case 3:
 					rawData[3] = vector3D.x;
 					rawData[7] = vector3D.y;
 					rawData[11] = vector3D.z;
 					rawData[15] = vector3D.w;
-
-				default:
+					break;
+				default:			
 			}
 		}
 
