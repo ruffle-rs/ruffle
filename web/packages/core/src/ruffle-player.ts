@@ -156,7 +156,6 @@ export class RufflePlayer extends HTMLElement {
     private panicked = false;
     private rendererDebugInfo = "";
 
-    private isExtension = isExtension;
     private longPressTimer: ReturnType<typeof setTimeout> | null = null;
     private pointerDownPosition: Point | null = null;
     private pointerMoveMaxDistance = 0;
@@ -1267,10 +1266,9 @@ export class RufflePlayer extends HTMLElement {
 
         addSeparator();
 
-        const extensionString = this.isExtension ? "extension" : "";
         items.push({
             text: text("context-menu-about-ruffle", {
-                flavor: extensionString,
+                flavor: isExtension ? "extension" : "",
                 version: buildInfo.versionName,
             }),
             onClick() {
@@ -1647,7 +1645,7 @@ export class RufflePlayer extends HTMLElement {
         result += `Channel: ${buildInfo.versionChannel}\n`;
         result += `Built: ${buildInfo.buildDate}\n`;
         result += `Commit: ${buildInfo.commitHash}\n`;
-        result += `Is extension: ${this.isExtension}\n`;
+        result += `Is extension: ${isExtension}\n`;
 
         result += "\n# Metadata\n";
         if (this.metadata) {
@@ -1737,9 +1735,17 @@ export class RufflePlayer extends HTMLElement {
         // Otherwise, create a link to the downloads section on the Ruffle website.
         let actionTag;
         if (!isBuildOutdated) {
+            let url;
+            if (document.location.protocol.includes("extension")) {
+                url = this.swfUrl!.href;
+            } else {
+                url = document.location.href;
+            }
+
             // Remove query params for the issue title.
-            const pageUrl = document.location.href.split(/[?#]/)[0];
-            const issueTitle = `Error on ${pageUrl}`;
+            url = url.split(/[?#]/, 1)[0]!;
+
+            const issueTitle = `Error on ${url}`;
             let issueLink = `https://github.com/ruffle-rs/ruffle/issues/new?title=${encodeURIComponent(
                 issueTitle
             )}&template=error_report.md&labels=error-report&body=`;
@@ -1957,10 +1963,7 @@ export class RufflePlayer extends HTMLElement {
     }
 
     protected displayRootMovieDownloadFailedMessage(): void {
-        if (
-            this.isExtension &&
-            window.location.origin !== this.swfUrl!.origin
-        ) {
+        if (isExtension && window.location.origin !== this.swfUrl!.origin) {
             const url = new URL(this.swfUrl!);
             if (this.loadedConfig?.parameters) {
                 const parameters = sanitizeParameters(
