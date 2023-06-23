@@ -802,16 +802,37 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                     label: label.as_deref(),
                 });
-        surface.apply_filter(
+        let applied_filter = surface.apply_filter(
             &self.descriptors,
             &mut draw_encoder,
             &mut self.offscreen_texture_pool,
             source_texture,
             source_point,
             source_size,
-            dest_texture,
-            dest_point,
             filter,
+        );
+        draw_encoder.copy_texture_to_texture(
+            wgpu::ImageCopyTexture {
+                texture: applied_filter.color_texture(),
+                mip_level: 0,
+                origin: wgpu::Origin3d { x: 0, y: 0, z: 0 },
+                aspect: Default::default(),
+            },
+            wgpu::ImageCopyTexture {
+                texture: &dest_texture.texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d {
+                    x: dest_point.0,
+                    y: dest_point.1,
+                    z: 0,
+                },
+                aspect: Default::default(),
+            },
+            wgpu::Extent3d {
+                width: (applied_filter.width()).min(dest_texture.width - dest_point.0),
+                height: (applied_filter.height()).min(dest_texture.height - dest_point.1),
+                depth_or_array_layers: 1,
+            },
         );
         let index = target.submit(
             &self.descriptors.device,
