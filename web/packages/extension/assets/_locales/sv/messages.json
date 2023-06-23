@@ -1,15 +1,15 @@
 {
     "settings_ruffle_enable": {
-        "message": "Spela upp Flashinnehåll i Ruffle"
+        "message": "Kör Flashinnehåll i Ruffle"
     },
     "settings_ignore_optout": {
-        "message": "Spela Flashinnehåll även på sidor som inte tillåter Ruffle"
+        "message": "Kör Flashinnehåll även på sidor som inte tillåter Ruffle"
     },
     "settings_show_swf_download": {
         "message": "Visa SWF-nedladdning i snabbmenyn"
     },
     "settings_autostart": {
-        "message": "Spela automatiskt utan startskärm (klicka sedan för ljud)"
+        "message": "Kör automatiskt utan startskärm (klicka sedan för ljud)"
     },
     "settings_warn_on_unsupported_content": {
         "message": "Varna för innehåll som inte stöds"
@@ -39,7 +39,7 @@
         "message": "Automatisk"
     },
     "settings_advanced_options": {
-        "message": "Avancerade inställningar"
+        "message": "Avancerade Inställningar"
     },
     "settings_reset": {
         "message": "Nollställ inställningar"

@@ -30,7 +30,7 @@ error-wasm-not-found =
     Om problemet kvarstår kan du behöva använda inställningen "publicPath": vänligen konsultera Rufflewikin för hjälp.
 error-wasm-mime-type =
     Ruffle har stött på ett stort fel under initialiseringen.
-    Denna webbserver servrar inte ".wasm"-filer med korrekt MIME-typ.
+    Denna webbserver serverar inte ".wasm"-filer med korrekt MIME-typ.
     Om du är serveradministratören, vänligen konsultera Rufflewikin för hjälp.
 error-swf-fetch =
     Ruffle misslyckades ladda SWF-filen.
@@ -46,7 +46,7 @@ error-wasm-cors =
     Om du är serveradministratören, vänligen konsultera Rufflewikin för hjälp.
 error-wasm-invalid =
     Ruffle har stött på ett stort fel under initialiseringen
-    Det verkar som om den här sidan har saknade eller ogiltiga filer för att köra Ruffle.
+    Det verkar som att den här sidan har saknade eller ogiltiga filer för att köra Ruffle.
     Om du är serveradministratören, vänligen konsultera Rufflewikin för hjälp.
 error-wasm-download =
     Ruffle har stött på ett stort fel under initialiseringen.
@@ -59,7 +59,7 @@ error-wasm-disabled-on-edge =
     Om problemet kvarstår kan du behöva använda en annan webbläsare.
 error-javascript-conflict =
     Ruffle har stött på ett stort fel under initialiseringen.
-    Det verkar som om den här sidan använder JavaScriptkod som stör Ruffle.
+    Det verkar som att den här sidan använder JavaScriptkod som stör Ruffle.
     Om du är serveradministratören bjuder vi in dig att försöka ladda filen på en blank sida.
 error-javascript-conflict-outdated = Du kan också försöka ladda upp en nyare version av Ruffle, vilket kan kringgå problemet (nuvarande version är utdaterad: { $buildDate }).
 error-csp-conflict =

@@ -25,3 +25,5 @@ help-menu-translate-ruffle = Перевести Ruffle...
 help-menu-about = О программе
 debug-menu = Отладка
 debug-menu-open-stage = Информация об этапе
+debug-menu-open-movie = Просмотр ролика
+debug-menu-open-movie-list = Известные ролики
