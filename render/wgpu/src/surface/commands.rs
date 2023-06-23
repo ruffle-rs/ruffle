@@ -2,7 +2,6 @@ use crate::backend::RenderTargetMode;
 use crate::blend::TrivialBlend;
 use crate::blend::{BlendType, ComplexBlend};
 use crate::buffer_pool::TexturePool;
-use crate::globals::Globals;
 use crate::mesh::{as_mesh, DrawType, Mesh};
 use crate::surface::target::CommandTarget;
 use crate::surface::Surface;
@@ -17,7 +16,6 @@ use ruffle_render::matrix::Matrix;
 use ruffle_render::quality::StageQuality;
 use ruffle_render::transform::Transform;
 use swf::{BlendMode, Color, ColorTransform, Fixed8};
-use wgpu::CommandEncoder;
 
 use super::target::PoolOrArcTexture;
 
@@ -604,92 +602,4 @@ pub fn chunk_blends<'a>(
     }
 
     result
-}
-
-#[allow(clippy::too_many_arguments)]
-pub fn run_copy_pipeline(
-    descriptors: &Descriptors,
-    format: wgpu::TextureFormat,
-    actual_surface_format: wgpu::TextureFormat,
-    size: wgpu::Extent3d,
-    frame_view: &wgpu::TextureView,
-    input: &wgpu::TextureView,
-    whole_frame_bind_group: &wgpu::BindGroup,
-    globals: &Globals,
-    sample_count: u32,
-    encoder: &mut CommandEncoder,
-) {
-    let copy_bind_group = descriptors
-        .device
-        .create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &descriptors.bind_layouts.bitmap,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: descriptors.quad.texture_transforms.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: wgpu::BindingResource::TextureView(input),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 2,
-                    resource: wgpu::BindingResource::Sampler(
-                        descriptors.bitmap_samplers.get_sampler(false, false),
-                    ),
-                },
-            ],
-            label: create_debug_label!("Copy sRGB bind group").as_deref(),
-        });
-
-    let pipeline = if actual_surface_format == format {
-        descriptors.copy_pipeline(format, sample_count)
-    } else {
-        descriptors.copy_srgb_pipeline(actual_surface_format, sample_count)
-    };
-
-    // We overwrite the pixels in the target texture (no blending at all),
-    // so this doesn't matter.
-    let load = wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT);
-
-    let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-            view: frame_view,
-            ops: wgpu::Operations { load, store: true },
-            resolve_target: None,
-        })],
-        depth_stencil_attachment: None,
-        label: create_debug_label!("Copy back to render target").as_deref(),
-    });
-
-    render_pass.set_pipeline(&pipeline);
-    render_pass.set_bind_group(0, globals.bind_group(), &[]);
-
-    if descriptors.limits.max_push_constant_size > 0 {
-        render_pass.set_push_constants(
-            wgpu::ShaderStages::VERTEX,
-            0,
-            bytemuck::cast_slice(&[Transforms {
-                world_matrix: [
-                    [size.width as f32, 0.0, 0.0, 0.0],
-                    [0.0, size.height as f32, 0.0, 0.0],
-                    [0.0, 0.0, 1.0, 0.0],
-                    [0.0, 0.0, 0.0, 1.0],
-                ],
-            }]),
-        );
-        render_pass.set_bind_group(1, &copy_bind_group, &[]);
-    } else {
-        render_pass.set_bind_group(1, whole_frame_bind_group, &[0]);
-        render_pass.set_bind_group(2, &copy_bind_group, &[]);
-    }
-
-    render_pass.set_vertex_buffer(0, descriptors.quad.vertices_pos.slice(..));
-    render_pass.set_index_buffer(
-        descriptors.quad.indices.slice(..),
-        wgpu::IndexFormat::Uint32,
-    );
-
-    render_pass.draw_indexed(0..6, 0, 0..1);
-    drop(render_pass);
 }

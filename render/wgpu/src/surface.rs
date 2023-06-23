@@ -20,7 +20,7 @@ use target::CommandTarget;
 use tracing::instrument;
 use wgpu::util::DeviceExt;
 
-use self::commands::run_copy_pipeline;
+use crate::utils::run_copy_pipeline;
 
 pub use crate::surface::commands::LayerRef;
 
