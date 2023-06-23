@@ -76,10 +76,16 @@ use self::loader_display::LoaderDisplayWeak;
 ///
 #[derive(Clone, Debug, Default)]
 pub struct BitmapCache {
-    /// The transform that was used when this cache was last generated.
-    /// Aside from `matrix.tx` and `matrix.ty`,
-    /// any other changes needs to cause an invalidation.
-    matrix: Matrix,
+    /// The `Matrix.a` value that was last used with this cache
+    matrix_a: f32,
+    /// The `Matrix.b` value that was last used with this cache
+    matrix_b: f32,
+    /// The `Matrix.c` value that was last used with this cache
+    matrix_c: f32,
+    /// The `Matrix.d` value that was last used with this cache
+    matrix_d: f32,
+
+    /// The current contents of the cache, if any
     bitmap: Option<BitmapInfo>,
 }
 
@@ -89,14 +95,14 @@ impl BitmapCache {
     pub fn make_dirty(&mut self) {
         // Setting the old transform to something invalid is a cheap way of making it invalid,
         // without reserving an extra field for.
-        self.matrix = Matrix::ZERO;
+        self.matrix_a = f32::NAN;
     }
 
     fn is_dirty(&self, other: &Matrix, width: u16, height: u16) -> bool {
-        if self.matrix.a != other.a
-            || self.matrix.b != other.b
-            || self.matrix.c != other.c
-            || self.matrix.d != other.d
+        if self.matrix_a != other.a
+            || self.matrix_b != other.b
+            || self.matrix_c != other.c
+            || self.matrix_d != other.d
         {
             return true;
         }
@@ -118,7 +124,10 @@ impl BitmapCache {
         width: u16,
         height: u16,
     ) {
-        self.matrix = matrix;
+        self.matrix_a = matrix.a;
+        self.matrix_b = matrix.b;
+        self.matrix_c = matrix.c;
+        self.matrix_d = matrix.d;
         if let Some(current) = &mut self.bitmap {
             if current.width == width && current.height == height {
                 return; // No need to resize it
