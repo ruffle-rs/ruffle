@@ -349,10 +349,8 @@ impl Surface {
         source_texture: &Texture,
         source_point: (u32, u32),
         source_size: (u32, u32),
-        dest_texture: &Texture,
-        dest_point: (u32, u32),
         filter: Filter,
-    ) {
+    ) -> CommandTarget {
         let target = match filter {
             Filter::ColorMatrixFilter(filter) => self.apply_color_matrix(
                 descriptors,
@@ -391,30 +389,7 @@ impl Surface {
         // a clear (in case no other draw commands were issued, we still need
         // the background clear color applied)
         target.ensure_cleared(draw_encoder);
-
-        draw_encoder.copy_texture_to_texture(
-            wgpu::ImageCopyTexture {
-                texture: target.color_texture(),
-                mip_level: 0,
-                origin: wgpu::Origin3d { x: 0, y: 0, z: 0 },
-                aspect: Default::default(),
-            },
-            wgpu::ImageCopyTexture {
-                texture: &dest_texture.texture,
-                mip_level: 0,
-                origin: wgpu::Origin3d {
-                    x: dest_point.0,
-                    y: dest_point.1,
-                    z: 0,
-                },
-                aspect: Default::default(),
-            },
-            wgpu::Extent3d {
-                width: (target.width()).min(dest_texture.width - dest_point.0),
-                height: (target.height()).min(dest_texture.height - dest_point.1),
-                depth_or_array_layers: 1,
-            },
-        )
+        target
     }
 
     #[allow(clippy::too_many_arguments)]
