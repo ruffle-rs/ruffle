@@ -1423,10 +1423,7 @@ pub trait TDisplayObject<'gc>:
         rectangle: Rectangle<Twips>,
     ) {
         self.base_mut(gc_context).next_scroll_rect = rectangle;
-        if let Some(parent) = self.parent() {
-            // We don't need to invalidate self, only ancestors that may contain this
-            parent.invalidate_cached_bitmap(gc_context);
-        }
+        self.invalidate_cached_bitmap(gc_context);
     }
 
     /// Whether this object has been removed. Only applies to AVM1.
