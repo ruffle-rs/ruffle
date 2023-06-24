@@ -71,13 +71,7 @@ async function fetchRuffle(
     // The Pale Moon browser currently lacks support for ReadableStream.
     // Unfortunately, currently it also lacks a sufficient WASM runtime.
     // If this becomes the last thing Pale Moon lacks, allow Ruffle to work.
-    const readableStreamDefined = (() => {
-        try {
-            return typeof new ReadableStream() === "object";
-        } catch (e: unknown) {
-            return false;
-        }
-    })();
+    const readableStreamDefined = typeof ReadableStream === "function";
     if (progressCallback && readableStreamDefined) {
         const contentLength =
             wasmResponse?.headers?.get("content-length") || "";
