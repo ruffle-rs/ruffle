@@ -5,6 +5,7 @@ members = [
     "core/build_playerglobal",
     "desktop",
     "swf",
+    "flv",
     "web",
     "web/packages/extension/safari",
     "wstr",
