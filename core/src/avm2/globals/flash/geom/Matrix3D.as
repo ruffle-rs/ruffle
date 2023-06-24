@@ -134,8 +134,6 @@ package flash.geom {
 					vector3D.z = rawData[11];
 					vector3D.w = rawData[15];
 					break;
-				default:
-					break;
 			}
 		}
 
@@ -166,8 +164,6 @@ package flash.geom {
 					rawData[7] = vector3D.y;
 					rawData[11] = vector3D.z;
 					rawData[15] = vector3D.w;
-					break;
-				default:
 					break;
 			}
 		}
