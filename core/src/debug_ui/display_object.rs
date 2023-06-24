@@ -391,6 +391,17 @@ impl DisplayObjectWindow {
                 ui.label(summary_color_transform(color_transform));
                 ui.end_row();
             });
+
+        let filters = object.filters();
+        if !filters.is_empty() {
+            CollapsingHeader::new(format!("Filters ({})", filters.len()))
+                .id_source(ui.id().with("filters"))
+                .show(ui, |ui| {
+                    for filter in filters {
+                        ui.label(format!("{:?}", filter));
+                    }
+                });
+        }
     }
 
     pub fn show_position<'gc>(
