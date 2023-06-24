@@ -140,7 +140,9 @@ impl<'gc> Avm1Button<'gc> {
         // TODO: This behavior probably differs in AVM2 (I suspect they always get recreated).
         let mut children = Vec::new();
 
-        for record in &self.0.read().static_data.read().records {
+        // [NA] This copies static_data so we can borrow it without keeping `self.0` borrowed
+        let static_data = self.0.read().static_data;
+        for record in &static_data.read().records {
             if record.states.contains(state.into()) {
                 // State contains this depth, so we don't have to remove it.
                 removed_depths.remove(&record.depth.into());
