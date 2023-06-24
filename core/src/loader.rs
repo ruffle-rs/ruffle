@@ -26,7 +26,6 @@ use crate::player::Player;
 use crate::streams::NetStream;
 use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
-use crate::vminterface::Instantiator;
 use encoding_rs::UTF_8;
 use gc_arena::{Collect, CollectionContext, GcCell};
 use generational_arena::{Arena, Index};
@@ -612,23 +611,22 @@ impl<'gc> Loader<'gc> {
                 target_clip, movie, ..
             }) => {
                 if movie.is_none() {
-                    //Non-SWF load or file not loaded yet
+                    // Non-SWF load or file not loaded yet.
                     return Ok(false);
                 }
 
-                if target_clip.as_movie_clip().is_none() {
-                    // Non-movie-clip loads should not be handled in preload_tick
-                    tracing::error!("Cannot preload non-movie-clip loader");
-                    return Ok(false);
+                match target_clip.as_movie_clip() {
+                    Some(mc) => mc,
+                    None => {
+                        // Non-movie-clip loads should not be handled in `preload_tick`.
+                        tracing::error!("Cannot preload non-movie-clip loader");
+                        return Ok(false);
+                    }
                 }
-
-                *target_clip
             }
             None => return Err(Error::Cancelled),
             Some(_) => panic!("Attempted to preload a non-SWF loader"),
         };
-
-        let mc = mc.as_movie_clip().unwrap();
 
         let did_finish = mc.preload(context, limit);
 
@@ -1743,7 +1741,6 @@ impl<'gc> Loader<'gc> {
                 // We call these methods after we initialize the `LoaderInfo`, but before
                 // we add the loaded clip as a child. The frame constructor should see
                 // 'this.parent == null' and 'this.stage == null'
-                dobj.post_instantiation(uc, None, Instantiator::Movie, false);
                 catchup_display_object_to_frame(uc, dobj);
                 // Movie clips created from ActionScript (including from a Loader) skip the next enterFrame,
                 // and consequently are observed to have their currentFrame lag one

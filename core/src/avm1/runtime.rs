@@ -488,11 +488,25 @@ impl<'gc> Avm1<'gc> {
         gc_context: MutationContext<'gc, '_>,
         clip: DisplayObject<'gc>,
     ) {
-        // Adding while iterating is safe, as this does not modify any active nodes.
-        if clip.next_avm1_clip().is_none() {
-            clip.set_next_avm1_clip(gc_context, self.clip_exec_list);
-            self.clip_exec_list = Some(clip);
+        // Check that `clip` is not already in execution list.
+        if cfg!(debug_assertions) {
+            let mut next = self.clip_exec_list;
+            while let Some(current) = next {
+                debug_assert!(
+                    !DisplayObject::ptr_eq(current, clip),
+                    "attempted to add clip twice"
+                );
+                next = current.next_avm1_clip();
+            }
         }
+        debug_assert!(
+            clip.next_avm1_clip().is_none(),
+            "attempted to add clip twice"
+        );
+
+        // Adding while iterating is safe, as this does not modify any active nodes.
+        clip.set_next_avm1_clip(gc_context, self.clip_exec_list);
+        self.clip_exec_list = Some(clip);
     }
 
     pub fn get_registered_constructor(
