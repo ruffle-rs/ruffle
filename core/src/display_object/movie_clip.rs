@@ -4328,13 +4328,14 @@ impl<'a> GotoPlaceObject<'a> {
                 if place_object.background_color.is_none() {
                     place_object.background_color = Some(Color::from_rgba(0));
                 }
+                if place_object.filters.is_none() {
+                    place_object.filters = Some(Default::default());
+                }
                 // Purposely omitted properties:
                 // name, clip_depth, clip_actions, amf_data
                 // These properties are only set on initial placement in `MovieClip::instantiate_child`
                 // and can not be modified by subsequent PlaceObject tags.
                 // Also, is_visible flag persists during rewind unlike all other properties.
-                // TODO: Filters need to be applied here. Rewinding will erase filters if initial
-                // PlaceObject tag has none.
             }
         }
 
