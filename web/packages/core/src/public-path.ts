@@ -22,7 +22,7 @@ export function publicPath(
     config: URLLoadOptions | DataLoadOptions | object
 ): string {
     // Default to the directory where this script resides.
-    let path = currentScriptURL;
+    let path = currentScriptURL?.href ?? "";
     if (
         !isExtension &&
         "publicPath" in config &&
