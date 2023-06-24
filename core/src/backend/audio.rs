@@ -312,10 +312,6 @@ impl<'gc> AudioManager<'gc> {
 
     /// Update state of active sounds. Should be called once per frame.
     pub fn update_sounds(context: &mut UpdateContext<'_, 'gc>) {
-        let Some(root) = context.stage.root_clip() else {
-            return
-        };
-
         // We can't use 'context' to construct an event inside the
         // 'retain()' closure, so we queue the events up here, and fire
         // them after running 'retain()'
@@ -340,15 +336,17 @@ impl<'gc> AudioManager<'gc> {
                     object.set_position(context.gc_context, duration.round() as u32);
 
                     // Fire soundComplete event.
-                    context.action_queue.queue_action(
-                        root,
-                        crate::context::ActionType::Method {
-                            object: object.into(),
-                            name: "onSoundComplete",
-                            args: vec![],
-                        },
-                        false,
-                    );
+                    if let Some(root) = context.stage.root_clip() {
+                        context.action_queue.queue_action(
+                            root,
+                            crate::context::ActionType::Method {
+                                object: object.into(),
+                                name: "onSoundComplete",
+                                args: vec![],
+                            },
+                            false,
+                        );
+                    }
                 }
 
                 if let Some(object) = sound.avm2_object {

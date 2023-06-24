@@ -1,0 +1,7 @@
+Initial state
+Removed root
+Loaded sound
+Playing sound
+[object SoundChannel]
+Finished playback
+Attached root
