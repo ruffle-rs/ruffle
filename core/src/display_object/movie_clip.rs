@@ -4386,11 +4386,13 @@ impl<'a> GotoPlaceObject<'a> {
         if next_place.background_color.is_some() {
             cur_place.background_color = next_place.background_color.take();
         }
+        if next_place.filters.is_some() {
+            cur_place.filters = next_place.filters.take();
+        }
         // Purposely omitted properties:
         // name, clip_depth, clip_actions, amf_data
         // These properties are only set on initial placement in `MovieClip::instantiate_child`
         // and can not be modified by subsequent PlaceObject tags.
-        // TODO: Filters need to be applied here. New filters will overwrite old filters.
     }
 }
 
