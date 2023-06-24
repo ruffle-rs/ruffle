@@ -1,6 +1,8 @@
 // This must be in global scope because `document.currentScript`
 // works only while the script is initially being processed.
-export let currentScriptURL = "";
+export let currentScriptURL: URL | null = null;
+export let isExtension = false;
+
 try {
     if (
         document.currentScript !== undefined &&
@@ -16,12 +18,9 @@ try {
             src += "/";
         }
 
-        currentScriptURL = new URL(".", src).href;
+        currentScriptURL = new URL(".", src);
+        isExtension = currentScriptURL.protocol.includes("extension");
     }
 } catch (e) {
     console.warn("Unable to get currentScript URL");
 }
-
-export const isExtension = new URL(currentScriptURL).protocol.includes(
-    "extension"
-);
