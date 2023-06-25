@@ -2,7 +2,6 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::events::Event;
-use crate::avm2::multiname::Multiname;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
@@ -162,8 +161,8 @@ impl<'gc> EventObject<'gc> {
             .unwrap();
         for (key, value) in info {
             info_object
-                .set_property(
-                    &Multiname::new(activation.avm2().public_namespace, AvmString::from(*key)),
+                .set_public_property(
+                    AvmString::from(*key),
                     Value::String(AvmString::from(*value)),
                     activation,
                 )
