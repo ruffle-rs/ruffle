@@ -681,9 +681,14 @@ fn to_xml_string_inner<'gc>(xml: E4XOrXml<'gc>, buf: &mut WString) -> Result<(),
         }
         E4XNodeKind::Attribute(_)
         | E4XNodeKind::Comment(_)
-        | E4XNodeKind::ProcessingInstruction(_)
-        | E4XNodeKind::CData(_) => {
+        | E4XNodeKind::ProcessingInstruction(_) => {
             return Err(format!("ToXMLString: Not yet implemented node {:?}", node_kind).into())
+        }
+        E4XNodeKind::CData(data) => {
+            buf.push_utf8("<![CDATA[");
+            buf.push_str(data);
+            buf.push_utf8("]]>");
+            return Ok(());
         }
         E4XNodeKind::Element {
             children,
