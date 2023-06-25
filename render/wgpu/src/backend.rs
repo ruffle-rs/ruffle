@@ -928,6 +928,15 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         width: u32,
         height: u32,
     ) -> Result<BitmapHandle, BitmapError> {
+        if width == 0 || height == 0 {
+            return Err(BitmapError::InvalidSize);
+        }
+        if width > self.descriptors.limits.max_texture_dimension_2d
+            || height > self.descriptors.limits.max_texture_dimension_2d
+        {
+            return Err(BitmapError::TooLarge);
+        }
+
         let extent = wgpu::Extent3d {
             width,
             height,
