@@ -15,7 +15,7 @@ flate2 = "1.0.26"
 fnv = "1.0.7"
 gc-arena = { workspace = true }
 generational-arena = "0.2.9"
-indexmap = "1.9.3"
+indexmap = "2.0.0"
 tracing = { workspace = true }
 ruffle_render = { path = "../render", features = ["tessellator"] }
 ruffle_video = { path = "../video" }
