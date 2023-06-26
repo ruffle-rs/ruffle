@@ -1,7 +1,7 @@
 use crate::blend::{ComplexBlend, TrivialBlend};
 use crate::layouts::BindLayouts;
 use crate::shaders::Shaders;
-use crate::{MaskState, PosColorVertex, PosVertex, PushConstants, Transforms};
+use crate::{FilterVertex, MaskState, PosColorVertex, PosVertex, PushConstants, Transforms};
 use enum_map::{enum_map, Enum, EnumMap};
 use std::mem;
 use wgpu::{vertex_attr_array, BlendState};
@@ -12,6 +12,16 @@ pub const VERTEX_BUFFERS_DESCRIPTION_POS: [wgpu::VertexBufferLayout; 1] =
         step_mode: wgpu::VertexStepMode::Vertex,
         attributes: &vertex_attr_array![
             0 => Float32x2,
+        ],
+    }];
+
+pub const VERTEX_BUFFERS_DESCRIPTION_FILTERS: [wgpu::VertexBufferLayout; 1] =
+    [wgpu::VertexBufferLayout {
+        array_stride: std::mem::size_of::<FilterVertex>() as u64,
+        step_mode: wgpu::VertexStepMode::Vertex,
+        attributes: &vertex_attr_array![
+            0 => Float32x2,
+            1 => Float32x2,
         ],
     }];
 
@@ -257,26 +267,10 @@ impl Pipelines {
             msaa_sample_count,
         ));
 
-        let color_matrix_filter_bindings = if device.limits().max_push_constant_size > 0 {
-            vec![
-                &bind_layouts.globals,
-                &bind_layouts.bitmap,
-                &bind_layouts.color_matrix_filter,
-            ]
-        } else {
-            vec![
-                &bind_layouts.globals,
-                &bind_layouts.transforms,
-                &bind_layouts.color_transforms,
-                &bind_layouts.bitmap,
-                &bind_layouts.color_matrix_filter,
-            ]
-        };
-
         let color_matrix_filter_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: None,
-                bind_group_layouts: &color_matrix_filter_bindings,
+                bind_group_layouts: &[&bind_layouts.color_matrix_filter],
                 push_constant_ranges: full_push_constants,
             });
 
@@ -286,7 +280,7 @@ impl Pipelines {
             vertex: wgpu::VertexState {
                 module: &shaders.color_matrix_filter,
                 entry_point: "main_vertex",
-                buffers: &VERTEX_BUFFERS_DESCRIPTION_POS,
+                buffers: &VERTEX_BUFFERS_DESCRIPTION_FILTERS,
             },
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleList,
@@ -311,25 +305,9 @@ impl Pipelines {
             multiview: None,
         });
 
-        let blur_filter_bindings = if device.limits().max_push_constant_size > 0 {
-            vec![
-                &bind_layouts.globals,
-                &bind_layouts.bitmap,
-                &bind_layouts.blur_filter,
-            ]
-        } else {
-            vec![
-                &bind_layouts.globals,
-                &bind_layouts.transforms,
-                &bind_layouts.color_transforms,
-                &bind_layouts.bitmap,
-                &bind_layouts.blur_filter,
-            ]
-        };
-
         let blur_filter_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: None,
-            bind_group_layouts: &blur_filter_bindings,
+            bind_group_layouts: &[&bind_layouts.blur_filter],
             push_constant_ranges: full_push_constants,
         });
 
@@ -339,7 +317,7 @@ impl Pipelines {
             vertex: wgpu::VertexState {
                 module: &shaders.blur_filter,
                 entry_point: "main_vertex",
-                buffers: &VERTEX_BUFFERS_DESCRIPTION_POS,
+                buffers: &VERTEX_BUFFERS_DESCRIPTION_FILTERS,
             },
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleList,

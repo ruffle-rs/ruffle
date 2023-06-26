@@ -1,10 +1,5 @@
 #import filter
 
-struct VertexOutput {
-    @builtin(position) position: vec4<f32>,
-    @location(0) uv: vec2<f32>,
-};
-
 struct Filter {
     blur_x: f32,
     blur_y: f32,
@@ -12,14 +7,12 @@ struct Filter {
     height: f32,
 }
 
-#if use_push_constants == true
-    @group(2) @binding(0) var<uniform> filter_args: Filter;
-#else
-    @group(4) @binding(0) var<uniform> filter_args: Filter;
-#endif
+@group(0) @binding(0) var texture: texture_2d<f32>;
+@group(0) @binding(1) var texture_sampler: sampler;
+@group(0) @binding(2) var<uniform> filter_args: Filter;
 
 @vertex
-fn main_vertex(in: filter::FilterVertexInput) -> filter::VertexOutput {
+fn main_vertex(in: filter::VertexInput) -> filter::VertexOutput {
     return filter::main_vertex(in);
 }
 
@@ -35,7 +28,7 @@ fn main_fragment(in: filter::VertexOutput) -> @location(0) vec4<f32> {
     for (var x = -blur_x; x <= blur_x; x += 0.5) {
         for (var y = -blur_y; y <= blur_y; y += 0.5) {
             var offset = vec3<f32>(x / f.width, y / f.height, 0.0);
-            let sample = textureSample(filter::texture, filter::texture_sampler, in.uv + offset.xy);
+            let sample = textureSample(texture, texture_sampler, in.uv + offset.xy);
             let weight = 1.0;
             color += sample * weight;
             sum += weight;
