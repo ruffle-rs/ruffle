@@ -8,8 +8,7 @@ use crate::mesh::Mesh;
 use crate::surface::commands::{chunk_blends, Chunk, CommandRenderer};
 use crate::utils::{remove_srgb, supported_sample_count};
 use crate::{
-    ColorAdjustments, Descriptors, MaskState, Pipelines, PushConstants, TextureTransforms,
-    Transforms, UniformBuffer, DEFAULT_COLOR_ADJUSTMENTS,
+    ColorAdjustments, Descriptors, FilterVertex, MaskState, Pipelines, Transforms, UniformBuffer,
 };
 use ruffle_render::commands::CommandList;
 use ruffle_render::filters::Filter;
@@ -416,31 +415,7 @@ impl Surface {
             RenderTargetMode::FreshWithColor(wgpu::Color::TRANSPARENT),
             draw_encoder,
         );
-        let texture_transform =
-            make_texture_transform(descriptors, source_size, source_point, source_texture);
         let source_view = source_texture.create_view(&Default::default());
-        let bitmap_group = descriptors
-            .device
-            .create_bind_group(&wgpu::BindGroupDescriptor {
-                label: create_debug_label!("Bitmap copy group").as_deref(),
-                layout: &descriptors.bind_layouts.bitmap,
-                entries: &[
-                    wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: texture_transform.as_entire_binding(),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 1,
-                        resource: wgpu::BindingResource::TextureView(&source_view),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 2,
-                        resource: wgpu::BindingResource::Sampler(
-                            descriptors.bitmap_samplers.get_sampler(false, false),
-                        ),
-                    },
-                ],
-            });
         let buffer = descriptors
             .device
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -448,15 +423,33 @@ impl Surface {
                 contents: bytemuck::cast_slice(&filter.matrix),
                 usage: wgpu::BufferUsages::UNIFORM,
             });
+        let vertices = create_filter_vertices(
+            &descriptors.device,
+            source_texture,
+            source_point,
+            source_size,
+        );
         let filter_group = descriptors
             .device
             .create_bind_group(&wgpu::BindGroupDescriptor {
                 label: create_debug_label!("Filter group").as_deref(),
                 layout: &descriptors.bind_layouts.color_matrix_filter,
-                entries: &[wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: buffer.as_entire_binding(),
-                }],
+                entries: &[
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: wgpu::BindingResource::TextureView(&source_view),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: wgpu::BindingResource::Sampler(
+                            descriptors.bitmap_samplers.get_sampler(false, false),
+                        ),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 2,
+                        resource: buffer.as_entire_binding(),
+                    },
+                ],
             });
         let mut render_pass = draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: create_debug_label!("Color matrix filter").as_deref(),
@@ -465,33 +458,9 @@ impl Surface {
         });
         render_pass.set_pipeline(&self.pipelines.color_matrix_filter);
 
-        render_pass.set_bind_group(0, target.globals().bind_group(), &[]);
-        if descriptors.limits.max_push_constant_size > 0 {
-            render_pass.set_push_constants(
-                wgpu::ShaderStages::VERTEX_FRAGMENT,
-                0,
-                bytemuck::cast_slice(&[PushConstants {
-                    transforms: Transforms {
-                        world_matrix: [
-                            [target.width() as f32, 0.0, 0.0, 0.0],
-                            [0.0, target.height() as f32, 0.0, 0.0],
-                            [0.0, 0.0, 1.0, 0.0],
-                            [0.0, 0.0, 0.0, 1.0],
-                        ],
-                    },
-                    colors: DEFAULT_COLOR_ADJUSTMENTS,
-                }]),
-            );
-            render_pass.set_bind_group(1, &bitmap_group, &[]);
-            render_pass.set_bind_group(2, &filter_group, &[]);
-        } else {
-            render_pass.set_bind_group(1, target.whole_frame_bind_group(descriptors), &[0]);
-            render_pass.set_bind_group(2, &descriptors.default_color_bind_group, &[0]);
-            render_pass.set_bind_group(3, &bitmap_group, &[]);
-            render_pass.set_bind_group(4, &filter_group, &[]);
-        }
+        render_pass.set_bind_group(0, &filter_group, &[]);
 
-        render_pass.set_vertex_buffer(0, descriptors.quad.vertices_pos.slice(..));
+        render_pass.set_vertex_buffer(0, vertices.slice(..));
         render_pass.set_index_buffer(
             descriptors.quad.indices.slice(..),
             wgpu::IndexFormat::Uint32,
@@ -542,17 +511,23 @@ impl Surface {
             ),
         ];
 
-        let texture_transform =
-            make_texture_transform(descriptors, source_size, source_point, source_texture);
+        // TODO: Vertices should be per pass, and each pass needs diff sizes
+        let vertices = create_filter_vertices(
+            &descriptors.device,
+            source_texture,
+            source_point,
+            source_size,
+        );
+
         let source_view = source_texture.create_view(&Default::default());
         for i in 0..2 {
             let blur_x = (filter.blur_x.to_f32() - 1.0).max(0.0);
             let blur_y = (filter.blur_y.to_f32() - 1.0).max(0.0);
             let current = &targets[i % 2];
-            let (previous_view, previous_transform, previous_width, previous_height) = if i == 0 {
+            let (previous_view, previous_vertices, previous_width, previous_height) = if i == 0 {
                 (
                     &source_view,
-                    texture_transform.as_entire_binding(),
+                    vertices.slice(..),
                     source_texture.width() as f32,
                     source_texture.height() as f32,
                 )
@@ -560,33 +535,11 @@ impl Surface {
                 let previous = &targets[(i - 1) % 2];
                 (
                     previous.color_view(),
-                    descriptors.quad.texture_transforms.as_entire_binding(),
+                    descriptors.quad.filter_vertices.slice(..),
                     previous.width() as f32,
                     previous.height() as f32,
                 )
             };
-            let bitmap_group = descriptors
-                .device
-                .create_bind_group(&wgpu::BindGroupDescriptor {
-                    label: create_debug_label!("Bitmap copy group").as_deref(),
-                    layout: &descriptors.bind_layouts.bitmap,
-                    entries: &[
-                        wgpu::BindGroupEntry {
-                            binding: 0,
-                            resource: previous_transform,
-                        },
-                        wgpu::BindGroupEntry {
-                            binding: 1,
-                            resource: wgpu::BindingResource::TextureView(previous_view),
-                        },
-                        wgpu::BindGroupEntry {
-                            binding: 2,
-                            resource: wgpu::BindingResource::Sampler(
-                                descriptors.bitmap_samplers.get_sampler(false, true),
-                            ),
-                        },
-                    ],
-                });
             let buffer = descriptors
                 .device
                 .create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -604,10 +557,22 @@ impl Surface {
                 .create_bind_group(&wgpu::BindGroupDescriptor {
                     label: create_debug_label!("Filter group").as_deref(),
                     layout: &descriptors.bind_layouts.blur_filter,
-                    entries: &[wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: buffer.as_entire_binding(),
-                    }],
+                    entries: &[
+                        wgpu::BindGroupEntry {
+                            binding: 0,
+                            resource: wgpu::BindingResource::TextureView(previous_view),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 1,
+                            resource: wgpu::BindingResource::Sampler(
+                                descriptors.bitmap_samplers.get_sampler(false, true),
+                            ),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 2,
+                            resource: buffer.as_entire_binding(),
+                        },
+                    ],
                 });
             let mut render_pass = draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: create_debug_label!("Blur filter").as_deref(),
@@ -616,33 +581,9 @@ impl Surface {
             });
             render_pass.set_pipeline(&self.pipelines.blur_filter);
 
-            render_pass.set_bind_group(0, current.globals().bind_group(), &[]);
-            if descriptors.limits.max_push_constant_size > 0 {
-                render_pass.set_push_constants(
-                    wgpu::ShaderStages::VERTEX_FRAGMENT,
-                    0,
-                    bytemuck::cast_slice(&[PushConstants {
-                        transforms: Transforms {
-                            world_matrix: [
-                                [current.width() as f32, 0.0, 0.0, 0.0],
-                                [0.0, current.height() as f32, 0.0, 0.0],
-                                [0.0, 0.0, 1.0, 0.0],
-                                [0.0, 0.0, 0.0, 1.0],
-                            ],
-                        },
-                        colors: DEFAULT_COLOR_ADJUSTMENTS,
-                    }]),
-                );
-                render_pass.set_bind_group(1, &bitmap_group, &[]);
-                render_pass.set_bind_group(2, &filter_group, &[]);
-            } else {
-                render_pass.set_bind_group(1, current.whole_frame_bind_group(descriptors), &[0]);
-                render_pass.set_bind_group(2, &descriptors.default_color_bind_group, &[0]);
-                render_pass.set_bind_group(3, &bitmap_group, &[]);
-                render_pass.set_bind_group(4, &filter_group, &[]);
-            }
+            render_pass.set_bind_group(0, &filter_group, &[]);
 
-            render_pass.set_vertex_buffer(0, descriptors.quad.vertices_pos.slice(..));
+            render_pass.set_vertex_buffer(0, previous_vertices);
             render_pass.set_index_buffer(
                 descriptors.quad.indices.slice(..),
                 wgpu::IndexFormat::Uint32,
@@ -657,46 +598,38 @@ impl Surface {
     }
 }
 
-fn make_texture_transform(
-    descriptors: &Descriptors,
-    source_size: (u32, u32),
-    source_point: (u32, u32),
+fn create_filter_vertices(
+    device: &wgpu::Device,
     source_texture: &wgpu::Texture,
+    source_point: (u32, u32),
+    source_size: (u32, u32),
 ) -> wgpu::Buffer {
-    descriptors
-        .device
-        .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: None,
-            contents: bytemuck::cast_slice(&[TextureTransforms {
-                // This is is column-major order.
-                u_matrix: [
-                    [
-                        // If we're applying the filter to a source rectangle that's smaller than
-                        // the full source texture, then the scale factor will be less than 1.
-                        // This will produce U-V coordinates that do not extend to the full [0, 1]
-                        // range, which makes us sample just the source region.
-                        source_size.0 as f32 / source_texture.width() as f32,
-                        0.0,
-                        0.0,
-                        0.0,
-                    ],
-                    [
-                        0.0,
-                        source_size.1 as f32 / source_texture.height() as f32,
-                        0.0,
-                        0.0,
-                    ],
-                    [0.0, 0.0, 1.0, 0.0],
-                    // Offset to 'source_point'. Note that we divide by the full texture size,
-                    // since that's what the UV coordinates are sampling from.
-                    [
-                        source_point.0 as f32 / source_texture.width() as f32,
-                        source_point.1 as f32 / source_texture.height() as f32,
-                        0.0,
-                        0.0,
-                    ],
-                ],
-            }]),
-            usage: wgpu::BufferUsages::UNIFORM,
-        })
+    let source_width = source_texture.width() as f32;
+    let source_height = source_texture.height() as f32;
+    let left = source_point.0;
+    let top = source_point.1;
+    let right = left + source_size.0;
+    let bottom = top + source_size.1;
+    device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: create_debug_label!("Filter vertices").as_deref(),
+        contents: bytemuck::cast_slice(&[
+            FilterVertex {
+                position: [0.0, 0.0],
+                uv: [left as f32 / source_width, top as f32 / source_height],
+            },
+            FilterVertex {
+                position: [1.0, 0.0],
+                uv: [right as f32 / source_width, top as f32 / source_height],
+            },
+            FilterVertex {
+                position: [1.0, 1.0],
+                uv: [right as f32 / source_width, bottom as f32 / source_height],
+            },
+            FilterVertex {
+                position: [0.0, 1.0],
+                uv: [left as f32 / source_width, bottom as f32 / source_height],
+            },
+        ]),
+        usage: wgpu::BufferUsages::VERTEX,
+    })
 }

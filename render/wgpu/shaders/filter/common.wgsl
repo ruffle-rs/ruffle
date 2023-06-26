@@ -6,34 +6,17 @@ struct VertexOutput {
     @location(0) uv: vec2<f32>,
 };
 
-#if use_push_constants == true
-    var<push_constant> pc: common::PushConstants;
-    @group(1) @binding(0) var<uniform> textureTransforms: common::TextureTransforms;
-    @group(1) @binding(1) var texture: texture_2d<f32>;
-    @group(1) @binding(2) var texture_sampler: sampler;
-#else
-    @group(1) @binding(0) var<uniform> transforms: common::Transforms;
-    @group(2) @binding(0) var<uniform> colorTransforms: common::ColorTransforms;
-    @group(3) @binding(0) var<uniform> textureTransforms: common::TextureTransforms;
-    @group(3) @binding(1) var texture: texture_2d<f32>;
-    @group(3) @binding(2) var texture_sampler: sampler;
-#endif
-
-/// FIXME: We should import VertexInput from 'common', but a naga_oil bug prevents
-/// us from importing 'common' in both this file and the invidual filter shaders (like 'color_matrix.wgsl')
-/// Currently, importing 'common' in that way will cause all of the definitions from 'common' to be duplicated,
-/// result in a WGSL parse error.
-struct FilterVertexInput {
-    /// The position of the vertex in object space.
+struct VertexInput {
+    /// The position of the vertex in texture space (topleft 0,0, bottomright 1,1)
     @location(0) position: vec2<f32>,
+
+    /// The coordinate of the texture to sample in texture space (topleft 0,0, bottomright 1,1)
+    @location(1) uv: vec2<f32>,
 };
 
 @vertex
-fn main_vertex(in: FilterVertexInput) -> VertexOutput {
-    #if use_push_constants == true
-        var transforms = pc.transforms;
-    #endif
-    let uv = (textureTransforms.texture_matrix * vec4<f32>(in.position, 0.0, 1.0)).xy;
-    let pos = common::globals.view_matrix * transforms.world_matrix * vec4<f32>(in.position.x, in.position.y, 0.0, 1.0);
-    return VertexOutput(pos, uv);
+fn main_vertex(in: VertexInput) -> VertexOutput {
+    // Convert texture space (topleft 0,0 to bottomright 1,1) to render space (topleft -1,1 to bottomright 1,-1)
+    let pos = vec4<f32>((in.position.x * 2.0 - 1.0), (1.0 - in.position.y * 2.0), 0.0, 1.0);
+    return VertexOutput(pos, in.uv);
 }

@@ -138,6 +138,13 @@ impl From<TessVertex> for PosColorVertex {
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
+struct FilterVertex {
+    position: [f32; 2],
+    uv: [f32; 2],
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, Pod, Zeroable)]
 struct GradientUniforms {
     focal_point: f32,
     interpolation: i32,
