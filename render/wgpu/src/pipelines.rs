@@ -271,7 +271,7 @@ impl Pipelines {
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: None,
                 bind_group_layouts: &[&bind_layouts.color_matrix_filter],
-                push_constant_ranges: full_push_constants,
+                push_constant_ranges: &[],
             });
 
         let color_matrix_filter = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -308,7 +308,7 @@ impl Pipelines {
         let blur_filter_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: None,
             bind_group_layouts: &[&bind_layouts.blur_filter],
-            push_constant_ranges: full_push_constants,
+            push_constant_ranges: &[],
         });
 
         let blur_filter = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
