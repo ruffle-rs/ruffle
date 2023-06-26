@@ -1408,6 +1408,19 @@ fn get_bounds<'gc>(
     };
 
     if let Some(target) = target {
+        if !(*activation.context.use_new_invalid_bounds_value) {
+            // The value is set to true if the activation SWF version is >= 8 or if the SWF
+            // version of this MovieClip's oldest parent MovieClip is >= 8.
+            if activation.swf_version() >= 8
+                || movie_clip.get_oldest_parent_swf_version(&mut activation.context) >= 8
+            {
+                // If only the activation SWF version (and not the oldest parent's SWF version)
+                // is >= 8 and the movie clip equals the target, the value sometimes isn't set
+                // in Flash Player 10.
+                *activation.context.use_new_invalid_bounds_value = true;
+            }
+        }
+
         let bounds = movie_clip.bounds();
         let out_bounds = if DisplayObject::ptr_eq(movie_clip.into(), target) {
             // Getting the clips bounds in its own coordinate space; no AABB transform needed.
@@ -1419,7 +1432,23 @@ fn get_bounds<'gc>(
             // the final matrix, but this matches Flash's behavior.
             let to_global_matrix = movie_clip.local_to_global_matrix();
             let to_target_matrix = target.global_to_local_matrix().unwrap_or_default();
-            to_target_matrix * to_global_matrix * bounds
+            let target_bounds = to_target_matrix * to_global_matrix * bounds.clone();
+
+            // If the bounds are invalid, the target space is identical to the origin space and
+            // use_new_invalid_bounds_value is true, the returned bounds use a specific invalid value.
+            if *activation.context.use_new_invalid_bounds_value
+                && bounds == Rectangle::default()
+                && target_bounds == Rectangle::default()
+            {
+                Rectangle {
+                    x_min: Twips::new(0x8000000),
+                    x_max: Twips::new(0x8000000),
+                    y_min: Twips::new(0x8000000),
+                    y_max: Twips::new(0x8000000),
+                }
+            } else {
+                target_bounds
+            }
         };
 
         let out = ScriptObject::new(
@@ -1692,7 +1721,7 @@ fn opaque_background<'gc>(
     if let Some(color) = this.opaque_background() {
         Ok(color.to_rgb().into())
     } else {
-        Ok(Value::Null)
+        Ok(Value::Undefined)
     }
 }
 

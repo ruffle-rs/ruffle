@@ -10,6 +10,7 @@ use crate::avm1::{Activation, Error, Object, ScriptObject, TObject, Value};
 use crate::context::GcContext;
 use crate::display_object::{DisplayObject, TDisplayObject};
 use gc_arena::Collect;
+use swf::{Rectangle, Twips};
 
 #[derive(Clone, Debug, Collect)]
 #[collect(no_drop)]
@@ -143,7 +144,19 @@ fn method<'gc>(
         }
         GET_PIXEL_BOUNDS => {
             // This is equivalent to `clip.getBounds()`.
-            let bounds = clip.world_bounds();
+            let world_bounds = clip.world_bounds();
+
+            // If the bounds are invalid, the pixelBounds rectangle consists only of zeroes.
+            let bounds = if world_bounds == Rectangle::default() {
+                Rectangle {
+                    x_min: Twips::new(0),
+                    x_max: Twips::new(0),
+                    y_min: Twips::new(0),
+                    y_max: Twips::new(0),
+                }
+            } else {
+                world_bounds
+            };
 
             // Return Rectangle object.
             let constructor = activation.context.avm1.prototypes().rectangle_constructor;

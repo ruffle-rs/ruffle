@@ -134,6 +134,14 @@ pub struct MovieClipData<'gc> {
 
     /// List of tags queued up for the current frame.
     queued_tags: HashMap<Depth, QueuedTagList>,
+
+    /// The SWF version of the oldest parent MovieClip of this MovieClip.
+    /// That is the original MovieClip that loaded all other MovieClips.
+    ///
+    /// This is calculated and saved on demand in the getter.
+    ///
+    /// If this MovieClip has no parent MovieClip, this equals zero.
+    oldest_parent_swf_version: Option<u8>,
 }
 
 impl<'gc> MovieClip<'gc> {
@@ -167,6 +175,7 @@ impl<'gc> MovieClip<'gc> {
                 #[cfg(feature = "timeline_debug")]
                 tag_frame_boundaries: Default::default(),
                 queued_tags: HashMap::new(),
+                oldest_parent_swf_version: None,
             },
         ))
     }
@@ -206,6 +215,7 @@ impl<'gc> MovieClip<'gc> {
                 #[cfg(feature = "timeline_debug")]
                 tag_frame_boundaries: Default::default(),
                 queued_tags: HashMap::new(),
+                oldest_parent_swf_version: None,
             },
         ))
     }
@@ -249,6 +259,7 @@ impl<'gc> MovieClip<'gc> {
                 #[cfg(feature = "timeline_debug")]
                 tag_frame_boundaries: Default::default(),
                 queued_tags: HashMap::new(),
+                oldest_parent_swf_version: None,
             },
         ))
     }
@@ -314,6 +325,7 @@ impl<'gc> MovieClip<'gc> {
                 #[cfg(feature = "timeline_debug")]
                 tag_frame_boundaries: Default::default(),
                 queued_tags: HashMap::new(),
+                oldest_parent_swf_version: None,
             },
         ));
 
@@ -2295,6 +2307,32 @@ impl<'gc> MovieClip<'gc> {
 
     pub fn set_forced_button_mode(self, context: &mut UpdateContext<'_, 'gc>, button_mode: bool) {
         self.0.write(context.gc_context).button_mode = button_mode;
+    }
+
+    pub fn get_oldest_parent_swf_version(&self, context: &mut UpdateContext<'_, 'gc>) -> u8 {
+        // highest_version_option needs to be set in an extra line.
+        // Otherwise, the write call in the else block causes a run-time exception.
+        let highest_version_option = self.0.read().oldest_parent_swf_version;
+        if let Some(highest_version) = highest_version_option {
+            highest_version
+        } else {
+            let highest_version = if let Some(DisplayObject::MovieClip(parent_mc)) = self.parent() {
+                let parent_result = parent_mc.get_oldest_parent_swf_version(context);
+                if parent_result == 0 {
+                    if let Some(DisplayObject::MovieClip(_)) = parent_mc.parent() {
+                        parent_result
+                    } else {
+                        parent_mc.swf_version()
+                    }
+                } else {
+                    parent_result
+                }
+            } else {
+                0
+            };
+            self.0.write(context.gc_context).oldest_parent_swf_version = Some(highest_version);
+            highest_version
+        }
     }
 
     pub fn drawing(&self, gc_context: MutationContext<'gc, '_>) -> RefMut<'_, Drawing> {
