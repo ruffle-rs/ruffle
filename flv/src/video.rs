@@ -78,6 +78,11 @@ impl TryFrom<u8> for CommandFrame {
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub enum VideoPacket<'a> {
     Data(&'a [u8]),
+    Vp6Data {
+        hadjust: u8,
+        vadjust: u8,
+        data: &'a [u8],
+    },
     AvcSequenceHeader(&'a [u8]),
     AvcNalu {
         composition_time_offset: i32,
@@ -122,6 +127,11 @@ impl<'a> VideoData<'a> {
             (FrameType::CommandFrame, _) => VideoPacket::CommandFrame(CommandFrame::try_from(
                 *data.first().ok_or(Error::ShortVideoBlock)?,
             )?),
+            (_, CodecId::On2Vp6) | (_, CodecId::On2Vp6Alpha) => VideoPacket::Vp6Data {
+                hadjust: data[0] & 0x0F,
+                vadjust: (data[0] & 0xF0) >> 4,
+                data: &data[1..],
+            },
             (_, CodecId::Avc) => {
                 let bytes = data.get(1..4).ok_or(Error::ShortVideoBlock)?;
                 let is_negative = bytes[0] & 0x80 != 0;
@@ -196,6 +206,44 @@ mod tests {
                 frame_type: FrameType::Keyframe,
                 codec_id: CodecId::SorensonH263,
                 data: VideoPacket::Data(&[0x12])
+            })
+        );
+    }
+
+    #[test]
+    fn read_videodata_vp6() {
+        let data = [0x14, 0x37, 0x12, 0x34, 0x56, 0x78];
+        let mut reader = FlvReader::from_source(&data);
+
+        assert_eq!(
+            VideoData::parse(&mut reader, data.len() as u32),
+            Ok(VideoData {
+                frame_type: FrameType::Keyframe,
+                codec_id: CodecId::On2Vp6,
+                data: VideoPacket::Vp6Data {
+                    hadjust: 0x07,
+                    vadjust: 0x03,
+                    data: &[0x12, 0x34, 0x56, 0x78]
+                }
+            })
+        );
+    }
+
+    #[test]
+    fn read_videodata_vp6alpha() {
+        let data = [0x15, 0x37, 0x12, 0x34, 0x56, 0x78];
+        let mut reader = FlvReader::from_source(&data);
+
+        assert_eq!(
+            VideoData::parse(&mut reader, data.len() as u32),
+            Ok(VideoData {
+                frame_type: FrameType::Keyframe,
+                codec_id: CodecId::On2Vp6Alpha,
+                data: VideoPacket::Vp6Data {
+                    hadjust: 0x07,
+                    vadjust: 0x03,
+                    data: &[0x12, 0x34, 0x56, 0x78]
+                }
             })
         );
     }

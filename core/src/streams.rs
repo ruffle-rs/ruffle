@@ -359,7 +359,16 @@ impl<'gc> NetStream<'gc> {
                         let codec = VideoCodec::from_u8(codec_id as u8);
 
                         match (video_handle, codec, data) {
-                            (Some(video_handle), Some(codec), FlvVideoPacket::Data(data)) => {
+                            (Some(video_handle), Some(codec), FlvVideoPacket::Data(data))
+                            | (
+                                Some(video_handle),
+                                Some(codec),
+                                FlvVideoPacket::Vp6Data {
+                                    hadjust: _,
+                                    vadjust: _,
+                                    data,
+                                },
+                            ) => {
                                 // NOTE: Currently, no implementation of the decoder backend actually requires
                                 if tag_needs_preloading {
                                     let encoded_frame = EncodedFrame {
