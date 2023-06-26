@@ -1,0 +1,11 @@
+Test file 1
+8LTrace8 loaded
+Trace8 loaded
+8LTrace8 finished
+
+Test file 2
+Parent (7) 6710886.35
+Child (7) loaded
+Parent (7) 6710886.35
+Child (7) 6710886.35
+Parent (7) 6710886.35
