@@ -46,3 +46,14 @@ with_video = false # If this test requires a video decoder backend to run.
 tolerance = 0 # The tolerance per pixel channel to be considered "the same". Increase as needed with tests that aren't pixel perfect across platforms.
 max_outliers = 0 # Maximum number of outliers allowed over the given tolerance levels. Increase as needed with tests that aren't pixel perfect across platforms.
 ```
+
+## Frame-based tests
+
+Some older tests break with tick timing, so they instead use frames. When `num_frames` is specified, Ruffle's `tick` method will not be called and tick-based processing will not occur. Instead, `run_frame` will be called directly.
+
+Tests that use video or other tick processing must not use `num_frames`, and in general its use is deprecated.
+
+```toml
+num_frames = 1 # The amount of frames of the swf to run
+sleep_to_meet_frame_rate = false # If true, slow the tick rate to match the movies requested fps rate
+```
