@@ -1,0 +1,75 @@
+Test file 1
+Child (7) loaded
+Child (7) 6710886.35
+
+Test file 2
+Parent (7) 6710886.35
+Child (7) loaded
+Parent (7) 6710886.35
+Child (7) 6710886.35
+Parent (7) 6710886.35
+
+Test file 3
+Parent (7) 6710886.35
+Child (7) loaded
+Parent (7) 6710886.35
+Child (7) 6710886.35
+Parent (7) 6710886.35
+
+Test file 4
+Parent (7) 6710886.35
+Child (7) loaded
+Parent (7) 6710886.35
+Child (7) 6710886.35
+Parent (7) 6710886.35
+
+Test file 5
+Parent (7) 6710886.35
+Child (7) loaded
+Parent (7) 6710886.35
+Child (7) 6710886.35
+Parent (7) 6710886.35
+
+Test file 6
+Parent (7) 6710886.35
+Child (7) loaded
+Parent (7) 6710886.35
+Child (7) 6710886.35
+Parent (7) 6710886.35
+
+Test file 7
+Parent (7) 6710886.35
+Child (7) loaded
+Parent (7) 6710886.35
+Child (7) 6710886.35
+Parent (7) 6710886.35
+
+Test file 8
+SP8 loaded
+Child (7) loaded
+SP8 running
+Child (7) 6710886.35
+SP8 finished
+
+Test file 9
+SP8 loaded
+Child (7) loaded
+SP8 running
+Child (7) 6710886.35
+SP8 finished
+
+Test file 10
+SP8 loaded
+Child (7) loaded
+SP8 running
+Child (7) 6710886.35
+SP8 finished
+
+Test file 11
+SP8 loaded
+Child (7) loaded
+SP8 running
+Child (7) 6710886.35
+SP8 finished
+
+Finished all test files.

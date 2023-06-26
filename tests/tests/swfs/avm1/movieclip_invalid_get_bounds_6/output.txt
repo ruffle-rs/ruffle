@@ -1,0 +1,10 @@
+Test file 1
+Child (8) 550.45
+Parent (7) 6710886.4
+
+Test file 2
+Parent (7) 6710886.4
+Child (7) loaded
+Parent (7) 6710886.4
+Child (7) 6710886.4
+Parent (7) 6710886.4

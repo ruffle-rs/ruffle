@@ -1,0 +1,13 @@
+Test file 1
+Parent (7) 6710886.35
+Child (8) loaded
+Parent (7) 6710886.35
+Child (8) 6710886.4
+Parent (7) 6710886.4
+
+Test file 2
+Parent (7) 6710886.4
+Child (7) loaded
+Parent (7) 6710886.4
+Child (7) 6710886.4
+Parent (7) 6710886.4
