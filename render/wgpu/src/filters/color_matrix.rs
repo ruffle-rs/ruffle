@@ -1,7 +1,7 @@
 use crate::backend::RenderTargetMode;
 use crate::buffer_pool::TexturePool;
 use crate::descriptors::Descriptors;
-use crate::filters::{create_filter_vertices, VERTEX_BUFFERS_DESCRIPTION_FILTERS};
+use crate::filters::{create_filter_vertices, FilterSource, VERTEX_BUFFERS_DESCRIPTION_FILTERS};
 use crate::surface::target::CommandTarget;
 use crate::utils::SampleCountMap;
 use std::sync::OnceLock;
@@ -101,27 +101,24 @@ impl ColorMatrixFilter {
         })
     }
 
-    #[allow(clippy::too_many_arguments)]
     pub fn apply(
         &self,
         descriptors: &Descriptors,
         texture_pool: &mut TexturePool,
         draw_encoder: &mut wgpu::CommandEncoder,
-        source_texture: &wgpu::Texture,
-        source_point: (u32, u32),
-        source_size: (u32, u32),
+        source: FilterSource,
         filter: &ColorMatrixFilterArgs,
     ) -> CommandTarget {
-        let sample_count = source_texture.sample_count();
-        let format = source_texture.format();
+        let sample_count = source.texture.sample_count();
+        let format = source.texture.format();
         let pipeline = self.pipeline(descriptors, sample_count);
 
         let target = CommandTarget::new(
             descriptors,
             texture_pool,
             wgpu::Extent3d {
-                width: source_size.0,
-                height: source_size.1,
+                width: source.size.0,
+                height: source.size.1,
                 depth_or_array_layers: 1,
             },
             format,
@@ -129,7 +126,7 @@ impl ColorMatrixFilter {
             RenderTargetMode::FreshWithColor(wgpu::Color::TRANSPARENT),
             draw_encoder,
         );
-        let source_view = source_texture.create_view(&Default::default());
+        let source_view = source.texture.create_view(&Default::default());
         let buffer = descriptors
             .device
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -137,12 +134,7 @@ impl ColorMatrixFilter {
                 contents: bytemuck::cast_slice(&filter.matrix),
                 usage: wgpu::BufferUsages::UNIFORM,
             });
-        let vertices = create_filter_vertices(
-            &descriptors.device,
-            source_texture,
-            source_point,
-            source_size,
-        );
+        let vertices = create_filter_vertices(&descriptors.device, &source);
         let filter_group = descriptors
             .device
             .create_bind_group(&wgpu::BindGroupDescriptor {

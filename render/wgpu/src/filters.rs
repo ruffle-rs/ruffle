@@ -11,6 +11,12 @@ use ruffle_render::filters::Filter;
 use wgpu::util::DeviceExt;
 use wgpu::vertex_attr_array;
 
+pub struct FilterSource<'a> {
+    pub texture: &'a wgpu::Texture,
+    pub point: (u32, u32),
+    pub size: (u32, u32),
+}
+
 pub struct Filters {
     pub blur: BlurFilter,
     pub color_matrix: ColorMatrixFilter,
@@ -24,15 +30,12 @@ impl Filters {
         }
     }
 
-    #[allow(clippy::too_many_arguments)]
     pub fn apply(
         &self,
         descriptors: &Descriptors,
         draw_encoder: &mut wgpu::CommandEncoder,
         texture_pool: &mut TexturePool,
-        source_texture: &wgpu::Texture,
-        source_point: (u32, u32),
-        source_size: (u32, u32),
+        source: FilterSource,
         filter: Filter,
     ) -> CommandTarget {
         let target = match filter {
@@ -40,18 +43,14 @@ impl Filters {
                 descriptors,
                 texture_pool,
                 draw_encoder,
-                source_texture,
-                source_point,
-                source_size,
+                source,
                 &filter,
             ),
             Filter::BlurFilter(filter) => descriptors.filters.blur.apply(
                 descriptors,
                 texture_pool,
                 draw_encoder,
-                source_texture,
-                source_point,
-                source_size,
+                source,
                 &filter,
             ),
             _ => {
@@ -61,9 +60,7 @@ impl Filters {
                     descriptors,
                     texture_pool,
                     draw_encoder,
-                    source_texture,
-                    source_point,
-                    source_size,
+                    source,
                     &Default::default(),
                 )
             }
@@ -94,18 +91,13 @@ pub const VERTEX_BUFFERS_DESCRIPTION_FILTERS: [wgpu::VertexBufferLayout; 1] =
         ],
     }];
 
-pub fn create_filter_vertices(
-    device: &wgpu::Device,
-    source_texture: &wgpu::Texture,
-    source_point: (u32, u32),
-    source_size: (u32, u32),
-) -> wgpu::Buffer {
-    let source_width = source_texture.width() as f32;
-    let source_height = source_texture.height() as f32;
-    let left = source_point.0;
-    let top = source_point.1;
-    let right = left + source_size.0;
-    let bottom = top + source_size.1;
+pub fn create_filter_vertices(device: &wgpu::Device, source: &FilterSource) -> wgpu::Buffer {
+    let source_width = source.texture.width() as f32;
+    let source_height = source.texture.height() as f32;
+    let left = source.point.0;
+    let top = source.point.1;
+    let right = left + source.size.0;
+    let bottom = top + source.size.1;
     device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: create_debug_label!("Filter vertices").as_deref(),
         contents: bytemuck::cast_slice(&[

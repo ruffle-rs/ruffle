@@ -1,6 +1,7 @@
 use crate::buffer_builder::BufferBuilder;
 use crate::buffer_pool::{BufferPool, TexturePool};
 use crate::context3d::WgpuContext3D;
+use crate::filters::FilterSource;
 use crate::mesh::{Mesh, PendingDraw};
 use crate::surface::{LayerRef, Surface};
 use crate::target::{MaybeOwnedBuffer, TextureTarget};
@@ -515,9 +516,11 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                         &self.descriptors,
                         &mut draw_encoder,
                         &mut self.offscreen_texture_pool,
-                        target.color_texture(),
-                        (0, 0),
-                        (target.width(), target.height()),
+                        FilterSource {
+                            texture: target.color_texture(),
+                            point: (0, 0),
+                            size: (target.width(), target.height()),
+                        },
                         filter,
                     );
                 }
@@ -845,9 +848,11 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             &self.descriptors,
             &mut draw_encoder,
             &mut self.offscreen_texture_pool,
-            &source_texture.texture,
-            source_point,
-            source_size,
+            FilterSource {
+                texture: &source_texture.texture,
+                point: source_point,
+                size: source_size,
+            },
             filter,
         );
         draw_encoder.copy_texture_to_texture(
