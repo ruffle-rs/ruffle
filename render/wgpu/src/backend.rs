@@ -511,7 +511,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     &mut self.offscreen_texture_pool,
                 );
                 for filter in entry.filters {
-                    target = surface.apply_filter(
+                    target = self.descriptors.filters.apply(
                         &self.descriptors,
                         &mut draw_encoder,
                         &mut self.offscreen_texture_pool,
@@ -834,13 +834,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         let frame_output = target
             .get_next_texture()
             .expect("TextureTargetFrame.get_next_texture is infallible");
-        let surface = Surface::new(
-            &self.descriptors,
-            self.surface.quality(),
-            dest_texture.texture.width(),
-            dest_texture.texture.height(),
-            wgpu::TextureFormat::Rgba8Unorm,
-        );
         let label = create_debug_label!("Draw encoder");
         let mut draw_encoder =
             self.descriptors
@@ -848,7 +841,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                     label: label.as_deref(),
                 });
-        let applied_filter = surface.apply_filter(
+        let applied_filter = self.descriptors.filters.apply(
             &self.descriptors,
             &mut draw_encoder,
             &mut self.offscreen_texture_pool,

@@ -1,9 +1,13 @@
 mod blur;
 mod color_matrix;
 
+use crate::buffer_pool::TexturePool;
+use crate::descriptors::Descriptors;
 use crate::filters::blur::BlurFilter;
 use crate::filters::color_matrix::ColorMatrixFilter;
+use crate::surface::target::CommandTarget;
 use bytemuck::{Pod, Zeroable};
+use ruffle_render::filters::Filter;
 use wgpu::util::DeviceExt;
 use wgpu::vertex_attr_array;
 
@@ -18,6 +22,58 @@ impl Filters {
             blur: BlurFilter::new(device),
             color_matrix: ColorMatrixFilter::new(device),
         }
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn apply(
+        &self,
+        descriptors: &Descriptors,
+        draw_encoder: &mut wgpu::CommandEncoder,
+        texture_pool: &mut TexturePool,
+        source_texture: &wgpu::Texture,
+        source_point: (u32, u32),
+        source_size: (u32, u32),
+        filter: Filter,
+    ) -> CommandTarget {
+        let target = match filter {
+            Filter::ColorMatrixFilter(filter) => descriptors.filters.color_matrix.apply(
+                descriptors,
+                texture_pool,
+                draw_encoder,
+                source_texture,
+                source_point,
+                source_size,
+                &filter,
+            ),
+            Filter::BlurFilter(filter) => descriptors.filters.blur.apply(
+                descriptors,
+                texture_pool,
+                draw_encoder,
+                source_texture,
+                source_point,
+                source_size,
+                &filter,
+            ),
+            _ => {
+                tracing::warn!("Unsupported filter {filter:?}");
+                // Apply a default color matrix - it's essentially a blit
+                descriptors.filters.color_matrix.apply(
+                    descriptors,
+                    texture_pool,
+                    draw_encoder,
+                    source_texture,
+                    source_point,
+                    source_size,
+                    &Default::default(),
+                )
+            }
+        };
+
+        // We're about to perform a copy, so make sure that we've applied
+        // a clear (in case no other draw commands were issued, we still need
+        // the background clear color applied)
+        target.ensure_cleared(draw_encoder);
+        target
     }
 }
 
