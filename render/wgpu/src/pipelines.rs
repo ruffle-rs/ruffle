@@ -1,7 +1,7 @@
 use crate::blend::{ComplexBlend, TrivialBlend};
 use crate::layouts::BindLayouts;
 use crate::shaders::Shaders;
-use crate::{FilterVertex, MaskState, PosColorVertex, PosVertex, PushConstants, Transforms};
+use crate::{MaskState, PosColorVertex, PosVertex, PushConstants, Transforms};
 use enum_map::{enum_map, Enum, EnumMap};
 use std::mem;
 use wgpu::{vertex_attr_array, BlendState};
@@ -12,16 +12,6 @@ pub const VERTEX_BUFFERS_DESCRIPTION_POS: [wgpu::VertexBufferLayout; 1] =
         step_mode: wgpu::VertexStepMode::Vertex,
         attributes: &vertex_attr_array![
             0 => Float32x2,
-        ],
-    }];
-
-pub const VERTEX_BUFFERS_DESCRIPTION_FILTERS: [wgpu::VertexBufferLayout; 1] =
-    [wgpu::VertexBufferLayout {
-        array_stride: std::mem::size_of::<FilterVertex>() as u64,
-        step_mode: wgpu::VertexStepMode::Vertex,
-        attributes: &vertex_attr_array![
-            0 => Float32x2,
-            1 => Float32x2,
         ],
     }];
 
@@ -56,8 +46,6 @@ pub struct Pipelines {
     pub bitmap: EnumMap<TrivialBlend, ShapePipeline>,
     pub gradients: ShapePipeline,
     pub complex_blends: EnumMap<ComplexBlend, ShapePipeline>,
-    pub color_matrix_filter: wgpu::RenderPipeline,
-    pub blur_filter: wgpu::RenderPipeline,
 }
 
 impl ShapePipeline {
@@ -267,81 +255,6 @@ impl Pipelines {
             msaa_sample_count,
         ));
 
-        let color_matrix_filter_layout =
-            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: None,
-                bind_group_layouts: &[&bind_layouts.color_matrix_filter],
-                push_constant_ranges: &[],
-            });
-
-        let color_matrix_filter = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: create_debug_label!("Color Matrix Filter").as_deref(),
-            layout: Some(&color_matrix_filter_layout),
-            vertex: wgpu::VertexState {
-                module: &shaders.color_matrix_filter,
-                entry_point: "main_vertex",
-                buffers: &VERTEX_BUFFERS_DESCRIPTION_FILTERS,
-            },
-            primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleList,
-                strip_index_format: None,
-                front_face: wgpu::FrontFace::Ccw,
-                cull_mode: None,
-                polygon_mode: wgpu::PolygonMode::default(),
-                unclipped_depth: false,
-                conservative: false,
-            },
-            depth_stencil: None,
-            multisample: wgpu::MultisampleState {
-                count: msaa_sample_count,
-                mask: !0,
-                alpha_to_coverage_enabled: false,
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &shaders.color_matrix_filter,
-                entry_point: "main_fragment",
-                targets: &[Some(format.into())],
-            }),
-            multiview: None,
-        });
-
-        let blur_filter_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: None,
-            bind_group_layouts: &[&bind_layouts.blur_filter],
-            push_constant_ranges: &[],
-        });
-
-        let blur_filter = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: create_debug_label!("Blur Filter").as_deref(),
-            layout: Some(&blur_filter_layout),
-            vertex: wgpu::VertexState {
-                module: &shaders.blur_filter,
-                entry_point: "main_vertex",
-                buffers: &VERTEX_BUFFERS_DESCRIPTION_FILTERS,
-            },
-            primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleList,
-                strip_index_format: None,
-                front_face: wgpu::FrontFace::Ccw,
-                cull_mode: None,
-                polygon_mode: wgpu::PolygonMode::default(),
-                unclipped_depth: false,
-                conservative: false,
-            },
-            depth_stencil: None,
-            multisample: wgpu::MultisampleState {
-                count: msaa_sample_count,
-                mask: !0,
-                alpha_to_coverage_enabled: false,
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &shaders.blur_filter,
-                entry_point: "main_fragment",
-                targets: &[Some(format.into())],
-            }),
-            multiview: None,
-        });
-
         Self {
             color: color_pipelines,
             bitmap: EnumMap::from_array(bitmap_pipelines),
@@ -349,8 +262,6 @@ impl Pipelines {
             bitmap_opaque_dummy_depth,
             gradients: gradient_pipeline,
             complex_blends: complex_blend_pipelines,
-            color_matrix_filter,
-            blur_filter,
         }
     }
 }
