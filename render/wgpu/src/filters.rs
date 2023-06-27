@@ -17,6 +17,16 @@ pub struct FilterSource<'a> {
     pub size: (u32, u32),
 }
 
+impl<'a> FilterSource<'a> {
+    pub fn for_entire_texture(texture: &'a wgpu::Texture) -> Self {
+        Self {
+            texture,
+            point: (0, 0),
+            size: (texture.width(), texture.height()),
+        }
+    }
+}
+
 pub struct Filters {
     pub blur: BlurFilter,
     pub color_matrix: ColorMatrixFilter,

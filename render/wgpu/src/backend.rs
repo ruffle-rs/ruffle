@@ -516,11 +516,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                         &self.descriptors,
                         &mut draw_encoder,
                         &mut self.offscreen_texture_pool,
-                        FilterSource {
-                            texture: target.color_texture(),
-                            point: (0, 0),
-                            size: (target.width(), target.height()),
-                        },
+                        FilterSource::for_entire_texture(target.color_texture()),
                         filter,
                     );
                 }
