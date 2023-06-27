@@ -4,9 +4,23 @@ use crate::descriptors::Descriptors;
 use crate::filters::{FilterSource, VERTEX_BUFFERS_DESCRIPTION_FILTERS};
 use crate::surface::target::CommandTarget;
 use crate::utils::SampleCountMap;
+use bytemuck::{Pod, Zeroable};
 use std::sync::OnceLock;
 use swf::BlurFilter as BlurFilterArgs;
 use wgpu::util::DeviceExt;
+
+/// How much each pass should multiply the requested blur size by.
+/// These are very approximate to Flash, and not 100% exact.
+const PASS_SCALES: [f32; 15] = [
+    1.0, 1.1, 0.60, 0.39, 0.40, 0.29, 0.18, 0.20, 0.19, 0.20, 0.39, 0.98, 0.00, 1.01, 0.00,
+];
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, Pod, Zeroable, PartialEq)]
+struct BlurUniform {
+    direction: [f32; 2],
+    size: f32,
+}
 
 pub struct BlurFilter {
     bind_group_layout: wgpu::BindGroupLayout,
@@ -41,7 +55,7 @@ impl BlurFilter {
                         ty: wgpu::BufferBindingType::Uniform,
                         has_dynamic_offset: false,
                         min_binding_size: wgpu::BufferSize::new(
-                            std::mem::size_of::<[f32; 4]>() as u64
+                            std::mem::size_of::<BlurUniform>() as u64
                         ),
                     },
                     count: None,
@@ -113,114 +127,131 @@ impl BlurFilter {
         let format = source.texture.format();
         let pipeline = self.pipeline(descriptors, sample_count);
 
-        // FIXME - this should be larger than the source texture. Figure out exactly how much larger
-        let targets = [
-            CommandTarget::new(
-                descriptors,
-                texture_pool,
-                wgpu::Extent3d {
-                    width: source.size.0,
-                    height: source.size.1,
-                    depth_or_array_layers: 1,
-                },
-                format,
-                sample_count,
-                RenderTargetMode::FreshWithColor(wgpu::Color::TRANSPARENT),
-                draw_encoder,
-            ),
-            CommandTarget::new(
-                descriptors,
-                texture_pool,
-                wgpu::Extent3d {
-                    width: source.size.0,
-                    height: source.size.1,
-                    depth_or_array_layers: 1,
-                },
-                format,
-                sample_count,
-                RenderTargetMode::FreshWithColor(wgpu::Color::TRANSPARENT),
-                draw_encoder,
-            ),
-        ];
+        // FIXME - these should be larger than the source texture, but we don't support that yet
+        let mut flip = CommandTarget::new(
+            descriptors,
+            texture_pool,
+            wgpu::Extent3d {
+                width: source.size.0,
+                height: source.size.1,
+                depth_or_array_layers: 1,
+            },
+            format,
+            sample_count,
+            RenderTargetMode::FreshWithColor(wgpu::Color::TRANSPARENT),
+            draw_encoder,
+        );
+        let mut flop = CommandTarget::new(
+            descriptors,
+            texture_pool,
+            wgpu::Extent3d {
+                width: source.size.0,
+                height: source.size.1,
+                depth_or_array_layers: 1,
+            },
+            format,
+            sample_count,
+            RenderTargetMode::FreshWithColor(wgpu::Color::TRANSPARENT),
+            draw_encoder,
+        );
 
-        // TODO: Vertices should be per pass, and each pass needs diff sizes
         let vertices = source.vertices(&descriptors.device);
 
         let source_view = source.texture.create_view(&Default::default());
-        for i in 0..2 {
-            let blur_x = (filter.blur_x.to_f32() - 1.0).max(0.0);
-            let blur_y = (filter.blur_y.to_f32() - 1.0).max(0.0);
-            let current = &targets[i % 2];
-            let (previous_view, previous_vertices, previous_width, previous_height) = if i == 0 {
-                (
-                    &source_view,
-                    vertices.slice(..),
-                    source.texture.width() as f32,
-                    source.texture.height() as f32,
-                )
-            } else {
-                let previous = &targets[(i - 1) % 2];
-                (
-                    previous.color_view(),
-                    descriptors.quad.filter_vertices.slice(..),
-                    previous.width() as f32,
-                    previous.height() as f32,
-                )
-            };
-            let buffer = descriptors
-                .device
-                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: create_debug_label!("Filter arguments").as_deref(),
-                    contents: bytemuck::cast_slice(&[
-                        blur_x * ((i as u32) % 2) as f32,
-                        blur_y * (((i as u32) % 2) + 1) as f32,
-                        previous_width,
-                        previous_height,
-                    ]),
-                    usage: wgpu::BufferUsages::UNIFORM,
-                });
-            let filter_group = descriptors
-                .device
-                .create_bind_group(&wgpu::BindGroupDescriptor {
-                    label: create_debug_label!("Filter group").as_deref(),
-                    layout: &self.bind_group_layout,
-                    entries: &[
-                        wgpu::BindGroupEntry {
-                            binding: 0,
-                            resource: wgpu::BindingResource::TextureView(previous_view),
-                        },
-                        wgpu::BindGroupEntry {
-                            binding: 1,
-                            resource: wgpu::BindingResource::Sampler(
-                                descriptors.bitmap_samplers.get_sampler(false, true),
-                            ),
-                        },
-                        wgpu::BindGroupEntry {
-                            binding: 2,
-                            resource: buffer.as_entire_binding(),
-                        },
-                    ],
-                });
-            let mut render_pass = draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: create_debug_label!("Blur filter").as_deref(),
-                color_attachments: &[current.color_attachments()],
-                depth_stencil_attachment: None,
-            });
-            render_pass.set_pipeline(pipeline);
+        let mut first = true;
+        for pass_scale in PASS_SCALES
+            .iter()
+            .take(filter.num_passes().min(15) as usize)
+        {
+            for i in 0..2 {
+                let horizontal = i % 2 == 0;
+                let strength = if horizontal {
+                    filter.blur_x.to_f32()
+                } else {
+                    filter.blur_y.to_f32()
+                };
+                let strength = (strength.min(255.0) * pass_scale).floor() - 1.0;
+                if strength <= 0.0 {
+                    // A strength of 0 is a noop
+                    continue;
+                }
 
-            render_pass.set_bind_group(0, &filter_group, &[]);
+                let (previous_view, previous_vertices, previous_width, previous_height) = if first {
+                    first = false;
+                    (
+                        &source_view,
+                        vertices.slice(..),
+                        source.texture.width() as f32,
+                        source.texture.height() as f32,
+                    )
+                } else {
+                    (
+                        flip.color_view(),
+                        descriptors.quad.filter_vertices.slice(..),
+                        flip.width() as f32,
+                        flip.height() as f32,
+                    )
+                };
+                let buffer =
+                    descriptors
+                        .device
+                        .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                            label: create_debug_label!("Filter arguments").as_deref(),
+                            contents: bytemuck::cast_slice(&[BlurUniform {
+                                direction: if horizontal {
+                                    [1.0 / previous_width, 0.0]
+                                } else {
+                                    [0.0, 1.0 / previous_height]
+                                },
+                                size: strength,
+                            }]),
+                            usage: wgpu::BufferUsages::UNIFORM,
+                        });
+                let filter_group =
+                    descriptors
+                        .device
+                        .create_bind_group(&wgpu::BindGroupDescriptor {
+                            label: create_debug_label!("Filter group").as_deref(),
+                            layout: &self.bind_group_layout,
+                            entries: &[
+                                wgpu::BindGroupEntry {
+                                    binding: 0,
+                                    resource: wgpu::BindingResource::TextureView(previous_view),
+                                },
+                                wgpu::BindGroupEntry {
+                                    binding: 1,
+                                    resource: wgpu::BindingResource::Sampler(
+                                        descriptors.bitmap_samplers.get_sampler(false, true),
+                                    ),
+                                },
+                                wgpu::BindGroupEntry {
+                                    binding: 2,
+                                    resource: buffer.as_entire_binding(),
+                                },
+                            ],
+                        });
+                {
+                    let mut render_pass =
+                        draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                            label: create_debug_label!("Blur filter").as_deref(),
+                            color_attachments: &[flop.color_attachments()],
+                            depth_stencil_attachment: None,
+                        });
+                    render_pass.set_pipeline(pipeline);
 
-            render_pass.set_vertex_buffer(0, previous_vertices);
-            render_pass.set_index_buffer(
-                descriptors.quad.indices.slice(..),
-                wgpu::IndexFormat::Uint32,
-            );
-            render_pass.draw_indexed(0..6, 0, 0..1);
+                    render_pass.set_bind_group(0, &filter_group, &[]);
+
+                    render_pass.set_vertex_buffer(0, previous_vertices);
+                    render_pass.set_index_buffer(
+                        descriptors.quad.indices.slice(..),
+                        wgpu::IndexFormat::Uint32,
+                    );
+                    render_pass.draw_indexed(0..6, 0, 0..1);
+                }
+                std::mem::swap(&mut flip, &mut flop);
+            }
         }
 
-        targets
-            .into_iter()
-            .last()
-            .expect("Targets should not be empty")
+        flip
     }
 }

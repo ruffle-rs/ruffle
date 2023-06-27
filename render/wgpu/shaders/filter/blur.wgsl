@@ -1,10 +1,12 @@
 #import filter
 
 struct Filter {
-    blur_x: f32,
-    blur_y: f32,
-    width: f32,
-    height: f32,
+    // Secretly a vec2<f32> but within alignment rules
+    dir_x: f32,
+    dir_y: f32,
+
+    // Size of the blur kernel
+    size: f32,
 }
 
 @group(0) @binding(0) var texture: texture_2d<f32>;
@@ -18,23 +20,15 @@ fn main_vertex(in: filter::VertexInput) -> filter::VertexOutput {
 
 @fragment
 fn main_fragment(in: filter::VertexOutput) -> @location(0) vec4<f32> {
-    var f = filter_args;
+    let direction = vec2<f32>(filter_args.dir_x, filter_args.dir_y);
     var color = vec4<f32>();
-    var sum = 0.0;
 
-    let blur_x = f.blur_x / 2.0;
-    let blur_y = f.blur_y / 2.0;
+    let num_samples = 2.0 * filter_args.size + 1.0;
+    let weight = 1.0 / num_samples;
 
-    for (var x = -blur_x; x <= blur_x; x += 0.5) {
-        for (var y = -blur_y; y <= blur_y; y += 0.5) {
-            var offset = vec3<f32>(x / f.width, y / f.height, 0.0);
-            let sample = textureSample(texture, texture_sampler, in.uv + offset.xy);
-            let weight = 1.0;
-            color += sample * weight;
-            sum += weight;
-        }
+    for (var i = 0.0; i < num_samples; i += 1.0) {
+        color += textureSample(texture, texture_sampler, in.uv + direction * (i - filter_args.size)) * weight;
     }
-    color /= sum;
 
     return color;
 }
