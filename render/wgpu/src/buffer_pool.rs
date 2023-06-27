@@ -8,7 +8,7 @@ use std::sync::{Arc, Mutex, Weak};
 type PoolInner<T> = Mutex<Vec<T>>;
 type Constructor<Type, Description> = Box<dyn Fn(&Descriptors, &Description) -> Type>;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct TexturePool {
     pools: FnvHashMap<TextureKey, BufferPool<(wgpu::Texture, wgpu::TextureView), AlwaysCompatible>>,
     globals_cache: FnvHashMap<GlobalsKey, Arc<Globals>>,
@@ -16,10 +16,7 @@ pub struct TexturePool {
 
 impl TexturePool {
     pub fn new() -> Self {
-        Self {
-            pools: FnvHashMap::default(),
-            globals_cache: FnvHashMap::default(),
-        }
+        Default::default()
     }
 
     pub fn get_texture(
