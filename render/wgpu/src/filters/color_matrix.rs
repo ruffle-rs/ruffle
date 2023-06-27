@@ -1,7 +1,7 @@
 use crate::backend::RenderTargetMode;
 use crate::buffer_pool::TexturePool;
 use crate::descriptors::Descriptors;
-use crate::filters::{create_filter_vertices, FilterSource, VERTEX_BUFFERS_DESCRIPTION_FILTERS};
+use crate::filters::{FilterSource, VERTEX_BUFFERS_DESCRIPTION_FILTERS};
 use crate::surface::target::CommandTarget;
 use crate::utils::SampleCountMap;
 use std::sync::OnceLock;
@@ -134,7 +134,7 @@ impl ColorMatrixFilter {
                 contents: bytemuck::cast_slice(&filter.matrix),
                 usage: wgpu::BufferUsages::UNIFORM,
             });
-        let vertices = create_filter_vertices(&descriptors.device, &source);
+        let vertices = source.vertices(&descriptors.device);
         let filter_group = descriptors
             .device
             .create_bind_group(&wgpu::BindGroupDescriptor {
