@@ -1,7 +1,7 @@
 use crate::backend::RenderTargetMode;
 use crate::buffer_pool::TexturePool;
 use crate::descriptors::Descriptors;
-use crate::filters::{create_filter_vertices, VERTEX_BUFFERS_DESCRIPTION_FILTERS};
+use crate::filters::{create_filter_vertices, FilterSource, VERTEX_BUFFERS_DESCRIPTION_FILTERS};
 use crate::surface::target::CommandTarget;
 use crate::utils::SampleCountMap;
 use std::sync::OnceLock;
@@ -101,19 +101,16 @@ impl BlurFilter {
         })
     }
 
-    #[allow(clippy::too_many_arguments)]
     pub fn apply(
         &self,
         descriptors: &Descriptors,
         texture_pool: &mut TexturePool,
         draw_encoder: &mut wgpu::CommandEncoder,
-        source_texture: &wgpu::Texture,
-        source_point: (u32, u32),
-        source_size: (u32, u32),
+        source: FilterSource,
         filter: &BlurFilterArgs,
     ) -> CommandTarget {
-        let sample_count = source_texture.sample_count();
-        let format = source_texture.format();
+        let sample_count = source.texture.sample_count();
+        let format = source.texture.format();
         let pipeline = self.pipeline(descriptors, sample_count);
 
         // FIXME - this should be larger than the source texture. Figure out exactly how much larger
@@ -122,8 +119,8 @@ impl BlurFilter {
                 descriptors,
                 texture_pool,
                 wgpu::Extent3d {
-                    width: source_size.0,
-                    height: source_size.1,
+                    width: source.size.0,
+                    height: source.size.1,
                     depth_or_array_layers: 1,
                 },
                 format,
@@ -135,8 +132,8 @@ impl BlurFilter {
                 descriptors,
                 texture_pool,
                 wgpu::Extent3d {
-                    width: source_size.0,
-                    height: source_size.1,
+                    width: source.size.0,
+                    height: source.size.1,
                     depth_or_array_layers: 1,
                 },
                 format,
@@ -147,14 +144,9 @@ impl BlurFilter {
         ];
 
         // TODO: Vertices should be per pass, and each pass needs diff sizes
-        let vertices = create_filter_vertices(
-            &descriptors.device,
-            source_texture,
-            source_point,
-            source_size,
-        );
+        let vertices = create_filter_vertices(&descriptors.device, &source);
 
-        let source_view = source_texture.create_view(&Default::default());
+        let source_view = source.texture.create_view(&Default::default());
         for i in 0..2 {
             let blur_x = (filter.blur_x.to_f32() - 1.0).max(0.0);
             let blur_y = (filter.blur_y.to_f32() - 1.0).max(0.0);
@@ -163,8 +155,8 @@ impl BlurFilter {
                 (
                     &source_view,
                     vertices.slice(..),
-                    source_texture.width() as f32,
-                    source_texture.height() as f32,
+                    source.texture.width() as f32,
+                    source.texture.height() as f32,
                 )
             } else {
                 let previous = &targets[(i - 1) % 2];
