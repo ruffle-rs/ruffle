@@ -1,7 +1,7 @@
 use crate::backend::RenderTargetMode;
 use crate::buffer_pool::TexturePool;
 use crate::descriptors::Descriptors;
-use crate::filters::{create_filter_vertices, FilterSource, VERTEX_BUFFERS_DESCRIPTION_FILTERS};
+use crate::filters::{FilterSource, VERTEX_BUFFERS_DESCRIPTION_FILTERS};
 use crate::surface::target::CommandTarget;
 use crate::utils::SampleCountMap;
 use std::sync::OnceLock;
@@ -144,7 +144,7 @@ impl BlurFilter {
         ];
 
         // TODO: Vertices should be per pass, and each pass needs diff sizes
-        let vertices = create_filter_vertices(&descriptors.device, &source);
+        let vertices = source.vertices(&descriptors.device);
 
         let source_view = source.texture.create_view(&Default::default());
         for i in 0..2 {
