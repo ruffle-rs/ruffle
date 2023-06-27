@@ -29,7 +29,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     // accommodate this (the default on Linux is high enough). We
     // do the same thing for wasm in web/build.rs.
     if std::env::var("TARGET").unwrap().contains("windows") {
-        println!("cargo:rustc-link-arg=/STACK:4000000");
+        if std::env::var("TARGET").unwrap().contains("msvc") {
+            println!("cargo:rustc-link-arg=/STACK:4000000");
+        }else{
+            println!("cargo:rustc-link-arg=-Xlinker");
+            println!("cargo:rustc-link-arg=--stack");
+            println!("cargo:rustc-link-arg=4000000");
+        }
     }
 
     Ok(())
