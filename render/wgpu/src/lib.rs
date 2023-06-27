@@ -42,6 +42,7 @@ mod buffer_pool;
 #[cfg(feature = "clap")]
 pub mod clap;
 pub mod descriptors;
+mod filters;
 mod layouts;
 mod mesh;
 mod shaders;
@@ -134,13 +135,6 @@ impl From<TessVertex> for PosColorVertex {
             ],
         }
     }
-}
-
-#[repr(C)]
-#[derive(Copy, Clone, Debug, Pod, Zeroable)]
-struct FilterVertex {
-    position: [f32; 2],
-    uv: [f32; 2],
 }
 
 #[repr(C)]

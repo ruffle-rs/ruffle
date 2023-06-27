@@ -288,3 +288,52 @@ pub fn run_copy_pipeline(
     render_pass.draw_indexed(0..6, 0, 0..1);
     drop(render_pass);
 }
+
+pub struct SampleCountMap<T> {
+    one: T,
+    two: T,
+    four: T,
+    eight: T,
+    sixteen: T,
+}
+
+impl<T: Default> Default for SampleCountMap<T> {
+    fn default() -> Self {
+        SampleCountMap {
+            one: Default::default(),
+            two: Default::default(),
+            four: Default::default(),
+            eight: Default::default(),
+            sixteen: Default::default(),
+        }
+    }
+}
+
+impl<T> SampleCountMap<T> {
+    pub fn get(&self, sample_count: u32) -> &T {
+        match sample_count {
+            1 => &self.one,
+            2 => &self.two,
+            4 => &self.four,
+            8 => &self.eight,
+            16 => &self.sixteen,
+            _ => unreachable!("Sample counts must be powers of two between 1..=16"),
+        }
+    }
+}
+
+impl<T> SampleCountMap<std::sync::OnceLock<T>> {
+    pub fn get_or_init<F>(&self, sample_count: u32, init: F) -> &T
+    where
+        F: FnOnce() -> T,
+    {
+        match sample_count {
+            1 => self.one.get_or_init(init),
+            2 => self.two.get_or_init(init),
+            4 => self.four.get_or_init(init),
+            8 => self.eight.get_or_init(init),
+            16 => self.sixteen.get_or_init(init),
+            _ => unreachable!("Sample counts must be powers of two between 1..=16"),
+        }
+    }
+}

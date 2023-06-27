@@ -1,8 +1,9 @@
+use crate::filters::{FilterVertex, Filters};
 use crate::layouts::BindLayouts;
 use crate::pipelines::VERTEX_BUFFERS_DESCRIPTION_POS;
 use crate::shaders::Shaders;
 use crate::{
-    create_buffer_with_data, BitmapSamplers, FilterVertex, Pipelines, PosColorVertex, PosVertex,
+    create_buffer_with_data, BitmapSamplers, Pipelines, PosColorVertex, PosVertex,
     TextureTransforms, Transforms, DEFAULT_COLOR_ADJUSTMENTS,
 };
 use fnv::FnvHashMap;
@@ -20,9 +21,10 @@ pub struct Descriptors {
     pub quad: Quad,
     copy_pipeline: Mutex<FnvHashMap<(u32, wgpu::TextureFormat), Arc<wgpu::RenderPipeline>>>,
     copy_srgb_pipeline: Mutex<FnvHashMap<(u32, wgpu::TextureFormat), Arc<wgpu::RenderPipeline>>>,
-    shaders: Shaders,
+    pub shaders: Shaders,
     pipelines: Mutex<FnvHashMap<(u32, wgpu::TextureFormat), Arc<Pipelines>>>,
     pub default_color_bind_group: wgpu::BindGroup,
+    pub filters: Filters,
 }
 
 impl Debug for Descriptors {
@@ -52,6 +54,7 @@ impl Descriptors {
                 resource: default_color_transform.as_entire_binding(),
             }],
         });
+        let filters = Filters::new(&device);
 
         Self {
             adapter,
@@ -66,6 +69,7 @@ impl Descriptors {
             shaders,
             pipelines: Default::default(),
             default_color_bind_group,
+            filters,
         }
     }
 
