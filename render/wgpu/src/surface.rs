@@ -9,7 +9,6 @@ use crate::surface::commands::{chunk_blends, Chunk, CommandRenderer};
 use crate::utils::{remove_srgb, supported_sample_count};
 use crate::{ColorAdjustments, Descriptors, MaskState, Pipelines, Transforms, UniformBuffer};
 use ruffle_render::commands::CommandList;
-use ruffle_render::filters::Filter;
 use ruffle_render::quality::StageQuality;
 use std::sync::Arc;
 use target::CommandTarget;
@@ -333,57 +332,5 @@ impl Surface {
 
     pub fn size(&self) -> wgpu::Extent3d {
         self.size
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    pub fn apply_filter(
-        &self,
-        descriptors: &Descriptors,
-        draw_encoder: &mut wgpu::CommandEncoder,
-        texture_pool: &mut TexturePool,
-        source_texture: &wgpu::Texture,
-        source_point: (u32, u32),
-        source_size: (u32, u32),
-        filter: Filter,
-    ) -> CommandTarget {
-        let target = match filter {
-            Filter::ColorMatrixFilter(filter) => descriptors.filters.color_matrix.apply(
-                descriptors,
-                texture_pool,
-                draw_encoder,
-                source_texture,
-                source_point,
-                source_size,
-                &filter,
-            ),
-            Filter::BlurFilter(filter) => descriptors.filters.blur.apply(
-                descriptors,
-                texture_pool,
-                draw_encoder,
-                source_texture,
-                source_point,
-                source_size,
-                &filter,
-            ),
-            _ => {
-                tracing::warn!("Unsupported filter {filter:?}");
-                // Apply a default color matrix - it's essentially a blit
-                descriptors.filters.color_matrix.apply(
-                    descriptors,
-                    texture_pool,
-                    draw_encoder,
-                    source_texture,
-                    source_point,
-                    source_size,
-                    &Default::default(),
-                )
-            }
-        };
-
-        // We're about to perform a copy, so make sure that we've applied
-        // a clear (in case no other draw commands were issued, we still need
-        // the background clear color applied)
-        target.ensure_cleared(draw_encoder);
-        target
     }
 }
