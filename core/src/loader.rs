@@ -153,6 +153,9 @@ pub enum Error {
     #[error("Non-NetStream loader spawned as NetStream loader")]
     NotNetStreamLoader,
 
+    #[error("Other Loader spawned as Movie unloader")]
+    NotMovieUnloader,
+
     #[error("HTTP Status is not OK: {0} redirected: {1}")]
     HttpNotOk(String, u16, bool),
 
@@ -220,7 +223,8 @@ impl<'gc> LoadManager<'gc> {
             | Loader::LoadURLLoader { self_handle, .. }
             | Loader::SoundAvm1 { self_handle, .. }
             | Loader::SoundAvm2 { self_handle, .. }
-            | Loader::NetStream { self_handle, .. } => *self_handle = Some(handle),
+            | Loader::NetStream { self_handle, .. }
+            | Loader::MovieUnloader { self_handle, .. } => *self_handle = Some(handle),
         }
         handle
     }
@@ -586,6 +590,16 @@ pub enum Loader<'gc> {
 
         /// The stream to buffer data into.
         target_stream: NetStream<'gc>,
+    },
+
+    /// Loader that is unloading a MovieClip.
+    MovieUnloader {
+        /// The handle to refer to this loader instance.
+        #[collect(require_static)]
+        self_handle: Option<Handle>,
+
+        /// The target MovieClip to unload.
+        target_clip: DisplayObject<'gc>,
     },
 }
 

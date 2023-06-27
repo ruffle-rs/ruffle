@@ -31,6 +31,8 @@ use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
 use crate::font::Font;
 use crate::limits::ExecutionLimit;
+use crate::loader;
+use crate::loader::Loader;
 use crate::prelude::*;
 use crate::string::{AvmString, SwfStrExt as _, WStr, WString};
 use crate::tag_utils::{self, ControlFlow, DecodeResult, Error, SwfMovie, SwfSlice, SwfStream};
@@ -2406,6 +2408,72 @@ impl<'gc> MovieClip<'gc> {
         }
 
         unqueued
+    }
+
+    /// This unloads the MovieClip.
+    ///
+    /// This means that one frame after this method has been called, avm1_unload and
+    /// transform_to_unloaded_state get called and the MovieClip enters the unloaded
+    /// state in which some attributes have certain values.
+    // TODO: Look at where avm1_unload gets called directly. Does Flash also execute these
+    // calls with one frame delay? Does transform_to_unloaded_state need to get executed
+    // after one frame if the target is a MovieClip? Test the behaviour and adapt the code
+    // if necessary.
+    pub fn unload_movie(&self, context: &mut UpdateContext<'_, 'gc>) {
+        let unloader = Loader::MovieUnloader {
+            self_handle: None,
+            target_clip: DisplayObject::MovieClip(*self),
+        };
+        let handle = context.load_manager.add_loader(unloader);
+
+        let player = context
+            .player
+            .clone()
+            .upgrade()
+            .expect("Could not upgrade weak reference to player");
+        let future = Box::pin(async move {
+            player
+                .lock()
+                .unwrap()
+                .update(|uc| -> Result<(), loader::Error> {
+                    let clip = match uc.load_manager.get_loader(handle) {
+                        Some(Loader::MovieUnloader { target_clip, .. }) => *target_clip,
+                        _ => unreachable!(),
+                    };
+                    if let Some(mc) = clip.as_movie_clip() {
+                        mc.avm1_unload(uc);
+                        mc.transform_to_unloaded_state(uc);
+                    }
+
+                    Ok(())
+                })?;
+            Ok(())
+        });
+
+        context.navigator.spawn_future(future);
+    }
+
+    /// This makes the MovieClip enter the unloaded state in which some attributes have
+    /// certain values.
+    /// An unloaded state movie stub which provides the correct values is created and
+    /// loaded.
+    ///
+    /// This happens if a MovieClip has been unloaded. The state is then changed one
+    /// frame after the command to unload the MovieClip has been read.
+    fn transform_to_unloaded_state(&self, context: &mut UpdateContext<'_, 'gc>) {
+        let movie = if let Some(DisplayObject::MovieClip(parent_mc)) = self.parent() {
+            let parent_movie = parent_mc.movie();
+            let parent_version = parent_movie.version();
+            let parent_url = parent_movie.url();
+            let mut unloaded_movie = SwfMovie::empty(parent_version);
+            unloaded_movie.set_url(parent_url.to_string());
+
+            Some(Arc::new(unloaded_movie))
+        } else {
+            None
+        };
+
+        self.replace_with_movie(context, movie, None);
     }
 }
 

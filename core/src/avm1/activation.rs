@@ -1206,8 +1206,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                         let level = self.get_level(level_id);
                         // Blank URL on movie loads = unload!
                         if let Some(mc) = level.and_then(|o| o.as_movie_clip()) {
-                            mc.avm1_unload(&mut self.context);
-                            mc.replace_with_movie(&mut self.context, None, None)
+                            mc.unload_movie(&mut self.context);
                         }
                     } else {
                         let level = self.get_or_create_level(level_id);
@@ -1332,8 +1331,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             if url.is_empty() {
                 // Blank URL on movie loads = unload!
                 if let Some(mc) = clip_target.and_then(|o| o.as_movie_clip()) {
-                    mc.avm1_unload(&mut self.context);
-                    mc.replace_with_movie(&mut self.context, None, None)
+                    mc.unload_movie(&mut self.context);
                 }
             } else {
                 if clip_target.is_none() && level_target > -1 {
@@ -1368,8 +1366,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 if url.is_empty() {
                     // Blank URL on movie loads = unload!
                     if let Some(mc) = clip_target.as_movie_clip() {
-                        mc.avm1_unload(&mut self.context);
-                        mc.replace_with_movie(&mut self.context, None, None)
+                        mc.unload_movie(&mut self.context);
                     }
                 } else {
                     let future = self.context.load_manager.load_movie_into_clip(

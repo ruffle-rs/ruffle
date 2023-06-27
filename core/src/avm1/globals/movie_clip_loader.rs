@@ -102,9 +102,13 @@ fn unload_clip<'gc>(
             _ => None,
         };
         if let Some(target) = target {
-            target.avm1_unload(&mut activation.context);
+            // TODO: Find out what's the correct behaviour. If target isn't a MovieClip,
+            // does Flash also wait a frame to execute avm1_unload? Is unload_movie the
+            // correct call?
             if let Some(mc) = target.as_movie_clip() {
-                mc.replace_with_movie(&mut activation.context, None, None);
+                mc.unload_movie(&mut activation.context);
+            } else {
+                target.avm1_unload(&mut activation.context);
             }
             return Ok(true.into());
         }
