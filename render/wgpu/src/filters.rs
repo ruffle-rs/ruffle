@@ -80,32 +80,37 @@ impl Filters {
         filter: Filter,
     ) -> CommandTarget {
         let target = match filter {
-            Filter::ColorMatrixFilter(filter) => descriptors.filters.color_matrix.apply(
+            Filter::ColorMatrixFilter(filter) => Some(descriptors.filters.color_matrix.apply(
                 descriptors,
                 texture_pool,
                 draw_encoder,
-                source,
+                &source,
                 &filter,
-            ),
+            )),
             Filter::BlurFilter(filter) => descriptors.filters.blur.apply(
                 descriptors,
                 texture_pool,
                 draw_encoder,
-                source,
+                &source,
                 &filter,
             ),
             _ => {
                 tracing::warn!("Unsupported filter {filter:?}");
-                // Apply a default color matrix - it's essentially a blit
-                descriptors.filters.color_matrix.apply(
-                    descriptors,
-                    texture_pool,
-                    draw_encoder,
-                    source,
-                    &Default::default(),
-                )
+                None
             }
         };
+
+        let target = target.unwrap_or_else(|| {
+            // Apply a default color matrix - it's essentially a blit
+            // TODO: Not need to do this.
+            descriptors.filters.color_matrix.apply(
+                descriptors,
+                texture_pool,
+                draw_encoder,
+                &source,
+                &Default::default(),
+            )
+        });
 
         // We're about to perform a copy, so make sure that we've applied
         // a clear (in case no other draw commands were issued, we still need

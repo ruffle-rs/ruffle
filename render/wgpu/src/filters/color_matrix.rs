@@ -106,7 +106,7 @@ impl ColorMatrixFilter {
         descriptors: &Descriptors,
         texture_pool: &mut TexturePool,
         draw_encoder: &mut wgpu::CommandEncoder,
-        source: FilterSource,
+        source: &FilterSource,
         filter: &ColorMatrixFilterArgs,
     ) -> CommandTarget {
         let sample_count = source.texture.sample_count();

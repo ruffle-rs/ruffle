@@ -120,9 +120,9 @@ impl BlurFilter {
         descriptors: &Descriptors,
         texture_pool: &mut TexturePool,
         draw_encoder: &mut wgpu::CommandEncoder,
-        source: FilterSource,
+        source: &FilterSource,
         filter: &BlurFilterArgs,
-    ) -> CommandTarget {
+    ) -> Option<CommandTarget> {
         let sample_count = source.texture.sample_count();
         let format = source.texture.format();
         let pipeline = self.pipeline(descriptors, sample_count);
@@ -252,6 +252,11 @@ impl BlurFilter {
             }
         }
 
-        flip
+        if first {
+            // Nothing happened, don't return an empty unused texture
+            None
+        } else {
+            Some(flip)
+        }
     }
 }
