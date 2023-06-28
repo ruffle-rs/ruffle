@@ -7,6 +7,7 @@ use crate::avm2::{
     e4x::{name_to_multiname, simple_content_to_string, E4XNode, E4XNodeKind},
     error::type_error,
     object::{E4XOrXml, XmlListObject},
+    parameters::ParametersExt,
     string::AvmString,
     Activation, Error, Multiname, Object, TObject, Value,
 };
@@ -39,6 +40,17 @@ pub fn init<'gc>(
     let this = this.unwrap().as_xml_list_object().unwrap();
     let value = args[0];
 
+    if let Some(obj) = value.as_object() {
+        if let Some(xml) = obj.as_xml_object() {
+            // Note - we re-use the XML object that was passed in, which makes
+            // `this[0] === xmlObjArg` true.
+            // This logic does *not* go in `E4XNode::parse`, as it does not apply
+            // to the `XML` constructor: `new XML(xmlObj) === xmlObj` is false.
+            this.set_children(activation.context.gc_context, vec![E4XOrXml::Xml(xml)]);
+            return Ok(Value::Undefined);
+        }
+    }
+
     match E4XNode::parse(value, activation) {
         Ok(nodes) => {
             this.set_children(
@@ -61,6 +73,12 @@ pub fn call_handler<'gc>(
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    // We do *not* create a new object when AS does 'XMLList(someXMLList)'
+    if let Some(obj) = args.try_get_object(activation, 0) {
+        if let Some(xml_list) = obj.as_xml_list_object() {
+            return Ok(xml_list.into());
+        }
+    }
     Ok(activation
         .avm2()
         .classes()
