@@ -9,13 +9,13 @@
         "message": "Permitir o download de SWFs pelo menu de contexto"
     },
     "settings_autostart": {
-        "message": "Reproduzir automaticamente sem o ecrã inicial (depois clique para dessilenciar)"
+        "message": "Reproduzir automaticamente sem ecrã inicial (depois clique para ativar o som)"
     },
     "settings_warn_on_unsupported_content": {
-        "message": "Aviar em conteúdo não suportado"
+        "message": "Avisar em conteúdo não suportado"
     },
     "settings_log_level": {
-        "message": "Nível do log"
+        "message": "Nível de registo"
     },
     "settings_log_level_error": {
         "message": "Erros"
@@ -45,7 +45,7 @@
         "message": "Redefinir opções"
     },
     "settings_reset_confirm": {
-        "message": "Tem a certeza que quer redefinir as definições do Ruffle para os seus valores originais?"
+        "message": "Tem a certeza de que quer redefinir as opções do Ruffle para os valores originais?"
     },
     "status_init": {
         "message": "Lendo o separador atual…"
@@ -57,42 +57,42 @@
         "message": "Um erro ocorreu durante a procura do separador atual."
     },
     "status_message_init": {
-        "message": "Verificando o estado do Ruffle na página atual…"
+        "message": "Verificando o estado do Ruffle no separador atual…"
     },
     "status_result_running": {
-        "message": "O Ruffle está carregado e pronto para executar o conteúdo Flash na página atual."
+        "message": "O Ruffle está carregado e pronto para executar o conteúdo Flash no separador atual."
     },
     "status_result_running_protected": {
         "message": "O Ruffle está carregado e executando o conteúdo Flash solicitado."
     },
     "status_result_optout": {
-        "message": "O Ruffle não foi carregado porque a página atual marcou-se como incompatível."
+        "message": "O Ruffle não carregou porque a página atual marcou-se como incompatível."
     },
     "status_result_disabled": {
-        "message": "O Ruffle não está carregado porque está desativado."
+        "message": "O Ruffle não carregou porque está desativado."
     },
     "status_result_error": {
-        "message": "Ocorreu um erro ao consultar a página atual do Ruffle."
+        "message": "Ocorreu um erro durante a procura pelo separador atual do Ruffle."
     },
     "status_result_protected": {
         "message": "O Ruffle não pode carregar em páginas protegidas do navegador."
     },
     "action_reload": {
-        "message": "Recarregue a página para aplicar as alterações"
+        "message": "Recarregar separador para aplicar alterações"
     },
     "open_settings_page": {
-        "message": "Abrir página de configurações"
+        "message": "Abrir página de opções"
     },
     "settings_page": {
-        "message": "Página de Configurações"
+        "message": "Página de Opções"
     },
     "description": {
         "message": "Coloca o Flash de volta no site que ele pertence."
     },
     "save_settings": {
-        "message": "Salvar configurações"
+        "message": "Gravar opções"
     },
     "settings_saved": {
-        "message": "Configurações salvas"
+        "message": "Opções gravadas"
     }
 }

@@ -1,10 +1,10 @@
-save-delete-prompt = Tem certeza que deseja apagar este arquivo salvo?
+save-delete-prompt = Tem a certeza de que quer apagar esta gravação?
 save-reload-prompt =
-    O único modo de { $action ->
+    A única forma de { $action ->
         [delete] apagar
        *[replace] substituir
-    } esse arquivo salvo sem um potencial conflito é recarregar este conteúdo. Deseja continuar mesmo assim?
-save-download = Baixar
+    } esta gravação sem um potencial conflito é recarregar este conteúdo. Deseja continuar mesmo assim?
+save-download = Descarregar
 save-replace = Substituir
 save-delete = Apagar
-save-backup-all = Baixar todos os arquivos
+save-backup-all = Descarregar todas as gravações

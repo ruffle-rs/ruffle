@@ -1,11 +1,11 @@
-context-menu-download-swf = Transferir.swf
+context-menu-download-swf = Descarga.swf
 context-menu-copy-debug-info = Copiar informações de depuração
-context-menu-open-save-manager = Abrir gerenciador de Saves
+context-menu-open-save-manager = Abrir Gestor de Gravações
 context-menu-about-ruffle =
     { $flavor ->
         [extension] Sobre a extensão do Ruffle ({ $version })
        *[other] Sobre o Ruffle ({ $version })
     }
 context-menu-hide = Esconder este menu
-context-menu-exit-fullscreen = Sair do modo de Tela Cheia
-context-menu-enter-fullscreen = Entrar no modo de Tela Cheia
+context-menu-exit-fullscreen = Fechar Ecrã Inteiro
+context-menu-enter-fullscreen = Abrir Ecrã Inteiro
