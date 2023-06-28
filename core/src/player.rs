@@ -1287,7 +1287,7 @@ impl Player {
                     }
 
                     if let Some(new_down_object) = display_object {
-                        if new_down_object.depth() == pressed.depth()
+                        if new_down_object.depth() == pressed.as_displayobject().depth()
                             && Arc::ptr_eq(
                                 &new_down_object.movie(),
                                 &pressed.as_displayobject().movie(),
