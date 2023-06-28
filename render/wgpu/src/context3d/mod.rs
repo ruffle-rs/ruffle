@@ -124,8 +124,6 @@ impl WgpuContext3D {
                 bind_linear: Default::default(),
                 bind_nearest: Default::default(),
                 texture: Arc::new(dummy_texture),
-                width: 0,
-                height: 0,
                 copy_count: Cell::new(0),
             }))
         };
@@ -704,16 +702,12 @@ impl Context3D for WgpuContext3D {
                         texture: Arc::new(back_buffer_resolve_texture.unwrap()),
                         bind_linear: Default::default(),
                         bind_nearest: Default::default(),
-                        width,
-                        height,
                         copy_count: Cell::new(0),
                     }));
                     self.front_buffer_raw_texture_handle = BitmapHandle(Arc::new(Texture {
                         texture: Arc::new(front_buffer_resolve_texture.unwrap()),
                         bind_linear: Default::default(),
                         bind_nearest: Default::default(),
-                        width,
-                        height,
                         copy_count: Cell::new(0),
                     }));
                 } else {
@@ -724,16 +718,12 @@ impl Context3D for WgpuContext3D {
                         texture: Arc::new(back_buffer_texture),
                         bind_linear: Default::default(),
                         bind_nearest: Default::default(),
-                        width,
-                        height,
                         copy_count: Cell::new(0),
                     }));
                     self.front_buffer_raw_texture_handle = BitmapHandle(Arc::new(Texture {
                         texture: Arc::new(front_buffer_texture),
                         bind_linear: Default::default(),
                         bind_nearest: Default::default(),
-                        width,
-                        height,
                         copy_count: Cell::new(0),
                     }));
                     self.current_texture_resolve_view = None;

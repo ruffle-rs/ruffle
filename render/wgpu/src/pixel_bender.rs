@@ -243,8 +243,8 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
 
         let target = as_texture(&target_handle);
         let extent = wgpu::Extent3d {
-            width: target.width,
-            height: target.height,
+            width: target.texture.width(),
+            height: target.texture.height(),
             depth_or_array_layers: 1,
         };
 
@@ -320,8 +320,8 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                     ) {
                         let cached_fresh_handle = target_clone.get_or_insert_with(|| {
                             let extent = wgpu::Extent3d {
-                                width: target.width,
-                                height: target.height,
+                                width: target.texture.width(),
+                                height: target.texture.height(),
                                 depth_or_array_layers: 1,
                             };
                             let fresh_texture =
@@ -356,8 +356,6 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                                 texture: Arc::new(fresh_texture),
                                 bind_linear: Default::default(),
                                 bind_nearest: Default::default(),
-                                width: extent.width,
-                                height: extent.height,
                                 copy_count: Cell::new(0),
                             }))
                         });

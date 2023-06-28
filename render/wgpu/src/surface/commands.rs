@@ -250,7 +250,11 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         );
         self.prep_bitmap(&bind.bind_group, blend_mode, render_stage3d);
         self.apply_transform(
-            &(transform.matrix * Matrix::scale(texture.width as f32, texture.height as f32)),
+            &(transform.matrix
+                * Matrix::scale(
+                    texture.texture.width() as f32,
+                    texture.texture.height() as f32,
+                )),
             &transform.color_transform,
         );
 

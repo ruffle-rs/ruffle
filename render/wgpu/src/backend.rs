@@ -467,8 +467,8 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             let mut surface = Surface::new(
                 &self.descriptors,
                 self.surface.quality(),
-                texture.width,
-                texture.height,
+                texture.texture.width(),
+                texture.texture.height(),
                 wgpu::TextureFormat::Rgba8Unorm,
             );
             if entry.filters.is_empty() {
@@ -618,8 +618,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             texture: Arc::new(texture),
             bind_linear: Default::default(),
             bind_nearest: Default::default(),
-            width: bitmap.width(),
-            height: bitmap.height(),
             copy_count: Cell::new(0),
         }));
 
@@ -659,11 +657,11 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 },
                 aspect: wgpu::TextureAspect::All,
             },
-            &bitmap.data()[(region.y_min * texture.width * 4) as usize
-                ..(region.y_max * texture.width * 4) as usize],
+            &bitmap.data()[(region.y_min * texture.texture.width() * 4) as usize
+                ..(region.y_max * texture.texture.width() * 4) as usize],
             wgpu::ImageDataLayout {
                 offset: (region.x_min * 4) as wgpu::BufferAddress,
-                bytes_per_row: Some(4 * texture.width),
+                bytes_per_row: Some(4 * texture.texture.width()),
                 rows_per_image: None,
             },
             extent,
@@ -683,8 +681,8 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         let texture = as_texture(&handle);
 
         let extent = wgpu::Extent3d {
-            width: texture.width,
-            height: texture.height,
+            width: texture.texture.width(),
+            height: texture.texture.height(),
             depth_or_array_layers: 1,
         };
 
@@ -716,8 +714,8 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         let mut surface = Surface::new(
             &self.descriptors,
             quality,
-            texture.width,
-            texture.height,
+            texture.texture.width(),
+            texture.texture.height(),
             wgpu::TextureFormat::Rgba8Unorm,
         );
         let uniform_encoder_label = create_debug_label!("Uniform upload command encoder");
@@ -803,10 +801,15 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         let source_texture = as_texture(&source);
         let dest_texture = as_texture(&destination);
 
-        let copy_area = PixelRegion::for_whole_size(dest_texture.width, dest_texture.height);
+        let copy_area = PixelRegion::for_whole_size(
+            dest_texture.texture.width(),
+            dest_texture.texture.height(),
+        );
         let buffer_info = if dest_texture.copy_count.get() >= TEXTURE_READS_BEFORE_PROMOTION {
-            let copy_dimensions =
-                BufferDimensions::new(dest_texture.width as usize, dest_texture.height as usize);
+            let copy_dimensions = BufferDimensions::new(
+                dest_texture.texture.width() as usize,
+                dest_texture.texture.height() as usize,
+            );
             let buffer = self
                 .offscreen_buffer_pool
                 .take(&self.descriptors, copy_dimensions.clone());
@@ -820,8 +823,8 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
         let mut target = TextureTarget {
             size: wgpu::Extent3d {
-                width: dest_texture.width,
-                height: dest_texture.height,
+                width: dest_texture.texture.width(),
+                height: dest_texture.texture.height(),
                 depth_or_array_layers: 1,
             },
             texture: dest_texture.texture.clone(),
@@ -834,8 +837,8 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         let surface = Surface::new(
             &self.descriptors,
             self.surface.quality(),
-            dest_texture.width,
-            dest_texture.height,
+            dest_texture.texture.width(),
+            dest_texture.texture.height(),
             wgpu::TextureFormat::Rgba8Unorm,
         );
         let label = create_debug_label!("Draw encoder");
@@ -872,8 +875,8 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 aspect: Default::default(),
             },
             wgpu::Extent3d {
-                width: (applied_filter.width()).min(dest_texture.width - dest_point.0),
-                height: (applied_filter.height()).min(dest_texture.height - dest_point.1),
+                width: (applied_filter.width()).min(dest_texture.texture.width() - dest_point.0),
+                height: (applied_filter.height()).min(dest_texture.texture.height() - dest_point.1),
                 depth_or_array_layers: 1,
             },
         );
@@ -964,8 +967,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             texture: Arc::new(texture),
             bind_linear: Default::default(),
             bind_nearest: Default::default(),
-            width,
-            height,
             copy_count: Cell::new(0),
         })))
     }
