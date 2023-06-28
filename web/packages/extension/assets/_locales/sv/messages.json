@@ -27,7 +27,7 @@
         "message": "Info"
     },
     "settings_max_execution_duration": {
-        "message": "Maximal tillåten exekveringstid tid för ActionScript (i sekunder)"
+        "message": "Maximal tillåten exekveringstid för ActionScript (i sekunder)"
     },
     "settings_player_version": {
         "message": "Flashspelarversion att emulera (mellan 1-32)"

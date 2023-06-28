@@ -62,6 +62,9 @@
     "status_result_running": {
         "message": "RuffleでFlashを実行する準備が整いました。"
     },
+    "status_result_running_protected": {
+        "message": "RuffleはリクエストされたFlashコンテンツをロードし、実行しています。"
+    },
     "status_result_optout": {
         "message": "Ruffleは現在のページと互換性がないため、読み込まれません。"
     },

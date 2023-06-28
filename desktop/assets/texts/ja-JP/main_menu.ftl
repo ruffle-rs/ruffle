@@ -8,3 +8,22 @@
 # Some items may be also be duplicated here, like "About Ruffle" in the menu and "About Ruffle" elsewhere as the header of the about menu.
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
+file-menu = ファイル
+file-menu-open-quick = 開く
+file-menu-open-advanced = ファイルと詳細設定
+file-menu-close = 閉じる
+file-menu-reload = 再読み込み
+file-menu-exit = 終了
+controls-menu = 操作
+controls-menu-suspend = 一時停止
+controls-menu-resume = 再開
+help-menu = ヘルプ
+help-menu-join-discord = Discordに参加
+help-menu-report-a-bug = バグを報告する
+help-menu-sponsor-development = 開発スポンサー
+help-menu-translate-ruffle = 翻訳に協力する
+help-menu-about = Ruffleについて
+debug-menu = デバッグツール
+debug-menu-open-stage = ステージ情報
+debug-menu-open-movie = 映像情報
+debug-menu-open-movie-list = 既存の映像情報
