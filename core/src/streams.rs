@@ -359,16 +359,26 @@ impl<'gc> NetStream<'gc> {
                         let codec = VideoCodec::from_u8(codec_id as u8);
 
                         match (video_handle, codec, data) {
-                            (Some(video_handle), Some(codec), FlvVideoPacket::Data(data))
+                            (Some(video_handle), Some(codec), FlvVideoPacket::Data(mut data))
                             | (
                                 Some(video_handle),
                                 Some(codec),
                                 FlvVideoPacket::Vp6Data {
                                     hadjust: _,
                                     vadjust: _,
-                                    data,
+                                    mut data,
                                 },
                             ) => {
+                                if codec == VideoCodec::ScreenVideo {
+                                    // ScreenVideo streams consider the FLV
+                                    // video data byte to be integral to their
+                                    // own bitstream.
+                                    let offset =
+                                        data.as_ptr() as usize - write.buffer.as_ptr() as usize;
+                                    let len = data.len();
+                                    data = &write.buffer[offset - 1..offset + len];
+                                }
+
                                 // NOTE: Currently, no implementation of the decoder backend actually requires
                                 if tag_needs_preloading {
                                     let encoded_frame = EncodedFrame {
