@@ -9,10 +9,7 @@ use quick_xml::{
     Reader,
 };
 
-use crate::{
-    avm2::{error::type_error, TObject},
-    xml::custom_unescape,
-};
+use crate::{avm2::TObject, xml::custom_unescape};
 
 use super::{object::E4XOrXml, string::AvmString, Activation, Error, Multiname, Value};
 use crate::string::{WStr, WString};
@@ -269,16 +266,8 @@ impl<'gc> E4XNode<'gc> {
             // The docs claim that only String, Number or Boolean are accepted, but that's also a lie
             val => {
                 if let Some(obj) = val.as_object() {
-                    if let Some(xml) = obj.as_xml_object() {
-                        value = xml.call_public_property("toXMLString", &[], activation)?;
-                    } else if let Some(list) = obj.as_xml_list_object() {
-                        if list.length() == 1 {
-                            value = list.children_mut(activation.context.gc_context)[0]
-                                .get_or_create_xml(activation)
-                                .call_public_property("toXMLString", &[], activation)?;
-                        } else {
-                            return Err(Error::AvmError(type_error(activation, "Error #1088: The markup in the document following the root element must be well-formed.", 1088)?));
-                        }
+                    if obj.as_xml_object().is_some() || obj.as_xml_list_object().is_some() {
+                        value = obj.call_public_property("toXMLString", &[], activation)?;
                     }
                 }
                 value.coerce_to_string(activation)?
