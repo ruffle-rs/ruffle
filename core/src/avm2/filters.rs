@@ -1,4 +1,6 @@
-use ruffle_render::filters::{DisplacementMapFilter, DisplacementMapFilterMode, Filter};
+use ruffle_render::filters::{
+    DisplacementMapFilter, DisplacementMapFilterMode, Filter, ShaderFilter,
+};
 use swf::{
     BevelFilter, BevelFilterFlags, BlurFilter, BlurFilterFlags, Color, ColorMatrixFilter,
     ConvolutionFilter, ConvolutionFilterFlags, DropShadowFilter, DropShadowFilterFlags, Fixed16,
@@ -7,6 +9,8 @@ use swf::{
 
 use crate::avm2::error::{make_error_2008, type_error};
 use crate::avm2::{Activation, ArrayObject, ClassObject, Error, Object, TObject, Value};
+
+use super::globals::flash::display::shader_job::get_shader_args;
 
 pub trait FilterAvm2Ext {
     fn from_avm2_object<'gc>(
@@ -74,6 +78,13 @@ impl FilterAvm2Ext for Filter {
             )?));
         }
 
+        let shader_filter = activation.avm2().classes().shaderfilter;
+        if object.is_of_type(shader_filter, &mut activation.context) {
+            return Ok(Filter::ShaderFilter(avm2_to_shader_filter(
+                activation, object,
+            )?));
+        }
+
         Err(Error::AvmError(type_error(
             activation,
             &format!(
@@ -105,6 +116,9 @@ impl FilterAvm2Ext for Filter {
                 let gradientglowfilter = activation.avm2().classes().gradientglowfilter;
                 gradient_filter_to_avm2(activation, filter, gradientglowfilter)
             }
+            Filter::ShaderFilter(_) => Err(Error::RustError(
+                "Shader filter conversion not yet implemented".into(),
+            )),
         }
     }
 }
@@ -700,6 +714,43 @@ fn gradient_filter_to_avm2<'gc>(
             filter.is_knockout().into(),
         ],
     )
+}
+
+fn avm2_to_shader_filter<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    object: Object<'gc>,
+) -> Result<ShaderFilter<'static>, Error<'gc>> {
+    let bottom_extension = object
+        .get_public_property("bottomExtension", activation)?
+        .coerce_to_i32(activation)?;
+
+    let left_extension = object
+        .get_public_property("leftExtension", activation)?
+        .coerce_to_i32(activation)?;
+
+    let right_extension = object
+        .get_public_property("rightExtension", activation)?
+        .coerce_to_i32(activation)?;
+
+    let top_extension = object
+        .get_public_property("topExtension", activation)?
+        .coerce_to_i32(activation)?;
+
+    let shader_obj = object
+        .get_public_property("shader", activation)?
+        .as_object()
+        .unwrap();
+
+    let (shader_handle, shader_args) = get_shader_args(shader_obj, activation)?;
+
+    Ok(ShaderFilter {
+        shader: shader_handle,
+        shader_args,
+        bottom_extension,
+        left_extension,
+        right_extension,
+        top_extension,
+    })
 }
 
 fn get_gradient_colors<'gc>(

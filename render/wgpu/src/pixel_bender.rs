@@ -5,27 +5,25 @@ use std::{borrow::Cow, cell::Cell, sync::Arc};
 use indexmap::IndexMap;
 use ruffle_render::error::Error as BitmapError;
 use ruffle_render::pixel_bender::{
-    PixelBenderShaderHandle, PixelBenderShaderImpl, PixelBenderType, OUT_COORD_NAME,
+    ImageInputTexture, PixelBenderShaderHandle, PixelBenderShaderImpl, PixelBenderType,
+    OUT_COORD_NAME,
 };
 use ruffle_render::{
-    bitmap::{BitmapHandle, PixelRegion, SyncHandle},
+    bitmap::BitmapHandle,
     pixel_bender::{PixelBenderParam, PixelBenderShader, PixelBenderShaderArgument},
 };
 use wgpu::util::StagingBelt;
 use wgpu::{
     BindGroupEntry, BindingResource, BlendComponent, BufferDescriptor, BufferUsages,
-    ColorTargetState, ColorWrites, FrontFace, ImageCopyTexture, RenderPipelineDescriptor,
-    SamplerBindingType, ShaderModuleDescriptor, TextureDescriptor, TextureFormat, TextureView,
-    VertexState,
+    ColorTargetState, ColorWrites, CommandEncoder, FrontFace, ImageCopyTexture,
+    RenderPipelineDescriptor, SamplerBindingType, ShaderModuleDescriptor, TextureDescriptor,
+    TextureFormat, TextureView, VertexState,
 };
 
+use crate::filters::{FilterSource, VERTEX_BUFFERS_DESCRIPTION_FILTERS};
+use crate::raw_texture_as_texture;
 use crate::{
-    as_texture,
-    backend::WgpuRenderBackend,
-    descriptors::Descriptors,
-    pipelines::VERTEX_BUFFERS_DESCRIPTION_POS,
-    target::{RenderTarget, RenderTargetFrame, TextureTarget},
-    QueueSyncHandle, Texture,
+    as_texture, backend::WgpuRenderBackend, descriptors::Descriptors, target::RenderTarget, Texture,
 };
 
 #[derive(Debug)]
@@ -37,6 +35,7 @@ pub struct PixelBenderWgpuShader {
     float_parameters_buffer_size: u64,
     int_parameters_buffer: wgpu::Buffer,
     int_parameters_buffer_size: u64,
+    zeroed_out_of_range_mode: wgpu::Buffer,
     staging_belt: RefCell<StagingBelt>,
 }
 
@@ -86,6 +85,16 @@ impl PixelBenderWgpuShader {
             },
             wgpu::BindGroupLayoutEntry {
                 binding: naga_pixelbender::SHADER_INT_PARAMETERS_INDEX,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            },
+            wgpu::BindGroupLayoutEntry {
+                binding: naga_pixelbender::ZEROED_OUT_OF_RANGE_MODE_INDEX,
                 visibility: wgpu::ShaderStages::FRAGMENT,
                 ty: wgpu::BindingType::Buffer {
                     ty: wgpu::BufferBindingType::Uniform,
@@ -156,6 +165,14 @@ impl PixelBenderWgpuShader {
             mapped_at_creation: false,
         });
 
+        let zeroed_out_of_range_mode = descriptors.device.create_buffer(&BufferDescriptor {
+            label: create_debug_label!("PixelBender zeroed_out_of_range_mode parameter buffer")
+                .as_deref(),
+            size: shaders.int_parameters_buffer_size,
+            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
         let vertex_shader = descriptors
             .device
             .create_shader_module(ShaderModuleDescriptor {
@@ -177,12 +194,12 @@ impl PixelBenderWgpuShader {
                 layout: Some(&pipeline_layout),
                 vertex: VertexState {
                     module: &vertex_shader,
-                    entry_point: naga_pixelbender::SHADER_ENTRYPOINT,
-                    buffers: &VERTEX_BUFFERS_DESCRIPTION_POS,
+                    entry_point: naga_pixelbender::VERTEX_SHADER_ENTRYPOINT,
+                    buffers: &VERTEX_BUFFERS_DESCRIPTION_FILTERS,
                 },
                 fragment: Some(wgpu::FragmentState {
                     module: &fragment_shader,
-                    entry_point: naga_pixelbender::SHADER_ENTRYPOINT,
+                    entry_point: naga_pixelbender::FRAGMENT_SHADER_ENTRYPOINT,
                     targets: &[Some(ColorTargetState {
                         format: TextureFormat::Rgba8Unorm,
                         // FIXME - what should this be?
@@ -215,9 +232,17 @@ impl PixelBenderWgpuShader {
             float_parameters_buffer_size: shaders.float_parameters_buffer_size,
             int_parameters_buffer,
             int_parameters_buffer_size: shaders.int_parameters_buffer_size,
+            zeroed_out_of_range_mode,
             // FIXME - come up with a good chunk size
             staging_belt: RefCell::new(StagingBelt::new(8)),
         }
+    }
+}
+
+fn image_input_as_texture<'a>(input: &'a ImageInputTexture<'a>) -> &wgpu::Texture {
+    match input {
+        ImageInputTexture::Bitmap(handle) => &as_texture(handle).texture,
+        ImageInputTexture::TextureRef(raw_texture) => raw_texture_as_texture(*raw_texture),
     }
 }
 
@@ -229,262 +254,277 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         let handle = PixelBenderWgpuShader::new(&self.descriptors, shader);
         Ok(PixelBenderShaderHandle(Arc::new(handle)))
     }
+}
 
-    pub(super) fn run_pixelbender_shader_impl(
-        &mut self,
-        shader: PixelBenderShaderHandle,
-        arguments: &[PixelBenderShaderArgument],
-        target_handle: BitmapHandle,
-    ) -> Result<Box<dyn SyncHandle>, BitmapError> {
-        let compiled_shader = &as_cache_holder(&shader);
-        let mut staging_belt = compiled_shader.staging_belt.borrow_mut();
+pub enum ShaderMode {
+    ShaderJob,
+    Filter,
+}
 
-        let mut arguments = arguments.to_vec();
+#[allow(clippy::too_many_arguments)]
+pub(super) fn run_pixelbender_shader_impl(
+    descriptors: &Descriptors,
+    shader: PixelBenderShaderHandle,
+    mode: ShaderMode,
+    arguments: &[PixelBenderShaderArgument],
+    target: &wgpu::Texture,
+    render_command_encoder: &mut CommandEncoder,
+    color_attachment: Option<wgpu::RenderPassColorAttachment>,
+    // FIXME - do we cover the whole source or the whole dest?
+    source: &FilterSource,
+) -> Result<(), BitmapError> {
+    let compiled_shader = &as_cache_holder(&shader);
+    let mut staging_belt = compiled_shader.staging_belt.borrow_mut();
 
-        let target = as_texture(&target_handle);
-        let extent = wgpu::Extent3d {
-            width: target.texture.width(),
-            height: target.texture.height(),
-            depth_or_array_layers: 1,
-        };
+    let mut arguments = arguments.to_vec();
 
-        let mut texture_target = TextureTarget {
-            size: extent,
-            texture: target.texture.clone(),
-            format: wgpu::TextureFormat::Rgba8Unorm,
-            buffer: None,
-        };
+    let mut bind_group_entries = vec![
+        BindGroupEntry {
+            binding: naga_pixelbender::SAMPLER_CLAMP_NEAREST,
+            resource: BindingResource::Sampler(&descriptors.bitmap_samplers.clamp_nearest),
+        },
+        BindGroupEntry {
+            binding: naga_pixelbender::SAMPLER_CLAMP_LINEAR,
+            resource: BindingResource::Sampler(&descriptors.bitmap_samplers.clamp_linear),
+        },
+        BindGroupEntry {
+            binding: naga_pixelbender::SAMPLER_CLAMP_BILINEAR,
+            // FIXME - create bilinear sampler
+            resource: BindingResource::Sampler(&descriptors.bitmap_samplers.clamp_linear),
+        },
+        BindGroupEntry {
+            binding: naga_pixelbender::SHADER_FLOAT_PARAMETERS_INDEX,
+            resource: BindingResource::Buffer(wgpu::BufferBinding {
+                buffer: &compiled_shader.float_parameters_buffer,
+                offset: 0,
+                size: Some(NonZeroU64::new(compiled_shader.float_parameters_buffer_size).unwrap()),
+            }),
+        },
+        BindGroupEntry {
+            binding: naga_pixelbender::SHADER_INT_PARAMETERS_INDEX,
+            resource: BindingResource::Buffer(wgpu::BufferBinding {
+                buffer: &compiled_shader.int_parameters_buffer,
+                offset: 0,
+                size: Some(NonZeroU64::new(compiled_shader.int_parameters_buffer_size).unwrap()),
+            }),
+        },
+        BindGroupEntry {
+            binding: naga_pixelbender::ZEROED_OUT_OF_RANGE_MODE_INDEX,
+            resource: BindingResource::Buffer(wgpu::BufferBinding {
+                buffer: &compiled_shader.zeroed_out_of_range_mode,
+                offset: 0,
+                size: Some(NonZeroU64::new(std::mem::size_of::<f32>() as u64).unwrap()),
+            }),
+        },
+    ];
 
-        let frame_output = texture_target
-            .get_next_texture()
-            .expect("TextureTargetFrame.get_next_texture is infallible");
+    let mut zeroed_out_of_range_mode_slice = staging_belt.write_buffer(
+        render_command_encoder,
+        &compiled_shader.zeroed_out_of_range_mode,
+        0,
+        NonZeroU64::new(std::mem::size_of::<f32>() as u64).unwrap(),
+        &descriptors.device,
+    );
 
-        let mut bind_group_entries = vec![
-            BindGroupEntry {
-                binding: naga_pixelbender::SAMPLER_CLAMP_NEAREST,
-                resource: BindingResource::Sampler(&self.descriptors.bitmap_samplers.clamp_nearest),
-            },
-            BindGroupEntry {
-                binding: naga_pixelbender::SAMPLER_CLAMP_LINEAR,
-                resource: BindingResource::Sampler(&self.descriptors.bitmap_samplers.clamp_linear),
-            },
-            BindGroupEntry {
-                binding: naga_pixelbender::SAMPLER_CLAMP_BILINEAR,
-                // FIXME - create bilinear sampler
-                resource: BindingResource::Sampler(&self.descriptors.bitmap_samplers.clamp_linear),
-            },
-            BindGroupEntry {
-                binding: naga_pixelbender::SHADER_FLOAT_PARAMETERS_INDEX,
-                resource: BindingResource::Buffer(wgpu::BufferBinding {
-                    buffer: &compiled_shader.float_parameters_buffer,
-                    offset: 0,
-                    size: Some(
-                        NonZeroU64::new(compiled_shader.float_parameters_buffer_size).unwrap(),
-                    ),
-                }),
-            },
-            BindGroupEntry {
-                binding: naga_pixelbender::SHADER_INT_PARAMETERS_INDEX,
-                resource: BindingResource::Buffer(wgpu::BufferBinding {
-                    buffer: &compiled_shader.int_parameters_buffer,
-                    offset: 0,
-                    size: Some(
-                        NonZeroU64::new(compiled_shader.int_parameters_buffer_size).unwrap(),
-                    ),
-                }),
-            },
-        ];
+    zeroed_out_of_range_mode_slice.copy_from_slice(bytemuck::cast_slice(&[match mode {
+        // When a Shader is run via a ShaderJob, out-of-range texture sample coordinates
+        // seem to be clamped to the edge of the texture (despite what the docs describe)
+        ShaderMode::ShaderJob => 0.0f32,
+        // When a Shader is run through a ShaderFilter, out-of-range texture sample coordinates
+        // return transparent black (0.0, 0.0, 0.0, 0.0). This is easiest to observe with
+        // BitmapData.applyFilter when the BitampData destination is larger than the source.
+        ShaderMode::Filter => 1.0f32,
+    }]));
+    drop(zeroed_out_of_range_mode_slice);
 
-        let mut texture_views: IndexMap<u8, TextureView> = Default::default();
+    let mut texture_views: IndexMap<u8, TextureView> = Default::default();
 
-        let mut render_command_encoder =
-            self.descriptors
-                .device
-                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                    label: create_debug_label!("Render command encoder").as_deref(),
-                });
+    let mut target_clone = None;
 
-        let mut target_clone = None;
+    let mut float_offset = 0;
+    let mut int_offset = 0;
 
-        let mut float_offset = 0;
-        let mut int_offset = 0;
+    let mut first_image = None;
 
-        for input in &mut arguments {
-            match input {
-                PixelBenderShaderArgument::ImageInput { index, texture, .. } => {
+    for input in &mut arguments {
+        match input {
+            PixelBenderShaderArgument::ImageInput { index, texture, .. } => {
+                let input_texture = &image_input_as_texture(texture.as_ref().unwrap());
+                if std::ptr::eq(*input_texture, target) {
                     // The input is the same as the output - we need to clone the input.
                     // We will write to the original output, and use a clone of the input as a texture input binding
-                    if std::ptr::eq(
-                        Arc::as_ptr(&texture.0) as *const (),
-                        Arc::as_ptr(&target_handle.0) as *const (),
-                    ) {
-                        let cached_fresh_handle = target_clone.get_or_insert_with(|| {
-                            let extent = wgpu::Extent3d {
-                                width: target.texture.width(),
-                                height: target.texture.height(),
-                                depth_or_array_layers: 1,
-                            };
-                            let fresh_texture =
-                                self.descriptors.device.create_texture(&TextureDescriptor {
-                                    label: Some("PixelBenderShader target clone"),
-                                    size: extent,
-                                    mip_level_count: 1,
-                                    sample_count: 1,
-                                    dimension: wgpu::TextureDimension::D2,
-                                    format: wgpu::TextureFormat::Rgba8Unorm,
-                                    usage: wgpu::TextureUsages::COPY_DST
-                                        | wgpu::TextureUsages::TEXTURE_BINDING,
-                                    view_formats: &[wgpu::TextureFormat::Rgba8Unorm],
-                                });
-                            render_command_encoder.copy_texture_to_texture(
-                                ImageCopyTexture {
-                                    texture: &target.texture,
-                                    mip_level: 0,
-                                    origin: Default::default(),
-                                    aspect: Default::default(),
-                                },
-                                ImageCopyTexture {
-                                    texture: &fresh_texture,
-                                    mip_level: 0,
-                                    origin: Default::default(),
-                                    aspect: Default::default(),
-                                },
-                                extent,
-                            );
-
-                            BitmapHandle(Arc::new(Texture {
-                                texture: Arc::new(fresh_texture),
-                                bind_linear: Default::default(),
-                                bind_nearest: Default::default(),
-                                copy_count: Cell::new(0),
-                            }))
+                    let cached_fresh_handle = target_clone.get_or_insert_with(|| {
+                        let extent = wgpu::Extent3d {
+                            width: target.width(),
+                            height: target.height(),
+                            depth_or_array_layers: 1,
+                        };
+                        let fresh_texture = descriptors.device.create_texture(&TextureDescriptor {
+                            label: Some("PixelBenderShader target clone"),
+                            size: extent,
+                            mip_level_count: 1,
+                            sample_count: 1,
+                            dimension: wgpu::TextureDimension::D2,
+                            format: wgpu::TextureFormat::Rgba8Unorm,
+                            usage: wgpu::TextureUsages::COPY_DST
+                                | wgpu::TextureUsages::TEXTURE_BINDING,
+                            view_formats: &[wgpu::TextureFormat::Rgba8Unorm],
                         });
-                        *texture = cached_fresh_handle.clone();
-                    }
-                    texture_views.insert(
-                        *index,
-                        as_texture(texture)
-                            .texture
-                            .create_view(&wgpu::TextureViewDescriptor::default()),
-                    );
-                }
-                PixelBenderShaderArgument::ValueInput { index, value } => {
-                    let param = &compiled_shader.shader.params[*index as usize];
+                        render_command_encoder.copy_texture_to_texture(
+                            ImageCopyTexture {
+                                texture: target,
+                                mip_level: 0,
+                                origin: Default::default(),
+                                aspect: Default::default(),
+                            },
+                            ImageCopyTexture {
+                                texture: &fresh_texture,
+                                mip_level: 0,
+                                origin: Default::default(),
+                                aspect: Default::default(),
+                            },
+                            extent,
+                        );
 
-                    let name = match param {
-                        PixelBenderParam::Normal { name, .. } => name,
-                        _ => unreachable!(),
-                    };
-
-                    if name == OUT_COORD_NAME {
-                        continue;
-                    }
-
-                    let (value_vec, is_float): ([f32; 4], bool) = match value {
-                        PixelBenderType::TFloat(f1) => ([*f1, 0.0, 0.0, 0.0], true),
-                        PixelBenderType::TFloat2(f1, f2) => ([*f1, *f2, 0.0, 0.0], true),
-                        PixelBenderType::TFloat3(f1, f2, f3) => ([*f1, *f2, *f3, 0.0], true),
-                        PixelBenderType::TFloat4(f1, f2, f3, f4) => ([*f1, *f2, *f3, *f4], true),
-                        PixelBenderType::TInt(i1) => ([*i1 as f32, 0.0, 0.0, 0.0], false),
-                        PixelBenderType::TInt2(i1, i2) => {
-                            ([*i1 as f32, *i2 as f32, 0.0, 0.0], false)
-                        }
-                        PixelBenderType::TInt3(i1, i2, i3) => {
-                            ([*i1 as f32, *i2 as f32, *i3 as f32, 0.0], false)
-                        }
-                        PixelBenderType::TInt4(i1, i2, i3, i4) => {
-                            ([*i1 as f32, *i2 as f32, *i3 as f32, *i4 as f32], false)
-                        }
-                        _ => unreachable!("Unimplemented value {value:?}"),
-                    };
-
-                    // Both float32 and int are 4 bytes
-                    let component_size_bytes = 4;
-
-                    let (buffer, vec4_count) = if is_float {
-                        let res = (&compiled_shader.float_parameters_buffer, float_offset);
-                        float_offset += 1;
-                        res
-                    } else {
-                        let res = (&compiled_shader.int_parameters_buffer, int_offset);
-                        int_offset += 1;
-                        res
-                    };
-
-                    let mut buffer_slice = staging_belt.write_buffer(
-                        &mut render_command_encoder,
-                        buffer,
-                        vec4_count * 4 * component_size_bytes,
-                        NonZeroU64::new(4 * component_size_bytes).unwrap(),
-                        &self.descriptors.device,
-                    );
-                    buffer_slice.copy_from_slice(bytemuck::cast_slice(&value_vec));
-                }
-            }
-        }
-
-        // This needs to be a separate loop, so that we can get references into `texture_views`
-        for input in &arguments {
-            match input {
-                PixelBenderShaderArgument::ImageInput { index, .. } => {
-                    let binding = naga_pixelbender::TEXTURE_START_BIND_INDEX + *index as u32;
-                    bind_group_entries.push(BindGroupEntry {
-                        binding,
-                        resource: BindingResource::TextureView(&texture_views[index]),
+                        BitmapHandle(Arc::new(Texture {
+                            texture: Arc::new(fresh_texture),
+                            bind_linear: Default::default(),
+                            bind_nearest: Default::default(),
+                            copy_count: Cell::new(0),
+                        }))
                     });
+                    *texture = Some(cached_fresh_handle.clone().into());
                 }
-                PixelBenderShaderArgument::ValueInput { .. } => {}
+                let wgpu_texture = image_input_as_texture(texture.as_ref().unwrap());
+                texture_views.insert(
+                    *index,
+                    wgpu_texture.create_view(&wgpu::TextureViewDescriptor::default()),
+                );
+            }
+            PixelBenderShaderArgument::ValueInput { index, value } => {
+                let param = &compiled_shader.shader.params[*index as usize];
+
+                let name = match param {
+                    PixelBenderParam::Normal { name, .. } => name,
+                    _ => unreachable!(),
+                };
+
+                if name == OUT_COORD_NAME {
+                    continue;
+                }
+
+                let (value_vec, is_float): (Vec<f32>, bool) = match value {
+                    PixelBenderType::TFloat(f1) => (vec![*f1, 0.0, 0.0, 0.0], true),
+                    PixelBenderType::TFloat2(f1, f2) => (vec![*f1, *f2, 0.0, 0.0], true),
+                    PixelBenderType::TFloat3(f1, f2, f3) => (vec![*f1, *f2, *f3, 0.0], true),
+                    PixelBenderType::TFloat4(f1, f2, f3, f4) => (vec![*f1, *f2, *f3, *f4], true),
+                    PixelBenderType::TInt(i1) => (vec![*i1 as f32, 0.0, 0.0, 0.0], false),
+                    PixelBenderType::TInt2(i1, i2) => {
+                        (vec![*i1 as f32, *i2 as f32, 0.0, 0.0], false)
+                    }
+                    PixelBenderType::TInt3(i1, i2, i3) => {
+                        (vec![*i1 as f32, *i2 as f32, *i3 as f32, 0.0], false)
+                    }
+                    PixelBenderType::TInt4(i1, i2, i3, i4) => {
+                        (vec![*i1 as f32, *i2 as f32, *i3 as f32, *i4 as f32], false)
+                    }
+                    PixelBenderType::TFloat2x2(arr) => (arr.to_vec(), true),
+                    PixelBenderType::TFloat3x3(arr) => {
+                        // Add a zero after every 3 values to created zero-padded vec4s
+                        let mut vec4_arr = Vec::with_capacity(16);
+                        for (i, val) in arr.iter().enumerate() {
+                            vec4_arr.push(*val);
+                            if i % 3 == 2 {
+                                vec4_arr.push(0.0);
+                            }
+                        }
+                        (vec4_arr, true)
+                    }
+                    PixelBenderType::TFloat4x4(arr) => (arr.to_vec(), true),
+                    _ => unreachable!("Unimplemented value {value:?}"),
+                };
+
+                assert_eq!(
+                    value_vec.len() % 4,
+                    0,
+                    "value_vec should represent concatenated vec4fs"
+                );
+                let num_vec4s = value_vec.len() / 4;
+                // Both float32 and int are 4 bytes
+                let component_size_bytes = 4;
+
+                let (buffer, vec4_count) = if is_float {
+                    let res = (&compiled_shader.float_parameters_buffer, float_offset);
+                    float_offset += num_vec4s;
+                    res
+                } else {
+                    let res = (&compiled_shader.int_parameters_buffer, int_offset);
+                    int_offset += num_vec4s;
+                    res
+                };
+
+                let mut buffer_slice = staging_belt.write_buffer(
+                    render_command_encoder,
+                    buffer,
+                    vec4_count as u64 * 4 * component_size_bytes,
+                    NonZeroU64::new(value_vec.len() as u64 * component_size_bytes).unwrap(),
+                    &descriptors.device,
+                );
+                buffer_slice.copy_from_slice(bytemuck::cast_slice(&value_vec));
             }
         }
-
-        let bind_group = self
-            .descriptors
-            .device
-            .create_bind_group(&wgpu::BindGroupDescriptor {
-                label: None,
-                layout: &compiled_shader.bind_group_layout,
-                entries: &bind_group_entries,
-            });
-
-        staging_belt.finish();
-
-        let mut render_pass =
-            render_command_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("PixelBender render pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: frame_output.view(),
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
-                        store: true,
-                    },
-                })],
-                depth_stencil_attachment: None,
-            });
-        render_pass.set_bind_group(0, &bind_group, &[]);
-        render_pass.set_pipeline(&compiled_shader.pipeline);
-
-        render_pass.set_vertex_buffer(0, self.descriptors.quad.vertices_pos.slice(..));
-        render_pass.set_index_buffer(
-            self.descriptors.quad.indices.slice(..),
-            wgpu::IndexFormat::Uint32,
-        );
-
-        render_pass.draw_indexed(0..6, 0, 0..1);
-
-        drop(render_pass);
-
-        self.descriptors
-            .queue
-            .submit(Some(render_command_encoder.finish()));
-
-        staging_belt.recall();
-
-        Ok(Box::new(QueueSyncHandle::NotCopied {
-            handle: target_handle,
-            copy_area: PixelRegion::for_whole_size(extent.width, extent.height),
-            descriptors: self.descriptors.clone(),
-            pool: self.offscreen_buffer_pool.clone(),
-        }))
     }
+
+    // This needs to be a separate loop, so that we can get references into `texture_views`
+    for input in &arguments {
+        match input {
+            PixelBenderShaderArgument::ImageInput { index, texture, .. } => {
+                let wgpu_texture = image_input_as_texture(texture.as_ref().unwrap());
+
+                if first_image.is_none() {
+                    first_image = Some(wgpu_texture);
+                }
+
+                let binding = naga_pixelbender::TEXTURE_START_BIND_INDEX + *index as u32;
+                bind_group_entries.push(BindGroupEntry {
+                    binding,
+                    resource: BindingResource::TextureView(&texture_views[index]),
+                });
+            }
+            PixelBenderShaderArgument::ValueInput { .. } => {}
+        }
+    }
+
+    let bind_group = descriptors
+        .device
+        .create_bind_group(&wgpu::BindGroupDescriptor {
+            label: None,
+            layout: &compiled_shader.bind_group_layout,
+            entries: &bind_group_entries,
+        });
+
+    staging_belt.finish();
+
+    let vertices = source.vertices(&descriptors.device);
+
+    let mut render_pass = render_command_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+        label: Some("PixelBender render pass"),
+        color_attachments: &[color_attachment],
+        depth_stencil_attachment: None,
+    });
+    render_pass.set_bind_group(0, &bind_group, &[]);
+    render_pass.set_pipeline(&compiled_shader.pipeline);
+
+    render_pass.set_vertex_buffer(0, vertices.slice(..));
+    render_pass.set_index_buffer(
+        descriptors.quad.indices.slice(..),
+        wgpu::IndexFormat::Uint32,
+    );
+
+    render_pass.draw_indexed(0..6, 0, 0..1);
+
+    // Note - we just drop the staging belt, instead of recalling it,
+    // since we're not going to use it again.
+
+    Ok(())
 }

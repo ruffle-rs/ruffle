@@ -1,0 +1,43 @@
+// Based on https://github.com/nojvek/pixelbender/blob/master/selfDisplace/glassDisplace.pbk
+<languageVersion : 1.0;>
+
+kernel NewFilter
+<   namespace : "com.om-labs.pixelbender.selfDisplace";
+    vendor : "Om Labs";
+    version : 1;
+    description : "depending on the color values of the image,displacement, centrepoint and stretch, create freaky images.";
+>
+{
+
+    parameter float2 center<
+        minValue:float2(-1000.0);
+        maxValue:float2(1000.0);
+        defaultValue:float2(500.0,400.0);
+    >;
+    
+    parameter float2 stretch<
+        minValue: float2(-1000.0);
+        maxValue: float2(1000.0);
+        defaultValue: float2(0.0);        
+    >;
+    
+    parameter float alpha<
+        minValue:0.0;
+        maxValue:1.0;
+        defaultValue:0.0;
+    >;
+    
+    input image4 src;
+    input image4 src2;
+    output float4 dst;
+
+    void evaluatePixel(){
+        float2 pos = outCoord();
+        float4 heightColor = sampleNearest(src,pos);
+        float height = (heightColor.r+heightColor.g+heightColor.b)/3.0;
+        float2 direction = normalize(pos-center);
+        pos += float2(-height*direction.x*stretch.x,-height*direction.y*stretch.y);
+        dst = mix(sampleNearest(src,pos),sampleNearest(src2,pos),alpha);
+        
+    }
+}

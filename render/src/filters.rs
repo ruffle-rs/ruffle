@@ -1,4 +1,7 @@
-use crate::bitmap::BitmapHandle;
+use crate::{
+    bitmap::BitmapHandle,
+    pixel_bender::{PixelBenderShaderArgument, PixelBenderShaderHandle},
+};
 use swf::Color;
 
 #[derive(Debug, Clone)]
@@ -12,6 +15,17 @@ pub enum Filter {
     GlowFilter(swf::GlowFilter),
     GradientBevelFilter(swf::GradientFilter),
     GradientGlowFilter(swf::GradientFilter),
+    ShaderFilter(ShaderFilter<'static>),
+}
+
+#[derive(Debug, Clone)]
+pub struct ShaderFilter<'a> {
+    pub shader: PixelBenderShaderHandle,
+    pub shader_args: Vec<PixelBenderShaderArgument<'a>>,
+    pub bottom_extension: i32,
+    pub left_extension: i32,
+    pub right_extension: i32,
+    pub top_extension: i32,
 }
 
 impl From<&swf::Filter> for Filter {

@@ -15,6 +15,11 @@ package flash.filters {
         public function set shader(value:Shader):void {
             this._shader = value;
         }
+
+        public var bottomExtension:int = 0;
+        public var leftExtension:int = 0;
+        public var rightExtension:int = 0;
+        public var topExtension:int = 0;
         
         // ShaderFilter is the only filter class that doesn't override clone
     }

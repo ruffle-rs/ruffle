@@ -2844,6 +2844,7 @@ dependencies = [
  "anyhow",
  "bitflags 2.3.2",
  "naga",
+ "naga_oil",
  "ruffle_render",
 ]
 
@@ -3855,6 +3856,7 @@ dependencies = [
  "thiserror",
  "tracing",
  "wasm-bindgen",
+ "wgpu",
 ]
 
 [[package]]

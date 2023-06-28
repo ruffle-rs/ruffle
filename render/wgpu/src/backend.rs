@@ -3,6 +3,7 @@ use crate::buffer_pool::{BufferPool, TexturePool};
 use crate::context3d::WgpuContext3D;
 use crate::filters::FilterSource;
 use crate::mesh::{Mesh, PendingDraw};
+use crate::pixel_bender::{run_pixelbender_shader_impl, ShaderMode};
 use crate::surface::{LayerRef, Surface};
 use crate::target::{MaybeOwnedBuffer, TextureTarget};
 use crate::target::{RenderTargetFrame, TextureBufferInfo};
@@ -781,7 +782,10 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     }
 
     fn is_filter_supported(&self, filter: &Filter) -> bool {
-        matches!(filter, Filter::BlurFilter(_) | Filter::ColorMatrixFilter(_))
+        matches!(
+            filter,
+            Filter::BlurFilter(_) | Filter::ColorMatrixFilter(_) | Filter::ShaderFilter(_)
+        )
     }
 
     fn is_offscreen_supported(&self) -> bool {
@@ -840,6 +844,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                     label: label.as_deref(),
                 });
+
         let applied_filter = self.descriptors.filters.apply(
             &self.descriptors,
             &mut draw_encoder,
@@ -917,7 +922,61 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         arguments: &[PixelBenderShaderArgument],
         target_handle: BitmapHandle,
     ) -> Result<Box<dyn SyncHandle>, BitmapError> {
-        self.run_pixelbender_shader_impl(shader, arguments, target_handle)
+        let target = as_texture(&target_handle);
+
+        let extent = wgpu::Extent3d {
+            width: target.texture.width(),
+            height: target.texture.height(),
+            depth_or_array_layers: 1,
+        };
+
+        let mut texture_target = TextureTarget {
+            size: extent,
+            texture: target.texture.clone(),
+            format: wgpu::TextureFormat::Rgba8Unorm,
+            buffer: None,
+        };
+
+        let frame_output = texture_target
+            .get_next_texture()
+            .expect("TextureTargetFrame.get_next_texture is infallible");
+
+        let mut render_command_encoder =
+            self.descriptors
+                .device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: create_debug_label!("Render command encoder").as_deref(),
+                });
+
+        run_pixelbender_shader_impl(
+            &self.descriptors,
+            shader,
+            ShaderMode::ShaderJob,
+            arguments,
+            &target.texture,
+            &mut render_command_encoder,
+            Some(wgpu::RenderPassColorAttachment {
+                view: frame_output.view(),
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
+                    store: true,
+                },
+            }),
+            // When running a standalone shader, we always process the entire image
+            &FilterSource::for_entire_texture(&target.texture),
+        )?;
+
+        self.descriptors
+            .queue
+            .submit(Some(render_command_encoder.finish()));
+
+        Ok(Box::new(QueueSyncHandle::NotCopied {
+            handle: target_handle,
+            copy_area: PixelRegion::for_whole_size(extent.width, extent.height),
+            descriptors: self.descriptors.clone(),
+            pool: self.offscreen_buffer_pool.clone(),
+        }))
     }
 
     fn create_empty_texture(

@@ -8,9 +8,9 @@ repository.workspace = true
 version.workspace = true
 
 [dependencies]
-wgpu = { version = "0.16", features = ["naga"] }
+wgpu = { workspace = true, features = ["naga"] }
 tracing = { workspace = true }
-ruffle_render = { path = "..", features = ["tessellator"] }
+ruffle_render = { path = "..", features = ["tessellator", "wgpu"] }
 bytemuck = { version = "1.13.1", features = ["derive"] }
 raw-window-handle = "0.5"
 clap = { version = "4.3.8", features = ["derive"], optional = true }
@@ -18,7 +18,7 @@ enum-map = "2.5.0"
 fnv = "1.0.7"
 swf = { path = "../../swf" }
 image = { version = "0.24.6", default-features = false }
-naga_oil = "0.7.0"
+naga_oil = { workspace = true }
 ouroboros = "0.17.0"
 typed-arena = "2.0.2"
 gc-arena = { workspace = true }

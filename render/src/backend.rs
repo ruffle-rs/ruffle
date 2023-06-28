@@ -120,6 +120,12 @@ impl_downcast!(ShaderModule);
 pub trait Texture: Downcast + Collect {}
 impl_downcast!(Texture);
 
+pub trait RawTexture: Downcast + Debug {}
+impl_downcast!(RawTexture);
+
+#[cfg(feature = "wgpu")]
+impl RawTexture for wgpu::Texture {}
+
 #[derive(Collect, Debug, Copy, Clone)]
 #[collect(require_static)]
 pub enum Context3DTextureFormat {

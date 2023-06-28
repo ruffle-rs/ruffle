@@ -6,6 +6,7 @@ pub mod error;
 pub mod filters;
 pub mod matrix;
 pub mod pixel_bender;
+pub mod shader_source;
 pub mod shape_utils;
 pub mod transform;
 pub mod utils;

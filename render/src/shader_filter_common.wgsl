@@ -1,5 +1,4 @@
 #define_import_path filter
-#import common
 
 struct VertexOutput {
     @builtin(position) position: vec4<f32>,

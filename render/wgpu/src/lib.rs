@@ -14,6 +14,7 @@ use crate::utils::{
 use bytemuck::{Pod, Zeroable};
 use descriptors::Descriptors;
 use enum_map::Enum;
+use ruffle_render::backend::RawTexture;
 use ruffle_render::bitmap::{BitmapHandle, BitmapHandleImpl, PixelRegion, RgbaBufRead, SyncHandle};
 use ruffle_render::shape_utils::GradientType;
 use ruffle_render::tessellator::{Gradient as TessGradient, Vertex as TessVertex};
@@ -52,6 +53,10 @@ impl BitmapHandleImpl for Texture {}
 
 pub fn as_texture(handle: &BitmapHandle) -> &Texture {
     <dyn BitmapHandleImpl>::downcast_ref(&*handle.0).unwrap()
+}
+
+pub fn raw_texture_as_texture(handle: &dyn RawTexture) -> &wgpu::Texture {
+    <dyn RawTexture>::downcast_ref(handle).unwrap()
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Enum)]

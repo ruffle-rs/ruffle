@@ -36,6 +36,9 @@ impl PixelBenderTypeExt for PixelBenderType {
                 | PixelBenderTypeOpcode::TFloat2
                 | PixelBenderTypeOpcode::TFloat3
                 | PixelBenderTypeOpcode::TFloat4
+                | PixelBenderTypeOpcode::TFloat2x2
+                | PixelBenderTypeOpcode::TFloat3x3
+                | PixelBenderTypeOpcode::TFloat4x4
         );
 
         match value {
@@ -68,6 +71,15 @@ impl PixelBenderTypeExt for PixelBenderType {
                                 vals.next().unwrap(),
                                 vals.next().unwrap(),
                                 vals.next().unwrap(),
+                            )),
+                            PixelBenderTypeOpcode::TFloat2x2 => Ok(PixelBenderType::TFloat2x2(
+                                vals.collect::<Vec<_>>().try_into().unwrap(),
+                            )),
+                            PixelBenderTypeOpcode::TFloat3x3 => Ok(PixelBenderType::TFloat3x3(
+                                vals.collect::<Vec<_>>().try_into().unwrap(),
+                            )),
+                            PixelBenderTypeOpcode::TFloat4x4 => Ok(PixelBenderType::TFloat4x4(
+                                vals.collect::<Vec<_>>().try_into().unwrap(),
                             )),
                             _ => unreachable!("Unexpected float kind {kind:?}"),
                         }

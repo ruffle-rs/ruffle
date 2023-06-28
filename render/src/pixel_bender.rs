@@ -14,7 +14,7 @@ use std::{
     sync::Arc,
 };
 
-use crate::bitmap::BitmapHandle;
+use crate::{backend::RawTexture, bitmap::BitmapHandle};
 
 /// The name of a special parameter, which gets automatically filled in with the coordinates
 /// of the pixel being processed.
@@ -69,9 +69,17 @@ pub enum PixelBenderRegChannel {
     G = 1,
     B = 2,
     A = 3,
+    M2x2 = 4,
+    M3x3 = 5,
+    M4x4 = 6,
 }
 
 impl PixelBenderRegChannel {
+    pub const RGB: [PixelBenderRegChannel; 3] = [
+        PixelBenderRegChannel::R,
+        PixelBenderRegChannel::G,
+        PixelBenderRegChannel::B,
+    ];
     pub const RGBA: [PixelBenderRegChannel; 4] = [
         PixelBenderRegChannel::R,
         PixelBenderRegChannel::G,
@@ -229,17 +237,39 @@ pub enum Operation {
 }
 
 #[derive(Debug, Clone)]
-pub enum PixelBenderShaderArgument {
+pub enum PixelBenderShaderArgument<'a> {
     ImageInput {
         index: u8,
         channels: u8,
         name: String,
-        texture: BitmapHandle,
+        texture: Option<ImageInputTexture<'a>>,
     },
     ValueInput {
         index: u8,
         value: PixelBenderType,
     },
+}
+
+/// An image input. This accepts both an owned BitmapHandle,
+/// and a borrowed texture (used when applying a filter to
+/// a texture that we don't have ownership of, and therefore
+/// cannot construct a BitmapHandle for).
+#[derive(Debug, Clone)]
+pub enum ImageInputTexture<'a> {
+    Bitmap(BitmapHandle),
+    TextureRef(&'a dyn RawTexture),
+}
+
+impl From<BitmapHandle> for ImageInputTexture<'_> {
+    fn from(b: BitmapHandle) -> Self {
+        ImageInputTexture::Bitmap(b)
+    }
+}
+
+impl<'a> From<&'a dyn RawTexture> for ImageInputTexture<'a> {
+    fn from(t: &'a dyn RawTexture) -> Self {
+        ImageInputTexture::TextureRef(t)
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -292,14 +322,17 @@ pub fn parse_shader(mut data: &[u8]) -> Result<PixelBenderShader, Box<dyn std::e
     Ok(shader)
 }
 
-fn read_src_reg(val: u32, size: u8) -> Result<PixelBenderReg, Box<dyn std::error::Error>> {
-    const CHANNELS: [PixelBenderRegChannel; 4] = [
-        PixelBenderRegChannel::R,
-        PixelBenderRegChannel::G,
-        PixelBenderRegChannel::B,
-        PixelBenderRegChannel::A,
-    ];
+const CHANNELS: [PixelBenderRegChannel; 7] = [
+    PixelBenderRegChannel::R,
+    PixelBenderRegChannel::G,
+    PixelBenderRegChannel::B,
+    PixelBenderRegChannel::A,
+    PixelBenderRegChannel::M2x2,
+    PixelBenderRegChannel::M3x3,
+    PixelBenderRegChannel::M4x4,
+];
 
+fn read_src_reg(val: u32, size: u8) -> Result<PixelBenderReg, Box<dyn std::error::Error>> {
     let swizzle = val >> 16;
     let mut channels = Vec::new();
     for i in 0..size {
@@ -320,6 +353,10 @@ fn read_src_reg(val: u32, size: u8) -> Result<PixelBenderReg, Box<dyn std::error
     })
 }
 
+fn read_matrix_reg(val: u16, mask: u8) -> PixelBenderReg {
+    read_reg(val, vec![CHANNELS[(mask + 3) as usize]])
+}
+
 fn read_dst_reg(val: u16, mask: u8) -> Result<PixelBenderReg, Box<dyn std::error::Error>> {
     let mut channels = Vec::new();
     if mask & 0x8 != 0 {
@@ -335,18 +372,22 @@ fn read_dst_reg(val: u16, mask: u8) -> Result<PixelBenderReg, Box<dyn std::error
         channels.push(PixelBenderRegChannel::A);
     }
 
+    Ok(read_reg(val, channels))
+}
+
+fn read_reg(val: u16, channels: Vec<PixelBenderRegChannel>) -> PixelBenderReg {
     let kind = if val & 0x8000 != 0 {
         PixelBenderRegKind::Int
     } else {
         PixelBenderRegKind::Float
     };
 
-    Ok(PixelBenderReg {
+    PixelBenderReg {
         // Mask off the 0x8000 bit
         index: (val & 0x7FFF) as u32,
         channels,
         kind,
-    })
+    }
 }
 
 fn read_op<R: Read>(
@@ -385,20 +426,44 @@ fn read_op<R: Read>(
             let param_type = PixelBenderTypeOpcode::from_u8(param_type).unwrap_or_else(|| {
                 panic!("Unexpected param type {param_type}");
             });
+
+            // Note - we deviate from Haxe's parser code here. We assert that the provided mask value
+            // is as expected, but we then construct a Matrix channel register as the dest reg,
+            // which helps our naga-pixelbender backend.
+            let dst_reg = match param_type {
+                PixelBenderTypeOpcode::TFloat2x2 => {
+                    assert_eq!(mask, 2);
+                    PixelBenderReg {
+                        index: reg as u32,
+                        channels: vec![PixelBenderRegChannel::M2x2],
+                        kind: PixelBenderRegKind::Float,
+                    }
+                }
+                PixelBenderTypeOpcode::TFloat3x3 => {
+                    assert_eq!(mask, 3);
+                    PixelBenderReg {
+                        index: reg as u32,
+                        channels: vec![PixelBenderRegChannel::M3x3],
+                        kind: PixelBenderRegKind::Float,
+                    }
+                }
+                PixelBenderTypeOpcode::TFloat4x4 => {
+                    assert_eq!(mask, 4);
+                    PixelBenderReg {
+                        index: reg as u32,
+                        channels: vec![PixelBenderRegChannel::M4x4],
+                        kind: PixelBenderRegKind::Float,
+                    }
+                }
+                _ => {
+                    assert_eq!(mask >> 4, 0);
+                    read_dst_reg(reg, mask)?
+                }
+            };
+
             let qualifier = PixelBenderParamQualifier::from_u8(qualifier)
                 .unwrap_or_else(|| panic!("Unexpected param qualifier {qualifier:?}"));
             apply_metadata(shader, metadata);
-
-            match param_type {
-                PixelBenderTypeOpcode::TFloat2x2
-                | PixelBenderTypeOpcode::TFloat3x3
-                | PixelBenderTypeOpcode::TFloat4x4 => {
-                    panic!("Unsupported param type {param_type:?}");
-                }
-                _ => {}
-            }
-
-            let dst_reg = read_dst_reg(reg, mask)?;
 
             shader.params.push(PixelBenderParam::Normal {
                 qualifier,
@@ -498,19 +563,26 @@ fn read_op<R: Read>(
             assert_eq!(data.read_u8()?, 0, "Unexpected u8 for opcode {opcode:?}");
             mask >>= 4;
 
-            let src_reg = read_src_reg(src, size)?;
-            let dst_reg = if matrix != 0 {
+            if matrix != 0 {
                 assert_eq!(src >> 16, 0);
                 assert_eq!(size, 1);
-                panic!("Matrix with mask {mask:b} matrix {matrix:b}");
+                let dst = if mask == 0 {
+                    read_matrix_reg(dst, matrix)
+                } else {
+                    read_dst_reg(dst, mask)?
+                };
+                shader.operations.push(Operation::Normal {
+                    opcode,
+                    dst,
+                    src: read_matrix_reg(src as u16, matrix),
+                });
             } else {
-                read_dst_reg(dst, mask)?
+                let dst = read_dst_reg(dst, mask)?;
+                let src = read_src_reg(src, size)?;
+                shader
+                    .operations
+                    .push(Operation::Normal { opcode, dst, src })
             };
-            shader.operations.push(Operation::Normal {
-                opcode,
-                dst: dst_reg,
-                src: src_reg,
-            })
         }
     };
     Ok(())
