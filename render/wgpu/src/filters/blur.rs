@@ -20,6 +20,7 @@ const PASS_SCALES: [f32; 15] = [
 struct BlurUniform {
     direction: [f32; 2],
     size: f32,
+    _padding: f32,
 }
 
 pub struct BlurFilter {
@@ -205,6 +206,7 @@ impl BlurFilter {
                                     [0.0, 1.0 / previous_height]
                                 },
                                 size: strength,
+                                _padding: 0.0,
                             }]),
                             usage: wgpu::BufferUsages::UNIFORM,
                         });

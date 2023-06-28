@@ -7,6 +7,8 @@ struct Filter {
 
     // Size of the blur kernel
     size: f32,
+
+    _padding: f32,
 }
 
 @group(0) @binding(0) var texture: texture_2d<f32>;
