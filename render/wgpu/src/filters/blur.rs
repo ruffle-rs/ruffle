@@ -170,7 +170,8 @@ impl BlurFilter {
                 } else {
                     filter.blur_y.to_f32()
                 };
-                let strength = (strength.min(255.0) * pass_scale).floor() - 1.0;
+                // blur_x/y is the total kernel width; change it to just half excluding center
+                let strength = ((strength.min(255.0) * pass_scale - 1.0) / 2.0).floor();
                 if strength <= 0.0 {
                     // A strength of 0 is a noop
                     continue;
