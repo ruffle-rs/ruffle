@@ -405,7 +405,6 @@ pub struct ShaderCompileData {
 #[collect(require_static)]
 pub struct TextureWrapper {
     texture: wgpu::Texture,
-    format: wgpu::TextureFormat,
 }
 
 impl IndexBuffer for IndexBufferWrapper {}
@@ -510,7 +509,7 @@ impl Context3D for WgpuContext3D {
                 | TextureUsages::COPY_DST
                 | TextureUsages::RENDER_ATTACHMENT,
         });
-        Ok(Rc::new(TextureWrapper { texture, format }))
+        Ok(Rc::new(TextureWrapper { texture }))
     }
 
     fn create_cube_texture(
@@ -548,7 +547,7 @@ impl Context3D for WgpuContext3D {
                 | TextureUsages::COPY_DST
                 | TextureUsages::RENDER_ATTACHMENT,
         });
-        Ok(Rc::new(TextureWrapper { texture, format }))
+        Ok(Rc::new(TextureWrapper { texture }))
     }
 
     fn process_command<'gc>(
@@ -1040,7 +1039,7 @@ impl Context3D for WgpuContext3D {
                 // If we were to use `self.buffer_command_encoder.copy_texture_to_texture`, the
                 // BitmapData's gpu texture might be modified before we actually submit
                 // `buffer_command_encoder` to the device.
-                let mut image_data = match (source.format(), dest.format) {
+                let mut image_data = match (source.format(), dest.texture.format()) {
                     (BitmapFormat::Rgba, wgpu::TextureFormat::Rgba8Unorm) => {
                         Cow::Borrowed(source.data())
                     }
