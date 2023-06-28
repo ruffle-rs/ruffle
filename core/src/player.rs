@@ -1275,26 +1275,26 @@ impl Player {
                     }
                 }
             }
-            if let Some(down_object) = context.mouse_down_object {
-                if !context.is_action_script_3() && down_object.as_displayobject().avm1_removed() {
+            if let Some(pressed) = context.mouse_down_object {
+                if !context.is_action_script_3() && pressed.as_displayobject().avm1_removed() {
                     context.mouse_down_object = None;
                     let mut display_object = None;
 
                     if let Some(root_clip) = context.stage.root_clip() {
                         display_object = Self::find_first_character_instance(
                             root_clip,
-                            down_object.as_displayobject(),
+                            pressed.as_displayobject(),
                         );
                     }
 
                     if let Some(new_down_object) = display_object {
-                        if new_down_object.depth() == new_down_object.depth()
+                        if new_down_object.depth() == pressed.depth()
                             && Arc::ptr_eq(
                                 &new_down_object.movie(),
-                                &down_object.as_displayobject().movie(),
+                                &pressed.as_displayobject().movie(),
                             )
                         {
-                            if let Some(state) = down_object.as_displayobject().state() {
+                            if let Some(state) = pressed.as_displayobject().state() {
                                 new_down_object.set_state(context, state);
                             }
                             context.mouse_down_object = if display_object.is_some() {
