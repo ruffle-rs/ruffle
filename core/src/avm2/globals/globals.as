@@ -51,6 +51,7 @@ include "flash/display/LoaderInfo.as"
 include "flash/display/Stage.as"
 
 include "flash/display/ActionScriptVersion.as"
+include "flash/display/AVM1Movie.as"
 include "flash/display/BitmapDataChannel.as"
 include "flash/display/BitmapEncodingColorSpace.as"
 include "flash/display/BlendMode.as"
