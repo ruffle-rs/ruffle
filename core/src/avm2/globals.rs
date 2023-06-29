@@ -536,6 +536,7 @@ pub fn load_player_globals<'gc>(
     )?;
     function(activation, "", "isFinite", toplevel::is_finite, script)?;
     function(activation, "", "isNaN", toplevel::is_nan, script)?;
+    function(activation, "", "isXMLName", toplevel::is_xml_name, script)?;
     function(activation, "", "parseInt", toplevel::parse_int, script)?;
     function(activation, "", "parseFloat", toplevel::parse_float, script)?;
     function(activation, "", "escape", toplevel::escape, script)?;
