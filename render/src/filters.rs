@@ -47,6 +47,20 @@ impl Clone for Box<dyn ShaderObject> {
     }
 }
 
+impl Filter {
+    pub fn scale(&mut self, x: f32, y: f32) {
+        match self {
+            Filter::BevelFilter(filter) => filter.scale(x, y),
+            Filter::BlurFilter(filter) => filter.scale(x, y),
+            Filter::DropShadowFilter(filter) => filter.scale(x, y),
+            Filter::GlowFilter(filter) => filter.scale(x, y),
+            Filter::GradientBevelFilter(filter) => filter.scale(x, y),
+            Filter::GradientGlowFilter(filter) => filter.scale(x, y),
+            _ => {}
+        }
+    }
+}
+
 impl From<&swf::Filter> for Filter {
     fn from(value: &swf::Filter) -> Self {
         match value {
