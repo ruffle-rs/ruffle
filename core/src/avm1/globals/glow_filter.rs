@@ -17,8 +17,7 @@ struct GlowFilterData {
     knockout: bool,
     blur_x: f64,
     blur_y: f64,
-    // TODO: Introduce unsigned `Fixed8`?
-    strength: u16,
+    strength: f64,
 }
 
 impl Default for GlowFilterData {
@@ -30,7 +29,7 @@ impl Default for GlowFilterData {
             knockout: false,
             blur_x: 6.0,
             blur_y: 6.0,
-            strength: 2 << 8,
+            strength: 2.0,
         }
     }
 }
@@ -174,7 +173,7 @@ impl<'gc> GlowFilter<'gc> {
     }
 
     fn strength(&self) -> f64 {
-        f64::from(self.0.read().strength) / 256.0
+        self.0.read().strength
     }
 
     fn set_strength(
@@ -183,7 +182,7 @@ impl<'gc> GlowFilter<'gc> {
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
-            let strength = ((value.coerce_to_f64(activation)? * 256.0) as u16).clamp(0, 0xFF00);
+            let strength = value.coerce_to_f64(activation)?.clamp(0.0, 255.0);
             self.0.write(activation.context.gc_context).strength = strength;
         }
         Ok(())

@@ -24,8 +24,7 @@ struct GradientFilterData {
     ratios: Vec<u8>,
     blur_x: f64,
     blur_y: f64,
-    // TODO: Introduce unsigned `Fixed8`?
-    strength: u16,
+    strength: f64,
     quality: i32,
     type_: BevelFilterType,
     knockout: bool,
@@ -42,7 +41,7 @@ impl Default for GradientFilterData {
             ratios: vec![],
             blur_x: 4.0,
             blur_y: 4.0,
-            strength: 1 << 8,
+            strength: 1.0,
             quality: 1,
             type_: BevelFilterType::Inner,
             knockout: false,
@@ -244,7 +243,7 @@ impl<'gc> GradientFilter<'gc> {
     }
 
     fn strength(&self) -> f64 {
-        f64::from(self.0.read().strength) / 256.0
+        self.0.read().strength
     }
 
     fn set_strength(
@@ -253,7 +252,7 @@ impl<'gc> GradientFilter<'gc> {
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
-            let strength = ((value.coerce_to_f64(activation)? * 256.0) as u16).clamp(0, 0xFF00);
+            let strength = value.coerce_to_f64(activation)?.clamp(0.0, 255.0);
             self.0.write(activation.context.gc_context).strength = strength;
         }
         Ok(())

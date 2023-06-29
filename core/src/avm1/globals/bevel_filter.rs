@@ -48,8 +48,7 @@ struct BevelFilterData {
     highlight: Color,
     shadow: Color,
     quality: i32,
-    // TODO: Introduce unsigned `Fixed8`?
-    strength: u16,
+    strength: f64,
     knockout: bool,
     blur_x: f64,
     blur_y: f64,
@@ -65,7 +64,7 @@ impl Default for BevelFilterData {
             highlight: Color::WHITE,
             shadow: Color::BLACK,
             quality: 1,
-            strength: 1 << 8,
+            strength: 1.0,
             knockout: false,
             blur_x: 4.0,
             blur_y: 4.0,
@@ -217,7 +216,7 @@ impl<'gc> BevelFilter<'gc> {
     }
 
     fn strength(&self) -> f64 {
-        f64::from(self.0.read().strength) / 256.0
+        self.0.read().strength
     }
 
     fn set_strength(
@@ -226,7 +225,7 @@ impl<'gc> BevelFilter<'gc> {
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
-            let strength = ((value.coerce_to_f64(activation)? * 256.0) as u16).clamp(0, 0xFF00);
+            let strength = value.coerce_to_f64(activation)?.clamp(0.0, 255.0);
             self.0.write(activation.context.gc_context).strength = strength;
         }
         Ok(())
