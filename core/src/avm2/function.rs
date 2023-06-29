@@ -299,6 +299,12 @@ pub fn display_function<'gc>(
                         } else {
                             output.push_str(&method_trait.name().local_name());
                         }
+                    } else if !method.method_name().is_empty() {
+                        // Last resort if we can't find a name anywhere else.
+                        // SWF's with debug information will provide a method name attached
+                        // to the method definition, so we can use that.
+                        output.push_char('/');
+                        output.push_utf8(method.method_name());
                     }
                     // TODO: What happens if we can't find the trait?
                 }
