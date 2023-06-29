@@ -134,7 +134,7 @@ impl HeaderExt {
     /// `None` will be returned if the SetBackgroundColor tag was not found.
     #[inline]
     pub fn background_color(&self) -> Option<Color> {
-        self.background_color.clone()
+        self.background_color
     }
 
     /// The compression format used by the SWF.

@@ -189,7 +189,7 @@ impl<'gc> Stage<'gc> {
     }
 
     pub fn background_color(self) -> Option<Color> {
-        self.0.read().background_color.clone()
+        self.0.read().background_color
     }
 
     pub fn set_background_color(self, gc_context: MutationContext<'gc, '_>, color: Option<Color>) {
