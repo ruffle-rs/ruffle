@@ -369,7 +369,9 @@ impl<'gc> NetStream<'gc> {
                                     mut data,
                                 },
                             ) => {
-                                if codec == VideoCodec::ScreenVideo {
+                                if codec == VideoCodec::ScreenVideo
+                                    || codec == VideoCodec::ScreenVideoV2
+                                {
                                     // ScreenVideo streams consider the FLV
                                     // video data byte to be integral to their
                                     // own bitstream.
