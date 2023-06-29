@@ -32,6 +32,11 @@ impl GradientFilter {
     pub fn num_passes(&self) -> u8 {
         (self.flags & GradientFilterFlags::PASSES).bits()
     }
+
+    pub fn scale(&mut self, x: f32, y: f32) {
+        self.blur_x *= Fixed16::from_f32(x);
+        self.blur_y *= Fixed16::from_f32(y);
+    }
 }
 
 bitflags! {
