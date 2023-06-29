@@ -183,7 +183,7 @@ fn draw_debug_rect(
 
     // Top
     context.commands.draw_rect(
-        color.clone(),
+        color,
         Matrix::create_box(
             width,
             thickness,
@@ -194,12 +194,12 @@ fn draw_debug_rect(
     );
     // Bottom
     context.commands.draw_rect(
-        color.clone(),
+        color,
         Matrix::create_box(width, thickness, 0.0, bounds.x_min, bounds.y_max),
     );
     // Left
     context.commands.draw_rect(
-        color.clone(),
+        color,
         Matrix::create_box(
             thickness,
             height,

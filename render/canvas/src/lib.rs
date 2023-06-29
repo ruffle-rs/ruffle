@@ -53,10 +53,10 @@ fn as_shape_data(handle: &ShapeHandle) -> &ShapeData {
 #[derive(Debug)]
 struct CanvasColor(Color, String);
 
-impl From<&Color> for CanvasColor {
-    fn from(color: &Color) -> Self {
+impl From<Color> for CanvasColor {
+    fn from(color: Color) -> Self {
         Self(
-            color.clone(),
+            color,
             format!(
                 "rgba({},{},{},{})",
                 color.r,
@@ -71,7 +71,7 @@ impl From<&Color> for CanvasColor {
 impl CanvasColor {
     /// Apply a color transformation to this color.
     fn color_transform(&self, cxform: &ColorTransform) -> Self {
-        (&(cxform * self.0.clone())).into()
+        (cxform * self.0).into()
     }
 }
 
@@ -858,7 +858,7 @@ fn swf_shape_to_canvas_commands(
                 );
 
                 let fill_style = match style {
-                    FillStyle::Color(color) => CanvasFillStyle::Color(color.into()),
+                    FillStyle::Color(color) => CanvasFillStyle::Color((*color).into()),
                     FillStyle::LinearGradient(gradient) => CanvasFillStyle::Gradient(
                         create_linear_gradient(&backend.context, gradient, true)
                             .expect("Couldn't create linear gradient"),
@@ -918,7 +918,7 @@ fn swf_shape_to_canvas_commands(
                 );
 
                 let stroke_style = match style.fill_style() {
-                    FillStyle::Color(color) => CanvasStrokeStyle::Color(color.into()),
+                    FillStyle::Color(color) => CanvasStrokeStyle::Color((*color).into()),
                     FillStyle::LinearGradient(gradient) => {
                         CanvasStrokeStyle::Gradient(gradient.clone(), None)
                     }

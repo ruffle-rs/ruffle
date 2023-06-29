@@ -136,7 +136,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
             if let Some(y) = block.y_offset {
                 transform.matrix.ty = y;
             }
-            color = block.color.as_ref().unwrap_or(&color).clone();
+            color = block.color.unwrap_or(color);
             font_id = block.font_id.unwrap_or(font_id);
             height = block.height.unwrap_or(height);
             if let Some(font) = context

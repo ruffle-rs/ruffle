@@ -245,7 +245,7 @@ impl<'gc> ConvolutionFilter<'gc> {
     }
 
     fn color(&self) -> Color {
-        self.0.read().color.clone()
+        self.0.read().color
     }
 
     fn set_color(

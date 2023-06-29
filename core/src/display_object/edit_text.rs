@@ -486,7 +486,7 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn background_color(self) -> Color {
-        self.0.read().background_color.clone()
+        self.0.read().background_color
     }
 
     pub fn set_background_color(
@@ -511,7 +511,7 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn border_color(self) -> Color {
-        self.0.read().border_color.clone()
+        self.0.read().border_color
     }
 
     pub fn set_border_color(self, gc_context: MutationContext<'gc, '_>, border_color: Color) {
@@ -648,14 +648,14 @@ impl<'gc> EditText<'gc> {
             let line_style = write.flags.contains(EditTextFlag::BORDER).then_some(
                 swf::LineStyle::new()
                     .with_width(Twips::new(1))
-                    .with_color(write.border_color.clone()),
+                    .with_color(write.border_color),
             );
             write.drawing.set_line_style(line_style);
 
             let fill_style = write
                 .flags
                 .contains(EditTextFlag::HAS_BACKGROUND)
-                .then_some(swf::FillStyle::Color(write.background_color.clone()));
+                .then_some(swf::FillStyle::Color(write.background_color));
             write.drawing.set_fill_style(fill_style);
 
             let width = write.bounds.width();
@@ -874,7 +874,7 @@ impl<'gc> EditText<'gc> {
                 font.get_baseline_for_height(params.height()) - params.height();
             font.evaluate(
                 text,
-                self.text_transform(color.clone(), baseline_adjustment),
+                self.text_transform(color, baseline_adjustment),
                 params,
                 |pos, transform, glyph: &Glyph, advance, x| {
                     // If it's highlighted, override the color.
@@ -919,7 +919,7 @@ impl<'gc> EditText<'gc> {
                                     x + Twips::from_pixels(-1.0),
                                     Twips::from_pixels(2.0),
                                 );
-                            context.commands.draw_rect(color.clone(), caret);
+                            context.commands.draw_rect(color, caret);
                         } else if pos == length - 1 && caret_pos == length {
                             let caret = context.transform_stack.transform().matrix
                                 * Matrix::create_box(
@@ -929,7 +929,7 @@ impl<'gc> EditText<'gc> {
                                     x + advance,
                                     Twips::from_pixels(2.0),
                                 );
-                            context.commands.draw_rect(color.clone(), caret);
+                            context.commands.draw_rect(color, caret);
                         }
                     }
                 },

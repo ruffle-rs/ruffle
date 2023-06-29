@@ -554,7 +554,7 @@ impl<'gc> DisplayObjectBase<'gc> {
     /// The opaque background color of this display object.
     /// The bounding box of the display object will be filled with this color.
     fn opaque_background(&self) -> Option<Color> {
-        self.opaque_background.clone()
+        self.opaque_background
     }
 
     /// The opaque background color of this display object.
@@ -1901,7 +1901,7 @@ pub trait TDisplayObject<'gc>:
                 if let Some(visible) = place_object.is_visible {
                     self.set_visible(context.gc_context, visible);
                 }
-                if let Some(mut color) = place_object.background_color.clone() {
+                if let Some(mut color) = place_object.background_color {
                     let color = if color.a > 0 {
                         // Force opaque background to have no transpranecy.
                         color.a = 255;

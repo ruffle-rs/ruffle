@@ -696,7 +696,7 @@ impl<'gc> LayoutBox<'gc> {
                 text_format: span.get_text_format(),
                 font,
                 params,
-                color: span.color.clone(),
+                color: span.color,
             },
         }
     }
@@ -711,7 +711,7 @@ impl<'gc> LayoutBox<'gc> {
                 text_format: span.get_text_format(),
                 font,
                 params,
-                color: span.color.clone(),
+                color: span.color,
             },
         }
     }
