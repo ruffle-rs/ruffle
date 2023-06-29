@@ -23,6 +23,7 @@ use ruffle_video::VideoStreamHandle;
 use ruffle_wstr::WStr;
 use std::cmp::max;
 use std::io::Seek;
+use std::sync::{Arc, Mutex};
 use swf::{VideoCodec, VideoDeblocking};
 
 /// Manager for all media streams.
@@ -146,7 +147,11 @@ pub enum NetStreamType {
 #[collect(no_drop)]
 pub struct NetStreamData<'gc> {
     /// All data currently loaded in the stream.
-    buffer: Vec<u8>,
+    ///
+    /// NOTE: This is stored as an `Arc` to allow independent borrows of the
+    /// buffer data and stream state.
+    #[collect(require_static)]
+    buffer: Arc<Mutex<Vec<u8>>>,
 
     /// The buffer position that we are currently seeking to.
     offset: usize,
@@ -184,7 +189,7 @@ impl<'gc> NetStream<'gc> {
         Self(GcCell::allocate(
             gc_context,
             NetStreamData {
-                buffer: Vec::new(),
+                buffer: Arc::new(Mutex::new(Vec::new())),
                 offset: 0,
                 preload_offset: 0,
                 stream_type: None,
@@ -200,7 +205,12 @@ impl<'gc> NetStream<'gc> {
     }
 
     pub fn load_buffer(self, context: &mut UpdateContext<'_, 'gc>, data: &mut Vec<u8>) {
-        self.0.write(context.gc_context).buffer.append(data);
+        self.0
+            .write(context.gc_context)
+            .buffer
+            .lock()
+            .unwrap()
+            .append(data);
 
         if context.is_action_script_3() {
             // Don't ask why but the AS3 test has a spurious status event in it
@@ -218,11 +228,11 @@ impl<'gc> NetStream<'gc> {
     }
 
     pub fn bytes_loaded(self) -> usize {
-        self.0.read().buffer.len()
+        self.0.read().buffer.lock().unwrap().len()
     }
 
     pub fn bytes_total(self) -> usize {
-        self.0.read().buffer.len()
+        self.0.read().buffer.lock().unwrap().len()
     }
 
     /// Start playing media from this NetStream.
@@ -265,6 +275,8 @@ impl<'gc> NetStream<'gc> {
 
     pub fn tick(self, context: &mut UpdateContext<'_, 'gc>, dt: f64) {
         let mut write = self.0.write(context.gc_context);
+        let buffer_owned = write.buffer.clone();
+        let buffer = buffer_owned.lock().unwrap();
 
         // First, try to sniff the stream's container format from headers.
         if write.stream_type.is_none() {
@@ -275,9 +287,9 @@ impl<'gc> NetStream<'gc> {
                 return;
             }
 
-            match write.buffer.get(0..3) {
+            match buffer.get(0..3) {
                 Some([0x46, 0x4C, 0x56]) => {
-                    let mut reader = FlvReader::from_parts(&write.buffer, write.offset);
+                    let mut reader = FlvReader::from_parts(&buffer, write.offset);
                     match FlvHeader::parse(&mut reader) {
                         Ok(header) => {
                             write.offset = reader.into_parts().1;
@@ -314,7 +326,7 @@ impl<'gc> NetStream<'gc> {
 
         //At this point we should know our stream type.
         if matches!(write.stream_type, Some(NetStreamType::Flv { .. })) {
-            let mut reader = FlvReader::from_parts(&write.buffer, write.offset);
+            let mut reader = FlvReader::from_parts(&buffer, write.offset);
 
             loop {
                 let tag = FlvTag::parse(&mut reader);
@@ -359,9 +371,9 @@ impl<'gc> NetStream<'gc> {
                         let codec = VideoCodec::from_u8(codec_id as u8);
 
                         match (video_handle, codec, data) {
-                            (Some(video_handle), Some(codec), FlvVideoPacket::Data(mut data))
+                            (maybe_video_handle, Some(codec), FlvVideoPacket::Data(mut data))
                             | (
-                                Some(video_handle),
+                                maybe_video_handle,
                                 Some(codec),
                                 FlvVideoPacket::Vp6Data {
                                     hadjust: _,
@@ -369,16 +381,48 @@ impl<'gc> NetStream<'gc> {
                                     mut data,
                                 },
                             ) => {
+                                //Some movies don't actually have metadata, so let's register a
+                                //dummy stream just in case. All the actual data in the registration
+                                //is lies, of course.
+                                let video_handle = match maybe_video_handle {
+                                    Some(stream) => stream,
+                                    None => {
+                                        match context.video.register_video_stream(
+                                            1,
+                                            (8, 8),
+                                            codec,
+                                            VideoDeblocking::UseVideoPacketValue,
+                                        ) {
+                                            Ok(new_handle) => {
+                                                match &mut write.stream_type {
+                                                    Some(NetStreamType::Flv { stream, .. }) => {
+                                                        *stream = Some(new_handle)
+                                                    }
+                                                    _ => unreachable!(),
+                                                }
+
+                                                new_handle
+                                            }
+                                            Err(e) => {
+                                                tracing::error!(
+                                                    "Got error when registring FLV video stream: {}",
+                                                    e
+                                                );
+                                                break;
+                                            }
+                                        }
+                                    }
+                                };
+
                                 if codec == VideoCodec::ScreenVideo
                                     || codec == VideoCodec::ScreenVideoV2
                                 {
                                     // ScreenVideo streams consider the FLV
                                     // video data byte to be integral to their
                                     // own bitstream.
-                                    let offset =
-                                        data.as_ptr() as usize - write.buffer.as_ptr() as usize;
+                                    let offset = data.as_ptr() as usize - buffer.as_ptr() as usize;
                                     let len = data.len();
-                                    data = &write.buffer[offset - 1..offset + len];
+                                    data = &buffer[offset - 1..offset + len];
                                 }
 
                                 // NOTE: Currently, no implementation of the decoder backend actually requires
@@ -415,7 +459,7 @@ impl<'gc> NetStream<'gc> {
                                     Ok(bitmap_info) => {
                                         let (_, position) = reader.into_parts();
                                         write.last_decoded_bitmap = Some(bitmap_info);
-                                        reader = FlvReader::from_parts(&write.buffer, position);
+                                        reader = FlvReader::from_parts(&buffer, position);
                                     }
                                     Err(e) => {
                                         tracing::error!(
@@ -444,9 +488,6 @@ impl<'gc> NetStream<'gc> {
                                     codec_id as u8
                                 )
                             }
-                            (None, _, _) => tracing::error!(
-                                "Cannot decode FLV video tag before metadata is loaded"
-                            ),
                         }
 
                         let (_, position) = reader.into_parts();
@@ -456,7 +497,7 @@ impl<'gc> NetStream<'gc> {
                             }) => *frame_id += 1,
                             _ => unreachable!(),
                         };
-                        reader = FlvReader::from_parts(&write.buffer, position);
+                        reader = FlvReader::from_parts(&buffer, position);
                     }
                     FlvTagData::Script(FlvScriptData(vars)) => {
                         let has_stream_already = match write.stream_type {
@@ -547,7 +588,7 @@ impl<'gc> NetStream<'gc> {
                             }
                         }
 
-                        reader = FlvReader::from_parts(&write.buffer, position);
+                        reader = FlvReader::from_parts(&buffer, position);
                     }
                     FlvTagData::Invalid(e) => {
                         tracing::error!("FLV data parsing failed: {}", e)
@@ -559,7 +600,7 @@ impl<'gc> NetStream<'gc> {
                 let (_, position) = reader.into_parts();
                 write.offset = position;
                 write.preload_offset = max(write.offset, write.preload_offset);
-                reader = FlvReader::from_parts(&write.buffer, position);
+                reader = FlvReader::from_parts(&buffer, position);
             }
         }
 
