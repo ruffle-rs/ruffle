@@ -6,6 +6,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::error::{uri_error, Error};
 use crate::avm2::object::Object;
 use crate::avm2::value::Value;
+use crate::avm2_stub_method;
 use crate::string::{AvmString, WStr, WString};
 use crate::stub::Stub;
 use ruffle_wstr::Integer;
@@ -233,6 +234,15 @@ pub fn parse_float<'gc>(
     }
 
     Ok(f64::NAN.into())
+}
+
+pub fn is_xml_name<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_method!(activation, "", "isXMLName");
+    Ok(true.into())
 }
 
 pub fn escape<'gc>(
