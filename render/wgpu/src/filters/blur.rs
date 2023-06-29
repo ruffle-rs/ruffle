@@ -9,10 +9,12 @@ use std::sync::OnceLock;
 use swf::BlurFilter as BlurFilterArgs;
 use wgpu::util::DeviceExt;
 
-/// How much each pass should multiply the requested blur size by.
+/// How much each pass should multiply the requested blur size by - accumulative.
 /// These are very approximate to Flash, and not 100% exact.
+/// Pass 1 would be 100%, but pass 2 would be 110%.
+/// This is accumulative so you can calculate the size upfront for how many passes you'll need to perform.
 const PASS_SCALES: [f32; 15] = [
-    1.0, 1.1, 0.60, 0.39, 0.40, 0.29, 0.18, 0.20, 0.19, 0.20, 0.39, 0.98, 0.00, 1.01, 0.00,
+    1.0, 2.1, 2.7, 3.1, 3.5, 3.8, 4.0, 4.2, 4.4, 4.6, 5.0, 6.0, 6.0, 7.0, 7.0,
 ];
 
 #[repr(C)]
@@ -160,10 +162,11 @@ impl BlurFilter {
 
         let source_view = source.texture.create_view(&Default::default());
         let mut first = true;
-        for pass_scale in PASS_SCALES
-            .iter()
-            .take(filter.num_passes().min(15) as usize)
-        {
+        let mut last_scale_total = 0.0;
+        for current_scale_total in PASS_SCALES.into_iter().take(filter.num_passes() as usize) {
+            let pass_scale = current_scale_total - last_scale_total;
+            last_scale_total = current_scale_total;
+
             for i in 0..2 {
                 let horizontal = i % 2 == 0;
                 let strength = if horizontal {
