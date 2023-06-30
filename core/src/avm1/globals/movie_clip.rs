@@ -1611,7 +1611,7 @@ fn unload_movie<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    target.unload_movie(&mut activation.context);
+    target.avm1_unload_movie(&mut activation.context);
 
     Ok(Value::Undefined)
 }
