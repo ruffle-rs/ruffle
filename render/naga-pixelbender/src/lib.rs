@@ -492,8 +492,8 @@ impl<'a> ShaderBuilder<'a> {
     }
 
     fn add_arguments(&mut self) -> Result<(u64, u64)> {
-        let mut num_floats = 0;
-        let mut num_ints = 0;
+        let mut num_vec4fs = 0;
+        let mut num_vec4is = 0;
 
         let mut param_offsets = Vec::new();
 
@@ -520,8 +520,8 @@ impl<'a> ShaderBuilder<'a> {
                         continue;
                     }
 
-                    let float_offset = num_floats;
-                    let int_offset = num_ints;
+                    let float_offset = num_vec4fs;
+                    let int_offset = num_vec4is;
 
                     // To meet alignment requirements, each parameter is stored as some number of vec4s in the constants array.
                     // Smaller types (e.g. Float, Float2, Float3) are padded with zeros.
@@ -530,29 +530,30 @@ impl<'a> ShaderBuilder<'a> {
                         | PixelBenderTypeOpcode::TFloat2
                         | PixelBenderTypeOpcode::TFloat3
                         | PixelBenderTypeOpcode::TFloat4 => {
-                            num_floats += 1;
+                            num_vec4fs += 1;
                             (float_offset, ParamKind::Float)
                         }
                         PixelBenderTypeOpcode::TInt
                         | PixelBenderTypeOpcode::TInt2
                         | PixelBenderTypeOpcode::TInt3
                         | PixelBenderTypeOpcode::TInt4 => {
-                            num_ints += 1;
+                            num_vec4is += 1;
                             (int_offset, ParamKind::Int)
                         }
                         PixelBenderTypeOpcode::TString => continue,
                         PixelBenderTypeOpcode::TFloat2x2 => {
-                            num_floats += 1;
+                            // A 2x2 matrix fits into a single vec4
+                            num_vec4fs += 1;
                             (float_offset, ParamKind::FloatMatrix)
                         }
                         PixelBenderTypeOpcode::TFloat3x3 => {
                             // Each row of the matrix is stored in a vec4 (with the last component of each set to 0)
-                            num_floats += 3;
+                            num_vec4fs += 3;
                             (float_offset, ParamKind::FloatMatrix)
                         }
                         PixelBenderTypeOpcode::TFloat4x4 => {
                             // Each row of the matrix is a vec4
-                            num_floats += 4;
+                            num_vec4fs += 4;
                             (float_offset, ParamKind::FloatMatrix)
                         }
                     };
@@ -601,7 +602,7 @@ impl<'a> ShaderBuilder<'a> {
                 specialization: None,
                 inner: naga::ConstantInner::Scalar {
                     width: 4,
-                    value: naga::ScalarValue::Uint(num_floats.max(1) as u64),
+                    value: naga::ScalarValue::Uint(num_vec4fs.max(1) as u64),
                 },
             },
             Span::UNDEFINED,
@@ -613,7 +614,7 @@ impl<'a> ShaderBuilder<'a> {
                 specialization: None,
                 inner: naga::ConstantInner::Scalar {
                     width: 4,
-                    value: naga::ScalarValue::Uint(num_ints.max(1) as u64),
+                    value: naga::ScalarValue::Uint(num_vec4is.max(1) as u64),
                 },
             },
             Span::UNDEFINED,
@@ -807,8 +808,8 @@ impl<'a> ShaderBuilder<'a> {
         }
 
         Ok((
-            num_floats.max(1) as u64 * 4 * std::mem::size_of::<f32>() as u64,
-            num_ints.max(1) as u64 * 4 * std::mem::size_of::<i32>() as u64,
+            num_vec4fs.max(1) as u64 * 4 * std::mem::size_of::<f32>() as u64,
+            num_vec4is.max(1) as u64 * 4 * std::mem::size_of::<i32>() as u64,
         ))
     }
 
