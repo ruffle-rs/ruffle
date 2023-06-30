@@ -159,7 +159,7 @@ pub fn start<'gc>(
 
     let target_bitmap = target
         .as_bitmap_data()
-        .expect("ShaderJob.target is not a BitmapData (FIXE - support other types)")
+        .expect("ShaderJob.target is not a BitmapData (FIXME - support other types)")
         .sync();
 
     // Perform both a GPU->CPU and CPU->GPU sync before writing to it.
