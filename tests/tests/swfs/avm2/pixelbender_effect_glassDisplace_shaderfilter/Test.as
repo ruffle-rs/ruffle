@@ -41,6 +41,9 @@
 			
 			out1.filters = [filter];
 			
+			trace("ShaderFilter equal: " + (out1.filters[0] === filter));
+			trace("Shader equal: " + (out1.filters[0].shader === filter.shader));
+			
 			trace("Dest rect: " + out2.bitmapData.generateFilterRect(new Rectangle(100, 10, 400, 20), filter));
 			out2.bitmapData.applyFilter(flowers.bitmapData, new Rectangle(0, 0, 20, 20), new Point(0, 0), filter);
 			out2.y = 390;

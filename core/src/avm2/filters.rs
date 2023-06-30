@@ -1,6 +1,8 @@
+use gc_arena::{Collect, DynamicRoot, Rootable};
 use ruffle_render::filters::{
-    DisplacementMapFilter, DisplacementMapFilterMode, Filter, ShaderFilter,
+    DisplacementMapFilter, DisplacementMapFilterMode, Filter, ShaderFilter, ShaderObject,
 };
+use std::fmt::Debug;
 use swf::{
     BevelFilter, BevelFilterFlags, BlurFilter, BlurFilterFlags, Color, ColorMatrixFilter,
     ConvolutionFilter, ConvolutionFilterFlags, DropShadowFilter, DropShadowFilterFlags, Fixed16,
@@ -22,6 +24,26 @@ pub trait FilterAvm2Ext {
         &self,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Object<'gc>, Error<'gc>>;
+}
+
+#[derive(Clone, Collect)]
+#[collect(require_static)]
+pub struct ObjectWrapper {
+    root: DynamicRoot<Rootable![Object<'gc>]>,
+}
+
+impl ShaderObject for ObjectWrapper {
+    fn clone_box(&self) -> Box<dyn ShaderObject> {
+        Box::new(self.clone())
+    }
+}
+
+impl Debug for ObjectWrapper {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ObjectWrapper")
+            .field("root", &self.root.as_ptr())
+            .finish()
+    }
 }
 
 impl FilterAvm2Ext for Filter {
@@ -116,9 +138,7 @@ impl FilterAvm2Ext for Filter {
                 let gradientglowfilter = activation.avm2().classes().gradientglowfilter;
                 gradient_filter_to_avm2(activation, filter, gradientglowfilter)
             }
-            Filter::ShaderFilter(_) => Err(Error::RustError(
-                "Shader filter conversion not yet implemented".into(),
-            )),
+            Filter::ShaderFilter(filter) => shader_filter_to_avm2(activation, filter),
         }
     }
 }
@@ -741,9 +761,15 @@ fn avm2_to_shader_filter<'gc>(
         .as_object()
         .unwrap();
 
+    let dyn_root = activation
+        .context
+        .dynamic_root
+        .stash(activation.context.gc_context, shader_obj);
+
     let (shader_handle, shader_args) = get_shader_args(shader_obj, activation)?;
 
     Ok(ShaderFilter {
+        shader_object: Box::new(ObjectWrapper { root: dyn_root }),
         shader: shader_handle,
         shader_args,
         bottom_extension,
@@ -751,6 +777,23 @@ fn avm2_to_shader_filter<'gc>(
         right_extension,
         top_extension,
     })
+}
+
+fn shader_filter_to_avm2<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    filter: &ShaderFilter<'static>,
+) -> Result<Object<'gc>, Error<'gc>> {
+    let object_wrapper: &ObjectWrapper = filter
+        .shader_object
+        .downcast_ref::<ObjectWrapper>()
+        .expect("ShaderObject was not an ObjectWrapper");
+
+    let obj = *activation.context.dynamic_root.fetch(&object_wrapper.root);
+    activation
+        .avm2()
+        .classes()
+        .shaderfilter
+        .construct(activation, &[obj.into()])
 }
 
 fn get_gradient_colors<'gc>(

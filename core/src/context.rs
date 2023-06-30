@@ -218,7 +218,6 @@ pub struct UpdateContext<'a, 'gc> {
     pub stream_manager: &'a mut StreamManager<'gc>,
 
     /// Dynamic root for allowing handles to GC objects to exist outside of the GC.
-    #[cfg(feature = "egui")]
     pub dynamic_root: gc_arena::DynamicRootSet<'gc>,
 }
 
@@ -377,7 +376,6 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
             actions_since_timeout_check: self.actions_since_timeout_check,
             frame_phase: self.frame_phase,
             stream_manager: self.stream_manager,
-            #[cfg(feature = "egui")]
             dynamic_root: self.dynamic_root,
         }
     }

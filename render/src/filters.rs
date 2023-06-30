@@ -2,6 +2,9 @@ use crate::{
     bitmap::BitmapHandle,
     pixel_bender::{PixelBenderShaderArgument, PixelBenderShaderHandle},
 };
+use downcast_rs::{impl_downcast, Downcast};
+use gc_arena::Collect;
+use std::fmt::Debug;
 use swf::Color;
 
 #[derive(Debug, Clone)]
@@ -20,12 +23,28 @@ pub enum Filter {
 
 #[derive(Debug, Clone)]
 pub struct ShaderFilter<'a> {
-    pub shader: PixelBenderShaderHandle,
-    pub shader_args: Vec<PixelBenderShaderArgument<'a>>,
     pub bottom_extension: i32,
     pub left_extension: i32,
     pub right_extension: i32,
     pub top_extension: i32,
+    /// The AVM2 `flash.display.Shader` object that we extracted
+    /// the `shader` and `shader_args` fields from. This is used when
+    /// we reconstruct a `ShaderFilter` object in the AVM2 `DisplayObject.filters`
+    /// (Flash re-uses the same object)
+    pub shader_object: Box<dyn ShaderObject>,
+    pub shader: PixelBenderShaderHandle,
+    pub shader_args: Vec<PixelBenderShaderArgument<'a>>,
+}
+
+pub trait ShaderObject: Downcast + Collect + Debug {
+    fn clone_box(&self) -> Box<dyn ShaderObject>;
+}
+impl_downcast!(ShaderObject);
+
+impl Clone for Box<dyn ShaderObject> {
+    fn clone(&self) -> Self {
+        self.clone_box()
+    }
 }
 
 impl From<&swf::Filter> for Filter {
