@@ -43,6 +43,16 @@ impl Default for DropShadowFilterData {
     }
 }
 
+impl DropShadowFilterData {
+    pub fn strength(&self) -> f64 {
+        f64::from(self.strength) / 256.0
+    }
+
+    pub fn set_strength(&mut self, strength: f64) {
+        self.strength = ((strength * 256.0) as u16).clamp(0, 0xFF00)
+    }
+}
+
 #[derive(Clone, Debug, Collect)]
 #[collect(no_drop)]
 #[repr(transparent)]
@@ -217,7 +227,7 @@ impl<'gc> DropShadowFilter<'gc> {
     }
 
     fn strength(&self) -> f64 {
-        f64::from(self.0.read().strength) / 256.0
+        self.0.read().strength()
     }
 
     fn set_strength(
@@ -226,8 +236,9 @@ impl<'gc> DropShadowFilter<'gc> {
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
-            let strength = ((value.coerce_to_f64(activation)? * 256.0) as u16).clamp(0, 0xFF00);
-            self.0.write(activation.context.gc_context).strength = strength;
+            self.0
+                .write(activation.context.gc_context)
+                .set_strength(value.coerce_to_f64(activation)?);
         }
         Ok(())
     }
