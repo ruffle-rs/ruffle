@@ -10,9 +10,7 @@ package flash.net {
         public var objectEncoding:uint = NetConnection.defaultObjectEncoding;
 
 
-        public function connect(command:String, ... arguments):void {
-            stub_method("flash.net.NetConnection", "connect");
-        }
+        public native function connect(command:String, ... arguments):void;
 
         public function addHeader(operation:String, mustUnderstand:Boolean = false, param:Object = null):void {
             stub_method("flash.net.NetConnection", "addHeader");
