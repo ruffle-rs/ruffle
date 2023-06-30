@@ -8,22 +8,22 @@
 # Some items may be also be duplicated here, like "About Ruffle" in the menu and "About Ruffle" elsewhere as the header of the about menu.
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
-file-menu = Berkas
-file-menu-open-quick = Buka...
-file-menu-open-advanced = Buka dengan opsi lanjutan...
-file-menu-close = Tutup
-file-menu-reload = Muat ulang
-file-menu-exit = Keluar
-controls-menu = Kontrol
-controls-menu-suspend = Tunda
-controls-menu-resume = Lanjut
-help-menu = Bantuan
-help-menu-join-discord = Gabung Discord
-help-menu-report-a-bug = Laporkan Bug...
-help-menu-sponsor-development = Sponsori Pengembangan...
-help-menu-translate-ruffle = Terjemahkan Ruffle...
-help-menu-about = Tentang Ruffle
-debug-menu = Alat debug
-debug-menu-open-stage = Lihat info halaman
-debug-menu-open-movie = Lihat Movie
-debug-menu-open-movie-list = Lihat Movie yang diketahui
+file-menu = Arquivo
+file-menu-open-quick = Abrir...
+file-menu-open-advanced = Abrir Avançado...
+file-menu-close = Fechar
+file-menu-reload = Recarregar
+file-menu-exit = Sair
+controls-menu = Controles
+controls-menu-suspend = Suspender
+controls-menu-resume = Continuar
+help-menu = Ajuda
+help-menu-join-discord = Junte-se ao Discord
+help-menu-report-a-bug = Reportar um Erro...
+help-menu-sponsor-development = Patrocine o Desenvolvimento...
+help-menu-translate-ruffle = Traduzir Ruffle...
+help-menu-about = Sobre Ruffle
+debug-menu = Ferramentas de Depuração
+debug-menu-open-stage = Ver Informações do Estágio
+debug-menu-open-movie = Ver Filme
+debug-menu-open-movie-list = Mostrar Filmes Conhecidos
