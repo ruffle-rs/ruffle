@@ -111,15 +111,10 @@ pub fn get_shader_args<'gc>(
                             "ShaderInput.input is not a BitmapData (FIXE - support other types)",
                         );
 
-                        // FIXME - this really only needs to be a CPU->GPU sync
-                        let bitmap = bitmap.sync();
-                        let mut bitmap_data = bitmap.write(activation.context.gc_context);
-                        bitmap_data.update_dirty_texture(activation.context.renderer);
-                        Some(
-                            bitmap_data
-                                .bitmap_handle(activation.context.renderer)
-                                .expect("Missing input BitmapHandle"),
-                        )
+                        Some(bitmap.bitmap_handle(
+                            activation.context.gc_context,
+                            activation.context.renderer,
+                        ))
                     };
 
                     Some(PixelBenderShaderArgument::ImageInput {
