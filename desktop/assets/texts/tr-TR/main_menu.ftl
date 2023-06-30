@@ -25,3 +25,5 @@ help-menu-translate-ruffle = Ruffle'ı Çevir...
 help-menu-about = Ruffle Hakkında
 debug-menu = Hata Ayıklama Araçları
 debug-menu-open-stage = Sahne Bilgilerini Göster
+debug-menu-open-movie = Filmi Göster
+debug-menu-open-movie-list = Bilinen Filmleri Göster

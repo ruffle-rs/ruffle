@@ -54,7 +54,7 @@
         "message": "Ainda não há um separador ativo."
     },
     "status_tabs_error": {
-        "message": "Um erro ocorreu durante a procura do separador atual."
+        "message": "Ocorreu um erro ao procurar o separador atual."
     },
     "status_message_init": {
         "message": "Verificando o estado do Ruffle no separador atual…"
@@ -66,13 +66,13 @@
         "message": "O Ruffle está carregado e executando o conteúdo Flash solicitado."
     },
     "status_result_optout": {
-        "message": "O Ruffle não carregou porque a página atual marcou-se como incompatível."
+        "message": "O Ruffle não carregou porque a página atual se marcou como incompatível."
     },
     "status_result_disabled": {
         "message": "O Ruffle não carregou porque está desativado."
     },
     "status_result_error": {
-        "message": "Ocorreu um erro durante a procura pelo separador atual do Ruffle."
+        "message": "Ocorreu um erro ao consultar a instância do Ruffle no separador atual."
     },
     "status_result_protected": {
         "message": "O Ruffle não pode carregar em páginas protegidas do navegador."
@@ -87,7 +87,7 @@
         "message": "Página de Opções"
     },
     "description": {
-        "message": "Coloca o Flash de volta no site que ele pertence."
+        "message": "Põe o Flash de volta na web, onde deve estar."
     },
     "save_settings": {
         "message": "Gravar opções"
