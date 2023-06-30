@@ -35,6 +35,7 @@ use std::path::Path;
 use std::sync::Arc;
 use swf::Color;
 use tracing::instrument;
+use wgpu::SubmissionIndex;
 
 /// How many times a texture must be written to & read back from,
 /// before it's automatically allocated a buffer on each write.
@@ -309,6 +310,36 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
 
     pub fn device(&self) -> &wgpu::Device {
         &self.descriptors.device
+    }
+
+    pub fn make_queue_sync_handle(
+        &self,
+        target: TextureTarget,
+        index: SubmissionIndex,
+        destination: BitmapHandle,
+        copy_area: PixelRegion,
+    ) -> Box<QueueSyncHandle> {
+        match target.take_buffer() {
+            None => Box::new(QueueSyncHandle::NotCopied {
+                handle: destination,
+                copy_area,
+                descriptors: self.descriptors.clone(),
+                pool: self.offscreen_buffer_pool.clone(),
+            }),
+            Some(TextureBufferInfo {
+                buffer: MaybeOwnedBuffer::Borrowed(buffer, copy_dimensions),
+                ..
+            }) => Box::new(QueueSyncHandle::AlreadyCopied {
+                index,
+                buffer,
+                copy_dimensions,
+                descriptors: self.descriptors.clone(),
+            }),
+            Some(TextureBufferInfo {
+                buffer: MaybeOwnedBuffer::Owned(..),
+                ..
+            }) => unreachable!("Buffer must be Borrowed as it was set to be Borrowed earlier"),
+        }
     }
 
     fn get_texture_buffer_info(
@@ -768,27 +799,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         self.uniform_buffers_storage.recall();
         self.color_buffers_storage.recall();
 
-        match target.take_buffer() {
-            None => Some(Box::new(QueueSyncHandle::NotCopied {
-                handle,
-                copy_area: bounds,
-                descriptors: self.descriptors.clone(),
-                pool: self.offscreen_buffer_pool.clone(),
-            })),
-            Some(TextureBufferInfo {
-                buffer: MaybeOwnedBuffer::Borrowed(buffer, copy_dimensions),
-                ..
-            }) => Some(Box::new(QueueSyncHandle::AlreadyCopied {
-                index,
-                buffer,
-                copy_dimensions,
-                descriptors: self.descriptors.clone(),
-            })),
-            Some(TextureBufferInfo {
-                buffer: MaybeOwnedBuffer::Owned(..),
-                ..
-            }) => unreachable!("Buffer must be Borrowed as it was set to be Borrowed earlier"),
-        }
+        Some(self.make_queue_sync_handle(target, index, handle, bounds))
     }
 
     fn is_filter_supported(&self, filter: &Filter) -> bool {
@@ -883,27 +894,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             frame_output,
         );
 
-        match target.take_buffer() {
-            None => Some(Box::new(QueueSyncHandle::NotCopied {
-                handle: destination,
-                copy_area,
-                descriptors: self.descriptors.clone(),
-                pool: self.offscreen_buffer_pool.clone(),
-            })),
-            Some(TextureBufferInfo {
-                buffer: MaybeOwnedBuffer::Borrowed(buffer, copy_dimensions),
-                ..
-            }) => Some(Box::new(QueueSyncHandle::AlreadyCopied {
-                index,
-                buffer,
-                copy_dimensions,
-                descriptors: self.descriptors.clone(),
-            })),
-            Some(TextureBufferInfo {
-                buffer: MaybeOwnedBuffer::Owned(..),
-                ..
-            }) => unreachable!("Buffer must be Borrowed as it was set to be Borrowed earlier"),
-        }
+        Some(self.make_queue_sync_handle(target, index, destination, copy_area))
     }
 
     fn compile_pixelbender_shader(
@@ -969,16 +960,17 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             &FilterSource::for_entire_texture(&target.texture),
         )?;
 
-        self.descriptors
+        let index = self
+            .descriptors
             .queue
             .submit(Some(render_command_encoder.finish()));
 
-        Ok(Box::new(QueueSyncHandle::NotCopied {
-            handle: target_handle,
-            copy_area: PixelRegion::for_whole_size(extent.width, extent.height),
-            descriptors: self.descriptors.clone(),
-            pool: self.offscreen_buffer_pool.clone(),
-        }))
+        Ok(self.make_queue_sync_handle(
+            texture_target,
+            index,
+            target_handle,
+            PixelRegion::for_whole_size(extent.width, extent.height),
+        ))
     }
 
     fn create_empty_texture(
