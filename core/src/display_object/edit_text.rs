@@ -7,8 +7,10 @@ use crate::avm1::{
     Object as Avm1Object, StageObject as Avm1StageObject, TObject as Avm1TObject,
     Value as Avm1Value,
 };
+use crate::avm2::Avm2;
 use crate::avm2::{
-    Activation as Avm2Activation, Object as Avm2Object, StageObject as Avm2StageObject,
+    Activation as Avm2Activation, EventObject as Avm2EventObject, Object as Avm2Object,
+    StageObject as Avm2StageObject,
 };
 use crate::backend::ui::MouseCursor;
 use crate::context::{RenderContext, UpdateContext};
@@ -1434,6 +1436,14 @@ impl<'gc> EditText<'gc> {
                 activation,
                 ExecutionReason::Special,
             );
+        } else if let Avm2Value::Object(object) = self.object2() {
+            let change_evt = Avm2EventObject::bare_event(
+                &mut activation.context,
+                "change",
+                true,  /* bubbles */
+                false, /* cancelable */
+            );
+            Avm2::dispatch_event(&mut activation.context, change_evt, object);
         }
     }
 
