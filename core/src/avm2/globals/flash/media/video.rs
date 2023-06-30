@@ -50,7 +50,6 @@ pub fn init<'gc>(
             let height = args.get_i32(activation, 1)?;
 
             video.set_size(activation.context.gc_context, width, height);
-            video.set_object2(&mut activation.context, this);
         }
     }
 
