@@ -106,10 +106,13 @@ package flash.geom {
 			}
 		}
 
-		//Based on https://github.com/openfl/openfl/blob/develop/src/openfl/geom/Matrix3D.hx#L542C1-L573
+		// Based on https://github.com/openfl/openfl/blob/develop/src/openfl/geom/Matrix3D.hx#L542C1-L573
 		public function copyRowTo(row:uint, vector3D:Vector3D):void {
-			switch(row)
-			{
+			if (row > 3) {
+				throw new ArgumentError("Error #2004: One of the parameters is invalid.", 2004);
+			}
+
+			switch (row) {
 				case 0:
 					vector3D.x = rawData[0];
 					vector3D.y = rawData[4];
@@ -137,33 +140,36 @@ package flash.geom {
 			}
 		}
 
-		//Based on https://github.com/openfl/openfl/blob/develop/src/openfl/geom/Matrix3D.hx#L504-L534
-		public function copyRowFrom(row:uint, vector3D:Vector3D):void{
-			switch (row)
-			{
+		// Based on https://github.com/openfl/openfl/blob/develop/src/openfl/geom/Matrix3D.hx#L504-L534
+		public function copyRowFrom(row:uint, vector3D:Vector3D):void {
+			if (row > 3) {
+				throw new ArgumentError("Error #2004: One of the parameters is invalid.", 2004);
+			}
+			
+			switch (row) {
 				case 0:
-					rawData[0] = vector3D.x;
-					rawData[4] = vector3D.y;
-					rawData[8] = vector3D.z;
-					rawData[12] = vector3D.w;
+					_rawData[0] = vector3D.x;
+					_rawData[4] = vector3D.y;
+					_rawData[8] = vector3D.z;
+					_rawData[12] = vector3D.w;
 					break;
 				case 1:
-					rawData[1] = vector3D.x;
-					rawData[5] = vector3D.y;
-					rawData[9] = vector3D.z;
-					rawData[13] = vector3D.w;
+					_rawData[1] = vector3D.x;
+					_rawData[5] = vector3D.y;
+					_rawData[9] = vector3D.z;
+					_rawData[13] = vector3D.w;
 					break;
 				case 2:
-					rawData[2] = vector3D.x;
-					rawData[6] = vector3D.y;
-					rawData[10] = vector3D.z;
-					rawData[14] = vector3D.w;
+					_rawData[2] = vector3D.x;
+					_rawData[6] = vector3D.y;
+					_rawData[10] = vector3D.z;
+					_rawData[14] = vector3D.w;
 					break;
 				case 3:
-					rawData[3] = vector3D.x;
-					rawData[7] = vector3D.y;
-					rawData[11] = vector3D.z;
-					rawData[15] = vector3D.w;
+					_rawData[3] = vector3D.x;
+					_rawData[7] = vector3D.y;
+					_rawData[11] = vector3D.z;
+					_rawData[15] = vector3D.w;
 					break;
 			}
 		}
@@ -661,6 +667,6 @@ import flash.geom.Orientation3D;
 
 function checkOrientation(orientationStyle:String) {
 	if (!(orientationStyle == Orientation3D.AXIS_ANGLE || orientationStyle == Orientation3D.EULER_ANGLES || orientationStyle == Orientation3D.QUATERNION)) {
-		throw new Error("Error #2187: Invalid orientation style " +  orientationStyle + ".  Value must be one of 'Orientation3D.EULER_ANGLES', 'Orientation3D.AXIS_ANGLE', or 'Orientation3D.QUATERNION'.", 2187);
+		throw new Error("Error #2187: Invalid orientation style " + orientationStyle + ".  Value must be one of 'Orientation3D.EULER_ANGLES', 'Orientation3D.AXIS_ANGLE', or 'Orientation3D.QUATERNION'.", 2187);
 	}
 }
