@@ -819,10 +819,25 @@ pub fn cubic_curve_to<'gc>(
 /// Implements `Graphics.copyFrom`
 pub fn copy_from<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.display.Graphics", "copyFrom");
+    if let Some(this) = this.and_then(|t| t.as_display_object()) {
+        let source = args
+            .get_object(activation, 0, "sourceGraphics")?
+            .as_display_object()
+            .expect("Bad sourceGraphics");
+
+        let source = source
+            .as_drawing(activation.context.gc_context)
+            .expect("Missing drawing for sourceGraphics");
+
+        let mut target_drawing = this
+            .as_drawing(activation.context.gc_context)
+            .expect("Missing drawing for target");
+
+        target_drawing.copy_from(&source);
+    }
     Ok(Value::Undefined)
 }
 
