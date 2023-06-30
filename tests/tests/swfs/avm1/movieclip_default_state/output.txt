@@ -67,4 +67,3 @@ getRect(mc).xMax = 6710886.35
 getRect(mc).yMin = 6710886.35
 getRect(mc).yMax = 6710886.35
 getSWFVersion() = 10
-getTextSnapshot().getCount() = 0

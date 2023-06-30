@@ -2419,7 +2419,7 @@ impl<'gc> MovieClip<'gc> {
     // calls with one frame delay? Does transform_to_unloaded_state need to get executed
     // after one frame if the target is a MovieClip? Test the behaviour and adapt the code
     // if necessary.
-    pub fn unload_movie(&self, context: &mut UpdateContext<'_, 'gc>) {
+    pub fn avm1_unload_movie(&self, context: &mut UpdateContext<'_, 'gc>) {
         let unloader = Loader::MovieUnloader {
             self_handle: None,
             target_clip: DisplayObject::MovieClip(*self),
