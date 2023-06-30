@@ -42,7 +42,7 @@ package flash.filters {
         }
 
         public function set rightExtension(value:int):void {
-            this._ = value;
+            this._rightExtension = value;
         }
 
         public function get topExtension():int {
