@@ -366,7 +366,7 @@ fn method<'gc>(
     })
 }
 
-pub fn create_constructor<'gc>(
+pub fn create_proto<'gc>(
     context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
@@ -378,11 +378,19 @@ pub fn create_constructor<'gc>(
         displacement_map_filter_proto,
         fn_proto,
     );
+    displacement_map_filter_proto.into()
+}
+
+pub fn create_constructor<'gc>(
+    context: &mut GcContext<'_, 'gc>,
+    proto: Object<'gc>,
+    fn_proto: Object<'gc>,
+) -> Object<'gc> {
     FunctionObject::constructor(
         context.gc_context,
         Executable::Native(displacement_map_filter_method!(0)),
         constructor_to_fn!(displacement_map_filter_method!(0)),
         fn_proto,
-        displacement_map_filter_proto.into(),
+        proto,
     )
 }
