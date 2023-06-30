@@ -4,6 +4,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::bevel_filter::BevelFilter;
 use crate::avm1::globals::blur_filter::BlurFilter;
+use crate::avm1::globals::color_matrix_filter::ColorMatrixFilter;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Attribute, Object, ScriptObject, TObject, Value};
@@ -70,6 +71,7 @@ pub fn avm1_to_filter(object: Object) -> Option<Filter> {
     match native {
         NativeObject::BevelFilter(filter) => Some(Filter::BevelFilter(filter.filter())),
         NativeObject::BlurFilter(filter) => Some(Filter::BlurFilter(filter.filter())),
+        NativeObject::ColorMatrixFilter(filter) => Some(Filter::ColorMatrixFilter(filter.filter())),
 
         // Invalid filters are silently dropped/ignored, no errors are thrown.
         _ => None,
@@ -91,6 +93,13 @@ pub fn filter_to_avm1<'gc>(activation: &mut Activation<'_, 'gc>, filter: Filter)
                 filter,
             )),
             activation.context.avm1.prototypes().blur_filter,
+        ),
+        Filter::ColorMatrixFilter(filter) => (
+            NativeObject::ColorMatrixFilter(ColorMatrixFilter::from_filter(
+                activation.context.gc_context,
+                filter,
+            )),
+            activation.context.avm1.prototypes().color_matrix_filter,
         ),
         _ => {
             // Unrepresentable filters (eg Shader) will just return as Null.
