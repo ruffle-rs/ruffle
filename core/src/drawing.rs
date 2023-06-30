@@ -104,6 +104,23 @@ impl Drawing {
         this
     }
 
+    pub fn copy_from(&mut self, other: &Drawing) {
+        *self = Drawing {
+            render_handle: RefCell::new(None),
+            dirty: Cell::new(true),
+            shape_bounds: other.shape_bounds.clone(),
+            edge_bounds: other.edge_bounds.clone(),
+            paths: other.paths.clone(),
+            bitmaps: other.bitmaps.clone(),
+            current_fill: other.current_fill.clone(),
+            current_line: other.current_line.clone(),
+            pending_lines: other.pending_lines.clone(),
+            cursor: other.cursor,
+            fill_start: other.fill_start,
+            winding_rule: other.winding_rule,
+        }
+    }
+
     pub fn set_winding_rule(&mut self, rule: FillRule) {
         self.winding_rule = rule;
     }

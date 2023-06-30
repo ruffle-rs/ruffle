@@ -48,8 +48,20 @@
 			shape.graphics.moveTo(90, 20);
 			shape.graphics.lineTo(110, 20);
 			shape.graphics.moveTo(120, 20);
+			
+			shape.graphics.beginFill(0xFF0000FF);
+
+			var partial = new Shape();
+			// These two commands should get overwritten by copyFrom
+			partial.graphics.drawCircle(0, 0, 30);
+			partial.graphics.beginFill(0xFFFF0000);
+			partial.graphics.copyFrom(shape.graphics);
+			partial.graphics.drawCircle(0, 0, 10);
+			partial.y = 100;
+			
 			shape.graphics.lineTo(130, 20);
 			this.addChild(shape);
+			this.addChild(partial);
 		}
 
 		function cubicCircle() {
