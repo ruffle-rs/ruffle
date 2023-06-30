@@ -310,6 +310,28 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
     pub fn device(&self) -> &wgpu::Device {
         &self.descriptors.device
     }
+
+    fn get_texture_buffer_info(
+        &self,
+        texture: &Texture,
+        copy_area: PixelRegion,
+    ) -> Option<TextureBufferInfo> {
+        if texture.copy_count.get() >= TEXTURE_READS_BEFORE_PROMOTION {
+            let copy_dimensions = BufferDimensions::new(
+                texture.texture.width() as usize,
+                texture.texture.height() as usize,
+            );
+            let buffer = self
+                .offscreen_buffer_pool
+                .take(&self.descriptors, copy_dimensions.clone());
+            Some(TextureBufferInfo {
+                buffer: MaybeOwnedBuffer::Borrowed(buffer, copy_dimensions),
+                copy_area,
+            })
+        } else {
+            None
+        }
+    }
 }
 
 impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
@@ -686,19 +708,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             depth_or_array_layers: 1,
         };
 
-        let buffer_info = if texture.copy_count.get() > TEXTURE_READS_BEFORE_PROMOTION {
-            let copy_dimensions =
-                BufferDimensions::new(bounds.width() as usize, bounds.height() as usize);
-            let buffer = self
-                .offscreen_buffer_pool
-                .take(&self.descriptors, copy_dimensions.clone());
-            Some(TextureBufferInfo {
-                buffer: MaybeOwnedBuffer::Borrowed(buffer, copy_dimensions),
-                copy_area: bounds,
-            })
-        } else {
-            None
-        };
+        let buffer_info = self.get_texture_buffer_info(texture, bounds);
 
         let mut target = TextureTarget {
             size: extent,
@@ -808,21 +818,8 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             dest_texture.texture.width(),
             dest_texture.texture.height(),
         );
-        let buffer_info = if dest_texture.copy_count.get() >= TEXTURE_READS_BEFORE_PROMOTION {
-            let copy_dimensions = BufferDimensions::new(
-                dest_texture.texture.width() as usize,
-                dest_texture.texture.height() as usize,
-            );
-            let buffer = self
-                .offscreen_buffer_pool
-                .take(&self.descriptors, copy_dimensions.clone());
-            Some(TextureBufferInfo {
-                buffer: MaybeOwnedBuffer::Borrowed(buffer, copy_dimensions),
-                copy_area,
-            })
-        } else {
-            None
-        };
+
+        let buffer_info = self.get_texture_buffer_info(dest_texture, copy_area);
 
         let mut target = TextureTarget {
             size: wgpu::Extent3d {
@@ -930,11 +927,16 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             depth_or_array_layers: 1,
         };
 
+        let buffer_info = self.get_texture_buffer_info(
+            target,
+            PixelRegion::for_whole_size(target.texture.width(), target.texture.height()),
+        );
+
         let mut texture_target = TextureTarget {
             size: extent,
             texture: target.texture.clone(),
             format: wgpu::TextureFormat::Rgba8Unorm,
-            buffer: None,
+            buffer: buffer_info,
         };
 
         let frame_output = texture_target
