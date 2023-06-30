@@ -3,10 +3,10 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::matrix::gradient_object_to_matrix;
-use crate::avm1::globals::{self, AVM_DEPTH_BIAS, AVM_MAX_DEPTH};
+use crate::avm1::globals::{self, bitmap_filter, AVM_DEPTH_BIAS, AVM_MAX_DEPTH};
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{self, Object, ScriptObject, TObject, Value};
+use crate::avm1::{self, ArrayObject, Object, ScriptObject, TObject, Value};
 use crate::avm_error;
 use crate::avm_warn;
 use crate::backend::navigator::NavigationMethod;
@@ -109,6 +109,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
 
     "blendMode" => property(mc_getter!(blend_mode), mc_setter!(set_blend_mode); DONT_DELETE | DONT_ENUM | VERSION_8);
     "cacheAsBitmap" => property(mc_getter!(cache_as_bitmap), mc_setter!(set_cache_as_bitmap); DONT_DELETE | DONT_ENUM | VERSION_8);
+    "filters" => property(mc_getter!(filters), mc_setter!(set_filters); DONT_DELETE | DONT_ENUM | VERSION_8);
     "opaqueBackground" => property(mc_getter!(opaque_background), mc_setter!(set_opaque_background); DONT_DELETE | DONT_ENUM | VERSION_8);
     "enabled" => bool(true; DONT_ENUM);
     "_lockroot" => property(mc_getter!(lock_root), mc_setter!(set_lock_root); DONT_DELETE | DONT_ENUM);
@@ -1708,5 +1709,37 @@ fn set_opaque_background<'gc>(
             Some(Color::from_rgb(value.coerce_to_u32(activation)?, 255)),
         );
     }
+    Ok(())
+}
+
+fn filters<'gc>(
+    this: MovieClip<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(ArrayObject::new(
+        activation.context.gc_context,
+        activation.context.avm1.prototypes().array,
+        this.filters()
+            .into_iter()
+            .map(|filter| bitmap_filter::filter_to_avm1(activation, filter)),
+    )
+    .into())
+}
+
+fn set_filters<'gc>(
+    this: MovieClip<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    let mut filters = vec![];
+    if let Value::Object(value) = value {
+        for index in value.get_keys(activation, false) {
+            let filter_object = value.get(index, activation)?.coerce_to_object(activation);
+            if let Some(filter) = bitmap_filter::avm1_to_filter(filter_object) {
+                filters.push(filter);
+            }
+        }
+    }
+    this.set_filters(activation.context.gc_context, filters);
     Ok(())
 }

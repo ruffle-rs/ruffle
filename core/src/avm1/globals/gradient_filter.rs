@@ -456,20 +456,38 @@ fn method<'gc>(
     })
 }
 
-pub fn create_bevel_constructor<'gc>(
+pub fn create_bevel_proto<'gc>(
     context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let gradient_bevel_filter_proto = ScriptObject::new(context.gc_context, Some(proto));
     define_properties_on(PROTO_DECLS, context, gradient_bevel_filter_proto, fn_proto);
+    gradient_bevel_filter_proto.into()
+}
+
+pub fn create_bevel_constructor<'gc>(
+    context: &mut GcContext<'_, 'gc>,
+    proto: Object<'gc>,
+    fn_proto: Object<'gc>,
+) -> Object<'gc> {
     FunctionObject::constructor(
         context.gc_context,
         Executable::Native(gradient_filter_method!(1000)),
         constructor_to_fn!(gradient_filter_method!(1000)),
         fn_proto,
-        gradient_bevel_filter_proto.into(),
+        proto,
     )
+}
+
+pub fn create_glow_proto<'gc>(
+    context: &mut GcContext<'_, 'gc>,
+    proto: Object<'gc>,
+    fn_proto: Object<'gc>,
+) -> Object<'gc> {
+    let gradient_bevel_filter_proto = ScriptObject::new(context.gc_context, Some(proto));
+    define_properties_on(PROTO_DECLS, context, gradient_bevel_filter_proto, fn_proto);
+    gradient_bevel_filter_proto.into()
 }
 
 pub fn create_glow_constructor<'gc>(
@@ -477,13 +495,11 @@ pub fn create_glow_constructor<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let gradient_bevel_filter_proto = ScriptObject::new(context.gc_context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, gradient_bevel_filter_proto, fn_proto);
     FunctionObject::constructor(
         context.gc_context,
         Executable::Native(gradient_filter_method!(0)),
         constructor_to_fn!(gradient_filter_method!(0)),
         fn_proto,
-        gradient_bevel_filter_proto.into(),
+        proto,
     )
 }
