@@ -7,7 +7,8 @@ use crate::avm1::{Activation, Error, Object, ScriptObject, TObject, Value};
 use crate::context::GcContext;
 use crate::string::{AvmString, WStr};
 use gc_arena::{Collect, GcCell, MutationContext};
-use swf::Color;
+use std::ops::Deref;
+use swf::{BevelFilterFlags, Color, Fixed16, Fixed8};
 
 #[derive(Copy, Clone, Debug, Collect)]
 #[collect(no_drop)]
@@ -39,6 +40,28 @@ impl From<BevelFilterType> for &'static WStr {
     }
 }
 
+impl BevelFilterType {
+    pub fn as_flags(&self) -> BevelFilterFlags {
+        match self {
+            BevelFilterType::Inner => BevelFilterFlags::INNER_SHADOW,
+            BevelFilterType::Outer => BevelFilterFlags::empty(),
+            BevelFilterType::Full => BevelFilterFlags::ON_TOP,
+        }
+    }
+}
+
+impl From<BevelFilterFlags> for BevelFilterType {
+    fn from(value: BevelFilterFlags) -> Self {
+        if value.contains(BevelFilterFlags::ON_TOP) {
+            BevelFilterType::Full
+        } else if value.contains(BevelFilterFlags::INNER_SHADOW) {
+            BevelFilterType::Inner
+        } else {
+            BevelFilterType::Outer
+        }
+    }
+}
+
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
 struct BevelFilterData {
@@ -54,6 +77,42 @@ struct BevelFilterData {
     blur_x: f64,
     blur_y: f64,
     type_: BevelFilterType,
+}
+
+impl From<&BevelFilterData> for swf::BevelFilter {
+    fn from(filter: &BevelFilterData) -> swf::BevelFilter {
+        let mut flags = BevelFilterFlags::COMPOSITE_SOURCE;
+        flags |= BevelFilterFlags::from_passes(filter.quality as u8);
+        flags |= filter.type_.as_flags();
+        flags.set(BevelFilterFlags::KNOCKOUT, filter.knockout);
+        swf::BevelFilter {
+            shadow_color: filter.shadow,
+            highlight_color: filter.highlight,
+            blur_x: Fixed16::from_f64(filter.blur_x),
+            blur_y: Fixed16::from_f64(filter.blur_y),
+            angle: Fixed16::from_f64(filter.angle),
+            distance: Fixed16::from_f64(filter.distance),
+            strength: Fixed8::from_f64(filter.strength()),
+            flags,
+        }
+    }
+}
+
+impl From<swf::BevelFilter> for BevelFilterData {
+    fn from(filter: swf::BevelFilter) -> BevelFilterData {
+        Self {
+            distance: filter.distance.into(),
+            angle: filter.angle.into(),
+            highlight: filter.highlight_color,
+            shadow: filter.shadow_color,
+            quality: filter.num_passes().into(),
+            strength: (filter.strength.to_f64() * 256.0) as u16,
+            knockout: filter.is_knockout(),
+            blur_x: filter.blur_x.into(),
+            blur_y: filter.blur_y.into(),
+            type_: filter.flags.into(),
+        }
+    }
 }
 
 impl Default for BevelFilterData {
@@ -108,6 +167,10 @@ impl<'gc> BevelFilter<'gc> {
         bevel_filter.set_type(activation, args.get(10))?;
         bevel_filter.set_knockout(activation, args.get(11))?;
         Ok(bevel_filter)
+    }
+
+    pub fn from_filter(gc_context: MutationContext<'gc, '_>, filter: swf::BevelFilter) -> Self {
+        Self(GcCell::allocate(gc_context, filter.into()))
     }
 
     pub(crate) fn duplicate(&self, gc_context: MutationContext<'gc, '_>) -> Self {
@@ -305,6 +368,10 @@ impl<'gc> BevelFilter<'gc> {
             self.0.write(activation.context.gc_context).type_ = type_;
         }
         Ok(())
+    }
+
+    pub fn filter(&self) -> swf::BevelFilter {
+        self.0.read().deref().into()
     }
 }
 

@@ -2,6 +2,7 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
+use crate::avm1::globals::bevel_filter::BevelFilter;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Attribute, Object, ScriptObject, TObject, Value};
@@ -63,19 +64,33 @@ pub fn clone<'gc>(
     Ok(create_instance(activation, native, proto).into())
 }
 
-pub fn avm1_to_filter(_object: Object) -> Option<Filter> {
-    // TODO
+pub fn avm1_to_filter(object: Object) -> Option<Filter> {
+    let native = object.native();
+    match native {
+        NativeObject::BevelFilter(filter) => Some(Filter::BevelFilter(filter.filter())),
 
-    // Invalid filters are silently dropped/ignored, no errors are thrown.
-    None
+        // Invalid filters are silently dropped/ignored, no errors are thrown.
+        _ => None,
+    }
 }
 
-pub fn filter_to_avm1<'gc>(_activation: &mut Activation<'_, 'gc>, _filter: Filter) -> Value<'gc> {
-    // TODO
+pub fn filter_to_avm1<'gc>(activation: &mut Activation<'_, 'gc>, filter: Filter) -> Value<'gc> {
+    let (native, proto) = match filter {
+        Filter::BevelFilter(filter) => (
+            NativeObject::BevelFilter(BevelFilter::from_filter(
+                activation.context.gc_context,
+                filter,
+            )),
+            activation.context.avm1.prototypes().bevel_filter,
+        ),
+        _ => {
+            // Unrepresentable filters (eg Shader) will just return as Null.
+            // Not sure there's a way to even get to that state though, they can only be added in avm2.
+            return Value::Null;
+        }
+    };
 
-    // Unrepresentable filters (eg Shader) will just return as Null.
-    // Not sure there's a way to even get to that state though, they can only be added in avm2.
-    Value::Null
+    create_instance(activation, native, Some(proto.into())).into()
 }
 
 pub fn create_instance<'gc>(
