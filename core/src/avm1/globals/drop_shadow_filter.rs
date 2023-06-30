@@ -6,7 +6,8 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, ScriptObject, TObject, Value};
 use crate::context::GcContext;
 use gc_arena::{Collect, GcCell, MutationContext};
-use swf::Color;
+use std::ops::Deref;
+use swf::{Color, DropShadowFilterFlags, Fixed16, Fixed8};
 
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
@@ -23,6 +24,42 @@ struct DropShadowFilterData {
     // TODO: Introduce unsigned `Fixed8`?
     strength: u16,
     hide_object: bool,
+}
+
+impl From<&DropShadowFilterData> for swf::DropShadowFilter {
+    fn from(filter: &DropShadowFilterData) -> swf::DropShadowFilter {
+        let mut flags = DropShadowFilterFlags::empty();
+        flags |= DropShadowFilterFlags::from_passes(filter.quality as u8);
+        flags.set(DropShadowFilterFlags::KNOCKOUT, filter.knockout);
+        flags.set(DropShadowFilterFlags::INNER_SHADOW, filter.inner);
+        flags.set(DropShadowFilterFlags::COMPOSITE_SOURCE, !filter.hide_object);
+        swf::DropShadowFilter {
+            color: filter.color,
+            blur_x: Fixed16::from_f64(filter.blur_x),
+            blur_y: Fixed16::from_f64(filter.blur_y),
+            angle: Fixed16::from_f64(filter.angle),
+            distance: Fixed16::from_f64(filter.distance),
+            strength: Fixed8::from_f64(filter.strength()),
+            flags,
+        }
+    }
+}
+
+impl From<swf::DropShadowFilter> for DropShadowFilterData {
+    fn from(filter: swf::DropShadowFilter) -> DropShadowFilterData {
+        Self {
+            distance: filter.distance.into(),
+            angle: filter.angle.into(),
+            color: filter.color,
+            quality: filter.num_passes().into(),
+            strength: (filter.strength.to_f64() * 256.0) as u16,
+            knockout: filter.is_knockout(),
+            blur_x: filter.blur_x.into(),
+            blur_y: filter.blur_y.into(),
+            inner: filter.is_inner(),
+            hide_object: filter.hide_object(),
+        }
+    }
 }
 
 impl Default for DropShadowFilterData {
@@ -76,6 +113,13 @@ impl<'gc> DropShadowFilter<'gc> {
         drop_shadow_filter.set_knockout(activation, args.get(9))?;
         drop_shadow_filter.set_hide_object(activation, args.get(10))?;
         Ok(drop_shadow_filter)
+    }
+
+    pub fn from_filter(
+        gc_context: MutationContext<'gc, '_>,
+        filter: swf::DropShadowFilter,
+    ) -> Self {
+        Self(GcCell::allocate(gc_context, filter.into()))
     }
 
     pub(crate) fn duplicate(&self, gc_context: MutationContext<'gc, '_>) -> Self {
@@ -257,6 +301,10 @@ impl<'gc> DropShadowFilter<'gc> {
             self.0.write(activation.context.gc_context).hide_object = hide_object;
         }
         Ok(())
+    }
+
+    pub fn filter(&self) -> swf::DropShadowFilter {
+        self.0.read().deref().into()
     }
 }
 
