@@ -1,4 +1,4 @@
-use crate::avm1::globals::system::SandboxType;
+use crate::avm1::globals::system::{RuffleType, SandboxType};
 use crate::avm1::Attribute;
 use crate::avm1::Avm1;
 use crate::avm1::Object;
@@ -2030,6 +2030,7 @@ pub struct PlayerBuilder {
     sandbox_type: SandboxType,
     frame_rate: Option<f64>,
     external_interface_providers: Vec<Box<dyn ExternalInterfaceProvider>>,
+    ruffle_type: RuffleType,
 }
 
 impl PlayerBuilder {
@@ -2039,6 +2040,12 @@ impl PlayerBuilder {
     /// can be changed by chaining the configuration methods.
     #[inline]
     pub fn new() -> Self {
+        let ruffle_type = if cfg!(not(target_family = "wasm")) {
+            RuffleType::Desktop
+        } else {
+            RuffleType::Web
+        };
+
         Self {
             movie: None,
 
@@ -2075,6 +2082,7 @@ impl PlayerBuilder {
             sandbox_type: SandboxType::LocalTrusted,
             frame_rate: None,
             external_interface_providers: vec![],
+            ruffle_type,
         }
     }
 
@@ -2362,7 +2370,7 @@ impl PlayerBuilder {
 
                 // Misc. state
                 rng: SmallRng::seed_from_u64(get_current_date_time().timestamp_millis() as u64),
-                system: SystemProperties::new(self.sandbox_type),
+                system: SystemProperties::new(self.sandbox_type, player_version, self.ruffle_type),
                 transform_stack: TransformStack::new(),
                 instance_counter: 0,
                 player_version,

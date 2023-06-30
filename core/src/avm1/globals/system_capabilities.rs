@@ -7,12 +7,13 @@ use crate::avm1::{ScriptObject, Value};
 use crate::context::GcContext;
 use crate::string::AvmString;
 
+// Variables have been added in later flash player versions.
+// To emulate exact flash player behaviour, properties can only be returned
+// if the flash player version is at least the one in which they were added.
+// Whether the properties are returned is independent of the SWF version.
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
-    "supports64BitProcesses" => property(get_has_64_bit_support);
-    "supports32BitProcesses" => property(get_has_32_bit_support);
-    "isEmbeddedInAcrobat" => property(get_is_acrobat_embedded);
-    "hasTLS" => property(get_has_tls);
-    "cpuArchitecture" => property(get_cpu_architecture);
+    // Properties in Specs
+    "avHardwareDisable" => property(get_is_av_hardware_disabled);
     "hasAccessibility" => property(get_has_accessibility);
     "hasAudio" => property(get_has_audio);
     "hasAudioEncoder" => property(get_has_audio_encoder);
@@ -26,10 +27,8 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "hasStreamingVideo" => property(get_has_streaming_video);
     "hasVideoEncoder" => property(get_has_video_encoder);
     "isDebugger" => property(get_is_debugger);
-    "avHardwareDisable" => property(get_is_av_hardware_disabled);
-    "localFileReadDisable" => property(get_is_local_file_read_disabled);
-    "windowlessDisable" => property(get_is_windowless_disabled);
     "language" => property(get_language);
+    "localFileReadDisable" => property(get_is_local_file_read_disabled);
     "manufacturer" => property(get_manufacturer);
     "os" => property(get_os_name);
     "pixelAspectRatio" => property(get_pixel_aspect_ratio);
@@ -40,7 +39,18 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "screenResolutionY" => property(get_screen_resolution_y);
     "serverString" => property(get_server_string);
     "version" => property(get_version);
+    "windowlessDisable" => property(get_is_windowless_disabled);
+
+    // Available in Flash player 10
+    "hasTLS" => property(get_has_tls);
+    "isEmbeddedInAcrobat" => property(get_is_acrobat_embedded);
     "maxLevelIDC" => property(get_max_idc_level);
+
+    // Not available in Flash player 10, but available in Flash player 32
+    "cpuAddressSize" => property(get_cpu_address_size);
+    "cpuArchitecture" => property(get_cpu_architecture);
+    "supports32BitProcesses" => property(get_has_32_bit_support);
+    "supports64BitProcesses" => property(get_has_64_bit_support);
 };
 
 macro_rules! capabilities_func {
@@ -129,11 +139,7 @@ pub fn get_language<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(AvmString::new_utf8(
         activation.context.gc_context,
-        activation
-            .context
-            .system
-            .language
-            .get_language_code(activation.context.avm1.player_version()),
+        activation.context.system.get_language_string(),
     )
     .into())
 }
@@ -187,7 +193,7 @@ pub fn get_manufacturer<'gc>(
             .context
             .system
             .manufacturer
-            .get_manufacturer_string(activation.context.avm1.player_version()),
+            .get_manufacturer_string(activation.swf_version()),
     )
     .into())
 }
@@ -227,7 +233,7 @@ pub fn get_server_string<'gc>(
     let server_string = activation
         .context
         .system
-        .get_server_string(&activation.context);
+        .get_server_string(&activation.context, activation.swf_version());
     Ok(AvmString::new_utf8(activation.context.gc_context, server_string).into())
 }
 
@@ -253,6 +259,14 @@ pub fn get_max_idc_level<'gc>(
         &activation.context.system.idc_level,
     )
     .into())
+}
+
+pub fn get_cpu_address_size<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(activation.context.system.cpu_address_size.into())
 }
 
 pub fn create<'gc>(

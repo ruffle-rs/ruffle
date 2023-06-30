@@ -3212,6 +3212,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "006e42d5b888366f1880eda20371fedde764ed2213dc8496f49622fa0c99cd5e"
 dependencies = [
  "log",
+ "serde",
  "winapi",
 ]
 
@@ -3742,6 +3743,7 @@ dependencies = [
  "nellymoser-rs",
  "num-derive",
  "num-traits",
+ "os_info",
  "percent-encoding",
  "png",
  "quick-xml",
@@ -3758,11 +3760,14 @@ dependencies = [
  "smallvec",
  "swf",
  "symphonia",
+ "sys-locale",
  "thiserror",
  "tracing",
  "url",
  "wasm-bindgen-futures",
  "weak-table",
+ "web-sys",
+ "winapi",
 ]
 
 [[package]]

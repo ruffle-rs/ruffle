@@ -966,6 +966,7 @@ pub fn create_globals<'gc>(
         array_proto,
     );
 
+    // TODO: System variable doesn't exist (=> shouldn't be accessible) for SWF version <= 4
     let system = system::create(
         context,
         object_proto,
