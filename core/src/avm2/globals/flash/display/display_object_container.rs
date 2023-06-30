@@ -1,5 +1,8 @@
 //! `flash.display.DisplayObjectContainer` builtin/prototype
 
+use swf::Point;
+use swf::Twips;
+
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{argument_error, make_error_2025, range_error};
 use crate::avm2::object::{Object, TObject};
@@ -7,6 +10,7 @@ use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::{ArrayObject, ArrayStorage, Error};
 use crate::context::UpdateContext;
+use crate::display_object::HitTestOptions;
 use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
 use crate::{avm2_stub_getter, avm2_stub_method, avm2_stub_setter};
 use std::cmp::min;
@@ -538,15 +542,45 @@ pub fn stop_all_movie_clips<'gc>(
 
 pub fn get_objects_under_point<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    this: Object<'gc>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_method!(
         activation,
         "flash.display.DisplayObjectContainer",
-        "getObjectsUnderPoint"
+        "getObjectsUnderPoint",
+        "proper hit-test behavior"
     );
-    Ok(ArrayObject::from_storage(activation, ArrayStorage::new(0))?.into())
+
+    let point = args.get_object(activation, 0, "point")?;
+    let x = point
+        .get_public_property("x", activation)?
+        .coerce_to_number(activation)?;
+    let y = point
+        .get_public_property("y", activation)?
+        .coerce_to_number(activation)?;
+
+    let point = Point {
+        x: Twips::from_pixels(x),
+        y: Twips::from_pixels(y),
+    };
+
+    let mut under_point = Vec::new();
+    let mut children = vec![this.as_display_object().unwrap()];
+    // FIXME - what are the actual options?
+    let options = HitTestOptions::SKIP_MASK;
+    while let Some(child) = children.pop() {
+        if child.hit_test_shape(&mut activation.context, point, options) {
+            under_point.push(Some(child.object2()));
+        }
+        if let Some(container) = child.as_container() {
+            for child in container.iter_render_list() {
+                children.push(child);
+            }
+        }
+    }
+
+    Ok(ArrayObject::from_storage(activation, ArrayStorage::from_storage(under_point))?.into())
 }
 
 pub fn are_inaccessible_objects_under_point<'gc>(
