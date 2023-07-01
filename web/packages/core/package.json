@@ -18,25 +18,20 @@
         "//5": "# https://github.com/rust-lang/cargo/issues/10271",
         "//6": "# Enabling `build-std` would also be great, but it's not stable yet.",
         "prebuild": "npm run build:wasm-vanilla && npm run build:wasm-extensions",
-
         "build:wasm-vanilla": "cross-env OUT_NAME=ruffle_web CARGO_PROFILE=web-vanilla-wasm RUSTFLAGS=\"$RUSTFLAGS --cfg=web_sys_unstable_apis -Aunknown_lints\" npm run build:wasm",
-
         "//7": "# Dispatches to either building the real, or copying the fake (stand-in),",
         "//8": "# 'with-extensions' module.",
         "build:wasm-extensions": "node -e \"process.exit(process.env.ENABLE_WASM_EXTENSIONS == 'true' ? 0 : 1)\" && npm run build:wasm-extensions-real || npm run build:wasm-extensions-fake",
         "build:wasm-extensions-real": "echo \"Building module with WebAssembly extensions\" && cross-env OUT_NAME=ruffle_web-wasm_extensions CARGO_PROFILE=web-wasm-extensions RUSTFLAGS=\"$RUSTFLAGS --cfg=web_sys_unstable_apis -Aunknown_lints -C target-feature=+bulk-memory,+simd128,+nontrapping-fptoint,+sign-ext,+reference-types\" WASM_BINDGEN_FLAGS=\"--reference-types\" WASM_OPT_FLAGS=\"--enable-reference-types\" npm run build:wasm",
         "build:wasm-extensions-fake": "echo \"Copying the vanilla module as stand-in\" && shx cp dist/ruffle_web_bg.wasm dist/ruffle_web-wasm_extensions_bg.wasm && shx cp dist/ruffle_web_bg.wasm.d.ts dist/ruffle_web-wasm_extensions_bg.wasm.d.ts && shx cp dist/ruffle_web.js dist/ruffle_web-wasm_extensions.js && shx cp dist/ruffle_web.d.ts dist/ruffle_web-wasm_extensions.d.ts",
-
         "//9": "# This just chains together the three commands after it.",
         "build:wasm": "npm run build:cargo && npm run build:wasm-bindgen && npm run build:wasm-opt",
         "build:cargo": "cross-env-shell cargo build --profile \"$CARGO_PROFILE\" --target wasm32-unknown-unknown --features \\\"$CARGO_FEATURES\\\" $CARGO_FLAGS",
         "build:wasm-bindgen": "cross-env-shell wasm-bindgen \"../../../target/wasm32-unknown-unknown/${CARGO_PROFILE}/ruffle_web.wasm\" --target web --out-dir dist --out-name \"$OUT_NAME\" $WASM_BINDGEN_FLAGS",
         "build:wasm-opt": "cross-env-shell wasm-opt -o \"dist/${OUT_NAME}_bg.wasm\" -O -g \"dist/${OUT_NAME}_bg.wasm\" $WASM_OPT_FLAGS || npm run build:wasm-opt-failed",
         "build:wasm-opt-failed": "echo 'NOTE: Since wasm-opt could not be found (or it failed), the resulting module might not perform that well, but it should still work.' && echo ; [ \"$CI\" != true ] # > nul",
-
         "build": "tsc --build --force",
         "postbuild": "node tools/set_version.js && node tools/bundle_texts.js",
-
         "docs": "typedoc",
         "test": "cross-env TS_NODE_COMPILER_OPTIONS={\\\"module\\\":\\\"commonjs\\\",\\\"verbatimModuleSyntax\\\":false} mocha"
     },
@@ -45,18 +40,18 @@
         "wasm-feature-detect": "^1.5.1"
     },
     "devDependencies": {
+        "@fluent/bundle": "^0.18.0",
+        "@fluent/langneg": "^0.7.0",
         "@tsconfig/strictest": "^2.0.1",
         "@types/mocha": "^10.0.1",
-        "eslint": "^8.42.0",
-        "eslint-plugin-jsdoc": "^46.2.4",
+        "eslint": "^8.44.0",
+        "eslint-plugin-jsdoc": "^46.4.3",
         "mocha": "^10.2.0",
         "replace-in-file": "^7.0.1",
         "shx": "^0.3.4",
         "ts-node": "^10.9.1",
         "typedoc": "^0.24.8",
-        "typescript": "^5.1.3",
-        "@fluent/bundle": "^0.18.0",
-        "@fluent/langneg": "^0.7.0"
+        "typescript": "^5.1.6"
     },
     "sideEffects": false
 }
