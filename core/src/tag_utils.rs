@@ -5,10 +5,10 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum Error {
-    #[error("Couldn't read SWF")]
+    #[error("Couldn't read SWF: {0}")]
     InvalidSwf(#[from] swf::error::Error),
 
-    #[error("Couldn't register bitmap")]
+    #[error("Couldn't register bitmap: {0}")]
     InvalidBitmap(#[from] ruffle_render::error::Error),
 
     #[error("Attempted to set symbol classes on movie without any")]
@@ -17,7 +17,7 @@ pub enum Error {
     #[error("Attempted to preload video frames into non-video character {0}")]
     PreloadVideoIntoInvalidCharacter(CharacterId),
 
-    #[error("IO Error")]
+    #[error("IO Error: {0}")]
     IOError(#[from] std::io::Error),
 
     #[error("Invalid SWF url")]

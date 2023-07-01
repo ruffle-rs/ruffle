@@ -1646,6 +1646,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "flv-rs"
+version = "0.1.0"
+dependencies = [
+ "bitflags 2.3.2",
+ "thiserror",
+]
+
+[[package]]
 name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3730,6 +3738,7 @@ dependencies = [
  "flash-lso",
  "flate2",
  "fluent-templates",
+ "flv-rs",
  "fnv",
  "futures",
  "gc-arena",

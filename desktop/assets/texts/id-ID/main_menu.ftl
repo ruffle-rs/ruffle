@@ -25,3 +25,5 @@ help-menu-translate-ruffle = Terjemahkan Ruffle...
 help-menu-about = Tentang Ruffle
 debug-menu = Alat debug
 debug-menu-open-stage = Lihat info halaman
+debug-menu-open-movie = Lihat Movie
+debug-menu-open-movie-list = Lihat Movie yang diketahui

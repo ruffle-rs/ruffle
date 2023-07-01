@@ -144,6 +144,48 @@ impl<'gc> EventObject<'gc> {
             )
             .unwrap() // we don't expect to break here
     }
+
+    pub fn net_status_event<S>(
+        activation: &mut Activation<'_, 'gc>,
+        event_type: S,
+        info: &[(&'static str, &'static str)],
+    ) -> Object<'gc>
+    where
+        S: Into<AvmString<'gc>>,
+    {
+        let mut info_object = activation
+            .avm2()
+            .classes()
+            .object
+            .construct(activation, &[])
+            .unwrap();
+        for (key, value) in info {
+            info_object
+                .set_public_property(
+                    AvmString::from(*key),
+                    Value::String(AvmString::from(*value)),
+                    activation,
+                )
+                .unwrap();
+        }
+
+        let event_type: AvmString<'gc> = event_type.into();
+
+        let net_status_cls = activation.avm2().classes().netstatusevent;
+        net_status_cls
+            .construct(
+                activation,
+                &[
+                    event_type.into(),
+                    //bubbles
+                    false.into(),
+                    //cancelable
+                    false.into(),
+                    info_object.into(),
+                ],
+            )
+            .unwrap() // we don't expect to break here
+    }
 }
 
 impl<'gc> TObject<'gc> for EventObject<'gc> {

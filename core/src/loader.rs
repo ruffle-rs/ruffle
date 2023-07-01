@@ -1333,10 +1333,10 @@ impl<'gc> Loader<'gc> {
         request: Request,
     ) -> OwnedFuture<(), Error> {
         let handle = match self {
-            Loader::SoundAvm2 { self_handle, .. } => {
+            Loader::NetStream { self_handle, .. } => {
                 self_handle.expect("Loader not self-introduced")
             }
-            _ => return Box::pin(async { Err(Error::NotLoadDataLoader) }),
+            _ => return Box::pin(async { Err(Error::NotNetStreamLoader) }),
         };
 
         let player = player
@@ -1357,7 +1357,7 @@ impl<'gc> Loader<'gc> {
 
                 match response {
                     Ok(mut response) => {
-                        stream.load_buffer(uc.gc_context, &mut response.body);
+                        stream.load_buffer(uc, &mut response.body);
                     }
                     Err(err) => {
                         stream.report_error(err);
