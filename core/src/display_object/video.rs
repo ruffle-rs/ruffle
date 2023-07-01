@@ -70,6 +70,12 @@ pub struct VideoData<'gc> {
 
     /// The self bounds for this movie.
     size: (i32, i32),
+
+    /// The last decoded frame in the video stream.
+    /// 
+    /// NOTE: This is only used for SWF-source video streams.
+    #[collect(require_static)]
+    decoded_frame: Option<(u32, BitmapInfo)>,
 }
 
 /// An optionally-instantiated video stream.
@@ -100,10 +106,6 @@ pub enum VideoSource<'gc> {
         /// Each frame consists of a start and end parameter which can be used
         /// to reconstruct a reference to the embedded bitstream.
         frames: BTreeMap<u32, (usize, usize)>,
-
-        /// The last decoded frame in the video stream.
-        #[collect(require_static)]
-        decoded_frame: Option<(u32, BitmapInfo)>,
     },
     /// An attached NetStream.
     NetStream {
@@ -126,7 +128,6 @@ impl<'gc> Video<'gc> {
             VideoSource::Swf {
                 streamdef,
                 frames: BTreeMap::new(),
-                decoded_frame: None,
             },
         );
 
@@ -140,6 +141,7 @@ impl<'gc> Video<'gc> {
                 keyframes: BTreeSet::new(),
                 movie,
                 size,
+                decoded_frame: None,
             },
         ))
     }
@@ -163,6 +165,7 @@ impl<'gc> Video<'gc> {
                 keyframes: BTreeSet::new(),
                 movie,
                 size: (width, height),
+                decoded_frame: None,
             },
         ))
     }
@@ -236,12 +239,11 @@ impl<'gc> Video<'gc> {
             return;
         };
 
-        let (num_frames, decoded_frame) = match &*read.source.read() {
+        let num_frames = match &*read.source.read() {
             VideoSource::Swf {
                 streamdef,
-                decoded_frame,
                 ..
-            } => (streamdef.num_frames as usize, decoded_frame.clone()),
+            } => streamdef.num_frames as usize,
             VideoSource::NetStream { .. } => return,
             VideoSource::Unconnected { .. } => return,
         };
@@ -252,7 +254,7 @@ impl<'gc> Video<'gc> {
             0
         };
 
-        let last_frame = decoded_frame.as_ref().map(|(lf, _)| *lf);
+        let last_frame = read.decoded_frame.as_ref().map(|(lf, _)| *lf);
 
         if last_frame == Some(frame_id) {
             return; // we are already there, no-op
@@ -314,7 +316,6 @@ impl<'gc> Video<'gc> {
             VideoSource::Swf {
                 streamdef,
                 frames,
-                decoded_frame,
             } => match frames.get(&frame_id) {
                 Some((slice_start, slice_end)) => {
                     let encframe = EncodedFrame {
@@ -327,8 +328,8 @@ impl<'gc> Video<'gc> {
                         .decode_video_stream_frame(*stream, encframe, context.renderer)
                 }
                 None => {
-                    if let Some((_old_id, old_frame)) = decoded_frame {
-                        Ok(old_frame.clone())
+                    if let Some((_old_id, old_frame)) = read.decoded_frame.clone() {
+                        Ok(old_frame)
                     } else {
                         Err(Error::SeekingBeforeDecoding(frame_id))
                     }
@@ -341,11 +342,7 @@ impl<'gc> Video<'gc> {
         drop(read);
 
         match res {
-            Ok(bitmap) => match &mut *source.write(context.gc_context) {
-                VideoSource::Swf { decoded_frame, .. } => *decoded_frame = Some((frame_id, bitmap)),
-                VideoSource::NetStream { .. } => unreachable!(),
-                VideoSource::Unconnected { .. } => unreachable!(),
-            },
+            Ok(bitmap) => self.0.write(context.gc_context).decoded_frame = Some((frame_id, bitmap)),
             Err(e) => tracing::error!("Got error when seeking to video frame {}: {}", frame_id, e),
         }
     }
@@ -533,12 +530,11 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
             VideoSource::Swf {
                 streamdef,
                 frames,
-                decoded_frame,
             } => (
                 streamdef.is_smoothed,
                 Some(frames.len()),
                 read.movie.version(),
-                decoded_frame.clone().map(|df| df.1),
+                read.decoded_frame.clone().map(|df| df.1),
                 Some(streamdef.codec),
             ),
             VideoSource::NetStream { stream, .. } => (
