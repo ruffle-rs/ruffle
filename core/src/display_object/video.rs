@@ -96,6 +96,13 @@ pub enum VideoStream {
 #[collect(no_drop)]
 pub enum VideoSource<'gc> {
     /// A video bitstream embedded inside of a SWF movie.
+    /// 
+    /// NOTE: Fields within this enum will be shared across all instances of a
+    /// particular character. If you need to mutate the video source, consider
+    /// reallocating a new source for your specific video instead.
+    /// 
+    /// This warning does not apply to `NetStream` or `Unconnected` videos,
+    /// which are never aliased.
     Swf {
         /// The video stream definition.
         #[collect(require_static)]
