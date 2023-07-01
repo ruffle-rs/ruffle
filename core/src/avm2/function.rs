@@ -104,7 +104,7 @@ impl<'gc> Executable<'gc> {
     /// declared on the function.
     pub fn exec(
         &self,
-        unbound_receiver: Option<Object<'gc>>,
+        unbound_receiver: Value<'gc>,
         mut arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc>,
         callee: Object<'gc>,
@@ -112,7 +112,20 @@ impl<'gc> Executable<'gc> {
         let ret = match self {
             Executable::Native(bm) => {
                 let method = bm.method.method;
-                let receiver = bm.bound_receiver.or(unbound_receiver);
+
+                let receiver = if let Some(receiver) = bm.bound_receiver {
+                    Some(receiver)
+                } else if matches!(unbound_receiver, Value::Null | Value::Undefined) {
+                    Some(
+                        bm.scope
+                            .get(0)
+                            .expect("No global scope for function call")
+                            .values(),
+                    )
+                } else {
+                    Some(unbound_receiver.coerce_to_object(activation)?)
+                };
+
                 let caller_domain = activation.caller_domain();
                 let subclass_object = bm.bound_superclass;
                 let mut activation = Activation::from_builtin(
@@ -152,7 +165,19 @@ impl<'gc> Executable<'gc> {
                     }
                 }
 
-                let receiver = bm.receiver.or(unbound_receiver);
+                let receiver = if let Some(receiver) = bm.receiver {
+                    Some(receiver)
+                } else if matches!(unbound_receiver, Value::Null | Value::Undefined) {
+                    Some(
+                        bm.scope
+                            .get(0)
+                            .expect("No global scope for function call")
+                            .values(),
+                    )
+                } else {
+                    Some(unbound_receiver.coerce_to_object(activation)?)
+                };
+
                 let subclass_object = bm.bound_superclass;
 
                 let mut activation = Activation::from_method(

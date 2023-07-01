@@ -2103,7 +2103,7 @@ impl<'gc> MovieClip<'gc> {
         if let Avm2Value::Object(object) = self.object2() {
             let mut constr_thing = || {
                 let mut activation = Avm2Activation::from_nothing(context.reborrow());
-                class_object.call_native_init(Some(object), &[], &mut activation)?;
+                class_object.call_native_init(object.into(), &[], &mut activation)?;
 
                 Ok(())
             };
@@ -2529,7 +2529,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
                             if let Err(e) = Avm2::run_stack_frame_for_callable(
                                 callable,
-                                Some(avm2_object),
+                                avm2_object.into(),
                                 &[],
                                 domain,
                                 context,

@@ -477,6 +477,8 @@ pub fn load_player_globals<'gc>(
     globals.set_instance_of(mc, global_class);
     globals.fork_vtable(activation.context.gc_context);
 
+    activation.context.avm2.toplevel_global_object = Some(globals);
+
     // From this point, `globals` is safe to be modified
 
     dynamic_class(mc, object_class, script, class_class);

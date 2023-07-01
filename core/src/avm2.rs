@@ -103,6 +103,10 @@ pub struct Avm2<'gc> {
     /// System classes.
     system_classes: Option<SystemClasses<'gc>>,
 
+    /// Top-level global object. It contains most top-level types (Object, Class) and functions.
+    /// However, it's not strictly defined which items end up there.
+    toplevel_global_object: Option<Object<'gc>>,
+
     pub public_namespace: Namespace<'gc>,
     pub internal_namespace: Namespace<'gc>,
     pub as3_namespace: Namespace<'gc>,
@@ -164,6 +168,7 @@ impl<'gc> Avm2<'gc> {
             playerglobals_domain,
             stage_domain,
             system_classes: None,
+            toplevel_global_object: None,
 
             public_namespace: Namespace::package("", context),
             internal_namespace: Namespace::internal("", context),
@@ -204,6 +209,10 @@ impl<'gc> Avm2<'gc> {
     /// This function panics if the interpreter has not yet been initialized.
     pub fn classes(&self) -> &SystemClasses<'gc> {
         self.system_classes.as_ref().unwrap()
+    }
+
+    pub fn toplevel_global_object(&self) -> Option<Object<'gc>> {
+        self.toplevel_global_object
     }
 
     /// Run a script's initializer method.
@@ -447,7 +456,7 @@ impl<'gc> Avm2<'gc> {
 
     pub fn run_stack_frame_for_callable(
         callable: Object<'gc>,
-        receiver: Option<Object<'gc>>,
+        receiver: Value<'gc>,
         args: &[Value<'gc>],
         domain: Domain<'gc>,
         context: &mut UpdateContext<'_, 'gc>,

@@ -614,7 +614,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             });
         let superclass_object = superclass_object?;
 
-        superclass_object.call_native_init(Some(receiver), args, self)
+        superclass_object.call_native_init(receiver.into(), args, self)
     }
 
     /// Attempts to lock the activation frame for execution.
@@ -1342,8 +1342,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_call(&mut self, arg_count: u32) -> Result<FrameControl<'gc>, Error<'gc>> {
         let args = self.pop_stack_args(arg_count);
-        let receiver = self.pop_stack().as_object();
-        let function = self.pop_stack().as_callable(self, None, receiver)?;
+        let receiver = self.pop_stack();
+        let function = self.pop_stack().as_callable(self, None, Some(receiver))?;
         let value = function.call(receiver, &args, self)?;
 
         self.push_stack(value);
@@ -1411,9 +1411,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let function = receiver.get_property(&multiname, self)?.as_callable(
             self,
             Some(&multiname),
-            Some(receiver),
+            Some(receiver.into()),
         )?;
-        let value = function.call(None, &args, self)?;
+        let value = function.call(Value::Null, &args, self)?;
 
         self.push_stack(value);
 
@@ -1444,7 +1444,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         arg_count: u32,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let args = self.pop_stack_args(arg_count);
-        let receiver = self.pop_stack().as_object();
+        let receiver = self.pop_stack();
         let method = self.table_method(method, index, false)?;
         // TODO: What scope should the function be executed with?
         let scope = self.create_scopechain();

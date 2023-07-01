@@ -294,7 +294,7 @@ impl<'gc> Callback<'gc> {
                     .into_iter()
                     .map(|v| v.into_avm2(&mut activation))
                     .collect();
-                match method.call(None, &args, &mut activation) {
+                match method.call(Avm2Value::Null, &args, &mut activation) {
                     Ok(result) => Value::from_avm2(result),
                     Err(e) => {
                         tracing::error!(

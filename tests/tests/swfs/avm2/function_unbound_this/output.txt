@@ -1,0 +1,52 @@
+// f()
+[object global]
+123
+undefined
+
+// f.call(null)
+[object global]
+123
+undefined
+
+// f.call(5)
+5
+
+// f.apply(null, [])
+[object global]
+123
+undefined
+
+// str.replace(pattern, f)
+[object global]
+123
+undefined
+
+// event dispatch on `f`
+[object global]
+undefined
+function Function() {}
+
+// arr.forEach(f)
+1
+[object global]
+123
+
+// arr.forEach(f, null)
+1
+[object global]
+123
+
+// arr.forEach(f, undefined)
+1
+[object global]
+123
+
+// arr.forEach(f, 5)
+1
+5
+
+// arr.forEach(f, {})
+1
+[object Object]
+undefined
+

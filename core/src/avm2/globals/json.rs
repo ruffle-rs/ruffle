@@ -40,7 +40,7 @@ fn deserialize_json_inner<'gc>(
                 let val = deserialize_json_inner(activation, entry.1.clone(), reviver)?;
                 let mapped_val = match reviver {
                     None => val,
-                    Some(reviver) => reviver.call(None, &[key.into(), val], activation)?,
+                    Some(reviver) => reviver.call(Value::Null, &[key.into(), val], activation)?,
                 };
                 if matches!(mapped_val, Value::Undefined) {
                     obj.delete_public_property(activation, key)?;
@@ -56,7 +56,7 @@ fn deserialize_json_inner<'gc>(
                 let val = deserialize_json_inner(activation, val.clone(), reviver)?;
                 let mapped_val = match reviver {
                     None => val,
-                    Some(reviver) => reviver.call(None, &[key.into(), val], activation)?,
+                    Some(reviver) => reviver.call(Value::Null, &[key.into(), val], activation)?,
                 };
                 arr.push(Some(mapped_val));
             }
@@ -75,7 +75,7 @@ fn deserialize_json<'gc>(
     let val = deserialize_json_inner(activation, json, reviver)?;
     match reviver {
         None => Ok(val),
-        Some(reviver) => reviver.call(None, &["".into(), val], activation),
+        Some(reviver) => reviver.call(Value::Null, &["".into(), val], activation),
     }
 }
 
@@ -131,7 +131,7 @@ impl<'gc> AvmSerializer<'gc> {
         };
         if let Some(Replacer::Function(replacer)) = self.replacer {
             replacer.call(
-                None,
+                Value::Null,
                 &[eval_key.unwrap_or_else(key).into(), value],
                 activation,
             )

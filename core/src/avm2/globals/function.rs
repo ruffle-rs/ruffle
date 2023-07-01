@@ -79,10 +79,7 @@ fn call<'gc>(
     func: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = args
-        .get(0)
-        .and_then(|v| v.coerce_to_object(activation).ok())
-        .or_else(|| activation.global_scope());
+    let this = args.get(0).copied().unwrap_or(Value::Null);
 
     if let Some(func) = func {
         if args.len() > 1 {
@@ -101,10 +98,7 @@ fn apply<'gc>(
     func: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = args
-        .get(0)
-        .and_then(|v| v.coerce_to_object(activation).ok())
-        .or_else(|| activation.global_scope());
+    let this = args.get(0).copied().unwrap_or(Value::Null);
 
     if let Some(func) = func {
         let arg_array = args.get(1).cloned().unwrap_or(Value::Undefined).as_object();

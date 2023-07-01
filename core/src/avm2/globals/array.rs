@@ -424,7 +424,7 @@ pub fn for_each<'gc>(
             .cloned()
             .unwrap_or(Value::Undefined)
             .as_callable(activation, None, None)?;
-        let receiver = args.get(1).cloned().unwrap_or(Value::Null).as_object();
+        let receiver = args.get(1).cloned().unwrap_or(Value::Null);
         let mut iter = ArrayIter::new(activation, this)?;
 
         while let Some(r) = iter.next(activation) {
@@ -449,7 +449,7 @@ pub fn map<'gc>(
             .cloned()
             .unwrap_or(Value::Undefined)
             .as_callable(activation, None, None)?;
-        let receiver = args.get(1).cloned().unwrap_or(Value::Null).as_object();
+        let receiver = args.get(1).cloned().unwrap_or(Value::Null);
         let mut new_array = ArrayStorage::new(0);
         let mut iter = ArrayIter::new(activation, this)?;
 
@@ -478,7 +478,7 @@ pub fn filter<'gc>(
             .cloned()
             .unwrap_or(Value::Undefined)
             .as_callable(activation, None, None)?;
-        let receiver = args.get(1).cloned().unwrap_or(Value::Null).as_object();
+        let receiver = args.get(1).cloned().unwrap_or(Value::Null);
         let mut new_array = ArrayStorage::new(0);
         let mut iter = ArrayIter::new(activation, this)?;
 
@@ -511,7 +511,7 @@ pub fn every<'gc>(
             .cloned()
             .unwrap_or(Value::Undefined)
             .as_callable(activation, None, None)?;
-        let receiver = args.get(1).cloned().unwrap_or(Value::Null).as_object();
+        let receiver = args.get(1).cloned().unwrap_or(Value::Null);
         let mut iter = ArrayIter::new(activation, this)?;
 
         while let Some(r) = iter.next(activation) {
@@ -544,7 +544,7 @@ pub fn some<'gc>(
             .cloned()
             .unwrap_or(Value::Undefined)
             .as_callable(activation, None, None)?;
-        let receiver = args.get(1).cloned().unwrap_or(Value::Null).as_object();
+        let receiver = args.get(1).cloned().unwrap_or(Value::Null);
         let mut iter = ArrayIter::new(activation, this)?;
 
         while let Some(r) = iter.next(activation) {
@@ -1087,7 +1087,7 @@ pub fn sort<'gc>(
                 options,
                 constrain(|activation, a, b| {
                     let order = v
-                        .call(None, &[a, b], activation)?
+                        .call(this.into(), &[a, b], activation)?
                         .coerce_to_number(activation)?;
 
                     if order > 0.0 {

@@ -436,7 +436,7 @@ impl<'gc> ClassObject<'gc> {
                 .write(activation.context.gc_context)
                 .mark_class_initialized();
 
-            class_init_fn.call(Some(object), &[], activation)?;
+            class_init_fn.call(object.into(), &[], activation)?;
         }
 
         Ok(())
@@ -492,7 +492,7 @@ impl<'gc> ClassObject<'gc> {
     /// Call the instance initializer.
     pub fn call_init(
         self,
-        receiver: Option<Object<'gc>>,
+        receiver: Value<'gc>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -510,7 +510,7 @@ impl<'gc> ClassObject<'gc> {
     /// classes that cannot be constructed but can be supercalled).
     pub fn call_native_init(
         self,
-        receiver: Option<Object<'gc>>,
+        receiver: Value<'gc>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -574,7 +574,7 @@ impl<'gc> ClassObject<'gc> {
             let callee =
                 FunctionObject::from_method(activation, method, scope, Some(receiver), Some(class));
 
-            callee.call(Some(receiver), arguments, activation)
+            callee.call(receiver.into(), arguments, activation)
         } else {
             receiver.call_property(multiname, arguments, activation)
         }
@@ -635,7 +635,7 @@ impl<'gc> ClassObject<'gc> {
 
                 // We call getters, but return the actual function object for normal methods
                 if matches!(property, Some(Property::Virtual { .. })) {
-                    callee.call(Some(receiver), &[], activation)
+                    callee.call(receiver.into(), &[], activation)
                 } else {
                     Ok(callee.into())
                 }
@@ -710,7 +710,7 @@ impl<'gc> ClassObject<'gc> {
                 let callee =
                     FunctionObject::from_method(activation, method, scope, Some(receiver), Some(class));
 
-                callee.call(Some(receiver), &[value], activation)?;
+                callee.call(receiver.into(), &[value], activation)?;
                 Ok(())
             }
             Some(Property::Slot { .. }) => {
@@ -837,7 +837,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
 
     fn call(
         self,
-        receiver: Option<Object<'gc>>,
+        receiver: Value<'gc>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -866,7 +866,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
 
         instance.install_instance_slots(activation.context.gc_context);
 
-        self.call_init(Some(instance), arguments, activation)?;
+        self.call_init(instance.into(), arguments, activation)?;
 
         Ok(instance)
     }

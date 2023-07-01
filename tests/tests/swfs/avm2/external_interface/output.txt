@@ -56,7 +56,7 @@ Hello World!
 After calling `parrot` with a string: String("Hello World!")
 /// freestanding() start
 // this
-null
+[object global]
 
 /// freestanding() end
 /// callWith() start

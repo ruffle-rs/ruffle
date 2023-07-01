@@ -74,7 +74,7 @@ impl<'gc> DomainObject<'gc> {
         class
             .superclass_object()
             .unwrap()
-            .call_native_init(Some(this), &[], activation)?;
+            .call_native_init(this.into(), &[], activation)?;
         Ok(this)
     }
 }

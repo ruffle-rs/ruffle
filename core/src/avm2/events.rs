@@ -413,9 +413,9 @@ pub fn dispatch_event_to_target<'gc>(
             break;
         }
 
-        let object = activation.global_scope();
+        let global = activation.context.avm2.toplevel_global_object().unwrap();
 
-        if let Err(err) = handler.call(object, &[event.into()], activation) {
+        if let Err(err) = handler.call(global.into(), &[event.into()], activation) {
             tracing::error!(
                 "Error dispatching event {:?} to handler {:?} : {:?}",
                 event,
