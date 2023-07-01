@@ -1735,7 +1735,9 @@ fn set_filters<'gc>(
     if let Value::Object(value) = value {
         for index in value.get_keys(activation, false) {
             let filter_object = value.get(index, activation)?.coerce_to_object(activation);
-            if let Some(filter) = bitmap_filter::avm1_to_filter(filter_object) {
+            if let Some(filter) =
+                bitmap_filter::avm1_to_filter(filter_object, &mut activation.context)
+            {
                 filters.push(filter);
             }
         }
