@@ -9,6 +9,7 @@ use crate::avm1::globals::convolution_filter::ConvolutionFilter;
 use crate::avm1::globals::displacement_map_filter::DisplacementMapFilter;
 use crate::avm1::globals::drop_shadow_filter::DropShadowFilter;
 use crate::avm1::globals::glow_filter::GlowFilter;
+use crate::avm1::globals::gradient_filter::GradientFilter;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Attribute, Object, ScriptObject, TObject, Value};
@@ -85,6 +86,12 @@ pub fn avm1_to_filter<'gc>(
         NativeObject::DisplacementMapFilter(filter) => {
             Some(Filter::DisplacementMapFilter(filter.filter(context)))
         }
+        NativeObject::GradientBevelFilter(filter) => {
+            Some(Filter::GradientBevelFilter(filter.filter()))
+        }
+        NativeObject::GradientGlowFilter(filter) => {
+            Some(Filter::GradientGlowFilter(filter.filter()))
+        }
 
         // Invalid filters are silently dropped/ignored, no errors are thrown.
         _ => None,
@@ -141,6 +148,20 @@ pub fn filter_to_avm1<'gc>(activation: &mut Activation<'_, 'gc>, filter: Filter)
                 filter,
             )),
             activation.context.avm1.prototypes().displacement_map_filter,
+        ),
+        Filter::GradientBevelFilter(filter) => (
+            NativeObject::GradientBevelFilter(GradientFilter::from_filter(
+                activation.context.gc_context,
+                filter,
+            )),
+            activation.context.avm1.prototypes().gradient_bevel_filter,
+        ),
+        Filter::GradientGlowFilter(filter) => (
+            NativeObject::GradientGlowFilter(GradientFilter::from_filter(
+                activation.context.gc_context,
+                filter,
+            )),
+            activation.context.avm1.prototypes().gradient_glow_filter,
         ),
         _ => {
             // Unrepresentable filters (eg Shader) will just return as Null.
