@@ -28,6 +28,7 @@ lru = "0.10.0"
 num-traits = "0.2"
 num-derive = "0.3"
 byteorder = "1.4"
+wgpu = { workspace = true, optional = true }
 
 [dependencies.jpeg-decoder]
 version = "0.3.0"
@@ -40,3 +41,4 @@ approx = "0.5.1"
 default = []
 tessellator = ["lyon"]
 web = ["wasm-bindgen"]
+wgpu = ["dep:wgpu"]

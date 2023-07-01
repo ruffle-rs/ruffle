@@ -1,4 +1,4 @@
-use std::sync::OnceLock;
+use std::{sync::OnceLock, vec};
 
 use anyhow::Result;
 use naga::{
@@ -7,15 +7,17 @@ use naga::{
     EntryPoint, Expression, Function, FunctionArgument, FunctionResult, GlobalVariable, Handle,
     ImageClass, ImageDimension, ImageQuery, LocalVariable, MathFunction, Module, ResourceBinding,
     ScalarKind, ScalarValue, ShaderStage, Span, Statement, SwizzleComponent, Type, TypeInner,
+    VectorSize,
 };
+use naga_oil::compose::{Composer, NagaModuleDescriptor};
 use ruffle_render::pixel_bender::{
     Opcode, Operation, PixelBenderParam, PixelBenderParamQualifier, PixelBenderReg,
     PixelBenderRegChannel, PixelBenderRegKind, PixelBenderShader, PixelBenderTypeOpcode,
     OUT_COORD_NAME,
 };
 
-/// The entrypoint name for the vertex and fragment shaders.
-pub const SHADER_ENTRYPOINT: &str = "main";
+pub const VERTEX_SHADER_ENTRYPOINT: &str = "main_vertex";
+pub const FRAGMENT_SHADER_ENTRYPOINT: &str = "main";
 
 pub struct NagaModules {
     pub vertex: naga::Module,
@@ -33,8 +35,22 @@ pub struct ShaderBuilder<'a> {
     vec2f: Handle<Type>,
     vec4f: Handle<Type>,
     vec4i: Handle<Type>,
+    mat2x2f: Handle<Type>,
+    mat3x3f: Handle<Type>,
+    mat4x4f: Handle<Type>,
     image2d: Handle<Type>,
     sampler: Handle<Type>,
+
+    // The value 0.0f32
+    zerof32: Handle<Expression>,
+    // The value 0i32
+    zeroi32: Handle<Expression>,
+    // The value 1.0f32
+    onef32: Handle<Expression>,
+
+    // A temporary vec4f local variable.
+    // Currently used during texture sampling.
+    temp_vec4f_local: Handle<Expression>,
 
     clamp_nearest: Handle<Expression>,
     clamp_linear: Handle<Expression>,
@@ -53,6 +69,9 @@ pub struct ShaderBuilder<'a> {
 
     /// Like float_registesr but with vec4i
     int_registers: Vec<Option<Handle<Expression>>>,
+
+    /// Like float_registers but with matrices
+    matrix_registers: Vec<Option<Handle<Expression>>>,
 
     // A stack of if/else blocks, using to push statements
     // into the correct block.
@@ -79,8 +98,6 @@ enum BlockStackEntry {
 
 const TEXTURE_SAMPLER_START_BIND_INDEX: u32 = 0;
 
-// FIXME - this shouldn't actually be clamp - https://www.mcjones.org/paul/PixelBenderReference.pdf
-// says that coordinates outside the range are 'transparent black'
 pub const SAMPLER_CLAMP_NEAREST: u32 = 0;
 pub const SAMPLER_CLAMP_LINEAR: u32 = 1;
 pub const SAMPLER_CLAMP_BILINEAR: u32 = 2;
@@ -89,21 +106,20 @@ pub const SHADER_FLOAT_PARAMETERS_INDEX: u32 = 3;
 // This covers ints and bool parameters
 pub const SHADER_INT_PARAMETERS_INDEX: u32 = 4;
 
-pub const TEXTURE_START_BIND_INDEX: u32 = 5;
+// A parameter controlling whether or not we produce transparent black (zero)
+// for textures samples with out-of-range coordinates. This is a single floating-point
+// uniform - when it's 0.0f32, we use the default clamping behavior, and produce
+// transparent black when it's any other value.
+//
+// Note - https://www.mcjones.org/paul/PixelBenderReference.pdf
+// claims that coordinates outside the range are 'transparent black'.
+// However, some testing shows that the actual behavior is 'clamp' (at least
+// when a shader is run through a ShaderJob, and is only 'transparent black'
+// when a ShaderFilter is used. We set this uniform from Ruffle based on
+// how the shader is being invoked.
+pub const ZEROED_OUT_OF_RANGE_MODE_INDEX: u32 = 5;
 
-const VERTEX_SHADER_WGSL: &str = r#"
-struct VertexOutput {
-    @builtin(position) position: vec4<f32>,
-};
-
-@vertex
-fn main(
-    @location(0) position: vec2<f32>,
-) -> VertexOutput {
-    // Map coordinates from [0, 1] to [-1, 1]
-    return VertexOutput(vec4<f32>((position * vec2(2.0, 2.0)) - vec2(1.0, 1.0), 0.0, 1.0));
-};
-"#;
+pub const TEXTURE_START_BIND_INDEX: u32 = 6;
 
 impl<'a> ShaderBuilder<'a> {
     pub fn build(shader: &PixelBenderShader) -> Result<NagaModules> {
@@ -112,9 +128,25 @@ impl<'a> ShaderBuilder<'a> {
         static VERTEX_SHADER: OnceLock<Module> = OnceLock::new();
         let vertex_shader = VERTEX_SHADER
             .get_or_init(|| {
-                naga::front::wgsl::Frontend::new()
-                    .parse(VERTEX_SHADER_WGSL)
-                    .expect("Failed to parse vertex shader")
+                let mut composer = Composer::default();
+                // [NA] Hack to get all capabilities since nobody exposes this type easily
+                let capabilities = composer.capabilities;
+                composer = composer.with_capabilities(!capabilities);
+
+                composer
+                    .make_naga_module(NagaModuleDescriptor {
+                        source: ruffle_render::shader_source::SHADER_FILTER_COMMON,
+                        file_path: "shaders/filter/common.wgsl",
+                        shader_defs: Default::default(),
+                        ..Default::default()
+                    })
+                    .unwrap_or_else(|e| {
+                        panic!(
+                            "shader_filter_common.wgsl failed to compile:\n{}\n{:#?}",
+                            e.emit_to_string(&composer),
+                            e
+                        )
+                    })
             })
             .clone();
 
@@ -154,6 +186,42 @@ impl<'a> ShaderBuilder<'a> {
             Span::UNDEFINED,
         );
 
+        let mat2x2f = module.types.insert(
+            Type {
+                name: None,
+                inner: TypeInner::Matrix {
+                    columns: naga::VectorSize::Bi,
+                    rows: naga::VectorSize::Bi,
+                    width: 4,
+                },
+            },
+            Span::UNDEFINED,
+        );
+
+        let mat3x3f = module.types.insert(
+            Type {
+                name: None,
+                inner: TypeInner::Matrix {
+                    columns: naga::VectorSize::Tri,
+                    rows: naga::VectorSize::Tri,
+                    width: 4,
+                },
+            },
+            Span::UNDEFINED,
+        );
+
+        let mat4x4f = module.types.insert(
+            Type {
+                name: None,
+                inner: TypeInner::Matrix {
+                    columns: naga::VectorSize::Quad,
+                    rows: naga::VectorSize::Quad,
+                    width: 4,
+                },
+            },
+            Span::UNDEFINED,
+        );
+
         let image2d = module.types.insert(
             Type {
                 name: None,
@@ -182,6 +250,17 @@ impl<'a> ShaderBuilder<'a> {
             name: None,
             ty: vec4f,
             binding: Some(Binding::BuiltIn(BuiltIn::Position { invariant: false })),
+        });
+        // UV coordinates from vertex shader - unused, but wgpu
+        // requires that we consume all outputs from the vertex shader
+        func.arguments.push(FunctionArgument {
+            name: None,
+            ty: vec2f,
+            binding: Some(Binding::Location {
+                location: 0,
+                interpolation: Some(naga::Interpolation::Perspective),
+                sampling: Some(naga::Sampling::Center),
+            }),
         });
 
         func.result = Some(FunctionResult {
@@ -219,14 +298,79 @@ impl<'a> ShaderBuilder<'a> {
             })
             .collect::<Vec<_>>();
 
+        let const_zeroi32 = module.constants.append(
+            Constant {
+                name: None,
+                specialization: None,
+                inner: ConstantInner::Scalar {
+                    width: 4,
+                    value: ScalarValue::Sint(0),
+                },
+            },
+            Span::UNDEFINED,
+        );
+        let zeroi32 = func
+            .expressions
+            .append(Expression::Constant(const_zeroi32), Span::UNDEFINED);
+
+        let const_zerof32 = module.constants.append(
+            Constant {
+                name: None,
+                specialization: None,
+                inner: ConstantInner::Scalar {
+                    width: 4,
+                    value: ScalarValue::Float(0.0),
+                },
+            },
+            Span::UNDEFINED,
+        );
+        let zerof32 = func
+            .expressions
+            .append(Expression::Constant(const_zerof32), Span::UNDEFINED);
+
+        let const_onef32 = module.constants.append(
+            crate::Constant {
+                name: None,
+                specialization: None,
+                inner: crate::ConstantInner::Scalar {
+                    width: 4,
+                    value: crate::ScalarValue::Float(1.0),
+                },
+            },
+            Span::UNDEFINED,
+        );
+
+        let onef32 = func
+            .expressions
+            .append(Expression::Constant(const_onef32), Span::UNDEFINED);
+
+        let temp_vec4f_local = func.local_variables.append(
+            LocalVariable {
+                name: Some("temp_vec4f_local".to_string()),
+                ty: vec4f,
+                init: None,
+            },
+            Span::UNDEFINED,
+        );
+        let temp_vec4f_local = func
+            .expressions
+            .append(Expression::LocalVariable(temp_vec4f_local), Span::UNDEFINED);
+
         let mut builder = ShaderBuilder {
             module,
             func,
             vec2f,
             vec4f,
             vec4i,
+            mat2x2f,
+            mat3x3f,
+            mat4x4f,
             image2d,
             sampler,
+            zerof32,
+            zeroi32,
+            onef32,
+            temp_vec4f_local,
             clamp_nearest: samplers[SAMPLER_CLAMP_NEAREST as usize],
             clamp_linear: samplers[SAMPLER_CLAMP_LINEAR as usize],
             clamp_bilinear: samplers[SAMPLER_CLAMP_BILINEAR as usize],
@@ -235,33 +379,76 @@ impl<'a> ShaderBuilder<'a> {
             textures: Vec::new(),
             float_registers: Vec::new(),
             int_registers: Vec::new(),
+            matrix_registers: Vec::new(),
             blocks: vec![BlockStackEntry::Normal(Block::new())],
         };
+
+        let zeroed_out_of_range_mode_global = builder.module.global_variables.append(
+            GlobalVariable {
+                name: Some("zeroed_out_of_range_mode".to_string()),
+                space: naga::AddressSpace::Uniform,
+                binding: Some(naga::ResourceBinding {
+                    group: 0,
+                    binding: ZEROED_OUT_OF_RANGE_MODE_INDEX,
+                }),
+                ty: builder.module.types.insert(
+                    Type {
+                        name: None,
+                        inner: TypeInner::Scalar {
+                            kind: ScalarKind::Float,
+                            width: 4,
+                        },
+                    },
+                    Span::UNDEFINED,
+                ),
+                init: None,
+            },
+            Span::UNDEFINED,
+        );
+
+        let zeroed_out_of_range_expr = builder.func.expressions.append(
+            Expression::GlobalVariable(zeroed_out_of_range_mode_global),
+            Span::UNDEFINED,
+        );
+        let zeroed_out_of_range_expr = builder.evaluate_expr(Expression::Load {
+            pointer: zeroed_out_of_range_expr,
+        });
+        let zeroed_out_of_range_expr = builder.evaluate_expr(Expression::Binary {
+            op: BinaryOperator::NotEqual,
+            left: zeroed_out_of_range_expr,
+            right: builder.zerof32,
+        });
 
         let wrapper_func = builder.make_sampler_wrapper();
 
         let (float_parameters_buffer_size, int_parameters_buffer_size) = builder.add_arguments()?;
-        builder.process_opcodes(wrapper_func)?;
+        builder.process_opcodes(wrapper_func, zeroed_out_of_range_expr)?;
 
-        let dst = shader
+        let (dst, dst_param_type) = shader
             .params
             .iter()
             .find_map(|p| {
                 if let PixelBenderParam::Normal {
                     qualifier: PixelBenderParamQualifier::Output,
                     reg,
+                    param_type,
                     ..
                 } = p
                 {
-                    Some(reg)
+                    Some((reg, param_type))
                 } else {
                     None
                 }
             })
             .expect("Missing destination register!");
+
+        let expected_dst_channels = match dst_param_type {
+            PixelBenderTypeOpcode::TFloat4 => PixelBenderRegChannel::RGBA.as_slice(),
+            PixelBenderTypeOpcode::TFloat3 => PixelBenderRegChannel::RGB.as_slice(),
+            _ => panic!("Invalid destination register type: {:?}", dst_param_type),
+        };
         assert_eq!(
-            dst.channels,
-            PixelBenderRegChannel::RGBA,
+            dst.channels, expected_dst_channels,
             "Invalid 'dest' parameter register {dst:?}"
         );
 
@@ -305,12 +492,18 @@ impl<'a> ShaderBuilder<'a> {
     }
 
     fn add_arguments(&mut self) -> Result<(u64, u64)> {
-        let mut num_floats = 0;
-        let mut num_ints = 0;
+        let mut num_vec4fs = 0;
+        let mut num_vec4is = 0;
 
         let mut param_offsets = Vec::new();
 
         let mut out_coord = None;
+
+        enum ParamKind {
+            Float,
+            Int,
+            FloatMatrix,
+        }
 
         for param in &self.shader.params {
             match param {
@@ -327,28 +520,42 @@ impl<'a> ShaderBuilder<'a> {
                         continue;
                     }
 
-                    let float_offset = num_floats;
-                    let int_offset = num_ints;
+                    let float_offset = num_vec4fs;
+                    let int_offset = num_vec4is;
 
-                    // To meet alignment requirements, each parameter is stored as a vec4 in the constants array.
+                    // To meet alignment requirements, each parameter is stored as some number of vec4s in the constants array.
                     // Smaller types (e.g. Float, Float2, Float3) are padded with zeros.
                     let (offset, is_float) = match param_type {
                         PixelBenderTypeOpcode::TFloat
                         | PixelBenderTypeOpcode::TFloat2
                         | PixelBenderTypeOpcode::TFloat3
                         | PixelBenderTypeOpcode::TFloat4 => {
-                            num_floats += 1;
-                            (float_offset, true)
+                            num_vec4fs += 1;
+                            (float_offset, ParamKind::Float)
                         }
                         PixelBenderTypeOpcode::TInt
                         | PixelBenderTypeOpcode::TInt2
                         | PixelBenderTypeOpcode::TInt3
                         | PixelBenderTypeOpcode::TInt4 => {
-                            num_ints += 1;
-                            (int_offset, false)
+                            num_vec4is += 1;
+                            (int_offset, ParamKind::Int)
                         }
                         PixelBenderTypeOpcode::TString => continue,
-                        _ => unimplemented!("Unsupported parameter type {:?}", param_type),
+                        PixelBenderTypeOpcode::TFloat2x2 => {
+                            // A 2x2 matrix fits into a single vec4
+                            num_vec4fs += 1;
+                            (float_offset, ParamKind::FloatMatrix)
+                        }
+                        PixelBenderTypeOpcode::TFloat3x3 => {
+                            // Each row of the matrix is stored in a vec4 (with the last component of each set to 0)
+                            num_vec4fs += 3;
+                            (float_offset, ParamKind::FloatMatrix)
+                        }
+                        PixelBenderTypeOpcode::TFloat4x4 => {
+                            // Each row of the matrix is a vec4
+                            num_vec4fs += 4;
+                            (float_offset, ParamKind::FloatMatrix)
+                        }
                     };
 
                     param_offsets.push((reg, offset, is_float));
@@ -395,7 +602,7 @@ impl<'a> ShaderBuilder<'a> {
                 specialization: None,
                 inner: naga::ConstantInner::Scalar {
                     width: 4,
-                    value: naga::ScalarValue::Uint(num_floats.max(1) as u64),
+                    value: naga::ScalarValue::Uint(num_vec4fs.max(1) as u64),
                 },
             },
             Span::UNDEFINED,
@@ -407,7 +614,7 @@ impl<'a> ShaderBuilder<'a> {
                 specialization: None,
                 inner: naga::ConstantInner::Scalar {
                     width: 4,
-                    value: naga::ScalarValue::Uint(num_ints.max(1) as u64),
+                    value: naga::ScalarValue::Uint(num_vec4is.max(1) as u64),
                 },
             },
             Span::UNDEFINED,
@@ -461,26 +668,132 @@ impl<'a> ShaderBuilder<'a> {
             Span::UNDEFINED,
         );
 
-        for (reg, offset, is_float) in param_offsets {
-            let global = if is_float {
-                shader_float_parameters
-            } else {
-                shader_int_parameters
+        for (reg, offset, param_kind) in param_offsets {
+            let param_global = match param_kind {
+                ParamKind::Float => shader_float_parameters,
+                ParamKind::Int => shader_int_parameters,
+                ParamKind::FloatMatrix => shader_float_parameters,
             };
 
             let global_base = self
                 .func
                 .expressions
-                .append(Expression::GlobalVariable(global), Span::UNDEFINED);
+                .append(Expression::GlobalVariable(param_global), Span::UNDEFINED);
 
             let src_ptr = self.evaluate_expr(Expression::AccessIndex {
                 base: global_base,
                 index: offset,
             });
 
-            let src = self.evaluate_expr(Expression::Load { pointer: src_ptr });
+            let src_expr = match reg.channels[0] {
+                // FIXME - add tests for this case
+                PixelBenderRegChannel::M2x2 => {
+                    // A 2x2 matrix fits exactly into a vec4f
+                    let vec0_load = self.evaluate_expr(Expression::Load { pointer: src_ptr });
+                    // Only the first two components of `pattern` matter
+                    let row0 = self.evaluate_expr(Expression::Swizzle {
+                        size: VectorSize::Bi,
+                        vector: vec0_load,
+                        pattern: [
+                            SwizzleComponent::X,
+                            SwizzleComponent::Y,
+                            SwizzleComponent::W,
+                            SwizzleComponent::W,
+                        ],
+                    });
 
-            self.emit_dest_store(src, reg);
+                    // Only the first two components of `pattern` matter (load the Z and W components into the second row)
+                    let row1 = self.evaluate_expr(Expression::Swizzle {
+                        size: VectorSize::Bi,
+                        vector: vec0_load,
+                        pattern: [
+                            SwizzleComponent::Z,
+                            SwizzleComponent::W,
+                            SwizzleComponent::W,
+                            SwizzleComponent::W,
+                        ],
+                    });
+
+                    self.evaluate_expr(Expression::Compose {
+                        ty: self.mat2x2f,
+                        components: vec![row0, row1],
+                    })
+                }
+                PixelBenderRegChannel::M3x3 | PixelBenderRegChannel::M4x4 => {
+                    let mut row0 = self.evaluate_expr(Expression::Load { pointer: src_ptr });
+
+                    let vec1_ptr = self.evaluate_expr(Expression::AccessIndex {
+                        base: global_base,
+                        index: offset + 1,
+                    });
+                    let mut row1 = self.evaluate_expr(Expression::Load { pointer: vec1_ptr });
+
+                    let vec2_ptr = self.evaluate_expr(Expression::AccessIndex {
+                        base: global_base,
+                        index: offset + 2,
+                    });
+                    let mut row2 = self.evaluate_expr(Expression::Load { pointer: vec2_ptr });
+
+                    match reg.channels[0] {
+                        PixelBenderRegChannel::M3x3 => {
+                            row0 = self.evaluate_expr(Expression::Swizzle {
+                                size: VectorSize::Tri,
+                                vector: row0,
+                                pattern: [
+                                    SwizzleComponent::X,
+                                    SwizzleComponent::Y,
+                                    SwizzleComponent::Z,
+                                    SwizzleComponent::W,
+                                ],
+                            });
+
+                            row1 = self.evaluate_expr(Expression::Swizzle {
+                                size: VectorSize::Tri,
+                                vector: row1,
+                                pattern: [
+                                    SwizzleComponent::X,
+                                    SwizzleComponent::Y,
+                                    SwizzleComponent::Z,
+                                    SwizzleComponent::W,
+                                ],
+                            });
+
+                            row2 = self.evaluate_expr(Expression::Swizzle {
+                                size: VectorSize::Tri,
+                                vector: row2,
+                                pattern: [
+                                    SwizzleComponent::X,
+                                    SwizzleComponent::Y,
+                                    SwizzleComponent::Z,
+                                    SwizzleComponent::W,
+                                ],
+                            });
+
+                            self.evaluate_expr(Expression::Compose {
+                                ty: self.mat3x3f,
+                                components: vec![row0, row1, row2],
+                            })
+                        }
+                        // FIXME - add tests for this case
+                        PixelBenderRegChannel::M4x4 => {
+                            let vec3_ptr = self.evaluate_expr(Expression::AccessIndex {
+                                base: global_base,
+                                index: offset + 3,
+                            });
+                            let row3 = self.evaluate_expr(Expression::Load { pointer: vec3_ptr });
+
+                            self.evaluate_expr(Expression::Compose {
+                                ty: self.mat4x4f,
+                                components: vec![row0, row1, row2, row3],
+                            })
+                        }
+                        _ => unreachable!(),
+                    }
+                }
+                _ => self.evaluate_expr(Expression::Load { pointer: src_ptr }),
+            };
+
+            self.emit_dest_store(src_expr, reg);
         }
 
         // Emit this after all other registers have been initialized
@@ -495,9 +808,144 @@ impl<'a> ShaderBuilder<'a> {
         }
 
         Ok((
-            num_floats.max(1) as u64 * 4 * std::mem::size_of::<f32>() as u64,
-            num_ints.max(1) as u64 * 4 * std::mem::size_of::<i32>() as u64,
+            num_vec4fs.max(1) as u64 * 4 * std::mem::size_of::<f32>() as u64,
+            num_vec4is.max(1) as u64 * 4 * std::mem::size_of::<i32>() as u64,
         ))
+    }
+
+    /// Samples a texture, determining the out-of-range coordinate behavior
+    /// based on `zeroed_out_of_range_expr`. See the comments on `ZEROED_OUT_OF_RANGE_MODE_INDEX`
+    /// for more details.
+    fn sample_texture(
+        &mut self,
+        sample_wrapper_func: Handle<Function>,
+        normalized_coord: Handle<Expression>,
+        image: Handle<Expression>,
+        sampler: Handle<Expression>,
+        zeroed_out_of_range_expr: Handle<Expression>,
+    ) -> Handle<Expression> {
+        // Don't evaluate this expression - it gets evaluated by Statement::Call
+        let result = self
+            .func
+            .expressions
+            .append(Expression::CallResult(sample_wrapper_func), Span::UNDEFINED);
+
+        // Build up the expression '(coord.x < 0.0 || coord.x > 1.0 || coord.y < 0.0 || coord.y > 1.0)'
+
+        let x_coord: Handle<Expression> = self.evaluate_expr(Expression::AccessIndex {
+            base: normalized_coord,
+            index: 0,
+        });
+
+        let y_coord = self.evaluate_expr(Expression::AccessIndex {
+            base: normalized_coord,
+            index: 1,
+        });
+
+        let x_coord_lt_zero = self.evaluate_expr(Expression::Binary {
+            op: BinaryOperator::Less,
+            left: x_coord,
+            right: self.zerof32,
+        });
+
+        let x_coord_gt_one = self.evaluate_expr(Expression::Binary {
+            op: BinaryOperator::Greater,
+            left: x_coord,
+            right: self.onef32,
+        });
+
+        let y_coord_lt_zero = self.evaluate_expr(Expression::Binary {
+            op: BinaryOperator::Less,
+            left: y_coord,
+            right: self.zerof32,
+        });
+
+        let y_coord_gt_one = self.evaluate_expr(Expression::Binary {
+            op: BinaryOperator::Greater,
+            left: y_coord,
+            right: self.onef32,
+        });
+
+        let x_coord_logical_or = self.evaluate_expr(Expression::Binary {
+            op: BinaryOperator::LogicalOr,
+            left: x_coord_lt_zero,
+            right: x_coord_gt_one,
+        });
+
+        let y_coord_logical_or = self.evaluate_expr(Expression::Binary {
+            op: BinaryOperator::LogicalOr,
+            left: y_coord_lt_zero,
+            right: y_coord_gt_one,
+        });
+
+        let any_coord_out_of_range = self.evaluate_expr(Expression::Binary {
+            op: BinaryOperator::LogicalOr,
+            left: x_coord_logical_or,
+            right: y_coord_logical_or,
+        });
+
+        let out_of_range_cond = self.evaluate_expr(Expression::Binary {
+            op: BinaryOperator::LogicalAnd,
+            left: zeroed_out_of_range_expr,
+            right: any_coord_out_of_range,
+        });
+
+        // Construct the statements:
+        // ```
+        // if (zeroed_out_of_range_expr && any_coord_out_of_range) {
+        //    temp_local = vec4f(0.0);
+        // else {
+        //    temp_local = sample_wrapper_func(image, sampler, normalized_coord);
+        // }
+        // return temp_local
+        // ```
+        //
+        // Note that due to the overly restrictive uniformity analysis in wgpu/naga,
+        // we need this `if/else` at every call site - it cannot be inlined into
+        // `sample_wrapper_func`
+
+        let mut good_coord_block = Block::new();
+        // Call our helper function, which just calls 'Expression::ImageSample' with
+        // the provided parameters. This works around a uniformity analysis issue
+        // with wgpu/naga
+        good_coord_block.push(
+            Statement::Call {
+                function: sample_wrapper_func,
+                arguments: vec![image, sampler, normalized_coord],
+                result: Some(result),
+            },
+            Span::UNDEFINED,
+        );
+        good_coord_block.push(
+            Statement::Store {
+                pointer: self.temp_vec4f_local,
+                value: result,
+            },
+            Span::UNDEFINED,
+        );
+
+        let mut bad_coord_block = Block::new();
+        let zero_vec = self.evaluate_expr(Expression::Splat {
+            size: VectorSize::Quad,
+            value: self.zerof32,
+        });
+        bad_coord_block.push(
+            Statement::Store {
+                pointer: self.temp_vec4f_local,
+                value: zero_vec,
+            },
+            Span::UNDEFINED,
+        );
+
+        self.push_statement(Statement::If {
+            condition: out_of_range_cond,
+            accept: bad_coord_block,
+            reject: good_coord_block,
+        });
+
+        self.evaluate_expr(Expression::Load {
+            pointer: self.temp_vec4f_local,
+        })
     }
 
     // Works around wgpu requiring naga's strict level of uniformity analysis
@@ -567,11 +1015,19 @@ impl<'a> ShaderBuilder<'a> {
         self.module.functions.append(func, Span::UNDEFINED)
     }
 
-    fn process_opcodes(&mut self, sample_wrapper_func: Handle<Function>) -> Result<()> {
+    fn process_opcodes(
+        &mut self,
+        sample_wrapper_func: Handle<Function>,
+        zeroed_out_of_range_expr: Handle<Expression>,
+    ) -> Result<()> {
         for op in &self.shader.operations {
             match op {
-                Operation::Normal { opcode, dst, src } => {
-                    let src = self.load_src_register(src)?;
+                Operation::Normal {
+                    opcode,
+                    dst,
+                    src: src_reg,
+                } => {
+                    let src = self.load_src_register(src_reg)?;
                     let mut dst = dst.clone();
                     let evaluated = match opcode {
                         Opcode::Mov => src,
@@ -721,8 +1177,79 @@ impl<'a> ShaderBuilder<'a> {
                                 value: length,
                             })
                         }
+                        Opcode::MatVecMul => {
+                            let right = self.load_src_register_with_padding(&dst, false)?;
+                            self.evaluate_expr(Expression::Binary {
+                                op: BinaryOperator::Multiply,
+                                left: src,
+                                right,
+                            })
+                        }
+                        Opcode::VecMatMul => {
+                            let vec = self.load_src_register_with_padding(&dst, false)?;
+                            self.evaluate_expr(Expression::Binary {
+                                op: BinaryOperator::Multiply,
+                                left: vec,
+                                right: src,
+                            })
+                        }
+                        Opcode::Distance => {
+                            let left = self.load_src_register_with_padding(&dst, false)?;
+                            let right = self.load_src_register_with_padding(src_reg, false)?;
+                            let dist = self.evaluate_expr(Expression::Math {
+                                fun: MathFunction::Distance,
+                                arg: left,
+                                arg1: Some(right),
+                                arg2: None,
+                                arg3: None,
+                            });
+                            self.evaluate_expr(Expression::Splat {
+                                size: VectorSize::Quad,
+                                value: dist,
+                            })
+                        }
+                        Opcode::Max => {
+                            let right = self.load_src_register(&dst)?;
+                            self.evaluate_expr(Expression::Math {
+                                fun: MathFunction::Max,
+                                arg: src,
+                                arg1: Some(right),
+                                arg2: None,
+                                arg3: None,
+                            })
+                        }
+                        Opcode::Min => {
+                            let right = self.load_src_register(&dst)?;
+                            self.evaluate_expr(Expression::Math {
+                                fun: MathFunction::Min,
+                                arg: src,
+                                arg1: Some(right),
+                                arg2: None,
+                                arg3: None,
+                            })
+                        }
+                        Opcode::Normalize => {
+                            let src = self.load_src_register_with_padding(src_reg, false)?;
+                            self.evaluate_expr(Expression::Math {
+                                fun: MathFunction::Normalize,
+                                arg: src,
+                                arg1: None,
+                                arg2: None,
+                                arg3: None,
+                            })
+                        }
+                        Opcode::Pow => {
+                            let dst_val = self.load_src_register(&dst)?;
+                            self.evaluate_expr(Expression::Math {
+                                fun: MathFunction::Pow,
+                                arg: dst_val,
+                                arg1: Some(src),
+                                arg2: None,
+                                arg3: None,
+                            })
+                        }
                         _ => {
-                            unimplemented!("Unimplemented opcode {opcode:?}");
+                            panic!("Unimplemented opcode {opcode:?}")
                         }
                     };
                     self.emit_dest_store(evaluated, &dst);
@@ -767,22 +1294,15 @@ impl<'a> ShaderBuilder<'a> {
                         _ => unreachable!(),
                     };
 
-                    // Don't evaluate this expression - it gets evaluated by Statement::Call
-                    let result = self
-                        .func
-                        .expressions
-                        .append(Expression::CallResult(sample_wrapper_func), Span::UNDEFINED);
+                    let sample_result = self.sample_texture(
+                        sample_wrapper_func,
+                        normalized_coord,
+                        image,
+                        sampler,
+                        zeroed_out_of_range_expr,
+                    );
 
-                    // Call our helper function, which just calls 'Expression::ImageSample' with
-                    // the provided parameters. This works around a uniformity analysis issue
-                    // with wgpu/naga
-                    self.push_statement(Statement::Call {
-                        function: sample_wrapper_func,
-                        arguments: vec![image, sampler, normalized_coord],
-                        result: Some(result),
-                    });
-
-                    self.emit_dest_store(result, dst);
+                    self.emit_dest_store(sample_result, dst);
                 }
                 Operation::LoadFloat { dst, val } => {
                     let const_val = self.module.constants.append(
@@ -831,9 +1351,9 @@ impl<'a> ShaderBuilder<'a> {
                     self.emit_dest_store(const_vec, dst);
                 }
                 Operation::If { src } => {
-                    let scalar_zero = match src.kind {
-                        PixelBenderRegKind::Float => ScalarValue::Float(0.0),
-                        PixelBenderRegKind::Int => ScalarValue::Sint(0),
+                    let expr_zero = match src.kind {
+                        PixelBenderRegKind::Float => self.zerof32,
+                        PixelBenderRegKind::Int => self.zeroi32,
                     };
                     if src.channels.len() != 1 {
                         panic!("If condition must be a scalar: {src:?}");
@@ -846,23 +1366,6 @@ impl<'a> ShaderBuilder<'a> {
                         base: src,
                         index: 0,
                     });
-
-                    let const_zero = self.module.constants.append(
-                        Constant {
-                            name: None,
-                            specialization: None,
-                            inner: ConstantInner::Scalar {
-                                width: 4,
-                                value: scalar_zero,
-                            },
-                        },
-                        Span::UNDEFINED,
-                    );
-
-                    let expr_zero = self
-                        .func
-                        .expressions
-                        .append(Expression::Constant(const_zero), Span::UNDEFINED);
 
                     let is_true = self.evaluate_expr(Expression::Binary {
                         op: BinaryOperator::NotEqual,
@@ -929,9 +1432,29 @@ impl<'a> ShaderBuilder<'a> {
     fn register_pointer(&mut self, reg: &PixelBenderReg) -> Result<Handle<Expression>> {
         let index = reg.index as usize;
 
-        let (ty, registers, register_kind_name) = match reg.kind {
-            PixelBenderRegKind::Float => (self.vec4f, &mut self.float_registers, "float"),
-            PixelBenderRegKind::Int => (self.vec4i, &mut self.int_registers, "int"),
+        let (ty, registers, register_kind_name) = if matches!(
+            &reg.channels.as_slice(),
+            [PixelBenderRegChannel::M2x2]
+                | [PixelBenderRegChannel::M3x3]
+                | [PixelBenderRegChannel::M4x4]
+        ) {
+            assert_eq!(
+                reg.kind,
+                PixelBenderRegKind::Float,
+                "Unexpected matrix element type"
+            );
+            let (ty, name) = match reg.channels[0] {
+                PixelBenderRegChannel::M2x2 => (self.mat2x2f, "mat2x2f"),
+                PixelBenderRegChannel::M3x3 => (self.mat3x3f, "mat3x3f"),
+                PixelBenderRegChannel::M4x4 => (self.mat4x4f, "mat4x4f"),
+                _ => unreachable!(),
+            };
+            (ty, &mut self.matrix_registers, name)
+        } else {
+            match reg.kind {
+                PixelBenderRegKind::Float => (self.vec4f, &mut self.float_registers, "float"),
+                PixelBenderRegKind::Int => (self.vec4i, &mut self.int_registers, "int"),
+            }
         };
 
         if index >= registers.len() {
@@ -957,13 +1480,30 @@ impl<'a> ShaderBuilder<'a> {
         Ok(registers[index].unwrap())
     }
 
+    fn load_src_register(&mut self, reg: &PixelBenderReg) -> Result<Handle<Expression>> {
+        self.load_src_register_with_padding(reg, true)
+    }
+
     /// Loads a vec4f/vec4i from the given register. Note that all registers are 4-component
     /// vectors - if the `PixelBenderReg` requests fewer components then that, then the extra
     /// components will be meaningless. This greatly simplifies the code, since we don't need
     /// to track whether or not we have a scalar or a vector everywhere.
-    fn load_src_register(&mut self, reg: &PixelBenderReg) -> Result<Handle<Expression>> {
+    fn load_src_register_with_padding(
+        &mut self,
+        reg: &PixelBenderReg,
+        padding: bool,
+    ) -> Result<Handle<Expression>> {
         let reg_ptr = self.register_pointer(reg)?;
         let reg_value = self.evaluate_expr(Expression::Load { pointer: reg_ptr });
+
+        if matches!(
+            reg.channels.as_slice(),
+            [PixelBenderRegChannel::M2x2]
+                | [PixelBenderRegChannel::M3x3]
+                | [PixelBenderRegChannel::M4x4]
+        ) {
+            return Ok(reg_value);
+        }
 
         let mut swizzle_components = reg
             .channels
@@ -973,17 +1513,30 @@ impl<'a> ShaderBuilder<'a> {
                 PixelBenderRegChannel::G => SwizzleComponent::Y,
                 PixelBenderRegChannel::B => SwizzleComponent::Z,
                 PixelBenderRegChannel::A => SwizzleComponent::W,
+                _ => panic!("Unexpected source register channel: {c:?}"),
             })
             .collect::<Vec<_>>();
+
+        let size = if padding {
+            VectorSize::Quad
+        } else {
+            match reg.channels.len() {
+                1 => panic!("Cannot load single channel as vector for reg {reg:?}"),
+                2 => VectorSize::Bi,
+                3 => VectorSize::Tri,
+                4 => VectorSize::Quad,
+                _ => unreachable!(),
+            }
+        };
 
         if swizzle_components.len() < 4 {
             // Pad with W - these components will be ignored, since whatever uses
             // the result will only use the components corresponding to 'reg.channels'
-            swizzle_components.resize(4, SwizzleComponent::W);
+            swizzle_components.resize(4_usize, SwizzleComponent::W);
         }
 
         Ok(self.evaluate_expr(Expression::Swizzle {
-            size: naga::VectorSize::Quad,
+            size,
             vector: reg_value,
             pattern: swizzle_components.try_into().unwrap(),
         }))
@@ -1001,9 +1554,31 @@ impl<'a> ShaderBuilder<'a> {
     // Emits a store of `expr` to the destination register, taking into account the store mask.
     fn emit_dest_store(&mut self, expr: Handle<Expression>, dst: &PixelBenderReg) {
         let dst_register = self.register_pointer(dst).unwrap();
+
+        if matches!(
+            dst.channels.as_slice(),
+            [PixelBenderRegChannel::M2x2]
+                | [PixelBenderRegChannel::M3x3]
+                | [PixelBenderRegChannel::M4x4]
+        ) {
+            self.push_statement(Statement::Store {
+                pointer: dst_register,
+                value: expr,
+            });
+            return;
+        }
+
         for (dst_channel, src_channel) in
             dst.channels.iter().zip(PixelBenderRegChannel::RGBA.iter())
         {
+            if matches!(
+                dst_channel,
+                PixelBenderRegChannel::M2x2
+                    | PixelBenderRegChannel::M3x3
+                    | PixelBenderRegChannel::M4x4
+            ) {
+                panic!("Unexpected to matrix channel for dst {dst:?}");
+            }
             // Write each channel of the source to the channel specified by the destiation mask
             let src_component_index = *src_channel as u32;
             let dst_component_index = *dst_channel as u32;

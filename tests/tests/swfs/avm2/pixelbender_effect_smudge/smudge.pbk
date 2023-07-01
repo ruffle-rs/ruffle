@@ -1,0 +1,73 @@
+// Based on https://github.com/hoojaoh/PhotoFilterShaders/blob/master/Smudge.pbk
+<languageVersion : 1.0;>
+
+kernel Smudge
+<   namespace : "Smudge";
+    vendor : "Paperless Post";
+    version : 1;
+>
+{
+    input image4 src;
+    output pixel4 dst;
+    
+     //left, right, top, bottom
+    parameter float4 bBox
+    <
+        minValue:float4(0.0,0.0,0.0,0.0);
+        maxValue:float4(1000.0,1000.0,1000.0,1000.0);
+        defaultValue:float4(0.0,600.0,0.0,400.0);
+    >;
+
+    parameter float exponent
+    <
+        minValue:float(-10.0);
+        maxValue:float(10.0);
+        defaultValue:float(0.0);
+    >;
+    
+    parameter float factor
+    <
+        minValue:float(-10.0);
+        maxValue:float(10.0);
+        defaultValue:float(0.0);
+    >;
+
+    parameter float2 center
+    <
+        minValue:float2(-2.0,-2.0);
+        maxValue:float2(2.0,2.0);
+        defaultValue:float2(0.5,0.5);
+    >;
+
+    //controls size of the gradient
+    parameter float size
+    <
+        minValue:float(0);
+        maxValue:float(2);
+        defaultValue:float(1);
+    >;
+    
+    //smudge factor
+    parameter float smudge
+    <
+        minValue:float(0.0);
+        maxValue:float(1.0);
+        defaultValue:float(0.0);
+    >;
+
+    void
+    evaluatePixel()
+    {
+        dst = sampleNearest(src, outCoord());           
+        float alpha = dst.a;
+        float2 centerPos = float2(mix(bBox[0],bBox[1],center[0]),mix(bBox[2],bBox[3],center[1]));
+        float dist = distance(centerPos,outCoord());
+        dist = dist * (1.0/size);
+        dist = dist/distance(centerPos,float2(bBox[0],bBox[3]));     // normalize the distance between 0 and 1
+        dist = 1.0 - factor * pow(dist,exponent);       // darken colors in relation to distance from center
+        dist *= smudge;
+        
+        dst *= 1.0 + dist;
+        dst.a = alpha;
+    }
+}

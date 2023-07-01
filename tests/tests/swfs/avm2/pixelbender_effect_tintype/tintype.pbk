@@ -1,0 +1,45 @@
+// Based on https://github.com/hoojaoh/PhotoFilterShaders/blob/master/TinType.pbk
+<languageVersion : 1.0;>
+
+kernel TinType
+<   namespace : "TinType";
+    vendor : "Paperless Post";
+    version : 1;
+>
+{
+    input image4 src;
+    output pixel4 dst;
+    
+    parameter float3x3 grayScale
+    <
+        defaultValue:float3x3(.3086,.6094,.0820,
+                                .3086,.6094,.0820,
+                                .3086,.6094,.0820);
+    >;
+    
+    parameter float contrast
+    <
+        minValue:float(0.0);
+        maxValue:float(3.0);
+        defaultValue:float(1.0);
+    >;
+    
+    parameter float mid
+    <
+        minValue:float(0.0);
+        maxValue:float(1.0);
+        defaultValue:float(0.5);
+    >;
+    
+    void
+    evaluatePixel()
+    {
+        float2 pos = outCoord();
+        dst = sampleNearest(src,pos);
+        dst.rgb = dst.rgb * grayScale;
+        dst.r = ((dst.r - mid) * contrast) + mid;
+        dst.g = ((dst.g - mid) * contrast) + mid;
+        dst.b = ((dst.b - mid) * contrast) + mid;
+        
+    }
+}

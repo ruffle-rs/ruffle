@@ -132,8 +132,8 @@ fn composer() -> Result<Composer, ComposerError> {
         ..Default::default()
     })?;
     composer.add_composable_module(ComposableModuleDescriptor {
-        source: include_str!("../shaders/filter/common.wgsl"),
-        file_path: "filter/common.wgsl",
+        source: ruffle_render::shader_source::SHADER_FILTER_COMMON,
+        file_path: "shader_filter_common.wgsl",
         ..Default::default()
     })?;
     Ok(composer)

@@ -4,6 +4,7 @@ package flash.display {
     import flash.geom.Point;
     import flash.geom.Matrix;
     import flash.filters.BitmapFilter;
+    import flash.filters.ShaderFilter;
     import flash.utils.ByteArray;
     import __ruffle__.stub_method;
 
@@ -68,6 +69,10 @@ package flash.display {
         ):int;
 
         public function generateFilterRect(sourceRect:Rectangle, filter:BitmapFilter):Rectangle {
+            // Flash always reports that a ShaderFilter affects the entire BitampData, ignoring SourceRect.
+            if (filter is ShaderFilter) {
+                return this.rect.clone();
+            }
             stub_method("flash.display.BitmapData", "generateFilterRect");
             return sourceRect.clone();
         }

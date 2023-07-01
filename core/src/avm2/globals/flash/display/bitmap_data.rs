@@ -9,6 +9,7 @@ use crate::avm2::parameters::{null_parameter_error, ParametersExt};
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
+use crate::avm2_stub_method;
 use crate::bitmap::bitmap_data::{
     BitmapData, BitmapDataWrapper, ChannelOptions, ThresholdOperation,
 };
@@ -23,6 +24,7 @@ use gc_arena::GcCell;
 use ruffle_render::filters::Filter;
 use ruffle_render::transform::Transform;
 use std::str::FromStr;
+use swf::{Rectangle, Twips};
 
 // Computes the integer x,y,width,height values from
 // the given `Rectangle`. This method performs `x + width`
@@ -1051,7 +1053,40 @@ pub fn apply_filter<'gc>(
                 Error::from(format!("TypeError: Error #1034: Type Coercion failed: cannot convert {} to flash.display.BitmapData.", args[0].coerce_to_string(activation).unwrap_or_default()))
             })?;
         let source_rect = args.get_object(activation, 1, "sourceRect")?;
-        let source_rect = super::display_object::object_to_rectangle(activation, source_rect)?;
+        let mut source_rect = super::display_object::object_to_rectangle(activation, source_rect)?;
+        let filter = args.get_object(activation, 3, "filter")?;
+        let filter = Filter::from_avm2_object(activation, filter)?;
+
+        if matches!(filter, Filter::ShaderFilter(_)) {
+            let source_bitmap_rect = Rectangle {
+                x_min: Twips::ZERO,
+                x_max: Twips::from_pixels(source_bitmap.width() as f64),
+                y_min: Twips::ZERO,
+                y_max: Twips::from_pixels(source_bitmap.height() as f64),
+            };
+            // Flash performs an odd translation/cropping behavior when sourceRect
+            // has a non-zero x or y starting value, which I haven't yet managed to reproduce.
+            //
+            // Additionally, when both x and y are 0, the 'width' and 'height' seem to
+            // be ignored completely in favor of the using the dimensions of the source
+            // image (even if a larger or smaller rect is passed in)
+            //
+            // To make matters worse, the behavior of ShaderFilter seems platform-dependent
+            // (or at least resolution-dependent). The test
+            // 'tests/tests/swfs/avm2/pixelbender_effect_glassDisplace_shaderfilter/test.swf'
+            // renders slightly differently in Linux vs a Windows VM (part of the mandelbrot fractal
+            // in the top image is cut off in the Windows Flash Player, but not in the Linux Flash Player)
+            if source_rect != source_bitmap_rect {
+                avm2_stub_method!(
+                    activation,
+                    "flash.display.BitmapData",
+                    "applyFilter",
+                    "ShaderFilter with non-standard sourceRect"
+                );
+                source_rect = source_bitmap_rect;
+            }
+        }
+
         let source_point = (
             source_rect.x_min.to_pixels().floor() as u32,
             source_rect.y_min.to_pixels().floor() as u32,
@@ -1069,8 +1104,7 @@ pub fn apply_filter<'gc>(
                 .get_public_property("y", activation)?
                 .coerce_to_u32(activation)?,
         );
-        let filter = args.get_object(activation, 3, "filter")?;
-        let filter = Filter::from_avm2_object(activation, filter)?;
+
         operations::apply_filter(
             &mut activation.context,
             dest_bitmap,
@@ -1079,7 +1113,7 @@ pub fn apply_filter<'gc>(
             source_size,
             dest_point,
             filter,
-        )
+        );
     }
     Ok(Value::Undefined)
 }

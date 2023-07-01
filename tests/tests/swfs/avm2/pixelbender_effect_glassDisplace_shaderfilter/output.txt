@@ -1,0 +1,4 @@
+Flowers rect: (x=0, y=0, w=500, h=375)
+ShaderFilter equal: false
+Shader equal: true
+Dest rect: (x=0, y=0, w=512, h=512)

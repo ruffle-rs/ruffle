@@ -1,8 +1,8 @@
 use ruffle_render::{
     bitmap::PixelRegion,
     pixel_bender::{
-        PixelBenderParam, PixelBenderParamQualifier, PixelBenderShaderArgument, PixelBenderType,
-        OUT_COORD_NAME,
+        PixelBenderParam, PixelBenderParamQualifier, PixelBenderShaderArgument,
+        PixelBenderShaderHandle, PixelBenderType, OUT_COORD_NAME,
     },
 };
 
@@ -12,28 +12,19 @@ use crate::{
     pixel_bender::PixelBenderTypeExt,
 };
 
-/// Implements `ShaderJob.start`.
-pub fn start<'gc>(
+pub fn get_shader_args<'gc>(
+    shader_obj: Object<'gc>,
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.unwrap();
-
-    avm2_stub_method!(
-        activation,
-        "flash.display.ShaderJob",
-        "start",
-        "async execution and non-BitmapData inputs"
-    );
-
+) -> Result<
+    (
+        PixelBenderShaderHandle,
+        Vec<PixelBenderShaderArgument<'static>>,
+    ),
+    Error<'gc>,
+> {
     // FIXME - determine what errors Flash Player throws here
     // instead of using `expect`
-    let shader = this
-        .get_public_property("shader", activation)?
-        .as_object()
-        .expect("Missing Shader object");
-    let shader_data = shader
+    let shader_data = shader_obj
         .get_public_property("data", activation)?
         .as_object()
         .expect("Missing ShaderData object")
@@ -46,7 +37,7 @@ pub fn start<'gc>(
         .expect("ShaderData object has no shader");
     let shader = shader_handle.0.parsed_shader();
 
-    let arguments: Vec<_> = shader
+    let args = shader
         .params
         .iter()
         .enumerate()
@@ -108,31 +99,58 @@ pub fn start<'gc>(
                     let input = shader_input
                         .get_public_property("input", activation)
                         .expect("Missing input property");
-                    let input = input
-                        .as_object()
-                        .expect("ShaderInput.input is not an object");
 
-                    let bitmap = input.as_bitmap_data().expect(
-                        "ShaderInput.input is not a BitmapData (FIXE - support other types)",
-                    );
+                    let texture = if let Value::Null = input {
+                        None
+                    } else {
+                        let input = input
+                            .as_object()
+                            .expect("ShaderInput.input is not an object");
 
-                    // FIXME - this really only needs to be a CPU->GPU sync
-                    let bitmap = bitmap.sync();
-                    let mut bitmap_data = bitmap.write(activation.context.gc_context);
-                    bitmap_data.update_dirty_texture(activation.context.renderer);
+                        let bitmap = input.as_bitmap_data().expect(
+                            "ShaderInput.input is not a BitmapData (FIXE - support other types)",
+                        );
+
+                        Some(bitmap.bitmap_handle(
+                            activation.context.gc_context,
+                            activation.context.renderer,
+                        ))
+                    };
 
                     Some(PixelBenderShaderArgument::ImageInput {
                         index: *index,
                         channels: *channels,
                         name: name.clone(),
-                        texture: bitmap_data
-                            .bitmap_handle(activation.context.renderer)
-                            .expect("Missing input BitmapHandle"),
+                        texture: texture.map(|t| t.into()),
                     })
                 }
             }
         })
         .collect();
+    Ok((shader_handle.clone(), args))
+}
+
+/// Implements `ShaderJob.start`.
+pub fn start<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.unwrap();
+
+    avm2_stub_method!(
+        activation,
+        "flash.display.ShaderJob",
+        "start",
+        "async execution and non-BitmapData inputs"
+    );
+
+    let shader = this
+        .get_public_property("shader", activation)?
+        .as_object()
+        .expect("Missing Shader object");
+
+    let (shader_handle, arguments) = get_shader_args(shader, activation)?;
 
     let target = this
         .get_public_property("target", activation)?
@@ -141,7 +159,7 @@ pub fn start<'gc>(
 
     let target_bitmap = target
         .as_bitmap_data()
-        .expect("ShaderJob.target is not a BitmapData (FIXE - support other types)")
+        .expect("ShaderJob.target is not a BitmapData (FIXME - support other types)")
         .sync();
 
     // Perform both a GPU->CPU and CPU->GPU sync before writing to it.
@@ -156,7 +174,7 @@ pub fn start<'gc>(
     let sync_handle = activation
         .context
         .renderer
-        .run_pixelbender_shader(shader_handle.clone(), &arguments, target_handle)
+        .run_pixelbender_shader(shader_handle, &arguments, target_handle)
         .expect("Failed to run shader");
 
     let width = target_bitmap_data.width();

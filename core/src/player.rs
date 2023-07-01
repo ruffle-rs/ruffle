@@ -1814,7 +1814,6 @@ impl Player {
                 frame_phase: &mut self.frame_phase,
                 stub_tracker: &mut self.stub_tracker,
                 stream_manager,
-                #[cfg(feature = "egui")]
                 dynamic_root,
             };
 

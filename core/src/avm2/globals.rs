@@ -139,9 +139,11 @@ pub struct SystemClasses<'gc> {
     pub cubetexture: ClassObject<'gc>,
     pub rectangletexture: ClassObject<'gc>,
     pub morphshape: ClassObject<'gc>,
+    pub shader: ClassObject<'gc>,
     pub shaderinput: ClassObject<'gc>,
     pub shaderparameter: ClassObject<'gc>,
     pub netstatusevent: ClassObject<'gc>,
+    pub shaderfilter: ClassObject<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -255,9 +257,11 @@ impl<'gc> SystemClasses<'gc> {
             cubetexture: object,
             rectangletexture: object,
             morphshape: object,
+            shader: object,
             shaderinput: object,
             shaderparameter: object,
             netstatusevent: object,
+            shaderfilter: object,
         }
     }
 }
@@ -742,6 +746,7 @@ fn load_playerglobal<'gc>(
             ("flash.filters", "GlowFilter", glowfilter),
             ("flash.filters", "GradientBevelFilter", gradientbevelfilter),
             ("flash.filters", "GradientGlowFilter", gradientglowfilter),
+            ("flash.filters", "ShaderFilter", shaderfilter),
         ]
     );
 

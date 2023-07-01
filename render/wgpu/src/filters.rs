@@ -1,16 +1,19 @@
 mod blur;
 mod color_matrix;
+mod shader;
 
 use crate::buffer_pool::TexturePool;
 use crate::descriptors::Descriptors;
 use crate::filters::blur::BlurFilter;
 use crate::filters::color_matrix::ColorMatrixFilter;
+use crate::filters::shader::ShaderFilter;
 use crate::surface::target::CommandTarget;
 use bytemuck::{Pod, Zeroable};
 use ruffle_render::filters::Filter;
 use wgpu::util::DeviceExt;
 use wgpu::vertex_attr_array;
 
+#[derive(Debug)]
 pub struct FilterSource<'a> {
     pub texture: &'a wgpu::Texture,
     pub point: (u32, u32),
@@ -61,6 +64,7 @@ impl<'a> FilterSource<'a> {
 pub struct Filters {
     pub blur: BlurFilter,
     pub color_matrix: ColorMatrixFilter,
+    pub shader: ShaderFilter,
 }
 
 impl Filters {
@@ -68,6 +72,7 @@ impl Filters {
         Self {
             blur: BlurFilter::new(device),
             color_matrix: ColorMatrixFilter::new(device),
+            shader: ShaderFilter::new(),
         }
     }
 
@@ -94,6 +99,13 @@ impl Filters {
                 &source,
                 &filter,
             ),
+            Filter::ShaderFilter(shader) => Some(descriptors.filters.shader.apply(
+                descriptors,
+                texture_pool,
+                draw_encoder,
+                &source,
+                shader,
+            )),
             _ => {
                 tracing::warn!("Unsupported filter {filter:?}");
                 None

@@ -32,7 +32,7 @@ bytemuck = "1.13.1"
 os_info = { version = "3", default-features = false }
 unic-langid = "0.9.1"
 sys-locale = "0.3.0"
-wgpu = { version = "0.16.1" }
+wgpu = { workspace = true }
 futures = "0.3.28"
 chrono = { version = "0.4", default-features = false, features = [] }
 fluent-templates = "0.8.0"
