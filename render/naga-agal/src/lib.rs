@@ -2,6 +2,7 @@ use naga::Module;
 
 mod builder;
 mod types;
+mod varying;
 
 use builder::NagaBuilder;
 

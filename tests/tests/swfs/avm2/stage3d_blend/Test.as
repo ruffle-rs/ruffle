@@ -31,9 +31,15 @@
         
         private const VERTEX_SHADER:String =
             "m44 op, va0, vc0    \n" +    // Apply the matrix transformation and write to output (starting matrix register is vc0)
-            "mov v0, va1"; //copy color to varying variable v0
+			"mov v2, va0         \n" +    // Do some dummy writes to varying registers, to ensure that we handle writes in any order
+			"mov v3, va0         \n" +
+			"mov v0, va1"; //copy color to varying variable v0
         
-        private const FRAGMENT_SHADER:String = 
+        // Due to a WGPU limitation, we need to read all of the outputs from the fragment shader, or we get a validation error.
+        // FIXME - remove the dummy reads when https://github.com/gfx-rs/wgpu/issues/3748 is fixed
+        private const FRAGMENT_SHADER:String =
+            "mov ft0, v3  \n" +
+            "mov ft1, v2  \n" +	
             "mov oc, v0"; //Set the output color to the value interpolated from the three triangle vertices 
 
         private var vertexAssembly:AGALMiniAssembler = new AGALMiniAssembler();

@@ -3,8 +3,7 @@ use std::io::Read;
 use naga::{
     AddressSpace, ArraySize, Block, BuiltIn, Constant, ConstantInner, DerivativeControl,
     EntryPoint, FunctionArgument, FunctionResult, GlobalVariable, ImageClass, ImageDimension,
-    Interpolation, ResourceBinding, ScalarValue, ShaderStage, StructMember, SwizzleComponent,
-    UnaryOperator,
+    ResourceBinding, ScalarValue, ShaderStage, StructMember, SwizzleComponent, UnaryOperator,
 };
 use naga::{BinaryOperator, MathFunction};
 use naga::{
@@ -13,6 +12,7 @@ use naga::{
 };
 use num_traits::FromPrimitive;
 
+use crate::varying::VaryingRegisters;
 use crate::{
     types::*, Error, ShaderType, VertexAttributeFormat, MAX_VERTEX_ATTRIBUTES, SHADER_ENTRY_POINT,
 };
@@ -52,17 +52,17 @@ struct TextureSamplers {
 }
 
 pub(crate) struct NagaBuilder<'a> {
-    module: Module,
-    func: Function,
+    pub(crate) module: Module,
+    pub(crate) func: Function,
 
     // This evaluate to a Pointer to the temporary 'main' destiation location
     // (the output position for a vertex shader, or the output color for a fragment shader)
     // which can be used with Expression::Load and Expression::Store
     // This is needed because an AGAL shader can write to the output register
     // multiple times.
-    dest: Handle<Expression>,
+    pub(crate) dest: Handle<Expression>,
 
-    shader_config: ShaderConfig<'a>,
+    pub(crate) shader_config: ShaderConfig<'a>,
 
     // Whenever we read from a vertex attribute in a vertex shader
     // for the first time,we fill in the corresponding index
@@ -70,11 +70,7 @@ pub(crate) struct NagaBuilder<'a> {
     // See `get_vertex_input`
     vertex_input_expressions: Vec<Option<Handle<Expression>>>,
 
-    // Whenever we write to a varying register in a vertex shader
-    // or read from a varying register in a fragment shader
-    // (for the first time), we store the created `Expression` here.
-    // See `get_varying_pointer`
-    varying_pointers: Vec<Option<Handle<Expression>>>,
+    pub(crate) varying_registers: VaryingRegisters,
 
     // Whenever we encounter a texture load at a particular index
     // for the first time, we store an `Expression::GlobalVariable`
@@ -92,10 +88,10 @@ pub(crate) struct NagaBuilder<'a> {
 
     // The function return type being built up. Each time a vertex
     // shader writes to a varying register, we add a new member to this
-    return_type: Type,
+    pub(crate) return_type: Type,
 
     // The Naga representation of 'vec4f'
-    vec4f: Handle<Type>,
+    pub(crate) vec4f: Handle<Type>,
     // The Naga representation of 'mat3x3f'
     matrix3x3f: Handle<Type>,
     // The Naga representation of 'mat4x3f'
@@ -590,7 +586,7 @@ impl<'a> NagaBuilder<'a> {
             dest,
             shader_config,
             vertex_input_expressions: vec![],
-            varying_pointers: vec![],
+            varying_registers: Default::default(),
             return_type,
             matrix3x3f,
             matrix4x3f,
@@ -663,81 +659,6 @@ impl<'a> NagaBuilder<'a> {
         Ok(self.temporary_registers[index].unwrap())
     }
 
-    fn get_varying_pointer(&mut self, index: usize) -> Result<Handle<Expression>> {
-        if index >= self.varying_pointers.len() {
-            self.varying_pointers.resize(index + 1, None);
-        }
-
-        if self.varying_pointers[index].is_none() {
-            match self.shader_config.shader_type {
-                ShaderType::Vertex => {
-                    // We can write to varying variables in the vertex shader,
-                    // and the fragment shader will receive them is input.
-                    // Therefore, we create a local variable for each varying,
-                    // and return them at the end of the function.
-                    let local = self.func.local_variables.append(
-                        LocalVariable {
-                            name: Some(format!("varying_{index}")),
-                            ty: self.vec4f,
-                            init: None,
-                        },
-                        Span::UNDEFINED,
-                    );
-
-                    let expr = self
-                        .func
-                        .expressions
-                        .append(Expression::LocalVariable(local), Span::UNDEFINED);
-                    let _range = self
-                        .func
-                        .expressions
-                        .range_from(self.func.expressions.len() - 1);
-
-                    if let TypeInner::Struct { members, .. } = &mut self.return_type.inner {
-                        members.push(StructMember {
-                            name: Some(format!("varying_{index}")),
-                            ty: self.vec4f,
-                            binding: Some(Binding::Location {
-                                location: index as u32,
-                                interpolation: Some(naga::Interpolation::Perspective),
-                                sampling: None,
-                            }),
-                            offset: 0,
-                        });
-                    } else {
-                        unreachable!();
-                    }
-
-                    self.varying_pointers[index] = Some(expr);
-                }
-                ShaderType::Fragment => {
-                    // Function arguments might not be in the same order as the
-                    // corresponding binding indices (e.g. the first argument might have binding '2').
-                    // However, we only access the `FunctionArgument` expression through the `varying_pointers`
-                    // vec, which is indexed by the binding index.
-                    self.func.arguments.push(FunctionArgument {
-                        name: None,
-                        ty: self.vec4f,
-                        binding: Some(Binding::Location {
-                            location: index as u32,
-                            interpolation: Some(Interpolation::Perspective),
-                            sampling: None,
-                        }),
-                    });
-                    let arg_index = self.func.arguments.len() - 1;
-
-                    let expr = self.func.expressions.append(
-                        Expression::FunctionArgument(arg_index as u32),
-                        Span::UNDEFINED,
-                    );
-                    self.varying_pointers[index] = Some(expr);
-                }
-            };
-        };
-
-        Ok(self.varying_pointers[index].unwrap())
-    }
-
     fn emit_const_register_load(&mut self, index: usize) -> Result<Handle<Expression>> {
         let index_const = self.module.constants.append(
             Constant {
@@ -768,7 +689,7 @@ impl<'a> NagaBuilder<'a> {
         }))
     }
 
-    fn emit_varying_load(&mut self, index: usize) -> Result<Handle<Expression>> {
+    pub(crate) fn emit_varying_load(&mut self, index: usize) -> Result<Handle<Expression>> {
         // A LocalVariable evaluates to a pointer, so we need to load it
         let varying_expr = self.get_varying_pointer(index)?;
         Ok(match self.shader_config.shader_type {
@@ -1041,7 +962,7 @@ impl<'a> NagaBuilder<'a> {
     }
 
     /// Creates a `Statement::Emit` covering `expr`
-    fn evaluate_expr(&mut self, expr: Expression) -> Handle<Expression> {
+    pub(crate) fn evaluate_expr(&mut self, expr: Expression) -> Handle<Expression> {
         let prev_len = self.func.expressions.len();
         let expr = self.func.expressions.append(expr, Span::UNDEFINED);
         let range = self.func.expressions.range_from(prev_len);
@@ -1680,20 +1601,6 @@ impl<'a> NagaBuilder<'a> {
     }
 
     fn finish(mut self) -> Result<Module> {
-        // Load the 'main' output (a position or color) from our temporary location.
-        let dest_load = self.evaluate_expr(Expression::Load { pointer: self.dest });
-        let mut components = vec![dest_load];
-
-        // If the vertex shader wrote to any varying registers, we need to
-        // return them as well.
-        if let ShaderType::Vertex = self.shader_config.shader_type {
-            for i in 0..self.varying_pointers.len() {
-                if self.varying_pointers[i].is_some() {
-                    components.push(self.emit_varying_load(i)?);
-                }
-            }
-        }
-
         // We're consuming 'self', so just store store garbage here so that we can continue
         // to use methods on 'self'
         let return_ty = std::mem::replace(
@@ -1714,11 +1621,7 @@ impl<'a> NagaBuilder<'a> {
             binding: None,
         });
 
-        let return_expr = self.evaluate_expr(Expression::Compose {
-            ty: return_ty,
-            components,
-        });
-
+        let return_expr = self.build_output_expr(return_ty)?;
         self.push_statement(Statement::Return {
             value: Some(return_expr),
         });
