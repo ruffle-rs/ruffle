@@ -725,6 +725,7 @@ fn load_playerglobal<'gc>(
             ("flash.geom", "ColorTransform", colortransform),
             ("flash.media", "SoundChannel", soundchannel),
             ("flash.media", "SoundTransform", soundtransform),
+            ("flash.media", "Video", video),
             ("flash.net", "URLVariables", urlvariables),
             ("flash.utils", "ByteArray", bytearray),
             ("flash.system", "ApplicationDomain", application_domain),
