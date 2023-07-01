@@ -8,7 +8,7 @@ use crate::context::GcContext;
 use crate::string::{AvmString, WStr};
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::ops::Deref;
-use swf::{BevelFilterFlags, Color, Fixed16, Fixed8};
+use swf::{BevelFilterFlags, Color, Fixed16, Fixed8, GradientFilterFlags};
 
 #[derive(Copy, Clone, Debug, Collect)]
 #[collect(no_drop)]
@@ -41,11 +41,19 @@ impl From<BevelFilterType> for &'static WStr {
 }
 
 impl BevelFilterType {
-    pub fn as_flags(&self) -> BevelFilterFlags {
+    pub fn as_bevel_flags(&self) -> BevelFilterFlags {
         match self {
             BevelFilterType::Inner => BevelFilterFlags::INNER_SHADOW,
             BevelFilterType::Outer => BevelFilterFlags::empty(),
             BevelFilterType::Full => BevelFilterFlags::ON_TOP,
+        }
+    }
+
+    pub fn as_gradient_flags(&self) -> GradientFilterFlags {
+        match self {
+            BevelFilterType::Inner => GradientFilterFlags::INNER_SHADOW,
+            BevelFilterType::Outer => GradientFilterFlags::empty(),
+            BevelFilterType::Full => GradientFilterFlags::ON_TOP,
         }
     }
 }
@@ -55,6 +63,18 @@ impl From<BevelFilterFlags> for BevelFilterType {
         if value.contains(BevelFilterFlags::ON_TOP) {
             BevelFilterType::Full
         } else if value.contains(BevelFilterFlags::INNER_SHADOW) {
+            BevelFilterType::Inner
+        } else {
+            BevelFilterType::Outer
+        }
+    }
+}
+
+impl From<GradientFilterFlags> for BevelFilterType {
+    fn from(value: GradientFilterFlags) -> Self {
+        if value.contains(GradientFilterFlags::ON_TOP) {
+            BevelFilterType::Full
+        } else if value.contains(GradientFilterFlags::INNER_SHADOW) {
             BevelFilterType::Inner
         } else {
             BevelFilterType::Outer
@@ -83,7 +103,7 @@ impl From<&BevelFilterData> for swf::BevelFilter {
     fn from(filter: &BevelFilterData) -> swf::BevelFilter {
         let mut flags = BevelFilterFlags::COMPOSITE_SOURCE;
         flags |= BevelFilterFlags::from_passes(filter.quality as u8);
-        flags |= filter.type_.as_flags();
+        flags |= filter.type_.as_bevel_flags();
         flags.set(BevelFilterFlags::KNOCKOUT, filter.knockout);
         swf::BevelFilter {
             shadow_color: filter.shadow,

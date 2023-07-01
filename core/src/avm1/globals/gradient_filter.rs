@@ -9,8 +9,11 @@ use crate::avm1::{Activation, ArrayObject, Error, Object, ScriptObject, TObject,
 use crate::context::{GcContext, UpdateContext};
 use crate::string::{AvmString, WStr};
 use gc_arena::{Collect, GcCell, MutationContext};
-use swf::Color;
+use std::ops::Deref;
+use swf::{Color, Fixed16, Fixed8, GradientFilterFlags};
 
+// [NA] Why the max? Why is colors limited but ratios isn't?
+// TODO: Make it all vec maybe?
 const MAX_COLORS: usize = 16;
 
 #[derive(Clone, Debug, Collect)]
@@ -29,6 +32,58 @@ struct GradientFilterData {
     quality: i32,
     type_: BevelFilterType,
     knockout: bool,
+}
+
+impl From<&GradientFilterData> for swf::GradientFilter {
+    fn from(filter: &GradientFilterData) -> swf::GradientFilter {
+        let mut flags = GradientFilterFlags::COMPOSITE_SOURCE;
+        flags |= GradientFilterFlags::from_passes(filter.quality as u8);
+        flags |= filter.type_.as_gradient_flags();
+        flags.set(GradientFilterFlags::KNOCKOUT, filter.knockout);
+        swf::GradientFilter {
+            colors: filter
+                .colors
+                .iter()
+                .zip(filter.ratios.iter())
+                .map(|(color, ratio)| swf::GradientRecord {
+                    color: *color,
+                    ratio: *ratio,
+                })
+                .collect(),
+            blur_x: Fixed16::from_f64(filter.blur_x),
+            blur_y: Fixed16::from_f64(filter.blur_y),
+            angle: Fixed16::from_f64(filter.angle),
+            distance: Fixed16::from_f64(filter.distance),
+            strength: Fixed8::from_f64(filter.strength()),
+            flags,
+        }
+    }
+}
+
+impl From<swf::GradientFilter> for GradientFilterData {
+    fn from(filter: swf::GradientFilter) -> GradientFilterData {
+        let mut colors = [Color::WHITE; MAX_COLORS];
+        let mut ratios = vec![];
+        let quality = filter.num_passes().into();
+        let knockout = filter.is_knockout();
+        for (i, record) in filter.colors.into_iter().take(MAX_COLORS).enumerate() {
+            colors[i] = record.color;
+            ratios.push(record.ratio);
+        }
+        Self {
+            distance: filter.distance.into(),
+            angle: filter.angle.into(),
+            colors,
+            num_colors: ratios.len(),
+            quality,
+            strength: (filter.strength.to_f64() * 256.0) as u16,
+            knockout,
+            blur_x: filter.blur_x.into(),
+            blur_y: filter.blur_y.into(),
+            type_: filter.flags.into(),
+            ratios,
+        }
+    }
 }
 
 impl Default for GradientFilterData {
@@ -83,6 +138,10 @@ impl<'gc> GradientFilter<'gc> {
         gradient_bevel_filter.set_type(activation, args.get(9))?;
         gradient_bevel_filter.set_knockout(activation, args.get(10))?;
         Ok(gradient_bevel_filter)
+    }
+
+    pub fn from_filter(gc_context: MutationContext<'gc, '_>, filter: swf::GradientFilter) -> Self {
+        Self(GcCell::allocate(gc_context, filter.into()))
     }
 
     pub(crate) fn duplicate(&self, gc_context: MutationContext<'gc, '_>) -> Self {
@@ -316,6 +375,10 @@ impl<'gc> GradientFilter<'gc> {
             self.0.write(activation.context.gc_context).knockout = knockout;
         }
         Ok(())
+    }
+
+    pub fn filter(&self) -> swf::GradientFilter {
+        self.0.read().deref().into()
     }
 }
 
