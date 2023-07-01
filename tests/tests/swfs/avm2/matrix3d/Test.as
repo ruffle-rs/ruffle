@@ -115,6 +115,20 @@
 		
 			newMat.prependRotation(90, Vector3D.X_AXIS);
 			trace("After prependRotation: " + newMat.rawData);
+
+
+			trace("// copyColumnFrom tests");
+			var columnMatrix:Matrix3D = new Matrix3D(Vector.<Number>([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]));
+			col = new Vector3D(3, 4, 5, 6);
+			for each(i in [0, 1, 2, 3]) {
+				columnMatrix.copyColumnFrom(i, col);
+				trace("Matrix raw data: " + columnMatrix.rawData);
+			}
+			try {
+				columnMatrix.copyColumnFrom(4, col);
+			} catch(e) {
+				trace("Column 4: " + e);
+			}
 		}
 	}
 }
