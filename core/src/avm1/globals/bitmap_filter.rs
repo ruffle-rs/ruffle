@@ -163,10 +163,10 @@ pub fn filter_to_avm1<'gc>(activation: &mut Activation<'_, 'gc>, filter: Filter)
             )),
             activation.context.avm1.prototypes().gradient_glow_filter,
         ),
-        _ => {
-            // Unrepresentable filters (eg Shader) will just return as Null.
-            // Not sure there's a way to even get to that state though, they can only be added in avm2.
-            return Value::Null;
+        Filter::ShaderFilter(_) => {
+            unreachable!(
+                "There should be no way for a ShaderFilter to exist in AVM1-reachable world"
+            )
         }
     };
 
