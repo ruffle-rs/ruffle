@@ -477,10 +477,12 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         if context.is_action_script_3() && matches!(self.object2(), Avm2Value::Null) {
             let video_constr = context.avm2.classes().video;
             let mut activation = Avm2Activation::from_nothing(context.reborrow());
-            match Avm2StageObject::for_display_object_childless(
+            let size = self.0.read().size;
+            match Avm2StageObject::for_display_object_childless_with_args(
                 &mut activation,
                 (*self).into(),
                 video_constr,
+                &[size.0.into(), size.1.into()],
             ) {
                 Ok(object) => {
                     let object: Avm2Object<'gc> = object.into();
