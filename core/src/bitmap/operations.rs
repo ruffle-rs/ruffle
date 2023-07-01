@@ -469,7 +469,7 @@ pub fn color_transform<'gc>(
     let x_max = x_max.min(target.width());
     let y_max = y_max.min(target.height());
 
-    if x_max == 0 || y_max == 0 {
+    if x_max == 0 || y_max == 0 || x_min == x_max || y_min == y_max {
         return;
     }
 
