@@ -72,7 +72,7 @@ pub struct VideoData<'gc> {
     size: (i32, i32),
 
     /// The last decoded frame in the video stream.
-    /// 
+    ///
     /// NOTE: This is only used for SWF-source video streams.
     #[collect(require_static)]
     decoded_frame: Option<(u32, BitmapInfo)>,
@@ -96,11 +96,11 @@ pub enum VideoStream {
 #[collect(no_drop)]
 pub enum VideoSource<'gc> {
     /// A video bitstream embedded inside of a SWF movie.
-    /// 
+    ///
     /// NOTE: Fields within this enum will be shared across all instances of a
     /// particular character. If you need to mutate the video source, consider
     /// reallocating a new source for your specific video instead.
-    /// 
+    ///
     /// This warning does not apply to `NetStream` or `Unconnected` videos,
     /// which are never aliased.
     Swf {
@@ -246,10 +246,7 @@ impl<'gc> Video<'gc> {
         };
 
         let num_frames = match &*read.source.read() {
-            VideoSource::Swf {
-                streamdef,
-                ..
-            } => streamdef.num_frames as usize,
+            VideoSource::Swf { streamdef, .. } => streamdef.num_frames as usize,
             VideoSource::NetStream { .. } => return,
             VideoSource::Unconnected { .. } => return,
         };
@@ -319,10 +316,7 @@ impl<'gc> Video<'gc> {
         };
 
         let res = match &*source.read() {
-            VideoSource::Swf {
-                streamdef,
-                frames,
-            } => match frames.get(&frame_id) {
+            VideoSource::Swf { streamdef, frames } => match frames.get(&frame_id) {
                 Some((slice_start, slice_end)) => {
                     let encframe = EncodedFrame {
                         codec: streamdef.codec,
@@ -533,10 +527,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         // TODO: smoothing flag should be a video property
         let (smoothed_flag, num_frames, version, decoded_frame, codec) = match &*read.source.read()
         {
-            VideoSource::Swf {
-                streamdef,
-                frames,
-            } => (
+            VideoSource::Swf { streamdef, frames } => (
                 streamdef.is_smoothed,
                 Some(frames.len()),
                 read.movie.version(),
