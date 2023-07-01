@@ -436,12 +436,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         // Note: normally this would just call into ScriptObjectData::call_property_local
         // but because calling into ScriptObjectData borrows it for entire duration,
         // we run a risk of a double borrow if the inner call borrows again.
+        let self_val: Value<'gc> = Value::from(self.into());
         let result = self
             .base()
             .get_property_local(multiname, activation)?
-            .as_callable(activation, Some(multiname), Some(self.into()))?;
+            .as_callable(activation, Some(multiname), Some(self_val))?;
 
-        result.call(Some(self.into()), arguments, activation)
+        result.call(self_val, arguments, activation)
     }
 
     /// Call a named property on the object.
@@ -461,10 +462,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 let obj = self.base().get_slot(slot_id)?.as_callable(
                     activation,
                     Some(multiname),
-                    Some(self.into()),
+                    Some(Value::from(self.into())),
                 )?;
 
-                obj.call(Some(self.into()), arguments, activation)
+                obj.call(Value::from(self.into()), arguments, activation)
             }
             Some(Property::Method { disp_id }) => {
                 let vtable = self.vtable().unwrap();
@@ -476,14 +477,18 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 {
                     if !method.needs_arguments_object() {
                         Executable::from_method(method, scope, None, Some(class)).exec(
-                            Some(self.into()),
+                            Value::from(self.into()),
                             arguments,
                             activation,
                             class.into(), //Deliberately invalid.
                         )
                     } else {
                         if let Some(bound_method) = self.get_bound_method(disp_id) {
-                            return bound_method.call(Some(self.into()), arguments, activation);
+                            return bound_method.call(
+                                Value::from(self.into()),
+                                arguments,
+                                activation,
+                            );
                         }
                         let bound_method = vtable
                             .make_bound_method(activation, self.into(), disp_id)
@@ -493,7 +498,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                             disp_id,
                             bound_method,
                         );
-                        bound_method.call(Some(self.into()), arguments, activation)
+                        bound_method.call(Value::from(self.into()), arguments, activation)
                     }
                 } else {
                     Err("Method not found".into())
@@ -503,10 +508,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 let obj = self.call_method(get, &[], activation)?.as_callable(
                     activation,
                     Some(multiname),
-                    Some(self.into()),
+                    Some(Value::from(self.into())),
                 )?;
 
-                obj.call(Some(self.into()), arguments, activation)
+                obj.call(Value::from(self.into()), arguments, activation)
             }
             Some(Property::Virtual { get: None, .. }) => {
                 return Err(error::make_reference_error(
@@ -585,7 +590,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
         let bound_method = self.get_bound_method(id);
         if let Some(method_object) = bound_method {
-            return method_object.call(Some(self.into()), arguments, activation);
+            return method_object.call(Value::from(self.into()), arguments, activation);
         }
 
         Err(format!("Cannot call unknown method id {id}").into())
@@ -842,7 +847,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Call the object.
     fn call(
         self,
-        _receiver: Option<Object<'gc>>,
+        _receiver: Value<'gc>,
         _arguments: &[Value<'gc>],
         _activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -885,7 +890,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         let ctor = self.get_property(multiname, activation)?.as_callable(
             activation,
             Some(multiname),
-            Some(self.into()),
+            Some(Value::from(self.into())),
         )?;
 
         ctor.construct(activation, args)

@@ -181,7 +181,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
     fn call(
         self,
-        receiver: Option<Object<'gc>>,
+        receiver: Value<'gc>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -201,7 +201,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         let instance =
             ScriptObject::custom_object(activation.context.gc_context, None, Some(prototype));
 
-        self.call(Some(instance), arguments, activation)?;
+        self.call(instance.into(), arguments, activation)?;
 
         Ok(instance)
     }

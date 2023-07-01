@@ -320,7 +320,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
 
         return method
             .as_callable(activation, Some(multiname), Some(self.into()))?
-            .call(Some(self.into()), arguments, activation);
+            .call(self.into(), arguments, activation);
     }
 
     fn set_property_local(

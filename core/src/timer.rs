@@ -153,7 +153,7 @@ impl<'gc> Timers<'gc> {
                     let domain = context.avm2.stage_domain();
                     let mut avm2_activation =
                         Avm2Activation::from_domain(context.reborrow(), domain);
-                    match closure.call(None, &params, &mut avm2_activation) {
+                    match closure.call(Avm2Value::Null, &params, &mut avm2_activation) {
                         Ok(v) => v.coerce_to_boolean(),
                         Err(e) => {
                             tracing::error!("Unhandled AVM2 error in timer callback: {e:?}",);

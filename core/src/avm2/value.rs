@@ -923,7 +923,7 @@ impl<'gc> Value<'gc> {
         &self,
         activation: &mut Activation<'_, 'gc>,
         name: Option<&Multiname<'gc>>,
-        receiver: Option<Object<'gc>>,
+        receiver: Option<Value<'gc>>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         match self.as_object() {
             Some(o) if o.as_class_object().is_some() || o.as_executable().is_some() => Ok(o),
@@ -934,7 +934,7 @@ impl<'gc> Value<'gc> {
                 } else {
                     "value".into()
                 };
-                let msg = if let Some(receiver) = receiver {
+                let msg = if let Some(Value::Object(receiver)) = receiver {
                     format!(
                         "Error #1006: {} is not a function of class {}.",
                         name,

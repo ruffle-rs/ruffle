@@ -569,7 +569,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
             if let Some(avm2_object) = avm2_object {
                 let mut constr_thing = || {
                     let mut activation = Avm2Activation::from_nothing(context.reborrow());
-                    class.call_native_init(Some(avm2_object), &[], &mut activation)?;
+                    class.call_native_init(avm2_object.into(), &[], &mut activation)?;
 
                     Ok(())
                 };
