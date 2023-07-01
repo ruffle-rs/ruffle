@@ -180,8 +180,7 @@ impl<'gc> Video<'gc> {
     pub fn attach_netstream(self, context: &mut UpdateContext<'_, 'gc>, stream: NetStream<'gc>) {
         let mut video = self.0.write(context.gc_context);
 
-        *video.source.write(context.gc_context) = VideoSource::NetStream { stream };
-
+        video.source = GcCell::allocate(context.gc_context, VideoSource::NetStream { stream });
         video.stream = VideoStream::Uninstantiated(0);
         video.keyframes = BTreeSet::new();
     }
