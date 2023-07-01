@@ -6,12 +6,13 @@ use crate::avm1::globals::bevel_filter::BevelFilter;
 use crate::avm1::globals::blur_filter::BlurFilter;
 use crate::avm1::globals::color_matrix_filter::ColorMatrixFilter;
 use crate::avm1::globals::convolution_filter::ConvolutionFilter;
+use crate::avm1::globals::displacement_map_filter::DisplacementMapFilter;
 use crate::avm1::globals::drop_shadow_filter::DropShadowFilter;
 use crate::avm1::globals::glow_filter::GlowFilter;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Attribute, Object, ScriptObject, TObject, Value};
-use crate::context::GcContext;
+use crate::context::{GcContext, UpdateContext};
 use ruffle_render::filters::Filter;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -69,7 +70,10 @@ pub fn clone<'gc>(
     Ok(create_instance(activation, native, proto).into())
 }
 
-pub fn avm1_to_filter(object: Object) -> Option<Filter> {
+pub fn avm1_to_filter<'gc>(
+    object: Object<'gc>,
+    context: &mut UpdateContext<'_, 'gc>,
+) -> Option<Filter> {
     let native = object.native();
     match native {
         NativeObject::BevelFilter(filter) => Some(Filter::BevelFilter(filter.filter())),
@@ -78,6 +82,9 @@ pub fn avm1_to_filter(object: Object) -> Option<Filter> {
         NativeObject::ConvolutionFilter(filter) => Some(Filter::ConvolutionFilter(filter.filter())),
         NativeObject::GlowFilter(filter) => Some(Filter::GlowFilter(filter.filter())),
         NativeObject::DropShadowFilter(filter) => Some(Filter::DropShadowFilter(filter.filter())),
+        NativeObject::DisplacementMapFilter(filter) => {
+            Some(Filter::DisplacementMapFilter(filter.filter(context)))
+        }
 
         // Invalid filters are silently dropped/ignored, no errors are thrown.
         _ => None,
@@ -127,6 +134,13 @@ pub fn filter_to_avm1<'gc>(activation: &mut Activation<'_, 'gc>, filter: Filter)
                 filter,
             )),
             activation.context.avm1.prototypes().drop_shadow_filter,
+        ),
+        Filter::DisplacementMapFilter(filter) => (
+            NativeObject::DisplacementMapFilter(DisplacementMapFilter::from_filter(
+                activation.context.gc_context,
+                filter,
+            )),
+            activation.context.avm1.prototypes().displacement_map_filter,
         ),
         _ => {
             // Unrepresentable filters (eg Shader) will just return as Null.
