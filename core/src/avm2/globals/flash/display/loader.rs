@@ -5,6 +5,7 @@ use indexmap::IndexMap;
 use crate::avm2::activation::Activation;
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
 use crate::avm2::object::LoaderInfoObject;
+use crate::avm2::object::LoaderStream;
 use crate::avm2::object::TObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
@@ -78,6 +79,19 @@ pub fn load<'gc>(
             )?
             .as_object()
             .unwrap();
+
+        // Update the LoaderStream - we still have a fake SwfMovie, but we now have the real target clip.
+        loader_info
+            .as_loader_info_object()
+            .unwrap()
+            .set_loader_stream(
+                LoaderStream::NotYetLoaded(
+                    Arc::new(SwfMovie::empty(activation.context.swf.version())),
+                    Some(content.into()),
+                    false,
+                ),
+                activation.context.gc_context,
+            );
 
         let request = request_from_url_request(activation, url_request)?;
 

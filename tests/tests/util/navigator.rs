@@ -83,18 +83,34 @@ impl NavigatorBackend for TestNavigatorBackend {
             }
         }
 
-        let mut path = self.relative_base_path.clone();
-        path.push(request.url());
+        let path = self.relative_base_path.clone();
 
         Box::pin(async move {
-            let url = Self::url_from_file_path(&path)
-                .map_err(|()| Error::FetchError("Invalid URL".to_string()))?
-                .into();
+            let mut base_url = Self::url_from_file_path(path.as_path())
+                .map_err(|_| Error::FetchError("Invalid base URL".to_string()))?;
 
-            let body = std::fs::read(path).map_err(|e| Error::FetchError(e.to_string()))?;
+            // Make sure we have a trailing slash, so that joining a request url like 'data.txt'
+            // gets appended, rather than replacing the last component.
+            base_url.path_segments_mut().unwrap().push("");
+            let response_url = base_url
+                .join(request.url())
+                .map_err(|_| Error::FetchError("Invalid URL".to_string()))?;
+
+            // Flash supports query parameters with local urls.
+            // SwfMovie takes care of exposing those to ActionScript -
+            // when we actually load a filesystem url, strip them out.
+            let mut filesystem_url = response_url.clone();
+            filesystem_url.set_query(None);
+
+            let filesystem_path = filesystem_url
+                .to_file_path()
+                .map_err(|_| Error::FetchError("Invalid filesystem URL".to_string()))?;
+
+            let body =
+                std::fs::read(filesystem_path).map_err(|e| Error::FetchError(e.to_string()))?;
 
             Ok(Response {
-                url,
+                url: response_url.to_string(),
                 body,
                 status: 0,
                 redirected: false,
