@@ -755,14 +755,10 @@ export class RufflePlayer extends HTMLElement {
                 console.log(`Loading SWF file ${options.url}`);
                 this.swfUrl = new URL(options.url, document.baseURI);
 
-                const parameters = {
-                    ...sanitizeParameters(
-                        options.url.substring(options.url.indexOf("?"))
-                    ),
-                    ...sanitizeParameters(options.parameters),
-                };
-
-                this.instance!.stream_from(this.swfUrl.href, parameters);
+                this.instance!.stream_from(
+                    this.swfUrl.href,
+                    sanitizeParameters(options.parameters)
+                );
             } else if ("data" in options) {
                 console.log("Loading SWF data");
                 this.instance!.load_data(

@@ -500,7 +500,7 @@ pub fn get_parameters<'gc>(
             .and_then(|o| o.as_loader_stream())
         {
             let root = match &*loader_stream {
-                LoaderStream::NotYetLoaded(_, _, _) => activation.context.swf,
+                LoaderStream::NotYetLoaded(root, _, _) => root,
                 LoaderStream::Swf(root, _) => root,
             };
 

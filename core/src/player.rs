@@ -329,6 +329,9 @@ impl Player {
     ///
     /// This should not be called if a root movie fetch has already been kicked
     /// off.
+    ///
+    /// `parameters` are *extra* parameters to set on the LoaderInfo -
+    /// parameters from `movie_url` query parameters will be automatically added.
     pub fn fetch_root_movie(
         &mut self,
         movie_url: String,

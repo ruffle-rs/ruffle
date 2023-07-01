@@ -154,15 +154,21 @@ impl NavigatorBackend for ExternalNavigatorBackend {
             }
         };
 
-        let processed_url = self.pre_process_url(full_url);
+        let mut processed_url = self.pre_process_url(full_url);
 
         let client = self.client.clone();
 
         match processed_url.scheme() {
             "file" => Box::pin(async move {
-                let path = processed_url.to_file_path().unwrap_or_default();
+                // We send the original url (including query parameters)
+                // back to ruffle_core in the `Response`
+                let response_url = processed_url.clone();
+                // Flash supports query parameters with local urls.
+                // SwfMovie takes care of exposing those to ActionScript -
+                // when we actually load a filesystem url, strip them out.
+                processed_url.set_query(None);
 
-                let url = processed_url.into();
+                let path = processed_url.to_file_path().unwrap_or_default();
 
                 let body = std::fs::read(&path).or_else(|e| {
                     if cfg!(feature = "sandbox") {
@@ -188,7 +194,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                 }).map_err(|e| Error::FetchError(e.to_string()))?;
 
                 Ok(Response {
-                    url,
+                    url: response_url.to_string(),
                     body,
                     status: 0,
                     redirected: false,

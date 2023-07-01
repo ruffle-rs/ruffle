@@ -25,14 +25,31 @@
 			stage.addChild(childLoader);
 		}
 	
-		function setupLoader(done: Function) {
-			var loader = new Loader();
+		private function dumpParams(obj: Object) {
+			var out = []
+			for (var key in obj) {
+				out.push(key + " = " + obj[key]);
+			}
+			out.sort();
+			trace("Parameters: (len=" + out.length + ")");
+			trace(out);
+		}
+	
+		private function dumpLoader(loader: Loader) {
 			trace("loader.content = " + loader.content);
 			trace("loader.contentLoaderInfo.content = " + loader.contentLoaderInfo.content);
 			trace("loader.contentLoaderInfo.bytesLoaded = " + loader.contentLoaderInfo.bytesLoaded);
 			trace("loader.contentLoaderInfo.bytesTotal = " + loader.contentLoaderInfo.bytesTotal);
 			trace("loader.contentLoaderInfo.bytes = " + loader.contentLoaderInfo.bytes); 
 			trace("loader.contentLoaderInfo.url = " + loader.contentLoaderInfo.url);
+			trace("loader.contentLoaderInfo.parameters = " + loader.contentLoaderInfo.parameters);
+			dumpParams(loader.contentLoaderInfo.parameters);			
+		}
+	
+		function setupLoader(done: Function) {
+			var loader = new Loader();
+			this.dumpLoader(loader);
+
 
 			function dump(event:Event) {
 				var url = loader.contentLoaderInfo.url;
@@ -46,7 +63,9 @@
 					+ ", loader.content = " + loader.content 
 					+ ", loader.contentLoaderInfo.bytesLoaded = " + loader.contentLoaderInfo.bytesLoaded
 					+ ", loader.contentLoaderInfo.bytesTotal = " + loader.contentLoaderInfo.bytesTotal
-					+ ", loader.contentLoaderInfo.url = " + url);	
+					+ ", loader.contentLoaderInfo.bytes.length = " + loader.contentLoaderInfo.bytes.length
+					+ ", loader.contentLoaderInfo.url = " + url);
+				dumpParams(loader.contentLoaderInfo.parameters);
 			}
 
 			loader.contentLoaderInfo.addEventListener(Event.OPEN, function(e) {
@@ -75,7 +94,9 @@
 				done();
 			});
 
-			loader.load(new URLRequest("./loadable.swf"));
+			loader.load(new URLRequest("./loadable.swf?paramOne=ValOne&paramTwo=ValTwo"));
+			trace("Directly after load:");
+			this.dumpLoader(loader);
 			return loader;
 		}
 	}

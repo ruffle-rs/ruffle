@@ -1402,19 +1402,6 @@ impl<'gc> Loader<'gc> {
             MovieLoaderVMData::Avm2 { loader_info, .. } => {
                 let mut activation = Avm2Activation::from_nothing(uc.reborrow());
 
-                // Update the LoadersTream - we still have a fake SwfMovie, but we now have the real target clip.
-                loader_info
-                    .as_loader_info_object()
-                    .unwrap()
-                    .set_loader_stream(
-                        LoaderStream::NotYetLoaded(
-                            Arc::new(SwfMovie::empty(activation.context.swf.version())),
-                            Some(clip),
-                            false,
-                        ),
-                        activation.context.gc_context,
-                    );
-
                 let open_evt = Avm2EventObject::bare_default_event(&mut activation.context, "open");
                 Avm2::dispatch_event(uc, open_evt, loader_info);
             }
@@ -1499,7 +1486,30 @@ impl<'gc> Loader<'gc> {
             };
 
             if let MovieLoaderVMData::Avm2 { loader_info, .. } = vm_data {
+                let fake_movie = Arc::new(SwfMovie::empty_fake_compressed_len(
+                    activation.context.swf.version(),
+                    length,
+                ));
+
+                // Expose 'bytesTotal' (via the fake movie) during the first 'progress' event,
+                // but nothing else (in particular, the `parameters` and `url` properties are not set
+                // to their real values)
+                loader_info
+                    .as_loader_info_object()
+                    .unwrap()
+                    .set_loader_stream(
+                        LoaderStream::NotYetLoaded(fake_movie, Some(clip), false),
+                        activation.context.gc_context,
+                    );
+
+                // Flash always fires an initial 'progress' event with
+                // bytesLoaded=0 and bytesTotal set to the proper value.
+                // This only seems to happen for an AVM2 event handler
+                Loader::movie_loader_progress(handle, &mut activation.context, 0, length)?;
+
                 // Update the LoaderStream - we now have a real SWF movie and a real target clip
+                // This is intentionally set *after* the first 'progress' event, to match Flash's behavior
+                // (`LoaderInfo.parameters` is always empty during the first 'progress' event)
                 loader_info
                     .as_loader_info_object()
                     .unwrap()
@@ -1507,10 +1517,6 @@ impl<'gc> Loader<'gc> {
                         LoaderStream::NotYetLoaded(movie.clone(), Some(clip), false),
                         activation.context.gc_context,
                     );
-                // Flash always fires an initial 'progress' event with
-                // bytesLoaded=0 and bytesTotal set to the proper value.
-                // This only seems to happen for an AVM2 event handler
-                Loader::movie_loader_progress(handle, &mut activation.context, 0, length)?;
             }
 
             match sniffed_type {

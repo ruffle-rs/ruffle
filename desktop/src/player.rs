@@ -165,15 +165,16 @@ impl ActivePlayer {
             let _ = event_loop.send_event(RuffleEvent::OnMetadata(swf_header.clone()));
         };
 
-        let mut parameters: Vec<(String, String)> = movie_url.query_pairs().into_owned().collect();
-        parameters.extend(opt.parameters.to_owned());
-
         {
             let mut player_lock = player.lock().expect("Player lock must be available");
             CALLSTACK.with(|callstack| {
                 *callstack.borrow_mut() = Some(player_lock.callstack());
             });
-            player_lock.fetch_root_movie(movie_url.to_string(), parameters, Box::new(on_metadata));
+            player_lock.fetch_root_movie(
+                movie_url.to_string(),
+                opt.parameters.to_owned(),
+                Box::new(on_metadata),
+            );
         }
 
         Self { player, executor }
