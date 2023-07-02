@@ -27,3 +27,4 @@ debug-menu = 디버그 도구
 debug-menu-open-stage = 스테이지 정보 보기
 debug-menu-open-movie = 무비 보기
 debug-menu-open-movie-list = 알려진 무비 표시
+debug-menu-search-display-objects = 표시된 객체 검색

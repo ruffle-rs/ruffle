@@ -27,3 +27,4 @@ debug-menu = Hibakereső eszközök
 debug-menu-open-stage = Színpadinformációk megtekintése
 debug-menu-open-movie = Animáció vizsgálata
 debug-menu-open-movie-list = Ismert animációk listája
+debug-menu-search-display-objects = Display objektumok keresése...
