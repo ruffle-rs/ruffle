@@ -24,6 +24,7 @@ use cli::Opt;
 use ruffle_core::StaticCallstack;
 use std::cell::RefCell;
 use std::panic::PanicInfo;
+use tracing_subscriber::util::SubscriberInitExt;
 use url::Url;
 
 thread_local! {
@@ -74,7 +75,7 @@ fn init() {
         let tracy_subscriber = tracing_tracy::TracyLayer::new();
         subscriber.with(tracy_subscriber)
     };
-    tracing::subscriber::set_global_default(subscriber).expect("Couldn't set up global subscriber");
+    subscriber.init();
 }
 
 fn panic_hook(info: &PanicInfo) {
