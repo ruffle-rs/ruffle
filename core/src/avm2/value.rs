@@ -961,11 +961,14 @@ impl<'gc> Value<'gc> {
         if type_name.is_any_name() {
             return Ok(*self);
         }
-        let param_type = activation.domain().get_class(type_name)?.ok_or_else(|| {
-            Error::RustError(
-                format!("Failed to lookup class {:?} during coercion", type_name).into(),
-            )
-        })?;
+        let param_type = activation
+            .domain()
+            .get_class(type_name, activation.context.gc_context)?
+            .ok_or_else(|| {
+                Error::RustError(
+                    format!("Failed to lookup class {:?} during coercion", type_name).into(),
+                )
+            })?;
 
         self.coerce_to_type(activation, param_type)
     }

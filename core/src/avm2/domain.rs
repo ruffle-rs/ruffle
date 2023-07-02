@@ -152,16 +152,28 @@ impl<'gc> Domain<'gc> {
     pub fn get_class(
         self,
         multiname: &Multiname<'gc>,
+        mc: MutationContext<'gc, '_>,
     ) -> Result<Option<GcCell<'gc, Class<'gc>>>, Error<'gc>> {
-        let read = self.0.read();
-        if let Some(class) = read.classes.get_for_multiname(multiname).copied() {
-            return Ok(Some(class));
+        let mut cur_domain = Some(self);
+        while let Some(domain) = cur_domain {
+            let read: std::cell::Ref<'_, DomainData<'_>> = domain.0.read();
+            if let Some(class) = read.classes.get_for_multiname(multiname).copied() {
+                if let Some(param) = multiname.param() {
+                    if !param.is_any_name() {
+                        // Lookup the param in the *starting* domain (the one we first called)
+                        // `get_class` on. If we're looking up `Vector.<SomeUserType>`, then
+                        // `Vector` will be found in the root domain, but `SomeUserType`
+                        // will be found in some child domain.
+                        let resolved_param = self
+                            .get_class(&param, mc)?
+                            .unwrap_or_else(|| panic!("Type param {param:?} not found"));
+                        return Ok(Some(Class::with_type_param(class, resolved_param, mc)));
+                    }
+                }
+                return Ok(Some(class));
+            }
+            cur_domain = read.parent;
         }
-
-        if let Some(parent) = read.parent {
-            return parent.get_class(multiname);
-        }
-
         Ok(None)
     }
 

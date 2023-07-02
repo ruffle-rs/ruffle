@@ -329,7 +329,11 @@ impl<'gc> ClassObject<'gc> {
         let mut queue = vec![class];
         while let Some(cls) = queue.pop() {
             for interface_name in cls.read().direct_interfaces() {
-                let interface = self.early_resolve_class(scope.domain(), interface_name)?;
+                let interface = self.early_resolve_class(
+                    scope.domain(),
+                    interface_name,
+                    activation.context.gc_context,
+                )?;
 
                 if !interface.read().is_interface() {
                     return Err(format!(
@@ -346,7 +350,11 @@ impl<'gc> ClassObject<'gc> {
             }
 
             if let Some(superclass_name) = cls.read().super_class_name() {
-                queue.push(self.early_resolve_class(scope.domain(), superclass_name)?);
+                queue.push(self.early_resolve_class(
+                    scope.domain(),
+                    superclass_name,
+                    activation.context.gc_context,
+                )?);
             }
         }
         write.interfaces = interfaces;
@@ -385,9 +393,10 @@ impl<'gc> ClassObject<'gc> {
         &self,
         domain: Domain<'gc>,
         class_name: &Multiname<'gc>,
+        mc: MutationContext<'gc, '_>,
     ) -> Result<GcCell<'gc, Class<'gc>>, Error<'gc>> {
         domain
-            .get_class(class_name)?
+            .get_class(class_name, mc)?
             .ok_or_else(|| format!("Could not resolve class {class_name:?}").into())
     }
 
@@ -943,9 +952,8 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             .unwrap_or(activation.avm2().classes().object)
             .inner_class_definition();
 
-        let parameterized_class = self_class
-            .read()
-            .with_type_param(class_param, activation.context.gc_context);
+        let parameterized_class: GcCell<'_, Class<'_>> =
+            Class::with_type_param(self_class, class_param, activation.context.gc_context);
 
         let class_scope = self.0.read().class_scope;
         let instance_scope = self.0.read().instance_scope;

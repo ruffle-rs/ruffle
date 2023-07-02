@@ -11,6 +11,7 @@ use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use bitflags::bitflags;
+use fnv::FnvHashMap;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::fmt;
 use std::hash::{Hash, Hasher};
@@ -152,11 +153,36 @@ pub struct Class<'gc> {
     /// Whether or not this `Class` has loaded its traits or not.
     traits_loaded: bool,
 
+    /// Maps a type parameter to the application of this class with that parameter.
+    ///
+    /// Only applicable if this class is generic.
+    applications: FnvHashMap<ClassKey<'gc>, GcCell<'gc, Class<'gc>>>,
+
     /// Whether or not this is a system-defined class.
     ///
     /// System defined classes are allowed to have illegal trait configurations
     /// without throwing a VerifyError.
     is_system: bool,
+}
+
+/// Allows using a `GcCell<'gc, Class<'gc>>` as a HashMap key,
+/// using the pointer address for hashing/equality.
+#[derive(Collect, Copy, Clone)]
+#[collect(no_drop)]
+struct ClassKey<'gc>(GcCell<'gc, Class<'gc>>);
+
+impl PartialEq for ClassKey<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        GcCell::ptr_eq(self.0, other.0)
+    }
+}
+
+impl Eq for ClassKey<'_> {}
+
+impl Hash for ClassKey<'_> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.0.as_ptr().hash(state);
+    }
 }
 
 impl<'gc> Class<'gc> {
@@ -201,6 +227,7 @@ impl<'gc> Class<'gc> {
                 ),
                 traits_loaded: true,
                 is_system: true,
+                applications: FnvHashMap::default(),
             },
         )
     }
@@ -210,11 +237,18 @@ impl<'gc> Class<'gc> {
     /// This is used to parameterize a generic type. The returned class will no
     /// longer be generic.
     pub fn with_type_param(
-        &self,
+        this: GcCell<'gc, Class<'gc>>,
         param: GcCell<'gc, Class<'gc>>,
         mc: MutationContext<'gc, '_>,
     ) -> GcCell<'gc, Class<'gc>> {
-        let mut new_class = self.clone();
+        let read = this.read();
+        let key = ClassKey(param);
+
+        if let Some(application) = read.applications.get(&key) {
+            return *application;
+        }
+
+        let mut new_class = (*read).clone();
 
         new_class.param = Some(param);
         new_class.attributes.remove(ClassAttributes::GENERIC);
@@ -234,7 +268,11 @@ impl<'gc> Class<'gc> {
             AvmString::new_utf8(mc, name_with_params),
         );
 
-        GcCell::allocate(mc, new_class)
+        let new_class = GcCell::allocate(mc, new_class);
+        drop(read);
+
+        this.write(mc).applications.insert(key, new_class);
+        new_class
     }
 
     /// Set the attributes of the class (sealed/final/interface status).
@@ -364,6 +402,7 @@ impl<'gc> Class<'gc> {
                 ),
                 traits_loaded: false,
                 is_system: false,
+                applications: Default::default(),
             },
         ))
     }
@@ -535,6 +574,7 @@ impl<'gc> Class<'gc> {
                 class_traits: Vec::new(),
                 traits_loaded: true,
                 is_system: false,
+                applications: Default::default(),
             },
         ))
     }
