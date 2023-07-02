@@ -338,20 +338,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 )
             })?;
 
-        // Type parameters should specialize the returned class.
+        // A type parameter should specialize the returned class.
         // Unresolvable parameter types are treated as Any, which is treated as
         // Object.
-        if !type_name.params().is_empty() {
-            let mut param_types = Vec::with_capacity(type_name.params().len());
-
-            for param in type_name.params() {
-                param_types.push(match self.resolve_type(param)? {
-                    Some(o) => Value::Object(o.into()),
-                    None => Value::Null,
-                });
-            }
-
-            return Ok(Some(class.apply(self, &param_types[..])?));
+        if let Some(param) = type_name.param() {
+            let param_type = match self.resolve_type(&param)? {
+                Some(o) => Value::Object(o.into()),
+                None => Value::Null,
+            };
+            return Ok(Some(class.apply(self, param_type)?));
         }
 
         Ok(Some(class))
@@ -2057,7 +2052,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .into());
         }
 
-        let applied = base.apply(self, &args[..])?;
+        let applied = base.apply(self, args[0])?;
         self.push_stack(applied);
 
         Ok(FrameControl::Continue)

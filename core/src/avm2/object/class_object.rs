@@ -896,7 +896,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
     fn apply(
         &self,
         activation: &mut Activation<'_, 'gc>,
-        nullable_params: &[Value<'gc>],
+        nullable_param: Value<'gc>,
     ) -> Result<ClassObject<'gc>, Error<'gc>> {
         let self_class = self.inner_class_definition();
 
@@ -904,22 +904,13 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             return Err(format!("Class {:?} is not generic", self_class.read().name()).into());
         }
 
-        if !self_class.read().params().is_empty() {
+        if !self_class.read().param().is_none() {
             return Err(format!("Class {:?} was already applied", self_class.read().name()).into());
-        }
-
-        if nullable_params.len() != 1 {
-            return Err(format!(
-                "Class {:?} only accepts one type parameter, {} given",
-                self_class.read().name(),
-                nullable_params.len()
-            )
-            .into());
         }
 
         //Because `null` is a valid parameter, we have to accept values as
         //parameters instead of objects. We coerce them to objects now.
-        let object_param = match &nullable_params[0] {
+        let object_param = match nullable_param {
             Value::Null => None,
             Value::Undefined => return Err("Undefined is not a valid type parameter".into()),
             v => Some(v.as_object().unwrap()),
@@ -944,7 +935,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
 
         let parameterized_class = self_class
             .read()
-            .with_type_params(&[class_param], activation.context.gc_context);
+            .with_type_param(class_param, activation.context.gc_context);
 
         let class_scope = self.0.read().class_scope;
         let instance_scope = self.0.read().instance_scope;

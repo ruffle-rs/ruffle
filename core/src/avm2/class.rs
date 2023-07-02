@@ -76,8 +76,8 @@ pub struct Class<'gc> {
     /// The name of the class.
     name: QName<'gc>,
 
-    /// The type parameters for this class.
-    params: Vec<GcCell<'gc, Class<'gc>>>,
+    /// The type parameter for this class (only supported for Vector)
+    param: Option<GcCell<'gc, Class<'gc>>>,
 
     /// The name of this class's superclass.
     super_class: Option<Multiname<'gc>>,
@@ -181,7 +181,7 @@ impl<'gc> Class<'gc> {
             mc,
             Self {
                 name,
-                params: Vec::new(),
+                param: None,
                 super_class,
                 attributes: ClassAttributes::empty(),
                 protected_namespace: None,
@@ -209,31 +209,24 @@ impl<'gc> Class<'gc> {
     ///
     /// This is used to parameterize a generic type. The returned class will no
     /// longer be generic.
-    pub fn with_type_params(
+    pub fn with_type_param(
         &self,
-        params: &[GcCell<'gc, Class<'gc>>],
+        param: GcCell<'gc, Class<'gc>>,
         mc: MutationContext<'gc, '_>,
     ) -> GcCell<'gc, Class<'gc>> {
         let mut new_class = self.clone();
 
-        new_class.params = params.to_vec();
+        new_class.param = Some(param);
         new_class.attributes.remove(ClassAttributes::GENERIC);
         new_class.class_init = new_class.specialized_class_init.clone();
         new_class.class_initializer_called = false;
-
-        if params.len() > 1 {
-            panic!(
-                "More than one type parameter is unsupported: {:?}",
-                self.name()
-            );
-        }
 
         // FIXME - we should store a `Multiname` instead of a `QName`, and use the
         // `params` field. For now, this is good enough to get tests passing
         let name_with_params = format!(
             "{}.<{}>",
             new_class.name.local_name(),
-            params[0].read().name().to_qualified_name(mc)
+            param.read().name().to_qualified_name(mc)
         );
 
         new_class.name = QName::new(
@@ -351,7 +344,7 @@ impl<'gc> Class<'gc> {
             activation.context.gc_context,
             Self {
                 name,
-                params: Vec::new(),
+                param: None,
                 super_class,
                 attributes,
                 protected_namespace,
@@ -510,7 +503,7 @@ impl<'gc> Class<'gc> {
             activation.context.gc_context,
             Self {
                 name: QName::new(activation.avm2().public_namespace, name),
-                params: Vec::new(),
+                param: None,
                 super_class: None,
                 attributes: ClassAttributes::empty(),
                 protected_namespace: None,
@@ -815,8 +808,8 @@ impl<'gc> Class<'gc> {
         self.attributes.contains(ClassAttributes::GENERIC)
     }
 
-    pub fn params(&self) -> &[GcCell<'gc, Class<'gc>>] {
-        &self.params[..]
+    pub fn param(&self) -> &Option<GcCell<'gc, Class<'gc>>> {
+        &self.param
     }
 }
 
