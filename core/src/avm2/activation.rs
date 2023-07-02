@@ -2970,10 +2970,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             Value::Number(_) | Value::Integer(_) => "number",
             Value::Object(o) => {
                 // Subclasses always have a typeof = "object", must be a subclass if the prototype chain is > 2, or not a subclass if <=2
-                let is_not_subclass = matches!(
-                    o.proto().and_then(|p| p.proto()).and_then(|p| p.proto()),
-                    None
-                );
+                let is_not_subclass = o
+                    .proto()
+                    .and_then(|p| p.proto())
+                    .and_then(|p| p.proto())
+                    .is_none();
 
                 match o {
                     Object::FunctionObject(_) => {
