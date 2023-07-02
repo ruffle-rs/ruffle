@@ -278,7 +278,7 @@ pub fn describe_type<'gc>(
             .classes()
             .xml
             .construct(activation, &[])?
-            .into())
+            .into());
     };
     let mut xml_string = String::new();
 

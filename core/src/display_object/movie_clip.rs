@@ -2611,7 +2611,9 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
 
         if self.world_bounds().contains(point) {
-            let Some(local_matrix) = self.global_to_local_matrix() else { return false; };
+            let Some(local_matrix) = self.global_to_local_matrix() else {
+                return false;
+            };
             if let Some(masker) = self.masker() {
                 if !masker.hit_test_shape(context, point, HitTestOptions::SKIP_INVISIBLE) {
                     return false;
@@ -2911,7 +2913,9 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
     ) -> Option<InteractiveObject<'gc>> {
         if self.visible() {
             let this: InteractiveObject<'gc> = (*self).into();
-            let Some(local_matrix) = self.global_to_local_matrix() else { return None; };
+            let Some(local_matrix) = self.global_to_local_matrix() else {
+                return None;
+            };
 
             if let Some(masker) = self.masker() {
                 if !masker.hit_test_shape(context, point, HitTestOptions::SKIP_INVISIBLE) {
@@ -2996,7 +3000,9 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
     ) -> Avm2MousePick<'gc> {
         if self.visible() {
             let this: InteractiveObject<'gc> = (*self).into();
-            let Some(local_matrix) = self.global_to_local_matrix() else { return Avm2MousePick::Miss; };
+            let Some(local_matrix) = self.global_to_local_matrix() else {
+                return Avm2MousePick::Miss;
+            };
 
             if let Some(masker) = self.masker() {
                 if !masker.hit_test_shape(context, point, HitTestOptions::SKIP_INVISIBLE) {
