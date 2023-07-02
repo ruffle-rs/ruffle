@@ -2,7 +2,7 @@
 
 use crate::avm1::{
     Activation as Avm1Activation, ActivationIdentifier as Avm1ActivationIdentifier,
-    ExecutionReason as Avm1ExecutionReason, ScriptObject as Avm1ScriptObject,
+    ExecutionReason as Avm1ExecutionReason, FlvValueAvm1Ext, ScriptObject as Avm1ScriptObject,
     TObject as Avm1TObject, Value as Avm1Value,
 };
 use crate::avm2::{Activation as Avm2Activation, Avm2, EventObject as Avm2EventObject};
@@ -513,7 +513,7 @@ impl<'gc> NetStream<'gc> {
 
                         for var in vars {
                             if var.name == b"onMetaData" && !has_stream_already {
-                                match var.data {
+                                match var.data.clone() {
                                     FlvValue::Object(subvars)
                                     | FlvValue::EcmaArray(subvars)
                                     | FlvValue::StrictArray(subvars) => {
@@ -540,12 +540,18 @@ impl<'gc> NetStream<'gc> {
                                     }
                                     _ => tracing::error!("Invalid FLV metadata tag!"),
                                 }
-                            } else {
-                                tracing::warn!(
-                                    "Stub: Stream data processing (name: {})",
-                                    WStr::from_units(var.name)
-                                );
                             }
+                            drop(write);
+                            // This is necessary because the script callback functions can call back into
+                            // these methods, (e.g. NetStream::play), so we need to avoid holding a borrow
+                            // while the script data is being handled.
+                            self.handle_script_data(
+                                self.0.read().avm_object,
+                                context,
+                                var.name,
+                                var.data,
+                            );
+                            write = self.0.write(context.gc_context);
                         }
 
                         let (_, position) = reader.into_parts();
@@ -669,7 +675,7 @@ impl<'gc> NetStream<'gc> {
                     Avm1ExecutionReason::Special,
                 ) {
                     tracing::error!(
-                        "Got error when dispatching AVM1 event from NetStream: {}",
+                        "Got error when dispatching AVM1 onStatus event from NetStream: {}",
                         e
                     );
                 }
@@ -680,6 +686,62 @@ impl<'gc> NetStream<'gc> {
                 let net_status_event =
                     Avm2EventObject::net_status_event(&mut activation, "netStatus", values);
                 Avm2::dispatch_event(&mut activation.context, net_status_event, object);
+            }
+            None => {}
+        }
+    }
+
+    fn handle_script_data(
+        self,
+        avm_object: Option<AvmObject<'gc>>,
+        context: &mut UpdateContext<'_, 'gc>,
+        variable_name: &[u8],
+        variable_data: FlvValue,
+    ) {
+        match avm_object {
+            Some(AvmObject::Avm1(object)) => {
+                match variable_name {
+                    b"onCuePoint" => {
+                        let root = context.stage.root_clip().expect("root");
+                        let mut activation = Avm1Activation::from_nothing(
+                            context.reborrow(),
+                            Avm1ActivationIdentifier::root("[FLV onCuePoint]"),
+                            root,
+                        );
+
+                        let avm1_object_value = variable_data.to_avm1_value(&mut activation);
+
+                        if let Err(e) = object.call_method(
+                            "onCuePoint".into(),
+                            &[avm1_object_value],
+                            &mut activation,
+                            Avm1ExecutionReason::Special,
+                        ) {
+                            tracing::error!(
+                                "Got error when dispatching AVM1 onCuePoint event from NetStream: {}",
+                                e
+                            );
+                        }
+                    }
+                    b"onXMPData" => {
+                        tracing::warn!("Stub: FLV stream data onXMPData for AVM1");
+                    }
+                    b"onMetaData" => {
+                        tracing::warn!("Stub: FLV stream data onMetaData for AVM1");
+                    }
+                    _ => {
+                        tracing::warn!(
+                            "Stub: FLV stream data {} for AVM1",
+                            WStr::from_units(variable_name)
+                        );
+                    }
+                };
+            }
+            Some(AvmObject::Avm2(_object)) => {
+                tracing::warn!(
+                    "Stub: FLV stream data processing (name: {}) for AVM2",
+                    WStr::from_units(variable_name)
+                );
             }
             None => {}
         }
