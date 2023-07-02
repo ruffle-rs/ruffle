@@ -27,3 +27,4 @@ debug-menu = 除錯工具
 debug-menu-open-stage = 檢視背景資訊
 debug-menu-open-movie = 檢視動畫資訊
 debug-menu-open-movie-list = 檢視所有動畫資訊
+debug-menu-search-display-objects = 搜尋顯示物體...
