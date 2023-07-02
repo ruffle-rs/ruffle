@@ -110,7 +110,7 @@ pub fn class_init<'gc>(
 
         let class_class = activation.avm2().classes().class;
         let int_class = activation.avm2().classes().int;
-        let int_vector_class = this.apply(activation, &[int_class.into()])?;
+        let int_vector_class = this.apply(activation, int_class.into())?;
         let int_vector_name_legacy = QName::new(vector_internal_namespace, "Vector$int");
 
         globals.install_const_late(
@@ -126,7 +126,7 @@ pub fn class_init<'gc>(
         );
 
         let uint_class = activation.avm2().classes().uint;
-        let uint_vector_class = this.apply(activation, &[uint_class.into()])?;
+        let uint_vector_class = this.apply(activation, uint_class.into())?;
         let uint_vector_name_legacy = QName::new(vector_internal_namespace, "Vector$uint");
 
         globals.install_const_late(
@@ -142,7 +142,7 @@ pub fn class_init<'gc>(
         );
 
         let number_class = activation.avm2().classes().number;
-        let number_vector_class = this.apply(activation, &[number_class.into()])?;
+        let number_vector_class = this.apply(activation, number_class.into())?;
         let number_vector_name_legacy = QName::new(vector_internal_namespace, "Vector$double");
 
         globals.install_const_late(
@@ -157,7 +157,7 @@ pub fn class_init<'gc>(
             activation.context.gc_context,
         );
 
-        let plain_vector_class = this.apply(activation, &[Value::Null])?;
+        let plain_vector_class = this.apply(activation, Value::Null)?;
         let object_vector_name_legacy = QName::new(vector_internal_namespace, "Vector$object");
 
         globals.install_const_late(

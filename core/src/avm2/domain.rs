@@ -233,7 +233,7 @@ impl<'gc> Domain<'gc> {
                 let class = res.as_object().ok_or_else(|| {
                     Error::RustError(format!("Vector type {:?} was not an object", res).into())
                 })?;
-                return class.apply(activation, &[type_class]).map(|obj| obj.into());
+                return class.apply(activation, type_class).map(|obj| obj.into());
             }
         }
         res

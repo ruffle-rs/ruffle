@@ -73,7 +73,7 @@ impl<'gc> VectorObject<'gc> {
         let value_type = vector.value_type();
         let vector_class = activation.avm2().classes().vector;
 
-        let applied_class = vector_class.apply(activation, &[value_type.into()])?;
+        let applied_class = vector_class.apply(activation, value_type.into())?;
 
         let mut object: Object<'gc> = VectorObject(GcCell::allocate(
             activation.context.gc_context,

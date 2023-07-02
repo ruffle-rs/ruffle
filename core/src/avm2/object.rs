@@ -909,7 +909,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn apply(
         &self,
         _activation: &mut Activation<'_, 'gc>,
-        _params: &[Value<'gc>],
+        _param: Value<'gc>,
     ) -> Result<ClassObject<'gc>, Error<'gc>> {
         Err("Not a parameterized type".into())
     }
