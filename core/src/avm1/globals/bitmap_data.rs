@@ -1334,7 +1334,9 @@ fn compare<'gc>(
     const DIFFERENT_WIDTHS: i32 = -3;
     const DIFFERENT_HEIGHTS: i32 = -4;
 
-    let NativeObject::BitmapData(this_bitmap_data) = this.native() else { return Ok(NOT_BITMAP.into()); };
+    let NativeObject::BitmapData(this_bitmap_data) = this.native() else {
+        return Ok(NOT_BITMAP.into());
+    };
 
     if this_bitmap_data.disposed() {
         // The documentation says that -2 should be returned here, but -1 is actually returned.
@@ -1394,7 +1396,9 @@ fn load_bitmap<'gc>(
         .library_for_movie(movie)
         .and_then(|l| l.character_by_export_name(name));
 
-    let Some(Character::Bitmap(bitmap)) = character else { return Ok(Value::Undefined); };
+    let Some(Character::Bitmap(bitmap)) = character else {
+        return Ok(Value::Undefined);
+    };
 
     let transparency = true;
     let bitmap_data = BitmapData::new_with_pixels(

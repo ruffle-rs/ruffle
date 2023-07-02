@@ -160,7 +160,8 @@ impl<'gc> ScriptObjectData<'gc> {
             ));
         }
 
-        let Some(local_name) = multiname.local_name() else { // when can this happen?
+        let Some(local_name) = multiname.local_name() else {
+            // when can this happen?
             return Err(error::make_reference_error(
                 activation,
                 error::ReferenceErrorCode::InvalidRead,

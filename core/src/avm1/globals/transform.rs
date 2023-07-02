@@ -78,10 +78,10 @@ fn method<'gc>(
     }
 
     let NativeObject::Transform(this) = this.native() else {
-        return Ok(Value::Undefined)
+        return Ok(Value::Undefined);
     };
     let Some(clip) = this.clip(activation) else {
-        return Ok(Value::Undefined)
+        return Ok(Value::Undefined);
     };
 
     Ok(match index {

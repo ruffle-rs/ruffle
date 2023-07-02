@@ -184,9 +184,13 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
             }
 
             // Transform the point into the text's local space.
-            let Some(local_matrix) = self.global_to_local_matrix() else { return false; };
+            let Some(local_matrix) = self.global_to_local_matrix() else {
+                return false;
+            };
             let tf = self.0.read();
-            let Some(text_matrix) = tf.static_data.text_transform.inverse() else { return false; };
+            let Some(text_matrix) = tf.static_data.text_transform.inverse() else {
+                return false;
+            };
             point = text_matrix * local_matrix * point;
 
             let mut font_id = 0;
@@ -214,7 +218,9 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
                     for c in &block.glyphs {
                         if let Some(glyph) = font.get_glyph(c.index as usize) {
                             // Transform the point into glyph space and test.
-                            let Some(matrix) = glyph_matrix.inverse() else { return false; };
+                            let Some(matrix) = glyph_matrix.inverse() else {
+                                return false;
+                            };
                             let point = matrix * point;
                             let glyph_shape = glyph.as_shape();
                             if glyph_shape.shape_bounds.contains(point)

@@ -327,9 +327,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
 
             let write = self.0.write(mc);
             let mut kind = write.node.kind_mut(mc);
-            let E4XNodeKind::Element {
-                attributes, ..
-            } = &mut *kind else {
+            let E4XNodeKind::Element { attributes, .. } = &mut *kind else {
                 return Ok(());
             };
 
@@ -340,9 +338,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         let self_node = *self.node();
         let write = self.0.write(mc);
         let mut kind = write.node.kind_mut(mc);
-        let E4XNodeKind::Element {
-            children, ..
-        } = &mut *kind else {
+        let E4XNodeKind::Element { children, .. } = &mut *kind else {
             return Ok(());
         };
 
@@ -399,8 +395,10 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         let mut kind = write.node.kind_mut(mc);
         let E4XNodeKind::Element {
             children,
-            attributes,..
-        } = &mut *kind else {
+            attributes,
+            ..
+        } = &mut *kind
+        else {
             return Ok(false);
         };
 

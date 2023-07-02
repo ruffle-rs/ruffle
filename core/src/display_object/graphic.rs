@@ -205,7 +205,9 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         if (!options.contains(HitTestOptions::SKIP_INVISIBLE) || self.visible())
             && self.world_bounds().contains(point)
         {
-            let Some(local_matrix) = self.global_to_local_matrix() else { return false; };
+            let Some(local_matrix) = self.global_to_local_matrix() else {
+                return false;
+            };
             let point = local_matrix * point;
             if let Some(drawing) = &self.0.read().drawing {
                 if drawing.hit_test(point, &local_matrix) {
