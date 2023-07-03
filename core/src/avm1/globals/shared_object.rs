@@ -134,6 +134,13 @@ fn deserialize_value<'gc>(
             if let Ok(Value::Object(obj)) =
                 array_constructor.construct(activation, &[(*len).into()])
             {
+                let v: Value<'gc> = obj.into();
+
+                // This should always be valid, but lets be sure
+                if let Some(reference) = lso.as_reference(val) {
+                    reference_cache.insert(reference, v);
+                }
+
                 for entry in associative {
                     let value = deserialize_value(activation, entry.value(), lso, reference_cache);
 
@@ -149,13 +156,6 @@ fn deserialize_value<'gc>(
                     }
                 }
 
-                let v: Value<'gc> = obj.into();
-
-                // This should always be valid, but lets be sure
-                if let Some(reference) = lso.as_reference(val) {
-                    reference_cache.insert(reference, v);
-                }
-
                 v
             } else {
                 Value::Undefined
@@ -167,6 +167,14 @@ fn deserialize_value<'gc>(
                 activation.context.gc_context,
                 Some(activation.context.avm1.prototypes().object),
             );
+
+            let v: Value<'gc> = obj.into();
+
+            // This should always be valid, but lets be sure
+            if let Some(reference) = lso.as_reference(val) {
+                reference_cache.insert(reference, v);
+            }
+
             for entry in elements {
                 let value = deserialize_value(activation, entry.value(), lso, reference_cache);
                 let name = AvmString::new_utf8(activation.context.gc_context, &entry.name);
@@ -176,13 +184,6 @@ fn deserialize_value<'gc>(
                     value,
                     Attribute::empty(),
                 );
-            }
-
-            let v: Value<'gc> = obj.into();
-
-            // This should always be valid, but lets be sure
-            if let Some(reference) = lso.as_reference(val) {
-                reference_cache.insert(reference, v);
             }
 
             v
