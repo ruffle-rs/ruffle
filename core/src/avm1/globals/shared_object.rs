@@ -57,10 +57,10 @@ pub fn get_disk_usage<'gc>(
 }
 
 /// Serialize an Object and any children to a JSON object
-fn recursive_serialize<'gc, 'b, 'c>(
+fn recursive_serialize<'gc>(
     activation: &mut Activation<'_, 'gc>,
     obj: Object<'gc>,
-    writer: &'b mut dyn ObjWriter<'c>,
+    writer: &mut dyn ObjWriter<'_>,
 ) {
     // Reversed to match flash player ordering
     for element_name in obj.get_keys(activation, false).into_iter().rev() {
