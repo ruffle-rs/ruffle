@@ -1063,6 +1063,7 @@ fn solve_cubic(a: f64, b: f64, c: f64, d: f64) -> SmallVec<[f64; 3]> {
     if a.abs() <= COEFFICIENT_EPSILON {
         // Fall back to quadratic formula.
         let (t0, t1) = solve_quadratic(b, c, d);
+        #[allow(clippy::tuple_array_conversions)]
         roots.extend_from_slice(&[t0, t1]);
         return roots;
     }

@@ -1057,7 +1057,7 @@ impl Context3D for WgpuContext3D {
                                 let padding_len = COPY_BYTES_PER_ROW_ALIGNMENT as usize
                                     - (row.len() % COPY_BYTES_PER_ROW_ALIGNMENT as usize);
                                 let padding = vec![0; padding_len];
-                                row.iter().copied().chain(padding.into_iter())
+                                row.iter().copied().chain(padding)
                             })
                             .collect(),
                     )
