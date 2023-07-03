@@ -29,6 +29,7 @@ pub struct Surface {
     quality: StageQuality,
     sample_count: u32,
     pipelines: Arc<Pipelines>,
+    wf_pipelines: Option<Arc<Pipelines>>,
     format: wgpu::TextureFormat,
     actual_surface_format: wgpu::TextureFormat,
 }
@@ -50,12 +51,15 @@ impl Surface {
 
         let sample_count =
             supported_sample_count(&descriptors.adapter, quality, frame_buffer_format);
-        let pipelines = descriptors.pipelines(sample_count, frame_buffer_format);
+        let pipelines =
+            descriptors.pipelines(sample_count, wgpu::PolygonMode::Fill, frame_buffer_format);
+
         Self {
             size,
             quality,
             sample_count,
             pipelines,
+            wf_pipelines: None,
             format: frame_buffer_format,
             actual_surface_format: surface_format,
         }
@@ -67,6 +71,7 @@ impl Surface {
         &mut self,
         frame_view: &wgpu::TextureView,
         render_target_mode: RenderTargetMode,
+        as_wireframe: bool,
         descriptors: &'global Descriptors,
         uniform_buffers: &'frame mut UniformBuffer<'global, Transforms>,
         color_buffers: &'frame mut UniformBuffer<'global, ColorAdjustments>,
@@ -79,6 +84,7 @@ impl Surface {
     ) {
         let target = self.draw_commands(
             render_target_mode,
+            as_wireframe,
             descriptors,
             meshes,
             commands,
@@ -109,6 +115,7 @@ impl Surface {
     pub fn draw_commands<'frame, 'global: 'frame>(
         &mut self,
         render_target_mode: RenderTargetMode,
+        as_wireframe: bool,
         descriptors: &'global Descriptors,
         meshes: &'global Vec<Mesh>,
         commands: CommandList,
@@ -133,6 +140,7 @@ impl Surface {
         let mut mask_state = MaskState::NoMask;
         let chunks = chunk_blends(
             commands.commands,
+            as_wireframe,
             descriptors,
             uniform_buffers,
             color_buffers,
@@ -148,6 +156,20 @@ impl Surface {
             },
             texture_pool,
         );
+
+        let pl: Arc<Pipelines> = if as_wireframe {
+            if let Some(ref wfpl) = self.wf_pipelines {
+                wfpl.clone()
+            } else {
+                let wf_pipelines =
+                    descriptors.pipelines(self.sample_count, wgpu::PolygonMode::Line, self.format);
+
+                self.wf_pipelines = Some(wf_pipelines.clone());
+                wf_pipelines
+            }
+        } else {
+            self.pipelines.clone()
+        };
 
         for chunk in chunks {
             match chunk {
@@ -172,7 +194,7 @@ impl Surface {
                         });
                     render_pass.set_bind_group(0, target.globals().bind_group(), &[]);
                     let mut renderer = CommandRenderer::new(
-                        &self.pipelines,
+                        &pl,
                         descriptors,
                         uniform_buffers,
                         color_buffers,
@@ -314,13 +336,11 @@ impl Surface {
                                 render_pass.set_stencil_reference(num_masks);
                             }
                         }
-                        render_pass.set_pipeline(
-                            self.pipelines.complex_blends[blend_mode].pipeline_for(mask_state),
-                        );
+                        render_pass
+                            .set_pipeline(pl.complex_blends[blend_mode].pipeline_for(mask_state));
                     } else {
-                        render_pass.set_pipeline(
-                            self.pipelines.complex_blends[blend_mode].stencilless_pipeline(),
-                        );
+                        render_pass
+                            .set_pipeline(pl.complex_blends[blend_mode].stencilless_pipeline());
                     }
 
                     if descriptors.limits.max_push_constant_size > 0 {

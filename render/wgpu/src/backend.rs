@@ -52,9 +52,25 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
     // This is currently unused - we just store it to report in
     // `get_viewport_dimensions`
     viewport_scale_factor: f64,
+    wireframe_available: bool,
+    wireframe: bool,
     texture_pool: TexturePool,
     offscreen_texture_pool: TexturePool,
     pub(crate) offscreen_buffer_pool: Arc<BufferPool<wgpu::Buffer, BufferDimensions>>,
+}
+
+impl<T: RenderTarget> WgpuRenderBackend<T> {
+    pub fn is_wireframe_available(&self) -> bool {
+        self.wireframe_available
+    }
+
+    pub fn get_wireframe(&self) -> bool {
+        self.wireframe
+    }
+
+    pub fn set_wireframe(&mut self, enabled: bool) {
+        self.wireframe = enabled;
+    }
 }
 
 impl WgpuRenderBackend<SwapChainTarget> {
@@ -189,6 +205,11 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                 .into());
         }
 
+        let wireframe_available = descriptors
+            .adapter
+            .features()
+            .contains(wgpu::Features::POLYGON_MODE_LINE);
+
         let surface = Surface::new(
             &descriptors,
             StageQuality::Low,
@@ -221,6 +242,8 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             target,
             surface,
             meshes: Vec::new(),
+            wireframe_available,
+            wireframe: false,
             shape_tessellator: ShapeTessellator::new(),
             viewport_scale_factor: 1.0,
             texture_pool: TexturePool::new(),
@@ -552,6 +575,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                             a: f64::from(entry.clear.a) / 255.0,
                         },
                     ),
+                    self.wireframe,
                     &self.descriptors,
                     &self.meshes,
                     entry.commands,
@@ -577,6 +601,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                             a: f64::from(entry.clear.a) / 255.0,
                         },
                     ),
+                    self.wireframe,
                     &self.descriptors,
                     &self.meshes,
                     entry.commands,
@@ -619,6 +644,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 b: f64::from(clear.b) / 255.0,
                 a: f64::from(clear.a) / 255.0,
             }),
+            self.wireframe,
             &self.descriptors,
             &mut uniform_buffer,
             &mut color_buffer,
@@ -800,6 +826,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         surface.draw_commands_and_copy_to(
             frame_output.view(),
             RenderTargetMode::FreshWithTexture(target.get_texture()),
+            self.wireframe,
             &self.descriptors,
             &mut uniform_buffer,
             &mut color_buffer,
@@ -1107,6 +1134,13 @@ async fn request_device(
         if adapter.features().contains(feature) {
             features |= feature;
         }
+    }
+
+    if adapter
+        .features()
+        .contains(wgpu::Features::POLYGON_MODE_LINE)
+    {
+        features |= wgpu::Features::POLYGON_MODE_LINE;
     }
 
     adapter

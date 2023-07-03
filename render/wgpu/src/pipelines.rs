@@ -85,6 +85,7 @@ impl Pipelines {
         shaders: &Shaders,
         format: wgpu::TextureFormat,
         msaa_sample_count: u32,
+        polygon_mode: wgpu::PolygonMode,
         bind_layouts: &BindLayouts,
     ) -> Self {
         let colort_bindings = if device.limits().max_push_constant_size > 0 {
@@ -121,6 +122,7 @@ impl Pipelines {
             format,
             &shaders.color_shader,
             msaa_sample_count,
+            polygon_mode,
             &VERTEX_BUFFERS_DESCRIPTION_COLOR,
             &colort_bindings,
             wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING,
@@ -144,6 +146,7 @@ impl Pipelines {
             format,
             &shaders.gradient_shader,
             msaa_sample_count,
+            polygon_mode,
             &VERTEX_BUFFERS_DESCRIPTION_POS,
             &gradient_bindings,
             wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING,
@@ -167,6 +170,7 @@ impl Pipelines {
                 format,
                 &shaders.blend_shaders[blend],
                 msaa_sample_count,
+                polygon_mode,
                 &VERTEX_BUFFERS_DESCRIPTION_POS,
                 &complex_blend_bindings,
                 wgpu::BlendState::REPLACE,
@@ -195,6 +199,7 @@ impl Pipelines {
                     format,
                     &shaders.bitmap_shader,
                     msaa_sample_count,
+                    polygon_mode,
                     &VERTEX_BUFFERS_DESCRIPTION_POS,
                     &bitmap_blend_bindings,
                     blend.blend_state(),
@@ -227,6 +232,7 @@ impl Pipelines {
             })],
             &VERTEX_BUFFERS_DESCRIPTION_POS,
             msaa_sample_count,
+            polygon_mode,
         ));
 
         let bitmap_opaque_dummy_depth = device.create_render_pipeline(&create_pipeline_descriptor(
@@ -253,6 +259,7 @@ impl Pipelines {
             })],
             &VERTEX_BUFFERS_DESCRIPTION_POS,
             msaa_sample_count,
+            polygon_mode,
         ));
 
         Self {
@@ -276,6 +283,7 @@ fn create_pipeline_descriptor<'a>(
     color_target_state: &'a [Option<wgpu::ColorTargetState>],
     vertex_buffer_layout: &'a [wgpu::VertexBufferLayout<'a>],
     msaa_sample_count: u32,
+    polygon_mode: wgpu::PolygonMode,
 ) -> wgpu::RenderPipelineDescriptor<'a> {
     wgpu::RenderPipelineDescriptor {
         label,
@@ -295,7 +303,7 @@ fn create_pipeline_descriptor<'a>(
             strip_index_format: None,
             front_face: wgpu::FrontFace::Ccw,
             cull_mode: None,
-            polygon_mode: wgpu::PolygonMode::default(),
+            polygon_mode,
             unclipped_depth: false,
             conservative: false,
         },
@@ -316,6 +324,7 @@ fn create_shape_pipeline(
     format: wgpu::TextureFormat,
     shader: &wgpu::ShaderModule,
     msaa_sample_count: u32,
+    polygon_mode: wgpu::PolygonMode,
     vertex_buffers_layout: &[wgpu::VertexBufferLayout<'_>],
     bind_group_layouts: &[&wgpu::BindGroupLayout],
     blend: wgpu::BlendState,
@@ -353,6 +362,7 @@ fn create_shape_pipeline(
             })],
             vertex_buffers_layout,
             msaa_sample_count,
+            polygon_mode,
         ))
     };
 
@@ -370,6 +380,7 @@ fn create_shape_pipeline(
             })],
             vertex_buffers_layout,
             msaa_sample_count,
+            polygon_mode,
         )),
         |mask_state| match mask_state {
             MaskState::NoMask => mask_render_state(

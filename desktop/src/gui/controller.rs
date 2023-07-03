@@ -222,7 +222,7 @@ impl GuiController {
                 full_output.platform_output.cursor_icon = player
                     .ui()
                     .downcast_ref::<DesktopUiBackend>()
-                    .unwrap_or_else(|| panic!("UI Backend should be DesktopUiBackend"))
+                    .expect("UI Backend should be DesktopUiBackend")
                     .cursor();
             }
         }

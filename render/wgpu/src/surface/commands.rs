@@ -467,6 +467,7 @@ pub enum LayerRef<'a> {
 #[allow(clippy::too_many_arguments)]
 pub fn chunk_blends<'a>(
     commands: Vec<Command>,
+    as_wireframe: bool,
     descriptors: &'a Descriptors,
     uniform_buffers: &mut UniformBuffer<'a, Transforms>,
     color_buffers: &mut UniformBuffer<'a, ColorAdjustments>,
@@ -503,6 +504,7 @@ pub fn chunk_blends<'a>(
                 let clear_color = blend_type.default_color();
                 let target = surface.draw_commands(
                     RenderTargetMode::FreshWithColor(clear_color),
+                    as_wireframe,
                     descriptors,
                     meshes,
                     commands,
