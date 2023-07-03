@@ -139,6 +139,13 @@ pub struct Activation<'a, 'gc: 'a> {
 }
 
 impl<'a, 'gc> Activation<'a, 'gc> {
+    /// Convenience method to retrieve the current GC context. Note that explicitely writing
+    /// `self.context.gc_context` can be sometimes necessary to satisfy the borrow checker.
+    #[inline(always)]
+    pub fn gc(&self) -> &'gc gc_arena::Mutation<'gc> {
+        self.context.gc_context
+    }
+
     /// Construct an activation that does not represent any particular scope.
     ///
     /// This exists primarily for non-AVM2 related manipulations of the

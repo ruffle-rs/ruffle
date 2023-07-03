@@ -172,6 +172,7 @@ impl<'a> ActivationIdentifier<'a> {
     }
 }
 
+/// Represents a single activation of a given AVM1 function or keyframe.
 pub struct Activation<'a, 'gc: 'a> {
     /// Represents the SWF version of a given function.
     ///
@@ -233,6 +234,13 @@ impl Drop for Activation<'_, '_> {
 }
 
 impl<'a, 'gc> Activation<'a, 'gc> {
+    /// Convenience method to retrieve the current GC context. Note that explicitely writing
+    /// `self.context.gc_context` can be sometimes necessary to satisfy the borrow checker.
+    #[inline(always)]
+    pub fn gc(&self) -> &'gc gc_arena::Mutation<'gc> {
+        self.context.gc_context
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn from_action(
         context: UpdateContext<'a, 'gc>,

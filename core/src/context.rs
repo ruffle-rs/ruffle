@@ -26,7 +26,7 @@ use crate::stub::StubCollection;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::timer::Timers;
 use core::fmt;
-use gc_arena::{Collect, MutationContext};
+use gc_arena::{Collect, Mutation};
 use instant::Instant;
 use rand::rngs::SmallRng;
 use ruffle_render::backend::{BitmapCacheEntry, RenderBackend};
@@ -39,8 +39,8 @@ use std::time::Duration;
 
 /// Minimal context, useful for manipulating the GC heap.
 pub struct GcContext<'a, 'gc> {
-    /// The mutation context to allocate and mutate `GcCell` types.
-    pub gc_context: MutationContext<'gc, 'a>,
+    /// The mutation context to allocate and mutate `Gc` pointers.
+    pub gc_context: &'gc Mutation<'gc>,
 
     /// The global string interner.
     pub interner: &'a mut AvmStringInterner<'gc>,
@@ -57,6 +57,13 @@ impl<'a, 'gc> GcContext<'a, 'gc> {
             interner: self.interner,
         }
     }
+
+    /// Convenience method to retrieve the current GC context. Note that explicitely writing
+    /// `self.gc_context` can be sometimes necessary to satisfy the borrow checker.
+    #[inline(always)]
+    pub fn gc(&self) -> &'gc Mutation<'gc> {
+        self.gc_context
+    }
 }
 
 /// `UpdateContext` holds shared data that is used by the various subsystems of Ruffle.
@@ -67,8 +74,8 @@ pub struct UpdateContext<'a, 'gc> {
     /// Display objects and actions can push actions onto the queue.
     pub action_queue: &'a mut ActionQueue<'gc>,
 
-    /// The mutation context to allocate and mutate `GcCell` types.
-    pub gc_context: MutationContext<'gc, 'a>,
+    /// The mutation context to allocate and mutate `Gc` pointers.
+    pub gc_context: &'gc Mutation<'gc>,
 
     /// The global string interner.
     pub interner: &'a mut AvmStringInterner<'gc>,
@@ -317,6 +324,13 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
 }
 
 impl<'a, 'gc> UpdateContext<'a, 'gc> {
+    /// Convenience method to retrieve the current GC context. Note that explicitely writing
+    /// `self.gc_context` can be sometimes necessary to satisfy the borrow checker.
+    #[inline(always)]
+    pub fn gc(&self) -> &'gc Mutation<'gc> {
+        self.gc_context
+    }
+
     /// Transform a borrowed update context into an owned update context with
     /// a shorter internal lifetime.
     ///
@@ -469,6 +483,9 @@ impl<'gc> Default for ActionQueue<'gc> {
 
 /// Shared data used during rendering.
 /// `Player` creates this when it renders a frame and passes it down to display objects.
+///
+/// As a convenience, this type can be deref-coerced to `Mutation<'gc>`, but note that explicitely
+/// writing `context.gc_context` can be sometimes necessary to satisfy the borrow checker.
 pub struct RenderContext<'a, 'gc> {
     /// The renderer, used by the display objects to register themselves.
     pub renderer: &'a mut dyn RenderBackend,
@@ -479,9 +496,8 @@ pub struct RenderContext<'a, 'gc> {
     /// Any offscreen draws that should be used to redraw a cacheAsBitmap
     pub cache_draws: &'a mut Vec<BitmapCacheEntry>,
 
-    /// The GC MutationContext, used to perform any GcCell writes
-    /// that must occur during rendering.
-    pub gc_context: MutationContext<'gc, 'a>,
+    /// The GC context, used to perform any `Gc` writes that must occur during rendering.
+    pub gc_context: &'gc Mutation<'gc>,
 
     /// The library, which provides access to fonts and other definitions when rendering.
     pub library: &'a Library<'gc>,
@@ -497,6 +513,15 @@ pub struct RenderContext<'a, 'gc> {
 
     /// The current player's stage (including all loaded levels)
     pub stage: Stage<'gc>,
+}
+
+impl<'a, 'gc> RenderContext<'a, 'gc> {
+    /// Convenience method to retrieve the current GC context. Note that explicitely writing
+    /// `self.gc_context` can be sometimes necessary to satisfy the borrow checker.
+    #[inline(always)]
+    pub fn gc(&self) -> &'gc Mutation<'gc> {
+        self.gc_context
+    }
 }
 
 /// The type of action being run.
