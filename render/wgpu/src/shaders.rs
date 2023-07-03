@@ -23,6 +23,7 @@ pub struct Shaders {
     pub blend_shaders: EnumMap<ComplexBlend, wgpu::ShaderModule>,
     pub color_matrix_filter: wgpu::ShaderModule,
     pub blur_filter: wgpu::ShaderModule,
+    pub glow_filter: wgpu::ShaderModule,
 }
 
 impl Shaders {
@@ -87,6 +88,13 @@ impl Shaders {
             "filter/blur.wgsl",
             include_str!("../shaders/filter/blur.wgsl"),
         );
+        let glow_filter = make_shader(
+            device,
+            &mut composer,
+            &shader_defs,
+            "filter/glow.wgsl",
+            include_str!("../shaders/filter/glow.wgsl"),
+        );
         let gradient_shader = make_shader(
             device,
             &mut composer,
@@ -117,6 +125,7 @@ impl Shaders {
             blend_shaders,
             color_matrix_filter,
             blur_filter,
+            glow_filter,
         }
     }
 }

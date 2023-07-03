@@ -1,5 +1,6 @@
 mod blur;
 mod color_matrix;
+mod glow;
 mod shader;
 
 use std::collections::HashSet;
@@ -9,6 +10,7 @@ use crate::buffer_pool::TexturePool;
 use crate::descriptors::Descriptors;
 use crate::filters::blur::BlurFilter;
 use crate::filters::color_matrix::ColorMatrixFilter;
+use crate::filters::glow::GlowFilter;
 use crate::filters::shader::ShaderFilter;
 use crate::surface::target::CommandTarget;
 use bytemuck::{Pod, Zeroable};
@@ -68,6 +70,7 @@ pub struct Filters {
     pub blur: BlurFilter,
     pub color_matrix: ColorMatrixFilter,
     pub shader: ShaderFilter,
+    pub glow: GlowFilter,
 }
 
 impl Filters {
@@ -76,6 +79,7 @@ impl Filters {
             blur: BlurFilter::new(device),
             color_matrix: ColorMatrixFilter::new(device),
             shader: ShaderFilter::new(),
+            glow: GlowFilter::new(device),
         }
     }
 
@@ -108,6 +112,14 @@ impl Filters {
                 draw_encoder,
                 &source,
                 shader,
+            )),
+            Filter::GlowFilter(filter) => Some(descriptors.filters.glow.apply(
+                descriptors,
+                texture_pool,
+                draw_encoder,
+                &source,
+                &filter,
+                &self.blur,
             )),
             filter => {
                 static WARNED_FILTERS: OnceLock<Mutex<HashSet<&'static str>>> = OnceLock::new();
