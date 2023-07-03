@@ -80,15 +80,15 @@ pub fn shared_object_self_ref_avm1() -> Result<(), libtest_mimic::Failed> {
         Path::new("tests/swfs/avm1/shared_object_self_ref/"),
         "shared_object_self_ref_avm1".to_string(),
     )?
-        .run(
-            |_| Ok(()),
-            |player| {
-                // Save the storage backend for next run.
-                let mut player = player.lock().unwrap();
-                std::mem::swap(player.storage_mut(), &mut memory_storage_backend);
-                Ok(())
-            },
-        )?;
+    .run(
+        |_| Ok(()),
+        |player| {
+            // Save the storage backend for next run.
+            let mut player = player.lock().unwrap();
+            std::mem::swap(player.storage_mut(), &mut memory_storage_backend);
+            Ok(())
+        },
+    )?;
 
     // Verify that the flash cookie matches the expected one
     let expected = std::fs::read("tests/swfs/avm1/shared_object_self_ref/RuffleTestRef.sol")?;
@@ -109,19 +109,18 @@ pub fn shared_object_self_ref_avm1() -> Result<(), libtest_mimic::Failed> {
         Path::new("tests/swfs/avm1/shared_object_self_ref/"),
         "shared_object_self_ref_avm1".to_string(),
     )?
-        .run(
-            |player| {
-                // Swap in the previous storage backend.
-                let mut player = player.lock().unwrap();
-                std::mem::swap(player.storage_mut(), &mut memory_storage_backend);
-                Ok(())
-            },
-            |_| Ok(()),
-        )?;
+    .run(
+        |player| {
+            // Swap in the previous storage backend.
+            let mut player = player.lock().unwrap();
+            std::mem::swap(player.storage_mut(), &mut memory_storage_backend);
+            Ok(())
+        },
+        |_| Ok(()),
+    )?;
 
     Ok(())
 }
-
 
 pub fn shared_object_avm2() -> Result<(), libtest_mimic::Failed> {
     set_logger();

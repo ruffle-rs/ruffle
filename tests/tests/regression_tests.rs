@@ -85,7 +85,10 @@ fn main() {
 
     // Manual tests here, since #[test] doesn't work once we use our own test harness
     tests.push(Trial::test("shared_object_avm1", shared_object_avm1));
-    tests.push(Trial::test("shared_object_self_ref_avm1", shared_object_self_ref_avm1));
+    tests.push(Trial::test(
+        "shared_object_self_ref_avm1",
+        shared_object_self_ref_avm1,
+    ));
     tests.push(Trial::test("shared_object_avm2", shared_object_avm2));
     tests.push(Trial::test(
         "external_interface_avm1",
