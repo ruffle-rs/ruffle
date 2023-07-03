@@ -11,7 +11,9 @@ use quick_xml::{
 
 use crate::{avm2::TObject, xml::custom_unescape};
 
-use super::{object::E4XOrXml, string::AvmString, Activation, Error, Multiname, Value};
+use super::{
+    error::type_error, object::E4XOrXml, string::AvmString, Activation, Error, Multiname, Value,
+};
 use crate::string::{WStr, WString};
 
 /// The underlying XML node data, based on E4XNode in avmplus
@@ -37,6 +39,17 @@ impl<'gc> Debug for E4XNodeData<'gc> {
             .field("kind", &self.kind)
             .finish()
     }
+}
+
+fn malformed_element<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    Error::AvmError(
+        type_error(
+            activation,
+            "Error #1090: XML parser failure: element is malformed.",
+            1090,
+        )
+        .expect("Failed to construct XML TypeError"),
+    )
 }
 
 #[derive(Collect, Debug)]
@@ -365,13 +378,14 @@ impl<'gc> E4XNode<'gc> {
         }
 
         loop {
-            let event = parser.read_event().map_err(|error| {
-                Error::RustError(format!("XML parsing error: {error:?}").into())
-            })?;
+            let event = parser
+                .read_event()
+                .map_err(|_| malformed_element(activation))?;
 
             match &event {
                 Event::Start(bs) => {
-                    let child = E4XNode::from_start_event(activation, bs, parser.decoder())?;
+                    let child = E4XNode::from_start_event(activation, bs, parser.decoder())
+                        .map_err(|_| malformed_element(activation))?;
 
                     if let Some(current_tag) = open_tags.last_mut() {
                         current_tag.append_child(activation.context.gc_context, child)?;
@@ -380,7 +394,8 @@ impl<'gc> E4XNode<'gc> {
                     depth += 1;
                 }
                 Event::Empty(bs) => {
-                    let node = E4XNode::from_start_event(activation, bs, parser.decoder())?;
+                    let node = E4XNode::from_start_event(activation, bs, parser.decoder())
+                        .map_err(|_| malformed_element(activation))?;
                     push_childless_node(node, &mut open_tags, &mut top_level, depth, activation)?;
                 }
                 Event::End(_) => {
@@ -392,7 +407,9 @@ impl<'gc> E4XNode<'gc> {
                 }
                 Event::Text(bt) => {
                     handle_text_cdata(
-                        custom_unescape(bt, parser.decoder())?.as_bytes(),
+                        custom_unescape(bt, parser.decoder())
+                            .map_err(|_| malformed_element(activation))?
+                            .as_bytes(),
                         ignore_white,
                         &mut open_tags,
                         &mut top_level,
@@ -419,7 +436,8 @@ impl<'gc> E4XNode<'gc> {
                     {
                         continue;
                     }
-                    let text = custom_unescape(bt, parser.decoder())?;
+                    let text = custom_unescape(bt, parser.decoder())
+                        .map_err(|_| malformed_element(activation))?;
                     let text =
                         AvmString::new_utf8_bytes(activation.context.gc_context, text.as_bytes());
                     let kind = match event {

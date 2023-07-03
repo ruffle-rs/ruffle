@@ -305,11 +305,3 @@ impl<'gc> From<ruffle_render::error::Error> for Error<'gc> {
         Error::RustError(val.into())
     }
 }
-
-// TODO - Remove this, and convert `quick_xml` errors into AVM errors,
-// specific to the XML method that was original invoked.
-impl<'gc> From<quick_xml::Error> for Error<'gc> {
-    fn from(val: quick_xml::Error) -> Error<'gc> {
-        Error::RustError(val.into())
-    }
-}
