@@ -5,9 +5,9 @@ use naga::{
     valid::{Capabilities, ValidationFlags, Validator},
     AddressSpace, ArraySize, BinaryOperator, Binding, Block, BuiltIn, Constant, ConstantInner,
     EntryPoint, Expression, Function, FunctionArgument, FunctionResult, GlobalVariable, Handle,
-    ImageClass, ImageDimension, ImageQuery, LocalVariable, MathFunction, Module, ResourceBinding,
-    ScalarKind, ScalarValue, ShaderStage, Span, Statement, SwizzleComponent, Type, TypeInner,
-    VectorSize,
+    ImageClass, ImageDimension, ImageQuery, LocalVariable, MathFunction, Module,
+    RelationalFunction, ResourceBinding, ScalarKind, ScalarValue, ShaderStage, Span, Statement,
+    SwizzleComponent, Type, TypeInner, VectorSize,
 };
 use naga_oil::compose::{Composer, NagaModuleDescriptor};
 use ruffle_render::pixel_bender::{
@@ -45,6 +45,8 @@ pub struct ShaderBuilder<'a> {
     zerof32: Handle<Expression>,
     // The value 0i32
     zeroi32: Handle<Expression>,
+    // The value vec4f(0.0)
+    zerovec4f: Handle<Expression>,
     // The value 1.0f32
     onef32: Handle<Expression>,
 
@@ -107,9 +109,10 @@ pub const SHADER_FLOAT_PARAMETERS_INDEX: u32 = 3;
 pub const SHADER_INT_PARAMETERS_INDEX: u32 = 4;
 
 // A parameter controlling whether or not we produce transparent black (zero)
-// for textures samples with out-of-range coordinates. This is a single floating-point
-// uniform - when it's 0.0f32, we use the default clamping behavior, and produce
-// transparent black when it's any other value.
+// for textures samples with out-of-range coordinates. This is a vec4f
+// uniform - when it's 0.0, we use the default clamping behavior, and produce
+// transparent black when it's any other value. This would ideally be a single
+// f32, but web requires a minimum of 16 bytes.
 //
 // Note - https://www.mcjones.org/paul/PixelBenderReference.pdf
 // claims that coordinates outside the range are 'transparent black'.
@@ -328,6 +331,22 @@ impl<'a> ShaderBuilder<'a> {
             .expressions
             .append(Expression::Constant(const_zerof32), Span::UNDEFINED);
 
+        let const_zerovec4f = module.constants.append(
+            Constant {
+                name: None,
+                specialization: None,
+                inner: ConstantInner::Composite {
+                    ty: vec4f,
+                    components: vec![const_zerof32, const_zerof32, const_zerof32, const_zerof32],
+                },
+            },
+            Span::UNDEFINED,
+        );
+
+        let zerovec4f = func
+            .expressions
+            .append(Expression::Constant(const_zerovec4f), Span::UNDEFINED);
+
         let const_onef32 = module.constants.append(
             crate::Constant {
                 name: None,
@@ -369,6 +388,7 @@ impl<'a> ShaderBuilder<'a> {
             sampler,
             zerof32,
             zeroi32,
+            zerovec4f,
             onef32,
             temp_vec4f_local,
             clamp_nearest: samplers[SAMPLER_CLAMP_NEAREST as usize],
@@ -391,16 +411,7 @@ impl<'a> ShaderBuilder<'a> {
                     group: 0,
                     binding: ZEROED_OUT_OF_RANGE_MODE_INDEX,
                 }),
-                ty: builder.module.types.insert(
-                    Type {
-                        name: None,
-                        inner: TypeInner::Scalar {
-                            kind: ScalarKind::Float,
-                            width: 4,
-                        },
-                    },
-                    Span::UNDEFINED,
-                ),
+                ty: vec4f,
                 init: None,
             },
             Span::UNDEFINED,
@@ -416,7 +427,11 @@ impl<'a> ShaderBuilder<'a> {
         let zeroed_out_of_range_expr = builder.evaluate_expr(Expression::Binary {
             op: BinaryOperator::NotEqual,
             left: zeroed_out_of_range_expr,
-            right: builder.zerof32,
+            right: builder.zerovec4f,
+        });
+        let zeroed_out_of_range_expr = builder.evaluate_expr(Expression::Relational {
+            fun: RelationalFunction::Any,
+            argument: zeroed_out_of_range_expr,
         });
 
         let wrapper_func = builder.make_sampler_wrapper();

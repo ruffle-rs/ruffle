@@ -313,7 +313,7 @@ pub(super) fn run_pixelbender_shader_impl(
             resource: BindingResource::Buffer(wgpu::BufferBinding {
                 buffer: &compiled_shader.zeroed_out_of_range_mode,
                 offset: 0,
-                size: Some(NonZeroU64::new(std::mem::size_of::<f32>() as u64).unwrap()),
+                size: Some(NonZeroU64::new(std::mem::size_of::<f32>() as u64 * 4).unwrap()),
             }),
         },
     ];
@@ -322,18 +322,19 @@ pub(super) fn run_pixelbender_shader_impl(
         render_command_encoder,
         &compiled_shader.zeroed_out_of_range_mode,
         0,
-        NonZeroU64::new(std::mem::size_of::<f32>() as u64).unwrap(),
+        NonZeroU64::new(std::mem::size_of::<f32>() as u64 * 4).unwrap(),
         &descriptors.device,
     );
 
+    // This would ideally be a single f32, but web requires at least 16 bytes
     zeroed_out_of_range_mode_slice.copy_from_slice(bytemuck::cast_slice(&[match mode {
         // When a Shader is run via a ShaderJob, out-of-range texture sample coordinates
         // seem to be clamped to the edge of the texture (despite what the docs describe)
-        ShaderMode::ShaderJob => 0.0f32,
+        ShaderMode::ShaderJob => [0.0f32, 0.0f32, 0.0f32, 0.0f32],
         // When a Shader is run through a ShaderFilter, out-of-range texture sample coordinates
         // return transparent black (0.0, 0.0, 0.0, 0.0). This is easiest to observe with
         // BitmapData.applyFilter when the BitampData destination is larger than the source.
-        ShaderMode::Filter => 1.0f32,
+        ShaderMode::Filter => [1.0f32, 1.0f32, 1.0f32, 1.0f32],
     }]));
     drop(zeroed_out_of_range_mode_slice);
 
