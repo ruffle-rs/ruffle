@@ -213,7 +213,8 @@ pub fn deserialize_value<'gc>(
         | AmfValue::VectorInt(..)
         | AmfValue::VectorObject(..)
         | AmfValue::Dictionary(..)
-        | AmfValue::Custom(..) => {
+        | AmfValue::Custom(..)
+        | AmfValue::Reference(_) => {
             tracing::error!("Deserialization not yet implemented: {:?}", val);
             Value::Undefined
         }
