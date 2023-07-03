@@ -1167,17 +1167,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2e66c9d817f1720209181c316d28635c050fa304f9c79e47a520882661b7308"
 
 [[package]]
-name = "derive-try-from-primitive"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "302ccf094df1151173bb6f5a2282fcd2f45accd5eae1bdf82dcbfefbc501ad5c"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 1.0.109",
-]
-
-[[package]]
 name = "diff"
 version = "0.1.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1384,7 +1373,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e875f1719c16de097dee81ed675e2d9bb63096823ed3f0ca827b7dea3028bbbb"
 dependencies = [
  "enumset_derive",
- "serde",
 ]
 
 [[package]]
@@ -1517,11 +1505,10 @@ dependencies = [
 
 [[package]]
 name = "flash-lso"
-version = "0.5.0"
-source = "git+https://github.com/ruffle-rs/rust-flash-lso?rev=8376453eddddbe701031a091c0eed94068fa5649#8376453eddddbe701031a091c0eed94068fa5649"
+version = "0.6.0"
+source = "git+https://github.com/ruffle-rs/rust-flash-lso?rev=3669a352c14192d0d301e594ae6047ae99725006#3669a352c14192d0d301e594ae6047ae99725006"
 dependencies = [
  "cookie-factory",
- "derive-try-from-primitive",
  "enumset",
  "nom",
  "thiserror",
