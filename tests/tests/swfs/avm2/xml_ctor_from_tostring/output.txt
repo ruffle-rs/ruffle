@@ -19,3 +19,5 @@ castCopy equal: true
 ctorCopy equal: false
 Caught error: TypeError: Error #1088: The markup in the document following the root element must be well-formed.
 1088
+Caught parsing error: TypeError: Error #1090: XML parser failure: element is malformed.
+1090

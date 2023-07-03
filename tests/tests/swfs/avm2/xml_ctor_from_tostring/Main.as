@@ -69,6 +69,13 @@
 				trace("Caught error: " + e);
 				trace(e.errorID);
 			}
+		
+			try {
+				trace(new XML("<Hello<"));
+			} catch (e) {
+				trace("Caught parsing error: " + e);
+				trace(e.errorID);
+			}
 		}
 	}
 	
