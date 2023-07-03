@@ -362,7 +362,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
-        self.0.read().base.as_ptr() as *const ObjectPtr
+        self.0.read().base.as_ptr()
     }
 }
 
