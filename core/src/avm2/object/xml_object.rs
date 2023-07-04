@@ -288,7 +288,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         name: impl Into<AvmString<'gc>>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<bool, Error<'gc>> {
-        let name = name_to_multiname(activation, &Value::String(name.into()))?;
+        let name = name_to_multiname(activation, &Value::String(name.into()), false)?;
         Ok(self.has_own_property(&name))
     }
 

@@ -33,6 +33,8 @@ use swf::avm2::types::{
     Multiname as AbcMultiname, Namespace as AbcNamespace, Op,
 };
 
+use super::object::QNameObject;
+
 /// Represents a particular register set.
 ///
 /// This type exists primarily because SmallVec isn't garbage-collectable.
@@ -1864,9 +1866,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let object = self.pop_stack().coerce_to_object_or_typeerror(self, None)?;
         let descendants = object.call_public_property(
             "descendants",
-            &[multiname
-                .to_qualified_name_or_star(self.context.gc_context)
-                .into()],
+            &[QNameObject::from_name(self, (*multiname).clone())?.into()],
             self,
         )?;
         self.push_stack(descendants);
