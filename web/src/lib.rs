@@ -27,6 +27,7 @@ use ruffle_video_software::backend::SoftwareVideoBackend;
 use ruffle_web_common::JsResult;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::Once;
 use std::sync::{Arc, Mutex};
@@ -81,7 +82,7 @@ struct RuffleInstance {
     paste_callback: Option<Closure<dyn FnMut(ClipboardEvent)>>,
     unload_callback: Option<Closure<dyn FnMut(Event)>>,
     has_focus: bool,
-    trace_observer: Arc<RefCell<JsValue>>,
+    trace_observer: Rc<RefCell<JsValue>>,
     log_subscriber: Arc<Layered<WASMLayer, Registry>>,
 }
 
@@ -562,7 +563,7 @@ impl Ruffle {
                 .with_external_interface(Box::new(JavascriptInterface::new(js_player.clone())));
         }
 
-        let trace_observer = Arc::new(RefCell::new(JsValue::UNDEFINED));
+        let trace_observer = Rc::new(RefCell::new(JsValue::UNDEFINED));
         let core = builder
             .with_log(log_adapter::WebLogBackend::new(trace_observer.clone()))
             .with_ui(ui::WebUiBackend::new(js_player.clone(), &canvas))
