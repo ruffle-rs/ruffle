@@ -1,0 +1,34 @@
+[
+    {
+        "type": "TextInput",
+        "codepoint": "R"
+    },
+    {
+        "type": "TextInput",
+        "codepoint": "u"
+    },
+    {
+        "type": "TextInput",
+        "codepoint": "f"
+    },
+    {
+        "type": "TextInput",
+        "codepoint": "f"
+    },
+    {
+        "type": "TextInput",
+        "codepoint": "l"
+    },
+    {
+        "type": "TextInput",
+        "codepoint": "e"
+    },
+    {
+        "type": "TextControl",
+        "code": "Backspace"
+    },
+    {
+        "type": "TextInput",
+        "codepoint": "!"
+    }
+]

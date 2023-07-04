@@ -19,6 +19,23 @@ pub enum MouseButton {
     Right,
 }
 
+/// Control inputs to a text field
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum TextControlCode {
+    // TODO: Add control codes for Ctrl+Arrows and Home/End keys
+    MoveLeft,
+    MoveRight,
+    SelectLeft,
+    SelectRight,
+    SelectAll,
+    Copy,
+    Paste,
+    Cut,
+    Backspace,
+    Enter,
+    Delete,
+}
+
 /// All automated event types supported by FlashTAS.
 ///
 /// A FlashTAS input file consists of a string of `AutomatedEvent`s which are
@@ -47,4 +64,10 @@ pub enum AutomatedEvent {
 
     /// Press a key
     KeyDown { key_code: u8 },
+
+    /// Input a character code
+    TextInput { codepoint: char },
+
+    /// Input a control character code
+    TextControl { code: TextControlCode },
 }

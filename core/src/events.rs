@@ -1,4 +1,5 @@
 use crate::display_object::InteractiveObject;
+use serde::Deserialize;
 use swf::ClipEventFlag;
 
 #[derive(Debug, Clone, Copy)]
@@ -334,7 +335,7 @@ impl<'gc> ClipEvent<'gc> {
 }
 
 /// Control inputs to a text field
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Deserialize)]
 pub enum TextControlCode {
     // TODO: Add control codes for Ctrl+Arrows and Home/End keys
     MoveLeft,

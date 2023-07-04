@@ -81,7 +81,10 @@ impl InputInjector {
 
                 match event {
                     AutomatedEvent::Wait => break,
-                    AutomatedEvent::MouseMove { .. } | AutomatedEvent::KeyDown { .. } => {}
+                    AutomatedEvent::MouseMove { .. }
+                    | AutomatedEvent::KeyDown { .. }
+                    | AutomatedEvent::TextInput { .. }
+                    | AutomatedEvent::TextControl { .. } => {}
                     AutomatedEvent::MouseDown { btn, .. } => {
                         self.buttons |= (*btn).into();
                     }
