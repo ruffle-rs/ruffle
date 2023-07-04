@@ -9,8 +9,8 @@ use crate::util::{
 use anyhow::{Context, Error};
 use ruffle_core::{PlayerEvent, StageDisplayState};
 use ruffle_render::backend::ViewportDimensions;
+use std::cell::RefCell;
 use std::rc::Rc;
-use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use url::Url;
 use winit::dpi::{LogicalSize, PhysicalPosition, PhysicalSize, Size};
@@ -22,7 +22,7 @@ pub struct App {
     opt: Opt,
     window: Rc<Window>,
     event_loop: Option<EventLoop<RuffleEvent>>,
-    gui: Arc<Mutex<GuiController>>,
+    gui: Rc<RefCell<GuiController>>,
     player: PlayerController,
     min_window_size: LogicalSize<u32>,
     max_window_size: PhysicalSize<u32>,
@@ -67,7 +67,7 @@ impl App {
             opt,
             window,
             event_loop: Some(event_loop),
-            gui: Arc::new(Mutex::new(gui)),
+            gui: Rc::new(RefCell::new(gui)),
             player,
             min_window_size,
             max_window_size,
@@ -132,9 +132,9 @@ impl App {
                         if let Some(mut player) = self.player.get() {
                             // Even if the movie is paused, user interaction with debug tools can change the render output
                             player.render();
-                            self.gui.lock().expect("Gui lock").render(Some(player));
+                            self.gui.borrow_mut().render(Some(player));
                         } else {
-                            self.gui.lock().expect("Gui lock").render(None);
+                            self.gui.borrow_mut().render(None);
                         }
                         #[cfg(feature = "tracy")]
                         tracing_tracy::client::Client::running()
@@ -144,7 +144,7 @@ impl App {
                 }
 
                 winit::event::Event::WindowEvent { event, .. } => {
-                    if self.gui.lock().expect("Gui lock").handle_event(&event) {
+                    if self.gui.borrow_mut().handle_event(&event) {
                         // Event consumed by GUI.
                         return;
                     }
@@ -176,7 +176,7 @@ impl App {
                             }
                         }
                         WindowEvent::CursorMoved { position, .. } => {
-                            if self.gui.lock().expect("Gui lock").is_context_menu_visible() {
+                            if self.gui.borrow_mut().is_context_menu_visible() {
                                 return;
                             }
 
@@ -190,7 +190,7 @@ impl App {
                         }
                         WindowEvent::DroppedFile(file) => {
                             if let Ok(url) = parse_url(&file) {
-                                self.gui.lock().expect("Gui lock").create_movie(
+                                self.gui.borrow_mut().create_movie(
                                     &mut self.player,
                                     PlayerOptions::from(&self.opt),
                                     url,
@@ -198,7 +198,7 @@ impl App {
                             }
                         }
                         WindowEvent::MouseInput { button, state, .. } => {
-                            if self.gui.lock().expect("Gui lock").is_context_menu_visible() {
+                            if self.gui.borrow_mut().is_context_menu_visible() {
                                 return;
                             }
 
@@ -222,10 +222,7 @@ impl App {
                                 // TODO: Should be squelched if player consumes the right click event.
                                 if let Some(mut player) = self.player.get() {
                                     let context_menu = player.prepare_context_menu();
-                                    self.gui
-                                        .lock()
-                                        .expect("Gui lock")
-                                        .show_context_menu(context_menu);
+                                    self.gui.borrow_mut().show_context_menu(context_menu);
                                 }
                             }
                             self.player.handle_event(event);
@@ -426,27 +423,20 @@ impl App {
                     if let Some(url) =
                         pick_file(false, None).and_then(|p| Url::from_file_path(p).ok())
                     {
-                        self.gui.lock().expect("Gui lock").create_movie(
-                            &mut self.player,
-                            *options,
-                            url,
-                        );
+                        self.gui
+                            .borrow_mut()
+                            .create_movie(&mut self.player, *options, url);
                     }
                 }
 
                 winit::event::Event::UserEvent(RuffleEvent::OpenURL(url, options)) => {
-                    self.gui.lock().expect("Gui lock").create_movie(
-                        &mut self.player,
-                        *options,
-                        url,
-                    );
+                    self.gui
+                        .borrow_mut()
+                        .create_movie(&mut self.player, *options, url);
                 }
 
                 winit::event::Event::UserEvent(RuffleEvent::DisplayUnsupportedMessage) => {
-                    self.gui
-                        .lock()
-                        .expect("Gui lock")
-                        .display_unsupported_message();
+                    self.gui.borrow_mut().display_unsupported_message();
                 }
 
                 winit::event::Event::UserEvent(RuffleEvent::CloseFile) => {
@@ -464,7 +454,7 @@ impl App {
             // Check for a redraw request.
             if check_redraw {
                 let player = self.player.get();
-                let gui = self.gui.lock().expect("Gui lock");
+                let gui = self.gui.borrow_mut();
                 if player.map(|p| p.needs_render()).unwrap_or_default() || gui.needs_render() {
                     self.window.request_redraw();
                 }
