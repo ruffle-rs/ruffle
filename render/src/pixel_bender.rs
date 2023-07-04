@@ -95,6 +95,18 @@ pub struct PixelBenderReg {
     pub kind: PixelBenderRegKind,
 }
 
+impl PixelBenderReg {
+    pub fn is_scalar(&self) -> bool {
+        self.channels.len() == 1
+            && !matches!(
+                self.channels[0],
+                PixelBenderRegChannel::M2x2
+                    | PixelBenderRegChannel::M3x3
+                    | PixelBenderRegChannel::M4x4
+            )
+    }
+}
+
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum PixelBenderRegKind {
     Float,
