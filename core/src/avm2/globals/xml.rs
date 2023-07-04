@@ -118,7 +118,7 @@ pub fn child<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let xml = this.unwrap().as_xml_object().unwrap();
-    let multiname = name_to_multiname(activation, &args[0])?;
+    let multiname = name_to_multiname(activation, &args[0], false)?;
     // FIXME: Support numerical indexes.
     let children = if let E4XNodeKind::Element { children, .. } = &*xml.node().kind() {
         children
@@ -208,7 +208,7 @@ pub fn elements<'gc>(
     let multiname = if args[0] == Value::Undefined {
         Multiname::any(activation.context.gc_context)
     } else {
-        name_to_multiname(activation, &args[0])?
+        name_to_multiname(activation, &args[0], false)?
     };
     let children = if let E4XNodeKind::Element { children, .. } = &*xml.node().kind() {
         children
@@ -249,7 +249,7 @@ pub fn attribute<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.unwrap();
     let xml = this.as_xml_object().unwrap();
-    let multiname = name_to_multiname(activation, &args[0])?;
+    let multiname = name_to_multiname(activation, &args[0], true)?;
     let attributes = if let E4XNodeKind::Element { attributes, .. } = &*xml.node().kind() {
         attributes
             .iter()
@@ -342,7 +342,7 @@ pub fn descendants<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let xml = this.unwrap().as_xml_object().unwrap();
-    let multiname = name_to_multiname(activation, &args[0])?;
+    let multiname = name_to_multiname(activation, &args[0], false)?;
     let mut descendants = Vec::new();
     xml.node().descendants(&multiname, &mut descendants);
     Ok(XmlListObject::new(activation, descendants, Some(xml.into())).into())

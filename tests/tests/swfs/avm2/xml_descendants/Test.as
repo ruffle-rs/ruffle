@@ -6,14 +6,17 @@
 			var xml:XML = 
 				  <enrollees>
 					<student id="239">
-						<myClass name="Algebra" />
+						<myClass name="Algebra" student="Algebra Student attribute" />
 						<myClass name="Spanish 2"/>
 					</student>
 					<student id="206">
-						<myClass name="Trigonometry" />
+						<myClass name="Trigonometry" student="Trigonometry Student attribute" />
 						<myClass name="Spanish 2" />
 					</student>
 				  </enrollees>;
+			
+				trace("xml..@student : " + xml..@student);
+				trace("xml..@* : " + xml..@*);
 			
 				trace("myClass descendants:");
 				trace(xml.descendants("myClass")); 

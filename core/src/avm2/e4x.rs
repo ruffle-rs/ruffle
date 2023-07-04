@@ -511,6 +511,11 @@ impl<'gc> E4XNode<'gc> {
     }
 
     pub fn matches_name(&self, name: &Multiname<'gc>) -> bool {
+        let self_is_attr = matches!(self.0.read().kind, E4XNodeKind::Attribute(_));
+        if self_is_attr != name.is_attribute() {
+            return false;
+        }
+
         // FIXME - we need to handle namespaces here
         if name.is_any_name() {
             return true;
@@ -524,7 +529,19 @@ impl<'gc> E4XNode<'gc> {
     }
 
     pub fn descendants(&self, name: &Multiname<'gc>, out: &mut Vec<E4XOrXml<'gc>>) {
-        if let E4XNodeKind::Element { children, .. } = &self.0.read().kind {
+        if let E4XNodeKind::Element {
+            children,
+            attributes,
+            ..
+        } = &self.0.read().kind
+        {
+            if name.is_attribute() {
+                for attribute in attributes {
+                    if attribute.matches_name(name) {
+                        out.push(E4XOrXml::E4X(*attribute));
+                    }
+                }
+            }
             for child in children {
                 if child.matches_name(name) {
                     out.push(E4XOrXml::E4X(*child));
@@ -730,26 +747,30 @@ pub fn to_xml_string<'gc>(
 pub fn name_to_multiname<'gc>(
     activation: &mut Activation<'_, 'gc>,
     name: &Value<'gc>,
+    force_attribute: bool,
 ) -> Result<Multiname<'gc>, Error<'gc>> {
     if let Value::Object(o) = name {
         if let Some(qname) = o.as_qname_object() {
-            return Ok(qname.name().clone());
+            let mut name = qname.name().clone();
+            if force_attribute {
+                name.set_is_attribute(true);
+            }
+            return Ok(name);
         }
     }
 
     let name = name.coerce_to_string(activation)?;
 
-    if let Some(name) = name.strip_prefix(b'@') {
+    let mut multiname = if let Some(name) = name.strip_prefix(b'@') {
         let name = AvmString::new(activation.context.gc_context, name);
-        return Ok(Multiname::attribute(
-            activation.avm2().public_namespace,
-            name,
-        ));
-    }
-
-    Ok(if &*name == b"*" {
+        Multiname::attribute(activation.avm2().public_namespace, name)
+    } else if &*name == b"*" {
         Multiname::any(activation.context.gc_context)
     } else {
         Multiname::new(activation.avm2().public_namespace, name)
-    })
+    };
+    if force_attribute {
+        multiname.set_is_attribute(true);
+    };
+    Ok(multiname)
 }

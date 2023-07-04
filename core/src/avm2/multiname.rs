@@ -109,6 +109,10 @@ impl<'gc> Multiname<'gc> {
         self.flags.contains(MultinameFlags::ATTRIBUTE)
     }
 
+    pub fn set_is_attribute(&mut self, is_attribute: bool) {
+        self.flags.set(MultinameFlags::ATTRIBUTE, is_attribute);
+    }
+
     /// Read a namespace set from the ABC constant pool, and return a list of
     /// copied namespaces.
     fn abc_namespace_set(

@@ -9,7 +9,7 @@ use crate::avm2::{
     object::{E4XOrXml, XmlListObject},
     parameters::ParametersExt,
     string::AvmString,
-    Activation, Error, Multiname, Object, TObject, Value,
+    Activation, Error, Object, TObject, Value,
 };
 
 fn has_complex_content_inner(children: &[E4XOrXml<'_>]) -> bool {
@@ -154,7 +154,7 @@ pub fn child<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let list = this.unwrap().as_xml_list_object().unwrap();
-    let multiname = name_to_multiname(activation, &args[0])?;
+    let multiname = name_to_multiname(activation, &args[0], false)?;
     let children = list.children();
     let mut sub_children = Vec::new();
     for child in &*children {
@@ -209,23 +209,7 @@ pub fn attribute<'gc>(
     let list = this.as_xml_list_object().unwrap();
 
     let name = args[0];
-    let multiname = match name {
-        Value::String(s) => Multiname::new(activation.avm2().public_namespace, s),
-        Value::Object(o) => {
-            if let Some(qname) = o.as_qname_object() {
-                qname.name().clone()
-            } else {
-                Multiname::new(
-                    activation.avm2().public_namespace,
-                    name.coerce_to_string(activation)?,
-                )
-            }
-        }
-        _ => Multiname::new(
-            activation.avm2().public_namespace,
-            name.coerce_to_string(activation)?,
-        ),
-    };
+    let multiname = name_to_multiname(activation, &name, true)?;
 
     let children = list.children();
     let mut sub_children = Vec::new();
@@ -290,7 +274,7 @@ pub fn descendants<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let xml_list = this.unwrap().as_xml_list_object().unwrap();
-    let multiname = name_to_multiname(activation, &args[0])?;
+    let multiname = name_to_multiname(activation, &args[0], false)?;
     let mut descendants = Vec::new();
     for child in xml_list.children().iter() {
         child.node().descendants(&multiname, &mut descendants);
