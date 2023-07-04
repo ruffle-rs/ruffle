@@ -27,3 +27,4 @@ debug-menu = 调试工具
 debug-menu-open-stage = 查看舞台信息
 debug-menu-open-movie = 查看视频
 debug-menu-open-movie-list = 显示已知视频
+debug-menu-search-display-objects = 搜索显示对象...

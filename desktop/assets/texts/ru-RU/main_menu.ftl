@@ -27,3 +27,4 @@ debug-menu = Отладка
 debug-menu-open-stage = Информация о сцене
 debug-menu-open-movie = Просмотр ролика
 debug-menu-open-movie-list = Известные ролики
+debug-menu-search-display-objects = Поиск объектов отображения...
