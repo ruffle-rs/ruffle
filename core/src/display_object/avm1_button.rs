@@ -14,6 +14,7 @@ use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::{Collect, GcCell, MutationContext};
+use ruffle_render::filters::Filter;
 use std::cell::{Ref, RefMut};
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -173,6 +174,11 @@ impl<'gc> Avm1Button<'gc> {
                 // Set transform of child (and modify previous child if it already existed)
                 child.set_matrix(context.gc_context, record.matrix.into());
                 child.set_color_transform(context.gc_context, record.color_transform);
+                child.set_blend_mode(context.gc_context, record.blend_mode);
+                child.set_filters(
+                    context.gc_context,
+                    record.filters.iter().map(Filter::from).collect(),
+                );
             }
         }
 
