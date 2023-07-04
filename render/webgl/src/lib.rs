@@ -1,4 +1,6 @@
 #![deny(clippy::unwrap_used)]
+// Remove this when we start using `Rc` when compiling for wasm
+#![allow(clippy::arc_with_non_send_sync)]
 
 use bytemuck::{Pod, Zeroable};
 use ruffle_render::backend::{

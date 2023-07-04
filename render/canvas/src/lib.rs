@@ -1,4 +1,6 @@
 #![deny(clippy::unwrap_used)]
+// Remove this when we start using `Rc` when compiling for wasm
+#![allow(clippy::arc_with_non_send_sync)]
 
 use ruffle_render::backend::{
     BitmapCacheEntry, Context3D, RenderBackend, ShapeHandle, ShapeHandleImpl, ViewportDimensions,

@@ -1,5 +1,7 @@
 // This is a new lint with false positives, see https://github.com/rust-lang/rust-clippy/issues/10318
 #![allow(clippy::extra_unused_type_parameters)]
+// Remove this when we decide on how to handle multithreaded rendering (especially on wasm)
+#![allow(clippy::arc_with_non_send_sync)]
 
 use crate::bitmaps::BitmapSamplers;
 use crate::buffer_pool::{BufferPool, PoolEntry};
