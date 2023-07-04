@@ -4,7 +4,9 @@ use ruffle_core::backend::audio::{
 };
 use ruffle_core::impl_audio_mixer_backend;
 use ruffle_web_common::JsResult;
-use std::sync::{Arc, RwLock};
+use std::cell::{Cell, RefCell};
+use std::rc::Rc;
+use std::sync::Arc;
 use std::time::Duration;
 use tracing_subscriber::layer::Layered;
 use tracing_subscriber::Registry;
@@ -17,12 +19,12 @@ pub struct WebAudioBackend {
     mixer: AudioMixer,
     context: AudioContext,
     /// The current length of both buffers, in frames (pairs of left/right samples).
-    buffer_size: Arc<RwLock<u32>>,
-    buffers: Vec<Arc<RwLock<Buffer>>>,
+    buffer_size: Rc<Cell<u32>>,
+    buffers: Vec<Rc<RefCell<Buffer>>>,
     /// When the last submitted buffer is expected to play out completely, in seconds.
-    time: Arc<RwLock<f64>>,
+    time: Rc<Cell<f64>>,
     /// For how many seconds were we able to continuously fill the next buffer "at a sufficiently early time".
-    probation_elapsed: Arc<RwLock<f32>>,
+    probation_elapsed: Rc<Cell<f32>>,
     log_subscriber: Arc<Layered<WASMLayer, Registry>>,
 }
 
@@ -52,10 +54,10 @@ impl WebAudioBackend {
         let mut audio = Self {
             context,
             mixer: AudioMixer::new(2, sample_rate as u32),
-            buffer_size: Arc::new(RwLock::new(Self::INITIAL_BUFFER_SIZE)),
+            buffer_size: Rc::new(Cell::new(Self::INITIAL_BUFFER_SIZE)),
             buffers: Vec::with_capacity(2),
-            time: Arc::new(RwLock::new(0.0)),
-            probation_elapsed: Arc::new(RwLock::new(0.0)),
+            time: Rc::new(Cell::new(0.0)),
+            probation_elapsed: Rc::new(Cell::new(0.0)),
             log_subscriber,
         };
 
@@ -63,7 +65,7 @@ impl WebAudioBackend {
         // These buffers ping-pong as the audio stream plays.
         for _ in 0..2 {
             let buffer = Buffer::new(&audio)?;
-            buffer.write().expect("Cannot reenter locks").play()?;
+            buffer.borrow_mut().play()?;
             audio.buffers.push(buffer);
         }
 
@@ -88,11 +90,9 @@ impl AudioBackend for WebAudioBackend {
     }
 
     fn position_resolution(&self) -> Option<Duration> {
-        self.buffer_size.read().map_or(None, |bs| {
-            Some(Duration::from_secs_f64(
-                f64::from(*bs) / f64::from(self.context.sample_rate()),
-            ))
-        })
+        Some(Duration::from_secs_f64(
+            f64::from(self.buffer_size.get()) / f64::from(self.context.sample_rate()),
+        ))
     }
 }
 
@@ -105,20 +105,20 @@ impl Drop for WebAudioBackend {
 struct Buffer {
     context: AudioContext,
     mixer_proxy: AudioMixerProxy,
-    buffer_size: Arc<RwLock<u32>>,
+    buffer_size: Rc<Cell<u32>>,
     audio_buffer: Vec<f32>,
     js_buffer: web_sys::AudioBuffer,
     audio_node: Option<web_sys::AudioBufferSourceNode>,
     on_ended_handler: Closure<dyn FnMut()>,
-    time: Arc<RwLock<f64>>,
-    probation_elapsed: Arc<RwLock<f32>>,
+    time: Rc<Cell<f64>>,
+    probation_elapsed: Rc<Cell<f32>>,
     log_subscriber: Arc<Layered<WASMLayer, Registry>>,
 }
 
 impl Buffer {
-    fn new(audio: &WebAudioBackend) -> Result<Arc<RwLock<Self>>, JsError> {
+    fn new(audio: &WebAudioBackend) -> Result<Rc<RefCell<Self>>, JsError> {
         let sample_rate = audio.context.sample_rate();
-        let buffer = Arc::new(RwLock::new(Self {
+        let buffer = Rc::new(RefCell::new(Self {
             context: audio.context.clone(),
             mixer_proxy: audio.mixer.proxy(),
             buffer_size: audio.buffer_size.clone(),
@@ -136,12 +136,9 @@ impl Buffer {
 
         // Swap in the onended handler.
         let buffer_handle = buffer.clone();
-        buffer
-            .write()
-            .expect("Cannot reenter locks")
-            .on_ended_handler = Closure::new(move || {
+        buffer.borrow_mut().on_ended_handler = Closure::new(move || {
             // Refill and schedule the buffer for playback.
-            let _ = buffer_handle.write().expect("Cannot reenter locks").play();
+            let _ = buffer_handle.borrow_mut().play();
         });
 
         Ok(buffer)
@@ -150,15 +147,9 @@ impl Buffer {
     fn play(&mut self) -> Result<(), JsError> {
         let _subscriber = tracing::subscriber::set_default(self.log_subscriber.clone());
 
-        let mut time = self.time.write().expect("Cannot reenter locks");
-        let mut buffer_size = self.buffer_size.write().expect("Cannot reenter locks");
-        let mut probation_elapsed = self
-            .probation_elapsed
-            .write()
-            .expect("Cannot reenter locks");
-
-        let time_left = *time - self.context.current_time();
-        let mut buffer_timestep = f64::from(*buffer_size) / f64::from(self.context.sample_rate());
+        let time_left = self.time.get() - self.context.current_time();
+        let mut buffer_timestep =
+            f64::from(self.buffer_size.get()) / f64::from(self.context.sample_rate());
 
         // How far along the other buffer is in playing out right now:
         //  ~0: it has just started playing, we are well within time
@@ -173,51 +164,60 @@ impl Buffer {
 
         if progress < WebAudioBackend::NORMAL_PROGRESS_RANGE_MIN {
             // This fill is considered quick, let's count it.
-            *probation_elapsed += buffer_timestep as f32;
+            self.probation_elapsed
+                .set(self.probation_elapsed.get() + buffer_timestep as f32);
         } else if progress < WebAudioBackend::NORMAL_PROGRESS_RANGE_MAX {
             // This fill is in the "normal" range, only resetting the probation time.
-            *probation_elapsed = 0.0;
+            self.probation_elapsed.set(0.0);
         } else {
             // This fill is considered slow (maybe even too slow), increasing the buffer size.
-            *probation_elapsed = 0.0;
+            self.probation_elapsed.set(0.0);
             if progress >= 1.0 {
                 tracing::debug!("Audio underrun detected!");
             }
-            if *time as f32 > WebAudioBackend::WARMUP_PERIOD {
-                if *buffer_size < WebAudioBackend::MAX_BUFFER_SIZE {
-                    *buffer_size *= 2;
-                    tracing::debug!("Increased audio buffer size to {} frames", buffer_size);
+            if self.time.get() as f32 > WebAudioBackend::WARMUP_PERIOD {
+                if self.buffer_size.get() < WebAudioBackend::MAX_BUFFER_SIZE {
+                    self.buffer_size.set(self.buffer_size.get() * 2);
+                    tracing::debug!(
+                        "Increased audio buffer size to {} frames",
+                        self.buffer_size.get()
+                    );
                 } else {
                     tracing::debug!("Not increasing audio buffer size, already at max size");
                 }
             } else {
                 tracing::debug!(
                     "Not increasing audio buffer size, still in warmup period (at {} of {} sec)",
-                    *time,
+                    self.time.get(),
                     WebAudioBackend::WARMUP_PERIOD
                 );
             }
         }
 
         // If enough quick fills happened, we decrease the buffer size.
-        if *probation_elapsed > WebAudioBackend::PROBATION_LENGTH
-            && *buffer_size > WebAudioBackend::MIN_BUFFER_SIZE
+        if self.probation_elapsed.get() > WebAudioBackend::PROBATION_LENGTH
+            && self.buffer_size.get() > WebAudioBackend::MIN_BUFFER_SIZE
         {
-            *buffer_size /= 2;
-            tracing::debug!("Decreased audio buffer size to {} frames", buffer_size);
-            *probation_elapsed = 0.0;
+            self.buffer_size.set(self.buffer_size.get() / 2);
+            tracing::debug!(
+                "Decreased audio buffer size to {} frames",
+                self.buffer_size.get()
+            );
+            self.probation_elapsed.set(0.0);
         }
 
         // In case buffer_size changed above (or in the latest call in the other instance),
         // we need to recaulculate/recreate/resize a couple of things that depend on it.
-        if self.js_buffer.length() != *buffer_size {
+        if self.js_buffer.length() != self.buffer_size.get() {
             tracing::trace!("Recreating JS side buffer with new length");
-            buffer_timestep = f64::from(*buffer_size) / f64::from(self.context.sample_rate());
+            buffer_timestep =
+                f64::from(self.buffer_size.get()) / f64::from(self.context.sample_rate());
             self.js_buffer = self
                 .context
-                .create_buffer(2, *buffer_size, self.context.sample_rate())
+                .create_buffer(2, self.buffer_size.get(), self.context.sample_rate())
                 .into_js_result()?;
-            self.audio_buffer.resize(2 * *buffer_size as usize, 0.0);
+            self.audio_buffer
+                .resize(2 * self.buffer_size.get() as usize, 0.0);
         }
 
         // Mix new audio into the output buffer and copy to JS.
@@ -233,11 +233,14 @@ impl Buffer {
         audio_node.set_onended(Some(self.on_ended_handler.as_ref().unchecked_ref()));
 
         // Sanity: ensure our player time is not in the past. This can happen due to underruns.
-        *time = f64::max(*time, self.context.current_time());
+        self.time
+            .set(f64::max(self.time.get(), self.context.current_time()));
 
         // Schedule this buffer for playback and advance the player time.
-        audio_node.start_with_when(*time).into_js_result()?;
-        *time += buffer_timestep;
+        audio_node
+            .start_with_when(self.time.get())
+            .into_js_result()?;
+        self.time.set(self.time.get() + buffer_timestep);
 
         self.audio_node = Some(audio_node);
         Ok(())
