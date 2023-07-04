@@ -7,13 +7,16 @@ use ruffle_core::backend::audio::{
 };
 use ruffle_core::backend::log::LogBackend;
 use ruffle_core::backend::navigator::NullExecutor;
-use ruffle_core::events::KeyCode;
 use ruffle_core::events::MouseButton as RuffleMouseButton;
+use ruffle_core::events::{KeyCode, TextControlCode as RuffleTextControlCode};
 use ruffle_core::impl_audio_mixer_backend;
 use ruffle_core::limits::ExecutionLimit;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{Player, PlayerBuilder, PlayerEvent};
-use ruffle_input_format::{AutomatedEvent, InputInjector, MouseButton as InputMouseButton};
+use ruffle_input_format::{
+    AutomatedEvent, InputInjector, MouseButton as InputMouseButton,
+    TextControlCode as InputTextControlCode,
+};
 use std::cell::RefCell;
 use std::path::Path;
 use std::rc::Rc;
@@ -193,6 +196,24 @@ pub fn run_swf(
                 AutomatedEvent::KeyDown { key_code } => PlayerEvent::KeyDown {
                     key_code: KeyCode::from_u8(*key_code).expect("Invalid keycode in test"),
                     key_char: None,
+                },
+                AutomatedEvent::TextInput { codepoint } => PlayerEvent::TextInput {
+                    codepoint: *codepoint,
+                },
+                AutomatedEvent::TextControl { code } => PlayerEvent::TextControl {
+                    code: match code {
+                        InputTextControlCode::MoveLeft => RuffleTextControlCode::Backspace,
+                        InputTextControlCode::MoveRight => RuffleTextControlCode::Delete,
+                        InputTextControlCode::SelectLeft => RuffleTextControlCode::SelectLeft,
+                        InputTextControlCode::SelectRight => RuffleTextControlCode::SelectRight,
+                        InputTextControlCode::SelectAll => RuffleTextControlCode::SelectAll,
+                        InputTextControlCode::Copy => RuffleTextControlCode::Copy,
+                        InputTextControlCode::Paste => RuffleTextControlCode::Paste,
+                        InputTextControlCode::Cut => RuffleTextControlCode::Cut,
+                        InputTextControlCode::Backspace => RuffleTextControlCode::Backspace,
+                        InputTextControlCode::Enter => RuffleTextControlCode::Enter,
+                        InputTextControlCode::Delete => RuffleTextControlCode::Delete,
+                    },
                 },
                 AutomatedEvent::Wait => unreachable!(),
             });
