@@ -174,6 +174,14 @@ impl<'gc> Bitmap<'gc> {
         self.0.read().height as u16
     }
 
+    pub fn pixel_snapping(self) -> PixelSnapping {
+        self.0.read().pixel_snapping
+    }
+
+    pub fn set_pixel_snapping(self, mc: MutationContext<'gc, '_>, value: PixelSnapping) {
+        self.0.write(mc).pixel_snapping = value;
+    }
+
     pub fn bitmap_data_wrapper(self) -> BitmapDataWrapper<'gc> {
         self.0.read().bitmap_data
     }

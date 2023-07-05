@@ -3,6 +3,7 @@ use std::fmt::Debug;
 use std::sync::Arc;
 
 use downcast_rs::{impl_downcast, Downcast};
+use ruffle_wstr::WStr;
 use swf::{Rectangle, Twips};
 
 use crate::backend::RenderBackend;
@@ -67,7 +68,29 @@ pub enum PixelSnapping {
     Never,
 }
 
+impl From<PixelSnapping> for &'static WStr {
+    fn from(value: PixelSnapping) -> &'static WStr {
+        match value {
+            PixelSnapping::Always => WStr::from_units(b"always"),
+            PixelSnapping::Auto => WStr::from_units(b"auto"),
+            PixelSnapping::Never => WStr::from_units(b"never"),
+        }
+    }
+}
+
 impl PixelSnapping {
+    pub fn from_wstr(str: &WStr) -> Option<Self> {
+        if str == b"always" {
+            Some(PixelSnapping::Always)
+        } else if str == b"auto" {
+            Some(PixelSnapping::Auto)
+        } else if str == b"never" {
+            Some(PixelSnapping::Never)
+        } else {
+            None
+        }
+    }
+
     pub fn apply(&self, matrix: &mut Matrix) {
         match self {
             PixelSnapping::Always => {
