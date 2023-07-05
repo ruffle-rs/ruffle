@@ -77,11 +77,6 @@ enum FrameControl<'gc> {
 
 /// Represents a single activation of a given AVM2 function or keyframe.
 pub struct Activation<'a, 'gc: 'a> {
-    /// Flags that the current activation frame is being executed and has a
-    /// reader object copied from it. Taking out two readers on the same
-    /// activation frame is a programming error.
-    is_executing: bool,
-
     /// Amount of actions performed since the last timeout check
     actions_since_timeout_check: u16,
 
@@ -156,7 +151,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let local_registers = RegisterSet::new(0);
 
         Self {
-            is_executing: false,
             actions_since_timeout_check: 0,
             local_registers,
             outer: ScopeChain::new(context.avm2.stage_domain),
@@ -184,7 +178,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let local_registers = RegisterSet::new(0);
 
         Self {
-            is_executing: false,
             actions_since_timeout_check: 0,
             local_registers,
             outer: ScopeChain::new(context.avm2.stage_domain),
@@ -225,7 +218,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         *local_registers.get_mut(0).unwrap() = global_object.into();
 
         Ok(Self {
-            is_executing: false,
             actions_since_timeout_check: 0,
             local_registers,
             outer: ScopeChain::new(domain),
@@ -470,7 +462,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         };
 
         let mut activation = Self {
-            is_executing: false,
             actions_since_timeout_check: 0,
             local_registers,
             outer,
@@ -554,7 +545,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let local_registers = RegisterSet::new(0);
 
         Ok(Self {
-            is_executing: false,
             actions_since_timeout_check: 0,
             local_registers,
             outer,
@@ -584,25 +574,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let superclass_object = superclass_object?;
 
         superclass_object.call_native_init(receiver.into(), args, self)
-    }
-
-    /// Attempts to lock the activation frame for execution.
-    ///
-    /// If this frame is already executing, that is an error condition.
-    pub fn lock(&mut self) -> Result<(), Error<'gc>> {
-        if self.is_executing {
-            return Err("Attempted to execute the same frame twice".into());
-        }
-
-        self.is_executing = true;
-
-        Ok(())
-    }
-
-    /// Unlock the activation object. This allows future execution to run on it
-    /// again.
-    pub fn unlock_execution(&mut self) {
-        self.is_executing = false;
     }
 
     /// Retrieve a local register.
