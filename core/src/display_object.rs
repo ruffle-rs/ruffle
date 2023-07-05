@@ -49,7 +49,7 @@ pub use loader_display::LoaderDisplay;
 pub use morph_shape::{MorphShape, MorphShapeStatic};
 pub use movie_clip::{MovieClip, MovieClipWeak, Scene};
 use ruffle_render::backend::{BitmapCacheEntry, RenderBackend};
-use ruffle_render::bitmap::{BitmapHandle, BitmapInfo};
+use ruffle_render::bitmap::{BitmapHandle, BitmapInfo, PixelSnapping};
 use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::filters::Filter;
 pub use stage::{Stage, StageAlign, StageDisplayState, StageScaleMode, WindowMode};
@@ -878,6 +878,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
                 color_transform: cache_info.base_transform.color_transform,
             },
             true,
+            PixelSnapping::Always, // cacheAsBitmap forces pixel snapping
         );
     } else {
         if let Some(background) = this.opaque_background() {

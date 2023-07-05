@@ -6,6 +6,7 @@ use downcast_rs::{impl_downcast, Downcast};
 use swf::{Rectangle, Twips};
 
 use crate::backend::RenderBackend;
+use crate::matrix::Matrix;
 
 #[derive(Clone, Debug)]
 pub struct BitmapHandle(pub Arc<dyn BitmapHandleImpl>);
@@ -50,6 +51,43 @@ impl_downcast!(SyncHandle);
 impl Clone for Box<dyn SyncHandle> {
     fn clone(&self) -> Box<dyn SyncHandle> {
         panic!("SyncHandle should have been consumed before clone() is called!")
+    }
+}
+
+/// How bitmaps should snap to the pixel grid when rendering
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub enum PixelSnapping {
+    /// Always snap the bitmap to the pixel grid
+    Always,
+
+    /// Only snap the bitmap to the pixel grid if it has no rotation/skew, and is 99.9% to 100.1% scale
+    Auto,
+
+    /// Never snap the bitmap to the pixel grid
+    Never,
+}
+
+impl PixelSnapping {
+    pub fn apply(&self, matrix: &mut Matrix) {
+        match self {
+            PixelSnapping::Always => {
+                matrix.tx = Twips::from_pixels(matrix.tx.to_pixels().round());
+                matrix.ty = Twips::from_pixels(matrix.ty.to_pixels().round());
+            }
+            PixelSnapping::Auto => {
+                if (matrix.a >= 0.999 && matrix.a <= 1.001)
+                    && (matrix.d >= 0.999 && matrix.d <= 1.001)
+                    && matrix.b == 0.0
+                    && matrix.c == 0.0
+                {
+                    matrix.a = 1.0;
+                    matrix.d = 1.0;
+                    matrix.tx = Twips::from_pixels(matrix.tx.to_pixels().round());
+                    matrix.ty = Twips::from_pixels(matrix.ty.to_pixels().round());
+                }
+            }
+            PixelSnapping::Never => {}
+        }
     }
 }
 

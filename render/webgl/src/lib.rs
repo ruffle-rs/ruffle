@@ -7,7 +7,8 @@ use ruffle_render::backend::{
     BitmapCacheEntry, Context3D, RenderBackend, ShapeHandle, ShapeHandleImpl, ViewportDimensions,
 };
 use ruffle_render::bitmap::{
-    Bitmap, BitmapFormat, BitmapHandle, BitmapHandleImpl, BitmapSource, PixelRegion, SyncHandle,
+    Bitmap, BitmapFormat, BitmapHandle, BitmapHandleImpl, BitmapSource, PixelRegion, PixelSnapping,
+    SyncHandle,
 };
 use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::error::Error as BitmapError;
@@ -1161,7 +1162,13 @@ impl RenderBackend for WebGlRenderBackend {
 }
 
 impl CommandHandler for WebGlRenderBackend {
-    fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: Transform, smoothing: bool) {
+    fn render_bitmap(
+        &mut self,
+        bitmap: BitmapHandle,
+        transform: Transform,
+        smoothing: bool,
+        _pixel_snapping: PixelSnapping,
+    ) {
         self.set_stencil_state();
         let entry = as_registry_data(&bitmap);
         // Adjust the quad draw to use the target bitmap.

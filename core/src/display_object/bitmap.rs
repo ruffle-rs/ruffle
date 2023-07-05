@@ -14,7 +14,7 @@ use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::{Collect, GcCell, MutationContext};
-use ruffle_render::bitmap::BitmapFormat;
+use ruffle_render::bitmap::{BitmapFormat, PixelSnapping};
 use std::cell::{Ref, RefMut};
 use std::sync::Arc;
 
@@ -82,6 +82,10 @@ pub struct BitmapGraphicData<'gc> {
     /// Whether or not bitmap smoothing is enabled.
     smoothing: bool,
 
+    /// How to snap this bitmap to the pixel grid
+    #[collect(require_static)]
+    pixel_snapping: PixelSnapping,
+
     /// The AVM2 side of this object.
     ///
     /// AVM1 code cannot directly reference `Bitmap`s, so this does not support
@@ -121,6 +125,7 @@ impl<'gc> Bitmap<'gc> {
                 width,
                 height,
                 smoothing,
+                pixel_snapping: PixelSnapping::Auto,
                 avm2_object: None,
                 avm2_bitmap_class: BitmapClass::NoSubclass,
                 movie: context.swf.clone(),
@@ -334,7 +339,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         let bitmap_data = self.0.read();
         bitmap_data
             .bitmap_data
-            .render(bitmap_data.smoothing, context);
+            .render(bitmap_data.smoothing, context, bitmap_data.pixel_snapping);
     }
 
     fn object2(&self) -> Avm2Value<'gc> {

@@ -241,7 +241,7 @@ mod wrapper {
     use crate::context::RenderContext;
     use gc_arena::{Collect, GcCell, MutationContext};
     use ruffle_render::backend::RenderBackend;
-    use ruffle_render::bitmap::{BitmapHandle, PixelRegion};
+    use ruffle_render::bitmap::{BitmapHandle, PixelRegion, PixelSnapping};
     use ruffle_render::commands::CommandHandler;
     use std::cell::Ref;
 
@@ -425,7 +425,12 @@ mod wrapper {
             self.0.write(mc).avm2_object = Some(object)
         }
 
-        pub fn render(&self, smoothing: bool, context: &mut RenderContext<'_, 'gc>) {
+        pub fn render(
+            &self,
+            smoothing: bool,
+            context: &mut RenderContext<'_, 'gc>,
+            pixel_snapping: PixelSnapping,
+        ) {
             let mut inner_bitmap_data = self.0.write(context.gc_context);
             if inner_bitmap_data.disposed() {
                 return;
@@ -438,9 +443,12 @@ mod wrapper {
                 .bitmap_handle(context.renderer)
                 .expect("Missing bitmap handle");
 
-            context
-                .commands
-                .render_bitmap(handle, context.transform_stack.transform(), smoothing);
+            context.commands.render_bitmap(
+                handle,
+                context.transform_stack.transform(),
+                smoothing,
+                pixel_snapping,
+            );
         }
 
         pub fn can_read(&self, read_area: PixelRegion) -> bool {

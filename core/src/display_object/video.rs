@@ -13,7 +13,7 @@ use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::vminterface::{AvmObject, Instantiator};
 use core::fmt;
 use gc_arena::{Collect, GcCell, MutationContext};
-use ruffle_render::bitmap::BitmapInfo;
+use ruffle_render::bitmap::{BitmapInfo, PixelSnapping};
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::quality::StageQuality;
 use ruffle_video::error::Error;
@@ -560,9 +560,12 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
                 bounds.height().to_pixels() as f32 / bitmap.height as f32,
             );
 
-            context
-                .commands
-                .render_bitmap(bitmap.handle, transform, smoothing);
+            context.commands.render_bitmap(
+                bitmap.handle,
+                transform,
+                smoothing,
+                PixelSnapping::Never,
+            );
         } else if codec != Some(VideoCodec::None) {
             tracing::warn!("Video has no decoded frame to render.");
         }
