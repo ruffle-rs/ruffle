@@ -6,7 +6,7 @@ use ruffle_render::backend::{
     BitmapCacheEntry, Context3D, RenderBackend, ShapeHandle, ShapeHandleImpl, ViewportDimensions,
 };
 use ruffle_render::bitmap::{
-    Bitmap, BitmapHandle, BitmapHandleImpl, BitmapSource, PixelRegion, SyncHandle,
+    Bitmap, BitmapHandle, BitmapHandleImpl, BitmapSource, PixelRegion, PixelSnapping, SyncHandle,
 };
 use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::error::Error;
@@ -527,7 +527,13 @@ impl RenderBackend for WebCanvasRenderBackend {
 }
 
 impl CommandHandler for WebCanvasRenderBackend {
-    fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: Transform, smoothing: bool) {
+    fn render_bitmap(
+        &mut self,
+        bitmap: BitmapHandle,
+        transform: Transform,
+        smoothing: bool,
+        _pixel_snapping: PixelSnapping,
+    ) {
         if self.mask_state == MaskState::ClearMask {
             return;
         }

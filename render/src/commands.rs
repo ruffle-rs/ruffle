@@ -1,11 +1,17 @@
 use crate::backend::ShapeHandle;
-use crate::bitmap::BitmapHandle;
+use crate::bitmap::{BitmapHandle, PixelSnapping};
 use crate::matrix::Matrix;
 use crate::transform::Transform;
 use swf::{BlendMode, Color};
 
 pub trait CommandHandler {
-    fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: Transform, smoothing: bool);
+    fn render_bitmap(
+        &mut self,
+        bitmap: BitmapHandle,
+        transform: Transform,
+        smoothing: bool,
+        pixel_snapping: PixelSnapping,
+    );
     fn render_stage3d(&mut self, bitmap: BitmapHandle, transform: Transform);
     fn render_shape(&mut self, shape: ShapeHandle, transform: Transform);
     fn draw_rect(&mut self, color: Color, matrix: Matrix);
@@ -39,7 +45,8 @@ impl CommandList {
                     bitmap,
                     transform,
                     smoothing,
-                } => handler.render_bitmap(bitmap, transform, smoothing),
+                    pixel_snapping,
+                } => handler.render_bitmap(bitmap, transform, smoothing, pixel_snapping),
                 Command::RenderShape { shape, transform } => handler.render_shape(shape, transform),
                 Command::RenderStage3D { bitmap, transform } => {
                     handler.render_stage3d(bitmap, transform)
@@ -61,12 +68,19 @@ impl CommandList {
 
 impl CommandHandler for CommandList {
     #[inline]
-    fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: Transform, smoothing: bool) {
+    fn render_bitmap(
+        &mut self,
+        bitmap: BitmapHandle,
+        transform: Transform,
+        smoothing: bool,
+        pixel_snapping: PixelSnapping,
+    ) {
         if self.maskers_in_progress <= 1 {
             self.commands.push(Command::RenderBitmap {
                 bitmap,
                 transform,
                 smoothing,
+                pixel_snapping,
             });
         }
     }
@@ -140,6 +154,7 @@ pub enum Command {
         bitmap: BitmapHandle,
         transform: Transform,
         smoothing: bool,
+        pixel_snapping: PixelSnapping,
     },
     RenderStage3D {
         bitmap: BitmapHandle,

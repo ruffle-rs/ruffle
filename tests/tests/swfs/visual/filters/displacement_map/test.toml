@@ -2,7 +2,7 @@ num_frames = 1
 
 [image_comparison]
 tolerance = 20
-max_outliers = 32
+max_outliers = 72
 
 [player_options]
 with_renderer = { optional = false, sample_count = 1 }

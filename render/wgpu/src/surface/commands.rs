@@ -10,7 +10,7 @@ use crate::{
     UniformBuffer,
 };
 use ruffle_render::backend::ShapeHandle;
-use ruffle_render::bitmap::BitmapHandle;
+use ruffle_render::bitmap::{BitmapHandle, PixelSnapping};
 use ruffle_render::commands::Command;
 use ruffle_render::matrix::Matrix;
 use ruffle_render::quality::StageQuality;
@@ -80,7 +80,15 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                 smoothing,
                 blend_mode,
                 render_stage3d,
-            } => self.render_bitmap(bitmap, transform, *smoothing, *blend_mode, *render_stage3d),
+                pixel_snapping,
+            } => self.render_bitmap(
+                bitmap,
+                transform,
+                *smoothing,
+                *blend_mode,
+                *render_stage3d,
+                *pixel_snapping,
+            ),
             DrawCommand::RenderTexture {
                 _texture,
                 binds,
@@ -232,6 +240,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         smoothing: bool,
         blend_mode: TrivialBlend,
         render_stage3d: bool,
+        pixel_snapping: PixelSnapping,
     ) {
         if cfg!(feature = "render_debug_labels") {
             self.render_pass
@@ -249,14 +258,13 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
             &descriptors.bitmap_samplers,
         );
         self.prep_bitmap(&bind.bind_group, blend_mode, render_stage3d);
-        self.apply_transform(
-            &(transform.matrix
-                * Matrix::scale(
-                    texture.texture.width() as f32,
-                    texture.texture.height() as f32,
-                )),
-            &transform.color_transform,
+        let mut matrix = transform.matrix;
+        pixel_snapping.apply(&mut matrix);
+        matrix *= Matrix::scale(
+            texture.texture.width() as f32,
+            texture.texture.height() as f32,
         );
+        self.apply_transform(&matrix, &transform.color_transform);
 
         self.draw(
             self.descriptors.quad.vertices_pos.slice(..),
@@ -418,6 +426,7 @@ pub enum DrawCommand {
         smoothing: bool,
         blend_mode: TrivialBlend,
         render_stage3d: bool,
+        pixel_snapping: PixelSnapping,
     },
     RenderTexture {
         _texture: PoolOrArcTexture,
@@ -558,12 +567,14 @@ pub fn chunk_blends<'a>(
                 bitmap,
                 transform,
                 smoothing,
+                pixel_snapping,
             } => current.push(DrawCommand::RenderBitmap {
                 bitmap,
                 transform,
                 smoothing,
                 blend_mode: TrivialBlend::Normal,
                 render_stage3d: false,
+                pixel_snapping,
             }),
             Command::RenderStage3D { bitmap, transform } => {
                 current.push(DrawCommand::RenderBitmap {
@@ -572,6 +583,7 @@ pub fn chunk_blends<'a>(
                     smoothing: false,
                     blend_mode: TrivialBlend::Normal,
                     render_stage3d: true,
+                    pixel_snapping: PixelSnapping::Never,
                 })
             }
             Command::RenderShape { shape, transform } => {
