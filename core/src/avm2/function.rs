@@ -114,23 +114,20 @@ impl<'gc> Executable<'gc> {
                 let method = bm.method.method;
 
                 let receiver = if let Some(receiver) = bm.bound_receiver {
-                    Some(receiver)
+                    receiver
                 } else if matches!(unbound_receiver, Value::Null | Value::Undefined) {
-                    Some(
-                        bm.scope
-                            .get(0)
-                            .expect("No global scope for function call")
-                            .values(),
-                    )
+                    bm.scope
+                        .get(0)
+                        .expect("No global scope for function call")
+                        .values()
                 } else {
-                    Some(unbound_receiver.coerce_to_object(activation)?)
+                    unbound_receiver.coerce_to_object(activation)?
                 };
 
                 let caller_domain = activation.caller_domain();
                 let subclass_object = bm.bound_superclass;
                 let mut activation = Activation::from_builtin(
                     activation.context.reborrow(),
-                    receiver,
                     subclass_object,
                     bm.scope,
                     caller_domain,
@@ -155,7 +152,7 @@ impl<'gc> Executable<'gc> {
                     .context
                     .avm2
                     .push_call(activation.context.gc_context, self);
-                method(&mut activation, receiver, &arguments)
+                method(&mut activation, Some(receiver), &arguments)
             }
             Executable::Action(bm) => {
                 if bm.method.is_unchecked() {
@@ -166,16 +163,14 @@ impl<'gc> Executable<'gc> {
                 }
 
                 let receiver = if let Some(receiver) = bm.receiver {
-                    Some(receiver)
+                    receiver
                 } else if matches!(unbound_receiver, Value::Null | Value::Undefined) {
-                    Some(
-                        bm.scope
-                            .get(0)
-                            .expect("No global scope for function call")
-                            .values(),
-                    )
+                    bm.scope
+                        .get(0)
+                        .expect("No global scope for function call")
+                        .values()
                 } else {
-                    Some(unbound_receiver.coerce_to_object(activation)?)
+                    unbound_receiver.coerce_to_object(activation)?
                 };
 
                 let subclass_object = bm.bound_superclass;
