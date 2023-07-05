@@ -1,0 +1,20 @@
+Original: [[object Object]] class: Object
+
+Serialized: 10,11,1,1
+Deserialized: [[object Object]] class: Object
+
+
+Original: [[object Object]] class: Object
+first=Hello,
+Serialized: 10,11,1,11,102,105,114,115,116,6,11,72,101,108,108,111,1
+Deserialized: [[object Object]] class: Object
+first=Hello,
+
+MyClass(firstProp= Hello secondProp=null thirdProp=-5.1 privProp=Overwritten private prop
+Original: [undefined] class: Test.as$38::MyClass
+
+Serialized: 10,51,25,77,121,67,108,97,115,115,65,108,105,97,115,19,102,105,114,115,116,80,114,111,112,21,115,101,99,111,110,100,80,114,111,112,19,116,104,105,114,100,80,114,111,112,6,11,72,101,108,108,111,1,5,192,20,102,102,102,102,102,102
+MyClass(firstProp= Hello secondProp=null thirdProp=-5.1 privProp=Constructor private prop
+Deserialized: [undefined] class: Test.as$38::MyClass
+
+

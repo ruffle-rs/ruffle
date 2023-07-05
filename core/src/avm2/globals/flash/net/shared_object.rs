@@ -17,7 +17,13 @@ fn new_lso<'gc>(
     data: Object<'gc>,
 ) -> Result<Lso, Error<'gc>> {
     let mut elements = Vec::new();
-    crate::avm2::amf::recursive_serialize(activation, data, &mut elements, AMFVersion::AMF3)?;
+    crate::avm2::amf::recursive_serialize(
+        activation,
+        data,
+        &mut elements,
+        &mut vec![],
+        AMFVersion::AMF3,
+    )?;
     Ok(Lso::new(
         elements,
         name.split('/')
