@@ -6,12 +6,14 @@ use crate::avm2::globals::flash::display::display_object::initialize_for_allocat
 use crate::avm2::object::{BitmapDataObject, ClassObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use ruffle_render::bitmap::PixelSnapping;
+use ruffle_wstr::WStr;
 
+use crate::avm2::error::make_error_2008;
 use crate::avm2::parameters::ParametersExt;
 use crate::bitmap::bitmap_data::BitmapDataWrapper;
 use crate::character::Character;
 use crate::display_object::{Bitmap, TDisplayObject};
-use crate::{avm2_stub_getter, avm2_stub_setter};
 
 pub fn bitmap_allocator<'gc>(
     class: ClassObject<'gc>,
@@ -79,8 +81,9 @@ pub fn init<'gc>(
     let bitmap_data = args
         .try_get_object(activation, 0)
         .and_then(|o| o.as_bitmap_data());
-    //TODO: Pixel snapping is not supported
-    let _pixel_snapping = args.get_string(activation, 1);
+    let Some(pixel_snapping) = PixelSnapping::from_wstr(&args.get_string(activation, 1)?) else {
+        return Err(make_error_2008(activation, "pixelSnapping"));
+    };
     let smoothing = args.get_bool(2);
 
     if let Some(bitmap) = this.as_display_object().and_then(|dobj| dobj.as_bitmap()) {
@@ -88,6 +91,7 @@ pub fn init<'gc>(
             bitmap.set_bitmap_data(&mut activation.context, bitmap_data);
         }
         bitmap.set_smoothing(activation.context.gc_context, smoothing);
+        bitmap.set_pixel_snapping(activation.context.gc_context, pixel_snapping);
     } else {
         unreachable!();
     }
@@ -138,21 +142,29 @@ pub fn set_bitmap_data<'gc>(
 
 /// Stub `Bitmap.pixelSnapping`'s getter
 pub fn get_pixel_snapping<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.display.Bitmap", "pixelSnapping");
-    Ok("auto".into())
+    if let Some(bitmap) = this.as_display_object().and_then(|dobj| dobj.as_bitmap()) {
+        let value: &WStr = bitmap.pixel_snapping().into();
+        return Ok(Value::String(value.into()));
+    }
+    Ok(Value::Undefined)
 }
 
 /// Stub `Bitmap.pixelSnapping`'s setter
 pub fn set_pixel_snapping<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    this: Object<'gc>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_setter!(activation, "flash.display.Bitmap", "pixelSnapping");
+    if let Some(bitmap) = this.as_display_object().and_then(|dobj| dobj.as_bitmap()) {
+        let Some(value) = PixelSnapping::from_wstr(&args.get_string(activation, 0)?) else {
+            return Err(make_error_2008(activation, "pixelSnapping"));
+        };
+        bitmap.set_pixel_snapping(activation.context.gc_context, value);
+    }
     Ok(Value::Undefined)
 }
 
