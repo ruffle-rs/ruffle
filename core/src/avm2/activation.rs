@@ -77,14 +77,6 @@ enum FrameControl<'gc> {
 
 /// Represents a single activation of a given AVM2 function or keyframe.
 pub struct Activation<'a, 'gc: 'a> {
-    /// The immutable value of `this`.
-    #[allow(dead_code)]
-    this: Option<Object<'gc>>,
-
-    /// The arguments this function was called by.
-    #[allow(dead_code)]
-    arguments: Option<Object<'gc>>,
-
     /// Flags that the current activation frame is being executed and has a
     /// reader object copied from it. Taking out two readers on the same
     /// activation frame is a programming error.
@@ -98,13 +90,6 @@ pub struct Activation<'a, 'gc: 'a> {
     /// All activations have local registers, but it is possible for multiple
     /// activations (such as a rescope) to execute from the same register set.
     local_registers: RegisterSet<'gc>,
-
-    /// What was returned from the function.
-    ///
-    /// A return value of `None` indicates that the called function is still
-    /// executing. Functions that do not return instead return `Undefined`.
-    #[allow(dead_code)]
-    return_value: Option<Value<'gc>>,
 
     /// This represents the outer scope of the method that is executing.
     ///
@@ -171,12 +156,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let local_registers = RegisterSet::new(0);
 
         Self {
-            this: None,
-            arguments: None,
             is_executing: false,
             actions_since_timeout_check: 0,
             local_registers,
-            return_value: None,
             outer: ScopeChain::new(context.avm2.stage_domain),
             caller_domain: None,
             subclass_object: None,
@@ -202,12 +184,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let local_registers = RegisterSet::new(0);
 
         Self {
-            this: None,
-            arguments: None,
             is_executing: false,
             actions_since_timeout_check: 0,
             local_registers,
-            return_value: None,
             outer: ScopeChain::new(context.avm2.stage_domain),
             caller_domain: Some(domain),
             subclass_object: None,
@@ -246,12 +225,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         *local_registers.get_mut(0).unwrap() = global_object.into();
 
         Ok(Self {
-            this: Some(global_object),
-            arguments: None,
             is_executing: false,
             actions_since_timeout_check: 0,
             local_registers,
-            return_value: None,
             outer: ScopeChain::new(domain),
             caller_domain: Some(domain),
             subclass_object: None,
@@ -433,7 +409,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         mut context: UpdateContext<'a, 'gc>,
         method: Gc<'gc, BytecodeMethod<'gc>>,
         outer: ScopeChain<'gc>,
-        this: Option<Object<'gc>>,
+        this: Object<'gc>,
         user_arguments: &[Value<'gc>],
         subclass_object: Option<ClassObject<'gc>>,
         callee: Object<'gc>,
@@ -461,7 +437,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         let mut local_registers =
             RegisterSet::new(num_locals + num_declared_arguments + arg_register + 1);
-        *local_registers.get_mut(0).unwrap() = this.map(|t| t.into()).unwrap_or(Value::Null);
+        *local_registers.get_mut(0).unwrap() = this.into();
 
         let activation_class = if let Some(class_cache) = method.activation_class {
             let cached_cls = class_cache.read();
@@ -494,12 +470,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         };
 
         let mut activation = Self {
-            this,
-            arguments: None,
             is_executing: false,
             actions_since_timeout_check: 0,
             local_registers,
-            return_value: None,
             outer,
             caller_domain: Some(outer.domain()),
             subclass_object,
@@ -574,7 +547,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// properly supercall.
     pub fn from_builtin(
         context: UpdateContext<'a, 'gc>,
-        this: Option<Object<'gc>>,
         subclass_object: Option<ClassObject<'gc>>,
         outer: ScopeChain<'gc>,
         caller_domain: Option<Domain<'gc>>,
@@ -582,12 +554,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let local_registers = RegisterSet::new(0);
 
         Ok(Self {
-            this,
-            arguments: None,
             is_executing: false,
             actions_since_timeout_check: 0,
             local_registers,
-            return_value: None,
             outer,
             caller_domain,
             subclass_object,
