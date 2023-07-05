@@ -2,6 +2,9 @@ mod blur;
 mod color_matrix;
 mod shader;
 
+use std::collections::HashSet;
+use std::sync::{Mutex, OnceLock};
+
 use crate::buffer_pool::TexturePool;
 use crate::descriptors::Descriptors;
 use crate::filters::blur::BlurFilter;
@@ -106,8 +109,29 @@ impl Filters {
                 &source,
                 shader,
             )),
-            _ => {
-                tracing::warn!("Unsupported filter {filter:?}");
+            filter => {
+                static WARNED_FILTERS: OnceLock<Mutex<HashSet<&'static str>>> = OnceLock::new();
+                let name = match filter {
+                    Filter::DropShadowFilter(_) => "DropShadowFilter",
+                    Filter::GlowFilter(_) => "GlowFilter",
+                    Filter::BevelFilter(_) => "BevelFilter",
+                    Filter::GradientGlowFilter(_) => "GradientGlowFilter",
+                    Filter::GradientBevelFilter(_) => "GradientBevelFilter",
+                    Filter::ConvolutionFilter(_) => "ConvolutionFilter",
+                    Filter::DisplacementMapFilter(_) => "DisplacementMapFilter",
+                    Filter::ColorMatrixFilter(_)
+                    | Filter::BlurFilter(_)
+                    | Filter::ShaderFilter(_) => unreachable!(),
+                };
+                // Only warn once per filter type
+                if WARNED_FILTERS
+                    .get_or_init(Default::default)
+                    .lock()
+                    .unwrap()
+                    .insert(name)
+                {
+                    tracing::warn!("Unsupported filter {filter:?}");
+                }
                 None
             }
         };
