@@ -14,12 +14,10 @@ use gc_arena::GcCell;
 /// Implements `Function`'s instance initializer.
 pub fn instance_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this {
-        activation.super_init(this, &[])?;
-    }
+    activation.super_init(this, &[])?;
 
     Ok(Value::Undefined)
 }
@@ -27,111 +25,102 @@ pub fn instance_init<'gc>(
 /// Implements `Function`'s class initializer.
 pub fn class_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this {
-        let scope = activation.create_scopechain();
-        let this_class = this.as_class_object().unwrap();
-        let function_proto = this_class.prototype();
+    let scope = activation.create_scopechain();
+    let this_class = this.as_class_object().unwrap();
+    let function_proto = this_class.prototype();
 
-        function_proto.set_string_property_local(
-            "call",
-            FunctionObject::from_method(
-                activation,
-                Method::from_builtin(call, "call", activation.context.gc_context),
-                scope,
-                None,
-                Some(this_class),
-            )
-            .into(),
+    function_proto.set_string_property_local(
+        "call",
+        FunctionObject::from_method(
             activation,
-        )?;
-        function_proto.set_string_property_local(
-            "apply",
-            FunctionObject::from_method(
-                activation,
-                Method::from_builtin(apply, "apply", activation.context.gc_context),
-                scope,
-                None,
-                Some(this_class),
-            )
-            .into(),
+            Method::from_builtin(call, "call", activation.context.gc_context),
+            scope,
+            None,
+            Some(this_class),
+        )
+        .into(),
+        activation,
+    )?;
+    function_proto.set_string_property_local(
+        "apply",
+        FunctionObject::from_method(
             activation,
-        )?;
-        function_proto.set_local_property_is_enumerable(
-            activation.context.gc_context,
-            "call".into(),
-            false,
-        );
-        function_proto.set_local_property_is_enumerable(
-            activation.context.gc_context,
-            "apply".into(),
-            false,
-        );
-    }
+            Method::from_builtin(apply, "apply", activation.context.gc_context),
+            scope,
+            None,
+            Some(this_class),
+        )
+        .into(),
+        activation,
+    )?;
+    function_proto.set_local_property_is_enumerable(
+        activation.context.gc_context,
+        "call".into(),
+        false,
+    );
+    function_proto.set_local_property_is_enumerable(
+        activation.context.gc_context,
+        "apply".into(),
+        false,
+    );
+
     Ok(Value::Undefined)
 }
 
 /// Implements `Function.prototype.call`
 fn call<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    func: Option<Object<'gc>>,
+    func: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = args.get(0).copied().unwrap_or(Value::Null);
 
-    if let Some(func) = func {
-        if args.len() > 1 {
-            Ok(func.call(this, &args[1..], activation)?)
-        } else {
-            Ok(func.call(this, &[], activation)?)
-        }
+    if args.len() > 1 {
+        Ok(func.call(this, &args[1..], activation)?)
     } else {
-        Err("Not a callable function".into())
+        Ok(func.call(this, &[], activation)?)
     }
 }
 
 /// Implements `Function.prototype.apply`
 fn apply<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    func: Option<Object<'gc>>,
+    func: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = args.get(0).copied().unwrap_or(Value::Null);
 
-    if let Some(func) = func {
-        let arg_array = args.get(1).cloned().unwrap_or(Value::Undefined).as_object();
-        let resolved_args = if let Some(arg_array) = arg_array {
-            let arg_storage: Vec<Option<Value<'gc>>> = arg_array
-                .as_array_storage()
-                .map(|a| a.iter().collect())
-                .ok_or_else(|| {
-                    Error::from("Second parameter of apply must be an array or undefined")
-                })?;
+    let arg_array = args.get(1).cloned().unwrap_or(Value::Undefined).as_object();
+    let resolved_args = if let Some(arg_array) = arg_array {
+        let arg_storage: Vec<Option<Value<'gc>>> = arg_array
+            .as_array_storage()
+            .map(|a| a.iter().collect())
+            .ok_or_else(|| {
+                Error::from("Second parameter of apply must be an array or undefined")
+            })?;
 
-            let mut resolved_args = Vec::with_capacity(arg_storage.len());
-            for (i, v) in arg_storage.iter().enumerate() {
-                resolved_args.push(resolve_array_hole(activation, arg_array, i, *v)?);
-            }
+        let mut resolved_args = Vec::with_capacity(arg_storage.len());
+        for (i, v) in arg_storage.iter().enumerate() {
+            resolved_args.push(resolve_array_hole(activation, arg_array, i, *v)?);
+        }
 
-            resolved_args
-        } else {
-            Vec::new()
-        };
-
-        Ok(func.call(this, &resolved_args, activation)?)
+        resolved_args
     } else {
-        Err("Not a callable function".into())
-    }
+        Vec::new()
+    };
+
+    func.call(this, &resolved_args, activation)
 }
 
 fn length<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.and_then(|this| this.as_function_object()) {
+    if let Some(this) = this.as_function_object() {
         return Ok(this.num_parameters().into());
     }
 
@@ -140,36 +129,34 @@ fn length<'gc>(
 
 fn prototype<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this {
-        if let Some(function) = this.as_function_object() {
-            if let Some(proto) = function.prototype() {
-                return Ok(proto.into());
-            } else {
-                return Ok(Value::Undefined);
-            }
+    if let Some(function) = this.as_function_object() {
+        if let Some(proto) = function.prototype() {
+            return Ok(proto.into());
+        } else {
+            return Ok(Value::Undefined);
         }
     }
+
     Ok(Value::Undefined)
 }
 
 fn set_prototype<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this {
-        if let Some(function) = this.as_function_object() {
-            let new_proto = args
-                .get(0)
-                .unwrap_or(&Value::Undefined)
-                .as_object()
-                .ok_or("Cannot set prototype of class to null or undefined")?;
-            function.set_prototype(new_proto, activation.context.gc_context);
-        }
+    if let Some(function) = this.as_function_object() {
+        let new_proto = args
+            .get(0)
+            .unwrap_or(&Value::Undefined)
+            .as_object()
+            .ok_or("Cannot set prototype of class to null or undefined")?;
+        function.set_prototype(new_proto, activation.context.gc_context);
     }
+
     Ok(Value::Undefined)
 }
 

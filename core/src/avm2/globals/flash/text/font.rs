@@ -12,10 +12,10 @@ use crate::string::AvmString;
 /// Implements `Font.fontName`
 pub fn get_font_name<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some((movie, character_id)) = this.and_then(|this| this.instance_of()).and_then(|this| {
+    if let Some((movie, character_id)) = this.instance_of().and_then(|this| {
         activation
             .context
             .library
@@ -42,10 +42,10 @@ pub fn get_font_name<'gc>(
 /// Implements `Font.fontStyle`
 pub fn get_font_style<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some((movie, character_id)) = this.and_then(|this| this.instance_of()).and_then(|this| {
+    if let Some((movie, character_id)) = this.instance_of().and_then(|this| {
         activation
             .context
             .library
@@ -73,10 +73,10 @@ pub fn get_font_style<'gc>(
 /// Implements `Font.fontType`
 pub fn get_font_type<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some((movie, character_id)) = this.and_then(|this| this.instance_of()).and_then(|this| {
+    if let Some((movie, character_id)) = this.instance_of().and_then(|this| {
         activation
             .context
             .library
@@ -100,10 +100,10 @@ pub fn get_font_type<'gc>(
 /// Implements `Font.hasGlyphs`
 pub fn has_glyphs<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some((movie, character_id)) = this.and_then(|this| this.instance_of()).and_then(|this| {
+    if let Some((movie, character_id)) = this.instance_of().and_then(|this| {
         activation
             .context
             .library
@@ -128,7 +128,7 @@ pub fn has_glyphs<'gc>(
 /// `Font.enumerateFonts`
 pub fn enumerate_fonts<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_method!(activation, "flash.text.Font", "enumerateFonts");
@@ -138,7 +138,7 @@ pub fn enumerate_fonts<'gc>(
 /// `Font.registerFont`
 pub fn register_font<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_method!(activation, "flash.text.Font", "registerFont");

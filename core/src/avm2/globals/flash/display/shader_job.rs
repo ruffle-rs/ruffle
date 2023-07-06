@@ -133,11 +133,9 @@ pub fn get_shader_args<'gc>(
 /// Implements `ShaderJob.start`.
 pub fn start<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.unwrap();
-
     avm2_stub_method!(
         activation,
         "flash.display.ShaderJob",

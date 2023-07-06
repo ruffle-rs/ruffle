@@ -8,10 +8,10 @@ use crate::avm2::TObject;
 
 pub fn get_stack_trace<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(error) = this.and_then(|this| this.as_error_object()) {
+    if let Some(error) = this.as_error_object() {
         return Ok(AvmString::new(activation.context.gc_context, error.display_full()?).into());
     }
     Ok(Value::Undefined)

@@ -14,7 +14,7 @@ use gc_arena::GcCell;
 /// Implements `Object`'s instance initializer.
 pub fn instance_init<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(Value::Undefined)
@@ -22,7 +22,7 @@ pub fn instance_init<'gc>(
 
 fn class_call<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this_class = activation.subclass_object().unwrap();
@@ -40,120 +40,114 @@ fn class_call<'gc>(
 /// Implements `Object`'s class initializer
 pub fn class_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this {
-        let scope = activation.create_scopechain();
-        let gc_context = activation.context.gc_context;
-        let this_class = this.as_class_object().unwrap();
-        let object_proto = this_class.prototype();
+    let scope = activation.create_scopechain();
+    let gc_context = activation.context.gc_context;
+    let this_class = this.as_class_object().unwrap();
+    let object_proto = this_class.prototype();
 
-        object_proto.set_string_property_local(
-            "hasOwnProperty",
-            FunctionObject::from_method(
-                activation,
-                Method::from_builtin(has_own_property, "hasOwnProperty", gc_context),
-                scope,
-                None,
-                Some(this_class),
-            )
-            .into(),
+    object_proto.set_string_property_local(
+        "hasOwnProperty",
+        FunctionObject::from_method(
             activation,
-        )?;
-        object_proto.set_string_property_local(
-            "propertyIsEnumerable",
-            FunctionObject::from_method(
-                activation,
-                Method::from_builtin(property_is_enumerable, "propertyIsEnumerable", gc_context),
-                scope,
-                None,
-                Some(this_class),
-            )
-            .into(),
+            Method::from_builtin(has_own_property, "hasOwnProperty", gc_context),
+            scope,
+            None,
+            Some(this_class),
+        )
+        .into(),
+        activation,
+    )?;
+    object_proto.set_string_property_local(
+        "propertyIsEnumerable",
+        FunctionObject::from_method(
             activation,
-        )?;
-        object_proto.set_string_property_local(
-            "setPropertyIsEnumerable",
-            FunctionObject::from_method(
-                activation,
-                Method::from_builtin(
-                    set_property_is_enumerable,
-                    "setPropertyIsEnumerable",
-                    gc_context,
-                ),
-                scope,
-                None,
-                Some(this_class),
-            )
-            .into(),
+            Method::from_builtin(property_is_enumerable, "propertyIsEnumerable", gc_context),
+            scope,
+            None,
+            Some(this_class),
+        )
+        .into(),
+        activation,
+    )?;
+    object_proto.set_string_property_local(
+        "setPropertyIsEnumerable",
+        FunctionObject::from_method(
             activation,
-        )?;
-        object_proto.set_string_property_local(
-            "isPrototypeOf",
-            FunctionObject::from_method(
-                activation,
-                Method::from_builtin(is_prototype_of, "isPrototypeOf", gc_context),
-                scope,
-                None,
-                Some(this_class),
-            )
-            .into(),
+            Method::from_builtin(
+                set_property_is_enumerable,
+                "setPropertyIsEnumerable",
+                gc_context,
+            ),
+            scope,
+            None,
+            Some(this_class),
+        )
+        .into(),
+        activation,
+    )?;
+    object_proto.set_string_property_local(
+        "isPrototypeOf",
+        FunctionObject::from_method(
             activation,
-        )?;
-        object_proto.set_string_property_local(
-            "toString",
-            FunctionObject::from_method(
-                activation,
-                Method::from_builtin(to_string, "toString", gc_context),
-                scope,
-                None,
-                Some(this_class),
-            )
-            .into(),
+            Method::from_builtin(is_prototype_of, "isPrototypeOf", gc_context),
+            scope,
+            None,
+            Some(this_class),
+        )
+        .into(),
+        activation,
+    )?;
+    object_proto.set_string_property_local(
+        "toString",
+        FunctionObject::from_method(
             activation,
-        )?;
-        object_proto.set_string_property_local(
-            "toLocaleString",
-            FunctionObject::from_method(
-                activation,
-                Method::from_builtin(to_locale_string, "toLocaleString", gc_context),
-                scope,
-                None,
-                Some(this_class),
-            )
-            .into(),
+            Method::from_builtin(to_string, "toString", gc_context),
+            scope,
+            None,
+            Some(this_class),
+        )
+        .into(),
+        activation,
+    )?;
+    object_proto.set_string_property_local(
+        "toLocaleString",
+        FunctionObject::from_method(
             activation,
-        )?;
-        object_proto.set_string_property_local(
-            "valueOf",
-            FunctionObject::from_method(
-                activation,
-                Method::from_builtin(value_of, "valueOf", gc_context),
-                scope,
-                None,
-                Some(this_class),
-            )
-            .into(),
+            Method::from_builtin(to_locale_string, "toLocaleString", gc_context),
+            scope,
+            None,
+            Some(this_class),
+        )
+        .into(),
+        activation,
+    )?;
+    object_proto.set_string_property_local(
+        "valueOf",
+        FunctionObject::from_method(
             activation,
-        )?;
+            Method::from_builtin(value_of, "valueOf", gc_context),
+            scope,
+            None,
+            Some(this_class),
+        )
+        .into(),
+        activation,
+    )?;
 
-        object_proto.set_local_property_is_enumerable(gc_context, "hasOwnProperty".into(), false);
-        object_proto.set_local_property_is_enumerable(
-            gc_context,
-            "propertyIsEnumerable".into(),
-            false,
-        );
-        object_proto.set_local_property_is_enumerable(
-            gc_context,
-            "setPropertyIsEnumerable".into(),
-            false,
-        );
-        object_proto.set_local_property_is_enumerable(gc_context, "isPrototypeOf".into(), false);
-        object_proto.set_local_property_is_enumerable(gc_context, "toString".into(), false);
-        object_proto.set_local_property_is_enumerable(gc_context, "toLocaleString".into(), false);
-        object_proto.set_local_property_is_enumerable(gc_context, "valueOf".into(), false);
-    }
+    object_proto.set_local_property_is_enumerable(gc_context, "hasOwnProperty".into(), false);
+    object_proto.set_local_property_is_enumerable(gc_context, "propertyIsEnumerable".into(), false);
+    object_proto.set_local_property_is_enumerable(
+        gc_context,
+        "setPropertyIsEnumerable".into(),
+        false,
+    );
+    object_proto.set_local_property_is_enumerable(gc_context, "isPrototypeOf".into(), false);
+    object_proto.set_local_property_is_enumerable(gc_context, "toString".into(), false);
+    object_proto.set_local_property_is_enumerable(gc_context, "toLocaleString".into(), false);
+    object_proto.set_local_property_is_enumerable(gc_context, "valueOf".into(), false);
 
     Ok(Value::Undefined)
 }
@@ -161,51 +155,36 @@ pub fn class_init<'gc>(
 /// Implements `Object.prototype.toString`
 fn to_string<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this {
-        this.to_string(activation)
-    } else {
-        Ok(Value::Undefined)
-    }
+    this.to_string(activation)
 }
 
 /// Implements `Object.prototype.toLocaleString`
 fn to_locale_string<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this {
-        this.to_locale_string(activation)
-    } else {
-        Ok(Value::Undefined)
-    }
+    this.to_locale_string(activation)
 }
 
 /// Implements `Object.prototype.valueOf`
 fn value_of<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this {
-        this.value_of(activation.context.gc_context)
-    } else {
-        Ok(Value::Undefined)
-    }
+    this.value_of(activation.context.gc_context)
 }
 
 /// `Object.prototype.hasOwnProperty`
 pub fn has_own_property<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this: Result<Object<'gc>, Error<'gc>> =
-        this.ok_or_else(|| "No valid this parameter".into());
-    let this = this?;
     let name: Result<&Value<'gc>, Error<'gc>> =
         args.get(0).ok_or_else(|| "No name specified".into());
     let name = name?.coerce_to_string(activation)?;
@@ -216,16 +195,13 @@ pub fn has_own_property<'gc>(
 /// `Object.prototype.isPrototypeOf`
 pub fn is_prototype_of<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let search_proto: Result<Object<'gc>, Error<'gc>> =
-        this.ok_or_else(|| "No valid this parameter".into());
-    let search_proto = search_proto?;
     let mut target_proto = args.get(0).cloned().unwrap_or(Value::Undefined);
 
     while let Value::Object(proto) = target_proto {
-        if Object::ptr_eq(search_proto, proto) {
+        if Object::ptr_eq(this, proto) {
             return Ok(true.into());
         }
 
@@ -238,12 +214,9 @@ pub fn is_prototype_of<'gc>(
 /// `Object.prototype.propertyIsEnumerable`
 pub fn property_is_enumerable<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this: Result<Object<'gc>, Error<'gc>> =
-        this.ok_or_else(|| "No valid this parameter".into());
-    let this = this?;
     let name: Result<&Value<'gc>, Error<'gc>> =
         args.get(0).ok_or_else(|| "No name specified".into());
     let name = name?.coerce_to_string(activation)?;
@@ -254,12 +227,9 @@ pub fn property_is_enumerable<'gc>(
 /// `Object.prototype.setPropertyIsEnumerable`
 pub fn set_property_is_enumerable<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this: Result<Object<'gc>, Error<'gc>> =
-        this.ok_or_else(|| "No valid this parameter".into());
-    let this = this?;
     let name: Result<&Value<'gc>, Error<'gc>> =
         args.get(0).ok_or_else(|| "No name specified".into());
     let name = name?.coerce_to_string(activation)?;
@@ -274,7 +244,7 @@ pub fn set_property_is_enumerable<'gc>(
 /// Undocumented `Object.init`, which is a no-op
 pub fn init<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(Value::Undefined)

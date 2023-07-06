@@ -16,10 +16,9 @@ pub use crate::avm2::object::shader_data_allocator;
 /// Implements `ShaderData.init`, which is called from the constructor
 pub fn init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    mut this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let mut this = this.unwrap();
     let bytecode = args.get_object(activation, 0, "bytecode")?;
     let bytecode = bytecode.as_bytearray().unwrap();
     let shader = parse_shader(bytecode.bytes()).expect("Failed to parse PixelBender");

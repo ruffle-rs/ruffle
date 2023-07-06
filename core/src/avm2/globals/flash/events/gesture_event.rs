@@ -7,7 +7,7 @@ use crate::avm2::Error;
 // Borrow mouse_event's `stageX` getter
 pub fn get_stage_x<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     mouse_event::get_stage_x(activation, this, args)
@@ -16,7 +16,7 @@ pub fn get_stage_x<'gc>(
 // Borrow mouse_event's `stageY` getter
 pub fn get_stage_y<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     mouse_event::get_stage_y(activation, this, args)

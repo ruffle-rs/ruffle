@@ -15,10 +15,10 @@ use swf::{Rectangle, Twips};
 
 pub fn create_index_buffer<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(context) = this.and_then(|this| this.as_context_3d()) {
+    if let Some(context) = this.as_context_3d() {
         // FIXME - get bufferUsage and pass it through
         let num_indices = args.get_u32(activation, 0)?;
         return context.create_index_buffer(num_indices, activation);
@@ -28,10 +28,10 @@ pub fn create_index_buffer<'gc>(
 
 pub fn create_vertex_buffer<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(context) = this.and_then(|this| this.as_context_3d()) {
+    if let Some(context) = this.as_context_3d() {
         // FIXME - get bufferUsage and pass it through
         let num_vertices = args.get_u32(activation, 0)?;
         let data_32_per_vertex = args.get_u32(activation, 1)?;
@@ -52,10 +52,10 @@ pub fn create_vertex_buffer<'gc>(
 
 pub fn configure_back_buffer<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut context) = this.and_then(|this| this.as_context_3d()) {
+    if let Some(mut context) = this.as_context_3d() {
         let width = args.get_u32(activation, 0)?;
         let height = args.get_u32(activation, 1)?;
         let anti_alias = args.get_u32(activation, 2)?;
@@ -127,10 +127,10 @@ pub fn configure_back_buffer<'gc>(
 
 pub fn set_vertex_buffer_at<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(context) = this.and_then(|this| this.as_context_3d()) {
+    if let Some(context) = this.as_context_3d() {
         let index = args.get_u32(activation, 0)?;
         let buffer = if matches!(args[1], Value::Null) {
             None
@@ -175,10 +175,10 @@ pub fn set_vertex_buffer_at<'gc>(
 
 pub fn create_program<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(context) = this.and_then(|this| this.as_context_3d()) {
+    if let Some(context) = this.as_context_3d() {
         return context.create_program(activation);
     }
     Ok(Value::Undefined)
@@ -186,10 +186,10 @@ pub fn create_program<'gc>(
 
 pub fn set_program<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(context) = this.and_then(|this| this.as_context_3d()) {
+    if let Some(context) = this.as_context_3d() {
         let program = args
             .try_get_object(activation, 0)
             .map(|p| p.as_program_3d().unwrap());
@@ -200,10 +200,10 @@ pub fn set_program<'gc>(
 
 pub fn draw_triangles<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(context) = this.and_then(|this| this.as_context_3d()) {
+    if let Some(context) = this.as_context_3d() {
         let index_buffer = args
             .get(0)
             .unwrap_or(&Value::Undefined)
@@ -221,10 +221,10 @@ pub fn draw_triangles<'gc>(
 
 pub fn present<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(context) = this.and_then(|this| this.as_context_3d()) {
+    if let Some(context) = this.as_context_3d() {
         context.present(activation)?;
     }
     Ok(Value::Undefined)
@@ -232,10 +232,10 @@ pub fn present<'gc>(
 
 pub fn set_culling<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(context) = this.and_then(|this| this.as_context_3d()) {
+    if let Some(context) = this.as_context_3d() {
         let culling = args.get_string(activation, 0)?;
 
         let culling = if &*culling == b"none" {
@@ -258,10 +258,10 @@ pub fn set_culling<'gc>(
 
 pub fn set_program_constants_from_matrix<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(context) = this.and_then(|this| this.as_context_3d()) {
+    if let Some(context) = this.as_context_3d() {
         let program_type = args.get_string(activation, 0)?;
 
         let is_vertex = if &*program_type == b"vertex" {
@@ -318,10 +318,10 @@ pub fn set_program_constants_from_matrix<'gc>(
 
 pub fn set_program_constants_from_vector<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(context) = this.and_then(|this| this.as_context_3d()) {
+    if let Some(context) = this.as_context_3d() {
         let program_type = args.get_string(activation, 0)?;
 
         let program_type = if &*program_type == b"vertex" {
@@ -372,10 +372,10 @@ pub fn set_program_constants_from_vector<'gc>(
 
 pub fn clear<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(context) = this.and_then(|this| this.as_context_3d()) {
+    if let Some(context) = this.as_context_3d() {
         // This is a native method, so all of the arguments have been checked and coerced for us
         let red = args[0].as_number(activation.context.gc_context)?;
         let green = args[1].as_number(activation.context.gc_context)?;
@@ -391,10 +391,10 @@ pub fn clear<'gc>(
 
 pub fn create_texture<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(context) = this.and_then(|this| this.as_context_3d()) {
+    if let Some(context) = this.as_context_3d() {
         // This is a native method, so all of the arguments have been checked and coerced for us
         let width = args[0].as_integer(activation.context.gc_context)? as u32;
         let height = args[1].as_integer(activation.context.gc_context)? as u32;
@@ -424,10 +424,10 @@ pub fn create_texture<'gc>(
 
 pub fn create_rectangle_texture<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(context) = this.and_then(|this| this.as_context_3d()) {
+    if let Some(context) = this.as_context_3d() {
         // This is a native method, so all of the arguments have been checked and coerced for us
         let width = args[0].as_integer(activation.context.gc_context)? as u32;
         let height = args[1].as_integer(activation.context.gc_context)? as u32;
@@ -460,10 +460,10 @@ pub fn create_rectangle_texture<'gc>(
 
 pub fn create_cube_texture<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(context) = this.and_then(|this| this.as_context_3d()) {
+    if let Some(context) = this.as_context_3d() {
         // This is a native method, so all of the arguments have been checked and coerced for us
         let size = args[0].as_integer(activation.context.gc_context)? as u32;
         let format = args[1].coerce_to_string(activation)?;
@@ -492,10 +492,10 @@ pub fn create_cube_texture<'gc>(
 
 pub fn set_texture_at<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(context) = this.and_then(|this| this.as_context_3d()) {
+    if let Some(context) = this.as_context_3d() {
         // This is a native method, so all of the arguments have been checked and coerced for us
         let sampler = args[0].as_integer(activation.context.gc_context)? as u32;
         let mut cube = false;
@@ -516,10 +516,10 @@ pub fn set_texture_at<'gc>(
 
 pub fn set_color_mask<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(context) = this.and_then(|this| this.as_context_3d()) {
+    if let Some(context) = this.as_context_3d() {
         // This is a native method, so all of the arguments have been checked and coerced for us
         let red = args[0].coerce_to_boolean();
         let green = args[1].coerce_to_boolean();
@@ -532,10 +532,10 @@ pub fn set_color_mask<'gc>(
 
 pub fn set_depth_test<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(context) = this.and_then(|this| this.as_context_3d()) {
+    if let Some(context) = this.as_context_3d() {
         // This is a native method, so all of the arguments have been checked and coerced for us
         let depth_mask = args[0].coerce_to_boolean();
         let pass_compare_mode = args[1].coerce_to_string(activation)?;
@@ -552,10 +552,10 @@ pub fn set_depth_test<'gc>(
 
 pub fn set_blend_factors<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(context) = this.and_then(|this| this.as_context_3d()) {
+    if let Some(context) = this.as_context_3d() {
         // This is a native method, so all of the arguments have been checked and coerced for us
         let source_factor = args[0].coerce_to_string(activation)?;
         let destination_factor = args[1].coerce_to_string(activation)?;
@@ -579,10 +579,10 @@ pub fn set_blend_factors<'gc>(
 
 pub fn set_render_to_texture<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let context = this.unwrap().as_context_3d().unwrap();
+    let context = this.as_context_3d().unwrap();
     let texture = args
         .get_object(activation, 0, "texture")?
         .as_texture()
@@ -631,20 +631,20 @@ pub fn set_render_to_texture<'gc>(
 
 pub fn set_render_to_back_buffer<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let context = this.unwrap().as_context_3d().unwrap();
+    let context = this.as_context_3d().unwrap();
     context.set_render_to_back_buffer(activation);
     Ok(Value::Undefined)
 }
 
 pub fn set_sampler_state_at<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(context) = this.and_then(|this| this.as_context_3d()) {
+    if let Some(context) = this.as_context_3d() {
         // This is a native method, so all of the arguments have been checked and coerced for us
         let sampler = args[0].as_integer(activation.context.gc_context)? as u32;
         let wrap = args[1].coerce_to_string(activation)?;
@@ -688,10 +688,10 @@ pub fn set_sampler_state_at<'gc>(
 
 pub fn set_scissor_rectangle<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let context3d = this.unwrap().as_context_3d().unwrap();
+    let context3d = this.as_context_3d().unwrap();
     let rectangle = args.try_get_object(activation, 0);
     let rectangle = if let Some(rectangle) = rectangle {
         let x = rectangle

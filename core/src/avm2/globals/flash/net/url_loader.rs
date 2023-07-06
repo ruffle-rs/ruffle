@@ -10,33 +10,30 @@ use crate::loader::DataFormat;
 /// Native function definition for `URLLoader.load`
 pub fn load<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this {
-        let request = match args.get(0) {
-            Some(Value::Object(request)) => request,
-            // This should never actually happen
-            _ => return Ok(Value::Undefined),
-        };
+    let request = match args.get(0) {
+        Some(Value::Object(request)) => request,
+        // This should never actually happen
+        _ => return Ok(Value::Undefined),
+    };
 
-        let data_format = this
-            .get_public_property("dataFormat", activation)?
-            .coerce_to_string(activation)?;
+    let data_format = this
+        .get_public_property("dataFormat", activation)?
+        .coerce_to_string(activation)?;
 
-        let data_format = if &data_format == b"binary" {
-            DataFormat::Binary
-        } else if &data_format == b"text" {
-            DataFormat::Text
-        } else if &data_format == b"variables" {
-            DataFormat::Variables
-        } else {
-            return Err(format!("Unknown data format: {data_format}").into());
-        };
+    let data_format = if &data_format == b"binary" {
+        DataFormat::Binary
+    } else if &data_format == b"text" {
+        DataFormat::Text
+    } else if &data_format == b"variables" {
+        DataFormat::Variables
+    } else {
+        return Err(format!("Unknown data format: {data_format}").into());
+    };
 
-        return spawn_fetch(activation, this, *request, data_format);
-    }
-    Ok(Value::Undefined)
+    spawn_fetch(activation, this, *request, data_format)
 }
 
 fn spawn_fetch<'gc>(

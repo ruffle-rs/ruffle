@@ -41,16 +41,14 @@ pub fn video_allocator<'gc>(
 /// Implements `flash.media.Video`'s `init` method, which is called from the constructor
 pub fn init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this {
-        if let Some(video) = this.as_display_object().and_then(|dobj| dobj.as_video()) {
-            let width = args.get_i32(activation, 0)?;
-            let height = args.get_i32(activation, 1)?;
+    if let Some(video) = this.as_display_object().and_then(|dobj| dobj.as_video()) {
+        let width = args.get_i32(activation, 0)?;
+        let height = args.get_i32(activation, 1)?;
 
-            video.set_size(activation.context.gc_context, width, height);
-        }
+        video.set_size(activation.context.gc_context, width, height);
     }
 
     Ok(Value::Undefined)
@@ -58,13 +56,10 @@ pub fn init<'gc>(
 
 pub fn attach_net_stream<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(video) = this
-        .and_then(|o| o.as_display_object())
-        .and_then(|dobj| dobj.as_video())
-    {
+    if let Some(video) = this.as_display_object().and_then(|dobj| dobj.as_video()) {
         let source = args.get(0).cloned().and_then(|v| v.as_object());
 
         if let Some(stream) = source.and_then(|o| o.as_netstream()) {

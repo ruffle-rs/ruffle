@@ -1929,7 +1929,7 @@ impl Player {
             for so in avm2_activation.context.avm2_shared_objects.clone().values() {
                 if let Err(e) = crate::avm2::globals::flash::net::shared_object::flush(
                     &mut avm2_activation,
-                    Some(*so),
+                    *so,
                     &[],
                 ) {
                     tracing::error!("Error flushing AVM2 shared object `{:?}`: {:?}", so, e);

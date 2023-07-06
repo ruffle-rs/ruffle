@@ -6,21 +6,19 @@ use crate::context_menu;
 
 pub fn hide_built_in_items<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this {
-        if let Value::Object(mut items) = this.get_public_property("builtInItems", activation)? {
-            // items is a ContextMenuBuiltInItems
-            items.set_public_property("forwardAndBack", Value::Bool(false), activation)?;
-            items.set_public_property("loop", Value::Bool(false), activation)?;
-            items.set_public_property("play", Value::Bool(false), activation)?;
-            items.set_public_property("print", Value::Bool(false), activation)?;
-            items.set_public_property("quality", Value::Bool(false), activation)?;
-            items.set_public_property("rewind", Value::Bool(false), activation)?;
-            items.set_public_property("save", Value::Bool(false), activation)?;
-            items.set_public_property("zoom", Value::Bool(false), activation)?;
-        }
+    if let Value::Object(mut items) = this.get_public_property("builtInItems", activation)? {
+        // items is a ContextMenuBuiltInItems
+        items.set_public_property("forwardAndBack", Value::Bool(false), activation)?;
+        items.set_public_property("loop", Value::Bool(false), activation)?;
+        items.set_public_property("play", Value::Bool(false), activation)?;
+        items.set_public_property("print", Value::Bool(false), activation)?;
+        items.set_public_property("quality", Value::Bool(false), activation)?;
+        items.set_public_property("rewind", Value::Bool(false), activation)?;
+        items.set_public_property("save", Value::Bool(false), activation)?;
+        items.set_public_property("zoom", Value::Bool(false), activation)?;
     }
 
     Ok(Value::Undefined)

@@ -16,7 +16,7 @@ use gc_arena::GcCell;
 /// error.
 pub fn instance_init<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Err("Classes cannot be constructed.".into())
@@ -25,7 +25,7 @@ pub fn instance_init<'gc>(
 /// Implement's `Class`'s class initializer.
 pub fn class_init<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(Value::Undefined)
@@ -33,14 +33,13 @@ pub fn class_init<'gc>(
 
 fn prototype<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this {
-        if let Some(class) = this.as_class_object() {
-            return Ok(class.prototype().into());
-        }
+    if let Some(class) = this.as_class_object() {
+        return Ok(class.prototype().into());
     }
+
     Ok(Value::Undefined)
 }
 

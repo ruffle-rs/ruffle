@@ -24,10 +24,10 @@ fn get_display_object<'gc>(
 
 pub fn init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    mut this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    this.unwrap().set_property(
+    this.set_property(
         &Multiname::new(activation.avm2().flash_geom_internal, "_displayObject"),
         args.get_value(0),
         activation,
@@ -37,10 +37,9 @@ pub fn init<'gc>(
 
 pub fn get_color_transform<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.unwrap();
     let display_object = get_display_object(this, activation)?;
     let display_object = display_object.base();
     color_transform_to_object(display_object.color_transform(), activation)
@@ -48,10 +47,9 @@ pub fn get_color_transform<'gc>(
 
 pub fn set_color_transform<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.unwrap();
     let ct = object_to_color_transform(args.get_object(activation, 0, "value")?, activation)?;
     let dobj = get_display_object(this, activation)?;
     dobj.set_color_transform(activation.context.gc_context, ct);
@@ -63,20 +61,18 @@ pub fn set_color_transform<'gc>(
 
 pub fn get_matrix<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.unwrap();
     let matrix = *get_display_object(this, activation)?.base().matrix();
     matrix_to_object(matrix, activation)
 }
 
 pub fn set_matrix<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.unwrap();
     let matrix = object_to_matrix(args.get_object(activation, 0, "value")?, activation)?;
     let dobj = get_display_object(this, activation)?;
     dobj.set_matrix(activation.context.gc_context, matrix);
@@ -90,11 +86,9 @@ pub fn set_matrix<'gc>(
 
 pub fn get_concatenated_matrix<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.unwrap();
-
     let dobj = get_display_object(this, activation)?;
     let mut node = Some(dobj);
     while let Some(obj) = node {
@@ -131,7 +125,7 @@ pub fn get_concatenated_matrix<'gc>(
 
 pub fn get_concatenated_color_transform<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(
@@ -255,10 +249,9 @@ pub fn object_to_matrix<'gc>(
 
 pub fn get_pixel_bounds<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.unwrap();
     let display_object = get_display_object(this, activation)?;
     rectangle_to_object(display_object.world_bounds(), activation)
 }

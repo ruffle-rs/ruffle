@@ -10,10 +10,9 @@ use crate::timer::TimerCallback;
 /// Implements `Timer.stop`
 pub fn stop<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    mut this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let mut this = this.expect("`this` should be set in native method!");
     let id = this
         .get_property(
             &Multiname::new(activation.avm2().flash_utils_internal, "_timerId"),
@@ -37,10 +36,9 @@ pub fn stop<'gc>(
 /// Implements `Timer.start`
 pub fn start<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    mut this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let mut this = this.expect("`this` should be set in native method!");
     let id = this
         .get_property(
             &Multiname::new(activation.avm2().flash_utils_internal, "_timerId"),

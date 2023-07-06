@@ -5,7 +5,7 @@ use crate::external::{Callback, Value as ExternalValue};
 
 pub fn call<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let name = args.get_string(activation, 0)?;
@@ -41,7 +41,7 @@ fn check_available<'gc>(activation: &mut Activation<'_, 'gc>) -> Result<(), Erro
 
 pub fn get_available<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(activation.context.external_interface.available().into())
@@ -49,7 +49,7 @@ pub fn get_available<'gc>(
 
 pub fn add_callback<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let name = args.get_string(activation, 0)?;

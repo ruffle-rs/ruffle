@@ -5,10 +5,9 @@ use crate::{
 
 pub fn connect<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.unwrap();
     if let Value::Null = args[0] {
         let event = EventObject::net_status_event(
             activation,

@@ -15,7 +15,7 @@ use std::sync::{Arc, OnceLock};
 /// Flash Player behavior.
 pub fn get_sound_transform<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let dobj_st = activation.context.global_sound_transform().clone();
@@ -29,7 +29,7 @@ pub fn get_sound_transform<'gc>(
 /// Flash Player behavior.
 pub fn set_sound_transform<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let as3_st = args
@@ -47,7 +47,7 @@ pub fn set_sound_transform<'gc>(
 /// Implements `SoundMixer.stopAll`
 pub fn stop_all<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     activation.context.stop_all_sounds();
@@ -58,7 +58,7 @@ pub fn stop_all<'gc>(
 /// Implements `bufferTime`'s getter
 pub fn get_buffer_time<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(activation.context.audio_manager.stream_buffer_time().into())
@@ -67,7 +67,7 @@ pub fn get_buffer_time<'gc>(
 /// Implements `bufferTime`'s setter
 pub fn set_buffer_time<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let buffer_time = args
@@ -87,7 +87,7 @@ pub fn set_buffer_time<'gc>(
 /// `SoundMixer.areSoundsInaccessible`
 pub fn are_sounds_inaccessible<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(
@@ -101,7 +101,7 @@ pub fn are_sounds_inaccessible<'gc>(
 /// Implements `SoundMixer.computeSpectrum`
 pub fn compute_spectrum<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let arg0 = args[0].as_object().unwrap();
