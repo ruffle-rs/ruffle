@@ -14,6 +14,7 @@ use ruffle_render_wgpu::utils::{format_list, get_backend_names};
 use std::rc::Rc;
 use std::sync::{Arc, MutexGuard};
 use std::time::{Duration, Instant};
+use unic_langid::LanguageIdentifier;
 use url::Url;
 use winit::dpi::PhysicalSize;
 use winit::event_loop::EventLoop;
@@ -83,9 +84,7 @@ impl GuiController {
             },
         );
         let descriptors = Descriptors::new(adapter, device, queue);
-        let system_fonts = load_system_fonts().unwrap_or_default();
         let egui_ctx = Context::default();
-        egui_ctx.set_fonts(system_fonts);
         if let Some(Theme::Light) = window.theme() {
             egui_ctx.set_visuals(egui::Visuals::light());
         }
@@ -104,6 +103,8 @@ impl GuiController {
         let egui_renderer = egui_wgpu::Renderer::new(&descriptors.device, surface_format, None, 1);
         let event_loop = event_loop.create_proxy();
         let gui = RuffleGui::new(event_loop, opt.movie_url.clone(), PlayerOptions::from(opt));
+        let system_fonts = load_system_fonts(gui.locale.to_owned()).unwrap_or_default();
+        egui_ctx.set_fonts(system_fonts);
         Ok(Self {
             descriptors: Arc::new(descriptors),
             egui_ctx,
@@ -316,17 +317,33 @@ impl GuiController {
 }
 
 // try to load known unicode supporting fonts to draw cjk characters in egui
-fn load_system_fonts() -> anyhow::Result<egui::FontDefinitions> {
+fn load_system_fonts(locale: LanguageIdentifier) -> anyhow::Result<egui::FontDefinitions> {
     let mut font_database = Database::default();
     font_database.load_system_fonts();
 
-    let system_unicode_fonts = Query {
-        families: &[
-            Family::Name("MS UI Gothic"),     // windows
+    let mut families = Vec::new();
+    if let Some(windows_font) = match locale.language.as_str() {
+        "ja" => Some(Family::Name("MS UI Gothic")),
+        "zh" => Some(match locale.to_string().as_str() {
+            "zh-CN" => Family::Name("Microsoft YaHei"),
+            _ => Family::Name("Microsoft JhengHei"),
+        }),
+        "ko" => Some(Family::Name("Malgun Gothic")),
+        _ => None,
+    } {
+        families.push(windows_font);
+    }
+    families.extend(
+        [
             Family::Name("Arial Unicode MS"), // macos
             Family::Name("Noto Sans"),        // linux
             Family::SansSerif,
-        ],
+        ]
+        .iter(),
+    );
+
+    let system_unicode_fonts = Query {
+        families: &families,
         ..Query::default()
     };
 
