@@ -1410,11 +1410,9 @@ fn get_bounds<'gc>(
     if let Some(target) = target {
         if !(*activation.context.use_new_invalid_bounds_value) {
             // The value is set to true if the activation SWF version is >= 8 or if the SWF
-            // version of this MovieClip's oldest parent MovieClip is >= 8.
-            if activation.swf_version() >= 8
-                || movie_clip.get_oldest_parent_swf_version(&mut activation.context) >= 8
-            {
-                // If only the activation SWF version (and not the oldest parent's SWF version)
+            // version of the root movie is >= 8.
+            if activation.swf_version() >= 8 || activation.context.swf.version() >= 8 {
+                // If only the activation SWF version (and not the root movie SWF version)
                 // is >= 8 and the movie clip equals the target, the value sometimes isn't set
                 // in Flash Player 10.
                 *activation.context.use_new_invalid_bounds_value = true;
