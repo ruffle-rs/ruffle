@@ -423,8 +423,8 @@ impl TextSpan {
             self.size = *size;
         }
 
-        if let Some(color) = &tf.color {
-            self.color = color.clone();
+        if let Some(color) = tf.color {
+            self.color = color;
         }
 
         if let Some(align) = &tf.align {
@@ -495,7 +495,7 @@ impl TextSpan {
         TextFormat {
             font: Some(self.font.clone()),
             size: Some(self.size),
-            color: Some(self.color.clone()),
+            color: Some(self.color),
             align: Some(self.align),
             bold: Some(self.bold),
             italic: Some(self.italic),

@@ -35,7 +35,7 @@ impl<'gc> ColorTransformObject {
 
     pub fn construct(
         activation: &mut Activation<'_, 'gc>,
-        color_transform: ColorTransform,
+        color_transform: &ColorTransform,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let args = [
             color_transform.r_multiply.to_f64().into(),

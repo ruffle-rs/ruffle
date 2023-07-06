@@ -3,10 +3,10 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::matrix::gradient_object_to_matrix;
-use crate::avm1::globals::{self, AVM_DEPTH_BIAS, AVM_MAX_DEPTH};
+use crate::avm1::globals::{self, bitmap_filter, AVM_DEPTH_BIAS, AVM_MAX_DEPTH};
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{self, Object, ScriptObject, TObject, Value};
+use crate::avm1::{self, ArrayObject, Object, ScriptObject, TObject, Value};
 use crate::avm_error;
 use crate::avm_warn;
 use crate::backend::navigator::NavigationMethod;
@@ -18,10 +18,9 @@ use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::prelude::*;
 use crate::string::AvmString;
 use crate::vminterface::Instantiator;
-use ruffle_render::shape_utils::DrawCommand;
-use std::str::FromStr;
+use ruffle_render::shape_utils::{DrawCommand, GradientType};
 use swf::{
-    BlendMode, FillStyle, Fixed8, Gradient, GradientInterpolation, GradientRecord, GradientSpread,
+    FillStyle, Fixed8, Gradient, GradientInterpolation, GradientRecord, GradientSpread,
     LineCapStyle, LineJoinStyle, LineStyle, Rectangle, Twips,
 };
 
@@ -66,10 +65,17 @@ macro_rules! mc_setter {
 }
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
+    "attachBitmap" => method(mc_method!(attach_bitmap); DONT_ENUM | DONT_DELETE | VERSION_8);
     "attachMovie" => method(mc_method!(attach_movie); DONT_ENUM | DONT_DELETE);
+    "beginFill" => method(mc_method!(begin_fill); DONT_ENUM | DONT_DELETE | VERSION_6);
+    "beginBitmapFill" => method(mc_method!(begin_bitmap_fill); DONT_ENUM | DONT_DELETE | VERSION_8);
+    "beginGradientFill" => method(mc_method!(begin_gradient_fill); DONT_ENUM | DONT_DELETE | VERSION_6);
+    "clear" => method(mc_method!(clear); DONT_ENUM | DONT_DELETE | VERSION_6);
     "createEmptyMovieClip" => method(mc_method!(create_empty_movie_clip); DONT_ENUM | DONT_DELETE | VERSION_6);
     "createTextField" => method(mc_method!(create_text_field); DONT_ENUM | DONT_DELETE);
+    "curveTo" => method(mc_method!(curve_to); DONT_ENUM | DONT_DELETE | VERSION_6);
     "duplicateMovieClip" => method(mc_method!(duplicate_movie_clip); DONT_ENUM | DONT_DELETE);
+    "endFill" => method(mc_method!(end_fill); DONT_ENUM | DONT_DELETE | VERSION_6);
     "getBounds" => method(mc_method!(get_bounds); DONT_ENUM | DONT_DELETE);
     "getBytesLoaded" => method(mc_method!(get_bytes_loaded); DONT_ENUM | DONT_DELETE);
     "getBytesTotal" => method(mc_method!(get_bytes_total); DONT_ENUM | DONT_DELETE);
@@ -83,35 +89,33 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "gotoAndPlay" => method(mc_method!(goto_and_play); DONT_ENUM | DONT_DELETE);
     "gotoAndStop" => method(mc_method!(goto_and_stop); DONT_ENUM | DONT_DELETE);
     "hitTest" => method(mc_method!(hit_test); DONT_ENUM | DONT_DELETE);
+    "lineGradientStyle" => method(mc_method!(line_gradient_style); DONT_ENUM | DONT_DELETE | VERSION_8);
+    "lineStyle" => method(mc_method!(line_style); DONT_ENUM | DONT_DELETE | VERSION_6);
+    "lineTo" => method(mc_method!(line_to); DONT_ENUM | DONT_DELETE | VERSION_6);
     "loadMovie" => method(mc_method!(load_movie); DONT_ENUM | DONT_DELETE);
     "loadVariables" => method(mc_method!(load_variables); DONT_ENUM | DONT_DELETE);
     "localToGlobal" => method(mc_method!(local_to_global); DONT_ENUM | DONT_DELETE);
+    "moveTo" => method(mc_method!(move_to); DONT_ENUM | DONT_DELETE | VERSION_6);
     "nextFrame" => method(mc_method!(next_frame); DONT_ENUM | DONT_DELETE);
     "play" => method(mc_method!(play); DONT_ENUM | DONT_DELETE);
     "prevFrame" => method(mc_method!(prev_frame); DONT_ENUM | DONT_DELETE);
+    "removeMovieClip" => method(remove_movie_clip; DONT_ENUM | DONT_DELETE);
     "setMask" => method(mc_method!(set_mask); DONT_ENUM | DONT_DELETE | VERSION_6);
     "startDrag" => method(mc_method!(start_drag); DONT_ENUM | DONT_DELETE);
     "stop" => method(mc_method!(stop); DONT_ENUM | DONT_DELETE);
     "stopDrag" => method(mc_method!(stop_drag); DONT_ENUM | DONT_DELETE);
     "swapDepths" => method(mc_method!(swap_depths); DONT_ENUM | DONT_DELETE);
     "unloadMovie" => method(mc_method!(unload_movie); DONT_ENUM | DONT_DELETE);
-    "beginFill" => method(mc_method!(begin_fill); DONT_ENUM | DONT_DELETE | VERSION_6);
-    "beginBitmapFill" => method(mc_method!(begin_bitmap_fill); DONT_ENUM | DONT_DELETE | VERSION_8);
-    "beginGradientFill" => method(mc_method!(begin_gradient_fill); DONT_ENUM | DONT_DELETE | VERSION_6);
-    "moveTo" => method(mc_method!(move_to); DONT_ENUM | DONT_DELETE | VERSION_6);
-    "lineTo" => method(mc_method!(line_to); DONT_ENUM | DONT_DELETE | VERSION_6);
-    "curveTo" => method(mc_method!(curve_to); DONT_ENUM | DONT_DELETE | VERSION_6);
-    "endFill" => method(mc_method!(end_fill); DONT_ENUM | DONT_DELETE | VERSION_6);
-    "lineStyle" => method(mc_method!(line_style); DONT_ENUM | DONT_DELETE | VERSION_6);
-    "clear" => method(mc_method!(clear); DONT_ENUM | DONT_DELETE | VERSION_6);
-    "attachBitmap" => method(mc_method!(attach_bitmap); DONT_ENUM | DONT_DELETE | VERSION_8);
-    "removeMovieClip" => method(remove_movie_clip; DONT_ENUM | DONT_DELETE);
+
+    "blendMode" => property(mc_getter!(blend_mode), mc_setter!(set_blend_mode); DONT_DELETE | DONT_ENUM | VERSION_8);
+    "cacheAsBitmap" => property(mc_getter!(cache_as_bitmap), mc_setter!(set_cache_as_bitmap); DONT_DELETE | DONT_ENUM | VERSION_8);
+    "filters" => property(mc_getter!(filters), mc_setter!(set_filters); DONT_DELETE | DONT_ENUM | VERSION_8);
+    "opaqueBackground" => property(mc_getter!(opaque_background), mc_setter!(set_opaque_background); DONT_DELETE | DONT_ENUM | VERSION_8);
     "enabled" => bool(true; DONT_ENUM);
-    "useHandCursor" => bool(true; DONT_ENUM);
-    "transform" => property(mc_getter!(transform), mc_setter!(set_transform); DONT_ENUM | VERSION_8);
     "_lockroot" => property(mc_getter!(lock_root), mc_setter!(set_lock_root); DONT_DELETE | DONT_ENUM);
-    "blendMode" => property(mc_getter!(blend_mode), mc_setter!(set_blend_mode); DONT_DELETE | DONT_ENUM);
     "scrollRect" => property(mc_getter!(scroll_rect), mc_setter!(set_scroll_rect); DONT_DELETE | DONT_ENUM | VERSION_8);
+    "transform" => property(mc_getter!(transform), mc_setter!(set_transform); DONT_ENUM | VERSION_8);
+    "useHandCursor" => bool(true; DONT_ENUM);
     // NOTE: `focusEnabled` is not a built-in property of MovieClip.
 };
 
@@ -361,6 +365,160 @@ fn line_style<'gc>(
     Ok(Value::Undefined)
 }
 
+fn line_gradient_style<'gc>(
+    movie_clip: MovieClip<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let (Some(gradient_type), Some(colors), Some(alphas), Some(ratios), Some(matrix)) = (
+        args.get(0),
+        args.get(1),
+        args.get(2),
+        args.get(3),
+        args.get(4),
+    ) {
+        if args.len() > 8 {
+            // Silently fail if too many arguments are passed.
+            return Ok(Value::Undefined);
+        }
+        let gradient_type = if let Some(gradient) =
+            parse_gradient_type(gradient_type.coerce_to_string(activation)?)
+        {
+            gradient
+        } else {
+            avm_warn!(
+                activation,
+                "lineGradientStyle() received invalid fill type {:?}",
+                gradient_type
+            );
+            return Ok(Value::Undefined);
+        };
+        let colors = colors.coerce_to_object(activation);
+        let alphas = alphas.coerce_to_object(activation);
+        let ratios = ratios.coerce_to_object(activation);
+        let records = if let Some(records) =
+            build_gradient_records(activation, "lineGradientStyle()", &colors, &alphas, &ratios)?
+        {
+            records
+        } else {
+            return Ok(Value::Undefined);
+        };
+        let matrix = matrix.coerce_to_object(activation);
+        let matrix = gradient_object_to_matrix(matrix, activation)?;
+        let spread = parse_spread_method(
+            args.get(5)
+                .and_then(|v| v.coerce_to_string(activation).ok()),
+        );
+        let interpolation = parse_interpolation_method(
+            args.get(6)
+                .and_then(|v| v.coerce_to_string(activation).ok()),
+        );
+        let focal_point = args
+            .get(7)
+            .and_then(|v| v.coerce_to_f64(activation).ok())
+            .unwrap_or_default();
+        let style = match gradient_type {
+            GradientType::Linear => FillStyle::LinearGradient(Gradient {
+                matrix: matrix.into(),
+                spread,
+                interpolation,
+                records,
+            }),
+            GradientType::Radial if focal_point == 0.0 => FillStyle::RadialGradient(Gradient {
+                matrix: matrix.into(),
+                spread,
+                interpolation,
+                records,
+            }),
+            _ => FillStyle::FocalGradient {
+                gradient: Gradient {
+                    matrix: matrix.into(),
+                    spread,
+                    interpolation,
+                    records,
+                },
+                focal_point: Fixed8::from_f64(focal_point),
+            },
+        };
+        movie_clip
+            .drawing(activation.context.gc_context)
+            .set_line_fill_style(style);
+    }
+    Ok(Value::Undefined)
+}
+
+fn build_gradient_records<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    fname: &str,
+    colors: &Object<'gc>,
+    alphas: &Object<'gc>,
+    ratios: &Object<'gc>,
+) -> Result<Option<Vec<GradientRecord>>, Error<'gc>> {
+    let colors_length = colors.length(activation)?;
+    let alphas_length = alphas.length(activation)?;
+    let ratios_length = ratios.length(activation)?;
+    if colors_length != alphas_length || colors_length != ratios_length {
+        avm_warn!(
+            activation,
+            "{} received different sized arrays for colors, alphas and ratios",
+            fname
+        );
+        return Ok(None);
+    }
+    let mut records = Vec::with_capacity(colors_length as usize);
+    for i in 0..colors_length {
+        let color = colors
+            .get_element(activation, i)
+            .coerce_to_u32(activation)?;
+        let alpha = alphas
+            .get_element(activation, i)
+            .coerce_to_f64(activation)?
+            .clamp(0.0, 100.0);
+        let ratio = ratios
+            .get_element(activation, i)
+            .coerce_to_f64(activation)?;
+        if ratio <= -1.0 || ratio >= 256.0 {
+            avm_warn!(
+                activation,
+                "{} received an invalid ratio value {}",
+                fname,
+                ratio
+            );
+            return Ok(None);
+        }
+        records.push(GradientRecord {
+            ratio: ratio as u8,
+            color: Color::from_rgb(color, (alpha / 100.0 * 255.0) as u8),
+        });
+    }
+    Ok(Some(records))
+}
+
+fn parse_gradient_type(gradient_type: AvmString) -> Option<GradientType> {
+    if &gradient_type == b"linear" {
+        Some(GradientType::Linear)
+    } else if &gradient_type == b"radial" {
+        Some(GradientType::Radial)
+    } else {
+        None
+    }
+}
+
+fn parse_spread_method(spread_method: Option<AvmString>) -> GradientSpread {
+    match spread_method.as_deref() {
+        Some(v) if v == b"reflect" => GradientSpread::Reflect,
+        Some(v) if v == b"repeat" => GradientSpread::Repeat,
+        _ => GradientSpread::Pad,
+    }
+}
+
+fn parse_interpolation_method(interpolation_method: Option<AvmString>) -> GradientInterpolation {
+    match interpolation_method.as_deref() {
+        Some(v) if v == b"linearRGB" => GradientInterpolation::LinearRgb,
+        _ => GradientInterpolation::Rgb,
+    }
+}
+
 fn begin_fill<'gc>(
     movie_clip: MovieClip<'gc>,
     activation: &mut Activation<'_, 'gc>,
@@ -447,66 +605,58 @@ fn begin_gradient_fill<'gc>(
     activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let (Some(method), Some(colors), Some(alphas), Some(ratios), Some(matrix)) = (
+    if Value::Undefined == *args.get(0).unwrap_or(&Value::Undefined) {
+        // The path has no fill if the first parameter is `undefined`, or if no parameters are passed.
+        movie_clip
+            .drawing(activation.context.gc_context)
+            .set_fill_style(None);
+    } else if let (Some(gradient_type), Some(colors), Some(alphas), Some(ratios), Some(matrix)) = (
         args.get(0),
         args.get(1),
         args.get(2),
         args.get(3),
         args.get(4),
     ) {
-        let method = method.coerce_to_string(activation)?;
-        let colors_object = colors.coerce_to_object(activation);
-        let colors_length = colors_object.length(activation)?;
-        let alphas_object = alphas.coerce_to_object(activation);
-        let alphas_length = alphas_object.length(activation)?;
-        let ratios_object = ratios.coerce_to_object(activation);
-        let ratios_length = ratios_object.length(activation)?;
-        let matrix_object = matrix.coerce_to_object(activation);
-        if colors_length != alphas_length || colors_length != ratios_length {
-            avm_warn!(
-                activation,
-                "beginGradientFill() received different sized arrays for colors, alphas and ratios"
-            );
+        if (args.len() > 8) || (args.len() > 5 && activation.swf_version() < 8) {
+            // Silently fail if too many arguments are passed.
             return Ok(Value::Undefined);
         }
-        let records: Result<Vec<_>, Error<'gc>> = (0..colors_length)
-            .map(|i| {
-                let ratio = ratios_object
-                    .get_element(activation, i)
-                    .coerce_to_f64(activation)?
-                    .clamp(0.0, 255.0) as u8;
-                let rgb = colors_object
-                    .get_element(activation, i)
-                    .coerce_to_u32(activation)?;
-                let alpha = alphas_object
-                    .get_element(activation, i)
-                    .coerce_to_f64(activation)?
-                    .clamp(0.0, 100.0);
-                Ok(GradientRecord {
-                    ratio,
-                    color: Color::from_rgb(rgb, (alpha / 100.0 * 255.0) as u8),
-                })
-            })
-            .collect();
-        let records = records?;
-        let matrix = gradient_object_to_matrix(matrix_object, activation)?;
-        let spread = match args
-            .get(5)
-            .and_then(|v| v.coerce_to_string(activation).ok())
-            .as_deref()
+        let gradient_type = if let Some(gradient) =
+            parse_gradient_type(gradient_type.coerce_to_string(activation)?)
         {
-            Some(v) if v == b"reflect" => GradientSpread::Reflect,
-            Some(v) if v == b"repeat" => GradientSpread::Repeat,
-            _ => GradientSpread::Pad,
+            gradient
+        } else {
+            avm_warn!(
+                activation,
+                "beginGradientFill() received invalid fill type {:?}",
+                gradient_type
+            );
+            return Ok(Value::Undefined);
         };
-        let interpolation = match args
-            .get(6)
-            .and_then(|v| v.coerce_to_string(activation).ok())
-            .as_deref()
+        let colors = colors.coerce_to_object(activation);
+        let alphas = alphas.coerce_to_object(activation);
+        let ratios = ratios.coerce_to_object(activation);
+        let records = if let Some(records) =
+            build_gradient_records(activation, "beginGradientFill()", &colors, &alphas, &ratios)?
         {
-            Some(v) if v == b"linearRGB" => GradientInterpolation::LinearRgb,
-            _ => GradientInterpolation::Rgb,
+            records
+        } else {
+            return Ok(Value::Undefined);
         };
+        let matrix = matrix.coerce_to_object(activation);
+        let matrix = gradient_object_to_matrix(matrix, activation)?;
+        let spread = parse_spread_method(
+            args.get(5)
+                .and_then(|v| v.coerce_to_string(activation).ok()),
+        );
+        let interpolation = parse_interpolation_method(
+            args.get(6)
+                .and_then(|v| v.coerce_to_string(activation).ok()),
+        );
+        let focal_point = args
+            .get(7)
+            .and_then(|v| v.coerce_to_f64(activation).ok())
+            .unwrap_or_default();
 
         let gradient = Gradient {
             matrix: matrix.into(),
@@ -514,32 +664,17 @@ fn begin_gradient_fill<'gc>(
             interpolation,
             records,
         };
-        let style = if &method == b"linear" {
-            FillStyle::LinearGradient(gradient)
-        } else if &method == b"radial" {
-            if let Some(focal_point) = args.get(7) {
-                FillStyle::FocalGradient {
-                    gradient,
-                    focal_point: Fixed8::from_f64(focal_point.coerce_to_f64(activation)?),
-                }
-            } else {
-                FillStyle::RadialGradient(gradient)
-            }
-        } else {
-            avm_warn!(
-                activation,
-                "beginGradientFill() received invalid fill type {:?}",
-                method
-            );
-            return Ok(Value::Undefined);
+        let style = match gradient_type {
+            GradientType::Linear => FillStyle::LinearGradient(gradient),
+            GradientType::Radial if focal_point == 0.0 => FillStyle::RadialGradient(gradient),
+            _ => FillStyle::FocalGradient {
+                gradient,
+                focal_point: Fixed8::from_f64(focal_point),
+            },
         };
         movie_clip
             .drawing(activation.context.gc_context)
             .set_fill_style(Some(style));
-    } else {
-        movie_clip
-            .drawing(activation.context.gc_context)
-            .set_fill_style(None);
     }
     Ok(Value::Undefined)
 }
@@ -1059,8 +1194,93 @@ fn start_drag<'gc>(
     activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    crate::avm1::activation::start_drag(movie_clip.into(), activation, args);
+    let lock_center = args
+        .get(0)
+        .map(|o| o.as_bool(activation.context.swf.version()))
+        .unwrap_or(false);
+
+    let constraint_args = if args.len() > 1 {
+        let x_min = args
+            .get(1)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_f64(activation)?;
+        let y_min = args
+            .get(2)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_f64(activation)?;
+        let x_max = args
+            .get(3)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_f64(activation)?;
+        let y_max = args
+            .get(4)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_f64(activation)?;
+        Some([x_min, y_min, x_max, y_max])
+    } else {
+        None
+    };
+
+    start_drag_impl(movie_clip.into(), activation, lock_center, constraint_args);
+
     Ok(Value::Undefined)
+}
+
+pub fn start_drag_impl<'gc>(
+    display_object: DisplayObject<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    lock_center: bool,
+    constraint_args: Option<[f64; 4]>,
+) {
+    let constraint = if let Some(constraint_args) = constraint_args {
+        // Invalid values turn into 0.
+        let mut x_min = Twips::from_pixels(if constraint_args[0].is_finite() {
+            constraint_args[0]
+        } else {
+            0.0
+        });
+        let mut y_min = Twips::from_pixels(if constraint_args[1].is_finite() {
+            constraint_args[1]
+        } else {
+            0.0
+        });
+        let mut x_max = Twips::from_pixels(if constraint_args[2].is_finite() {
+            constraint_args[2]
+        } else {
+            0.0
+        });
+        let mut y_max = Twips::from_pixels(if constraint_args[3].is_finite() {
+            constraint_args[3]
+        } else {
+            0.0
+        });
+
+        // Normalize the bounds.
+        if x_max.get() < x_min.get() {
+            std::mem::swap(&mut x_min, &mut x_max);
+        }
+        if y_max.get() < y_min.get() {
+            std::mem::swap(&mut y_min, &mut y_max);
+        }
+
+        Rectangle {
+            x_min,
+            y_min,
+            x_max,
+            y_max,
+        }
+    } else {
+        // No constraints.
+        Default::default()
+    };
+
+    let drag_object = crate::player::DragObject {
+        display_object,
+        last_mouse_position: *activation.context.mouse_position,
+        lock_center,
+        constraint,
+    };
+    *activation.context.drag_object = Some(drag_object);
 }
 
 fn stop<'gc>(
@@ -1079,9 +1299,9 @@ fn stop_drag<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     // It doesn't matter which clip we call this on; it simply stops any active drag.
 
-    // we might not have had an opportunity to call `update_drag`
-    // if AS did `startDrag(mc);stopDrag();` in one go
-    // so let's do it here
+    // We might not have had an opportunity to call `update_drag`
+    // if AS did `startDrag(mc); stopDrag();` in one go,
+    // so let's do it here.
     crate::player::Player::update_drag(&mut activation.context);
 
     *activation.context.drag_object = None;
@@ -1329,8 +1549,7 @@ fn load_movie<'gc>(
         DisplayObject::MovieClip(target),
         request,
         None,
-        None,
-        None,
+        crate::loader::MovieLoaderVMData::Avm1 { broadcaster: None },
     );
     activation.context.navigator.spawn_future(future);
 
@@ -1384,13 +1603,19 @@ fn set_transform<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Value::Object(object) = value {
-        if let Some(transform) = object.as_transform_object() {
-            if let Some(clip) = transform.clip() {
+        if let NativeObject::Transform(transform) = object.native() {
+            if let Some(clip) = transform.clip(activation) {
                 let matrix = *clip.base().matrix();
                 this.set_matrix(activation.context.gc_context, matrix);
 
                 let color_transform = *clip.base().color_transform();
                 this.set_color_transform(activation.context.gc_context, color_transform);
+
+                if let Some(parent) = this.parent() {
+                    // Self-transform changes are automatically handled,
+                    // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
+                    parent.invalidate_cached_bitmap(activation.context.gc_context);
+                }
 
                 this.set_transformed_by_script(activation.context.gc_context, true);
             }
@@ -1430,13 +1655,93 @@ fn set_blend_mode<'gc>(
     activation: &mut Activation<'_, 'gc>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    // No-op if value is not a string.
-    if let Value::String(mode) = value {
-        if let Ok(mode) = BlendMode::from_str(&mode.to_string()) {
-            this.set_blend_mode(activation.context.gc_context, mode);
-        } else {
-            tracing::error!("Unknown blend mode {}", mode);
-        };
+    // No-op if value is not a valid blend mode.
+    if let Some(mode) = value.as_blend_mode() {
+        this.set_blend_mode(activation.context.gc_context, mode);
+    } else {
+        tracing::error!("Unknown blend mode {value:?}");
     }
+    Ok(())
+}
+
+fn cache_as_bitmap<'gc>(
+    this: MovieClip<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    // Note that the *getter* returns actual, and *setter* is preference
+    Ok(this.is_bitmap_cached().into())
+}
+
+fn set_cache_as_bitmap<'gc>(
+    this: MovieClip<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    // Note that the *getter* returns actual, and *setter* is preference
+    this.set_bitmap_cached_preference(
+        activation.context.gc_context,
+        value.as_bool(activation.swf_version()),
+    );
+    Ok(())
+}
+
+fn opaque_background<'gc>(
+    this: MovieClip<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(color) = this.opaque_background() {
+        Ok(color.to_rgb().into())
+    } else {
+        Ok(Value::Null)
+    }
+}
+
+fn set_opaque_background<'gc>(
+    this: MovieClip<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    if matches!(value, Value::Undefined | Value::Null) {
+        this.set_opaque_background(activation.context.gc_context, None);
+    } else {
+        this.set_opaque_background(
+            activation.context.gc_context,
+            Some(Color::from_rgb(value.coerce_to_u32(activation)?, 255)),
+        );
+    }
+    Ok(())
+}
+
+fn filters<'gc>(
+    this: MovieClip<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(ArrayObject::new(
+        activation.context.gc_context,
+        activation.context.avm1.prototypes().array,
+        this.filters()
+            .into_iter()
+            .map(|filter| bitmap_filter::filter_to_avm1(activation, filter)),
+    )
+    .into())
+}
+
+fn set_filters<'gc>(
+    this: MovieClip<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    let mut filters = vec![];
+    if let Value::Object(value) = value {
+        for index in value.get_keys(activation, false) {
+            let filter_object = value.get(index, activation)?.coerce_to_object(activation);
+            if let Some(filter) =
+                bitmap_filter::avm1_to_filter(filter_object, &mut activation.context)
+            {
+                filters.push(filter);
+            }
+        }
+    }
+    this.set_filters(activation.context.gc_context, filters);
     Ok(())
 }

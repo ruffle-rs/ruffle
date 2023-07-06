@@ -9,7 +9,7 @@ use crate::avm2::Multiname;
 use crate::avm2::{Error, QName};
 use crate::string::AvmString;
 use fnv::FnvHashMap;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use std::cell::{Ref, RefMut};
 use std::collections::hash_map::Entry;
 use std::fmt::Debug;
@@ -27,7 +27,11 @@ pub fn scriptobject_allocator<'gc>(
 /// Default implementation of `avm2::Object`.
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct ScriptObject<'gc>(GcCell<'gc, ScriptObjectData<'gc>>);
+pub struct ScriptObject<'gc>(pub GcCell<'gc, ScriptObjectData<'gc>>);
+
+#[derive(Clone, Collect, Copy, Debug)]
+#[collect(no_drop)]
+pub struct ScriptObjectWeak<'gc>(pub GcWeakCell<'gc, ScriptObjectData<'gc>>);
 
 /// Base data common to all `TObject` implementations.
 ///
@@ -156,7 +160,8 @@ impl<'gc> ScriptObjectData<'gc> {
             ));
         }
 
-        let Some(local_name) = multiname.local_name() else { // when can this happen?
+        let Some(local_name) = multiname.local_name() else {
+            // when can this happen?
             return Err(error::make_reference_error(
                 activation,
                 error::ReferenceErrorCode::InvalidRead,

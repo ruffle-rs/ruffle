@@ -9,6 +9,7 @@ use crate::bitmap::bitmap_data::BitmapDataWrapper;
 use crate::context::{GcContext, UpdateContext};
 use crate::string::{AvmString, FromWStr, WStr};
 use gc_arena::{Collect, GcCell, MutationContext};
+use ruffle_render::filters::DisplacementMapFilterMode;
 use std::convert::Infallible;
 use std::fmt::Debug;
 use swf::{Color, Point};
@@ -50,6 +51,29 @@ impl FromWStr for Mode {
     }
 }
 
+// TODO: Merge these types together
+impl From<DisplacementMapFilterMode> for Mode {
+    fn from(value: DisplacementMapFilterMode) -> Self {
+        match value {
+            DisplacementMapFilterMode::Clamp => Mode::Clamp,
+            DisplacementMapFilterMode::Color => Mode::Color,
+            DisplacementMapFilterMode::Ignore => Mode::Ignore,
+            DisplacementMapFilterMode::Wrap => Mode::Wrap,
+        }
+    }
+}
+
+impl From<Mode> for DisplacementMapFilterMode {
+    fn from(value: Mode) -> Self {
+        match value {
+            Mode::Wrap => DisplacementMapFilterMode::Wrap,
+            Mode::Clamp => DisplacementMapFilterMode::Clamp,
+            Mode::Ignore => DisplacementMapFilterMode::Ignore,
+            Mode::Color => DisplacementMapFilterMode::Color,
+        }
+    }
+}
+
 #[derive(Clone, Collect, Debug, Default)]
 #[collect(no_drop)]
 struct DisplacementMapFilterData<'gc> {
@@ -63,6 +87,23 @@ struct DisplacementMapFilterData<'gc> {
     mode: Mode,
     #[collect(require_static)]
     color: Color,
+}
+
+impl<'gc> From<ruffle_render::filters::DisplacementMapFilter> for DisplacementMapFilterData<'gc> {
+    fn from(
+        filter: ruffle_render::filters::DisplacementMapFilter,
+    ) -> DisplacementMapFilterData<'gc> {
+        Self {
+            map_bitmap: None, // TODO: We can't store this object yet
+            map_point: Point::new(filter.map_point.0, filter.map_point.1),
+            component_x: filter.component_x as i32,
+            component_y: filter.component_y as i32,
+            scale_x: filter.scale_x,
+            scale_y: filter.scale_y,
+            mode: filter.mode.into(),
+            color: filter.color,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Collect)]
@@ -86,6 +127,13 @@ impl<'gc> DisplacementMapFilter<'gc> {
         displacement_map_filter.set_color(activation, args.get(7))?;
         displacement_map_filter.set_alpha(activation, args.get(8))?;
         Ok(displacement_map_filter)
+    }
+
+    pub fn from_filter(
+        gc_context: MutationContext<'gc, '_>,
+        filter: ruffle_render::filters::DisplacementMapFilter,
+    ) -> Self {
+        Self(GcCell::allocate(gc_context, filter.into()))
     }
 
     pub(crate) fn duplicate(&self, gc_context: MutationContext<'gc, '_>) -> Self {
@@ -225,7 +273,7 @@ impl<'gc> DisplacementMapFilter<'gc> {
     }
 
     fn color(&self) -> Color {
-        self.0.read().color.clone()
+        self.0.read().color
     }
 
     fn set_color(
@@ -250,6 +298,25 @@ impl<'gc> DisplacementMapFilter<'gc> {
             self.0.write(activation.context.gc_context).color.a = (alpha * 255.0) as u8;
         }
         Ok(())
+    }
+
+    pub fn filter(
+        &self,
+        context: &mut UpdateContext<'_, 'gc>,
+    ) -> ruffle_render::filters::DisplacementMapFilter {
+        let filter = self.0.read();
+        ruffle_render::filters::DisplacementMapFilter {
+            color: filter.color,
+            component_x: filter.component_x as u8,
+            component_y: filter.component_y as u8,
+            map_bitmap: filter
+                .map_bitmap
+                .map(|b| b.bitmap_handle(context.gc_context, context.renderer)),
+            map_point: (filter.map_point.x, filter.map_point.y),
+            mode: filter.mode.into(),
+            scale_x: filter.scale_x,
+            scale_y: filter.scale_y,
+        }
     }
 }
 
@@ -366,7 +433,7 @@ fn method<'gc>(
     })
 }
 
-pub fn create_constructor<'gc>(
+pub fn create_proto<'gc>(
     context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
@@ -378,11 +445,19 @@ pub fn create_constructor<'gc>(
         displacement_map_filter_proto,
         fn_proto,
     );
+    displacement_map_filter_proto.into()
+}
+
+pub fn create_constructor<'gc>(
+    context: &mut GcContext<'_, 'gc>,
+    proto: Object<'gc>,
+    fn_proto: Object<'gc>,
+) -> Object<'gc> {
     FunctionObject::constructor(
         context.gc_context,
         Executable::Native(displacement_map_filter_method!(0)),
         constructor_to_fn!(displacement_map_filter_method!(0)),
         fn_proto,
-        displacement_map_filter_proto.into(),
+        proto,
     )
 }

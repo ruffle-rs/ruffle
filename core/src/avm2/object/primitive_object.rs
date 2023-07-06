@@ -9,7 +9,7 @@ use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::string::AvmString;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 
 /// A class instance allocator that allocates primitive objects.
 pub fn primitive_allocator<'gc>(
@@ -31,7 +31,11 @@ pub fn primitive_allocator<'gc>(
 /// An Object which represents a primitive value of some other kind.
 #[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
-pub struct PrimitiveObject<'gc>(GcCell<'gc, PrimitiveObjectData<'gc>>);
+pub struct PrimitiveObject<'gc>(pub GcCell<'gc, PrimitiveObjectData<'gc>>);
+
+#[derive(Collect, Clone, Copy, Debug)]
+#[collect(no_drop)]
+pub struct PrimitiveObjectWeak<'gc>(pub GcWeakCell<'gc, PrimitiveObjectData<'gc>>);
 
 impl fmt::Debug for PrimitiveObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

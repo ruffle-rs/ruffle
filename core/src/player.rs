@@ -8,7 +8,7 @@ use crate::avm1::{Activation, ActivationIdentifier};
 use crate::avm1::{ScriptObject, TObject, Value};
 use crate::avm2::{
     object::LoaderInfoObject, object::TObject as _, Activation as Avm2Activation, Avm2, CallStack,
-    Domain as Avm2Domain, Object as Avm2Object,
+    Object as Avm2Object,
 };
 use crate::backend::{
     audio::{AudioBackend, AudioManager},
@@ -329,6 +329,9 @@ impl Player {
     ///
     /// This should not be called if a root movie fetch has already been kicked
     /// off.
+    ///
+    /// `parameters` are *extra* parameters to set on the LoaderInfo -
+    /// parameters from `movie_url` query parameters will be automatically added.
     pub fn fetch_root_movie(
         &mut self,
         movie_url: String,
@@ -377,19 +380,14 @@ impl Player {
                 .stage
                 .set_movie(context.gc_context, context.swf.clone());
 
-            let global_domain = context.avm2.global_domain();
-            let mut global_activation =
-                Avm2Activation::from_domain(context.reborrow(), global_domain);
-            let domain = Avm2Domain::movie_domain(&mut global_activation, global_domain);
-
-            let mut activation =
-                Avm2Activation::from_domain(global_activation.context.reborrow(), domain);
+            let stage_domain = context.avm2.stage_domain();
+            let mut activation = Avm2Activation::from_domain(context.reborrow(), stage_domain);
 
             activation
                 .context
                 .library
                 .library_for_movie_mut(activation.context.swf.clone())
-                .set_avm2_domain(domain);
+                .set_avm2_domain(stage_domain);
             activation.context.ui.set_mouse_visible(true);
 
             let swf = activation.context.swf.clone();
@@ -840,15 +838,6 @@ impl Player {
         })
     }
 
-    pub fn set_stage_align(&mut self, stage_align: &str) {
-        self.mutate_with_update_context(|context| {
-            let stage = context.stage;
-            if let Ok(stage_align) = StageAlign::from_str(stage_align) {
-                stage.set_align(context, stage_align);
-            }
-        })
-    }
-
     pub fn set_quality(&mut self, quality: StageQuality) {
         self.mutate_with_update_context(|context| {
             context.stage.set_quality(context, quality);
@@ -1205,20 +1194,24 @@ impl Player {
             let global_to_local_matrix = local_to_global_matrix.inverse().unwrap_or_default();
 
             let new_position = if drag_object.lock_center {
-                global_to_local_matrix * mouse_position
+                let new_position = global_to_local_matrix * mouse_position;
+                drag_object.constraint.clamp(new_position)
             } else {
-                let mouse_delta = mouse_position - drag_object.last_mouse_position;
                 // TODO: Introduce `DisplayObject::position()`?
                 let position = Point::new(display_object.x(), display_object.y());
-                position + global_to_local_matrix * mouse_delta
-            };
+                let mouse_delta = mouse_position - drag_object.last_mouse_position;
+                let new_position = position + global_to_local_matrix * mouse_delta;
+                let new_position = drag_object.constraint.clamp(new_position);
 
-            let new_position = drag_object.constraint.clamp(new_position);
+                let mouse_delta = local_to_global_matrix * (new_position - position);
+                drag_object.last_mouse_position += mouse_delta;
+
+                new_position
+            };
 
             // TODO: Introduce `DisplayObject::set_position()`?
             display_object.set_x(context.gc_context, new_position.x);
             display_object.set_y(context.gc_context, new_position.y);
-            drag_object.last_mouse_position = mouse_position;
 
             // Update `_droptarget` property of dragged object.
             if let Some(movie_clip) = display_object.as_movie_clip() {
@@ -1554,17 +1547,20 @@ impl Player {
 
         let mut background_color = Color::WHITE;
 
-        let commands = self.gc_arena.borrow().mutate(|gc_context, gc_root| {
+        let (cache_draws, commands) = self.gc_arena.borrow().mutate(|gc_context, gc_root| {
             let root_data = gc_root.data.read();
             let stage = root_data.stage;
 
+            let mut cache_draws = vec![];
             let mut render_context = RenderContext {
                 renderer: self.renderer.deref_mut(),
                 commands: CommandList::new(),
+                cache_draws: &mut cache_draws,
                 gc_context,
                 library: &root_data.library,
                 transform_stack: &mut self.transform_stack,
                 is_offscreen: false,
+                use_bitmap_cache: true,
                 stage,
             };
 
@@ -1585,10 +1581,12 @@ impl Player {
                     Color::from_rgba(0)
                 };
 
-            render_context.commands
+            let commands = render_context.commands;
+            (cache_draws, commands)
         });
 
-        self.renderer.submit_frame(background_color, commands);
+        self.renderer
+            .submit_frame(background_color, commands, cache_draws);
 
         self.needs_render = false;
     }
@@ -1819,7 +1817,6 @@ impl Player {
                 frame_phase: &mut self.frame_phase,
                 stub_tracker: &mut self.stub_tracker,
                 stream_manager,
-                #[cfg(feature = "egui")]
                 dynamic_root,
             };
 
@@ -1868,20 +1865,20 @@ impl Player {
     }
 
     #[cfg(feature = "egui")]
-    pub fn show_debug_ui(&mut self, egui_ctx: &egui::Context) {
+    pub fn show_debug_ui(&mut self, egui_ctx: &egui::Context, movie_offset: f64) {
         // To allow using `mutate_with_update_context` and passing the context inside the debug ui,
         // we avoid borrowing directly from self here.
         // This method should only be called once and it will panic if it tries to recursively render.
         let debug_ui = self.debug_ui.clone();
         let mut debug_ui = debug_ui.borrow_mut();
         self.mutate_with_update_context(|context| {
-            debug_ui.show(egui_ctx, context);
+            debug_ui.show(egui_ctx, context, movie_offset);
         });
     }
 
     #[cfg(feature = "egui")]
-    pub fn debug_ui_message(&mut self, message: crate::debug_ui::Message) {
-        self.debug_ui.borrow_mut().queue_message(message)
+    pub fn debug_ui(&mut self) -> core::cell::RefMut<'_, crate::debug_ui::DebugUi> {
+        self.debug_ui.borrow_mut()
     }
 
     /// Update the current state of the player.
@@ -2016,6 +2013,8 @@ pub struct PlayerBuilder {
 
     // Misc. player configuration
     autoplay: bool,
+    align: StageAlign,
+    forced_align: bool,
     scale_mode: StageScaleMode,
     forced_scale_mode: bool,
     fullscreen: bool,
@@ -2032,6 +2031,7 @@ pub struct PlayerBuilder {
     quality: StageQuality,
     sandbox_type: SandboxType,
     frame_rate: Option<f64>,
+    external_interface_providers: Vec<Box<dyn ExternalInterfaceProvider>>,
 }
 
 impl PlayerBuilder {
@@ -2053,7 +2053,9 @@ impl PlayerBuilder {
             video: None,
 
             autoplay: false,
-            scale_mode: StageScaleMode::ShowAll,
+            align: StageAlign::default(),
+            forced_align: false,
+            scale_mode: StageScaleMode::default(),
             forced_scale_mode: false,
             fullscreen: false,
             // Disable script timeout in debug builds by default.
@@ -2074,6 +2076,7 @@ impl PlayerBuilder {
             quality: StageQuality::High,
             sandbox_type: SandboxType::LocalTrusted,
             frame_rate: None,
+            external_interface_providers: vec![],
         }
     }
 
@@ -2130,6 +2133,14 @@ impl PlayerBuilder {
     #[inline]
     pub fn with_video(mut self, video: impl 'static + VideoBackend) -> Self {
         self.video = Some(Box::new(video));
+        self
+    }
+
+    /// Sets the stage scale mode and optionally prevents movies from changing it.
+    #[inline]
+    pub fn with_align(mut self, align: StageAlign, force: bool) -> Self {
+        self.align = align;
+        self.forced_align = force;
         self
     }
 
@@ -2231,11 +2242,18 @@ impl PlayerBuilder {
         self
     }
 
+    /// Adds an External Interface provider for movies to communicate with
+    pub fn with_external_interface(mut self, provider: Box<dyn ExternalInterfaceProvider>) -> Self {
+        self.external_interface_providers.push(provider);
+        self
+    }
+
     fn create_gc_root<'gc>(
         gc_context: MutationContext<'gc, '_>,
         player_version: u8,
         fullscreen: bool,
         fake_movie: Arc<SwfMovie>,
+        external_interface_providers: Vec<Box<dyn ExternalInterfaceProvider>>,
     ) -> GcRoot<'gc> {
         let mut interner = AvmStringInterner::new();
         let mut init = GcContext {
@@ -2256,7 +2274,7 @@ impl PlayerBuilder {
                     interner,
                     current_context_menu: None,
                     drag_object: None,
-                    external_interface: ExternalInterface::new(),
+                    external_interface: ExternalInterface::new(external_interface_providers),
                     focus_tracker: FocusTracker::new(gc_context),
                     library: Library::empty(),
                     load_manager: LoadManager::new(),
@@ -2370,6 +2388,7 @@ impl PlayerBuilder {
                             player_version,
                             self.fullscreen,
                             fake_movie.clone(),
+                            self.external_interface_providers,
                         )
                     },
                 ))),
@@ -2381,6 +2400,8 @@ impl PlayerBuilder {
         player_lock.mutate_with_update_context(|context| {
             Avm2::load_player_globals(context).expect("Unable to load AVM2 globals");
             let stage = context.stage;
+            stage.set_align(context, self.align);
+            stage.set_forced_align(context, self.forced_align);
             stage.set_scale_mode(context, self.scale_mode);
             stage.set_forced_scale_mode(context, self.forced_scale_mode);
             stage.post_instantiation(context, None, Instantiator::Movie, false);

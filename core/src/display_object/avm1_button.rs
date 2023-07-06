@@ -14,6 +14,7 @@ use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::{Collect, GcCell, MutationContext};
+use ruffle_render::filters::Filter;
 use std::cell::{Ref, RefMut};
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -140,7 +141,9 @@ impl<'gc> Avm1Button<'gc> {
         // TODO: This behavior probably differs in AVM2 (I suspect they always get recreated).
         let mut children = Vec::new();
 
-        for record in &self.0.read().static_data.read().records {
+        // [NA] This copies static_data so we can borrow it without keeping `self.0` borrowed
+        let static_data = self.0.read().static_data;
+        for record in &static_data.read().records {
             if record.states.contains(state.into()) {
                 // State contains this depth, so we don't have to remove it.
                 removed_depths.remove(&record.depth.into());
@@ -171,6 +174,11 @@ impl<'gc> Avm1Button<'gc> {
                 // Set transform of child (and modify previous child if it already existed)
                 child.set_matrix(context.gc_context, record.matrix.into());
                 child.set_color_transform(context.gc_context, record.color_transform);
+                child.set_blend_mode(context.gc_context, record.blend_mode);
+                child.set_filters(
+                    context.gc_context,
+                    record.filters.iter().map(Filter::from).collect(),
+                );
             }
         }
 
@@ -191,6 +199,8 @@ impl<'gc> Avm1Button<'gc> {
                 dispatch_removed_event(removed_child, context);
             }
         }
+
+        self.invalidate_cached_bitmap(context.gc_context);
     }
 
     fn get_boolean_property(

@@ -12,12 +12,11 @@ use wgpu::{
 use wgpu::{Buffer, DepthStencilState, StencilFaceState};
 use wgpu::{ColorTargetState, RenderPipelineDescriptor, TextureFormat, VertexState};
 
-use std::borrow::Cow;
 use std::cell::Cell;
 use std::num::NonZeroU64;
 use std::rc::Rc;
 
-use crate::context3d::VertexBufferWrapper;
+use crate::context3d::{ShaderCompileData, VertexBufferWrapper};
 use crate::descriptors::Descriptors;
 
 use super::{ShaderModuleAgal, VertexAttributeInfo, MAX_VERTEX_ATTRIBUTES};
@@ -413,44 +412,31 @@ impl CurrentPipeline {
             })
         });
 
-        let sampler_overrides = &self.sampler_override;
+        let vertex_module = self
+            .vertex_shader
+            .as_ref()
+            .expect("Missing vertex shader!")
+            .compile(
+                descriptors,
+                ShaderCompileData {
+                    vertex_attributes: agal_attributes,
+                    // Vertex shaders do not use sampler overrides
+                    sampler_overrides: [None; 8],
+                },
+            );
 
-        let vertex_naga = naga_agal::agal_to_naga(
-            &self
-                .vertex_shader
-                .as_ref()
-                .expect("Missing vertex shader!")
-                .0,
-            &agal_attributes,
-            sampler_overrides,
-        )
-        .expect("Vertex shader failed to compile");
-
-        let fragment_naga = naga_agal::agal_to_naga(
-            &self
-                .fragment_shader
-                .as_ref()
-                .expect("Missing fragment shader")
-                .0,
-            &[None; 8],
-            sampler_overrides,
-        )
-        .expect("Fragment shader failed to compile");
-
-        let vertex_module = descriptors
-            .device
-            .create_shader_module(wgpu::ShaderModuleDescriptor {
-                label: Some("Vertex shader"),
-                source: wgpu::ShaderSource::Naga(Cow::Owned(vertex_naga)),
-            });
-
-        let fragment_module =
-            descriptors
-                .device
-                .create_shader_module(wgpu::ShaderModuleDescriptor {
-                    label: Some("Fragment shader"),
-                    source: wgpu::ShaderSource::Naga(Cow::Owned(fragment_naga)),
-                });
+        let fragment_module = self
+            .fragment_shader
+            .as_ref()
+            .expect("Missing fragment shader!")
+            .compile(
+                descriptors,
+                ShaderCompileData {
+                    // Fragment shaders do not use vertex attributes
+                    vertex_attributes: [None; 8],
+                    sampler_overrides: self.sampler_override,
+                },
+            );
 
         struct BufferData {
             buffer: Rc<VertexBufferWrapper>,

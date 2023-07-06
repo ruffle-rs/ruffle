@@ -10,13 +10,13 @@ pub fn constructor<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let netstream = NetStream::new(activation.context.gc_context);
+    let netstream = NetStream::new(activation.context.gc_context, Some(this.into()));
     this.set_native(
         activation.context.gc_context,
         NativeObject::NetStream(netstream),
     );
 
-    Ok(Value::Undefined)
+    Ok(this.into())
 }
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {

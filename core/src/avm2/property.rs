@@ -163,9 +163,8 @@ fn resolve_class_private<'gc>(
     } else {
         // First, check the domain for an exported (non-private) class.
         // If the property we're resolving for lacks a `TranslationUnit`,
-        // then it must have come from `load_player_globals`, so we use
-        // the top-level `Domain`
-        let domain = unit.map_or(activation.avm2().globals, |u| u.domain());
+        // use the stage domain
+        let domain = unit.map_or(activation.avm2().stage_domain, |u| u.domain());
         let globals = if let Some((_, mut script)) = domain.get_defining_script(name)? {
             script.globals(&mut activation.context)?
         } else if unit.is_some() {

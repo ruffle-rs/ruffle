@@ -14,7 +14,7 @@ pub fn shared_object_avm1() -> Result<(), libtest_mimic::Failed> {
     // Initial run; no shared object data.
     Test::from_options(
         TestOptions {
-            num_frames: 1,
+            num_frames: Some(1),
             output_path: "output1.txt".into(),
             ..Default::default()
         },
@@ -43,7 +43,7 @@ pub fn shared_object_avm1() -> Result<(), libtest_mimic::Failed> {
     // Re-run the SWF, verifying that the shared object persists.
     Test::from_options(
         TestOptions {
-            num_frames: 1,
+            num_frames: Some(1),
             output_path: "output2.txt".into(),
             ..Default::default()
         },
@@ -73,7 +73,7 @@ pub fn shared_object_avm2() -> Result<(), libtest_mimic::Failed> {
     // Initial run; no shared object data.
     Test::from_options(
         TestOptions {
-            num_frames: 1,
+            num_frames: Some(1),
             output_path: "output1.txt".into(),
             ..Default::default()
         },
@@ -102,7 +102,7 @@ pub fn shared_object_avm2() -> Result<(), libtest_mimic::Failed> {
     // Re-run the SWF, verifying that the shared object persists.
     Test::from_options(
         TestOptions {
-            num_frames: 1,
+            num_frames: Some(1),
             output_path: "output2.txt".into(),
             ..Default::default()
         },

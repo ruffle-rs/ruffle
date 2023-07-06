@@ -1,5 +1,7 @@
 // This is a new lint with false positives, see https://github.com/rust-lang/rust-clippy/issues/10318
 #![allow(clippy::extra_unused_type_parameters)]
+// Remove this when we decide on how to handle multithreaded rendering (especially on wasm)
+#![allow(clippy::arc_with_non_send_sync)]
 
 use crate::bitmaps::BitmapSamplers;
 use crate::buffer_pool::{BufferPool, PoolEntry};
@@ -14,6 +16,7 @@ use crate::utils::{
 use bytemuck::{Pod, Zeroable};
 use descriptors::Descriptors;
 use enum_map::Enum;
+use ruffle_render::backend::RawTexture;
 use ruffle_render::bitmap::{BitmapHandle, BitmapHandleImpl, PixelRegion, RgbaBufRead, SyncHandle};
 use ruffle_render::shape_utils::GradientType;
 use ruffle_render::tessellator::{Gradient as TessGradient, Vertex as TessVertex};
@@ -31,6 +34,7 @@ mod bitmaps;
 mod context3d;
 mod globals;
 mod pipelines;
+mod pixel_bender;
 pub mod target;
 mod uniform_buffer;
 
@@ -41,6 +45,7 @@ mod buffer_pool;
 #[cfg(feature = "clap")]
 pub mod clap;
 pub mod descriptors;
+mod filters;
 mod layouts;
 mod mesh;
 mod shaders;
@@ -50,6 +55,10 @@ impl BitmapHandleImpl for Texture {}
 
 pub fn as_texture(handle: &BitmapHandle) -> &Texture {
     <dyn BitmapHandleImpl>::downcast_ref(&*handle.0).unwrap()
+}
+
+pub fn raw_texture_as_texture(handle: &dyn RawTexture) -> &wgpu::Texture {
+    <dyn RawTexture>::downcast_ref(handle).unwrap()
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Enum)]
@@ -274,8 +283,6 @@ pub struct Texture {
     pub(crate) texture: Arc<wgpu::Texture>,
     bind_linear: OnceCell<BitmapBinds>,
     bind_nearest: OnceCell<BitmapBinds>,
-    width: u32,
-    height: u32,
     copy_count: Cell<u8>,
 }
 

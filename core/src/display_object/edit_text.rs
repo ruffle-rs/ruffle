@@ -7,8 +7,10 @@ use crate::avm1::{
     Object as Avm1Object, StageObject as Avm1StageObject, TObject as Avm1TObject,
     Value as Avm1Value,
 };
+use crate::avm2::Avm2;
 use crate::avm2::{
-    Activation as Avm2Activation, Object as Avm2Object, StageObject as Avm2StageObject,
+    Activation as Avm2Activation, EventObject as Avm2EventObject, Object as Avm2Object,
+    StageObject as Avm2StageObject,
 };
 use crate::backend::ui::MouseCursor;
 use crate::context::{RenderContext, UpdateContext};
@@ -486,7 +488,7 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn background_color(self) -> Color {
-        self.0.read().background_color.clone()
+        self.0.read().background_color
     }
 
     pub fn set_background_color(
@@ -511,7 +513,7 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn border_color(self) -> Color {
-        self.0.read().border_color.clone()
+        self.0.read().border_color
     }
 
     pub fn set_border_color(self, gc_context: MutationContext<'gc, '_>, border_color: Color) {
@@ -648,14 +650,14 @@ impl<'gc> EditText<'gc> {
             let line_style = write.flags.contains(EditTextFlag::BORDER).then_some(
                 swf::LineStyle::new()
                     .with_width(Twips::new(1))
-                    .with_color(write.border_color.clone()),
+                    .with_color(write.border_color),
             );
             write.drawing.set_line_style(line_style);
 
             let fill_style = write
                 .flags
                 .contains(EditTextFlag::HAS_BACKGROUND)
-                .then_some(swf::FillStyle::Color(write.background_color.clone()));
+                .then_some(swf::FillStyle::Color(write.background_color));
             write.drawing.set_fill_style(fill_style);
 
             let width = write.bounds.width();
@@ -671,6 +673,9 @@ impl<'gc> EditText<'gc> {
                 .drawing
                 .draw_command(DrawCommand::LineTo(Point::new(width, Twips::ZERO)));
             write.drawing.draw_command(DrawCommand::LineTo(Point::ZERO));
+
+            drop(write);
+            self.invalidate_cached_bitmap(gc_context);
         }
     }
 
@@ -737,6 +742,9 @@ impl<'gc> EditText<'gc> {
             edit_text.bounds.set_height(height);
             drop(edit_text);
             self.redraw_border(context.gc_context);
+        } else {
+            drop(edit_text);
+            self.invalidate_cached_bitmap(context.gc_context);
         }
     }
 
@@ -868,7 +876,7 @@ impl<'gc> EditText<'gc> {
                 font.get_baseline_for_height(params.height()) - params.height();
             font.evaluate(
                 text,
-                self.text_transform(color.clone(), baseline_adjustment),
+                self.text_transform(color, baseline_adjustment),
                 params,
                 |pos, transform, glyph: &Glyph, advance, x| {
                     // If it's highlighted, override the color.
@@ -913,7 +921,7 @@ impl<'gc> EditText<'gc> {
                                     x + Twips::from_pixels(-1.0),
                                     Twips::from_pixels(2.0),
                                 );
-                            context.commands.draw_rect(color.clone(), caret);
+                            context.commands.draw_rect(color, caret);
                         } else if pos == length - 1 && caret_pos == length {
                             let caret = context.transform_stack.transform().matrix
                                 * Matrix::create_box(
@@ -923,7 +931,7 @@ impl<'gc> EditText<'gc> {
                                     x + advance,
                                     Twips::from_pixels(2.0),
                                 );
-                            context.commands.draw_rect(color.clone(), caret);
+                            context.commands.draw_rect(color, caret);
                         }
                     }
                 },
@@ -1131,7 +1139,9 @@ impl<'gc> EditText<'gc> {
 
     pub fn screen_position_to_index(self, position: Point<Twips>) -> Option<usize> {
         let text = self.0.read();
-        let Some(mut position) = self.global_to_local(position) else { return None; };
+        let Some(mut position) = self.global_to_local(position) else {
+            return None;
+        };
         position.x += Twips::from_pixels(Self::INTERNAL_PADDING);
         position.y += Twips::from_pixels(Self::INTERNAL_PADDING);
 
@@ -1426,6 +1436,14 @@ impl<'gc> EditText<'gc> {
                 activation,
                 ExecutionReason::Special,
             );
+        } else if let Avm2Value::Object(object) = self.object2() {
+            let change_evt = Avm2EventObject::bare_event(
+                &mut activation.context,
+                "change",
+                true,  /* bubbles */
+                false, /* cancelable */
+            );
+            Avm2::dispatch_event(&mut activation.context, change_evt, object);
         }
     }
 

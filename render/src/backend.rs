@@ -4,6 +4,7 @@ use crate::bitmap::{Bitmap, BitmapHandle, BitmapSource, PixelRegion, SyncHandle}
 use crate::commands::CommandList;
 use crate::error::Error;
 use crate::filters::Filter;
+use crate::pixel_bender::{PixelBenderShader, PixelBenderShaderArgument, PixelBenderShaderHandle};
 use crate::quality::StageQuality;
 use crate::shape_utils::DistilledShape;
 use downcast_rs::{impl_downcast, Downcast};
@@ -14,7 +15,14 @@ use std::borrow::Cow;
 use std::fmt::Debug;
 use std::rc::Rc;
 use std::sync::Arc;
-use swf::{self, Rectangle, Twips};
+use swf::{self, Color, Rectangle, Twips};
+
+pub struct BitmapCacheEntry {
+    pub handle: BitmapHandle,
+    pub commands: CommandList,
+    pub clear: Color,
+    pub filters: Vec<Filter>,
+}
 
 pub trait RenderBackend: Downcast {
     fn viewport_dimensions(&self) -> ViewportDimensions;
@@ -57,7 +65,18 @@ pub trait RenderBackend: Downcast {
         false
     }
 
-    fn submit_frame(&mut self, clear: swf::Color, commands: CommandList);
+    fn is_offscreen_supported(&self) -> bool {
+        false
+    }
+
+    fn submit_frame(
+        &mut self,
+        clear: swf::Color,
+        commands: CommandList,
+        cache_entries: Vec<BitmapCacheEntry>,
+    );
+
+    fn create_empty_texture(&mut self, width: u32, height: u32) -> Result<BitmapHandle, Error>;
 
     fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, Error>;
     fn update_texture(
@@ -75,6 +94,18 @@ pub trait RenderBackend: Downcast {
     fn name(&self) -> &'static str;
 
     fn set_quality(&mut self, quality: StageQuality);
+
+    fn compile_pixelbender_shader(
+        &mut self,
+        shader: PixelBenderShader,
+    ) -> Result<PixelBenderShaderHandle, Error>;
+
+    fn run_pixelbender_shader(
+        &mut self,
+        handle: PixelBenderShaderHandle,
+        arguments: &[PixelBenderShaderArgument],
+        target: BitmapHandle,
+    ) -> Result<Box<dyn SyncHandle>, Error>;
 }
 impl_downcast!(RenderBackend);
 
@@ -88,6 +119,12 @@ impl_downcast!(ShaderModule);
 
 pub trait Texture: Downcast + Collect {}
 impl_downcast!(Texture);
+
+pub trait RawTexture: Downcast + Debug {}
+impl_downcast!(RawTexture);
+
+#[cfg(feature = "wgpu")]
+impl RawTexture for wgpu::Texture {}
 
 #[derive(Collect, Debug, Copy, Clone)]
 #[collect(require_static)]

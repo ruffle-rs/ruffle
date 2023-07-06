@@ -7,7 +7,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::html::TextFormat;
 use core::fmt;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates TextFormat objects.
@@ -29,7 +29,11 @@ pub fn textformat_allocator<'gc>(
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct TextFormatObject<'gc>(GcCell<'gc, TextFormatObjectData<'gc>>);
+pub struct TextFormatObject<'gc>(pub GcCell<'gc, TextFormatObjectData<'gc>>);
+
+#[derive(Clone, Collect, Copy, Debug)]
+#[collect(no_drop)]
+pub struct TextFormatObjectWeak<'gc>(pub GcWeakCell<'gc, TextFormatObjectData<'gc>>);
 
 impl fmt::Debug for TextFormatObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

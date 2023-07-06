@@ -1,9 +1,17 @@
+mod search;
+
+pub use search::DisplayObjectSearchWindow;
+
+use crate::avm1::TObject as _;
+use crate::avm2::object::TObject as _;
 use crate::context::UpdateContext;
-use crate::debug_ui::handle::DisplayObjectHandle;
+use crate::debug_ui::handle::{AVM1ObjectHandle, AVM2ObjectHandle, DisplayObjectHandle};
+use crate::debug_ui::movie::open_movie_button;
 use crate::debug_ui::Message;
 use crate::display_object::{DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer};
 use egui::collapsing_header::CollapsingState;
-use egui::{Button, Checkbox, CollapsingHeader, ComboBox, Grid, Id, Ui, Widget, Window};
+use egui::{Button, Checkbox, CollapsingHeader, ComboBox, Grid, Id, TextEdit, Ui, Widget, Window};
+use ruffle_wstr::{WStr, WString};
 use std::borrow::Cow;
 use swf::{BlendMode, ColorTransform, Fixed8};
 
@@ -52,6 +60,7 @@ pub struct DisplayObjectWindow {
     debug_rect_color: [f32; 3],
     debug_rect_visible: bool,
     hovered_debug_rect: Option<DisplayObjectHandle>,
+    search: String,
 }
 
 impl Default for DisplayObjectWindow {
@@ -66,6 +75,7 @@ impl Default for DisplayObjectWindow {
             debug_rect_color,
             debug_rect_visible: false,
             hovered_debug_rect: None,
+            search: Default::default(),
         }
     }
 }
@@ -126,7 +136,7 @@ impl DisplayObjectWindow {
                 ui.separator();
 
                 match self.open_panel {
-                    Panel::Position => self.show_position(ui, object),
+                    Panel::Position => self.show_position(ui, context, object, messages),
                     Panel::Display => self.show_display(ui, context, object, messages),
                     Panel::Children => self.show_children(ui, context, object, messages),
                     Panel::TypeSpecific => {
@@ -201,7 +211,7 @@ impl DisplayObjectWindow {
             .id_source(ui.id().with("frames"))
             .show(ui, |ui| {
                 Grid::new(ui.id().with("frames"))
-                    .num_columns(4)
+                    .num_columns(5)
                     .show(ui, |ui| {
                         let num_frames = object.total_frames();
                         let scenes = object.scenes();
@@ -262,23 +272,92 @@ impl DisplayObjectWindow {
         Grid::new(ui.id().with("display"))
             .num_columns(2)
             .show(ui, |ui| {
+                ui.label("Parent");
                 if let Some(other) = object.parent() {
-                    ui.label("Parent");
-                    self.display_object_button(ui, context, messages, other);
-                    ui.end_row();
+                    open_display_object_button(
+                        ui,
+                        context,
+                        messages,
+                        other,
+                        &mut self.hovered_debug_rect,
+                    );
+                } else {
+                    ui.colored_label(ui.style().visuals.error_fg_color, "Orphaned");
                 }
+                ui.end_row();
+
+                ui.label("AVM1 Root");
+                if object.avm1_root().as_ptr() != object.as_ptr() {
+                    open_display_object_button(
+                        ui,
+                        context,
+                        messages,
+                        object.avm1_root(),
+                        &mut self.hovered_debug_rect,
+                    );
+                } else {
+                    ui.label("Self");
+                }
+                ui.end_row();
+
+                ui.label("AVM2 Root");
+                if let Some(other) = object.avm2_root() {
+                    if object.as_ptr() != object.as_ptr() {
+                        open_display_object_button(
+                            ui,
+                            context,
+                            messages,
+                            other,
+                            &mut self.hovered_debug_rect,
+                        );
+                    } else {
+                        ui.label("Self");
+                    }
+                } else {
+                    ui.colored_label(ui.style().visuals.error_fg_color, "None");
+                }
+                ui.end_row();
 
                 if let Some(other) = object.masker() {
                     ui.label("Masker");
-                    self.display_object_button(ui, context, messages, other);
+                    open_display_object_button(
+                        ui,
+                        context,
+                        messages,
+                        other,
+                        &mut self.hovered_debug_rect,
+                    );
                     ui.end_row();
                 }
 
                 if let Some(other) = object.maskee() {
                     ui.label("Maskee");
-                    self.display_object_button(ui, context, messages, other);
+                    open_display_object_button(
+                        ui,
+                        context,
+                        messages,
+                        other,
+                        &mut self.hovered_debug_rect,
+                    );
                     ui.end_row();
                 }
+
+                ui.label("Cache as Bitmap");
+                ui.horizontal(|ui| {
+                    if object.filters().is_empty() {
+                        let mut enabled = object.is_bitmap_cached_preference();
+                        Checkbox::new(&mut enabled, "Enabled").ui(ui);
+                        if enabled != object.is_bitmap_cached_preference() {
+                            object.set_bitmap_cached_preference(context.gc_context, enabled);
+                        }
+                    } else {
+                        ui.label("Forced due to filters");
+                    }
+                    if ui.button("Invalidate").clicked() {
+                        object.invalidate_cached_bitmap(context.gc_context);
+                    }
+                });
+                ui.end_row();
 
                 ui.label("Debug Rect");
                 ui.horizontal(|ui| {
@@ -316,9 +395,26 @@ impl DisplayObjectWindow {
                 ui.label(summary_color_transform(color_transform));
                 ui.end_row();
             });
+
+        let filters = object.filters();
+        if !filters.is_empty() {
+            CollapsingHeader::new(format!("Filters ({})", filters.len()))
+                .id_source(ui.id().with("filters"))
+                .show(ui, |ui| {
+                    for filter in filters {
+                        ui.label(format!("{:?}", filter));
+                    }
+                });
+        }
     }
 
-    pub fn show_position(&mut self, ui: &mut Ui, object: DisplayObject<'_>) {
+    pub fn show_position<'gc>(
+        &mut self,
+        ui: &mut Ui,
+        context: &mut UpdateContext<'_, 'gc>,
+        object: DisplayObject<'gc>,
+        messages: &mut Vec<Message>,
+    ) {
         Grid::new(ui.id().with("position"))
             .num_columns(2)
             .show(ui, |ui| {
@@ -326,6 +422,52 @@ impl DisplayObjectWindow {
                 // &mut of a temporary thing because we don't want to actually be able to change this
                 // If we disable it, the user can't highlight or interact with it, so this makes it readonly but enabled
                 ui.text_edit_singleline(&mut object.name().to_string());
+                ui.end_row();
+
+                if let crate::avm1::Value::Object(object) = object.object() {
+                    ui.label("AVM1 Object");
+                    if ui.button(format!("{:p}", object.as_ptr())).clicked() {
+                        messages.push(Message::TrackAVM1Object(AVM1ObjectHandle::new(
+                            context, object,
+                        )));
+                    }
+                    ui.end_row();
+                }
+
+                if let crate::avm2::Value::Object(object) = object.object2() {
+                    ui.label("AVM2 Object");
+                    if ui.button(format!("{:p}", object.as_ptr())).clicked() {
+                        messages.push(Message::TrackAVM2Object(AVM2ObjectHandle::new(
+                            context, object,
+                        )));
+                    }
+                    ui.end_row();
+                }
+
+                ui.label("Character");
+                let id = object.id();
+                if let Some(name) =
+                    context
+                        .library
+                        .library_for_movie(object.movie())
+                        .and_then(|l| {
+                            l.export_characters().iter().find_map(|(k, v)| {
+                                if *v == id {
+                                    Some(k)
+                                } else {
+                                    None
+                                }
+                            })
+                        })
+                {
+                    ui.label(format!("{id} {name}"));
+                } else {
+                    ui.label(id.to_string());
+                }
+                ui.end_row();
+
+                ui.label("Movie");
+                open_movie_button(ui, &object.movie(), messages);
                 ui.end_row();
 
                 ui.label("AVM1 Path");
@@ -341,11 +483,39 @@ impl DisplayObjectWindow {
                 ui.end_row();
 
                 ui.label("World Bounds");
-                ui.label(object.world_bounds().to_string());
+                if object.world_bounds().is_valid() {
+                    ui.label(object.world_bounds().to_string());
+                } else {
+                    ui.weak("Invalid");
+                }
                 ui.end_row();
 
                 ui.label("Local Bounds");
-                ui.label(object.local_bounds().to_string());
+                if object.local_bounds().is_valid() {
+                    ui.label(object.local_bounds().to_string());
+                } else {
+                    ui.weak("Invalid");
+                }
+                ui.end_row();
+
+                ui.label("Self Bounds");
+                if object.self_bounds().is_valid() {
+                    ui.label(object.self_bounds().to_string());
+                } else {
+                    ui.weak("Invalid");
+                }
+                ui.end_row();
+
+                ui.label("Scroll Rect");
+                if let Some(scroll_rect) = object.scroll_rect() {
+                    if scroll_rect.is_valid() {
+                        ui.label(scroll_rect.to_string());
+                    } else {
+                        ui.weak("Invalid");
+                    }
+                } else {
+                    ui.label("None");
+                }
                 ui.end_row();
 
                 let matrix = *object.base().matrix();
@@ -370,9 +540,15 @@ impl DisplayObjectWindow {
         object: DisplayObject<'gc>,
         messages: &mut Vec<Message>,
     ) {
+        TextEdit::singleline(&mut self.search)
+            .hint_text("Search")
+            .show(ui);
+        // Let's search ascii-insensitive for QOL
+        let search = WString::from_utf8(&self.search).to_ascii_lowercase();
+
         if let Some(ctr) = object.as_container() {
             for child in ctr.iter_render_list() {
-                self.show_display_tree(ui, context, child, messages);
+                self.show_display_tree(ui, context, child, messages, &search);
             }
         }
     }
@@ -383,39 +559,47 @@ impl DisplayObjectWindow {
         context: &mut UpdateContext<'_, 'gc>,
         object: DisplayObject<'gc>,
         messages: &mut Vec<Message>,
+        search: &WStr,
     ) {
+        if !matches_search(object, search) {
+            return;
+        }
         if let Some(ctr) = object.as_container() {
             CollapsingState::load_with_default_open(ui.ctx(), ui.id().with(object.as_ptr()), false)
                 .show_header(ui, |ui| {
-                    self.display_object_button(ui, context, messages, object);
+                    open_display_object_button(
+                        ui,
+                        context,
+                        messages,
+                        object,
+                        &mut self.hovered_debug_rect,
+                    );
                 })
                 .body(|ui| {
                     for child in ctr.iter_render_list() {
-                        self.show_display_tree(ui, context, child, messages);
+                        self.show_display_tree(ui, context, child, messages, search);
                     }
                 });
         } else {
-            self.display_object_button(ui, context, messages, object);
+            open_display_object_button(ui, context, messages, object, &mut self.hovered_debug_rect);
+        }
+    }
+}
+
+fn matches_search(object: DisplayObject, search: &WStr) -> bool {
+    if object.name().to_ascii_lowercase().contains(search) {
+        return true;
+    }
+
+    if let Some(ctr) = object.as_container() {
+        for child in ctr.iter_render_list() {
+            if matches_search(child, search) {
+                return true;
+            }
         }
     }
 
-    fn display_object_button<'gc>(
-        &mut self,
-        ui: &mut Ui,
-        context: &mut UpdateContext<'_, 'gc>,
-        messages: &mut Vec<Message>,
-        object: DisplayObject<'gc>,
-    ) {
-        let response = ui.button(summary_name(object));
-        if response.hovered() {
-            self.hovered_debug_rect = Some(DisplayObjectHandle::new(context, object));
-        }
-        if response.clicked() {
-            messages.push(Message::TrackDisplayObject(DisplayObjectHandle::new(
-                context, object,
-            )));
-        }
-    }
+    false
 }
 
 fn summary_color_transform(ct: ColorTransform) -> Cow<'static, str> {
@@ -512,5 +696,23 @@ fn blend_mode_name(mode: BlendMode) -> &'static str {
         BlendMode::Erase => "Erase",
         BlendMode::Overlay => "Overlay",
         BlendMode::HardLight => "HardLight",
+    }
+}
+
+pub fn open_display_object_button<'gc>(
+    ui: &mut Ui,
+    context: &mut UpdateContext<'_, 'gc>,
+    messages: &mut Vec<Message>,
+    object: DisplayObject<'gc>,
+    hover: &mut Option<DisplayObjectHandle>,
+) {
+    let response = ui.button(summary_name(object));
+    if response.hovered() {
+        *hover = Some(DisplayObjectHandle::new(context, object));
+    }
+    if response.clicked() {
+        messages.push(Message::TrackDisplayObject(DisplayObjectHandle::new(
+            context, object,
+        )));
     }
 }

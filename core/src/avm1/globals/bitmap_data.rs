@@ -17,7 +17,6 @@ use crate::swf::BlendMode;
 use crate::{avm1_stub, avm_error};
 use gc_arena::{GcCell, MutationContext};
 use ruffle_render::transform::Transform;
-use std::str::FromStr;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "height" => property(height);
@@ -508,16 +507,11 @@ fn draw<'gc>(
                 .unwrap_or_default();
 
             let mut blend_mode = BlendMode::Normal;
-            if let Some(mode) = args.get(3) {
-                if let Ok(mode) =
-                    BlendMode::from_str(&mode.coerce_to_string(activation)?.to_string())
-                {
-                    blend_mode = mode;
-                } else if let Ok(Some(mode)) = mode.coerce_to_u8(activation).map(BlendMode::from_u8)
-                {
+            if let Some(value) = args.get(3) {
+                if let Some(mode) = value.as_blend_mode() {
                     blend_mode = mode;
                 } else {
-                    tracing::error!("Unknown blend mode {:?}", mode);
+                    tracing::error!("Unknown blend mode {value:?}");
                 }
             }
 
@@ -1340,7 +1334,9 @@ fn compare<'gc>(
     const DIFFERENT_WIDTHS: i32 = -3;
     const DIFFERENT_HEIGHTS: i32 = -4;
 
-    let NativeObject::BitmapData(this_bitmap_data) = this.native() else { return Ok(NOT_BITMAP.into()); };
+    let NativeObject::BitmapData(this_bitmap_data) = this.native() else {
+        return Ok(NOT_BITMAP.into());
+    };
 
     if this_bitmap_data.disposed() {
         // The documentation says that -2 should be returned here, but -1 is actually returned.
@@ -1400,7 +1396,9 @@ fn load_bitmap<'gc>(
         .library_for_movie(movie)
         .and_then(|l| l.character_by_export_name(name));
 
-    let Some(Character::Bitmap(bitmap)) = character else { return Ok(Value::Undefined); };
+    let Some(Character::Bitmap(bitmap)) = character else {
+        return Ok(Value::Undefined);
+    };
 
     let transparency = true;
     let bitmap_data = BitmapData::new_with_pixels(

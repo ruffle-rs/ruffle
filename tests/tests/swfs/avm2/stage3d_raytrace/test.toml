@@ -6,7 +6,7 @@ num_frames = 80
 
 [image_comparison]
 tolerance = 1
-max_outliers = 3
+max_outliers = 6
 
 [player_options]
 # This test runs very slowly on unoptimized `test` builds,

@@ -1,15 +1,14 @@
 use js_sys::Function;
 use ruffle_core::backend::log::LogBackend;
-use std::cell::RefCell;
-use std::sync::Arc;
+use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{JsCast, JsValue};
 
 pub struct WebLogBackend {
-    trace_observer: Arc<RefCell<JsValue>>,
+    trace_observer: Rc<RefCell<JsValue>>,
 }
 
 impl WebLogBackend {
-    pub fn new(trace_observer: Arc<RefCell<JsValue>>) -> Self {
+    pub fn new(trace_observer: Rc<RefCell<JsValue>>) -> Self {
         Self { trace_observer }
     }
 }

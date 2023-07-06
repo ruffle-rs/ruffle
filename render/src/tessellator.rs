@@ -58,7 +58,7 @@ impl ShapeTessellator {
             };
 
             let (draw, color, needs_flush) = match fill_style {
-                swf::FillStyle::Color(color) => (DrawType::Color, color.clone(), false),
+                swf::FillStyle::Color(color) => (DrawType::Color, *color, false),
                 swf::FillStyle::LinearGradient(gradient) => (
                     DrawType::Gradient(swf_gradient_to_uniforms(
                         GradientType::Linear,
@@ -392,7 +392,7 @@ impl FillVertexConstructor<Vertex> for RuffleVertexCtor {
         Vertex {
             x: vertex.position().x,
             y: vertex.position().y,
-            color: self.color.clone(),
+            color: self.color,
         }
     }
 }
@@ -402,7 +402,7 @@ impl StrokeVertexConstructor<Vertex> for RuffleVertexCtor {
         Vertex {
             x: vertex.position().x,
             y: vertex.position().y,
-            color: self.color.clone(),
+            color: self.color,
         }
     }
 }

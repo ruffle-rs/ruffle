@@ -404,7 +404,7 @@ fn replace<'gc>(
             // Replacement is either a function or treatable as string.
             if let Some(f) = replacement.as_object().and_then(|o| o.as_function_object()) {
                 let args = [pattern.into(), position.into(), this.into()];
-                let v = f.call(activation.global_scope(), &args, activation)?;
+                let v = f.call(Value::Null, &args, activation)?;
                 ret.push_str(v.coerce_to_string(activation)?.as_wstr());
             } else {
                 let replacement = replacement.coerce_to_string(activation)?;
@@ -574,6 +574,20 @@ fn substr<'gc>(
             .get(1)
             .unwrap_or(&Value::Number(0x7fffffff as f64))
             .coerce_to_number(activation)?;
+
+        let len = if len < 0. {
+            if len.is_infinite() {
+                0.
+            } else {
+                let wrapped_around = this.len() as f64 + len;
+                if wrapped_around as usize + start_index >= this.len() {
+                    return Ok("".into());
+                };
+                wrapped_around
+            }
+        } else {
+            len
+        };
 
         let end_index = if len == f64::INFINITY {
             this.len()

@@ -115,8 +115,8 @@ pub(super) fn add_child_to_displaylist<'gc>(
     index: usize,
 ) {
     if let Some(mut ctr) = parent.as_container() {
-        ctr.insert_at_index(context, child, index);
         child.set_placed_by_script(context.gc_context, true);
+        ctr.insert_at_index(context, child, index);
     }
 }
 

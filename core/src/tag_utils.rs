@@ -2,13 +2,14 @@ use gc_arena::Collect;
 use std::sync::Arc;
 use swf::{CharacterId, Fixed8, HeaderExt, Rectangle, TagCode, Twips};
 use thiserror::Error;
+use url::Url;
 
 #[derive(Error, Debug)]
 pub enum Error {
-    #[error("Couldn't read SWF")]
+    #[error("Couldn't read SWF: {0}")]
     InvalidSwf(#[from] swf::error::Error),
 
-    #[error("Couldn't register bitmap")]
+    #[error("Couldn't register bitmap: {0}")]
     InvalidBitmap(#[from] ruffle_render::error::Error),
 
     #[error("Attempted to set symbol classes on movie without any")]
@@ -17,7 +18,7 @@ pub enum Error {
     #[error("Attempted to preload video frames into non-video character {0}")]
     PreloadVideoIntoInvalidCharacter(CharacterId),
 
-    #[error("IO Error")]
+    #[error("IO Error: {0}")]
     IOError(#[from] std::io::Error),
 
     #[error("Invalid SWF url")]
@@ -78,6 +79,22 @@ impl SwfMovie {
         }
     }
 
+    /// Construct an empty movie with a fake `compressed_len`.
+    /// This is used by `Loader` when firing an initial `progress` event:
+    /// `LoaderInfo.bytesTotal` is set to the actual value, but no data is available,
+    /// and `LoaderInfo.parameters` is empty.
+    pub fn empty_fake_compressed_len(swf_version: u8, compressed_len: usize) -> Self {
+        Self {
+            header: HeaderExt::default_with_swf_version(swf_version),
+            data: vec![],
+            url: "file:///".into(),
+            loader_url: None,
+            parameters: Vec::new(),
+            encoding: swf::UTF_8,
+            compressed_len,
+        }
+    }
+
     /// Utility method to construct a movie from a file on disk.
     #[cfg(any(unix, windows, target_os = "redox"))]
     pub fn from_path<P: AsRef<std::path::Path>>(
@@ -101,7 +118,7 @@ impl SwfMovie {
         let compressed_len = swf_data.len();
         let swf_buf = swf::read::decompress_swf(swf_data)?;
         let encoding = swf::SwfStr::encoding_for_version(swf_buf.header.version());
-        Ok(Self {
+        let mut movie = Self {
             header: swf_buf.header,
             data: swf_buf.data,
             url,
@@ -109,12 +126,14 @@ impl SwfMovie {
             parameters: Vec::new(),
             encoding,
             compressed_len,
-        })
+        };
+        movie.append_parameters_from_url();
+        Ok(movie)
     }
 
     /// Construct a movie based on a loaded image (JPEG, GIF or PNG).
     pub fn from_loaded_image(url: String, length: usize) -> Self {
-        Self {
+        let mut movie = Self {
             header: HeaderExt::default_with_uncompressed_len(length as u32),
             data: vec![],
             url,
@@ -122,6 +141,24 @@ impl SwfMovie {
             parameters: Vec::new(),
             encoding: swf::UTF_8,
             compressed_len: length,
+        };
+        movie.append_parameters_from_url();
+        movie
+    }
+
+    fn append_parameters_from_url(&mut self) {
+        match Url::parse(&self.url) {
+            Ok(url) => {
+                for (key, value) in url.query_pairs() {
+                    self.parameters.push((key.into_owned(), value.into_owned()));
+                }
+            }
+            Err(e) => {
+                tracing::error!(
+                    "Failed to parse loader URL when extracting query parameters: {}",
+                    e
+                );
+            }
         }
     }
 

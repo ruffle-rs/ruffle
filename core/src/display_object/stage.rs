@@ -95,6 +95,9 @@ pub struct StageData<'gc> {
     /// The alignment of the stage.
     align: StageAlign,
 
+    /// Whether to prevent movies from the changing the stage alignment
+    forced_align: bool,
+
     /// Whether or not a RENDER event should be dispatched on the next render
     invalidated: bool,
 
@@ -168,6 +171,7 @@ impl<'gc> Stage<'gc> {
                 },
                 invalidated: false,
                 align: Default::default(),
+                forced_align: false,
                 use_bitmap_downsampling: false,
                 view_bounds: Default::default(),
                 window_mode: Default::default(),
@@ -185,7 +189,7 @@ impl<'gc> Stage<'gc> {
     }
 
     pub fn background_color(self) -> Option<Color> {
-        self.0.read().background_color.clone()
+        self.0.read().background_color
     }
 
     pub fn set_background_color(self, gc_context: MutationContext<'gc, '_>, color: Option<Color>) {
@@ -386,8 +390,20 @@ impl<'gc> Stage<'gc> {
     /// Set the stage alignment.
     /// This only has an effect if the scale mode is not `StageScaleMode::ExactFit`.
     pub fn set_align(self, context: &mut UpdateContext<'_, 'gc>, align: StageAlign) {
-        self.0.write(context.gc_context).align = align;
-        self.build_matrices(context);
+        if !self.forced_align() {
+            self.0.write(context.gc_context).align = align;
+            self.build_matrices(context);
+        }
+    }
+
+    /// Get whether movies are prevented from changing the stage alignment.
+    pub fn forced_align(self) -> bool {
+        self.0.read().forced_align
+    }
+
+    /// Set whether movies are prevented from changing the stage alignment.
+    pub fn set_forced_align(self, context: &mut UpdateContext<'_, 'gc>, force: bool) {
+        self.0.write(context.gc_context).forced_align = force;
     }
 
     /// Returns whether bitmaps will use high quality downsampling when scaled down.
@@ -740,7 +756,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         // TODO: Replace this when we have a convenience method for constructing AVM2 native objects.
         // TODO: We should only do this if the movie is actually an AVM2 movie.
         // This is necessary for EventDispatcher super-constructor to run.
-        let global_domain = context.avm2.global_domain();
+        let global_domain = context.avm2.stage_domain();
         let mut activation = Avm2Activation::from_domain(context.reborrow(), global_domain);
         let avm2_stage = Avm2StageObject::for_display_object_childless(
             &mut activation,
@@ -1034,7 +1050,7 @@ bitflags! {
     ///
     /// This is a bitflags instead of an enum to mimic Flash Player behavior.
     /// You can theoretically have both TOP and BOTTOM bits set, for example.
-    #[derive(Clone, Copy, Default, Collect)]
+    #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Collect)]
     #[collect(require_static)]
     pub struct StageAlign: u8 {
         /// Align to the top of the viewport.

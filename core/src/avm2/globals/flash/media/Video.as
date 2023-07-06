@@ -2,7 +2,8 @@ package flash.media
 {
     import flash.display.DisplayObject
     import flash.net.NetStream
-
+    
+    [Ruffle(InstanceAllocator)]
     public class Video extends DisplayObject
     {
         private var _deblocking: int;
@@ -13,7 +14,10 @@ package flash.media
         public function Video(width: int = 320, height: int = 240) {
             this._videoWidth = width;
             this._videoHeight = height;
+            this.init(width, height);
         }
+
+        private native function init(width: int, height: int);
 
         public function get deblocking():int {
             return this._deblocking;

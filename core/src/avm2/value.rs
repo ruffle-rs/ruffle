@@ -588,6 +588,20 @@ impl<'gc> Value<'gc> {
         }
     }
 
+    /// Like `as_number`, but for `u32`
+    pub fn as_u32(&self, mc: MutationContext<'gc, '_>) -> Result<u32, Error<'gc>> {
+        match self {
+            Value::Object(num) => match num.value_of(mc)? {
+                Value::Number(num) => Ok(num as u32),
+                Value::Integer(num) => Ok(num as u32),
+                _ => Err(format!("Expected Number, int, or uint, found {self:?}").into()),
+            },
+            Value::Number(num) => Ok(*num as u32),
+            Value::Integer(num) => Ok(*num as u32),
+            _ => Err(format!("Expected Number, int, or uint, found {self:?}").into()),
+        }
+    }
+
     /// Yields `true` if the given value is an unboxed primitive value.
     ///
     /// Note: Boxed primitive values are not considered primitive - it is
@@ -641,6 +655,7 @@ impl<'gc> Value<'gc> {
         });
 
         match self {
+            Value::Object(Object::PrimitiveObject(o)) => o.value_of(activation.context.gc_context),
             Value::Object(o) if hint == Hint::String => {
                 let mut prim = *self;
                 let object = *o;
@@ -908,7 +923,7 @@ impl<'gc> Value<'gc> {
         &self,
         activation: &mut Activation<'_, 'gc>,
         name: Option<&Multiname<'gc>>,
-        receiver: Option<Object<'gc>>,
+        receiver: Option<Value<'gc>>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         match self.as_object() {
             Some(o) if o.as_class_object().is_some() || o.as_executable().is_some() => Ok(o),
@@ -919,7 +934,7 @@ impl<'gc> Value<'gc> {
                 } else {
                     "value".into()
                 };
-                let msg = if let Some(receiver) = receiver {
+                let msg = if let Some(Value::Object(receiver)) = receiver {
                     format!(
                         "Error #1006: {} is not a function of class {}.",
                         name,

@@ -34,14 +34,24 @@ quality-high8x8linear = High (8x8) Linear
 quality-high16x16 = High (16x16)
 quality-high16x16linear = High (16x16) Linear
 
+align = Stage Alignment
+align-center = Center
+align-left = Left
+align-right = Right
+align-top = Top
+align-bottom = Bottom
+align-top-left = Top-Left
+align-bottom-left = Bottom-Left
+align-top-right = Top-Right
+align-bottom-right = Bottom-Right
+align-force = Force
+
 scale-mode = Scale Mode
 scale-mode-exactfit = Exact Fit
 scale-mode-noborder = No Border
 scale-mode-noscale = No Scale
 scale-mode-showall = Show All
-
-force-scale-mode = Force Scale Mode
-force-scale-mode-check = Force
+scale-mode-force = Force
 
 warn-if-unsupported = Warn if Unsupported
 warn-if-unsupported-check = Warn
@@ -50,3 +60,6 @@ player-version = Player Version
 
 custom-framerate = Custom Framerate
 custom-framerate-suffix = {" "} fps
+
+dummy-external-interface = Dummy External Interface
+dummy-external-interface-check = Enable

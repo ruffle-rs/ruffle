@@ -240,9 +240,9 @@ pub fn stop_drag<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     // It doesn't matter which clip we call this on; it simply stops any active drag.
 
-    // we might not have had an opportunity to call `update_drag`
-    // if AS did `startDrag(mc);stopDrag();` in one go
-    // so let's do it here
+    // We might not have had an opportunity to call `update_drag`
+    // if AS did `startDrag(mc); stopDrag();` in one go,
+    // so let's do it here.
     crate::player::Player::update_drag(&mut activation.context);
 
     *activation.context.drag_object = None;

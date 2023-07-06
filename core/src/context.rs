@@ -29,7 +29,7 @@ use core::fmt;
 use gc_arena::{Collect, MutationContext};
 use instant::Instant;
 use rand::rngs::SmallRng;
-use ruffle_render::backend::RenderBackend;
+use ruffle_render::backend::{BitmapCacheEntry, RenderBackend};
 use ruffle_render::commands::CommandList;
 use ruffle_render::transform::TransformStack;
 use ruffle_video::backend::VideoBackend;
@@ -218,7 +218,6 @@ pub struct UpdateContext<'a, 'gc> {
     pub stream_manager: &'a mut StreamManager<'gc>,
 
     /// Dynamic root for allowing handles to GC objects to exist outside of the GC.
-    #[cfg(feature = "egui")]
     pub dynamic_root: gc_arena::DynamicRootSet<'gc>,
 }
 
@@ -377,7 +376,6 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
             actions_since_timeout_check: self.actions_since_timeout_check,
             frame_phase: self.frame_phase,
             stream_manager: self.stream_manager,
-            #[cfg(feature = "egui")]
             dynamic_root: self.dynamic_root,
         }
     }
@@ -478,6 +476,9 @@ pub struct RenderContext<'a, 'gc> {
     /// The command list, used by the display objects to draw themselves.
     pub commands: CommandList,
 
+    /// Any offscreen draws that should be used to redraw a cacheAsBitmap
+    pub cache_draws: &'a mut Vec<BitmapCacheEntry>,
+
     /// The GC MutationContext, used to perform any GcCell writes
     /// that must occur during rendering.
     pub gc_context: MutationContext<'gc, 'a>,
@@ -490,6 +491,9 @@ pub struct RenderContext<'a, 'gc> {
 
     /// Whether we're rendering offscreen. This can disable some logic like Ruffle-side render culling
     pub is_offscreen: bool,
+
+    /// Whether or not to use cacheAsBitmap, vs drawing everything explicitly
+    pub use_bitmap_cache: bool,
 
     /// The current player's stage (including all loaded levels)
     pub stage: Stage<'gc>,

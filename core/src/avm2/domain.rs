@@ -9,6 +9,7 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::QName;
 use gc_arena::{Collect, GcCell, MutationContext};
+use ruffle_wstr::WStr;
 
 use super::class::Class;
 use super::string::AvmString;
@@ -45,25 +46,28 @@ impl<'gc> Domain<'gc> {
     /// Create a new domain with no parent.
     ///
     /// This is intended exclusively for creating the player globals domain,
-    /// hence the name.
+    /// and stage domain, which are created before ByteArray is available.
     ///
     /// Note: the global domain will be created without valid domain memory.
     /// You must initialize domain memory later on after the ByteArray class is
     /// instantiated but before user code runs.
-    pub fn global_domain(mc: MutationContext<'gc, '_>) -> Domain<'gc> {
+    pub fn uninitialized_domain(
+        mc: MutationContext<'gc, '_>,
+        parent: Option<Domain<'gc>>,
+    ) -> Domain<'gc> {
         Self(GcCell::allocate(
             mc,
             DomainData {
                 defs: PropertyMap::new(),
                 classes: PropertyMap::new(),
-                parent: None,
+                parent,
                 domain_memory: None,
             },
         ))
     }
 
-    pub fn is_avm2_global_domain(&self, activation: &mut Activation<'_, 'gc>) -> bool {
-        activation.avm2().global_domain().0.as_ptr() == self.0.as_ptr()
+    pub fn is_playerglobals_domain(&self, activation: &mut Activation<'_, 'gc>) -> bool {
+        activation.avm2().playerglobals_domain.0.as_ptr() == self.0.as_ptr()
     }
 
     /// Create a new domain with a given parent.
@@ -201,24 +205,25 @@ impl<'gc> Domain<'gc> {
     pub fn get_defined_value_handling_vector(
         self,
         activation: &mut Activation<'_, 'gc>,
-        mut name: QName<'gc>,
+        mut name: AvmString<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         // Special-case lookups of `Vector.<SomeType>` - these get internally converted
         // to a lookup of `Vector,` a lookup of `SomeType`, and `vector_class.apply(some_type_class)`
         let mut type_name = None;
-        if (name.namespace() == activation.avm2().vector_public_namespace
-            || name.namespace() == activation.avm2().vector_internal_namespace
-            || name.namespace() == activation.avm2().public_namespace)
-            && (name.local_name().starts_with(b"Vector.<".as_slice())
-                && name.local_name().ends_with(b">".as_slice()))
+        if (name.starts_with(WStr::from_units(b"__AS3__.vec::Vector.<"))
+            || name.starts_with(WStr::from_units(b"Vector.<")))
+            && name.ends_with(WStr::from_units(b">"))
         {
-            let local_name = name.local_name();
+            let start = name.find(WStr::from_units(b".<")).unwrap();
+
             type_name = Some(AvmString::new(
                 activation.context.gc_context,
-                &local_name["Vector.<".len()..(local_name.len() - 1)],
+                &name[(start + 2)..(name.len() - 1)],
             ));
-            name = QName::new(activation.avm2().vector_public_namespace, "Vector");
+            name = "__AS3__.vec::Vector".into();
         }
+        let name = QName::from_qualified_name(name, activation);
+
         let res = self.get_defined_value(activation, name);
 
         if let Some(type_name) = type_name {
@@ -228,7 +233,7 @@ impl<'gc> Domain<'gc> {
                 let class = res.as_object().ok_or_else(|| {
                     Error::RustError(format!("Vector type {:?} was not an object", res).into())
                 })?;
-                return class.apply(activation, &[type_class]).map(|obj| obj.into());
+                return class.apply(activation, type_class).map(|obj| obj.into());
             }
         }
         res

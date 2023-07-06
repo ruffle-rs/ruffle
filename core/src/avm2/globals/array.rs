@@ -3,6 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::class::Class;
+use crate::avm2::error::range_error;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{array_allocator, ArrayObject, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
@@ -78,8 +79,12 @@ pub fn instance_init<'gc>(
                     .get(0)
                     .and_then(|v| v.as_number(activation.context.gc_context).ok())
                 {
-                    if expected_len < 0.0 || expected_len.is_nan() {
-                        return Err("Length must be a positive integer".into());
+                    if expected_len < 0.0 || expected_len.is_nan() || expected_len.fract() != 0.0 {
+                        return Err(Error::AvmError(range_error(
+                            activation,
+                            &format!("Error #1005: Array index is not a positive integer ({expected_len})"),
+                            1005,
+                        )?));
                     }
 
                     array.set_length(expected_len as usize);
@@ -95,6 +100,19 @@ pub fn instance_init<'gc>(
     }
 
     Ok(Value::Undefined)
+}
+
+pub fn class_call<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(activation
+        .avm2()
+        .classes()
+        .array
+        .construct(activation, args)?
+        .into())
 }
 
 /// Implements `Array`'s class initializer.
@@ -182,7 +200,11 @@ pub fn concat<'gc>(
         .unwrap_or_else(|| ArrayStorage::new(0));
 
     for arg in args {
-        if let Some(other_array) = arg.coerce_to_object(activation)?.as_array_storage() {
+        if let Some(other_array) = arg
+            .as_object()
+            .as_ref()
+            .and_then(|obj| obj.as_array_storage())
+        {
             base_array.append(&other_array);
         } else {
             base_array.push(*arg);
@@ -402,7 +424,7 @@ pub fn for_each<'gc>(
             .cloned()
             .unwrap_or(Value::Undefined)
             .as_callable(activation, None, None)?;
-        let receiver = args.get(1).cloned().unwrap_or(Value::Null).as_object();
+        let receiver = args.get(1).cloned().unwrap_or(Value::Null);
         let mut iter = ArrayIter::new(activation, this)?;
 
         while let Some(r) = iter.next(activation) {
@@ -427,7 +449,7 @@ pub fn map<'gc>(
             .cloned()
             .unwrap_or(Value::Undefined)
             .as_callable(activation, None, None)?;
-        let receiver = args.get(1).cloned().unwrap_or(Value::Null).as_object();
+        let receiver = args.get(1).cloned().unwrap_or(Value::Null);
         let mut new_array = ArrayStorage::new(0);
         let mut iter = ArrayIter::new(activation, this)?;
 
@@ -456,7 +478,7 @@ pub fn filter<'gc>(
             .cloned()
             .unwrap_or(Value::Undefined)
             .as_callable(activation, None, None)?;
-        let receiver = args.get(1).cloned().unwrap_or(Value::Null).as_object();
+        let receiver = args.get(1).cloned().unwrap_or(Value::Null);
         let mut new_array = ArrayStorage::new(0);
         let mut iter = ArrayIter::new(activation, this)?;
 
@@ -489,7 +511,7 @@ pub fn every<'gc>(
             .cloned()
             .unwrap_or(Value::Undefined)
             .as_callable(activation, None, None)?;
-        let receiver = args.get(1).cloned().unwrap_or(Value::Null).as_object();
+        let receiver = args.get(1).cloned().unwrap_or(Value::Null);
         let mut iter = ArrayIter::new(activation, this)?;
 
         while let Some(r) = iter.next(activation) {
@@ -522,7 +544,7 @@ pub fn some<'gc>(
             .cloned()
             .unwrap_or(Value::Undefined)
             .as_callable(activation, None, None)?;
-        let receiver = args.get(1).cloned().unwrap_or(Value::Null).as_object();
+        let receiver = args.get(1).cloned().unwrap_or(Value::Null);
         let mut iter = ArrayIter::new(activation, this)?;
 
         while let Some(r) = iter.next(activation) {
@@ -1065,7 +1087,7 @@ pub fn sort<'gc>(
                 options,
                 constrain(|activation, a, b| {
                     let order = v
-                        .call(None, &[a, b], activation)?
+                        .call(this.into(), &[a, b], activation)?
                         .coerce_to_number(activation)?;
 
                     if order > 0.0 {
@@ -1267,6 +1289,7 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
     let mut write = class.write(mc);
 
     write.set_instance_allocator(array_allocator);
+    write.set_call_handler(Method::from_builtin(class_call, "<Array call handler>", mc));
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(
         &str,

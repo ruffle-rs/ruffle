@@ -1,0 +1,12 @@
+Frame 1
+Enter frame!
+Constructed MyChild
+In MyChild.onAdded - this.parent.getChildAt(1) = null
+Child added! Running this.parent.gotoAndStop(3)
+Constructed OtherChild
+Num children: 2
+Frame 3: this.getChildAt(1) = myOtherChild this.myOtherChild = [object OtherChild]
+Frame 3 - running this.gotoAndStop(2)
+Frame 3 - ran gotoAndStop
+Child done
+Enter frame done

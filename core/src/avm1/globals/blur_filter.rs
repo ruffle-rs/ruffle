@@ -6,6 +6,8 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, ScriptObject, TObject, Value};
 use crate::context::GcContext;
 use gc_arena::{Collect, GcCell, MutationContext};
+use std::ops::Deref;
+use swf::{BlurFilterFlags, Fixed16};
 
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
@@ -25,6 +27,26 @@ impl Default for BlurFilterData {
     }
 }
 
+impl From<&BlurFilterData> for swf::BlurFilter {
+    fn from(filter: &BlurFilterData) -> swf::BlurFilter {
+        swf::BlurFilter {
+            blur_x: Fixed16::from_f64(filter.blur_x),
+            blur_y: Fixed16::from_f64(filter.blur_y),
+            flags: BlurFilterFlags::from_passes(filter.quality as u8),
+        }
+    }
+}
+
+impl From<swf::BlurFilter> for BlurFilterData {
+    fn from(filter: swf::BlurFilter) -> BlurFilterData {
+        Self {
+            quality: filter.num_passes().into(),
+            blur_x: filter.blur_x.into(),
+            blur_y: filter.blur_y.into(),
+        }
+    }
+}
+
 #[derive(Clone, Debug, Collect)]
 #[collect(no_drop)]
 #[repr(transparent)]
@@ -40,6 +62,10 @@ impl<'gc> BlurFilter<'gc> {
         blur_filter.set_blur_y(activation, args.get(1))?;
         blur_filter.set_quality(activation, args.get(2))?;
         Ok(blur_filter)
+    }
+
+    pub fn from_filter(gc_context: MutationContext<'gc, '_>, filter: swf::BlurFilter) -> Self {
+        Self(GcCell::allocate(gc_context, filter.into()))
     }
 
     pub(crate) fn duplicate(&self, gc_context: MutationContext<'gc, '_>) -> Self {
@@ -92,6 +118,10 @@ impl<'gc> BlurFilter<'gc> {
             self.0.write(activation.context.gc_context).quality = quality;
         }
         Ok(())
+    }
+
+    pub fn filter(&self) -> swf::BlurFilter {
+        self.0.read().deref().into()
     }
 }
 
@@ -155,18 +185,26 @@ fn method<'gc>(
     })
 }
 
-pub fn create_constructor<'gc>(
+pub fn create_proto<'gc>(
     context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let blur_filter_proto = ScriptObject::new(context.gc_context, Some(proto));
     define_properties_on(PROTO_DECLS, context, blur_filter_proto, fn_proto);
+    blur_filter_proto.into()
+}
+
+pub fn create_constructor<'gc>(
+    context: &mut GcContext<'_, 'gc>,
+    proto: Object<'gc>,
+    fn_proto: Object<'gc>,
+) -> Object<'gc> {
     FunctionObject::constructor(
         context.gc_context,
         Executable::Native(blur_filter_method!(0)),
         constructor_to_fn!(blur_filter_method!(0)),
         fn_proto,
-        blur_filter_proto.into(),
+        proto,
     )
 }

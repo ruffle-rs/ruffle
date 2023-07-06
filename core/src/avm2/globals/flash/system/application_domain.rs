@@ -5,7 +5,6 @@ use crate::avm2::object::{DomainObject, Object, TObject, VectorObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
-use crate::avm2::QName;
 use crate::avm2::{Domain, Error};
 
 pub use crate::avm2::object::application_domain_allocator;
@@ -19,7 +18,7 @@ pub fn init<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         let parent_domain = if matches!(args[0], Value::Null) {
-            activation.avm2().global_domain()
+            activation.avm2().stage_domain()
         } else {
             args.get_object(activation, 0, "parentDomain")?
                 .as_application_domain()
@@ -38,7 +37,9 @@ pub fn get_current_domain<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let appdomain = activation.caller_domain();
+    let appdomain = activation
+        .caller_domain()
+        .expect("Missing caller domain in ApplicationDomain.currentDomain");
 
     Ok(DomainObject::from_domain(activation, appdomain)?.into())
 }
@@ -51,6 +52,9 @@ pub fn get_parent_domain<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(appdomain) = this.and_then(|this| this.as_application_domain()) {
         if let Some(parent_domain) = appdomain.parent_domain() {
+            if parent_domain.is_playerglobals_domain(activation) {
+                return Ok(Value::Null);
+            }
             return Ok(DomainObject::from_domain(activation, parent_domain)?.into());
         }
     }
@@ -70,7 +74,6 @@ pub fn get_definition<'gc>(
             .cloned()
             .unwrap_or_else(|| "".into())
             .coerce_to_string(activation)?;
-        let name = QName::from_qualified_name(name, activation);
         return appdomain.get_defined_value_handling_vector(activation, name);
     }
 
@@ -90,10 +93,8 @@ pub fn has_definition<'gc>(
             .unwrap_or_else(|| "".into())
             .coerce_to_string(activation)?;
 
-        let qname = QName::from_qualified_name(name, activation);
-
         return Ok(appdomain
-            .get_defined_value_handling_vector(activation, qname)
+            .get_defined_value_handling_vector(activation, name)
             .is_ok()
             .into());
     }

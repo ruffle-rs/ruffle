@@ -1,5 +1,7 @@
 use crate::avm2::bytearray::{ByteArrayStorage, EofError};
-use crate::avm2::{Error, Value as Avm2Value};
+use crate::avm2::error::range_error;
+use crate::avm2::vector::VectorStorage;
+use crate::avm2::{Activation, Error, Value as Avm2Value};
 use crate::bitmap::bitmap_data::{
     BitmapData, BitmapDataDrawError, BitmapDataWrapper, ChannelOptions, Color, IBitmapDrawable,
     LehmerRng, ThresholdOperation,
@@ -467,7 +469,7 @@ pub fn color_transform<'gc>(
     let x_max = x_max.min(target.width());
     let y_max = y_max.min(target.height());
 
-    if x_max == 0 || y_max == 0 {
+    if x_max == 0 || y_max == 0 || x_min == x_max || y_min == y_max {
         return;
     }
 
@@ -1452,13 +1454,16 @@ pub fn draw<'gc>(
     let mut transform_stack = ruffle_render::transform::TransformStack::new();
     transform_stack.push(&transform);
 
+    let mut cache_draws = vec![];
     let mut render_context = RenderContext {
         renderer: context.renderer,
         commands: CommandList::new(),
+        cache_draws: &mut cache_draws,
         gc_context: context.gc_context,
         library: context.library,
         transform_stack: &mut transform_stack,
         is_offscreen: true,
+        use_bitmap_cache: false,
         stage: context.stage,
     };
 
@@ -1524,6 +1529,10 @@ pub fn draw<'gc>(
         dirty_region.union(old);
     }
 
+    assert!(
+        cache_draws.is_empty(),
+        "BitmapData.draw() should not use cacheAsBitmap"
+    );
     let image = context
         .renderer
         .render_offscreen(handle, commands, quality, dirty_region);
@@ -1560,6 +1569,50 @@ pub fn get_vector(
     }
 
     result
+}
+
+pub fn set_vector<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    target: BitmapDataWrapper<'gc>,
+    x_min: u32,
+    y_min: u32,
+    x_max: u32,
+    y_max: u32,
+    vector: &VectorStorage<'gc>,
+) -> Result<(), Error<'gc>> {
+    // If the vector doesn't contain enough data, no change happens and error immediately.
+    let width = (x_max - x_min) as usize;
+    let height = (y_max - y_min) as usize;
+    if vector.length() < width * height {
+        return Err(Error::AvmError(range_error(
+            activation,
+            "Error #2006: The supplied index is out of bounds.",
+            2006,
+        )?));
+    }
+
+    let region = PixelRegion::for_region(x_min, y_min, width as u32, height as u32);
+
+    let bitmap_data = target.sync();
+    let mut bitmap_data = bitmap_data.write(activation.context.gc_context);
+    let transparency = bitmap_data.transparency();
+    let mut iter = vector.iter();
+    bitmap_data.set_cpu_dirty(region);
+    for y in region.y_min..region.y_max {
+        for x in region.x_min..region.x_max {
+            let color = iter
+                .next()
+                .expect("BitmapData.setVector: Expected element")
+                .as_u32(activation.context.gc_context)
+                .expect("BitmapData.setVector: Expected uint vector");
+            bitmap_data.set_pixel32_raw(
+                x,
+                y,
+                Color::from(color).to_premultiplied_alpha(transparency),
+            );
+        }
+    }
+    Ok(())
 }
 
 pub fn get_pixels_as_byte_array<'gc>(

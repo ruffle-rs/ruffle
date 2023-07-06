@@ -68,8 +68,13 @@ async function fetchRuffle(
         ? new URL("../dist/ruffle_web-wasm_extensions_bg.wasm", import.meta.url)
         : new URL("../dist/ruffle_web_bg.wasm", import.meta.url);
     const wasmResponse = await fetch(wasmUrl);
-    if (progressCallback) {
-        const contentLength = wasmResponse.headers.get("content-length") || "";
+    // The Pale Moon browser currently lacks support for ReadableStream.
+    // Unfortunately, currently it also lacks a sufficient WASM runtime.
+    // If this becomes the last thing Pale Moon lacks, allow Ruffle to work.
+    const readableStreamDefined = typeof ReadableStream === "function";
+    if (progressCallback && readableStreamDefined) {
+        const contentLength =
+            wasmResponse?.headers?.get("content-length") || "";
         let bytesLoaded = 0;
         // Use parseInt rather than Number so the empty string is coerced to NaN instead of 0
         const bytesTotal = parseInt(contentLength);

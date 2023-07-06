@@ -66,10 +66,7 @@ pub fn get_application_domain<'gc>(
             .and_then(|o| o.as_loader_stream())
         {
             match &*loader_stream {
-                LoaderStream::NotYetLoaded(_, _, _) => {
-                    return Ok(DomainObject::from_domain(activation, activation.domain())?.into());
-                }
-                LoaderStream::Swf(movie, _) => {
+                LoaderStream::NotYetLoaded(movie, _, _) | LoaderStream::Swf(movie, _) => {
                     let domain = activation
                         .context
                         .library
@@ -503,7 +500,7 @@ pub fn get_parameters<'gc>(
             .and_then(|o| o.as_loader_stream())
         {
             let root = match &*loader_stream {
-                LoaderStream::NotYetLoaded(_, _, _) => activation.context.swf,
+                LoaderStream::NotYetLoaded(root, _, _) => root,
                 LoaderStream::Swf(root, _) => root,
             };
 

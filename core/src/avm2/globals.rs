@@ -93,6 +93,7 @@ pub struct SystemClasses<'gc> {
     pub qname: ClassObject<'gc>,
     pub mouseevent: ClassObject<'gc>,
     pub progressevent: ClassObject<'gc>,
+    pub httpstatusevent: ClassObject<'gc>,
     pub textevent: ClassObject<'gc>,
     pub errorevent: ClassObject<'gc>,
     pub ioerrorevent: ClassObject<'gc>,
@@ -138,8 +139,11 @@ pub struct SystemClasses<'gc> {
     pub cubetexture: ClassObject<'gc>,
     pub rectangletexture: ClassObject<'gc>,
     pub morphshape: ClassObject<'gc>,
+    pub shader: ClassObject<'gc>,
     pub shaderinput: ClassObject<'gc>,
     pub shaderparameter: ClassObject<'gc>,
+    pub netstatusevent: ClassObject<'gc>,
+    pub shaderfilter: ClassObject<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -207,6 +211,7 @@ impl<'gc> SystemClasses<'gc> {
             qname: object,
             mouseevent: object,
             progressevent: object,
+            httpstatusevent: object,
             textevent: object,
             errorevent: object,
             ioerrorevent: object,
@@ -252,8 +257,11 @@ impl<'gc> SystemClasses<'gc> {
             cubetexture: object,
             rectangletexture: object,
             morphshape: object,
+            shader: object,
             shaderinput: object,
             shaderparameter: object,
+            netstatusevent: object,
+            shaderfilter: object,
         }
     }
 }
@@ -469,6 +477,8 @@ pub fn load_player_globals<'gc>(
     globals.set_instance_of(mc, global_class);
     globals.fork_vtable(activation.context.gc_context);
 
+    activation.context.avm2.toplevel_global_object = Some(globals);
+
     // From this point, `globals` is safe to be modified
 
     dynamic_class(mc, object_class, script, class_class);
@@ -534,6 +544,7 @@ pub fn load_player_globals<'gc>(
     )?;
     function(activation, "", "isFinite", toplevel::is_finite, script)?;
     function(activation, "", "isNaN", toplevel::is_nan, script)?;
+    function(activation, "", "isXMLName", toplevel::is_xml_name, script)?;
     function(activation, "", "parseInt", toplevel::parse_int, script)?;
     function(activation, "", "parseFloat", toplevel::parse_float, script)?;
     function(activation, "", "escape", toplevel::escape, script)?;
@@ -702,11 +713,13 @@ fn load_playerglobal<'gc>(
             ("flash.events", "ErrorEvent", errorevent),
             ("flash.events", "KeyboardEvent", keyboardevent),
             ("flash.events", "ProgressEvent", progressevent),
+            ("flash.events", "HTTPStatusEvent", httpstatusevent),
             ("flash.events", "SecurityErrorEvent", securityerrorevent),
             ("flash.events", "IOErrorEvent", ioerrorevent),
             ("flash.events", "MouseEvent", mouseevent),
             ("flash.events", "FullScreenEvent", fullscreenevent),
             ("flash.events", "UncaughtErrorEvents", uncaughterrorevents),
+            ("flash.events", "NetStatusEvent", netstatusevent),
             ("flash.geom", "Matrix", matrix),
             ("flash.geom", "Point", point),
             ("flash.geom", "Rectangle", rectangle),
@@ -714,6 +727,7 @@ fn load_playerglobal<'gc>(
             ("flash.geom", "ColorTransform", colortransform),
             ("flash.media", "SoundChannel", soundchannel),
             ("flash.media", "SoundTransform", soundtransform),
+            ("flash.media", "Video", video),
             ("flash.net", "URLVariables", urlvariables),
             ("flash.utils", "ByteArray", bytearray),
             ("flash.system", "ApplicationDomain", application_domain),
@@ -735,10 +749,15 @@ fn load_playerglobal<'gc>(
             ("flash.filters", "GlowFilter", glowfilter),
             ("flash.filters", "GradientBevelFilter", gradientbevelfilter),
             ("flash.filters", "GradientGlowFilter", gradientglowfilter),
+            ("flash.filters", "ShaderFilter", shaderfilter),
         ]
     );
 
     // Domain memory must be initialized after playerglobals is loaded because it relies on ByteArray.
     domain.init_default_domain_memory(activation)?;
+    activation
+        .avm2()
+        .stage_domain()
+        .init_default_domain_memory(activation)?;
     Ok(())
 }

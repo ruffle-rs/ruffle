@@ -1,3 +1,10 @@
+test.filters[0].quality
+2
+test.filters[0].blurX
+9
+test.filters[0].blurY
+9
+
 // new BlurFilter
 [object Object]
 // x.clone()
@@ -10,6 +17,14 @@ false
 4
 // x.quality
 1
+// test.filters = [x]
+test.filters[0].quality
+1
+test.filters[0].blurX
+4
+test.filters[0].blurY
+4
+
 // x.quality(after set to 100)
 15
 // x.blurX(after set to 100)

@@ -7,8 +7,6 @@ use crate::avm1::{globals, Object, ScriptObject, TObject, Value};
 use crate::context::GcContext;
 use crate::display_object::{Avm1Button, TDisplayObject};
 use crate::string::AvmString;
-use std::str::FromStr;
-use swf::BlendMode;
 
 macro_rules! button_getter {
     ($name:ident) => {
@@ -41,7 +39,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "enabled" => bool(true);
     "useHandCursor" => bool(true);
     "getDepth" => method(globals::get_depth; DONT_DELETE | READ_ONLY | VERSION_6);
-    "blendMode" => property(button_getter!(blend_mode), button_setter!(set_blend_mode); DONT_DELETE);
+    "blendMode" => property(button_getter!(blend_mode), button_setter!(set_blend_mode); DONT_DELETE | VERSION_8);
 };
 
 pub fn create_proto<'gc>(
@@ -76,13 +74,11 @@ fn set_blend_mode<'gc>(
     activation: &mut Activation<'_, 'gc>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    // No-op if value is not a string.
-    if let Value::String(mode) = value {
-        if let Ok(mode) = BlendMode::from_str(&mode.to_string()) {
-            this.set_blend_mode(activation.context.gc_context, mode);
-        } else {
-            tracing::error!("Unknown blend mode {}", mode);
-        };
+    // No-op if value is not a valid blend mode.
+    if let Some(mode) = value.as_blend_mode() {
+        this.set_blend_mode(activation.context.gc_context, mode);
+    } else {
+        tracing::error!("Unknown blend mode {value:?}");
     }
     Ok(())
 }

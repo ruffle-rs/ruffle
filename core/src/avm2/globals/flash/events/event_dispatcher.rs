@@ -159,10 +159,13 @@ pub fn to_string<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let object_proto = activation.avm2().classes().object.prototype();
-    let name = Multiname::new(activation.avm2().public_namespace, "toString");
-    object_proto
-        .get_property(&name, activation)?
-        .as_callable(activation, Some(&name), Some(object_proto))?
-        .call(this, args, activation)
+    if let Some(this) = this {
+        let object_proto = activation.avm2().classes().object.prototype();
+        let name = Multiname::new(activation.avm2().public_namespace, "toString");
+        return object_proto
+            .get_property(&name, activation)?
+            .as_callable(activation, Some(&name), Some(object_proto.into()))?
+            .call(this.into(), args, activation);
+    }
+    Ok(Value::Undefined)
 }

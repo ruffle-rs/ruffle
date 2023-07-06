@@ -4,7 +4,7 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::{Error, Multiname};
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use std::cell::{Ref, RefMut};
 use std::fmt::{self, Debug};
 use std::ops::Deref;
@@ -33,7 +33,11 @@ pub fn xml_list_allocator<'gc>(
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct XmlListObject<'gc>(GcCell<'gc, XmlListObjectData<'gc>>);
+pub struct XmlListObject<'gc>(pub GcCell<'gc, XmlListObjectData<'gc>>);
+
+#[derive(Clone, Collect, Copy, Debug)]
+#[collect(no_drop)]
+pub struct XmlListObjectWeak<'gc>(pub GcWeakCell<'gc, XmlListObjectData<'gc>>);
 
 impl<'gc> Debug for XmlListObject<'gc> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -316,7 +320,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
 
         return method
             .as_callable(activation, Some(multiname), Some(self.into()))?
-            .call(Some(self.into()), arguments, activation);
+            .call(self.into(), arguments, activation);
     }
 
     fn set_property_local(

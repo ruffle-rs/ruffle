@@ -12,6 +12,7 @@ file-menu = Archivo
 file-menu-open-quick = Abrir...
 file-menu-open-advanced = Abrir avanzado...
 file-menu-close = Cerrar
+file-menu-reload = Recargar
 file-menu-exit = Salir
 controls-menu = Controles
 controls-menu-suspend = Suspender

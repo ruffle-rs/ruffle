@@ -1,12 +1,15 @@
 use std::borrow::Cow;
 use std::sync::Arc;
 
-use crate::backend::{RenderBackend, ShapeHandle, ShapeHandleImpl, ViewportDimensions};
+use crate::backend::{
+    BitmapCacheEntry, RenderBackend, ShapeHandle, ShapeHandleImpl, ViewportDimensions,
+};
 use crate::bitmap::{
     Bitmap, BitmapHandle, BitmapHandleImpl, BitmapSize, BitmapSource, PixelRegion, SyncHandle,
 };
 use crate::commands::CommandList;
 use crate::error::Error;
+use crate::pixel_bender::{PixelBenderShader, PixelBenderShaderArgument, PixelBenderShaderHandle};
 use crate::quality::StageQuality;
 use crate::shape_utils::DistilledShape;
 use swf::Color;
@@ -67,7 +70,13 @@ impl RenderBackend for NullRenderer {
         None
     }
 
-    fn submit_frame(&mut self, _clear: Color, _commands: CommandList) {}
+    fn submit_frame(
+        &mut self,
+        _clear: Color,
+        _commands: CommandList,
+        _cache_entries: Vec<BitmapCacheEntry>,
+    ) {
+    }
     fn register_bitmap(&mut self, _bitmap: Bitmap) -> Result<BitmapHandle, Error> {
         Ok(BitmapHandle(Arc::new(NullBitmapHandle)))
     }
@@ -98,4 +107,26 @@ impl RenderBackend for NullRenderer {
     }
 
     fn set_quality(&mut self, _quality: StageQuality) {}
+
+    fn run_pixelbender_shader(
+        &mut self,
+        _shader: PixelBenderShaderHandle,
+        _arguments: &[PixelBenderShaderArgument],
+        _target: BitmapHandle,
+    ) -> Result<Box<dyn SyncHandle>, Error> {
+        Err(Error::Unimplemented("Pixel bender shader".into()))
+    }
+
+    fn compile_pixelbender_shader(
+        &mut self,
+        _shader: PixelBenderShader,
+    ) -> Result<PixelBenderShaderHandle, Error> {
+        Err(Error::Unimplemented(
+            "Pixel bender shader compilation".into(),
+        ))
+    }
+
+    fn create_empty_texture(&mut self, _width: u32, _height: u32) -> Result<BitmapHandle, Error> {
+        Ok(BitmapHandle(Arc::new(NullBitmapHandle)))
+    }
 }

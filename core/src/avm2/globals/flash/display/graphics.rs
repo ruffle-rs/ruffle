@@ -819,20 +819,130 @@ pub fn cubic_curve_to<'gc>(
 /// Implements `Graphics.copyFrom`
 pub fn copy_from<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.display.Graphics", "copyFrom");
+    if let Some(this) = this.and_then(|t| t.as_display_object()) {
+        let source = args
+            .get_object(activation, 0, "sourceGraphics")?
+            .as_display_object()
+            .expect("Bad sourceGraphics");
+
+        let source = source
+            .as_drawing(activation.context.gc_context)
+            .expect("Missing drawing for sourceGraphics");
+
+        let mut target_drawing = this
+            .as_drawing(activation.context.gc_context)
+            .expect("Missing drawing for target");
+
+        target_drawing.copy_from(&source);
+    }
     Ok(Value::Undefined)
 }
 
 /// Implements `Graphics.drawPath`
 pub fn draw_path<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.display.Graphics", "drawPath");
+    let this = this.unwrap().as_display_object().unwrap();
+    let mut drawing = this.as_drawing(activation.context.gc_context).unwrap();
+    let commands = args.get_object(activation, 0, "commands")?;
+    let data = args.get_object(activation, 1, "data")?;
+    // FIXME - implement winding, and fill  behavior described in the Flash docs
+    // (which is different from just running each command sequentially on `Graphics`)
+    let _winding = args.get_string(activation, 2)?;
+
+    avm2_stub_method!(
+        activation,
+        "flash.display.Graphics",
+        "drawPath",
+        "winding and fill behavior"
+    );
+
+    let commands = commands
+        .as_vector_storage()
+        .expect("commands is not a Vector");
+    let data = &*data.as_vector_storage().expect("data is not a Vector");
+
+    let mut data_index = 0;
+
+    for i in 0..commands.length() {
+        let command = commands
+            .get(i, activation)
+            .expect("missing command")
+            .as_integer(activation.context.gc_context)
+            .expect("commands is not a Vec.<int>");
+
+        let mut read_point = || {
+            let x = data
+                .get(data_index, activation)
+                .expect("missing data")
+                .as_number(activation.context.gc_context)
+                .expect("data is not a Vec.<Number>");
+
+            let y = data
+                .get(data_index + 1, activation)
+                .expect("missing data")
+                .as_number(activation.context.gc_context)
+                .expect("data is not a Vec.<Number>");
+
+            data_index += 2;
+
+            Point {
+                x: Twips::from_pixels(x),
+                y: Twips::from_pixels(y),
+            }
+        };
+
+        // FIXME - determine correct behavior when data is missing or invalid commands
+        // are used. Flash doesn't throw an error, and it's unclear what the correct
+        // behavior is, exactly. For now, just panic when this happens, so we can determine
+        // if there are any SWFS in the wild relying on this.
+        let draw_command = match command {
+            // NO_OP
+            0 => None,
+            // MOVE_TO
+            1 => Some(DrawCommand::MoveTo(read_point())),
+            // LINE_TO
+            2 => Some(DrawCommand::LineTo(read_point())),
+            // CURVE_TO
+            3 => Some(DrawCommand::CurveTo {
+                control: read_point(),
+                anchor: read_point(),
+            }),
+            // WIDE_MOVE_TO
+            4 => {
+                let _dummy = read_point();
+                Some(DrawCommand::MoveTo(read_point()))
+            }
+            // WIDE_LINE_TO
+            5 => {
+                let _dummy = read_point();
+                Some(DrawCommand::LineTo(read_point()))
+            }
+            // CUBIC_CURVE_TO
+            6 => {
+                let _first = read_point();
+                let _second = read_point();
+                avm2_stub_method!(
+                    activation,
+                    "flash.display.Graphics",
+                    "drawPath",
+                    "CUBIC_CURVE_TO"
+                );
+                None
+            }
+            _ => panic!("Unexpected command value {command}"),
+        };
+
+        if let Some(draw_command) = draw_command {
+            drawing.draw_command(draw_command);
+        }
+    }
+
     Ok(Value::Undefined)
 }
 

@@ -743,6 +743,7 @@ macro_rules! constructor_to_fn {
             this: $crate::avm1::Object<'gc>,
             args: &[$crate::avm1::Value<'gc>],
         ) -> Result<$crate::avm1::Value<'gc>, $crate::avm1::error::Error<'gc>> {
+            #[allow(clippy::redundant_closure_call)]
             let _ = $f(activation, this, args)?;
             Ok($crate::avm1::Value::Undefined)
         }

@@ -110,7 +110,7 @@ pub fn class_init<'gc>(
 
         let class_class = activation.avm2().classes().class;
         let int_class = activation.avm2().classes().int;
-        let int_vector_class = this.apply(activation, &[int_class.into()])?;
+        let int_vector_class = this.apply(activation, int_class.into())?;
         let int_vector_name_legacy = QName::new(vector_internal_namespace, "Vector$int");
 
         globals.install_const_late(
@@ -126,7 +126,7 @@ pub fn class_init<'gc>(
         );
 
         let uint_class = activation.avm2().classes().uint;
-        let uint_vector_class = this.apply(activation, &[uint_class.into()])?;
+        let uint_vector_class = this.apply(activation, uint_class.into())?;
         let uint_vector_name_legacy = QName::new(vector_internal_namespace, "Vector$uint");
 
         globals.install_const_late(
@@ -142,7 +142,7 @@ pub fn class_init<'gc>(
         );
 
         let number_class = activation.avm2().classes().number;
-        let number_vector_class = this.apply(activation, &[number_class.into()])?;
+        let number_vector_class = this.apply(activation, number_class.into())?;
         let number_vector_name_legacy = QName::new(vector_internal_namespace, "Vector$double");
 
         globals.install_const_late(
@@ -157,7 +157,7 @@ pub fn class_init<'gc>(
             activation.context.gc_context,
         );
 
-        let plain_vector_class = this.apply(activation, &[Value::Null])?;
+        let plain_vector_class = this.apply(activation, Value::Null)?;
         let object_vector_name_legacy = QName::new(vector_internal_namespace, "Vector$object");
 
         globals.install_const_late(
@@ -459,7 +459,7 @@ pub fn every<'gc>(
             .cloned()
             .unwrap_or(Value::Undefined)
             .as_callable(activation, None, None)?;
-        let receiver = args.get(1).cloned().unwrap_or(Value::Null).as_object();
+        let receiver = args.get(1).cloned().unwrap_or(Value::Null);
         let mut iter = ArrayIter::new(activation, this)?;
 
         while let Some(r) = iter.next(activation) {
@@ -492,7 +492,7 @@ pub fn some<'gc>(
             .cloned()
             .unwrap_or(Value::Undefined)
             .as_callable(activation, None, None)?;
-        let receiver = args.get(1).cloned().unwrap_or(Value::Null).as_object();
+        let receiver = args.get(1).cloned().unwrap_or(Value::Null);
         let mut iter = ArrayIter::new(activation, this)?;
 
         while let Some(r) = iter.next(activation) {
@@ -525,7 +525,7 @@ pub fn filter<'gc>(
             .cloned()
             .unwrap_or(Value::Undefined)
             .as_callable(activation, None, None)?;
-        let receiver = args.get(1).cloned().unwrap_or(Value::Null).as_object();
+        let receiver = args.get(1).cloned().unwrap_or(Value::Null);
 
         let value_type = this
             .instance_of()
@@ -566,7 +566,7 @@ pub fn for_each<'gc>(
             .cloned()
             .unwrap_or(Value::Undefined)
             .as_callable(activation, None, None)?;
-        let receiver = args.get(1).cloned().unwrap_or(Value::Null).as_object();
+        let receiver = args.get(1).cloned().unwrap_or(Value::Null);
         let mut iter = ArrayIter::new(activation, this)?;
 
         while let Some(r) = iter.next(activation) {
@@ -665,7 +665,7 @@ pub fn map<'gc>(
             .cloned()
             .unwrap_or(Value::Undefined)
             .as_callable(activation, None, None)?;
-        let receiver = args.get(1).cloned().unwrap_or(Value::Null).as_object();
+        let receiver = args.get(1).cloned().unwrap_or(Value::Null);
 
         let value_type = this
             .instance_of()
@@ -900,7 +900,7 @@ pub fn sort<'gc>(
             let compare = move |activation: &mut Activation<'_, 'gc>, a, b| {
                 if let Some(compare_fnc) = compare_fnc {
                     let order = compare_fnc
-                        .call(Some(this), &[a, b], activation)?
+                        .call(this.into(), &[a, b], activation)?
                         .coerce_to_number(activation)?;
 
                     if order > 0.0 {

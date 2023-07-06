@@ -8,7 +8,7 @@ use crate::avm2::Error;
 use crate::avm2_stub_method;
 use crate::bitmap::bitmap_data::BitmapData;
 use crate::context::RenderContext;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use ruffle_render::backend::{
     BufferUsage, Context3D, Context3DBlendFactor, Context3DCommand, Context3DCompareMode,
     Context3DTextureFormat, Context3DTriangleFace, Context3DVertexBufferFormat, ProgramType,
@@ -26,7 +26,11 @@ use super::{ClassObject, IndexBuffer3DObject, VertexBuffer3DObject};
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct Context3DObject<'gc>(GcCell<'gc, Context3DData<'gc>>);
+pub struct Context3DObject<'gc>(pub GcCell<'gc, Context3DData<'gc>>);
+
+#[derive(Clone, Collect, Copy, Debug)]
+#[collect(no_drop)]
+pub struct Context3DObjectWeak<'gc>(pub GcWeakCell<'gc, Context3DData<'gc>>);
 
 impl<'gc> Context3DObject<'gc> {
     pub fn from_context(
@@ -46,7 +50,7 @@ impl<'gc> Context3DObject<'gc> {
         .into();
         this.install_instance_slots(activation.context.gc_context);
 
-        class.call_native_init(Some(this), &[], activation)?;
+        class.call_native_init(this.into(), &[], activation)?;
 
         Ok(this)
     }

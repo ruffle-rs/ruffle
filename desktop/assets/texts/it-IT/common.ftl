@@ -1,0 +1,2 @@
+start = Inizia
+browse = Sfoglia

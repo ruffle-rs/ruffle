@@ -11,7 +11,7 @@ use crate::avm1::{ArrayObject, Object, Value};
 use crate::backend::navigator::Request;
 use crate::context::GcContext;
 use crate::display_object::{TDisplayObject, TDisplayObjectContainer};
-use crate::loader::MovieLoaderEventHandler;
+use crate::loader::MovieLoaderVMData;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "loadClip" => method(load_clip; DONT_ENUM | DONT_DELETE);
@@ -53,7 +53,7 @@ fn load_clip<'gc>(
                 Value::Number(level_id) => {
                     // Levels are rounded down.
                     // TODO: What happens with negative levels?
-                    Some(activation.resolve_level(*level_id as i32))
+                    Some(activation.get_or_create_level(*level_id as i32))
                 }
                 Value::Object(object) => object.as_display_object(),
                 Value::MovieClip(_) => target.coerce_to_object(activation).as_display_object(),
@@ -65,8 +65,9 @@ fn load_clip<'gc>(
                     target,
                     Request::get(url.to_utf8_lossy().into_owned()),
                     None,
-                    Some(MovieLoaderEventHandler::Avm1Broadcast(this)),
-                    None,
+                    MovieLoaderVMData::Avm1 {
+                        broadcaster: Some(this),
+                    },
                 );
                 activation.context.navigator.spawn_future(future);
 

@@ -1,3 +1,5 @@
+use lru::LruCache;
+use naga_agal::{SamplerOverride, VertexAttributeFormat};
 use ruffle_render::backend::{
     Context3D, Context3DBlendFactor, Context3DCommand, Context3DCompareMode,
     Context3DTextureFormat, Context3DVertexBufferFormat, IndexBuffer, ProgramType, ShaderModule,
@@ -6,7 +8,7 @@ use ruffle_render::backend::{
 use ruffle_render::bitmap::{BitmapFormat, BitmapHandle};
 use ruffle_render::error::Error;
 use std::borrow::Cow;
-use std::cell::Cell;
+use std::cell::{Cell, RefCell, RefMut};
 use swf::{Rectangle, Twips};
 
 use wgpu::util::StagingBelt;
@@ -21,7 +23,7 @@ use crate::descriptors::Descriptors;
 use crate::Texture;
 use gc_arena::{Collect, MutationContext};
 
-use std::num::NonZeroU64;
+use std::num::{NonZeroU64, NonZeroUsize};
 use std::rc::Rc;
 use std::sync::Arc;
 
@@ -122,8 +124,6 @@ impl WgpuContext3D {
                 bind_linear: Default::default(),
                 bind_nearest: Default::default(),
                 texture: Arc::new(dummy_texture),
-                width: 0,
-                height: 0,
                 copy_count: Cell::new(0),
             }))
         };
@@ -353,13 +353,58 @@ pub struct VertexBufferWrapper {
 
 #[derive(Collect)]
 #[collect(require_static)]
-pub struct ShaderModuleAgal(Vec<u8>);
+pub struct ShaderModuleAgal {
+    bytecode: Vec<u8>,
+    // Caches compiled wgpu shader modules. The cache key represents all of the data
+    // that we need to pass to `naga_agal::agal_to_naga` to compile a shader.
+    compiled: RefCell<LruCache<ShaderCompileData, wgpu::ShaderModule>>,
+}
+
+impl ShaderModuleAgal {
+    pub fn new(bytecode: Vec<u8>) -> Self {
+        Self {
+            bytecode,
+            // TODO - figure out a good size for this cache.
+            compiled: RefCell::new(LruCache::new(NonZeroUsize::new(2).unwrap())),
+        }
+    }
+
+    pub fn compile(
+        &self,
+        descriptors: &Descriptors,
+        data: ShaderCompileData,
+    ) -> RefMut<'_, wgpu::ShaderModule> {
+        let compiled = self.compiled.borrow_mut();
+        RefMut::map(compiled, |compiled| {
+            // TODO: Figure out a way to avoid the clone when we have a cache hit
+            compiled.get_or_insert_mut(data.clone(), || {
+                let naga_module = naga_agal::agal_to_naga(
+                    &self.bytecode,
+                    &data.vertex_attributes,
+                    &data.sampler_overrides,
+                )
+                .unwrap();
+                descriptors
+                    .device
+                    .create_shader_module(wgpu::ShaderModuleDescriptor {
+                        label: Some("AGAL shader"),
+                        source: wgpu::ShaderSource::Naga(Cow::Owned(naga_module)),
+                    })
+            })
+        })
+    }
+}
+
+#[derive(Hash, Eq, PartialEq, Clone)]
+pub struct ShaderCompileData {
+    sampler_overrides: [Option<SamplerOverride>; 8],
+    vertex_attributes: [Option<VertexAttributeFormat>; MAX_VERTEX_ATTRIBUTES],
+}
 
 #[derive(Collect)]
 #[collect(require_static)]
 pub struct TextureWrapper {
     texture: wgpu::Texture,
-    format: wgpu::TextureFormat,
 }
 
 impl IndexBuffer for IndexBufferWrapper {}
@@ -464,7 +509,7 @@ impl Context3D for WgpuContext3D {
                 | TextureUsages::COPY_DST
                 | TextureUsages::RENDER_ATTACHMENT,
         });
-        Ok(Rc::new(TextureWrapper { texture, format }))
+        Ok(Rc::new(TextureWrapper { texture }))
     }
 
     fn create_cube_texture(
@@ -502,7 +547,7 @@ impl Context3D for WgpuContext3D {
                 | TextureUsages::COPY_DST
                 | TextureUsages::RENDER_ATTACHMENT,
         });
-        Ok(Rc::new(TextureWrapper { texture, format }))
+        Ok(Rc::new(TextureWrapper { texture }))
     }
 
     fn process_command<'gc>(
@@ -656,16 +701,12 @@ impl Context3D for WgpuContext3D {
                         texture: Arc::new(back_buffer_resolve_texture.unwrap()),
                         bind_linear: Default::default(),
                         bind_nearest: Default::default(),
-                        width,
-                        height,
                         copy_count: Cell::new(0),
                     }));
                     self.front_buffer_raw_texture_handle = BitmapHandle(Arc::new(Texture {
                         texture: Arc::new(front_buffer_resolve_texture.unwrap()),
                         bind_linear: Default::default(),
                         bind_nearest: Default::default(),
-                        width,
-                        height,
                         copy_count: Cell::new(0),
                     }));
                 } else {
@@ -676,16 +717,12 @@ impl Context3D for WgpuContext3D {
                         texture: Arc::new(back_buffer_texture),
                         bind_linear: Default::default(),
                         bind_nearest: Default::default(),
-                        width,
-                        height,
                         copy_count: Cell::new(0),
                     }));
                     self.front_buffer_raw_texture_handle = BitmapHandle(Arc::new(Texture {
                         texture: Arc::new(front_buffer_texture),
                         bind_linear: Default::default(),
                         bind_nearest: Default::default(),
-                        width,
-                        height,
                         copy_count: Cell::new(0),
                     }));
                     self.current_texture_resolve_view = None;
@@ -933,8 +970,9 @@ impl Context3D for WgpuContext3D {
                 fragment_shader,
                 fragment_shader_agal,
             } => {
-                *vertex_shader.write(mc) = Some(Rc::new(ShaderModuleAgal(vertex_shader_agal)));
-                *fragment_shader.write(mc) = Some(Rc::new(ShaderModuleAgal(fragment_shader_agal)));
+                *vertex_shader.write(mc) = Some(Rc::new(ShaderModuleAgal::new(vertex_shader_agal)));
+                *fragment_shader.write(mc) =
+                    Some(Rc::new(ShaderModuleAgal::new(fragment_shader_agal)));
             }
 
             Context3DCommand::SetShaders {
@@ -1001,7 +1039,7 @@ impl Context3D for WgpuContext3D {
                 // If we were to use `self.buffer_command_encoder.copy_texture_to_texture`, the
                 // BitmapData's gpu texture might be modified before we actually submit
                 // `buffer_command_encoder` to the device.
-                let mut image_data = match (source.format(), dest.format) {
+                let mut image_data = match (source.format(), dest.texture.format()) {
                     (BitmapFormat::Rgba, wgpu::TextureFormat::Rgba8Unorm) => {
                         Cow::Borrowed(source.data())
                     }
@@ -1019,7 +1057,7 @@ impl Context3D for WgpuContext3D {
                                 let padding_len = COPY_BYTES_PER_ROW_ALIGNMENT as usize
                                     - (row.len() % COPY_BYTES_PER_ROW_ALIGNMENT as usize);
                                 let padding = vec![0; padding_len];
-                                row.iter().copied().chain(padding.into_iter())
+                                row.iter().copied().chain(padding)
                             })
                             .collect(),
                     )

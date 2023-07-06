@@ -17,6 +17,7 @@ pub struct DesktopUiBackend {
     cursor_visible: bool,
     clipboard: Clipboard,
     language: LanguageIdentifier,
+    preferred_cursor: MouseCursor,
 }
 
 impl DesktopUiBackend {
@@ -31,7 +32,21 @@ impl DesktopUiBackend {
             cursor_visible: true,
             clipboard: Clipboard::new().context("Couldn't get platform clipboard")?,
             language,
+            preferred_cursor: MouseCursor::Arrow,
         })
+    }
+
+    pub fn cursor(&self) -> egui::CursorIcon {
+        if self.cursor_visible {
+            match self.preferred_cursor {
+                MouseCursor::Arrow => egui::CursorIcon::Default,
+                MouseCursor::Hand => egui::CursorIcon::PointingHand,
+                MouseCursor::IBeam => egui::CursorIcon::Text,
+                MouseCursor::Grab => egui::CursorIcon::Grab,
+            }
+        } else {
+            egui::CursorIcon::None
+        }
     }
 }
 
@@ -43,19 +58,11 @@ impl UiBackend for DesktopUiBackend {
     }
 
     fn set_mouse_visible(&mut self, visible: bool) {
-        self.window.set_cursor_visible(visible);
         self.cursor_visible = visible;
     }
 
     fn set_mouse_cursor(&mut self, cursor: MouseCursor) {
-        use winit::window::CursorIcon;
-        let icon = match cursor {
-            MouseCursor::Arrow => CursorIcon::Arrow,
-            MouseCursor::Hand => CursorIcon::Hand,
-            MouseCursor::IBeam => CursorIcon::Text,
-            MouseCursor::Grab => CursorIcon::Grab,
-        };
-        self.window.set_cursor_icon(icon);
+        self.preferred_cursor = cursor;
     }
 
     fn clipboard_content(&mut self) -> String {

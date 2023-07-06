@@ -3,7 +3,7 @@
 
 #[macro_use]
 mod display_object;
-pub use display_object::{StageDisplayState, StageScaleMode};
+pub use display_object::{StageAlign, StageDisplayState, StageScaleMode};
 
 #[macro_use]
 extern crate smallvec;
@@ -34,7 +34,7 @@ mod library;
 pub mod limits;
 pub mod loader;
 mod locale;
-mod pixel_bender;
+pub mod pixel_bender;
 mod player;
 mod prelude;
 mod streams;

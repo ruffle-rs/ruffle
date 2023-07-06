@@ -196,7 +196,6 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
     ) -> Option<Value<'gc>> {
         let name = name.into();
         let obj = self.0.read();
-        let props = activation.context.avm1.display_properties();
 
         // Property search order for DisplayObjects:
         // 1) Actual properties on the underlying object
@@ -223,7 +222,13 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
 
         // 4) Display object properties such as `_x`, `_y` (never case sensitive)
         if magic_property {
-            if let Some(property) = props.read().get_by_name(name) {
+            if let Some(property) = activation
+                .context
+                .avm1
+                .display_properties()
+                .get_by_name(name)
+                .copied()
+            {
                 return Some(property.get(activation, obj.display_object));
             }
         }
@@ -239,7 +244,6 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         this: Object<'gc>,
     ) -> Result<(), Error<'gc>> {
         let obj = self.0.read();
-        let props = activation.context.avm1.display_properties();
 
         // Check if a text field is bound to this property and update the text if so.
         let case_sensitive = activation.is_case_sensitive();
@@ -263,10 +267,15 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         if base.has_own_property(activation, name) {
             // 1) Actual properties on the underlying object
             base.set_local(name, value, activation, this)
-        } else if let Some(property) = props.read().get_by_name(name) {
+        } else if let Some(property) = activation
+            .context
+            .avm1
+            .display_properties()
+            .get_by_name(name)
+            .copied()
+        {
             // 2) Display object properties such as _x, _y
-            property.set(activation, display_object, value)?;
-            Ok(())
+            property.set(activation, display_object, value)
         } else {
             // 3) TODO: Prototype
             base.set_local(name, value, activation, this)
@@ -296,7 +305,6 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
                 .context
                 .avm1
                 .display_properties()
-                .read()
                 .get_by_name(name)
                 .is_some()
         {
@@ -322,11 +330,15 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         false
     }
 
-    fn get_keys(&self, activation: &mut Activation<'_, 'gc>) -> Vec<AvmString<'gc>> {
+    fn get_keys(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        include_hidden: bool,
+    ) -> Vec<AvmString<'gc>> {
         // Keys from the underlying object are listed first, followed by
         // child display objects in order from highest depth to lowest depth.
         let obj = self.0.read();
-        let mut keys = obj.base.get_keys(activation);
+        let mut keys = obj.base.get_keys(activation, include_hidden);
 
         if let Some(ctr) = obj.display_object.as_container() {
             // Button/MovieClip children are included in key list.
@@ -350,7 +362,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
-        self.0.read().base.as_ptr() as *const ObjectPtr
+        self.0.read().base.as_ptr()
     }
 }
 
@@ -391,6 +403,10 @@ impl<'gc> DisplayProperty {
         }
         Ok(())
     }
+
+    pub fn is_read_only(&self) -> bool {
+        self.set.is_none()
+    }
 }
 
 /// The map from key/index to function pointers for special display object properties.
@@ -400,8 +416,8 @@ pub struct DisplayPropertyMap<'gc>(PropertyMap<'gc, DisplayProperty>);
 
 impl<'gc> DisplayPropertyMap<'gc> {
     /// Creates the display property map.
-    pub fn new(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, DisplayPropertyMap<'gc>> {
-        let mut property_map = DisplayPropertyMap(PropertyMap::new());
+    pub fn new() -> Self {
+        let mut property_map = Self(PropertyMap::new());
 
         // Order is important:
         // should match the SWF specs for GetProperty/SetProperty.
@@ -432,7 +448,7 @@ impl<'gc> DisplayPropertyMap<'gc> {
         property_map.add_property("_xmouse".into(), x_mouse, None);
         property_map.add_property("_ymouse".into(), y_mouse, None);
 
-        GcCell::allocate(gc_context, property_map)
+        property_map
     }
 
     /// Gets a property slot by name.
@@ -459,6 +475,12 @@ impl<'gc> DisplayPropertyMap<'gc> {
     ) {
         let prop = DisplayProperty { get, set };
         self.0.insert(name, prop, false);
+    }
+}
+
+impl Default for DisplayPropertyMap<'_> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -790,7 +812,35 @@ fn property_coerce_to_number<'gc>(
             return Ok(Some(n));
         }
     }
-
     // Invalid value; do not set.
     Ok(None)
+}
+
+/// Coerces a value according to the property index.
+/// Used by `SetProperty`.
+pub fn action_property_coerce<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    index: usize,
+    value: Value<'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(match index {
+        // Coerce to a number. This affects the following properties (including some which have no setter):
+        // _x, _y, _xscale, _yscale, _currentframe, _totalframes, _alpha, _visible, _width, _height, _rotation, _framesloaded.
+        0..=10 | 12 => {
+            if let Some(value_to_number) = property_coerce_to_number(activation, value)? {
+                value_to_number.into()
+            } else {
+                value
+            }
+        }
+        // Coerce to a f64. This affects the following properties (including some which have no setter):
+        // _highquality, _soundbuftime, _xmouse, _ymouse.
+        16 | 18 | 20..=21 => value.coerce_to_f64(activation)?.into(),
+        // Coerce to a string. This affects the following properties:
+        // _name, _quality.
+        13 | 19 => value.coerce_to_string(activation)?.into(),
+        // No coercion. This affects the following properties:
+        // _target, _droptarget, _url, _focusrect.
+        _ => value,
+    })
 }

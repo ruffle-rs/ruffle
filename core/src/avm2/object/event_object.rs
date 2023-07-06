@@ -11,7 +11,7 @@ use crate::display_object::TDisplayObject;
 use crate::display_object::{DisplayObject, InteractiveObject, TInteractiveObject};
 use crate::events::KeyCode;
 use crate::string::AvmString;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 
@@ -34,7 +34,11 @@ pub fn event_allocator<'gc>(
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct EventObject<'gc>(GcCell<'gc, EventObjectData<'gc>>);
+pub struct EventObject<'gc>(pub GcCell<'gc, EventObjectData<'gc>>);
+
+#[derive(Clone, Collect, Copy, Debug)]
+#[collect(no_drop)]
+pub struct EventObjectWeak<'gc>(pub GcWeakCell<'gc, EventObjectData<'gc>>);
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
@@ -136,6 +140,48 @@ impl<'gc> EventObject<'gc> {
                     activation.context.input.is_mouse_down().into(),
                     // delta
                     delta.into(),
+                ],
+            )
+            .unwrap() // we don't expect to break here
+    }
+
+    pub fn net_status_event<S>(
+        activation: &mut Activation<'_, 'gc>,
+        event_type: S,
+        info: &[(&'static str, &'static str)],
+    ) -> Object<'gc>
+    where
+        S: Into<AvmString<'gc>>,
+    {
+        let mut info_object = activation
+            .avm2()
+            .classes()
+            .object
+            .construct(activation, &[])
+            .unwrap();
+        for (key, value) in info {
+            info_object
+                .set_public_property(
+                    AvmString::from(*key),
+                    Value::String(AvmString::from(*value)),
+                    activation,
+                )
+                .unwrap();
+        }
+
+        let event_type: AvmString<'gc> = event_type.into();
+
+        let net_status_cls = activation.avm2().classes().netstatusevent;
+        net_status_cls
+            .construct(
+                activation,
+                &[
+                    event_type.into(),
+                    //bubbles
+                    false.into(),
+                    //cancelable
+                    false.into(),
+                    info_object.into(),
                 ],
             )
             .unwrap() // we don't expect to break here

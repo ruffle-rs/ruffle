@@ -19,14 +19,15 @@ use ruffle_core::external::{
 };
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{
-    Color, Player, PlayerBuilder, PlayerEvent, SandboxType, StageScaleMode, StaticCallstack,
-    ViewportDimensions,
+    Color, Player, PlayerBuilder, PlayerEvent, SandboxType, StageAlign, StageScaleMode,
+    StaticCallstack, ViewportDimensions,
 };
 use ruffle_render::quality::StageQuality;
 use ruffle_video_software::backend::SoftwareVideoBackend;
 use ruffle_web_common::JsResult;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::Once;
 use std::sync::{Arc, Mutex};
@@ -81,7 +82,7 @@ struct RuffleInstance {
     paste_callback: Option<Closure<dyn FnMut(ClipboardEvent)>>,
     unload_callback: Option<Closure<dyn FnMut(Event)>>,
     has_focus: bool,
-    trace_observer: Arc<RefCell<JsValue>>,
+    trace_observer: Rc<RefCell<JsValue>>,
     log_subscriber: Arc<Layered<WASMLayer, Registry>>,
 }
 
@@ -261,6 +262,8 @@ struct Config {
 
     salign: Option<String>,
 
+    force_align: bool,
+
     quality: Option<String>,
 
     scale: Option<String>,
@@ -336,6 +339,9 @@ impl Ruffle {
     /// Stream an arbitrary movie file from (presumably) the Internet.
     ///
     /// This method should only be called once per player.
+    ///
+    /// `parameters` are *extra* parameters to set on the LoaderInfo -
+    /// parameters from `movie_url` query parameters will be automatically added.
     pub fn stream_from(&mut self, movie_url: String, parameters: JsValue) -> Result<(), JsValue> {
         let _ = self.with_core_mut(|core| {
             let parameters_to_load = parse_movie_parameters(&parameters);
@@ -554,7 +560,13 @@ impl Ruffle {
             StageQuality::High
         };
 
-        let trace_observer = Arc::new(RefCell::new(JsValue::UNDEFINED));
+        // Create the external interface.
+        if allow_script_access && allow_networking == NetworkingAccessMode::All {
+            builder = builder
+                .with_external_interface(Box::new(JavascriptInterface::new(js_player.clone())));
+        }
+
+        let trace_observer = Rc::new(RefCell::new(JsValue::UNDEFINED));
         let core = builder
             .with_log(log_adapter::WebLogBackend::new(trace_observer.clone()))
             .with_ui(ui::WebUiBackend::new(js_player.clone(), &canvas))
@@ -574,11 +586,18 @@ impl Ruffle {
                     .and_then(|q| StageQuality::from_str(&q).ok())
                     .unwrap_or(default_quality),
             )
+            .with_align(
+                config
+                    .salign
+                    .and_then(|s| StageAlign::from_str(&s).ok())
+                    .unwrap_or_default(),
+                config.force_align,
+            )
             .with_scale_mode(
                 config
                     .scale
                     .and_then(|s| StageScaleMode::from_str(&s).ok())
-                    .unwrap_or(StageScaleMode::ShowAll),
+                    .unwrap_or_default(),
                 config.force_scale,
             )
             .with_frame_rate(config.frame_rate)
@@ -591,13 +610,7 @@ impl Ruffle {
             // Set config parameters.
             core.set_background_color(config.background_color);
             core.set_show_menu(config.show_menu);
-            core.set_stage_align(config.salign.as_deref().unwrap_or(""));
             core.set_window_mode(config.wmode.as_deref().unwrap_or("window"));
-
-            // Create the external interface.
-            if allow_script_access && allow_networking == NetworkingAccessMode::All {
-                core.add_external_interface(Box::new(JavascriptInterface::new(js_player.clone())));
-            }
             callstack = Some(core.callstack());
         }
 

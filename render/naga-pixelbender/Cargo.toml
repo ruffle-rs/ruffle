@@ -1,0 +1,16 @@
+[package]
+name = "naga-pixelbender"
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+repository.workspace = true
+version.workspace = true
+
+[dependencies]
+ruffle_render = { path = "../" }
+naga = { workspace = true }
+naga_oil = { workspace = true }
+anyhow = "1.0.71"
+bitflags = "2.3.3"
+

@@ -12,6 +12,7 @@ file-menu = Súbor
 file-menu-open-quick = Otvoriť...
 file-menu-open-advanced = Otvoriť pokročilé...
 file-menu-close = Zavrieť
+file-menu-reload = Obnoviť
 file-menu-exit = Ukončiť
 controls-menu = Ovládanie
 controls-menu-suspend = Pozastaviť

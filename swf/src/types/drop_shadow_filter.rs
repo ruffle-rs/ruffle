@@ -32,6 +32,11 @@ impl DropShadowFilter {
     pub fn hide_object(&self) -> bool {
         !self.flags.contains(DropShadowFilterFlags::COMPOSITE_SOURCE)
     }
+
+    pub fn scale(&mut self, x: f32, y: f32) {
+        self.blur_x *= Fixed16::from_f32(x);
+        self.blur_y *= Fixed16::from_f32(y);
+    }
 }
 
 bitflags! {

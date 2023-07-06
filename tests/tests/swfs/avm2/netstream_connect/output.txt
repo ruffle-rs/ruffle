@@ -1,0 +1,5 @@
+Calling connect
+Event: [NetStatusEvent type="netStatus" bubbles=false cancelable=false eventPhase=2 info=[object Object]]
+Code: NetConnection.Connect.Success
+Level: status
+Called connect

@@ -1,0 +1,167 @@
+// SWF hand-edited with JPEXS.
+
+
+function newObject(index) {
+	var object = "obj_" + index;
+	var valueOf = (i === 0 ? -1 : index);
+	var toString = (i === 0 ? "/" : index.toString());
+	_root[object] = {
+		valueOf: function() {
+			trace(object + ".valueOf()");
+			return toString;
+		},
+		toString: function() {
+			trace(object + ".toString()");
+			return valueOf;
+		}
+	};
+}
+
+var i = 0;
+for(; i < 8; i++) {
+	newObject(i);
+}
+
+
+trace("// Add");
+trace(obj_1 + obj_2); // JPEXS usually compiles to `Add2`.
+trace("");
+
+trace("// Subtract");
+trace(obj_1 - obj_2);
+trace("");
+
+trace("// Multiply");
+trace(obj_1 * obj_2);
+trace("");
+
+trace("// Divide");
+trace(obj_1 / obj_2);
+trace("");
+
+trace("// Equals");
+trace(obj_1 == obj_2); // JPEXS usually compiles to `Equals2`.
+trace("");
+
+trace("// Less");
+trace(obj_1 < obj_2); // JPEXS usually compiles to `Less2`.
+trace("");
+
+trace("// And");
+trace(obj_2 and obj_1);
+trace("");
+
+trace("// Or");
+trace(obj_1 or obj_2);
+trace("");
+
+trace("// Not");
+trace(!obj_1);
+trace("");
+
+trace("// StringEquals");
+trace(obj_1 eq obj_2);
+trace("");
+
+trace("// StringLength");
+trace(length(obj_2));
+trace("");
+
+trace("// StringAdd");
+trace(obj_1 add obj_2);
+trace("");
+
+trace("// StringExtract");
+trace(substr(obj_1, obj_2, obj_3));
+trace("");
+
+trace("// StringLess");
+trace(obj_1 lt obj_2);
+trace("");
+
+trace("// MBStringLength");
+trace(mblength(obj_2));
+trace("");
+
+trace("// MBStringExtract");
+trace(mbsubstring(obj_1, obj_2, obj_3));
+trace("");
+
+trace("// ToInteger");
+trace(int(obj_2));
+trace("");
+
+trace("// CharToAscii");
+trace(ord(obj_2));
+trace("");
+
+trace("// AsciiToChar");
+trace(chr(obj_2));
+trace("");
+
+trace("// MBCharToAscii");
+trace(mbord(obj_2));
+trace("");
+
+trace("// MBAsciiToChar");
+trace(mbchr(obj_2));
+trace("");
+
+trace("// Call");
+call(obj_2);
+trace("");
+
+trace("// GetURL2");
+loadVariables(obj_1, obj_2, "GET");
+trace("");
+
+trace("// GotoFrame2");
+gotoAndStop(obj_2);
+trace("");
+
+trace("// SetTarget2");
+tellTarget(obj_2) {
+	trace("tellTarget");
+}
+trace("");
+
+trace("// GetProperty");
+trace(getProperty(obj_0, obj_7)); // P-code edited to make the property name use the variable "obj_7".
+trace("");
+
+trace("// SetProperty");
+setProperty(obj_0, obj_7, obj_1); // P-code edited to make the property name use the variable "obj_7".
+trace("");
+setProperty(obj_0, _totalframes, obj_2);
+trace("");
+setProperty(obj_0, _xmouse, obj_3);
+trace("");
+setProperty(obj_0, _name, obj_4);
+trace("");
+setProperty(obj_0, _url, obj_5);
+trace("");
+
+trace("// CloneSprite");
+duplicateMovieClip(obj_1, obj_2, obj_3);
+trace("");
+
+trace("// RemoveSprite");
+removeMovieClip(obj_1);
+trace("");
+
+trace("// StartDrag");
+startDrag(obj_0, obj_1, obj_2, obj_3, obj_4, obj_5); // P-code must be edited to make the constraint use the variable "obj_7".
+trace("");
+startDrag(obj_0, obj_2, obj_3, obj_4, obj_5, obj_6); // P-code must be edited to make the constraint use the variable "obj_1".
+trace("");
+
+trace("// WaitForFrame2");
+ifFrameLoaded(obj_1) {
+	trace("ifFrameLoaded");
+}
+trace("");
+
+trace("// RandomNumber");
+trace(random(obj_0));
+trace("");
+

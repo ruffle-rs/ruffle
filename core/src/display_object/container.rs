@@ -1,7 +1,10 @@
 //! Container mix-in for display objects
 
 use crate::avm1::{Activation, ActivationIdentifier, TObject};
-use crate::avm2::{Avm2, EventObject as Avm2EventObject, Value as Avm2Value};
+use crate::avm2::{
+    Activation as Avm2Activation, Avm2, EventObject as Avm2EventObject, TObject as _,
+    Value as Avm2Value,
+};
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::avm1_button::Avm1Button;
 use crate::display_object::loader_display::LoaderDisplay;
@@ -206,6 +209,9 @@ pub trait TDisplayObjectContainer<'gc>:
             removed_child.set_parent(context, None);
         }
 
+        let this: DisplayObject<'_> = self.into();
+        this.invalidate_cached_bitmap(context.gc_context);
+
         removed_child
     }
 
@@ -230,6 +236,8 @@ pub trait TDisplayObjectContainer<'gc>:
 
         self.raw_container_mut(context.gc_context)
             .swap_at_depth(context, this, child, depth);
+
+        this.invalidate_cached_bitmap(context.gc_context);
     }
 
     /// Insert a child display object into the container at a specific position
@@ -273,6 +281,8 @@ pub trait TDisplayObjectContainer<'gc>:
         if parent_changed {
             dispatch_added_event(this, child, child_was_on_stage, context);
         }
+
+        this.invalidate_cached_bitmap(context.gc_context);
     }
 
     /// Swap two children in the render list.
@@ -286,6 +296,8 @@ pub trait TDisplayObjectContainer<'gc>:
     ) {
         self.raw_container_mut(context.gc_context)
             .swap_at_id(index1, index2);
+        let this: DisplayObject<'_> = (*self).into();
+        this.invalidate_cached_bitmap(context.gc_context);
     }
 
     /// Remove (and unloads) a child display object from this container's render and depth lists.
@@ -324,6 +336,10 @@ pub trait TDisplayObjectContainer<'gc>:
                 // Re-Insert the child at the new depth
                 raw_container.insert_child_into_depth_list(child.depth(), child);
 
+                drop(raw_container);
+                let this: DisplayObject<'_> = (*self).into();
+                this.invalidate_cached_bitmap(context.gc_context);
+
                 return;
             }
         }
@@ -338,11 +354,13 @@ pub trait TDisplayObjectContainer<'gc>:
         child: DisplayObject<'gc>,
     ) {
         dispatch_removed_event(child, context);
-
+        let this: DisplayObjectContainer<'gc> = (*self).into();
         let mut write = self.raw_container_mut(context.gc_context);
         write.remove_child_from_depth_list(child);
-        let removed_from_render_list = write.remove_child_from_render_list(child);
         drop(write);
+
+        let removed_from_render_list =
+            ChildContainer::remove_child_from_render_list(this, child, context);
 
         if removed_from_render_list {
             if !context.is_action_script_3() {
@@ -354,6 +372,9 @@ pub trait TDisplayObjectContainer<'gc>:
 
                 child.set_parent(context, None);
             }
+
+            let this: DisplayObject<'_> = (*self).into();
+            this.invalidate_cached_bitmap(context.gc_context);
         }
     }
 
@@ -370,6 +391,9 @@ pub trait TDisplayObjectContainer<'gc>:
 
         self.raw_container_mut(context.gc_context)
             .remove_child_from_depth_list(child);
+
+        let this: DisplayObject<'_> = (*self).into();
+        this.invalidate_cached_bitmap(context.gc_context);
     }
 
     /// Remove a set of children identified by their render list indicies from
@@ -393,10 +417,14 @@ pub trait TDisplayObjectContainer<'gc>:
         let mut write = self.raw_container_mut(context.gc_context);
 
         for removed in removed_list {
-            write.remove_child_from_render_list(removed);
+            // The `remove_range` method is only ever called as a result of an ActionScript
+            // call
+            removed.set_placed_by_script(context.gc_context, true);
             write.remove_child_from_depth_list(removed);
-
             drop(write);
+
+            let this: DisplayObjectContainer<'gc> = (*self).into();
+            ChildContainer::remove_child_from_render_list(this, removed, context);
 
             if !context.is_action_script_3() {
                 removed.avm1_unload(context);
@@ -404,12 +432,12 @@ pub trait TDisplayObjectContainer<'gc>:
                 removed.set_parent(context, None);
             }
 
-            // The `remove_range` method is only ever called as a result of an ActionScript
-            // call
-            removed.set_placed_by_script(context.gc_context, true);
-
             write = self.raw_container_mut(context.gc_context);
         }
+
+        drop(write);
+        let this: DisplayObject<'_> = (*self).into();
+        this.invalidate_cached_bitmap(context.gc_context);
     }
 
     /// Determine if the container is empty.
@@ -597,13 +625,56 @@ impl<'gc> ChildContainer<'gc> {
     ///
     /// This returns `true` if the child was successfully removed, and `false`
     /// if no list alterations were made.
-    fn remove_child_from_render_list(&mut self, child: DisplayObject<'gc>) -> bool {
-        let render_list_position = self
+    ///
+    /// This must be called *before* setting the child's parent field to `None`.
+    /// Note: This cannot be a normal method that takes &self, since we need to call
+    /// `parent.object2()` on our own `DisplayObject` (which is borrowed mutably
+    /// by `raw_container_mut`)
+    fn remove_child_from_render_list(
+        container: DisplayObjectContainer<'gc>,
+        child: DisplayObject<'gc>,
+        context: &mut UpdateContext<'_, 'gc>,
+    ) -> bool {
+        let mut this = container.raw_container_mut(context.gc_context);
+
+        let render_list_position = this
             .render_list
             .iter()
             .position(|x| DisplayObject::ptr_eq(*x, child));
         if let Some(position) = render_list_position {
-            self.render_list_mut().remove(position);
+            this.render_list_mut().remove(position);
+            drop(this);
+
+            // Only set the parent's field to 'null' if the child was not placed/modified
+            // on the render list by AVM2 code.
+            if !child.placed_by_script() {
+                let parent = child.parent().expect(
+                    "Parent must be removed *after* calling `remove_child_from_render_list`",
+                );
+                if child.has_explicit_name() {
+                    if let Avm2Value::Object(mut parent_obj) = parent.object2() {
+                        let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                        let current_val =
+                            parent_obj.get_public_property(child.name(), &mut activation);
+                        match current_val {
+                            Ok(Avm2Value::Null) | Ok(Avm2Value::Undefined) => {}
+                            Ok(_other) => {
+                                let res = parent_obj.set_public_property(
+                                    child.name(),
+                                    Avm2Value::Null,
+                                    &mut activation,
+                                );
+                                if let Err(e) = res {
+                                    tracing::error!("Failed to set child {} ({:?}) to null on parent obj {:?}: {:?}", child.name(), child, parent_obj, e);
+                                }
+                            }
+                            Err(e) => {
+                                tracing::error!("Failed to get current value of child {} ({:?}) on parent obj {:?}: {:?}", child.name(), child, parent_obj, e);
+                            }
+                        }
+                    }
+                }
+            }
             true
         } else {
             false

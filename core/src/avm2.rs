@@ -1,5 +1,7 @@
 //! ActionScript Virtual Machine 2 (AS3) support
 
+use std::rc::Rc;
+
 use crate::avm2::class::AllocatorFn;
 use crate::avm2::function::Executable;
 use crate::avm2::globals::SystemClasses;
@@ -41,7 +43,7 @@ mod multiname;
 mod namespace;
 pub mod object;
 mod parameters;
-mod property;
+pub mod property;
 mod property_map;
 mod qname;
 mod regexp;
@@ -51,7 +53,7 @@ mod string;
 mod stubs;
 mod traits;
 mod value;
-mod vector;
+pub mod vector;
 mod vtable;
 
 pub use crate::avm2::activation::Activation;
@@ -69,6 +71,7 @@ pub use crate::avm2::object::{
 pub use crate::avm2::qname::QName;
 pub use crate::avm2::value::Value;
 
+use self::object::WeakObject;
 use self::scope::Scope;
 
 const BROADCAST_WHITELIST: [&str; 4] = ["enterFrame", "exitFrame", "frameConstructed", "render"];
@@ -89,13 +92,23 @@ pub struct Avm2<'gc> {
     /// The current call stack of the player.
     call_stack: GcCell<'gc, CallStack<'gc>>,
 
-    /// Global scope object.
-    globals: Domain<'gc>,
+    /// This domain is used exclusively for classes from playerglobals
+    playerglobals_domain: Domain<'gc>,
+
+    /// The domain associated with 'stage.loaderInfo.applicationDomain'.
+    /// Note that this is a parent of the root movie clip's domain
+    /// (which can be observed from ActionScript)
+    stage_domain: Domain<'gc>,
 
     /// System classes.
     system_classes: Option<SystemClasses<'gc>>,
 
+    /// Top-level global object. It contains most top-level types (Object, Class) and functions.
+    /// However, it's not strictly defined which items end up there.
+    toplevel_global_object: Option<Object<'gc>>,
+
     pub public_namespace: Namespace<'gc>,
+    pub internal_namespace: Namespace<'gc>,
     pub as3_namespace: Namespace<'gc>,
     pub vector_public_namespace: Namespace<'gc>,
     pub vector_internal_namespace: Namespace<'gc>,
@@ -123,10 +136,7 @@ pub struct Avm2<'gc> {
     /// Certain types of events are "broadcast events" that are emitted on all
     /// constructed objects in order of their creation, whether or not they are
     /// currently present on the display list. This list keeps track of that.
-    ///
-    /// TODO: These should be weak object pointers, but our current garbage
-    /// collector does not support weak references.
-    broadcast_list: FnvHashMap<AvmString<'gc>, Vec<Object<'gc>>>,
+    broadcast_list: FnvHashMap<AvmString<'gc>, Vec<WeakObject<'gc>>>,
 
     /// The list of 'orphan' objects - these objects have no parent,
     /// so we need to manually run their frames in `run_all_phases_avm2` to match
@@ -137,7 +147,7 @@ pub struct Avm2<'gc> {
     /// alive if they would otherwise be garbage-collected. The movie will
     /// stop ticking whenever garbage collection runs if there are no more
     /// strong references around (this matches Flash's behavior).
-    orphan_objects: Vec<DisplayObjectWeak<'gc>>,
+    orphan_objects: Rc<Vec<DisplayObjectWeak<'gc>>>,
 
     #[cfg(feature = "avm_debug")]
     pub debug_output: bool,
@@ -146,17 +156,22 @@ pub struct Avm2<'gc> {
 impl<'gc> Avm2<'gc> {
     /// Construct a new AVM interpreter.
     pub fn new(context: &mut GcContext<'_, 'gc>, player_version: u8) -> Self {
-        let globals = Domain::global_domain(context.gc_context);
+        let playerglobals_domain = Domain::uninitialized_domain(context.gc_context, None);
+        let stage_domain =
+            Domain::uninitialized_domain(context.gc_context, Some(playerglobals_domain));
 
         Self {
             player_version,
             stack: Vec::new(),
             scope_stack: Vec::new(),
             call_stack: GcCell::allocate(context.gc_context, CallStack::new()),
-            globals,
+            playerglobals_domain,
+            stage_domain,
             system_classes: None,
+            toplevel_global_object: None,
 
             public_namespace: Namespace::package("", context),
+            internal_namespace: Namespace::internal("", context),
             as3_namespace: Namespace::package("http://adobe.com/AS3/2006/builtin", context),
             vector_public_namespace: Namespace::package("__AS3__.vec", context),
             vector_internal_namespace: Namespace::internal("__AS3__.vec", context),
@@ -176,7 +191,7 @@ impl<'gc> Avm2<'gc> {
             native_call_handler_table: Default::default(),
             broadcast_list: Default::default(),
 
-            orphan_objects: Vec::new(),
+            orphan_objects: Default::default(),
 
             #[cfg(feature = "avm_debug")]
             debug_output: false,
@@ -184,7 +199,7 @@ impl<'gc> Avm2<'gc> {
     }
 
     pub fn load_player_globals(context: &mut UpdateContext<'_, 'gc>) -> Result<(), Error<'gc>> {
-        let globals = context.avm2.globals;
+        let globals = context.avm2.playerglobals_domain;
         let mut activation = Activation::from_domain(context.reborrow(), globals);
         globals::load_player_globals(&mut activation, globals)
     }
@@ -194,6 +209,10 @@ impl<'gc> Avm2<'gc> {
     /// This function panics if the interpreter has not yet been initialized.
     pub fn classes(&self) -> &SystemClasses<'gc> {
         self.system_classes.as_ref().unwrap()
+    }
+
+    pub fn toplevel_global_object(&self) -> Option<Object<'gc>> {
+        self.toplevel_global_object
     }
 
     /// Run a script's initializer method.
@@ -237,6 +256,10 @@ impl<'gc> Avm2<'gc> {
         Ok(())
     }
 
+    fn orphan_objects_mut(&mut self) -> &mut Vec<DisplayObjectWeak<'gc>> {
+        Rc::make_mut(&mut self.orphan_objects)
+    }
+
     /// Adds a `MovieClip` to the orphan list. In AVM2, movies advance their
     /// frames even when they are not on a display list. Unfortunately,
     /// mutliple SWFS rely on this behavior, so we need to match Flash's
@@ -248,7 +271,7 @@ impl<'gc> Avm2<'gc> {
             .iter()
             .all(|d| d.as_ptr() != dobj.as_ptr())
         {
-            self.orphan_objects.push(dobj.downgrade());
+            self.orphan_objects_mut().push(dobj.downgrade());
         }
     }
 
@@ -256,16 +279,16 @@ impl<'gc> Avm2<'gc> {
         context: &mut UpdateContext<'_, 'gc>,
         mut f: impl FnMut(DisplayObject<'gc>, &mut UpdateContext<'_, 'gc>),
     ) {
-        let mut i = 0;
-        // FIXME - should we handle movies added while we're looping?
-        let total = context.avm2.orphan_objects.len();
+        // Clone the Rc before iterating over it. Any modifications must go through
+        // `Rc::make_mut` in `orphan_objects_mut`, which will leave this `Rc` unmodified.
+        // This ensures that any orphan additions/removals done by `f` will not affect
+        // the iteration in this method.
+        let orphan_objs: Rc<_> = context.avm2.orphan_objects.clone();
 
-        // We cannot use an iterator, as it would conflict with the mutable borrow of `context`.
-        while i < total {
-            if let Some(dobj) = valid_orphan(context.avm2.orphan_objects[i], context.gc_context) {
+        for orphan in orphan_objs.iter() {
+            if let Some(dobj) = valid_orphan(*orphan, context.gc_context) {
                 f(dobj, context);
             }
-            i += 1;
         }
     }
 
@@ -273,7 +296,7 @@ impl<'gc> Avm2<'gc> {
     /// that have been garbage collected, or are no longer orphans
     /// (they've since acquired a parent).
     pub fn cleanup_dead_orphans(context: &mut UpdateContext<'_, 'gc>) {
-        context.avm2.orphan_objects.retain(|d| {
+        context.avm2.orphan_objects_mut().retain(|d| {
             if let Some(dobj) = valid_orphan(*d, context.gc_context) {
                 // All clips that become orphaned (have their parent removed, or start out with no parent)
                 // get added to the orphan list. However, there's a distinction between clips
@@ -321,9 +344,9 @@ impl<'gc> Avm2<'gc> {
         let mut activation = Activation::from_nothing(context.reborrow());
         if let Err(err) = events::dispatch_event(&mut activation, target, event) {
             tracing::error!(
-                "Encountered AVM2 error when dispatching `{}` event: {}",
+                "Encountered AVM2 error when dispatching `{}` event: {:?}",
                 event_name,
-                err.detailed_message(&mut activation),
+                err,
             );
             // TODO: push the error onto `loaderInfo.uncaughtErrorEvents`
         }
@@ -352,11 +375,15 @@ impl<'gc> Avm2<'gc> {
 
         let bucket = context.avm2.broadcast_list.entry(event_name).or_default();
 
-        if bucket.iter().any(|x| Object::ptr_eq(*x, object)) {
-            return;
+        for entry in bucket.iter() {
+            if let Some(obj) = entry.upgrade(context.gc_context) {
+                if Object::ptr_eq(obj, object) {
+                    return;
+                }
+            }
         }
 
-        bucket.push(object);
+        bucket.push(object.downgrade());
     }
 
     /// Dispatch an event on all objects in the current execution list.
@@ -403,26 +430,33 @@ impl<'gc> Avm2<'gc> {
                 .get(i)
                 .copied();
 
-            if let Some(object) = object {
+            if let Some(object) = object.and_then(|obj| obj.upgrade(context.gc_context)) {
                 let mut activation = Activation::from_nothing(context.reborrow());
 
                 if object.is_of_type(on_type, &mut activation.context) {
                     if let Err(err) = events::dispatch_event(&mut activation, object, event) {
                         tracing::error!(
-                            "Encountered AVM2 error when broadcasting `{}` event: {}",
+                            "Encountered AVM2 error when broadcasting `{}` event: {:?}",
                             event_name,
-                            err.detailed_message(&mut activation),
+                            err,
                         );
                         // TODO: push the error onto `loaderInfo.uncaughtErrorEvents`
                     }
                 }
             }
         }
+        // Once we're done iterating, remove dead weak references from the list.
+        context
+            .avm2
+            .broadcast_list
+            .entry(event_name)
+            .or_default()
+            .retain(|x| x.upgrade(context.gc_context).is_some());
     }
 
     pub fn run_stack_frame_for_callable(
         callable: Object<'gc>,
-        receiver: Option<Object<'gc>>,
+        receiver: Value<'gc>,
         args: &[Value<'gc>],
         domain: Domain<'gc>,
         context: &mut UpdateContext<'_, 'gc>,
@@ -430,7 +464,7 @@ impl<'gc> Avm2<'gc> {
         let mut evt_activation = Activation::from_domain(context.reborrow(), domain);
         callable
             .call(receiver, args, &mut evt_activation)
-            .map_err(|e| e.detailed_message(&mut evt_activation))?;
+            .map_err(|e| format!("{e:?}"))?;
 
         Ok(())
     }
@@ -472,8 +506,8 @@ impl<'gc> Avm2<'gc> {
         Ok(())
     }
 
-    pub fn global_domain(&self) -> Domain<'gc> {
-        self.globals
+    pub fn stage_domain(&self) -> Domain<'gc> {
+        self.stage_domain
     }
 
     /// Pushes an executable on the call stack
@@ -538,7 +572,7 @@ impl<'gc> Avm2<'gc> {
             .get(self.stack.len() - index - 1)
             .copied()
             .unwrap_or_else(|| {
-                tracing::warn!("Avm1::pop: Stack underflow");
+                tracing::warn!("Avm2::peek: Stack underflow");
                 Value::Undefined
             });
 

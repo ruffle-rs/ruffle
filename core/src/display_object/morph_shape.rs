@@ -60,6 +60,7 @@ impl<'gc> MorphShape<'gc> {
 
     pub fn set_ratio(&mut self, gc_context: MutationContext<'gc, '_>, ratio: u16) {
         self.0.write(gc_context).ratio = ratio;
+        self.invalidate_cached_bitmap(gc_context);
     }
 }
 
@@ -98,6 +99,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         } else {
             tracing::warn!("PlaceObject: expected morph shape at character ID {}", id);
         }
+        self.invalidate_cached_bitmap(context.gc_context);
     }
 
     fn run_frame_avm1(&self, _context: &mut UpdateContext) {
@@ -161,7 +163,9 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
             && self.world_bounds().contains(point)
         {
             if let Some(frame) = self.0.read().static_data.frames.borrow().get(&self.ratio()) {
-                let Some(local_matrix) = self.global_to_local_matrix() else { return false; };
+                let Some(local_matrix) = self.global_to_local_matrix() else {
+                    return false;
+                };
                 return ruffle_render::shape_utils::shape_hit_test(
                     &frame.shape,
                     local_matrix * point,

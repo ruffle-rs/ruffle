@@ -7,7 +7,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Namespace;
 use core::fmt;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates namespace objects.
@@ -30,7 +30,11 @@ pub fn namespace_allocator<'gc>(
 /// An Object which represents a boxed namespace name.
 #[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
-pub struct NamespaceObject<'gc>(GcCell<'gc, NamespaceObjectData<'gc>>);
+pub struct NamespaceObject<'gc>(pub GcCell<'gc, NamespaceObjectData<'gc>>);
+
+#[derive(Collect, Clone, Copy, Debug)]
+#[collect(no_drop)]
+pub struct NamespaceObjectWeak<'gc>(pub GcWeakCell<'gc, NamespaceObjectData<'gc>>);
 
 impl fmt::Debug for NamespaceObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -66,7 +70,7 @@ impl<'gc> NamespaceObject<'gc> {
         .into();
         this.install_instance_slots(activation.context.gc_context);
 
-        class.call_native_init(Some(this), &[], activation)?;
+        class.call_native_init(this.into(), &[], activation)?;
 
         Ok(this)
     }

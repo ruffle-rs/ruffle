@@ -8,7 +8,7 @@ use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::{Error, Multiname};
 use core::fmt;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
 use super::xml_list_object::E4XOrXml;
@@ -33,7 +33,11 @@ pub fn xml_allocator<'gc>(
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct XmlObject<'gc>(GcCell<'gc, XmlObjectData<'gc>>);
+pub struct XmlObject<'gc>(pub GcCell<'gc, XmlObjectData<'gc>>);
+
+#[derive(Clone, Collect, Copy, Debug)]
+#[collect(no_drop)]
+pub struct XmlObjectWeak<'gc>(pub GcWeakCell<'gc, XmlObjectData<'gc>>);
 
 impl fmt::Debug for XmlObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -246,7 +250,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
 
         return method
             .as_callable(activation, Some(multiname), Some(self.into()))?
-            .call(Some(self.into()), arguments, activation);
+            .call(self.into(), arguments, activation);
     }
 
     fn has_own_property(self, name: &Multiname<'gc>) -> bool {
@@ -284,7 +288,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         name: impl Into<AvmString<'gc>>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<bool, Error<'gc>> {
-        let name = name_to_multiname(activation, &Value::String(name.into()))?;
+        let name = name_to_multiname(activation, &Value::String(name.into()), false)?;
         Ok(self.has_own_property(&name))
     }
 
@@ -319,13 +323,11 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
                 return Err(format!("Cannot set attribute {:?} without a local name", name).into());
             };
             let value = value.coerce_to_string(activation)?;
-            let new_attr = E4XNode::attribute(mc, local_name, value);
+            let new_attr = E4XNode::attribute(mc, local_name, value, *self.node());
 
             let write = self.0.write(mc);
             let mut kind = write.node.kind_mut(mc);
-            let E4XNodeKind::Element {
-                attributes, ..
-            } = &mut *kind else {
+            let E4XNodeKind::Element { attributes, .. } = &mut *kind else {
                 return Ok(());
             };
 
@@ -333,11 +335,10 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
             return Ok(());
         }
 
+        let self_node = *self.node();
         let write = self.0.write(mc);
         let mut kind = write.node.kind_mut(mc);
-        let E4XNodeKind::Element {
-            children, ..
-        } = &mut *kind else {
+        let E4XNodeKind::Element { children, .. } = &mut *kind else {
             return Ok(());
         };
 
@@ -363,13 +364,13 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
             [] => {
                 let element_with_text =
                     E4XNode::element(mc, name.local_name().unwrap(), write.node);
-                element_with_text.append_child(mc, E4XNode::text(mc, text))?;
+                element_with_text.append_child(mc, E4XNode::text(mc, text, Some(self_node)))?;
                 children.push(element_with_text);
                 Ok(())
             }
             [child] => {
                 child.remove_all_children(mc);
-                child.append_child(mc, E4XNode::text(mc, text))?;
+                child.append_child(mc, E4XNode::text(mc, text, Some(self_node)))?;
                 Ok(())
             }
             _ => Err(format!("Can not replace multiple elements yet: {name:?} = {value:?}").into()),
@@ -393,15 +394,28 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         let write = self.0.write(mc);
         let mut kind = write.node.kind_mut(mc);
         let E4XNodeKind::Element {
-            attributes,..
-        } = &mut *kind else {
+            children,
+            attributes,
+            ..
+        } = &mut *kind
+        else {
             return Ok(false);
         };
 
+        let retain_non_matching = |node: &E4XNode<'gc>| {
+            if node.matches_name(name) {
+                node.set_parent(None, mc);
+                false
+            } else {
+                true
+            }
+        };
+
         if name.is_attribute() {
-            attributes.retain(|attr| !attr.matches_name(name));
-            return Ok(true);
+            attributes.retain(retain_non_matching);
+        } else {
+            children.retain(retain_non_matching);
         }
-        Err(format!("Can not delete non-attribute XML name {:?} yet", name).into())
+        Ok(true)
     }
 }

@@ -7,7 +7,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::bitmap::bitmap_data::BitmapDataWrapper;
 use core::fmt;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates BitmapData objects.
@@ -32,7 +32,11 @@ pub fn bitmap_data_allocator<'gc>(
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct BitmapDataObject<'gc>(GcCell<'gc, BitmapDataObjectData<'gc>>);
+pub struct BitmapDataObject<'gc>(pub GcCell<'gc, BitmapDataObjectData<'gc>>);
+
+#[derive(Clone, Collect, Copy, Debug)]
+#[collect(no_drop)]
+pub struct BitmapDataObjectWeak<'gc>(pub GcWeakCell<'gc, BitmapDataObjectData<'gc>>);
 
 impl fmt::Debug for BitmapDataObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -66,15 +70,16 @@ impl<'gc> BitmapDataObject<'gc> {
         bitmap_data: BitmapDataWrapper<'gc>,
         class: ClassObject<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        let mut instance = Self(GcCell::allocate(
+        let mut instance: Object<'gc> = Self(GcCell::allocate(
             activation.context.gc_context,
             BitmapDataObjectData {
                 base: ScriptObjectData::new(class),
                 bitmap_data: Some(bitmap_data),
             },
-        ));
+        ))
+        .into();
 
-        bitmap_data.init_object2(activation.context.gc_context, instance.into());
+        bitmap_data.init_object2(activation.context.gc_context, instance);
         instance.install_instance_slots(activation.context.gc_context);
 
         // We call the custom BitmapData class with width and height...
@@ -83,10 +88,10 @@ impl<'gc> BitmapDataObject<'gc> {
         // when the custom class makes a super() call, the BitmapData constructor will
         // load in the real data from the linked SymbolClass.
         if class != activation.avm2().classes().bitmapdata {
-            class.call_native_init(Some(instance.into()), &[1.into(), 1.into()], activation)?;
+            class.call_native_init(instance.into(), &[1.into(), 1.into()], activation)?;
         }
 
-        Ok(instance.into())
+        Ok(instance)
     }
 }
 

@@ -104,7 +104,7 @@ impl<'gc> Executable<'gc> {
     /// declared on the function.
     pub fn exec(
         &self,
-        unbound_receiver: Option<Object<'gc>>,
+        unbound_receiver: Value<'gc>,
         mut arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc>,
         callee: Object<'gc>,
@@ -112,12 +112,22 @@ impl<'gc> Executable<'gc> {
         let ret = match self {
             Executable::Native(bm) => {
                 let method = bm.method.method;
-                let receiver = bm.bound_receiver.or(unbound_receiver);
+
+                let receiver = if let Some(receiver) = bm.bound_receiver {
+                    receiver
+                } else if matches!(unbound_receiver, Value::Null | Value::Undefined) {
+                    bm.scope
+                        .get(0)
+                        .expect("No global scope for function call")
+                        .values()
+                } else {
+                    unbound_receiver.coerce_to_object(activation)?
+                };
+
                 let caller_domain = activation.caller_domain();
                 let subclass_object = bm.bound_superclass;
                 let mut activation = Activation::from_builtin(
                     activation.context.reborrow(),
-                    receiver,
                     subclass_object,
                     bm.scope,
                     caller_domain,
@@ -142,7 +152,7 @@ impl<'gc> Executable<'gc> {
                     .context
                     .avm2
                     .push_call(activation.context.gc_context, self);
-                method(&mut activation, receiver, &arguments)
+                method(&mut activation, Some(receiver), &arguments)
             }
             Executable::Action(bm) => {
                 if bm.method.is_unchecked() {
@@ -152,7 +162,17 @@ impl<'gc> Executable<'gc> {
                     }
                 }
 
-                let receiver = bm.receiver.or(unbound_receiver);
+                let receiver = if let Some(receiver) = bm.receiver {
+                    receiver
+                } else if matches!(unbound_receiver, Value::Null | Value::Undefined) {
+                    bm.scope
+                        .get(0)
+                        .expect("No global scope for function call")
+                        .values()
+                } else {
+                    unbound_receiver.coerce_to_object(activation)?
+                };
+
                 let subclass_object = bm.bound_superclass;
 
                 let mut activation = Activation::from_method(
@@ -299,6 +319,12 @@ pub fn display_function<'gc>(
                         } else {
                             output.push_str(&method_trait.name().local_name());
                         }
+                    } else if !method.method_name().is_empty() {
+                        // Last resort if we can't find a name anywhere else.
+                        // SWF's with debug information will provide a method name attached
+                        // to the method definition, so we can use that.
+                        output.push_char('/');
+                        output.push_utf8(method.method_name());
                     }
                     // TODO: What happens if we can't find the trait?
                 }

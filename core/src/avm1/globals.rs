@@ -32,8 +32,7 @@ pub(crate) mod error;
 mod external_interface;
 mod function;
 pub(crate) mod glow_filter;
-pub(crate) mod gradient_bevel_filter;
-pub mod gradient_glow_filter;
+pub(crate) mod gradient_filter;
 mod key;
 mod load_vars;
 mod local_connection;
@@ -58,7 +57,7 @@ pub(crate) mod system_ime;
 pub(crate) mod system_security;
 pub(crate) mod text_field;
 mod text_format;
-mod transform;
+pub(crate) mod transform;
 mod video;
 mod xml;
 mod xml_node;
@@ -487,7 +486,6 @@ pub struct SystemPrototypes<'gc> {
     pub point_constructor: Object<'gc>,
     pub rectangle: Object<'gc>,
     pub rectangle_constructor: Object<'gc>,
-    pub transform: Object<'gc>,
     pub transform_constructor: Object<'gc>,
     pub shared_object: Object<'gc>,
     pub shared_object_constructor: Object<'gc>,
@@ -497,14 +495,19 @@ pub struct SystemPrototypes<'gc> {
     pub context_menu_constructor: Object<'gc>,
     pub context_menu_item: Object<'gc>,
     pub context_menu_item_constructor: Object<'gc>,
-    pub bitmap_filter: Object<'gc>,
-    pub bitmap_filter_constructor: Object<'gc>,
-    pub gradient_glow_filter: Object<'gc>,
-    pub gradient_glow_filter_constructor: Object<'gc>,
     pub date_constructor: Object<'gc>,
     pub bitmap_data: Object<'gc>,
     pub video: Object<'gc>,
     pub video_constructor: Object<'gc>,
+    pub blur_filter: Object<'gc>,
+    pub bevel_filter: Object<'gc>,
+    pub glow_filter: Object<'gc>,
+    pub drop_shadow_filter: Object<'gc>,
+    pub color_matrix_filter: Object<'gc>,
+    pub displacement_map_filter: Object<'gc>,
+    pub convolution_filter: Object<'gc>,
+    pub gradient_bevel_filter: Object<'gc>,
+    pub gradient_glow_filter: Object<'gc>,
 }
 
 /// Initialize default global scope and builtins for an AVM1 instance.
@@ -552,7 +555,6 @@ pub fn create_globals<'gc>(
     let rectangle_proto = rectangle::create_proto(context, object_proto, function_proto);
     let color_transform_proto =
         color_transform::create_proto(context, object_proto, function_proto);
-    let transform_proto = transform::create_proto(context, object_proto, function_proto);
     let external_interface_proto = external_interface::create_proto(context, object_proto);
     let selection_proto = selection::create_proto(context, object_proto);
 
@@ -693,13 +695,7 @@ pub fn create_globals<'gc>(
         function_proto,
         color_transform_proto,
     );
-    let transform = FunctionObject::constructor(
-        gc_context,
-        Executable::Native(transform::constructor),
-        constructor_to_fn!(transform::constructor),
-        function_proto,
-        transform_proto,
-    );
+    let transform = transform::create_constructor(context, object_proto, function_proto);
     let video = FunctionObject::constructor(
         gc_context,
         Executable::Native(video::constructor),
@@ -741,37 +737,50 @@ pub fn create_globals<'gc>(
         bitmap_filter_proto,
     );
 
-    let blur_filter = blur_filter::create_constructor(context, bitmap_filter_proto, function_proto);
+    let blur_filter = blur_filter::create_proto(context, bitmap_filter_proto, function_proto);
+    let blur_filter_constructor =
+        blur_filter::create_constructor(context, blur_filter, function_proto);
 
-    let bevel_filter =
-        bevel_filter::create_constructor(context, bitmap_filter_proto, function_proto);
+    let bevel_filter = bevel_filter::create_proto(context, bitmap_filter_proto, function_proto);
+    let bevel_filter_constructor =
+        bevel_filter::create_constructor(context, bevel_filter, function_proto);
 
-    let glow_filter = glow_filter::create_constructor(context, bitmap_filter_proto, function_proto);
+    let glow_filter = glow_filter::create_proto(context, bitmap_filter_proto, function_proto);
+    let glow_filter_constructor =
+        glow_filter::create_constructor(context, glow_filter, function_proto);
 
     let drop_shadow_filter =
-        drop_shadow_filter::create_constructor(context, bitmap_filter_proto, function_proto);
+        drop_shadow_filter::create_proto(context, bitmap_filter_proto, function_proto);
+    let drop_shadow_filter_constructor =
+        drop_shadow_filter::create_constructor(context, drop_shadow_filter, function_proto);
 
     let color_matrix_filter =
-        color_matrix_filter::create_constructor(context, bitmap_filter_proto, function_proto);
+        color_matrix_filter::create_proto(context, bitmap_filter_proto, function_proto);
+    let color_matrix_filter_constructor =
+        color_matrix_filter::create_constructor(context, color_matrix_filter, function_proto);
 
     let displacement_map_filter =
-        displacement_map_filter::create_constructor(context, bitmap_filter_proto, function_proto);
+        displacement_map_filter::create_proto(context, bitmap_filter_proto, function_proto);
+    let displacement_map_filter_constructor = displacement_map_filter::create_constructor(
+        context,
+        displacement_map_filter,
+        function_proto,
+    );
 
     let convolution_filter =
-        convolution_filter::create_constructor(context, bitmap_filter_proto, function_proto);
+        convolution_filter::create_proto(context, bitmap_filter_proto, function_proto);
+    let convolution_filter_constructor =
+        convolution_filter::create_constructor(context, convolution_filter, function_proto);
 
     let gradient_bevel_filter =
-        gradient_bevel_filter::create_constructor(context, bitmap_filter_proto, function_proto);
+        gradient_filter::create_bevel_proto(context, bitmap_filter_proto, function_proto);
+    let gradient_bevel_filter_constructor =
+        gradient_filter::create_bevel_constructor(context, gradient_bevel_filter, function_proto);
 
-    let gradient_glow_filter_proto =
-        gradient_glow_filter::create_proto(context, bitmap_filter_proto, function_proto);
-    let gradient_glow_filter = FunctionObject::constructor(
-        gc_context,
-        Executable::Native(gradient_glow_filter::constructor),
-        constructor_to_fn!(gradient_glow_filter::constructor),
-        function_proto,
-        gradient_glow_filter_proto,
-    );
+    let gradient_glow_filter =
+        gradient_filter::create_glow_proto(context, bitmap_filter_proto, function_proto);
+    let gradient_glow_filter_constructor =
+        gradient_filter::create_glow_constructor(context, gradient_glow_filter, function_proto);
 
     filters.define_value(
         gc_context,
@@ -782,56 +791,56 @@ pub fn create_globals<'gc>(
     filters.define_value(
         gc_context,
         "BlurFilter",
-        blur_filter.into(),
+        blur_filter_constructor.into(),
         Attribute::empty(),
     );
     filters.define_value(
         gc_context,
         "BevelFilter",
-        bevel_filter.into(),
+        bevel_filter_constructor.into(),
         Attribute::empty(),
     );
     filters.define_value(
         gc_context,
         "GlowFilter",
-        glow_filter.into(),
+        glow_filter_constructor.into(),
         Attribute::empty(),
     );
     filters.define_value(
         gc_context,
         "DropShadowFilter",
-        drop_shadow_filter.into(),
+        drop_shadow_filter_constructor.into(),
         Attribute::empty(),
     );
     filters.define_value(
         gc_context,
         "ColorMatrixFilter",
-        color_matrix_filter.into(),
+        color_matrix_filter_constructor.into(),
         Attribute::empty(),
     );
     filters.define_value(
         gc_context,
         "DisplacementMapFilter",
-        displacement_map_filter.into(),
+        displacement_map_filter_constructor.into(),
         Attribute::empty(),
     );
     filters.define_value(
         gc_context,
         "ConvolutionFilter",
-        convolution_filter.into(),
+        convolution_filter_constructor.into(),
         Attribute::empty(),
     );
 
     filters.define_value(
         gc_context,
         "GradientBevelFilter",
-        gradient_bevel_filter.into(),
+        gradient_bevel_filter_constructor.into(),
         Attribute::empty(),
     );
     filters.define_value(
         gc_context,
         "GradientGlowFilter",
-        gradient_glow_filter.into(),
+        gradient_glow_filter_constructor.into(),
         Attribute::empty(),
     );
 
@@ -1080,7 +1089,6 @@ pub fn create_globals<'gc>(
             point_constructor: point,
             rectangle: rectangle_proto,
             rectangle_constructor: rectangle,
-            transform: transform_proto,
             transform_constructor: transform,
             shared_object: shared_object_proto,
             shared_object_constructor: shared_obj,
@@ -1090,14 +1098,19 @@ pub fn create_globals<'gc>(
             context_menu_constructor: context_menu,
             context_menu_item: context_menu_item_proto,
             context_menu_item_constructor: context_menu_item,
-            bitmap_filter: bitmap_filter_proto,
-            bitmap_filter_constructor: bitmap_filter,
-            gradient_glow_filter: gradient_glow_filter_proto,
-            gradient_glow_filter_constructor: gradient_glow_filter,
             date_constructor: date,
             bitmap_data: bitmap_data_proto.into(),
             video: video_proto,
             video_constructor: video,
+            blur_filter,
+            bevel_filter,
+            glow_filter,
+            drop_shadow_filter,
+            color_matrix_filter,
+            displacement_map_filter,
+            convolution_filter,
+            gradient_bevel_filter,
+            gradient_glow_filter,
         },
         globals.into(),
         broadcaster_functions,

@@ -1,11 +1,12 @@
 use crate::RUFFLE_VERSION;
+use anyhow::Error;
 use clap::Parser;
 use ruffle_core::backend::navigator::OpenURLMode;
 use ruffle_core::config::Letterbox;
-use ruffle_core::{LoadBehavior, StageScaleMode};
+use ruffle_core::{LoadBehavior, StageAlign, StageScaleMode};
 use ruffle_render::quality::StageQuality;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use url::Url;
 
 #[derive(Parser, Debug)]
@@ -16,8 +17,8 @@ use url::Url;
 )]
 pub struct Opt {
     /// Path or URL of a Flash movie (SWF) to play.
-    #[clap(name = "FILE")]
-    pub input_path: Option<PathBuf>,
+    #[clap(name = "FILE", value_parser(parse_movie_file_or_url))]
+    pub movie_url: Option<Url>,
 
     /// A "flashvars" parameter to provide to the movie.
     /// This can be repeated multiple times, for example -Pkey=value -Pfoo=bar.
@@ -55,6 +56,14 @@ pub struct Opt {
     #[clap(long, short, default_value = "high")]
     pub quality: StageQuality,
 
+    /// The alignment of the stage.
+    #[clap(long, short)]
+    pub align: Option<StageAlign>,
+
+    /// Prevent movies from changing the stage alignment.
+    #[clap(long, action)]
+    pub force_align: bool,
+
     /// The scale mode of the stage.
     #[clap(long, short, default_value = "show-all")]
     pub scale: StageScaleMode,
@@ -70,7 +79,7 @@ pub struct Opt {
     /// Location to store a wgpu trace output
     #[clap(long)]
     #[cfg(feature = "render_trace")]
-    trace_path: Option<PathBuf>,
+    trace_path: Option<std::path::PathBuf>,
 
     /// Proxy to use when loading movies via URL.
     #[clap(long)]
@@ -113,6 +122,16 @@ pub struct Opt {
     /// The handling mode of links opening a new website.
     #[clap(long, default_value = "allow")]
     pub open_url_mode: OpenURLMode,
+
+    /// Provide a dummy (completely empty) External Interface to the movie.
+    /// This may break some movies that expect an External Interface to be functional,
+    /// but may fix others that always require an External Interface.
+    #[clap(long)]
+    pub dummy_external_interface: bool,
+}
+
+fn parse_movie_file_or_url(path: &str) -> Result<Url, Error> {
+    crate::util::parse_url(Path::new(path))
 }
 
 impl Opt {

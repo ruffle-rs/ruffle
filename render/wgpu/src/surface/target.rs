@@ -2,8 +2,8 @@ use crate::backend::RenderTargetMode;
 use crate::buffer_pool::{AlwaysCompatible, PoolEntry, TexturePool};
 use crate::descriptors::Descriptors;
 use crate::globals::Globals;
-use crate::surface::commands::run_copy_pipeline;
 use crate::utils::create_buffer_with_data;
+use crate::utils::run_copy_pipeline;
 use crate::Transforms;
 use std::cell::OnceCell;
 use std::sync::Arc;
@@ -69,7 +69,6 @@ pub struct FrameBuffer {
 /// (when doing an offscreen render to a BitmapData texture)
 pub enum PoolOrArcTexture {
     Pool(PoolEntry<(wgpu::Texture, wgpu::TextureView), AlwaysCompatible>),
-    #[allow(dead_code)]
     Manual((Arc<wgpu::Texture>, wgpu::TextureView)),
 }
 
@@ -234,23 +233,38 @@ impl CommandTarget {
 
         let whole_frame_bind_group = OnceCell::new();
 
-        let frame_buffer = make_pooled_frame_buffer();
-        let resolve_buffer = if sample_count > 1 {
-            Some(ResolveBuffer::new(
-                descriptors,
-                size,
-                format,
-                wgpu::TextureUsages::COPY_SRC
-                    | wgpu::TextureUsages::COPY_DST
-                    | wgpu::TextureUsages::TEXTURE_BINDING
-                    | wgpu::TextureUsages::RENDER_ATTACHMENT,
-                pool,
-            ))
-        } else {
-            None
-        };
+        let (frame_buffer, resolve_buffer) =
+            if let RenderTargetMode::ExistingWithColor(texture, _) = &render_target_mode {
+                if sample_count > 1 {
+                    (
+                        make_pooled_frame_buffer(),
+                        Some(ResolveBuffer::new_manual(texture.clone())),
+                    )
+                } else {
+                    (
+                        FrameBuffer::new_manual(texture.clone(), texture.size()),
+                        None,
+                    )
+                }
+            } else if sample_count > 1 {
+                (
+                    make_pooled_frame_buffer(),
+                    Some(ResolveBuffer::new(
+                        descriptors,
+                        size,
+                        format,
+                        wgpu::TextureUsages::COPY_SRC
+                            | wgpu::TextureUsages::COPY_DST
+                            | wgpu::TextureUsages::TEXTURE_BINDING
+                            | wgpu::TextureUsages::RENDER_ATTACHMENT,
+                        pool,
+                    )),
+                )
+            } else {
+                (make_pooled_frame_buffer(), None)
+            };
 
-        if let RenderTargetMode::ExistingTexture(texture) = &render_target_mode {
+        if let RenderTargetMode::FreshWithTexture(texture) = &render_target_mode {
             if let Some(resolve_buffer) = &resolve_buffer {
                 encoder.copy_texture_to_texture(
                     texture.as_image_copy(),
@@ -312,9 +326,9 @@ impl CommandTarget {
         if self.color_needs_clear.get().is_some() {
             return;
         }
-        // If we don't have ClearType::Color (we have ClearType::Texture),
+        // If we aren't clearing with a color (eg a texture instead)
         // the there's no point in creating a new render pass that does nothing.
-        if let RenderTargetMode::FreshBuffer(_) = self.render_target_mode {
+        if self.render_target_mode.color().is_some() {
             encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: create_debug_label!("Clearing command target").as_deref(),
                 color_attachments: &[self.color_attachments()],
@@ -340,8 +354,8 @@ impl CommandTarget {
     pub fn color_attachments(&self) -> Option<wgpu::RenderPassColorAttachment> {
         let mut load = wgpu::LoadOp::Load;
         if self.color_needs_clear.set(false).is_ok() {
-            if let RenderTargetMode::FreshBuffer(clear_color) = &self.render_target_mode {
-                load = wgpu::LoadOp::Clear(*clear_color);
+            if let Some(clear_color) = self.render_target_mode.color() {
+                load = wgpu::LoadOp::Clear(clear_color);
             }
         }
         Some(wgpu::RenderPassColorAttachment {

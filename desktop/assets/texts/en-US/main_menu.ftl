@@ -11,6 +11,7 @@ file-menu = File
 file-menu-open-quick = Open...
 file-menu-open-advanced = Open Advanced...
 file-menu-close = Close
+file-menu-reload = Reload
 file-menu-exit = Exit
 
 controls-menu = Controls
@@ -26,3 +27,7 @@ help-menu-about = About Ruffle
 
 debug-menu = Debug Tools
 debug-menu-open-stage = View Stage Info
+debug-menu-open-movie = View Movie
+debug-menu-open-movie-list = Show Known Movies
+debug-menu-search-display-objects = Search Display Objects...
+

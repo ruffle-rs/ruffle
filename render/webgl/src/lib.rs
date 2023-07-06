@@ -1,8 +1,10 @@
 #![deny(clippy::unwrap_used)]
+// Remove this when we start using `Rc` when compiling for wasm
+#![allow(clippy::arc_with_non_send_sync)]
 
 use bytemuck::{Pod, Zeroable};
 use ruffle_render::backend::{
-    Context3D, RenderBackend, ShapeHandle, ShapeHandleImpl, ViewportDimensions,
+    BitmapCacheEntry, Context3D, RenderBackend, ShapeHandle, ShapeHandleImpl, ViewportDimensions,
 };
 use ruffle_render::bitmap::{
     Bitmap, BitmapFormat, BitmapHandle, BitmapHandleImpl, BitmapSource, PixelRegion, SyncHandle,
@@ -150,7 +152,8 @@ pub struct WebGlRenderBackend {
 #[derive(Debug)]
 struct RegistryData {
     gl: Gl,
-    bitmap: Bitmap,
+    width: u32,
+    height: u32,
     texture: WebGlTexture,
 }
 
@@ -974,7 +977,15 @@ impl RenderBackend for WebGlRenderBackend {
         ShapeHandle(Arc::new(mesh))
     }
 
-    fn submit_frame(&mut self, clear: Color, commands: CommandList) {
+    fn submit_frame(
+        &mut self,
+        clear: Color,
+        commands: CommandList,
+        cache_entries: Vec<BitmapCacheEntry>,
+    ) {
+        if !cache_entries.is_empty() {
+            panic!("Bitmap caching is unavailable on the webgl backend");
+        }
         self.begin_frame(clear);
         commands.execute(self);
         self.end_frame();
@@ -1018,7 +1029,8 @@ impl RenderBackend for WebGlRenderBackend {
 
         Ok(BitmapHandle(Arc::new(RegistryData {
             gl: self.gl.clone(),
-            bitmap,
+            width: bitmap.width(),
+            height: bitmap.height(),
             texture,
         })))
     }
@@ -1099,6 +1111,53 @@ impl RenderBackend for WebGlRenderBackend {
     }
 
     fn set_quality(&mut self, _quality: StageQuality) {}
+
+    fn compile_pixelbender_shader(
+        &mut self,
+        _shader: ruffle_render::pixel_bender::PixelBenderShader,
+    ) -> Result<ruffle_render::pixel_bender::PixelBenderShaderHandle, BitmapError> {
+        Err(BitmapError::Unimplemented(
+            "compile_pixelbender_shader".into(),
+        ))
+    }
+
+    fn run_pixelbender_shader(
+        &mut self,
+        _handle: ruffle_render::pixel_bender::PixelBenderShaderHandle,
+        _arguments: &[ruffle_render::pixel_bender::PixelBenderShaderArgument],
+        _target: BitmapHandle,
+    ) -> Result<Box<dyn SyncHandle>, BitmapError> {
+        Err(BitmapError::Unimplemented("run_pixelbender_shader".into()))
+    }
+
+    fn create_empty_texture(
+        &mut self,
+        width: u32,
+        height: u32,
+    ) -> Result<BitmapHandle, BitmapError> {
+        let texture = self
+            .gl
+            .create_texture()
+            .ok_or_else(|| BitmapError::JavascriptError("Unable to create texture".into()))?;
+        self.gl.bind_texture(Gl::TEXTURE_2D, Some(&texture));
+
+        // You must set the texture parameters for non-power-of-2 textures to function in WebGL1.
+        self.gl
+            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_WRAP_S, Gl::CLAMP_TO_EDGE as i32);
+        self.gl
+            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_WRAP_T, Gl::CLAMP_TO_EDGE as i32);
+        self.gl
+            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MIN_FILTER, Gl::LINEAR as i32);
+        self.gl
+            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MAG_FILTER, Gl::LINEAR as i32);
+
+        Ok(BitmapHandle(Arc::new(RegistryData {
+            gl: self.gl.clone(),
+            width,
+            height,
+            texture,
+        })))
+    }
 }
 
 impl CommandHandler for WebGlRenderBackend {
@@ -1116,10 +1175,7 @@ impl CommandHandler for WebGlRenderBackend {
 
         // Scale the quad to the bitmap's dimensions.
         let matrix = transform.matrix
-            * ruffle_render::matrix::Matrix::scale(
-                entry.bitmap.width() as f32,
-                entry.bitmap.height() as f32,
-            );
+            * ruffle_render::matrix::Matrix::scale(entry.width as f32, entry.height as f32);
 
         let world_matrix = [
             [matrix.a, matrix.b, 0.0, 0.0],

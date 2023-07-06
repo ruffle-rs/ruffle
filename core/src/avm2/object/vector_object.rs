@@ -9,7 +9,7 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::string::AvmString;
 use core::fmt;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates Vector objects.
@@ -40,7 +40,11 @@ pub fn vector_allocator<'gc>(
 /// An Object which stores typed properties in vector storage
 #[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
-pub struct VectorObject<'gc>(GcCell<'gc, VectorObjectData<'gc>>);
+pub struct VectorObject<'gc>(pub GcCell<'gc, VectorObjectData<'gc>>);
+
+#[derive(Collect, Clone, Copy, Debug)]
+#[collect(no_drop)]
+pub struct VectorObjectWeak<'gc>(pub GcWeakCell<'gc, VectorObjectData<'gc>>);
 
 impl fmt::Debug for VectorObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -69,7 +73,7 @@ impl<'gc> VectorObject<'gc> {
         let value_type = vector.value_type();
         let vector_class = activation.avm2().classes().vector;
 
-        let applied_class = vector_class.apply(activation, &[value_type.into()])?;
+        let applied_class = vector_class.apply(activation, value_type.into())?;
 
         let mut object: Object<'gc> = VectorObject(GcCell::allocate(
             activation.context.gc_context,

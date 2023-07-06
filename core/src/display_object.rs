@@ -5,7 +5,6 @@ use crate::avm2::{
 };
 use crate::context::{RenderContext, UpdateContext};
 use crate::drawing::Drawing;
-use crate::player::NEWEST_PLAYER_VERSION;
 use crate::prelude::*;
 use crate::string::{AvmString, WString};
 use crate::tag_utils::SwfMovie;
@@ -14,7 +13,7 @@ use crate::vminterface::Instantiator;
 use bitflags::bitflags;
 use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
-use ruffle_render::transform::Transform;
+use ruffle_render::transform::{Transform, TransformStack};
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 use std::hash::Hash;
@@ -49,13 +48,114 @@ pub use interactive::{Avm2MousePick, InteractiveObject, TInteractiveObject};
 pub use loader_display::LoaderDisplay;
 pub use morph_shape::{MorphShape, MorphShapeStatic};
 pub use movie_clip::{MovieClip, MovieClipWeak, Scene};
-use ruffle_render::commands::CommandHandler;
+use ruffle_render::backend::{BitmapCacheEntry, RenderBackend};
+use ruffle_render::bitmap::{BitmapHandle, BitmapInfo};
+use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::filters::Filter;
 pub use stage::{Stage, StageAlign, StageDisplayState, StageScaleMode, WindowMode};
 pub use text::Text;
 pub use video::Video;
 
 use self::loader_display::LoaderDisplayWeak;
+
+/// If a `DisplayObject` is marked `cacheAsBitmap` (via tag or AS),
+/// this struct keeps the information required to uphold that cache.
+/// A cached Display Object must have its bitmap invalidated when
+/// any "visual" change happens, which can include:
+/// - Changing the rotation
+/// - Changing the scale
+/// - Changing the alpha
+/// - Changing the color transform
+/// - Any "visual" change to children, **including** position changes
+///
+/// Position changes to the cached Display Object does not regenerate the cache,
+/// allowing Display Objects to move freely without being regenerated.
+///
+/// Flash isn't very good at always recognising when it should be invalidated,
+/// and there's cases such as changing the blend mode which don't always trigger it.
+///
+#[derive(Clone, Debug, Default)]
+pub struct BitmapCache {
+    /// The `Matrix.a` value that was last used with this cache
+    matrix_a: f32,
+    /// The `Matrix.b` value that was last used with this cache
+    matrix_b: f32,
+    /// The `Matrix.c` value that was last used with this cache
+    matrix_c: f32,
+    /// The `Matrix.d` value that was last used with this cache
+    matrix_d: f32,
+
+    /// The current contents of the cache, if any
+    bitmap: Option<BitmapInfo>,
+}
+
+impl BitmapCache {
+    /// Forcefully make this BitmapCache invalid and require regeneration.
+    /// This should be used for changes that aren't automatically detected, such as children.
+    pub fn make_dirty(&mut self) {
+        // Setting the old transform to something invalid is a cheap way of making it invalid,
+        // without reserving an extra field for.
+        self.matrix_a = f32::NAN;
+    }
+
+    fn is_dirty(&self, other: &Matrix, width: u16, height: u16) -> bool {
+        if self.matrix_a != other.a
+            || self.matrix_b != other.b
+            || self.matrix_c != other.c
+            || self.matrix_d != other.d
+        {
+            return true;
+        }
+        if let Some(bitmap) = &self.bitmap {
+            if bitmap.width != width || bitmap.height != height {
+                return true;
+            }
+        } else {
+            return true;
+        }
+        false
+    }
+
+    /// Clears any dirtiness and ensure there's an appropriately sized texture allocated
+    fn update(
+        &mut self,
+        renderer: &mut dyn RenderBackend,
+        matrix: Matrix,
+        width: u16,
+        height: u16,
+    ) {
+        self.matrix_a = matrix.a;
+        self.matrix_b = matrix.b;
+        self.matrix_c = matrix.c;
+        self.matrix_d = matrix.d;
+        if let Some(current) = &mut self.bitmap {
+            if current.width == width && current.height == height {
+                return; // No need to resize it
+            }
+        }
+        if renderer.is_offscreen_supported() && width > 0 && height > 0 {
+            let handle = renderer.create_empty_texture(width as u32, height as u32);
+            self.bitmap = handle.ok().map(|handle| BitmapInfo {
+                width,
+                height,
+                handle,
+            });
+        } else {
+            self.bitmap = None;
+        }
+    }
+
+    /// Explicitly clears the cached value and drops any resources.
+    /// This should only be used in situations where you can't render to the cache and it needs to be
+    /// temporarily disabled.
+    fn clear(&mut self) {
+        self.bitmap = None;
+    }
+
+    fn handle(&self) -> Option<BitmapHandle> {
+        self.bitmap.as_ref().map(|b| b.handle.clone())
+    }
+}
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
@@ -121,6 +221,11 @@ pub struct DisplayObjectBase<'gc> {
     /// changes immediately (without needing wait for a render)
     #[collect(require_static)]
     next_scroll_rect: Rectangle<Twips>,
+
+    /// If this Display Object should cacheAsBitmap - and if so, the cache itself.
+    /// None means not cached, Some means cached.
+    #[collect(require_static)]
+    cache: Option<BitmapCache>,
 }
 
 impl<'gc> Default for DisplayObjectBase<'gc> {
@@ -146,6 +251,7 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
             flags: DisplayObjectFlags::VISIBLE,
             scroll_rect: None,
             next_scroll_rect: Default::default(),
+            cache: None,
         }
     }
 }
@@ -352,6 +458,7 @@ impl<'gc> DisplayObjectBase<'gc> {
 
     fn set_filters(&mut self, filters: Vec<Filter>) {
         self.filters = filters;
+        self.recheck_cache_as_bitmap();
     }
 
     fn alpha(&self) -> f64 {
@@ -447,7 +554,7 @@ impl<'gc> DisplayObjectBase<'gc> {
     /// The opaque background color of this display object.
     /// The bounding box of the display object will be filled with this color.
     fn opaque_background(&self) -> Option<Color> {
-        self.opaque_background.clone()
+        self.opaque_background
     }
 
     /// The opaque background color of this display object.
@@ -495,12 +602,46 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.flags.set(DisplayObjectFlags::PLACED_BY_SCRIPT, value);
     }
 
-    fn is_bitmap_cached(&self) -> bool {
+    fn is_bitmap_cached_preference(&self) -> bool {
         self.flags.contains(DisplayObjectFlags::CACHE_AS_BITMAP)
     }
 
-    fn set_is_bitmap_cached(&mut self, value: bool) {
+    fn set_bitmap_cached_preference(&mut self, value: bool) {
         self.flags.set(DisplayObjectFlags::CACHE_AS_BITMAP, value);
+        self.recheck_cache_as_bitmap();
+    }
+
+    fn bitmap_cache_mut(&mut self) -> Option<&mut BitmapCache> {
+        self.cache.as_mut()
+    }
+
+    /// Invalidates a cached bitmap, if it exists.
+    /// This may only be called once per frame - the first call will return true, regardless of
+    /// if there was a cache.
+    /// Any subsequent calls will return false, indicating that you do not need to invalidate the ancestors.
+    /// This is reset during rendering.
+    fn invalidate_cached_bitmap(&mut self) -> bool {
+        if self.flags.contains(DisplayObjectFlags::CACHE_INVALIDATED) {
+            return false;
+        }
+        if let Some(cache) = &mut self.cache {
+            cache.make_dirty();
+        }
+        self.flags.insert(DisplayObjectFlags::CACHE_INVALIDATED);
+        true
+    }
+
+    fn clear_invalidate_flag(&mut self) {
+        self.flags.remove(DisplayObjectFlags::CACHE_INVALIDATED);
+    }
+
+    fn recheck_cache_as_bitmap(&mut self) {
+        let should_cache = self.is_bitmap_cached_preference() || !self.filters.is_empty();
+        if should_cache && self.cache.is_none() {
+            self.cache = Some(Default::default());
+        } else if !should_cache && self.cache.is_some() {
+            self.cache = None;
+        }
     }
 
     fn instantiated_by_timeline(&self) -> bool {
@@ -558,6 +699,125 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
         None
     };
 
+    let cache_info = if context.use_bitmap_cache {
+        let mut cache_info: Option<(BitmapHandle, bool, Transform, Rectangle<Twips>)> = None;
+        let base_transform = context.transform_stack.transform();
+        let bounds: Rectangle<Twips> = this.bounds_with_transform(&base_transform.matrix);
+
+        if let Some(cache) = this.base_mut(context.gc_context).bitmap_cache_mut() {
+            let width = bounds.width().to_pixels().ceil().max(0.0);
+            let height = bounds.height().to_pixels().ceil().max(0.0);
+            if width <= u16::MAX as f64 && height <= u16::MAX as f64 {
+                let width = width as u16;
+                let height = height as u16;
+                if cache.is_dirty(&base_transform.matrix, width, height) {
+                    cache.update(context.renderer, base_transform.matrix, width, height);
+                    cache_info = cache
+                        .handle()
+                        .map(|handle| (handle, true, base_transform, bounds));
+                } else {
+                    cache_info = cache
+                        .handle()
+                        .map(|handle| (handle, false, base_transform, bounds));
+                }
+            } else {
+                tracing::warn!(
+                "Skipping cacheAsBitmap for incredibly large object at {:?} ({width} x {height})",
+                this.path()
+            );
+                cache.clear();
+                cache_info = None;
+            }
+        }
+        cache_info
+    } else {
+        None
+    };
+
+    // We can't hold `cache` (which will hold `base`), so this is split up
+    if let Some((handle, dirty, base_transform, bounds)) = cache_info {
+        // In order to render an object to a texture, we need to draw its entire bounds.
+        // Calculate the offset from tx/ty in order to accommodate any drawings that extend the bounds
+        // negatively
+        let offset_x = bounds.x_min - base_transform.matrix.tx;
+        let offset_y = bounds.y_min - base_transform.matrix.ty;
+
+        if dirty {
+            let mut transform_stack = TransformStack::new();
+            transform_stack.push(&Transform {
+                color_transform: Default::default(),
+                matrix: Matrix {
+                    tx: -offset_x,
+                    ty: -offset_y,
+                    ..base_transform.matrix
+                },
+            });
+            let mut offscreen_context = RenderContext {
+                renderer: context.renderer,
+                commands: CommandList::new(),
+                cache_draws: context.cache_draws,
+                gc_context: context.gc_context,
+                library: context.library,
+                transform_stack: &mut transform_stack,
+                is_offscreen: true,
+                use_bitmap_cache: true,
+                stage: context.stage,
+            };
+            render_base_inner(this, &mut offscreen_context);
+            let mut filters = this.filters();
+            for filter in &mut filters {
+                filter.scale(base_transform.matrix.a, base_transform.matrix.d);
+            }
+            offscreen_context.cache_draws.push(BitmapCacheEntry {
+                handle: handle.clone(),
+                commands: offscreen_context.commands,
+                clear: this.opaque_background().unwrap_or_default(),
+                filters,
+            });
+        }
+
+        // When rendering it back, ensure we're only keeping the translation - scale/rotation is within the image already
+        context.commands.render_bitmap(
+            handle,
+            Transform {
+                matrix: Matrix {
+                    tx: base_transform.matrix.tx + offset_x,
+                    ty: base_transform.matrix.ty + offset_y,
+                    ..Default::default()
+                },
+                color_transform: base_transform.color_transform,
+            },
+            true,
+        );
+    } else {
+        if let Some(background) = this.opaque_background() {
+            // This is intended for use with cacheAsBitmap, but can be set for non-cached objects too
+            // It wants the entire bounding box to be cleared before any draws happen
+            let bounds: Rectangle<Twips> =
+                this.bounds_with_transform(&context.transform_stack.transform().matrix);
+            context.commands.draw_rect(
+                background,
+                Matrix::create_box(
+                    bounds.width().to_pixels() as f32,
+                    bounds.height().to_pixels() as f32,
+                    0.0,
+                    bounds.x_min,
+                    bounds.y_min,
+                ),
+            );
+        }
+        render_base_inner(this, context);
+    }
+
+    if let Some(original_commands) = original_commands {
+        let sub_commands = std::mem::replace(&mut context.commands, original_commands);
+        context.commands.blend(sub_commands, blend_mode);
+    }
+
+    context.transform_stack.pop();
+}
+
+pub fn render_base_inner<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_, 'gc>) {
     let scroll_rect_matrix = if let Some(rect) = this.scroll_rect() {
         let cur_transform = context.transform_stack.transform();
         // The matrix we use for actually drawing a rectangle for cropping purposes
@@ -629,17 +889,10 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
         context.commands.pop_mask();
     }
 
-    if let Some(original_commands) = original_commands {
-        let sub_commands = std::mem::replace(&mut context.commands, original_commands);
-        context.commands.blend(sub_commands, blend_mode);
-    }
-
     if scroll_rect_matrix.is_some() {
         // Remove the translation that we pushed
         context.transform_stack.pop();
     }
-
-    context.transform_stack.pop();
 }
 
 #[enum_trait_object(
@@ -742,10 +995,16 @@ pub trait TDisplayObject<'gc>:
         self.base_mut(gc_context).set_place_frame(frame)
     }
 
+    /// Sets the matrix of this object.
+    /// This does NOT invalidate the cache, as it's often used with other operations.
+    /// It is the callers responsibility to do so.
     fn set_matrix(&self, gc_context: MutationContext<'gc, '_>, matrix: Matrix) {
         self.base_mut(gc_context).set_matrix(matrix);
     }
 
+    /// Sets the color transform of this object.
+    /// This does NOT invalidate the cache, as it's often used with other operations.
+    /// It is the callers responsibility to do so.
     fn set_color_transform(
         &self,
         gc_context: MutationContext<'gc, '_>,
@@ -819,8 +1078,14 @@ pub trait TDisplayObject<'gc>:
 
     /// Sets the `x` position in pixels of this display object in local space.
     /// Set by the `_x`/`x` ActionScript properties.
+    /// This invalidates any ancestors cacheAsBitmap automatically.
     fn set_x(&self, gc_context: MutationContext<'gc, '_>, x: Twips) {
         self.base_mut(gc_context).set_x(x);
+        if let Some(parent) = self.parent() {
+            // Self-transform changes are automatically handled,
+            // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
+            parent.invalidate_cached_bitmap(gc_context);
+        }
     }
 
     /// The `y` position in pixels of this display object in local space.
@@ -831,8 +1096,14 @@ pub trait TDisplayObject<'gc>:
 
     /// Sets the `y` position in pixels of this display object in local space.
     /// Set by the `_y`/`y` ActionScript properties.
+    /// This invalidates any ancestors cacheAsBitmap automatically.
     fn set_y(&self, gc_context: MutationContext<'gc, '_>, y: Twips) {
         self.base_mut(gc_context).set_y(y);
+        if let Some(parent) = self.parent() {
+            // Self-transform changes are automatically handled,
+            // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
+            parent.invalidate_cached_bitmap(gc_context);
+        }
     }
 
     /// The rotation in degrees this display object in local space.
@@ -845,9 +1116,15 @@ pub trait TDisplayObject<'gc>:
 
     /// Sets the rotation in degrees this display object in local space.
     /// Set by the `_rotation`/`rotation` ActionScript properties.
+    /// This invalidates any ancestors cacheAsBitmap automatically.
     fn set_rotation(&self, gc_context: MutationContext<'gc, '_>, radians: Degrees) {
         self.base_mut(gc_context).set_rotation(radians);
         self.set_scale_rotation_cached(gc_context);
+        if let Some(parent) = self.parent() {
+            // Self-transform changes are automatically handled,
+            // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
+            parent.invalidate_cached_bitmap(gc_context);
+        }
     }
 
     /// The X axis scale for this display object in local space.
@@ -860,9 +1137,15 @@ pub trait TDisplayObject<'gc>:
 
     /// Sets the X axis scale for this display object in local space.
     /// Set by the `_xscale`/`scaleX` ActionScript properties.
+    /// This invalidates any ancestors cacheAsBitmap automatically.
     fn set_scale_x(&self, gc_context: MutationContext<'gc, '_>, value: Percent) {
         self.base_mut(gc_context).set_scale_x(value);
         self.set_scale_rotation_cached(gc_context);
+        if let Some(parent) = self.parent() {
+            // Self-transform changes are automatically handled,
+            // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
+            parent.invalidate_cached_bitmap(gc_context);
+        }
     }
 
     /// The Y axis scale for this display object in local space.
@@ -875,9 +1158,15 @@ pub trait TDisplayObject<'gc>:
 
     /// Sets the Y axis scale for this display object in local space.
     /// Returned by the `_yscale`/`scaleY` ActionScript properties.
+    /// This invalidates any ancestors cacheAsBitmap automatically.
     fn set_scale_y(&self, gc_context: MutationContext<'gc, '_>, value: Percent) {
         self.base_mut(gc_context).set_scale_y(value);
         self.set_scale_rotation_cached(gc_context);
+        if let Some(parent) = self.parent() {
+            // Self-transform changes are automatically handled,
+            // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
+            parent.invalidate_cached_bitmap(gc_context);
+        }
     }
 
     /// Gets the pixel width of the AABB containing this display object in local space.
@@ -985,8 +1274,13 @@ pub trait TDisplayObject<'gc>:
     /// Sets the opacity of this display object.
     /// 1 is fully opaque.
     /// Set by the `_alpha`/`alpha` ActionScript properties.
+    /// This invalidates any cacheAsBitmap automatically.
     fn set_alpha(&self, gc_context: MutationContext<'gc, '_>, value: f64) {
-        self.base_mut(gc_context).set_alpha(value)
+        self.base_mut(gc_context).set_alpha(value);
+        if let Some(parent) = self.parent() {
+            // Self-transform changes are automatically handled
+            parent.invalidate_cached_bitmap(gc_context);
+        }
     }
 
     fn name(&self) -> AvmString<'gc> {
@@ -1001,7 +1295,8 @@ pub trait TDisplayObject<'gc>:
     }
 
     fn set_filters(&self, gc_context: MutationContext<'gc, '_>, filters: Vec<Filter>) {
-        self.base_mut(gc_context).set_filters(filters)
+        self.base_mut(gc_context).set_filters(filters);
+        self.invalidate_cached_bitmap(gc_context);
     }
 
     /// Returns the dot-syntax path to this display object, e.g. `_level0.foo.clip`
@@ -1106,6 +1401,7 @@ pub trait TDisplayObject<'gc>:
             if let Some(old_masker) = self.base().masker() {
                 old_masker.set_maskee(gc_context, None, false);
             }
+            self.invalidate_cached_bitmap(gc_context);
         }
         self.base_mut(gc_context).set_masker(node);
     }
@@ -1122,6 +1418,7 @@ pub trait TDisplayObject<'gc>:
             if let Some(old_maskee) = self.base().maskee() {
                 old_maskee.set_masker(gc_context, None, false);
             }
+            self.invalidate_cached_bitmap(gc_context);
         }
         self.base_mut(gc_context).set_maskee(node);
     }
@@ -1140,6 +1437,7 @@ pub trait TDisplayObject<'gc>:
         rectangle: Rectangle<Twips>,
     ) {
         self.base_mut(gc_context).next_scroll_rect = rectangle;
+        self.invalidate_cached_bitmap(gc_context);
     }
 
     /// Whether this object has been removed. Only applies to AVM1.
@@ -1169,6 +1467,7 @@ pub trait TDisplayObject<'gc>:
     /// Returned by the `_visible`/`visible` ActionScript properties.
     fn set_visible(&self, gc_context: MutationContext<'gc, '_>, value: bool) {
         self.base_mut(gc_context).set_visible(value);
+        self.invalidate_cached_bitmap(gc_context);
     }
 
     /// The blend mode used when rendering this display object.
@@ -1181,6 +1480,10 @@ pub trait TDisplayObject<'gc>:
     /// Values other than the default `BlendMode::Normal` implicitly cause cache-as-bitmap behavior.
     fn set_blend_mode(&self, gc_context: MutationContext<'gc, '_>, value: BlendMode) {
         self.base_mut(gc_context).set_blend_mode(value);
+
+        // Note that Flash does not always invalidate on changing the blend mode;
+        // but that's a bug we don't need to copy :)
+        self.invalidate_cached_bitmap(gc_context);
     }
 
     /// The opaque background color of this display object.
@@ -1194,6 +1497,7 @@ pub trait TDisplayObject<'gc>:
     /// is ignored.
     fn set_opaque_background(&self, gc_context: MutationContext<'gc, '_>, value: Option<Color>) {
         self.base_mut(gc_context).set_opaque_background(value);
+        self.invalidate_cached_bitmap(gc_context);
     }
 
     /// Whether this display object represents the root of loaded content.
@@ -1241,17 +1545,23 @@ pub trait TDisplayObject<'gc>:
         self.base_mut(gc_context).set_transformed_by_script(value)
     }
 
-    /// Whether this display object is cached into a bitmap rendering.
-    /// This is set implicitly when a filter or blend mode is applied, or explicitly by the user
-    /// via the `cacheAsBitmap` property.
-    fn is_bitmap_cached(&self) -> bool {
-        self.base().is_bitmap_cached()
+    /// Whether this display object prefers to be cached into a bitmap rendering.
+    /// This is the PlaceObject `cacheAsBitmap` flag - and may be overriden if filters are applied.
+    /// Consider `is_bitmap_cached` for if a bitmap cache is actually in use.
+    fn is_bitmap_cached_preference(&self) -> bool {
+        self.base().is_bitmap_cached_preference()
     }
 
-    /// Explicilty sets this display object to be cached into a bitmap rendering.
-    /// Note that the object will still be bitmap cached if a filter or blend mode is active.
-    fn set_is_bitmap_cached(&self, gc_context: MutationContext<'gc, '_>, value: bool) {
-        self.base_mut(gc_context).set_is_bitmap_cached(value)
+    /// Whether this display object is using a bitmap cache, whether by preference or necessity.
+    fn is_bitmap_cached(&self) -> bool {
+        self.base().cache.is_some()
+    }
+
+    /// Explicitly sets the preference of this display object to be cached into a bitmap rendering.
+    /// Note that the object will still be bitmap cached if a filter is active.
+    fn set_bitmap_cached_preference(&self, gc_context: MutationContext<'gc, '_>, value: bool) {
+        self.base_mut(gc_context)
+            .set_bitmap_cached_preference(value)
     }
 
     /// Whether this display object has a scroll rectangle applied.
@@ -1451,6 +1761,7 @@ pub trait TDisplayObject<'gc>:
     /// (as long as the child is still on a render list)
     fn pre_render(&self, context: &mut RenderContext<'_, 'gc>) {
         let mut this = self.base_mut(context.gc_context);
+        this.clear_invalidate_flag();
         this.scroll_rect = this
             .has_scroll_rect()
             .then(|| this.next_scroll_rect.clone());
@@ -1565,9 +1876,17 @@ pub trait TDisplayObject<'gc>:
         if !self.transformed_by_script() {
             if let Some(matrix) = place_object.matrix {
                 self.set_matrix(context.gc_context, matrix.into());
+                if let Some(parent) = self.parent() {
+                    // Self-transform changes are automatically handled,
+                    // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
+                    parent.invalidate_cached_bitmap(context.gc_context);
+                }
             }
             if let Some(color_transform) = &place_object.color_transform {
                 self.set_color_transform(context.gc_context, *color_transform);
+                if let Some(parent) = self.parent() {
+                    parent.invalidate_cached_bitmap(context.gc_context);
+                }
             }
             if let Some(ratio) = place_object.ratio {
                 if let Some(mut morph_shape) = self.as_morph_shape() {
@@ -1577,7 +1896,7 @@ pub trait TDisplayObject<'gc>:
                 }
             }
             if let Some(is_bitmap_cached) = place_object.is_bitmap_cached {
-                self.set_is_bitmap_cached(context.gc_context, is_bitmap_cached);
+                self.set_bitmap_cached_preference(context.gc_context, is_bitmap_cached);
             }
             if let Some(blend_mode) = place_object.blend_mode {
                 self.set_blend_mode(context.gc_context, blend_mode);
@@ -1586,7 +1905,7 @@ pub trait TDisplayObject<'gc>:
                 if let Some(visible) = place_object.is_visible {
                     self.set_visible(context.gc_context, visible);
                 }
-                if let Some(mut color) = place_object.background_color.clone() {
+                if let Some(mut color) = place_object.background_color {
                     let color = if color.a > 0 {
                         // Force opaque background to have no transpranecy.
                         color.a = 255;
@@ -1597,11 +1916,16 @@ pub trait TDisplayObject<'gc>:
                     self.set_opaque_background(context.gc_context, color);
                 }
             }
+            if let Some(filters) = &place_object.filters {
+                self.set_filters(
+                    context.gc_context,
+                    filters.iter().map(Filter::from).collect(),
+                );
+            }
             // Purposely omitted properties:
             // name, clip_depth, clip_actions
             // These properties are only set on initial placement in `MovieClip::instantiate_child`
             // and can not be modified by subsequent PlaceObject tags.
-            // TODO: Filters need to be applied here.
         }
     }
 
@@ -1657,9 +1981,7 @@ pub trait TDisplayObject<'gc>:
 
     /// Return the version of the SWF that created this movie clip.
     fn swf_version(&self) -> u8 {
-        self.parent()
-            .map(|p| p.swf_version())
-            .unwrap_or(NEWEST_PLAYER_VERSION)
+        self.movie().version()
     }
 
     /// Return the SWF that defines this display object.
@@ -1702,7 +2024,7 @@ pub trait TDisplayObject<'gc>:
     ///
     /// This function implements the AVM2 concept of root clips. For the AVM1
     /// version, see `avm1_root`.
-    fn avm2_root(&self, _context: &mut UpdateContext<'_, 'gc>) -> Option<DisplayObject<'gc>> {
+    fn avm2_root(&self) -> Option<DisplayObject<'gc>> {
         let mut parent = Some((*self).into());
         while let Some(p) = parent {
             if p.is_root() {
@@ -1787,6 +2109,17 @@ pub trait TDisplayObject<'gc>:
             }
         }
     }
+
+    /// Inform this object and its ancestors that it has visually changed and must be redrawn.
+    /// If this object or any ancestor is marked as cacheAsBitmap, it will invalidate that cache.
+    fn invalidate_cached_bitmap(&self, mc: MutationContext<'gc, '_>) {
+        if self.base_mut(mc).invalidate_cached_bitmap() {
+            // Don't inform ancestors if we've already done so this frame
+            if let Some(parent) = self.parent() {
+                parent.invalidate_cached_bitmap(mc);
+            }
+        }
+    }
 }
 
 pub enum DisplayObjectPtr {}
@@ -1859,6 +2192,9 @@ bitflags! {
         /// which are observed to lag behind objects placed by the timeline
         /// (even if they are both placed in the same frame)
         const SKIP_NEXT_ENTER_FRAME          = 1 << 11;
+
+        /// If this object has already had `invalidate_cached_bitmap` called this frame
+        const CACHE_INVALIDATED          = 1 << 12;
     }
 }
 

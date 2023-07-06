@@ -6,7 +6,8 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, ScriptObject, TObject, Value};
 use crate::context::GcContext;
 use gc_arena::{Collect, GcCell, MutationContext};
-use swf::Color;
+use std::ops::Deref;
+use swf::{Color, Fixed16, Fixed8, GlowFilterFlags};
 
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
@@ -35,6 +36,48 @@ impl Default for GlowFilterData {
     }
 }
 
+impl GlowFilterData {
+    pub fn strength(&self) -> f64 {
+        f64::from(self.strength) / 256.0
+    }
+
+    pub fn set_strength(&mut self, strength: f64) {
+        self.strength = ((strength * 256.0) as u16).clamp(0, 0xFF00)
+    }
+}
+
+impl From<&GlowFilterData> for swf::GlowFilter {
+    fn from(filter: &GlowFilterData) -> swf::GlowFilter {
+        let mut flags = GlowFilterFlags::COMPOSITE_SOURCE;
+        flags |= GlowFilterFlags::from_passes(filter.quality as u8);
+        flags.set(GlowFilterFlags::KNOCKOUT, filter.knockout);
+        flags.set(GlowFilterFlags::INNER_GLOW, filter.inner);
+        swf::GlowFilter {
+            color: filter.color,
+            blur_x: Fixed16::from_f64(filter.blur_x),
+            blur_y: Fixed16::from_f64(filter.blur_y),
+            strength: Fixed8::from_f64(filter.strength()),
+            flags,
+        }
+    }
+}
+
+impl From<swf::GlowFilter> for GlowFilterData {
+    fn from(filter: swf::GlowFilter) -> GlowFilterData {
+        let inner = filter.is_inner();
+        let knockout = filter.is_knockout();
+        Self {
+            color: filter.color,
+            quality: filter.num_passes().into(),
+            strength: (filter.strength.to_f64() * 256.0) as u16,
+            knockout,
+            blur_x: filter.blur_x.into(),
+            blur_y: filter.blur_y.into(),
+            inner,
+        }
+    }
+}
+
 #[derive(Clone, Debug, Collect)]
 #[collect(no_drop)]
 #[repr(transparent)]
@@ -55,6 +98,10 @@ impl<'gc> GlowFilter<'gc> {
         glow_filter.set_inner(activation, args.get(6))?;
         glow_filter.set_knockout(activation, args.get(7))?;
         Ok(glow_filter)
+    }
+
+    pub fn from_filter(gc_context: MutationContext<'gc, '_>, filter: swf::GlowFilter) -> Self {
+        Self(GcCell::allocate(gc_context, filter.into()))
     }
 
     pub(crate) fn duplicate(&self, gc_context: MutationContext<'gc, '_>) -> Self {
@@ -174,7 +221,7 @@ impl<'gc> GlowFilter<'gc> {
     }
 
     fn strength(&self) -> f64 {
-        f64::from(self.0.read().strength) / 256.0
+        self.0.read().strength()
     }
 
     fn set_strength(
@@ -183,10 +230,15 @@ impl<'gc> GlowFilter<'gc> {
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
-            let strength = ((value.coerce_to_f64(activation)? * 256.0) as u16).clamp(0, 0xFF00);
-            self.0.write(activation.context.gc_context).strength = strength;
+            self.0
+                .write(activation.context.gc_context)
+                .set_strength(value.coerce_to_f64(activation)?);
         }
         Ok(())
+    }
+
+    pub fn filter(&self) -> swf::GlowFilter {
+        self.0.read().deref().into()
     }
 }
 
@@ -290,18 +342,26 @@ fn method<'gc>(
     })
 }
 
-pub fn create_constructor<'gc>(
+pub fn create_proto<'gc>(
     context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let glow_filter_proto = ScriptObject::new(context.gc_context, Some(proto));
     define_properties_on(PROTO_DECLS, context, glow_filter_proto, fn_proto);
+    glow_filter_proto.into()
+}
+
+pub fn create_constructor<'gc>(
+    context: &mut GcContext<'_, 'gc>,
+    proto: Object<'gc>,
+    fn_proto: Object<'gc>,
+) -> Object<'gc> {
     FunctionObject::constructor(
         context.gc_context,
         Executable::Native(glow_filter_method!(0)),
         constructor_to_fn!(glow_filter_method!(0)),
         fn_proto,
-        glow_filter_proto.into(),
+        proto,
     )
 }

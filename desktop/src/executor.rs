@@ -20,12 +20,12 @@ struct TaskHandle {
     handle: Index,
 
     /// The executor the task belongs to.
-    executor: Arc<Mutex<GlutinAsyncExecutor>>,
+    executor: Arc<Mutex<WinitAsyncExecutor>>,
 }
 
 impl TaskHandle {
     /// Construct a handle to a given task.
-    fn for_task(task: Index, executor: Arc<Mutex<GlutinAsyncExecutor>>) -> Self {
+    fn for_task(task: Index, executor: Arc<Mutex<WinitAsyncExecutor>>) -> Self {
         Self {
             handle: task,
             executor,
@@ -121,7 +121,7 @@ impl TaskHandle {
     );
 }
 
-pub struct GlutinAsyncExecutor {
+pub struct WinitAsyncExecutor {
     /// List of all spawned tasks.
     task_queue: Arena<Task>,
 
@@ -138,8 +138,8 @@ pub struct GlutinAsyncExecutor {
     waiting_for_poll: bool,
 }
 
-impl GlutinAsyncExecutor {
-    /// Construct a new executor for the Glutin event loop.
+impl WinitAsyncExecutor {
+    /// Construct a new executor for the winit event loop.
     ///
     /// This function returns the executor itself, plus the `Sender` necessary
     /// to spawn new tasks.

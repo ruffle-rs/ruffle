@@ -7,7 +7,8 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, ArrayObject, Error, Object, ScriptObject, TObject, Value};
 use crate::context::{GcContext, UpdateContext};
 use gc_arena::{Collect, GcCell, MutationContext};
-use swf::Color;
+use std::ops::Deref;
+use swf::{Color, ConvolutionFilterFlags, Fixed16};
 
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
@@ -43,6 +44,48 @@ impl ConvolutionFilterData {
     fn set_matrix_y(&mut self, matrix_y: u8) {
         self.matrix_y = matrix_y;
         self.resize_matrix();
+    }
+}
+
+impl From<&ConvolutionFilterData> for swf::ConvolutionFilter {
+    fn from(filter: &ConvolutionFilterData) -> swf::ConvolutionFilter {
+        let mut flags = ConvolutionFilterFlags::empty();
+        flags.set(
+            ConvolutionFilterFlags::PRESERVE_ALPHA,
+            filter.preserve_alpha,
+        );
+        flags.set(ConvolutionFilterFlags::CLAMP, filter.clamp);
+        swf::ConvolutionFilter {
+            num_matrix_rows: filter.matrix_y,
+            num_matrix_cols: filter.matrix_x,
+            matrix: filter
+                .matrix
+                .iter()
+                .copied()
+                .map(Fixed16::from_f32)
+                .collect(),
+            divisor: Fixed16::from_f32(filter.divisor),
+            bias: Fixed16::from_f32(filter.bias),
+            default_color: filter.color,
+            flags,
+        }
+    }
+}
+
+impl From<swf::ConvolutionFilter> for ConvolutionFilterData {
+    fn from(filter: swf::ConvolutionFilter) -> ConvolutionFilterData {
+        let preserve_alpha = filter.is_preserve_alpha();
+        let clamp = filter.is_clamped();
+        Self {
+            matrix_x: filter.num_matrix_cols,
+            matrix_y: filter.num_matrix_rows,
+            matrix: filter.matrix.into_iter().map(Fixed16::to_f32).collect(),
+            divisor: filter.divisor.to_f32(),
+            bias: filter.bias.to_f32(),
+            preserve_alpha,
+            clamp,
+            color: filter.default_color,
+        }
     }
 }
 
@@ -92,6 +135,13 @@ impl<'gc> ConvolutionFilter<'gc> {
         convolution_filter.set_color(activation, args.get(7))?;
         convolution_filter.set_alpha(activation, args.get(8))?;
         Ok(convolution_filter)
+    }
+
+    pub fn from_filter(
+        gc_context: MutationContext<'gc, '_>,
+        filter: swf::ConvolutionFilter,
+    ) -> Self {
+        Self(GcCell::allocate(gc_context, filter.into()))
     }
 
     pub(crate) fn duplicate(&self, gc_context: MutationContext<'gc, '_>) -> Self {
@@ -245,7 +295,7 @@ impl<'gc> ConvolutionFilter<'gc> {
     }
 
     fn color(&self) -> Color {
-        self.0.read().color.clone()
+        self.0.read().color
     }
 
     fn set_color(
@@ -270,6 +320,10 @@ impl<'gc> ConvolutionFilter<'gc> {
             self.0.write(activation.context.gc_context).color.a = (alpha * 255.0) as u8;
         }
         Ok(())
+    }
+
+    pub fn filter(&self) -> swf::ConvolutionFilter {
+        self.0.read().deref().into()
     }
 }
 
@@ -381,18 +435,26 @@ fn method<'gc>(
     })
 }
 
-pub fn create_constructor<'gc>(
+pub fn create_proto<'gc>(
     context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let convolution_filter_proto = ScriptObject::new(context.gc_context, Some(proto));
     define_properties_on(PROTO_DECLS, context, convolution_filter_proto, fn_proto);
+    convolution_filter_proto.into()
+}
+
+pub fn create_constructor<'gc>(
+    context: &mut GcContext<'_, 'gc>,
+    proto: Object<'gc>,
+    fn_proto: Object<'gc>,
+) -> Object<'gc> {
     FunctionObject::constructor(
         context.gc_context,
         Executable::Native(convolution_filter_method!(0)),
         constructor_to_fn!(convolution_filter_method!(0)),
         fn_proto,
-        convolution_filter_proto.into(),
+        proto,
     )
 }

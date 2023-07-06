@@ -1,11 +1,13 @@
+use ruffle_render::pixel_bender::PixelBenderParam;
+
 use crate::{
     avm2::{string::AvmString, Activation, Error, Multiname, TObject, Value},
-    pixel_bender::PixelBenderParam,
+    pixel_bender::PixelBenderTypeExt,
 };
 
 pub fn make_shader_parameter<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    param: PixelBenderParam,
+    param: &PixelBenderParam,
     index: usize,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let ns = activation.avm2().flash_display_internal;
@@ -29,7 +31,7 @@ pub fn make_shader_parameter<'gc>(
             obj.set_property(&Multiname::new(ns, "_type"), type_name.into(), activation)?;
             for meta in metadata {
                 let name = AvmString::new_utf8(activation.context.gc_context, &meta.key);
-                let value = meta.value.clone().into_avm2_value(activation)?;
+                let value = meta.value.clone().as_avm2_value(activation)?;
                 obj.set_public_property(name, value, activation)?;
             }
             obj.set_public_property(
@@ -47,7 +49,7 @@ pub fn make_shader_parameter<'gc>(
                 .construct(activation, &[])?;
             obj.set_property(
                 &Multiname::new(ns, "_channels"),
-                channels.into(),
+                (*channels).into(),
                 activation,
             )?;
             obj.set_property(&Multiname::new(ns, "_index"), index.into(), activation)?;

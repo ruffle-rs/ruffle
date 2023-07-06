@@ -5,7 +5,7 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use ruffle_render::backend::VertexBuffer;
 use std::cell::{Ref, RefMut};
 use std::rc::Rc;
@@ -14,7 +14,11 @@ use super::Context3DObject;
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct VertexBuffer3DObject<'gc>(GcCell<'gc, VertexBuffer3DObjectData<'gc>>);
+pub struct VertexBuffer3DObject<'gc>(pub GcCell<'gc, VertexBuffer3DObjectData<'gc>>);
+
+#[derive(Clone, Collect, Copy, Debug)]
+#[collect(no_drop)]
+pub struct VertexBuffer3DObjectWeak<'gc>(pub GcWeakCell<'gc, VertexBuffer3DObjectData<'gc>>);
 
 impl<'gc> VertexBuffer3DObject<'gc> {
     pub fn from_handle(
@@ -38,7 +42,7 @@ impl<'gc> VertexBuffer3DObject<'gc> {
         .into();
         this.install_instance_slots(activation.context.gc_context);
 
-        class.call_native_init(Some(this), &[], activation)?;
+        class.call_native_init(this.into(), &[], activation)?;
 
         Ok(this)
     }

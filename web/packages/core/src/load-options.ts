@@ -331,6 +331,13 @@ export interface BaseLoadOptions {
     compatibilityRules?: boolean;
 
     /**
+     * Favor using the real Adobe Flash Player over Ruffle if the browser supports it.
+     *
+     * @default true
+     */
+    favorFlash?: boolean;
+
+    /**
      * Whether or not to display an overlay with a warning when
      * loading a movie with unsupported content.
      *
@@ -406,6 +413,13 @@ export interface BaseLoadOptions {
      * @default ""
      */
     salign?: string;
+
+    /**
+     * If set to true, movies are prevented from changing the stage alignment.
+     *
+     * @default false
+     */
+    forceAlign?: boolean;
 
     /**
      * This is equivalent to Stage.quality.

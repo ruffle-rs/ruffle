@@ -8,24 +8,27 @@ repository.workspace = true
 version.workspace = true
 
 [dependencies]
-wgpu = { version = "0.16", features = ["naga"] }
-tracing = "0.1.37"
-ruffle_render = { path = "..", features = ["tessellator"] }
+wgpu = { workspace = true, features = ["naga"] }
+tracing = { workspace = true }
+ruffle_render = { path = "..", features = ["tessellator", "wgpu"] }
 bytemuck = { version = "1.13.1", features = ["derive"] }
 raw-window-handle = "0.5"
-clap = { version = "4.3.1", features = ["derive"], optional = true }
-enum-map = "2.5.0"
+clap = { version = "4.3.10", features = ["derive"], optional = true }
+enum-map = "2.6.0"
 fnv = "1.0.7"
 swf = { path = "../../swf" }
 image = { version = "0.24.6", default-features = false }
-naga_oil = "0.7.0"
-ouroboros = "0.15.6"
+naga_oil = { workspace = true }
+ouroboros = "0.17.0"
 typed-arena = "2.0.2"
 gc-arena = { workspace = true }
 naga-agal = { path = "../naga-agal" }
+naga-pixelbender = { path = "../naga-pixelbender" }
 downcast-rs = "1.2.0"
 profiling = { version = "1.0", default-features = false, optional = true }
-naga = { version = "0.12.2", features = ["validate", "wgsl-out"] }
+lru = "0.10.1"
+naga = { workspace = true }
+indexmap = "2.0.0"
 
 # desktop
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
@@ -33,7 +36,7 @@ version = "0.3.28"
 
 # wasm
 [target.'cfg(target_family = "wasm")'.dependencies.web-sys]
-version = "0.3.63"
+version = "0.3.64"
 features = ["HtmlCanvasElement"]
 
 [features]
