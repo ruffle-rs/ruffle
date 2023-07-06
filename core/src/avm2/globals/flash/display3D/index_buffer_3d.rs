@@ -13,10 +13,10 @@ pub fn index_buffer_3d_allocator<'gc>(
 
 pub fn upload_from_byte_array<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(index_buffer) = this.and_then(|this| this.as_index_buffer()) {
+    if let Some(index_buffer) = this.as_index_buffer() {
         let byte_array = args.get_object(activation, 0, "byteArray")?;
         let byte_array = byte_array
             .as_bytearray()
@@ -44,10 +44,10 @@ pub fn upload_from_byte_array<'gc>(
 
 pub fn upload_from_vector<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(index_buffer) = this.and_then(|this| this.as_index_buffer()) {
+    if let Some(index_buffer) = this.as_index_buffer() {
         let vector = args
             .get(0)
             .unwrap_or(&Value::Undefined)

@@ -11,10 +11,10 @@ pub use crate::avm2::object::q_name_allocator;
 /// Implements `QName`'s `init` method, which is called from the constructor.
 pub fn init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.unwrap().as_qname_object().unwrap();
+    let this = this.as_qname_object().unwrap();
     let namespace = if !matches!(args[1], Value::Undefined) {
         let ns_arg = args.get(0).cloned().unwrap();
         let local_arg = args.get(1).cloned().unwrap_or(Value::Undefined);
@@ -61,10 +61,10 @@ pub fn init<'gc>(
 /// Implements `QName.localName`'s getter
 pub fn get_local_name<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.and_then(|t| t.as_qname_object()) {
+    if let Some(this) = this.as_qname_object() {
         return Ok(this.local_name().into());
     }
 
@@ -74,10 +74,10 @@ pub fn get_local_name<'gc>(
 /// Implements `QName.uri`'s getter
 pub fn get_uri<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.and_then(|t| t.as_qname_object()) {
+    if let Some(this) = this.as_qname_object() {
         return Ok(this.uri().map(Value::from).unwrap_or(Value::Null));
     }
 
@@ -87,10 +87,10 @@ pub fn get_uri<'gc>(
 /// Implements `QName.AS3::toString` and `QName.prototype.toString`
 pub fn to_string<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.and_then(|t| t.as_qname_object()) {
+    if let Some(this) = this.as_qname_object() {
         return Ok(this.name().as_uri(activation.context.gc_context).into());
     }
 

@@ -4,10 +4,10 @@ pub use crate::avm2::object::netstream_allocator as net_stream_allocator;
 
 pub fn get_bytes_loaded<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(ns) = this.and_then(|o| o.as_netstream()) {
+    if let Some(ns) = this.as_netstream() {
         return Ok(ns.bytes_loaded().into());
     }
 
@@ -16,10 +16,10 @@ pub fn get_bytes_loaded<'gc>(
 
 pub fn get_bytes_total<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(ns) = this.and_then(|o| o.as_netstream()) {
+    if let Some(ns) = this.as_netstream() {
         return Ok(ns.bytes_total().into());
     }
 
@@ -28,10 +28,10 @@ pub fn get_bytes_total<'gc>(
 
 pub fn play<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(ns) = this.and_then(|o| o.as_netstream()) {
+    if let Some(ns) = this.as_netstream() {
         let name = args
             .get(0)
             .cloned()
@@ -47,10 +47,10 @@ pub fn play<'gc>(
 
 pub fn pause<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(ns) = this.and_then(|o| o.as_netstream()) {
+    if let Some(ns) = this.as_netstream() {
         ns.pause(&mut activation.context);
     }
 
@@ -59,10 +59,10 @@ pub fn pause<'gc>(
 
 pub fn resume<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(ns) = this.and_then(|o| o.as_netstream()) {
+    if let Some(ns) = this.as_netstream() {
         ns.resume(&mut activation.context);
     }
 
@@ -71,10 +71,10 @@ pub fn resume<'gc>(
 
 pub fn toggle_pause<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(ns) = this.and_then(|o| o.as_netstream()) {
+    if let Some(ns) = this.as_netstream() {
         ns.toggle_paused(&mut activation.context);
     }
 

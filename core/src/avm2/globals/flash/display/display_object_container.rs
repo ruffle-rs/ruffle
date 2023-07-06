@@ -16,12 +16,10 @@ use std::cmp::min;
 /// Implements `flash.display.DisplayObjectContainer`'s native instance constructor.
 pub fn native_instance_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this {
-        activation.super_init(this, &[])?;
-    }
+    activation.super_init(this, &[])?;
 
     Ok(Value::Undefined)
 }
@@ -123,11 +121,11 @@ pub(super) fn add_child_to_displaylist<'gc>(
 /// Implements `DisplayObjectContainer.getChildAt`
 pub fn get_child_at<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_container())
     {
         let index = args.get_i32(activation, 0)?;
@@ -149,11 +147,11 @@ pub fn get_child_at<'gc>(
 /// Implements `DisplayObjectContainer.getChildByName`
 pub fn get_child_by_name<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_container())
     {
         let name = args.get_string(activation, 0)?;
@@ -171,10 +169,10 @@ pub fn get_child_by_name<'gc>(
 /// Implements `DisplayObjectContainer.addChild`
 pub fn add_child<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(parent) = this.and_then(|this| this.as_display_object()) {
+    if let Some(parent) = this.as_display_object() {
         if let Some(ctr) = parent.as_container() {
             let child = args.get_object(activation, 0, "child")?;
             if child.as_display_object().is_none() {
@@ -203,10 +201,10 @@ pub fn add_child<'gc>(
 /// Implements `DisplayObjectContainer.addChildAt`
 pub fn add_child_at<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(parent) = this.and_then(|this| this.as_display_object()) {
+    if let Some(parent) = this.as_display_object() {
         let child = args
             .get_object(activation, 0, "child")?
             .as_display_object()
@@ -225,10 +223,10 @@ pub fn add_child_at<'gc>(
 /// Implements `DisplayObjectContainer.removeChild`
 pub fn remove_child<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(parent) = this.and_then(|this| this.as_display_object()) {
+    if let Some(parent) = this.as_display_object() {
         let child = args
             .get_object(activation, 0, "child")?
             .as_display_object()
@@ -246,11 +244,11 @@ pub fn remove_child<'gc>(
 /// Implements `DisplayObjectContainer.numChildren`
 pub fn get_num_children<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(parent) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_container())
     {
         return Ok(parent.num_children().into());
@@ -262,10 +260,10 @@ pub fn get_num_children<'gc>(
 /// Implements `DisplayObjectContainer.contains`
 pub fn contains<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(parent) = this.and_then(|this| this.as_display_object()) {
+    if let Some(parent) = this.as_display_object() {
         if parent.as_container().is_some() {
             if let Some(child) = args.get_object(activation, 0, "child")?.as_display_object() {
                 let mut maybe_child_parent = Some(child);
@@ -286,10 +284,10 @@ pub fn contains<'gc>(
 /// Implements `DisplayObjectContainer.getChildIndex`
 pub fn get_child_index<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(parent) = this.and_then(|this| this.as_display_object()) {
+    if let Some(parent) = this.as_display_object() {
         if let Some(ctr) = parent.as_container() {
             let target_child = args.get_object(activation, 0, "child")?.as_display_object();
 
@@ -309,10 +307,10 @@ pub fn get_child_index<'gc>(
 /// Implements `DisplayObjectContainer.removeChildAt`
 pub fn remove_child_at<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(parent) = this.and_then(|this| this.as_display_object()) {
+    if let Some(parent) = this.as_display_object() {
         if let Some(mut ctr) = parent.as_container() {
             let target_child = args.get_i32(activation, 0)?;
 
@@ -344,10 +342,10 @@ pub fn remove_child_at<'gc>(
 /// Implements `DisplayObjectContainer.removeChildren`
 pub fn remove_children<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(parent) = this.and_then(|this| this.as_display_object()) {
+    if let Some(parent) = this.as_display_object() {
         if let Some(mut ctr) = parent.as_container() {
             let from = args.get_i32(activation, 0)?;
             let to = args.get_i32(activation, 1)?;
@@ -406,10 +404,10 @@ pub fn remove_children<'gc>(
 /// Implements `DisplayObjectContainer.setChildIndex`
 pub fn set_child_index<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(parent) = this.and_then(|this| this.as_display_object()) {
+    if let Some(parent) = this.as_display_object() {
         let child = args
             .get_object(activation, 0, "child")?
             .as_display_object()
@@ -433,10 +431,10 @@ pub fn set_child_index<'gc>(
 /// Implements `DisplayObjectContainer.swapChildrenAt`
 pub fn swap_children_at<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(parent) = this.and_then(|this| this.as_display_object()) {
+    if let Some(parent) = this.as_display_object() {
         if let Some(mut ctr) = parent.as_container() {
             let index0 = args.get_i32(activation, 0)?;
             let index1 = args.get_i32(activation, 1)?;
@@ -476,10 +474,10 @@ pub fn swap_children_at<'gc>(
 /// Implements `DisplayObjectContainer.swapChildren`
 pub fn swap_children<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(parent) = this.and_then(|this| this.as_display_object()) {
+    if let Some(parent) = this.as_display_object() {
         if let Some(mut ctr) = parent.as_container() {
             let child0 = args
                 .get_object(activation, 0, "child1")?
@@ -512,10 +510,10 @@ pub fn swap_children<'gc>(
 /// Implements `DisplayObjectContainer.stopAllMovieClips`
 pub fn stop_all_movie_clips<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(parent) = this.and_then(|this| this.as_display_object()) {
+    if let Some(parent) = this.as_display_object() {
         if let Some(mc) = parent.as_movie_clip() {
             mc.stop(&mut activation.context);
         }
@@ -524,7 +522,10 @@ pub fn stop_all_movie_clips<'gc>(
             for child in ctr.iter_render_list() {
                 if child.as_container().is_some() {
                     let child_this = child.object2().as_object();
-                    stop_all_movie_clips(activation, child_this, &[])?;
+
+                    if let Some(child_this) = child_this {
+                        stop_all_movie_clips(activation, child_this, &[])?;
+                    }
                 }
             }
         }
@@ -535,7 +536,7 @@ pub fn stop_all_movie_clips<'gc>(
 
 pub fn get_objects_under_point<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_method!(
@@ -548,7 +549,7 @@ pub fn get_objects_under_point<'gc>(
 
 pub fn are_inaccessible_objects_under_point<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_method!(
@@ -561,11 +562,11 @@ pub fn are_inaccessible_objects_under_point<'gc>(
 
 pub fn get_mouse_children<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_container())
     {
         return Ok(dobj.raw_container().mouse_children().into());
@@ -575,11 +576,11 @@ pub fn get_mouse_children<'gc>(
 
 pub fn set_mouse_children<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_container())
     {
         let mouse_children = args.get_bool(0);
@@ -592,7 +593,7 @@ pub fn set_mouse_children<'gc>(
 
 pub fn get_tab_children<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(
@@ -606,7 +607,7 @@ pub fn get_tab_children<'gc>(
 
 pub fn set_tab_children<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_setter!(

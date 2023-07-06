@@ -23,10 +23,10 @@ fn ill_formed_markup_err<'gc>(
 
 pub fn init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.unwrap().as_xml_object().unwrap();
+    let this = this.as_xml_object().unwrap();
     let value = args[0];
 
     if let Some(obj) = value.as_object() {
@@ -58,10 +58,10 @@ pub fn init<'gc>(
 
 pub fn name<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let node = this.unwrap().as_xml_object().unwrap();
+    let node = this.as_xml_object().unwrap();
     if let Some(local_name) = node.local_name() {
         avm2_stub_method!(activation, "XML", "name", "namespaces");
         // FIXME - use namespace
@@ -74,7 +74,7 @@ pub fn name<'gc>(
 
 pub fn namespace<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // FIXME: Implement namespace support (including prefix)
@@ -85,39 +85,39 @@ pub fn namespace<'gc>(
 
 pub fn local_name<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let node = this.unwrap().as_xml_object().unwrap();
+    let node = this.as_xml_object().unwrap();
     Ok(node.local_name().map_or(Value::Null, Value::String))
 }
 
 pub fn to_string<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let xml = this.unwrap().as_xml_object().unwrap();
+    let xml = this.as_xml_object().unwrap();
     let node = xml.node();
     Ok(Value::String(node.xml_to_string(activation)?))
 }
 
 pub fn to_xml_string<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let xml = this.unwrap().as_xml_object().unwrap();
+    let xml = this.as_xml_object().unwrap();
     let node = xml.node();
     Ok(Value::String(node.xml_to_xml_string(activation)?))
 }
 
 pub fn child<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let xml = this.unwrap().as_xml_object().unwrap();
+    let xml = this.as_xml_object().unwrap();
     let multiname = name_to_multiname(activation, &args[0], false)?;
     // FIXME: Support numerical indexes.
     let children = if let E4XNodeKind::Element { children, .. } = &*xml.node().kind() {
@@ -135,10 +135,10 @@ pub fn child<'gc>(
 
 pub fn child_index<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let xml = this.unwrap().as_xml_object().unwrap();
+    let xml = this.as_xml_object().unwrap();
     let node = xml.node();
 
     let parent = if let Some(parent) = node.parent() {
@@ -164,10 +164,10 @@ pub fn child_index<'gc>(
 
 pub fn children<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let xml = this.unwrap().as_xml_object().unwrap();
+    let xml = this.as_xml_object().unwrap();
     let children = if let E4XNodeKind::Element { children, .. } = &*xml.node().kind() {
         children.iter().map(|node| E4XOrXml::E4X(*node)).collect()
     } else {
@@ -179,20 +179,20 @@ pub fn children<'gc>(
 
 pub fn copy<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let xml = this.unwrap().as_xml_object().unwrap();
+    let xml = this.as_xml_object().unwrap();
     let node = xml.node();
     Ok(XmlObject::new(node.deep_copy(activation.context.gc_context), activation).into())
 }
 
 pub fn parent<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let xml = this.unwrap().as_xml_object().unwrap();
+    let xml = this.as_xml_object().unwrap();
     let node = xml.node();
     Ok(node.parent().map_or(Value::Undefined, |parent| {
         XmlObject::new(parent, activation).into()
@@ -201,10 +201,10 @@ pub fn parent<'gc>(
 
 pub fn elements<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let xml = this.unwrap().as_xml_object().unwrap();
+    let xml = this.as_xml_object().unwrap();
     let multiname = if args[0] == Value::Undefined {
         Multiname::any(activation.context.gc_context)
     } else {
@@ -228,10 +228,9 @@ pub fn elements<'gc>(
 
 pub fn attributes<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.unwrap();
     let xml = this.as_xml_object().unwrap();
     let attributes = if let E4XNodeKind::Element { attributes, .. } = &*xml.node().kind() {
         attributes.iter().map(|node| E4XOrXml::E4X(*node)).collect()
@@ -244,10 +243,9 @@ pub fn attributes<'gc>(
 
 pub fn attribute<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.unwrap();
     let xml = this.as_xml_object().unwrap();
     let multiname = name_to_multiname(activation, &args[0], true)?;
     let attributes = if let E4XNodeKind::Element { attributes, .. } = &*xml.node().kind() {
@@ -265,7 +263,7 @@ pub fn attribute<'gc>(
 
 pub fn call_handler<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(obj) = args.try_get_object(activation, 0) {
@@ -294,10 +292,9 @@ pub fn call_handler<'gc>(
 
 pub fn node_kind<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.unwrap();
     let xml = this.as_xml_object().unwrap();
     let name = match &*xml.node().kind() {
         E4XNodeKind::Text(_) => "text",
@@ -312,10 +309,9 @@ pub fn node_kind<'gc>(
 
 pub fn append_child<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.unwrap();
     let xml = this.as_xml_object().unwrap();
 
     let child = args.get_object(activation, 0, "child")?;
@@ -338,10 +334,10 @@ pub fn append_child<'gc>(
 
 pub fn descendants<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let xml = this.unwrap().as_xml_object().unwrap();
+    let xml = this.as_xml_object().unwrap();
     let multiname = name_to_multiname(activation, &args[0], false)?;
     let mut descendants = Vec::new();
     xml.node().descendants(&multiname, &mut descendants);
@@ -350,10 +346,10 @@ pub fn descendants<'gc>(
 
 pub fn text<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let xml = this.unwrap().as_xml_object().unwrap();
+    let xml = this.as_xml_object().unwrap();
     let nodes = if let E4XNodeKind::Element { children, .. } = &*xml.node().kind() {
         children
             .iter()
@@ -368,7 +364,7 @@ pub fn text<'gc>(
 
 pub fn length<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(Value::Integer(1))
@@ -376,20 +372,20 @@ pub fn length<'gc>(
 
 pub fn has_complex_content<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let xml_obj = this.unwrap().as_xml_object().unwrap();
+    let xml_obj = this.as_xml_object().unwrap();
     let result = xml_obj.node().has_complex_content();
     Ok(result.into())
 }
 
 pub fn has_simple_content<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let xml_obj = this.unwrap().as_xml_object().unwrap();
+    let xml_obj = this.as_xml_object().unwrap();
     let result = xml_obj.node().has_simple_content();
     Ok(result.into())
 }

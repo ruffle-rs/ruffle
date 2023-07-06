@@ -9,7 +9,7 @@ use crate::string::AvmString;
 
 pub fn get_sandbox_type<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let sandbox_type = activation.context.system.sandbox_type.to_string();
@@ -18,7 +18,7 @@ pub fn get_sandbox_type<'gc>(
 
 pub fn allow_domain<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_method!(activation, "flash.system.Security", "allowDomain");
@@ -27,7 +27,7 @@ pub fn allow_domain<'gc>(
 
 pub fn allow_insecure_domain<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_method!(activation, "flash.system.Security", "allowInsecureDomain");
@@ -36,7 +36,7 @@ pub fn allow_insecure_domain<'gc>(
 
 pub fn load_policy_file<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_method!(activation, "flash.system.Security", "loadPolicyFile");
@@ -45,7 +45,7 @@ pub fn load_policy_file<'gc>(
 
 pub fn show_settings<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_method!(activation, "flash.system.Security", "showSettings");

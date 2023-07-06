@@ -73,25 +73,23 @@ pub fn bitmap_allocator<'gc>(
 /// Implements `flash.display.Bitmap`'s `init` method, which is called from the constructor
 pub fn init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this {
-        let bitmap_data = args
-            .try_get_object(activation, 0)
-            .and_then(|o| o.as_bitmap_data());
-        //TODO: Pixel snapping is not supported
-        let _pixel_snapping = args.get_string(activation, 1);
-        let smoothing = args.get_bool(2);
+    let bitmap_data = args
+        .try_get_object(activation, 0)
+        .and_then(|o| o.as_bitmap_data());
+    //TODO: Pixel snapping is not supported
+    let _pixel_snapping = args.get_string(activation, 1);
+    let smoothing = args.get_bool(2);
 
-        if let Some(bitmap) = this.as_display_object().and_then(|dobj| dobj.as_bitmap()) {
-            if let Some(bitmap_data) = bitmap_data {
-                bitmap.set_bitmap_data(&mut activation.context, bitmap_data);
-            }
-            bitmap.set_smoothing(activation.context.gc_context, smoothing);
-        } else {
-            unreachable!();
+    if let Some(bitmap) = this.as_display_object().and_then(|dobj| dobj.as_bitmap()) {
+        if let Some(bitmap_data) = bitmap_data {
+            bitmap.set_bitmap_data(&mut activation.context, bitmap_data);
         }
+        bitmap.set_smoothing(activation.context.gc_context, smoothing);
+    } else {
+        unreachable!();
     }
 
     Ok(Value::Undefined)
@@ -100,13 +98,10 @@ pub fn init<'gc>(
 /// Implements `Bitmap.bitmapData`'s getter.
 pub fn get_bitmap_data<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap) = this
-        .and_then(|this| this.as_display_object())
-        .and_then(|dobj| dobj.as_bitmap())
-    {
+    if let Some(bitmap) = this.as_display_object().and_then(|dobj| dobj.as_bitmap()) {
         let mut value = bitmap.bitmap_data_wrapper().object2();
 
         // AS3 expects an unset BitmapData to be null, not 'undefined'
@@ -122,13 +117,10 @@ pub fn get_bitmap_data<'gc>(
 /// Implements `Bitmap.bitmapData`'s setter.
 pub fn set_bitmap_data<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap) = this
-        .and_then(|this| this.as_display_object())
-        .and_then(|dobj| dobj.as_bitmap())
-    {
+    if let Some(bitmap) = this.as_display_object().and_then(|dobj| dobj.as_bitmap()) {
         let bitmap_data = args.get(0).unwrap_or(&Value::Null);
         let bitmap_data = if matches!(bitmap_data, Value::Null) {
             BitmapDataWrapper::dummy(activation.context.gc_context)
@@ -147,7 +139,7 @@ pub fn set_bitmap_data<'gc>(
 /// Stub `Bitmap.pixelSnapping`'s getter
 pub fn get_pixel_snapping<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(activation, "flash.display.Bitmap", "pixelSnapping");
@@ -157,7 +149,7 @@ pub fn get_pixel_snapping<'gc>(
 /// Stub `Bitmap.pixelSnapping`'s setter
 pub fn set_pixel_snapping<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_setter!(activation, "flash.display.Bitmap", "pixelSnapping");
@@ -167,13 +159,10 @@ pub fn set_pixel_snapping<'gc>(
 /// Implement `Bitmap.smoothing`'s getter
 pub fn get_smoothing<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap) = this
-        .and_then(|this| this.as_display_object())
-        .and_then(|dobj| dobj.as_bitmap())
-    {
+    if let Some(bitmap) = this.as_display_object().and_then(|dobj| dobj.as_bitmap()) {
         return Ok(bitmap.smoothing().into());
     }
 
@@ -183,13 +172,10 @@ pub fn get_smoothing<'gc>(
 /// Implement `Bitmap.smoothing`'s setter
 pub fn set_smoothing<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap) = this
-        .and_then(|this| this.as_display_object())
-        .and_then(|dobj| dobj.as_bitmap())
-    {
+    if let Some(bitmap) = this.as_display_object().and_then(|dobj| dobj.as_bitmap()) {
         let smoothing = args.get_bool(0);
         bitmap.set_smoothing(activation.context.gc_context, smoothing);
     }

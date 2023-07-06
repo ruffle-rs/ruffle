@@ -4,7 +4,7 @@ use crate::string::AvmString;
 /// Implements `domain` getter
 pub fn get_domain<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let movie = activation.context.swf;

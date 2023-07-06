@@ -152,7 +152,7 @@ impl<'gc> Executable<'gc> {
                     .context
                     .avm2
                     .push_call(activation.context.gc_context, self);
-                method(&mut activation, Some(receiver), &arguments)
+                method(&mut activation, receiver, &arguments)
             }
             Executable::Action(bm) => {
                 if bm.method.is_unchecked() {
