@@ -12,6 +12,23 @@
  *
  *****************************************************************************/
 
+ // Relevant portion of the Adobe Pixelbender Toolkit 2 license:
+
+/*
+
+(a) Under this License Agreement, You may use, modify or merge all or portions of the Sample Code
+    with Your application programs and distribute it only as part of Your products in object code form.
+    Any modified or merged portion of the Sample Code is subject to this License Agreement.
+    You are required to include Adobe’s copyright notices on Your application programs
+    except for those programs in which You include a copyright notice reflecting
+    the copyright ownership of Developer in such programs.
+    You may not use Adobe’s name, logo or trademarks to market Your products.
+    You may not assign Your rights or obligations granted under this License Agreement
+    without the prior written consent of Adobe.
+    Any attempted assignment or transfer without such prior written consent from Adobe shall be void and of no effect.
+*/
+ 
+
 <languageVersion: 1.0;> 
  
 // twirl: A simple example to demonstrate the use of the sampling 
