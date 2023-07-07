@@ -398,7 +398,7 @@ impl<'gc> Multiname<'gc> {
         }
 
         if let Some(param) = self.param {
-            uri.push_str(WStr::from_units(b"<"));
+            uri.push_str(WStr::from_units(b".<"));
             uri.push_str(&param.to_qualified_name(mc));
             uri.push_str(WStr::from_units(b">"));
         }

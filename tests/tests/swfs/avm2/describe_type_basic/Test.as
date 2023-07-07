@@ -73,6 +73,10 @@ class Subclass extends Base {
 	public override function overridenMethod(firstParam: *, secondParam: Dictionary, thirdParam: DisplayObject = null): Object { return null; }
 }
 
+class HasVector {
+    public var vec1: Vector.<int>;
+}
+
 describeXMLNormalized(Object);
 describeXMLNormalized(new Object());
 describeXMLNormalized(Subclass);
@@ -84,3 +88,4 @@ describeXMLNormalized(1);
 describeXMLNormalized(Class);
 describeXMLNormalized(Dictionary);
 describeXMLNormalized(new Dictionary());
+describeXMLNormalized(new HasVector());
