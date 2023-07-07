@@ -1,29 +1,25 @@
 /*****************************************************************************
  *
- * Copyright (C) 2008 Adobe Systems Incorporated
+ * ADOBE SYSTEMS INCORPORATED
+ * Copyright (C) 2010 Adobe Systems Incorporated
  * All Rights Reserved.
  *
- * NOTICE:  All information contained  herein is,  and remains the property of
- * Adobe Systems Incorporated and its suppliers, if any.  The intellectual and
- * technical  concepts  contained  herein  are  proprietary  to  Adobe Systems
- * Incorporated  and  its suppliers  and may  be covered  by U.S.  and Foreign
- * Patents, patents in process, and are protected by trade secret or copyright
- * law.  Dissemination of this information or reproduction of this material is
- * strictly forbidden  unless prior  written permission is obtained from Adobe
- * Systems Incorporated.
+ * NOTICE:  Adobe permits you to use, modify, and distribute this file in 
+ * accordance with the terms of the Adobe license agreement accompanying it.  
+ * If you have received this file from a source other than Adobe, then your 
+ * use, modification, or distribution of it requires the prior written 
+ * permission of Adobe.
  *
  *****************************************************************************/
 
-// From https://github.com/nojvek/pixelbender/blob/master/twirl/twirl.pbk
-
 <languageVersion: 1.0;> 
  
-// twirl: A simple example to demonstrate the use of the hydra sampling 
+// twirl: A simple example to demonstrate the use of the sampling 
 //           function to yield an interesting effect.  The filter performs 
 //           some math based on the parameter values to change the sampling 
 //           location.
 kernel twirl
-<   namespace : "AIF";
+<   namespace : "Pixel Bender Samples";
     vendor : "Adobe Systems";
     version : 2;
     description : "twist an image around"; >
@@ -34,7 +30,12 @@ kernel twirl
     // An input parameter to specify the radius of the twirl effect.
     // For this parameter, we're using metadata to indicate the minimum,
     // maximum, and default values, so that the tools can set the values 
-    // in the correctly in the UI for the filter.
+    // in the correctly in the UI for the filter.  
+    // NOTE: This parameter indicates how many pixel values out from the 
+    // center location we would like to twirl.  The radius is in the pixel
+    // coordinate space to ensure that we always rotate in a circle.  For 
+    // more information regarding the coordinate spaces, please consult the 
+    // pixel bender spec.
     parameter float radius 
     <       
         minValue:float(0.1);
@@ -88,8 +89,7 @@ kernel twirl
     evaluatePixel()
     {
         // convert the angle to radians
-        float twirlAngleRadians = (twirlAngle / 360.0) * 2.0 * PI;
-
+        float twirlAngleRadians = radians(twirlAngle);
 
         // calculate where we are relative to the center of the twirl
         float2 relativePos = outCoord() - center;
@@ -106,6 +106,7 @@ kernel twirl
         float sincWeight = sin( distFromCenter ) * twirlAngleRadians / ( distFromCenter );
         float gaussWeight = exp( -1.0 * distFromCenter * distFromCenter ) * twirlAngleRadians;
         
+
         // protect the algorithm from a 1 / 0 error
         if (distFromCenter == 0.0) {
             adjustedRadians = twirlAngleRadians;
@@ -114,7 +115,10 @@ kernel twirl
         }
         
         // switch between a gaussian falloff or a sinc fallof
-        if (gaussOrSinc != 1) {
+        
+        if (gaussOrSinc == 0) {
+            adjustedRadians = adjustedRadians;
+        } else {
             adjustedRadians = gaussWeight;
         }
         
@@ -135,3 +139,4 @@ kernel twirl
         outputColor = sampleLinear( oImage, relativePos + center );
     }
 }
+
