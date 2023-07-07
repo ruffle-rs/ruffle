@@ -5,7 +5,11 @@ use crate::avm1::{
     ExecutionReason as Avm1ExecutionReason, FlvValueAvm1Ext, ScriptObject as Avm1ScriptObject,
     TObject as Avm1TObject, Value as Avm1Value,
 };
-use crate::avm2::{Activation as Avm2Activation, Avm2, EventObject as Avm2EventObject};
+use crate::avm2::object::TObject as Avm2TObject;
+use crate::avm2::{
+    Activation as Avm2Activation, Avm2, Error as Avm2Error, EventObject as Avm2EventObject,
+    FlvValueAvm2Ext, Object as Avm2Object,
+};
 use crate::backend::navigator::Request;
 use crate::context::UpdateContext;
 use crate::loader::Error;
@@ -183,6 +187,9 @@ pub struct NetStreamData<'gc> {
 
     /// The AVM side of this stream.
     avm_object: Option<AvmObject<'gc>>,
+
+    /// The AVM2 client object, which corresponds to `NetStream.client`.
+    avm2_client: Option<Avm2Object<'gc>>,
 }
 
 impl<'gc> NetStream<'gc> {
@@ -197,8 +204,17 @@ impl<'gc> NetStream<'gc> {
                 stream_time: 0.0,
                 last_decoded_bitmap: None,
                 avm_object,
+                avm2_client: None,
             },
         ))
+    }
+
+    pub fn set_client(self, gc_context: MutationContext<'gc, '_>, new_client: Avm2Object<'gc>) {
+        self.0.write(gc_context).avm2_client = Some(new_client);
+    }
+
+    pub fn client(self) -> Option<Avm2Object<'gc>> {
+        self.0.read().avm2_client
     }
 
     pub fn set_avm_object(self, gc_context: MutationContext<'gc, '_>, avm_object: AvmObject<'gc>) {
@@ -546,12 +562,12 @@ impl<'gc> NetStream<'gc> {
                             // This is necessary because the script callback functions can call back into
                             // these methods, (e.g. NetStream::play), so we need to avoid holding a borrow
                             // while the script data is being handled.
-                            self.handle_script_data(
+                            let _ = self.handle_script_data(
                                 self.0.read().avm_object,
                                 context,
                                 var.name,
                                 var.data,
-                            );
+                            ); // Any errors while trying to lookup or call AVM2 properties are silently swallowed.
                             write = self.0.write(context.gc_context);
                         }
 
@@ -698,7 +714,7 @@ impl<'gc> NetStream<'gc> {
         context: &mut UpdateContext<'_, 'gc>,
         variable_name: &[u8],
         variable_data: FlvValue,
-    ) {
+    ) -> Result<(), Avm2Error<'gc>> {
         match avm_object {
             Some(AvmObject::Avm1(object)) => {
                 match variable_name {
@@ -739,12 +755,32 @@ impl<'gc> NetStream<'gc> {
                 };
             }
             Some(AvmObject::Avm2(_object)) => {
-                tracing::warn!(
-                    "Stub: FLV stream data processing (name: {}) for AVM2",
-                    WStr::from_units(variable_name)
-                );
+                match variable_name {
+                    b"onCuePoint" | b"onMetaData" => {
+                        let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                        let client_object = self.client().expect(
+                            "Client should be initialized if script data is being accessed",
+                        );
+
+                        let data_object = variable_data.to_avm2_value(&mut activation);
+
+                        client_object.call_public_property(
+                            AvmString::new_utf8_bytes(activation.context.gc_context, variable_name),
+                            &[data_object],
+                            &mut activation,
+                        )?;
+                    }
+                    _ => {
+                        tracing::warn!(
+                            "Stub: FLV stream data {} for AVM2",
+                            WStr::from_units(variable_name)
+                        );
+                    }
+                };
             }
             None => {}
-        }
+        };
+
+        Ok(())
     }
 }

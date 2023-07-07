@@ -1,3 +1,5 @@
+use crate::avm2::error::type_error;
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Object, TObject, Value};
 
 pub use crate::avm2::object::netstream_allocator as net_stream_allocator;
@@ -76,6 +78,40 @@ pub fn toggle_pause<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(ns) = this.as_netstream() {
         ns.toggle_paused(&mut activation.context);
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn get_client<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(ns) = this.as_netstream() {
+        return Ok(ns.client().expect("NetStream client should be set").into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn set_client<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let client = args.get_value(0).as_object();
+
+    if let Some(client) = client {
+        if let Some(ns) = this.as_netstream() {
+            ns.set_client(activation.context.gc_context, client);
+        }
+    } else {
+        return Err(Error::AvmError(type_error(
+            activation,
+            "Error #2004: One of the parameters is invalid.",
+            2004,
+        )?));
     }
 
     Ok(Value::Undefined)

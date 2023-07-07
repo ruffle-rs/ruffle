@@ -24,6 +24,8 @@ pub fn netstream_allocator<'gc>(
 
     ns.set_avm_object(activation.context.gc_context, this.into());
 
+    ns.set_client(activation.context.gc_context, this);
+
     Ok(this)
 }
 
