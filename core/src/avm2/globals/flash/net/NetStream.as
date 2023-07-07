@@ -169,14 +169,9 @@ package flash.net {
             stub_setter("flash.net.NetStream", "checkPolicyFile");
         }
 
-        public function get client():Object {
-            stub_getter("flash.net.NetStream", "client");
-            return {};
-        }
+        public native function get client():Object;
 
-        public function set client(client:Object) {
-            stub_setter("flash.net.NetStream", "client");
-        }
+        public native function set client(client:Object);
 
         public function get currentFPS():Number {
             stub_getter("flash.net.NetStream", "currentFPS");
