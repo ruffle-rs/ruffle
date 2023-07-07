@@ -994,30 +994,8 @@ impl<'a> ShaderBuilder<'a> {
                                 right: src,
                             })
                         }
-                        Opcode::LessThan => {
-                            let left = self.load_src_register(&dst)?;
-                            let res = self.evaluate_expr(Expression::Binary {
-                                op: BinaryOperator::Less,
-                                left,
-                                right: src,
-                            });
-
-                            // The 'LessThan' opcodes appears to compare the src and dst, and then
-                            // write the result to the 'R' component of int register 0
-                            dst = PixelBenderReg {
-                                index: 0,
-                                channels: vec![PixelBenderRegChannel::R],
-                                kind: PixelBenderRegKind::Int,
-                            };
-                            // We get back a vec of bools from BinaryOperator::Less, so convert it to a vec of floats
-                            self.evaluate_expr(Expression::As {
-                                expr: res,
-                                kind: ScalarKind::Float,
-                                convert: Some(4),
-                            })
-                        }
                         Opcode::LogicalOr => {
-                            // The destiation is also used as the first operand: 'dst = dst - src'
+                            // The destination is also used as the first operand: 'dst = dst - src'
                             let left = self.load_src_register(&dst)?;
                             let left_bool = self.evaluate_expr(Expression::As {
                                 expr: left,
@@ -1262,25 +1240,33 @@ impl<'a> ShaderBuilder<'a> {
                             });
                             self.pad_result(res, src_reg.is_scalar())
                         }
-                        Opcode::Equal => {
-                            let src_val = self.load_src_register_with_padding(src_reg, false)?;
-                            let dst_val = self.load_src_register_with_padding(&dst, false)?;
+                        Opcode::Equal | Opcode::NotEqual | Opcode::LessThan => {
+                            let bin_op: BinaryOperator = match opcode {
+                                Opcode::Equal => BinaryOperator::Equal,
+                                Opcode::NotEqual => BinaryOperator::NotEqual,
+                                Opcode::LessThan => BinaryOperator::Less,
+                                _ => unreachable!(),
+                            };
+                            let left = self.load_src_register(&dst)?;
                             let res = self.evaluate_expr(Expression::Binary {
-                                op: BinaryOperator::Equal,
-                                left: dst_val,
-                                right: src_val,
+                                op: bin_op,
+                                left,
+                                right: src,
                             });
-                            self.pad_result(res, src_reg.is_scalar())
-                        }
-                        Opcode::NotEqual => {
-                            let src_val = self.load_src_register_with_padding(src_reg, false)?;
-                            let dst_val = self.load_src_register_with_padding(&dst, false)?;
-                            let res = self.evaluate_expr(Expression::Binary {
-                                op: BinaryOperator::NotEqual,
-                                left: dst_val,
-                                right: src_val,
-                            });
-                            self.pad_result(res, src_reg.is_scalar())
+
+                            // Comparison opcodes appears to compare the src and dst, and then
+                            // write the result to the 'R' component of int register 0
+                            dst = PixelBenderReg {
+                                index: 0,
+                                channels: vec![PixelBenderRegChannel::R],
+                                kind: PixelBenderRegKind::Int,
+                            };
+                            // We get back a vec of bools from BinaryOperator::Less, so convert it to a vec of floats
+                            self.evaluate_expr(Expression::As {
+                                expr: res,
+                                kind: ScalarKind::Float,
+                                convert: Some(4),
+                            })
                         }
                         Opcode::Mod => {
                             let dst_val = self.load_src_register(&dst)?;
