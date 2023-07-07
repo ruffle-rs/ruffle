@@ -71,8 +71,12 @@ impl<'gc> PropertyClass<'gc> {
                 } else {
                     // Note - we look up the class in the domain by name, which allows us to look up private classes.
                     // This also has the advantage of letting us coerce to a class while the `ClassObject`
-                    // is still being constructed (since the `Class` will already exist in the domain)
-                    let domain = unit.map_or(activation.avm2().stage_domain, |u| u.domain());
+                    // is still being constructed (since the `Class` will already exist in the domain).
+
+                    // We should only be missing a translation unit when performing a lookup from playerglobals,
+                    // so use that domain if we don't have a translation unit.
+                    let domain =
+                        unit.map_or(activation.avm2().playerglobals_domain, |u| u.domain());
                     if let Some(class) = domain.get_class(name, activation.context.gc_context)? {
                         *self = PropertyClass::Class(class);
                         (Some(class), true)
