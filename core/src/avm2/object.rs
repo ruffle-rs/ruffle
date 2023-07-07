@@ -1062,14 +1062,19 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// checking against this object.
     fn is_of_type(
         &self,
-        test_class: ClassObject<'gc>,
+        test_class: GcCell<'gc, Class<'gc>>,
         context: &mut UpdateContext<'_, 'gc>,
     ) -> bool {
         let my_class = self.instance_of();
 
         // ES3 objects are not class instances but are still treated as
         // instances of Object, which is an ES4 class.
-        if my_class.is_none() && Object::ptr_eq(test_class, context.avm2.classes().object) {
+        if my_class.is_none()
+            && GcCell::ptr_eq(
+                test_class,
+                context.avm2.classes().object.inner_class_definition(),
+            )
+        {
             true
         } else if let Some(my_class) = my_class {
             my_class.has_class_in_chain(test_class)

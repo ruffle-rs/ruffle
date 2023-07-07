@@ -1708,7 +1708,7 @@ pub trait TDisplayObject<'gc>:
                 .object2()
                 .as_object()
                 .expect("MovieClip object should have been constructed");
-            let movieclip_class = context.avm2.classes().movieclip;
+            let movieclip_class = context.avm2.classes().movieclip.inner_class_definition();
             // It's possible to have a DefineSprite tag with multiple frames, but have
             // the corresponding `SymbolClass` *not* extend `MovieClip` (e.g. extending `Sprite` directly.)
             // When this occurs, Flash Player will run the first frame, and immediately stop.

@@ -149,7 +149,7 @@ impl<'gc> Domain<'gc> {
         Ok(None)
     }
 
-    pub fn get_class(
+    fn get_class_inner(
         self,
         multiname: &Multiname<'gc>,
     ) -> Result<Option<GcCell<'gc, Class<'gc>>>, Error<'gc>> {
@@ -159,10 +159,30 @@ impl<'gc> Domain<'gc> {
         }
 
         if let Some(parent) = read.parent {
-            return parent.get_class(multiname);
+            return parent.get_class_inner(multiname);
         }
 
         Ok(None)
+    }
+
+    pub fn get_class(
+        self,
+        multiname: &Multiname<'gc>,
+        mc: MutationContext<'gc, '_>,
+    ) -> Result<Option<GcCell<'gc, Class<'gc>>>, Error<'gc>> {
+        let class = self.get_class_inner(multiname)?;
+
+        if let Some(class) = class {
+            if let Some(param) = multiname.param() {
+                if !param.is_any_name() {
+                    if let Some(resolved_param) = self.get_class(&param, mc)? {
+                        return Ok(Some(Class::with_type_param(class, resolved_param, mc)));
+                    }
+                    return Ok(None);
+                }
+            }
+        }
+        Ok(class)
     }
 
     /// Resolve a Multiname and return the script that provided it.

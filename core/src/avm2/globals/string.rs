@@ -291,7 +291,7 @@ fn match_s<'gc>(
     let this = Value::from(this).coerce_to_string(activation)?;
 
     let regexp_class = activation.avm2().classes().regexp;
-    let pattern = if !pattern.is_of_type(activation, regexp_class) {
+    let pattern = if !pattern.is_of_type(activation, regexp_class.inner_class_definition()) {
         let string = pattern.coerce_to_string(activation)?;
         regexp_class.construct(activation, &[Value::String(string)])?
     } else {
@@ -401,7 +401,7 @@ fn search<'gc>(
     let this = Value::from(this).coerce_to_string(activation)?;
 
     let regexp_class = activation.avm2().classes().regexp;
-    let pattern = if !pattern.is_of_type(activation, regexp_class) {
+    let pattern = if !pattern.is_of_type(activation, regexp_class.inner_class_definition()) {
         let string = pattern.coerce_to_string(activation)?;
         regexp_class.construct(activation, &[Value::String(string)])?
     } else {

@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error;
 use crate::avm2::error::type_error;
-use crate::avm2::object::{ClassObject, NamespaceObject, Object, PrimitiveObject, TObject};
+use crate::avm2::object::{NamespaceObject, Object, PrimitiveObject, TObject};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
@@ -16,6 +16,7 @@ use std::cell::Ref;
 use std::mem::size_of;
 use swf::avm2::types::{DefaultValue as AbcDefaultValue, Index};
 
+use super::class::Class;
 use super::e4x::E4XNode;
 
 /// Indicate what kind of primitive coercion would be preferred when coercing
@@ -957,44 +958,19 @@ impl<'gc> Value<'gc> {
         activation: &mut Activation<'_, 'gc>,
         type_name: &Multiname<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let param_type = match activation.resolve_type(type_name) {
-            Ok(param_type) => param_type,
-            Err(e) => {
-                // While running a class initializer, we might need to resolve the class
-                // itself. For example, a static/const can run a static method, which does
-                // `var foo:ClassBeingInitialized = new ClassBeingInitialized();`
-                //
-                // Since the class initializer is running, we won't be able to resolve the
-                // ClassObject yet. If the normal `resolve_type` lookup fails, then
-                // try resolving the class through `domain().get_class`, and check if the
-                // object's class matches directly (not considering superclasses or interfaces).
-                // Any superclasses or superinterfaces will already have been initialized,
-                // so the `resolve_type` lookup will succeed for them.
-
-                if let Ok(Some(resolved_class)) = activation.domain().get_class(type_name) {
-                    // Note that we do this check *after* successfully resolving the class. This ensures
-                    // that we still produce errors when trying to coerce null/undefined to a completely
-                    // non-existent class.
-                    if matches!(self, Value::Undefined) || matches!(self, Value::Null) {
-                        return Ok(Value::Null);
-                    }
-                    if let Some(obj) = self.as_object() {
-                        if let Some(obj_class) = obj.instance_of_class_definition() {
-                            if GcCell::ptr_eq(resolved_class, obj_class) {
-                                return Ok(*self);
-                            }
-                        }
-                    }
-                }
-                return Err(e);
-            }
-        };
-
-        if let Some(param_type) = param_type {
-            self.coerce_to_type(activation, param_type)
-        } else {
-            Ok(*self)
+        if type_name.is_any_name() {
+            return Ok(*self);
         }
+        let param_type = activation
+            .domain()
+            .get_class(type_name, activation.context.gc_context)?
+            .ok_or_else(|| {
+                Error::RustError(
+                    format!("Failed to lookup class {:?} during coercion", type_name).into(),
+                )
+            })?;
+
+        self.coerce_to_type(activation, param_type)
     }
 
     /// Coerce the value to another value by type name.
@@ -1008,21 +984,33 @@ impl<'gc> Value<'gc> {
     pub fn coerce_to_type(
         &self,
         activation: &mut Activation<'_, 'gc>,
-        class: ClassObject<'gc>,
+        class: GcCell<'gc, Class<'gc>>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        if Object::ptr_eq(class, activation.avm2().classes().int) {
+        if GcCell::ptr_eq(
+            class,
+            activation.avm2().classes().int.inner_class_definition(),
+        ) {
             return Ok(self.coerce_to_i32(activation)?.into());
         }
 
-        if Object::ptr_eq(class, activation.avm2().classes().uint) {
+        if GcCell::ptr_eq(
+            class,
+            activation.avm2().classes().uint.inner_class_definition(),
+        ) {
             return Ok(self.coerce_to_u32(activation)?.into());
         }
 
-        if Object::ptr_eq(class, activation.avm2().classes().number) {
+        if GcCell::ptr_eq(
+            class,
+            activation.avm2().classes().number.inner_class_definition(),
+        ) {
             return Ok(self.coerce_to_number(activation)?.into());
         }
 
-        if Object::ptr_eq(class, activation.avm2().classes().boolean) {
+        if GcCell::ptr_eq(
+            class,
+            activation.avm2().classes().boolean.inner_class_definition(),
+        ) {
             return Ok(self.coerce_to_boolean().into());
         }
 
@@ -1030,7 +1018,10 @@ impl<'gc> Value<'gc> {
             return Ok(Value::Null);
         }
 
-        if Object::ptr_eq(class, activation.avm2().classes().string) {
+        if GcCell::ptr_eq(
+            class,
+            activation.avm2().classes().string.inner_class_definition(),
+        ) {
             return Ok(self.coerce_to_string(activation)?.into());
         }
 
@@ -1040,7 +1031,7 @@ impl<'gc> Value<'gc> {
             }
 
             if let Some(vector) = object.as_vector_storage() {
-                let name = class.inner_class_definition().read().name();
+                let name = class.read().name();
                 let vector_public_namespace = activation.avm2().vector_public_namespace;
                 let vector_internal_namespace = activation.avm2().vector_internal_namespace;
                 if name == QName::new(vector_public_namespace, "Vector")
@@ -1059,7 +1050,6 @@ impl<'gc> Value<'gc> {
         }
 
         let name = class
-            .inner_class_definition()
             .read()
             .name()
             .to_qualified_name_err_message(activation.context.gc_context);
@@ -1128,15 +1118,24 @@ impl<'gc> Value<'gc> {
     pub fn is_of_type(
         &self,
         activation: &mut Activation<'_, 'gc>,
-        type_object: ClassObject<'gc>,
+        type_object: GcCell<'gc, Class<'gc>>,
     ) -> bool {
-        if Object::ptr_eq(type_object, activation.avm2().classes().number) {
+        if GcCell::ptr_eq(
+            type_object,
+            activation.avm2().classes().number.inner_class_definition(),
+        ) {
             return self.is_number();
         }
-        if Object::ptr_eq(type_object, activation.avm2().classes().uint) {
+        if GcCell::ptr_eq(
+            type_object,
+            activation.avm2().classes().uint.inner_class_definition(),
+        ) {
             return self.is_u32();
         }
-        if Object::ptr_eq(type_object, activation.avm2().classes().int) {
+        if GcCell::ptr_eq(
+            type_object,
+            activation.avm2().classes().int.inner_class_definition(),
+        ) {
             return self.is_i32();
         }
 

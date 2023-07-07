@@ -909,7 +909,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                         matches = true;
                     } else if let Ok(err_object) = err_object {
                         let type_name = self.pool_multiname_static(method, e.type_name)?;
-                        let ty_class = self.resolve_class(&type_name)?;
+                        let ty_class = self.resolve_class(&type_name)?.inner_class_definition();
 
                         matches = err_object.is_of_type(ty_class, &mut self.context);
                     }
@@ -2105,8 +2105,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_check_filter(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let xml = self.avm2().classes().xml;
-        let xml_list = self.avm2().classes().xml_list;
+        let xml = self.avm2().classes().xml.inner_class_definition();
+        let xml_list = self.avm2().classes().xml_list.inner_class_definition();
         let value = self.pop_stack().coerce_to_object_or_typeerror(self, None)?;
 
         if value.is_of_type(xml, &mut self.context) || value.is_of_type(xml_list, &mut self.context)
@@ -2791,7 +2791,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let value = self.pop_stack();
 
         let multiname = self.pool_multiname_static(method, type_name_index)?;
-        let type_object = self.resolve_class(&multiname)?;
+        let type_object = self.resolve_class(&multiname)?.inner_class_definition();
 
         let is_instance_of = value.is_of_type(self, type_object);
         self.push_stack(is_instance_of);
@@ -2804,7 +2804,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .pop_stack()
             .as_object()
             .and_then(|o| o.as_class_object())
-            .ok_or("Cannot check if value is of a type that is null, undefined, or not a class")?;
+            .ok_or("Cannot check if value is of a type that is null, undefined, or not a class")?
+            .inner_class_definition();
         let value = self.pop_stack();
 
         let is_instance_of = value.is_of_type(self, type_object);
@@ -2821,7 +2822,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let value = self.pop_stack();
 
         let multiname = self.pool_multiname_static(method, type_name_index)?;
-        let class = self.resolve_class(&multiname)?;
+        let class = self.resolve_class(&multiname)?.inner_class_definition();
 
         if value.is_of_type(self, class) {
             self.push_stack(value);
@@ -2847,7 +2848,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             )?))?;
             let value = self.pop_stack();
 
-            if value.is_of_type(self, class) {
+            if value.is_of_type(self, class.inner_class_definition()) {
                 self.push_stack(value);
             } else {
                 self.push_stack(Value::Null);

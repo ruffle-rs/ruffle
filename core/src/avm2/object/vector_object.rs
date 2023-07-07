@@ -133,7 +133,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         if name.contains_public_namespace() {
             if let Some(name) = name.local_name() {
                 if let Ok(index) = name.parse::<usize>() {
-                    let type_of = self.0.read().vector.value_type();
+                    let type_of = self.0.read().vector.value_type().inner_class_definition();
                     let value = match value.coerce_to_type(activation, type_of)? {
                         Value::Undefined => self.0.read().vector.default(activation),
                         Value::Null => self.0.read().vector.default(activation),
@@ -164,7 +164,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         if name.contains_public_namespace() {
             if let Some(name) = name.local_name() {
                 if let Ok(index) = name.parse::<usize>() {
-                    let type_of = self.0.read().vector.value_type();
+                    let type_of = self.0.read().vector.value_type().inner_class_definition();
                     let value = match value.coerce_to_type(activation, type_of)? {
                         Value::Undefined => self.0.read().vector.default(activation),
                         Value::Null => self.0.read().vector.default(activation),

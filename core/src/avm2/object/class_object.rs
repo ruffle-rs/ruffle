@@ -329,7 +329,11 @@ impl<'gc> ClassObject<'gc> {
         let mut queue = vec![class];
         while let Some(cls) = queue.pop() {
             for interface_name in cls.read().direct_interfaces() {
-                let interface = self.early_resolve_class(scope.domain(), interface_name)?;
+                let interface = self.early_resolve_class(
+                    scope.domain(),
+                    interface_name,
+                    activation.context.gc_context,
+                )?;
 
                 if !interface.read().is_interface() {
                     return Err(format!(
@@ -346,7 +350,11 @@ impl<'gc> ClassObject<'gc> {
             }
 
             if let Some(superclass_name) = cls.read().super_class_name() {
-                queue.push(self.early_resolve_class(scope.domain(), superclass_name)?);
+                queue.push(self.early_resolve_class(
+                    scope.domain(),
+                    superclass_name,
+                    activation.context.gc_context,
+                )?);
             }
         }
         write.interfaces = interfaces;
@@ -385,9 +393,10 @@ impl<'gc> ClassObject<'gc> {
         &self,
         domain: Domain<'gc>,
         class_name: &Multiname<'gc>,
+        mc: MutationContext<'gc, '_>,
     ) -> Result<GcCell<'gc, Class<'gc>>, Error<'gc>> {
         domain
-            .get_class(class_name)?
+            .get_class(class_name, mc)?
             .ok_or_else(|| format!("Could not resolve class {class_name:?}").into())
     }
 
@@ -448,24 +457,19 @@ impl<'gc> ClassObject<'gc> {
     /// interface we are checking against this class.
     ///
     /// To test if a class *instance* is of a given type, see is_of_type.
-    pub fn has_class_in_chain(self, test_class: ClassObject<'gc>) -> bool {
+    pub fn has_class_in_chain(self, test_class: GcCell<'gc, Class<'gc>>) -> bool {
         let mut my_class = Some(self);
 
         while let Some(class) = my_class {
-            if Object::ptr_eq(class, test_class) {
+            if GcCell::ptr_eq(class.inner_class_definition(), test_class) {
                 return true;
             }
 
-            if let (Some(my_param), Some(test_param)) =
-                (class.as_class_params(), test_class.as_class_params())
+            let test_class_read = test_class.read();
+            if let (Some(Some(my_param)), Some(other_single_param)) =
+                (class.as_class_params(), test_class_read.param())
             {
-                let are_all_params_coercible = match (my_param, test_param) {
-                    (Some(my_param), Some(test_param)) => my_param.has_class_in_chain(test_param),
-                    (None, Some(_)) => false,
-                    _ => true,
-                };
-
-                if are_all_params_coercible {
+                if my_param.has_class_in_chain(*other_single_param) {
                     return true;
                 }
             }
@@ -478,9 +482,9 @@ impl<'gc> ClassObject<'gc> {
         // Therefore, we only need to check interfaces once, and we can skip
         // checking them when we processing superclasses in the `while`
         // further down in this method.
-        if test_class.inner_class_definition().read().is_interface() {
+        if test_class.read().is_interface() {
             for interface in self.interfaces() {
-                if GcCell::ptr_eq(interface, test_class.inner_class_definition()) {
+                if GcCell::ptr_eq(interface, test_class) {
                     return true;
                 }
             }
@@ -851,7 +855,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
                 .get(0)
                 .cloned()
                 .unwrap_or(Value::Undefined)
-                .coerce_to_type(activation, self)
+                .coerce_to_type(activation, self.inner_class_definition())
         }
     }
 
@@ -933,9 +937,8 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             .unwrap_or(activation.avm2().classes().object)
             .inner_class_definition();
 
-        let parameterized_class = self_class
-            .read()
-            .with_type_param(class_param, activation.context.gc_context);
+        let parameterized_class: GcCell<'_, Class<'_>> =
+            Class::with_type_param(self_class, class_param, activation.context.gc_context);
 
         let class_scope = self.0.read().class_scope;
         let instance_scope = self.0.read().instance_scope;

@@ -63,3 +63,4 @@ true
 /// (contents of c_vector...)
 1,2
 5,16
+Caught error: TypeError: Error #1034: Type Coercion failed: cannot convert __AS3__.vec::Vector.<Test.as$38::MyObject>@ADDRESS to __AS3__.vec.Vector.<int>.

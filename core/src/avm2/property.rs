@@ -1,14 +1,15 @@
 //! Property data structures
 
-use crate::avm2::object::TObject;
 use crate::avm2::Activation;
-use crate::avm2::ClassObject;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::TranslationUnit;
 use crate::avm2::Value;
+use gc_arena::GcCell;
 use gc_arena::MutationContext;
 use gc_arena::{Collect, Gc};
+
+use super::class::Class;
 
 #[derive(Debug, Collect, Clone, Copy)]
 #[collect(no_drop)]
@@ -39,7 +40,7 @@ pub enum PropertyClass<'gc> {
     /// `Value::Undefined`, so it needs to be distinguished
     /// from the `Object` class
     Any,
-    Class(ClassObject<'gc>),
+    Class(GcCell<'gc, Class<'gc>>),
     Name(Gc<'gc, (Multiname<'gc>, Option<TranslationUnit<'gc>>)>),
 }
 
@@ -64,56 +65,28 @@ impl<'gc> PropertyClass<'gc> {
             PropertyClass::Class(class) => (Some(*class), false),
             PropertyClass::Name(gc) => {
                 let (name, unit) = &**gc;
-                let outcome = resolve_class_private(name, *unit, activation)?;
-                let class = match outcome {
-                    ResolveOutcome::Class(class) => {
+                if name.is_any_name() {
+                    *self = PropertyClass::Any;
+                    (None, true)
+                } else {
+                    // Note - we look up the class in the domain by name, which allows us to look up private classes.
+                    // This also has the advantage of letting us coerce to a class while the `ClassObject`
+                    // is still being constructed (since the `Class` will already exist in the domain).
+
+                    // We should only be missing a translation unit when performing a lookup from playerglobals,
+                    // so use that domain if we don't have a translation unit.
+                    let domain =
+                        unit.map_or(activation.avm2().playerglobals_domain, |u| u.domain());
+                    if let Some(class) = domain.get_class(name, activation.context.gc_context)? {
                         *self = PropertyClass::Class(class);
                         (Some(class), true)
+                    } else {
+                        return Err(format!(
+                            "Could not resolve class {name:?} for property coercion"
+                        )
+                        .into());
                     }
-                    ResolveOutcome::Any => {
-                        *self = PropertyClass::Any;
-                        (None, true)
-                    }
-                    ResolveOutcome::NotFound => {
-                        // FP allows a class to reference its own type in a static initializer:
-                        // `class Foo { static var INSTANCE: Foo = new Foo(); }`
-                        // When this happens, the `ClassObject` for `Foo` will not yet
-                        // be available when we perform the coercion, since we're still
-                        // in the process of constructing it.
-                        //
-                        // Fortunately, a coercion to a non-primitive class either
-                        // succeeds with the value unchanged, or fails (if the object
-                        // is not an instance of the class). Therefore, we can just check
-                        // if the class name and domain match our property name, without
-                        // actually needing to perform resolution. This does not handle subclasses,
-                        // but that's fine - a superclass cannot reference a subclass from a class
-                        // initializer.
-                        //
-                        // We should eventually be able to remove this when we refactor
-                        // `Class`/`ClassObject` to be closer to what avmplus does.
-                        if let Some(object) = value.as_object() {
-                            if let Some(class) = object.instance_of() {
-                                if name.contains_name(&class.inner_class_definition().read().name())
-                                    && unit.map(|u| u.domain())
-                                        == Some(class.class_scope().domain())
-                                {
-                                    // Even though resolution succeeded, we haven't modified
-                                    // this `PropertyClass`, so return `false`
-                                    return Ok((value, false));
-                                }
-                            }
-                        } else if matches!(value, Value::Null) || matches!(value, Value::Undefined)
-                        {
-                            //AVM2 properties are nullable, so null is always an instance of the class
-                            return Ok((Value::Null, false));
-                        }
-
-                        return Err(Error::from(format!(
-                            "Attempted to perform (private) resolution of nonexistent type {name:?}",
-                        )));
-                    }
-                };
-                class
+                }
             }
             PropertyClass::Any => (None, false),
         };
@@ -129,55 +102,10 @@ impl<'gc> PropertyClass<'gc> {
 
     pub fn get_name(&self, mc: MutationContext<'gc, '_>) -> Multiname<'gc> {
         match self {
-            PropertyClass::Class(class) => class.inner_class_definition().read().name().into(),
+            PropertyClass::Class(class) => class.read().name().into(),
             PropertyClass::Name(gc) => gc.0.clone(),
             PropertyClass::Any => Multiname::any(mc),
         }
-    }
-}
-
-enum ResolveOutcome<'gc> {
-    Class(ClassObject<'gc>),
-    Any,
-    NotFound,
-}
-
-/// Resolves a class definition referenced by the type of a property.
-/// This supports private (`Namespace::Private`) classes,
-/// and does not use the `ScopeStack`/`ScopeChain`.
-///
-/// This is an internal operation used to resolve property type names.
-/// It does not correspond to any opcode or native method.
-fn resolve_class_private<'gc>(
-    name: &Multiname<'gc>,
-    unit: Option<TranslationUnit<'gc>>,
-    activation: &mut Activation<'_, 'gc>,
-) -> Result<ResolveOutcome<'gc>, Error<'gc>> {
-    // A Property may have a type of '*' (which corresponds to 'Multiname::any()')
-    // We don't want to perform any coercions in this case - in particular,
-    // this means that the property can have a value of `Undefined`.
-    // If the type is `Object`, then a value of `Undefind` gets coerced
-    // to `Null`
-    if name.is_any_name() {
-        Ok(ResolveOutcome::Any)
-    } else {
-        // First, check the domain for an exported (non-private) class.
-        // If the property we're resolving for lacks a `TranslationUnit`,
-        // use the stage domain
-        let domain = unit.map_or(activation.avm2().stage_domain, |u| u.domain());
-        let globals = if let Some((_, mut script)) = domain.get_defining_script(name)? {
-            script.globals(&mut activation.context)?
-        } else if unit.is_some() {
-            return Err(format!("Could not find script for class trait {name:?}").into());
-        } else {
-            return Err(format!("Missing script and translation unit for class {name:?}").into());
-        };
-
-        Ok(globals
-            .get_property(name, activation)?
-            .as_object()
-            .and_then(|o| o.as_class_object())
-            .map_or(ResolveOutcome::NotFound, ResolveOutcome::Class))
     }
 }
 
