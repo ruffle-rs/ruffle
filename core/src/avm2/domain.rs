@@ -149,32 +149,40 @@ impl<'gc> Domain<'gc> {
         Ok(None)
     }
 
+    fn get_class_inner(
+        self,
+        multiname: &Multiname<'gc>,
+    ) -> Result<Option<GcCell<'gc, Class<'gc>>>, Error<'gc>> {
+        let read = self.0.read();
+        if let Some(class) = read.classes.get_for_multiname(multiname).copied() {
+            return Ok(Some(class));
+        }
+
+        if let Some(parent) = read.parent {
+            return parent.get_class_inner(multiname);
+        }
+
+        Ok(None)
+    }
+
     pub fn get_class(
         self,
         multiname: &Multiname<'gc>,
         mc: MutationContext<'gc, '_>,
     ) -> Result<Option<GcCell<'gc, Class<'gc>>>, Error<'gc>> {
-        let mut cur_domain = Some(self);
-        while let Some(domain) = cur_domain {
-            let read: std::cell::Ref<'_, DomainData<'_>> = domain.0.read();
-            if let Some(class) = read.classes.get_for_multiname(multiname).copied() {
-                if let Some(param) = multiname.param() {
-                    if !param.is_any_name() {
-                        // Lookup the param in the *starting* domain (the one we first called)
-                        // `get_class` on. If we're looking up `Vector.<SomeUserType>`, then
-                        // `Vector` will be found in the root domain, but `SomeUserType`
-                        // will be found in some child domain.
-                        let resolved_param = self
-                            .get_class(&param, mc)?
-                            .unwrap_or_else(|| panic!("Type param {param:?} not found"));
+        let class = self.get_class_inner(multiname)?;
+
+        if let Some(class) = class {
+            if let Some(param) = multiname.param() {
+                if !param.is_any_name() {
+                    if let Some(resolved_param) = self.get_class(&param, mc)? {
                         return Ok(Some(Class::with_type_param(class, resolved_param, mc)));
                     }
+                    return Ok(None);
                 }
-                return Ok(Some(class));
             }
-            cur_domain = read.parent;
         }
-        Ok(None)
+        Ok(class)
     }
 
     /// Resolve a Multiname and return the script that provided it.

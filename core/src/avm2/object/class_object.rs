@@ -469,21 +469,6 @@ impl<'gc> ClassObject<'gc> {
             if let (Some(Some(my_param)), Some(other_single_param)) =
                 (class.as_class_params(), test_class_read.param())
             {
-                // The only parameterized class that exists is `__AS3__.vec::Vector`
-                // (users cannot create their own parameterized classes). As a sanity check,
-                // we make sure that both classes are in the same namespace (i.e. `__AS3__.vec`).
-                // We cannot directly compare the class names, as they include the parameter.
-                assert_eq!(
-                    class.inner_class_definition().read().name().namespace(),
-                    test_class_read.name().namespace(),
-                    "Parameterized classes should both be Vector, but are in different namespaces"
-                );
-                assert_eq!(
-                    &*test_class_read.name().namespace().as_uri(),
-                    b"__AS3__.vec",
-                    "Parameterized class should be a Vector"
-                );
-
                 if my_param.has_class_in_chain(*other_single_param) {
                     return true;
                 }
