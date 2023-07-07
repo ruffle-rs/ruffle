@@ -68,6 +68,23 @@ pub struct Avm1<'gc> {
     constructor_registry_case_insensitive: PropertyMap<'gc, FunctionObject<'gc>>,
     constructor_registry_case_sensitive: PropertyMap<'gc, FunctionObject<'gc>>,
 
+    /// If getBounds / getRect is called on a MovieClip with invalid bounds and the
+    /// target space is identical to the origin space, but the target is not the
+    /// MovieClip itself, the call can return either the default invalid rectangle
+    /// (all corners have 0x7ffffff twips) or a special invalid bounds rectangle (all
+    /// corners have 0x8000000 twips).
+    ///
+    /// This boolean is used in this situation. If it's true, the special invalid
+    /// bounds rectangle is returned instead of the default invalid rectangle.
+    ///
+    /// This boolean is set to true if getBounds or getRect is called on a MovieClip
+    /// with activation SWF version >= 8 or root movie SWF version >= 8. It is an
+    /// internal state changing irreversibly. This means that the getBounds result
+    /// of a MovieClip can change by calling getBounds on a different MovieClip.
+    ///
+    /// More examples of this are in the movieclip_invalid_get_bounds_X tests.
+    use_new_invalid_bounds_value: bool,
+
     #[cfg(feature = "avm_debug")]
     pub debug_output: bool,
 }
@@ -100,6 +117,7 @@ impl<'gc> Avm1<'gc> {
 
             #[cfg(feature = "avm_debug")]
             debug_output: false,
+            use_new_invalid_bounds_value: false,
         }
     }
 
@@ -526,6 +544,16 @@ impl<'gc> Avm1<'gc> {
         } else {
             registry.remove(symbol, is_case_sensitive);
         }
+    }
+
+    /// Returns use_new_invalid_bounds_value.
+    pub fn get_use_new_invalid_bounds_value(&self) -> bool {
+        self.use_new_invalid_bounds_value
+    }
+
+    /// Sets use_new_invalid_bounds_value to true.
+    pub fn activate_use_new_invalid_bounds_value(&mut self) {
+        self.use_new_invalid_bounds_value = true;
     }
 
     #[cfg(feature = "avm_debug")]
