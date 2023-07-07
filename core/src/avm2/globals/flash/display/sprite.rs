@@ -44,21 +44,6 @@ pub fn sprite_allocator<'gc>(
     unreachable!("A Sprite subclass should have Sprite in superclass chain");
 }
 
-pub fn init_empty_sprite<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-) -> Result<(), Error<'gc>> {
-    let class_object = this
-        .instance_of()
-        .ok_or("Attempted to construct Sprite on a bare object")?;
-    let movie = activation.context.swf.clone();
-    let new_do = MovieClip::new_with_avm2(movie, this, class_object, activation.context.gc_context);
-
-    this.init_display_object(&mut activation.context, new_do.into());
-
-    Ok(())
-}
-
 /// Implements `dropTarget`'s getter
 pub fn get_drop_target<'gc>(
     _activation: &mut Activation<'_, 'gc>,
