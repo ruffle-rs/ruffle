@@ -6,46 +6,46 @@
   <factory type="Object"/>
 </type>
 <type name="Object" isDynamic="true" isFinal="false" isStatic="false"/>
-<type name="Test.as$38::Subclass" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+<type name="FilePrivateNS:Test::Subclass" base="Class" isDynamic="true" isFinal="true" isStatic="true">
   <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
   <extendsClass type="Class"/>
   <extendsClass type="Object"/>
-  <factory type="Test.as$38::Subclass">
+  <factory type="FilePrivateNS:Test::Subclass">
+      <extendsClass type="FilePrivateNS:Test::Base"/>
       <extendsClass type="Object"/>
-      <extendsClass type="Test.as$38::Base"/>
-      <method name="baseMethod" declaredBy="Test.as$38::Base" returnType="Boolean"/>
-      <method name="overridenMethod" declaredBy="Test.as$38::Subclass" returnType="Object">
+      <method name="baseMethod" declaredBy="FilePrivateNS:Test::Base" returnType="Boolean"/>
+      <method name="overridenMethod" declaredBy="FilePrivateNS:Test::Subclass" returnType="Object">
           <parameter index="1" type="*" optional="false"/>
           <parameter index="2" type="flash.utils::Dictionary" optional="false"/>
           <parameter index="3" type="flash.display::DisplayObject" optional="true"/>
     </method>
-      <method name="subMethod" declaredBy="Test.as$38::Subclass" returnType="*"/>
+      <method name="subMethod" declaredBy="FilePrivateNS:Test::Subclass" returnType="*"/>
       <variable name="baseProp" type="Object"/>
       <variable name="subProp" type="Object"/>
   </factory>
 </type>
-<type name="Test.as$38::Subclass" base="Test.as$38::Base" isDynamic="false" isFinal="false" isStatic="false">
+<type name="FilePrivateNS:Test::Subclass" base="FilePrivateNS:Test::Base" isDynamic="false" isFinal="false" isStatic="false">
+  <extendsClass type="FilePrivateNS:Test::Base"/>
   <extendsClass type="Object"/>
-  <extendsClass type="Test.as$38::Base"/>
-  <method name="baseMethod" declaredBy="Test.as$38::Base" returnType="Boolean"/>
-  <method name="overridenMethod" declaredBy="Test.as$38::Subclass" returnType="Object">
+  <method name="baseMethod" declaredBy="FilePrivateNS:Test::Base" returnType="Boolean"/>
+  <method name="overridenMethod" declaredBy="FilePrivateNS:Test::Subclass" returnType="Object">
       <parameter index="1" type="*" optional="false"/>
       <parameter index="2" type="flash.utils::Dictionary" optional="false"/>
       <parameter index="3" type="flash.display::DisplayObject" optional="true"/>
   </method>
-  <method name="subMethod" declaredBy="Test.as$38::Subclass" returnType="*"/>
+  <method name="subMethod" declaredBy="FilePrivateNS:Test::Subclass" returnType="*"/>
   <variable name="baseProp" type="Object"/>
   <variable name="subProp" type="Object"/>
 </type>
-<type name="Test.as$38::C" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+<type name="FilePrivateNS:Test::C" base="Class" isDynamic="true" isFinal="true" isStatic="true">
   <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
   <extendsClass type="Class"/>
   <extendsClass type="Object"/>
-  <factory type="Test.as$38::C">
+  <factory type="FilePrivateNS:Test::C">
       <extendsClass type="Object"/>
   </factory>
 </type>
-<type name="Test.as$38::C" base="Object" isDynamic="false" isFinal="false" isStatic="false">
+<type name="FilePrivateNS:Test::C" base="Object" isDynamic="false" isFinal="false" isStatic="false">
   <extendsClass type="Object"/>
 </type>
 <type name="int" base="Class" isDynamic="true" isFinal="true" isStatic="true">
@@ -94,4 +94,8 @@
       <parameter index="1" type="Boolean" optional="true"/>
   </constructor>
   <extendsClass type="Object"/>
+</type>
+<type name="FilePrivateNS:Test::HasVector" base="Object" isDynamic="false" isFinal="false" isStatic="false">
+  <extendsClass type="Object"/>
+  <variable name="vec1" type="__AS3__.vec::Vector.<int>"/>
 </type>
