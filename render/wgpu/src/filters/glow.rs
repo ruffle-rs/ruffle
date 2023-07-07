@@ -2,7 +2,7 @@ use crate::backend::RenderTargetMode;
 use crate::buffer_pool::TexturePool;
 use crate::descriptors::Descriptors;
 use crate::filters::blur::BlurFilter;
-use crate::filters::{FilterSource, VERTEX_BUFFERS_DESCRIPTION_FILTERS};
+use crate::filters::{FilterSource, VERTEX_BUFFERS_DESCRIPTION_FILTERS_WITH_BLUR};
 use crate::surface::target::CommandTarget;
 use crate::utils::SampleCountMap;
 use bytemuck::{Pod, Zeroable};
@@ -96,7 +96,7 @@ impl GlowFilter {
                     vertex: wgpu::VertexState {
                         module: &descriptors.shaders.glow_filter,
                         entry_point: "main_vertex",
-                        buffers: &VERTEX_BUFFERS_DESCRIPTION_FILTERS,
+                        buffers: &VERTEX_BUFFERS_DESCRIPTION_FILTERS_WITH_BLUR,
                     },
                     primitive: wgpu::PrimitiveState {
                         topology: wgpu::PrimitiveTopology::TriangleList,
@@ -192,7 +192,11 @@ impl GlowFilter {
                 }]),
                 usage: wgpu::BufferUsages::UNIFORM,
             });
-        let vertices = source.vertices(&descriptors.device);
+        let vertices = source.vertices_with_blur(
+            &descriptors.device,
+            (blurred_texture.width(), blurred_texture.height()),
+            (0, 0),
+        );
         let filter_group = descriptors
             .device
             .create_bind_group(&wgpu::BindGroupDescriptor {
