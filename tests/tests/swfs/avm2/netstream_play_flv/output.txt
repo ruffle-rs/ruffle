@@ -2,9 +2,9 @@ netStatus
 code: NetStream.Play.Start
 level: status
 netStatus
-netStatus
 code: NetStream.Buffer.Full
 level: status
+netStatusOnMetaData
 netStatus
 code: NetStream.Buffer.Flush
 level: status

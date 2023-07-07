@@ -229,11 +229,7 @@ impl<'gc> NetStream<'gc> {
             .unwrap()
             .append(data);
 
-        if context.is_action_script_3() {
-            // Don't ask why but the AS3 test has a spurious status event in it
-            self.trigger_status_event(context, &[]);
-        }
-
+        // NOTE: The onMetaData event triggers before this event in Flash due to its streaming behavior.
         self.trigger_status_event(
             context,
             &[("code", "NetStream.Buffer.Full"), ("level", "status")],
@@ -718,18 +714,21 @@ impl<'gc> NetStream<'gc> {
         match avm_object {
             Some(AvmObject::Avm1(object)) => {
                 match variable_name {
-                    b"onCuePoint" => {
+                    b"onCuePoint" | b"onMetaData" => {
+                        let avm_string_name =
+                            AvmString::new_utf8_bytes(context.gc_context, variable_name);
+
                         let root = context.stage.root_clip().expect("root");
                         let mut activation = Avm1Activation::from_nothing(
                             context.reborrow(),
-                            Avm1ActivationIdentifier::root("[FLV onCuePoint]"),
+                            Avm1ActivationIdentifier::root(format!("[FLV {}]", avm_string_name)),
                             root,
                         );
 
                         let avm1_object_value = variable_data.to_avm1_value(&mut activation);
 
                         if let Err(e) = object.call_method(
-                            "onCuePoint".into(),
+                            avm_string_name,
                             &[avm1_object_value],
                             &mut activation,
                             Avm1ExecutionReason::Special,
@@ -742,9 +741,6 @@ impl<'gc> NetStream<'gc> {
                     }
                     b"onXMPData" => {
                         tracing::warn!("Stub: FLV stream data onXMPData for AVM1");
-                    }
-                    b"onMetaData" => {
-                        tracing::warn!("Stub: FLV stream data onMetaData for AVM1");
                     }
                     _ => {
                         tracing::warn!(
