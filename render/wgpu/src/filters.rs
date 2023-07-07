@@ -65,6 +65,73 @@ impl<'a> FilterSource<'a> {
             usage: wgpu::BufferUsages::VERTEX,
         })
     }
+
+    pub fn vertices_with_blur(
+        &self,
+        device: &wgpu::Device,
+        blur_size: (u32, u32),
+        blur_point: (u32, u32),
+    ) -> wgpu::Buffer {
+        let source_width = self.texture.width() as f32;
+        let source_height = self.texture.height() as f32;
+        let source_left = self.point.0;
+        let source_top = self.point.1;
+        let source_right = source_left + self.size.0;
+        let source_bottom = source_top + self.size.1;
+        let blur_width = blur_size.0 as f32;
+        let blur_height = blur_size.1 as f32;
+        let blur_left = blur_point.0;
+        let blur_top = blur_point.1;
+        let blur_right = blur_left + blur_size.0;
+        let blur_bottom = blur_top + blur_size.1;
+        device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: create_debug_label!("Filter vertices").as_deref(),
+            contents: bytemuck::cast_slice(&[
+                FilterVertexWithBlur {
+                    position: [0.0, 0.0],
+                    source_uv: [
+                        source_left as f32 / source_width,
+                        source_top as f32 / source_height,
+                    ],
+                    blur_uv: [blur_left as f32 / blur_width, blur_top as f32 / blur_height],
+                },
+                FilterVertexWithBlur {
+                    position: [1.0, 0.0],
+                    source_uv: [
+                        source_right as f32 / source_width,
+                        source_top as f32 / source_height,
+                    ],
+                    blur_uv: [
+                        blur_right as f32 / blur_width,
+                        blur_top as f32 / blur_height,
+                    ],
+                },
+                FilterVertexWithBlur {
+                    position: [1.0, 1.0],
+                    source_uv: [
+                        source_right as f32 / source_width,
+                        source_bottom as f32 / source_height,
+                    ],
+                    blur_uv: [
+                        blur_right as f32 / blur_width,
+                        blur_bottom as f32 / blur_height,
+                    ],
+                },
+                FilterVertexWithBlur {
+                    position: [0.0, 1.0],
+                    source_uv: [
+                        source_left as f32 / source_width,
+                        source_bottom as f32 / source_height,
+                    ],
+                    blur_uv: [
+                        blur_left as f32 / blur_width,
+                        blur_bottom as f32 / blur_height,
+                    ],
+                },
+            ]),
+            usage: wgpu::BufferUsages::VERTEX,
+        })
+    }
 }
 
 pub struct Filters {
@@ -198,5 +265,24 @@ pub const VERTEX_BUFFERS_DESCRIPTION_FILTERS: [wgpu::VertexBufferLayout; 1] =
         attributes: &vertex_attr_array![
             0 => Float32x2,
             1 => Float32x2,
+        ],
+    }];
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, Pod, Zeroable)]
+pub struct FilterVertexWithBlur {
+    pub position: [f32; 2],
+    pub source_uv: [f32; 2],
+    pub blur_uv: [f32; 2],
+}
+
+pub const VERTEX_BUFFERS_DESCRIPTION_FILTERS_WITH_BLUR: [wgpu::VertexBufferLayout; 1] =
+    [wgpu::VertexBufferLayout {
+        array_stride: std::mem::size_of::<FilterVertexWithBlur>() as u64,
+        step_mode: wgpu::VertexStepMode::Vertex,
+        attributes: &vertex_attr_array![
+            0 => Float32x2,
+            1 => Float32x2,
+            2 => Float32x2,
         ],
     }];

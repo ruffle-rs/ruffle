@@ -1,5 +1,3 @@
-#import filter
-
 struct Filter {
     color: vec4<f32>,
     strength: f32,
@@ -13,17 +11,36 @@ struct Filter {
 @group(0) @binding(2) var<uniform> filter_args: Filter;
 @group(0) @binding(3) var blurred: texture_2d<f32>;
 
+struct VertexOutput {
+    @builtin(position) position: vec4<f32>,
+    @location(0) source_uv: vec2<f32>,
+    @location(1) blur_uv: vec2<f32>,
+};
+
+struct VertexInput {
+    /// The position of the vertex in texture space (topleft 0,0, bottomright 1,1)
+    @location(0) position: vec2<f32>,
+
+    /// The coordinate of the source texture to sample in texture space (topleft 0,0, bottomright 1,1)
+    @location(1) source_uv: vec2<f32>,
+
+    /// The coordinate of the blur texture to sample in texture space (topleft 0,0, bottomright 1,1)
+    @location(2) blur_uv: vec2<f32>,
+};
+
 @vertex
-fn main_vertex(in: filter::VertexInput) -> filter::VertexOutput {
-    return filter::main_vertex(in);
+fn main_vertex(in: VertexInput) -> VertexOutput {
+    // Convert texture space (topleft 0,0 to bottomright 1,1) to render space (topleft -1,1 to bottomright 1,-1)
+    let pos = vec4<f32>((in.position.x * 2.0 - 1.0), (1.0 - in.position.y * 2.0), 0.0, 1.0);
+    return VertexOutput(pos, in.source_uv, in.blur_uv);
 }
 
 @fragment
-fn main_fragment(in: filter::VertexOutput) -> @location(0) vec4<f32> {
+fn main_fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     let inner = filter_args.inner > 0u;
     let knockout = filter_args.knockout > 0u;
-    let blur = textureSample(blurred, texture_sampler, in.uv).a;
-    let dest = textureSample(texture, texture_sampler, in.uv); // TODO: The UVs may not match when we resize the blur texture
+    let blur = textureSample(blurred, texture_sampler, in.blur_uv).a;
+    let dest = textureSample(texture, texture_sampler, in.source_uv);
 
     // [NA] It'd be nice to use hardware blending but the operation is too complex :( Only knockouts would work.
 
