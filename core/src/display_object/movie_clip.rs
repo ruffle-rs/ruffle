@@ -69,6 +69,50 @@ enum NextFrame {
 /// However, in AVM2, Sprite is a separate display object, and MovieClip is a subclass of Sprite.
 ///
 /// (SWF19 pp. 201-203)
+///
+/// # MovieClip States
+/// A MovieClip can be in different states.
+/// The state of a MovieClip consists of the values of all properties and the results of some getter
+/// functions of the MovieClip.
+/// Most of these states are inaccessible in AVM2.
+///
+/// The states a MovieClip can be in are the following:
+///
+/// ## Default State
+/// This is the default state a MovieClip is in after it's created (in AVM1 with createEmptyMovieClip).
+///
+/// ## Initial Loading State
+/// This state is entered when FP / Ruffle try to load the MovieClip. As soon as FP / Ruffle either
+/// load the first frame of the SWF or realise the movie can't be loaded, a different state is
+/// entered.
+///
+/// Therefore, if FP / Ruffle are too fast to determine whether the file exists or not, the state
+/// can directly change after one frame from the default state to a different state.
+///
+/// The initial loading state is different, depending on whether the SWF file which is loading is
+/// an online file or a local file.
+///
+/// ## Error State
+/// This state is entered if no file could be loaded or if the loaded content is no valid supported
+/// content.
+///
+/// ## Image State
+/// This state is entered if an image has been loaded.
+///
+/// ## Success State
+/// This state is entered if the first frame of a valid SWF file has been loaded.
+///
+/// ## Unloaded State
+/// This state is entered on the next frame after the movie has been unloaded.
+///
+/// ## States in AVM2
+/// In AVM2, only the success state is accessible to the ActionScript code. The Ruffle MovieClip
+/// can still be in the default state, initial loading state and error state, however it is only
+/// passed to the code (via the ActionScript Loader) after it has reached the success state. If
+/// an image is loaded in AVM2, the ActionScript code doesn't get any MovieClip object, even if
+/// the MovieClip exists in Ruffle and is in the image state.
+///
+/// The unloaded state can only be reached in AVM1 through the unloadMovie function.
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct MovieClip<'gc>(GcCell<'gc, MovieClipData<'gc>>);

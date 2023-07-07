@@ -263,8 +263,6 @@ pub struct Player {
 
     stub_tracker: StubCollection,
 
-    use_new_invalid_bounds_value: bool,
-
     /// A time budget for executing frames.
     /// Gained by passage of time between host frames, spent by executing SWF frames.
     /// This is how we support custom SWF framerates
@@ -1887,7 +1885,6 @@ impl Player {
                 frame_phase: &mut self.frame_phase,
                 stub_tracker: &mut self.stub_tracker,
                 stream_manager,
-                use_new_invalid_bounds_value: &mut self.use_new_invalid_bounds_value,
                 dynamic_root,
             };
 
@@ -2447,7 +2444,6 @@ impl PlayerBuilder {
                 spoofed_url: self.spoofed_url.clone(),
                 compatibility_rules: self.compatibility_rules.clone(),
                 stub_tracker: StubCollection::new(),
-                use_new_invalid_bounds_value: false,
                 #[cfg(feature = "egui")]
                 debug_ui: Default::default(),
 
