@@ -690,6 +690,13 @@ impl<'gc> DisplayObjectBase<'gc> {
     }
 }
 
+struct DrawCacheInfo {
+    handle: BitmapHandle,
+    dirty: bool,
+    base_transform: Transform,
+    bounds: Rectangle<Twips>,
+}
+
 pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_, 'gc>) {
     if this.maskee().is_some() {
         return;
@@ -703,7 +710,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
     };
 
     let cache_info = if context.use_bitmap_cache {
-        let mut cache_info: Option<(BitmapHandle, bool, Transform, Rectangle<Twips>)> = None;
+        let mut cache_info: Option<DrawCacheInfo> = None;
         let base_transform = context.transform_stack.transform();
         let bounds: Rectangle<Twips> = this.bounds_with_transform(&base_transform.matrix);
         let path = this.path();
@@ -716,13 +723,19 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
                 let height = height as u16;
                 if cache.is_dirty(&base_transform.matrix, width, height) {
                     cache.update(context.renderer, base_transform.matrix, width, height);
-                    cache_info = cache
-                        .handle()
-                        .map(|handle| (handle, true, base_transform, bounds));
+                    cache_info = cache.handle().map(|handle| DrawCacheInfo {
+                        handle,
+                        dirty: true,
+                        base_transform,
+                        bounds,
+                    });
                 } else {
-                    cache_info = cache
-                        .handle()
-                        .map(|handle| (handle, false, base_transform, bounds));
+                    cache_info = cache.handle().map(|handle| DrawCacheInfo {
+                        handle,
+                        dirty: false,
+                        base_transform,
+                        bounds,
+                    });
                 }
             } else {
                 if !cache.warned_for_oversize {
@@ -742,21 +755,21 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
     };
 
     // We can't hold `cache` (which will hold `base`), so this is split up
-    if let Some((handle, dirty, base_transform, bounds)) = cache_info {
+    if let Some(cache_info) = cache_info {
         // In order to render an object to a texture, we need to draw its entire bounds.
         // Calculate the offset from tx/ty in order to accommodate any drawings that extend the bounds
         // negatively
-        let offset_x = bounds.x_min - base_transform.matrix.tx;
-        let offset_y = bounds.y_min - base_transform.matrix.ty;
+        let offset_x = cache_info.bounds.x_min - cache_info.base_transform.matrix.tx;
+        let offset_y = cache_info.bounds.y_min - cache_info.base_transform.matrix.ty;
 
-        if dirty {
+        if cache_info.dirty {
             let mut transform_stack = TransformStack::new();
             transform_stack.push(&Transform {
                 color_transform: Default::default(),
                 matrix: Matrix {
                     tx: -offset_x,
                     ty: -offset_y,
-                    ..base_transform.matrix
+                    ..cache_info.base_transform.matrix
                 },
             });
             let mut offscreen_context = RenderContext {
@@ -773,10 +786,13 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
             render_base_inner(this, &mut offscreen_context);
             let mut filters = this.filters();
             for filter in &mut filters {
-                filter.scale(base_transform.matrix.a, base_transform.matrix.d);
+                filter.scale(
+                    cache_info.base_transform.matrix.a,
+                    cache_info.base_transform.matrix.d,
+                );
             }
             offscreen_context.cache_draws.push(BitmapCacheEntry {
-                handle: handle.clone(),
+                handle: cache_info.handle.clone(),
                 commands: offscreen_context.commands,
                 clear: this.opaque_background().unwrap_or_default(),
                 filters,
@@ -785,14 +801,14 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
 
         // When rendering it back, ensure we're only keeping the translation - scale/rotation is within the image already
         context.commands.render_bitmap(
-            handle,
+            cache_info.handle,
             Transform {
                 matrix: Matrix {
-                    tx: base_transform.matrix.tx + offset_x,
-                    ty: base_transform.matrix.ty + offset_y,
+                    tx: cache_info.base_transform.matrix.tx + offset_x,
+                    ty: cache_info.base_transform.matrix.ty + offset_y,
                     ..Default::default()
                 },
-                color_transform: base_transform.color_transform,
+                color_transform: cache_info.base_transform.color_transform,
             },
             true,
         );
