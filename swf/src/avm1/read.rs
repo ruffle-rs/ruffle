@@ -350,6 +350,15 @@ impl<'a> Reader<'a> {
     }
 
     fn read_try(&mut self, length: &mut usize) -> Result<Try<'a>> {
+        // All Try opcodes must be at least 7 bytes long. If it's shorter, it's a bogus opcode; return an empty Try.
+        if *length < 7 {
+            return Ok(Try {
+                try_body: &[],
+                catch_body: None,
+                finally_body: None,
+            });
+        }
+
         let flags = TryFlags::from_bits_truncate(self.read_u8()?);
         let try_size: usize = self.read_u16()?.into();
         let catch_size: usize = self.read_u16()?.into();
