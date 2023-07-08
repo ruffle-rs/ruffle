@@ -15,6 +15,7 @@ use crate::filters::shader::ShaderFilter;
 use crate::surface::target::CommandTarget;
 use bytemuck::{Pod, Zeroable};
 use ruffle_render::filters::Filter;
+use swf::Rectangle;
 use wgpu::util::DeviceExt;
 use wgpu::vertex_attr_array;
 
@@ -80,6 +81,21 @@ impl Filters {
             color_matrix: ColorMatrixFilter::new(device),
             shader: ShaderFilter::new(),
             glow: GlowFilter::new(device),
+        }
+    }
+
+    pub fn calculate_dest_rect(
+        &self,
+        filter: &Filter,
+        source_rect: Rectangle<i32>,
+    ) -> Rectangle<i32> {
+        match filter {
+            Filter::BlurFilter(filter) => self.blur.calculate_dest_rect(filter, source_rect),
+            Filter::GlowFilter(filter) => {
+                self.glow
+                    .calculate_dest_rect(filter, source_rect, &self.blur)
+            }
+            _ => source_rect,
         }
     }
 
