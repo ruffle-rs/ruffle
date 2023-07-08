@@ -6,7 +6,7 @@ use crate::surface::target::CommandTarget;
 use crate::utils::SampleCountMap;
 use bytemuck::{Pod, Zeroable};
 use std::sync::OnceLock;
-use swf::BlurFilter as BlurFilterArgs;
+use swf::{BlurFilter as BlurFilterArgs, Rectangle};
 use wgpu::util::DeviceExt;
 
 /// How much each pass should multiply the requested blur size by - accumulative.
@@ -116,6 +116,22 @@ impl BlurFilter {
                     multiview: None,
                 })
         })
+    }
+
+    pub fn calculate_dest_rect(
+        &self,
+        filter: &BlurFilterArgs,
+        source_rect: Rectangle<i32>,
+    ) -> Rectangle<i32> {
+        let scale = PASS_SCALES[filter.num_passes() as usize];
+        let x = (scale * filter.blur_x.to_f32()).ceil().max(0.0) as i32;
+        let y = (scale * filter.blur_y.to_f32()).ceil().max(0.0) as i32;
+        Rectangle {
+            x_min: source_rect.x_min - x,
+            x_max: source_rect.x_max + x,
+            y_min: source_rect.y_min - y,
+            y_max: source_rect.y_max + y,
+        }
     }
 
     pub fn apply(
