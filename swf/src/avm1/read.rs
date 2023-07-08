@@ -207,7 +207,10 @@ impl<'a> Reader<'a> {
         let count = self.read_u16()?;
         let mut strings = Vec::with_capacity(count as usize);
         for _ in 0..count {
-            strings.push(self.read_str()?);
+            let string = self.read_str();
+            if let Ok(string) = string {
+                strings.push(string);
+            }
         }
         Ok(ConstantPool { strings })
     }
