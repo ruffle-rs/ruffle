@@ -1061,7 +1061,7 @@ impl<'a> ShaderBuilder<'a> {
                         }),
                         Opcode::Length => {
                             // Don't pad the result, as adding extra components changes the length
-                            let src_val = self.load_src_register_with_padding(&src_reg, false)?;
+                            let src_val = self.load_src_register_with_padding(src_reg, false)?;
                             let length = self.evaluate_expr(Expression::Math {
                                 fun: MathFunction::Length,
                                 arg: src_val,
