@@ -7,7 +7,6 @@ use crate::avm2::scope::{Scope, ScopeChain};
 use crate::avm2::script::Script;
 use crate::avm2::Avm2;
 use crate::avm2::Error;
-use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::string::AvmString;
@@ -630,8 +629,9 @@ fn load_playerglobal<'gc>(
             let activation = $activation;
             $(
                 let ns = Namespace::package($package, &mut activation.borrow_gc());
-                let name = Multiname::new(ns, $class_name);
-                let class_object = activation.resolve_class(&name)?;
+                let name = QName::new(ns, $class_name);
+                let class_object = activation.domain().get_defined_value(activation, name)?;
+                let class_object = class_object.as_object().unwrap().as_class_object().unwrap();
                 let sc = activation.avm2().system_classes.as_mut().unwrap();
                 sc.$field = class_object;
             )*
