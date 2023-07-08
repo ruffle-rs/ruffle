@@ -1,0 +1,10 @@
+[object NetStream]
+true
+TypeError: 2004
+TypeError: 2004
+TypeError: 2004
+TypeError: 2004
+TypeError: 2004
+success!
+success!
+test over
