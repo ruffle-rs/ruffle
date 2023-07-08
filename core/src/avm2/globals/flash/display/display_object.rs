@@ -6,10 +6,9 @@ use crate::avm2::filters::FilterAvm2Ext;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::avm2::Namespace;
+use crate::avm2::StageObject;
 use crate::avm2::{ArrayObject, ArrayStorage};
 use crate::avm2::{ClassObject, Error};
-use crate::avm2::{Multiname, StageObject};
 use crate::display_object::{DisplayObject, HitTestOptions, TDisplayObject};
 use crate::ecma_conversions::round_to_even;
 use crate::prelude::*;
@@ -260,13 +259,8 @@ pub fn set_filters<'gc>(
         if let Some(new_filters) = new_filters {
             if let Some(filters_array) = new_filters.as_array_object() {
                 if let Some(filters_storage) = filters_array.as_array_storage() {
-                    let filters_namespace =
-                        Namespace::package("flash.filters", &mut activation.borrow_gc());
-                    let filter_class = Multiname::new(filters_namespace, "BitmapFilter");
-
-                    let filter_class_object = activation
-                        .resolve_class(&filter_class)?
-                        .inner_class_definition();
+                    let filter_class_object = activation.avm2().classes().bitmapfilter;
+                    let filter_class = filter_class_object.inner_class_definition();
                     let mut filter_vec = Vec::with_capacity(filters_storage.length());
 
                     for filter in filters_storage.iter().flatten() {
@@ -275,9 +269,7 @@ pub fn set_filters<'gc>(
                         } else {
                             let filter_object = filter.coerce_to_object(activation)?;
 
-                            if !filter_object
-                                .is_of_type(filter_class_object, &mut activation.context)
-                            {
+                            if !filter_object.is_of_type(filter_class, &mut activation.context) {
                                 return build_argument_type_error(activation);
                             }
 
