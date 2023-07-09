@@ -18,7 +18,7 @@ pub fn primitive_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
-    Ok(PrimitiveObject(GcCell::allocate(
+    Ok(PrimitiveObject(GcCell::new(
         activation.context.gc_context,
         PrimitiveObjectData {
             base,
@@ -86,7 +86,7 @@ impl<'gc> PrimitiveObject<'gc> {
         };
 
         let base = ScriptObjectData::new(class);
-        let mut this: Object<'gc> = PrimitiveObject(GcCell::allocate(
+        let mut this: Object<'gc> = PrimitiveObject(GcCell::new(
             activation.context.gc_context,
             PrimitiveObjectData { base, primitive },
         ))

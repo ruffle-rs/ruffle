@@ -16,7 +16,7 @@ pub fn stage_3d_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
-    Ok(Stage3DObject(GcCell::allocate(
+    Ok(Stage3DObject(GcCell::new(
         activation.context.gc_context,
         Stage3DObjectData {
             base,

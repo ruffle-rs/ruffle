@@ -67,7 +67,7 @@ impl<'gc> DispatchObject<'gc> {
         // TODO: we might want this to be a proper Object instance, just in case
         let base = ScriptObjectData::custom_new(None, None);
 
-        DispatchObject(GcCell::allocate(
+        DispatchObject(GcCell::new(
             mc,
             DispatchObjectData {
                 base,

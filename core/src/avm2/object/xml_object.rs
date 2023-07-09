@@ -21,7 +21,7 @@ pub fn xml_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
-    Ok(XmlObject(GcCell::allocate(
+    Ok(XmlObject(GcCell::new(
         activation.context.gc_context,
         XmlObjectData {
             base,
@@ -58,7 +58,7 @@ pub struct XmlObjectData<'gc> {
 
 impl<'gc> XmlObject<'gc> {
     pub fn new(node: E4XNode<'gc>, activation: &mut Activation<'_, 'gc>) -> Self {
-        XmlObject(GcCell::allocate(
+        XmlObject(GcCell::new(
             activation.context.gc_context,
             XmlObjectData {
                 base: ScriptObjectData::new(activation.context.avm2.classes().xml),

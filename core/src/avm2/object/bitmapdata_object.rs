@@ -17,7 +17,7 @@ pub fn bitmap_data_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
-    Ok(BitmapDataObject(GcCell::allocate(
+    Ok(BitmapDataObject(GcCell::new(
         activation.context.gc_context,
         BitmapDataObjectData {
             base,
@@ -70,7 +70,7 @@ impl<'gc> BitmapDataObject<'gc> {
         bitmap_data: BitmapDataWrapper<'gc>,
         class: ClassObject<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        let mut instance: Object<'gc> = Self(GcCell::allocate(
+        let mut instance: Object<'gc> = Self(GcCell::new(
             activation.context.gc_context,
             BitmapDataObjectData {
                 base: ScriptObjectData::new(class),

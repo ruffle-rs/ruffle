@@ -122,7 +122,7 @@ pub struct GradientFilter<'gc>(GcCell<'gc, GradientFilterData>);
 
 impl<'gc> GradientFilter<'gc> {
     fn new(activation: &mut Activation<'_, 'gc>, args: &[Value<'gc>]) -> Result<Self, Error<'gc>> {
-        let gradient_bevel_filter = Self(GcCell::allocate(
+        let gradient_bevel_filter = Self(GcCell::new(
             activation.context.gc_context,
             Default::default(),
         ));
@@ -141,11 +141,11 @@ impl<'gc> GradientFilter<'gc> {
     }
 
     pub fn from_filter(gc_context: MutationContext<'gc, '_>, filter: swf::GradientFilter) -> Self {
-        Self(GcCell::allocate(gc_context, filter.into()))
+        Self(GcCell::new(gc_context, filter.into()))
     }
 
     pub(crate) fn duplicate(&self, gc_context: MutationContext<'gc, '_>) -> Self {
-        Self(GcCell::allocate(gc_context, self.0.read().clone()))
+        Self(GcCell::new(gc_context, self.0.read().clone()))
     }
 
     fn distance(&self) -> f64 {

@@ -30,7 +30,7 @@ impl<'gc> VertexBuffer3DObject<'gc> {
         let class = activation.avm2().classes().vertexbuffer3d;
         let base = ScriptObjectData::new(class);
 
-        let mut this: Object<'gc> = VertexBuffer3DObject(GcCell::allocate(
+        let mut this: Object<'gc> = VertexBuffer3DObject(GcCell::new(
             activation.context.gc_context,
             VertexBuffer3DObjectData {
                 base,

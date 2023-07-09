@@ -135,7 +135,7 @@ fn new_text_format<'gc>(
     let object = ScriptObject::new(activation.context.gc_context, Some(proto));
     object.set_native(
         activation.context.gc_context,
-        NativeObject::TextFormat(GcCell::allocate(activation.context.gc_context, text_format)),
+        NativeObject::TextFormat(GcCell::new(activation.context.gc_context, text_format)),
     );
     object
 }

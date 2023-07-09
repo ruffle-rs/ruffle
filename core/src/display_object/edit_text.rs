@@ -250,12 +250,12 @@ impl<'gc> EditText<'gc> {
             flags.contains(EditTextFlag::BORDER),
         );
 
-        let et = EditText(GcCell::allocate(
+        let et = EditText(GcCell::new(
             context.gc_context,
             EditTextData {
                 base,
                 text_spans,
-                static_data: gc_arena::Gc::allocate(
+                static_data: gc_arena::Gc::new(
                     context.gc_context,
                     EditTextStatic {
                         swf: swf_movie,
@@ -1586,7 +1586,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     }
 
     fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc> {
-        Self(GcCell::allocate(gc_context, self.0.read().clone())).into()
+        Self(GcCell::new(gc_context, self.0.read().clone())).into()
     }
 
     fn as_ptr(&self) -> *const DisplayObjectPtr {

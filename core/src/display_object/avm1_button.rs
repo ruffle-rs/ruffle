@@ -73,11 +73,11 @@ impl<'gc> Avm1Button<'gc> {
             over_to_up_sound: None,
         };
 
-        Avm1Button(GcCell::allocate(
+        Avm1Button(GcCell::new(
             gc_context,
             Avm1ButtonData {
                 base: Default::default(),
-                static_data: GcCell::allocate(gc_context, static_data),
+                static_data: GcCell::new(gc_context, static_data),
                 container: ChildContainer::new(),
                 hit_area: BTreeMap::new(),
                 state: self::ButtonState::Up,
@@ -246,7 +246,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
     }
 
     fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc> {
-        Self(GcCell::allocate(gc_context, self.0.read().clone())).into()
+        Self(GcCell::new(gc_context, self.0.read().clone())).into()
     }
 
     fn as_ptr(&self) -> *const DisplayObjectPtr {

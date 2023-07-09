@@ -97,7 +97,7 @@ pub struct DropShadowFilter<'gc>(GcCell<'gc, DropShadowFilterData>);
 
 impl<'gc> DropShadowFilter<'gc> {
     fn new(activation: &mut Activation<'_, 'gc>, args: &[Value<'gc>]) -> Result<Self, Error<'gc>> {
-        let drop_shadow_filter = Self(GcCell::allocate(
+        let drop_shadow_filter = Self(GcCell::new(
             activation.context.gc_context,
             Default::default(),
         ));
@@ -119,11 +119,11 @@ impl<'gc> DropShadowFilter<'gc> {
         gc_context: MutationContext<'gc, '_>,
         filter: swf::DropShadowFilter,
     ) -> Self {
-        Self(GcCell::allocate(gc_context, filter.into()))
+        Self(GcCell::new(gc_context, filter.into()))
     }
 
     pub(crate) fn duplicate(&self, gc_context: MutationContext<'gc, '_>) -> Self {
-        Self(GcCell::allocate(gc_context, self.0.read().clone()))
+        Self(GcCell::new(gc_context, self.0.read().clone()))
     }
 
     fn distance(&self) -> f64 {

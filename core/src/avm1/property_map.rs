@@ -109,7 +109,7 @@ impl<'gc, V> PropertyMap<'gc, V> {
 }
 
 unsafe impl<'gc, V: Collect> Collect for PropertyMap<'gc, V> {
-    fn trace(&self, cc: gc_arena::CollectionContext) {
+    fn trace(&self, cc: &gc_arena::Collection) {
         for (key, value) in &self.0 {
             key.0.trace(cc);
             value.trace(cc);

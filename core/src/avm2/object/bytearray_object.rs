@@ -40,7 +40,7 @@ pub fn byte_array_allocator<'gc>(
 
     let base = ScriptObjectData::new(class);
 
-    Ok(ByteArrayObject(GcCell::allocate(
+    Ok(ByteArrayObject(GcCell::new(
         activation.context.gc_context,
         ByteArrayObjectData { base, storage },
     ))
@@ -80,7 +80,7 @@ impl<'gc> ByteArrayObject<'gc> {
         let class = activation.avm2().classes().bytearray;
         let base = ScriptObjectData::new(class);
 
-        let mut instance: Object<'gc> = ByteArrayObject(GcCell::allocate(
+        let mut instance: Object<'gc> = ByteArrayObject(GcCell::new(
             activation.context.gc_context,
             ByteArrayObjectData {
                 base,

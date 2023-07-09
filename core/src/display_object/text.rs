@@ -41,11 +41,11 @@ impl<'gc> Text<'gc> {
         swf: Arc<SwfMovie>,
         tag: &swf::Text,
     ) -> Self {
-        Text(GcCell::allocate(
+        Text(GcCell::new(
             context.gc_context,
             TextData {
                 base: Default::default(),
-                static_data: gc_arena::Gc::allocate(
+                static_data: gc_arena::Gc::new(
                     context.gc_context,
                     TextStatic {
                         swf,
@@ -81,7 +81,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
     }
 
     fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc> {
-        Self(GcCell::allocate(gc_context, self.0.read().clone())).into()
+        Self(GcCell::new(gc_context, self.0.read().clone())).into()
     }
 
     fn as_ptr(&self) -> *const DisplayObjectPtr {

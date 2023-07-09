@@ -43,7 +43,7 @@ pub struct RegisterSet<'gc>(SmallVec<[Value<'gc>; 8]>);
 
 unsafe impl<'gc> gc_arena::Collect for RegisterSet<'gc> {
     #[inline]
-    fn trace(&self, cc: gc_arena::CollectionContext) {
+    fn trace(&self, cc: &gc_arena::Collection) {
         for register in &self.0 {
             register.trace(cc);
         }
@@ -139,6 +139,13 @@ pub struct Activation<'a, 'gc: 'a> {
 }
 
 impl<'a, 'gc> Activation<'a, 'gc> {
+    /// Convenience method to retrieve the current GC context. Note that explicitely writing
+    /// `self.context.gc_context` can be sometimes necessary to satisfy the borrow checker.
+    #[inline(always)]
+    pub fn gc(&self) -> &'gc gc_arena::Mutation<'gc> {
+        self.context.gc_context
+    }
+
     /// Construct an activation that does not represent any particular scope.
     ///
     /// This exists primarily for non-AVM2 related manipulations of the
@@ -764,7 +771,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .pool_maybe_uninitialized_multiname(index, &mut self.borrow_gc())?;
         if name.has_lazy_component() {
             let name = name.fill_with_runtime_params(self)?;
-            Ok(Gc::allocate(self.context.gc_context, name))
+            Ok(Gc::new(self.context.gc_context, name))
         } else {
             Ok(name)
         }

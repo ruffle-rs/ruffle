@@ -21,7 +21,7 @@ image = { version = "0.24.6", default-features = false }
 naga_oil = { workspace = true }
 ouroboros = "0.17.0"
 typed-arena = "2.0.2"
-gc-arena = { workspace = true }
+gc-arena = { package = "ruffle_gc_arena", path = "../../ruffle_gc_arena" }
 naga-agal = { path = "../naga-agal" }
 naga-pixelbender = { path = "../naga-pixelbender" }
 downcast-rs = "1.2.0"

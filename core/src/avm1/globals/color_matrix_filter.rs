@@ -51,7 +51,7 @@ pub struct ColorMatrixFilter<'gc>(GcCell<'gc, ColorMatrixFilterData>);
 
 impl<'gc> ColorMatrixFilter<'gc> {
     fn new(activation: &mut Activation<'_, 'gc>, args: &[Value<'gc>]) -> Result<Self, Error<'gc>> {
-        let color_matrix_filter = Self(GcCell::allocate(
+        let color_matrix_filter = Self(GcCell::new(
             activation.context.gc_context,
             Default::default(),
         ));
@@ -63,11 +63,11 @@ impl<'gc> ColorMatrixFilter<'gc> {
         gc_context: MutationContext<'gc, '_>,
         filter: swf::ColorMatrixFilter,
     ) -> Self {
-        Self(GcCell::allocate(gc_context, filter.into()))
+        Self(GcCell::new(gc_context, filter.into()))
     }
 
     pub(crate) fn duplicate(&self, gc_context: MutationContext<'gc, '_>) -> Self {
-        Self(GcCell::allocate(gc_context, self.0.read().clone()))
+        Self(GcCell::new(gc_context, self.0.read().clone()))
     }
 
     fn matrix(&self, activation: &mut Activation<'_, 'gc>) -> Value<'gc> {

@@ -17,7 +17,7 @@ pub fn textformat_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
-    Ok(TextFormatObject(GcCell::allocate(
+    Ok(TextFormatObject(GcCell::new(
         activation.context.gc_context,
         TextFormatObjectData {
             base,
@@ -60,7 +60,7 @@ impl<'gc> TextFormatObject<'gc> {
         let class = activation.avm2().classes().textformat;
         let base = ScriptObjectData::new(class);
 
-        let mut this: Object<'gc> = Self(GcCell::allocate(
+        let mut this: Object<'gc> = Self(GcCell::new(
             activation.context.gc_context,
             TextFormatObjectData { base, text_format },
         ))

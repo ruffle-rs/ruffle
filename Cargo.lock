@@ -1810,8 +1810,8 @@ dependencies = [
 
 [[package]]
 name = "gc-arena"
-version = "0.2.2"
-source = "git+https://github.com/kyren/gc-arena?rev=63dab12871321e0e5ada10ff1f1de8f4cf1764f9#63dab12871321e0e5ada10ff1f1de8f4cf1764f9"
+version = "0.3.1"
+source = "git+https://github.com/kyren/gc-arena?rev=ad3e24f89c78d8bb94db18383987290f88e4edcb#ad3e24f89c78d8bb94db18383987290f88e4edcb"
 dependencies = [
  "gc-arena-derive",
  "sptr",
@@ -1819,8 +1819,8 @@ dependencies = [
 
 [[package]]
 name = "gc-arena-derive"
-version = "0.2.2"
-source = "git+https://github.com/kyren/gc-arena?rev=63dab12871321e0e5ada10ff1f1de8f4cf1764f9#63dab12871321e0e5ada10ff1f1de8f4cf1764f9"
+version = "0.3.1"
+source = "git+https://github.com/kyren/gc-arena?rev=ad3e24f89c78d8bb94db18383987290f88e4edcb#ad3e24f89c78d8bb94db18383987290f88e4edcb"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3816,7 +3816,6 @@ dependencies = [
  "flv-rs",
  "fnv",
  "futures",
- "gc-arena",
  "generational-arena",
  "hashbrown 0.14.0",
  "indexmap 2.0.0",
@@ -3832,6 +3831,7 @@ dependencies = [
  "rand",
  "realfft",
  "regress",
+ "ruffle_gc_arena",
  "ruffle_macros",
  "ruffle_render",
  "ruffle_video",
@@ -3889,6 +3889,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "ruffle_gc_arena"
+version = "0.0.0"
+dependencies = [
+ "gc-arena",
+]
+
+[[package]]
 name = "ruffle_input_format"
 version = "0.1.0"
 dependencies = [
@@ -3915,7 +3922,6 @@ dependencies = [
  "downcast-rs",
  "enum-map",
  "flate2",
- "gc-arena",
  "gif",
  "h263-rs-yuv",
  "jpeg-decoder",
@@ -3925,6 +3931,7 @@ dependencies = [
  "num-traits",
  "png",
  "renderdoc",
+ "ruffle_gc_arena",
  "ruffle_wstr",
  "serde",
  "smallvec",
@@ -3941,9 +3948,9 @@ version = "0.1.0"
 dependencies = [
  "downcast-rs",
  "fnv",
- "gc-arena",
  "js-sys",
  "log",
+ "ruffle_gc_arena",
  "ruffle_render",
  "ruffle_web_common",
  "swf",
@@ -3958,9 +3965,9 @@ dependencies = [
  "bytemuck",
  "downcast-rs",
  "fnv",
- "gc-arena",
  "js-sys",
  "log",
+ "ruffle_gc_arena",
  "ruffle_render",
  "ruffle_web_common",
  "swf",
@@ -3979,7 +3986,6 @@ dependencies = [
  "enum-map",
  "fnv",
  "futures",
- "gc-arena",
  "image",
  "indexmap 2.0.0",
  "lru",
@@ -3990,6 +3996,7 @@ dependencies = [
  "ouroboros",
  "profiling",
  "raw-window-handle",
+ "ruffle_gc_arena",
  "ruffle_render",
  "swf",
  "tracing",

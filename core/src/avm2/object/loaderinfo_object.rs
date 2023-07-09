@@ -22,7 +22,7 @@ pub fn loader_info_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
-    Ok(LoaderInfoObject(GcCell::allocate(
+    Ok(LoaderInfoObject(GcCell::new(
         activation.context.gc_context,
         LoaderInfoObjectData {
             base,
@@ -128,7 +128,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         let base = ScriptObjectData::new(class);
         let loaded_stream = Some(LoaderStream::Swf(movie, root));
 
-        let mut this: Object<'gc> = LoaderInfoObject(GcCell::allocate(
+        let mut this: Object<'gc> = LoaderInfoObject(GcCell::new(
             activation.context.gc_context,
             LoaderInfoObjectData {
                 base,
@@ -172,7 +172,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         let class = activation.avm2().classes().loaderinfo;
         let base = ScriptObjectData::new(class);
 
-        let mut this: Object<'gc> = LoaderInfoObject(GcCell::allocate(
+        let mut this: Object<'gc> = LoaderInfoObject(GcCell::new(
             activation.context.gc_context,
             LoaderInfoObjectData {
                 base,

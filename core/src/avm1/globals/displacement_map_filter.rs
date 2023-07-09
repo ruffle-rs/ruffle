@@ -113,7 +113,7 @@ pub struct DisplacementMapFilter<'gc>(GcCell<'gc, DisplacementMapFilterData<'gc>
 
 impl<'gc> DisplacementMapFilter<'gc> {
     fn new(activation: &mut Activation<'_, 'gc>, args: &[Value<'gc>]) -> Result<Self, Error<'gc>> {
-        let displacement_map_filter = Self(GcCell::allocate(
+        let displacement_map_filter = Self(GcCell::new(
             activation.context.gc_context,
             Default::default(),
         ));
@@ -133,11 +133,11 @@ impl<'gc> DisplacementMapFilter<'gc> {
         gc_context: MutationContext<'gc, '_>,
         filter: ruffle_render::filters::DisplacementMapFilter,
     ) -> Self {
-        Self(GcCell::allocate(gc_context, filter.into()))
+        Self(GcCell::new(gc_context, filter.into()))
     }
 
     pub(crate) fn duplicate(&self, gc_context: MutationContext<'gc, '_>) -> Self {
-        Self(GcCell::allocate(gc_context, self.0.read().clone()))
+        Self(GcCell::new(gc_context, self.0.read().clone()))
     }
 
     fn map_bitmap(&self, context: &mut UpdateContext<'_, 'gc>) -> Option<Object<'gc>> {

@@ -170,7 +170,7 @@ pub struct BevelFilter<'gc>(GcCell<'gc, BevelFilterData>);
 
 impl<'gc> BevelFilter<'gc> {
     fn new(activation: &mut Activation<'_, 'gc>, args: &[Value<'gc>]) -> Result<Self, Error<'gc>> {
-        let bevel_filter = Self(GcCell::allocate(
+        let bevel_filter = Self(GcCell::new(
             activation.context.gc_context,
             Default::default(),
         ));
@@ -190,11 +190,11 @@ impl<'gc> BevelFilter<'gc> {
     }
 
     pub fn from_filter(gc_context: MutationContext<'gc, '_>, filter: swf::BevelFilter) -> Self {
-        Self(GcCell::allocate(gc_context, filter.into()))
+        Self(GcCell::new(gc_context, filter.into()))
     }
 
     pub(crate) fn duplicate(&self, gc_context: MutationContext<'gc, '_>) -> Self {
-        Self(GcCell::allocate(gc_context, self.0.read().clone()))
+        Self(GcCell::new(gc_context, self.0.read().clone()))
     }
 
     fn distance(&self) -> f64 {

@@ -17,7 +17,7 @@ pub fn namespace_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
-    Ok(NamespaceObject(GcCell::allocate(
+    Ok(NamespaceObject(GcCell::new(
         activation.context.gc_context,
         NamespaceObjectData {
             base,
@@ -63,7 +63,7 @@ impl<'gc> NamespaceObject<'gc> {
         let class = activation.avm2().classes().namespace;
         let base = ScriptObjectData::new(class);
 
-        let mut this: Object<'gc> = NamespaceObject(GcCell::allocate(
+        let mut this: Object<'gc> = NamespaceObject(GcCell::new(
             activation.context.gc_context,
             NamespaceObjectData { base, namespace },
         ))

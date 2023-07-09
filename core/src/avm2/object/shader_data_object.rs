@@ -17,7 +17,7 @@ pub fn shader_data_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
-    Ok(ShaderDataObject(GcCell::allocate(
+    Ok(ShaderDataObject(GcCell::new(
         activation.context.gc_context,
         ShaderDataObjectData { base, shader: None },
     ))

@@ -28,7 +28,7 @@ impl<'gc> XmlNodeObject<'gc> {
         mut node: XmlNode<'gc>,
         proto: Object<'gc>,
     ) -> Self {
-        let object = Self(GcCell::allocate(
+        let object = Self(GcCell::new(
             gc_context,
             XmlNodeObjectData {
                 base: ScriptObject::new(gc_context, Some(proto)),

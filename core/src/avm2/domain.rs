@@ -55,7 +55,7 @@ impl<'gc> Domain<'gc> {
         mc: MutationContext<'gc, '_>,
         parent: Option<Domain<'gc>>,
     ) -> Domain<'gc> {
-        Self(GcCell::allocate(
+        Self(GcCell::new(
             mc,
             DomainData {
                 defs: PropertyMap::new(),
@@ -75,7 +75,7 @@ impl<'gc> Domain<'gc> {
     /// This function must not be called before the player globals have been
     /// fully allocated.
     pub fn movie_domain(activation: &mut Activation<'_, 'gc>, parent: Domain<'gc>) -> Domain<'gc> {
-        let this = Self(GcCell::allocate(
+        let this = Self(GcCell::new(
             activation.context.gc_context,
             DomainData {
                 defs: PropertyMap::new(),

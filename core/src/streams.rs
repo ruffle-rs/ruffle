@@ -186,7 +186,7 @@ pub struct NetStreamData<'gc> {
 
 impl<'gc> NetStream<'gc> {
     pub fn new(gc_context: MutationContext<'gc, '_>, avm_object: Option<AvmObject<'gc>>) -> Self {
-        Self(GcCell::allocate(
+        Self(GcCell::new(
             gc_context,
             NetStreamData {
                 buffer: Arc::new(Mutex::new(Vec::new())),

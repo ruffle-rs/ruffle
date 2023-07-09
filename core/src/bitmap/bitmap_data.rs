@@ -289,7 +289,7 @@ mod wrapper {
         // Marking it as disposed skips rendering, and the unset `avm2_object` will cause this to
         // be inaccessible to AS3 code.
         pub fn dummy(mc: MutationContext<'gc, '_>) -> Self {
-            BitmapDataWrapper(GcCell::allocate(
+            BitmapDataWrapper(GcCell::new(
                 mc,
                 BitmapData {
                     pixels: Vec::new(),

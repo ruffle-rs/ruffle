@@ -16,7 +16,7 @@ pub fn netstream_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
     let ns = NetStream::new(activation.context.gc_context, None);
-    let this: Object<'gc> = NetStreamObject(GcCell::allocate(
+    let this: Object<'gc> = NetStreamObject(GcCell::new(
         activation.context.gc_context,
         NetStreamObjectData { base, ns },
     ))

@@ -29,7 +29,7 @@ pub trait FilterAvm2Ext {
 #[derive(Clone, Collect)]
 #[collect(require_static)]
 pub struct ObjectWrapper {
-    root: DynamicRoot<Rootable![Object<'gc>]>,
+    root: DynamicRoot<Rootable![Object<'_>]>,
 }
 
 impl ShaderObject for ObjectWrapper {

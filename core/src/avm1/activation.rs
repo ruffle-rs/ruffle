@@ -45,7 +45,7 @@ pub struct RegisterSet<'gc>(SmallVec<[Value<'gc>; 8]>);
 
 unsafe impl<'gc> gc_arena::Collect for RegisterSet<'gc> {
     #[inline]
-    fn trace(&self, cc: gc_arena::CollectionContext) {
+    fn trace(&self, cc: &gc_arena::Collection) {
         for register in &self.0 {
             register.trace(cc);
         }
@@ -172,6 +172,7 @@ impl<'a> ActivationIdentifier<'a> {
     }
 }
 
+/// Represents a single activation of a given AVM1 function or keyframe.
 pub struct Activation<'a, 'gc: 'a> {
     /// Represents the SWF version of a given function.
     ///
@@ -233,6 +234,13 @@ impl Drop for Activation<'_, '_> {
 }
 
 impl<'a, 'gc> Activation<'a, 'gc> {
+    /// Convenience method to retrieve the current GC context. Note that explicitely writing
+    /// `self.context.gc_context` can be sometimes necessary to satisfy the borrow checker.
+    #[inline(always)]
+    pub fn gc(&self) -> &'gc gc_arena::Mutation<'gc> {
+        self.context.gc_context
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn from_action(
         context: UpdateContext<'a, 'gc>,
@@ -357,7 +365,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let clip_obj = active_clip
             .object()
             .coerce_to_object(&mut parent_activation);
-        let child_scope = Gc::allocate(
+        let child_scope = Gc::new(
             parent_activation.context.gc_context,
             Scope::new(
                 parent_activation.scope(),
@@ -395,7 +403,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             Value::Object(o) => o,
             _ => panic!("No script object for display object"),
         };
-        let child_scope = Gc::allocate(
+        let child_scope = Gc::new(
             self.context.gc_context,
             Scope::new(
                 self.context.avm1.global_scope(),
@@ -869,7 +877,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         self.context
             .avm1
-            .set_constant_pool(Gc::allocate(self.context.gc_context, constants));
+            .set_constant_pool(Gc::new(self.context.gc_context, constants));
         self.set_constant_pool(self.context.avm1.constant_pool());
 
         Ok(FrameControl::Continue)
@@ -907,7 +915,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         .into();
         let func_obj = FunctionObject::function(
             self.context.gc_context,
-            Gc::allocate(self.context.gc_context, func),
+            Gc::new(self.context.gc_context, func),
             self.context.avm1.prototypes().function,
             prototype,
         );
@@ -2388,7 +2396,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             value => {
                 // Note that primitives get boxed at this point.
                 let object = value.coerce_to_object(self);
-                let with_scope = Gc::allocate(
+                let with_scope = Gc::new(
                     self.context.gc_context,
                     Scope::new_with_scope(self.scope(), object),
                 );
@@ -3017,7 +3025,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     pub fn allocate_local_registers(&mut self, num: u8, mc: MutationContext<'gc, '_>) {
         self.local_registers = match num {
             0 => None,
-            num => Some(GcCell::allocate(mc, RegisterSet::new(num))),
+            num => Some(GcCell::new(mc, RegisterSet::new(num))),
         };
     }
 

@@ -5,7 +5,7 @@ use std::hash::{BuildHasher, Hash, Hasher};
 use std::marker::PhantomData;
 use std::ops::DerefMut;
 
-use gc_arena::{Collect, CollectionContext, Gc, GcWeak, MutationContext};
+use gc_arena::{Collect, Gc, GcWeak, MutationContext};
 use hashbrown::HashSet;
 
 use crate::string::{AvmString, AvmStringRepr, WStr};
@@ -60,7 +60,7 @@ impl<'gc> AvmStringInterner<'gc> {
 
     fn alloc(mc: MutationContext<'gc, '_>, s: Cow<'_, WStr>) -> Gc<'gc, AvmStringRepr> {
         let repr = AvmStringRepr::from_raw(s.into_owned(), true);
-        Gc::allocate(mc, repr)
+        Gc::new(mc, repr)
     }
 
     #[must_use]
@@ -220,7 +220,7 @@ impl<'gc, T: Hash + 'gc> WeakSet<'gc, T> {
 }
 
 unsafe impl<'gc, T> Collect for WeakSet<'gc, T> {
-    fn trace(&self, cc: CollectionContext) {
+    fn trace(&self, cc: &gc_arena::Collection) {
         // Prune entries known to be dead.
         // Safe, as we never pick up new GC pointers from outside this allocation.
         let mut guard = unsafe { self.table.steal_for_trace() };
@@ -256,12 +256,12 @@ impl<'gc, T> CollectCell<'gc, T> {
 
     /// SAFETY: must be called inside a `Collect::trace` function.
     ///
-    /// An alternative would be to require a `CollectionContext` argument, but this is
+    /// An alternative would be to require a `&gc_arena::Collection` argument, but this is
     /// still unsound in presence of nested arenas (preventing this would require a `'gc`
-    /// lifetime on `CollectionContext` and `Collect`):
+    /// lifetime on `&gc_arena::Collection` and `Collect`):
     ///
     /// ```rs,ignore
-    /// fn trace(&self, cc: CollectionContext) {
+    /// fn trace(&self, cc: &gc_arena::Collection) {
     ///     rootless_arena(|mc| {
     ///         let cell = CollectCell::<i32>::default();
     ///         let borrow: &i32 = dbg!(cell.as_ref(mc)); // 0

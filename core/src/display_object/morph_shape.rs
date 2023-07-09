@@ -43,11 +43,11 @@ impl<'gc> MorphShape<'gc> {
         movie: Arc<SwfMovie>,
     ) -> Self {
         let static_data = MorphShapeStatic::from_swf_tag(&tag, movie);
-        MorphShape(GcCell::allocate(
+        MorphShape(GcCell::new(
             gc_context,
             MorphShapeData {
                 base: Default::default(),
-                static_data: Gc::allocate(gc_context, static_data),
+                static_data: Gc::new(gc_context, static_data),
                 ratio: 0,
                 object: None,
             },
@@ -74,7 +74,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
     }
 
     fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc> {
-        Self(GcCell::allocate(gc_context, self.0.read().clone())).into()
+        Self(GcCell::new(gc_context, self.0.read().clone())).into()
     }
 
     fn as_ptr(&self) -> *const DisplayObjectPtr {

@@ -203,7 +203,7 @@ impl<'gc> Class<'gc> {
     ) -> GcCell<'gc, Self> {
         let native_instance_init = instance_init.clone();
 
-        GcCell::allocate(
+        GcCell::new(
             mc,
             Self {
                 name,
@@ -268,7 +268,7 @@ impl<'gc> Class<'gc> {
             AvmString::new_utf8(mc, name_with_params),
         );
 
-        let new_class = GcCell::allocate(mc, new_class);
+        let new_class = GcCell::new(mc, new_class);
         drop(read);
 
         this.write(mc).applications.insert(key, new_class);
@@ -378,7 +378,7 @@ impl<'gc> Class<'gc> {
             }
         }
 
-        Ok(GcCell::allocate(
+        Ok(GcCell::new(
             activation.context.gc_context,
             Self {
                 name,
@@ -538,7 +538,7 @@ impl<'gc> Class<'gc> {
             )?);
         }
 
-        Ok(GcCell::allocate(
+        Ok(GcCell::new(
             activation.context.gc_context,
             Self {
                 name: QName::new(activation.avm2().public_namespace, name),

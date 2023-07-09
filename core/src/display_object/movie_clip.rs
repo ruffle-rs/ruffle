@@ -137,11 +137,11 @@ pub struct MovieClipData<'gc> {
 
 impl<'gc> MovieClip<'gc> {
     pub fn new(movie: Arc<SwfMovie>, gc_context: MutationContext<'gc, '_>) -> Self {
-        MovieClip(GcCell::allocate(
+        MovieClip(GcCell::new(
             gc_context,
             MovieClipData {
                 base: Default::default(),
-                static_data: Gc::allocate(gc_context, MovieClipStatic::empty(movie, gc_context)),
+                static_data: Gc::new(gc_context, MovieClipStatic::empty(movie, gc_context)),
                 tag_stream_pos: 0,
                 current_frame: 0,
                 audio_stream: None,
@@ -176,11 +176,11 @@ impl<'gc> MovieClip<'gc> {
         class: Avm2ClassObject<'gc>,
         gc_context: MutationContext<'gc, '_>,
     ) -> Self {
-        MovieClip(GcCell::allocate(
+        MovieClip(GcCell::new(
             gc_context,
             MovieClipData {
                 base: Default::default(),
-                static_data: Gc::allocate(gc_context, MovieClipStatic::empty(movie, gc_context)),
+                static_data: Gc::new(gc_context, MovieClipStatic::empty(movie, gc_context)),
                 tag_stream_pos: 0,
                 current_frame: 0,
                 audio_stream: None,
@@ -216,11 +216,11 @@ impl<'gc> MovieClip<'gc> {
         swf: SwfSlice,
         num_frames: u16,
     ) -> Self {
-        MovieClip(GcCell::allocate(
+        MovieClip(GcCell::new(
             gc_context,
             MovieClipData {
                 base: Default::default(),
-                static_data: Gc::allocate(
+                static_data: Gc::new(
                     gc_context,
                     MovieClipStatic::with_data(id, swf, num_frames, None, gc_context),
                 ),
@@ -275,11 +275,11 @@ impl<'gc> MovieClip<'gc> {
             None
         };
 
-        let mc = MovieClip(GcCell::allocate(
+        let mc = MovieClip(GcCell::new(
             activation.context.gc_context,
             MovieClipData {
                 base: Default::default(),
-                static_data: Gc::allocate(
+                static_data: Gc::new(
                     activation.context.gc_context,
                     MovieClipStatic::with_data(
                         0,
@@ -357,7 +357,7 @@ impl<'gc> MovieClip<'gc> {
         );
 
         mc.base.base.reset_for_movie_load();
-        mc.static_data = Gc::allocate(
+        mc.static_data = Gc::new(
             context.gc_context,
             MovieClipStatic::with_data(
                 0,
@@ -682,8 +682,7 @@ impl<'gc> MovieClip<'gc> {
                 .unwrap();
         }
 
-        self.0.write(context.gc_context).static_data =
-            Gc::allocate(context.gc_context, static_data);
+        self.0.write(context.gc_context).static_data = Gc::new(context.gc_context, static_data);
 
         is_finished
     }
@@ -2361,7 +2360,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc> {
-        Self(GcCell::allocate(gc_context, self.0.read().clone())).into()
+        Self(GcCell::new(gc_context, self.0.read().clone())).into()
     }
 
     fn as_ptr(&self) -> *const DisplayObjectPtr {
@@ -4277,9 +4276,9 @@ impl<'gc> MovieClipStatic<'gc> {
             scene_labels_map: HashMap::new(),
             audio_stream_info: None,
             audio_stream_handle: None,
-            exported_name: GcCell::allocate(gc_context, None),
+            exported_name: GcCell::new(gc_context, None),
             loader_info,
-            preload_progress: GcCell::allocate(gc_context, Default::default()),
+            preload_progress: GcCell::new(gc_context, Default::default()),
         }
     }
 }

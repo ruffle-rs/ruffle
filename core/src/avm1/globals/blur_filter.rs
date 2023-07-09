@@ -54,7 +54,7 @@ pub struct BlurFilter<'gc>(GcCell<'gc, BlurFilterData>);
 
 impl<'gc> BlurFilter<'gc> {
     fn new(activation: &mut Activation<'_, 'gc>, args: &[Value<'gc>]) -> Result<Self, Error<'gc>> {
-        let blur_filter = Self(GcCell::allocate(
+        let blur_filter = Self(GcCell::new(
             activation.context.gc_context,
             Default::default(),
         ));
@@ -65,11 +65,11 @@ impl<'gc> BlurFilter<'gc> {
     }
 
     pub fn from_filter(gc_context: MutationContext<'gc, '_>, filter: swf::BlurFilter) -> Self {
-        Self(GcCell::allocate(gc_context, filter.into()))
+        Self(GcCell::new(gc_context, filter.into()))
     }
 
     pub(crate) fn duplicate(&self, gc_context: MutationContext<'gc, '_>) -> Self {
-        Self(GcCell::allocate(gc_context, self.0.read().clone()))
+        Self(GcCell::new(gc_context, self.0.read().clone()))
     }
 
     fn blur_x(&self) -> f64 {

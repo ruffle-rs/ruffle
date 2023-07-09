@@ -111,7 +111,7 @@ pub struct ConvolutionFilter<'gc>(GcCell<'gc, ConvolutionFilterData>);
 
 impl<'gc> ConvolutionFilter<'gc> {
     fn new(activation: &mut Activation<'_, 'gc>, args: &[Value<'gc>]) -> Result<Self, Error<'gc>> {
-        let convolution_filter = Self(GcCell::allocate(
+        let convolution_filter = Self(GcCell::new(
             activation.context.gc_context,
             Default::default(),
         ));
@@ -141,11 +141,11 @@ impl<'gc> ConvolutionFilter<'gc> {
         gc_context: MutationContext<'gc, '_>,
         filter: swf::ConvolutionFilter,
     ) -> Self {
-        Self(GcCell::allocate(gc_context, filter.into()))
+        Self(GcCell::new(gc_context, filter.into()))
     }
 
     pub(crate) fn duplicate(&self, gc_context: MutationContext<'gc, '_>) -> Self {
-        Self(GcCell::allocate(gc_context, self.0.read().clone()))
+        Self(GcCell::new(gc_context, self.0.read().clone()))
     }
 
     fn matrix_x(&self) -> u8 {

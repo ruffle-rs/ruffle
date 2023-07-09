@@ -79,8 +79,8 @@ impl<'gc> Avm1<'gc> {
 
         Self {
             player_version,
-            constant_pool: Gc::allocate(gc_context, vec![]),
-            global_scope: Gc::allocate(gc_context, Scope::from_global_object(globals)),
+            constant_pool: Gc::new(gc_context, vec![]),
+            global_scope: Gc::new(gc_context, Scope::from_global_object(globals)),
             prototypes,
             broadcaster_functions,
             display_properties: stage_object::DisplayPropertyMap::new(),
@@ -126,7 +126,7 @@ impl<'gc> Avm1<'gc> {
         let clip_obj = active_clip
             .object()
             .coerce_to_object(&mut parent_activation);
-        let child_scope = Gc::allocate(
+        let child_scope = Gc::new(
             parent_activation.context.gc_context,
             Scope::new(
                 parent_activation.scope(),
@@ -166,7 +166,7 @@ impl<'gc> Avm1<'gc> {
             Value::Object(o) => o,
             _ => panic!("No script object for display object"),
         };
-        let child_scope = Gc::allocate(
+        let child_scope = Gc::new(
             action_context.gc_context,
             Scope::new(
                 action_context.avm1.global_scope,
@@ -210,7 +210,7 @@ impl<'gc> Avm1<'gc> {
         let clip_obj = active_clip
             .object()
             .coerce_to_object(&mut parent_activation);
-        let child_scope = Gc::allocate(
+        let child_scope = Gc::new(
             parent_activation.context.gc_context,
             Scope::new(
                 parent_activation.scope(),

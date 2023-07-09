@@ -46,8 +46,7 @@ use crate::stub::StubCollection;
 use crate::tag_utils::SwfMovie;
 use crate::timer::Timers;
 use crate::vminterface::Instantiator;
-use gc_arena::{ArenaParameters, Collect, DynamicRootSet, GcCell};
-use gc_arena::{MutationContext, Rootable};
+use gc_arena::{ArenaParameters, Collect, DynamicRootSet, GcCell, Rootable};
 use instant::Instant;
 use rand::{rngs::SmallRng, SeedableRng};
 use ruffle_render::backend::{null::NullRenderer, RenderBackend, ViewportDimensions};
@@ -212,7 +211,7 @@ impl<'gc> GcRootData<'gc> {
     }
 }
 
-type GcArena = gc_arena::Arena<Rootable![GcRoot<'gc>]>;
+type GcArena = gc_arena::Arena<Rootable![GcRoot<'_>]>;
 
 type Audio = Box<dyn AudioBackend>;
 type Navigator = Box<dyn NavigatorBackend>;
@@ -1849,7 +1848,7 @@ impl Player {
     }
 
     pub fn load_device_font<'gc>(
-        gc_context: gc_arena::MutationContext<'gc, '_>,
+        gc_context: &'gc gc_arena::Mutation<'gc>,
         renderer: &mut dyn RenderBackend,
     ) -> Font<'gc> {
         const DEVICE_FONT_TAG: &[u8] = include_bytes!("../assets/noto-sans-definefont3.bin");
@@ -2249,7 +2248,7 @@ impl PlayerBuilder {
     }
 
     fn create_gc_root<'gc>(
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &'gc gc_arena::Mutation<'gc>,
         player_version: u8,
         fullscreen: bool,
         fake_movie: Arc<SwfMovie>,
@@ -2263,8 +2262,8 @@ impl PlayerBuilder {
         let dynamic_root = DynamicRootSet::new(gc_context);
 
         GcRoot {
-            callstack: GcCell::allocate(gc_context, GcCallstack::default()),
-            data: GcCell::allocate(
+            callstack: GcCell::new(gc_context, GcCallstack::default()),
+            data: GcCell::new(
                 gc_context,
                 GcRootData {
                     audio_manager: AudioManager::new(),

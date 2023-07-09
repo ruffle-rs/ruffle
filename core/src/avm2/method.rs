@@ -153,7 +153,7 @@ impl<'gc> BytecodeMethod<'gc> {
                 .clone();
 
             let activation_class = if method.flags.contains(AbcMethodFlags::NEED_ACTIVATION) {
-                Some(GcCell::allocate(activation.context.gc_context, None))
+                Some(GcCell::new(activation.context.gc_context, None))
             } else {
                 None
             };
@@ -323,7 +323,7 @@ impl<'gc> Method<'gc> {
         is_variadic: bool,
         mc: MutationContext<'gc, '_>,
     ) -> Self {
-        Self::Native(Gc::allocate(
+        Self::Native(Gc::new(
             mc,
             NativeMethod {
                 method,
@@ -342,7 +342,7 @@ impl<'gc> Method<'gc> {
         name: &'static str,
         mc: MutationContext<'gc, '_>,
     ) -> Self {
-        Self::Native(Gc::allocate(
+        Self::Native(Gc::new(
             mc,
             NativeMethod {
                 method,
