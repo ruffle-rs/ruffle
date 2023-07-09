@@ -1,0 +1,159 @@
+/*****************************************************************************
+ *
+ * ADOBE SYSTEMS INCORPORATED
+ * Copyright (C) 2010 Adobe Systems Incorporated
+ * All Rights Reserved.
+ *
+ * NOTICE:  Adobe permits you to use, modify, and distribute this file in 
+ * accordance with the terms of the Adobe license agreement accompanying it.  
+ * If you have received this file from a source other than Adobe, then your 
+ * use, modification, or distribution of it requires the prior written 
+ * permission of Adobe.
+ *
+ *****************************************************************************/
+
+ // Relevant portion of the Adobe Pixelbender Toolkit 2 license:
+
+/*
+
+(a) Under this License Agreement, You may use, modify or merge all or portions of the Sample Code
+    with Your application programs and distribute it only as part of Your products in object code form.
+    Any modified or merged portion of the Sample Code is subject to this License Agreement.
+    You are required to include Adobe’s copyright notices on Your application programs
+    except for those programs in which You include a copyright notice reflecting
+    the copyright ownership of Developer in such programs.
+    You may not use Adobe’s name, logo or trademarks to market Your products.
+    You may not assign Your rights or obligations granted under this License Agreement
+    without the prior written consent of Adobe.
+    Any attempted assignment or transfer without such prior written consent from Adobe shall be void and of no effect.
+*/
+ 
+
+<languageVersion: 1.0;> 
+ 
+// twirl: A simple example to demonstrate the use of the sampling 
+//           function to yield an interesting effect.  The filter performs 
+//           some math based on the parameter values to change the sampling 
+//           location.
+kernel twirl
+<   namespace : "Pixel Bender Samples";
+    vendor : "Adobe Systems";
+    version : 2;
+    description : "twist an image around"; >
+{
+    // define PI for the degrees to radians calculation
+    const float PI = 3.14159265;
+    
+    // An input parameter to specify the radius of the twirl effect.
+    // For this parameter, we're using metadata to indicate the minimum,
+    // maximum, and default values, so that the tools can set the values 
+    // in the correctly in the UI for the filter.  
+    // NOTE: This parameter indicates how many pixel values out from the 
+    // center location we would like to twirl.  The radius is in the pixel
+    // coordinate space to ensure that we always rotate in a circle.  For 
+    // more information regarding the coordinate spaces, please consult the 
+    // pixel bender spec.
+    parameter float radius 
+    <       
+        minValue:float(0.1);
+        maxValue:float(2048.0); 
+        defaultValue:float(10.0);
+    >;
+    
+    // An input parameter to specify the center of the twirl effect.
+    // As above, we're using metadata to indicate the minimum,
+    // maximum, and default values, so that the tools can set the values 
+    // in the correctly in the UI for the filter.
+    parameter float2 center
+    <
+        minValue:float2(0.0, 0.0);
+        maxValue:float2(2048.0, 2048.0);
+        defaultValue:float2(256.0, 256.0);
+    >;
+    
+    // An input parameter to specify the angle that we would like to twirl.
+    // For this parameter, we're using metadata to indicate the minimum,
+    // maximum, and default values, so that the tools can set the values 
+    // in the correctly in the UI for the filter.
+    parameter float twirlAngle
+    <
+        minValue:float(0.0);
+        maxValue:float(360.0);
+        defaultValue:float(90.0);
+    >;
+    
+    // An input parameter that indicates how we want to vary the twirling
+    // within the radius.  We've added support to modulate by one of two 
+    // functions, a gaussian or a sinc function.  Since Flash does not support
+    // bool parameters, we instead are using this as an int with two possible
+    // values. Setting this parameter to be 1 will
+    // cause the gaussian function to be used, unchecking it will cause 
+    // the sinc function to be used.
+    parameter int gaussOrSinc
+    <
+        minValue:int(0);
+        maxValue:int(1);
+        defaultValue:int(0);
+    >;
+    
+    input image4 oImage;
+    output float4 outputColor;
+
+    // evaluatePixel(): The function of the filter that actually does the 
+    //                  processing of the image.  This function is called once 
+    //                  for each pixel of the output image.
+    void
+    evaluatePixel()
+    {
+        // convert the angle to radians
+        float twirlAngleRadians = radians(twirlAngle);
+
+        // calculate where we are relative to the center of the twirl
+        float2 relativePos = outCoord() - center;
+        
+        // calculate the absolute distance from the center normalized 
+        // by the twirl radius.
+        float distFromCenter = length( relativePos );
+        distFromCenter /= radius; 
+        
+        // modulate the angle based on either a gaussian or a sync.
+        float adjustedRadians;
+        
+        // precalculate either the gaussian or the sinc weight
+        float sincWeight = sin( distFromCenter ) * twirlAngleRadians / ( distFromCenter );
+        float gaussWeight = exp( -1.0 * distFromCenter * distFromCenter ) * twirlAngleRadians;
+        
+
+        // protect the algorithm from a 1 / 0 error
+        if (distFromCenter == 0.0) {
+            adjustedRadians = twirlAngleRadians;
+        } else {
+            adjustedRadians = sincWeight;
+        }
+        
+        // switch between a gaussian falloff or a sinc fallof
+        
+        if (gaussOrSinc == 0) {
+            adjustedRadians = adjustedRadians;
+        } else {
+            adjustedRadians = gaussWeight;
+        }
+        
+        // rotate the pixel sample location.
+        float cosAngle = cos( adjustedRadians );
+        float sinAngle = sin( adjustedRadians );
+        
+        float2x2 rotationMat = float2x2(
+            cosAngle,   sinAngle,
+            -sinAngle,  cosAngle
+        );
+        
+        relativePos = rotationMat * relativePos; 
+        
+        // sample and set as the output color.  since relativePos
+        // is related to the center location, we need to add it back in.
+        // We use linear sampling to smooth out some of the pixelation.
+        outputColor = sampleLinear( oImage, relativePos + center );
+    }
+}
+

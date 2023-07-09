@@ -72,9 +72,6 @@ pub struct ShaderBuilder<'a> {
     /// Like float_registesr but with vec4i
     int_registers: Vec<Option<Handle<Expression>>>,
 
-    /// Like float_registers but with matrices
-    matrix_registers: Vec<Option<Handle<Expression>>>,
-
     // A stack of if/else blocks, using to push statements
     // into the correct block.
     blocks: Vec<BlockStackEntry>,
@@ -399,7 +396,6 @@ impl<'a> ShaderBuilder<'a> {
             textures: Vec::new(),
             float_registers: Vec::new(),
             int_registers: Vec::new(),
-            matrix_registers: Vec::new(),
             blocks: vec![BlockStackEntry::Normal(Block::new())],
         };
 
@@ -685,9 +681,8 @@ impl<'a> ShaderBuilder<'a> {
 
         for (reg, offset, param_kind) in param_offsets {
             let param_global = match param_kind {
-                ParamKind::Float => shader_float_parameters,
+                ParamKind::Float | ParamKind::FloatMatrix => shader_float_parameters,
                 ParamKind::Int => shader_int_parameters,
-                ParamKind::FloatMatrix => shader_float_parameters,
             };
 
             let global_base = self
@@ -701,114 +696,21 @@ impl<'a> ShaderBuilder<'a> {
             });
 
             let src_expr = match reg.channels[0] {
-                // FIXME - add tests for this case
-                PixelBenderRegChannel::M2x2 => {
-                    // A 2x2 matrix fits exactly into a vec4f
-                    let vec0_load = self.evaluate_expr(Expression::Load { pointer: src_ptr });
-                    // Only the first two components of `pattern` matter
-                    let row0 = self.evaluate_expr(Expression::Swizzle {
-                        size: VectorSize::Bi,
-                        vector: vec0_load,
-                        pattern: [
-                            SwizzleComponent::X,
-                            SwizzleComponent::Y,
-                            SwizzleComponent::W,
-                            SwizzleComponent::W,
-                        ],
-                    });
-
-                    // Only the first two components of `pattern` matter (load the Z and W components into the second row)
-                    let row1 = self.evaluate_expr(Expression::Swizzle {
-                        size: VectorSize::Bi,
-                        vector: vec0_load,
-                        pattern: [
-                            SwizzleComponent::Z,
-                            SwizzleComponent::W,
-                            SwizzleComponent::W,
-                            SwizzleComponent::W,
-                        ],
-                    });
-
-                    self.evaluate_expr(Expression::Compose {
-                        ty: self.mat2x2f,
-                        components: vec![row0, row1],
-                    })
-                }
-                PixelBenderRegChannel::M3x3 | PixelBenderRegChannel::M4x4 => {
-                    let mut row0 = self.evaluate_expr(Expression::Load { pointer: src_ptr });
-
-                    let vec1_ptr = self.evaluate_expr(Expression::AccessIndex {
-                        base: global_base,
-                        index: offset + 1,
-                    });
-                    let mut row1 = self.evaluate_expr(Expression::Load { pointer: vec1_ptr });
-
-                    let vec2_ptr = self.evaluate_expr(Expression::AccessIndex {
-                        base: global_base,
-                        index: offset + 2,
-                    });
-                    let mut row2 = self.evaluate_expr(Expression::Load { pointer: vec2_ptr });
-
-                    match reg.channels[0] {
-                        PixelBenderRegChannel::M3x3 => {
-                            row0 = self.evaluate_expr(Expression::Swizzle {
-                                size: VectorSize::Tri,
-                                vector: row0,
-                                pattern: [
-                                    SwizzleComponent::X,
-                                    SwizzleComponent::Y,
-                                    SwizzleComponent::Z,
-                                    SwizzleComponent::W,
-                                ],
-                            });
-
-                            row1 = self.evaluate_expr(Expression::Swizzle {
-                                size: VectorSize::Tri,
-                                vector: row1,
-                                pattern: [
-                                    SwizzleComponent::X,
-                                    SwizzleComponent::Y,
-                                    SwizzleComponent::Z,
-                                    SwizzleComponent::W,
-                                ],
-                            });
-
-                            row2 = self.evaluate_expr(Expression::Swizzle {
-                                size: VectorSize::Tri,
-                                vector: row2,
-                                pattern: [
-                                    SwizzleComponent::X,
-                                    SwizzleComponent::Y,
-                                    SwizzleComponent::Z,
-                                    SwizzleComponent::W,
-                                ],
-                            });
-
-                            self.evaluate_expr(Expression::Compose {
-                                ty: self.mat3x3f,
-                                components: vec![row0, row1, row2],
-                            })
-                        }
-                        // FIXME - add tests for this case
-                        PixelBenderRegChannel::M4x4 => {
-                            let vec3_ptr = self.evaluate_expr(Expression::AccessIndex {
-                                base: global_base,
-                                index: offset + 3,
-                            });
-                            let row3 = self.evaluate_expr(Expression::Load { pointer: vec3_ptr });
-
-                            self.evaluate_expr(Expression::Compose {
-                                ty: self.mat4x4f,
-                                components: vec![row0, row1, row2, row3],
-                            })
-                        }
-                        _ => unreachable!(),
-                    }
+                PixelBenderRegChannel::M2x2
+                | PixelBenderRegChannel::M3x3
+                | PixelBenderRegChannel::M4x4 => {
+                    let get_vec_ptr = |this: &mut Self, index| {
+                        Ok(this.evaluate_expr(Expression::AccessIndex {
+                            base: global_base,
+                            index: offset + index,
+                        }))
+                    };
+                    self.load_reg_as_matrix(reg.channels[0], get_vec_ptr)?
                 }
                 _ => self.evaluate_expr(Expression::Load { pointer: src_ptr }),
             };
 
-            self.emit_dest_store(src_expr, reg);
+            self.emit_dest_store(src_expr, reg)?;
         }
 
         // Emit this after all other registers have been initialized
@@ -819,7 +721,7 @@ impl<'a> ShaderBuilder<'a> {
                 .func
                 .expressions
                 .append(Expression::FunctionArgument(0), Span::UNDEFINED);
-            self.emit_dest_store(coord_val, coord_reg);
+            self.emit_dest_store(coord_val, coord_reg)?;
         }
 
         Ok((
@@ -1092,30 +994,8 @@ impl<'a> ShaderBuilder<'a> {
                                 right: src,
                             })
                         }
-                        Opcode::LessThan => {
-                            let left = self.load_src_register(&dst)?;
-                            let res = self.evaluate_expr(Expression::Binary {
-                                op: BinaryOperator::Less,
-                                left,
-                                right: src,
-                            });
-
-                            // The 'LessThan' opcodes appears to compare the src and dst, and then
-                            // write the result to the 'R' component of int register 0
-                            dst = PixelBenderReg {
-                                index: 0,
-                                channels: vec![PixelBenderRegChannel::R],
-                                kind: PixelBenderRegKind::Int,
-                            };
-                            // We get back a vec of bools from BinaryOperator::Less, so convert it to a vec of floats
-                            self.evaluate_expr(Expression::As {
-                                expr: res,
-                                kind: ScalarKind::Float,
-                                convert: Some(4),
-                            })
-                        }
                         Opcode::LogicalOr => {
-                            // The destiation is also used as the first operand: 'dst = dst - src'
+                            // The destination is also used as the first operand: 'dst = dst - src'
                             let left = self.load_src_register(&dst)?;
                             let left_bool = self.evaluate_expr(Expression::As {
                                 expr: left,
@@ -1180,9 +1060,11 @@ impl<'a> ShaderBuilder<'a> {
                             arg3: None,
                         }),
                         Opcode::Length => {
+                            // Don't pad the result, as adding extra components changes the length
+                            let src_val = self.load_src_register_with_padding(src_reg, false)?;
                             let length = self.evaluate_expr(Expression::Math {
                                 fun: MathFunction::Length,
-                                arg: src,
+                                arg: src_val,
                                 arg1: None,
                                 arg2: None,
                                 arg3: None,
@@ -1194,6 +1076,7 @@ impl<'a> ShaderBuilder<'a> {
                         }
                         Opcode::MatVecMul => {
                             let right = self.load_src_register_with_padding(&dst, false)?;
+                            // This is always a vector, so no need to use `pad_result`
                             self.evaluate_expr(Expression::Binary {
                                 op: BinaryOperator::Multiply,
                                 left: src,
@@ -1202,6 +1085,7 @@ impl<'a> ShaderBuilder<'a> {
                         }
                         Opcode::VecMatMul => {
                             let vec = self.load_src_register_with_padding(&dst, false)?;
+                            // This is always a vector, so no need to use `pad_result`
                             self.evaluate_expr(Expression::Binary {
                                 op: BinaryOperator::Multiply,
                                 left: vec,
@@ -1218,10 +1102,11 @@ impl<'a> ShaderBuilder<'a> {
                                 arg2: None,
                                 arg3: None,
                             });
-                            self.evaluate_expr(Expression::Splat {
+                            let res = self.evaluate_expr(Expression::Splat {
                                 size: VectorSize::Quad,
                                 value: dist,
-                            })
+                            });
+                            self.pad_result(res, src_reg.is_scalar())
                         }
                         Opcode::Max => {
                             let right = self.load_src_register(&dst)?;
@@ -1245,14 +1130,22 @@ impl<'a> ShaderBuilder<'a> {
                         }
                         Opcode::Normalize => {
                             let src = self.load_src_register_with_padding(src_reg, false)?;
-                            self.evaluate_expr(Expression::Math {
+                            let res = self.evaluate_expr(Expression::Math {
                                 fun: MathFunction::Normalize,
                                 arg: src,
                                 arg1: None,
                                 arg2: None,
                                 arg3: None,
-                            })
+                            });
+                            self.pad_result(res, src_reg.is_scalar())
                         }
+                        Opcode::Exp => self.evaluate_expr(Expression::Math {
+                            fun: MathFunction::Exp,
+                            arg: src,
+                            arg1: None,
+                            arg2: None,
+                            arg3: None,
+                        }),
                         Opcode::Pow => {
                             let dst_val = self.load_src_register(&dst)?;
                             self.evaluate_expr(Expression::Math {
@@ -1263,11 +1156,156 @@ impl<'a> ShaderBuilder<'a> {
                                 arg3: None,
                             })
                         }
+                        Opcode::Abs => self.evaluate_expr(Expression::Math {
+                            fun: MathFunction::Abs,
+                            arg: src,
+                            arg1: None,
+                            arg2: None,
+                            arg3: None,
+                        }),
+                        Opcode::Sin => self.evaluate_expr(Expression::Math {
+                            fun: MathFunction::Sin,
+                            arg: src,
+                            arg1: None,
+                            arg2: None,
+                            arg3: None,
+                        }),
+                        Opcode::Asin => self.evaluate_expr(Expression::Math {
+                            fun: MathFunction::Asin,
+                            arg: src,
+                            arg1: None,
+                            arg2: None,
+                            arg3: None,
+                        }),
+                        Opcode::Cos => self.evaluate_expr(Expression::Math {
+                            fun: MathFunction::Cos,
+                            arg: src,
+                            arg1: None,
+                            arg2: None,
+                            arg3: None,
+                        }),
+                        Opcode::Acos => self.evaluate_expr(Expression::Math {
+                            fun: MathFunction::Acos,
+                            arg: src,
+                            arg1: None,
+                            arg2: None,
+                            arg3: None,
+                        }),
+                        Opcode::Tan => self.evaluate_expr(Expression::Math {
+                            fun: MathFunction::Tan,
+                            arg: src,
+                            arg1: None,
+                            arg2: None,
+                            arg3: None,
+                        }),
+                        Opcode::Atan => self.evaluate_expr(Expression::Math {
+                            fun: MathFunction::Atan,
+                            arg: src,
+                            arg1: None,
+                            arg2: None,
+                            arg3: None,
+                        }),
+                        Opcode::Atan2 => {
+                            let dst_val = self.load_src_register(&dst)?;
+                            self.evaluate_expr(Expression::Math {
+                                fun: MathFunction::Atan2,
+                                arg: dst_val,
+                                arg1: Some(src),
+                                arg2: None,
+                                arg3: None,
+                            })
+                        }
+                        Opcode::DotProduct => {
+                            let src_val: Handle<Expression> =
+                                self.load_src_register_with_padding(src_reg, false)?;
+                            let dst_val = self.load_src_register_with_padding(&dst, false)?;
+                            let dot = self.evaluate_expr(Expression::Math {
+                                fun: MathFunction::Dot,
+                                arg: dst_val,
+                                arg1: Some(src_val),
+                                arg2: None,
+                                arg3: None,
+                            });
+                            self.evaluate_expr(Expression::Splat {
+                                size: VectorSize::Quad,
+                                value: dot,
+                            })
+                        }
+                        Opcode::Sqrt => {
+                            let src_val = self.load_src_register_with_padding(src_reg, false)?;
+                            let res = self.evaluate_expr(Expression::Math {
+                                fun: MathFunction::Sqrt,
+                                arg: src_val,
+                                arg1: None,
+                                arg2: None,
+                                arg3: None,
+                            });
+                            self.pad_result(res, src_reg.is_scalar())
+                        }
+                        Opcode::Equal | Opcode::NotEqual | Opcode::LessThan => {
+                            let bin_op: BinaryOperator = match opcode {
+                                Opcode::Equal => BinaryOperator::Equal,
+                                Opcode::NotEqual => BinaryOperator::NotEqual,
+                                Opcode::LessThan => BinaryOperator::Less,
+                                _ => unreachable!(),
+                            };
+                            let left = self.load_src_register(&dst)?;
+                            let res = self.evaluate_expr(Expression::Binary {
+                                op: bin_op,
+                                left,
+                                right: src,
+                            });
+
+                            // Comparison opcodes appears to compare the src and dst, and then
+                            // write the result to the 'R' component of int register 0
+                            dst = PixelBenderReg {
+                                index: 0,
+                                channels: vec![PixelBenderRegChannel::R],
+                                kind: PixelBenderRegKind::Int,
+                            };
+                            // We get back a vec of bools from BinaryOperator::Less, so convert it to a vec of floats
+                            self.evaluate_expr(Expression::As {
+                                expr: res,
+                                kind: ScalarKind::Float,
+                                convert: Some(4),
+                            })
+                        }
+                        Opcode::Mod => {
+                            let dst_val = self.load_src_register(&dst)?;
+                            self.evaluate_expr(Expression::Binary {
+                                op: BinaryOperator::Modulo,
+                                left: dst_val,
+                                right: src,
+                            })
+                        }
+                        Opcode::FloatToInt => self.evaluate_expr(Expression::As {
+                            kind: crate::ScalarKind::Sint,
+                            expr: src,
+                            convert: Some(4),
+                        }),
+                        Opcode::IntToFloat => self.evaluate_expr(Expression::As {
+                            kind: crate::ScalarKind::Float,
+                            expr: src,
+                            convert: Some(4),
+                        }),
+                        Opcode::CrossProduct => {
+                            let src_val = self.load_src_register_with_padding(src_reg, false)?;
+                            let dst_val = self.load_src_register_with_padding(&dst, false)?;
+                            let res = self.evaluate_expr(Expression::Math {
+                                fun: MathFunction::Cross,
+                                arg: dst_val,
+                                arg1: Some(src_val),
+                                arg2: None,
+                                arg3: None,
+                            });
+                            self.pad_result(res, src_reg.is_scalar())
+                        }
+
                         _ => {
-                            panic!("Unimplemented opcode {opcode:?}")
+                            panic!("Unimplemented opcode {opcode:?}");
                         }
                     };
-                    self.emit_dest_store(evaluated, &dst);
+                    self.emit_dest_store(evaluated, &dst)?;
                 }
                 Operation::SampleLinear { dst, src, tf }
                 | Operation::SampleNearest { dst, src, tf } => {
@@ -1317,7 +1355,7 @@ impl<'a> ShaderBuilder<'a> {
                         zeroed_out_of_range_expr,
                     );
 
-                    self.emit_dest_store(sample_result, dst);
+                    self.emit_dest_store(sample_result, dst)?;
                 }
                 Operation::LoadFloat { dst, val } => {
                     let const_val = self.module.constants.append(
@@ -1340,7 +1378,7 @@ impl<'a> ShaderBuilder<'a> {
                         size: naga::VectorSize::Quad,
                         value: const_expr,
                     });
-                    self.emit_dest_store(const_vec, dst);
+                    self.emit_dest_store(const_vec, dst)?;
                 }
                 Operation::LoadInt { dst, val } => {
                     let const_val = self.module.constants.append(
@@ -1363,7 +1401,7 @@ impl<'a> ShaderBuilder<'a> {
                         size: naga::VectorSize::Quad,
                         value: const_expr,
                     });
-                    self.emit_dest_store(const_vec, dst);
+                    self.emit_dest_store(const_vec, dst)?;
                 }
                 Operation::If { src } => {
                     let expr_zero = match src.kind {
@@ -1445,41 +1483,28 @@ impl<'a> ShaderBuilder<'a> {
     /// Gets a pointer to the given register - this does *not* perform a load, so it can
     /// be used with both `Expression::Load` and `Statement::Store`
     fn register_pointer(&mut self, reg: &PixelBenderReg) -> Result<Handle<Expression>> {
-        let index = reg.index as usize;
+        let base_index = reg.index as usize;
 
-        let (ty, registers, register_kind_name) = if matches!(
-            &reg.channels.as_slice(),
-            [PixelBenderRegChannel::M2x2]
-                | [PixelBenderRegChannel::M3x3]
-                | [PixelBenderRegChannel::M4x4]
+        if matches!(
+            reg.channels[0],
+            PixelBenderRegChannel::M2x2 | PixelBenderRegChannel::M3x3 | PixelBenderRegChannel::M4x4
         ) {
-            assert_eq!(
-                reg.kind,
-                PixelBenderRegKind::Float,
-                "Unexpected matrix element type"
-            );
-            let (ty, name) = match reg.channels[0] {
-                PixelBenderRegChannel::M2x2 => (self.mat2x2f, "mat2x2f"),
-                PixelBenderRegChannel::M3x3 => (self.mat3x3f, "mat3x3f"),
-                PixelBenderRegChannel::M4x4 => (self.mat4x4f, "mat4x4f"),
-                _ => unreachable!(),
-            };
-            (ty, &mut self.matrix_registers, name)
-        } else {
-            match reg.kind {
-                PixelBenderRegKind::Float => (self.vec4f, &mut self.float_registers, "float"),
-                PixelBenderRegKind::Int => (self.vec4i, &mut self.int_registers, "int"),
-            }
-        };
-
-        if index >= registers.len() {
-            registers.resize(index + 1, None);
+            panic!("register_pointer cannot be used with matrix channel {reg:?}")
         }
 
-        if registers[index].is_none() {
+        let (ty, registers, register_kind_name) = match reg.kind {
+            PixelBenderRegKind::Float => (self.vec4f, &mut self.float_registers, "float"),
+            PixelBenderRegKind::Int => (self.vec4i, &mut self.int_registers, "int"),
+        };
+
+        if base_index >= registers.len() {
+            registers.resize(base_index + 1, None);
+        }
+
+        if registers[base_index].is_none() {
             let local = self.func.local_variables.append(
                 LocalVariable {
-                    name: Some(format!("local_{register_kind_name}_reg_{index}")),
+                    name: Some(format!("local_{register_kind_name}_reg_{base_index}")),
                     ty,
                     init: None,
                 },
@@ -1490,9 +1515,10 @@ impl<'a> ShaderBuilder<'a> {
                 .func
                 .expressions
                 .append(Expression::LocalVariable(local), Span::UNDEFINED);
-            registers[index] = Some(expr);
+            registers[base_index] = Some(expr);
         }
-        Ok(registers[index].unwrap())
+
+        Ok(registers[base_index].unwrap())
     }
 
     fn load_src_register(&mut self, reg: &PixelBenderReg) -> Result<Handle<Expression>> {
@@ -1508,17 +1534,30 @@ impl<'a> ShaderBuilder<'a> {
         reg: &PixelBenderReg,
         padding: bool,
     ) -> Result<Handle<Expression>> {
-        let reg_ptr = self.register_pointer(reg)?;
-        let reg_value = self.evaluate_expr(Expression::Load { pointer: reg_ptr });
-
         if matches!(
             reg.channels.as_slice(),
             [PixelBenderRegChannel::M2x2]
                 | [PixelBenderRegChannel::M3x3]
                 | [PixelBenderRegChannel::M4x4]
         ) {
-            return Ok(reg_value);
+            assert_eq!(
+                reg.kind,
+                PixelBenderRegKind::Float,
+                "Unexpected matrix element type"
+            );
+
+            let get_vec_ptr = |this: &mut Self, index| {
+                this.register_pointer(&PixelBenderReg {
+                    channels: PixelBenderRegChannel::RGBA.to_vec(),
+                    index: reg.index + index,
+                    kind: PixelBenderRegKind::Float,
+                })
+            };
+            return self.load_reg_as_matrix(reg.channels[0], get_vec_ptr);
         }
+
+        let reg_ptr = self.register_pointer(reg)?;
+        let reg_value = self.evaluate_expr(Expression::Load { pointer: reg_ptr });
 
         let mut swizzle_components = reg
             .channels
@@ -1536,7 +1575,12 @@ impl<'a> ShaderBuilder<'a> {
             VectorSize::Quad
         } else {
             match reg.channels.len() {
-                1 => panic!("Cannot load single channel as vector for reg {reg:?}"),
+                1 => {
+                    return Ok(self.evaluate_expr(Expression::AccessIndex {
+                        base: reg_value,
+                        index: swizzle_components[0] as u32,
+                    }))
+                }
                 2 => VectorSize::Bi,
                 3 => VectorSize::Tri,
                 4 => VectorSize::Quad,
@@ -1566,22 +1610,106 @@ impl<'a> ShaderBuilder<'a> {
         expr
     }
 
-    // Emits a store of `expr` to the destination register, taking into account the store mask.
-    fn emit_dest_store(&mut self, expr: Handle<Expression>, dst: &PixelBenderReg) {
-        let dst_register = self.register_pointer(dst).unwrap();
+    /// Normally, we pad all loads (including scalar loads) to a vec4, and operate component-wise
+    /// on them. This removes the need to check for scalar vs vector everywhere.
+    ///
+    /// However, some operations
+    /// will give a different result if we pad out to a vec4 (e.g. Sqrt, Equal, DotProduct).
+    /// For these operations, we work with the original un-padded register load (possibly a scalar).
+    /// To simplify the rest of the code, we then pad the *result* to a vec4, which allows the dest
+    /// writing code to operate on a vector component-wise, and not worry about scalar vs vector.
+    /// (the dest mask ensures that the padding is not written).
+    ///
+    /// This function pads out a result to a vec4 if it was a scalar. We leave other vector
+    /// types (e.g. vec3) unmodified, since they can still be used with AccessIndex
+    fn pad_result(&mut self, result: Handle<Expression>, is_scalar: bool) -> Handle<Expression> {
+        if is_scalar {
+            self.evaluate_expr(Expression::Splat {
+                size: VectorSize::Quad,
+                value: result,
+            })
+        } else {
+            result
+        }
+    }
 
+    // Emits a store of `expr` to the destination register, taking into account the store mask.
+    fn emit_dest_store(&mut self, expr: Handle<Expression>, dst: &PixelBenderReg) -> Result<()> {
         if matches!(
             dst.channels.as_slice(),
             [PixelBenderRegChannel::M2x2]
                 | [PixelBenderRegChannel::M3x3]
                 | [PixelBenderRegChannel::M4x4]
         ) {
-            self.push_statement(Statement::Store {
-                pointer: dst_register,
-                value: expr,
-            });
-            return;
+            // If we're writing to a 2x2 matrix, load the individual values from the matrix,
+            // and construct a vec4f containing all of them (a 2x2 matrix is stored as a single vec4f)
+            if let PixelBenderRegChannel::M2x2 = dst.channels[0] {
+                let col0 = self.evaluate_expr(Expression::AccessIndex {
+                    base: expr,
+                    index: 0,
+                });
+                let val0 = self.evaluate_expr(Expression::AccessIndex {
+                    base: col0,
+                    index: 0,
+                });
+                let val1 = self.evaluate_expr(Expression::AccessIndex {
+                    base: col0,
+                    index: 1,
+                });
+
+                let col1 = self.evaluate_expr(Expression::AccessIndex {
+                    base: expr,
+                    index: 1,
+                });
+                let val2 = self.evaluate_expr(Expression::AccessIndex {
+                    base: col1,
+                    index: 0,
+                });
+                let val3 = self.evaluate_expr(Expression::AccessIndex {
+                    base: col1,
+                    index: 1,
+                });
+
+                let combined_vec = self.evaluate_expr(Expression::Compose {
+                    ty: self.vec4f,
+                    components: vec![val0, val1, val2, val3],
+                });
+                let dst_register = self.register_pointer(&PixelBenderReg {
+                    channels: PixelBenderRegChannel::RGBA.to_vec(),
+                    index: dst.index,
+                    kind: PixelBenderRegKind::Float,
+                })?;
+                self.push_statement(Statement::Store {
+                    pointer: dst_register,
+                    value: combined_vec,
+                })
+            } else {
+                // If we're writing to a 3x3 or 4x4 matrix, load each column from the matrix,
+                // and store it in a float registers. Matrices are stored in column-major order.
+                let (num_cols, components) = match dst.channels[0] {
+                    PixelBenderRegChannel::M3x3 => (3, PixelBenderRegChannel::RGB.to_vec()),
+                    PixelBenderRegChannel::M4x4 => (4, PixelBenderRegChannel::RGBA.to_vec()),
+                    _ => unreachable!(),
+                };
+                for i in 0..num_cols {
+                    let col = self.evaluate_expr(Expression::AccessIndex {
+                        base: expr,
+                        index: i,
+                    });
+                    self.emit_dest_store(
+                        col,
+                        &PixelBenderReg {
+                            channels: components.clone(),
+                            index: dst.index + i,
+                            kind: PixelBenderRegKind::Float,
+                        },
+                    )?;
+                }
+            }
+            return Ok(());
         }
+
+        let dst_register = self.register_pointer(dst).unwrap();
 
         for (dst_channel, src_channel) in
             dst.channels.iter().zip(PixelBenderRegChannel::RGBA.iter())
@@ -1623,6 +1751,7 @@ impl<'a> ShaderBuilder<'a> {
                 value: src_cast,
             })
         }
+        Ok(())
     }
 
     /// Pushes a statement, taking into account our current 'if' block.
@@ -1644,6 +1773,113 @@ impl<'a> ShaderBuilder<'a> {
             }
         };
         block.push(stmt, Span::UNDEFINED);
+    }
+
+    // Loads a Matrix with a size determined by `channel`. Each column of the matrix
+    // is loaded via the `get_vec_ptr` callback.
+    fn load_reg_as_matrix(
+        &mut self,
+        channel: PixelBenderRegChannel,
+        mut get_vec_ptr: impl FnMut(&mut Self, u32) -> Result<Handle<Expression>>,
+    ) -> Result<Handle<Expression>> {
+        let vec0_ptr = get_vec_ptr(self, 0)?;
+        let vec0_load = self.evaluate_expr(Expression::Load { pointer: vec0_ptr });
+
+        match channel {
+            // FIXME - add tests for this case
+            PixelBenderRegChannel::M2x2 => {
+                // A 2x2 matrix fits exactly into our single vec4f
+                // Only the first two components of `pattern` matter
+                let col0 = self.evaluate_expr(Expression::Swizzle {
+                    size: VectorSize::Bi,
+                    vector: vec0_load,
+                    pattern: [
+                        SwizzleComponent::X,
+                        SwizzleComponent::Y,
+                        SwizzleComponent::W,
+                        SwizzleComponent::W,
+                    ],
+                });
+
+                // Only the first two components of `pattern` matter (load the Z and W components into the second row)
+                let col1 = self.evaluate_expr(Expression::Swizzle {
+                    size: VectorSize::Bi,
+                    vector: vec0_load,
+                    pattern: [
+                        SwizzleComponent::Z,
+                        SwizzleComponent::W,
+                        SwizzleComponent::W,
+                        SwizzleComponent::W,
+                    ],
+                });
+
+                Ok(self.evaluate_expr(Expression::Compose {
+                    ty: self.mat2x2f,
+                    components: vec![col0, col1],
+                }))
+            }
+            PixelBenderRegChannel::M3x3 | PixelBenderRegChannel::M4x4 => {
+                let vec1_ptr = get_vec_ptr(self, 1)?;
+                let mut col1 = self.evaluate_expr(Expression::Load { pointer: vec1_ptr });
+
+                let vec2_ptr = get_vec_ptr(self, 2)?;
+                let mut col2 = self.evaluate_expr(Expression::Load { pointer: vec2_ptr });
+
+                match channel {
+                    PixelBenderRegChannel::M3x3 => {
+                        let col0 = self.evaluate_expr(Expression::Swizzle {
+                            size: VectorSize::Tri,
+                            vector: vec0_load,
+                            pattern: [
+                                SwizzleComponent::X,
+                                SwizzleComponent::Y,
+                                SwizzleComponent::Z,
+                                SwizzleComponent::W,
+                            ],
+                        });
+
+                        col1 = self.evaluate_expr(Expression::Swizzle {
+                            size: VectorSize::Tri,
+                            vector: col1,
+                            pattern: [
+                                SwizzleComponent::X,
+                                SwizzleComponent::Y,
+                                SwizzleComponent::Z,
+                                SwizzleComponent::W,
+                            ],
+                        });
+
+                        col2 = self.evaluate_expr(Expression::Swizzle {
+                            size: VectorSize::Tri,
+                            vector: col2,
+                            pattern: [
+                                SwizzleComponent::X,
+                                SwizzleComponent::Y,
+                                SwizzleComponent::Z,
+                                SwizzleComponent::W,
+                            ],
+                        });
+
+                        Ok(self.evaluate_expr(Expression::Compose {
+                            ty: self.mat3x3f,
+                            components: vec![col0, col1, col2],
+                        }))
+                    }
+                    // FIXME - add tests for this case
+                    PixelBenderRegChannel::M4x4 => {
+                        let vec3_ptr = get_vec_ptr(self, 3)?;
+                        let col3 = self.evaluate_expr(Expression::Load { pointer: vec3_ptr });
+
+                        Ok(self.evaluate_expr(Expression::Compose {
+                            ty: self.mat4x4f,
+                            components: vec![vec0_load, col1, col2, col3],
+                        }))
+                    }
+                    _ => unreachable!(),
+                }
+            }
+            _ => unreachable!(),
+        }
     }
 }
 

@@ -429,6 +429,8 @@ pub(super) fn run_pixelbender_shader_impl(
                     PixelBenderType::TInt4(i1, i2, i3, i4) => {
                         (vec![*i1 as f32, *i2 as f32, *i3 as f32, *i4 as f32], false)
                     }
+                    // We treat the input as being in column-major order. Despite what the Flash docs claim,
+                    // this seems to be what Flash Player does.
                     PixelBenderType::TFloat2x2(arr) => (arr.to_vec(), true),
                     PixelBenderType::TFloat3x3(arr) => {
                         // Add a zero after every 3 values to created zero-padded vec4s

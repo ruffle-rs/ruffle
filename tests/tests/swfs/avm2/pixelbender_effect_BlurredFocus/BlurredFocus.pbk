@@ -1,0 +1,129 @@
+<languageVersion : 1.0;>
+
+kernel BlurredFocus
+<   namespace : "BlurredFocus";
+    vendor : "Paperless Post";
+    version : 1;
+>
+{
+    input image4 src;
+    output pixel4 dst;
+
+    parameter float4 bBox
+    <
+        minValue:float4(0.0,0.0,0.0,0.0);
+        maxValue:float4(1000.0,1000.0,1000.0,1000.0);
+        defaultValue:float4(0.0,600.0,0.0,400.0);
+    >;
+
+    parameter float2 center
+    <
+        minValue:float2(-2.0,-2.0);
+        maxValue:float2(2.0,2.0);
+        defaultValue:float2(0.5,0.5);
+    >;
+    
+    parameter float size
+    <
+        minValue:float(0);
+        maxValue:float(2);
+        defaultValue:float(1);
+    >;
+    
+    parameter float exponent
+    <
+        minValue:float(-10.0);
+        maxValue:float(10.0);
+        defaultValue:float(0.0);
+    >;
+
+    parameter float factor
+    <
+        minValue:float(-10.0);
+        maxValue:float(10.0);
+        defaultValue:float(0.0);
+    >;
+
+    parameter float maxBlur
+    <
+        minValue:float(0.0);
+        maxValue:float(10.0);
+        defaultValue:float(1.0);
+    >;
+
+    void
+    evaluatePixel()
+    {
+        float2 pos = outCoord();
+        float2 centerPos = float2(mix(bBox[0],bBox[1],center[0]),mix(bBox[2],bBox[3],center[1]));
+        float dist = distance(centerPos,pos);
+        dist = dist * (1.0/size);
+        dist = dist/distance(centerPos,float2(bBox[1],bBox[3]));
+        float blurFactor = factor * pow(dist,exponent) * maxBlur;    // used to control size of sampling area
+            
+        float2 p0 = float2(pos.x - blurFactor, pos.y - blurFactor);
+        float2 p1 = float2(pos.x + blurFactor, pos.y - blurFactor);
+        float2 p2 = float2(pos.x - blurFactor, pos.y + blurFactor);
+        float2 p3 = float2(pos.x + blurFactor, pos.y + blurFactor);
+            
+        // corners of unit square surrounding pixel
+        float4 w0 = sampleNearest(src,p0); // lower left
+        float4 w1 = sampleNearest(src,p1); // lower right
+        float4 w2 = sampleNearest(src,p2); // upper left
+        float4 w3 = sampleNearest(src,p3); // upper right
+        
+        // partial derivatives with respect to x at points w0 through w3
+        // i.e slopes of color values only in relation to x axis
+        // interpolate between previous and next x values
+        float4 x0 = (sampleNearest(src,float2(p0.x-2.0,p0.y-1.0)) + sampleNearest(src,float2(pos.x,pos.y-1.0)))/2.0;
+        float4 x1 = (sampleNearest(src,float2(p1.x,p1.y-1.0)) + sampleNearest(src,float2(pos.x+2.0,pos.y-1.0)))/2.0;
+        float4 x2 = (sampleNearest(src,float2(p2.x-2.0,p2.y+1.0)) + sampleNearest(src,float2(pos.x,pos.y+1.0)))/2.0;
+        float4 x3 = (sampleNearest(src,float2(p3.x,p3.y+1.0)) + sampleNearest(src,float2(pos.x+2.0,pos.y+1.0)))/2.0;
+        
+        // partial derivatives with respect to y at points w0 through w3
+        // i.e slopes of color values only inrelation to y axis
+        // interpolate between previous and next y values
+        float4 y0 = (sampleNearest(src,float2(p0.x-1.0,p0.y-2.0)) + sampleNearest(src,float2(pos.x-1.0,pos.y)))/2.0;
+        float4 y1 = (sampleNearest(src,float2(p1.x+1.0,p1.y-2.0)) + sampleNearest(src,float2(pos.x+1.0,pos.y)))/2.0;
+        float4 y2 = (sampleNearest(src,float2(p2.x-1.0,p2.y)) + sampleNearest(src,float2(pos.x-1.0,pos.y+2.0)))/2.0;
+        float4 y3 = (sampleNearest(src,float2(p3.x+1.0,p3.y)) + sampleNearest(src,float2(pos.x+1.0,pos.y+2.0)))/2.0;
+        
+        // partial derivative cross product at points w0 through w3
+        // temporary cross products that don't have alpha channels associated with them
+        float3 z0t = cross(float3(x0.r,x0.g,x0.b),float3(y0.r,y0.g,y0.b));
+        float3 z1t = cross(float3(x1.r,x1.g,x1.b),float3(y1.r,y1.g,y1.b));
+        float3 z2t = cross(float3(x2.r,x2.g,x2.b),float3(y2.r,y2.g,y2.b));
+        float3 z3t = cross(float3(x3.r,x3.g,x3.b),float3(y3.r,y3.g,y3.b));
+            
+        // add alpha channel back in
+        float4 z0 = float4(z0t.r,z0t.g,z0t.b,1.0);
+        float4 z1 = float4(z1t.r,z1t.g,z1t.b,1.0);
+        float4 z2 = float4(z2t.r,z2t.g,z2t.b,1.0);
+        float4 z3 = float4(z3t.r,z3t.g,z3t.b,1.0);
+            
+        // calculate the coefficients
+        float4 a00 =  w0;
+        float4 a01 =  y0;
+        float4 a02 = -3.0*w0 + 3.0*w2 -2.0*y0 - y2;
+        float4 a03 =  2.0*w0 - 2.0*w2 + y0 + y2;
+        float4 a10 =  x0;
+        float4 a11 =  z0;
+        float4 a12 = -3.0*x0 + 3.0*x2 - 2.0*z0 - z2;
+        float4 a13 =  2.0*x0 - 2.0*x2 + z0 + z2;
+        float4 a20 = -3.0*w0 + 3.0*w1 - 2.0*x0 - x1;
+        float4 a21 = -3.0*y0 + 3.0*y1 - 2.0*z0 - z1;
+        float4 a22 =  9.0*w0 - 9.0*w1 - 9.0*w2 + 9.0*w3 + 6.0*x0 + 3.0*x1 + -6.0*x2 - 3.0*x3 + 6.0*y0 - 6.0*y1 + 3.0*y2 - 3.0*y3 + 4.0*z0 + 2.0*z1 + 2.0*z2 + z3;
+        float4 a23 = -6.0*w0 + 6.0*w1 + 6.0*w2 - 6.0*w3 - 4.0*x0 - 2.0*x1 + 4.0*x2 + 2.0*x3 -3.0*y0 + 3.0*y1 - 3.0*y2 + 3.0*y3 +-2.0*z0 - z1 - 2.0*z2 - z3;
+        float4 a30 =  2.0*w0 - 2.0*w1 + x0 + x1;
+        float4 a31 =  2.0*y0 - 2.0*y1 + z0 + z1;
+        float4 a32 = -6.0*w0 + 6.0*w1 + 6.0*w2 -6.0*w3 -3.0*x0 - 3.0*x1 +3.0*x2 + 3.0*x3 -4.0*y0 + 4.0*y1 - 2.0*y2 + 2.0*y3 +-2.0*z0 - 2.0*z1 - z2 - z3;
+        float4 a33 =  4.0*w0 - 4.0*w1 - 4.0*w2 + 4.0*w3 + 2.0*x0 + 2.0*x1 +-2.0*x2 - 2.0*x3 + 2.0*y0 - 2.0*y1 + 2.0*y2 - 2.0*y3 + z0 + z1 + z2 + z3;
+            
+        dst = a00 + a01*0.5 + a02*pow(0.5,2.0) + a03*pow(0.5,3.0) + 
+                a10*0.5 + a11*pow(0.5,2.0) + a12*pow(0.5,3.0) + a13*pow(0.5,4.0) +
+                a20*pow(0.5,2.0) + a21*pow(0.5,3.0) + a22*pow(0.5,4.0) + a23*pow(0.5,5.0) +
+                a30*pow(0.5,3.0) + a31*pow(0.5,4.0) + a32*pow(0.5,5.0) + a33*pow(0.5,6.0);
+    
+        
+    }
+}
