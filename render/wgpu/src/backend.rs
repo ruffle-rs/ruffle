@@ -805,7 +805,11 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     fn is_filter_supported(&self, filter: &Filter) -> bool {
         matches!(
             filter,
-            Filter::BlurFilter(_) | Filter::ColorMatrixFilter(_) | Filter::ShaderFilter(_)
+            Filter::BlurFilter(_)
+                | Filter::GlowFilter(_)
+                | Filter::DropShadowFilter(_)
+                | Filter::ColorMatrixFilter(_)
+                | Filter::ShaderFilter(_)
         )
     }
 

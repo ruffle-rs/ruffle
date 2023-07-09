@@ -133,6 +133,7 @@ impl GlowFilter {
         blur_filter.calculate_dest_rect(&filter.inner_blur_filter(), source_rect)
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn apply(
         &self,
         descriptors: &Descriptors,
@@ -141,6 +142,7 @@ impl GlowFilter {
         source: &FilterSource,
         filter: &GlowFilterArgs,
         blur_filter: &BlurFilter,
+        blur_offset: (f32, f32),
     ) -> CommandTarget {
         let sample_count = source.texture.sample_count();
         let format = source.texture.format();
@@ -192,11 +194,7 @@ impl GlowFilter {
                 }]),
                 usage: wgpu::BufferUsages::UNIFORM,
             });
-        let vertices = source.vertices_with_blur(
-            &descriptors.device,
-            (blurred_texture.width(), blurred_texture.height()),
-            (0, 0),
-        );
+        let vertices = source.vertices_with_blur_offset(&descriptors.device, blur_offset);
         let filter_group = descriptors
             .device
             .create_bind_group(&wgpu::BindGroupDescriptor {

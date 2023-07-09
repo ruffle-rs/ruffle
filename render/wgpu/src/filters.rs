@@ -1,5 +1,6 @@
 mod blur;
 mod color_matrix;
+mod drop_shadow;
 mod glow;
 mod shader;
 
@@ -10,6 +11,7 @@ use crate::buffer_pool::TexturePool;
 use crate::descriptors::Descriptors;
 use crate::filters::blur::BlurFilter;
 use crate::filters::color_matrix::ColorMatrixFilter;
+use crate::filters::drop_shadow::DropShadowFilter;
 use crate::filters::glow::GlowFilter;
 use crate::filters::shader::ShaderFilter;
 use crate::surface::target::CommandTarget;
@@ -66,11 +68,10 @@ impl<'a> FilterSource<'a> {
         })
     }
 
-    pub fn vertices_with_blur(
+    pub fn vertices_with_blur_offset(
         &self,
         device: &wgpu::Device,
-        blur_size: (u32, u32),
-        blur_point: (u32, u32),
+        blur_offset: (f32, f32),
     ) -> wgpu::Buffer {
         let source_width = self.texture.width() as f32;
         let source_height = self.texture.height() as f32;
@@ -78,12 +79,6 @@ impl<'a> FilterSource<'a> {
         let source_top = self.point.1;
         let source_right = source_left + self.size.0;
         let source_bottom = source_top + self.size.1;
-        let blur_width = blur_size.0 as f32;
-        let blur_height = blur_size.1 as f32;
-        let blur_left = blur_point.0;
-        let blur_top = blur_point.1;
-        let blur_right = blur_left + blur_size.0;
-        let blur_bottom = blur_top + blur_size.1;
         device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: create_debug_label!("Filter vertices").as_deref(),
             contents: bytemuck::cast_slice(&[
@@ -93,7 +88,10 @@ impl<'a> FilterSource<'a> {
                         source_left as f32 / source_width,
                         source_top as f32 / source_height,
                     ],
-                    blur_uv: [blur_left as f32 / blur_width, blur_top as f32 / blur_height],
+                    blur_uv: [
+                        (source_left as f32 + blur_offset.0) / source_width,
+                        (source_top as f32 + blur_offset.1) / source_height,
+                    ],
                 },
                 FilterVertexWithBlur {
                     position: [1.0, 0.0],
@@ -102,8 +100,8 @@ impl<'a> FilterSource<'a> {
                         source_top as f32 / source_height,
                     ],
                     blur_uv: [
-                        blur_right as f32 / blur_width,
-                        blur_top as f32 / blur_height,
+                        (source_right as f32 + blur_offset.0) / source_width,
+                        (source_top as f32 + blur_offset.1) / source_height,
                     ],
                 },
                 FilterVertexWithBlur {
@@ -113,8 +111,8 @@ impl<'a> FilterSource<'a> {
                         source_bottom as f32 / source_height,
                     ],
                     blur_uv: [
-                        blur_right as f32 / blur_width,
-                        blur_bottom as f32 / blur_height,
+                        (source_right as f32 + blur_offset.0) / source_width,
+                        (source_bottom as f32 + blur_offset.1) / source_height,
                     ],
                 },
                 FilterVertexWithBlur {
@@ -124,8 +122,8 @@ impl<'a> FilterSource<'a> {
                         source_bottom as f32 / source_height,
                     ],
                     blur_uv: [
-                        blur_left as f32 / blur_width,
-                        blur_bottom as f32 / blur_height,
+                        (source_left as f32 + blur_offset.0) / source_width,
+                        (source_bottom as f32 + blur_offset.1) / source_height,
                     ],
                 },
             ]),
@@ -161,6 +159,9 @@ impl Filters {
             Filter::GlowFilter(filter) => {
                 self.glow
                     .calculate_dest_rect(filter, source_rect, &self.blur)
+            }
+            Filter::DropShadowFilter(filter) => {
+                DropShadowFilter::calculate_dest_rect(filter, source_rect, &self.blur, &self.glow)
             }
             _ => source_rect,
         }
@@ -203,12 +204,20 @@ impl Filters {
                 &source,
                 &filter,
                 &self.blur,
+                (0.0, 0.0),
+            )),
+            Filter::DropShadowFilter(filter) => Some(DropShadowFilter::apply(
+                descriptors,
+                texture_pool,
+                draw_encoder,
+                &source,
+                &filter,
+                &self.blur,
+                &self.glow,
             )),
             filter => {
                 static WARNED_FILTERS: OnceLock<Mutex<HashSet<&'static str>>> = OnceLock::new();
                 let name = match filter {
-                    Filter::DropShadowFilter(_) => "DropShadowFilter",
-                    Filter::GlowFilter(_) => "GlowFilter",
                     Filter::BevelFilter(_) => "BevelFilter",
                     Filter::GradientGlowFilter(_) => "GradientGlowFilter",
                     Filter::GradientBevelFilter(_) => "GradientBevelFilter",
@@ -216,6 +225,8 @@ impl Filters {
                     Filter::DisplacementMapFilter(_) => "DisplacementMapFilter",
                     Filter::ColorMatrixFilter(_)
                     | Filter::BlurFilter(_)
+                    | Filter::GlowFilter(_)
+                    | Filter::DropShadowFilter(_)
                     | Filter::ShaderFilter(_) => unreachable!(),
                 };
                 // Only warn once per filter type
