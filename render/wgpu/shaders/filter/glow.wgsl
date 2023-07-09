@@ -47,14 +47,14 @@ fn main_fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     // Start with 1 alpha because we'll be multiplying the whole thing
     var color = vec4<f32>(filter_args.color.r, filter_args.color.g, filter_args.color.b, 1.0);
     if (inner) {
-        let alpha = filter_args.color.a * (1.0 - blur) * filter_args.strength;
+        let alpha = filter_args.color.a * saturate((1.0 - blur) * filter_args.strength);
         if (knockout) {
             color = color * alpha * dest.a;
         } else {
             color = color * alpha * dest.a + dest * (1.0 - alpha);
         }
     } else {
-        let alpha = filter_args.color.a * blur * filter_args.strength;
+        let alpha = filter_args.color.a * saturate(blur * filter_args.strength);
         if (knockout) {
             color = color * alpha * (1.0 - dest.a);
         } else {
