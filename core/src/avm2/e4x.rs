@@ -297,7 +297,6 @@ impl<'gc> E4XNode<'gc> {
         let ignore_white = true;
 
         let mut top_level = vec![];
-        let mut depth = 0;
 
         // This can't be a closure that captures these variables, because we need to modify them
         // outside of this body.
@@ -305,14 +304,13 @@ impl<'gc> E4XNode<'gc> {
             node: E4XNode<'gc>,
             open_tags: &mut [E4XNode<'gc>],
             top_level: &mut Vec<E4XNode<'gc>>,
-            depth: usize,
             activation: &mut Activation<'_, 'gc>,
         ) -> Result<(), Error<'gc>> {
             if let Some(current_tag) = open_tags.last_mut() {
                 current_tag.append_child(activation.context.gc_context, node)?;
             }
 
-            if depth == 0 {
+            if open_tags.is_empty() {
                 top_level.push(node);
             }
             Ok(())
@@ -345,7 +343,6 @@ impl<'gc> E4XNode<'gc> {
             ignore_white: bool,
             open_tags: &mut [E4XNode<'gc>],
             top_level: &mut Vec<E4XNode<'gc>>,
-            depth: usize,
             is_text: bool,
             activation: &mut Activation<'_, 'gc>,
         ) -> Result<(), Error<'gc>> {
@@ -372,7 +369,7 @@ impl<'gc> E4XNode<'gc> {
                         },
                     },
                 ));
-                push_childless_node(node, open_tags, top_level, depth, activation)?;
+                push_childless_node(node, open_tags, top_level, activation)?;
             }
             Ok(())
         }
@@ -391,17 +388,15 @@ impl<'gc> E4XNode<'gc> {
                         current_tag.append_child(activation.context.gc_context, child)?;
                     }
                     open_tags.push(child);
-                    depth += 1;
                 }
                 Event::Empty(bs) => {
                     let node = E4XNode::from_start_event(activation, bs, parser.decoder())
                         .map_err(|_| malformed_element(activation))?;
-                    push_childless_node(node, &mut open_tags, &mut top_level, depth, activation)?;
+                    push_childless_node(node, &mut open_tags, &mut top_level, activation)?;
                 }
                 Event::End(_) => {
-                    depth -= 1;
                     let node = open_tags.pop().unwrap();
-                    if depth == 0 {
+                    if open_tags.is_empty() {
                         top_level.push(node);
                     }
                 }
@@ -413,7 +408,6 @@ impl<'gc> E4XNode<'gc> {
                         ignore_white,
                         &mut open_tags,
                         &mut top_level,
-                        depth,
                         true,
                         activation,
                     )?;
@@ -425,7 +419,6 @@ impl<'gc> E4XNode<'gc> {
                         ignore_white,
                         &mut open_tags,
                         &mut top_level,
-                        depth,
                         false,
                         activation,
                     )?;
@@ -454,7 +447,7 @@ impl<'gc> E4XNode<'gc> {
                         },
                     ));
 
-                    push_childless_node(node, &mut open_tags, &mut top_level, depth, activation)?;
+                    push_childless_node(node, &mut open_tags, &mut top_level, activation)?;
                 }
                 // These are completely ignored by AVM2
                 Event::Decl(_) | Event::DocType(_) => {}
