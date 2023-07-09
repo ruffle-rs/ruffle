@@ -1,0 +1,8 @@
+num_frames = 1
+
+[image_comparison]
+tolerance = 2
+
+[player_options]
+with_renderer = { optional = false, sample_count = 1 }
+viewport_dimensions = { width = 800, height = 400, scale_factor = 1.0 }
