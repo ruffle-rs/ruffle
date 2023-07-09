@@ -22,6 +22,11 @@ impl GlowFilter {
     }
 
     #[inline]
+    pub fn composite_source(&self) -> bool {
+        self.flags.contains(GlowFilterFlags::COMPOSITE_SOURCE)
+    }
+
+    #[inline]
     pub fn num_passes(&self) -> u8 {
         (self.flags & GlowFilterFlags::PASSES).bits()
     }

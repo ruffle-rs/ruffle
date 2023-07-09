@@ -3,7 +3,7 @@ struct Filter {
     strength: f32,
     inner: u32,
     knockout: u32,
-    _pad: f32,
+    composite_source: u32,
 }
 
 @group(0) @binding(0) var texture: texture_2d<f32>;
@@ -39,8 +39,9 @@ fn main_vertex(in: VertexInput) -> VertexOutput {
 fn main_fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     let inner = filter_args.inner > 0u;
     let knockout = filter_args.knockout > 0u;
+    let composite_source = filter_args.composite_source > 0u;
     var blur = textureSample(blurred, texture_sampler, in.blur_uv).a;
-    let dest = textureSample(texture, texture_sampler, in.source_uv);
+    var dest = textureSample(texture, texture_sampler, in.source_uv);
 
     if (in.blur_uv.x < 0.0 || in.blur_uv.x > 1.0 || in.blur_uv.y < 0.0 || in.blur_uv.y > 1.0) {
         blur = 0.0;
@@ -54,15 +55,20 @@ fn main_fragment(in: VertexOutput) -> @location(0) vec4<f32> {
         let alpha = filter_args.color.a * saturate((1.0 - blur) * filter_args.strength);
         if (knockout) {
             color = color * alpha * dest.a;
-        } else {
+        } else if (composite_source) {
             color = color * alpha * dest.a + dest * (1.0 - alpha);
+        } else {
+            // [NA] Yes it's intentional that the !composite_source is different for inner/outer. Just Flash things.
+            color = color * alpha * dest.a;
         }
     } else {
         let alpha = filter_args.color.a * saturate(blur * filter_args.strength);
         if (knockout) {
             color = color * alpha * (1.0 - dest.a);
-        } else {
+        } else if (composite_source) {
             color = color * alpha * (1.0 - dest.a) + dest;
+        } else {
+            color = color * alpha;
         }
     }
 

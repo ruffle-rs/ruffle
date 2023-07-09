@@ -15,9 +15,9 @@ use wgpu::util::DeviceExt;
 struct GlowUniform {
     color: [f32; 4],
     strength: f32,
-    inner: u32,    // a wasteful bool, but we need to be aligned anyway
-    knockout: u32, // a wasteful bool, but we need to be aligned anyway
-    _pad: f32,
+    inner: u32,            // a wasteful bool, but we need to be aligned anyway
+    knockout: u32,         // a wasteful bool, but we need to be aligned anyway
+    composite_source: u32, // undocumented flash feature, another bool
 }
 
 pub struct GlowFilter {
@@ -190,7 +190,7 @@ impl GlowFilter {
                     strength: filter.strength.to_f32(),
                     inner: if filter.is_inner() { 1 } else { 0 },
                     knockout: if filter.is_knockout() { 1 } else { 0 },
-                    _pad: 0.0,
+                    composite_source: if filter.composite_source() { 1 } else { 0 },
                 }]),
                 usage: wgpu::BufferUsages::UNIFORM,
             });
