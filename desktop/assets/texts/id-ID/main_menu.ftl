@@ -27,3 +27,4 @@ debug-menu = Alat debug
 debug-menu-open-stage = Lihat info halaman
 debug-menu-open-movie = Lihat Movie
 debug-menu-open-movie-list = Lihat Movie yang diketahui
+debug-menu-search-display-objects = Cari Objek Tertampil...
