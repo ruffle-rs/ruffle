@@ -146,7 +146,6 @@ impl BlurFilter {
         let format = source.texture.format();
         let pipeline = self.pipeline(descriptors, sample_count);
 
-        // FIXME - these should be larger than the source texture, but we don't support that yet
         let mut flip = CommandTarget::new(
             descriptors,
             texture_pool,
