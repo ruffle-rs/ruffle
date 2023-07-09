@@ -5,10 +5,11 @@ struct Filter {
     dir_x: f32,
     dir_y: f32,
 
-    // Size of the blur kernel
-    size: f32,
+    // Full size of the blur kernel (from left to right, ie)
+    full_size: f32,
 
-    _padding: f32,
+    // Half size of the blur kernel (from center to right, ie) - without center piece
+    half_size: f32,
 }
 
 @group(0) @binding(0) var texture: texture_2d<f32>;
@@ -25,11 +26,10 @@ fn main_fragment(in: filter::VertexOutput) -> @location(0) vec4<f32> {
     let direction = vec2<f32>(filter_args.dir_x, filter_args.dir_y);
     var color = vec4<f32>();
 
-    let num_samples = 2.0 * filter_args.size + 1.0;
-    let weight = 1.0 / num_samples;
+    let weight = 1.0 / filter_args.full_size;
 
-    for (var i = 0.0; i < num_samples; i += 1.0) {
-        color += textureSample(texture, texture_sampler, in.uv + direction * (i - filter_args.size)) * weight;
+    for (var i = 0.0; i < filter_args.full_size; i += 1.0) {
+        color += textureSample(texture, texture_sampler, in.uv + direction * (i - filter_args.half_size)) * weight;
     }
 
     return color;
