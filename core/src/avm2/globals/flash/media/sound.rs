@@ -2,12 +2,13 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::object::{Object, QueuedPlay, SoundChannelObject, TObject};
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::backend::navigator::Request;
 use crate::character::Character;
 use crate::display_object::SoundTransform;
-use crate::{avm2_stub_constructor, avm2_stub_getter, avm2_stub_method};
+use crate::{avm2_stub_getter, avm2_stub_method};
 use swf::{SoundEvent, SoundInfo};
 
 pub use crate::avm2::object::sound_allocator;
@@ -18,10 +19,6 @@ pub fn init<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if !args.is_empty() {
-        avm2_stub_constructor!(activation, "flash.media.Sound", "with arguments");
-    }
-
     if let Some(sound_object) = this.as_sound_object() {
         let class_object = this
             .instance_of()
@@ -45,6 +42,10 @@ pub fn init<'gc>(
                 tracing::warn!("Attempted to construct subclass of Sound, {}, which is associated with non-Sound character {}", class_object.inner_class_definition().read().name().local_name(), symbol);
             }
         }
+    }
+
+    if args.try_get_object(activation, 0).is_some() {
+        this.call_public_property("load", args, activation)?;
     }
 
     Ok(Value::Undefined)
