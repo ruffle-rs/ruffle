@@ -22,7 +22,7 @@ mod avm1;
 mod avm2;
 mod binary_data;
 pub mod bitmap;
-mod buffer;
+pub mod buffer;
 mod character;
 pub mod context;
 pub mod context_menu;
