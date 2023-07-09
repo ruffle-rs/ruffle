@@ -39,8 +39,12 @@ fn main_vertex(in: VertexInput) -> VertexOutput {
 fn main_fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     let inner = filter_args.inner > 0u;
     let knockout = filter_args.knockout > 0u;
-    let blur = textureSample(blurred, texture_sampler, in.blur_uv).a;
+    var blur = textureSample(blurred, texture_sampler, in.blur_uv).a;
     let dest = textureSample(texture, texture_sampler, in.source_uv);
+
+    if (in.blur_uv.x < 0.0 || in.blur_uv.x > 1.0 || in.blur_uv.y < 0.0 || in.blur_uv.y > 1.0) {
+        blur = 0.0;
+    }
 
     // [NA] It'd be nice to use hardware blending but the operation is too complex :( Only knockouts would work.
 
