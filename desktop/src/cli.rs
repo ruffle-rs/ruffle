@@ -44,7 +44,7 @@ pub struct Opt {
     pub height: Option<f64>,
 
     /// Maximum number of seconds a script can run before scripting is disabled.
-    #[clap(long, short, default_value = "15.0")]
+    #[clap(long, short, default_value = "Infinity")]
     pub max_execution_duration: f64,
 
     /// Base directory or URL used to resolve all relative path statements in the SWF file.

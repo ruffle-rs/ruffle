@@ -129,6 +129,12 @@ impl ActivePlayer {
                 builder.with_external_interface(Box::<DesktopExternalInterfaceProvider>::default());
         }
 
+        let max_execution_duration = if opt.max_execution_duration == f64::INFINITY {
+            Duration::MAX
+        } else {
+            Duration::from_secs_f64(opt.max_execution_duration)
+        };
+
         builder = builder
             .with_navigator(navigator)
             .with_renderer(renderer)
@@ -139,7 +145,7 @@ impl ActivePlayer {
             )
             .with_autoplay(true)
             .with_letterbox(opt.letterbox)
-            .with_max_execution_duration(Duration::from_secs_f64(opt.max_execution_duration))
+            .with_max_execution_duration(max_execution_duration)
             .with_quality(opt.quality)
             .with_warn_on_unsupported_content(opt.warn_on_unsupported_content)
             .with_align(opt.align, opt.force_align)
