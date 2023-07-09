@@ -36,6 +36,7 @@ impl DropShadowFilter {
     pub fn scale(&mut self, x: f32, y: f32) {
         self.blur_x *= Fixed16::from_f32(x);
         self.blur_y *= Fixed16::from_f32(y);
+        self.distance *= Fixed16::from_f32(y);
     }
 
     pub fn inner_blur_filter(&self) -> BlurFilter {
