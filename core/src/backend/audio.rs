@@ -1,6 +1,7 @@
 use crate::{
     avm1::SoundObject,
     avm2::{Avm2, EventObject as Avm2EventObject, SoundChannelObject},
+    buffer::Substream,
     context::UpdateContext,
     display_object::{self, DisplayObject, MovieClip, TDisplayObject},
 };
@@ -60,8 +61,9 @@ pub trait AudioBackend: Downcast {
 
     /// Starts playing a "stream" sound, which is an audio stream that is distributed
     /// among the frames of a Flash MovieClip.
-    /// On the web backend, `stream_handle` should be the handle for the preloaded stream.
-    /// Other backends can pass `None`.
+    ///
+    /// NOTE: `stream_handle` and `clip_frame` are no longer used on any
+    /// backends.
     fn start_stream(
         &mut self,
         stream_handle: Option<SoundHandle>,
@@ -69,6 +71,37 @@ pub trait AudioBackend: Downcast {
         clip_data: crate::tag_utils::SwfSlice,
         handle: &swf::SoundStreamHead,
     ) -> Result<SoundInstanceHandle, DecodeError>;
+
+    /// Starts playing a "stream" sound, which is an audio stream that is
+    /// distributed among multiple chunks of a larger data stream such as a
+    /// Flash MovieClip or video container format.
+    ///
+    /// The `handle` parameter should refer to an actual SWF `SoundStreamHead`
+    /// tag for SWF-wrapped audio. Other container formats will need to have
+    /// their data converted to an equivalent SWF tag.
+    ///
+    /// MP3 data within the substream is expected to have sample count and
+    /// seek offset data at the head of each chunk (SWF19 p.184). This is used
+    /// to allow MP3 data to be buffered across multiple chunks or frames as
+    /// necessary for playback.
+    fn start_substream(
+        &mut self,
+        stream_data: Substream,
+        handle: &swf::SoundStreamHead,
+    ) -> Result<SoundInstanceHandle, DecodeError>;
+
+    /// Adds data to an already playing stream sound started with
+    /// `start_substream`.
+    ///
+    /// If a sound instance has not yet finished playing, then it will act as
+    /// if the appended data was originally provided at the time of the
+    /// `start_substream` call. Otherwise, the append operation will fail and
+    /// the caller will need to start another substream sound.
+    fn append_substream(
+        &mut self,
+        instance: SoundInstanceHandle,
+        addl_data: Substream,
+    ) -> Result<(), DecodeError>;
 
     /// Stops a playing sound instance.
     /// No-op if the sound is not playing.
@@ -214,6 +247,22 @@ impl AudioBackend for NullAudioBackend {
         _handle: &swf::SoundStreamHead,
     ) -> Result<SoundInstanceHandle, DecodeError> {
         Ok(SoundInstanceHandle::from_raw_parts(0, 0))
+    }
+
+    fn start_substream(
+        &mut self,
+        _stream_data: Substream,
+        _handle: &swf::SoundStreamHead,
+    ) -> Result<SoundInstanceHandle, DecodeError> {
+        Ok(SoundInstanceHandle::from_raw_parts(0, 0))
+    }
+
+    fn append_substream(
+        &mut self,
+        _instance: SoundInstanceHandle,
+        _addl_data: Substream,
+    ) -> Result<(), DecodeError> {
+        Ok(())
     }
 
     fn stop_sound(&mut self, _sound: SoundInstanceHandle) {}
