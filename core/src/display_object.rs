@@ -738,9 +738,11 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
                     y_min: 0,
                     y_max: height as i32,
                 };
+                let stage_matrix = context.stage.view_matrix();
                 for filter in &mut filters {
+                    // Scaling is done by *stage view matrix* only, nothing in-between
+                    filter.scale(stage_matrix.a, stage_matrix.d);
                     filter_rect = context.renderer.calculate_dest_rect(filter, filter_rect);
-                    filter.scale(base_transform.matrix.a, base_transform.matrix.d);
                 }
                 let draw_offset = Point::new(filter_rect.x_min, filter_rect.y_min);
                 if cache.is_dirty(&base_transform.matrix, width, height) {
