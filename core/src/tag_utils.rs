@@ -1,4 +1,5 @@
 use gc_arena::Collect;
+use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 use swf::{CharacterId, Fixed8, HeaderExt, Rectangle, TagCode, Twips};
 use thiserror::Error;
@@ -406,6 +407,34 @@ impl SwfSlice {
     /// Get the length of the SwfSlice.
     pub fn len(&self) -> usize {
         self.end - self.start
+    }
+}
+
+#[derive(Collect)]
+#[collect(no_drop)]
+pub struct SwfPosition {
+    pub movie: Arc<SwfMovie>,
+    pub pos: usize,
+}
+
+impl SwfPosition {
+    pub fn new(movie: Arc<SwfMovie>, pos: usize) -> Self {
+        SwfPosition { movie, pos }
+    }
+}
+
+impl PartialEq for SwfPosition {
+    fn eq(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.movie, &other.movie) && self.pos == other.pos
+    }
+}
+
+impl Eq for SwfPosition {}
+
+impl Hash for SwfPosition {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.pos.hash(state);
+        Arc::as_ptr(&self.movie).hash(state);
     }
 }
 

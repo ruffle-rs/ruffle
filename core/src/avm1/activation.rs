@@ -12,7 +12,7 @@ use crate::display_object::{DisplayObject, MovieClip, TDisplayObject, TDisplayOb
 use crate::ecma_conversions::{f64_to_wrapping_i32, f64_to_wrapping_u32};
 use crate::loader::MovieLoaderVMData;
 use crate::string::{AvmString, SwfStrExt as _, WStr, WString};
-use crate::tag_utils::SwfSlice;
+use crate::tag_utils::{SwfPosition, SwfSlice};
 use crate::vminterface::Instantiator;
 use crate::{avm_error, avm_warn};
 use gc_arena::{Gc, GcCell, MutationContext};
@@ -25,6 +25,7 @@ use std::cmp::min;
 use std::fmt;
 use swf::avm1::read::Reader;
 use swf::avm1::types::*;
+use swf::extensions::ReadSwfExt;
 use url::form_urlencoded;
 
 use super::object_reference::MovieClipReference;
@@ -480,7 +481,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Action::CastOp => self.action_cast_op(),
                 Action::CharToAscii => self.action_char_to_ascii(),
                 Action::CloneSprite => self.action_clone_sprite(),
-                Action::ConstantPool(action) => self.action_constant_pool(action),
+                Action::ConstantPool(action) => self.action_constant_pool(action, data, reader),
                 Action::Decrement => self.action_decrement(),
                 Action::DefineFunction(action) => self.action_define_function(action.into(), data),
                 Action::DefineFunction2(action) => self.action_define_function(action, data),
@@ -863,21 +864,42 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn action_constant_pool(
         &mut self,
         action: ConstantPool,
+        data: &SwfSlice,
+        reader: &mut Reader,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let constants = action
-            .strings
-            .iter()
-            .map(|s| {
-                self.context
-                    .interner
-                    .intern_wstr(self.context.gc_context, s.decode(self.encoding()))
-                    .into()
-            })
-            .collect();
+        let current_pos = reader.pos(data.movie.data());
+        let swf_position = SwfPosition::new(data.movie.clone(), current_pos);
 
-        self.context
-            .avm1
-            .set_constant_pool(Gc::new(self.context.gc_context, constants));
+        let const_pool_cache = self.context.avm1.constant_pool_cache();
+
+        let constants = if let Some(constants) = const_pool_cache.get(&swf_position) {
+            *constants
+        } else {
+            let constants: Vec<_> = action
+                .strings
+                .iter()
+                .map(|s| {
+                    self.context
+                        .interner
+                        .intern_wstr(self.context.gc_context, s.decode(self.encoding()))
+                        .into()
+                })
+                .collect();
+
+            let consts = Gc::new(self.context.gc_context, constants);
+
+            if consts.len() > 1000 {
+                self.context
+                    .avm1
+                    .constant_pool_cache()
+                    .insert(swf_position, consts);
+            }
+
+            consts
+        };
+
+        self.context.avm1.set_constant_pool(constants);
+
         self.set_constant_pool(self.context.avm1.constant_pool());
 
         Ok(FrameControl::Continue)

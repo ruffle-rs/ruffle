@@ -10,10 +10,11 @@ use crate::context::{GcContext, UpdateContext};
 use crate::frame_lifecycle::FramePhase;
 use crate::prelude::*;
 use crate::string::AvmString;
-use crate::tag_utils::SwfSlice;
+use crate::tag_utils::{SwfPosition, SwfSlice};
 use crate::{avm1, avm_debug};
 use gc_arena::{Collect, Gc, MutationContext};
 use std::borrow::Cow;
+use std::collections::HashMap;
 use swf::avm1::read::Reader;
 use tracing::instrument;
 
@@ -26,6 +27,8 @@ pub struct Avm1<'gc> {
     /// The constant pool to use for new activations from code sources that
     /// don't close over the constant pool they were defined with.
     constant_pool: Gc<'gc, Vec<Value<'gc>>>,
+
+    constant_pool_cache: HashMap<SwfPosition, Gc<'gc, Vec<Value<'gc>>>>,
 
     /// The global scope (pre-allocated so that it can be reused by fresh `Activation`s).
     global_scope: Gc<'gc, Scope<'gc>>,
@@ -80,6 +83,7 @@ impl<'gc> Avm1<'gc> {
         Self {
             player_version,
             constant_pool: Gc::new(gc_context, vec![]),
+            constant_pool_cache: HashMap::new(),
             global_scope: Gc::new(gc_context, Scope::from_global_object(globals)),
             prototypes,
             broadcaster_functions,
@@ -361,6 +365,10 @@ impl<'gc> Avm1<'gc> {
     /// don't close over the constant pool they were defined with.
     pub fn set_constant_pool(&mut self, constant_pool: Gc<'gc, Vec<Value<'gc>>>) {
         self.constant_pool = constant_pool;
+    }
+
+    pub fn constant_pool_cache(&mut self) -> &mut HashMap<SwfPosition, Gc<'gc, Vec<Value<'gc>>>> {
+        &mut self.constant_pool_cache
     }
 
     /// DisplayObject property map.
