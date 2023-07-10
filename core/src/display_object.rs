@@ -87,6 +87,9 @@ pub struct BitmapCache {
 
     /// The current contents of the cache, if any
     bitmap: Option<BitmapInfo>,
+
+    /// Whether we warned that this bitmap was too large to be cached
+    warned_for_oversize: bool,
 }
 
 impl BitmapCache {
@@ -703,6 +706,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
         let mut cache_info: Option<(BitmapHandle, bool, Transform, Rectangle<Twips>)> = None;
         let base_transform = context.transform_stack.transform();
         let bounds: Rectangle<Twips> = this.bounds_with_transform(&base_transform.matrix);
+        let path = this.path();
 
         if let Some(cache) = this.base_mut(context.gc_context).bitmap_cache_mut() {
             let width = bounds.width().to_pixels().ceil().max(0.0);
@@ -721,10 +725,13 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
                         .map(|handle| (handle, false, base_transform, bounds));
                 }
             } else {
-                tracing::warn!(
-                "Skipping cacheAsBitmap for incredibly large object at {:?} ({width} x {height})",
-                this.path()
-            );
+                if !cache.warned_for_oversize {
+                    tracing::warn!(
+                        "Skipping cacheAsBitmap for incredibly large object at {:?} ({width} x {height})",
+                        path
+                    );
+                    cache.warned_for_oversize = true;
+                }
                 cache.clear();
                 cache_info = None;
             }
