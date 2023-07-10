@@ -34,6 +34,11 @@ quality-high8x8linear = High (8x8) Linear
 quality-high16x16 = High (16x16)
 quality-high16x16linear = High (16x16) Linear
 
+letterbox = Letterbox
+letterbox-on = On
+letterbox-fullscreen = Fullscreen Only
+letterbox-off = Off
+
 align = Stage Alignment
 align-center = Center
 align-left = Left

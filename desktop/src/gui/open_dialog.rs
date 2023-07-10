@@ -6,6 +6,7 @@ use egui::{
     Align2, Button, Checkbox, ComboBox, DragValue, Grid, Slider, TextEdit, Ui, Widget, Window,
 };
 use ruffle_core::backend::navigator::OpenURLMode;
+use ruffle_core::config::Letterbox;
 use ruffle_core::{LoadBehavior, StageAlign, StageScaleMode};
 use ruffle_render::quality::StageQuality;
 use std::path::Path;
@@ -277,6 +278,32 @@ impl OpenDialog {
                             &mut self.options.quality,
                             StageQuality::High16x16Linear,
                             text(&self.locale, "quality-high16x16linear"),
+                        );
+                    });
+                ui.end_row();
+
+                ui.label(text(&self.locale, "letterbox"));
+                ComboBox::from_id_source("open-file-advanced-options-letterbox")
+                    .selected_text(match self.options.letterbox {
+                        Letterbox::On => text(&self.locale, "letterbox-on"),
+                        Letterbox::Fullscreen => text(&self.locale, "letterbox-fullscreen"),
+                        Letterbox::Off => text(&self.locale, "letterbox-off"),
+                    })
+                    .show_ui(ui, |ui| {
+                        ui.selectable_value(
+                            &mut self.options.letterbox,
+                            Letterbox::On,
+                            text(&self.locale, "letterbox-on"),
+                        );
+                        ui.selectable_value(
+                            &mut self.options.letterbox,
+                            Letterbox::Fullscreen,
+                            text(&self.locale, "letterbox-fullscreen"),
+                        );
+                        ui.selectable_value(
+                            &mut self.options.letterbox,
+                            Letterbox::Off,
+                            text(&self.locale, "letterbox-off"),
                         );
                     });
                 ui.end_row();
