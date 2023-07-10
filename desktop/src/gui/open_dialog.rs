@@ -474,7 +474,7 @@ impl OpenDialog {
             if ui
                 .add_enabled(
                     !self.options.parameters.is_empty(),
-                    Button::new(text(&self.locale, "open-dialog-clear-parameters")),
+                    Button::new(text(&self.locale, "open-dialog-remove-parameters")),
                 )
                 .clicked()
             {
@@ -495,7 +495,7 @@ impl OpenDialog {
                         ui.text_edit_singleline(value);
                         if ui
                             .button("x")
-                            .on_hover_text(text(&self.locale, "open-dialog-delete-parameter"))
+                            .on_hover_text(text(&self.locale, "open-dialog-remove-parameter"))
                             .clicked()
                         {
                             keep = false;
