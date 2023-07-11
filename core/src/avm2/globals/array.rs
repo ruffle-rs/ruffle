@@ -1015,15 +1015,15 @@ pub fn sort<'gc>(
             ),
         )
     } else {
-        (
-            None,
-            SortOptions::from_bits_truncate(
-                args.get(0)
-                    .cloned()
-                    .unwrap_or_else(|| 0.into())
-                    .coerce_to_u32(activation)? as u8,
-            ),
-        )
+        let arg = args.get(0).cloned().unwrap_or(Value::Undefined);
+        if let Ok(callable) = arg.as_callable(activation, None, None) {
+            (Some(callable), SortOptions::empty())
+        } else {
+            (
+                None,
+                SortOptions::from_bits_truncate(arg.coerce_to_u32(activation)? as u8),
+            )
+        }
     };
 
     let mut values = if let Some(values) = extract_array_values(activation, this.into())? {

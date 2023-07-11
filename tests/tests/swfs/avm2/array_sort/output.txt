@@ -263,17 +263,17 @@ false
 //Array.prototype[10] = "hole in slot 10";
 //var a = new Array(7,2,1,"3","4")
 //(contents of a.sort(sub_comparison))
-1
-2
-3
-4
 7
+4
+3
+2
+1
 //(contents of a.sort(sub_comparison, 2))
-7
-4
-3
-2
 1
+2
+3
+4
+7
 //(contents of a.sort(sub_comparison, Array.RETURNINDEXEDARRAY))
 4
 3
@@ -293,5 +293,5 @@ false
 true
 //var d = new Array(3,"4")
 //(contents of d.sort(sub_comparison, 4))
-3
 4
+3
