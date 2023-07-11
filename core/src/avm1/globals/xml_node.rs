@@ -3,10 +3,10 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{ArrayObject, Object, ScriptObject, TObject, Value};
+use crate::avm1::{ArrayObject, NativeObject, Object, ScriptObject, TObject, Value};
 use crate::context::GcContext;
 use crate::string::{AvmString, WStr};
-use crate::xml::XmlNode;
+use crate::xml::{XmlNode, TEXT_NODE};
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "localName" => property(local_name);
@@ -38,12 +38,15 @@ pub fn constructor<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let [node_type, value, ..] = args {
+    let mut node = if let [node_type, value, ..] = args {
         let node_type = node_type.coerce_to_u8(activation)?;
         let node_value = value.coerce_to_string(activation)?;
-        let mut node = XmlNode::new(activation.context.gc_context, node_type, Some(node_value));
-        return Ok(node.script_object(activation).into());
-    }
+        XmlNode::new(activation.context.gc_context, node_type, Some(node_value))
+    } else {
+        XmlNode::new(activation.context.gc_context, TEXT_NODE, Some("".into()))
+    };
+    node.introduce_script_object(activation.context.gc_context, this);
+    this.set_native(activation.context.gc_context, NativeObject::XmlNode(node));
 
     Ok(this.into())
 }
