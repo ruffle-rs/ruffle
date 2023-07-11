@@ -1,8 +1,7 @@
 //! XML Tree structure
 
-use crate::avm1::Activation;
 use crate::avm1::Attribute;
-use crate::avm1::XmlNodeObject;
+use crate::avm1::{Activation, NativeObject};
 use crate::avm1::{Error, Object, ScriptObject, TObject, Value};
 use crate::string::{AvmString, WStr, WString};
 use crate::xml;
@@ -369,8 +368,15 @@ impl<'gc> XmlNode<'gc> {
         match self.get_script_object() {
             Some(object) => object,
             None => {
-                let proto = activation.context.avm1.prototypes().xml_node;
-                XmlNodeObject::from_xml_node(activation.context.gc_context, *self, proto).into()
+                let xml_node = activation.context.avm1.prototypes().xml_node_constructor;
+                let prototype = xml_node
+                    .get("prototype", activation)
+                    .map(|p| p.coerce_to_object(activation))
+                    .ok();
+                let object = ScriptObject::new(activation.context.gc_context, prototype);
+                self.introduce_script_object(activation.context.gc_context, object.into());
+                object.set_native(activation.context.gc_context, NativeObject::XmlNode(*self));
+                object.into()
             }
         }
     }

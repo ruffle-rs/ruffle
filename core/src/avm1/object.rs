@@ -16,7 +16,6 @@ use crate::avm1::object::array_object::ArrayObject;
 use crate::avm1::object::shared_object::SharedObject;
 use crate::avm1::object::super_object::SuperObject;
 use crate::avm1::object::value_object::ValueObject;
-use crate::avm1::object::xml_node_object::XmlNodeObject;
 use crate::avm1::object::xml_object::XmlObject;
 use crate::avm1::{Activation, Attribute, Error, ScriptObject, SoundObject, StageObject, Value};
 use crate::bitmap::bitmap_data::BitmapDataWrapper;
@@ -38,7 +37,6 @@ pub mod sound_object;
 pub mod stage_object;
 pub mod super_object;
 pub mod value_object;
-pub mod xml_node_object;
 pub mod xml_object;
 
 #[derive(Clone, Collect)]
@@ -60,6 +58,7 @@ pub enum NativeObject<'gc> {
     TextFormat(GcCell<'gc, TextFormat>),
     NetStream(NetStream<'gc>),
     BitmapData(BitmapDataWrapper<'gc>),
+    XmlNode(XmlNode<'gc>),
 }
 
 /// Represents an object that can be directly interacted with by the AVM
@@ -75,7 +74,6 @@ pub enum NativeObject<'gc> {
         StageObject(StageObject<'gc>),
         SuperObject(SuperObject<'gc>),
         XmlObject(XmlObject<'gc>),
-        XmlNodeObject(XmlNodeObject<'gc>),
         ValueObject(ValueObject<'gc>),
         FunctionObject(FunctionObject<'gc>),
         SharedObject(SharedObject<'gc>),
@@ -587,7 +585,11 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
 
     /// Get the underlying XML node for this object, if it exists.
     fn as_xml_node(&self) -> Option<XmlNode<'gc>> {
-        None
+        if let NativeObject::XmlNode(xml_node) = self.native() {
+            Some(xml_node)
+        } else {
+            None
+        }
     }
 
     /// Get the underlying `ValueObject`, if it exists.
