@@ -1,0 +1,82 @@
+use crate::avm2::object::script_object::ScriptObjectData;
+use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
+use crate::avm2::value::Value;
+use crate::avm2::{Activation, Error};
+use crate::socket::SocketHandle;
+use gc_arena::barrier::unlock;
+use gc_arena::{lock::RefLock, Collect, Gc};
+use gc_arena::{GcWeak, Mutation};
+use std::cell::{Cell, Ref, RefMut};
+use std::fmt;
+
+/// A class instance allocator that allocates ShaderData objects.
+pub fn socket_allocator<'gc>(
+    class: ClassObject<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+) -> Result<Object<'gc>, Error<'gc>> {
+    let base = ScriptObjectData::new(class).into();
+
+    Ok(SocketObject(Gc::new(
+        activation.context.gc(),
+        SocketObjectData {
+            base,
+            handle: Cell::new(None),
+        },
+    ))
+    .into())
+}
+
+#[derive(Clone, Collect, Copy)]
+#[collect(no_drop)]
+pub struct SocketObject<'gc>(pub Gc<'gc, SocketObjectData<'gc>>);
+
+#[derive(Clone, Collect, Copy, Debug)]
+#[collect(no_drop)]
+pub struct SocketObjectWeak<'gc>(pub GcWeak<'gc, SocketObjectData<'gc>>);
+
+impl<'gc> TObject<'gc> for SocketObject<'gc> {
+    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
+        self.0.base.borrow()
+    }
+
+    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
+        unlock!(Gc::write(mc, self.0), SocketObjectData, base).borrow_mut()
+    }
+
+    fn as_ptr(&self) -> *const ObjectPtr {
+        Gc::as_ptr(self.0) as *const ObjectPtr
+    }
+
+    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
+        Ok(Value::Object(Object::from(*self)))
+    }
+
+    fn as_socket(&self) -> Option<SocketObject<'gc>> {
+        Some(*self)
+    }
+}
+
+impl<'gc> SocketObject<'gc> {
+    pub fn get_handle(&self) -> Option<SocketHandle> {
+        self.0.handle.get()
+    }
+
+    pub fn set_handle(&self, handle: SocketHandle) -> Option<SocketHandle> {
+        self.0.handle.replace(Some(handle))
+    }
+}
+
+#[derive(Collect)]
+#[collect(no_drop)]
+pub struct SocketObjectData<'gc> {
+    /// Base script object
+    base: RefLock<ScriptObjectData<'gc>>,
+    #[collect(require_static)]
+    handle: Cell<Option<SocketHandle>>,
+}
+
+impl fmt::Debug for SocketObject<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "SocketObject")
+    }
+}
