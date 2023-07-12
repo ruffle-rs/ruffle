@@ -190,6 +190,21 @@ package flash.geom {
 			return new Vector3D(x, y, z, w);
 		}
 
+		public function transformVectors(vin:Vector.<Number>, vout:Vector.<Number>):void {
+			if (vin == null) {
+				throw new TypeError("Error #2007: Parameter vin must be non-null.", 2007);
+}
+			if (vout == null) {
+				throw new TypeError("Error #2007: Parameter vout must be non-null.", 2007);
+			}
+
+			var result3D:Vector3D;
+			for (var i = 0; i < Math.floor(vin.length / 3) * 3; i += 3) {
+				result3D = transformVector(new Vector3D(vin[i], vin[i + 1], vin[i + 2]));
+				vout.push(result3D.x, result3D.y, result3D.z);
+			}
+		}
+
 		public function transpose():void {
 			// Make a copy
 			var oRawData = this._rawData.concat();
