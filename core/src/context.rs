@@ -20,6 +20,7 @@ use crate::library::Library;
 use crate::loader::LoadManager;
 use crate::player::Player;
 use crate::prelude::*;
+use crate::socket::Sockets;
 use crate::streams::StreamManager;
 use crate::string::AvmStringInterner;
 use crate::stub::StubCollection;
@@ -224,6 +225,8 @@ pub struct UpdateContext<'a, 'gc> {
     /// Manager of in-progress media streams.
     pub stream_manager: &'a mut StreamManager<'gc>,
 
+    pub sockets: &'a mut Sockets<'gc>,
+
     /// Dynamic root for allowing handles to GC objects to exist outside of the GC.
     pub dynamic_root: gc_arena::DynamicRootSet<'gc>,
 }
@@ -390,6 +393,7 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
             actions_since_timeout_check: self.actions_since_timeout_check,
             frame_phase: self.frame_phase,
             stream_manager: self.stream_manager,
+            sockets: self.sockets,
             dynamic_root: self.dynamic_root,
         }
     }

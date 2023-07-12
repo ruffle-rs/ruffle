@@ -40,6 +40,7 @@ use crate::limits::ExecutionLimit;
 use crate::loader::{LoadBehavior, LoadManager};
 use crate::locale::get_current_date_time;
 use crate::prelude::*;
+use crate::socket::Sockets;
 use crate::streams::StreamManager;
 use crate::string::{AvmString, AvmStringInterner};
 use crate::stub::StubCollection;
@@ -160,6 +161,8 @@ struct GcRootData<'gc> {
     /// List of actively playing streams to decode.
     stream_manager: StreamManager<'gc>,
 
+    sockets: Sockets<'gc>,
+
     /// Dynamic root for allowing handles to GC objects to exist outside of the GC.
     dynamic_root: DynamicRootSet<'gc>,
 }
@@ -187,6 +190,7 @@ impl<'gc> GcRootData<'gc> {
         &mut ExternalInterface<'gc>,
         &mut AudioManager<'gc>,
         &mut StreamManager<'gc>,
+        &mut Sockets<'gc>,
         DynamicRootSet<'gc>,
     ) {
         (
@@ -206,6 +210,7 @@ impl<'gc> GcRootData<'gc> {
             &mut self.external_interface,
             &mut self.audio_manager,
             &mut self.stream_manager,
+            &mut self.sockets,
             self.dynamic_root,
         )
     }
@@ -545,6 +550,7 @@ impl Player {
                     * 1000.0
             });
 
+            self.update_sockets();
             self.update_timers(dt);
             self.update(|context| {
                 StreamManager::tick(context, dt);
@@ -1829,6 +1835,7 @@ impl Player {
                 external_interface,
                 audio_manager,
                 stream_manager,
+                sockets,
                 dynamic_root,
             ) = root_data.update_context_params();
 
@@ -1879,6 +1886,7 @@ impl Player {
                 frame_phase: &mut self.frame_phase,
                 stub_tracker: &mut self.stub_tracker,
                 stream_manager,
+                sockets,
                 dynamic_root,
             };
 
@@ -2007,6 +2015,13 @@ impl Player {
     pub fn update_timers(&mut self, dt: f64) {
         self.time_til_next_timer =
             self.mutate_with_update_context(|context| Timers::update_timers(context, dt));
+    }
+
+    /// Update connected Sockets.
+    pub fn update_sockets(&mut self) {
+        self.mutate_with_update_context(|context| {
+            Sockets::update_sockets(context);
+        })
     }
 
     /// Returns whether this player consumes mouse wheel events.
@@ -2341,6 +2356,7 @@ impl PlayerBuilder {
                     timers: Timers::new(),
                     unbound_text_fields: Vec::new(),
                     stream_manager: StreamManager::new(),
+                    sockets: Sockets::empty(),
                     dynamic_root,
                 },
             ),
