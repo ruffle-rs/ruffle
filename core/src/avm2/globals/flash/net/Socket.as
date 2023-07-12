@@ -22,9 +22,7 @@ package flash.net {
             }
         }
 
-        public function connect(host: String, port: int):void {
-            stub_method("flash.net.Socket", "connect");
-        }
+        public native function connect(host: String, port: int):void;
 
 
         public function get timeout():uint {
@@ -65,10 +63,7 @@ package flash.net {
             }
         }
 
-        public function get connected():Boolean {
-            stub_getter("flash.net.Socket", "connected");
-            return false;
-        }
+        public native function get connected():Boolean;
 
         public function get objectEncoding():uint {
             stub_getter("flash.net.Socket", "objectEncoding");
