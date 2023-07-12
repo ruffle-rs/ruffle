@@ -1,6 +1,7 @@
 //! Browser-related platform functions
 
 use crate::loader::Error;
+use crate::socket::SocketConnection;
 use crate::string::WStr;
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
@@ -238,6 +239,14 @@ pub trait NavigatorBackend {
     /// Changing http -> https for example. This function may alter any part of the
     /// URL (generally only if configured to do so by the user).
     fn pre_process_url(&self, url: Url) -> Url;
+
+    /// Handle any Socket connection request
+    ///
+    /// Returning `None` makes `Socket.connect()` returns `false`,
+    /// as if network access was disabled.
+    ///
+    /// See [SocketConnection] for more details about implementation.
+    fn connect_socket(&mut self, host: &str, port: u16) -> Option<Box<dyn SocketConnection>>;
 }
 
 #[cfg(not(target_family = "wasm"))]
@@ -366,6 +375,10 @@ impl NavigatorBackend for NullNavigatorBackend {
 
     fn pre_process_url(&self, url: Url) -> Url {
         url
+    }
+
+    fn connect_socket(&mut self, _host: &str, _port: u16) -> Option<Box<dyn SocketConnection>> {
+        None
     }
 }
 

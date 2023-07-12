@@ -37,6 +37,7 @@ mod locale;
 pub mod pixel_bender;
 mod player;
 mod prelude;
+pub mod socket;
 mod streams;
 pub mod string;
 pub mod tag_utils;
