@@ -12,6 +12,10 @@ use ruffle_core::backend::navigator::{
 };
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
+use ruffle_core::socket::SocketConnection;
+use std::collections::VecDeque;
+use std::io::{ErrorKind, Read, Write};
+use std::net::TcpStream;
 use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::mpsc::Sender;
@@ -183,7 +187,6 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                 let body = match std::fs::read(&path).or_else(|e| {
                     if cfg!(feature = "sandbox") {
                         use rfd::FileDialog;
-                        use std::io::ErrorKind;
 
                         if e.kind() == ErrorKind::PermissionDenied {
                             let attempt_sandbox_open = MessageDialog::new()
@@ -307,5 +310,93 @@ impl NavigatorBackend for ExternalNavigatorBackend {
             tracing::error!("Url::set_scheme failed on: {}", url);
         }
         url
+    }
+
+    fn connect_socket(&mut self, host: &str, port: u16) -> Option<Box<dyn SocketConnection>> {
+        // FIXME: Add connection permissions
+        Some(Box::new(TcpSocket::connect(host, port)))
+    }
+}
+
+struct TcpSocket {
+    stream: Option<TcpStream>,
+    pending_write: Vec<u8>,
+    pending_read: VecDeque<u8>,
+}
+
+impl TcpSocket {
+    fn connect(host: &str, port: u16) -> Self {
+        // FIXME: make connect asynchronous
+        Self {
+            stream: TcpStream::connect((host, port)).ok().and_then(|socket| {
+                if socket.set_nonblocking(true).is_ok() {
+                    Some(socket)
+                } else {
+                    None
+                }
+            }),
+            pending_read: Default::default(),
+            pending_write: Default::default(),
+        }
+    }
+}
+
+impl SocketConnection for TcpSocket {
+    fn is_connected(&self) -> Option<bool> {
+        Some(self.stream.is_some())
+    }
+
+    fn send(&mut self, buf: Vec<u8>) {
+        if self.stream.is_some() {
+            self.pending_write.extend(buf)
+        }
+    }
+
+    fn poll(&mut self) -> Option<Vec<u8>> {
+        if let Some(stream) = &mut self.stream {
+            if !self.pending_write.is_empty() {
+                match stream.write(&self.pending_write) {
+                    Err(e) if e.kind() == ErrorKind::WouldBlock => {} // just try later
+                    Err(_) | Ok(0) => {
+                        self.stream = None;
+                        return None;
+                    }
+                    Ok(written) => {
+                        let _ = self.pending_write.drain(..written);
+                    }
+                }
+            }
+
+            match process_next_message(&mut self.pending_read) {
+                Some(msg) => Some(msg),
+                None => {
+                    let mut buffer = [0; 2048];
+
+                    match stream.read(&mut buffer) {
+                        Err(e) if e.kind() == ErrorKind::WouldBlock => None, // just try later
+                        Err(_) | Ok(0) => {
+                            self.stream = None;
+                            None
+                        }
+                        Ok(read) => {
+                            self.pending_read.extend(buffer.into_iter().take(read));
+                            process_next_message(&mut self.pending_read)
+                        }
+                    }
+                }
+            }
+        } else {
+            None
+        }
+    }
+}
+
+fn process_next_message(pending_read: &mut VecDeque<u8>) -> Option<Vec<u8>> {
+    if let Some((index, _)) = pending_read.iter().enumerate().find(|(_, &b)| b == 0) {
+        let buffer = pending_read.drain(..index).collect::<Vec<_>>();
+        let _ = pending_read.pop_front(); // remove the separator
+        Some(buffer)
+    } else {
+        None
     }
 }
