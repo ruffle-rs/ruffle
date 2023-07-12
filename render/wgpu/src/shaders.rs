@@ -24,6 +24,7 @@ pub struct Shaders {
     pub color_matrix_filter: wgpu::ShaderModule,
     pub blur_filter: wgpu::ShaderModule,
     pub glow_filter: wgpu::ShaderModule,
+    pub bevel_filter: wgpu::ShaderModule,
 }
 
 impl Shaders {
@@ -95,6 +96,13 @@ impl Shaders {
             "filter/glow.wgsl",
             include_str!("../shaders/filter/glow.wgsl"),
         );
+        let bevel_filter = make_shader(
+            device,
+            &mut composer,
+            &shader_defs,
+            "filter/bevel.wgsl",
+            include_str!("../shaders/filter/bevel.wgsl"),
+        );
         let gradient_shader = make_shader(
             device,
             &mut composer,
@@ -126,6 +134,7 @@ impl Shaders {
             color_matrix_filter,
             blur_filter,
             glow_filter,
+            bevel_filter,
         }
     }
 }
