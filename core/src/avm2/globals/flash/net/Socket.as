@@ -9,6 +9,7 @@ package flash.net {
     import __ruffle__.stub_getter;
     import __ruffle__.stub_setter;
 
+    [Ruffle(InstanceAllocator)]
     public class Socket extends EventDispatcher implements IDataOutput, IDataInput {
         private var _timeout:uint;
 
