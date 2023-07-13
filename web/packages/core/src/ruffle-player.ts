@@ -139,6 +139,9 @@ export class RufflePlayer extends HTMLElement {
     // Allows the user to permanently disable the context menu.
     private contextMenuForceDisabled = false;
 
+    // Whether this device is a touch device.
+    // Set to true when a touch event is encountered.
+    private isTouch = false;
     // Whether this device sends contextmenu events.
     // Set to true when a contextmenu event is seen.
     private contextMenuSupported = false;
@@ -275,6 +278,7 @@ export class RufflePlayer extends HTMLElement {
             "context-menu-overlay"
         )!;
         this.contextMenuElement = this.shadow.getElementById("context-menu")!;
+        window.addEventListener("pointerdown", this.checkIfTouch.bind(this));
         this.addEventListener("contextmenu", this.showContextMenu.bind(this));
         this.container.addEventListener(
             "pointerdown",
@@ -917,6 +921,12 @@ export class RufflePlayer extends HTMLElement {
         document.body.removeChild(link);
         URL.revokeObjectURL(blobURL);
     }
+    
+    private checkIfTouch(event: PointerEvent): void {
+        if (event.pointerType === "touch" || event.pointerType === "pen") {
+            this.isTouch = true;
+        }
+    }
 
     private base64ToBlob(bytesBase64: string, mimeString: string): Blob {
         const byteString = atob(bytesBase64);
@@ -1183,7 +1193,7 @@ export class RufflePlayer extends HTMLElement {
         return this.shadow.activeElement === this.virtualKeyboard;
     }
 
-    private contextMenuItems(isTouch: boolean): Array<ContextMenuItem | null> {
+    private contextMenuItems(): Array<ContextMenuItem | null> {
         const CHECKMARK = String.fromCharCode(0x2713);
         const items: Array<ContextMenuItem | null> = [];
         const addSeparator = () => {
@@ -1273,7 +1283,7 @@ export class RufflePlayer extends HTMLElement {
         });
         // Give option to disable context menu when touch support is being used
         // to avoid a long press triggering the context menu. (#1972)
-        if (isTouch) {
+        if (this.isTouch) {
             addSeparator();
             items.push({
                 text: text("context-menu-hide"),
@@ -1353,15 +1363,11 @@ export class RufflePlayer extends HTMLElement {
             event.stopPropagation();
         }
 
-        const isTouch =
-            event instanceof PointerEvent &&
-            (event.pointerType === "touch" || event.pointerType === "pen");
-
         if (
             [false, ContextMenu.Off].includes(
                 this.loadedConfig?.contextMenu ?? ContextMenu.On
             ) ||
-            (isTouch &&
+            (this.isTouch &&
                 this.loadedConfig?.contextMenu ===
                     ContextMenu.RightClickOnly) ||
             this.contextMenuForceDisabled
@@ -1377,7 +1383,7 @@ export class RufflePlayer extends HTMLElement {
         }
 
         // Populate context menu items.
-        for (const item of this.contextMenuItems(isTouch)) {
+        for (const item of this.contextMenuItems()) {
             if (item === null) {
                 const menuSeparator = document.createElement("li");
                 menuSeparator.className = "menu_separator";
