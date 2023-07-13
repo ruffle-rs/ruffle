@@ -139,8 +139,7 @@ export class RufflePlayer extends HTMLElement {
     // Allows the user to permanently disable the context menu.
     private contextMenuForceDisabled = false;
 
-    // Whether this device is a touch device.
-    // Set to true when a touch event is encountered.
+    // Whether the most recent pointer event was from a touch (or pen).
     private isTouch = false;
     // Whether this device sends contextmenu events.
     // Set to true when a contextmenu event is seen.
@@ -921,11 +920,10 @@ export class RufflePlayer extends HTMLElement {
         document.body.removeChild(link);
         URL.revokeObjectURL(blobURL);
     }
-    
+
     private checkIfTouch(event: PointerEvent): void {
-        if (event.pointerType === "touch" || event.pointerType === "pen") {
-            this.isTouch = true;
-        }
+        this.isTouch =
+            event.pointerType === "touch" || event.pointerType === "pen";
     }
 
     private base64ToBlob(bytesBase64: string, mimeString: string): Blob {
