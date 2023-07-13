@@ -19,6 +19,12 @@ Out: 0,154,168,182,200,330,364,398,440,506,560,614,680,1525,1690,1855,2056,0,0,0
 Out: 0,154,154,330,506,1525,168,364,560,1690,182,398,614,1855,200,440,680,2056,0,0
 mat.transformVector(v):
 3857 4266 4675 5176
+mat.transformVectors(vecs, vecsOut):
+3857,4266,4675,6827,7542,8257,9797,10818,11839
+mat.transformVectors(null, vecsOut):
+TypeError: Error #2007: Parameter vin must be non-null.
+mat.transformVectors(vecs, null):
+TypeError: Error #2007: Parameter vout must be non-null.
 mat.deltaTransformVector(v):
 2332 2576 2820 3120
 Too short: 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1
