@@ -1,5 +1,5 @@
 use crate::{
-    avm2::{Activation, Avm2, EventObject, Object},
+    avm2::{Activation, Avm2, EventObject, Object, TObject},
     backend::navigator::NavigatorBackend,
     context::UpdateContext,
 };
@@ -217,7 +217,7 @@ impl<'gc> Sockets<'gc> {
                         EventObject::bare_default_event(&mut activation.context, "close");
                     Avm2::dispatch_event(&mut activation.context, close_evt, target);
                 }
-                SocketAction::Data(handle, _data) => {
+                SocketAction::Data(handle, data) => {
                     let target = activation
                         .context
                         .sockets
@@ -225,6 +225,9 @@ impl<'gc> Sockets<'gc> {
                         .get(handle)
                         .expect("only valid handles in SocketAction")
                         .target;
+
+                    let socket = target.as_socket().expect("only SocketObjects in handles");
+                    socket.read_buffer().extend(data);
 
                     let socket_data_evt =
                         EventObject::bare_default_event(&mut activation.context, "socketData");
