@@ -367,36 +367,18 @@ impl SocketConnection for TcpSocket {
                 }
             }
 
-            match process_next_message(&mut self.pending_read) {
-                Some(msg) => Some(msg),
-                None => {
-                    let mut buffer = [0; 2048];
+            let mut buffer = [0; 4096];
 
-                    match stream.read(&mut buffer) {
-                        Err(e) if e.kind() == ErrorKind::WouldBlock => None, // just try later
-                        Err(_) | Ok(0) => {
-                            self.stream = None;
-                            None
-                        }
-                        Ok(read) => {
-                            self.pending_read.extend(buffer.into_iter().take(read));
-                            process_next_message(&mut self.pending_read)
-                        }
-                    }
+            match stream.read(&mut buffer) {
+                Err(e) if e.kind() == ErrorKind::WouldBlock => return None, // just try later
+                Err(_) | Ok(0) => {
+                    self.stream = None;
+                    return None;
                 }
+                Ok(_read) => return Some(buffer.to_vec()),
             }
         } else {
             None
         }
-    }
-}
-
-fn process_next_message(pending_read: &mut VecDeque<u8>) -> Option<Vec<u8>> {
-    if let Some((index, _)) = pending_read.iter().enumerate().find(|(_, &b)| b == 0) {
-        let buffer = pending_read.drain(..index).collect::<Vec<_>>();
-        let _ = pending_read.pop_front(); // remove the separator
-        Some(buffer)
-    } else {
-        None
     }
 }
