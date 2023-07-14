@@ -55,6 +55,7 @@ impl Filter {
             Filter::GlowFilter(filter) => filter.scale(x, y),
             Filter::GradientBevelFilter(filter) => filter.scale(x, y),
             Filter::GradientGlowFilter(filter) => filter.scale(x, y),
+            Filter::DisplacementMapFilter(filter) => filter.scale(x, y),
             _ => {}
         }
     }
@@ -101,7 +102,7 @@ pub enum DisplacementMapFilterComponent {
     Red,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum DisplacementMapFilterMode {
     Clamp,
     Color,
@@ -119,6 +120,15 @@ pub struct DisplacementMapFilter {
     pub mode: DisplacementMapFilterMode,
     pub scale_x: f32,
     pub scale_y: f32,
+    pub viewscale_x: f32,
+    pub viewscale_y: f32,
+}
+
+impl DisplacementMapFilter {
+    pub fn scale(&mut self, x: f32, y: f32) {
+        self.viewscale_x *= x;
+        self.viewscale_y *= y;
+    }
 }
 
 impl Default for DisplacementMapFilter {
@@ -132,6 +142,8 @@ impl Default for DisplacementMapFilter {
             mode: DisplacementMapFilterMode::Wrap,
             scale_x: 0.0,
             scale_y: 0.0,
+            viewscale_x: 1.0,
+            viewscale_y: 1.0,
         }
     }
 }

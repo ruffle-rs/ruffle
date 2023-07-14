@@ -811,6 +811,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 | Filter::ColorMatrixFilter(_)
                 | Filter::ShaderFilter(_)
                 | Filter::BevelFilter(_)
+                | Filter::DisplacementMapFilter(_)
         )
     }
 

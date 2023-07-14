@@ -316,6 +316,8 @@ impl<'gc> DisplacementMapFilter<'gc> {
             mode: filter.mode.into(),
             scale_x: filter.scale_x,
             scale_y: filter.scale_y,
+            viewscale_x: 1.0,
+            viewscale_y: 1.0,
         }
     }
 }

@@ -1,6 +1,7 @@
 mod bevel;
 mod blur;
 mod color_matrix;
+mod displacement_map;
 mod drop_shadow;
 mod glow;
 mod shader;
@@ -13,6 +14,7 @@ use crate::descriptors::Descriptors;
 use crate::filters::bevel::BevelFilter;
 use crate::filters::blur::BlurFilter;
 use crate::filters::color_matrix::ColorMatrixFilter;
+use crate::filters::displacement_map::DisplacementMapFilter;
 use crate::filters::drop_shadow::DropShadowFilter;
 use crate::filters::glow::GlowFilter;
 use crate::filters::shader::ShaderFilter;
@@ -207,6 +209,7 @@ pub struct Filters {
     pub shader: ShaderFilter,
     pub glow: GlowFilter,
     pub bevel: BevelFilter,
+    pub displacement_map: DisplacementMapFilter,
 }
 
 impl Filters {
@@ -217,6 +220,7 @@ impl Filters {
             shader: ShaderFilter::new(),
             glow: GlowFilter::new(device),
             bevel: BevelFilter::new(device),
+            displacement_map: DisplacementMapFilter::new(device),
         }
     }
 
@@ -238,6 +242,9 @@ impl Filters {
                 self.bevel
                     .calculate_dest_rect(filter, source_rect, &self.blur)
             }
+            Filter::DisplacementMapFilter(filter) => self
+                .displacement_map
+                .calculate_dest_rect(filter, source_rect),
             _ => source_rect,
         }
     }
@@ -250,80 +257,85 @@ impl Filters {
         source: FilterSource,
         filter: Filter,
     ) -> CommandTarget {
-        let target = match filter {
-            Filter::ColorMatrixFilter(filter) => Some(descriptors.filters.color_matrix.apply(
-                descriptors,
-                texture_pool,
-                draw_encoder,
-                &source,
-                &filter,
-            )),
-            Filter::BlurFilter(filter) => descriptors.filters.blur.apply(
-                descriptors,
-                texture_pool,
-                draw_encoder,
-                &source,
-                &filter,
-            ),
-            Filter::ShaderFilter(shader) => Some(descriptors.filters.shader.apply(
-                descriptors,
-                texture_pool,
-                draw_encoder,
-                &source,
-                shader,
-            )),
-            Filter::GlowFilter(filter) => Some(descriptors.filters.glow.apply(
-                descriptors,
-                texture_pool,
-                draw_encoder,
-                &source,
-                &filter,
-                &self.blur,
-                (0.0, 0.0),
-            )),
-            Filter::DropShadowFilter(filter) => Some(DropShadowFilter::apply(
-                descriptors,
-                texture_pool,
-                draw_encoder,
-                &source,
-                &filter,
-                &self.blur,
-                &self.glow,
-            )),
-            Filter::BevelFilter(filter) => Some(descriptors.filters.bevel.apply(
-                descriptors,
-                texture_pool,
-                draw_encoder,
-                &source,
-                &filter,
-                &self.blur,
-            )),
-            filter => {
-                static WARNED_FILTERS: OnceLock<Mutex<HashSet<&'static str>>> = OnceLock::new();
-                let name = match filter {
-                    Filter::GradientGlowFilter(_) => "GradientGlowFilter",
-                    Filter::GradientBevelFilter(_) => "GradientBevelFilter",
-                    Filter::ConvolutionFilter(_) => "ConvolutionFilter",
-                    Filter::DisplacementMapFilter(_) => "DisplacementMapFilter",
-                    Filter::ColorMatrixFilter(_)
-                    | Filter::BlurFilter(_)
-                    | Filter::GlowFilter(_)
-                    | Filter::DropShadowFilter(_)
-                    | Filter::BevelFilter(_)
-                    | Filter::ShaderFilter(_) => unreachable!(),
-                };
-                // Only warn once per filter type
-                if WARNED_FILTERS
-                    .get_or_init(Default::default)
-                    .lock()
-                    .unwrap()
-                    .insert(name)
-                {
-                    tracing::warn!("Unsupported filter {filter:?}");
+        let target =
+            match filter {
+                Filter::ColorMatrixFilter(filter) => Some(descriptors.filters.color_matrix.apply(
+                    descriptors,
+                    texture_pool,
+                    draw_encoder,
+                    &source,
+                    &filter,
+                )),
+                Filter::BlurFilter(filter) => descriptors.filters.blur.apply(
+                    descriptors,
+                    texture_pool,
+                    draw_encoder,
+                    &source,
+                    &filter,
+                ),
+                Filter::ShaderFilter(shader) => Some(descriptors.filters.shader.apply(
+                    descriptors,
+                    texture_pool,
+                    draw_encoder,
+                    &source,
+                    shader,
+                )),
+                Filter::GlowFilter(filter) => Some(descriptors.filters.glow.apply(
+                    descriptors,
+                    texture_pool,
+                    draw_encoder,
+                    &source,
+                    &filter,
+                    &self.blur,
+                    (0.0, 0.0),
+                )),
+                Filter::DropShadowFilter(filter) => Some(DropShadowFilter::apply(
+                    descriptors,
+                    texture_pool,
+                    draw_encoder,
+                    &source,
+                    &filter,
+                    &self.blur,
+                    &self.glow,
+                )),
+                Filter::BevelFilter(filter) => Some(descriptors.filters.bevel.apply(
+                    descriptors,
+                    texture_pool,
+                    draw_encoder,
+                    &source,
+                    &filter,
+                    &self.blur,
+                )),
+                Filter::DisplacementMapFilter(filter) => descriptors
+                    .filters
+                    .displacement_map
+                    .apply(descriptors, texture_pool, draw_encoder, &source, &filter),
+                filter => {
+                    static WARNED_FILTERS: OnceLock<Mutex<HashSet<&'static str>>> = OnceLock::new();
+                    let name = match filter {
+                        Filter::GradientGlowFilter(_) => "GradientGlowFilter",
+                        Filter::GradientBevelFilter(_) => "GradientBevelFilter",
+                        Filter::ConvolutionFilter(_) => "ConvolutionFilter",
+                        Filter::ColorMatrixFilter(_)
+                        | Filter::BlurFilter(_)
+                        | Filter::GlowFilter(_)
+                        | Filter::DropShadowFilter(_)
+                        | Filter::BevelFilter(_)
+                        | Filter::DisplacementMapFilter(_)
+                        | Filter::ShaderFilter(_) => unreachable!(),
+                    };
+                    // Only warn once per filter type
+                    if WARNED_FILTERS
+                        .get_or_init(Default::default)
+                        .lock()
+                        .unwrap()
+                        .insert(name)
+                    {
+                        tracing::warn!("Unsupported filter {filter:?}");
+                    }
+                    None
                 }
-                None
-            }
-        };
+            };
 
         let target = target.unwrap_or_else(|| {
             // Apply a default color matrix - it's essentially a blit

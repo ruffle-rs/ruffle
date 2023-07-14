@@ -507,6 +507,8 @@ fn avm2_to_displacement_map_filter<'gc>(
         mode,
         scale_x: scale_x as f32,
         scale_y: scale_y as f32,
+        viewscale_x: 1.0,
+        viewscale_y: 1.0,
     }))
 }
 
