@@ -1,0 +1,14 @@
+root: _level0
+_root.foo: foo1
+_root.real: _level0.real
+_root.real.foo: foo2
+get(root.real.foo): foo2
+get(root.real/foo): undefined
+get(root.real:foo): foo2
+_root.empty: _level0
+_root.empty.foo: foo1
+get(root.empty.foo): foo1
+get(root.empty/foo): undefined
+get(root.empty:foo): foo1
+_root.nothere: undefined
+_root.nothere.foo: undefined

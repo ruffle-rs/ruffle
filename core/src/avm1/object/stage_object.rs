@@ -193,13 +193,14 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         &self,
         name: impl Into<AvmString<'gc>>,
         activation: &mut Activation<'_, 'gc>,
+        is_slash_path: bool,
     ) -> Option<Value<'gc>> {
         let name = name.into();
         let obj = self.0.read();
 
         // Property search order for DisplayObjects:
         // 1) Actual properties on the underlying object
-        if let Some(value) = obj.base.get_local_stored(name, activation) {
+        if let Some(value) = obj.base.get_local_stored(name, activation, is_slash_path) {
             return Some(value);
         }
 
@@ -217,7 +218,15 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             .as_container()
             .and_then(|o| o.child_by_name(&name, activation.is_case_sensitive()))
         {
-            return Some(child.object());
+            return if is_slash_path {
+                Some(child.object())
+            // If an object doesn't have an object representation, e.g. Graphic, then trying to access it
+            // Returns the parent instead
+            } else if let crate::display_object::DisplayObject::Graphic(_) = child {
+                child.parent().map(|p| p.object())
+            } else {
+                Some(child.object())
+            };
         }
 
         // 4) Display object properties such as `_x`, `_y` (never case sensitive)
