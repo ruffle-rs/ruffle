@@ -12,11 +12,11 @@ use crate::avm1::globals::drop_shadow_filter::DropShadowFilter;
 use crate::avm1::globals::glow_filter::GlowFilter;
 use crate::avm1::globals::gradient_filter::GradientFilter;
 use crate::avm1::globals::transform::TransformObject;
+use crate::avm1::globals::xml::Xml;
 use crate::avm1::object::array_object::ArrayObject;
 use crate::avm1::object::shared_object::SharedObject;
 use crate::avm1::object::super_object::SuperObject;
 use crate::avm1::object::value_object::ValueObject;
-use crate::avm1::object::xml_object::XmlObject;
 use crate::avm1::{Activation, Attribute, Error, ScriptObject, SoundObject, StageObject, Value};
 use crate::bitmap::bitmap_data::BitmapDataWrapper;
 use crate::display_object::DisplayObject;
@@ -37,7 +37,6 @@ pub mod sound_object;
 pub mod stage_object;
 pub mod super_object;
 pub mod value_object;
-pub mod xml_object;
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
@@ -58,6 +57,7 @@ pub enum NativeObject<'gc> {
     TextFormat(GcCell<'gc, TextFormat>),
     NetStream(NetStream<'gc>),
     BitmapData(BitmapDataWrapper<'gc>),
+    Xml(Xml<'gc>),
     XmlNode(XmlNode<'gc>),
 }
 
@@ -73,7 +73,6 @@ pub enum NativeObject<'gc> {
         SoundObject(SoundObject<'gc>),
         StageObject(StageObject<'gc>),
         SuperObject(SuperObject<'gc>),
-        XmlObject(XmlObject<'gc>),
         ValueObject(ValueObject<'gc>),
         FunctionObject(FunctionObject<'gc>),
         SharedObject(SharedObject<'gc>),
@@ -578,17 +577,12 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
         None
     }
 
-    /// Get the underlying XML document for this object, if it exists.
-    fn as_xml(&self) -> Option<XmlObject<'gc>> {
-        None
-    }
-
     /// Get the underlying XML node for this object, if it exists.
     fn as_xml_node(&self) -> Option<XmlNode<'gc>> {
-        if let NativeObject::XmlNode(xml_node) = self.native() {
-            Some(xml_node)
-        } else {
-            None
+        match self.native() {
+            NativeObject::Xml(xml) => Some(xml.root()),
+            NativeObject::XmlNode(xml_node) => Some(xml_node),
+            _ => None,
         }
     }
 
