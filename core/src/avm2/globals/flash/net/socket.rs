@@ -1,5 +1,5 @@
 use crate::avm2::bytearray::Endian;
-use crate::avm2::error::{io_error, make_error_2008};
+use crate::avm2::error::{io_error, make_error_2008, security_error};
 pub use crate::avm2::object::socket_allocator;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Object, TObject, Value};
@@ -16,7 +16,10 @@ pub fn connect<'gc>(
     };
 
     let host = args.get_string(activation, 0)?;
-    let port = args.get_i32(activation, 1)? as u16;
+    let port = args.get_u32(activation, 1)?;
+    let port: u16 = port
+        .try_into()
+        .map_err(|_| invalid_port_number(activation))?;
 
     let UpdateContext {
         sockets, navigator, ..
@@ -44,7 +47,7 @@ pub fn close<'gc>(
         // We throw an IOError when socket is not open.
         let handle = socket
             .get_handle()
-            .ok_or(Error::AvmError(io_error(activation, "TODO", 0)?))?;
+            .ok_or(invalid_socket_error(activation))?;
 
         let UpdateContext { sockets, .. } = &mut activation.context;
 
@@ -93,7 +96,7 @@ pub fn set_endian<'gc>(
         } else if &endian == b"littleEndian" {
             socket.set_endian(Endian::Little);
         } else {
-            return Err(make_error_2008(activation, "value"));
+            return Err(make_error_2008(activation, "endian"));
         }
     }
 
@@ -128,10 +131,11 @@ pub fn flush<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(socket) = this.as_socket() {
+        let handle = socket
+            .get_handle()
+            .ok_or(invalid_socket_error(activation))?;
         let UpdateContext { sockets, .. } = &mut activation.context;
 
-        // FIXME: Throw correct IoError
-        let handle = socket.get_handle().unwrap();
         let data = socket.drain_write_buf();
 
         sockets.send(handle, data)
@@ -260,7 +264,7 @@ pub fn write_byte<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(socket) = this.as_socket() {
-        let byte = args.get_i32(activation, 0)?;
+        let byte = args.get_u32(activation, 0)?;
         socket.write_bytes(&[byte as u8]);
     }
 
@@ -279,7 +283,7 @@ pub fn write_bytes<'gc>(
 
         let ba_read = bytearray
             .as_bytearray()
-            .ok_or("ArgumentError: Parameter must be a bytearray")?;
+            .expect("Parameter must be a bytearray!");
 
         let to_write = ba_read
             .read_at(
@@ -362,4 +366,26 @@ pub fn write_unsigned_int<'gc>(
     }
 
     Ok(Value::Undefined)
+}
+
+fn invalid_socket_error<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    match io_error(
+        activation,
+        "Error #2002: Operation attempted on invalid socket.",
+        2002,
+    ) {
+        Ok(err) => Error::AvmError(err),
+        Err(e) => e,
+    }
+}
+
+fn invalid_port_number<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    match security_error(
+        activation,
+        "Error #2003: Invalid socket port number specified.",
+        2003,
+    ) {
+        Ok(err) => Error::AvmError(err),
+        Err(e) => e,
+    }
 }

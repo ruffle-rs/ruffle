@@ -226,12 +226,29 @@ impl<'gc> Sockets<'gc> {
                         .expect("only valid handles in SocketAction")
                         .target;
 
+                    let bytes_loaded = data.len();
+
                     let socket = target.as_socket().expect("only SocketObjects in handles");
                     socket.read_buffer().extend(data);
 
-                    let socket_data_evt =
-                        EventObject::bare_default_event(&mut activation.context, "socketData");
-                    Avm2::dispatch_event(&mut activation.context, socket_data_evt, target);
+                    let progress_evt = activation
+                        .avm2()
+                        .classes()
+                        .progressevent
+                        .construct(
+                            &mut activation,
+                            &[
+                                "socketData".into(),
+                                false.into(),
+                                false.into(),
+                                bytes_loaded.into(),
+                                //NOTE: bytesTotal is not used by socketData event.
+                                0.into(),
+                            ],
+                        )
+                        .expect("ProgressEvent should be constructed");
+
+                    Avm2::dispatch_event(&mut activation.context, progress_evt, target);
                 }
             };
         }
