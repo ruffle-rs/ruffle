@@ -13,8 +13,6 @@ package flash.net {
     public class Socket extends EventDispatcher implements IDataOutput, IDataInput {
         private var _timeout:uint;
 
-        private var _endian:String = Endian.BIG_ENDIAN;
-
         public function Socket(host:String = null, port:int = 0) {
             this._timeout = 20000;
             if (host != null) {
@@ -51,17 +49,8 @@ package flash.net {
             return 0;
         }
 
-        public function get endian():String {
-            return this._endian;
-        }
-
-        public function set endian(value:String):void {
-            if (value === Endian.BIG_ENDIAN || value === Endian.LITTLE_ENDIAN) {
-                this._endian = value;
-            } else {
-                throw new ArgumentError("Error #2008: Parameter endian must be one of the accepted values.", 2008);
-            }
-        }
+        public native function get endian():String;
+        public native function set endian(value:String):void;
 
         public native function get connected():Boolean;
 

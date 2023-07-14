@@ -1,8 +1,8 @@
+use crate::avm2::bytearray::Endian;
+use crate::avm2::error::make_error_2008;
 pub use crate::avm2::object::socket_allocator;
-use crate::{
-    avm2::{Activation, Error, Object, TObject, Value},
-    context::UpdateContext,
-};
+use crate::avm2::{Activation, Error, Object, TObject, Value};
+use crate::context::UpdateContext;
 
 pub fn connect<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -40,6 +40,43 @@ pub fn connect<'gc>(
     };
 
     // FIXME: Are we supposed to throw and IOError when a connection fails?
+
+    Ok(Value::Undefined)
+}
+
+pub fn get_endian<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(socket) = this.as_socket() {
+        return Ok(match socket.endian() {
+            Endian::Big => "bigEndian".into(),
+            Endian::Little => "littleEndian".into(),
+        });
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn set_endian<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(socket) = this.as_socket() {
+        let endian = args
+            .get(0)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_string(activation)?;
+        if &endian == b"bigEndian" {
+            socket.set_endian(Endian::Big);
+        } else if &endian == b"littleEndian" {
+            socket.set_endian(Endian::Little);
+        } else {
+            return Err(make_error_2008(activation, "value"));
+        }
+    }
 
     Ok(Value::Undefined)
 }
