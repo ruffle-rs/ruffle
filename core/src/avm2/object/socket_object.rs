@@ -1,3 +1,4 @@
+use crate::avm2::bytearray::Endian;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
@@ -20,6 +21,8 @@ pub fn socket_allocator<'gc>(
         activation.context.gc(),
         SocketObjectData {
             base,
+            // Default endianness is Big.
+            endian: Cell::new(Endian::Big),
             handle: Cell::new(None),
         },
     ))
@@ -57,6 +60,14 @@ impl<'gc> TObject<'gc> for SocketObject<'gc> {
 }
 
 impl<'gc> SocketObject<'gc> {
+    pub fn endian(&self) -> Endian {
+        self.0.endian.get()
+    }
+
+    pub fn set_endian(&self, endian: Endian) {
+        self.0.endian.set(endian)
+    }
+
     pub fn get_handle(&self) -> Option<SocketHandle> {
         self.0.handle.get()
     }
@@ -73,6 +84,7 @@ pub struct SocketObjectData<'gc> {
     base: RefLock<ScriptObjectData<'gc>>,
     #[collect(require_static)]
     handle: Cell<Option<SocketHandle>>,
+    endian: Cell<Endian>,
 }
 
 impl fmt::Debug for SocketObject<'_> {
