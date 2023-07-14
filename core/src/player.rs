@@ -1288,7 +1288,7 @@ impl Player {
                         if let Some(state) = pressed.as_displayobject().state() {
                             new_down_object.set_state(context, state);
                         }
-                        
+
                         context.mouse_down_object = new_down_object.as_interactive();
                     }
                 }
