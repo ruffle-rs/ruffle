@@ -1,6 +1,7 @@
 use crate::avm2::bytearray::Endian;
 use crate::avm2::error::{io_error, make_error_2008};
 pub use crate::avm2::object::socket_allocator;
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Object, TObject, Value};
 use crate::context::UpdateContext;
 
@@ -14,18 +15,8 @@ pub fn connect<'gc>(
         None => return Ok(Value::Undefined),
     };
 
-    let host = match args.get(0) {
-        Some(host) => host,
-        // FIXME: What error should we use here?
-        None => todo!(),
-    }
-    .coerce_to_string(activation)?;
-
-    // FIXME: How do you get u16? there is no coerce_to_u16 method.
-    let port = args
-        .get(1)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_u32(activation)? as u16;
+    let host = args.get_string(activation, 0)?;
+    let port = args.get_i32(activation, 1)? as u16;
 
     let UpdateContext {
         sockets, navigator, ..
@@ -96,10 +87,7 @@ pub fn set_endian<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(socket) = this.as_socket() {
-        let endian = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_string(activation)?;
+        let endian = args.get_string(activation, 0)?;
         if &endian == b"bigEndian" {
             socket.set_endian(Endian::Big);
         } else if &endian == b"littleEndian" {
@@ -272,11 +260,7 @@ pub fn write_byte<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(socket) = this.as_socket() {
-        let byte = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_i32(activation)?;
+        let byte = args.get_i32(activation, 0)?;
         socket.write_bytes(&[byte as u8]);
     }
 
@@ -289,18 +273,9 @@ pub fn write_bytes<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(socket) = this.as_socket() {
-        let bytearray = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_object(activation)?;
-        let offset = args
-            .get(1)
-            .unwrap_or(&Value::Integer(0))
-            .coerce_to_u32(activation)? as usize;
-        let length = args
-            .get(2)
-            .unwrap_or(&Value::Integer(0))
-            .coerce_to_u32(activation)? as usize;
+        let bytearray = args.get_object(activation, 0, "bytes")?;
+        let offset = args.get_u32(activation, 1)? as usize;
+        let length = args.get_u32(activation, 2)? as usize;
 
         let ba_read = bytearray
             .as_bytearray()
@@ -330,10 +305,7 @@ pub fn write_double<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(socket) = this.as_socket() {
-        let num = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_number(activation)?;
+        let num = args.get_f64(activation, 0)?;
         socket.write_double(num);
     }
 
@@ -346,10 +318,7 @@ pub fn write_float<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(socket) = this.as_socket() {
-        let num = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_number(activation)?;
+        let num = args.get_f64(activation, 0)?;
         socket.write_float(num as f32);
     }
 
@@ -362,10 +331,7 @@ pub fn write_int<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(socket) = this.as_socket() {
-        let num = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_i32(activation)?;
+        let num = args.get_i32(activation, 0)?;
         socket.write_int(num);
     }
 
@@ -378,10 +344,7 @@ pub fn write_short<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(socket) = this.as_socket() {
-        let num = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_i32(activation)?;
+        let num = args.get_i32(activation, 0)?;
         socket.write_short(num as i16);
     }
 
@@ -394,10 +357,7 @@ pub fn write_unsigned_int<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(socket) = this.as_socket() {
-        let num = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_u32(activation)?;
+        let num = args.get_u32(activation, 0)?;
         socket.write_unsigned_int(num);
     }
 
