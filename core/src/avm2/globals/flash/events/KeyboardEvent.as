@@ -87,5 +87,7 @@ package flash.events
         {
             return new KeyboardEvent(this.type,this.bubbles,this.cancelable);
         }
+
+        public native function updateAfterEvent():void;
     }
 }

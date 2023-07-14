@@ -9,7 +9,7 @@ use crate::avm2::Multiname;
 use crate::avm2::{Error, QName};
 use crate::string::AvmString;
 use fnv::FnvHashMap;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use std::cell::{Ref, RefMut};
 use std::collections::hash_map::Entry;
 use std::fmt::Debug;
@@ -21,13 +21,17 @@ pub fn scriptobject_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
-    Ok(ScriptObject(GcCell::allocate(activation.context.gc_context, base)).into())
+    Ok(ScriptObject(GcCell::new(activation.context.gc_context, base)).into())
 }
 
 /// Default implementation of `avm2::Object`.
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct ScriptObject<'gc>(GcCell<'gc, ScriptObjectData<'gc>>);
+pub struct ScriptObject<'gc>(pub GcCell<'gc, ScriptObjectData<'gc>>);
+
+#[derive(Clone, Collect, Copy, Debug)]
+#[collect(no_drop)]
+pub struct ScriptObjectWeak<'gc>(pub GcWeakCell<'gc, ScriptObjectData<'gc>>);
 
 /// Base data common to all `TObject` implementations.
 ///
@@ -97,11 +101,7 @@ impl<'gc> ScriptObject<'gc> {
         class: Option<ClassObject<'gc>>,
         proto: Option<Object<'gc>>,
     ) -> Object<'gc> {
-        ScriptObject(GcCell::allocate(
-            mc,
-            ScriptObjectData::custom_new(proto, class),
-        ))
-        .into()
+        ScriptObject(GcCell::new(mc, ScriptObjectData::custom_new(proto, class))).into()
     }
 
     /// A special case for `newcatch` implementation. Basically a variable (q)name
@@ -114,7 +114,7 @@ impl<'gc> ScriptObject<'gc> {
         base.set_vtable(vt);
         base.install_instance_slots();
 
-        ScriptObject(GcCell::allocate(mc, base)).into()
+        ScriptObject(GcCell::new(mc, base)).into()
     }
 }
 
@@ -156,7 +156,8 @@ impl<'gc> ScriptObjectData<'gc> {
             ));
         }
 
-        let Some(local_name) = multiname.local_name() else { // when can this happen?
+        let Some(local_name) = multiname.local_name() else {
+            // when can this happen?
             return Err(error::make_reference_error(
                 activation,
                 error::ReferenceErrorCode::InvalidRead,

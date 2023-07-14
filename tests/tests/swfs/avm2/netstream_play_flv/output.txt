@@ -1,0 +1,16 @@
+netStatus
+code: NetStream.Play.Start
+level: status
+netStatus
+netStatus
+code: NetStream.Buffer.Full
+level: status
+netStatus
+code: NetStream.Buffer.Flush
+level: status
+netStatus
+code: NetStream.Play.Stop
+level: status
+netStatus
+code: NetStream.Buffer.Empty
+level: status

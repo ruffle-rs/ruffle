@@ -7,7 +7,8 @@ use crate::avm1::{Activation, Error, Object, ScriptObject, TObject, Value};
 use crate::context::GcContext;
 use crate::string::{AvmString, WStr};
 use gc_arena::{Collect, GcCell, MutationContext};
-use swf::Color;
+use std::ops::Deref;
+use swf::{BevelFilterFlags, Color, Fixed16, Fixed8, GradientFilterFlags};
 
 #[derive(Copy, Clone, Debug, Collect)]
 #[collect(no_drop)]
@@ -39,6 +40,48 @@ impl From<BevelFilterType> for &'static WStr {
     }
 }
 
+impl BevelFilterType {
+    pub fn as_bevel_flags(&self) -> BevelFilterFlags {
+        match self {
+            BevelFilterType::Inner => BevelFilterFlags::INNER_SHADOW,
+            BevelFilterType::Outer => BevelFilterFlags::empty(),
+            BevelFilterType::Full => BevelFilterFlags::ON_TOP,
+        }
+    }
+
+    pub fn as_gradient_flags(&self) -> GradientFilterFlags {
+        match self {
+            BevelFilterType::Inner => GradientFilterFlags::INNER_SHADOW,
+            BevelFilterType::Outer => GradientFilterFlags::empty(),
+            BevelFilterType::Full => GradientFilterFlags::ON_TOP,
+        }
+    }
+}
+
+impl From<BevelFilterFlags> for BevelFilterType {
+    fn from(value: BevelFilterFlags) -> Self {
+        if value.contains(BevelFilterFlags::ON_TOP) {
+            BevelFilterType::Full
+        } else if value.contains(BevelFilterFlags::INNER_SHADOW) {
+            BevelFilterType::Inner
+        } else {
+            BevelFilterType::Outer
+        }
+    }
+}
+
+impl From<GradientFilterFlags> for BevelFilterType {
+    fn from(value: GradientFilterFlags) -> Self {
+        if value.contains(GradientFilterFlags::ON_TOP) {
+            BevelFilterType::Full
+        } else if value.contains(GradientFilterFlags::INNER_SHADOW) {
+            BevelFilterType::Inner
+        } else {
+            BevelFilterType::Outer
+        }
+    }
+}
+
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
 struct BevelFilterData {
@@ -54,6 +97,42 @@ struct BevelFilterData {
     blur_x: f64,
     blur_y: f64,
     type_: BevelFilterType,
+}
+
+impl From<&BevelFilterData> for swf::BevelFilter {
+    fn from(filter: &BevelFilterData) -> swf::BevelFilter {
+        let mut flags = BevelFilterFlags::COMPOSITE_SOURCE;
+        flags |= BevelFilterFlags::from_passes(filter.quality as u8);
+        flags |= filter.type_.as_bevel_flags();
+        flags.set(BevelFilterFlags::KNOCKOUT, filter.knockout);
+        swf::BevelFilter {
+            shadow_color: filter.shadow,
+            highlight_color: filter.highlight,
+            blur_x: Fixed16::from_f64(filter.blur_x),
+            blur_y: Fixed16::from_f64(filter.blur_y),
+            angle: Fixed16::from_f64(filter.angle),
+            distance: Fixed16::from_f64(filter.distance),
+            strength: Fixed8::from_f64(filter.strength()),
+            flags,
+        }
+    }
+}
+
+impl From<swf::BevelFilter> for BevelFilterData {
+    fn from(filter: swf::BevelFilter) -> BevelFilterData {
+        Self {
+            distance: filter.distance.into(),
+            angle: filter.angle.into(),
+            highlight: filter.highlight_color,
+            shadow: filter.shadow_color,
+            quality: filter.num_passes().into(),
+            strength: (filter.strength.to_f64() * 256.0) as u16,
+            knockout: filter.is_knockout(),
+            blur_x: filter.blur_x.into(),
+            blur_y: filter.blur_y.into(),
+            type_: filter.flags.into(),
+        }
+    }
 }
 
 impl Default for BevelFilterData {
@@ -74,6 +153,16 @@ impl Default for BevelFilterData {
     }
 }
 
+impl BevelFilterData {
+    pub fn strength(&self) -> f64 {
+        f64::from(self.strength) / 256.0
+    }
+
+    pub fn set_strength(&mut self, strength: f64) {
+        self.strength = ((strength * 256.0) as u16).clamp(0, 0xFF00)
+    }
+}
+
 #[derive(Clone, Debug, Collect)]
 #[collect(no_drop)]
 #[repr(transparent)]
@@ -81,7 +170,7 @@ pub struct BevelFilter<'gc>(GcCell<'gc, BevelFilterData>);
 
 impl<'gc> BevelFilter<'gc> {
     fn new(activation: &mut Activation<'_, 'gc>, args: &[Value<'gc>]) -> Result<Self, Error<'gc>> {
-        let bevel_filter = Self(GcCell::allocate(
+        let bevel_filter = Self(GcCell::new(
             activation.context.gc_context,
             Default::default(),
         ));
@@ -100,8 +189,12 @@ impl<'gc> BevelFilter<'gc> {
         Ok(bevel_filter)
     }
 
+    pub fn from_filter(gc_context: MutationContext<'gc, '_>, filter: swf::BevelFilter) -> Self {
+        Self(GcCell::new(gc_context, filter.into()))
+    }
+
     pub(crate) fn duplicate(&self, gc_context: MutationContext<'gc, '_>) -> Self {
-        Self(GcCell::allocate(gc_context, self.0.read().clone()))
+        Self(GcCell::new(gc_context, self.0.read().clone()))
     }
 
     fn distance(&self) -> f64 {
@@ -217,7 +310,7 @@ impl<'gc> BevelFilter<'gc> {
     }
 
     fn strength(&self) -> f64 {
-        f64::from(self.0.read().strength) / 256.0
+        self.0.read().strength()
     }
 
     fn set_strength(
@@ -226,8 +319,9 @@ impl<'gc> BevelFilter<'gc> {
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
-            let strength = ((value.coerce_to_f64(activation)? * 256.0) as u16).clamp(0, 0xFF00);
-            self.0.write(activation.context.gc_context).strength = strength;
+            self.0
+                .write(activation.context.gc_context)
+                .set_strength(value.coerce_to_f64(activation)?);
         }
         Ok(())
     }
@@ -294,6 +388,10 @@ impl<'gc> BevelFilter<'gc> {
             self.0.write(activation.context.gc_context).type_ = type_;
         }
         Ok(())
+    }
+
+    pub fn filter(&self) -> swf::BevelFilter {
+        self.0.read().deref().into()
     }
 }
 
@@ -432,18 +530,26 @@ fn method<'gc>(
     })
 }
 
-pub fn create_constructor<'gc>(
+pub fn create_proto<'gc>(
     context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let bevel_filter_proto = ScriptObject::new(context.gc_context, Some(proto));
     define_properties_on(PROTO_DECLS, context, bevel_filter_proto, fn_proto);
+    bevel_filter_proto.into()
+}
+
+pub fn create_constructor<'gc>(
+    context: &mut GcContext<'_, 'gc>,
+    proto: Object<'gc>,
+    fn_proto: Object<'gc>,
+) -> Object<'gc> {
     FunctionObject::constructor(
         context.gc_context,
         Executable::Native(bevel_filter_method!(0)),
         constructor_to_fn!(bevel_filter_method!(0)),
         fn_proto,
-        bevel_filter_proto.into(),
+        proto,
     )
 }

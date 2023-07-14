@@ -160,6 +160,12 @@ pub struct Response {
 
     /// The contents of the response body.
     pub body: Vec<u8>,
+
+    /// The status code of the response.
+    pub status: u16,
+
+    /// The field to indicate if the request has been redirected.
+    pub redirected: bool,
 }
 
 /// Type alias for pinned, boxed, and owned futures that output a falliable
@@ -350,7 +356,12 @@ impl NavigatorBackend for NullNavigatorBackend {
 
             let body = std::fs::read(path).map_err(|e| Error::FetchError(e.to_string()))?;
 
-            Ok(Response { url, body })
+            Ok(Response {
+                url,
+                body,
+                status: 0,
+                redirected: false,
+            })
         })
     }
 

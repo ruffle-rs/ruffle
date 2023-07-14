@@ -1,4 +1,4 @@
-use crate::avm1::PropertyMap as Avm1PropertyMap;
+use crate::avm1::{PropertyMap as Avm1PropertyMap, PropertyMap};
 use crate::avm2::{ClassObject as Avm2ClassObject, Domain as Avm2Domain};
 use crate::backend::audio::SoundHandle;
 use crate::character::Character;
@@ -49,7 +49,7 @@ pub struct Avm2ClassRegistry<'gc> {
 }
 
 unsafe impl Collect for Avm2ClassRegistry<'_> {
-    fn trace(&self, cc: gc_arena::CollectionContext) {
+    fn trace(&self, cc: &gc_arena::Collection) {
         for (k, _) in self.class_map.iter() {
             k.trace(cc);
         }
@@ -121,7 +121,7 @@ impl<'gc> Avm2ClassRegistry<'gc> {
 #[collect(no_drop)]
 pub struct MovieLibrary<'gc> {
     characters: HashMap<CharacterId, Character<'gc>>,
-    export_characters: Avm1PropertyMap<'gc, Character<'gc>>,
+    export_characters: Avm1PropertyMap<'gc, CharacterId>,
     jpeg_tables: Option<Vec<u8>>,
     fonts: HashMap<FontDescriptor, Font<'gc>>,
     avm2_domain: Option<Avm2Domain<'gc>>,
@@ -156,23 +156,18 @@ impl<'gc> MovieLibrary<'gc> {
 
     /// Registers an export name for a given character ID.
     /// This character will then be instantiable from AVM1.
-    pub fn register_export(
-        &mut self,
-        id: CharacterId,
-        export_name: AvmString<'gc>,
-    ) -> Option<&Character<'gc>> {
-        if let Some(character) = self.characters.get(&id) {
-            self.export_characters
-                .insert(export_name, character.clone(), false);
-            Some(character)
-        } else {
-            tracing::warn!(
-                "Can't register export {}: Character ID {} doesn't exist",
-                export_name,
-                id,
-            );
-            None
-        }
+    pub fn register_export(&mut self, id: CharacterId, export_name: AvmString<'gc>) {
+        self.export_characters.insert(export_name, id, false);
+    }
+
+    #[allow(dead_code)]
+    pub fn characters(&self) -> &HashMap<CharacterId, Character<'gc>> {
+        &self.characters
+    }
+
+    #[allow(dead_code)]
+    pub fn export_characters(&self) -> &PropertyMap<'gc, CharacterId> {
+        &self.export_characters
     }
 
     pub fn contains_character(&self, id: CharacterId) -> bool {
@@ -184,7 +179,10 @@ impl<'gc> MovieLibrary<'gc> {
     }
 
     pub fn character_by_export_name(&self, name: AvmString<'gc>) -> Option<&Character<'gc>> {
-        self.export_characters.get(name, false)
+        if let Some(id) = self.export_characters.get(name, false) {
+            return self.characters.get(id);
+        }
+        None
     }
 
     /// Instantiates the library item with the given character ID into a display object.
@@ -209,7 +207,7 @@ impl<'gc> MovieLibrary<'gc> {
         export_name: AvmString<'gc>,
         gc_context: MutationContext<'gc, '_>,
     ) -> Result<DisplayObject<'gc>, &'static str> {
-        if let Some(character) = self.export_characters.get(export_name, false) {
+        if let Some(character) = self.character_by_export_name(export_name) {
             self.instantiate_display_object(character, gc_context)
         } else {
             tracing::error!(
@@ -396,7 +394,7 @@ pub struct Library<'gc> {
 
 unsafe impl<'gc> gc_arena::Collect for Library<'gc> {
     #[inline]
-    fn trace(&self, cc: gc_arena::CollectionContext) {
+    fn trace(&self, cc: &gc_arena::Collection) {
         for (_, val) in self.movie_libraries.iter() {
             val.trace(cc);
         }
@@ -422,6 +420,10 @@ impl<'gc> Library<'gc> {
         self.movie_libraries
             .entry(movie)
             .or_insert_with(MovieLibrary::new)
+    }
+
+    pub fn known_movies(&self) -> Vec<Arc<SwfMovie>> {
+        self.movie_libraries.keys().collect()
     }
 
     /// Returns the device font for use when a font is unavailable.

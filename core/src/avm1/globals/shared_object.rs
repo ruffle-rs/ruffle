@@ -102,7 +102,7 @@ fn recursive_serialize<'gc>(
     elements: &mut Vec<Element>,
 ) {
     // Reversed to match flash player ordering
-    for element_name in obj.get_keys(activation).into_iter().rev() {
+    for element_name in obj.get_keys(activation, false).into_iter().rev() {
         if let Ok(elem) = obj.get(element_name, activation) {
             if let Some(v) = serialize_value(activation, elem) {
                 elements.push(Element::new(element_name.to_utf8_lossy(), v));
@@ -439,7 +439,7 @@ pub fn clear<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let data = this.get("data", activation)?.coerce_to_object(activation);
 
-    for k in &data.get_keys(activation) {
+    for k in &data.get_keys(activation, false) {
         data.delete(activation, *k);
     }
 

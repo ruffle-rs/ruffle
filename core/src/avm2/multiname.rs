@@ -24,7 +24,7 @@ enum NamespaceSet<'gc> {
 
 impl<'gc> NamespaceSet<'gc> {
     pub fn multiple(set: Vec<Namespace<'gc>>, mc: MutationContext<'gc, '_>) -> Self {
-        Self::Multiple(Gc::allocate(mc, set))
+        Self::Multiple(Gc::new(mc, set))
     }
     pub fn single(ns: Namespace<'gc>) -> Self {
         Self::Single(ns)
@@ -81,9 +81,9 @@ pub struct Multiname<'gc> {
     /// multiname is satisfied by any name in the namespace.
     name: Option<AvmString<'gc>>,
 
-    /// The type parameters required to satisfy this multiname. If empty, then
-    /// this multiname is satisfied by any type parameters in any amount.
-    params: Vec<Gc<'gc, Multiname<'gc>>>,
+    /// The type parameter required to satisfy this multiname. If None, then
+    /// this multiname is satisfied by any type parameter or no type parameter
+    param: Option<Gc<'gc, Multiname<'gc>>>,
 
     flags: MultinameFlags,
 }
@@ -107,6 +107,10 @@ impl<'gc> Multiname<'gc> {
     #[inline(always)]
     pub fn is_attribute(&self) -> bool {
         self.flags.contains(MultinameFlags::ATTRIBUTE)
+    }
+
+    pub fn set_is_attribute(&mut self, is_attribute: bool) {
+        self.flags.set(MultinameFlags::ATTRIBUTE, is_attribute);
     }
 
     /// Read a namespace set from the ABC constant pool, and return a list of
@@ -162,7 +166,7 @@ impl<'gc> Multiname<'gc> {
                     name: translation_unit
                         .pool_string_option(name.0, context)?
                         .map(|v| v.into()),
-                    params: Vec::new(),
+                    param: None,
                     flags: Default::default(),
                 }
             }
@@ -171,13 +175,13 @@ impl<'gc> Multiname<'gc> {
                 name: translation_unit
                     .pool_string_option(name.0, context)?
                     .map(|v| v.into()),
-                params: Vec::new(),
+                param: None,
                 flags: MultinameFlags::HAS_LAZY_NS,
             },
             AbcMultiname::RTQNameL | AbcMultiname::RTQNameLA => Self {
                 ns: NamespaceSet::multiple(vec![], mc),
                 name: None,
-                params: Vec::new(),
+                param: None,
                 flags: MultinameFlags::HAS_LAZY_NS | MultinameFlags::HAS_LAZY_NAME,
             },
             AbcMultiname::Multiname {
@@ -192,14 +196,14 @@ impl<'gc> Multiname<'gc> {
                 name: translation_unit
                     .pool_string_option(name.0, context)?
                     .map(|v| v.into()),
-                params: Vec::new(),
+                param: None,
                 flags: Default::default(),
             },
             AbcMultiname::MultinameL { namespace_set }
             | AbcMultiname::MultinameLA { namespace_set } => Self {
                 ns: Self::abc_namespace_set(translation_unit, *namespace_set, context)?,
                 name: None,
-                params: Vec::new(),
+                param: None,
                 flags: MultinameFlags::HAS_LAZY_NAME,
             },
             AbcMultiname::TypeName {
@@ -219,12 +223,8 @@ impl<'gc> Multiname<'gc> {
                     .into());
                 }
 
-                for param_type in parameters {
-                    let param_multiname =
-                        translation_unit.pool_multiname_static_any(*param_type, context)?;
-
-                    base.params.push(param_multiname);
-                }
+                base.param =
+                    Some(translation_unit.pool_multiname_static_any(parameters[0], context)?);
                 base
             }
         };
@@ -273,8 +273,8 @@ impl<'gc> Multiname<'gc> {
         Ok(Self {
             ns,
             name,
-            params: self.params.clone(),
-            flags: Default::default(),
+            param: self.param,
+            flags: self.flags & MultinameFlags::ATTRIBUTE,
         })
     }
 
@@ -300,7 +300,7 @@ impl<'gc> Multiname<'gc> {
         Self {
             ns: NamespaceSet::single(Namespace::any(mc)),
             name: None,
-            params: Vec::new(),
+            param: None,
             flags: Default::default(),
         }
     }
@@ -309,7 +309,7 @@ impl<'gc> Multiname<'gc> {
         Self {
             ns: NamespaceSet::single(ns),
             name: Some(name.into()),
-            params: Vec::new(),
+            param: None,
             flags: Default::default(),
         }
     }
@@ -319,7 +319,7 @@ impl<'gc> Multiname<'gc> {
         Self {
             ns: NamespaceSet::single(ns),
             name: Some(name.into()),
-            params: Vec::new(),
+            param: None,
             flags: MultinameFlags::ATTRIBUTE,
         }
     }
@@ -374,8 +374,8 @@ impl<'gc> Multiname<'gc> {
     }
 
     /// List the parameters that the selected class must match.
-    pub fn params(&self) -> &[Gc<'gc, Multiname<'gc>>] {
-        &self.params[..]
+    pub fn param(&self) -> Option<Gc<'gc, Multiname<'gc>>> {
+        self.param
     }
 
     pub fn to_qualified_name(&self, mc: MutationContext<'gc, '_>) -> AvmString<'gc> {
@@ -397,16 +397,9 @@ impl<'gc> Multiname<'gc> {
             uri.push_str(WStr::from_units(b"::*"));
         }
 
-        if !self.params.is_empty() {
-            uri.push_str(WStr::from_units(b"<"));
-
-            for (i, param) in self.params.iter().enumerate() {
-                uri.push_str(&param.to_qualified_name(mc));
-                if i < self.params.len() - 1 {
-                    uri.push_str(WStr::from_units(b","));
-                }
-            }
-
+        if let Some(param) = self.param {
+            uri.push_str(WStr::from_units(b".<"));
+            uri.push_str(&param.to_qualified_name(mc));
             uri.push_str(WStr::from_units(b">"));
         }
 
@@ -461,7 +454,7 @@ impl<'gc> From<QName<'gc>> for Multiname<'gc> {
         Self {
             ns: NamespaceSet::single(q.namespace()),
             name: Some(q.local_name()),
-            params: Vec::new(),
+            param: None,
             flags: Default::default(),
         }
     }

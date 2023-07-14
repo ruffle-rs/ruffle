@@ -3,7 +3,7 @@
 
 #[macro_use]
 mod display_object;
-pub use display_object::{StageDisplayState, StageScaleMode};
+pub use display_object::{StageAlign, StageDisplayState, StageScaleMode};
 
 #[macro_use]
 extern crate smallvec;
@@ -34,6 +34,7 @@ mod library;
 pub mod limits;
 pub mod loader;
 mod locale;
+pub mod pixel_bender;
 mod player;
 mod prelude;
 mod streams;
@@ -47,6 +48,8 @@ mod xml;
 pub mod backend;
 pub mod compatibility_rules;
 pub mod config;
+#[cfg(feature = "egui")]
+pub mod debug_ui;
 pub mod external;
 pub mod i18n;
 pub mod stub;

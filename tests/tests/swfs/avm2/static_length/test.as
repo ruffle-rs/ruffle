@@ -8,6 +8,7 @@ package
 
 
 
+trace("Object.length is: " + Object.length);
 trace("RegExp.length is: " + RegExp.length);
 trace("String.length is: " + String.length);
 trace("XMLList.length is: " + XMLList.length);

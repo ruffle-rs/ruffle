@@ -7,8 +7,9 @@ use crate::avm2::{
     e4x::{name_to_multiname, simple_content_to_string, E4XNode, E4XNodeKind},
     error::type_error,
     object::{E4XOrXml, XmlListObject},
+    parameters::ParametersExt,
     string::AvmString,
-    Activation, Error, Multiname, Object, TObject, Value,
+    Activation, Error, Object, TObject, Value,
 };
 
 fn has_complex_content_inner(children: &[E4XOrXml<'_>]) -> bool {
@@ -33,11 +34,22 @@ fn has_simple_content_inner(children: &[E4XOrXml<'_>]) -> bool {
 
 pub fn init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.unwrap().as_xml_list_object().unwrap();
+    let this = this.as_xml_list_object().unwrap();
     let value = args[0];
+
+    if let Some(obj) = value.as_object() {
+        if let Some(xml) = obj.as_xml_object() {
+            // Note - we re-use the XML object that was passed in, which makes
+            // `this[0] === xmlObjArg` true.
+            // This logic does *not* go in `E4XNode::parse`, as it does not apply
+            // to the `XML` constructor: `new XML(xmlObj) === xmlObj` is false.
+            this.set_children(activation.context.gc_context, vec![E4XOrXml::Xml(xml)]);
+            return Ok(Value::Undefined);
+        }
+    }
 
     match E4XNode::parse(value, activation) {
         Ok(nodes) => {
@@ -56,32 +68,51 @@ pub fn init<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn call_handler<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    // We do *not* create a new object when AS does 'XMLList(someXMLList)'
+    if let Some(obj) = args.try_get_object(activation, 0) {
+        if let Some(xml_list) = obj.as_xml_list_object() {
+            return Ok(xml_list.into());
+        }
+    }
+    Ok(activation
+        .avm2()
+        .classes()
+        .xml_list
+        .construct(activation, args)?
+        .into())
+}
+
 pub fn has_complex_content<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let list = this.unwrap().as_xml_list_object().unwrap();
+    let list = this.as_xml_list_object().unwrap();
     let children = list.children();
     Ok(has_complex_content_inner(&children).into())
 }
 
 pub fn has_simple_content<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let list = this.unwrap().as_xml_list_object().unwrap();
+    let list = this.as_xml_list_object().unwrap();
     let children = list.children();
     Ok(has_simple_content_inner(&children).into())
 }
 
 pub fn to_string<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let list = this.unwrap().as_xml_list_object().unwrap();
+    let list = this.as_xml_list_object().unwrap();
     let children = list.children();
     if has_simple_content_inner(&children) {
         Ok(simple_content_to_string(children.iter().cloned(), activation)?.into())
@@ -92,10 +123,10 @@ pub fn to_string<'gc>(
 
 pub fn to_xml_string<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let list = this.unwrap().as_xml_list_object().unwrap();
+    let list = this.as_xml_list_object().unwrap();
     let children = list.children();
     let mut out = WString::new();
     for (i, child) in children.iter().enumerate() {
@@ -109,21 +140,21 @@ pub fn to_xml_string<'gc>(
 
 pub fn length<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let list = this.unwrap().as_xml_list_object().unwrap();
+    let list = this.as_xml_list_object().unwrap();
     let children = list.children();
     Ok(children.len().into())
 }
 
 pub fn child<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let list = this.unwrap().as_xml_list_object().unwrap();
-    let multiname = name_to_multiname(activation, &args[0])?;
+    let list = this.as_xml_list_object().unwrap();
+    let multiname = name_to_multiname(activation, &args[0], false)?;
     let children = list.children();
     let mut sub_children = Vec::new();
     for child in &*children {
@@ -141,10 +172,10 @@ pub fn child<'gc>(
 
 pub fn children<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let list = this.unwrap().as_xml_list_object().unwrap();
+    let list = this.as_xml_list_object().unwrap();
     let children = list.children();
     let mut sub_children = Vec::new();
     for child in &*children {
@@ -157,10 +188,10 @@ pub fn children<'gc>(
 
 pub fn copy<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let list = this.unwrap().as_xml_list_object().unwrap();
+    let list = this.as_xml_list_object().unwrap();
     let children = list
         .children()
         .iter()
@@ -171,30 +202,13 @@ pub fn copy<'gc>(
 
 pub fn attribute<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.unwrap();
     let list = this.as_xml_list_object().unwrap();
 
     let name = args[0];
-    let multiname = match name {
-        Value::String(s) => Multiname::new(activation.avm2().public_namespace, s),
-        Value::Object(o) => {
-            if let Some(qname) = o.as_qname_object() {
-                qname.name().clone()
-            } else {
-                Multiname::new(
-                    activation.avm2().public_namespace,
-                    name.coerce_to_string(activation)?,
-                )
-            }
-        }
-        _ => Multiname::new(
-            activation.avm2().public_namespace,
-            name.coerce_to_string(activation)?,
-        ),
-    };
+    let multiname = name_to_multiname(activation, &name, true)?;
 
     let children = list.children();
     let mut sub_children = Vec::new();
@@ -214,10 +228,9 @@ pub fn attribute<'gc>(
 
 pub fn attributes<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.unwrap();
     let list = this.as_xml_list_object().unwrap();
 
     let mut child_attrs = Vec::new();
@@ -232,10 +245,9 @@ pub fn attributes<'gc>(
 
 pub fn name<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.unwrap();
     let list = this.as_xml_list_object().unwrap();
 
     let mut children = list.children_mut(activation.context.gc_context);
@@ -255,11 +267,11 @@ pub fn name<'gc>(
 
 pub fn descendants<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let xml_list = this.unwrap().as_xml_list_object().unwrap();
-    let multiname = name_to_multiname(activation, &args[0])?;
+    let xml_list = this.as_xml_list_object().unwrap();
+    let multiname = name_to_multiname(activation, &args[0], false)?;
     let mut descendants = Vec::new();
     for child in xml_list.children().iter() {
         child.node().descendants(&multiname, &mut descendants);
@@ -269,10 +281,10 @@ pub fn descendants<'gc>(
 
 pub fn text<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let xml_list = this.unwrap().as_xml_list_object().unwrap();
+    let xml_list = this.as_xml_list_object().unwrap();
     let mut nodes = Vec::new();
     for child in xml_list.children().iter() {
         if let E4XNodeKind::Element { ref children, .. } = &*child.node().kind() {

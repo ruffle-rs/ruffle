@@ -12,7 +12,7 @@ pub struct FocusTracker<'gc>(GcCell<'gc, Option<DisplayObject<'gc>>>);
 
 impl<'gc> FocusTracker<'gc> {
     pub fn new(gc_context: MutationContext<'gc, '_>) -> Self {
-        Self(GcCell::allocate(gc_context, None))
+        Self(GcCell::new(gc_context, None))
     }
 
     pub fn get(&self) -> Option<DisplayObject<'gc>> {

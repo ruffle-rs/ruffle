@@ -150,16 +150,13 @@ impl<'gc> Timers<'gc> {
                     }
                 }
                 TimerCallback::Avm2Callback { closure, params } => {
-                    let domain = context.avm2.global_domain();
+                    let domain = context.avm2.stage_domain();
                     let mut avm2_activation =
                         Avm2Activation::from_domain(context.reborrow(), domain);
-                    match closure.call(None, &params, &mut avm2_activation) {
+                    match closure.call(Avm2Value::Null, &params, &mut avm2_activation) {
                         Ok(v) => v.coerce_to_boolean(),
                         Err(e) => {
-                            tracing::error!(
-                                "Unhandled AVM2 error in timer callback: {}",
-                                e.detailed_message(&mut avm2_activation)
-                            );
+                            tracing::error!("Unhandled AVM2 error in timer callback: {e:?}",);
                             false
                         }
                     }
@@ -274,7 +271,7 @@ impl Default for Timers<'_> {
 }
 
 unsafe impl<'gc> Collect for Timers<'gc> {
-    fn trace(&self, cc: gc_arena::CollectionContext) {
+    fn trace(&self, cc: &gc_arena::Collection) {
         for timer in &self.timers {
             timer.trace(cc);
         }

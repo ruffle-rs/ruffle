@@ -5,8 +5,19 @@ test
 test
 xmlCopy().toXMLString(): <outer/>
 xmlObj === xmlCopy: false
+xmlObj === xmlCast: true
+listFromSingle[0] === xmlObj: true
+newListFromSingle[0] === xmlObj: true
+new XMLList(listFromSingle) === listFromSingle: false
+emptyList.toString(): 
+emptyList.toXMLString(): 
 Caught error: TypeError: Error #1088: The markup in the document following the root element must be well-formed.
 1088
-new XML(singleList): <outer><inner>Hello</inner><second>World</second></outer>
+xmlFromSingle === singleList[0]: true
+newXMLFromSingle === singleList[0]: false
+castCopy equal: true
+ctorCopy equal: false
 Caught error: TypeError: Error #1088: The markup in the document following the root element must be well-formed.
 1088
+Caught parsing error: TypeError: Error #1090: XML parser failure: element is malformed.
+1090

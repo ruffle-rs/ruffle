@@ -9,12 +9,11 @@ use quick_xml::{
     Reader,
 };
 
-use crate::{
-    avm2::{error::type_error, TObject},
-    xml::custom_unescape,
-};
+use crate::{avm2::TObject, xml::custom_unescape};
 
-use super::{object::E4XOrXml, string::AvmString, Activation, Error, Multiname, Value};
+use super::{
+    error::type_error, object::E4XOrXml, string::AvmString, Activation, Error, Multiname, Value,
+};
 use crate::string::{WStr, WString};
 
 /// The underlying XML node data, based on E4XNode in avmplus
@@ -42,6 +41,17 @@ impl<'gc> Debug for E4XNodeData<'gc> {
     }
 }
 
+fn malformed_element<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    Error::AvmError(
+        type_error(
+            activation,
+            "Error #1090: XML parser failure: element is malformed.",
+            1090,
+        )
+        .expect("Failed to construct XML TypeError"),
+    )
+}
+
 #[derive(Collect, Debug)]
 #[collect(no_drop)]
 pub enum E4XNodeKind<'gc> {
@@ -58,7 +68,7 @@ pub enum E4XNodeKind<'gc> {
 
 impl<'gc> E4XNode<'gc> {
     pub fn dummy(mc: MutationContext<'gc, '_>) -> Self {
-        E4XNode(GcCell::allocate(
+        E4XNode(GcCell::new(
             mc,
             E4XNodeData {
                 parent: None,
@@ -71,11 +81,11 @@ impl<'gc> E4XNode<'gc> {
         ))
     }
 
-    pub fn text(mc: MutationContext<'gc, '_>, text: AvmString<'gc>) -> Self {
-        E4XNode(GcCell::allocate(
+    pub fn text(mc: MutationContext<'gc, '_>, text: AvmString<'gc>, parent: Option<Self>) -> Self {
+        E4XNode(GcCell::new(
             mc,
             E4XNodeData {
-                parent: None,
+                parent,
                 local_name: None,
                 kind: E4XNodeKind::Text(text),
             },
@@ -83,7 +93,7 @@ impl<'gc> E4XNode<'gc> {
     }
 
     pub fn element(mc: MutationContext<'gc, '_>, name: AvmString<'gc>, parent: Self) -> Self {
-        E4XNode(GcCell::allocate(
+        E4XNode(GcCell::new(
             mc,
             E4XNodeData {
                 parent: Some(parent),
@@ -100,11 +110,12 @@ impl<'gc> E4XNode<'gc> {
         mc: MutationContext<'gc, '_>,
         name: AvmString<'gc>,
         value: AvmString<'gc>,
+        parent: E4XNode<'gc>,
     ) -> Self {
-        E4XNode(GcCell::allocate(
+        E4XNode(GcCell::new(
             mc,
             E4XNodeData {
-                parent: None,
+                parent: Some(parent),
                 local_name: Some(name),
                 kind: E4XNodeKind::Attribute(value),
             },
@@ -180,7 +191,7 @@ impl<'gc> E4XNode<'gc> {
             },
         };
 
-        let node = E4XNode(GcCell::allocate(
+        let node = E4XNode(GcCell::new(
             mc,
             E4XNodeData {
                 parent: None,
@@ -268,16 +279,8 @@ impl<'gc> E4XNode<'gc> {
             // The docs claim that only String, Number or Boolean are accepted, but that's also a lie
             val => {
                 if let Some(obj) = val.as_object() {
-                    if let Some(xml) = obj.as_xml_object() {
-                        value = xml.call_public_property("toXMLString", &[], activation)?;
-                    } else if let Some(list) = obj.as_xml_list_object() {
-                        if list.length() == 1 {
-                            value = list.children_mut(activation.context.gc_context)[0]
-                                .get_or_create_xml(activation)
-                                .call_public_property("toXMLString", &[], activation)?;
-                        } else {
-                            return Err(Error::AvmError(type_error(activation, "Error #1088: The markup in the document following the root element must be well-formed.", 1088)?));
-                        }
+                    if obj.as_xml_object().is_some() || obj.as_xml_list_object().is_some() {
+                        value = obj.call_public_property("toXMLString", &[], activation)?;
                     }
                 }
                 value.coerce_to_string(activation)?
@@ -357,7 +360,7 @@ impl<'gc> E4XNode<'gc> {
                         text
                     },
                 );
-                let node = E4XNode(GcCell::allocate(
+                let node = E4XNode(GcCell::new(
                     activation.context.gc_context,
                     E4XNodeData {
                         parent: None,
@@ -375,13 +378,14 @@ impl<'gc> E4XNode<'gc> {
         }
 
         loop {
-            let event = parser.read_event().map_err(|error| {
-                Error::RustError(format!("XML parsing error: {error:?}").into())
-            })?;
+            let event = parser
+                .read_event()
+                .map_err(|_| malformed_element(activation))?;
 
             match &event {
                 Event::Start(bs) => {
-                    let child = E4XNode::from_start_event(activation, bs, parser.decoder())?;
+                    let child = E4XNode::from_start_event(activation, bs, parser.decoder())
+                        .map_err(|_| malformed_element(activation))?;
 
                     if let Some(current_tag) = open_tags.last_mut() {
                         current_tag.append_child(activation.context.gc_context, child)?;
@@ -390,7 +394,8 @@ impl<'gc> E4XNode<'gc> {
                     depth += 1;
                 }
                 Event::Empty(bs) => {
-                    let node = E4XNode::from_start_event(activation, bs, parser.decoder())?;
+                    let node = E4XNode::from_start_event(activation, bs, parser.decoder())
+                        .map_err(|_| malformed_element(activation))?;
                     push_childless_node(node, &mut open_tags, &mut top_level, depth, activation)?;
                 }
                 Event::End(_) => {
@@ -402,7 +407,9 @@ impl<'gc> E4XNode<'gc> {
                 }
                 Event::Text(bt) => {
                     handle_text_cdata(
-                        custom_unescape(bt, parser.decoder())?.as_bytes(),
+                        custom_unescape(bt, parser.decoder())
+                            .map_err(|_| malformed_element(activation))?
+                            .as_bytes(),
                         ignore_white,
                         &mut open_tags,
                         &mut top_level,
@@ -429,7 +436,8 @@ impl<'gc> E4XNode<'gc> {
                     {
                         continue;
                     }
-                    let text = custom_unescape(bt, parser.decoder())?;
+                    let text = custom_unescape(bt, parser.decoder())
+                        .map_err(|_| malformed_element(activation))?;
                     let text =
                         AvmString::new_utf8_bytes(activation.context.gc_context, text.as_bytes());
                     let kind = match event {
@@ -437,7 +445,7 @@ impl<'gc> E4XNode<'gc> {
                         Event::PI(_) => E4XNodeKind::ProcessingInstruction(text),
                         _ => unreachable!(),
                     };
-                    let node = E4XNode(GcCell::allocate(
+                    let node = E4XNode(GcCell::new(
                         activation.context.gc_context,
                         E4XNodeData {
                             parent: None,
@@ -486,10 +494,7 @@ impl<'gc> E4XNode<'gc> {
                 local_name: Some(key),
                 kind: E4XNodeKind::Attribute(value),
             };
-            let attribute = E4XNode(GcCell::allocate(
-                activation.context.gc_context,
-                attribute_data,
-            ));
+            let attribute = E4XNode(GcCell::new(activation.context.gc_context, attribute_data));
             attribute_nodes.push(attribute);
         }
 
@@ -502,14 +507,15 @@ impl<'gc> E4XNode<'gc> {
             },
         };
 
-        Ok(E4XNode(GcCell::allocate(
-            activation.context.gc_context,
-            data,
-        )))
+        Ok(E4XNode(GcCell::new(activation.context.gc_context, data)))
     }
 
     pub fn local_name(&self) -> Option<AvmString<'gc>> {
         self.0.read().local_name
+    }
+
+    pub fn set_parent(&self, parent: Option<E4XNode<'gc>>, mc: MutationContext<'gc, '_>) {
+        self.0.write(mc).parent = parent;
     }
 
     pub fn parent(&self) -> Option<E4XNode<'gc>> {
@@ -517,6 +523,11 @@ impl<'gc> E4XNode<'gc> {
     }
 
     pub fn matches_name(&self, name: &Multiname<'gc>) -> bool {
+        let self_is_attr = matches!(self.0.read().kind, E4XNodeKind::Attribute(_));
+        if self_is_attr != name.is_attribute() {
+            return false;
+        }
+
         // FIXME - we need to handle namespaces here
         if name.is_any_name() {
             return true;
@@ -530,7 +541,19 @@ impl<'gc> E4XNode<'gc> {
     }
 
     pub fn descendants(&self, name: &Multiname<'gc>, out: &mut Vec<E4XOrXml<'gc>>) {
-        if let E4XNodeKind::Element { children, .. } = &self.0.read().kind {
+        if let E4XNodeKind::Element {
+            children,
+            attributes,
+            ..
+        } = &self.0.read().kind
+        {
+            if name.is_attribute() {
+                for attribute in attributes {
+                    if attribute.matches_name(name) {
+                        out.push(E4XOrXml::E4X(*attribute));
+                    }
+                }
+            }
             for child in children {
                 if child.matches_name(name) {
                     out.push(E4XOrXml::E4X(*child));
@@ -676,9 +699,14 @@ fn to_xml_string_inner<'gc>(xml: E4XOrXml<'gc>, buf: &mut WString) -> Result<(),
         }
         E4XNodeKind::Attribute(_)
         | E4XNodeKind::Comment(_)
-        | E4XNodeKind::ProcessingInstruction(_)
-        | E4XNodeKind::CData(_) => {
+        | E4XNodeKind::ProcessingInstruction(_) => {
             return Err(format!("ToXMLString: Not yet implemented node {:?}", node_kind).into())
+        }
+        E4XNodeKind::CData(data) => {
+            buf.push_utf8("<![CDATA[");
+            buf.push_str(data);
+            buf.push_utf8("]]>");
+            return Ok(());
         }
         E4XNodeKind::Element {
             children,
@@ -731,26 +759,30 @@ pub fn to_xml_string<'gc>(
 pub fn name_to_multiname<'gc>(
     activation: &mut Activation<'_, 'gc>,
     name: &Value<'gc>,
+    force_attribute: bool,
 ) -> Result<Multiname<'gc>, Error<'gc>> {
     if let Value::Object(o) = name {
         if let Some(qname) = o.as_qname_object() {
-            return Ok(qname.name().clone());
+            let mut name = qname.name().clone();
+            if force_attribute {
+                name.set_is_attribute(true);
+            }
+            return Ok(name);
         }
     }
 
     let name = name.coerce_to_string(activation)?;
 
-    if let Some(name) = name.strip_prefix(b'@') {
+    let mut multiname = if let Some(name) = name.strip_prefix(b'@') {
         let name = AvmString::new(activation.context.gc_context, name);
-        return Ok(Multiname::attribute(
-            activation.avm2().public_namespace,
-            name,
-        ));
-    }
-
-    Ok(if &*name == b"*" {
+        Multiname::attribute(activation.avm2().public_namespace, name)
+    } else if &*name == b"*" {
         Multiname::any(activation.context.gc_context)
     } else {
         Multiname::new(activation.avm2().public_namespace, name)
-    })
+    };
+    if force_attribute {
+        multiname.set_is_attribute(true);
+    };
+    Ok(multiname)
 }

@@ -21,18 +21,13 @@ use swf::avm2::types::{
 /// Parameters are as follows:
 ///
 ///  * The AVM2 runtime
-///  * The action context
 ///  * The current `this` object
 ///  * The arguments this function was called with
 ///
-/// Native functions are allowed to return a value or `None`. `None` indicates
-/// that the given value will not be returned on the stack and instead will
-/// resolve on the AVM stack, as if you had called a non-native function. If
-/// your function yields `None`, you must ensure that the top-most activation
-/// in the AVM1 runtime will return with the value of this function.
+/// Native functions are allowed to return a Value or an Error.
 pub type NativeMethodImpl = for<'gc> fn(
     &mut Activation<'_, 'gc>,
-    Option<Object<'gc>>,
+    Object<'gc>,
     &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>>;
 
@@ -158,7 +153,7 @@ impl<'gc> BytecodeMethod<'gc> {
                 .clone();
 
             let activation_class = if method.flags.contains(AbcMethodFlags::NEED_ACTIVATION) {
-                Some(GcCell::allocate(activation.context.gc_context, None))
+                Some(GcCell::new(activation.context.gc_context, None))
             } else {
                 None
             };
@@ -328,7 +323,7 @@ impl<'gc> Method<'gc> {
         is_variadic: bool,
         mc: MutationContext<'gc, '_>,
     ) -> Self {
-        Self::Native(Gc::allocate(
+        Self::Native(Gc::new(
             mc,
             NativeMethod {
                 method,
@@ -347,7 +342,7 @@ impl<'gc> Method<'gc> {
         name: &'static str,
         mc: MutationContext<'gc, '_>,
     ) -> Self {
-        Self::Native(Gc::allocate(
+        Self::Native(Gc::new(
             mc,
             NativeMethod {
                 method,

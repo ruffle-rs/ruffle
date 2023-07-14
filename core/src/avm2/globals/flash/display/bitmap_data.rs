@@ -9,6 +9,7 @@ use crate::avm2::parameters::{null_parameter_error, ParametersExt};
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
+use crate::avm2_stub_method;
 use crate::bitmap::bitmap_data::{
     BitmapData, BitmapDataWrapper, ChannelOptions, ThresholdOperation,
 };
@@ -23,6 +24,7 @@ use gc_arena::GcCell;
 use ruffle_render::filters::Filter;
 use ruffle_render::transform::Transform;
 use std::str::FromStr;
+use swf::{Rectangle, Twips};
 
 // Computes the integer x,y,width,height values from
 // the given `Rectangle`. This method performs `x + width`
@@ -66,7 +68,7 @@ pub fn fill_bitmap_data_from_symbol<'gc>(
     activation: &mut Activation<'_, 'gc>,
     bd: &Bitmap<'gc>,
 ) -> BitmapDataWrapper<'gc> {
-    let new_bitmap_data = GcCell::allocate(
+    let new_bitmap_data = GcCell::new(
         activation.context.gc_context,
         BitmapData::new_with_pixels(
             Bitmap::width(*bd).into(),
@@ -81,67 +83,62 @@ pub fn fill_bitmap_data_from_symbol<'gc>(
 /// Implements `flash.display.BitmapData`'s 'init' method (invoked from the AS3 constructor)
 pub fn init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this {
-        // We set the underlying BitmapData instance - we start out with a dummy BitmapDataWrapper,
-        // which makes custom classes see a disposed BitmapData before they call super()
-        let name = this.instance_of_class_definition().map(|c| c.read().name());
-        let character = this
-            .instance_of()
-            .and_then(|t| {
-                activation
-                    .context
-                    .library
-                    .avm2_class_registry()
-                    .class_symbol(t)
-            })
-            .and_then(|(movie, chara_id)| {
-                activation
-                    .context
-                    .library
-                    .library_for_movie_mut(movie)
-                    .character_by_id(chara_id)
-                    .cloned()
-            });
+    // We set the underlying BitmapData instance - we start out with a dummy BitmapDataWrapper,
+    // which makes custom classes see a disposed BitmapData before they call super()
+    let name = this.instance_of_class_definition().map(|c| c.read().name());
+    let character = this
+        .instance_of()
+        .and_then(|t| {
+            activation
+                .context
+                .library
+                .avm2_class_registry()
+                .class_symbol(t)
+        })
+        .and_then(|(movie, chara_id)| {
+            activation
+                .context
+                .library
+                .library_for_movie_mut(movie)
+                .character_by_id(chara_id)
+                .cloned()
+        });
 
-        let new_bitmap_data = if let Some(Character::Bitmap(bitmap)) = character {
-            // Instantiating BitmapData from an Animate-style bitmap asset
-            fill_bitmap_data_from_symbol(activation, &bitmap)
-        } else {
-            if character.is_some() {
-                //TODO: Determine if mismatched symbols will still work as a
-                //regular BitmapData subclass, or if this should throw
-                tracing::warn!(
-                    "BitmapData subclass {:?} is associated with a non-bitmap symbol",
-                    name
-                );
-            }
+    let new_bitmap_data = if let Some(Character::Bitmap(bitmap)) = character {
+        // Instantiating BitmapData from an Animate-style bitmap asset
+        fill_bitmap_data_from_symbol(activation, &bitmap)
+    } else {
+        if character.is_some() {
+            //TODO: Determine if mismatched symbols will still work as a
+            //regular BitmapData subclass, or if this should throw
+            tracing::warn!(
+                "BitmapData subclass {:?} is associated with a non-bitmap symbol",
+                name
+            );
+        }
 
-            let width = args.get_u32(activation, 0)?;
-            let height = args.get_u32(activation, 1)?;
-            let transparency = args.get_bool(2);
-            let fill_color = args.get_u32(activation, 3)?;
+        let width = args.get_u32(activation, 0)?;
+        let height = args.get_u32(activation, 1)?;
+        let transparency = args.get_bool(2);
+        let fill_color = args.get_u32(activation, 3)?;
 
-            if !is_size_valid(activation.context.swf.version(), width, height) {
-                return Err(Error::AvmError(argument_error(
-                    activation,
-                    "Error #2015: Invalid BitmapData.",
-                    2015,
-                )?));
-            }
+        if !is_size_valid(activation.context.swf.version(), width, height) {
+            return Err(Error::AvmError(argument_error(
+                activation,
+                "Error #2015: Invalid BitmapData.",
+                2015,
+            )?));
+        }
 
-            let new_bitmap_data = BitmapData::new(width, height, transparency, fill_color);
-            BitmapDataWrapper::new(GcCell::allocate(
-                activation.context.gc_context,
-                new_bitmap_data,
-            ))
-        };
+        let new_bitmap_data = BitmapData::new(width, height, transparency, fill_color);
+        BitmapDataWrapper::new(GcCell::new(activation.context.gc_context, new_bitmap_data))
+    };
 
-        new_bitmap_data.init_object2(activation.context.gc_context, this);
-        this.init_bitmap_data(activation.context.gc_context, new_bitmap_data);
-    }
+    new_bitmap_data.init_object2(activation.context.gc_context, this);
+    this.init_bitmap_data(activation.context.gc_context, new_bitmap_data);
 
     Ok(Value::Undefined)
 }
@@ -149,10 +146,10 @@ pub fn init<'gc>(
 /// Implements `BitmapData.width`'s getter.
 pub fn get_width<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+    if let Some(bitmap_data) = this.as_bitmap_data() {
         bitmap_data.check_valid(activation)?;
         return Ok((bitmap_data.width() as i32).into());
     }
@@ -163,10 +160,10 @@ pub fn get_width<'gc>(
 /// Implements `BitmapData.height`'s getter.
 pub fn get_height<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+    if let Some(bitmap_data) = this.as_bitmap_data() {
         bitmap_data.check_valid(activation)?;
         return Ok((bitmap_data.height() as i32).into());
     }
@@ -177,10 +174,10 @@ pub fn get_height<'gc>(
 /// Implements `BitmapData.transparent`'s getter.
 pub fn get_transparent<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+    if let Some(bitmap_data) = this.as_bitmap_data() {
         bitmap_data.check_valid(activation)?;
         return Ok(bitmap_data.transparency().into());
     }
@@ -191,10 +188,10 @@ pub fn get_transparent<'gc>(
 /// Implements `BitmapData.scroll`.
 pub fn scroll<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+    if let Some(bitmap_data) = this.as_bitmap_data() {
         bitmap_data.check_valid(activation)?;
         let x = args.get_i32(activation, 0)?;
         let y = args.get_i32(activation, 1)?;
@@ -208,10 +205,10 @@ pub fn scroll<'gc>(
 /// Implements `BitmapData.copyPixels`.
 pub fn copy_pixels<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+    if let Some(bitmap_data) = this.as_bitmap_data() {
         bitmap_data.check_valid(activation)?;
         let source_bitmap = args
             .get(0)
@@ -293,10 +290,10 @@ pub fn copy_pixels<'gc>(
 /// Implements `BitmapData.getPixels`.
 pub fn get_pixels<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+    if let Some(bitmap_data) = this.as_bitmap_data() {
         bitmap_data.check_valid(activation)?;
         let rectangle = args.get_object(activation, 0, "rect")?;
         let (x, y, width, height) = get_rectangle_x_y_width_height(activation, rectangle)?;
@@ -312,10 +309,10 @@ pub fn get_pixels<'gc>(
 
 pub fn get_vector<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+    if let Some(bitmap_data) = this.as_bitmap_data() {
         bitmap_data.check_valid(activation)?;
         let rectangle = args.get_object(activation, 0, "rect")?;
         let (x, y, width, height) = get_rectangle_x_y_width_height(activation, rectangle)?;
@@ -334,10 +331,10 @@ pub fn get_vector<'gc>(
 /// Implements `BitmapData.getPixel`.
 pub fn get_pixel<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+    if let Some(bitmap_data) = this.as_bitmap_data() {
         bitmap_data.check_valid(activation)?;
         let x = args.get_u32(activation, 0)?;
         let y = args.get_u32(activation, 1)?;
@@ -351,10 +348,10 @@ pub fn get_pixel<'gc>(
 /// Implements `BitmapData.getPixel32`.
 pub fn get_pixel32<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+    if let Some(bitmap_data) = this.as_bitmap_data() {
         bitmap_data.check_valid(activation)?;
         let x = args.get_u32(activation, 0)?;
         let y = args.get_u32(activation, 1)?;
@@ -368,10 +365,10 @@ pub fn get_pixel32<'gc>(
 /// Implements `BitmapData.setPixel`.
 pub fn set_pixel<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+    if let Some(bitmap_data) = this.as_bitmap_data() {
         let x = args.get_u32(activation, 0)?;
         let y = args.get_u32(activation, 1)?;
         let color = args.get_u32(activation, 2)?;
@@ -390,10 +387,10 @@ pub fn set_pixel<'gc>(
 /// Implements `BitmapData.setPixel32`.
 pub fn set_pixel32<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+    if let Some(bitmap_data) = this.as_bitmap_data() {
         bitmap_data.check_valid(activation)?;
 
         let x = args.get_u32(activation, 0)?;
@@ -409,7 +406,7 @@ pub fn set_pixel32<'gc>(
 /// Implements `BitmapData.setPixels`.
 pub fn set_pixels<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let rectangle = args.get_object(activation, 0, "rect")?;
@@ -418,7 +415,7 @@ pub fn set_pixels<'gc>(
         .get(1)
         .unwrap_or(&Value::Undefined)
         .coerce_to_object(activation)?;
-    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+    if let Some(bitmap_data) = this.as_bitmap_data() {
         let (x, y, width, height) = get_rectangle_x_y_width_height(activation, rectangle)?;
 
         let mut ba_write = bytearray
@@ -440,13 +437,67 @@ pub fn set_pixels<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `BitmapData.setVector`.
+pub fn set_vector<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let rectangle = args.get_object(activation, 0, "rect")?;
+    // Note - flash player misspells this as 'imputVector'.
+    let vec = args.get_object(activation, 1, "imputVector")?;
+    if let Some(bitmap_data) = this.as_bitmap_data() {
+        let x = rectangle
+            .get_public_property("x", activation)?
+            .coerce_to_number(activation)?;
+        let y = rectangle
+            .get_public_property("y", activation)?
+            .coerce_to_number(activation)?;
+        let width = rectangle
+            .get_public_property("width", activation)?
+            .coerce_to_number(activation)?;
+        let height = rectangle
+            .get_public_property("height", activation)?
+            .coerce_to_number(activation)?;
+
+        // Clamp to bitmap rect.
+        let bitmap_width = f64::from(bitmap_data.width());
+        let bitmap_height = f64::from(bitmap_data.height());
+        let x_min = x.clamp(0.0, bitmap_width);
+        let y_min = y.clamp(0.0, bitmap_height);
+        let x_max = (x + width).clamp(x_min, bitmap_width);
+        let y_max = (y + height).clamp(y_min, bitmap_height);
+
+        let x_min = x_min as u32;
+        let x_max = x_max as u32;
+        let y_min = y_min as u32;
+        let y_max = y_max as u32;
+
+        let vec_read = vec
+            .as_vector_storage()
+            .expect("BitmapData.setVector: Expected vector");
+
+        operations::set_vector(
+            activation,
+            bitmap_data,
+            x_min,
+            y_min,
+            x_max,
+            y_max,
+            &vec_read,
+        )?;
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Implements `BitmapData.copyChannel`.
 pub fn copy_channel<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+    if let Some(bitmap_data) = this.as_bitmap_data() {
         bitmap_data.check_valid(activation)?;
         let source_bitmap = args
             .get(0)
@@ -490,10 +541,10 @@ pub fn copy_channel<'gc>(
 
 pub fn flood_fill<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+    if let Some(bitmap_data) = this.as_bitmap_data() {
         if !bitmap_data.disposed() {
             let x = args.get_u32(activation, 0)?;
             let y = args.get_u32(activation, 1)?;
@@ -508,7 +559,7 @@ pub fn flood_fill<'gc>(
 
 pub fn noise<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let low = args.get_u32(activation, 1)? as u8;
@@ -519,7 +570,7 @@ pub fn noise<'gc>(
 
     let gray_scale = args.get_bool(4);
 
-    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+    if let Some(bitmap_data) = this.as_bitmap_data() {
         bitmap_data.check_valid(activation)?;
         let random_seed = args.get_i32(activation, 0)?;
         operations::noise(
@@ -537,10 +588,10 @@ pub fn noise<'gc>(
 
 pub fn color_transform<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+    if let Some(bitmap_data) = this.as_bitmap_data() {
         if !bitmap_data.disposed() {
             // TODO: Re-use `object_to_rectangle` in `movie_clip.rs`.
             let rectangle = args.get_object(activation, 0, "rect")?;
@@ -575,10 +626,10 @@ pub fn color_transform<'gc>(
 
 pub fn get_color_bounds_rect<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+    if let Some(bitmap_data) = this.as_bitmap_data() {
         if !bitmap_data.disposed() {
             let find_color = args.get_bool(2);
 
@@ -602,7 +653,7 @@ pub fn get_color_bounds_rect<'gc>(
 
 pub fn lock<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // `BitmapData.lock` tells Flash Player to temporarily stop updating the player's
@@ -621,7 +672,7 @@ pub fn lock<'gc>(
 
 pub fn unlock<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // No effect (see comments for `lock`).
@@ -630,10 +681,10 @@ pub fn unlock<'gc>(
 
 pub fn hit_test<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+    if let Some(bitmap_data) = this.as_bitmap_data() {
         if !bitmap_data.disposed() {
             let first_point = args.get_object(activation, 0, "firstPoint")?;
             let top_left = (
@@ -646,8 +697,12 @@ pub fn hit_test<'gc>(
             );
             let source_threshold = args.get_u32(activation, 1)?.clamp(0, u8::MAX.into()) as u8;
             let compare_object = args.get_object(activation, 2, "secondObject")?;
-            let point_class = activation.avm2().classes().point;
-            let rectangle_class = activation.avm2().classes().rectangle;
+            let point_class = activation.avm2().classes().point.inner_class_definition();
+            let rectangle_class = activation
+                .avm2()
+                .classes()
+                .rectangle
+                .inner_class_definition();
 
             if compare_object.is_of_type(point_class, &mut activation.context) {
                 let test_point = (
@@ -754,10 +809,10 @@ pub fn hit_test<'gc>(
 /// Implements `BitmapData.draw`
 pub fn draw<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data()) {
+    if let Some(bitmap_data) = this.as_bitmap_data() {
         let mut transform = Transform::default();
         let mut blend_mode = BlendMode::Normal;
 
@@ -833,10 +888,10 @@ pub fn draw<'gc>(
 /// Implements `BitmapData.drawWithQuality`
 pub fn draw_with_quality<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data()) {
+    if let Some(bitmap_data) = this.as_bitmap_data() {
         let mut transform = Transform::default();
         let mut blend_mode = BlendMode::Normal;
 
@@ -890,7 +945,7 @@ pub fn draw_with_quality<'gc>(
                 Err(_) => {
                     return Err(Error::AvmError(argument_error(
                         activation,
-                        "One of the parameters is invalid.",
+                        "Error #2004: One of the parameters is invalid.",
                         2004,
                     )?));
                 }
@@ -921,14 +976,14 @@ pub fn draw_with_quality<'gc>(
 /// Implement `BitmapData.fillRect`
 pub fn fill_rect<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let rectangle = args.get_object(activation, 0, "rect")?;
 
     let color = args.get_u32(activation, 1)?;
 
-    if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data()) {
+    if let Some(bitmap_data) = this.as_bitmap_data() {
         bitmap_data.check_valid(activation)?;
         let (x, y, width, height) = get_rectangle_x_y_width_height(activation, rectangle)?;
 
@@ -948,10 +1003,10 @@ pub fn fill_rect<'gc>(
 /// Implements `BitmapData.dispose`
 pub fn dispose<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data()) {
+    if let Some(bitmap_data) = this.as_bitmap_data() {
         // Don't check if we've already disposed this BitmapData - 'BitmapData.dispose()' can be called
         // multiple times
         bitmap_data.dispose(activation.context.gc_context);
@@ -962,10 +1017,10 @@ pub fn dispose<'gc>(
 /// Implement `BitmapData.rect`
 pub fn get_rect<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data()) {
+    if let Some(bitmap_data) = this.as_bitmap_data() {
         return Ok(activation
             .avm2()
             .classes()
@@ -987,17 +1042,50 @@ pub fn get_rect<'gc>(
 /// Implement `BitmapData.applyFilter`
 pub fn apply_filter<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(dest_bitmap) = this.and_then(|this| this.as_bitmap_data()) {
+    if let Some(dest_bitmap) = this.as_bitmap_data() {
         let source_bitmap = args.get_object(activation, 0, "sourceBitmapData")?
             .as_bitmap_data()
             .ok_or_else(|| {
                 Error::from(format!("TypeError: Error #1034: Type Coercion failed: cannot convert {} to flash.display.BitmapData.", args[0].coerce_to_string(activation).unwrap_or_default()))
             })?;
         let source_rect = args.get_object(activation, 1, "sourceRect")?;
-        let source_rect = super::display_object::object_to_rectangle(activation, source_rect)?;
+        let mut source_rect = super::display_object::object_to_rectangle(activation, source_rect)?;
+        let filter = args.get_object(activation, 3, "filter")?;
+        let filter = Filter::from_avm2_object(activation, filter)?;
+
+        if matches!(filter, Filter::ShaderFilter(_)) {
+            let source_bitmap_rect = Rectangle {
+                x_min: Twips::ZERO,
+                x_max: Twips::from_pixels(source_bitmap.width() as f64),
+                y_min: Twips::ZERO,
+                y_max: Twips::from_pixels(source_bitmap.height() as f64),
+            };
+            // Flash performs an odd translation/cropping behavior when sourceRect
+            // has a non-zero x or y starting value, which I haven't yet managed to reproduce.
+            //
+            // Additionally, when both x and y are 0, the 'width' and 'height' seem to
+            // be ignored completely in favor of the using the dimensions of the source
+            // image (even if a larger or smaller rect is passed in)
+            //
+            // To make matters worse, the behavior of ShaderFilter seems platform-dependent
+            // (or at least resolution-dependent). The test
+            // 'tests/tests/swfs/avm2/pixelbender_effect_glassDisplace_shaderfilter/test.swf'
+            // renders slightly differently in Linux vs a Windows VM (part of the mandelbrot fractal
+            // in the top image is cut off in the Windows Flash Player, but not in the Linux Flash Player)
+            if source_rect != source_bitmap_rect {
+                avm2_stub_method!(
+                    activation,
+                    "flash.display.BitmapData",
+                    "applyFilter",
+                    "ShaderFilter with non-standard sourceRect"
+                );
+                source_rect = source_bitmap_rect;
+            }
+        }
+
         let source_point = (
             source_rect.x_min.to_pixels().floor() as u32,
             source_rect.y_min.to_pixels().floor() as u32,
@@ -1015,8 +1103,7 @@ pub fn apply_filter<'gc>(
                 .get_public_property("y", activation)?
                 .coerce_to_u32(activation)?,
         );
-        let filter = args.get_object(activation, 3, "filter")?;
-        let filter = Filter::from_avm2_object(activation, filter)?;
+
         operations::apply_filter(
             &mut activation.context,
             dest_bitmap,
@@ -1025,7 +1112,7 @@ pub fn apply_filter<'gc>(
             source_size,
             dest_point,
             filter,
-        )
+        );
     }
     Ok(Value::Undefined)
 }
@@ -1033,20 +1120,17 @@ pub fn apply_filter<'gc>(
 /// Implement `BitmapData.clone`
 pub fn clone<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data()) {
+    if let Some(bitmap_data) = this.as_bitmap_data() {
         if !bitmap_data.disposed() {
             let new_bitmap_data = operations::clone(bitmap_data);
 
             let class = activation.avm2().classes().bitmapdata;
             let new_bitmap_data_object = BitmapDataObject::from_bitmap_data_internal(
                 activation,
-                BitmapDataWrapper::new(GcCell::allocate(
-                    activation.context.gc_context,
-                    new_bitmap_data,
-                )),
+                BitmapDataWrapper::new(GcCell::new(activation.context.gc_context, new_bitmap_data)),
                 class,
             )?;
 
@@ -1059,10 +1143,10 @@ pub fn clone<'gc>(
 /// Implement `BitmapData.paletteMap`
 pub fn palette_map<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data()) {
+    if let Some(bitmap_data) = this.as_bitmap_data() {
         bitmap_data.check_valid(activation)?;
         let source_bitmap = args
             .get_object(activation, 0, "sourceBitmapData")?
@@ -1126,10 +1210,10 @@ pub fn palette_map<'gc>(
 /// Implement `BitmapData.perlinNoise`
 pub fn perlin_noise<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data()) {
+    if let Some(bitmap_data) = this.as_bitmap_data() {
         if !bitmap_data.disposed() {
             let base_x = args.get_f64(activation, 0)?;
             let base_y = args.get_f64(activation, 1)?;
@@ -1188,10 +1272,10 @@ pub fn perlin_noise<'gc>(
 /// Implement `BitmapData.threshold`
 pub fn threshold<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data()) {
+    if let Some(bitmap_data) = this.as_bitmap_data() {
         if !bitmap_data.disposed() {
             let src_bitmap = args.get_object(activation, 0, "sourceBitmapData")?;
             let source_rect = args.get_object(activation, 1, "sourceRect")?;
@@ -1254,7 +1338,7 @@ pub fn threshold<'gc>(
 /// Implement `BitmapData.compare`
 pub fn compare<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     const EQUIVALENT: i32 = 0;
@@ -1263,12 +1347,11 @@ pub fn compare<'gc>(
     const DIFFERENT_WIDTHS: i32 = -3;
     const DIFFERENT_HEIGHTS: i32 = -4;
 
-    let this_bitmap_data =
-        if let Some(this_bitmap_data) = this.and_then(|this| this.as_bitmap_data()) {
-            this_bitmap_data
-        } else {
-            return Ok(NOT_BITMAP.into());
-        };
+    let this_bitmap_data = if let Some(this_bitmap_data) = this.as_bitmap_data() {
+        this_bitmap_data
+    } else {
+        return Ok(NOT_BITMAP.into());
+    };
     this_bitmap_data.check_valid(activation)?;
 
     if this_bitmap_data.disposed() {
@@ -1309,10 +1392,7 @@ pub fn compare<'gc>(
             let class = activation.avm2().classes().bitmapdata;
             Ok(BitmapDataObject::from_bitmap_data_internal(
                 activation,
-                BitmapDataWrapper::new(GcCell::allocate(
-                    activation.context.gc_context,
-                    bitmap_data,
-                )),
+                BitmapDataWrapper::new(GcCell::new(activation.context.gc_context, bitmap_data)),
                 class,
             )?
             .into())
@@ -1324,10 +1404,10 @@ pub fn compare<'gc>(
 /// Implements `BitmapData.pixelDissolve`.
 pub fn pixel_dissolve<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+    if let Some(bitmap_data) = this.as_bitmap_data() {
         bitmap_data.check_valid(activation)?;
 
         let src_bitmap_data = args.get_object(activation, 0, "sourceBitmapData")?;

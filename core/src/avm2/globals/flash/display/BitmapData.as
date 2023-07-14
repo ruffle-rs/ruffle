@@ -4,6 +4,7 @@ package flash.display {
     import flash.geom.Point;
     import flash.geom.Matrix;
     import flash.filters.BitmapFilter;
+    import flash.filters.ShaderFilter;
     import flash.utils.ByteArray;
     import __ruffle__.stub_method;
 
@@ -29,6 +30,7 @@ package flash.display {
         public native function setPixel(x:int, y:int, color:uint):void;
         public native function setPixel32(x:int, y:int, color:uint):void;
         public native function setPixels(rect:Rectangle, inputByteArray:ByteArray):void;
+        public native function setVector(rect:Rectangle, inputVector:Vector.<uint>):void;
         public native function copyChannel(sourceBitmapData:BitmapData, sourceRect:Rectangle, destPoint:Point, sourceChannel:uint, destChannel:uint):void;
         public native function floodFill(x:int, y:int, color:uint):void;
         public native function noise(randomSeed:int, low:uint = 0, high:uint = 255, channelOptions:uint = 7, grayScale:Boolean = false):void;
@@ -67,6 +69,10 @@ package flash.display {
         ):int;
 
         public function generateFilterRect(sourceRect:Rectangle, filter:BitmapFilter):Rectangle {
+            // Flash always reports that a ShaderFilter affects the entire BitampData, ignoring SourceRect.
+            if (filter is ShaderFilter) {
+                return this.rect.clone();
+            }
             stub_method("flash.display.BitmapData", "generateFilterRect");
             return sourceRect.clone();
         }

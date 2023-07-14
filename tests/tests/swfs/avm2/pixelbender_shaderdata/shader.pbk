@@ -1,0 +1,41 @@
+     <languageVersion : 1.0;>
+     
+     kernel DoNothing
+     <
+         namespace: "Adobe::Example";
+         vendor: "Adobe examples";
+         version: 1;
+         description: "A shader that does nothing, but does it well.";
+     >
+     {
+
+         input image4 src;
+        
+     
+         output pixel4 dst;
+         
+         parameter float2 size
+         <
+             description: "The size of the image to which the kernel is applied";
+             minValue: float2(0.0, 0.0);
+             maxValue: float2(100.0, 100.5);
+             defaultValue: float2(50.0, 50.0);
+         >;
+         
+         parameter float radius
+         <
+             description: "The radius of the effect";
+             minValue: 0.0;
+             maxValue: 50.0;
+             defaultValue: 25.0;
+         >;
+         
+         input image4 otherSrc;
+     
+         void evaluatePixel()
+         {
+             float2 one = (radius / radius) * (size / size);
+             float4 two = sampleLinear(otherSrc, float2(1.0, 2.0));
+             dst = sampleNearest(src, outCoord()) + float4(100.0, 0.0, 100.0, 1.0);
+         }
+     }

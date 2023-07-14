@@ -15,6 +15,7 @@ import { swfFileName } from "./swf-utils";
 import { buildInfo } from "./build-info";
 import { text, textAsParagraphs } from "./i18n";
 import JSZip from "jszip";
+import { isExtension } from "./current-script";
 
 const RUFFLE_ORIGIN = "https://ruffle.rs";
 const DIMENSION_REGEX = /^\s*(\d+(\.\d+)?(%)?)/;
@@ -155,7 +156,6 @@ export class RufflePlayer extends HTMLElement {
     private panicked = false;
     private rendererDebugInfo = "";
 
-    private isExtension = false;
     private longPressTimer: ReturnType<typeof setTimeout> | null = null;
     private pointerDownPosition: Point | null = null;
     private pointerMoveMaxDistance = 0;
@@ -740,10 +740,6 @@ export class RufflePlayer extends HTMLElement {
                 ...options,
             };
 
-            // `allowScriptAccess` can only be set in `options`.
-            this.loadedConfig.allowScriptAccess =
-                options.allowScriptAccess === true;
-
             // Pre-emptively set background color of container while Ruffle/SWF loads.
             if (
                 this.loadedConfig.backgroundColor &&
@@ -759,14 +755,10 @@ export class RufflePlayer extends HTMLElement {
                 console.log(`Loading SWF file ${options.url}`);
                 this.swfUrl = new URL(options.url, document.baseURI);
 
-                const parameters = {
-                    ...sanitizeParameters(
-                        options.url.substring(options.url.indexOf("?"))
-                    ),
-                    ...sanitizeParameters(options.parameters),
-                };
-
-                this.instance!.stream_from(this.swfUrl.href, parameters);
+                this.instance!.stream_from(
+                    this.swfUrl.href,
+                    sanitizeParameters(options.parameters)
+                );
             } else if ("data" in options) {
                 console.log("Loading SWF data");
                 this.instance!.load_data(
@@ -1270,10 +1262,9 @@ export class RufflePlayer extends HTMLElement {
 
         addSeparator();
 
-        const extensionString = this.isExtension ? "extension" : "";
         items.push({
             text: text("context-menu-about-ruffle", {
-                flavor: extensionString,
+                flavor: isExtension ? "extension" : "",
                 version: buildInfo.versionName,
             }),
             onClick() {
@@ -1650,7 +1641,7 @@ export class RufflePlayer extends HTMLElement {
         result += `Channel: ${buildInfo.versionChannel}\n`;
         result += `Built: ${buildInfo.buildDate}\n`;
         result += `Commit: ${buildInfo.commitHash}\n`;
-        result += `Is extension: ${this.isExtension}\n`;
+        result += `Is extension: ${isExtension}\n`;
 
         result += "\n# Metadata\n";
         if (this.metadata) {
@@ -1740,9 +1731,17 @@ export class RufflePlayer extends HTMLElement {
         // Otherwise, create a link to the downloads section on the Ruffle website.
         let actionTag;
         if (!isBuildOutdated) {
+            let url;
+            if (document.location.protocol.includes("extension")) {
+                url = this.swfUrl!.href;
+            } else {
+                url = document.location.href;
+            }
+
             // Remove query params for the issue title.
-            const pageUrl = document.location.href.split(/[?#]/)[0];
-            const issueTitle = `Error on ${pageUrl}`;
+            url = url.split(/[?#]/, 1)[0]!;
+
+            const issueTitle = `Error on ${url}`;
             let issueLink = `https://github.com/ruffle-rs/ruffle/issues/new?title=${encodeURIComponent(
                 issueTitle
             )}&template=error_report.md&labels=error-report&body=`;
@@ -1960,10 +1959,7 @@ export class RufflePlayer extends HTMLElement {
     }
 
     protected displayRootMovieDownloadFailedMessage(): void {
-        if (
-            this.isExtension &&
-            window.location.origin !== this.swfUrl!.origin
-        ) {
+        if (isExtension && window.location.origin !== this.swfUrl!.origin) {
             const url = new URL(this.swfUrl!);
             if (this.loadedConfig?.parameters) {
                 const parameters = sanitizeParameters(
@@ -2064,10 +2060,6 @@ export class RufflePlayer extends HTMLElement {
         this.dispatchEvent(new Event(RufflePlayer.LOADED_METADATA));
         // TODO: Move this to whatever function changes the ReadyState to Loaded when we have streaming support.
         this.dispatchEvent(new Event(RufflePlayer.LOADED_DATA));
-    }
-
-    setIsExtension(isExtension: boolean): void {
-        this.isExtension = isExtension;
     }
 }
 

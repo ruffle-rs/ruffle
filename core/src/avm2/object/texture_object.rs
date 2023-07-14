@@ -5,7 +5,9 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::barrier::unlock;
+use gc_arena::lock::RefLock;
+use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use ruffle_render::backend::Texture;
 use std::cell::{Ref, RefMut};
 use std::rc::Rc;
@@ -14,7 +16,11 @@ use super::{ClassObject, Context3DObject};
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct TextureObject<'gc>(GcCell<'gc, TextureObjectData<'gc>>);
+pub struct TextureObject<'gc>(pub Gc<'gc, TextureObjectData<'gc>>);
+
+#[derive(Clone, Collect, Copy, Debug)]
+#[collect(no_drop)]
+pub struct TextureObjectWeak<'gc>(pub GcWeak<'gc, TextureObjectData<'gc>>);
 
 impl<'gc> TextureObject<'gc> {
     pub fn from_handle(
@@ -23,30 +29,28 @@ impl<'gc> TextureObject<'gc> {
         handle: Rc<dyn Texture>,
         class: ClassObject<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        let base = ScriptObjectData::new(class);
-
-        let mut this: Object<'gc> = TextureObject(GcCell::allocate(
-            activation.context.gc_context,
+        let mut this: Object<'gc> = TextureObject(Gc::new(
+            activation.gc(),
             TextureObjectData {
-                base,
+                base: RefLock::new(ScriptObjectData::new(class)),
                 context3d,
                 handle,
             },
         ))
         .into();
-        this.install_instance_slots(activation.context.gc_context);
+        this.install_instance_slots(activation.gc());
 
-        class.call_native_init(Some(this), &[], activation)?;
+        class.call_native_init(this.into(), &[], activation)?;
 
         Ok(this)
     }
 
     pub fn handle(&self) -> Rc<dyn Texture> {
-        self.0.read().handle.clone()
+        self.0.handle.clone()
     }
 
     pub fn context3d(&self) -> Context3DObject<'gc> {
-        self.0.read().context3d
+        self.0.context3d
     }
 }
 
@@ -54,27 +58,28 @@ impl<'gc> TextureObject<'gc> {
 #[collect(no_drop)]
 pub struct TextureObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: RefLock<ScriptObjectData<'gc>>,
 
     context3d: Context3DObject<'gc>,
 
+    #[collect(require_static)]
     handle: Rc<dyn Texture>,
 }
 
 impl<'gc> TObject<'gc> for TextureObject<'gc> {
     fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        Ref::map(self.0.read(), |read| &read.base)
+        self.0.base.borrow()
     }
 
-    fn base_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<ScriptObjectData<'gc>> {
-        RefMut::map(self.0.write(mc), |write| &mut write.base)
+    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
+        unlock!(Gc::write(mc, self.0), TextureObjectData, base).borrow_mut()
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
-        self.0.as_ptr() as *const ObjectPtr
+        Gc::as_ptr(self.0) as *const ObjectPtr
     }
 
-    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error<'gc>> {
+    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Value::Object(Object::from(*self)))
     }
 

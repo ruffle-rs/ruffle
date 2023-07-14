@@ -13,19 +13,17 @@ use gc_arena::GcCell;
 /// Implements `Boolean`'s instance initializer.
 fn instance_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this {
-        if let Some(mut prim) = this.as_primitive_mut(activation.context.gc_context) {
-            if matches!(*prim, Value::Undefined | Value::Null) {
-                *prim = args
-                    .get(0)
-                    .cloned()
-                    .unwrap_or(Value::Bool(false))
-                    .coerce_to_boolean()
-                    .into();
-            }
+    if let Some(mut prim) = this.as_primitive_mut(activation.context.gc_context) {
+        if matches!(*prim, Value::Undefined | Value::Null) {
+            *prim = args
+                .get(0)
+                .cloned()
+                .unwrap_or(Value::Bool(false))
+                .coerce_to_boolean()
+                .into();
         }
     }
 
@@ -35,12 +33,10 @@ fn instance_init<'gc>(
 /// Implements `Boolean`'s native instance initializer.
 fn native_instance_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this {
-        activation.super_init(this, args)?;
-    }
+    activation.super_init(this, args)?;
 
     Ok(Value::Undefined)
 }
@@ -48,42 +44,40 @@ fn native_instance_init<'gc>(
 /// Implements `Boolean`'s class initializer.
 fn class_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this {
-        let scope = activation.create_scopechain();
-        let gc_context = activation.context.gc_context;
-        let this_class = this.as_class_object().unwrap();
-        let boolean_proto = this_class.prototype();
+    let scope = activation.create_scopechain();
+    let gc_context = activation.context.gc_context;
+    let this_class = this.as_class_object().unwrap();
+    let boolean_proto = this_class.prototype();
 
-        boolean_proto.set_string_property_local(
-            "toString",
-            FunctionObject::from_method(
-                activation,
-                Method::from_builtin(to_string, "toString", gc_context),
-                scope,
-                None,
-                Some(this_class),
-            )
-            .into(),
+    boolean_proto.set_string_property_local(
+        "toString",
+        FunctionObject::from_method(
             activation,
-        )?;
-        boolean_proto.set_string_property_local(
-            "valueOf",
-            FunctionObject::from_method(
-                activation,
-                Method::from_builtin(value_of, "valueOf", gc_context),
-                scope,
-                None,
-                Some(this_class),
-            )
-            .into(),
+            Method::from_builtin(to_string, "toString", gc_context),
+            scope,
+            None,
+            Some(this_class),
+        )
+        .into(),
+        activation,
+    )?;
+    boolean_proto.set_string_property_local(
+        "valueOf",
+        FunctionObject::from_method(
             activation,
-        )?;
-        boolean_proto.set_local_property_is_enumerable(gc_context, "toString".into(), false);
-        boolean_proto.set_local_property_is_enumerable(gc_context, "valueOf".into(), false);
-    }
+            Method::from_builtin(value_of, "valueOf", gc_context),
+            scope,
+            None,
+            Some(this_class),
+        )
+        .into(),
+        activation,
+    )?;
+    boolean_proto.set_local_property_is_enumerable(gc_context, "toString".into(), false);
+    boolean_proto.set_local_property_is_enumerable(gc_context, "valueOf".into(), false);
 
     Ok(Value::Undefined)
 }
@@ -91,17 +85,15 @@ fn class_init<'gc>(
 /// Implements `Boolean.toString`
 fn to_string<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this {
-        if let Some(this) = this.as_primitive() {
-            match *this {
-                Value::Bool(true) => return Ok("true".into()),
-                Value::Bool(false) => return Ok("false".into()),
-                _ => {}
-            };
-        }
+    if let Some(this) = this.as_primitive() {
+        match *this {
+            Value::Bool(true) => return Ok("true".into()),
+            Value::Bool(false) => return Ok("false".into()),
+            _ => {}
+        };
     }
 
     Err("Boolean.prototype.toString has been called on an incompatible object".into())
@@ -110,13 +102,11 @@ fn to_string<'gc>(
 /// Implements `Boolean.valueOf`
 fn value_of<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this {
-        if let Some(this) = this.as_primitive() {
-            return Ok(*this);
-        }
+    if let Some(this) = this.as_primitive() {
+        return Ok(*this);
     }
 
     Ok(Value::Undefined)

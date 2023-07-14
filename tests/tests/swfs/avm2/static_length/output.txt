@@ -1,3 +1,4 @@
+Object.length is: 1
 RegExp.length is: 1
 String.length is: 1
 XMLList.length is: 1

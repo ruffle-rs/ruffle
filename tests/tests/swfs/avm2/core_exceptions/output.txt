@@ -3,13 +3,30 @@
 1009
 1009
 1009
+TypeError: Error #1009: Cannot access a property or method of a null object reference.
+TypeError: Error #1009: Cannot access a property or method of a null object reference.
+TypeError: Error #1009: Cannot access a property or method of a null object reference.
+TypeError: Error #1009: Cannot access a property or method of a null object reference.
+TypeError: Error #1009: Cannot access a property or method of a null object reference.
 // 1010: use of undefined
 1010
 1010
 1010
 1010
+TypeError: Error #1010: A term is undefined and has no properties.
+TypeError: Error #1010: A term is undefined and has no properties.
+TypeError: Error #1010: A term is undefined and has no properties.
+TypeError: Error #1010: A term is undefined and has no properties.
+TypeError: Error #1010: A term is undefined and has no properties.
 // 1037: setproperty to method
 ReferenceError: Error #1037: Cannot assign to a method method on FilePrivateNS:Test.C.
+// 1041: right-hand side of instanceof must be a class or function
+TypeError: Error #1040: The right-hand side of instanceof must be a class or function.
+TypeError: Error #1040: The right-hand side of instanceof must be a class or function.
+TypeError: Error #1040: The right-hand side of instanceof must be a class or function.
+TypeError: Error #1040: The right-hand side of instanceof must be a class or function.
+// 1041: right-hand side of operator must be a class
+TypeError: Error #1041: The right-hand side of operator must be a class.
 // 1056: setproperty fail
 ReferenceError: Error #1056: Cannot create property asdf on FilePrivateNS:Test.C.
 ReferenceError: Error #1056: Cannot create property ns::asdf on FilePrivateNS:Test.C.
@@ -25,3 +42,6 @@ ReferenceError: Error #1077: Illegal read of write-only property setonly on File
 // 1120: deleteproperty on non-object
 1120
 // should not throw
+success
+success
+false

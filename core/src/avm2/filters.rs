@@ -1,4 +1,8 @@
-use ruffle_render::filters::{DisplacementMapFilter, DisplacementMapFilterMode, Filter};
+use gc_arena::{Collect, DynamicRoot, Rootable};
+use ruffle_render::filters::{
+    DisplacementMapFilter, DisplacementMapFilterMode, Filter, ShaderFilter, ShaderObject,
+};
+use std::fmt::Debug;
 use swf::{
     BevelFilter, BevelFilterFlags, BlurFilter, BlurFilterFlags, Color, ColorMatrixFilter,
     ConvolutionFilter, ConvolutionFilterFlags, DropShadowFilter, DropShadowFilterFlags, Fixed16,
@@ -7,6 +11,8 @@ use swf::{
 
 use crate::avm2::error::{make_error_2008, type_error};
 use crate::avm2::{Activation, ArrayObject, ClassObject, Error, Object, TObject, Value};
+
+use super::globals::flash::display::shader_job::get_shader_args;
 
 pub trait FilterAvm2Ext {
     fn from_avm2_object<'gc>(
@@ -20,56 +26,123 @@ pub trait FilterAvm2Ext {
     ) -> Result<Object<'gc>, Error<'gc>>;
 }
 
+#[derive(Clone, Collect)]
+#[collect(require_static)]
+pub struct ObjectWrapper {
+    root: DynamicRoot<Rootable![Object<'_>]>,
+}
+
+impl ShaderObject for ObjectWrapper {
+    fn clone_box(&self) -> Box<dyn ShaderObject> {
+        Box::new(self.clone())
+    }
+}
+
+impl Debug for ObjectWrapper {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ObjectWrapper")
+            .field("root", &self.root.as_ptr())
+            .finish()
+    }
+}
+
 impl FilterAvm2Ext for Filter {
     fn from_avm2_object<'gc>(
         activation: &mut Activation<'_, 'gc>,
         object: Object<'gc>,
     ) -> Result<Filter, Error<'gc>> {
-        let bevel_filter = activation.avm2().classes().bevelfilter;
+        let bevel_filter = activation
+            .avm2()
+            .classes()
+            .bevelfilter
+            .inner_class_definition();
         if object.is_of_type(bevel_filter, &mut activation.context) {
             return avm2_to_bevel_filter(activation, object);
         }
 
-        let blur_filter = activation.avm2().classes().blurfilter;
+        let blur_filter = activation
+            .avm2()
+            .classes()
+            .blurfilter
+            .inner_class_definition();
         if object.is_of_type(blur_filter, &mut activation.context) {
             return avm2_to_blur_filter(activation, object);
         }
 
-        let color_matrix_filter = activation.avm2().classes().colormatrixfilter;
+        let color_matrix_filter = activation
+            .avm2()
+            .classes()
+            .colormatrixfilter
+            .inner_class_definition();
         if object.is_of_type(color_matrix_filter, &mut activation.context) {
             return avm2_to_color_matrix_filter(activation, object);
         }
 
-        let convolution_filter = activation.avm2().classes().convolutionfilter;
+        let convolution_filter = activation
+            .avm2()
+            .classes()
+            .convolutionfilter
+            .inner_class_definition();
         if object.is_of_type(convolution_filter, &mut activation.context) {
             return avm2_to_convolution_filter(activation, object);
         }
 
-        let displacement_map_filter = activation.avm2().classes().displacementmapfilter;
+        let displacement_map_filter = activation
+            .avm2()
+            .classes()
+            .displacementmapfilter
+            .inner_class_definition();
         if object.is_of_type(displacement_map_filter, &mut activation.context) {
             return avm2_to_displacement_map_filter(activation, object);
         }
 
-        let drop_shadow_filter = activation.avm2().classes().dropshadowfilter;
+        let drop_shadow_filter = activation
+            .avm2()
+            .classes()
+            .dropshadowfilter
+            .inner_class_definition();
         if object.is_of_type(drop_shadow_filter, &mut activation.context) {
             return avm2_to_drop_shadow_filter(activation, object);
         }
 
-        let glow_filter = activation.avm2().classes().glowfilter;
+        let glow_filter = activation
+            .avm2()
+            .classes()
+            .glowfilter
+            .inner_class_definition();
         if object.is_of_type(glow_filter, &mut activation.context) {
             return avm2_to_glow_filter(activation, object);
         }
 
-        let gradient_bevel_filter = activation.avm2().classes().gradientbevelfilter;
+        let gradient_bevel_filter = activation
+            .avm2()
+            .classes()
+            .gradientbevelfilter
+            .inner_class_definition();
         if object.is_of_type(gradient_bevel_filter, &mut activation.context) {
             return Ok(Filter::GradientBevelFilter(avm2_to_gradient_filter(
                 activation, object,
             )?));
         }
 
-        let gradient_glow_filter = activation.avm2().classes().gradientglowfilter;
+        let gradient_glow_filter = activation
+            .avm2()
+            .classes()
+            .gradientglowfilter
+            .inner_class_definition();
         if object.is_of_type(gradient_glow_filter, &mut activation.context) {
             return Ok(Filter::GradientGlowFilter(avm2_to_gradient_filter(
+                activation, object,
+            )?));
+        }
+
+        let shader_filter = activation
+            .avm2()
+            .classes()
+            .shaderfilter
+            .inner_class_definition();
+        if object.is_of_type(shader_filter, &mut activation.context) {
+            return Ok(Filter::ShaderFilter(avm2_to_shader_filter(
                 activation, object,
             )?));
         }
@@ -105,6 +178,7 @@ impl FilterAvm2Ext for Filter {
                 let gradientglowfilter = activation.avm2().classes().gradientglowfilter;
                 gradient_filter_to_avm2(activation, filter, gradientglowfilter)
             }
+            Filter::ShaderFilter(filter) => shader_filter_to_avm2(activation, filter),
         }
     }
 }
@@ -700,6 +774,66 @@ fn gradient_filter_to_avm2<'gc>(
             filter.is_knockout().into(),
         ],
     )
+}
+
+fn avm2_to_shader_filter<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    object: Object<'gc>,
+) -> Result<ShaderFilter<'static>, Error<'gc>> {
+    let bottom_extension = object
+        .get_public_property("bottomExtension", activation)?
+        .coerce_to_i32(activation)?;
+
+    let left_extension = object
+        .get_public_property("leftExtension", activation)?
+        .coerce_to_i32(activation)?;
+
+    let right_extension = object
+        .get_public_property("rightExtension", activation)?
+        .coerce_to_i32(activation)?;
+
+    let top_extension = object
+        .get_public_property("topExtension", activation)?
+        .coerce_to_i32(activation)?;
+
+    let shader_obj = object
+        .get_public_property("shader", activation)?
+        .as_object()
+        .unwrap();
+
+    let dyn_root = activation
+        .context
+        .dynamic_root
+        .stash(activation.context.gc_context, shader_obj);
+
+    let (shader_handle, shader_args) = get_shader_args(shader_obj, activation)?;
+
+    Ok(ShaderFilter {
+        shader_object: Box::new(ObjectWrapper { root: dyn_root }),
+        shader: shader_handle,
+        shader_args,
+        bottom_extension,
+        left_extension,
+        right_extension,
+        top_extension,
+    })
+}
+
+fn shader_filter_to_avm2<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    filter: &ShaderFilter<'static>,
+) -> Result<Object<'gc>, Error<'gc>> {
+    let object_wrapper: &ObjectWrapper = filter
+        .shader_object
+        .downcast_ref::<ObjectWrapper>()
+        .expect("ShaderObject was not an ObjectWrapper");
+
+    let obj = *activation.context.dynamic_root.fetch(&object_wrapper.root);
+    activation
+        .avm2()
+        .classes()
+        .shaderfilter
+        .construct(activation, &[obj.into()])
 }
 
 fn get_gradient_colors<'gc>(

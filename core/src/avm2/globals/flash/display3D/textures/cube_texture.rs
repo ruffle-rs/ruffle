@@ -6,10 +6,10 @@ use crate::avm2_stub_method;
 
 pub fn upload_from_bitmap_data<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(texture) = this.and_then(|this| this.as_texture()) {
+    if let Some(texture) = this.as_texture() {
         if let Some(source) = args[0].coerce_to_object(activation)?.as_bitmap_data() {
             let side = args[1].coerce_to_u32(activation)?;
             let mip_level = args[2].coerce_to_u32(activation)?;
@@ -19,7 +19,6 @@ pub fn upload_from_bitmap_data<'gc>(
                     texture.handle(),
                     // FIXME - is this right?
                     side,
-                    activation,
                 );
             } else {
                 avm2_stub_method!(

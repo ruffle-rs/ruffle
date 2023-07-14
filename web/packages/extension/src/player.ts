@@ -22,7 +22,6 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     const player = ruffle.createPlayer();
     player.id = "player";
-    player.setIsExtension(true);
     document.getElementById("main")!.append(player);
 
     const options = await utils.getOptions();
@@ -33,6 +32,7 @@ window.addEventListener("DOMContentLoaded", async () => {
         base: swfUrl.substring(0, swfUrl.lastIndexOf("/") + 1),
         // Override some default values when playing in the extension player page.
         letterbox: "on" as Letterbox,
+        forceAlign: true,
         forceScale: true,
     });
 });

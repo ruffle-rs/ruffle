@@ -15,10 +15,10 @@ use gc_arena::GcCell;
 /// Implements `Namespace`'s instance initializer.
 pub fn instance_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.and_then(|this| this.as_namespace_object()) {
+    if let Some(this) = this.as_namespace_object() {
         let uri_value = match args {
             [_prefix, uri] => {
                 avm2_stub_constructor!(activation, "Namespace", "Namespace prefix not supported");
@@ -47,7 +47,7 @@ pub fn instance_init<'gc>(
 
 fn class_call<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_constructor!(activation, "Namespace");
@@ -57,12 +57,10 @@ fn class_call<'gc>(
 /// Implements `Namespace`'s native instance initializer.
 pub fn native_instance_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this {
-        activation.super_init(this, args)?;
-    }
+    activation.super_init(this, args)?;
 
     Ok(Value::Undefined)
 }
@@ -70,7 +68,7 @@ pub fn native_instance_init<'gc>(
 /// Implements `Namespace`'s class initializer.
 pub fn class_init<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(Value::Undefined)
@@ -79,10 +77,10 @@ pub fn class_init<'gc>(
 /// Implements `Namespace.prefix`'s getter
 pub fn prefix<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if this.and_then(|t| t.as_namespace_object()).is_some() {
+    if this.as_namespace_object().is_some() {
         avm2_stub_getter!(activation, "Namespace", "prefix");
         return Ok("".into());
     }
@@ -93,10 +91,10 @@ pub fn prefix<'gc>(
 /// Implements `Namespace.uri`'s getter
 pub fn uri<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(o) = this.and_then(|t| t.as_namespace_object()) {
+    if let Some(o) = this.as_namespace_object() {
         return Ok(o.namespace().as_uri().into());
     }
 

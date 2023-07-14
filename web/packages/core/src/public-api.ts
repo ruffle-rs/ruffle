@@ -163,9 +163,7 @@ export class PublicAPI {
             const polyfills =
                 "polyfills" in this.config ? this.config.polyfills : true;
             if (polyfills !== false) {
-                this.sources[this.newestName]!.polyfill(
-                    this.newestName === "extension"
-                );
+                this.sources[this.newestName]!.polyfill();
             }
         }
     }

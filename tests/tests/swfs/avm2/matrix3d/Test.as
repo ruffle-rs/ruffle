@@ -83,6 +83,52 @@
 			} catch (e) {
 				trace("Column 4: " + e);
 			}
+		
+			var row = new Vector3D();
+			for each (var i in [0, 1, 2, 3]) {
+				newMat.copyRowTo(i, row);
+				trace("Row: " + row + " w=" + row.w);
+			}
+			try {
+				newMat.copyRowTo(4, row);
+			} catch (e) {
+				trace("Row 4: " + e);
+			}
+		
+			var row0 = new Vector3D(100, 200, 300, 400);
+			var row1 =  new Vector3D(500, 600, 700, 800);
+			var row2 =  new Vector3D(900, 1000, 1100, 1200);
+			var row3 = new Vector3D(1300, 1400, 1500, 1600);
+		
+			newMat.copyRowFrom(0, row0);
+			newMat.copyRowFrom(1, row1);
+			newMat.copyRowFrom(2, row2);
+			newMat.copyRowFrom(3, row3);
+		
+			try {
+				newMat.copyRowFrom(4, row3)
+			} catch (e) {
+				trace("Copy from row 4: " + e);
+			}
+		
+			trace("After row copies: " + newMat.rawData);
+		
+			newMat.prependRotation(90, Vector3D.X_AXIS);
+			trace("After prependRotation: " + newMat.rawData);
+
+
+			trace("// copyColumnFrom tests");
+			var columnMatrix:Matrix3D = new Matrix3D(Vector.<Number>([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]));
+			col = new Vector3D(3, 4, 5, 6);
+			for each(i in [0, 1, 2, 3]) {
+				columnMatrix.copyColumnFrom(i, col);
+				trace("Matrix raw data: " + columnMatrix.rawData);
+			}
+			try {
+				columnMatrix.copyColumnFrom(4, col);
+			} catch(e) {
+				trace("Column 4: " + e);
+			}
 		}
 	}
 }

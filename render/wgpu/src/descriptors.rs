@@ -1,3 +1,4 @@
+use crate::filters::{FilterVertex, Filters};
 use crate::layouts::BindLayouts;
 use crate::pipelines::VERTEX_BUFFERS_DESCRIPTION_POS;
 use crate::shaders::Shaders;
@@ -20,9 +21,10 @@ pub struct Descriptors {
     pub quad: Quad,
     copy_pipeline: Mutex<FnvHashMap<(u32, wgpu::TextureFormat), Arc<wgpu::RenderPipeline>>>,
     copy_srgb_pipeline: Mutex<FnvHashMap<(u32, wgpu::TextureFormat), Arc<wgpu::RenderPipeline>>>,
-    shaders: Shaders,
+    pub shaders: Shaders,
     pipelines: Mutex<FnvHashMap<(u32, wgpu::TextureFormat), Arc<Pipelines>>>,
     pub default_color_bind_group: wgpu::BindGroup,
+    pub filters: Filters,
 }
 
 impl Debug for Descriptors {
@@ -52,6 +54,7 @@ impl Descriptors {
                 resource: default_color_transform.as_entire_binding(),
             }],
         });
+        let filters = Filters::new(&device);
 
         Self {
             adapter,
@@ -66,6 +69,7 @@ impl Descriptors {
             shaders,
             pipelines: Default::default(),
             default_color_bind_group,
+            filters,
         }
     }
 
@@ -250,6 +254,7 @@ impl Descriptors {
 pub struct Quad {
     pub vertices_pos: wgpu::Buffer,
     pub vertices_pos_color: wgpu::Buffer,
+    pub filter_vertices: wgpu::Buffer,
     pub indices: wgpu::Buffer,
     pub texture_transforms: wgpu::Buffer,
 }
@@ -288,6 +293,24 @@ impl Quad {
                 color: [1.0, 1.0, 1.0, 1.0],
             },
         ];
+        let filter_vertices = [
+            FilterVertex {
+                position: [0.0, 0.0],
+                uv: [0.0, 0.0],
+            },
+            FilterVertex {
+                position: [1.0, 0.0],
+                uv: [1.0, 0.0],
+            },
+            FilterVertex {
+                position: [1.0, 1.0],
+                uv: [1.0, 1.0],
+            },
+            FilterVertex {
+                position: [0.0, 1.0],
+                uv: [0.0, 1.0],
+            },
+        ];
         let indices: [u32; 6] = [0, 1, 2, 0, 2, 3];
 
         let vbo_pos = create_buffer_with_data(
@@ -302,6 +325,13 @@ impl Quad {
             bytemuck::cast_slice(&vertices_pos_color),
             wgpu::BufferUsages::VERTEX,
             create_debug_label!("Quad vbo (pos & color)"),
+        );
+
+        let vbo_filter = create_buffer_with_data(
+            device,
+            bytemuck::cast_slice(&filter_vertices),
+            wgpu::BufferUsages::VERTEX,
+            create_debug_label!("Quad vbo (filter)"),
         );
 
         let ibo = create_buffer_with_data(
@@ -328,6 +358,7 @@ impl Quad {
         Self {
             vertices_pos: vbo_pos,
             vertices_pos_color: vbo_pos_color,
+            filter_vertices: vbo_filter,
             indices: ibo,
             texture_transforms: tex_transforms,
         }

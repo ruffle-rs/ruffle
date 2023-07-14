@@ -1,0 +1,37 @@
+getProperty('_root.mc3', _X)
+123
+getProperty('mc3', _X)
+undefined
+getProperty('clip3', _X)
+undefined
+
+setProperty('_root.mc3', _Y, 789)
+789
+789
+setProperty('mc3', _Y, 123)
+123
+undefined
+setProperty('clip3', _Y, 456)
+456
+undefined
+
+Target not found: Target="/mc2" Base="_level0"
+// tellTarget(mc1) { mc2.removeMovieClip() }
+
+getProperty('_root.mc3', _X)
+123
+getProperty('mc3', _X)
+123
+getProperty('clip3', _X)
+undefined
+
+setProperty('_root.mc3', _Y, 789)
+789
+789
+setProperty('mc3', _Y, 123)
+123
+123
+setProperty('clip3', _Y, 456)
+456
+undefined
+

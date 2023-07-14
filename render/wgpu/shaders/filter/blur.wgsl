@@ -1,44 +1,36 @@
 #import filter
 
-struct VertexOutput {
-    @builtin(position) position: vec4<f32>,
-    @location(0) uv: vec2<f32>,
-};
-
 struct Filter {
-    blur_x: f32,
-    blur_y: f32,
-    width: f32,
-    height: f32,
+    // Secretly a vec2<f32> but within alignment rules
+    dir_x: f32,
+    dir_y: f32,
+
+    // Full size of the blur kernel (from left to right, ie)
+    full_size: f32,
+
+    // Half size of the blur kernel (from center to right, ie) - without center piece
+    half_size: f32,
 }
 
-#if use_push_constants == true
-    @group(2) @binding(0) var<uniform> filter_args: Filter;
-#else
-    @group(4) @binding(0) var<uniform> filter_args: Filter;
-#endif
+@group(0) @binding(0) var texture: texture_2d<f32>;
+@group(0) @binding(1) var texture_sampler: sampler;
+@group(0) @binding(2) var<uniform> filter_args: Filter;
 
 @vertex
-fn main_vertex(in: filter::FilterVertexInput) -> filter::VertexOutput {
+fn main_vertex(in: filter::VertexInput) -> filter::VertexOutput {
     return filter::main_vertex(in);
 }
 
 @fragment
 fn main_fragment(in: filter::VertexOutput) -> @location(0) vec4<f32> {
-    var f = filter_args;
+    let direction = vec2<f32>(filter_args.dir_x, filter_args.dir_y);
     var color = vec4<f32>();
-    var sum = 0.0;
 
-    for (var x = -f.blur_x; x <= f.blur_x; x += 1.0) {
-        for (var y = -f.blur_y; y <= f.blur_y; y += 1.0) {
-            var offset = vec3<f32>(x / f.width, y / f.height, 0.0);
-            let sample = textureSample(filter::texture, filter::texture_sampler, in.uv + offset.xy);
-            let weight = 1.0;
-            color += vec4<f32>(sample.rgb / sample.a, sample.a) * weight;
-            sum += weight;
-        }
+    let weight = 1.0 / filter_args.full_size;
+
+    for (var i = 0.0; i < filter_args.full_size; i += 1.0) {
+        color += textureSample(texture, texture_sampler, in.uv + direction * (i - filter_args.half_size)) * weight;
     }
-    color /= sum;
 
-    return vec4<f32>(color.rgb * color.a, color.a);
+    return color;
 }

@@ -85,11 +85,11 @@ impl<'gc> Namespace<'gc> {
                 NamespaceData::Private(translation_unit.pool_string(idx.0, context)?)
             }
         };
-        Ok(Self(Gc::allocate(context.gc_context, ns)))
+        Ok(Self(Gc::new(context.gc_context, ns)))
     }
 
     pub fn any(mc: MutationContext<'gc, '_>) -> Self {
-        Self(Gc::allocate(mc, NamespaceData::Any))
+        Self(Gc::new(mc, NamespaceData::Any))
     }
 
     // TODO(moulins): allow passing an AvmAtom or a non-static `&WStr` directly
@@ -100,10 +100,7 @@ impl<'gc> Namespace<'gc> {
         let atom = context
             .interner
             .intern(context.gc_context, package_name.into());
-        Self(Gc::allocate(
-            context.gc_context,
-            NamespaceData::Namespace(atom),
-        ))
+        Self(Gc::new(context.gc_context, NamespaceData::Namespace(atom)))
     }
 
     // TODO(moulins): allow passing an AvmAtom or a non-static `&WStr` directly
@@ -114,7 +111,7 @@ impl<'gc> Namespace<'gc> {
         let atom = context
             .interner
             .intern(context.gc_context, package_name.into());
-        Self(Gc::allocate(
+        Self(Gc::new(
             context.gc_context,
             NamespaceData::PackageInternal(atom),
         ))

@@ -4,6 +4,7 @@ use crate::avm2::object::TObject;
 use crate::avm2::{Activation, Error, Object, Value};
 
 pub mod local_connection;
+pub mod net_connection;
 pub mod net_stream;
 pub mod object_encoding;
 pub mod shared_object;
@@ -12,7 +13,7 @@ pub mod url_loader;
 /// Implements `flash.net.navigateToURL`
 pub fn navigate_to_url<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let request = args

@@ -5,6 +5,7 @@ use indexmap::IndexMap;
 use crate::avm2::activation::Activation;
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
 use crate::avm2::object::LoaderInfoObject;
+use crate::avm2::object::LoaderStream;
 use crate::avm2::object::TObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
@@ -15,7 +16,7 @@ use crate::avm2_stub_method;
 use crate::backend::navigator::{NavigationMethod, Request};
 use crate::display_object::LoaderDisplay;
 use crate::display_object::MovieClip;
-use crate::loader::{Avm2LoaderData, MovieLoaderEventHandler};
+use crate::loader::MovieLoaderVMData;
 use crate::tag_utils::SwfMovie;
 use std::sync::Arc;
 
@@ -55,46 +56,60 @@ pub fn loader_allocator<'gc>(
 
 pub fn load<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this {
-        let url_request = args.get_object(activation, 0, "request")?;
-        let context = args.try_get_object(activation, 1);
+    let url_request = args.get_object(activation, 0, "request")?;
+    let context = args.try_get_object(activation, 1);
 
-        // This is a dummy MovieClip, which will get overwritten in `Loader`
-        let content = MovieClip::new(
-            Arc::new(SwfMovie::empty(activation.context.swf.version())),
+    // This is a dummy MovieClip, which will get overwritten in `Loader`
+    let content = MovieClip::new(
+        Arc::new(SwfMovie::empty(activation.context.swf.version())),
+        activation.context.gc_context,
+    );
+
+    let loader_info = this
+        .get_property(
+            &Multiname::new(
+                activation.avm2().flash_display_internal,
+                "_contentLoaderInfo",
+            ),
+            activation,
+        )?
+        .as_object()
+        .unwrap();
+
+    // Update the LoaderStream - we still have a fake SwfMovie, but we now have the real target clip.
+    loader_info
+        .as_loader_info_object()
+        .unwrap()
+        .set_loader_stream(
+            LoaderStream::NotYetLoaded(
+                Arc::new(SwfMovie::empty(activation.context.swf.version())),
+                Some(content.into()),
+                false,
+            ),
             activation.context.gc_context,
         );
 
-        let loader_info = this
-            .get_property(
-                &Multiname::new(
-                    activation.avm2().flash_display_internal,
-                    "_contentLoaderInfo",
-                ),
-                activation,
-            )?
-            .as_object()
-            .unwrap();
+    let request = request_from_url_request(activation, url_request)?;
 
-        let request = request_from_url_request(activation, url_request)?;
+    let url = request.url().to_string();
+    let future = activation.context.load_manager.load_movie_into_clip(
+        activation.context.player.clone(),
+        content.into(),
+        request,
+        Some(url),
+        MovieLoaderVMData::Avm2 {
+            loader_info,
+            context,
+            default_domain: activation
+                .caller_domain()
+                .expect("Missing caller domain in Loader.load"),
+        },
+    );
+    activation.context.navigator.spawn_future(future);
 
-        let url = request.url().to_string();
-        let future = activation.context.load_manager.load_movie_into_clip(
-            activation.context.player.clone(),
-            content.into(),
-            request,
-            Some(url),
-            Some(MovieLoaderEventHandler::Avm2LoaderInfo(loader_info)),
-            Some(Avm2LoaderData {
-                context,
-                default_domain: activation.caller_domain(),
-            }),
-        );
-        activation.context.navigator.spawn_future(future);
-    }
     Ok(Value::Undefined)
 }
 
@@ -188,48 +203,49 @@ pub fn request_from_url_request<'gc>(
 
 pub fn load_bytes<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this {
-        let arg0 = args.get_object(activation, 0, "data")?;
-        let bytearray = arg0.as_bytearray().unwrap();
-        let context = args.try_get_object(activation, 1);
+    let arg0 = args.get_object(activation, 0, "data")?;
+    let bytearray = arg0.as_bytearray().unwrap();
+    let context = args.try_get_object(activation, 1);
 
-        // This is a dummy MovieClip, which will get overwritten in `Loader`
-        let content = MovieClip::new(
-            Arc::new(SwfMovie::empty(activation.context.swf.version())),
-            activation.context.gc_context,
-        );
+    // This is a dummy MovieClip, which will get overwritten in `Loader`
+    let content = MovieClip::new(
+        Arc::new(SwfMovie::empty(activation.context.swf.version())),
+        activation.context.gc_context,
+    );
 
-        let loader_info = this
-            .get_property(
-                &Multiname::new(
-                    activation.avm2().flash_display_internal,
-                    "_contentLoaderInfo",
-                ),
-                activation,
-            )?
-            .as_object()
-            .unwrap();
-        let future = activation.context.load_manager.load_movie_into_clip_bytes(
-            activation.context.player.clone(),
-            content.into(),
-            bytearray.bytes().to_vec(),
-            Some(MovieLoaderEventHandler::Avm2LoaderInfo(loader_info)),
-            Some(Avm2LoaderData {
-                context,
-                default_domain: activation.caller_domain(),
-            }),
-        );
-        activation.context.navigator.spawn_future(future);
-    }
+    let loader_info = this
+        .get_property(
+            &Multiname::new(
+                activation.avm2().flash_display_internal,
+                "_contentLoaderInfo",
+            ),
+            activation,
+        )?
+        .as_object()
+        .unwrap();
+    let future = activation.context.load_manager.load_movie_into_clip_bytes(
+        activation.context.player.clone(),
+        content.into(),
+        bytearray.bytes().to_vec(),
+        MovieLoaderVMData::Avm2 {
+            loader_info,
+            context,
+            default_domain: activation
+                .caller_domain()
+                .expect("Missing caller domain in Loader.loadBytes"),
+        },
+    );
+    activation.context.navigator.spawn_future(future);
+
     Ok(Value::Undefined)
 }
 
 pub fn unload<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // TODO: Broadcast an "unload" event on the LoaderInfo and reset LoaderInfo properties

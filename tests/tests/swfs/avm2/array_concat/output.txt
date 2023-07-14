@@ -33,3 +33,9 @@ f
 d
 e
 f
+//a.concat(null, undefined);
+a
+b
+c
+null
+undefined

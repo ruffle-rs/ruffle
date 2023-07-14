@@ -17,7 +17,7 @@ use crate::avm2::TranslationUnit;
 use crate::avm2::{Domain, Error};
 use crate::string::AvmString;
 use fnv::FnvHashMap;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use std::cell::{BorrowError, Ref, RefMut};
 use std::collections::HashSet;
 use std::fmt::Debug;
@@ -26,7 +26,11 @@ use std::hash::{Hash, Hasher};
 /// An Object which can be called to execute its function code.
 #[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
-pub struct ClassObject<'gc>(GcCell<'gc, ClassObjectData<'gc>>);
+pub struct ClassObject<'gc>(pub GcCell<'gc, ClassObjectData<'gc>>);
+
+#[derive(Collect, Clone, Copy, Debug)]
+#[collect(no_drop)]
+pub struct ClassObjectWeak<'gc>(pub GcWeakCell<'gc, ClassObjectData<'gc>>);
 
 #[derive(Collect, Clone)]
 #[collect(no_drop)]
@@ -190,7 +194,7 @@ impl<'gc> ClassObject<'gc> {
             .or_else(|| superclass_object.and_then(|c| c.instance_allocator()))
             .unwrap_or(scriptobject_allocator);
 
-        let class_object = ClassObject(GcCell::allocate(
+        let class_object = ClassObject(GcCell::new(
             activation.context.gc_context,
             ClassObjectData {
                 base: ScriptObjectData::custom_new(None, None),
@@ -325,7 +329,11 @@ impl<'gc> ClassObject<'gc> {
         let mut queue = vec![class];
         while let Some(cls) = queue.pop() {
             for interface_name in cls.read().direct_interfaces() {
-                let interface = self.early_resolve_class(scope.domain(), interface_name)?;
+                let interface = self.early_resolve_class(
+                    scope.domain(),
+                    interface_name,
+                    activation.context.gc_context,
+                )?;
 
                 if !interface.read().is_interface() {
                     return Err(format!(
@@ -342,7 +350,11 @@ impl<'gc> ClassObject<'gc> {
             }
 
             if let Some(superclass_name) = cls.read().super_class_name() {
-                queue.push(self.early_resolve_class(scope.domain(), superclass_name)?);
+                queue.push(self.early_resolve_class(
+                    scope.domain(),
+                    superclass_name,
+                    activation.context.gc_context,
+                )?);
             }
         }
         write.interfaces = interfaces;
@@ -381,9 +393,10 @@ impl<'gc> ClassObject<'gc> {
         &self,
         domain: Domain<'gc>,
         class_name: &Multiname<'gc>,
+        mc: MutationContext<'gc, '_>,
     ) -> Result<GcCell<'gc, Class<'gc>>, Error<'gc>> {
         domain
-            .get_class(class_name)?
+            .get_class(class_name, mc)?
             .ok_or_else(|| format!("Could not resolve class {class_name:?}").into())
     }
 
@@ -432,7 +445,7 @@ impl<'gc> ClassObject<'gc> {
                 .write(activation.context.gc_context)
                 .mark_class_initialized();
 
-            class_init_fn.call(Some(object), &[], activation)?;
+            class_init_fn.call(object.into(), &[], activation)?;
         }
 
         Ok(())
@@ -444,24 +457,19 @@ impl<'gc> ClassObject<'gc> {
     /// interface we are checking against this class.
     ///
     /// To test if a class *instance* is of a given type, see is_of_type.
-    pub fn has_class_in_chain(self, test_class: ClassObject<'gc>) -> bool {
+    pub fn has_class_in_chain(self, test_class: GcCell<'gc, Class<'gc>>) -> bool {
         let mut my_class = Some(self);
 
         while let Some(class) = my_class {
-            if Object::ptr_eq(class, test_class) {
+            if GcCell::ptr_eq(class.inner_class_definition(), test_class) {
                 return true;
             }
 
-            if let (Some(my_param), Some(test_param)) =
-                (class.as_class_params(), test_class.as_class_params())
+            let test_class_read = test_class.read();
+            if let (Some(Some(my_param)), Some(other_single_param)) =
+                (class.as_class_params(), test_class_read.param())
             {
-                let are_all_params_coercible = match (my_param, test_param) {
-                    (Some(my_param), Some(test_param)) => my_param.has_class_in_chain(test_param),
-                    (None, Some(_)) => false,
-                    _ => true,
-                };
-
-                if are_all_params_coercible {
+                if my_param.has_class_in_chain(*other_single_param) {
                     return true;
                 }
             }
@@ -474,9 +482,9 @@ impl<'gc> ClassObject<'gc> {
         // Therefore, we only need to check interfaces once, and we can skip
         // checking them when we processing superclasses in the `while`
         // further down in this method.
-        if test_class.inner_class_definition().read().is_interface() {
+        if test_class.read().is_interface() {
             for interface in self.interfaces() {
-                if GcCell::ptr_eq(interface, test_class.inner_class_definition()) {
+                if GcCell::ptr_eq(interface, test_class) {
                     return true;
                 }
             }
@@ -488,7 +496,7 @@ impl<'gc> ClassObject<'gc> {
     /// Call the instance initializer.
     pub fn call_init(
         self,
-        receiver: Option<Object<'gc>>,
+        receiver: Value<'gc>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -506,7 +514,7 @@ impl<'gc> ClassObject<'gc> {
     /// classes that cannot be constructed but can be supercalled).
     pub fn call_native_init(
         self,
-        receiver: Option<Object<'gc>>,
+        receiver: Value<'gc>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -570,7 +578,7 @@ impl<'gc> ClassObject<'gc> {
             let callee =
                 FunctionObject::from_method(activation, method, scope, Some(receiver), Some(class));
 
-            callee.call(Some(receiver), arguments, activation)
+            callee.call(receiver.into(), arguments, activation)
         } else {
             receiver.call_property(multiname, arguments, activation)
         }
@@ -631,7 +639,7 @@ impl<'gc> ClassObject<'gc> {
 
                 // We call getters, but return the actual function object for normal methods
                 if matches!(property, Some(Property::Virtual { .. })) {
-                    callee.call(Some(receiver), &[], activation)
+                    callee.call(receiver.into(), &[], activation)
                 } else {
                     Ok(callee.into())
                 }
@@ -706,7 +714,7 @@ impl<'gc> ClassObject<'gc> {
                 let callee =
                     FunctionObject::from_method(activation, method, scope, Some(receiver), Some(class));
 
-                callee.call(Some(receiver), &[value], activation)?;
+                callee.call(receiver.into(), &[value], activation)?;
                 Ok(())
             }
             Some(Property::Slot { .. }) => {
@@ -833,7 +841,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
 
     fn call(
         self,
-        receiver: Option<Object<'gc>>,
+        receiver: Value<'gc>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -847,7 +855,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
                 .get(0)
                 .cloned()
                 .unwrap_or(Value::Undefined)
-                .coerce_to_type(activation, self)
+                .coerce_to_type(activation, self.inner_class_definition())
         }
     }
 
@@ -862,7 +870,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
 
         instance.install_instance_slots(activation.context.gc_context);
 
-        self.call_init(Some(instance), arguments, activation)?;
+        self.call_init(instance.into(), arguments, activation)?;
 
         Ok(instance)
     }
@@ -892,7 +900,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
     fn apply(
         &self,
         activation: &mut Activation<'_, 'gc>,
-        nullable_params: &[Value<'gc>],
+        nullable_param: Value<'gc>,
     ) -> Result<ClassObject<'gc>, Error<'gc>> {
         let self_class = self.inner_class_definition();
 
@@ -900,22 +908,13 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             return Err(format!("Class {:?} is not generic", self_class.read().name()).into());
         }
 
-        if !self_class.read().params().is_empty() {
+        if !self_class.read().param().is_none() {
             return Err(format!("Class {:?} was already applied", self_class.read().name()).into());
-        }
-
-        if nullable_params.len() != 1 {
-            return Err(format!(
-                "Class {:?} only accepts one type parameter, {} given",
-                self_class.read().name(),
-                nullable_params.len()
-            )
-            .into());
         }
 
         //Because `null` is a valid parameter, we have to accept values as
         //parameters instead of objects. We coerce them to objects now.
-        let object_param = match &nullable_params[0] {
+        let object_param = match nullable_param {
             Value::Null => None,
             Value::Undefined => return Err("Undefined is not a valid type parameter".into()),
             v => Some(v.as_object().unwrap()),
@@ -938,9 +937,8 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             .unwrap_or(activation.avm2().classes().object)
             .inner_class_definition();
 
-        let parameterized_class = self_class
-            .read()
-            .with_type_params(&[class_param], activation.context.gc_context);
+        let parameterized_class: GcCell<'_, Class<'_>> =
+            Class::with_type_param(self_class, class_param, activation.context.gc_context);
 
         let class_scope = self.0.read().class_scope;
         let instance_scope = self.0.read().instance_scope;
@@ -955,7 +953,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         let native_constructor = self.0.read().native_constructor.clone();
         let call_handler = self.0.read().call_handler.clone();
 
-        let mut class_object = ClassObject(GcCell::allocate(
+        let mut class_object = ClassObject(GcCell::new(
             activation.context.gc_context,
             ClassObjectData {
                 base: ScriptObjectData::new(class_class),

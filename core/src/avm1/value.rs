@@ -486,6 +486,17 @@ impl<'gc> Value<'gc> {
             ValueObject::boxed(activation, self.to_owned())
         }
     }
+
+    pub fn as_blend_mode(&self) -> Option<swf::BlendMode> {
+        match *self {
+            Value::Undefined | Value::Null => Some(swf::BlendMode::Normal),
+            Value::Number(n) => swf::BlendMode::from_u8(f64_to_wrapping_u8(n)),
+            // Note that strings like `"5"` *are not* coerced.
+            Value::String(s) => s.to_string().parse().ok(),
+            // Anything else is not coerced either.
+            Value::Bool(_) | Value::Object(_) | Value::MovieClip(_) => None,
+        }
+    }
 }
 
 /// Calculate `value * 10^exp` through repeated multiplication or division.

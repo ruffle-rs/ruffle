@@ -72,7 +72,7 @@ impl<'gc> Scope<'gc> {
             scope.parent = scope.parent.map(|p| Self::new_target_scope(p, clip, mc));
         }
 
-        Gc::allocate(mc, scope)
+        Gc::new(mc, scope)
     }
 
     /// Construct a with scope to be used as the scope during a with block.

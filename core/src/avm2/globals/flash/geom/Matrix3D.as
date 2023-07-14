@@ -106,6 +106,74 @@ package flash.geom {
 			}
 		}
 
+		// Based on https://github.com/openfl/openfl/blob/develop/src/openfl/geom/Matrix3D.hx#L542C1-L573
+		public function copyRowTo(row:uint, vector3D:Vector3D):void {
+			if (row > 3) {
+				throw new ArgumentError("Error #2004: One of the parameters is invalid.", 2004);
+			}
+
+			switch (row) {
+				case 0:
+					vector3D.x = rawData[0];
+					vector3D.y = rawData[4];
+					vector3D.z = rawData[8];
+					vector3D.w = rawData[12];
+					break;
+				case 1:
+					vector3D.x = rawData[1];
+					vector3D.y = rawData[5];
+					vector3D.z = rawData[9];
+					vector3D.w = rawData[13];
+					break;
+				case 2:
+					vector3D.x = rawData[2];
+					vector3D.y = rawData[6];
+					vector3D.z = rawData[10];
+					vector3D.w = rawData[14];
+					break;
+				case 3:
+					vector3D.x = rawData[3];
+					vector3D.y = rawData[7];
+					vector3D.z = rawData[11];
+					vector3D.w = rawData[15];
+					break;
+			}
+		}
+
+		// Based on https://github.com/openfl/openfl/blob/develop/src/openfl/geom/Matrix3D.hx#L504-L534
+		public function copyRowFrom(row:uint, vector3D:Vector3D):void {
+			if (row > 3) {
+				throw new ArgumentError("Error #2004: One of the parameters is invalid.", 2004);
+			}
+			
+			switch (row) {
+				case 0:
+					_rawData[0] = vector3D.x;
+					_rawData[4] = vector3D.y;
+					_rawData[8] = vector3D.z;
+					_rawData[12] = vector3D.w;
+					break;
+				case 1:
+					_rawData[1] = vector3D.x;
+					_rawData[5] = vector3D.y;
+					_rawData[9] = vector3D.z;
+					_rawData[13] = vector3D.w;
+					break;
+				case 2:
+					_rawData[2] = vector3D.x;
+					_rawData[6] = vector3D.y;
+					_rawData[10] = vector3D.z;
+					_rawData[14] = vector3D.w;
+					break;
+				case 3:
+					_rawData[3] = vector3D.x;
+					_rawData[7] = vector3D.y;
+					_rawData[11] = vector3D.z;
+					_rawData[15] = vector3D.w;
+					break;
+			}
+		}
+
 		public function deltaTransformVector(v:Vector3D):Vector3D {
 			var x:Number = this._rawData[0] * v.x + this._rawData[4] * v.y + this._rawData[8] * v.z;
 			var y:Number = this._rawData[1] * v.x + this._rawData[5] * v.y + this._rawData[9] * v.z;
@@ -203,6 +271,12 @@ package flash.geom {
 		public function prependTranslation(x:Number, y:Number, z:Number):void {
 			var m = new Matrix3D();
 			m.position = new Vector3D(x, y, z);
+			this.prepend(m);
+		}
+
+		public function prependRotation(degrees:Number, axis:Vector3D, pivotPoint:Vector3D = null):void {
+			var m = new Matrix3D();
+			m.appendRotation(degrees, axis, pivotPoint);
 			this.prepend(m);
 		}
 
@@ -391,6 +465,7 @@ package flash.geom {
 
 			return !(components[2].x == 0 || components[2].y == 0 || components[2].y == 0);
 		}
+
 		public function copyColumnTo(column:uint, vector3D:Vector3D):void {
 			if (column > 3) {
 				throw new ArgumentError("Error #2004: One of the parameters is invalid.", 2004);
@@ -423,8 +498,41 @@ package flash.geom {
 					vector3D.z = _rawData[14];
 					vector3D.w = _rawData[15];
 					break;
+			}
+		}
 
-				default:
+		public function copyColumnFrom(column:uint, vector3D:Vector3D):void {
+			if (column > 3) {
+				throw new ArgumentError("Error #2004: One of the parameters is invalid.", 2004);
+			}
+			switch (column) {
+				case 0:
+				    _rawData[0] = vector3D.x;
+				    _rawData[1] = vector3D.y;
+				    _rawData[2] = vector3D.z;
+				    _rawData[3] = vector3D.w;
+					break;
+
+				case 1:
+				    _rawData[4] = vector3D.x;
+				    _rawData[5] = vector3D.y;
+				    _rawData[6] = vector3D.z;
+				    _rawData[7] = vector3D.w;
+					break;
+
+				case 2:
+				    _rawData[8] = vector3D.x;
+				    _rawData[9] = vector3D.y;
+				    _rawData[10] = vector3D.z;
+				    _rawData[11] = vector3D.w;
+					break;
+
+				case 3:
+				    _rawData[12] = vector3D.x;
+				    _rawData[13] = vector3D.y;
+				    _rawData[14] = vector3D.z;
+				    _rawData[15] = vector3D.w;
+					break;
 			}
 		}
 
@@ -593,6 +701,6 @@ import flash.geom.Orientation3D;
 
 function checkOrientation(orientationStyle:String) {
 	if (!(orientationStyle == Orientation3D.AXIS_ANGLE || orientationStyle == Orientation3D.EULER_ANGLES || orientationStyle == Orientation3D.QUATERNION)) {
-		throw new Error("Error #2187: Invalid orientation style " +  orientationStyle + ".  Value must be one of 'Orientation3D.EULER_ANGLES', 'Orientation3D.AXIS_ANGLE', or 'Orientation3D.QUATERNION'.", 2187);
+		throw new Error("Error #2187: Invalid orientation style " + orientationStyle + ".  Value must be one of 'Orientation3D.EULER_ANGLES', 'Orientation3D.AXIS_ANGLE', or 'Orientation3D.QUATERNION'.", 2187);
 	}
 }

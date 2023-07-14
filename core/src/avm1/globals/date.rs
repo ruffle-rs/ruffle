@@ -372,7 +372,7 @@ fn constructor<'gc>(
     };
     this.set_native(
         activation.context.gc_context,
-        NativeObject::Date(GcCell::allocate(activation.context.gc_context, date)),
+        NativeObject::Date(GcCell::new(activation.context.gc_context, date)),
     );
     Ok(this.into())
 }

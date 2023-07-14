@@ -28,10 +28,10 @@ fn color_from_args(rgb: u32, alpha: f64) -> Color {
 /// Implements `Graphics.beginFill`.
 pub fn begin_fill<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.and_then(|t| t.as_display_object()) {
+    if let Some(this) = this.as_display_object() {
         let color = args.get_u32(activation, 0)?;
         let alpha = args.get_f64(activation, 1)?;
 
@@ -46,10 +46,10 @@ pub fn begin_fill<'gc>(
 /// Implements `Graphics.beginBitmapFill`.
 pub fn begin_bitmap_fill<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.and_then(|t| t.as_display_object()) {
+    if let Some(this) = this.as_display_object() {
         let bitmap = args
             .get_object(activation, 0, "bitmap")?
             .as_bitmap_data()
@@ -93,10 +93,10 @@ pub fn begin_bitmap_fill<'gc>(
 /// Implements `Graphics.beginGradientFill`.
 pub fn begin_gradient_fill<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.and_then(|t| t.as_display_object()) {
+    if let Some(this) = this.as_display_object() {
         let gradient_type = args.get_string(activation, 0);
         let gradient_type = parse_gradient_type(activation, gradient_type?)?;
         let colors = args.get_object(activation, 1, "colors")?;
@@ -216,10 +216,10 @@ fn parse_spread_method(spread_method: AvmString) -> GradientSpread {
 /// Implements `Graphics.clear`
 pub fn clear<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.and_then(|t| t.as_display_object()) {
+    if let Some(this) = this.as_display_object() {
         if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
             draw.clear()
         }
@@ -231,10 +231,10 @@ pub fn clear<'gc>(
 /// Implements `Graphics.curveTo`.
 pub fn curve_to<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.and_then(|t| t.as_display_object()) {
+    if let Some(this) = this.as_display_object() {
         let control_x = args.get_f64(activation, 0)?;
         let control_y = args.get_f64(activation, 1)?;
         let anchor_x = args.get_f64(activation, 2)?;
@@ -254,10 +254,10 @@ pub fn curve_to<'gc>(
 /// Implements `Graphics.endFill`.
 pub fn end_fill<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.and_then(|t| t.as_display_object()) {
+    if let Some(this) = this.as_display_object() {
         if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
             draw.set_fill_style(None);
         }
@@ -309,10 +309,10 @@ fn scale_mode_to_allow_scale_bits<'gc>(scale_mode: &WStr) -> Result<(bool, bool)
 /// Implements `Graphics.lineStyle`.
 pub fn line_style<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.and_then(|t| t.as_display_object()) {
+    if let Some(this) = this.as_display_object() {
         let thickness = args.get_f64(activation, 0)?;
 
         if thickness.is_nan() {
@@ -356,10 +356,10 @@ pub fn line_style<'gc>(
 /// Implements `Graphics.lineTo`.
 pub fn line_to<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.and_then(|t| t.as_display_object()) {
+    if let Some(this) = this.as_display_object() {
         let x = Twips::from_pixels(args.get_f64(activation, 0)?);
         let y = Twips::from_pixels(args.get_f64(activation, 1)?);
 
@@ -374,10 +374,10 @@ pub fn line_to<'gc>(
 /// Implements `Graphics.moveTo`.
 pub fn move_to<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.and_then(|t| t.as_display_object()) {
+    if let Some(this) = this.as_display_object() {
         let x = Twips::from_pixels(args.get_f64(activation, 0)?);
         let y = Twips::from_pixels(args.get_f64(activation, 1)?);
 
@@ -392,10 +392,10 @@ pub fn move_to<'gc>(
 /// Implements `Graphics.drawRect`.
 pub fn draw_rect<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.and_then(|t| t.as_display_object()) {
+    if let Some(this) = this.as_display_object() {
         let x = Twips::from_pixels(args.get_f64(activation, 0)?);
         let y = Twips::from_pixels(args.get_f64(activation, 1)?);
         let width = Twips::from_pixels(args.get_f64(activation, 2)?);
@@ -669,10 +669,10 @@ fn draw_round_rect_internal(
 /// Implements `Graphics.drawRoundRect`.
 pub fn draw_round_rect<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.and_then(|t| t.as_display_object()) {
+    if let Some(this) = this.as_display_object() {
         let x = args.get_f64(activation, 0)?;
         let y = args.get_f64(activation, 1)?;
         let width = args.get_f64(activation, 2)?;
@@ -699,10 +699,10 @@ pub fn draw_round_rect<'gc>(
 /// Implements `Graphics.drawCircle`.
 pub fn draw_circle<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.and_then(|t| t.as_display_object()) {
+    if let Some(this) = this.as_display_object() {
         let x = args.get_f64(activation, 0)?;
         let y = args.get_f64(activation, 1)?;
         let radius = args.get_f64(activation, 2)?;
@@ -726,10 +726,10 @@ pub fn draw_circle<'gc>(
 /// Implements `Graphics.drawEllipse`.
 pub fn draw_ellipse<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.and_then(|t| t.as_display_object()) {
+    if let Some(this) = this.as_display_object() {
         let x = args.get_f64(activation, 0)?;
         let y = args.get_f64(activation, 1)?;
         let width = args.get_f64(activation, 2)?;
@@ -746,10 +746,10 @@ pub fn draw_ellipse<'gc>(
 /// Implements `Graphics.lineGradientStyle`
 pub fn line_gradient_style<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.and_then(|t| t.as_display_object()) {
+    if let Some(this) = this.as_display_object() {
         let gradient_type = args.get_string(activation, 0);
         let gradient_type = parse_gradient_type(activation, gradient_type?)?;
         let colors = args.get_object(activation, 1, "colors")?;
@@ -809,7 +809,7 @@ pub fn line_gradient_style<'gc>(
 /// Implements `Graphics.cubicCurveTo`
 pub fn cubic_curve_to<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_method!(activation, "flash.display.Graphics", "cubicCurveTo");
@@ -819,27 +819,137 @@ pub fn cubic_curve_to<'gc>(
 /// Implements `Graphics.copyFrom`
 pub fn copy_from<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
+    this: Object<'gc>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.display.Graphics", "copyFrom");
+    if let Some(this) = this.as_display_object() {
+        let source = args
+            .get_object(activation, 0, "sourceGraphics")?
+            .as_display_object()
+            .expect("Bad sourceGraphics");
+
+        let source = source
+            .as_drawing(activation.context.gc_context)
+            .expect("Missing drawing for sourceGraphics");
+
+        let mut target_drawing = this
+            .as_drawing(activation.context.gc_context)
+            .expect("Missing drawing for target");
+
+        target_drawing.copy_from(&source);
+    }
     Ok(Value::Undefined)
 }
 
 /// Implements `Graphics.drawPath`
 pub fn draw_path<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
+    this: Object<'gc>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.display.Graphics", "drawPath");
+    let this = this.as_display_object().unwrap();
+    let mut drawing = this.as_drawing(activation.context.gc_context).unwrap();
+    let commands = args.get_object(activation, 0, "commands")?;
+    let data = args.get_object(activation, 1, "data")?;
+    // FIXME - implement winding, and fill  behavior described in the Flash docs
+    // (which is different from just running each command sequentially on `Graphics`)
+    let _winding = args.get_string(activation, 2)?;
+
+    avm2_stub_method!(
+        activation,
+        "flash.display.Graphics",
+        "drawPath",
+        "winding and fill behavior"
+    );
+
+    let commands = commands
+        .as_vector_storage()
+        .expect("commands is not a Vector");
+    let data = &*data.as_vector_storage().expect("data is not a Vector");
+
+    let mut data_index = 0;
+
+    for i in 0..commands.length() {
+        let command = commands
+            .get(i, activation)
+            .expect("missing command")
+            .as_integer(activation.context.gc_context)
+            .expect("commands is not a Vec.<int>");
+
+        let mut read_point = || {
+            let x = data
+                .get(data_index, activation)
+                .expect("missing data")
+                .as_number(activation.context.gc_context)
+                .expect("data is not a Vec.<Number>");
+
+            let y = data
+                .get(data_index + 1, activation)
+                .expect("missing data")
+                .as_number(activation.context.gc_context)
+                .expect("data is not a Vec.<Number>");
+
+            data_index += 2;
+
+            Point {
+                x: Twips::from_pixels(x),
+                y: Twips::from_pixels(y),
+            }
+        };
+
+        // FIXME - determine correct behavior when data is missing or invalid commands
+        // are used. Flash doesn't throw an error, and it's unclear what the correct
+        // behavior is, exactly. For now, just panic when this happens, so we can determine
+        // if there are any SWFS in the wild relying on this.
+        let draw_command = match command {
+            // NO_OP
+            0 => None,
+            // MOVE_TO
+            1 => Some(DrawCommand::MoveTo(read_point())),
+            // LINE_TO
+            2 => Some(DrawCommand::LineTo(read_point())),
+            // CURVE_TO
+            3 => Some(DrawCommand::CurveTo {
+                control: read_point(),
+                anchor: read_point(),
+            }),
+            // WIDE_MOVE_TO
+            4 => {
+                let _dummy = read_point();
+                Some(DrawCommand::MoveTo(read_point()))
+            }
+            // WIDE_LINE_TO
+            5 => {
+                let _dummy = read_point();
+                Some(DrawCommand::LineTo(read_point()))
+            }
+            // CUBIC_CURVE_TO
+            6 => {
+                let _first = read_point();
+                let _second = read_point();
+                avm2_stub_method!(
+                    activation,
+                    "flash.display.Graphics",
+                    "drawPath",
+                    "CUBIC_CURVE_TO"
+                );
+                None
+            }
+            _ => panic!("Unexpected command value {command}"),
+        };
+
+        if let Some(draw_command) = draw_command {
+            drawing.draw_command(draw_command);
+        }
+    }
+
     Ok(Value::Undefined)
 }
 
 /// Implements `Graphics.drawRoundRectComplex`
 pub fn draw_round_rect_complex<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_method!(activation, "flash.display.Graphics", "drawRoundRectComplex");
@@ -849,7 +959,7 @@ pub fn draw_round_rect_complex<'gc>(
 /// Implements `Graphics.drawTriangles`
 pub fn draw_triangles<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_method!(activation, "flash.display.Graphics", "drawTriangles");
@@ -859,7 +969,7 @@ pub fn draw_triangles<'gc>(
 /// Implements `Graphics.drawGraphicsData`
 pub fn draw_graphics_data<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_method!(activation, "flash.display.Graphics", "drawGraphicsData");
@@ -869,10 +979,10 @@ pub fn draw_graphics_data<'gc>(
 /// Implements `Graphics.lineBitmapStyle`
 pub fn line_bitmap_style<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.and_then(|t| t.as_display_object()) {
+    if let Some(this) = this.as_display_object() {
         let bitmap = args
             .get_object(activation, 0, "bitmap")?
             .as_bitmap_data()
@@ -916,7 +1026,7 @@ pub fn line_bitmap_style<'gc>(
 /// Implements `Graphics.readGraphicsData`
 pub fn read_graphics_data<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_method!(activation, "flash.display.Graphics", "readGraphicsData");

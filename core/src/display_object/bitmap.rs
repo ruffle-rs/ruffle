@@ -112,7 +112,7 @@ impl<'gc> Bitmap<'gc> {
         let width = bitmap_data.width();
         let height = bitmap_data.height();
 
-        Bitmap(GcCell::allocate(
+        Bitmap(GcCell::new(
             context.gc_context,
             BitmapGraphicData {
                 base: Default::default(),
@@ -153,7 +153,7 @@ impl<'gc> Bitmap<'gc> {
         Ok(Self::new_with_bitmap_data(
             context,
             id,
-            BitmapDataWrapper::new(GcCell::allocate(context.gc_context, bitmap_data)),
+            BitmapDataWrapper::new(GcCell::new(context.gc_context, bitmap_data)),
             smoothing,
         ))
     }
@@ -219,9 +219,13 @@ impl<'gc> Bitmap<'gc> {
         context: &mut UpdateContext<'_, 'gc>,
         class: Avm2ClassObject<'gc>,
     ) {
-        let bitmap_class = if class.has_class_in_chain(context.avm2.classes().bitmap) {
+        let bitmap_class = if class
+            .has_class_in_chain(context.avm2.classes().bitmap.inner_class_definition())
+        {
             BitmapClass::Bitmap(class)
-        } else if class.has_class_in_chain(context.avm2.classes().bitmapdata) {
+        } else if class
+            .has_class_in_chain(context.avm2.classes().bitmapdata.inner_class_definition())
+        {
             BitmapClass::BitmapData(class)
         } else {
             return tracing::error!("Associated class {:?} for symbol {} must extend flash.display.Bitmap or BitmapData, does neither", class.inner_class_definition().read().name(), self.id());
@@ -249,7 +253,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
     }
 
     fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc> {
-        Self(GcCell::allocate(gc_context, self.0.read().clone())).into()
+        Self(GcCell::new(gc_context, self.0.read().clone())).into()
     }
 
     fn as_ptr(&self) -> *const DisplayObjectPtr {

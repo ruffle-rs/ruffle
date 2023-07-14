@@ -609,7 +609,7 @@ pub fn constructor<'gc>(
     )?;
     this.set_native(
         activation.context.gc_context,
-        NativeObject::TextFormat(GcCell::allocate(activation.context.gc_context, text_format)),
+        NativeObject::TextFormat(GcCell::new(activation.context.gc_context, text_format)),
     );
     Ok(this.into())
 }

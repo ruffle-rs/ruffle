@@ -6,7 +6,8 @@ use egui::{
     Align2, Button, Checkbox, ComboBox, DragValue, Grid, Slider, TextEdit, Ui, Widget, Window,
 };
 use ruffle_core::backend::navigator::OpenURLMode;
-use ruffle_core::{LoadBehavior, StageScaleMode};
+use ruffle_core::config::Letterbox;
+use ruffle_core::{LoadBehavior, StageAlign, StageScaleMode};
 use ruffle_render::quality::StageQuality;
 use std::path::Path;
 use unic_langid::LanguageIdentifier;
@@ -17,7 +18,6 @@ pub struct OpenDialog {
     options: PlayerOptions,
     event_loop: EventLoopProxy<RuffleEvent>,
     locale: LanguageIdentifier,
-    should_close: bool,
 
     // These are outside of PlayerOptions as it can be an invalid value (ie URL) during typing,
     // and we don't want to clear the value if the user, ie, toggles the checkbox.
@@ -33,18 +33,18 @@ pub struct OpenDialog {
 impl OpenDialog {
     pub fn new(
         defaults: PlayerOptions,
+        default_url: Option<Url>,
         event_loop: EventLoopProxy<RuffleEvent>,
         locale: LanguageIdentifier,
     ) -> Self {
         let spoof_url = OptionalUrlField::new(&defaults.spoof_url, "https://example.org/game.swf");
-        let base_url = OptionalUrlField::new(&defaults.spoof_url, "https://example.org");
-        let proxy_url = OptionalUrlField::new(&defaults.spoof_url, "socks5://localhost:8080");
-        let path = PathOrUrlField::new(None, "path/to/movie.swf");
+        let base_url = OptionalUrlField::new(&defaults.base, "https://example.org");
+        let proxy_url = OptionalUrlField::new(&defaults.proxy, "socks5://localhost:8080");
+        let path = PathOrUrlField::new(default_url, "path/to/movie.swf");
         Self {
             options: defaults,
             event_loop,
             locale,
-            should_close: false,
             spoof_url,
             base_url,
             proxy_url,
@@ -78,6 +78,7 @@ impl OpenDialog {
 
     pub fn show(&mut self, egui_ctx: &egui::Context) -> bool {
         let mut keep_open = true;
+        let mut should_close = false;
         let mut is_valid = true;
 
         Window::new(text(&self.locale, "open-dialog"))
@@ -115,12 +116,13 @@ impl OpenDialog {
                             .add_enabled(is_valid, Button::new(text(&self.locale, "start")))
                             .clicked()
                         {
-                            self.should_close = self.start();
+                            should_close = self.start();
                         }
                     })
                 });
             });
-        keep_open && !self.should_close
+
+        keep_open && !should_close
     }
 
     fn network_settings(&mut self, ui: &mut Ui) -> bool {
@@ -280,42 +282,151 @@ impl OpenDialog {
                     });
                 ui.end_row();
 
-                ui.label(text(&self.locale, "scale-mode"));
-                ComboBox::from_id_source("open-file-advanced-options-scale")
-                    .selected_text(match self.options.scale {
-                        StageScaleMode::ExactFit => text(&self.locale, "scale-mode-exactfit"),
-                        StageScaleMode::NoBorder => text(&self.locale, "scale-mode-noborder"),
-                        StageScaleMode::NoScale => text(&self.locale, "scale-mode-noscale"),
-                        StageScaleMode::ShowAll => text(&self.locale, "scale-mode-showall"),
+                ui.label(text(&self.locale, "letterbox"));
+                ComboBox::from_id_source("open-file-advanced-options-letterbox")
+                    .selected_text(match self.options.letterbox {
+                        Letterbox::On => text(&self.locale, "letterbox-on"),
+                        Letterbox::Fullscreen => text(&self.locale, "letterbox-fullscreen"),
+                        Letterbox::Off => text(&self.locale, "letterbox-off"),
                     })
                     .show_ui(ui, |ui| {
                         ui.selectable_value(
-                            &mut self.options.scale,
-                            StageScaleMode::ExactFit,
-                            text(&self.locale, "scale-mode-exactfit"),
+                            &mut self.options.letterbox,
+                            Letterbox::On,
+                            text(&self.locale, "letterbox-on"),
                         );
                         ui.selectable_value(
-                            &mut self.options.scale,
-                            StageScaleMode::NoBorder,
-                            text(&self.locale, "scale-mode-noborder"),
+                            &mut self.options.letterbox,
+                            Letterbox::Fullscreen,
+                            text(&self.locale, "letterbox-fullscreen"),
                         );
                         ui.selectable_value(
-                            &mut self.options.scale,
-                            StageScaleMode::NoScale,
-                            text(&self.locale, "scale-mode-noscale"),
-                        );
-                        ui.selectable_value(
-                            &mut self.options.scale,
-                            StageScaleMode::ShowAll,
-                            text(&self.locale, "scale-mode-showall"),
+                            &mut self.options.letterbox,
+                            Letterbox::Off,
+                            text(&self.locale, "letterbox-off"),
                         );
                     });
                 ui.end_row();
 
-                ui.label(text(&self.locale, "force-scale-mode"));
+                ui.label(text(&self.locale, "align"));
+                ui.horizontal(|ui| {
+                    ComboBox::from_id_source("open-file-advanced-options-align")
+                        .selected_text(match self.options.align {
+                            StageAlign::TOP => text(&self.locale, "align-top"),
+                            StageAlign::BOTTOM => text(&self.locale, "align-bottom"),
+                            StageAlign::LEFT => text(&self.locale, "align-left"),
+                            StageAlign::RIGHT => text(&self.locale, "align-right"),
+                            _ => {
+                                let align = self.options.align;
+                                if align == StageAlign::TOP | StageAlign::LEFT {
+                                    text(&self.locale, "align-top-left")
+                                } else if align == StageAlign::TOP | StageAlign::RIGHT {
+                                    text(&self.locale, "align-top-right")
+                                } else if align == StageAlign::BOTTOM | StageAlign::LEFT {
+                                    text(&self.locale, "align-bottom-left")
+                                } else if align == StageAlign::BOTTOM | StageAlign::RIGHT {
+                                    text(&self.locale, "align-bottom-right")
+                                } else {
+                                    text(&self.locale, "align-center")
+                                }
+                            }
+                        })
+                        .show_ui(ui, |ui| {
+                            ui.selectable_value(
+                                &mut self.options.align,
+                                StageAlign::default(),
+                                text(&self.locale, "align-center"),
+                            );
+                            ui.selectable_value(
+                                &mut self.options.align,
+                                StageAlign::TOP,
+                                text(&self.locale, "align-top"),
+                            );
+                            ui.selectable_value(
+                                &mut self.options.align,
+                                StageAlign::BOTTOM,
+                                text(&self.locale, "align-bottom"),
+                            );
+                            ui.selectable_value(
+                                &mut self.options.align,
+                                StageAlign::LEFT,
+                                text(&self.locale, "align-left"),
+                            );
+                            ui.selectable_value(
+                                &mut self.options.align,
+                                StageAlign::RIGHT,
+                                text(&self.locale, "align-right"),
+                            );
+                            ui.selectable_value(
+                                &mut self.options.align,
+                                StageAlign::TOP | StageAlign::LEFT,
+                                text(&self.locale, "align-top-left"),
+                            );
+                            ui.selectable_value(
+                                &mut self.options.align,
+                                StageAlign::TOP | StageAlign::RIGHT,
+                                text(&self.locale, "align-top-right"),
+                            );
+                            ui.selectable_value(
+                                &mut self.options.align,
+                                StageAlign::BOTTOM | StageAlign::LEFT,
+                                text(&self.locale, "align-bottom-left"),
+                            );
+                            ui.selectable_value(
+                                &mut self.options.align,
+                                StageAlign::BOTTOM | StageAlign::RIGHT,
+                                text(&self.locale, "align-bottom-right"),
+                            );
+                        });
+                    ui.checkbox(
+                        &mut self.options.force_align,
+                        text(&self.locale, "align-force"),
+                    );
+                });
+                ui.end_row();
+
+                ui.label(text(&self.locale, "scale-mode"));
+                ui.horizontal(|ui| {
+                    ComboBox::from_id_source("open-file-advanced-options-scale")
+                        .selected_text(match self.options.scale {
+                            StageScaleMode::ExactFit => text(&self.locale, "scale-mode-exactfit"),
+                            StageScaleMode::NoBorder => text(&self.locale, "scale-mode-noborder"),
+                            StageScaleMode::NoScale => text(&self.locale, "scale-mode-noscale"),
+                            StageScaleMode::ShowAll => text(&self.locale, "scale-mode-showall"),
+                        })
+                        .show_ui(ui, |ui| {
+                            ui.selectable_value(
+                                &mut self.options.scale,
+                                StageScaleMode::ExactFit,
+                                text(&self.locale, "scale-mode-exactfit"),
+                            );
+                            ui.selectable_value(
+                                &mut self.options.scale,
+                                StageScaleMode::NoBorder,
+                                text(&self.locale, "scale-mode-noborder"),
+                            );
+                            ui.selectable_value(
+                                &mut self.options.scale,
+                                StageScaleMode::NoScale,
+                                text(&self.locale, "scale-mode-noscale"),
+                            );
+                            ui.selectable_value(
+                                &mut self.options.scale,
+                                StageScaleMode::ShowAll,
+                                text(&self.locale, "scale-mode-showall"),
+                            );
+                        });
+                    ui.checkbox(
+                        &mut self.options.force_scale,
+                        text(&self.locale, "scale-mode-force"),
+                    );
+                });
+                ui.end_row();
+
+                ui.label(text(&self.locale, "dummy-external-interface"));
                 ui.checkbox(
-                    &mut self.options.force_scale,
-                    text(&self.locale, "force-scale-mode-check"),
+                    &mut self.options.dummy_external_interface,
+                    text(&self.locale, "dummy-external-interface-check"),
                 );
                 ui.end_row();
 
@@ -359,6 +470,16 @@ impl OpenDialog {
                     .parameters
                     .push((Default::default(), Default::default()));
             }
+
+            if ui
+                .add_enabled(
+                    !self.options.parameters.is_empty(),
+                    Button::new(text(&self.locale, "open-dialog-remove-parameters")),
+                )
+                .clicked()
+            {
+                self.options.parameters.clear();
+            }
         });
 
         Grid::new("open-file-params")
@@ -374,7 +495,7 @@ impl OpenDialog {
                         ui.text_edit_singleline(value);
                         if ui
                             .button("x")
-                            .on_hover_text(text(&self.locale, "open-dialog-delete-parameter"))
+                            .on_hover_text(text(&self.locale, "open-dialog-remove-parameter"))
                             .clicked()
                         {
                             keep = false;
@@ -423,7 +544,17 @@ impl PathOrUrlField {
     pub fn ui(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) -> &mut Self {
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             if ui.button(text(locale, "browse")).clicked() {
-                if let Some(path) = pick_file(true) {
+                let dir = self
+                    .result
+                    .as_ref()
+                    .filter(|url| url.scheme() == "file")
+                    .and_then(|url| url.to_file_path().ok())
+                    .map(|mut path| {
+                        path.pop();
+                        path
+                    });
+
+                if let Some(path) = pick_file(true, dir) {
                     self.value = path.to_string_lossy().to_string();
                 }
             }

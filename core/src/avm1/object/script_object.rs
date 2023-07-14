@@ -69,7 +69,7 @@ impl fmt::Debug for ScriptObject<'_> {
 
 impl<'gc> ScriptObject<'gc> {
     pub fn new(gc_context: MutationContext<'gc, '_>, proto: Option<Object<'gc>>) -> Self {
-        let object = Self(GcCell::allocate(
+        let object = Self(GcCell::new(
             gc_context,
             ScriptObjectData {
                 native: NativeObject::None,
@@ -444,9 +444,13 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     }
 
     /// Enumerate the object.
-    fn get_keys(&self, activation: &mut Activation<'_, 'gc>) -> Vec<AvmString<'gc>> {
+    fn get_keys(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        include_hidden: bool,
+    ) -> Vec<AvmString<'gc>> {
         let proto_keys = if let Value::Object(proto) = self.proto(activation) {
-            proto.get_keys(activation)
+            proto.get_keys(activation, include_hidden)
         } else {
             Vec::new()
         };
@@ -461,7 +465,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
 
         // Then our own keys.
         out_keys.extend(self.0.read().properties.iter().filter_map(move |(k, p)| {
-            if p.is_enumerable() {
+            if include_hidden || p.is_enumerable() {
                 Some(k)
             } else {
                 None
@@ -756,7 +760,7 @@ mod tests {
                 Attribute::DONT_ENUM,
             );
 
-            let keys: Vec<_> = object.get_keys(activation);
+            let keys: Vec<_> = object.get_keys(activation, false);
             assert_eq!(keys.len(), 2);
             assert!(keys.contains(&"stored".into()));
             assert!(!keys.contains(&"stored_hidden".into()));

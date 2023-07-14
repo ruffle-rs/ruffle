@@ -75,7 +75,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
-        self.0.as_ptr() as *const ObjectPtr
+        self.0.as_ptr()
     }
 
     fn set_local(

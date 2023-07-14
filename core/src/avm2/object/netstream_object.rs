@@ -6,7 +6,7 @@ use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::streams::NetStream;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 
@@ -15,20 +15,25 @@ pub fn netstream_allocator<'gc>(
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
-
-    Ok(NetStreamObject(GcCell::allocate(
+    let ns = NetStream::new(activation.context.gc_context, None);
+    let this: Object<'gc> = NetStreamObject(GcCell::new(
         activation.context.gc_context,
-        NetStreamObjectData {
-            base,
-            ns: NetStream::new(activation.context.gc_context),
-        },
+        NetStreamObjectData { base, ns },
     ))
-    .into())
+    .into();
+
+    ns.set_avm_object(activation.context.gc_context, this.into());
+
+    Ok(this)
 }
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct NetStreamObject<'gc>(GcCell<'gc, NetStreamObjectData<'gc>>);
+pub struct NetStreamObject<'gc>(pub GcCell<'gc, NetStreamObjectData<'gc>>);
+
+#[derive(Collect, Clone, Copy, Debug)]
+#[collect(no_drop)]
+pub struct NetStreamObjectWeak<'gc>(pub GcWeakCell<'gc, NetStreamObjectData<'gc>>);
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]

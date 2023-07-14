@@ -1,4 +1,4 @@
-use crate::util::environment::WGPU;
+use crate::util::environment::wgpu_descriptors;
 use crate::util::runner::TestAudioBackend;
 use anyhow::{anyhow, Result};
 use approx::assert_relative_eq;
@@ -15,7 +15,9 @@ use std::time::Duration;
 #[derive(Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct TestOptions {
-    pub num_frames: u32,
+    pub num_frames: Option<u32>,
+    pub num_ticks: Option<u32>,
+    pub tick_rate: Option<f64>,
     pub output_path: PathBuf,
     pub sleep_to_meet_frame_rate: bool,
     pub image_comparison: Option<ImageComparison>,
@@ -28,7 +30,9 @@ pub struct TestOptions {
 impl Default for TestOptions {
     fn default() -> Self {
         Self {
-            num_frames: 1,
+            num_frames: None,
+            num_ticks: None,
+            tick_rate: None,
             output_path: PathBuf::from("output.txt"),
             sleep_to_meet_frame_rate: false,
             image_comparison: None,
@@ -121,7 +125,7 @@ impl PlayerOptions {
             use ruffle_render_wgpu::backend::WgpuRenderBackend;
             use ruffle_render_wgpu::target::TextureTarget;
 
-            if let Some(descriptors) = WGPU.clone() {
+            if let Some(descriptors) = wgpu_descriptors() {
                 if render_options.is_supported(&descriptors.adapter) {
                     let target = TextureTarget::new(&descriptors.device, (width, height))
                         .map_err(|e| anyhow!(e.to_string()))?;
@@ -135,7 +139,7 @@ impl PlayerOptions {
                             _ => StageQuality::Low,
                         })
                         .with_renderer(
-                            WgpuRenderBackend::new(descriptors, target)
+                            WgpuRenderBackend::new(descriptors.clone(), target)
                                 .map_err(|e| anyhow!(e.to_string()))?,
                         );
                 }
@@ -160,8 +164,8 @@ impl PlayerOptions {
             // If we don't actually want to check the renderer (ie we're just listing potential tests),
             // don't spend the cost to create it
             if check_renderer && !render.optional {
-                if let Some(wgpu) = WGPU.as_deref() {
-                    if !render.is_supported(&wgpu.adapter) {
+                if let Some(descriptors) = wgpu_descriptors() {
+                    if !render.is_supported(&descriptors.adapter) {
                         return false;
                     }
                 } else {
@@ -192,7 +196,7 @@ impl ImageComparison {
         actual_image: image::RgbaImage,
         expected_image: image::RgbaImage,
         test_path: &Path,
-        adapter_info: ruffle_render_wgpu::wgpu::AdapterInfo,
+        adapter_info: wgpu::AdapterInfo,
     ) -> Result<()> {
         use anyhow::Context;
 

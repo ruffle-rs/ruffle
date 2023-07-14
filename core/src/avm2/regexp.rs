@@ -6,7 +6,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::object::FunctionObject;
 use crate::avm2::object::TObject;
 use crate::avm2::Error;
-use crate::avm2::{ArrayObject, ArrayStorage, Object};
+use crate::avm2::{ArrayObject, ArrayStorage, Object, Value};
 use crate::string::WString;
 use crate::string::{AvmString, Units, WStrToUtf8};
 use bitflags::bitflags;
@@ -225,7 +225,7 @@ impl<'gc> RegExp<'gc> {
                 .chain(std::iter::once(m.range.start.into()))
                 .chain(std::iter::once((*txt).into()))
                 .collect::<Vec<_>>();
-            let r = f.call(activation.global_scope(), &args, activation)?;
+            let r = f.call(Value::Null, &args, activation)?;
             return Ok(WString::from(r.coerce_to_string(activation)?.as_wstr()));
         })
     }

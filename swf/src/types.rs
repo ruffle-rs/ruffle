@@ -134,7 +134,7 @@ impl HeaderExt {
     /// `None` will be returned if the SetBackgroundColor tag was not found.
     #[inline]
     pub fn background_color(&self) -> Option<Color> {
-        self.background_color.clone()
+        self.background_color
     }
 
     /// The compression format used by the SWF.
@@ -1698,6 +1698,7 @@ impl VideoDeblocking {
 
 #[derive(Clone, Copy, Debug, Eq, FromPrimitive, PartialEq)]
 pub enum VideoCodec {
+    None = 0,
     H263 = 2,
     ScreenVideo = 3,
     Vp6 = 4,

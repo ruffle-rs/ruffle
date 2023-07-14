@@ -28,7 +28,20 @@ use std::io::{self, Write};
 /// let output = Vec::new();
 /// swf::write_swf(&header, &tags, output).unwrap();
 /// ```
-pub fn write_swf<W: Write>(header: &Header, tags: &[Tag<'_>], mut output: W) -> Result<()> {
+pub fn write_swf<W: Write>(header: &Header, tags: &[Tag<'_>], output: W) -> Result<()> {
+    // Write SWF body.
+    let mut swf_body = Vec::new();
+    {
+        let mut writer = Writer::new(&mut swf_body, header.version);
+        // Write main timeline tag list.
+        writer.write_tag_list(tags)?;
+    }
+    write_swf_raw_tags(header, &swf_body, output)
+}
+
+/// Writes a SWF to the output stream, where the tag list has already been serialized to bytes.
+/// This still appends other header information such as stage size.
+pub fn write_swf_raw_tags<W: Write>(header: &Header, tags: &[u8], mut output: W) -> Result<()> {
     let signature = match header.compression {
         Compression::None => b"FWS",
         Compression::Zlib => b"CWS",
@@ -45,10 +58,8 @@ pub fn write_swf<W: Write>(header: &Header, tags: &[Tag<'_>], mut output: W) -> 
         writer.write_rectangle(&header.stage_size)?;
         writer.write_fixed8(header.frame_rate)?;
         writer.write_u16(header.num_frames)?;
-
-        // Write main timeline tag list.
-        writer.write_tag_list(tags)?;
     }
+    swf_body.extend_from_slice(tags);
 
     // Write SWF header.
     // Uncompressed SWF length.

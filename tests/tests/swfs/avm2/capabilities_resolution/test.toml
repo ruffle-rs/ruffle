@@ -1,0 +1,3 @@
+num_frames = 1
+[player_options]
+viewport_dimensions = { width = 1920, height = 1080, scale_factor = 1.25 }

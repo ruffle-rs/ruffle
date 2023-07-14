@@ -5,8 +5,8 @@ use std::hash::{BuildHasher, Hash, Hasher};
 use std::marker::PhantomData;
 use std::ops::DerefMut;
 
-use gc_arena::{Collect, CollectionContext, Gc, GcWeak, MutationContext};
-use hashbrown::raw::{Bucket, RawTable};
+use gc_arena::{Collect, Gc, GcWeak, MutationContext};
+use hashbrown::HashSet;
 
 use crate::string::{AvmString, AvmStringRepr, WStr};
 
@@ -60,7 +60,7 @@ impl<'gc> AvmStringInterner<'gc> {
 
     fn alloc(mc: MutationContext<'gc, '_>, s: Cow<'_, WStr>) -> Gc<'gc, AvmStringRepr> {
         let repr = AvmStringRepr::from_raw(s.into_owned(), true);
-        Gc::allocate(mc, repr)
+        Gc::new(mc, repr)
     }
 
     #[must_use]
@@ -108,85 +108,69 @@ impl<'gc> AvmStringInterner<'gc> {
 /// - upon insertion when the set is at capacity.
 #[derive(Default)]
 struct WeakSet<'gc, T: 'gc> {
-    // Cannot use `HashSet` here, as `GcWeak` cannot implement `Hash`.
-    raw: CollectCell<'gc, RawTable<GcWeak<'gc, T>>>,
+    // Note that `GcWeak<T>` does not implement `Hash`, so the `RawTable`
+    // API is used for lookups and insertions.
+    table: CollectCell<'gc, HashSet<GcWeak<'gc, T>>>,
     hasher: fnv::FnvBuildHasher,
 }
 
-struct FindResult<'gc, T: 'gc> {
-    value: Option<Gc<'gc, T>>,
-    stale: Option<Bucket<GcWeak<'gc, T>>>,
-}
-
-impl<'gc, T: 'gc> WeakSet<'gc, T> {
+impl<'gc, T: Hash + 'gc> WeakSet<'gc, T> {
     fn hash<K: Hash + ?Sized>(build_hasher: &impl BuildHasher, key: &K) -> u64 {
         let mut hasher = build_hasher.build_hasher();
         key.hash(&mut hasher);
         hasher.finish()
     }
 
-    /// Finds a live, matching entry with a given hash.
-    /// Returns both the matching entry and the first stale bucket found along the way.
-    fn find_inner(
-        &self,
-        mc: MutationContext<'gc, '_>,
-        hash: u64,
-        mut eq: impl FnMut(&T) -> bool,
-    ) -> FindResult<'gc, T> {
-        let raw = self.raw.as_ref(mc);
-        let mut result = FindResult {
-            value: None,
-            stale: None,
-        };
-
-        // SAFETY: `iter_hash` doesn't outlive `raw`, and only returns full buckets.
-        unsafe {
-            for bucket in raw.iter_hash(hash) {
-                match bucket.as_ref().upgrade(mc) {
-                    Some(strong) if eq(&strong) => {
-                        result.value = Some(strong);
-                        break;
-                    }
-                    None if result.stale.is_none() => {
-                        result.stale = Some(bucket);
-                    }
-                    _ => (),
-                }
-            }
-        }
-
-        result
-    }
-
     /// Finds the given key in the map.
     fn get<Q>(&self, mc: MutationContext<'gc, '_>, key: &Q) -> Option<Gc<'gc, T>>
     where
-        T: Borrow<Q> + Hash,
+        T: Borrow<Q>,
         Q: Hash + Eq + ?Sized,
     {
+        let raw = self.table.as_ref(mc).raw_table();
         let hash = Self::hash(&self.hasher, key);
-        let result = self.find_inner(mc, hash, |strong| strong.borrow() == key);
-        result.value
+        let mut found = None;
+        let _ = raw.find(hash, |(weak, _)| {
+            if let Some(strong) = weak.upgrade(mc) {
+                if (*strong).borrow() == key {
+                    found = Some(strong);
+                    return true;
+                }
+            }
+            false
+        });
+        found
     }
 
     /// Finds the given key in the map, and return its and its hash.
+    /// This also cleans up stale buckets found along the way.
     /// TODO: add proper entry API?
     fn entry<Q>(&mut self, mc: MutationContext<'gc, '_>, key: &Q) -> (Option<Gc<'gc, T>>, u64)
     where
-        T: Borrow<Q> + Hash,
+        T: Borrow<Q>,
         Q: Hash + Eq + ?Sized,
     {
-        let hasher = &self.hasher;
-        let hash = Self::hash(hasher, key);
-        let result = self.find_inner(mc, hash, |strong| strong.borrow() == key);
+        let raw = self.table.as_mut().raw_table_mut();
+        let hash = Self::hash(&self.hasher, key);
 
-        // Clear any stale bucket found; this ensures that reinserting
-        // a freshly pruned key does not grow the table.
-        if let Some(stale) = result.stale {
-            unsafe { self.raw.as_mut().erase(stale) }
+        // SAFETY: the iterator doesn't outlive the `HashSet`.
+        for bucket in unsafe { raw.iter_hash(hash) } {
+            // SAFETY: `iter_hash` only returns occupied buckets.
+            let weak = unsafe { bucket.as_ref().0 };
+
+            if let Some(strong) = weak.upgrade(mc) {
+                // The entry matches, return it.
+                if (*strong).borrow() == key {
+                    return (Some(strong), hash);
+                }
+            } else {
+                // The entry is stale, delete it.
+                // SAFETY: the entry has already been yielded by the iterator.
+                unsafe { raw.erase(bucket) };
+            }
         }
 
-        (result.value, hash)
+        (None, hash)
     }
 
     /// Inserts a new key in the set.
@@ -197,63 +181,50 @@ impl<'gc, T: 'gc> WeakSet<'gc, T> {
         mc: MutationContext<'gc, '_>,
         hash: u64,
         key: Gc<'gc, T>,
-    ) -> Gc<'gc, T>
-    where
-        T: Hash,
-    {
-        let weak = Gc::downgrade(key);
-        let raw = self.raw.as_mut();
-        let hasher = &self.hasher;
+    ) -> Gc<'gc, T> {
+        let entry = (Gc::downgrade(key), ());
 
-        if raw.try_insert_no_grow(hash, weak).is_err() {
-            Self::prune_and_grow(raw, |w| w.upgrade(mc), |k| Self::hash(hasher, &**k));
-            raw.try_insert_no_grow(hash, weak)
+        let raw = self.table.as_mut().raw_table_mut();
+
+        if raw.try_insert_no_grow(hash, entry).is_err() {
+            self.prune_and_grow(mc);
+            let raw = self.table.as_mut().raw_table_mut();
+            raw.try_insert_no_grow(hash, entry)
                 .expect("failed to grow table");
         }
 
         key
     }
 
-    /// Prune stale entries and resize the table to ensure at least one extra entry can be added.
+    /// Prune stale entries and/or resize the table to ensure at least one extra entry can be added.
     #[cold]
-    fn prune_and_grow<K, B>(
-        raw: &mut RawTable<B>,
-        upgrade: impl Fn(&B) -> Option<K>,
-        hasher: impl Fn(&K) -> u64,
-    ) {
+    fn prune_and_grow(&mut self, mc: MutationContext<'gc, '_>) {
+        let table = self.table.as_mut();
+
         // We *really* don't want to reallocate, so try to prune dead references first.
-        let all = raw.len();
-        Self::retain(raw, |b| upgrade(b).is_some());
-        let remaining = raw.len();
+        let all = table.len();
+        table.retain(|weak| weak.upgrade(mc).is_some());
+        let remaining = table.len();
 
         // Only reallocate if few entries were pruned.
         if remaining >= all / 2 {
-            raw.reserve(all - remaining + 1, |b| match upgrade(b) {
-                Some(k) => hasher(&k),
-                None => unreachable!("unexpected stale entry"),
-            })
-        }
-    }
-
-    /// Filters the entries of a raw table.
-    fn retain<B>(raw: &mut RawTable<B>, mut f: impl FnMut(&mut B) -> bool) {
-        // SAFETY: `iter` doesn't outlive `raw`, and only return full buckets.
-        unsafe {
-            for bucket in raw.iter() {
-                if !f(bucket.as_mut()) {
-                    raw.erase(bucket);
-                }
-            }
+            let extra = all - remaining + 1;
+            table
+                .raw_table_mut()
+                .reserve(extra, |(weak, _)| match weak.upgrade(mc) {
+                    Some(strong) => Self::hash(&self.hasher, &*strong),
+                    None => unreachable!("unexpected stale entry"),
+                });
         }
     }
 }
 
 unsafe impl<'gc, T> Collect for WeakSet<'gc, T> {
-    fn trace(&self, cc: CollectionContext) {
+    fn trace(&self, cc: &gc_arena::Collection) {
         // Prune entries known to be dead.
         // Safe, as we never pick up new GC pointers from outside this allocation.
-        let mut guard = unsafe { self.raw.steal_for_trace() };
-        Self::retain(&mut *guard, |weak| {
+        let mut guard = unsafe { self.table.steal_for_trace() };
+        guard.retain(|weak| {
             let keep = !weak.is_dropped();
             if keep {
                 // NOTE: The explicit dereference is necessary to not
@@ -285,12 +256,12 @@ impl<'gc, T> CollectCell<'gc, T> {
 
     /// SAFETY: must be called inside a `Collect::trace` function.
     ///
-    /// An alternative would be to require a `CollectionContext` argument, but this is
+    /// An alternative would be to require a `&gc_arena::Collection` argument, but this is
     /// still unsound in presence of nested arenas (preventing this would require a `'gc`
-    /// lifetime on `CollectionContext` and `Collect`):
+    /// lifetime on `&gc_arena::Collection` and `Collect`):
     ///
     /// ```rs,ignore
-    /// fn trace(&self, cc: CollectionContext) {
+    /// fn trace(&self, cc: &gc_arena::Collection) {
     ///     rootless_arena(|mc| {
     ///         let cell = CollectCell::<i32>::default();
     ///         let borrow: &i32 = dbg!(cell.as_ref(mc)); // 0

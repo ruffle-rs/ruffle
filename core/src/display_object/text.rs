@@ -41,11 +41,11 @@ impl<'gc> Text<'gc> {
         swf: Arc<SwfMovie>,
         tag: &swf::Text,
     ) -> Self {
-        Text(GcCell::allocate(
+        Text(GcCell::new(
             context.gc_context,
             TextData {
                 base: Default::default(),
-                static_data: gc_arena::Gc::allocate(
+                static_data: gc_arena::Gc::new(
                     context.gc_context,
                     TextStatic {
                         swf,
@@ -66,7 +66,8 @@ impl<'gc> Text<'gc> {
         gc_context: MutationContext<'gc, '_>,
         settings: TextRenderSettings,
     ) {
-        self.0.write(gc_context).render_settings = settings
+        self.0.write(gc_context).render_settings = settings;
+        self.invalidate_cached_bitmap(gc_context);
     }
 }
 
@@ -80,7 +81,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
     }
 
     fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc> {
-        Self(GcCell::allocate(gc_context, self.0.read().clone())).into()
+        Self(GcCell::new(gc_context, self.0.read().clone())).into()
     }
 
     fn as_ptr(&self) -> *const DisplayObjectPtr {
@@ -105,6 +106,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         } else {
             tracing::warn!("PlaceObject: expected text at character ID {}", id);
         }
+        self.invalidate_cached_bitmap(context.gc_context);
     }
 
     fn run_frame_avm1(&self, _context: &mut UpdateContext) {
@@ -134,7 +136,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
             if let Some(y) = block.y_offset {
                 transform.matrix.ty = y;
             }
-            color = block.color.as_ref().unwrap_or(&color).clone();
+            color = block.color.unwrap_or(color);
             font_id = block.font_id.unwrap_or(font_id);
             height = block.height.unwrap_or(height);
             if let Some(font) = context
@@ -182,9 +184,13 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
             }
 
             // Transform the point into the text's local space.
-            let Some(local_matrix) = self.global_to_local_matrix() else { return false; };
+            let Some(local_matrix) = self.global_to_local_matrix() else {
+                return false;
+            };
             let tf = self.0.read();
-            let Some(text_matrix) = tf.static_data.text_transform.inverse() else { return false; };
+            let Some(text_matrix) = tf.static_data.text_transform.inverse() else {
+                return false;
+            };
             point = text_matrix * local_matrix * point;
 
             let mut font_id = 0;
@@ -212,7 +218,9 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
                     for c in &block.glyphs {
                         if let Some(glyph) = font.get_glyph(c.index as usize) {
                             // Transform the point into glyph space and test.
-                            let Some(matrix) = glyph_matrix.inverse() else { return false; };
+                            let Some(matrix) = glyph_matrix.inverse() else {
+                                return false;
+                            };
                             let point = matrix * point;
                             let glyph_shape = glyph.as_shape();
                             if glyph_shape.shape_bounds.contains(point)

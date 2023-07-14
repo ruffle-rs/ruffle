@@ -289,7 +289,7 @@ mod wrapper {
         // Marking it as disposed skips rendering, and the unset `avm2_object` will cause this to
         // be inaccessible to AS3 code.
         pub fn dummy(mc: MutationContext<'gc, '_>) -> Self {
-            BitmapDataWrapper(GcCell::allocate(
+            BitmapDataWrapper(GcCell::new(
                 mc,
                 BitmapData {
                     pixels: Vec::new(),
@@ -448,6 +448,21 @@ mod wrapper {
                 !area.intersects(read_area)
             } else {
                 true
+            }
+        }
+
+        #[cfg(feature = "egui")]
+        pub fn debug_sync_status(&self) -> std::borrow::Cow<'static, str> {
+            match self.0.read().dirty_state {
+                DirtyState::Clean => std::borrow::Cow::Borrowed("Clean"),
+                DirtyState::CpuModified(area) => std::borrow::Cow::Owned(format!(
+                    "CPU modified from {}, {} to {}, {}",
+                    area.x_min, area.y_min, area.x_max, area.y_max
+                )),
+                DirtyState::GpuModified(_, area) => std::borrow::Cow::Owned(format!(
+                    "GPU modified from {}, {} to {}, {}",
+                    area.x_min, area.y_min, area.x_max, area.y_max
+                )),
             }
         }
 

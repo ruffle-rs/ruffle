@@ -35,13 +35,13 @@ package flash.ui
 
         public function get frameRate():Number
         {
-            stub_getter("flash.net.MouseCursorData", "data");
+            stub_getter("flash.ui.MouseCursorData", "frameRate");
             return this._frameRate;
         }
 
         public function set frameRate(value:Number):void
         {
-            stub_setter("flash.net.MouseCursorData", "data");
+            stub_setter("flash.ui.MouseCursorData", "frameRate");
             this._frameRate = value;
         }
 

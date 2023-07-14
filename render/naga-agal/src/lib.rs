@@ -2,6 +2,7 @@ use naga::Module;
 
 mod builder;
 mod types;
+mod varying;
 
 use builder::NagaBuilder;
 
@@ -10,7 +11,7 @@ pub const SHADER_ENTRY_POINT: &str = "main";
 pub const MAX_VERTEX_ATTRIBUTES: usize = 8;
 pub const MAX_TEXTURES: usize = 8;
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum VertexAttributeFormat {
     Float1,
     Float2,

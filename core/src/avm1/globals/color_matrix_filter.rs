@@ -6,11 +6,28 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, ArrayObject, Error, Object, ScriptObject, TObject, Value};
 use crate::context::GcContext;
 use gc_arena::{Collect, GcCell, MutationContext};
+use std::ops::Deref;
 
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
 struct ColorMatrixFilterData {
     matrix: [f32; 4 * 5],
+}
+
+impl From<&ColorMatrixFilterData> for swf::ColorMatrixFilter {
+    fn from(filter: &ColorMatrixFilterData) -> swf::ColorMatrixFilter {
+        swf::ColorMatrixFilter {
+            matrix: filter.matrix,
+        }
+    }
+}
+
+impl From<swf::ColorMatrixFilter> for ColorMatrixFilterData {
+    fn from(filter: swf::ColorMatrixFilter) -> ColorMatrixFilterData {
+        Self {
+            matrix: filter.matrix,
+        }
+    }
 }
 
 impl Default for ColorMatrixFilterData {
@@ -34,7 +51,7 @@ pub struct ColorMatrixFilter<'gc>(GcCell<'gc, ColorMatrixFilterData>);
 
 impl<'gc> ColorMatrixFilter<'gc> {
     fn new(activation: &mut Activation<'_, 'gc>, args: &[Value<'gc>]) -> Result<Self, Error<'gc>> {
-        let color_matrix_filter = Self(GcCell::allocate(
+        let color_matrix_filter = Self(GcCell::new(
             activation.context.gc_context,
             Default::default(),
         ));
@@ -42,8 +59,15 @@ impl<'gc> ColorMatrixFilter<'gc> {
         Ok(color_matrix_filter)
     }
 
+    pub fn from_filter(
+        gc_context: MutationContext<'gc, '_>,
+        filter: swf::ColorMatrixFilter,
+    ) -> Self {
+        Self(GcCell::new(gc_context, filter.into()))
+    }
+
     pub(crate) fn duplicate(&self, gc_context: MutationContext<'gc, '_>) -> Self {
-        Self(GcCell::allocate(gc_context, self.0.read().clone()))
+        Self(GcCell::new(gc_context, self.0.read().clone()))
     }
 
     fn matrix(&self, activation: &mut Activation<'_, 'gc>) -> Value<'gc> {
@@ -74,6 +98,10 @@ impl<'gc> ColorMatrixFilter<'gc> {
             self.0.write(activation.context.gc_context).matrix = matrix;
         }
         Ok(())
+    }
+
+    pub fn filter(&self) -> swf::ColorMatrixFilter {
+        self.0.read().deref().into()
     }
 }
 
@@ -121,18 +149,26 @@ fn method<'gc>(
     })
 }
 
-pub fn create_constructor<'gc>(
+pub fn create_proto<'gc>(
     context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let color_matrix_filter_proto = ScriptObject::new(context.gc_context, Some(proto));
     define_properties_on(PROTO_DECLS, context, color_matrix_filter_proto, fn_proto);
+    color_matrix_filter_proto.into()
+}
+
+pub fn create_constructor<'gc>(
+    context: &mut GcContext<'_, 'gc>,
+    proto: Object<'gc>,
+    fn_proto: Object<'gc>,
+) -> Object<'gc> {
     FunctionObject::constructor(
         context.gc_context,
         Executable::Native(color_matrix_filter_method!(0)),
         constructor_to_fn!(color_matrix_filter_method!(0)),
         fn_proto,
-        color_matrix_filter_proto.into(),
+        proto,
     )
 }

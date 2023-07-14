@@ -60,10 +60,10 @@
         "message": "בודק את מצב Ruffle תחת לשונית נוכחית זו…"
     },
     "status_result_running": {
-        "message": "Ruffle נטען ומוכן להפעיל תוכן פלאש תחת לשונית נוכחית זו."
+        "message": "נטען ומוכן להפעיל תוכן Ruffle פלאש תחת לשונית נוכחית זו."
     },
     "status_result_running_protected": {
-        "message": "Ruffle נטען ומפעיל את תוכן הפלאש אשר ביקשת להפעיל."
+        "message": "נטען ומפעיל את תוכן Ruffle הפלאש אשר ביקשת להפעיל."
     },
     "status_result_optout": {
         "message": "Ruffle לא נטען בגלל שדף זה סימן את עצמו כלא תואם."

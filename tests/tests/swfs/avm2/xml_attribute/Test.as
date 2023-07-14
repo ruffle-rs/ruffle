@@ -58,6 +58,7 @@
 		
 			outer.@name = "Custom attr value";
 			trace("outer.@name = " + outer.@name);
+			trace("outer.@name.parent().name() = " + outer.@name.parent().name());
 			trace("outer.attribute('name') = " + outer.attribute('name'));
 			trace("outer.name() = " + outer.name());
 
@@ -65,8 +66,9 @@
 				trace("Attr: " + attr.name() + " = " + attr);
 			}
 		
+			var outerName = outer.@name;
 			delete outer.@name;
-			trace("After delete: outer.@name = " + outer.@name);
+			trace("After delete: outer.@name = " + outer.@name + " outerName.parent() = " + outerName.parent());
 		
 			outer.@myAttr = "First val";
 			outer.@myAttr = "Second val";

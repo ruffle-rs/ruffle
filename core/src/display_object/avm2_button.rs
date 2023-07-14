@@ -18,6 +18,7 @@ use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::{Collect, GcCell, MutationContext};
+use ruffle_render::filters::Filter;
 use std::cell::{Ref, RefMut};
 use std::sync::Arc;
 
@@ -109,11 +110,11 @@ impl<'gc> Avm2Button<'gc> {
             over_to_up_sound: None,
         };
 
-        Avm2Button(GcCell::allocate(
+        Avm2Button(GcCell::new(
             context.gc_context,
             Avm2ButtonData {
                 base: Default::default(),
-                static_data: GcCell::allocate(context.gc_context, static_data),
+                static_data: GcCell::new(context.gc_context, static_data),
                 state: self::ButtonState::Up,
                 hit_area: None,
                 up_state: None,
@@ -211,6 +212,11 @@ impl<'gc> Avm2Button<'gc> {
 
                         if swf_state != swf::ButtonState::HIT_TEST {
                             child.set_color_transform(context.gc_context, record.color_transform);
+                            child.set_blend_mode(context.gc_context, record.blend_mode);
+                            child.set_filters(
+                                context.gc_context,
+                                record.filters.iter().map(Filter::from).collect(),
+                            );
                         }
 
                         children.push((child, record.depth));
@@ -226,6 +232,8 @@ impl<'gc> Avm2Button<'gc> {
                 };
             }
         }
+
+        self.invalidate_cached_bitmap(context.gc_context);
 
         // We manually call `construct_frame` for `child` and `state_sprite` - normally
         // this would be done in the `DisplayObject` constructor, but SimpleButton does
@@ -403,7 +411,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
     }
 
     fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc> {
-        Self(GcCell::allocate(gc_context, self.0.read().clone())).into()
+        Self(GcCell::new(gc_context, self.0.read().clone())).into()
     }
 
     fn as_ptr(&self) -> *const DisplayObjectPtr {
@@ -561,7 +569,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
             if let Some(avm2_object) = avm2_object {
                 let mut constr_thing = || {
                     let mut activation = Avm2Activation::from_nothing(context.reborrow());
-                    class.call_native_init(Some(avm2_object), &[], &mut activation)?;
+                    class.call_native_init(avm2_object.into(), &[], &mut activation)?;
 
                     Ok(())
                 };
@@ -617,7 +625,8 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         // Add the bounds of the child, dictated by current state
         let state = self.0.read().state;
         if let Some(child) = self.get_state_child(state.into()) {
-            let child_bounds = child.bounds_with_transform(matrix);
+            let matrix = *matrix * *child.base().matrix();
+            let child_bounds = child.bounds_with_transform(&matrix);
             bounds = bounds.union(&child_bounds);
         }
 

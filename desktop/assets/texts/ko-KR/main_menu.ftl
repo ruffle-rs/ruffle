@@ -9,11 +9,22 @@
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
 file-menu = 파일
+file-menu-open-quick = 열기...
+file-menu-open-advanced = 고급 열기...
 file-menu-close = 닫기
+file-menu-reload = 다시 로드
 file-menu-exit = 종료
+controls-menu = 컨트롤
+controls-menu-suspend = 일시 정지
+controls-menu-resume = 재개
 help-menu = 도움말
 help-menu-join-discord = 디스코드 참여
 help-menu-report-a-bug = 버그 제보...
 help-menu-sponsor-development = 개발자 후원하기...
 help-menu-translate-ruffle = Ruffle 번역...
 help-menu-about = Ruffle 정보
+debug-menu = 디버그 도구
+debug-menu-open-stage = 스테이지 정보 보기
+debug-menu-open-movie = 무비 보기
+debug-menu-open-movie-list = 알려진 무비 표시
+debug-menu-search-display-objects = 표시된 객체 검색

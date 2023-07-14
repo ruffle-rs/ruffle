@@ -16,13 +16,14 @@ thiserror = "1.0"
 flate2 = "1.0.26"
 log = "0.4"
 
-h263-rs = { git = "https://github.com/ruffle-rs/h263-rs", rev = "d5d78eb251c1ce1f1da57c63db14f0fdc77a4b36", optional = true }
+h263-rs = { git = "https://github.com/ruffle-rs/h263-rs", rev = "128cdbd85455d19783c88927bb535e8a26fe5220", optional = true }
+h263-rs-deblock = { git = "https://github.com/ruffle-rs/h263-rs", rev = "128cdbd85455d19783c88927bb535e8a26fe5220", optional = true }
 nihav_core = { git = "https://github.com/ruffle-rs/nihav-vp6", rev = "9416fcc9fc8aab8f4681aa9093b42922214abbd3", optional = true }
 nihav_codec_support = { git = "https://github.com/ruffle-rs/nihav-vp6", rev = "9416fcc9fc8aab8f4681aa9093b42922214abbd3", optional = true }
 nihav_duck = { git = "https://github.com/ruffle-rs/nihav-vp6", rev = "9416fcc9fc8aab8f4681aa9093b42922214abbd3", optional = true }
 
 [features]
 default = ["h263", "vp6", "screenvideo"]
-h263 = ["h263-rs"]
+h263 = ["h263-rs", "h263-rs-deblock"]
 vp6 = ["nihav_core", "nihav_codec_support", "nihav_duck"]
 screenvideo = []

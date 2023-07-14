@@ -6,6 +6,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::error::{uri_error, Error};
 use crate::avm2::object::Object;
 use crate::avm2::value::Value;
+use crate::avm2_stub_method;
 use crate::string::{AvmString, WStr, WString};
 use crate::stub::Stub;
 use ruffle_wstr::Integer;
@@ -14,7 +15,7 @@ use std::fmt::Write;
 
 pub fn trace<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     match args {
@@ -38,7 +39,7 @@ pub fn trace<'gc>(
 
 pub fn log_warn<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     match args {
@@ -62,7 +63,7 @@ pub fn log_warn<'gc>(
 
 pub fn stub_method<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     match args {
@@ -99,7 +100,7 @@ pub fn stub_method<'gc>(
 
 pub fn stub_getter<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     match args {
@@ -122,7 +123,7 @@ pub fn stub_getter<'gc>(
 
 pub fn stub_setter<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     match args {
@@ -145,7 +146,7 @@ pub fn stub_setter<'gc>(
 
 pub fn stub_constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     match args {
@@ -178,7 +179,7 @@ pub fn stub_constructor<'gc>(
 
 pub fn is_finite<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(val) = args.get(0) {
@@ -190,7 +191,7 @@ pub fn is_finite<'gc>(
 
 pub fn is_nan<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(val) = args.get(0) {
@@ -202,7 +203,7 @@ pub fn is_nan<'gc>(
 
 pub fn parse_int<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let string = match args.get(0).unwrap_or(&Value::Undefined) {
@@ -221,7 +222,7 @@ pub fn parse_int<'gc>(
 
 pub fn parse_float<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(value) = args.get(0) {
@@ -235,9 +236,18 @@ pub fn parse_float<'gc>(
     Ok(f64::NAN.into())
 }
 
+pub fn is_xml_name<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_method!(activation, "", "isXMLName");
+    Ok(true.into())
+}
+
 pub fn escape<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let value = match args.first() {
@@ -270,7 +280,7 @@ pub fn escape<'gc>(
 
 pub fn unescape<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let value = match args.first() {
@@ -317,7 +327,7 @@ pub fn unescape<'gc>(
 
 pub fn encode_uri<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     encode_utf8_with_exclusions(
@@ -330,7 +340,7 @@ pub fn encode_uri<'gc>(
 
 pub fn encode_uri_component<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     encode_utf8_with_exclusions(
@@ -382,7 +392,7 @@ fn encode_utf8_with_exclusions<'gc>(
 
 pub fn decode_uri<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     decode(
@@ -396,7 +406,7 @@ pub fn decode_uri<'gc>(
 
 pub fn decode_uri_component<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     decode(activation, args, "", "decodeURIComponent")

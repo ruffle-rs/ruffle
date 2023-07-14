@@ -14,10 +14,10 @@ pub fn vertex_buffer_3d_allocator<'gc>(
 
 pub fn upload_from_byte_array<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(vertex_buffer) = this.and_then(|this| this.as_vertex_buffer()) {
+    if let Some(vertex_buffer) = this.as_vertex_buffer() {
         let byte_array = args
             .get(0)
             .unwrap_or(&Value::Undefined)
@@ -44,7 +44,6 @@ pub fn upload_from_byte_array<'gc>(
             data,
             start_vertex as usize,
             vertex_buffer.data32_per_vertex(),
-            activation,
         );
     }
     Ok(Value::Undefined)
@@ -52,10 +51,10 @@ pub fn upload_from_byte_array<'gc>(
 
 pub fn upload_from_vector<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(vertex_buffer) = this.and_then(|this| this.as_vertex_buffer()) {
+    if let Some(vertex_buffer) = this.as_vertex_buffer() {
         let vector = args
             .get(0)
             .unwrap_or(&Value::Undefined)
@@ -81,7 +80,6 @@ pub fn upload_from_vector<'gc>(
             data_bytes,
             start_vertex as usize,
             vertex_buffer.data32_per_vertex(),
-            activation,
         );
     }
     Ok(Value::Undefined)

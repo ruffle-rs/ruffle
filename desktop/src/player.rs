@@ -1,16 +1,17 @@
 use crate::backends::{
-    CpalAudioBackend, DesktopUiBackend, DiskStorageBackend, ExternalNavigatorBackend,
+    CpalAudioBackend, DesktopExternalInterfaceProvider, DesktopUiBackend, DiskStorageBackend,
+    ExternalNavigatorBackend,
 };
 use crate::cli::Opt;
 use crate::custom_event::RuffleEvent;
-use crate::executor::GlutinAsyncExecutor;
+use crate::executor::WinitAsyncExecutor;
 use crate::gui::MovieView;
 use crate::{CALLSTACK, RENDER_INFO, SWF_INFO};
 use anyhow::anyhow;
 use ruffle_core::backend::audio::AudioBackend;
 use ruffle_core::backend::navigator::OpenURLMode;
 use ruffle_core::config::Letterbox;
-use ruffle_core::{LoadBehavior, Player, PlayerBuilder, PlayerEvent, StageScaleMode};
+use ruffle_core::{LoadBehavior, Player, PlayerBuilder, PlayerEvent, StageAlign, StageScaleMode};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::quality::StageQuality;
 use ruffle_render_wgpu::backend::WgpuRenderBackend;
@@ -30,6 +31,8 @@ pub struct PlayerOptions {
     pub max_execution_duration: f64,
     pub base: Option<Url>,
     pub quality: StageQuality,
+    pub align: StageAlign,
+    pub force_align: bool,
     pub scale: StageScaleMode,
     pub volume: f32,
     pub force_scale: bool,
@@ -43,6 +46,7 @@ pub struct PlayerOptions {
     pub player_version: u8,
     pub frame_rate: Option<f64>,
     pub open_url_mode: OpenURLMode,
+    pub dummy_external_interface: bool,
 }
 
 impl From<&Opt> for PlayerOptions {
@@ -52,6 +56,8 @@ impl From<&Opt> for PlayerOptions {
             max_execution_duration: value.max_execution_duration,
             base: value.base.clone(),
             quality: value.quality,
+            align: value.align.unwrap_or_default(),
+            force_align: value.force_align,
             scale: value.scale,
             volume: value.volume,
             force_scale: value.force_scale,
@@ -65,6 +71,7 @@ impl From<&Opt> for PlayerOptions {
             player_version: value.player_version.unwrap_or(32),
             frame_rate: value.frame_rate,
             open_url_mode: value.open_url_mode,
+            dummy_external_interface: value.dummy_external_interface,
         }
     }
 }
@@ -73,14 +80,14 @@ impl From<&Opt> for PlayerOptions {
 /// which may be lost when this Player is closed (dropped)
 struct ActivePlayer {
     player: Arc<Mutex<Player>>,
-    executor: Arc<Mutex<GlutinAsyncExecutor>>,
+    executor: Arc<Mutex<WinitAsyncExecutor>>,
 }
 
 impl ActivePlayer {
     pub fn new(
         opt: &PlayerOptions,
         event_loop: EventLoopProxy<RuffleEvent>,
-        movie_url: Url,
+        movie_url: &Url,
         window: Rc<Window>,
         descriptors: Arc<Descriptors>,
         movie_view: MovieView,
@@ -97,7 +104,7 @@ impl ActivePlayer {
             }
         };
 
-        let (executor, channel) = GlutinAsyncExecutor::new(event_loop.clone());
+        let (executor, channel) = WinitAsyncExecutor::new(event_loop.clone());
         let navigator = ExternalNavigatorBackend::new(
             opt.base.to_owned().unwrap_or_else(|| movie_url.clone()),
             channel,
@@ -117,6 +124,11 @@ impl ActivePlayer {
             .expect("Couldn't create wgpu rendering backend");
         RENDER_INFO.with(|i| *i.borrow_mut() = Some(renderer.debug_info().to_string()));
 
+        if opt.dummy_external_interface {
+            builder =
+                builder.with_external_interface(Box::<DesktopExternalInterfaceProvider>::default());
+        }
+
         builder = builder
             .with_navigator(navigator)
             .with_renderer(renderer)
@@ -130,6 +142,7 @@ impl ActivePlayer {
             .with_max_execution_duration(Duration::from_secs_f64(opt.max_execution_duration))
             .with_quality(opt.quality)
             .with_warn_on_unsupported_content(opt.warn_on_unsupported_content)
+            .with_align(opt.align, opt.force_align)
             .with_scale_mode(opt.scale, opt.force_scale)
             .with_fullscreen(opt.fullscreen)
             .with_load_behavior(opt.load_behavior)
@@ -152,15 +165,16 @@ impl ActivePlayer {
             let _ = event_loop.send_event(RuffleEvent::OnMetadata(swf_header.clone()));
         };
 
-        let mut parameters: Vec<(String, String)> = movie_url.query_pairs().into_owned().collect();
-        parameters.extend(opt.parameters.to_owned());
-
         {
             let mut player_lock = player.lock().expect("Player lock must be available");
             CALLSTACK.with(|callstack| {
                 *callstack.borrow_mut() = Some(player_lock.callstack());
             });
-            player_lock.fetch_root_movie(movie_url.to_string(), parameters, Box::new(on_metadata));
+            player_lock.fetch_root_movie(
+                movie_url.to_string(),
+                opt.parameters.to_owned(),
+                Box::new(on_metadata),
+            );
         }
 
         Self { player, executor }
@@ -190,7 +204,7 @@ impl PlayerController {
         }
     }
 
-    pub fn create(&mut self, opt: &PlayerOptions, movie_url: Url, movie_view: MovieView) {
+    pub fn create(&mut self, opt: &PlayerOptions, movie_url: &Url, movie_view: MovieView) {
         self.player = Some(ActivePlayer::new(
             opt,
             self.event_loop.clone(),

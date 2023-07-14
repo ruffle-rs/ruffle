@@ -1,7 +1,9 @@
 #![deny(clippy::unwrap_used)]
+// Remove this when we start using `Rc` when compiling for wasm
+#![allow(clippy::arc_with_non_send_sync)]
 
 use ruffle_render::backend::{
-    Context3D, RenderBackend, ShapeHandle, ShapeHandleImpl, ViewportDimensions,
+    BitmapCacheEntry, Context3D, RenderBackend, ShapeHandle, ShapeHandleImpl, ViewportDimensions,
 };
 use ruffle_render::bitmap::{
     Bitmap, BitmapHandle, BitmapHandleImpl, BitmapSource, PixelRegion, SyncHandle,
@@ -53,10 +55,10 @@ fn as_shape_data(handle: &ShapeHandle) -> &ShapeData {
 #[derive(Debug)]
 struct CanvasColor(Color, String);
 
-impl From<&Color> for CanvasColor {
-    fn from(color: &Color) -> Self {
+impl From<Color> for CanvasColor {
+    fn from(color: Color) -> Self {
         Self(
-            color.clone(),
+            color,
             format!(
                 "rgba({},{},{},{})",
                 color.r,
@@ -71,7 +73,7 @@ impl From<&Color> for CanvasColor {
 impl CanvasColor {
     /// Apply a color transformation to this color.
     fn color_transform(&self, cxform: &ColorTransform) -> Self {
-        (&(cxform * self.0.clone())).into()
+        (cxform * self.0).into()
     }
 }
 
@@ -141,7 +143,6 @@ struct CanvasBitmap {
 #[allow(dead_code)]
 #[derive(Debug)]
 struct BitmapData {
-    bitmap: Bitmap,
     image_data: ImageData,
     canvas: HtmlCanvasElement,
     context: CanvasRenderingContext2d,
@@ -156,20 +157,28 @@ fn as_bitmap_data(handle: &BitmapHandle) -> &BitmapData {
 
 impl BitmapData {
     /// Puts the image data into a newly created <canvas>, and caches it.
-    fn new(bitmap: Bitmap) -> Result<Self, JsValue> {
+    fn with_bitmap(bitmap: Bitmap) -> Result<Self, JsValue> {
         let bitmap = bitmap.to_rgba();
         let image_data =
             ImageData::new_with_u8_clamped_array(Clamped(bitmap.data()), bitmap.width())
                 .into_js_result()?;
+        Self::with_image_data(image_data)
+    }
 
+    fn empty(width: u32, height: u32) -> Result<Self, JsValue> {
+        let image_data = ImageData::new_with_sw(width, height).into_js_result()?;
+        Self::with_image_data(image_data)
+    }
+
+    fn with_image_data(image_data: ImageData) -> Result<Self, JsValue> {
         let window = web_sys::window().expect("window()");
         let document = window.document().expect("document()");
         let canvas: HtmlCanvasElement = document
             .create_element("canvas")
             .into_js_result()?
             .unchecked_into();
-        canvas.set_width(bitmap.width());
-        canvas.set_height(bitmap.height());
+        canvas.set_width(image_data.width());
+        canvas.set_height(image_data.height());
 
         let context: CanvasRenderingContext2d = canvas
             .get_context("2d")?
@@ -180,7 +189,6 @@ impl BitmapData {
             .put_image_data(&image_data, 0.0, 0.0)
             .into_js_result()?;
         Ok(BitmapData {
-            bitmap,
             image_data,
             canvas,
             context,
@@ -450,13 +458,21 @@ impl RenderBackend for WebCanvasRenderBackend {
         None
     }
 
-    fn submit_frame(&mut self, clear: Color, commands: CommandList) {
+    fn submit_frame(
+        &mut self,
+        clear: Color,
+        commands: CommandList,
+        cache_entries: Vec<BitmapCacheEntry>,
+    ) {
+        if !cache_entries.is_empty() {
+            panic!("Bitmap caching is unavailable on the canvas backend");
+        }
         self.begin_frame(clear);
         commands.execute(self);
     }
 
     fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, Error> {
-        let bitmap_data = BitmapData::new(bitmap).map_err(Error::JavascriptError)?;
+        let bitmap_data = BitmapData::with_bitmap(bitmap).map_err(Error::JavascriptError)?;
         Ok(BitmapHandle(Arc::new(bitmap_data)))
     }
 
@@ -487,6 +503,27 @@ impl RenderBackend for WebCanvasRenderBackend {
     }
 
     fn set_quality(&mut self, _quality: StageQuality) {}
+
+    fn compile_pixelbender_shader(
+        &mut self,
+        _shader: ruffle_render::pixel_bender::PixelBenderShader,
+    ) -> Result<ruffle_render::pixel_bender::PixelBenderShaderHandle, Error> {
+        Err(Error::Unimplemented("compile_pixelbender_shader".into()))
+    }
+
+    fn run_pixelbender_shader(
+        &mut self,
+        _handle: ruffle_render::pixel_bender::PixelBenderShaderHandle,
+        _arguments: &[ruffle_render::pixel_bender::PixelBenderShaderArgument],
+        _target: BitmapHandle,
+    ) -> Result<Box<dyn SyncHandle>, Error> {
+        Err(Error::Unimplemented("run_pixelbender_shader".into()))
+    }
+
+    fn create_empty_texture(&mut self, width: u32, height: u32) -> Result<BitmapHandle, Error> {
+        let bitmap_data = BitmapData::empty(width, height).map_err(Error::JavascriptError)?;
+        Ok(BitmapHandle(Arc::new(bitmap_data)))
+    }
 }
 
 impl CommandHandler for WebCanvasRenderBackend {
@@ -823,7 +860,7 @@ fn swf_shape_to_canvas_commands(
                 );
 
                 let fill_style = match style {
-                    FillStyle::Color(color) => CanvasFillStyle::Color(color.into()),
+                    FillStyle::Color(color) => CanvasFillStyle::Color((*color).into()),
                     FillStyle::LinearGradient(gradient) => CanvasFillStyle::Gradient(
                         create_linear_gradient(&backend.context, gradient, true)
                             .expect("Couldn't create linear gradient"),
@@ -883,7 +920,7 @@ fn swf_shape_to_canvas_commands(
                 );
 
                 let stroke_style = match style.fill_style() {
-                    FillStyle::Color(color) => CanvasStrokeStyle::Color(color.into()),
+                    FillStyle::Color(color) => CanvasStrokeStyle::Color((*color).into()),
                     FillStyle::LinearGradient(gradient) => {
                         CanvasStrokeStyle::Gradient(gradient.clone(), None)
                     }

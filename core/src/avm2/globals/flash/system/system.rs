@@ -8,7 +8,7 @@ use crate::avm2::Error;
 /// Implements `flash.system.System.setClipboard` method
 pub fn set_clipboard<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // The following restrictions only apply to the plugin.

@@ -172,3 +172,15 @@ c_vector[1] = b_vector;
 
 trace("/// (contents of c_vector...)");
 trace_vector(c_vector);
+
+class MyObject {}
+
+
+var myobj_vec: Vector.<MyObject> = new <MyObject>[];
+try {
+	var cast: Vector.<int> = myobj_vec;
+} catch (e) {
+	// Replace the non-deterministic address value with a placeholder string.
+	var normalized = e.toString().replace(/@[0-9A-Fa-f]+/, "@ADDRESS")
+	trace("Caught error: " + normalized);
+}

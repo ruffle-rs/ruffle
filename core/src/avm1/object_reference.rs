@@ -90,11 +90,11 @@ impl<'gc> MovieClipReference<'gc> {
             return None;
         };
 
-        Some(Self(Gc::allocate(
+        Some(Self(Gc::new(
             activation.context.gc_context,
             MovieClipReferenceData {
                 path: MovieClipPath::new_from_path(activation, path),
-                cached_stage_object: GcCell::allocate(
+                cached_stage_object: GcCell::new(
                     activation.context.gc_context,
                     Some(cached.as_weak()),
                 ),
@@ -169,7 +169,7 @@ impl<'gc> MovieClipReference<'gc> {
         // Should correctly find the child. As `this` is Value::MovieClip("_level0.child"), we don't want to try and find `123.child`!
 
         // Get the level
-        let mut start = Some(activation.resolve_level(self.0.path.level));
+        let mut start = Some(activation.get_or_create_level(self.0.path.level));
 
         // Keep traversing to find the target DisplayObject
         for part in self.0.path.path_segments.iter() {

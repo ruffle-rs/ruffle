@@ -40,7 +40,7 @@ fn deserialize_json_inner<'gc>(
                 let val = deserialize_json_inner(activation, entry.1.clone(), reviver)?;
                 let mapped_val = match reviver {
                     None => val,
-                    Some(reviver) => reviver.call(None, &[key.into(), val], activation)?,
+                    Some(reviver) => reviver.call(Value::Null, &[key.into(), val], activation)?,
                 };
                 if matches!(mapped_val, Value::Undefined) {
                     obj.delete_public_property(activation, key)?;
@@ -56,7 +56,7 @@ fn deserialize_json_inner<'gc>(
                 let val = deserialize_json_inner(activation, val.clone(), reviver)?;
                 let mapped_val = match reviver {
                     None => val,
-                    Some(reviver) => reviver.call(None, &[key.into(), val], activation)?,
+                    Some(reviver) => reviver.call(Value::Null, &[key.into(), val], activation)?,
                 };
                 arr.push(Some(mapped_val));
             }
@@ -75,7 +75,7 @@ fn deserialize_json<'gc>(
     let val = deserialize_json_inner(activation, json, reviver)?;
     match reviver {
         None => Ok(val),
-        Some(reviver) => reviver.call(None, &["".into(), val], activation),
+        Some(reviver) => reviver.call(Value::Null, &["".into(), val], activation),
     }
 }
 
@@ -131,7 +131,7 @@ impl<'gc> AvmSerializer<'gc> {
         };
         if let Some(Replacer::Function(replacer)) = self.replacer {
             replacer.call(
-                None,
+                Value::Null,
                 &[eval_key.unwrap_or_else(key).into(), value],
                 activation,
             )
@@ -235,13 +235,15 @@ impl<'gc> AvmSerializer<'gc> {
                     )?));
                 }
                 self.obj_stack.push(obj);
-                let value =
-                    if obj.is_of_type(activation.avm2().classes().array, &mut activation.context) {
-                        // TODO: Vectors
-                        self.serialize_iterable(activation, obj)?
-                    } else {
-                        self.serialize_object(activation, obj)?
-                    };
+                let value = if obj.is_of_type(
+                    activation.avm2().classes().array.inner_class_definition(),
+                    &mut activation.context,
+                ) {
+                    // TODO: Vectors
+                    self.serialize_iterable(activation, obj)?
+                } else {
+                    self.serialize_object(activation, obj)?
+                };
                 self.obj_stack
                     .pop()
                     .expect("Stack underflow during JSON serialization");
@@ -264,7 +266,7 @@ impl<'gc> AvmSerializer<'gc> {
 /// Implements `JSON.parse`.
 pub fn parse<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let input = args.get_string(activation, 0)?;
@@ -286,7 +288,7 @@ pub fn parse<'gc>(
 /// Implements `JSON.stringify`.
 pub fn stringify<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let val = args.get_value(0);

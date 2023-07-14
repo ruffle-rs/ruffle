@@ -17,14 +17,12 @@ const BUNDLED_TEXTS: LocaleBundle = {
 
 const bundles: Record<string, FluentBundle> = {};
 
-for (const locale in BUNDLED_TEXTS) {
+for (const [locale, files] of Object.entries(BUNDLED_TEXTS)) {
     const bundle = new FluentBundle(locale);
-    const files = BUNDLED_TEXTS[locale];
     if (files) {
-        for (const filename in files) {
-            const text = files[filename];
+        for (const [filename, text] of Object.entries(files)) {
             if (text) {
-                for (const error in bundle.addResource(
+                for (const error of bundle.addResource(
                     new FluentResource(text)
                 )) {
                     console.error(

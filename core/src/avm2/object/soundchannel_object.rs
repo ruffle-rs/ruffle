@@ -9,7 +9,7 @@ use crate::backend::audio::SoundInstanceHandle;
 use crate::context::UpdateContext;
 use crate::display_object::SoundTransform;
 use core::fmt;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates SoundChannel objects.
@@ -19,7 +19,7 @@ pub fn sound_channel_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
-    Ok(SoundChannelObject(GcCell::allocate(
+    Ok(SoundChannelObject(GcCell::new(
         activation.context.gc_context,
         SoundChannelObjectData {
             base,
@@ -35,7 +35,11 @@ pub fn sound_channel_allocator<'gc>(
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct SoundChannelObject<'gc>(GcCell<'gc, SoundChannelObjectData<'gc>>);
+pub struct SoundChannelObject<'gc>(pub GcCell<'gc, SoundChannelObjectData<'gc>>);
+
+#[derive(Clone, Collect, Copy, Debug)]
+#[collect(no_drop)]
+pub struct SoundChannelObjectWeak<'gc>(pub GcWeakCell<'gc, SoundChannelObjectData<'gc>>);
 
 impl fmt::Debug for SoundChannelObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -77,7 +81,7 @@ impl<'gc> SoundChannelObject<'gc> {
         let class = activation.avm2().classes().soundchannel;
         let base = ScriptObjectData::new(class);
 
-        let mut sound_object = SoundChannelObject(GcCell::allocate(
+        let mut sound_object = SoundChannelObject(GcCell::new(
             activation.context.gc_context,
             SoundChannelObjectData {
                 base,
@@ -90,7 +94,7 @@ impl<'gc> SoundChannelObject<'gc> {
         ));
         sound_object.install_instance_slots(activation.context.gc_context);
 
-        class.call_native_init(Some(sound_object.into()), &[], activation)?;
+        class.call_native_init(Value::Object(sound_object.into()), &[], activation)?;
 
         Ok(sound_object)
     }

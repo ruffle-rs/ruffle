@@ -1,0 +1,18 @@
+The embedded FLV videos were encoded like this:
+  $ ffmpeg -i gray_on_black.png -q 0 gray_on_black_0.flv
+And similarly for `q` values of 11, 22, and 33; and for the other two images.
+
+Since the test images consist only of constant colored blocks (8x8 for luma and
+16x16 for chroma, due to subsampling), the `q` option doesn't actually change the
+encoded image at all. The decoder, however, doesn't know this, and will more eagerly
+smooth out the block edges of the same picture if it says it was quantized more.
+
+What this test DOES check:
+ - Which deblocking algorithm is in use and how it affects the luma and chroma planes.
+ - How its strength is affected by the encoded quality/quantizer setting.
+
+What it DOES NOT check:
+ - How the deblocking strength of non-first (for example, inter-) frames is selected.
+ - How/if the deblocking of one frame affects any neighboring frames.
+ - Exactly when deblocking is used or not, based on: playback quality, frame count
+   of the video, stream or frame tag flags, etc.

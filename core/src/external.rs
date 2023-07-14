@@ -141,7 +141,7 @@ impl Value {
                         .collect();
                     Value::List(values?)
                 } else {
-                    let keys = object.get_keys(activation);
+                    let keys = object.get_keys(activation, false);
                     let mut values = BTreeMap::new();
                     for key in keys {
                         let value = object.get(key, activation)?;
@@ -294,12 +294,12 @@ impl<'gc> Callback<'gc> {
                     .into_iter()
                     .map(|v| v.into_avm2(&mut activation))
                     .collect();
-                match method.call(None, &args, &mut activation) {
+                match method.call(Avm2Value::Null, &args, &mut activation) {
                     Ok(result) => Value::from_avm2(result),
                     Err(e) => {
                         tracing::error!(
-                            "Unhandled error in External Interface callback {name}: {}",
-                            e.detailed_message(&mut activation)
+                            "Unhandled error in External Interface callback {name}: {:?}",
+                            e
                         );
                         Value::Null
                     }
@@ -339,8 +339,11 @@ pub struct ExternalInterface<'gc> {
 }
 
 impl<'gc> ExternalInterface<'gc> {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(providers: Vec<Box<dyn ExternalInterfaceProvider>>) -> Self {
+        Self {
+            providers,
+            ..Default::default()
+        }
     }
 
     pub fn add_provider(&mut self, provider: Box<dyn ExternalInterfaceProvider>) {

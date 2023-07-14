@@ -35,7 +35,7 @@ impl<'gc> ColorTransformObject {
 
     pub fn construct(
         activation: &mut Activation<'_, 'gc>,
-        color_transform: ColorTransform,
+        color_transform: &ColorTransform,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let args = [
             color_transform.r_multiply.to_f64().into(),
@@ -129,10 +129,7 @@ pub fn constructor<'gc>(
     };
     this.set_native(
         activation.context.gc_context,
-        NativeObject::ColorTransform(GcCell::allocate(
-            activation.context.gc_context,
-            color_transform,
-        )),
+        NativeObject::ColorTransform(GcCell::new(activation.context.gc_context, color_transform)),
     );
     Ok(this.into())
 }

@@ -8,3 +8,20 @@
 # Some items may be also be duplicated here, like "About Ruffle" in the menu and "About Ruffle" elsewhere as the header of the about menu.
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
+file-menu = Archivo
+file-menu-open-quick = Abrir...
+file-menu-open-advanced = Abrir avanzado...
+file-menu-close = Cerrar
+file-menu-reload = Recargar
+file-menu-exit = Salir
+controls-menu = Controles
+controls-menu-suspend = Suspender
+controls-menu-resume = Reanudar
+help-menu = Ayuda
+help-menu-join-discord = Únete al Discord
+help-menu-report-a-bug = Reportar un problema...
+help-menu-sponsor-development = Patrocinar desarrollo...
+help-menu-translate-ruffle = Traducir Ruffle...
+help-menu-about = Sobre Ruffle
+debug-menu = Herramientas de depuración
+debug-menu-open-stage = Ver información de la página

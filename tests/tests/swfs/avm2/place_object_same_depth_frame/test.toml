@@ -1,0 +1,3 @@
+# NOTE - test.swf is manually edited to have two PlaceObject tags
+# in the same frame with the same depth
+num_frames = 1

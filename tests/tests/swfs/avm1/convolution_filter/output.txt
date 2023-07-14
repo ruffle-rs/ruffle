@@ -22,6 +22,26 @@ true
 0
 // x.preserveAlpha
 true
+// test.filters = [x]
+// test.filters[0].alpha
+0
+// test.filters[0].bias
+0
+// test.filters[0].clamp
+true
+// test.filters[0].color
+0
+// test.filters[0].divisor
+1
+// test.filters[0].matrix
+
+// test.filters[0].matrixX
+0
+// test.filters[0].matrixY
+0
+// test.filters[0].preserveAlpha
+true
+
 // x.alpha (after set to 100)
 1
 // x.bias (after set to 100.5)
