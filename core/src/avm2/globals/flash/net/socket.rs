@@ -103,6 +103,24 @@ pub fn get_connected<'gc>(
     Ok(Value::Bool(is_connected))
 }
 
+pub fn flush<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(socket) = this.as_socket() {
+        let UpdateContext { sockets, .. } = &mut activation.context;
+
+        // FIXME: Throw correct IoError
+        let handle = socket.get_handle().unwrap();
+        let data = socket.drain_write_buf();
+
+        sockets.send(handle, data)
+    }
+
+    Ok(Value::Undefined)
+}
+
 pub fn write_byte<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
