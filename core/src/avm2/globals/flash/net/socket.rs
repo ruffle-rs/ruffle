@@ -304,3 +304,83 @@ pub fn write_bytes<'gc>(
 
     Ok(Value::Undefined)
 }
+
+pub fn write_double<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(socket) = this.as_socket() {
+        let num = args
+            .get(0)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_number(activation)?;
+        socket.write_double(num);
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn write_float<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(socket) = this.as_socket() {
+        let num = args
+            .get(0)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_number(activation)?;
+        socket.write_float(num as f32);
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn write_int<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(socket) = this.as_socket() {
+        let num = args
+            .get(0)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_i32(activation)?;
+        socket.write_int(num);
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn write_short<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(socket) = this.as_socket() {
+        let num = args
+            .get(0)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_i32(activation)?;
+        socket.write_short(num as i16);
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn write_unsigned_int<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(socket) = this.as_socket() {
+        let num = args
+            .get(0)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_u32(activation)?;
+        socket.write_unsigned_int(num);
+    }
+
+    Ok(Value::Undefined)
+}
