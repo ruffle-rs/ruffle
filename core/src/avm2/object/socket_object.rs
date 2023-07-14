@@ -8,6 +8,7 @@ use gc_arena::barrier::unlock;
 use gc_arena::{lock::RefLock, Collect, Gc};
 use gc_arena::{GcWeak, Mutation};
 use std::cell::{Cell, Ref, RefCell, RefMut};
+use std::collections::VecDeque;
 use std::fmt;
 
 /// A class instance allocator that allocates ShaderData objects.
@@ -24,6 +25,7 @@ pub fn socket_allocator<'gc>(
             // Default endianness is Big.
             endian: Cell::new(Endian::Big),
             handle: Cell::new(None),
+            read_buffer: RefCell::new(VecDeque::new()),
             write_buffer: RefCell::new(vec![]),
         },
     ))
@@ -77,6 +79,10 @@ impl<'gc> SocketObject<'gc> {
         self.0.handle.replace(Some(handle))
     }
 
+    pub fn read_buffer(&self) -> RefMut<'_, VecDeque<u8>> {
+        self.0.read_buffer.borrow_mut()
+    }
+
     pub fn write_bytes(&self, bytes: &[u8]) {
         self.0.write_buffer.borrow_mut().extend_from_slice(bytes)
     }
@@ -96,6 +102,7 @@ pub struct SocketObjectData<'gc> {
     #[collect(require_static)]
     handle: Cell<Option<SocketHandle>>,
     endian: Cell<Endian>,
+    read_buffer: RefCell<VecDeque<u8>>,
     write_buffer: RefCell<Vec<u8>>,
 }
 

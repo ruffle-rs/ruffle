@@ -44,6 +44,18 @@ pub fn connect<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn get_bytes_available<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(socket) = this.as_socket() {
+        return Ok(socket.read_buffer().len().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
 pub fn get_endian<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
