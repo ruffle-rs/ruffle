@@ -1,5 +1,5 @@
 use crate::avm2::bytearray::Endian;
-use crate::avm2::error::make_error_2008;
+use crate::avm2::error::{io_error, make_error_2008};
 pub use crate::avm2::object::socket_allocator;
 use crate::avm2::{Activation, Error, Object, TObject, Value};
 use crate::context::UpdateContext;
@@ -40,6 +40,25 @@ pub fn connect<'gc>(
     };
 
     // FIXME: Are we supposed to throw and IOError when a connection fails?
+
+    Ok(Value::Undefined)
+}
+
+pub fn close<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(socket) = this.as_socket() {
+        // We throw an IOError when socket is not open.
+        let handle = socket
+            .get_handle()
+            .ok_or(Error::AvmError(io_error(activation, "TODO", 0)?))?;
+
+        let UpdateContext { sockets, .. } = &mut activation.context;
+
+        sockets.close(handle)
+    }
 
     Ok(Value::Undefined)
 }
