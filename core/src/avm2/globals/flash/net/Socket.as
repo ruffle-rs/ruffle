@@ -39,10 +39,7 @@ package flash.net {
             stub_method("flash.net.Socket", "close");
         }
 
-        public function get bytesAvailable():uint {
-            stub_getter("flash.net.Socket", "bytesAvailable");
-            return 0;
-        }
+        public native function get bytesAvailable():uint;
 
         public function get bytesPending():uint {
             stub_getter("flash.net.Socket", "bytesPending");
