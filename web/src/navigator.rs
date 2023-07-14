@@ -355,4 +355,9 @@ impl NavigatorBackend for WebNavigatorBackend {
         }
         url
     }
+
+    fn connect_socket(&mut self, _host: &str, _port: u16) -> Option<Box<dyn ruffle_core::socket::SocketConnection>> {
+        // FIXME: Add way to call out to JS code.
+        None
+    }
 }
