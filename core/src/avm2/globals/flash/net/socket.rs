@@ -133,6 +133,120 @@ pub fn flush<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn read_byte<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(socket) = this.as_socket() {
+        return Ok(socket.read_byte().map_err(|e| e.to_avm(activation))?.into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn read_double<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(socket) = this.as_socket() {
+        return Ok(socket
+            .read_double()
+            .map_err(|e| e.to_avm(activation))?
+            .into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn read_float<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(socket) = this.as_socket() {
+        return Ok(socket
+            .read_float()
+            .map_err(|e| e.to_avm(activation))?
+            .into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn read_int<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(socket) = this.as_socket() {
+        return Ok(socket.read_int().map_err(|e| e.to_avm(activation))?.into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn read_short<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(socket) = this.as_socket() {
+        return Ok(socket
+            .read_short()
+            .map_err(|e| e.to_avm(activation))?
+            .into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn read_unsigned_byte<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(socket) = this.as_socket() {
+        return Ok(socket
+            .read_unsigned_byte()
+            .map_err(|e| e.to_avm(activation))?
+            .into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn read_unsigned_int<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(socket) = this.as_socket() {
+        return Ok(socket
+            .read_unsigned_int()
+            .map_err(|e| e.to_avm(activation))?
+            .into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn read_unsigned_short<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(socket) = this.as_socket() {
+        return Ok(socket
+            .read_unsigned_short()
+            .map_err(|e| e.to_avm(activation))?
+            .into());
+    }
+
+    Ok(Value::Undefined)
+}
+
 pub fn write_byte<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
