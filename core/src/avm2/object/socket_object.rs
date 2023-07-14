@@ -106,6 +106,22 @@ impl<'gc> SocketObject<'gc> {
     }
 }
 
+macro_rules! impl_write{
+    ($($method_name:ident $data_type:ty ), *)
+    =>
+    {
+        impl<'gc> SocketObject<'gc> {
+            $( pub fn $method_name (&self, val: $data_type) {
+                let val_bytes = match self.endian() {
+                    Endian::Big => val.to_be_bytes(),
+                    Endian::Little => val.to_le_bytes(),
+                };
+                self.write_bytes(&val_bytes)
+             } )*
+        }
+    }
+}
+
 macro_rules! impl_read{
     ($($method_name:ident $size:expr; $data_type:ty ), *)
     =>
@@ -121,6 +137,7 @@ macro_rules! impl_read{
     }
 }
 
+impl_write!(write_float f32, write_double f64, write_int i32, write_unsigned_int u32, write_short i16, write_unsigned_short u16);
 impl_read!(read_float 4; f32, read_double 8; f64, read_int 4; i32, read_unsigned_int 4; u32, read_short 2; i16, read_unsigned_short 2; u16, read_byte 1; i8, read_unsigned_byte 1; u8);
 
 #[derive(Collect)]

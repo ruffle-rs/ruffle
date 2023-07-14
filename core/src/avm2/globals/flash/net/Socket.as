@@ -108,18 +108,9 @@ package flash.net {
 
         public native function writeByte(value:int):void;
         public native function writeBytes(bytes:ByteArray, offset:uint = 0, length:uint = 0):void;
-
-        public function writeDouble(value:Number):void {
-            stub_method("flash.net.Socket", "writeDouble");
-        }
-
-        public function writeFloat(value:Number):void {
-            stub_method("flash.net.Socket", "writeFloat");
-        }
-
-        public function writeInt(value:int):void {
-            stub_method("flash.net.Socket", "writeInt");
-        }
+        public native function writeDouble(value:Number):void;
+        public native function writeFloat(value:Number):void;
+        public native function writeInt(value:int):void;
 
         public function writeMultiByte(value:String, charSet:String):void {
             stub_method("flash.net.Socket", "writeMultiByte");
@@ -129,13 +120,8 @@ package flash.net {
             stub_method("flash.net.Socket", "writeObject");
         }
 
-        public function writeShort(value:int):void {
-            stub_method("flash.net.Socket", "writeShort");
-        }
-
-        public function writeUnsignedInt(value:uint):void {
-            stub_method("flash.net.Socket", "writeUnsignedInt");
-        }
+        public native function writeShort(value:int):void;
+        public native function writeUnsignedInt(value:uint):void;
 
         public function writeUTF(value:String):void {
             stub_method("flash.net.Socket", "writeUTF");
