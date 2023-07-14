@@ -94,4 +94,9 @@ impl NavigatorBackend for TestNavigatorBackend {
     fn pre_process_url(&self, url: Url) -> Url {
         url
     }
+
+    fn connect_socket(&mut self, _host: &str, _port: u16) -> Option<Box<dyn ruffle_core::socket::SocketConnection>> {
+        // TODO: Stub impl.
+        None
+    }
 }
