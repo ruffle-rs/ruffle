@@ -59,7 +59,7 @@ pub(crate) mod text_field;
 mod text_format;
 pub(crate) mod transform;
 mod video;
-mod xml;
+pub(crate) mod xml;
 mod xml_node;
 
 const GLOBAL_DECLS: &[Declaration] = declare_properties! {
@@ -475,7 +475,7 @@ pub struct SystemPrototypes<'gc> {
     pub text_format: Object<'gc>,
     pub array: Object<'gc>,
     pub array_constructor: Object<'gc>,
-    pub xml_node: Object<'gc>,
+    pub xml_node_constructor: Object<'gc>,
     pub xml_constructor: Object<'gc>,
     pub string: Object<'gc>,
     pub number: Object<'gc>,
@@ -541,8 +541,6 @@ pub fn create_globals<'gc>(
     let error_proto = error::create_proto(context, object_proto, function_proto);
 
     let xmlnode_proto = xml_node::create_proto(context, object_proto, function_proto);
-
-    let xml_proto = xml::create_proto(context, xmlnode_proto, function_proto);
 
     let string_proto = string::create_proto(context, object_proto, function_proto);
     let number_proto = number::create_proto(context, object_proto, function_proto);
@@ -666,13 +664,7 @@ pub fn create_globals<'gc>(
         function_proto,
         xmlnode_proto,
     );
-    let xml = FunctionObject::constructor(
-        gc_context,
-        Executable::Native(xml::constructor),
-        constructor_to_fn!(xml::constructor),
-        function_proto,
-        xml_proto,
-    );
+    let xml = xml::create_constructor(context, xmlnode_proto, function_proto);
     let string = string::create_string_object(context, string_proto, function_proto);
     let number = number::create_number_object(context, number_proto, function_proto);
     let boolean = boolean::create_boolean_object(context, boolean_proto, function_proto);
@@ -1078,7 +1070,7 @@ pub fn create_globals<'gc>(
             text_format: text_format_proto,
             array: array_proto,
             array_constructor: array,
-            xml_node: xmlnode_proto,
+            xml_node_constructor: xmlnode,
             xml_constructor: xml,
             string: string_proto,
             number: number_proto,

@@ -6,7 +6,7 @@ use crate::surface::target::CommandTarget;
 use crate::utils::SampleCountMap;
 use bytemuck::{Pod, Zeroable};
 use std::sync::OnceLock;
-use swf::BlurFilter as BlurFilterArgs;
+use swf::{BlurFilter as BlurFilterArgs, Rectangle};
 use wgpu::util::DeviceExt;
 
 /// How much each pass should multiply the requested blur size by - accumulative.
@@ -21,8 +21,8 @@ const PASS_SCALES: [f32; 15] = [
 #[derive(Copy, Clone, Debug, Pod, Zeroable, PartialEq)]
 struct BlurUniform {
     direction: [f32; 2],
-    size: f32,
-    _padding: f32,
+    full_size: f32,
+    half_size: f32,
 }
 
 pub struct BlurFilter {
@@ -118,6 +118,22 @@ impl BlurFilter {
         })
     }
 
+    pub fn calculate_dest_rect(
+        &self,
+        filter: &BlurFilterArgs,
+        source_rect: Rectangle<i32>,
+    ) -> Rectangle<i32> {
+        let scale = PASS_SCALES[filter.num_passes() as usize];
+        let x = (scale * filter.blur_x.to_f32()).ceil().max(0.0) as i32;
+        let y = (scale * filter.blur_y.to_f32()).ceil().max(0.0) as i32;
+        Rectangle {
+            x_min: source_rect.x_min - x,
+            x_max: source_rect.x_max + x,
+            y_min: source_rect.y_min - y,
+            y_max: source_rect.y_max + y,
+        }
+    }
+
     pub fn apply(
         &self,
         descriptors: &Descriptors,
@@ -130,7 +146,6 @@ impl BlurFilter {
         let format = source.texture.format();
         let pipeline = self.pipeline(descriptors, sample_count);
 
-        // FIXME - these should be larger than the source texture, but we don't support that yet
         let mut flip = CommandTarget::new(
             descriptors,
             texture_pool,
@@ -174,12 +189,14 @@ impl BlurFilter {
                 } else {
                     filter.blur_y.to_f32()
                 };
-                // blur_x/y is the total kernel width; change it to just half excluding center
-                let strength = ((strength.min(255.0) * pass_scale - 1.0) / 2.0).floor();
-                if strength <= 0.0 {
-                    // A strength of 0 is a noop
+                // Full width of the kernel (left edge to right edge)
+                let full_size = (strength.min(255.0) * pass_scale).round();
+                if full_size <= 1.0 {
+                    // A width of 1 or less is a noop (it'd just sample itself and nothing else)
                     continue;
                 }
+                // Radius of the kernel (edge of the center, to right edge), excludes center pixel
+                let half_size = (full_size - 1.0) / 2.0;
 
                 let (previous_view, previous_vertices, previous_width, previous_height) = if first {
                     first = false;
@@ -208,8 +225,8 @@ impl BlurFilter {
                                 } else {
                                     [0.0, 1.0 / previous_height]
                                 },
-                                size: strength,
-                                _padding: 0.0,
+                                full_size,
+                                half_size,
                             }]),
                             usage: wgpu::BufferUsages::UNIFORM,
                         });

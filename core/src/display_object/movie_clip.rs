@@ -2059,6 +2059,7 @@ impl<'gc> MovieClip<'gc> {
     /// This function does *not* call the constructor; it is intended that you
     /// will construct the object first before doing so. This function is
     /// intended to be called from `construct_frame`.
+    #[inline(never)]
     fn allocate_as_avm2_object(
         self,
         context: &mut UpdateContext<'_, 'gc>,
@@ -2092,6 +2093,7 @@ impl<'gc> MovieClip<'gc> {
     /// This function does *not* allocate the object; it is intended that you
     /// will allocate the object first before doing so. This function is
     /// intended to be called from `post_instantiate`.
+    #[inline(never)]
     fn construct_as_avm2_object(self, context: &mut UpdateContext<'_, 'gc>) {
         let class_object = self
             .0

@@ -333,10 +333,20 @@ fn load_system_fonts(locale: LanguageIdentifier) -> anyhow::Result<egui::FontDef
     } {
         families.push(windows_font);
     }
+    if let Some(linux_font) = match locale.language.as_str() {
+        "ja" => Some(Family::Name("Noto Sans CJK JP")),
+        "zh" => Some(match locale.to_string().as_str() {
+            "zh-CN" => Family::Name("Noto Sans CJK SC"),
+            _ => Family::Name("Noto Sans CJK TC"),
+        }),
+        "ko" => Some(Family::Name("Noto Sans CJK KR")),
+        _ => Some(Family::Name("Noto Sans")),
+    } {
+        families.push(linux_font);
+    }
     families.extend(
         [
             Family::Name("Arial Unicode MS"), // macos
-            Family::Name("Noto Sans"),        // linux
             Family::SansSerif,
         ]
         .iter(),

@@ -85,8 +85,20 @@ pub struct BitmapCache {
     /// The `Matrix.d` value that was last used with this cache
     matrix_d: f32,
 
-    /// The current contents of the cache, if any
+    /// The width of the original bitmap, pre-filters
+    source_width: u16,
+
+    /// The height of the original bitmap, pre-filters
+    source_height: u16,
+
+    /// The offset used to draw the final bitmap (i.e. if a filter increases the size)
+    draw_offset: Point<i32>,
+
+    /// The current contents of the cache, if any. Values are post-filters.
     bitmap: Option<BitmapInfo>,
+
+    /// Whether we warned that this bitmap was too large to be cached
+    warned_for_oversize: bool,
 }
 
 impl BitmapCache {
@@ -98,46 +110,45 @@ impl BitmapCache {
         self.matrix_a = f32::NAN;
     }
 
-    fn is_dirty(&self, other: &Matrix, width: u16, height: u16) -> bool {
-        if self.matrix_a != other.a
+    fn is_dirty(&self, other: &Matrix, source_width: u16, source_height: u16) -> bool {
+        self.matrix_a != other.a
             || self.matrix_b != other.b
             || self.matrix_c != other.c
             || self.matrix_d != other.d
-        {
-            return true;
-        }
-        if let Some(bitmap) = &self.bitmap {
-            if bitmap.width != width || bitmap.height != height {
-                return true;
-            }
-        } else {
-            return true;
-        }
-        false
+            || self.source_width != source_width
+            || self.source_height != source_height
+            || self.bitmap.is_none()
     }
 
     /// Clears any dirtiness and ensure there's an appropriately sized texture allocated
+    #[allow(clippy::too_many_arguments)]
     fn update(
         &mut self,
         renderer: &mut dyn RenderBackend,
         matrix: Matrix,
-        width: u16,
-        height: u16,
+        source_width: u16,
+        source_height: u16,
+        actual_width: u16,
+        actual_height: u16,
+        draw_offset: Point<i32>,
     ) {
         self.matrix_a = matrix.a;
         self.matrix_b = matrix.b;
         self.matrix_c = matrix.c;
         self.matrix_d = matrix.d;
+        self.source_width = source_width;
+        self.source_height = source_height;
+        self.draw_offset = draw_offset;
         if let Some(current) = &mut self.bitmap {
-            if current.width == width && current.height == height {
+            if current.width == actual_width && current.height == actual_height {
                 return; // No need to resize it
             }
         }
-        if renderer.is_offscreen_supported() && width > 0 && height > 0 {
-            let handle = renderer.create_empty_texture(width as u32, height as u32);
+        if renderer.is_offscreen_supported() && actual_width > 0 && actual_height > 0 {
+            let handle = renderer.create_empty_texture(actual_width as u32, actual_height as u32);
             self.bitmap = handle.ok().map(|handle| BitmapInfo {
-                width,
-                height,
+                width: actual_width,
+                height: actual_height,
                 handle,
             });
         } else {
@@ -687,6 +698,15 @@ impl<'gc> DisplayObjectBase<'gc> {
     }
 }
 
+struct DrawCacheInfo {
+    handle: BitmapHandle,
+    dirty: bool,
+    base_transform: Transform,
+    bounds: Rectangle<Twips>,
+    draw_offset: Point<i32>,
+    filters: Vec<Filter>,
+}
+
 pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_, 'gc>) {
     if this.maskee().is_some() {
         return;
@@ -700,9 +720,11 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
     };
 
     let cache_info = if context.use_bitmap_cache {
-        let mut cache_info: Option<(BitmapHandle, bool, Transform, Rectangle<Twips>)> = None;
+        let mut cache_info: Option<DrawCacheInfo> = None;
         let base_transform = context.transform_stack.transform();
         let bounds: Rectangle<Twips> = this.bounds_with_transform(&base_transform.matrix);
+        let path = this.path();
+        let mut filters: Vec<Filter> = this.filters();
 
         if let Some(cache) = this.base_mut(context.gc_context).bitmap_cache_mut() {
             let width = bounds.width().to_pixels().ceil().max(0.0);
@@ -710,21 +732,55 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
             if width <= u16::MAX as f64 && height <= u16::MAX as f64 {
                 let width = width as u16;
                 let height = height as u16;
+                let mut filter_rect = Rectangle {
+                    x_min: 0,
+                    x_max: width as i32,
+                    y_min: 0,
+                    y_max: height as i32,
+                };
+                let stage_matrix = context.stage.view_matrix();
+                for filter in &mut filters {
+                    // Scaling is done by *stage view matrix* only, nothing in-between
+                    filter.scale(stage_matrix.a, stage_matrix.d);
+                    filter_rect = context.renderer.calculate_dest_rect(filter, filter_rect);
+                }
+                let draw_offset = Point::new(filter_rect.x_min, filter_rect.y_min);
                 if cache.is_dirty(&base_transform.matrix, width, height) {
-                    cache.update(context.renderer, base_transform.matrix, width, height);
-                    cache_info = cache
-                        .handle()
-                        .map(|handle| (handle, true, base_transform, bounds));
+                    cache.update(
+                        context.renderer,
+                        base_transform.matrix,
+                        width,
+                        height,
+                        filter_rect.width() as u16,
+                        filter_rect.height() as u16,
+                        draw_offset,
+                    );
+                    cache_info = cache.handle().map(|handle| DrawCacheInfo {
+                        handle,
+                        dirty: true,
+                        base_transform,
+                        bounds,
+                        draw_offset,
+                        filters,
+                    });
                 } else {
-                    cache_info = cache
-                        .handle()
-                        .map(|handle| (handle, false, base_transform, bounds));
+                    cache_info = cache.handle().map(|handle| DrawCacheInfo {
+                        handle,
+                        dirty: false,
+                        base_transform,
+                        bounds,
+                        draw_offset,
+                        filters,
+                    });
                 }
             } else {
-                tracing::warn!(
-                "Skipping cacheAsBitmap for incredibly large object at {:?} ({width} x {height})",
-                this.path()
-            );
+                if !cache.warned_for_oversize {
+                    tracing::warn!(
+                        "Skipping cacheAsBitmap for incredibly large object at {:?} ({width} x {height})",
+                        path
+                    );
+                    cache.warned_for_oversize = true;
+                }
                 cache.clear();
                 cache_info = None;
             }
@@ -735,21 +791,23 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
     };
 
     // We can't hold `cache` (which will hold `base`), so this is split up
-    if let Some((handle, dirty, base_transform, bounds)) = cache_info {
+    if let Some(cache_info) = cache_info {
         // In order to render an object to a texture, we need to draw its entire bounds.
         // Calculate the offset from tx/ty in order to accommodate any drawings that extend the bounds
         // negatively
-        let offset_x = bounds.x_min - base_transform.matrix.tx;
-        let offset_y = bounds.y_min - base_transform.matrix.ty;
+        let offset_x = cache_info.bounds.x_min - cache_info.base_transform.matrix.tx
+            + Twips::from_pixels_i32(cache_info.draw_offset.x);
+        let offset_y = cache_info.bounds.y_min - cache_info.base_transform.matrix.ty
+            + Twips::from_pixels_i32(cache_info.draw_offset.y);
 
-        if dirty {
+        if cache_info.dirty {
             let mut transform_stack = TransformStack::new();
             transform_stack.push(&Transform {
                 color_transform: Default::default(),
                 matrix: Matrix {
                     tx: -offset_x,
                     ty: -offset_y,
-                    ..base_transform.matrix
+                    ..cache_info.base_transform.matrix
                 },
             });
             let mut offscreen_context = RenderContext {
@@ -764,28 +822,24 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
                 stage: context.stage,
             };
             render_base_inner(this, &mut offscreen_context);
-            let mut filters = this.filters();
-            for filter in &mut filters {
-                filter.scale(base_transform.matrix.a, base_transform.matrix.d);
-            }
             offscreen_context.cache_draws.push(BitmapCacheEntry {
-                handle: handle.clone(),
+                handle: cache_info.handle.clone(),
                 commands: offscreen_context.commands,
                 clear: this.opaque_background().unwrap_or_default(),
-                filters,
+                filters: cache_info.filters,
             });
         }
 
         // When rendering it back, ensure we're only keeping the translation - scale/rotation is within the image already
         context.commands.render_bitmap(
-            handle,
+            cache_info.handle,
             Transform {
                 matrix: Matrix {
-                    tx: base_transform.matrix.tx + offset_x,
-                    ty: base_transform.matrix.ty + offset_y,
+                    tx: cache_info.base_transform.matrix.tx + offset_x,
+                    ty: cache_info.base_transform.matrix.ty + offset_y,
                     ..Default::default()
                 },
-                color_transform: base_transform.color_transform,
+                color_transform: cache_info.base_transform.color_transform,
             },
             true,
         );
@@ -1663,6 +1717,7 @@ pub trait TDisplayObject<'gc>:
     /// Since we construct AVM2 display objects after they are allocated and
     /// placed on the render list, these steps have to be done by the child
     /// object to signal to its parent that it was added.
+    #[inline(never)]
     fn on_construction_complete(&self, context: &mut UpdateContext<'_, 'gc>) {
         if !self.placed_by_script() {
             // Since we construct AVM2 display objects after they are

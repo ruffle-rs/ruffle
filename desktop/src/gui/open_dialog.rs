@@ -6,6 +6,7 @@ use egui::{
     Align2, Button, Checkbox, ComboBox, DragValue, Grid, Slider, TextEdit, Ui, Widget, Window,
 };
 use ruffle_core::backend::navigator::OpenURLMode;
+use ruffle_core::config::Letterbox;
 use ruffle_core::{LoadBehavior, StageAlign, StageScaleMode};
 use ruffle_render::quality::StageQuality;
 use std::path::Path;
@@ -281,6 +282,32 @@ impl OpenDialog {
                     });
                 ui.end_row();
 
+                ui.label(text(&self.locale, "letterbox"));
+                ComboBox::from_id_source("open-file-advanced-options-letterbox")
+                    .selected_text(match self.options.letterbox {
+                        Letterbox::On => text(&self.locale, "letterbox-on"),
+                        Letterbox::Fullscreen => text(&self.locale, "letterbox-fullscreen"),
+                        Letterbox::Off => text(&self.locale, "letterbox-off"),
+                    })
+                    .show_ui(ui, |ui| {
+                        ui.selectable_value(
+                            &mut self.options.letterbox,
+                            Letterbox::On,
+                            text(&self.locale, "letterbox-on"),
+                        );
+                        ui.selectable_value(
+                            &mut self.options.letterbox,
+                            Letterbox::Fullscreen,
+                            text(&self.locale, "letterbox-fullscreen"),
+                        );
+                        ui.selectable_value(
+                            &mut self.options.letterbox,
+                            Letterbox::Off,
+                            text(&self.locale, "letterbox-off"),
+                        );
+                    });
+                ui.end_row();
+
                 ui.label(text(&self.locale, "align"));
                 ui.horizontal(|ui| {
                     ComboBox::from_id_source("open-file-advanced-options-align")
@@ -447,7 +474,7 @@ impl OpenDialog {
             if ui
                 .add_enabled(
                     !self.options.parameters.is_empty(),
-                    Button::new(text(&self.locale, "open-dialog-clear-parameters")),
+                    Button::new(text(&self.locale, "open-dialog-remove-parameters")),
                 )
                 .clicked()
             {
@@ -468,7 +495,7 @@ impl OpenDialog {
                         ui.text_edit_singleline(value);
                         if ui
                             .button("x")
-                            .on_hover_text(text(&self.locale, "open-dialog-delete-parameter"))
+                            .on_hover_text(text(&self.locale, "open-dialog-remove-parameter"))
                             .clicked()
                         {
                             keep = false;

@@ -33,7 +33,7 @@ use std::cell::Cell;
 use std::mem;
 use std::path::Path;
 use std::sync::Arc;
-use swf::Color;
+use swf::{Color, Rectangle};
 use tracing::instrument;
 use wgpu::SubmissionIndex;
 
@@ -805,7 +805,11 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     fn is_filter_supported(&self, filter: &Filter) -> bool {
         matches!(
             filter,
-            Filter::BlurFilter(_) | Filter::ColorMatrixFilter(_) | Filter::ShaderFilter(_)
+            Filter::BlurFilter(_)
+                | Filter::GlowFilter(_)
+                | Filter::DropShadowFilter(_)
+                | Filter::ColorMatrixFilter(_)
+                | Filter::ShaderFilter(_)
         )
     }
 
@@ -895,6 +899,12 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         );
 
         Some(self.make_queue_sync_handle(target, index, destination, copy_area))
+    }
+
+    fn calculate_dest_rect(&self, filter: &Filter, source_rect: Rectangle<i32>) -> Rectangle<i32> {
+        self.descriptors
+            .filters
+            .calculate_dest_rect(filter, source_rect)
     }
 
     fn compile_pixelbender_shader(

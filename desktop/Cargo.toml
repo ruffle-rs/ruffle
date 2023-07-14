@@ -8,7 +8,7 @@ repository.workspace = true
 version.workspace = true
 
 [dependencies]
-clap = { version = "4.3.10", features = ["derive"] }
+clap = { version = "4.3.11", features = ["derive"] }
 cpal = "0.15.2"
 egui = "0.22.0"
 egui-wgpu = { version = "0.22.0", features = ["winit"] }
@@ -46,7 +46,7 @@ winapi = "0.3.9"
 
 [build-dependencies]
 embed-resource = "2"
-vergen = { version = "8.2.3", features = ["build", "git", "gitcl", "cargo"] }
+vergen = { version = "8.2.4", features = ["build", "git", "gitcl", "cargo"] }
 
 [features]
 default = ["software_video"]

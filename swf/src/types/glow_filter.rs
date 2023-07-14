@@ -1,4 +1,4 @@
-use crate::{Color, Fixed16, Fixed8};
+use crate::{BlurFilter, BlurFilterFlags, Color, Fixed16, Fixed8};
 use bitflags::bitflags;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -22,6 +22,11 @@ impl GlowFilter {
     }
 
     #[inline]
+    pub fn composite_source(&self) -> bool {
+        self.flags.contains(GlowFilterFlags::COMPOSITE_SOURCE)
+    }
+
+    #[inline]
     pub fn num_passes(&self) -> u8 {
         (self.flags & GlowFilterFlags::PASSES).bits()
     }
@@ -29,6 +34,14 @@ impl GlowFilter {
     pub fn scale(&mut self, x: f32, y: f32) {
         self.blur_x *= Fixed16::from_f32(x);
         self.blur_y *= Fixed16::from_f32(y);
+    }
+
+    pub fn inner_blur_filter(&self) -> BlurFilter {
+        BlurFilter {
+            blur_x: self.blur_x,
+            blur_y: self.blur_y,
+            flags: BlurFilterFlags::from_passes(self.num_passes()),
+        }
     }
 }
 

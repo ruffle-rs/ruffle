@@ -35,11 +35,11 @@ impl VideoBackend for SoftwareVideoBackend {
         _num_frames: u32,
         size: (u16, u16),
         codec: VideoCodec,
-        _filter: VideoDeblocking,
+        filter: VideoDeblocking,
     ) -> Result<VideoStreamHandle, Error> {
         let decoder: Box<dyn VideoDecoder> = match codec {
             #[cfg(feature = "h263")]
-            VideoCodec::H263 => Box::new(crate::decoder::h263::H263Decoder::new()),
+            VideoCodec::H263 => Box::new(crate::decoder::h263::H263Decoder::new(filter)),
             #[cfg(feature = "vp6")]
             VideoCodec::Vp6 => Box::new(crate::decoder::vp6::Vp6Decoder::new(false, size)),
             #[cfg(feature = "vp6")]
