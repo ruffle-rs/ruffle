@@ -1261,9 +1261,6 @@ impl Player {
                         if Self::check_display_object_equality(
                             new_object.as_displayobject(),
                             hovered.as_displayobject(),
-                        ) && Arc::ptr_eq(
-                            &new_object.as_displayobject().movie(),
-                            &hovered.as_displayobject().movie(),
                         ) {
                             if let Some(state) = hovered.as_displayobject().state() {
                                 new_object.as_displayobject().set_state(context, state);
@@ -1414,8 +1411,10 @@ impl Player {
                     if let Some(down) = context.mouse_down_object {
                         if let Some(over) = context.mouse_over_object {
                             if !released_inside {
-                                released_inside =
-                                    down.as_displayobject().id() == over.as_displayobject().id();
+                                released_inside = Self::check_display_object_equality(
+                                    down.as_displayobject(),
+                                    over.as_displayobject(),
+                                );
                             }
                         }
                     }
@@ -1492,9 +1491,11 @@ impl Player {
         needs_render
     }
 
-    //Checks if two displayObjects have the same depth and id
+    //Checks if two displayObjects have the same depth and id and accur in the same movie.s
     fn check_display_object_equality(object1: DisplayObject, object2: DisplayObject) -> bool {
-        object1.depth() == object2.depth() && object1.id() == object2.id()
+        object1.depth() == object2.depth()
+            && object1.id() == object2.id()
+            && Arc::ptr_eq(&object1.movie(), &object2.movie())
     }
     ///This searches for a display object by it's id.
     ///When a button is being held down but the mouse stops hovering over the object
@@ -1506,9 +1507,7 @@ impl Player {
     ) -> Option<DisplayObject<'gc>> {
         if let Some(parent) = obj.as_container() {
             for child in parent.iter_render_list() {
-                if Self::check_display_object_equality(child, previous_object)
-                    && Arc::ptr_eq(&child.movie(), &previous_object.movie())
-                {
+                if Self::check_display_object_equality(child, previous_object) {
                     return Some(child);
                 }
 
