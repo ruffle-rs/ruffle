@@ -1127,7 +1127,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let object_val = self.context.avm1.pop();
         let object = object_val.coerce_to_object(self);
 
-        let result = object.get(name, self)?;
+        let result = object.get_non_slash_path(name, self)?;
         self.stack_push(result);
 
         Ok(FrameControl::Continue)
@@ -2563,7 +2563,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let root = start.avm1_root();
         let start = start.object().coerce_to_object(self);
         Ok(self
-            .resolve_target_path(root, start, &path, false)?
+            .resolve_target_path(root, start, &path, false, true)?
             .and_then(|o| o.as_display_object()))
     }
 
@@ -2582,6 +2582,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         start: Object<'gc>,
         mut path: &WStr,
         mut first_element: bool,
+        path_has_slash: bool,
     ) -> Result<Option<Object<'gc>>, Error<'gc>> {
         // Empty path resolves immediately to start clip.
         if path.is_empty() {
@@ -2656,10 +2657,25 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                         .and_then(|o| o.as_container())
                         .and_then(|o| o.child_by_name(name, case_sensitive))
                     {
-                        child.object()
+                        // If an object doesn't have an object representation, e.g. Graphic, then trying to access it
+                        // Returns the parent instead
+                        if path_has_slash {
+                            child.object()
+                        } else if let crate::display_object::DisplayObject::Graphic(_) = child {
+                            child
+                                .parent()
+                                .map(|p| p.object())
+                                .unwrap_or(Value::Undefined)
+                        } else {
+                            child.object()
+                        }
                     } else {
                         let name = AvmString::new(self.context.gc_context, name);
-                        object.get(name, self).unwrap()
+                        if path_has_slash {
+                            object.get(name, self).unwrap()
+                        } else {
+                            object.get_non_slash_path(name, self).unwrap()
+                        }
                     }
                 }
             };
@@ -2689,6 +2705,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         start: DisplayObject<'gc>,
         path: &'s WStr,
     ) -> Result<Option<(Object<'gc>, &'s WStr)>, Error<'gc>> {
+        let path_has_slash = path.contains(b'/');
+
         // Find the right-most : or . in the path.
         // If we have one, we must resolve as a target path.
         if let Some(separator) = path.rfind(b":.".as_ref()) {
@@ -2699,9 +2717,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             let mut current_scope = Some(self.scope());
             while let Some(scope) = current_scope {
                 let avm1_root = start.avm1_root();
-                if let Some(object) =
-                    self.resolve_target_path(avm1_root, *scope.locals(), path, true)?
-                {
+                if let Some(object) = self.resolve_target_path(
+                    avm1_root,
+                    *scope.locals(),
+                    path,
+                    true,
+                    path_has_slash,
+                )? {
                     return Ok(Some((object, var_name)));
                 }
                 current_scope = scope.parent();
@@ -2744,6 +2766,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // Resolve a variable path for a GetVariable action.
         let start = self.target_clip_or_root();
 
+        let path_has_slash = path.contains(b'/');
+
         // Find the right-most : or . in the path.
         // If we have one, we must resolve as a target path.
         if let Some(separator) = path.rfind(b":.".as_ref()) {
@@ -2754,9 +2778,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             let mut current_scope = Some(self.scope());
             while let Some(scope) = current_scope {
                 let avm1_root = start.avm1_root();
-                if let Some(object) =
-                    self.resolve_target_path(avm1_root, *scope.locals(), path, true)?
-                {
+                if let Some(object) = self.resolve_target_path(
+                    avm1_root,
+                    *scope.locals(),
+                    path,
+                    true,
+                    path_has_slash,
+                )? {
                     let var_name = AvmString::new(self.context.gc_context, var_name);
                     if object.has_property(self, var_name) {
                         return Ok(CallableValue::Callable(object, object.get(var_name, self)?));
@@ -2774,7 +2802,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             while let Some(scope) = current_scope {
                 let avm1_root = start.avm1_root();
                 if let Some(object) =
-                    self.resolve_target_path(avm1_root, *scope.locals(), &path, false)?
+                    self.resolve_target_path(avm1_root, *scope.locals(), &path, false, true)?
                 {
                     return Ok(CallableValue::UnCallable(object.into()));
                 }
@@ -2841,7 +2869,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             while let Some(scope) = current_scope {
                 let avm1_root = start.avm1_root();
                 if let Some(object) =
-                    self.resolve_target_path(avm1_root, *scope.locals(), path, true)?
+                    self.resolve_target_path(avm1_root, *scope.locals(), path, true, true)?
                 {
                     let var_name = AvmString::new(self.context.gc_context, var_name);
                     object.set(var_name, value, self)?;
@@ -3075,7 +3103,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         if target.is_empty() {
             new_target_clip = Some(base_clip);
         } else if let Some(clip) = self
-            .resolve_target_path(root, start, target, false)?
+            .resolve_target_path(root, start, target, false, true)?
             .and_then(|o| o.as_display_object())
             .filter(|_| !self.base_clip.avm1_removed())
         // All properties invalid if base clip is removed.

@@ -391,7 +391,7 @@ fn clone<'gc>(
         if !bitmap_data.disposed() {
             return Ok(new_bitmap_data(
                 activation.context.gc_context,
-                this.get_local_stored("__proto__", activation),
+                this.get_local_stored("__proto__", activation, false),
                 operations::clone(bitmap_data),
             )
             .into());
@@ -756,8 +756,8 @@ fn hit_test<'gc>(
                 .unwrap_or(&Value::Undefined)
                 .coerce_to_object(activation);
             let top_left = if let (Some(x), Some(y)) = (
-                first_point.get_local_stored("x", activation),
-                first_point.get_local_stored("y", activation),
+                first_point.get_local_stored("x", activation, false),
+                first_point.get_local_stored("y", activation, false),
             ) {
                 (x.coerce_to_i32(activation)?, y.coerce_to_i32(activation)?)
             } else {
@@ -787,8 +787,8 @@ fn hit_test<'gc>(
                     .unwrap_or(&Value::Undefined)
                     .coerce_to_object(activation);
                 let second_point = if let (Some(x), Some(y)) = (
-                    second_point.get_local_stored("x", activation),
-                    second_point.get_local_stored("y", activation),
+                    second_point.get_local_stored("x", activation, false),
+                    second_point.get_local_stored("y", activation, false),
                 ) {
                     (x.coerce_to_i32(activation)?, y.coerce_to_i32(activation)?)
                 } else {
@@ -814,10 +814,10 @@ fn hit_test<'gc>(
                 // Determine what kind of Object we have, point or rectangle.
                 // Duck-typed dumb objects are allowed.
                 let compare_fields = (
-                    compare_object.get_local_stored("x", activation),
-                    compare_object.get_local_stored("y", activation),
-                    compare_object.get_local_stored("width", activation),
-                    compare_object.get_local_stored("height", activation),
+                    compare_object.get_local_stored("x", activation, false),
+                    compare_object.get_local_stored("y", activation, false),
+                    compare_object.get_local_stored("width", activation, false),
+                    compare_object.get_local_stored("height", activation, false),
                 );
                 match compare_fields {
                     // BitmapData vs. point
@@ -1144,10 +1144,10 @@ fn pixel_dissolve<'gc>(
                 .coerce_to_object(activation);
             let (src_min_x, src_min_y, src_width, src_height) =
                 if let (Some(x), Some(y), Some(width), Some(height)) = (
-                    source_rect.get_local_stored("x", activation),
-                    source_rect.get_local_stored("y", activation),
-                    source_rect.get_local_stored("width", activation),
-                    source_rect.get_local_stored("height", activation),
+                    source_rect.get_local_stored("x", activation, false),
+                    source_rect.get_local_stored("y", activation, false),
+                    source_rect.get_local_stored("width", activation, false),
+                    source_rect.get_local_stored("height", activation, false),
                 ) {
                     (
                         x.coerce_to_f64(activation)? as i32,
@@ -1365,7 +1365,7 @@ fn compare<'gc>(
     match operations::compare(this_bitmap_data, other_bitmap_data) {
         Some(bitmap_data) => Ok(new_bitmap_data(
             activation.context.gc_context,
-            this.get_local_stored("__proto__", activation),
+            this.get_local_stored("__proto__", activation, false),
             bitmap_data,
         )
         .into()),
@@ -1406,7 +1406,7 @@ fn load_bitmap<'gc>(
     );
     Ok(new_bitmap_data(
         activation.context.gc_context,
-        this.get_local_stored("prototype", activation),
+        this.get_local_stored("prototype", activation, false),
         bitmap_data,
     )
     .into())

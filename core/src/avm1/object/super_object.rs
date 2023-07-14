@@ -75,6 +75,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         &self,
         _name: impl Into<AvmString<'gc>>,
         _activation: &mut Activation<'_, 'gc>,
+        _is_slash_path: bool,
     ) -> Option<Value<'gc>> {
         None
     }
@@ -124,7 +125,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
     ) -> Result<Value<'gc>, Error<'gc>> {
         let this = self.0.this;
         let (method, depth) =
-            match search_prototype(self.proto(activation), name, activation, this)? {
+            match search_prototype(self.proto(activation), name, activation, this, false)? {
                 Some((Value::Object(method), depth)) => (method, depth),
                 _ => return Ok(Value::Undefined),
             };

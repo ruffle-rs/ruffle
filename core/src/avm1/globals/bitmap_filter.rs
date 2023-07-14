@@ -67,7 +67,7 @@ pub fn clone<'gc>(
         ),
         _ => return Ok(Value::Undefined),
     };
-    let proto = this.get_local_stored("__proto__", activation);
+    let proto = this.get_local_stored("__proto__", activation, false);
     Ok(create_instance(activation, native, proto).into())
 }
 

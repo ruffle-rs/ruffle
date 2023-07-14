@@ -155,6 +155,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         &self,
         name: impl Into<AvmString<'gc>>,
         activation: &mut Activation<'_, 'gc>,
+        _is_slash_path: bool,
     ) -> Option<Value<'gc>> {
         self.0
             .read()

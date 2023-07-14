@@ -582,10 +582,10 @@ fn sort_on_compare<'a, 'gc>(fields: &'a [(AvmString<'gc>, SortOptions)]) -> Comp
         if let [Value::Object(a), Value::Object(b)] = [a, b] {
             for (field_name, options) in fields {
                 let a_prop = a
-                    .get_local_stored(*field_name, activation)
+                    .get_local_stored(*field_name, activation, false)
                     .unwrap_or(Value::Undefined);
                 let b_prop = b
-                    .get_local_stored(*field_name, activation)
+                    .get_local_stored(*field_name, activation, false)
                     .unwrap_or(Value::Undefined);
 
                 let result = sort_compare(activation, &a_prop, &b_prop, *options)?;
