@@ -67,29 +67,15 @@ package flash.net {
             return false;
         }
 
-        public function readByte():int {
-            stub_method("flash.net.Socket", "readByte");
-            return 0;
-        }
+        public native function readByte():int;
 
         public function readBytes(bytes:ByteArray, offset:uint = 0, length:uint = 0):void {
             stub_method("flash.net.Socket", "readBytes");
         }
 
-        public function readDouble():Number {
-            stub_method("flash.net.Socket", "readDouble");
-            return 0.0;
-        }
-
-        public function readFloat():Number {
-            stub_method("flash.net.Socket", "readFloat");
-            return 0.0;
-        }
-
-        public function readInt():int {
-            stub_method("flash.net.Socket", "readInt");
-            return 0;
-        }
+        public native function readDouble():Number;
+        public native function readFloat():Number;
+        public native function readInt():int;
 
         public function readMultiByte(length:uint, charSet:String):String {
             stub_method("flash.net.Socket", "readMultiByte");
@@ -101,25 +87,10 @@ package flash.net {
             return null;
         }
 
-        public function readShort():int {
-            stub_method("flash.net.Socket", "readShort");
-            return 0;
-        }
-
-        public function readUnsignedByte():uint {
-            stub_method("flash.net.Socket", "readUnsignedByte");
-            return 0;
-        }
-
-        public function readUnsignedInt():uint {
-            stub_method("flash.net.Socket", "readUnsignedInt");
-            return 0;
-        }
-
-        public function readUnsignedShort():uint {
-            stub_method("flash.net.Socket", "readUnsignedShort");
-            return 0;
-        }
+        public native function readShort():int;
+        public native function readUnsignedByte():uint;
+        public native function readUnsignedInt():uint;
+        public native function readUnsignedShort():uint;
 
         public function readUTF():String {
             stub_method("flash.net.Socket", "readUTF");
