@@ -22,7 +22,7 @@ const PASS_SCALES: [f32; 15] = [
 struct BlurUniform {
     direction: [f32; 2],
     full_size: f32,
-    half_size: f32,
+    _pad: f32,
 }
 
 pub struct BlurFilter {
@@ -195,8 +195,6 @@ impl BlurFilter {
                     // A width of 1 or less is a noop (it'd just sample itself and nothing else)
                     continue;
                 }
-                // Radius of the kernel (edge of the center, to right edge), excludes center pixel
-                let half_size = (full_size - 1.0) / 2.0;
 
                 let (previous_view, previous_vertices, previous_width, previous_height) = if first {
                     first = false;
@@ -226,7 +224,7 @@ impl BlurFilter {
                                     [0.0, 1.0 / previous_height]
                                 },
                                 full_size,
-                                half_size,
+                                _pad: 0.0,
                             }]),
                             usage: wgpu::BufferUsages::UNIFORM,
                         });
