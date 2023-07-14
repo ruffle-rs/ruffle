@@ -102,3 +102,61 @@ pub fn get_connected<'gc>(
 
     Ok(Value::Bool(is_connected))
 }
+
+pub fn write_byte<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(socket) = this.as_socket() {
+        let byte = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_i32(activation)?;
+        socket.write_bytes(&[byte as u8]);
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn write_bytes<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(socket) = this.as_socket() {
+        let bytearray = args
+            .get(0)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_object(activation)?;
+        let offset = args
+            .get(1)
+            .unwrap_or(&Value::Integer(0))
+            .coerce_to_u32(activation)? as usize;
+        let length = args
+            .get(2)
+            .unwrap_or(&Value::Integer(0))
+            .coerce_to_u32(activation)? as usize;
+
+        let ba_read = bytearray
+            .as_bytearray()
+            .ok_or("ArgumentError: Parameter must be a bytearray")?;
+
+        let to_write = ba_read
+            .read_at(
+                // If length is 0, lets read the remaining bytes of ByteArray from the supplied offset
+                if length != 0 {
+                    length
+                } else {
+                    ba_read.len().saturating_sub(offset)
+                },
+                offset,
+            )
+            .map_err(|e| e.to_avm(activation))?;
+
+        socket.write_bytes(to_write);
+    }
+
+    Ok(Value::Undefined)
+}
