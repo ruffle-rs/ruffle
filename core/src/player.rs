@@ -1272,11 +1272,11 @@ impl Player {
                     }
                 }
             }
+
             if let Some(pressed) = context.mouse_down_object {
                 if !context.is_action_script_3() && pressed.as_displayobject().avm1_removed() {
                     context.mouse_down_object = None;
                     let mut display_object = None;
-
                     if let Some(root_clip) = context.stage.root_clip() {
                         display_object = Self::find_first_character_instance(
                             root_clip,
@@ -1285,21 +1285,11 @@ impl Player {
                     }
 
                     if let Some(new_down_object) = display_object {
-                        if new_down_object.depth() == pressed.as_displayobject().depth()
-                            && Arc::ptr_eq(
-                                &new_down_object.movie(),
-                                &pressed.as_displayobject().movie(),
-                            )
-                        {
-                            if let Some(state) = pressed.as_displayobject().state() {
-                                new_down_object.set_state(context, state);
-                            }
-                            context.mouse_down_object = if display_object.is_some() {
-                                new_down_object.as_interactive()
-                            } else {
-                                None
-                            };
+                        if let Some(state) = pressed.as_displayobject().state() {
+                            new_down_object.set_state(context, state);
                         }
+                        
+                        context.mouse_down_object = new_down_object.as_interactive();
                     }
                 }
             }
