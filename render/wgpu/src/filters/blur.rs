@@ -123,7 +123,7 @@ impl BlurFilter {
         filter: &BlurFilterArgs,
         source_rect: Rectangle<i32>,
     ) -> Rectangle<i32> {
-        let scale = PASS_SCALES[filter.num_passes() as usize];
+        let scale = PASS_SCALES[filter.num_passes().clamp(1, 15) as usize - 1];
         let x = (scale * filter.blur_x.to_f32()).ceil().max(0.0) as i32;
         let y = (scale * filter.blur_y.to_f32()).ceil().max(0.0) as i32;
         Rectangle {
