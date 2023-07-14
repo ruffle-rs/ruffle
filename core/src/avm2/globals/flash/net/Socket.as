@@ -63,9 +63,7 @@ package flash.net {
             stub_setter("flash.net.Socket", "objectEncoding");
         }
 
-        public function flush():void {
-            stub_method("flash.net.Socket", "flush");
-        }
+        public native function flush():void;
 
         public function readBoolean():Boolean {
             stub_method("flash.net.Socket", "readBoolean");

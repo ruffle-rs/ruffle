@@ -80,6 +80,12 @@ impl<'gc> SocketObject<'gc> {
     pub fn write_bytes(&self, bytes: &[u8]) {
         self.0.write_buffer.borrow_mut().extend_from_slice(bytes)
     }
+
+    pub fn drain_write_buf(&self) -> Vec<u8> {
+        let mut buf = self.0.write_buffer.borrow_mut();
+        let len = buf.len();
+        buf.drain(..len).collect::<Vec<u8>>()
+    }
 }
 
 #[derive(Collect)]
