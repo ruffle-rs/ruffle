@@ -35,9 +35,7 @@ package flash.net {
             }
         }
 
-        public function close():void {
-            stub_method("flash.net.Socket", "close");
-        }
+        public native function close():void;
 
         public native function get bytesAvailable():uint;
 
