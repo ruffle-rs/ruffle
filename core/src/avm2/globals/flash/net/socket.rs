@@ -26,7 +26,6 @@ pub fn connect<'gc>(
     } = &mut activation.context;
 
     sockets.connect(*navigator, socket, host.to_utf8_lossy().into_owned(), port);
-    // FIXME: Are we supposed to throw and IOError when a connection fails?
 
     Ok(Value::Undefined)
 }
