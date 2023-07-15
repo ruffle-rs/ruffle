@@ -19,6 +19,8 @@ package flash.net
 
       native public static function getLocal(name:String, localPath:String = null, secure:Boolean = false): SharedObject;
 
+      native public function get size() : uint;
+
       native public function flush(minDiskSpace:int = 0) : String;
       native public function close() : void;
       native public function clear() : void;
@@ -29,9 +31,6 @@ package flash.net
 
       // note: this is supposed to be a read-only property
       public var data: Object;
-      
-      // note: this is supposed to be a read-only property
-      public var size: uint;
 
       ruffle var _ruffleName: String;
    }

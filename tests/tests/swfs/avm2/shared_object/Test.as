@@ -63,6 +63,7 @@
 		
 			if(obj.data.props === undefined) {
 				trace("No data found. Initializing...");
+				trace("sizes: obj = " + obj.size + ", otherObj = " + otherObj.size);
 				
 				storeData(obj.data)
 				storeData(otherObj.data)
@@ -74,8 +75,10 @@
 				trace("otherObj.data.props:")
 				dump(otherObj.data.props);
 			
+				trace("sizes: obj = " + obj.size + ", otherObj = " + otherObj.size);
 				obj.flush();
 				otherObj.flush();
+				trace("sizes: obj = " + obj.size + ", otherObj = " + otherObj.size);
 			} else {		
 				trace("obj.data.hidden: " + obj.data.hidden);
 				trace("otherObj.data.hidden: " + otherObj.data.hidden);
@@ -87,6 +90,9 @@
 				trace()
 				trace("otherObj dump:")
 				dump(otherObj.data.props)
+
+				trace();
+				trace("sizes: obj = " + obj.size + ", otherObj = " + otherObj.size);
 				
 				// Test SharedObject.clear()
 				trace();
@@ -98,6 +104,9 @@
 				trace();
 				trace("obj dump:");
 				dump(obj.data);
+
+				trace();
+				trace("sizes: obj = " + obj.size + ", otherObj = " + otherObj.size);
 				
 				trace();
 				trace("obj dump again:");
@@ -132,5 +141,3 @@ function dump(obj:Object) {
 
 	}
 }
-
-test.main();
