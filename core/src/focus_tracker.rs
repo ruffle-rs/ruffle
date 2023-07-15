@@ -34,10 +34,10 @@ impl<'gc> FocusTracker<'gc> {
             && old.unwrap().as_ptr() == focused_element.unwrap().as_ptr())
         {
             if let Some(old) = old {
-                old.on_focus_changed(context, false);
+                old.on_focus_changed(context.gc_context, false);
             }
             if let Some(new) = focused_element {
-                new.on_focus_changed(context, true);
+                new.on_focus_changed(context.gc_context, true);
             }
 
             tracing::info!("Focus is now on {:?}", focused_element);
@@ -59,7 +59,7 @@ impl<'gc> FocusTracker<'gc> {
         // This applies even if the focused element hasn't changed.
         if let Some(text_field) = focused_element.and_then(|e| e.as_edit_text()) {
             if text_field.is_editable() {
-                if !context.is_action_script_3() {
+                if !text_field.movie().is_action_script_3() {
                     let length = text_field.text_length();
                     text_field.set_selection(
                         Some(TextSelection::for_range(0, length)),

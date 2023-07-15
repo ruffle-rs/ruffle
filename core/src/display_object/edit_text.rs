@@ -1883,10 +1883,11 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.set_avm1_removed(context.gc_context, true);
     }
 
-    fn on_focus_changed(&self, context: &UpdateContext<'_, 'gc>, focused: bool) {
-        let mut text = self.0.write(context.gc_context);
+    fn on_focus_changed(&self, gc_context: MutationContext<'gc, '_>, focused: bool) {
+        let is_action_script_3 = self.movie().is_action_script_3();
+        let mut text = self.0.write(gc_context);
         text.flags.set(EditTextFlag::HAS_FOCUS, focused);
-        if !focused && !context.is_action_script_3() {
+        if !focused && !is_action_script_3 {
             text.selection = None;
         }
     }
