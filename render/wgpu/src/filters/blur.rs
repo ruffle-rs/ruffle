@@ -23,7 +23,7 @@ const PASS_SCALES: [f32; 15] = [
 struct BlurUniform {
     direction: [f32; 2],
     full_size: f32,
-    _pad: f32,
+    left_weight: f32,
 }
 
 pub struct BlurFilter {
@@ -236,7 +236,7 @@ impl BlurFilter {
                         [0.0, 1.0 / previous_height]
                     },
                     full_size,
-                    _pad: 0.0,
+                    left_weight: ((full_size % 2.0) * 0.5) + 0.5,
                 };
 
                 if descriptors.limits.max_push_constant_size > 0 {

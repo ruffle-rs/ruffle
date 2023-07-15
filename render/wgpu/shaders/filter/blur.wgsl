@@ -8,7 +8,8 @@ struct Filter {
     // Full size of the blur kernel (from left to right, ie). Must be a whole integer.
     full_size: f32,
 
-    _pad: f32,
+    // Weight of the left most sample (odd width has a weight of 1, even width has 0.5)
+    left_weight: f32,
 }
 
 @group(0) @binding(0) var texture: texture_2d<f32>;
@@ -32,12 +33,9 @@ fn main_fragment(in: filter::VertexOutput) -> @location(0) vec4<f32> {
     // Left edge. Always lands in the middle of the first pixel inside this blur.
     let left_uv = in.uv - (direction * floor(filter_args.full_size / 2.0));
 
-    // Left edge weight. Odd width has a weight of 1, even width has a weight of 0.5.
-    let left_weight = ((filter_args.full_size % 2.0) * 0.5) + 0.5;
-
     // We always start off with the left edge. Everything else is optional.
-    var center_length = filter_args.full_size - left_weight;
-    var total = textureSample(texture, texture_sampler, left_uv) * left_weight;
+    var center_length = filter_args.full_size - filter_args.left_weight;
+    var total = textureSample(texture, texture_sampler, left_uv) * filter_args.left_weight;
 
     if (filter_args.full_size % 2.0 == 0.0) {
         // If the width is even, we have a right edge of a fixed weight and offset
