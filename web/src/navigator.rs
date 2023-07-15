@@ -7,7 +7,9 @@ use ruffle_core::backend::navigator::{
 use ruffle_core::config::NetworkingAccessMode;
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
+use ruffle_core::socket::{SocketHandle, SocketAction};
 use std::sync::Arc;
+use std::sync::mpsc::{Receiver, Sender};
 use tracing_subscriber::layer::Layered;
 use tracing_subscriber::Registry;
 use tracing_wasm::WASMLayer;
@@ -356,8 +358,17 @@ impl NavigatorBackend for WebNavigatorBackend {
         url
     }
 
-    fn connect_socket(&mut self, _host: &str, _port: u16) -> Option<Box<dyn ruffle_core::socket::SocketConnection>> {
+    fn connect_socket(
+        &mut self,
+        _host: String,
+        _port: u16,
+        handle: SocketHandle,
+        _receiver: Receiver<Vec<u8>>,
+        sender: Sender<SocketAction>,
+    ) {
         // FIXME: Add way to call out to JS code.
-        None
+        sender
+            .send(SocketAction::Connect(handle, false))
+            .expect("working channel send");
     }
 }
