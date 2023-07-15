@@ -1,6 +1,7 @@
 use super::decoders::{self, AdpcmDecoder, Decoder, PcmDecoder, SeekableDecoder};
 use super::{SoundHandle, SoundInstanceHandle, SoundTransform};
 use crate::backend::audio::{DecodeError, RegisterError};
+use crate::buffer::Substream;
 use crate::tag_utils::SwfSlice;
 use generational_arena::Arena;
 use std::io::Cursor;
@@ -211,6 +212,8 @@ impl SoundInstance {
     }
 
     /// Creates a new `SoundInstance` from a `Stream`, for stream sounds.
+    ///
+    /// Substream-backed sounds also use this.
     fn new_stream(stream: Box<dyn Stream>) -> Self {
         SoundInstance {
             handle: None,
@@ -407,6 +410,20 @@ impl AudioMixer {
         Ok(stream)
     }
 
+    fn make_stream_from_buffer_substream(
+        &self,
+        stream_info: &swf::SoundStreamHead,
+        data_stream: Substream,
+    ) -> Result<Box<dyn Stream>, DecodeError> {
+        // Instantiate a decoder for the compression that the sound data uses.
+        let clip_stream_decoder = decoders::make_substream_decoder(stream_info, data_stream)?;
+
+        // Convert the `Decoder` to a `Stream`, and resample it to the output sample rate.
+        let stream = DecoderStream::new(clip_stream_decoder);
+        let stream = Box::new(self.make_resampler(stream));
+        Ok(stream)
+    }
+
     /// Callback to the audio thread.
     /// Refill the output buffer by stepping through all active sounds
     /// and mixing in their output.
@@ -584,6 +601,25 @@ impl AudioMixer {
             .lock()
             .expect("Cannot be called reentrant");
         let handle = sound_instances.insert(SoundInstance::new_sound(sound_handle, stream));
+        Ok(handle)
+    }
+
+    /// Starts a `Substream` backed audio stream.
+    pub fn start_substream(
+        &mut self,
+        stream_data: Substream,
+        stream_info: &swf::SoundStreamHead,
+    ) -> Result<SoundInstanceHandle, DecodeError> {
+        // The audio data for substream sounds is already de-multiplexed by the
+        // caller. The substream tag reader will feed the decoder audio data
+        // from each chunk.
+        let stream = self.make_stream_from_buffer_substream(stream_info, stream_data)?;
+
+        let mut sound_instances = self
+            .sound_instances
+            .lock()
+            .expect("Cannot be called reentrant");
+        let handle = sound_instances.insert(SoundInstance::new_stream(stream));
         Ok(handle)
     }
 
@@ -1069,6 +1105,15 @@ macro_rules! impl_audio_mixer_backend {
             settings: &swf::SoundInfo,
         ) -> Result<SoundInstanceHandle, DecodeError> {
             self.$mixer.start_sound(sound_handle, settings)
+        }
+
+        #[inline]
+        fn start_substream(
+            &mut self,
+            stream_data: ruffle_core::buffer::Substream,
+            stream_info: &swf::SoundStreamHead,
+        ) -> Result<SoundInstanceHandle, DecodeError> {
+            self.$mixer.start_substream(stream_data, stream_info)
         }
 
         #[inline]

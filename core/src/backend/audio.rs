@@ -84,24 +84,15 @@ pub trait AudioBackend: Downcast {
     /// seek offset data at the head of each chunk (SWF19 p.184). This is used
     /// to allow MP3 data to be buffered across multiple chunks or frames as
     /// necessary for playback.
+    ///
+    /// The sound instance constructed by this function explicitly supports
+    /// streaming additional data to it by appending chunks to the underlying
+    /// `Substream`, if the sound is still playing.
     fn start_substream(
         &mut self,
         stream_data: Substream,
-        handle: &swf::SoundStreamHead,
+        stream_info: &swf::SoundStreamHead,
     ) -> Result<SoundInstanceHandle, DecodeError>;
-
-    /// Adds data to an already playing stream sound started with
-    /// `start_substream`.
-    ///
-    /// If a sound instance has not yet finished playing, then it will act as
-    /// if the appended data was originally provided at the time of the
-    /// `start_substream` call. Otherwise, the append operation will fail and
-    /// the caller will need to start another substream sound.
-    fn append_substream(
-        &mut self,
-        instance: SoundInstanceHandle,
-        addl_data: Substream,
-    ) -> Result<(), DecodeError>;
 
     /// Stops a playing sound instance.
     /// No-op if the sound is not playing.
@@ -164,6 +155,11 @@ pub trait AudioBackend: Downcast {
 
     /// Returns the last whole window of output samples.
     fn get_sample_history(&self) -> [[f32; 2]; 1024];
+
+    /// Determine if a sound is still playing.
+    fn is_sound_playing(&self, instance: SoundInstanceHandle) -> bool {
+        self.get_sound_duration(instance).is_some()
+    }
 }
 
 impl_downcast!(AudioBackend);
@@ -255,14 +251,6 @@ impl AudioBackend for NullAudioBackend {
         _handle: &swf::SoundStreamHead,
     ) -> Result<SoundInstanceHandle, DecodeError> {
         Ok(SoundInstanceHandle::from_raw_parts(0, 0))
-    }
-
-    fn append_substream(
-        &mut self,
-        _instance: SoundInstanceHandle,
-        _addl_data: Substream,
-    ) -> Result<(), DecodeError> {
-        Ok(())
     }
 
     fn stop_sound(&mut self, _sound: SoundInstanceHandle) {}
