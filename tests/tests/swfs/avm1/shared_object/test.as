@@ -4,6 +4,7 @@ class test {
 
         if(obj.data.saved === undefined) {
             trace("No data found. Initializing...");
+            trace("size: " + obj.getSize());
             obj.data.saved = true;
             obj.data.num = 10;
             obj.data.str = "hello";
@@ -23,7 +24,10 @@ class test {
             obj.data.testxml = new XML("<test>Test</test>");
             
             obj.data.o = {a: "a", b: "b"};
+
+            trace("size: " + obj.getSize());
             obj.flush();
+            trace("size: " + obj.getSize());
         } else {
             trace("saved: " + obj.data.saved);
             trace("num: " + obj.data.num);
@@ -44,9 +48,11 @@ class test {
             
             trace("o.a: " + obj.data.o.a);
             trace("o.b: " + obj.data.o.b);
+
             trace("delete");
             trace(delete obj.data);
             trace("saved: " + obj.data.saved);
+            trace("size: " + obj.getSize());
         }
     }
 }
