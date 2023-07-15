@@ -56,6 +56,26 @@
 			vOut = mat.transformVector(v);
 			trace(vOut.x, vOut.y, vOut.z, vOut.w);
 
+			var vecs:Vector.<Number> = Vector.<Number>([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+			var vecsOut:Vector.<Number> = new Vector.<Number>();
+			trace("mat.transformVectors(vecs, vecsOut):");
+			mat.transformVectors(vecs, vecsOut);
+			trace(vecsOut);
+
+			trace("mat.transformVectors(null, vecsOut):");
+			try {
+				mat.transformVectors(null, vecsOut);
+			} catch (e) {
+				trace(e);
+			}
+
+			trace("mat.transformVectors(vecs, null):");
+			try {
+				mat.transformVectors(vecs, null);
+			} catch (e) {
+				trace(e);
+			}
+
 			trace("mat.deltaTransformVector(v):");
 			vOut = mat.deltaTransformVector(v);
 			trace(vOut.x, vOut.y, vOut.z, vOut.w);
