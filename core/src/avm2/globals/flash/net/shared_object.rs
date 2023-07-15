@@ -10,6 +10,23 @@ use crate::string::AvmString;
 use flash_lso::types::{AMFVersion, Lso};
 use std::borrow::Cow;
 
+fn new_lso<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    name: &str,
+    data: Object<'gc>,
+) -> Result<Lso, Error<'gc>> {
+    let mut elements = Vec::new();
+    crate::avm2::amf::recursive_serialize(activation, data, &mut elements, AMFVersion::AMF3)?;
+    Ok(Lso::new(
+        elements,
+        name.split('/')
+            .last()
+            .map(|e| e.to_string())
+            .unwrap_or_else(|| "<unknown>".to_string()),
+        AMFVersion::AMF3,
+    ))
+}
+
 pub fn get_local<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
@@ -193,20 +210,42 @@ pub fn flush<'gc>(
         .coerce_to_string(activation)?;
     let name = name.to_utf8_lossy();
 
-    let mut elements = Vec::new();
-    crate::avm2::amf::recursive_serialize(activation, data, &mut elements, AMFVersion::AMF3)?;
-    let mut lso = Lso::new(
-        elements,
-        name.split('/')
-            .last()
-            .map(|e| e.to_string())
-            .unwrap_or_else(|| "<unknown>".to_string()),
-        AMFVersion::AMF3,
+    let mut lso = new_lso(activation, &name, data)?;
+    // Flash does not write empty LSOs to disk
+    if lso.body.is_empty() {
+        Ok(true.into())
+    } else {
+        let bytes = flash_lso::write::write_to_bytes(&mut lso).unwrap_or_default();
+        Ok(activation.context.storage.put(&name, &bytes).into())
+    }
+}
+
+pub fn get_size<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let data = this
+        .get_public_property("data", activation)?
+        .coerce_to_object(activation)?;
+
+    let ruffle_name = Multiname::new(
+        Namespace::package("__ruffle__", &mut activation.borrow_gc()),
+        "_ruffleName",
     );
+    let name = this
+        .get_property(&ruffle_name, activation)?
+        .coerce_to_string(activation)?;
+    let name = name.to_utf8_lossy();
 
-    let bytes = flash_lso::write::write_to_bytes(&mut lso).unwrap_or_default();
-
-    Ok(activation.context.storage.put(&name, &bytes).into())
+    let mut lso = new_lso(activation, &name, data)?;
+    // Flash returns 0 for empty LSOs, but the actual number of bytes (including the header) otherwise
+    if lso.body.is_empty() {
+        Ok(0.into())
+    } else {
+        let bytes = flash_lso::write::write_to_bytes(&mut lso).unwrap_or_default();
+        Ok(bytes.len().into())
+    }
 }
 
 pub fn close<'gc>(
