@@ -1,0 +1,9 @@
+From string:
+0
+Some string
+From complex string:
+1
+outer
+XMLList from string:
+<p>First element</p>
+<p>Second element</p>

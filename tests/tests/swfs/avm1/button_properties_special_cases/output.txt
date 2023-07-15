@@ -1,0 +1,23 @@
+Step 1: rollOver
+MovieClip.prototype.hasOwnProperty('enabled'): true
+button.hasOwnProperty('enabled'): false
+'enabled' in button: true
+button.enabled: true
+// button.enabled = undefined
+button.hasOwnProperty('enabled'): true
+'enabled' in button: true
+`button.enabled` is now a falsy value.
+`button.enabled` is undefined.
+
+Step 2: press
+`button.enabled` is still a falsy value.
+`button.enabled` is still undefined.
+
+Step 3: release
+// delete button.enabled
+button.hasOwnProperty('enabled'): false
+'enabled' in button: true
+`button.enabled` is now true.
+
+Step 4: press
+

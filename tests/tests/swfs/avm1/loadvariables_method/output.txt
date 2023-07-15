@@ -1,2 +1,7 @@
+Navigator::fetch:
+  URL: testvars.txt
+  Method: POST
+  Mime-Type: application/x-www-form-urlencoded
+  Body: baz=%5Bobject+Object%5D&bar=1&foo=foo
 Hurray
 The test passed

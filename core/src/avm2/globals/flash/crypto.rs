@@ -7,7 +7,7 @@ use rand::{rngs::OsRng, RngCore};
 /// Implements `flash.crypto.generateRandomBytes`
 pub fn generate_random_bytes<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let length = args

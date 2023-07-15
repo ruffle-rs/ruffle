@@ -9,9 +9,9 @@ use crate::ecma_conversions::{
     f64_to_wrapping_i16, f64_to_wrapping_i32, f64_to_wrapping_u16, f64_to_wrapping_u32,
     f64_to_wrapping_u8,
 };
-use crate::string::{AvmString, Integer, WStr};
+use crate::string::{AvmAtom, AvmString, Integer, WStr};
 use gc_arena::Collect;
-use std::{borrow::Cow, io::Write, num::Wrapping};
+use std::{borrow::Cow, io::Write, mem::size_of, num::Wrapping};
 
 use super::object_reference::MovieClipReference;
 
@@ -28,9 +28,23 @@ pub enum Value<'gc> {
     MovieClip(MovieClipReference<'gc>),
 }
 
+// This type is used very frequently, so make sure it doesn't unexpectedly grow.
+// On 32-bit x86 Android, it's 12 bytes. On most other 32-bit platforms it's 16.
+#[cfg(target_pointer_width = "32")]
+const _: () = assert!(size_of::<Value<'_>>() <= 16);
+
+#[cfg(target_pointer_width = "64")]
+const _: () = assert!(size_of::<Value<'_>>() == 24);
+
 impl<'gc> From<AvmString<'gc>> for Value<'gc> {
     fn from(string: AvmString<'gc>) -> Self {
         Value::String(string)
+    }
+}
+
+impl<'gc> From<AvmAtom<'gc>> for Value<'gc> {
+    fn from(atom: AvmAtom<'gc>) -> Self {
+        Value::String(atom.into())
     }
 }
 
@@ -472,6 +486,17 @@ impl<'gc> Value<'gc> {
             ValueObject::boxed(activation, self.to_owned())
         }
     }
+
+    pub fn as_blend_mode(&self) -> Option<swf::BlendMode> {
+        match *self {
+            Value::Undefined | Value::Null => Some(swf::BlendMode::Normal),
+            Value::Number(n) => swf::BlendMode::from_u8(f64_to_wrapping_u8(n)),
+            // Note that strings like `"5"` *are not* coerced.
+            Value::String(s) => s.to_string().parse().ok(),
+            // Anything else is not coerced either.
+            Value::Bool(_) | Value::Object(_) | Value::MovieClip(_) => None,
+        }
+    }
 }
 
 /// Calculate `value * 10^exp` through repeated multiplication or division.
@@ -883,7 +908,7 @@ mod test {
             );
             assert_eq!(null.to_primitive_num(activation).unwrap(), null);
 
-            let (protos, global, _) = create_globals(activation.context.gc_context);
+            let (protos, global, _) = create_globals(&mut activation.context.borrow_gc());
             let vglobal = Value::Object(global);
 
             assert_eq!(vglobal.to_primitive_num(activation).unwrap(), undefined);

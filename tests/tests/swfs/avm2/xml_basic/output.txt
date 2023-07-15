@@ -22,6 +22,11 @@ My
 Multiline
 CDATA
 
+<![CDATA[My
+Multiline
+CDATA
+]]>
 Skipped everything else
 Text after comments and PI
 Empty lists: 0 0
+trimmedXML: <a>foo<b>bar</b></a>

@@ -1,0 +1,16 @@
+// ba.readUTF8Bytes(7)
+Text
+// ba.readUTF8Bytes(7).length
+4
+// ba.readUTF8Bytes(8)
+Text
+// ba.readUTF8Bytes(8).length
+4
+// ba.readUTF8()
+Text
+// ba.readUTF8().length
+4
+// ba.readUTF8()
+Text
+// ba.readUTF8().length
+4

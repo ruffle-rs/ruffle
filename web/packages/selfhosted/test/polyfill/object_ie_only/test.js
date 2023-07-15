@@ -1,7 +1,7 @@
 const {
-    inject_ruffle_and_wait,
-    open_test,
-    play_and_monitor,
+    injectRuffleAndWait,
+    openTest,
+    playAndMonitor,
 } = require("../../utils");
 const { expect, use } = require("chai");
 const chaiHtml = require("chai-html");
@@ -11,18 +11,18 @@ use(chaiHtml);
 
 describe("Object for old IE must work everywhere", () => {
     it("loads the test", async () => {
-        await open_test(browser, __dirname);
+        await openTest(browser, __dirname);
     });
 
     it("polyfills with ruffle", async () => {
-        await inject_ruffle_and_wait(browser);
+        await injectRuffleAndWait(browser);
         const actual = await browser.$("#test-container").getHTML(false);
         const expected = fs.readFileSync(`${__dirname}/expected.html`, "utf8");
         expect(actual).html.to.equal(expected);
     });
 
     it("Plays a movie", async () => {
-        await play_and_monitor(
+        await playAndMonitor(
             browser,
             await browser.$("#test-container").$("<ruffle-object />")
         );

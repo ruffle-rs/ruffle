@@ -17,12 +17,13 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
-use crate::bitmap::bitmap_data::{BitmapData, BitmapDataWrapper};
+use crate::bitmap::bitmap_data::BitmapDataWrapper;
 use crate::context::UpdateContext;
 use crate::display_object::DisplayObject;
 use crate::html::TextFormat;
+use crate::streams::NetStream;
 use crate::string::AvmString;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use ruffle_macros::enum_trait_object;
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
@@ -43,12 +44,14 @@ mod function_object;
 mod index_buffer_3d_object;
 mod loaderinfo_object;
 mod namespace_object;
+mod netstream_object;
 mod primitive_object;
 mod program_3d_object;
 mod proxy_object;
 mod qname_object;
 mod regexp_object;
 mod script_object;
+mod shader_data_object;
 mod sound_object;
 mod soundchannel_object;
 mod stage3d_object;
@@ -60,39 +63,73 @@ mod vertex_buffer_3d_object;
 mod xml_list_object;
 mod xml_object;
 
-pub use crate::avm2::object::array_object::{array_allocator, ArrayObject};
-pub use crate::avm2::object::bitmapdata_object::{bitmap_data_allocator, BitmapDataObject};
-pub use crate::avm2::object::bytearray_object::{byte_array_allocator, ByteArrayObject};
-pub use crate::avm2::object::class_object::ClassObject;
-pub use crate::avm2::object::context3d_object::Context3DObject;
-pub use crate::avm2::object::date_object::{date_allocator, DateObject};
-pub use crate::avm2::object::dictionary_object::{dictionary_allocator, DictionaryObject};
-pub use crate::avm2::object::dispatch_object::DispatchObject;
-pub use crate::avm2::object::domain_object::{appdomain_allocator, DomainObject};
-pub use crate::avm2::object::error_object::{error_allocator, ErrorObject};
-pub use crate::avm2::object::event_object::{event_allocator, EventObject};
-pub use crate::avm2::object::function_object::{function_allocator, FunctionObject};
-pub use crate::avm2::object::index_buffer_3d_object::IndexBuffer3DObject;
-pub use crate::avm2::object::loaderinfo_object::{
-    loader_info_allocator, LoaderInfoObject, LoaderStream,
+pub use crate::avm2::object::array_object::{array_allocator, ArrayObject, ArrayObjectWeak};
+pub use crate::avm2::object::bitmapdata_object::{
+    bitmap_data_allocator, BitmapDataObject, BitmapDataObjectWeak,
 };
-pub use crate::avm2::object::namespace_object::{namespace_allocator, NamespaceObject};
-pub use crate::avm2::object::primitive_object::{primitive_allocator, PrimitiveObject};
-pub use crate::avm2::object::program_3d_object::Program3DObject;
-pub use crate::avm2::object::proxy_object::{proxy_allocator, ProxyObject};
-pub use crate::avm2::object::qname_object::{qname_allocator, QNameObject};
-pub use crate::avm2::object::regexp_object::{regexp_allocator, RegExpObject};
-pub use crate::avm2::object::script_object::{ScriptObject, ScriptObjectData};
-pub use crate::avm2::object::sound_object::{sound_allocator, QueuedPlay, SoundData, SoundObject};
-pub use crate::avm2::object::soundchannel_object::{soundchannel_allocator, SoundChannelObject};
-pub use crate::avm2::object::stage3d_object::{stage_3d_allocator, Stage3DObject};
-pub use crate::avm2::object::stage_object::{stage_allocator, StageObject};
-pub use crate::avm2::object::textformat_object::{textformat_allocator, TextFormatObject};
-pub use crate::avm2::object::texture_object::TextureObject;
-pub use crate::avm2::object::vector_object::{vector_allocator, VectorObject};
-pub use crate::avm2::object::vertex_buffer_3d_object::VertexBuffer3DObject;
-pub use crate::avm2::object::xml_list_object::{xml_list_allocator, E4XOrXml, XmlListObject};
-pub use crate::avm2::object::xml_object::{xml_allocator, XmlObject};
+pub use crate::avm2::object::bytearray_object::{
+    byte_array_allocator, ByteArrayObject, ByteArrayObjectWeak,
+};
+pub use crate::avm2::object::class_object::{ClassObject, ClassObjectWeak};
+pub use crate::avm2::object::context3d_object::{Context3DObject, Context3DObjectWeak};
+pub use crate::avm2::object::date_object::{date_allocator, DateObject, DateObjectWeak};
+pub use crate::avm2::object::dictionary_object::{
+    dictionary_allocator, DictionaryObject, DictionaryObjectWeak,
+};
+pub use crate::avm2::object::dispatch_object::{DispatchObject, DispatchObjectWeak};
+pub use crate::avm2::object::domain_object::{
+    application_domain_allocator, DomainObject, DomainObjectWeak,
+};
+pub use crate::avm2::object::error_object::{error_allocator, ErrorObject, ErrorObjectWeak};
+pub use crate::avm2::object::event_object::{event_allocator, EventObject, EventObjectWeak};
+pub use crate::avm2::object::function_object::{
+    function_allocator, FunctionObject, FunctionObjectWeak,
+};
+pub use crate::avm2::object::index_buffer_3d_object::{
+    IndexBuffer3DObject, IndexBuffer3DObjectWeak,
+};
+pub use crate::avm2::object::loaderinfo_object::{
+    loader_info_allocator, LoaderInfoObject, LoaderInfoObjectWeak, LoaderStream,
+};
+pub use crate::avm2::object::namespace_object::{
+    namespace_allocator, NamespaceObject, NamespaceObjectWeak,
+};
+pub use crate::avm2::object::netstream_object::{
+    netstream_allocator, NetStreamObject, NetStreamObjectWeak,
+};
+pub use crate::avm2::object::primitive_object::{
+    primitive_allocator, PrimitiveObject, PrimitiveObjectWeak,
+};
+pub use crate::avm2::object::program_3d_object::{Program3DObject, Program3DObjectWeak};
+pub use crate::avm2::object::proxy_object::{proxy_allocator, ProxyObject, ProxyObjectWeak};
+pub use crate::avm2::object::qname_object::{q_name_allocator, QNameObject, QNameObjectWeak};
+pub use crate::avm2::object::regexp_object::{reg_exp_allocator, RegExpObject, RegExpObjectWeak};
+pub use crate::avm2::object::script_object::{ScriptObject, ScriptObjectData, ScriptObjectWeak};
+pub use crate::avm2::object::shader_data_object::{
+    shader_data_allocator, ShaderDataObject, ShaderDataObjectWeak,
+};
+pub use crate::avm2::object::sound_object::{
+    sound_allocator, QueuedPlay, SoundData, SoundObject, SoundObjectWeak,
+};
+pub use crate::avm2::object::soundchannel_object::{
+    sound_channel_allocator, SoundChannelObject, SoundChannelObjectWeak,
+};
+pub use crate::avm2::object::stage3d_object::{
+    stage_3d_allocator, Stage3DObject, Stage3DObjectWeak,
+};
+pub use crate::avm2::object::stage_object::{StageObject, StageObjectWeak};
+pub use crate::avm2::object::textformat_object::{
+    textformat_allocator, TextFormatObject, TextFormatObjectWeak,
+};
+pub use crate::avm2::object::texture_object::{TextureObject, TextureObjectWeak};
+pub use crate::avm2::object::vector_object::{vector_allocator, VectorObject, VectorObjectWeak};
+pub use crate::avm2::object::vertex_buffer_3d_object::{
+    VertexBuffer3DObject, VertexBuffer3DObjectWeak,
+};
+pub use crate::avm2::object::xml_list_object::{
+    xml_list_allocator, E4XOrXml, XmlListObject, XmlListObjectWeak,
+};
+pub use crate::avm2::object::xml_object::{xml_allocator, XmlObject, XmlObjectWeak};
 
 /// Represents an object that can be directly interacted with by the AVM2
 /// runtime.
@@ -132,6 +169,8 @@ pub use crate::avm2::object::xml_object::{xml_allocator, XmlObject};
         VertexBuffer3DObject(VertexBuffer3DObject<'gc>),
         TextureObject(TextureObject<'gc>),
         Program3DObject(Program3DObject<'gc>),
+        NetStreamObject(NetStreamObject<'gc>),
+        ShaderDataObject(ShaderDataObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -179,6 +218,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 {
                     return self.get_property_local(multiname, activation);
                 }
+
                 if let Some(bound_method) = self.get_bound_method(disp_id) {
                     return Ok(bound_method.into());
                 }
@@ -274,6 +314,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 )
             }
             Some(Property::Method { .. }) => {
+                // Similar to the get_property special case for XML/XMLList.
+                if (self.as_xml_object().is_some() || self.as_xml_list_object().is_some())
+                    && multiname.contains_public_namespace()
+                {
+                    return self.set_property_local(multiname, value, activation);
+                }
+
                 return Err(error::make_reference_error(
                     activation,
                     error::ReferenceErrorCode::AssignToMethod,
@@ -389,12 +436,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         // Note: normally this would just call into ScriptObjectData::call_property_local
         // but because calling into ScriptObjectData borrows it for entire duration,
         // we run a risk of a double borrow if the inner call borrows again.
+        let self_val: Value<'gc> = Value::from(self.into());
         let result = self
             .base()
             .get_property_local(multiname, activation)?
-            .as_callable(activation, Some(multiname), Some(self.into()))?;
+            .as_callable(activation, Some(multiname), Some(self_val))?;
 
-        result.call(Some(self.into()), arguments, activation)
+        result.call(self_val, arguments, activation)
     }
 
     /// Call a named property on the object.
@@ -414,10 +462,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 let obj = self.base().get_slot(slot_id)?.as_callable(
                     activation,
                     Some(multiname),
-                    Some(self.into()),
+                    Some(Value::from(self.into())),
                 )?;
 
-                obj.call(Some(self.into()), arguments, activation)
+                obj.call(Value::from(self.into()), arguments, activation)
             }
             Some(Property::Method { disp_id }) => {
                 let vtable = self.vtable().unwrap();
@@ -429,14 +477,18 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 {
                     if !method.needs_arguments_object() {
                         Executable::from_method(method, scope, None, Some(class)).exec(
-                            Some(self.into()),
+                            Value::from(self.into()),
                             arguments,
                             activation,
                             class.into(), //Deliberately invalid.
                         )
                     } else {
                         if let Some(bound_method) = self.get_bound_method(disp_id) {
-                            return bound_method.call(Some(self.into()), arguments, activation);
+                            return bound_method.call(
+                                Value::from(self.into()),
+                                arguments,
+                                activation,
+                            );
                         }
                         let bound_method = vtable
                             .make_bound_method(activation, self.into(), disp_id)
@@ -446,7 +498,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                             disp_id,
                             bound_method,
                         );
-                        bound_method.call(Some(self.into()), arguments, activation)
+                        bound_method.call(Value::from(self.into()), arguments, activation)
                     }
                 } else {
                     Err("Method not found".into())
@@ -456,10 +508,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 let obj = self.call_method(get, &[], activation)?.as_callable(
                     activation,
                     Some(multiname),
-                    Some(self.into()),
+                    Some(Value::from(self.into())),
                 )?;
 
-                obj.call(Some(self.into()), arguments, activation)
+                obj.call(Value::from(self.into()), arguments, activation)
             }
             Some(Property::Virtual { get: None, .. }) => {
                 return Err(error::make_reference_error(
@@ -538,7 +590,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
         let bound_method = self.get_bound_method(id);
         if let Some(method_object) = bound_method {
-            return method_object.call(Some(self.into()), arguments, activation);
+            return method_object.call(Value::from(self.into()), arguments, activation);
         }
 
         Err(format!("Cannot call unknown method id {id}").into())
@@ -580,6 +632,15 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// not part of the prototype chain.
     fn has_own_property(self, name: &Multiname<'gc>) -> bool {
         self.base().has_own_property(name)
+    }
+
+    /// Same as has_own_property, but constructs a public Multiname for you.
+    fn has_own_property_string(
+        self,
+        name: impl Into<AvmString<'gc>>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<bool, Error<'gc>> {
+        Ok(self.has_own_property(&Multiname::new(activation.avm2().public_namespace, name)))
     }
 
     /// Returns true if an object has one or more traits of a given name.
@@ -632,7 +693,15 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     self.delete_property_local(activation, multiname)
                 }
             }
-            _ => Ok(false),
+            _ => {
+                // Similar to the get_property special case for XML/XMLList.
+                if (self.as_xml_object().is_some() || self.as_xml_list_object().is_some())
+                    && multiname.contains_public_namespace()
+                {
+                    return self.delete_property_local(activation, multiname);
+                }
+                Ok(false)
+            }
         }
     }
 
@@ -771,15 +840,14 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             .install_const_slot_late(new_slot_id, value);
     }
 
-    fn install_instance_slots(&mut self, activation: &mut Activation<'_, 'gc>) {
-        self.base_mut(activation.context.gc_context)
-            .install_instance_slots();
+    fn install_instance_slots(&mut self, mc: MutationContext<'gc, '_>) {
+        self.base_mut(mc).install_instance_slots();
     }
 
     /// Call the object.
     fn call(
         self,
-        _reciever: Option<Object<'gc>>,
+        _receiver: Value<'gc>,
         _arguments: &[Value<'gc>],
         _activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -798,7 +866,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// 2. Associate the instance object with the class's explicit `prototype`.
     /// 3. If the class has instance traits, install them at this time.
     /// 4. Call the constructor method with the newly-allocated object as
-    /// reciever. For ES3 classes, this is just the function's associated
+    /// receiver. For ES3 classes, this is just the function's associated
     /// method.
     /// 5. Yield the allocated object. (The return values of constructors are
     /// ignored.)
@@ -822,7 +890,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         let ctor = self.get_property(multiname, activation)?.as_callable(
             activation,
             Some(multiname),
-            Some(self.into()),
+            Some(Value::from(self.into())),
         )?;
 
         ctor.construct(activation, args)
@@ -846,7 +914,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn apply(
         &self,
         _activation: &mut Activation<'_, 'gc>,
-        _params: &[Value<'gc>],
+        _param: Value<'gc>,
     ) -> Result<ClassObject<'gc>, Error<'gc>> {
         Err("Not a parameterized type".into())
     }
@@ -994,14 +1062,19 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// checking against this object.
     fn is_of_type(
         &self,
-        test_class: ClassObject<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        test_class: GcCell<'gc, Class<'gc>>,
+        context: &mut UpdateContext<'_, 'gc>,
     ) -> bool {
         let my_class = self.instance_of();
 
         // ES3 objects are not class instances but are still treated as
         // instances of Object, which is an ES4 class.
-        if my_class.is_none() && Object::ptr_eq(test_class, activation.avm2().classes().object) {
+        if my_class.is_none()
+            && GcCell::ptr_eq(
+                test_class,
+                context.avm2.classes().object.inner_class_definition(),
+            )
+        {
             true
         } else if let Some(my_class) = my_class {
             my_class.has_class_in_chain(test_class)
@@ -1083,6 +1156,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         None
     }
 
+    fn as_namespace_object(&self) -> Option<NamespaceObject<'gc>> {
+        None
+    }
+
     /// Unwrap this object as a `QNameObject`
     fn as_qname_object(self) -> Option<QNameObject<'gc>> {
         None
@@ -1145,6 +1222,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ///
     /// If not, then this function does nothing.
     fn init_display_object(&self, _context: &mut UpdateContext<'_, 'gc>, _obj: DisplayObject<'gc>) {
+    }
+
+    fn init_application_domain(&self, _mc: MutationContext<'gc, '_>, _domain: Domain<'gc>) {
+        panic!("Tried to init an application domain on a non-ApplicationDomain object!")
     }
 
     /// Unwrap this object as an ApplicationDomain.
@@ -1211,12 +1292,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         None
     }
 
-    /// Unwrap this object's bitmap data
-    fn as_bitmap_data(&self) -> Option<GcCell<'gc, BitmapData<'gc>>> {
+    fn as_bitmap_data(&self) -> Option<BitmapDataWrapper<'gc>> {
         None
     }
 
-    fn as_bitmap_data_wrapper(&self) -> Option<BitmapDataWrapper<'gc>> {
+    fn as_shader_data(&self) -> Option<ShaderDataObject<'gc>> {
         None
     }
 
@@ -1226,11 +1306,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// This should only be called to initialize the association between an AVM
     /// object and it's associated bitmap data. This association should not be
     /// reinitialized later.
-    fn init_bitmap_data(
-        &self,
-        _mc: MutationContext<'gc, '_>,
-        _new_bitmap: GcCell<'gc, BitmapData<'gc>>,
-    ) {
+    fn init_bitmap_data(&self, _mc: MutationContext<'gc, '_>, _new_bitmap: BitmapDataWrapper<'gc>) {
     }
 
     /// Get this objects `DateObject`, if it has one.
@@ -1289,6 +1365,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn as_texture(&self) -> Option<TextureObject<'gc>> {
         None
     }
+
+    fn as_netstream(self) -> Option<NetStream<'gc>> {
+        None
+    }
 }
 
 pub enum ObjectPtr {}
@@ -1296,6 +1376,45 @@ pub enum ObjectPtr {}
 impl<'gc> Object<'gc> {
     pub fn ptr_eq<T: TObject<'gc>>(a: T, b: T) -> bool {
         a.as_ptr() == b.as_ptr()
+    }
+
+    #[rustfmt::skip]
+    pub fn downgrade(&self) -> WeakObject<'gc> {
+        match self {
+            Self::ScriptObject(o) => WeakObject::ScriptObject(ScriptObjectWeak(GcCell::downgrade(o.0))),
+            Self::FunctionObject(o) => WeakObject::FunctionObject(FunctionObjectWeak(GcCell::downgrade(o.0))),
+            Self::PrimitiveObject(o) => WeakObject::PrimitiveObject(PrimitiveObjectWeak(GcCell::downgrade(o.0))),
+            Self::NamespaceObject(o) => WeakObject::NamespaceObject(NamespaceObjectWeak(GcCell::downgrade(o.0))),
+            Self::ArrayObject(o) => WeakObject::ArrayObject(ArrayObjectWeak(GcCell::downgrade(o.0))),
+            Self::StageObject(o) => WeakObject::StageObject(StageObjectWeak(GcCell::downgrade(o.0))),
+            Self::DomainObject(o) => WeakObject::DomainObject(DomainObjectWeak(GcCell::downgrade(o.0))),
+            Self::EventObject(o) => WeakObject::EventObject(EventObjectWeak(GcCell::downgrade(o.0))),
+            Self::DispatchObject(o) => WeakObject::DispatchObject(DispatchObjectWeak(GcCell::downgrade(o.0))),
+            Self::XmlObject(o) => WeakObject::XmlObject(XmlObjectWeak(GcCell::downgrade(o.0))),
+            Self::XmlListObject(o) => WeakObject::XmlListObject(XmlListObjectWeak(GcCell::downgrade(o.0))),
+            Self::RegExpObject(o) => WeakObject::RegExpObject(RegExpObjectWeak(GcCell::downgrade(o.0))),
+            Self::ByteArrayObject(o) => WeakObject::ByteArrayObject(ByteArrayObjectWeak(GcCell::downgrade(o.0))),
+            Self::LoaderInfoObject(o) => WeakObject::LoaderInfoObject(LoaderInfoObjectWeak(GcCell::downgrade(o.0))),
+            Self::ClassObject(o) => WeakObject::ClassObject(ClassObjectWeak(GcCell::downgrade(o.0))),
+            Self::VectorObject(o) => WeakObject::VectorObject(VectorObjectWeak(GcCell::downgrade(o.0))),
+            Self::SoundObject(o) => WeakObject::SoundObject(SoundObjectWeak(GcCell::downgrade(o.0))),
+            Self::SoundChannelObject(o) => WeakObject::SoundChannelObject(SoundChannelObjectWeak(GcCell::downgrade(o.0))),
+            Self::BitmapDataObject(o) => WeakObject::BitmapDataObject(BitmapDataObjectWeak(GcCell::downgrade(o.0))),
+            Self::DateObject(o) => WeakObject::DateObject(DateObjectWeak(GcCell::downgrade(o.0))),
+            Self::DictionaryObject(o) => WeakObject::DictionaryObject(DictionaryObjectWeak(GcCell::downgrade(o.0))),
+            Self::QNameObject(o) => WeakObject::QNameObject(QNameObjectWeak(GcCell::downgrade(o.0))),
+            Self::TextFormatObject(o) => WeakObject::TextFormatObject(TextFormatObjectWeak(GcCell::downgrade(o.0))),
+            Self::ProxyObject(o) => WeakObject::ProxyObject(ProxyObjectWeak(GcCell::downgrade(o.0))),
+            Self::ErrorObject(o) => WeakObject::ErrorObject(ErrorObjectWeak(GcCell::downgrade(o.0))),
+            Self::Stage3DObject(o) => WeakObject::Stage3DObject(Stage3DObjectWeak(Gc::downgrade(o.0))),
+            Self::Context3DObject(o) => WeakObject::Context3DObject(Context3DObjectWeak(Gc::downgrade(o.0))),
+            Self::IndexBuffer3DObject(o) => WeakObject::IndexBuffer3DObject(IndexBuffer3DObjectWeak(Gc::downgrade(o.0))),
+            Self::VertexBuffer3DObject(o) => WeakObject::VertexBuffer3DObject(VertexBuffer3DObjectWeak(Gc::downgrade(o.0))),
+            Self::TextureObject(o) => WeakObject::TextureObject(TextureObjectWeak(Gc::downgrade(o.0))),
+            Self::Program3DObject(o) => WeakObject::Program3DObject(Program3DObjectWeak(Gc::downgrade(o.0))),
+            Self::NetStreamObject(o) => WeakObject::NetStreamObject(NetStreamObjectWeak(GcCell::downgrade(o.0))),
+            Self::ShaderDataObject(o) => WeakObject::ShaderDataObject(ShaderDataObjectWeak(Gc::downgrade(o.0))),
+        }
     }
 }
 
@@ -1310,5 +1429,84 @@ impl<'gc> Eq for Object<'gc> {}
 impl<'gc> Hash for Object<'gc> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.as_ptr().hash(state);
+    }
+}
+
+#[allow(clippy::enum_variant_names)]
+#[derive(Clone, Collect, Debug, Copy)]
+#[collect(no_drop)]
+pub enum WeakObject<'gc> {
+    ScriptObject(ScriptObjectWeak<'gc>),
+    FunctionObject(FunctionObjectWeak<'gc>),
+    PrimitiveObject(PrimitiveObjectWeak<'gc>),
+    NamespaceObject(NamespaceObjectWeak<'gc>),
+    ArrayObject(ArrayObjectWeak<'gc>),
+    StageObject(StageObjectWeak<'gc>),
+    DomainObject(DomainObjectWeak<'gc>),
+    EventObject(EventObjectWeak<'gc>),
+    DispatchObject(DispatchObjectWeak<'gc>),
+    XmlObject(XmlObjectWeak<'gc>),
+    XmlListObject(XmlListObjectWeak<'gc>),
+    RegExpObject(RegExpObjectWeak<'gc>),
+    ByteArrayObject(ByteArrayObjectWeak<'gc>),
+    LoaderInfoObject(LoaderInfoObjectWeak<'gc>),
+    ClassObject(ClassObjectWeak<'gc>),
+    VectorObject(VectorObjectWeak<'gc>),
+    SoundObject(SoundObjectWeak<'gc>),
+    SoundChannelObject(SoundChannelObjectWeak<'gc>),
+    BitmapDataObject(BitmapDataObjectWeak<'gc>),
+    DateObject(DateObjectWeak<'gc>),
+    DictionaryObject(DictionaryObjectWeak<'gc>),
+    QNameObject(QNameObjectWeak<'gc>),
+    TextFormatObject(TextFormatObjectWeak<'gc>),
+    ProxyObject(ProxyObjectWeak<'gc>),
+    ErrorObject(ErrorObjectWeak<'gc>),
+    Stage3DObject(Stage3DObjectWeak<'gc>),
+    Context3DObject(Context3DObjectWeak<'gc>),
+    IndexBuffer3DObject(IndexBuffer3DObjectWeak<'gc>),
+    VertexBuffer3DObject(VertexBuffer3DObjectWeak<'gc>),
+    TextureObject(TextureObjectWeak<'gc>),
+    Program3DObject(Program3DObjectWeak<'gc>),
+    NetStreamObject(NetStreamObjectWeak<'gc>),
+    ShaderDataObject(ShaderDataObjectWeak<'gc>),
+}
+
+impl<'gc> WeakObject<'gc> {
+    pub fn upgrade(self, mc: MutationContext<'gc, '_>) -> Option<Object<'gc>> {
+        Some(match self {
+            Self::ScriptObject(o) => ScriptObject(o.0.upgrade(mc)?).into(),
+            Self::FunctionObject(o) => FunctionObject(o.0.upgrade(mc)?).into(),
+            Self::PrimitiveObject(o) => PrimitiveObject(o.0.upgrade(mc)?).into(),
+            Self::NamespaceObject(o) => NamespaceObject(o.0.upgrade(mc)?).into(),
+            Self::ArrayObject(o) => ArrayObject(o.0.upgrade(mc)?).into(),
+            Self::StageObject(o) => StageObject(o.0.upgrade(mc)?).into(),
+            Self::DomainObject(o) => DomainObject(o.0.upgrade(mc)?).into(),
+            Self::EventObject(o) => EventObject(o.0.upgrade(mc)?).into(),
+            Self::DispatchObject(o) => DispatchObject(o.0.upgrade(mc)?).into(),
+            Self::XmlObject(o) => XmlObject(o.0.upgrade(mc)?).into(),
+            Self::XmlListObject(o) => XmlListObject(o.0.upgrade(mc)?).into(),
+            Self::RegExpObject(o) => RegExpObject(o.0.upgrade(mc)?).into(),
+            Self::ByteArrayObject(o) => ByteArrayObject(o.0.upgrade(mc)?).into(),
+            Self::LoaderInfoObject(o) => LoaderInfoObject(o.0.upgrade(mc)?).into(),
+            Self::ClassObject(o) => ClassObject(o.0.upgrade(mc)?).into(),
+            Self::VectorObject(o) => VectorObject(o.0.upgrade(mc)?).into(),
+            Self::SoundObject(o) => SoundObject(o.0.upgrade(mc)?).into(),
+            Self::SoundChannelObject(o) => SoundChannelObject(o.0.upgrade(mc)?).into(),
+            Self::BitmapDataObject(o) => BitmapDataObject(o.0.upgrade(mc)?).into(),
+            Self::DateObject(o) => DateObject(o.0.upgrade(mc)?).into(),
+            Self::DictionaryObject(o) => DictionaryObject(o.0.upgrade(mc)?).into(),
+            Self::QNameObject(o) => QNameObject(o.0.upgrade(mc)?).into(),
+            Self::TextFormatObject(o) => TextFormatObject(o.0.upgrade(mc)?).into(),
+            Self::ProxyObject(o) => ProxyObject(o.0.upgrade(mc)?).into(),
+            Self::ErrorObject(o) => ErrorObject(o.0.upgrade(mc)?).into(),
+            Self::Stage3DObject(o) => Stage3DObject(o.0.upgrade(mc)?).into(),
+            Self::Context3DObject(o) => Context3DObject(o.0.upgrade(mc)?).into(),
+            Self::IndexBuffer3DObject(o) => IndexBuffer3DObject(o.0.upgrade(mc)?).into(),
+            Self::VertexBuffer3DObject(o) => VertexBuffer3DObject(o.0.upgrade(mc)?).into(),
+            Self::TextureObject(o) => TextureObject(o.0.upgrade(mc)?).into(),
+            Self::Program3DObject(o) => Program3DObject(o.0.upgrade(mc)?).into(),
+            Self::NetStreamObject(o) => NetStreamObject(o.0.upgrade(mc)?).into(),
+            Self::ShaderDataObject(o) => ShaderDataObject(o.0.upgrade(mc)?).into(),
+        })
     }
 }

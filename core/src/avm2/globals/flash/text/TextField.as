@@ -1,15 +1,12 @@
 package flash.text {
     import flash.display.InteractiveObject;
     import __ruffle__.stub_setter;
-    
+    import __ruffle__.stub_method;
+
+    [Ruffle(InstanceAllocator)]
     public class TextField extends InteractiveObject {
         internal var _styleSheet:StyleSheet;
-    
-        public function TextField() {
-            this.init();
-        }
-
-        private native function init();
+        internal var _useRichTextClipboard:Boolean;
         
         public native function get alwaysShowSelection():Boolean;
         public native function set alwaysShowSelection(value:Boolean):void;
@@ -54,6 +51,9 @@ package flash.text {
         
         public native function get maxChars():int;
         public native function set maxChars(value:int):void;
+
+        public native function get mouseWheelEnabled():Boolean
+        public native function set mouseWheelEnabled(value:Boolean):void
         
         public native function get multiline():Boolean;
         public native function set multiline(value:Boolean):void;
@@ -91,6 +91,15 @@ package flash.text {
         public native function get type():String;
         public native function set type(value:String):void;
         
+        public function get useRichTextClipboard():Boolean {
+            return this._useRichTextClipboard;
+        }
+        
+        public function set useRichTextClipboard(value:Boolean):void {
+            this._useRichTextClipboard = value;
+            stub_setter("flash.text.TextField", "useRichTextClipboard");
+        }
+        
         public native function get wordWrap():Boolean;
         public native function set wordWrap(value:Boolean):void;
         
@@ -115,10 +124,14 @@ package flash.text {
 
         public native function appendText(text:String):void;
         public native function getLineMetrics(lineIndex:int):TextLineMetrics;
-        public native function getTextFormat():TextFormat;
+        public native function getTextFormat(beginIndex:int = -1, endIndex:int = -1):TextFormat;
         public native function setTextFormat(format:TextFormat, beginIndex:int = -1, endIndex:int = -1):void;
         public native function replaceSelectedText(value:String):void;
         public native function replaceText(beginIndex:int, endIndex:int, newText:String):void;
         public native function setSelection(beginIndex:int, endIndex:int):void;
+        
+        public function insertXMLText(beginIndex:int, endIndex:int, text:String, paste:Boolean = false):void {
+            stub_method("flash.text.TextField", "insertXMLText");
+        }
     }
 }

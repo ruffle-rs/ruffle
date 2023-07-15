@@ -1,0 +1,6 @@
+num_ticks = 1
+
+[approximations]
+epsilon = 0.01
+# Based on https://stackoverflow.com/questions/12643009/regular-expression-for-floating-point-numbers#comment101152072_12643009
+number_patterns = ['([-+]?(?:[0-9]*[.])?[0-9]+(?:[eE][-+]?\d+)?|(?:NaN))']

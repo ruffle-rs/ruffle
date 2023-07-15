@@ -48,7 +48,7 @@ For the compiler to be able to output WebAssembly, an additional target has to b
 
 #### Java
 
-Follow the instructions [to install OpenJDK](https://openjdk.org/projects/jdk/19/) on your machine.
+Follow the instructions [to install OpenJDK](https://openjdk.org/projects/jdk/20/) on your machine.
 
 We do not have a specific Java support policy. Any Java version that supports running the AS3 compiler
 should work. Additionally, headless JREs should also work.
@@ -57,7 +57,7 @@ should work. Additionally, headless JREs should also work.
 
 Follow the instructions to [install Node.js](https://nodejs.org/) on your machine.
 
-We recommend using the currently active LTS 18, but we do also run tests with current Node.js 19.
+We recommend using the currently active LTS 18, but we do also run tests with current Node.js 20.
 
 Note that npm 7 or newer is required. It should come bundled with Node.js 15 or newer, but can be upgraded with older Node.js versions using `npm install -g npm` as root/Administrator.
 
@@ -65,7 +65,7 @@ Note that npm 7 or newer is required. It should come bundled with Node.js 15 or 
 
 <!-- Be sure to also update the wasm-bindgen-cli version in `.github/workflows/*.yml` and `web/Cargo.toml`. -->
 
-This can be installed with `cargo install wasm-bindgen-cli --version 0.2.84`. Be sure to install this specific version of `wasm-bindgen-cli` to match the version used by Ruffle.
+This can be installed with `cargo install wasm-bindgen-cli --version 0.2.87`. Be sure to install this specific version of `wasm-bindgen-cli` to match the version used by Ruffle.
 
 #### Binaryen
 

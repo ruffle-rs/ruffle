@@ -1,3 +1,4 @@
+use crate::util::navigator::TestNavigatorBackend;
 use crate::util::test::Test;
 use anyhow::{anyhow, Result};
 use ruffle_core::backend::audio::{
@@ -5,14 +6,17 @@ use ruffle_core::backend::audio::{
     SoundTransform,
 };
 use ruffle_core::backend::log::LogBackend;
-use ruffle_core::backend::navigator::{NullExecutor, NullNavigatorBackend};
-use ruffle_core::events::KeyCode;
+use ruffle_core::backend::navigator::NullExecutor;
 use ruffle_core::events::MouseButton as RuffleMouseButton;
+use ruffle_core::events::{KeyCode, TextControlCode as RuffleTextControlCode};
 use ruffle_core::impl_audio_mixer_backend;
 use ruffle_core::limits::ExecutionLimit;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{Player, PlayerBuilder, PlayerEvent};
-use ruffle_input_format::{AutomatedEvent, InputInjector, MouseButton as InputMouseButton};
+use ruffle_input_format::{
+    AutomatedEvent, InputInjector, MouseButton as InputMouseButton,
+    TextControlCode as InputTextControlCode,
+};
 use std::cell::RefCell;
 use std::path::Path;
 use std::rc::Rc;
@@ -21,26 +25,18 @@ use std::time::Duration;
 
 pub struct TestAudioBackend {
     mixer: AudioMixer,
+    buffer: Vec<f32>,
 }
 
 impl TestAudioBackend {
+    const NUM_CHANNELS: u8 = 2;
+    const SAMPLE_RATE: u32 = 44100;
+
     pub fn new() -> Self {
-        const NUM_CHANNELS: u8 = 2;
-        const SAMPLE_RATE: u32 = 44100;
-        const BUFFER_SIZE: usize = 1024;
-
-        let mixer = AudioMixer::new(NUM_CHANNELS, SAMPLE_RATE);
-        let mixer_proxy = mixer.proxy();
-
-        std::thread::spawn(move || loop {
-            let mut buffer = [0f32; NUM_CHANNELS as usize * BUFFER_SIZE];
-            mixer_proxy.mix::<f32>(&mut buffer);
-            std::thread::sleep(std::time::Duration::from_secs_f32(
-                BUFFER_SIZE as f32 / SAMPLE_RATE as f32,
-            ));
-        });
-
-        Self { mixer }
+        Self {
+            mixer: AudioMixer::new(Self::NUM_CHANNELS, Self::SAMPLE_RATE),
+            buffer: vec![],
+        }
     }
 }
 
@@ -48,15 +44,32 @@ impl AudioBackend for TestAudioBackend {
     impl_audio_mixer_backend!(mixer);
     fn play(&mut self) {}
     fn pause(&mut self) {}
+
+    fn set_frame_rate(&mut self, frame_rate: f64) {
+        let new_buffer_size =
+            ((Self::NUM_CHANNELS as u32 * Self::SAMPLE_RATE) as f64 / frame_rate).round() as usize;
+        self.buffer.resize(new_buffer_size, 0.0);
+    }
+    fn tick(&mut self) {
+        debug_assert!(!self.buffer.is_empty());
+        self.mixer.mix::<f32>(self.buffer.as_mut());
+    }
 }
 
-struct TestLogBackend {
+#[derive(Clone)]
+pub struct TestLogBackend {
     trace_output: Rc<RefCell<String>>,
 }
 
 impl TestLogBackend {
-    pub fn new(trace_output: Rc<RefCell<String>>) -> Self {
-        Self { trace_output }
+    pub fn new() -> Self {
+        Self {
+            trace_output: Rc::new(RefCell::new(String::new())),
+        }
+    }
+
+    pub fn trace_output(self) -> String {
+        self.trace_output.take()
     }
 }
 
@@ -78,13 +91,23 @@ pub fn run_swf(
     let base_path = Path::new(&test.output_path).parent().unwrap();
     let mut executor = NullExecutor::new();
     let movie = SwfMovie::from_path(&test.swf_path, None).map_err(|e| anyhow!(e.to_string()))?;
-    let frame_time = 1000.0 / movie.frame_rate().to_f64();
+    let mut frame_time = 1000.0 / movie.frame_rate().to_f64();
+    if let Some(tr) = test.options.tick_rate {
+        frame_time = tr;
+    }
+
     let frame_time_duration = Duration::from_millis(frame_time as u64);
-    let trace_output = Rc::new(RefCell::new(String::new()));
+
+    let log = TestLogBackend::new();
+    let navigator = TestNavigatorBackend::new(
+        base_path,
+        &executor,
+        test.options.log_fetch.then(|| log.clone()),
+    )?;
 
     let builder = PlayerBuilder::new()
-        .with_log(TestLogBackend::new(trace_output.clone()))
-        .with_navigator(NullNavigatorBackend::with_base_path(base_path, &executor)?)
+        .with_log(log.clone())
+        .with_navigator(navigator)
         .with_max_execution_duration(Duration::from_secs(300))
         .with_viewport_dimensions(
             movie.width().to_pixels() as u32,
@@ -98,11 +121,25 @@ pub fn run_swf(
         .player_options
         .setup(builder, &movie)?
         .with_movie(movie)
+        .with_autoplay(true) //.tick() requires playback
         .build();
 
     before_start(player.clone())?;
 
-    for _ in 0..test.options.num_frames {
+    if test.options.num_frames.is_none() && test.options.num_ticks.is_none() {
+        return Err(anyhow!(
+            "Test {} must specify at least one of num_frames or num_ticks",
+            test.swf_path.to_string_lossy()
+        ));
+    }
+
+    let num_iterations = test
+        .options
+        .num_frames
+        .or(test.options.num_ticks)
+        .expect("valid iteration count");
+
+    for _ in 0..num_iterations {
         // If requested, ensure that the 'expected' amount of
         // time actually elapses between frames. This is useful for
         // tests that call 'flash.utils.getTimer()' and use
@@ -126,8 +163,13 @@ pub fn run_swf(
             .preload(&mut ExecutionLimit::exhausted())
         {}
 
-        player.lock().unwrap().run_frame();
-        player.lock().unwrap().update_timers(frame_time);
+        if test.options.num_ticks.is_some() {
+            player.lock().unwrap().tick(frame_time);
+        } else {
+            player.lock().unwrap().run_frame();
+            player.lock().unwrap().update_timers(frame_time);
+            player.lock().unwrap().audio_mut().tick();
+        }
         executor.run();
 
         injector.next(|evt, _btns_down| {
@@ -155,6 +197,24 @@ pub fn run_swf(
                     key_code: KeyCode::from_u8(*key_code).expect("Invalid keycode in test"),
                     key_char: None,
                 },
+                AutomatedEvent::TextInput { codepoint } => PlayerEvent::TextInput {
+                    codepoint: *codepoint,
+                },
+                AutomatedEvent::TextControl { code } => PlayerEvent::TextControl {
+                    code: match code {
+                        InputTextControlCode::MoveLeft => RuffleTextControlCode::Backspace,
+                        InputTextControlCode::MoveRight => RuffleTextControlCode::Delete,
+                        InputTextControlCode::SelectLeft => RuffleTextControlCode::SelectLeft,
+                        InputTextControlCode::SelectRight => RuffleTextControlCode::SelectRight,
+                        InputTextControlCode::SelectAll => RuffleTextControlCode::SelectAll,
+                        InputTextControlCode::Copy => RuffleTextControlCode::Copy,
+                        InputTextControlCode::Paste => RuffleTextControlCode::Paste,
+                        InputTextControlCode::Cut => RuffleTextControlCode::Cut,
+                        InputTextControlCode::Backspace => RuffleTextControlCode::Backspace,
+                        InputTextControlCode::Enter => RuffleTextControlCode::Enter,
+                        InputTextControlCode::Delete => RuffleTextControlCode::Delete,
+                    },
+                },
                 AutomatedEvent::Wait => unreachable!(),
             });
         });
@@ -166,7 +226,7 @@ pub fn run_swf(
     // FIXME: Determine how we want to compare against on on-disk image
     #[cfg(feature = "imgtests")]
     if let Some(image_comparison) = &test.options.image_comparison {
-        if crate::util::environment::WGPU.is_some() {
+        if crate::util::environment::wgpu_descriptors().is_some() {
             use anyhow::Context;
             use ruffle_render_wgpu::backend::WgpuRenderBackend;
             use ruffle_render_wgpu::target::TextureTarget;
@@ -178,10 +238,7 @@ pub fn run_swf(
                 .downcast_mut::<WgpuRenderBackend<TextureTarget>>()
                 .unwrap();
 
-            // Use straight alpha, since we want to save this as a PNG
-            let actual_image = renderer
-                .capture_frame(false)
-                .expect("Failed to capture image");
+            let actual_image = renderer.capture_frame().expect("Failed to capture image");
 
             let expected_image_path = base_path.join("expected.png");
             if expected_image_path.is_file() {
@@ -205,6 +262,10 @@ pub fn run_swf(
 
     executor.run();
 
-    let trace = trace_output.borrow().clone();
-    Ok(trace)
+    let trace = log.trace_output();
+    // Null bytes are invisible, and interfere with constructing
+    // the expected output.txt file. Any tests dealing with null
+    // bytes should explicitly test for them in ActionScript.
+    let normalized_trace = trace.replace('\0', "");
+    Ok(normalized_trace)
 }

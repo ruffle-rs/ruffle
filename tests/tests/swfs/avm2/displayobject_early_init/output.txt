@@ -1,0 +1,54 @@
+MyImage before super(): width=1 height=1
+Caught error: ArgumentError: Error #2015: Invalid BitmapData.
+MyImage after super(): this.width=300 this.height=300 pixel: 39679
+MySprite before super(): this.graphics: [object Graphics] this.numChildren = 1 this.getChildAt(0) = null this.parent = [object Main]
+MySprite after super(): this.graphics === earlyGraphics: true this.numChildren = 2 this.getChildAt(0) = [object Shape] this.parent = [object Main]
+MyMovieClip before super(): this.graphics: [object Graphics] this.numChildren = 1 this.getChildAt(0) = null this.parent = [object Main]
+MyMovieClip after super(): this.graphics === earlyGraphics: true this.numChildren = 2 this.getChildAt(0) = [object Shape] this.parent = [object Main]
+Constructing MyImage from ActionScript
+MyImage before super(): width=42 height=24
+Caught error: ArgumentError: Error #2015: Invalid BitmapData.
+MyImage after super(): this.width=300 this.height=300 pixel: 39679
+Image: [object MyImage]
+UnlinkedBitmapData before super()
+Caught error: ArgumentError: Error #2015: Invalid BitmapData.
+UnlinkedBitmapData after super(): this.width=100
+Constructing MySprite from ActionScript
+MySprite before super(): this.graphics: [object Graphics] this.numChildren = 1 this.getChildAt(0) = null this.parent = null
+MySprite after super(): this.graphics === earlyGraphics: true this.numChildren = 2 this.getChildAt(0) = [object Shape] this.parent = null
+mySprite: [object MySprite]
+Constructing MyMovieClip from ActionScript
+MyMovieClip before super(): this.graphics: [object Graphics] this.numChildren = 1 this.getChildAt(0) = null this.parent = null
+MyMovieClip after super(): this.graphics === earlyGraphics: true this.numChildren = 2 this.getChildAt(0) = [object Shape] this.parent = null
+myMovieClip: [object MyMovieClip]
+UnlinkedSprite before super(): this.graphics: [object Graphics] this.numChildren = 0
+UnlinkedSprite after super(): this.graphics: [object Graphics] this.numChildren = 0
+UnlinkedMovieClip before super(): this.graphics: [object Graphics] this.numChildren = 0
+UnlinkedMovieClip after super(): this.graphics: [object Graphics] this.numChildren = 0
+UnlinkedLoader before super(): this.contentLoaderInfo = [object LoaderInfo] this.numChildren = 0
+UnlinkedLoader after super(): this.contentLoaderInfo = [object LoaderInfo] this.numChildren = 0
+UnlinkedShape before super(): this.graphics: [object Graphics]
+UnlinkedShape after super(): this.graphics: [object Graphics]
+UnlinkedButton before super(): this.mouseEnabled = true
+UnlinkedButton after super(): this.mouseEnabled = true
+UnlinkedTextField before super(): this.mouseEnabled = pixel
+UnlinkedTextField after super(): this.mouseEnabled = pixel
+UnlinkedByteArray before super(): this.objectEncoding = 3
+UnlinkedByteArray after super(): this.objectEncoding = 3
+UnlinkedSound before super(): this.bytesLoaded = 0
+UnlinkedSound after super(): this.bytesLoaded = 0
+Constructing MyButton from ActionScript
+Constructed OverButtonState
+Constructed OverButtonState
+MyButton before super(): this.mouseEnabled = true this.parent = null
+MyButton after super(): this.mouseEnabled = true this.parent = null
+myButton: [object MyButton]
+Constructing BoundByteArray from ActionScript
+BoundByteArray before super(): this.bytesAvailable = 18
+BoundByteArray after super(): this.bytseAvailable = 18
+boundByteArray: This is some text
+
+Constructing BoundSound from ActionScriot
+BoundSound before super(): this.bytesLoaded = 0 this.bytesTotal = 0
+BoundSound after super(): this.bytesLoaded = 4180 this.bytesTotal = 4180
+boundSound: [object BoundSound]

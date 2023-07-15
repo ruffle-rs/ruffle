@@ -1,5 +1,6 @@
 package flash.net {
 
+	import __ruffle__.stub_getter;
 	import __ruffle__.stub_setter;
 
 	public final class URLRequest {
@@ -9,6 +10,8 @@ package flash.net {
 		// FIXME - this should be a getter/setter for consistency with Flash
 		public var url:String;
 		private var _contentType: String = "application/x-www-form-urlencoded"; // ignored
+
+		private var _requestHeaders: Array = []; 
 
 		public var digest:String;
 		private var _method:String = URLRequestMethod.GET;
@@ -42,5 +45,14 @@ package flash.net {
 		public function get contentType():String {
 			return this._contentType;
 		}
+
+		public function get requestHeaders():Array {
+			return _requestHeaders;
+		}
+
+		public function set requestHeaders(headers:Array):void {
+			_requestHeaders = headers;
+		}
+
 	}
 }

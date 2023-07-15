@@ -1,18 +1,18 @@
 Error
 	at Test$cinit()
-	at global$init()
+	at global$init() [TU=]
 	at test_fla::MainTimeline/frame1()
 Error
 	at MethodInfo-1()
 	at MethodInfo-2()
-	at global$init()
+	at global$init() [TU=]
 	at test_fla::MainTimeline/frame1()
 100
 test message
 Test
 Test: test message
 Test: test message
-	at global$init()
+	at global$init() [TU=]
 	at test_fla::MainTimeline/frame1()
 Error
 	at Test()

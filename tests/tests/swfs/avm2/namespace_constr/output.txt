@@ -1,0 +1,5 @@
+new Namespace() 
+new Namespace("prefix", "uri") uri
+new Namespace("uri") uri
+var q = new QName("test");
+new Namespace(q) uri

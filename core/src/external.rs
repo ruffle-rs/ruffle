@@ -19,6 +19,7 @@ use std::collections::BTreeMap;
 /// lossy format. Any recursion or additional metadata in ActionScript will not be translated.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
+    Undefined,
     Null,
     Bool(bool),
     Number(f64),
@@ -123,7 +124,8 @@ impl Value {
         value: Avm1Value<'gc>,
     ) -> Result<Value, Avm1Error<'gc>> {
         Ok(match value {
-            Avm1Value::Undefined | Avm1Value::Null => Value::Null,
+            Avm1Value::Undefined => Value::Undefined,
+            Avm1Value::Null => Value::Null,
             Avm1Value::Bool(value) => value.into(),
             Avm1Value::Number(value) => value.into(),
             Avm1Value::String(value) => Value::String(value.to_string()),
@@ -139,7 +141,7 @@ impl Value {
                         .collect();
                     Value::List(values?)
                 } else {
-                    let keys = object.get_keys(activation);
+                    let keys = object.get_keys(activation, false);
                     let mut values = BTreeMap::new();
                     for key in keys {
                         let value = object.get(key, activation)?;
@@ -153,6 +155,7 @@ impl Value {
 
     pub fn into_avm1<'gc>(self, activation: &mut Avm1Activation<'_, 'gc>) -> Avm1Value<'gc> {
         match self {
+            Value::Undefined => Avm1Value::Undefined,
             Value::Null => Avm1Value::Null,
             Value::Bool(value) => Avm1Value::Bool(value),
             Value::Number(value) => Avm1Value::Number(value),
@@ -188,7 +191,8 @@ impl Value {
 
     pub fn from_avm2(value: Avm2Value) -> Value {
         match value {
-            Avm2Value::Undefined | Avm2Value::Null => Value::Null,
+            Avm2Value::Undefined => Value::Undefined,
+            Avm2Value::Null => Value::Null,
             Avm2Value::Bool(value) => value.into(),
             Avm2Value::Number(value) => value.into(),
             Avm2Value::Integer(value) => value.into(),
@@ -214,6 +218,7 @@ impl Value {
 
     pub fn into_avm2<'gc>(self, activation: &mut Avm2Activation<'_, 'gc>) -> Avm2Value<'gc> {
         match self {
+            Value::Undefined => Avm2Value::Undefined,
             Value::Null => Avm2Value::Null,
             Value::Bool(value) => Avm2Value::Bool(value),
             Value::Number(value) => Avm2Value::Number(value),
@@ -257,37 +262,47 @@ impl<'gc> Callback<'gc> {
     ) -> Value {
         match self {
             Callback::Avm1 { this, method } => {
-                let base_clip = context.stage.root_clip();
-                let mut activation = Avm1Activation::from_nothing(
-                    context.reborrow(),
-                    Avm1ActivationIdentifier::root("[ExternalInterface]"),
-                    base_clip,
-                );
-                let this = this.coerce_to_object(&mut activation);
-                let args: Vec<Avm1Value> = args
-                    .into_iter()
-                    .map(|v| v.into_avm1(&mut activation))
-                    .collect();
-                let name = AvmString::new_utf8(activation.context.gc_context, name);
-                if let Ok(result) = method
-                    .call(name, &mut activation, this.into(), &args)
-                    .and_then(|value| Value::from_avm1(&mut activation, value))
-                {
-                    result
-                } else {
-                    Value::Null
+                if let Some(base_clip) = context.stage.root_clip() {
+                    let mut activation = Avm1Activation::from_nothing(
+                        context.reborrow(),
+                        Avm1ActivationIdentifier::root("[ExternalInterface]"),
+                        base_clip,
+                    );
+                    let this = this.coerce_to_object(&mut activation);
+                    let args: Vec<Avm1Value> = args
+                        .into_iter()
+                        .map(|v| v.into_avm1(&mut activation))
+                        .collect();
+                    let name = AvmString::new_utf8(activation.context.gc_context, name);
+                    if let Ok(result) = method
+                        .call(name, &mut activation, this.into(), &args)
+                        .and_then(|value| Value::from_avm1(&mut activation, value))
+                    {
+                        return result;
+                    }
                 }
+                Value::Null
             }
             Callback::Avm2 { method } => {
-                let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                let domain = context
+                    .library
+                    .library_for_movie(context.swf.clone())
+                    .unwrap()
+                    .avm2_domain();
+                let mut activation = Avm2Activation::from_domain(context.reborrow(), domain);
                 let args: Vec<Avm2Value> = args
                     .into_iter()
                     .map(|v| v.into_avm2(&mut activation))
                     .collect();
-                if let Ok(result) = method.call(None, &args, &mut activation) {
-                    Value::from_avm2(result)
-                } else {
-                    Value::Null
+                match method.call(Avm2Value::Null, &args, &mut activation) {
+                    Ok(result) => Value::from_avm2(result),
+                    Err(e) => {
+                        tracing::error!(
+                            "Unhandled error in External Interface callback {name}: {:?}",
+                            e
+                        );
+                        Value::Null
+                    }
                 }
             }
         }
@@ -324,8 +339,11 @@ pub struct ExternalInterface<'gc> {
 }
 
 impl<'gc> ExternalInterface<'gc> {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(providers: Vec<Box<dyn ExternalInterfaceProvider>>) -> Self {
+        Self {
+            providers,
+            ..Default::default()
+        }
     }
 
     pub fn add_provider(&mut self, provider: Box<dyn ExternalInterfaceProvider>) {

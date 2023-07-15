@@ -8,6 +8,8 @@ use crate::avm1;
 use crate::avm2;
 use crate::display_object::Stage;
 use crate::display_object::TDisplayObject;
+use crate::i18n::core_text;
+use fluent_templates::LanguageIdentifier;
 use gc_arena::Collect;
 use ruffle_render::quality::StageQuality;
 use serde::Serialize;
@@ -33,39 +35,46 @@ impl<'gc> ContextMenuState<'gc> {
     pub fn callback(&self, index: usize) -> &ContextMenuCallback<'gc> {
         &self.callbacks[index]
     }
-    pub fn build_builtin_items(&mut self, item_flags: BuiltInItemFlags, stage: Stage<'gc>) {
-        let root_mc = stage.root_clip().as_movie_clip();
+    pub fn build_builtin_items(
+        &mut self,
+        item_flags: BuiltInItemFlags,
+        stage: Stage<'gc>,
+        language: &LanguageIdentifier,
+    ) {
+        let Some(root_mc) = stage.root_clip().and_then(|c| c.as_movie_clip()) else {
+            return;
+        };
         if item_flags.play {
-            let is_playing_root_movie = root_mc.unwrap().playing();
+            let is_playing_root_movie = root_mc.playing();
             self.push(
                 ContextMenuItem {
                     enabled: true,
                     separator_before: true,
-                    caption: "Play".to_string(),
+                    caption: core_text(language, "context-menu-play"),
                     checked: is_playing_root_movie,
                 },
                 ContextMenuCallback::Play,
             );
         }
         if item_flags.rewind {
-            let is_first_frame = root_mc.unwrap().current_frame() <= 1;
+            let is_first_frame = root_mc.current_frame() <= 1;
             self.push(
                 ContextMenuItem {
                     enabled: !is_first_frame,
                     separator_before: true,
-                    caption: "Rewind".to_string(),
+                    caption: core_text(language, "context-menu-rewind"),
                     checked: false,
                 },
                 ContextMenuCallback::Rewind,
             );
         }
         if item_flags.forward_and_back {
-            let is_first_frame = root_mc.unwrap().current_frame() <= 1;
+            let is_first_frame = root_mc.current_frame() <= 1;
             self.push(
                 ContextMenuItem {
                     enabled: true,
                     separator_before: false,
-                    caption: "Forward".to_string(),
+                    caption: core_text(language, "context-menu-forward"),
                     checked: false,
                 },
                 ContextMenuCallback::Forward,
@@ -74,7 +83,7 @@ impl<'gc> ContextMenuState<'gc> {
                 ContextMenuItem {
                     enabled: !is_first_frame,
                     separator_before: false,
-                    caption: "Back".to_string(),
+                    caption: core_text(language, "context-menu-back"),
                     checked: false,
                 },
                 ContextMenuCallback::Back,
@@ -87,7 +96,7 @@ impl<'gc> ContextMenuState<'gc> {
                     enabled: stage.quality() != StageQuality::Low,
                     separator_before: true,
                     checked: stage.quality() == StageQuality::Low,
-                    caption: "Quality: Low".to_string(),
+                    caption: core_text(language, "context-menu-quality-low"),
                 },
                 ContextMenuCallback::QualityLow,
             );
@@ -96,7 +105,7 @@ impl<'gc> ContextMenuState<'gc> {
                     enabled: stage.quality() != StageQuality::Medium,
                     separator_before: false,
                     checked: stage.quality() == StageQuality::Medium,
-                    caption: "Quality: Medium".to_string(),
+                    caption: core_text(language, "context-menu-quality-medium"),
                 },
                 ContextMenuCallback::QualityMedium,
             );
@@ -105,7 +114,7 @@ impl<'gc> ContextMenuState<'gc> {
                     enabled: stage.quality() != StageQuality::High,
                     separator_before: false,
                     checked: stage.quality() == StageQuality::High,
-                    caption: "Quality: High".to_string(),
+                    caption: core_text(language, "context-menu-quality-high"),
                 },
                 ContextMenuCallback::QualityHigh,
             );
@@ -158,7 +167,7 @@ pub struct BuiltInItemFlags {
 
 impl BuiltInItemFlags {
     pub fn for_stage(stage: Stage<'_>) -> Self {
-        let root_mc = stage.root_clip().as_movie_clip();
+        let root_mc = stage.root_clip().and_then(|c| c.as_movie_clip());
         let is_multiframe_movie = root_mc.map(|mc| mc.total_frames() > 1).unwrap_or(false);
         if is_multiframe_movie {
             Self {

@@ -10,12 +10,20 @@ use std::collections::HashMap;
 pub struct Shaders {
     pub color_shader: wgpu::ShaderModule,
     pub bitmap_shader: wgpu::ShaderModule,
+    /// Like `bitmap_shader` but performs saturation after we've
+    /// re-multiplied the alpha. This is used for the Stage3D
+    /// `bitmap_opaque` pipeline, which needs to able to
+    /// avoid changing initially-in-range rgb values (regadless
+    /// of whether dividing by the alpha value would produce
+    /// an out-of-range value).
+    pub bitmap_late_saturate_shader: wgpu::ShaderModule,
     pub gradient_shader: wgpu::ShaderModule,
     pub copy_srgb_shader: wgpu::ShaderModule,
     pub copy_shader: wgpu::ShaderModule,
     pub blend_shaders: EnumMap<ComplexBlend, wgpu::ShaderModule>,
     pub color_matrix_filter: wgpu::ShaderModule,
     pub blur_filter: wgpu::ShaderModule,
+    pub glow_filter: wgpu::ShaderModule,
 }
 
 impl Shaders {
@@ -26,6 +34,11 @@ impl Shaders {
             "use_push_constants".to_owned(),
             ShaderDefValue::Bool(device.limits().max_push_constant_size > 0),
         );
+        shader_defs.insert("early_saturate".to_owned(), ShaderDefValue::Bool(true));
+
+        let mut late_saturate_shader_defs = shader_defs.clone();
+        late_saturate_shader_defs.insert("early_saturate".to_owned(), ShaderDefValue::Bool(false));
+
         let color_shader = make_shader(
             device,
             &mut composer,
@@ -37,6 +50,13 @@ impl Shaders {
             device,
             &mut composer,
             &shader_defs,
+            "bitmap.wgsl",
+            include_str!("../shaders/bitmap.wgsl"),
+        );
+        let bitmap_late_saturate_shader = make_shader(
+            device,
+            &mut composer,
+            &late_saturate_shader_defs,
             "bitmap.wgsl",
             include_str!("../shaders/bitmap.wgsl"),
         );
@@ -68,6 +88,13 @@ impl Shaders {
             "filter/blur.wgsl",
             include_str!("../shaders/filter/blur.wgsl"),
         );
+        let glow_filter = make_shader(
+            device,
+            &mut composer,
+            &shader_defs,
+            "filter/glow.wgsl",
+            include_str!("../shaders/filter/glow.wgsl"),
+        );
         let gradient_shader = make_shader(
             device,
             &mut composer,
@@ -77,6 +104,7 @@ impl Shaders {
         );
 
         let blend_shaders = enum_map! {
+            ComplexBlend::Multiply => make_shader(device, &mut composer, &shader_defs, "blend/multiply.wgsl", include_str!("../shaders/blend/multiply.wgsl")),
             ComplexBlend::Lighten => make_shader(device, &mut composer, &shader_defs, "blend/lighten.wgsl", include_str!("../shaders/blend/lighten.wgsl")),
             ComplexBlend::Darken => make_shader(device, &mut composer, &shader_defs, "blend/darken.wgsl", include_str!("../shaders/blend/darken.wgsl")),
             ComplexBlend::Difference => make_shader(device, &mut composer, &shader_defs, "blend/difference.wgsl", include_str!("../shaders/blend/difference.wgsl")),
@@ -90,12 +118,14 @@ impl Shaders {
         Self {
             color_shader,
             bitmap_shader,
+            bitmap_late_saturate_shader,
             gradient_shader,
             copy_srgb_shader,
             copy_shader,
             blend_shaders,
             color_matrix_filter,
             blur_filter,
+            glow_filter,
         }
     }
 }
@@ -111,8 +141,8 @@ fn composer() -> Result<Composer, ComposerError> {
         ..Default::default()
     })?;
     composer.add_composable_module(ComposableModuleDescriptor {
-        source: include_str!("../shaders/filter/common.wgsl"),
-        file_path: "filter/common.wgsl",
+        source: ruffle_render::shader_source::SHADER_FILTER_COMMON,
+        file_path: "shader_filter_common.wgsl",
         ..Default::default()
     })?;
     Ok(composer)

@@ -12,8 +12,8 @@ use crate::avm2::value::Value;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::{Avm2, Error};
-use crate::context::UpdateContext;
-use crate::string::AvmString;
+use crate::context::{GcContext, UpdateContext};
+use crate::string::{AvmAtom, AvmString};
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use std::cell::Ref;
 use std::mem::drop;
@@ -41,9 +41,12 @@ pub struct TranslationUnit<'gc>(GcCell<'gc, TranslationUnitData<'gc>>);
 /// constructing the appropriate runtime object for that item.
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
-pub struct TranslationUnitData<'gc> {
+struct TranslationUnitData<'gc> {
     /// The domain that all scripts in the translation unit export defs to.
     domain: Domain<'gc>,
+
+    /// The name from the original `DoAbc2` tag, or `None` if this came from a `DoAbc` tag
+    name: Option<AvmString<'gc>>,
 
     /// The ABC file that all of the following loaded data comes from.
     #[collect(require_static)]
@@ -59,8 +62,8 @@ pub struct TranslationUnitData<'gc> {
     scripts: Vec<Option<Script<'gc>>>,
 
     /// All strings loaded from the ABC's strings list.
-    /// They're lazy loaded and offset by 1, with the 0th element being always None.
-    strings: Vec<Option<AvmString<'gc>>>,
+    /// They're lazy loaded and offset by 1, with the 0th element being always the empty string.
+    strings: Vec<Option<AvmAtom<'gc>>>,
 
     /// All namespaces loaded from the ABC's scripts list.
     namespaces: Vec<Option<Namespace<'gc>>>,
@@ -74,7 +77,12 @@ pub struct TranslationUnitData<'gc> {
 impl<'gc> TranslationUnit<'gc> {
     /// Construct a new `TranslationUnit` for a given ABC file intended to
     /// execute within a particular domain.
-    pub fn from_abc(abc: AbcFile, domain: Domain<'gc>, mc: MutationContext<'gc, '_>) -> Self {
+    pub fn from_abc(
+        abc: AbcFile,
+        domain: Domain<'gc>,
+        name: Option<AvmString<'gc>>,
+        mc: MutationContext<'gc, '_>,
+    ) -> Self {
         let classes = vec![None; abc.classes.len()];
         let methods = vec![None; abc.methods.len()];
         let scripts = vec![None; abc.scripts.len()];
@@ -82,10 +90,11 @@ impl<'gc> TranslationUnit<'gc> {
         let namespaces = vec![None; abc.constant_pool.namespaces.len() + 1];
         let multinames = vec![None; abc.constant_pool.multinames.len() + 1];
 
-        Self(GcCell::allocate(
+        Self(GcCell::new(
             mc,
             TranslationUnitData {
                 domain,
+                name,
                 abc: Rc::new(abc),
                 classes,
                 methods,
@@ -99,6 +108,11 @@ impl<'gc> TranslationUnit<'gc> {
 
     pub fn domain(self) -> Domain<'gc> {
         self.0.read().domain
+    }
+
+    // Retrieve the name associated with the original `DoAbc2` tag
+    pub fn name(self) -> Option<AvmString<'gc>> {
+        self.0.read().name
     }
 
     /// Retrieve the underlying `AbcFile` for this translation unit.
@@ -118,7 +132,7 @@ impl<'gc> TranslationUnit<'gc> {
             return Ok(method.clone());
         }
 
-        let is_global = read.domain.is_avm2_global_domain(activation);
+        let is_global = read.domain.is_playerglobals_domain(activation);
         drop(read);
 
         let bc_method =
@@ -131,6 +145,10 @@ impl<'gc> TranslationUnit<'gc> {
                 if let Some((name, native)) =
                     activation.avm2().native_method_table[method_index.0 as usize]
                 {
+                    assert_eq!(
+                        bc_method.abc_method_body, None,
+                        "Method in native method table has a bytecode body!"
+                    );
                     let variadic = bc_method.is_variadic();
                     // Set the method name and function pointer from the table.
                     return Method::from_builtin_and_params(
@@ -142,7 +160,7 @@ impl<'gc> TranslationUnit<'gc> {
                     );
                 }
             }
-            Gc::allocate(activation.context.gc_context, bc_method).into()
+            Gc::new(activation.context.gc_context, bc_method).into()
         })();
 
         self.0.write(activation.context.gc_context).methods[method_index.0 as usize] =
@@ -189,7 +207,7 @@ impl<'gc> TranslationUnit<'gc> {
 
         drop(read);
 
-        let mut activation = Activation::from_nothing(uc.reborrow());
+        let mut activation = Activation::from_domain(uc.reborrow(), domain);
         let global_class = activation.avm2().classes().global;
         let global_obj = global_class.construct(&mut activation, &[])?;
         global_obj.fork_vtable(activation.context.gc_context);
@@ -217,29 +235,13 @@ impl<'gc> TranslationUnit<'gc> {
     pub fn pool_string_option(
         self,
         string_index: u32,
-        mc: MutationContext<'gc, '_>,
-    ) -> Result<Option<AvmString<'gc>>, Error<'gc>> {
-        let mut write = self.0.write(mc);
-        if let Some(Some(string)) = write.strings.get(string_index as usize) {
-            return Ok(Some(*string));
-        }
-
+        context: &mut GcContext<'_, 'gc>,
+    ) -> Result<Option<AvmAtom<'gc>>, Error<'gc>> {
         if string_index == 0 {
-            return Ok(None);
+            Ok(None)
+        } else {
+            self.pool_string(string_index, context).map(Some)
         }
-
-        let avm_string = AvmString::new_utf8(
-            mc,
-            write
-                .abc
-                .constant_pool
-                .strings
-                .get(string_index as usize - 1)
-                .ok_or_else(|| format!("Unknown string constant {string_index}"))?,
-        );
-        write.strings[string_index as usize] = Some(avm_string);
-
-        Ok(Some(avm_string))
     }
 
     /// Load a string from the ABC's constant pool.
@@ -251,11 +253,30 @@ impl<'gc> TranslationUnit<'gc> {
     pub fn pool_string(
         self,
         string_index: u32,
-        mc: MutationContext<'gc, '_>,
-    ) -> Result<AvmString<'gc>, Error<'gc>> {
-        Ok(self
-            .pool_string_option(string_index, mc)?
-            .unwrap_or_default())
+        context: &mut GcContext<'_, 'gc>,
+    ) -> Result<AvmAtom<'gc>, Error<'gc>> {
+        let mut write = self.0.write(context.gc_context);
+        if let Some(Some(atom)) = write.strings.get(string_index as usize) {
+            return Ok(*atom);
+        }
+
+        let raw = if string_index == 0 {
+            ""
+        } else {
+            write
+                .abc
+                .constant_pool
+                .strings
+                .get(string_index as usize - 1)
+                .ok_or_else(|| format!("Unknown string constant {string_index}"))?
+        };
+
+        let atom = context
+            .interner
+            .intern_wstr(context.gc_context, ruffle_wstr::from_utf8(raw));
+
+        write.strings[string_index as usize] = Some(atom);
+        Ok(atom)
     }
 
     /// Retrieve a static, or non-runtime, multiname from the current constant
@@ -265,7 +286,7 @@ impl<'gc> TranslationUnit<'gc> {
     pub fn pool_namespace(
         self,
         ns_index: Index<AbcNamespace>,
-        mc: MutationContext<'gc, '_>,
+        context: &mut GcContext<'_, 'gc>,
     ) -> Result<Namespace<'gc>, Error<'gc>> {
         let read = self.0.read();
         if let Some(Some(namespace)) = read.namespaces.get(ns_index.0 as usize) {
@@ -274,8 +295,8 @@ impl<'gc> TranslationUnit<'gc> {
 
         drop(read);
 
-        let namespace = Namespace::from_abc_namespace(self, ns_index, mc)?;
-        self.0.write(mc).namespaces[ns_index.0 as usize] = Some(namespace);
+        let namespace = Namespace::from_abc_namespace(self, ns_index, context)?;
+        self.0.write(context.gc_context).namespaces[ns_index.0 as usize] = Some(namespace);
 
         Ok(namespace)
     }
@@ -285,8 +306,9 @@ impl<'gc> TranslationUnit<'gc> {
     pub fn pool_maybe_uninitialized_multiname(
         self,
         multiname_index: Index<AbcMultiname>,
-        mc: MutationContext<'gc, '_>,
+        context: &mut GcContext<'_, 'gc>,
     ) -> Result<Gc<'gc, Multiname<'gc>>, Error<'gc>> {
+        let mc = context.gc_context;
         let read = self.0.read();
         if let Some(Some(multiname)) = read.multinames.get(multiname_index.0 as usize) {
             return Ok(*multiname);
@@ -294,8 +316,8 @@ impl<'gc> TranslationUnit<'gc> {
 
         drop(read);
 
-        let multiname = Multiname::from_abc_index(self, multiname_index, mc)?;
-        let multiname = Gc::allocate(mc, multiname);
+        let multiname = Multiname::from_abc_index(self, multiname_index, context)?;
+        let multiname = Gc::new(mc, multiname);
         self.0.write(mc).multinames[multiname_index.0 as usize] = Some(multiname);
 
         Ok(multiname)
@@ -308,9 +330,9 @@ impl<'gc> TranslationUnit<'gc> {
     pub fn pool_multiname_static(
         self,
         multiname_index: Index<AbcMultiname>,
-        mc: MutationContext<'gc, '_>,
+        context: &mut GcContext<'_, 'gc>,
     ) -> Result<Gc<'gc, Multiname<'gc>>, Error<'gc>> {
-        let multiname = self.pool_maybe_uninitialized_multiname(multiname_index, mc)?;
+        let multiname = self.pool_maybe_uninitialized_multiname(multiname_index, context)?;
         if multiname.has_lazy_component() {
             return Err(format!("Multiname {} is not static", multiname_index.0).into());
         }
@@ -325,12 +347,13 @@ impl<'gc> TranslationUnit<'gc> {
     pub fn pool_multiname_static_any(
         self,
         multiname_index: Index<AbcMultiname>,
-        mc: MutationContext<'gc, '_>,
+        context: &mut GcContext<'_, 'gc>,
     ) -> Result<Gc<'gc, Multiname<'gc>>, Error<'gc>> {
         if multiname_index.0 == 0 {
-            Ok(Gc::allocate(mc, Multiname::any(mc)))
+            let mc = context.gc_context;
+            Ok(Gc::new(mc, Multiname::any(mc)))
         } else {
-            self.pool_multiname_static(multiname_index, mc)
+            self.pool_multiname_static(multiname_index, context)
         }
     }
 }
@@ -342,7 +365,7 @@ pub struct Script<'gc>(GcCell<'gc, ScriptData<'gc>>);
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
-struct ScriptData<'gc> {
+pub struct ScriptData<'gc> {
     /// The global object for the script.
     globals: Object<'gc>,
 
@@ -360,6 +383,9 @@ struct ScriptData<'gc> {
 
     /// Whether or not script initialization occurred.
     initialized: bool,
+
+    /// The `TranslationUnit` this script was loaded from.
+    translation_unit: Option<TranslationUnit<'gc>>,
 }
 
 impl<'gc> Script<'gc> {
@@ -378,7 +404,7 @@ impl<'gc> Script<'gc> {
         globals: Object<'gc>,
         domain: Domain<'gc>,
     ) -> Self {
-        Self(GcCell::allocate(
+        Self(GcCell::new(
             mc,
             ScriptData {
                 globals,
@@ -391,6 +417,7 @@ impl<'gc> Script<'gc> {
                 traits: Vec::new(),
                 traits_loaded: true,
                 initialized: false,
+                translation_unit: None,
             },
         ))
     }
@@ -420,7 +447,7 @@ impl<'gc> Script<'gc> {
 
         let init = unit.load_method(script.init_method, false, activation)?;
 
-        Ok(Self(GcCell::allocate(
+        Ok(Self(GcCell::new(
             activation.context.gc_context,
             ScriptData {
                 globals,
@@ -429,6 +456,7 @@ impl<'gc> Script<'gc> {
                 traits: Vec::new(),
                 traits_loaded: false,
                 initialized: false,
+                translation_unit: Some(unit),
             },
         )))
     }
@@ -483,6 +511,14 @@ impl<'gc> Script<'gc> {
         (read.init.clone(), read.globals, read.domain)
     }
 
+    pub fn domain(self) -> Domain<'gc> {
+        self.0.read().domain
+    }
+
+    pub fn translation_unit(self) -> Option<TranslationUnit<'gc>> {
+        self.0.read().translation_unit
+    }
+
     /// Return the global scope for the script.
     ///
     /// If the script has not yet been initialized, this will initialize it on
@@ -511,7 +547,7 @@ impl<'gc> Script<'gc> {
                 None,
                 &mut null_activation,
             )?;
-            globals.install_instance_slots(&mut null_activation);
+            globals.install_instance_slots(context.gc_context);
 
             Avm2::run_script_initializer(*self, context)?;
 

@@ -1,3 +1,4 @@
+use ruffle_render::bitmap::Bitmap;
 use swf::VideoCodec;
 
 /// An encoded video frame of some video codec.
@@ -20,12 +21,8 @@ impl<'a> EncodedFrame<'a> {
     }
 }
 
-/// A decoded frame of video in RGBA format.
-pub struct DecodedFrame {
-    pub width: u16,
-    pub height: u16,
-    pub rgba: Vec<u8>,
-}
+/// A decoded frame of video. It can be in whichever format the decoder chooses.
+pub type DecodedFrame = Bitmap;
 
 /// What dependencies a given video frame has on any previous frames.
 #[derive(Copy, Clone, Debug)]

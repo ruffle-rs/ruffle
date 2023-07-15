@@ -2,7 +2,7 @@
 
 use crate::avm2::value::Value;
 use gc_arena::Collect;
-use std::ops::RangeBounds;
+use std::{cmp::max, ops::RangeBounds};
 
 /// The array storage portion of an array object.
 ///
@@ -152,6 +152,27 @@ impl<'gc> ArrayStorage<'gc> {
            + ExactSizeIterator<Item = Option<Value<'gc>>>
            + 'a {
         self.storage.iter().cloned()
+    }
+
+    /// Remove a value from a specific position in the array.
+    ///
+    /// This function returns None if the index is out of bonds.
+    /// Otherwise, it returns the removed value.
+    ///
+    /// Negative bounds are supported and treated as indexing from the end of
+    /// the array, backwards.
+    pub fn remove(&mut self, position: i32) -> Option<Value<'gc>> {
+        let position = if position < 0 {
+            max(position + self.storage.len() as i32, 0) as usize
+        } else {
+            position as usize
+        };
+
+        if position >= self.storage.len() {
+            None
+        } else {
+            self.storage.remove(position)
+        }
     }
 
     pub fn splice<'a, R, I>(

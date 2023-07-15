@@ -1,0 +1,24 @@
+// actionScriptVersion
+Error: Error #2099: The loading object is not sufficiently loaded to provide this information.
+
+// childAllowsParent
+Error: Error #2099: The loading object is not sufficiently loaded to provide this information.
+
+// frameRate
+Error: Error #2099: The loading object is not sufficiently loaded to provide this information.
+
+// height
+Error: Error #2099: The loading object is not sufficiently loaded to provide this information.
+
+// parentAllowsChild
+Error: Error #2099: The loading object is not sufficiently loaded to provide this information.
+
+// sameDomain
+Error: Error #2099: The loading object is not sufficiently loaded to provide this information.
+
+// swfVersion
+Error: Error #2099: The loading object is not sufficiently loaded to provide this information.
+
+// width
+Error: Error #2099: The loading object is not sufficiently loaded to provide this information.
+

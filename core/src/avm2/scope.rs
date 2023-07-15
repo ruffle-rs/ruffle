@@ -126,7 +126,7 @@ impl<'gc> ScopeChain<'gc> {
                 let mut cloned = container.read().scopes.clone();
                 cloned.extend_from_slice(new_scopes);
                 Self {
-                    container: Some(GcCell::allocate(mc, ScopeContainer::new(cloned))),
+                    container: Some(GcCell::new(mc, ScopeContainer::new(cloned))),
                     domain: self.domain,
                 }
             }
@@ -134,10 +134,7 @@ impl<'gc> ScopeChain<'gc> {
                 // We are chaining on top of an empty ScopeChain, so we don't actually
                 // need to chain anything.
                 Self {
-                    container: Some(GcCell::allocate(
-                        mc,
-                        ScopeContainer::new(new_scopes.to_vec()),
-                    )),
+                    container: Some(GcCell::new(mc, ScopeContainer::new(new_scopes.to_vec()))),
                     domain: self.domain,
                 }
             }

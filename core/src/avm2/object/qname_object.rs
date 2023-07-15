@@ -9,17 +9,17 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use core::fmt;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates QName objects.
-pub fn qname_allocator<'gc>(
+pub fn q_name_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
-    Ok(QNameObject(GcCell::allocate(
+    Ok(QNameObject(GcCell::new(
         activation.context.gc_context,
         QNameObjectData {
             base,
@@ -32,7 +32,11 @@ pub fn qname_allocator<'gc>(
 /// An Object which represents a boxed QName.
 #[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
-pub struct QNameObject<'gc>(GcCell<'gc, QNameObjectData<'gc>>);
+pub struct QNameObject<'gc>(pub GcCell<'gc, QNameObjectData<'gc>>);
+
+#[derive(Collect, Clone, Copy, Debug)]
+#[collect(no_drop)]
+pub struct QNameObjectWeak<'gc>(pub GcWeakCell<'gc, QNameObjectData<'gc>>);
 
 impl fmt::Debug for QNameObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -61,12 +65,12 @@ impl<'gc> QNameObject<'gc> {
         let class = activation.avm2().classes().qname;
         let base = ScriptObjectData::new(class);
 
-        let mut this: Object<'gc> = QNameObject(GcCell::allocate(
+        let mut this: Object<'gc> = QNameObject(GcCell::new(
             activation.context.gc_context,
             QNameObjectData { base, name },
         ))
         .into();
-        this.install_instance_slots(activation);
+        this.install_instance_slots(activation.context.gc_context);
 
         Ok(this)
     }

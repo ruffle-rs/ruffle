@@ -2,6 +2,7 @@
 // written by Kostya Shishkov, with permission.
 
 use crate::decoder::VideoDecoder;
+use ruffle_render::bitmap::BitmapFormat;
 use ruffle_video::error::Error;
 
 use flate2::Decompress;
@@ -189,25 +190,26 @@ impl VideoDecoder for ScreenVideoDecoder {
             return Err(ScreenError::KeyframeInvalid.into());
         }
 
-        let mut rgba = vec![0u8; w * h * 4];
+        let mut rgb = vec![0u8; w * h * 3];
 
-        // convert from BGR to RGBA and flip Y
+        // convert from BGR to RGB and flip Y
         for y in 0..h {
             let data_row = &data[y * w * 3..(y + 1) * w * 3];
-            let rgba_row = &mut rgba[(h - y - 1) * w * 4..(h - y) * w * 4];
+            let rgb_row = &mut rgb[(h - y - 1) * w * 3..(h - y) * w * 3];
 
-            for (bgr, rgba) in data_row.chunks(3).zip(rgba_row.chunks_mut(4)) {
-                rgba.copy_from_slice(&[bgr[2], bgr[1], bgr[0], 255]);
+            for (bgr, rgb) in data_row.chunks(3).zip(rgb_row.chunks_mut(3)) {
+                rgb.copy_from_slice(&[bgr[2], bgr[1], bgr[0]]);
             }
         }
 
         self.last_frame = Some(data);
 
-        Ok(DecodedFrame {
-            width: w as u16,
-            height: h as u16,
-            rgba,
-        })
+        Ok(DecodedFrame::new(
+            w as u32,
+            h as u32,
+            BitmapFormat::Rgb,
+            rgb,
+        ))
     }
 }
 

@@ -66,10 +66,6 @@ jobs:
       - name: Check formatting
         run: cargo fmt --all -- --check
 
-      - name: Lint AS3 playerglobals 
-        if: runner.os == 'Linux' && matrix.rust_version == 'stable'
-        run: cargo run -p build_playerglobal -- lint
-
       - name: Check clippy
         # Don't fail the build for clippy on nightly, since we get a lot of false-positives
         run: cargo clippy --all --all-features --tests ${{ (matrix.rust_version != 'nightly' && '-- -D warnings') || '' }}
@@ -80,7 +76,7 @@ jobs:
           RUSTDOCFLAGS: -D warnings
 
       - name: Run tests with image tests
-        run: cargo test --locked --features imgtests
+        run: cargo test --all --locked --features imgtests
         env:
           XDG_RUNTIME_DIR: '' # dummy value, just to silence warnings about it missing
 

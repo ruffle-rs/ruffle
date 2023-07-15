@@ -14,11 +14,12 @@ As best practice, please also include any source used to make the swf - such as 
 
 # Test Structure
 ## test.toml
-Except for `num_frames`, every other field and section is optional.
+Except for `num_ticks`, every other field and section is optional.
 
 ```toml
-num_frames = 1 # The amount of frames of the swf to run
-sleep_to_meet_frame_rate = false # If true, slow the tick rate to match the movies requested fps rate
+num_ticks = 1 # The amount of frames of the SWF to run.
+tick_rate = 16.666 # The amount of time to process per tick. By default this uses the SWF frame rate.
+sleep_to_meet_frame_rate = false # If true, sleep in between ticks to run at realtime speed. Necessary for some timer tests.
 ignore = false # If true, ignore this test. Please comment why, ideally link to an issue, so we know what's up
 output_path = "output.txt" # Path (relative to the directory containing test.toml) to the expected output
 
@@ -44,4 +45,15 @@ with_video = false # If this test requires a video decoder backend to run.
 [image_comparison]
 tolerance = 0 # The tolerance per pixel channel to be considered "the same". Increase as needed with tests that aren't pixel perfect across platforms.
 max_outliers = 0 # Maximum number of outliers allowed over the given tolerance levels. Increase as needed with tests that aren't pixel perfect across platforms.
+```
+
+## Frame-based tests
+
+Some older tests break with tick timing, so they instead use frames. When `num_frames` is specified, Ruffle's `tick` method will not be called and tick-based processing will not occur. Instead, `run_frame` will be called directly.
+
+Tests that use video or other tick processing must not use `num_frames`, and in general its use is deprecated.
+
+```toml
+num_frames = 1 # The amount of frames of the swf to run
+sleep_to_meet_frame_rate = false # If true, slow the tick rate to match the movies requested fps rate
 ```

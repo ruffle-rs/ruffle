@@ -1,15 +1,51 @@
 {
     "settings_ruffle_enable": {
-        "message": "Riproduci i contenuti Flash in Ruffle"
-    },
-    "settings_page_ignore_optout": {
-        "message": "Riproduci i contenuti Flash anche in siti che disabilitano Ruffle"
+        "message": "Riproduci contenuti Flash in Ruffle"
     },
     "settings_ignore_optout": {
-        "message": "Ignora gli avvertimenti di compatibilità dei siti"
+        "message": "Riproduci contenuti Flash anche su siti che non consentono Ruffle"
     },
     "settings_show_swf_download": {
-        "message": "Mostra l'opzione per scaricare gli SWF nel menu contestuale"
+        "message": "Mostra download SWF nel menu contestuale"
+    },
+    "settings_autostart": {
+        "message": "Riproduci automaticamente senza schermata iniziale (quindi fai clic per disattivare)"
+    },
+    "settings_warn_on_unsupported_content": {
+        "message": "Avviso su contenuti non supportati"
+    },
+    "settings_log_level": {
+        "message": "Livello di registrazione"
+    },
+    "settings_log_level_error": {
+        "message": "Errori"
+    },
+    "settings_log_level_warn": {
+        "message": "Avvisi"
+    },
+    "settings_log_level_info": {
+        "message": "Info"
+    },
+    "settings_max_execution_duration": {
+        "message": "Durata massima consentita di esecuzione ActionScript (in secondi)"
+    },
+    "settings_player_version": {
+        "message": "Numero di versione del Flash Player da emulare (intervallo 1-32)"
+    },
+    "settings_preferred_renderer": {
+        "message": "Renditore preferito"
+    },
+    "settings_preferred_renderer_auto": {
+        "message": "Automatico"
+    },
+    "settings_advanced_options": {
+        "message": "Opzioni avanzate"
+    },
+    "settings_reset": {
+        "message": "Reimposta opzioni"
+    },
+    "settings_reset_confirm": {
+        "message": "Sei sicuro di voler ripristinare le impostazioni di Ruffle ai valori predefiniti originali?"
     },
     "status_init": {
         "message": "Lettura tab corrente…"
@@ -24,13 +60,16 @@
         "message": "Controllo dello stato di Ruffle nella tab corrente…"
     },
     "status_result_running": {
-        "message": "Ruffle é caricato e sta eseguendo contenuti Flash nella tab corrente."
+        "message": "Ruffle è caricato e pronto per eseguire il contenuto Flash sulla scheda corrente."
+    },
+    "status_result_running_protected": {
+        "message": "Ruffle è caricato ed in esecuzione il contenuto Flash che hai richiesto."
     },
     "status_result_optout": {
         "message": "Ruffle non é caricato perché la pagina corrente si é dichiarata incompatibile."
     },
     "status_result_disabled": {
-        "message": "Ruffle non é caricato perché é stato disabilitato dall'utente."
+        "message": "Ruffle non è caricato perché è disabilitato."
     },
     "status_result_error": {
         "message": "C'é stato un errore leggendo lo stato di Ruffle nella tab corrente."

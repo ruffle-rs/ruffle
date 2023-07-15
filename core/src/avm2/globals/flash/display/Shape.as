@@ -1,10 +1,7 @@
 package flash.display {
-    public class Shape extends DisplayObject {
-        public function Shape() {
-            this.init();
-        }
-        private native function init();
 
+    [Ruffle(InstanceAllocator)]
+    public class Shape extends DisplayObject {
         public native function get graphics():Graphics;
 
         internal var _graphics:Graphics;

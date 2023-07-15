@@ -48,7 +48,7 @@ impl<'gc> ValueObject<'gc> {
                 _ => None,
             };
 
-            let obj = ValueObject(GcCell::allocate(
+            let obj = ValueObject(GcCell::new(
                 activation.context.gc_context,
                 ValueObjectData {
                     base: ScriptObject::new(activation.context.gc_context, proto),
@@ -80,7 +80,7 @@ impl<'gc> ValueObject<'gc> {
 
     /// Construct an empty box to be filled by a constructor.
     pub fn empty_box(gc_context: MutationContext<'gc, '_>, proto: Object<'gc>) -> Object<'gc> {
-        ValueObject(GcCell::allocate(
+        ValueObject(GcCell::new(
             gc_context,
             ValueObjectData {
                 base: ScriptObject::new(gc_context, Some(proto)),

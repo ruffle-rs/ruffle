@@ -2,10 +2,9 @@ pub use crate::avm2::Value as Avm2Value;
 pub use crate::display_object::{
     DisplayObject, DisplayObjectContainer, HitTestOptions, TDisplayObject, TDisplayObjectContainer,
 };
-pub use ruffle_render::color_transform::ColorTransform;
 pub use ruffle_render::matrix::Matrix;
 pub use std::ops::{Bound, RangeBounds};
-pub use swf::{CharacterId, Color, Rectangle, Twips};
+pub use swf::{CharacterId, Color, Point, Rectangle, Twips};
 pub use tracing::{error, info, trace, warn};
 
 /// A depth for a Flash display object in AVM1.

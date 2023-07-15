@@ -1,0 +1,8 @@
+Setting mouseEnabled=false for: Second timeline text
+
+Before: secondTimelineText.selectable = true
+After: secondTimelineText.selectable = true
+mouseDown: [object MovieClip] at: 202.45 171.05
+mouseDown: [object TextField] at: 208.45 266.05
+mouseDown: [object Stage] at: 211 373
+mouseDown: [object TextField] at: 375.45 267.05

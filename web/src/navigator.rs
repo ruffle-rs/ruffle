@@ -1,8 +1,9 @@
 //! Navigator backend for web
 use js_sys::{Array, ArrayBuffer, Uint8Array};
 use ruffle_core::backend::navigator::{
-    NavigationMethod, NavigatorBackend, OwnedFuture, Request, Response,
+    NavigationMethod, NavigatorBackend, OpenURLMode, OwnedFuture, Request, Response,
 };
+use ruffle_core::config::NetworkingAccessMode;
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
 use std::borrow::Cow;
@@ -14,22 +15,27 @@ use url::Url;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::{spawn_local, JsFuture};
 use web_sys::{
-    window, Blob, BlobPropertyBag, Request as WebRequest, RequestInit, Response as WebResponse,
+    window, Blob, BlobPropertyBag, HtmlFormElement, HtmlInputElement, Request as WebRequest,
+    RequestInit, Response as WebResponse,
 };
 
 pub struct WebNavigatorBackend {
     log_subscriber: Arc<Layered<WASMLayer, Registry>>,
     allow_script_access: bool,
+    allow_networking: NetworkingAccessMode,
     upgrade_to_https: bool,
     base_url: Option<Url>,
+    open_url_mode: OpenURLMode,
 }
 
 impl WebNavigatorBackend {
     pub fn new(
         allow_script_access: bool,
+        allow_networking: NetworkingAccessMode,
         upgrade_to_https: bool,
         base_url: Option<String>,
         log_subscriber: Arc<Layered<WASMLayer, Registry>>,
+        open_url_mode: OpenURLMode,
     ) -> Self {
         let window = web_sys::window().expect("window()");
 
@@ -66,9 +72,11 @@ impl WebNavigatorBackend {
 
         Self {
             allow_script_access,
+            allow_networking,
             upgrade_to_https,
             base_url,
             log_subscriber,
+            open_url_mode,
         }
     }
 
@@ -86,8 +94,8 @@ impl WebNavigatorBackend {
 impl NavigatorBackend for WebNavigatorBackend {
     fn navigate_to_url(
         &self,
-        url: String,
-        target: String,
+        url: &str,
+        target: &str,
         vars_method: Option<(NavigationMethod, IndexMap<String, String>)>,
     ) {
         // If the URL is empty, ignore the request.
@@ -95,18 +103,60 @@ impl NavigatorBackend for WebNavigatorBackend {
             return;
         }
 
-        let url = self.resolve_url(&url);
+        let url = self.resolve_url(url);
+
+        // If `allowNetworking` is set to `internal` or `none`, block all `navigate_to_url` calls.
+        if self.allow_networking != NetworkingAccessMode::All {
+            tracing::warn!("SWF tried to open a URL, but opening URLs is not allowed");
+            return;
+        }
 
         // If `allowScriptAccess` is disabled, reject the `javascript:` scheme.
-        if let Ok(url) = Url::parse(&url) {
-            if !self.allow_script_access && url.scheme() == "javascript" {
-                tracing::warn!("SWF tried to run a script, but script access is not allowed");
+        // Also reject any attempt to open a URL when `target` is a keyword that affects the current tab.
+        let is_javascript_call = if let Ok(url) = Url::parse(&url) {
+            let is_javascript_scheme = url.scheme() == "javascript";
+            if !self.allow_script_access {
+                if is_javascript_scheme {
+                    tracing::warn!("SWF tried to run a script, but script access is not allowed");
+                    return;
+                } else {
+                    match target.to_lowercase().as_str() {
+                        "_parent" | "_self" | "_top" | "" => {
+                            tracing::warn!("SWF tried to open a URL, but opening URLs in the current tab is prevented by script access");
+                            return;
+                        }
+                        _ => (),
+                    }
+                }
+            }
+            is_javascript_scheme
+        } else {
+            false
+        };
+
+        let window = window().expect("window()");
+
+        if !is_javascript_call {
+            if self.open_url_mode == OpenURLMode::Confirm {
+                let message = format!("The SWF file wants to open the website {}", &url);
+                // TODO: Add a checkbox with a GUI toolkit
+                let confirm = window
+                    .confirm_with_message(&message)
+                    .expect("confirm_with_message()");
+                if !confirm {
+                    tracing::info!(
+                        "SWF tried to open a website, but the user declined the request"
+                    );
+                    return;
+                }
+            } else if self.open_url_mode == OpenURLMode::Deny {
+                tracing::warn!("SWF tried to open a website, but opening a website is not allowed");
                 return;
             }
+            // If the user confirmed or if in `Allow` mode, open the website.
         }
 
         // TODO: Should we return a result for failed opens? Does Flash care?
-        let window = window().expect("window()");
         match vars_method {
             Some((navmethod, formvars)) => {
                 let document = window.document().expect("document()");
@@ -115,34 +165,29 @@ impl NavigatorBackend for WebNavigatorBackend {
                     None => return,
                 };
 
-                let form = document
+                let form: HtmlFormElement = document
                     .create_element("form")
                     .expect("create_element() must succeed")
-                    .dyn_into::<web_sys::HtmlFormElement>()
-                    .expect("create_element('form') didn't give us a form");
+                    .dyn_into()
+                    .expect("create_element(\"form\") didn't give us a form");
 
-                let _ = form.set_attribute(
-                    "method",
-                    match navmethod {
-                        NavigationMethod::Get => "get",
-                        NavigationMethod::Post => "post",
-                    },
-                );
-
-                let _ = form.set_attribute("action", &url);
+                form.set_method(&navmethod.to_string());
+                form.set_action(&url);
 
                 if !target.is_empty() {
-                    let _ = form.set_attribute("target", &target);
+                    form.set_target(target);
                 }
 
-                for (k, v) in formvars.iter() {
-                    let hidden = document
+                for (key, value) in formvars {
+                    let hidden: HtmlInputElement = document
                         .create_element("input")
-                        .expect("create_element() must succeed");
+                        .expect("create_element() must succeed")
+                        .dyn_into()
+                        .expect("create_element(\"input\") didn't give us an input");
 
-                    let _ = hidden.set_attribute("type", "hidden");
-                    let _ = hidden.set_attribute("name", k);
-                    let _ = hidden.set_attribute("value", v);
+                    hidden.set_type("hidden");
+                    hidden.set_name(&key);
+                    hidden.set_value(&value);
 
                     let _ = form.append_child(&hidden);
                 }
@@ -154,7 +199,7 @@ impl NavigatorBackend for WebNavigatorBackend {
                 if target.is_empty() {
                     let _ = window.location().assign(&url);
                 } else {
-                    let _ = window.open_with_url_and_target(&url, &target);
+                    let _ = window.open_with_url_and_target(&url, target);
                 }
             }
         };
@@ -166,50 +211,47 @@ impl NavigatorBackend for WebNavigatorBackend {
         Box::pin(async move {
             let mut init = RequestInit::new();
 
-            init.method(match request.method() {
-                NavigationMethod::Get => "GET",
-                NavigationMethod::Post => "POST",
-            });
+            init.method(&request.method().to_string());
 
             if let Some((data, mime)) = request.body() {
-                let arraydata = ArrayBuffer::new(data.len() as u32);
-                let u8data = Uint8Array::new(&arraydata);
+                let blob = Blob::new_with_buffer_source_sequence_and_options(
+                    &Array::from_iter([Uint8Array::from(data.as_slice()).buffer()]),
+                    BlobPropertyBag::new().type_(mime),
+                )
+                .map_err(|_| Error::FetchError("Got JS error".to_string()))?
+                .dyn_into()
+                .map_err(|_| Error::FetchError("Got JS error".to_string()))?;
 
-                for (i, byte) in data.iter().enumerate() {
-                    u8data.fill(*byte, i as u32, i as u32 + 1);
-                }
-
-                let blobparts = Array::new();
-                blobparts.push(&arraydata);
-
-                let mut blobprops = BlobPropertyBag::new();
-                blobprops.type_(mime);
-
-                let datablob =
-                    Blob::new_with_buffer_source_sequence_and_options(&blobparts, &blobprops)
-                        .map_err(|_| Error::FetchError("Got JS error".to_string()))?
-                        .dyn_into()
-                        .map_err(|_| Error::FetchError("Got JS error".to_string()))?;
-
-                init.body(Some(&datablob));
+                init.body(Some(&blob));
             }
 
-            let request = WebRequest::new_with_str_and_init(&url, &init)
+            let web_request = WebRequest::new_with_str_and_init(&url, &init)
                 .map_err(|_| Error::FetchError(format!("Unable to create request for {url}")))?;
 
+            let headers = web_request.headers();
+
+            for (header_name, header_val) in request.headers() {
+                headers
+                    .set(header_name, header_val)
+                    .map_err(|_| Error::FetchError("Got JS error".to_string()))?;
+            }
+
             let window = web_sys::window().expect("window()");
-            let fetchval = JsFuture::from(window.fetch_with_request(&request))
+            let fetchval = JsFuture::from(window.fetch_with_request(&web_request))
                 .await
                 .map_err(|_| Error::FetchError("Got JS error".to_string()))?;
 
             let response: WebResponse = fetchval
                 .dyn_into()
                 .map_err(|_| Error::FetchError("Fetch result wasn't a WebResponse".to_string()))?;
+            let status = response.status();
+            let redirected = response.redirected();
             if !response.ok() {
-                return Err(Error::FetchError(format!(
-                    "HTTP status is not ok, got {}",
-                    response.status_text()
-                )));
+                return Err(Error::HttpNotOk(
+                    format!("HTTP status is not ok, got {}", response.status_text()),
+                    status,
+                    redirected,
+                ));
             }
 
             let url = response.url();
@@ -229,7 +271,12 @@ impl NavigatorBackend for WebNavigatorBackend {
             })?;
             let body = Uint8Array::new(&body).to_vec();
 
-            Ok(Response { url, body })
+            Ok(Response {
+                url,
+                body,
+                status,
+                redirected,
+            })
         })
     }
 

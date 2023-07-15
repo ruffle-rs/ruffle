@@ -10,7 +10,7 @@ pub fn external_interface_avm1() -> Result<(), libtest_mimic::Failed> {
     set_logger();
     Test::from_options(
         TestOptions {
-            num_frames: 1,
+            num_frames: Some(1),
             ..Default::default()
         },
         Path::new("tests/swfs/avm1/external_interface/"),
@@ -66,7 +66,7 @@ pub fn external_interface_avm2() -> Result<(), libtest_mimic::Failed> {
     set_logger();
     Test::from_options(
         TestOptions {
-            num_frames: 1,
+            num_frames: Some(1),
             ..Default::default()
         },
         Path::new("tests/swfs/avm2/external_interface/"),

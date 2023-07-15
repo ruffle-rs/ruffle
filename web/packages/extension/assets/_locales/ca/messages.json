@@ -1,0 +1,98 @@
+{
+    "settings_ruffle_enable": {
+        "message": "Reprodueix contingut Flash amb Ruffle"
+    },
+    "settings_ignore_optout": {
+        "message": "Reprodueix contingut Flash també a llocs web que prohibeixen Ruffle"
+    },
+    "settings_show_swf_download": {
+        "message": "Permet la baixada de fitxers SWF des del menú contextual"
+    },
+    "settings_autostart": {
+        "message": "Reprodueix automàticament sense pantalla de benvinguda (feu clic per activar el so)"
+    },
+    "settings_warn_on_unsupported_content": {
+        "message": "Mostra un avís en reproduir contingut no suportat"
+    },
+    "settings_log_level": {
+        "message": "Nivell de registre"
+    },
+    "settings_log_level_error": {
+        "message": "Errors"
+    },
+    "settings_log_level_warn": {
+        "message": "Avisos"
+    },
+    "settings_log_level_info": {
+        "message": "Informació"
+    },
+    "settings_max_execution_duration": {
+        "message": "Temps màxim permès per a l'execució d'ActionScript (en segons)"
+    },
+    "settings_player_version": {
+        "message": "Versió del reproductor Flash a emular (valor entre 1 i 32)"
+    },
+    "settings_preferred_renderer": {
+        "message": "Motor de renderització preferit"
+    },
+    "settings_preferred_renderer_auto": {
+        "message": "Automàtic"
+    },
+    "settings_advanced_options": {
+        "message": "Opcions avançades"
+    },
+    "settings_reset": {
+        "message": "Restableix la configuració"
+    },
+    "settings_reset_confirm": {
+        "message": "Esteu segur que voleu restablir Ruffle a la seva configuració per defecte?"
+    },
+    "status_init": {
+        "message": "Llegint la pestanya actual…"
+    },
+    "status_no_tabs": {
+        "message": "No hi ha cap pestanya activa."
+    },
+    "status_tabs_error": {
+        "message": "S'ha produït un error en accedir a la pestanya actual."
+    },
+    "status_message_init": {
+        "message": "Comprovant l'estat de Ruffle a la pestanya actual…"
+    },
+    "status_result_running": {
+        "message": "Ruffle està carregat i llest per a reproduir contingut Flash a la pestanya actual."
+    },
+    "status_result_running_protected": {
+        "message": "Ruffle està carregat i reproduint el contingut que heu demanat."
+    },
+    "status_result_optout": {
+        "message": "Ruffle no s'ha carregat perquè el lloc ha indicat que no hi és compatible."
+    },
+    "status_result_disabled": {
+        "message": "Ruffle no s'ha carregat perquè l'heu desactivat."
+    },
+    "status_result_error": {
+        "message": "S'ha produït un error en consultar la instància de Ruffle a la pestanya actual."
+    },
+    "status_result_protected": {
+        "message": "Ruffle no es pot carregar a llocs protegits del navegador."
+    },
+    "action_reload": {
+        "message": "Recarrega la pestanya per a efectuar els canvis"
+    },
+    "open_settings_page": {
+        "message": "Obre la pàgina de configuració"
+    },
+    "settings_page": {
+        "message": "Pàgina de configuració"
+    },
+    "description": {
+        "message": "Torna el Flash a la xarxa, allà on pertoca."
+    },
+    "save_settings": {
+        "message": "Desa la configuració"
+    },
+    "settings_saved": {
+        "message": "S'ha desat la configuració"
+    }
+}

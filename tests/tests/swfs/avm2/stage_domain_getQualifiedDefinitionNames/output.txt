@@ -1,0 +1,5 @@
+ApplicationDomain.currentDomain.parentDomain: null
+Stage getQualifiedDefinitionNames(): Test,test_fla::MainTimeline
+Stage parent: null
+ApplicationDomain.currentDomain.getQualifiedDefinitionNames(): Test,test_fla::MainTimeline
+ApplicationDomain.currentDomain === ApplicationDomain.currentDomain: false

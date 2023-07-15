@@ -2,7 +2,7 @@
 
 use crate::context::UpdateContext;
 use crate::html::iterators::TextSpanIter;
-use crate::string::{Integer, Units, WStr, WString};
+use crate::string::{Integer, SwfStrExt as _, Units, WStr, WString};
 use crate::tag_utils::SwfMovie;
 use gc_arena::Collect;
 use quick_xml::{escape::escape, events::Event, Reader};
@@ -145,7 +145,7 @@ impl TextFormat {
         let font = et.font_id().and_then(|fid| movie_library.get_font(fid));
         let font_class = et
             .font_class()
-            .map(|s| WString::from_utf8(&s.to_string_lossy(encoding)))
+            .map(|s| s.decode(encoding).into_owned())
             .or_else(|| font.map(|font| WString::from_utf8(font.descriptor().class())))
             .unwrap_or_else(|| WString::from_utf8("Times New Roman"));
         let align = et.layout().map(|l| l.align);
@@ -423,8 +423,8 @@ impl TextSpan {
             self.size = *size;
         }
 
-        if let Some(color) = &tf.color {
-            self.color = color.clone();
+        if let Some(color) = tf.color {
+            self.color = color;
         }
 
         if let Some(align) = &tf.align {
@@ -495,7 +495,7 @@ impl TextSpan {
         TextFormat {
             font: Some(self.font.clone()),
             size: Some(self.size),
-            color: Some(self.color.clone()),
+            color: Some(self.color),
             align: Some(self.align),
             bold: Some(self.bold),
             italic: Some(self.italic),
@@ -606,13 +606,11 @@ impl FormatSpans {
         let mut reader = Reader::from_reader(&raw_bytes[..]);
         reader.expand_empty_elements(true);
         reader.check_end_names(false);
-        let mut buf = Vec::new();
         loop {
-            buf.clear();
-            match reader.read_event(&mut buf) {
+            match reader.read_event() {
                 Ok(Event::Start(ref e)) => {
                     opened_starts.push(opened_buffer.len());
-                    opened_buffer.extend(e.name());
+                    opened_buffer.extend(e.name().into_inner());
 
                     let attributes: Result<Vec<_>, _> = e.attributes().with_checks(false).collect();
                     let attributes = match attributes {
@@ -626,12 +624,13 @@ impl FormatSpans {
                         attributes.iter().find_map(|attribute| {
                             attribute
                                 .key
+                                .into_inner()
                                 .eq_ignore_ascii_case(name)
                                 .then(|| decode_to_wstr(&attribute.value))
                         })
                     };
                     let mut format = format_stack.last().unwrap().clone();
-                    match &e.name().to_ascii_lowercase()[..] {
+                    match &e.name().into_inner().to_ascii_lowercase()[..] {
                         b"br" => {
                             if is_multiline {
                                 text.push_byte(b'\n');
@@ -684,6 +683,7 @@ impl FormatSpans {
                             }
 
                             if let Some(color) = attribute(b"color") {
+                                // FIXME - handle alpha
                                 if color.starts_with(b'#') {
                                     let rval = color
                                         .slice(1..3)
@@ -762,7 +762,7 @@ impl FormatSpans {
                     format_stack.push(format);
                 }
                 Ok(Event::Text(e)) if !e.is_empty() => {
-                    let e = decode_to_wstr(e.escaped());
+                    let e = decode_to_wstr(&e.into_inner());
                     let e = process_html_entity(&e).unwrap_or(e);
                     let format = format_stack.last().unwrap().clone();
                     text.push_str(&e);
@@ -772,7 +772,7 @@ impl FormatSpans {
                     // Check for a mismatch.
                     match opened_starts.last() {
                         Some(start) => {
-                            if e.name() != &opened_buffer[*start..] {
+                            if e.name().into_inner() != &opened_buffer[*start..] {
                                 continue;
                             } else {
                                 opened_buffer.truncate(*start);
@@ -782,7 +782,7 @@ impl FormatSpans {
                         None => continue,
                     }
 
-                    match &e.name().to_ascii_lowercase()[..] {
+                    match &e.name().into_inner().to_ascii_lowercase()[..] {
                         b"br" | b"sbr" => {
                             // Skip pop from `format_stack`.
                             continue;
@@ -1422,16 +1422,17 @@ impl<'a> FormatState<'a> {
                 self.close_tags();
             }
             let encoded = text.to_utf8_lossy();
-            let escaped = escape(encoded.as_bytes());
+            let escaped = escape(&encoded);
 
             if let Cow::Borrowed(_) = &encoded {
                 // Optimization: if the utf8 conversion was a no-op, we know the text is ASCII;
                 // escaping special characters cannot insert new non-ASCII characters, so we can
                 // simply append the bytes directly without converting from UTF8.
-                self.result.push_str(WStr::from_units(&*escaped));
+                self.result.push_str(WStr::from_units(escaped.as_bytes()));
             } else {
                 // TODO: updating our quick_xml fork to upstream will allow removing this UTF8 check.
-                let escaped = std::str::from_utf8(&escaped).expect("escaped text should be utf8");
+                let escaped =
+                    std::str::from_utf8(escaped.as_bytes()).expect("escaped text should be utf8");
                 self.result.push_utf8(escaped);
             }
         }

@@ -61,6 +61,7 @@ CDATA
 ]]>;
 			
 			trace(cdata);
+			trace(cdata.toXMLString());
 			
 var declaration_doctype = new XML("<?xml version = \"1.0\" encoding = \"UTF-8\" standalone = \"yes\" ?> <!DOCTYPE person [<!ELEMENT name (#PCDATA)> ]> <p>Skipped everything else</p>");
 trace(declaration_doctype.toString());
@@ -71,9 +72,17 @@ trace(declaration_doctype.toString());
 			var emptyList1 = new XMLList();
 			var emptyList2 = new XMLList("");
 			trace("Empty lists: " + emptyList1.length() + " " + emptyList2.length());
-			
+
+			var trimmedXML = <a>  
+			foo <b>  
+			bar</b>
+			</a>;
+			XML.prettyPrinting = false;
+			trace("trimmedXML: " + trimmedXML);			
 			// FIXME - enable this when Ruffle throws coercion errors
 			//XML.prototype.name.apply(5);
 		}
 	}
 }
+
+Test.run();

@@ -1,5 +1,6 @@
 import * as utils from "./utils";
-import { Options, bindOptions } from "./common";
+import type { Options } from "./common";
+import { bindOptions } from "./common";
 import { buildInfo } from "ruffle-core";
 
 let activeTab: chrome.tabs.Tab | browser.tabs.Tab;
@@ -13,14 +14,15 @@ let reloadButton: HTMLButtonElement;
 // prettier-ignore
 const STATUS_COLORS = {
     "status_init": "gray",
-    "status_no_tabs": "red",
-    "status_tabs_error": "red",
     "status_message_init": "gray",
-    "status_result_protected": "gray",
-    "status_result_error": "red",
-    "status_result_running": "green",
-    "status_result_optout": "gray",
+    "status_no_tabs": "red",
     "status_result_disabled": "gray",
+    "status_result_error": "red",
+    "status_result_optout": "gray",
+    "status_result_protected": "gray",
+    "status_result_running": "green",
+    "status_result_running_protected": "green",
+    "status_tabs_error": "red",
 };
 
 async function queryTabStatus(
@@ -51,6 +53,19 @@ async function queryTabStatus(
     }
 
     activeTab = tabs[0]!;
+
+    // FIXME: `activeTab.url` returns `undefined` on Chrome as it requires the `tabs`
+    // permission, which we don't set in `manifest.json5` because of #11098.
+    const url = activeTab.url ? new URL(activeTab.url) : null;
+    if (
+        url &&
+        url.origin === window.location.origin &&
+        url.pathname === "/player.html"
+    ) {
+        listener("status_result_running_protected");
+        return;
+    }
+
     listener("status_message_init");
 
     let response;
@@ -82,20 +97,36 @@ async function queryTabStatus(
     optionsChanged();
 }
 
-function objectsEqual<T>(x: NonNullable<T>, y: NonNullable<T>) {
-    for (const [key, value] of Object.entries(x)) {
-        if (y[key as keyof T] !== value) {
-            return false;
-        }
-    }
+/**
+ * Should only be called on data type objects without any "cyclic members" to avoid infinite recursion.
+ */
+function deepEqual(x: unknown, y: unknown): boolean {
+    if (
+        typeof x === "object" &&
+        typeof y === "object" &&
+        x !== null &&
+        y !== null
+    ) {
+        // Two non-null objects.
 
-    for (const [key, value] of Object.entries(y)) {
-        if (x[key as keyof T] !== value) {
-            return false;
+        for (const [key, value] of Object.entries(x)) {
+            if (!deepEqual(value, y[key as keyof typeof y])) {
+                return false;
+            }
         }
-    }
 
-    return true;
+        for (const [key, value] of Object.entries(y)) {
+            if (!deepEqual(value, x[key as keyof typeof x])) {
+                return false;
+            }
+        }
+
+        return true;
+    } else {
+        // Not two non-null objects.
+
+        return x === y;
+    }
 }
 
 function optionsChanged() {
@@ -103,7 +134,7 @@ function optionsChanged() {
         return;
     }
 
-    const isDifferent = !objectsEqual(savedOptions, tabOptions);
+    const isDifferent = !deepEqual(savedOptions, tabOptions);
     reloadButton.disabled = !isDifferent;
 }
 
@@ -134,7 +165,10 @@ window.addEventListener("DOMContentLoaded", () => {
         "options-button"
     ) as HTMLButtonElement;
     optionsButton.textContent = utils.i18n.getMessage("open_settings_page");
-    optionsButton.addEventListener("click", () => utils.openOptionsPage());
+    optionsButton.addEventListener("click", async () => {
+        await utils.openOptionsPage();
+        window.close();
+    });
 
     reloadButton = document.getElementById(
         "reload-button"
@@ -142,10 +176,7 @@ window.addEventListener("DOMContentLoaded", () => {
     reloadButton.textContent = utils.i18n.getMessage("action_reload");
     reloadButton.addEventListener("click", async () => {
         await utils.tabs.reload(activeTab.id!);
-        // TODO: Wait for tab to load?
-        setTimeout(() => {
-            displayTabStatus();
-        }, 1000);
+        window.close();
     });
 
     displayTabStatus();

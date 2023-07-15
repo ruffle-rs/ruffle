@@ -1,6 +1,5 @@
 use crate::bitmap::BitmapSource;
-use crate::shape_utils::{DistilledShape, DrawCommand, DrawPath};
-use enum_map::Enum;
+use crate::shape_utils::{DistilledShape, DrawCommand, DrawPath, GradientType};
 use lyon::path::Path;
 use lyon::tessellation::{
     self,
@@ -42,9 +41,11 @@ impl ShapeTessellator {
         self.lyon_mesh = VertexBuffers::new();
         for path in shape.paths {
             let (fill_style, lyon_path, next_is_stroke) = match &path {
-                DrawPath::Fill { style, commands } => {
-                    (*style, ruffle_path_to_lyon_path(commands, true), false)
-                }
+                DrawPath::Fill {
+                    style,
+                    commands,
+                    winding_rule: _,
+                } => (*style, ruffle_path_to_lyon_path(commands, true), false),
                 DrawPath::Stroke {
                     style,
                     commands,
@@ -57,7 +58,7 @@ impl ShapeTessellator {
             };
 
             let (draw, color, needs_flush) = match fill_style {
-                swf::FillStyle::Color(color) => (DrawType::Color, color.clone(), false),
+                swf::FillStyle::Color(color) => (DrawType::Color, *color, false),
                 swf::FillStyle::LinearGradient(gradient) => (
                     DrawType::Gradient(swf_gradient_to_uniforms(
                         GradientType::Linear,
@@ -133,9 +134,9 @@ impl ShapeTessellator {
             let mut buffers_builder =
                 BuffersBuilder::new(&mut self.lyon_mesh, RuffleVertexCtor { color });
             let result = match path {
-                DrawPath::Fill { .. } => self.fill_tess.tessellate_path(
+                DrawPath::Fill { winding_rule, .. } => self.fill_tess.tessellate_path(
                     &lyon_path,
-                    &FillOptions::even_odd(),
+                    &FillOptions::default().with_fill_rule(winding_rule.into()),
                     &mut buffers_builder,
                 ),
                 DrawPath::Stroke { style, .. } => {
@@ -326,36 +327,36 @@ fn swf_bitmap_to_gl_matrix(
 }
 
 fn ruffle_path_to_lyon_path(commands: &[DrawCommand], is_closed: bool) -> Path {
-    fn point(x: swf::Twips, y: swf::Twips) -> lyon::math::Point {
-        lyon::math::Point::new(x.to_pixels() as f32, y.to_pixels() as f32)
+    fn point(point: swf::Point<swf::Twips>) -> lyon::math::Point {
+        lyon::math::Point::new(point.x.to_pixels() as f32, point.y.to_pixels() as f32)
     }
 
     let mut builder = Path::builder();
-    let mut move_to = Some((swf::Twips::default(), swf::Twips::default()));
-    for cmd in commands {
-        match *cmd {
-            DrawCommand::MoveTo { x, y } => {
-                if move_to.is_none() {
+    let mut cursor = Some(swf::Point::ZERO);
+    for command in commands {
+        match command {
+            DrawCommand::MoveTo(move_to) => {
+                if cursor.is_none() {
                     builder.end(false);
                 }
-                move_to = Some((x, y));
+                cursor = Some(*move_to);
             }
-            DrawCommand::LineTo { x, y } => {
-                if let Some((x, y)) = move_to.take() {
-                    builder.begin(point(x, y));
+            DrawCommand::LineTo(line_to) => {
+                if let Some(cursor) = cursor.take() {
+                    builder.begin(point(cursor));
                 }
-                builder.line_to(point(x, y));
+                builder.line_to(point(*line_to));
             }
-            DrawCommand::CurveTo { x1, y1, x2, y2 } => {
-                if let Some((x, y)) = move_to.take() {
-                    builder.begin(point(x, y));
+            DrawCommand::CurveTo { control, anchor } => {
+                if let Some(cursor) = cursor.take() {
+                    builder.begin(point(cursor));
                 }
-                builder.quadratic_bezier_to(point(x1, y1), point(x2, y2));
+                builder.quadratic_bezier_to(point(*control), point(*anchor));
             }
         }
     }
 
-    if move_to.is_none() {
+    if cursor.is_none() {
         if is_closed {
             builder.close();
         } else {
@@ -391,7 +392,7 @@ impl FillVertexConstructor<Vertex> for RuffleVertexCtor {
         Vertex {
             x: vertex.position().x,
             y: vertex.position().y,
-            color: self.color.clone(),
+            color: self.color,
         }
     }
 }
@@ -401,14 +402,7 @@ impl StrokeVertexConstructor<Vertex> for RuffleVertexCtor {
         Vertex {
             x: vertex.position().x,
             y: vertex.position().y,
-            color: self.color.clone(),
+            color: self.color,
         }
     }
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Enum)]
-pub enum GradientType {
-    Linear,
-    Radial,
-    Focal,
 }

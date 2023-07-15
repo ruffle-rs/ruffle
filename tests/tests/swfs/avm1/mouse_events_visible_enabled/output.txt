@@ -1,0 +1,12 @@
+Step 1: rollOver
+Step 2: rollOut
+Step 3: rollOver
+Step 4: from onEnterFrame
+Step 5: from onEnterFrame
+Step 6: press
+Step 7: releaseOutside
+Step 8: rollOver
+Step 9: press
+Step 10: from onEnterFrame
+Step 11: from onEnterFrame
+Step 12: rollOver

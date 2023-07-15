@@ -1,0 +1,16 @@
+/// frame 0 marked as loaded
+/// frame -43 marked as loaded
+/// _totalframes marked as loaded
+/// _totalframes + 5 marked as loaded
+/// frame Infinity marked as loaded
+/// frame NaN marked as loaded
+/// frame abc marked as loaded
+/// frame undefined marked as loaded
+/// frame null marked as loaded
+/// frame 16000 marked as loaded
+/// frame 16001 marked as loaded
+/// frame 16002.5 marked as loaded
+/// frame 2147483649 marked as loaded
+/// target frame 0 marked as loaded
+/// target frame -43 marked as loaded
+/// target frame Infinity marked as loaded

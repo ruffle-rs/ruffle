@@ -3,14 +3,14 @@ use gc_arena::Collect;
 use ruffle_render::backend::{RenderBackend, ShapeHandle};
 use ruffle_render::bitmap::{BitmapHandle, BitmapInfo, BitmapSize, BitmapSource};
 use ruffle_render::commands::CommandHandler;
-use ruffle_render::shape_utils::{DistilledShape, DrawCommand, DrawPath};
-use std::cell::Cell;
-use swf::{FillStyle, LineStyle, Rectangle, Twips};
+use ruffle_render::shape_utils::{DistilledShape, DrawCommand, DrawPath, FillRule};
+use std::cell::{Cell, RefCell};
+use swf::{FillStyle, LineStyle, Point, Rectangle, Twips};
 
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
 pub struct Drawing {
-    render_handle: Cell<Option<ShapeHandle>>,
+    render_handle: RefCell<Option<ShapeHandle>>,
     shape_bounds: Rectangle<Twips>,
     edge_bounds: Rectangle<Twips>,
     dirty: Cell<bool>,
@@ -19,8 +19,9 @@ pub struct Drawing {
     current_fill: Option<DrawingFill>,
     current_line: Option<DrawingLine>,
     pending_lines: Vec<DrawingLine>,
-    cursor: (Twips, Twips),
-    fill_start: (Twips, Twips),
+    cursor: Point<Twips>,
+    fill_start: Point<Twips>,
+    winding_rule: FillRule,
 }
 
 impl Default for Drawing {
@@ -32,7 +33,7 @@ impl Default for Drawing {
 impl Drawing {
     pub fn new() -> Self {
         Self {
-            render_handle: Cell::new(None),
+            render_handle: RefCell::new(None),
             shape_bounds: Default::default(),
             edge_bounds: Default::default(),
             dirty: Cell::new(false),
@@ -41,14 +42,15 @@ impl Drawing {
             current_fill: None,
             current_line: None,
             pending_lines: Vec::new(),
-            cursor: (Twips::ZERO, Twips::ZERO),
-            fill_start: (Twips::ZERO, Twips::ZERO),
+            cursor: Point::ZERO,
+            fill_start: Point::ZERO,
+            winding_rule: FillRule::EvenOdd,
         }
     }
 
     pub fn from_swf_shape(shape: &swf::Shape) -> Self {
         let mut this = Self {
-            render_handle: Cell::new(None),
+            render_handle: RefCell::new(None),
             shape_bounds: shape.shape_bounds.clone(),
             edge_bounds: shape.edge_bounds.clone(),
             dirty: Cell::new(true),
@@ -57,8 +59,13 @@ impl Drawing {
             current_fill: None,
             current_line: None,
             pending_lines: Vec::new(),
-            cursor: (Twips::ZERO, Twips::ZERO),
-            fill_start: (Twips::ZERO, Twips::ZERO),
+            cursor: Point::ZERO,
+            fill_start: Point::ZERO,
+            winding_rule: if shape.flags.contains(swf::ShapeFlag::NON_ZERO_WINDING_RULE) {
+                FillRule::NonZero
+            } else {
+                FillRule::EvenOdd
+            },
         };
 
         let shape: DistilledShape = shape.into();
@@ -77,7 +84,12 @@ impl Drawing {
 
                     this.set_line_style(None);
                 }
-                DrawPath::Fill { style, commands } => {
+                DrawPath::Fill {
+                    style,
+                    commands,
+                    winding_rule,
+                } => {
+                    this.set_winding_rule(winding_rule);
                     this.set_fill_style(Some(style.clone()));
 
                     for command in commands {
@@ -90,6 +102,27 @@ impl Drawing {
         }
 
         this
+    }
+
+    pub fn copy_from(&mut self, other: &Drawing) {
+        *self = Drawing {
+            render_handle: RefCell::new(None),
+            dirty: Cell::new(true),
+            shape_bounds: other.shape_bounds.clone(),
+            edge_bounds: other.edge_bounds.clone(),
+            paths: other.paths.clone(),
+            bitmaps: other.bitmaps.clone(),
+            current_fill: other.current_fill.clone(),
+            current_line: other.current_line.clone(),
+            pending_lines: other.pending_lines.clone(),
+            cursor: other.cursor,
+            fill_start: other.fill_start,
+            winding_rule: other.winding_rule,
+        }
+    }
+
+    pub fn set_winding_rule(&mut self, rule: FillRule) {
+        self.winding_rule = rule;
     }
 
     pub fn set_fill_style(&mut self, style: Option<FillStyle>) {
@@ -105,20 +138,14 @@ impl Drawing {
             self.paths.push(DrawingPath::Line(existing));
             self.current_line = Some(DrawingLine {
                 style,
-                commands: vec![DrawCommand::MoveTo {
-                    x: self.cursor.0,
-                    y: self.cursor.1,
-                }],
+                commands: vec![DrawCommand::MoveTo(self.cursor)],
                 is_closed: false,
             });
         }
         if let Some(style) = style {
             self.current_fill = Some(DrawingFill {
                 style,
-                commands: vec![DrawCommand::MoveTo {
-                    x: self.cursor.0,
-                    y: self.cursor.1,
-                }],
+                commands: vec![DrawCommand::MoveTo(self.cursor)],
             });
         }
         self.fill_start = self.cursor;
@@ -134,8 +161,8 @@ impl Drawing {
         self.edge_bounds = Default::default();
         self.shape_bounds = Default::default();
         self.dirty.set(true);
-        self.cursor = (Twips::ZERO, Twips::ZERO);
-        self.fill_start = (Twips::ZERO, Twips::ZERO);
+        self.cursor = Point::ZERO;
+        self.fill_start = Point::ZERO;
     }
 
     pub fn set_line_style(&mut self, style: Option<LineStyle>) {
@@ -150,10 +177,7 @@ impl Drawing {
         if let Some(style) = style {
             self.current_line = Some(DrawingLine {
                 style,
-                commands: vec![DrawCommand::MoveTo {
-                    x: self.cursor.0,
-                    y: self.cursor.1,
-                }],
+                commands: vec![DrawCommand::MoveTo(self.cursor)],
                 is_closed: false,
             });
         }
@@ -161,11 +185,17 @@ impl Drawing {
         self.dirty.set(true);
     }
 
+    pub fn set_line_fill_style(&mut self, fill_style: FillStyle) {
+        if let Some(style) = self.current_line.as_ref().map(|l| l.style.clone()) {
+            self.set_line_style(Some(style.with_fill_style(fill_style)));
+        }
+    }
+
     pub fn draw_command(&mut self, command: DrawCommand) {
-        let add_to_bounds = if let DrawCommand::MoveTo { x, y } = command {
+        let add_to_bounds = if let DrawCommand::MoveTo(move_to) = &command {
             // Close any pending fills before moving.
             self.close_path();
-            self.fill_start = (x, y);
+            self.fill_start = *move_to;
             false
         } else {
             true
@@ -187,10 +217,7 @@ impl Drawing {
         if add_to_bounds {
             if self.fill_start == self.cursor {
                 // If this is the initial command after a move, include the starting point.
-                let command = DrawCommand::MoveTo {
-                    x: self.cursor.0,
-                    y: self.cursor.1,
-                };
+                let command = DrawCommand::MoveTo(self.cursor);
                 self.shape_bounds = stretch_bounds(&self.shape_bounds, &command, stroke_width);
                 self.edge_bounds = stretch_bounds(&self.edge_bounds, &command, Twips::ZERO);
             }
@@ -219,6 +246,7 @@ impl Drawing {
                         paths.push(DrawPath::Fill {
                             style: &fill.style,
                             commands: fill.commands.to_owned(),
+                            winding_rule: FillRule::EvenOdd,
                         });
                     }
                     DrawingPath::Line(line) => {
@@ -235,16 +263,14 @@ impl Drawing {
                 paths.push(DrawPath::Fill {
                     style: &fill.style,
                     commands: fill.commands.to_owned(),
+                    winding_rule: FillRule::EvenOdd,
                 })
             }
 
             for line in &self.pending_lines {
                 let mut commands = line.commands.to_owned();
                 let is_closed = if self.current_fill.is_some() {
-                    commands.push(DrawCommand::LineTo {
-                        x: self.fill_start.0,
-                        y: self.fill_start.1,
-                    });
+                    commands.push(DrawCommand::LineTo(self.fill_start));
                     true
                 } else {
                     self.cursor == self.fill_start
@@ -259,10 +285,7 @@ impl Drawing {
             if let Some(line) = &self.current_line {
                 let mut commands = line.commands.to_owned();
                 let is_closed = if self.current_fill.is_some() {
-                    commands.push(DrawCommand::LineTo {
-                        x: self.fill_start.0,
-                        y: self.fill_start.1,
-                    });
+                    commands.push(DrawCommand::LineTo(self.fill_start));
                     true
                 } else {
                     self.cursor == self.fill_start
@@ -280,15 +303,11 @@ impl Drawing {
                 edge_bounds: self.edge_bounds.clone(),
                 id: 0,
             };
-            if let Some(handle) = self.render_handle.get() {
-                context.renderer.replace_shape(shape, self, handle);
-            } else {
-                self.render_handle
-                    .set(Some(context.renderer.register_shape(shape, self)));
-            }
+            self.render_handle
+                .replace(Some(context.renderer.register_shape(shape, self)));
         }
 
-        if let Some(handle) = self.render_handle.get() {
+        if let Some(handle) = self.render_handle.borrow().to_owned() {
             context
                 .commands
                 .render_shape(handle, context.transform_stack.transform());
@@ -301,7 +320,7 @@ impl Drawing {
 
     pub fn hit_test(
         &self,
-        point: (Twips, Twips),
+        point: Point<Twips>,
         local_matrix: &ruffle_render::matrix::Matrix,
     ) -> bool {
         use ruffle_render::shape_utils;
@@ -358,14 +377,8 @@ impl Drawing {
                 && self.cursor != self.fill_start
                 && shape_utils::draw_command_stroke_hit_test(
                     &[
-                        DrawCommand::MoveTo {
-                            x: self.cursor.0,
-                            y: self.cursor.1,
-                        },
-                        DrawCommand::LineTo {
-                            x: self.fill_start.0,
-                            y: self.fill_start.1,
-                        },
+                        DrawCommand::MoveTo(self.cursor),
+                        DrawCommand::LineTo(self.fill_start),
                     ],
                     line.style.width(),
                     point,
@@ -383,16 +396,9 @@ impl Drawing {
     fn close_path(&mut self) {
         if let Some(fill) = &mut self.current_fill {
             if self.cursor != self.fill_start {
-                fill.commands.push(DrawCommand::LineTo {
-                    x: self.fill_start.0,
-                    y: self.fill_start.1,
-                });
-
+                fill.commands.push(DrawCommand::LineTo(self.fill_start));
                 if let Some(line) = &mut self.current_line {
-                    line.commands.push(DrawCommand::LineTo {
-                        x: self.fill_start.0,
-                        y: self.fill_start.1,
-                    });
+                    line.commands.push(DrawCommand::LineTo(self.fill_start));
                 }
                 self.dirty.set(true);
             }
@@ -439,16 +445,13 @@ fn stretch_bounds(
     let radius = stroke_width / 2;
     let bounds = bounds.clone();
     match *command {
-        DrawCommand::MoveTo { x, y } => bounds
-            .encompass(x - radius, y - radius)
-            .encompass(x + radius, y + radius),
-        DrawCommand::LineTo { x, y } => bounds
-            .encompass(x - radius, y - radius)
-            .encompass(x + radius, y + radius),
-        DrawCommand::CurveTo { x1, y1, x2, y2 } => bounds
-            .encompass(x1 - radius, y1 - radius)
-            .encompass(x1 + radius, y1 + radius)
-            .encompass(x2 - radius, y2 - radius)
-            .encompass(x2 + radius, y2 + radius),
+        DrawCommand::MoveTo(point) | DrawCommand::LineTo(point) => bounds
+            .encompass(Point::new(point.x - radius, point.y - radius))
+            .encompass(Point::new(point.x + radius, point.y + radius)),
+        DrawCommand::CurveTo { control, anchor } => bounds
+            .encompass(Point::new(control.x - radius, control.y - radius))
+            .encompass(Point::new(control.x + radius, control.y + radius))
+            .encompass(Point::new(anchor.x - radius, anchor.y - radius))
+            .encompass(Point::new(anchor.x + radius, anchor.y + radius)),
     }
 }

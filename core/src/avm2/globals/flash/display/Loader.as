@@ -1,4 +1,6 @@
 package flash.display {
+
+	[Ruffle(InstanceAllocator)]
 	public class Loader extends DisplayObjectContainer {
 		import flash.display.LoaderInfo;
 		import flash.display.DisplayObject;
@@ -14,12 +16,6 @@ package flash.display {
 			return this._contentLoaderInfo;
 		}
 
-		private native function init();
-
-		public function Loader() {
-			this.init()
-		}
-
 		public function get content():DisplayObject {
 			if (this.numChildren == 0) {
 				return null;
@@ -31,11 +27,10 @@ package flash.display {
 
 		public native function loadBytes(data: ByteArray, context: LoaderContext = null):void;
 		
-		public function unload():void {
-			stub_method("flash.display.Loader", "unload");
-			// Content seems to prefer an error here, over an empty implementation.
-			// https://github.com/ruffle-rs/ruffle/pull/8909
-			throw new Error("flash.display.Loader.unload - not yet implemented");
+		public native function unload():void;
+
+		public function unloadAndStop(gc:Boolean = true):void {
+			stub_method("flash.display.Loader", "unloadAndStop");
 		}
 		
 		public function close():void {

@@ -25,11 +25,8 @@ package flash.utils {
 		public native function set position(value:uint):void;
 
 		public function ByteArray() {
-			this.init();
 			this.objectEncoding = _defaultObjectEncoding;
 		}
-
-		private native function init():void;
 
 		public native function clear():void;
 
@@ -46,9 +43,6 @@ package flash.utils {
 		public native function uncompress(algorithm: String = CompressionAlgorithm.ZLIB): void;
 
 		public native function toString():String;
-		public function toJSON(k:String):String {
-			return "ByteArray"
-		}
 
 		public native function readBoolean():Boolean;
 		public native function readByte():int;
@@ -77,5 +71,10 @@ package flash.utils {
 		public native function writeUTF(value:String):void;
 		public native function writeUTFBytes(value:String):void;
 		public native function writeObject(object:*):void;
+		
+		prototype.toJSON = function(k:String):* {
+			return "ByteArray";
+		}
+		prototype.setPropertyIsEnumerable("toJSON", false);
 	}
 }

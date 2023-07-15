@@ -1,0 +1,36 @@
+simple: <a>abc</a>
+simple == simple: true
+simple == "abc": true
+simple == simple.children()[0] [text]: true
+simple == <a>abc</a> true
+simple == <a hello="world">abc</a> false
+simple == <xxx>abc</xxx> false
+true_XML: <a>true</a>
+true_XML == true: true
+attr: <a hello="world"/>
+attr.@hello == attr.@hello: true
+attr.@hello == "world": true
+attr.@hello == <x>world</x>: true
+attr.@hello == "foobar": false
+attr.@hello == <x><y>world</y></x>: false
+xml: <x><a>a</a><t>true</t><n>123</n><b>b1</b><b>b2</b></x>
+xml == xml: true
+xml_a == xml_a: true
+xml.a == xml.a: true
+xml.a == "a": true
+xml.t == true: true
+xml.n == 123: true
+xml.n == "123": true
+xml.n == 42: false
+xml.b == xml.b: true
+xml.b == xml.a: false
+other: <xxx><y>b1</y><y>b2</y></xxx>
+xml.b == other.y: false
+other2: <xxx><b>b1</b><b>b2</b></xxx>
+xml.b == other2.b: true
+attrs: <x a="b1" b="b2"/>
+attrs == <x a="x1" b="x2" /> false
+attrs == <x b="b2" a="b1" /> true
+xml.b == attrs.attributes(): true
+xml.child("unknown") == undefined: true
+xml.child("unknown") == "": false

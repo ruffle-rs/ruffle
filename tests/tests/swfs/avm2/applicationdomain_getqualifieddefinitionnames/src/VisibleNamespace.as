@@ -1,0 +1,3 @@
+package {
+    public namespace VisibleNamespace;
+}

@@ -1,16 +1,23 @@
-use crate::events::{KeyCode, PlayerEvent};
+use crate::events::{KeyCode, PlayerEvent, TextControlCode};
+use downcast_rs::Downcast;
+use fluent_templates::loader::langid;
+pub use fluent_templates::LanguageIdentifier;
 use std::borrow::Cow;
 use std::collections::HashSet;
 
 pub type FullscreenError = Cow<'static, str>;
+pub static US_ENGLISH: LanguageIdentifier = langid!("en-US");
 
-pub trait UiBackend {
+pub trait UiBackend: Downcast {
     fn mouse_visible(&self) -> bool;
 
     fn set_mouse_visible(&mut self, visible: bool);
 
     /// Changes the mouse cursor image.
     fn set_mouse_cursor(&mut self, cursor: MouseCursor);
+
+    /// Get the clipboard content
+    fn clipboard_content(&mut self) -> String;
 
     /// Sets the clipboard to the given content.
     fn set_clipboard_content(&mut self, content: String);
@@ -31,7 +38,10 @@ pub trait UiBackend {
 
     // Only used on web.
     fn open_virtual_keyboard(&self);
+
+    fn language(&self) -> &LanguageIdentifier;
 }
+impl_downcast!(UiBackend);
 
 /// A mouse cursor icon displayed by the Flash Player.
 /// Communicated from the core to the UI backend via `UiBackend::set_mouse_cursor`.
@@ -58,6 +68,7 @@ pub struct InputManager {
     keys_down: HashSet<KeyCode>,
     last_key: KeyCode,
     last_char: Option<char>,
+    last_text_control: Option<TextControlCode>,
 }
 
 impl InputManager {
@@ -66,6 +77,7 @@ impl InputManager {
             keys_down: HashSet::new(),
             last_key: KeyCode::Unknown,
             last_char: None,
+            last_text_control: None,
         }
     }
 
@@ -92,6 +104,10 @@ impl InputManager {
             PlayerEvent::KeyUp { key_code, key_char } => {
                 self.last_char = key_char;
                 self.remove_key(key_code);
+                self.last_text_control = None;
+            }
+            PlayerEvent::TextControl { code } => {
+                self.last_text_control = Some(code);
             }
             PlayerEvent::MouseDown { button, .. } => self.add_key(button.into()),
             PlayerEvent::MouseUp { button, .. } => self.remove_key(button.into()),
@@ -109,6 +125,10 @@ impl InputManager {
 
     pub fn last_key_char(&self) -> Option<char> {
         self.last_char
+    }
+
+    pub fn last_text_control(&self) -> Option<TextControlCode> {
+        self.last_text_control
     }
 
     pub fn is_mouse_down(&self) -> bool {
@@ -140,6 +160,10 @@ impl UiBackend for NullUiBackend {
 
     fn set_mouse_cursor(&mut self, _cursor: MouseCursor) {}
 
+    fn clipboard_content(&mut self) -> String {
+        "".into()
+    }
+
     fn set_clipboard_content(&mut self, _content: String) {}
 
     fn set_fullscreen(&mut self, _is_full: bool) -> Result<(), FullscreenError> {
@@ -153,6 +177,10 @@ impl UiBackend for NullUiBackend {
     fn message(&self, _message: &str) {}
 
     fn open_virtual_keyboard(&self) {}
+
+    fn language(&self) -> &LanguageIdentifier {
+        &US_ENGLISH
+    }
 }
 
 impl Default for NullUiBackend {

@@ -134,3 +134,7 @@ Attempting to launch and connect to Player using URL I:\Code\ruffle\tests\tests\
 1044.8979591836735
 ///lofisilence_channel.position
 1044.8979591836735
+///var cached_position_channel = silence.start();
+///cached_position_channel.stop()
+///cached_position_channel.position
+0

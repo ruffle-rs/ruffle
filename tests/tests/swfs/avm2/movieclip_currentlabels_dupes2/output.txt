@@ -1,0 +1,31 @@
+//(contents of this.scenes)
+scene "Scene 1" - 1 frames, 0 labels
+scene "Scene 2" - 5 frames, 0 labels
+scene "Scene 2" - 1 frames, 0 labels
+//(contents of this.currentLabels in frame 1)
+//(contents of this.currentLabel and this.currentScene)
+null
+Scene 1
+
+//(contents of this.currentLabels in frame 2)
+//(contents of this.currentLabel and this.currentScene)
+null
+Scene 2
+
+//(contents of this.currentLabel and this.currentScene in frame 3)
+null
+Scene 2
+//(contents of this.currentLabel and this.currentScene in frame 4)
+null
+Scene 2
+//(contents of this.currentLabel and this.currentScene in frame 5)
+null
+Scene 2
+//(contents of this.currentLabel and this.currentScene in frame 6)
+null
+Scene 2
+//(contents of this.currentLabels in frame 7)
+//(contents of this.currentLabel and this.currentScene)
+null
+Scene 2
+

@@ -1,0 +1,15 @@
+trailingNull: ABC
+trailingNull.toString().length = 4
+readWithNull: ABC
+readWithNull.length: 3
+readWithNullUTFBytes: ABC
+readWithNullUTFBytes.length: 3
+Multiple null: ABCDEFGHI
+multipleNull.toString().length = 12
+readWithMultipleNull: ABC
+readWithmultipleNull.length: 3
+readWithMultipleNullUTFBytes: ABC
+readWithMultipleNullUTFBytes.length: 3
+readWithLenPrefix: ABC
+readWithLenPrefix.length: 3
+Caught error: Error: Error #2030: End of file was encountered.

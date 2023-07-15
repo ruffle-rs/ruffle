@@ -1,7 +1,6 @@
 //! Object representation for Error objects
 
 use crate::avm2::activation::Activation;
-#[cfg(feature = "avm_debug")]
 use crate::avm2::call_stack::CallStack;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
@@ -10,9 +9,10 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::string::WString;
 use core::fmt;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
+use tracing::{enabled, Level};
 
 /// A class instance allocator that allocates Error objects.
 pub fn error_allocator<'gc>(
@@ -21,12 +21,13 @@ pub fn error_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
-    Ok(ErrorObject(GcCell::allocate(
+    Ok(ErrorObject(GcCell::new(
         activation.context.gc_context,
         ErrorObjectData {
             base,
-            #[cfg(feature = "avm_debug")]
-            call_stack: activation.avm2().call_stack().read().clone(),
+            call_stack: (enabled!(Level::INFO) || cfg!(feature = "avm_debug"))
+                .then(|| activation.avm2().call_stack().read().clone())
+                .unwrap_or_default(),
         },
     ))
     .into())
@@ -34,7 +35,11 @@ pub fn error_allocator<'gc>(
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct ErrorObject<'gc>(GcCell<'gc, ErrorObjectData<'gc>>);
+pub struct ErrorObject<'gc>(pub GcCell<'gc, ErrorObjectData<'gc>>);
+
+#[derive(Clone, Collect, Copy, Debug)]
+#[collect(no_drop)]
+pub struct ErrorObjectWeak<'gc>(pub GcWeakCell<'gc, ErrorObjectData<'gc>>);
 
 impl fmt::Debug for ErrorObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -51,51 +56,55 @@ pub struct ErrorObjectData<'gc> {
     /// Base script object
     base: ScriptObjectData<'gc>,
 
-    #[cfg(feature = "avm_debug")]
     call_stack: CallStack<'gc>,
 }
 
 impl<'gc> ErrorObject<'gc> {
-    pub fn display(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<AvmString<'gc>, Error<'gc>> {
-        let name = self
-            .get_public_property("name", activation)?
-            .coerce_to_string(activation)?;
-        let message = self
-            .get_public_property("message", activation)?
-            .coerce_to_string(activation)?;
+    pub fn display(&self) -> Result<WString, Error<'gc>> {
+        // FIXME - we should have a safer way of accessing properties without
+        // an `Activation`. For now, we just access the 'name' and 'message' fields
+        // by hardcoded slot id. Our `Error` class definition should fully match
+        // Flash Player, and we have lots of test coverage around error, so
+        // there should be very little risk to doing this.
+        let name = match self.base().get_slot(1)? {
+            Value::String(string) => string,
+            Value::Null => "null".into(),
+            Value::Undefined => "undefined".into(),
+            name => {
+                return Err(Error::RustError(
+                    format!("Error.name {name:?} is not a string on error object {self:?}",).into(),
+                ))
+            }
+        };
+        let message = match self.base().get_slot(2)? {
+            Value::String(string) => string,
+            Value::Null => "null".into(),
+            Value::Undefined => "undefined".into(),
+            message => {
+                return Err(Error::RustError(
+                    format!("Error.message {message:?} is not a string on error object {self:?}")
+                        .into(),
+                ))
+            }
+        };
         if message.is_empty() {
-            return Ok(name);
+            return Ok(name.as_wstr().to_owned());
         }
+
         let mut output = WString::new();
         output.push_str(&name);
         output.push_utf8(": ");
         output.push_str(&message);
-        Ok(AvmString::new(activation.context.gc_context, output))
+        Ok(output)
     }
 
-    #[cfg(feature = "avm_debug")]
-    pub fn display_full(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<AvmString<'gc>, Error<'gc>> {
+    pub fn display_full(&self) -> Result<WString, Error<'gc>> {
         let mut output = WString::new();
-        output.push_str(&self.display(activation)?);
+        output.push_str(&self.display()?);
         self.call_stack().display(&mut output);
-        Ok(AvmString::new(activation.context.gc_context, output))
+        Ok(output)
     }
 
-    #[cfg(not(feature = "avm_debug"))]
-    pub fn display_full(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<AvmString<'gc>, Error<'gc>> {
-        self.display(activation)
-    }
-
-    #[cfg(feature = "avm_debug")]
     fn call_stack(&self) -> Ref<CallStack<'gc>> {
         Ref::map(self.0.read(), |r| &r.call_stack)
     }
@@ -131,7 +140,7 @@ impl<'gc> TObject<'gc> for ErrorObject<'gc> {
     }
 
     fn to_string(&self, activation: &mut Activation<'_, 'gc>) -> Result<Value<'gc>, Error<'gc>> {
-        Ok(self.display(activation)?.into())
+        Ok(AvmString::new(activation.context.gc_context, self.display()?).into())
     }
 
     fn as_error_object(&self) -> Option<ErrorObject<'gc>> {

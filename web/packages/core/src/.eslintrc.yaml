@@ -3,15 +3,13 @@ env:
 plugins:
   - jsdoc
 extends:
-  - plugin:jsdoc/recommended
+  - plugin:jsdoc/recommended-typescript-error
 rules:
-  jsdoc/no-types: error
-  jsdoc/require-returns-type: 'off'
-  jsdoc/require-param-type: 'off'
-  jsdoc/check-tag-names:
-    - warn
-    - definedTags:
-        - internal
+  jsdoc/tag-lines:
+    - error
+    - always
+    - count: 0
+      startLines: 1
 settings:
   jsdoc:
     ignorePrivate: true

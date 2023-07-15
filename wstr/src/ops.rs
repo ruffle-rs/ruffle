@@ -150,8 +150,11 @@ pub fn str_cmp_ignore_case(left: &WStr, right: &WStr) -> core::cmp::Ordering {
 }
 
 pub fn str_hash<H: Hasher>(s: &WStr, state: &mut H) {
+    state.write_u32(s.len() as u32);
     match s.units() {
-        Units::Bytes(us) => state.write(us),
+        // Using `state.write_bytes(us)` would be incorrect here, as `Hash`
+        // doesn't guarantee any equivalence between its various methods.
+        Units::Bytes(us) => us.iter().for_each(|u| state.write_u8(*u)),
         Units::Wide(us) => us.iter().for_each(|u| {
             if *u <= 0xFF {
                 state.write_u8(*u as u8)
@@ -160,7 +163,6 @@ pub fn str_hash<H: Hasher>(s: &WStr, state: &mut H) {
             }
         }),
     }
-    state.write_u8(0xff);
 }
 
 pub fn str_offset_in(s: &WStr, other: &WStr) -> Option<usize> {
@@ -198,6 +200,19 @@ fn map_latin1_chars(s: &WStr, mut map: impl FnMut(u8) -> u8) -> WString {
 
 pub fn str_to_ascii_lowercase(s: &WStr) -> WString {
     map_latin1_chars(s, |c| c.to_ascii_lowercase())
+}
+
+pub fn str_make_ascii_lowercase(s: &mut WStr) {
+    match s.units_mut() {
+        Units::Bytes(us) => us.make_ascii_lowercase(),
+        Units::Wide(us) => {
+            for c in us {
+                if let Ok(b) = u8::try_from(*c) {
+                    *c = b.to_ascii_lowercase().into();
+                }
+            }
+        }
+    }
 }
 
 pub fn str_is_latin1(s: &WStr) -> bool {
@@ -255,7 +270,7 @@ pub fn str_repeat(s: &WStr, count: usize) -> WString {
     }
 
     let len = s.len().saturating_mul(count);
-    if len > super::MAX_STRING_LEN {
+    if len > WStr::MAX_LEN {
         super::panic_on_invalid_length(len);
     }
 

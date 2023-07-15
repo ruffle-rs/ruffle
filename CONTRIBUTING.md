@@ -9,6 +9,7 @@ This document serves as a general guide for contributing to Ruffle. Follow your 
 * [Getting Started](#getting-started)
 * [Ways to Contribute](#ways-to-contribute)
     * [Test your favorite Flash content](#test-your-favorite-flash-content)
+    * [Translate Ruffle to your language](#translate-ruffle-to-your-language)
     * [Improve documentation](#improve-documentation)
     * [Fix interesting issues](#fix-interesting-issues)
     * [Implement missing Flash functionality](#implement-missing-flash-functionality)
@@ -25,6 +26,14 @@ The [Ruffle wiki](https://github.com/ruffle-rs/ruffle/wiki) is a great way to fa
 
 Feel free to ask questions in our [Discord server](https://discord.gg/ruffle).
 
+## Reverse Engineering requirements
+
+Ruffle does not use any proprietary knowledge or code, and is built entirely upon either inspecting the output of Flash Player, or by consulting license-compatible libraries such as [avmplus](https://github.com/adobe/avmplus).
+
+It is strictly forbidden to decompile Flash Player, Flash Professional, Adobe Animate, or any other software that does not explicitly permit doing so. Any contributions to Ruffle must be re-licensable to MIT/Apache and obtained through legitimate methods.
+
+If you're unsure if something is allowed, ask in our [Discord server](https://discord.gg/ruffle)! The rule of thumb though is that if you made it, and you didn't decompile anything to get there, it's probably fine!
+
 ## Ways to Contribute
 
 We love new contributors! You can contribute to Ruffle in several ways:
@@ -34,6 +43,12 @@ We love new contributors! You can contribute to Ruffle in several ways:
 Try out your favorite SWF content in Ruffle and see how it works! Follow the instructions on the [Using Ruffle](https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle) page to get Ruffle for your desired platform. You can run the SWF through the desktop player, the web demo, or try the extension on live websites.
 
 If you encounter specific issues with content, please follow the guidelines on filing an issue.
+
+### Translate Ruffle to your language
+
+We use Crowdin to manage the translations of Ruffle into various languages. You can [view the project](https://crowdin.com/project/ruffle/) and help make sure your language is nicely translated.
+
+If your native language isn't listed on there, ask us in Discord and we may be able to add it as a new supported language!
 
 ### Improve documentation
 
@@ -78,6 +93,8 @@ it is that you're looking for.
 The hotkey <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>V</kbd> dumps every variable inside the AVM at the moment you press it.
 This can be very useful to inspect the internal state of games and see, for example, if a coordinate is NaN, your lives
 are negative, or maybe an important object just didn't get initialized.
+
+This currently only works for AVM1. We'd [welcome a PR to change that](https://github.com/ruffle-rs/ruffle/issues/8951)!
 
 ### Render Tree Dumping
 
@@ -140,13 +157,31 @@ Specific warnings and clippy lints can be allowed when appropriate using attribu
 
 ## Test Guidelines
 
+Most tests are SWF-based, with the SWFs stored in `tests/tests/swfs/`. They are configured in `tests/tests/regression_tests.rs`. Most test SWFs include `trace()` statements, the output of which is compared to the expected output from Flash Player. To view the output from Flash Player, first download the [debug Flash Player](https://web.archive.org/web/20220401020702/https://www.adobe.com/support/flashplayer/debug_downloads.html) for your platform. Then create a plain text file called `mm.cfg` with the following contents:
+```
+ErrorReportingEnable=1
+TraceOutputFileEnable=1
+```
+Place the file at the following location:
+* Windows: `%USERPROFILE%`
+* MacOS: `/Library/Application Support/Macromedia/`
+* Linux: `$HOME`
+
+When you run a test SWF, trace output will appear in a file called `flashlog.txt` at the following location:
+* Windows: `%APPDATA%\Macromedia\Flash Player\Logs\`
+* MacOS: `~/Library/Preferences/Macromedia/Flash Player/Logs/`
+* Linux: `$HOME/.macromedia/Flash_Player/Logs/`
+
+There are several ways to create your own test SWFs, which are listed in the sections below. 
+Once you have an `.swf`, run it in the debug Flash Player and copy the output of the trace statements into a file called `output.txt`. Add the `output.txt`, `test.swf` and either the `test.as` or `test.fla` file to a directory under `tests/tests/swfs/avm1` (or `avm2`) named after what your test tests.
+
+Finally, add a `test.toml` in the same directory to control how the test is run - such as how many frames it should take or if we should compare the image it generates. See [tests/README.md](tests/README.md) for information on what the test.toml should look like.
+
+Running `cargo test [your test]` from within the `tests` folder will run the `.swf` in Ruffle and compare the `trace()` output against `output.txt`. To run all of the tests in all workspaces, run `cargo test --all`.
+
+Some tests also compare Ruffle's visual output to an expected image. To properly run these tests, add the argument `--features imgtests`.
+
 Heavily algorithmic code may benefit from unit tests in Rust: create a module `mod tests` conditionally compiled with `#[cfg(test)]`, and add your tests in there.
-
-Most tests are SWF-based, with the SWFs stored in `tests/tests/swfs/`. They are configured in `tests/tests/regression_tests.rs`. To add a new test, create an `.swf` that runs `trace()` statements. You can do this in several ways, listed below.
-
-Once you have an `.swf`, run it in Flash Player and create a file `output.txt` with the contents of the trace statements. Add the `output.txt`, `test.swf` and either the `test.as` or `test.fla` file to a directory under `tests/tests/swfs/avm1` (or `avm2`) named after what your test tests, and add a line in `regression_tests.rs` to have Ruffle run it.
-
-Running `cargo test [your test]` will run the `.swf` in Ruffle and compare the `trace()` output against `output.txt`.
 
 ### Flash authoring tool
 

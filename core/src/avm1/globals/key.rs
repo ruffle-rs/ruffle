@@ -3,8 +3,8 @@ use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, Value};
+use crate::context::GcContext;
 use crate::events::KeyCode;
-use gc_arena::MutationContext;
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "ALT" => int(KeyCode::Alt as i32; DONT_ENUM | DONT_DELETE | READ_ONLY);
@@ -66,14 +66,14 @@ pub fn get_code<'gc>(
 }
 
 pub fn create_key_object<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
     broadcaster_functions: BroadcasterFunctions<'gc>,
     array_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let key = ScriptObject::new(gc_context, Some(proto));
-    broadcaster_functions.initialize(gc_context, key.into(), array_proto);
-    define_properties_on(OBJECT_DECLS, gc_context, key, fn_proto);
+    let key = ScriptObject::new(context.gc_context, Some(proto));
+    broadcaster_functions.initialize(context.gc_context, key.into(), array_proto);
+    define_properties_on(OBJECT_DECLS, context, key, fn_proto);
     key.into()
 }

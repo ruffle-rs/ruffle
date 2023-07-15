@@ -1,14 +1,14 @@
 //! Object representation for XML objects
 
 use crate::avm2::activation::Activation;
-use crate::avm2::e4x::{E4XNode, E4XNodeKind};
+use crate::avm2::e4x::{name_to_multiname, E4XNode, E4XNodeKind};
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject, XmlListObject};
 use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::{Error, Multiname};
 use core::fmt;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
 use super::xml_list_object::E4XOrXml;
@@ -21,7 +21,7 @@ pub fn xml_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
-    Ok(XmlObject(GcCell::allocate(
+    Ok(XmlObject(GcCell::new(
         activation.context.gc_context,
         XmlObjectData {
             base,
@@ -33,7 +33,11 @@ pub fn xml_allocator<'gc>(
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct XmlObject<'gc>(GcCell<'gc, XmlObjectData<'gc>>);
+pub struct XmlObject<'gc>(pub GcCell<'gc, XmlObjectData<'gc>>);
+
+#[derive(Clone, Collect, Copy, Debug)]
+#[collect(no_drop)]
+pub struct XmlObjectWeak<'gc>(pub GcWeakCell<'gc, XmlObjectData<'gc>>);
 
 impl fmt::Debug for XmlObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -54,7 +58,7 @@ pub struct XmlObjectData<'gc> {
 
 impl<'gc> XmlObject<'gc> {
     pub fn new(node: E4XNode<'gc>, activation: &mut Activation<'_, 'gc>) -> Self {
-        XmlObject(GcCell::allocate(
+        XmlObject(GcCell::new(
             activation.context.gc_context,
             XmlObjectData {
                 base: ScriptObjectData::new(activation.context.avm2.classes().xml),
@@ -76,6 +80,65 @@ impl<'gc> XmlObject<'gc> {
 
     pub fn node(&self) -> Ref<'_, E4XNode<'gc>> {
         Ref::map(self.0.read(), |data| &data.node)
+    }
+
+    pub fn equals(
+        &self,
+        other: &Value<'gc>,
+        _activation: &mut Activation<'_, 'gc>,
+    ) -> Result<bool, Error<'gc>> {
+        // 1. If Type(V) is not XML, return false.
+        let other = if let Some(xml_obj) = other.as_object().and_then(|obj| obj.as_xml_object()) {
+            xml_obj
+        } else {
+            return Ok(false);
+        };
+
+        // It seems like an XML object should always be equal to itself
+        if Object::ptr_eq(*self, other) {
+            return Ok(true);
+        }
+
+        let node = other.node();
+        Ok(self.node().equals(&node))
+    }
+
+    // Implements "The Abstract Equality Comparison Algorithm" as defined
+    // in ECMA-357 when one side is an XML type (object).
+    pub fn abstract_eq(
+        &self,
+        other: &Value<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<bool, Error<'gc>> {
+        // 3.a. If both x and y are the same type (XML)
+        if let Value::Object(obj) = other {
+            if let Some(xml_obj) = obj.as_xml_object() {
+                if (matches!(
+                    &*self.node().kind(),
+                    E4XNodeKind::Text(_) | E4XNodeKind::CData(_) | E4XNodeKind::Attribute(_)
+                ) && xml_obj.node().has_simple_content())
+                    || (matches!(
+                        &*xml_obj.node().kind(),
+                        E4XNodeKind::Text(_) | E4XNodeKind::CData(_) | E4XNodeKind::Attribute(_)
+                    ) && self.node().has_simple_content())
+                {
+                    return Ok(self.node().xml_to_string(activation)?
+                        == xml_obj.node().xml_to_string(activation)?);
+                }
+
+                return self.equals(other, activation);
+            }
+        }
+
+        // 4. If (Type(x) is XML) and x.hasSimpleContent() == true)
+        if self.node().has_simple_content() {
+            return Ok(
+                self.node().xml_to_string(activation)? == other.coerce_to_string(activation)?
+            );
+        }
+
+        // It seems like everything else will just ultimately fall-through to the last step.
+        Ok(false)
     }
 }
 
@@ -108,7 +171,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         // FIXME - implement everything from E4X spec (XMLObject::getMultinameProperty in avmplus)
         let read = self.0.read();
 
-        if name.contains_public_namespace() {
+        if !name.has_explicit_namespace() {
             if let Some(local_name) = name.local_name() {
                 // The only supported numerical index is 0
                 if let Ok(index) = local_name.parse::<usize>() {
@@ -187,7 +250,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
 
         return method
             .as_callable(activation, Some(multiname), Some(self.into()))?
-            .call(Some(self.into()), arguments, activation);
+            .call(self.into(), arguments, activation);
     }
 
     fn has_own_property(self, name: &Multiname<'gc>) -> bool {
@@ -195,7 +258,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
 
         // FIXME - see if we can deduplicate this with get_property_local in
         // an efficient way
-        if name.contains_public_namespace() {
+        if !name.has_explicit_namespace() {
             if let Some(local_name) = name.local_name() {
                 // The only supported numerical index is 0
                 if let Ok(index) = local_name.parse::<usize>() {
@@ -220,12 +283,139 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         read.base.has_own_dynamic_property(name)
     }
 
+    fn has_own_property_string(
+        self,
+        name: impl Into<AvmString<'gc>>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<bool, Error<'gc>> {
+        let name = name_to_multiname(activation, &Value::String(name.into()), false)?;
+        Ok(self.has_own_property(&name))
+    }
+
     fn set_property_local(
         self,
         name: &Multiname<'gc>,
         value: Value<'gc>,
-        _activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        Err(format!("Modifying an XML object is not yet implemented: {name:?} = {value:?}").into())
+        if name.has_explicit_namespace() {
+            return Err(format!(
+                "Can not set property {:?} with an explicit namespace yet",
+                name
+            )
+            .into());
+        }
+
+        let mc = activation.context.gc_context;
+
+        if name.is_attribute() {
+            self.delete_property_local(activation, name)?;
+            if let Some(obj) = value.as_object() {
+                if obj.as_xml_object().is_some() || obj.as_xml_list_object().is_some() {
+                    return Err(format!(
+                        "Cannot set an XML/XMLList object {:?} as an attribute",
+                        obj
+                    )
+                    .into());
+                }
+            }
+            let Some(local_name) = name.local_name() else {
+                return Err(format!("Cannot set attribute {:?} without a local name", name).into());
+            };
+            let value = value.coerce_to_string(activation)?;
+            let new_attr = E4XNode::attribute(mc, local_name, value, *self.node());
+
+            let write = self.0.write(mc);
+            let mut kind = write.node.kind_mut(mc);
+            let E4XNodeKind::Element { attributes, .. } = &mut *kind else {
+                return Ok(());
+            };
+
+            attributes.push(new_attr);
+            return Ok(());
+        }
+
+        let self_node = *self.node();
+        let write = self.0.write(mc);
+        let mut kind = write.node.kind_mut(mc);
+        let E4XNodeKind::Element { children, .. } = &mut *kind else {
+            return Ok(());
+        };
+
+        if value.as_object().map_or(false, |obj| {
+            obj.as_xml_object().is_some() || obj.as_xml_list_object().is_some()
+        }) {
+            return Err(
+                format!("Cannot set an XML/XMLList object {value:?} as an element yet").into(),
+            );
+        }
+
+        if name.is_any_name() {
+            return Err("Any name (*) not yet implemented for set".into());
+        }
+
+        let text = value.coerce_to_string(activation)?;
+
+        let matches: Vec<_> = children
+            .iter()
+            .filter(|child| child.matches_name(name))
+            .collect();
+        match matches.as_slice() {
+            [] => {
+                let element_with_text =
+                    E4XNode::element(mc, name.local_name().unwrap(), write.node);
+                element_with_text.append_child(mc, E4XNode::text(mc, text, Some(self_node)))?;
+                children.push(element_with_text);
+                Ok(())
+            }
+            [child] => {
+                child.remove_all_children(mc);
+                child.append_child(mc, E4XNode::text(mc, text, Some(self_node)))?;
+                Ok(())
+            }
+            _ => Err(format!("Can not replace multiple elements yet: {name:?} = {value:?}").into()),
+        }
+    }
+
+    fn delete_property_local(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        name: &Multiname<'gc>,
+    ) -> Result<bool, Error<'gc>> {
+        if name.has_explicit_namespace() {
+            return Err(format!(
+                "Can not set property {:?} with an explicit namespace yet",
+                name
+            )
+            .into());
+        }
+
+        let mc = activation.context.gc_context;
+        let write = self.0.write(mc);
+        let mut kind = write.node.kind_mut(mc);
+        let E4XNodeKind::Element {
+            children,
+            attributes,
+            ..
+        } = &mut *kind
+        else {
+            return Ok(false);
+        };
+
+        let retain_non_matching = |node: &E4XNode<'gc>| {
+            if node.matches_name(name) {
+                node.set_parent(None, mc);
+                false
+            } else {
+                true
+            }
+        };
+
+        if name.is_attribute() {
+            attributes.retain(retain_non_matching);
+        } else {
+            children.retain(retain_non_matching);
+        }
+        Ok(true)
     }
 }

@@ -1,4 +1,5 @@
 pub mod bitmap_data;
+pub mod operations;
 pub mod turbulence;
 
 /// Determine if a particular bitmap data size is valid.

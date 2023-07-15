@@ -1,0 +1,8 @@
+// xml.parent()
+undefined
+// foo.parent()
+<x><foo foo="foo"><bar><baz>baz1</baz></bar></foo></x>
+// bar.parent()
+<foo foo="foo"><bar><baz>baz1</baz></bar></foo>
+// baz.parent()
+<bar><baz>baz1</baz></bar>

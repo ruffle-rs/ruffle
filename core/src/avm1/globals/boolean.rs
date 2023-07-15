@@ -6,8 +6,8 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, TObject, Value};
+use crate::context::GcContext;
 use crate::string::AvmString;
-use gc_arena::MutationContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "toString" => method(to_string; DONT_ENUM | DONT_DELETE);
@@ -46,12 +46,12 @@ pub fn boolean_function<'gc>(
 }
 
 pub fn create_boolean_object<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    context: &mut GcContext<'_, 'gc>,
     boolean_proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     FunctionObject::constructor(
-        gc_context,
+        context.gc_context,
         Executable::Native(constructor),
         Executable::Native(boolean_function),
         fn_proto,
@@ -61,13 +61,13 @@ pub fn create_boolean_object<'gc>(
 
 /// Creates `Boolean.prototype`.
 pub fn create_proto<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let boolean_proto = ValueObject::empty_box(gc_context, proto);
+    let boolean_proto = ValueObject::empty_box(context.gc_context, proto);
     let object = boolean_proto.raw_script_object();
-    define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
+    define_properties_on(PROTO_DECLS, context, object, fn_proto);
     boolean_proto
 }
 

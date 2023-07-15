@@ -31,7 +31,7 @@ impl fmt::Debug for SharedObject<'_> {
 
 impl<'gc> SharedObject<'gc> {
     pub fn empty_shared_obj(gc_context: MutationContext<'gc, '_>, proto: Object<'gc>) -> Self {
-        SharedObject(GcCell::allocate(
+        SharedObject(GcCell::new(
             gc_context,
             SharedObjectData {
                 base: ScriptObject::new(gc_context, Some(proto)),

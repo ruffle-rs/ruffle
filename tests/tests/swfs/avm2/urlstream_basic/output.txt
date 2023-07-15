@@ -1,0 +1,5 @@
+Event: open event: [Event type="open" bubbles=false cancelable=false eventPhase=2] bytesAvailable: 0
+Event: progress event: [ProgressEvent type="progress" bubbles=false cancelable=false eventPhase=2 bytesLoaded=31 bytesTotal=31] bytesAvailable: 31
+Event: complete event: [Event type="complete" bubbles=false cancelable=false eventPhase=2] bytesAvailable: 31
+Read string: This is a string from a file
+Bytes available: 0

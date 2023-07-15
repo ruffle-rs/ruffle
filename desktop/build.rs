@@ -1,52 +1,44 @@
 use std::env;
-use std::fs::File;
-use std::io::Write;
-use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::error::Error;
+use vergen::EmitBuilder;
 
-fn main() {
-    // This build script to generate Git version info is from the rustfmt project
-
-    // Only check .git/HEAD dirty status if it exists - doing so when
-    // building dependent crates may lead to false positives and rebuilds
-    println!("cargo:rerun-if-changed=build.rs");
-    if Path::new(".git/HEAD").exists() {
-        println!("cargo:rerun-if-changed=.git/HEAD");
-    }
+fn main() -> Result<(), Box<dyn Error>> {
+    // Emit version info, and "rerun-if-changed" for relevant files, including build.rs
+    EmitBuilder::builder()
+        .build_timestamp()
+        .cargo_features()
+        .git_sha(false)
+        .git_commit_timestamp()
+        .git_commit_date()
+        .emit()?;
 
     // Embed resource file w/ icon on windows
     // To allow for cross-compilation, this must not be behind cfg(windows)!
     println!("cargo:rerun-if-changed=assets/ruffle_desktop.rc");
-    embed_resource::compile("assets/ruffle_desktop.rc");
+    embed_resource::compile("assets/ruffle_desktop.rc", embed_resource::NONE);
 
     println!("cargo:rerun-if-env-changed=CFG_RELEASE_CHANNEL");
-    if option_env!("CFG_RELEASE_CHANNEL").map_or(true, |c| c == "nightly" || c == "dev") {
+    let channel = channel();
+    if channel == "nightly" || channel == "dev" {
         println!("cargo:rustc-cfg=nightly");
     }
+    println!("cargo:rustc-env=CFG_RELEASE_CHANNEL={channel}");
 
-    let out_dir: PathBuf = env::var_os("OUT_DIR")
-        .expect("OUT_DIR environment variable must be set and valid")
-        .into();
-
-    File::create(out_dir.join("version-info.txt"))
-        .expect("Must be able to create a file in OUT_DIR")
-        .write_all(commit_info().as_bytes())
-        .expect("Must be able to write to OUT_DIR");
-}
-
-// Try to get hash and date of the last commit on a best effort basis. If anything goes wrong
-// (git not installed or if this is not a git repository) just return an empty string.
-fn commit_info() -> String {
-    match (channel(), commit_hash(), commit_date()) {
-        (channel, Some(hash), Some(date)) => format!(
-            "{}-{} ({} {})",
-            option_env!("CARGO_PKG_VERSION").unwrap_or("unknown"),
-            channel,
-            hash.trim_end(),
-            date
-        ),
-        _ => String::new(),
+    // Some SWFS have a large amount of recursion (particularly
+    // around `goto`s). Increase the stack size on Windows
+    // accommodate this (the default on Linux is high enough). We
+    // do the same thing for wasm in web/build.rs.
+    if std::env::var("TARGET").unwrap().contains("windows") {
+        if std::env::var("TARGET").unwrap().contains("msvc") {
+            println!("cargo:rustc-link-arg=/STACK:4000000");
+        } else {
+            println!("cargo:rustc-link-arg=-Xlinker");
+            println!("cargo:rustc-link-arg=--stack");
+            println!("cargo:rustc-link-arg=4000000");
+        }
     }
+
+    Ok(())
 }
 
 fn channel() -> String {
@@ -55,20 +47,4 @@ fn channel() -> String {
     } else {
         "nightly".to_owned()
     }
-}
-
-fn commit_hash() -> Option<String> {
-    Command::new("git")
-        .args(["rev-parse", "--short", "HEAD"])
-        .output()
-        .ok()
-        .and_then(|r| String::from_utf8(r.stdout).ok())
-}
-
-fn commit_date() -> Option<String> {
-    Command::new("git")
-        .args(["log", "-1", "--date=short", "--pretty=format:%cd"])
-        .output()
-        .ok()
-        .and_then(|r| String::from_utf8(r.stdout).ok())
 }

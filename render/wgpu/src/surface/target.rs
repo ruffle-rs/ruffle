@@ -1,12 +1,11 @@
 use crate::backend::RenderTargetMode;
-use crate::buffer_pool::{PoolEntry, TexturePool};
+use crate::buffer_pool::{AlwaysCompatible, PoolEntry, TexturePool};
 use crate::descriptors::Descriptors;
 use crate::globals::Globals;
-use crate::surface::commands::run_copy_pipeline;
 use crate::utils::create_buffer_with_data;
+use crate::utils::run_copy_pipeline;
 use crate::Transforms;
-use once_cell::race::OnceBool;
-use once_cell::sync::OnceCell;
+use std::cell::OnceCell;
 use std::sync::Arc;
 
 #[derive(Debug)]
@@ -28,6 +27,7 @@ impl ResolveBuffer {
         }
     }
 
+    #[allow(dead_code)]
     pub fn new_manual(texture: Arc<wgpu::Texture>) -> Self {
         Self {
             texture: PoolOrArcTexture::Manual((
@@ -68,7 +68,7 @@ pub struct FrameBuffer {
 /// (when rendering to the main screen), or rendering to a non-pooled `Texture`
 /// (when doing an offscreen render to a BitmapData texture)
 pub enum PoolOrArcTexture {
-    Pool(PoolEntry<(wgpu::Texture, wgpu::TextureView)>),
+    Pool(PoolEntry<(wgpu::Texture, wgpu::TextureView), AlwaysCompatible>),
     Manual((Arc<wgpu::Texture>, wgpu::TextureView)),
 }
 
@@ -98,6 +98,7 @@ impl FrameBuffer {
         }
     }
 
+    #[allow(dead_code)]
     pub fn new_manual(texture: Arc<wgpu::Texture>, size: wgpu::Extent3d) -> Self {
         Self {
             texture: PoolOrArcTexture::Manual((
@@ -133,7 +134,7 @@ impl FrameBuffer {
 
 #[derive(Debug)]
 pub struct BlendBuffer {
-    texture: PoolEntry<(wgpu::Texture, wgpu::TextureView)>,
+    texture: PoolEntry<(wgpu::Texture, wgpu::TextureView), AlwaysCompatible>,
 }
 
 impl BlendBuffer {
@@ -160,7 +161,7 @@ impl BlendBuffer {
 
 #[derive(Debug)]
 pub struct DepthBuffer {
-    texture: PoolEntry<(wgpu::Texture, wgpu::TextureView)>,
+    texture: PoolEntry<(wgpu::Texture, wgpu::TextureView), AlwaysCompatible>,
 }
 
 impl DepthBuffer {
@@ -196,7 +197,7 @@ pub struct CommandTarget {
     format: wgpu::TextureFormat,
     sample_count: u32,
     whole_frame_bind_group: OnceCell<(wgpu::Buffer, wgpu::BindGroup)>,
-    color_needs_clear: OnceBool,
+    color_needs_clear: OnceCell<bool>,
     render_target_mode: RenderTargetMode,
 }
 
@@ -232,13 +233,22 @@ impl CommandTarget {
 
         let whole_frame_bind_group = OnceCell::new();
 
-        let (frame_buffer, resolve_buffer) = match &render_target_mode {
-            // In `FreshBuffer` mode, get a new frame buffer (and resolve buffer, if necessary)
-            // from the pool. They will be cleared with the provided clear color
-            // in `color_attachments`
-            RenderTargetMode::FreshBuffer(_) => {
-                let frame_buffer = make_pooled_frame_buffer();
-                let resolve_buffer = if sample_count > 1 {
+        let (frame_buffer, resolve_buffer) =
+            if let RenderTargetMode::ExistingWithColor(texture, _) = &render_target_mode {
+                if sample_count > 1 {
+                    (
+                        make_pooled_frame_buffer(),
+                        Some(ResolveBuffer::new_manual(texture.clone())),
+                    )
+                } else {
+                    (
+                        FrameBuffer::new_manual(texture.clone(), texture.size()),
+                        None,
+                    )
+                }
+            } else if sample_count > 1 {
+                (
+                    make_pooled_frame_buffer(),
                     Some(ResolveBuffer::new(
                         descriptors,
                         size,
@@ -248,50 +258,46 @@ impl CommandTarget {
                             | wgpu::TextureUsages::TEXTURE_BINDING
                             | wgpu::TextureUsages::RENDER_ATTACHMENT,
                         pool,
-                    ))
-                } else {
-                    None
-                };
-                (frame_buffer, resolve_buffer)
-            }
-            // In `ExistingTexture` mode, we will use an existing texture
-            // as either the frame buffer or resolve buffer.
-            RenderTargetMode::ExistingTexture(texture) => {
-                if sample_count > 1 {
-                    // The exising texture always has a sample count of 1,
-                    // so we need to create a new texture for the multisampled frame
-                    // buffer. Our existing texture will be used as the resolve buffer,
-                    // which is downsampled from the frame buffer.
-                    let frame_buffer = make_pooled_frame_buffer();
+                    )),
+                )
+            } else {
+                (make_pooled_frame_buffer(), None)
+            };
 
-                    // Both our frame buffer and resolve buffer need to start out
-                    // in the same state, so copy our existing texture to the freshly
-                    // allocated frame buffer. We cannot use `copy_texture_to_texture`,
-                    // since the sample counts are different.
-                    run_copy_pipeline(
-                        descriptors,
-                        format,
-                        format,
-                        size,
-                        frame_buffer.texture.view(),
-                        &texture.create_view(&Default::default()),
-                        get_whole_frame_bind_group(&whole_frame_bind_group, descriptors, size),
-                        &globals,
-                        sample_count,
-                        encoder,
-                    );
-
-                    (
-                        frame_buffer,
-                        Some(ResolveBuffer::new_manual(texture.clone())),
-                    )
-                } else {
-                    // If multisampling is disabled, we don't need a resolve buffer.
-                    // We can just use our existing texture as the frame buffer.
-                    (FrameBuffer::new_manual(texture.clone(), size), None)
-                }
+        if let RenderTargetMode::FreshWithTexture(texture) = &render_target_mode {
+            if let Some(resolve_buffer) = &resolve_buffer {
+                encoder.copy_texture_to_texture(
+                    texture.as_image_copy(),
+                    resolve_buffer.texture().as_image_copy(),
+                    size,
+                );
             }
-        };
+
+            if sample_count > 1 {
+                // Both our frame buffer and resolve buffer need to start out
+                // in the same state, so copy our existing texture to the freshly
+                // allocated frame buffer. We cannot use `copy_texture_to_texture`,
+                // since the sample counts are different.
+                run_copy_pipeline(
+                    descriptors,
+                    format,
+                    format,
+                    size,
+                    frame_buffer.texture.view(),
+                    &texture.create_view(&Default::default()),
+                    get_whole_frame_bind_group(&whole_frame_bind_group, descriptors, size),
+                    &globals,
+                    sample_count,
+                    encoder,
+                );
+            } else {
+                encoder.copy_texture_to_texture(
+                    texture.as_image_copy(),
+                    frame_buffer.texture().as_image_copy(),
+                    size,
+                );
+            }
+        }
 
         Self {
             frame_buffer,
@@ -303,7 +309,7 @@ impl CommandTarget {
             format,
             sample_count,
             whole_frame_bind_group,
-            color_needs_clear: OnceBool::new(),
+            color_needs_clear: OnceCell::new(),
             render_target_mode,
         }
     }
@@ -320,9 +326,9 @@ impl CommandTarget {
         if self.color_needs_clear.get().is_some() {
             return;
         }
-        // If we don't have ClearType::Color (we have ClearType::Texture),
+        // If we aren't clearing with a color (eg a texture instead)
         // the there's no point in creating a new render pass that does nothing.
-        if let RenderTargetMode::FreshBuffer(_) = self.render_target_mode {
+        if self.render_target_mode.color().is_some() {
             encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: create_debug_label!("Clearing command target").as_deref(),
                 color_attachments: &[self.color_attachments()],
@@ -348,8 +354,8 @@ impl CommandTarget {
     pub fn color_attachments(&self) -> Option<wgpu::RenderPassColorAttachment> {
         let mut load = wgpu::LoadOp::Load;
         if self.color_needs_clear.set(false).is_ok() {
-            if let RenderTargetMode::FreshBuffer(clear_color) = &self.render_target_mode {
-                load = wgpu::LoadOp::Clear(*clear_color);
+            if let Some(clear_color) = self.render_target_mode.color() {
+                load = wgpu::LoadOp::Clear(clear_color);
             }
         }
         Some(wgpu::RenderPassColorAttachment {

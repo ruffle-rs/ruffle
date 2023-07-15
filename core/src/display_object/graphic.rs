@@ -59,11 +59,11 @@ impl<'gc> Graphic<'gc> {
             movie,
         };
 
-        Graphic(GcCell::allocate(
+        Graphic(GcCell::new(
             context.gc_context,
             GraphicData {
                 base: Default::default(),
-                static_data: gc_arena::Gc::allocate(context.gc_context, static_data),
+                static_data: gc_arena::Gc::new(context.gc_context, static_data),
                 avm2_object: None,
                 drawing: None,
             },
@@ -71,10 +71,7 @@ impl<'gc> Graphic<'gc> {
     }
 
     /// Construct an empty `Graphic`.
-    pub fn new_with_avm2(
-        context: &mut UpdateContext<'_, 'gc>,
-        avm2_object: Avm2Object<'gc>,
-    ) -> Self {
+    pub fn empty(context: &mut UpdateContext<'_, 'gc>) -> Self {
         let static_data = GraphicStatic {
             id: 0,
             bounds: Default::default(),
@@ -95,12 +92,12 @@ impl<'gc> Graphic<'gc> {
         };
         let drawing = Drawing::new();
 
-        Graphic(GcCell::allocate(
+        Graphic(GcCell::new(
             context.gc_context,
             GraphicData {
                 base: Default::default(),
-                static_data: gc_arena::Gc::allocate(context.gc_context, static_data),
-                avm2_object: Some(avm2_object),
+                static_data: gc_arena::Gc::new(context.gc_context, static_data),
+                avm2_object: None,
                 drawing: Some(drawing),
             },
         ))
@@ -123,7 +120,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
     }
 
     fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc> {
-        Self(GcCell::allocate(gc_context, self.0.read().clone())).into()
+        Self(GcCell::new(gc_context, self.0.read().clone())).into()
     }
 
     fn as_ptr(&self) -> *const DisplayObjectPtr {
@@ -176,6 +173,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         } else {
             tracing::warn!("PlaceObject: expected Graphic at character ID {}", id);
         }
+        self.invalidate_cached_bitmap(context.gc_context);
     }
 
     fn run_frame_avm1(&self, _context: &mut UpdateContext) {
@@ -190,7 +188,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
 
         if let Some(drawing) = &self.0.read().drawing {
             drawing.render(context);
-        } else if let Some(render_handle) = self.0.read().static_data.render_handle {
+        } else if let Some(render_handle) = self.0.read().static_data.render_handle.clone() {
             context
                 .commands
                 .render_shape(render_handle, context.transform_stack.transform())
@@ -200,12 +198,16 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
     fn hit_test_shape(
         &self,
         _context: &mut UpdateContext<'_, 'gc>,
-        point: (Twips, Twips),
-        _options: HitTestOptions,
+        point: Point<Twips>,
+        options: HitTestOptions,
     ) -> bool {
         // Transform point to local coordinates and test.
-        if self.world_bounds().contains(point) {
-            let local_matrix = self.global_to_local_matrix();
+        if (!options.contains(HitTestOptions::SKIP_INVISIBLE) || self.visible())
+            && self.world_bounds().contains(point)
+        {
+            let Some(local_matrix) = self.global_to_local_matrix() else {
+                return false;
+            };
             let point = local_matrix * point;
             if let Some(drawing) = &self.0.read().drawing {
                 if drawing.hit_test(point, &local_matrix) {

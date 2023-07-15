@@ -6,7 +6,9 @@
 import flash.net.URLLoader;
 import flash.net.URLRequest;
 import flash.net.URLLoaderDataFormat;
+import flash.events.HTTPStatusEvent;
 import flash.events.IOErrorEvent;
+import flash.events.ProgressEvent;
 import flash.events.Event;
 import flash.utils.setInterval;
 import flash.utils.clearInterval;
@@ -18,8 +20,10 @@ var missingRequest:URLRequest = new URLRequest("missingFile.bin");
 
 var urlLoader:URLLoader = new URLLoader();
 urlLoader.addEventListener(Event.OPEN, on_open);
+urlLoader.addEventListener(ProgressEvent.PROGRESS, on_progress)
 urlLoader.addEventListener(Event.COMPLETE, on_complete);
 urlLoader.addEventListener(IOErrorEvent.IO_ERROR, on_error);
+urlLoader.addEventListener(HTTPStatusEvent.HTTP_STATUS, on_status);
 urlLoader.load(txtRequest);
 
 var state = "first";
@@ -27,6 +31,14 @@ var state = "first";
 function on_open(evt: Event):void {
 	trace("Event.OPEN with: ", evt.target)
 	trace("Got data: " + evt.target.data);
+}
+
+function on_progress(evt: Event):void {
+	trace("Event.PROGRESS: " + evt);
+}
+
+function on_status(evt: HTTPStatusEvent):void {
+	trace("HTTPStatusEvent.HTTP_STATUS: " + evt);
 }
 
 function on_complete(evt:Event):void {

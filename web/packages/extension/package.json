@@ -4,8 +4,9 @@
     "description": "Extension packaging for Ruffle Flash emulator",
     "license": "(MIT OR Apache-2.0)",
     "private": true,
+    "type": "module",
     "scripts": {
-        "build": "npm run build:generic && npm run build:firefox",
+        "build": "tsc -p jsconfig.json && npm run build:generic && npm run build:firefox",
         "build:generic": "webpack --env generic && node tools/inject_plugin_polyfill.js && node tools/zip.js dist/ruffle_extension.zip",
         "build:firefox": "webpack --env firefox && node tools/inject_plugin_polyfill.js && node tools/zip.js dist/firefox_unsigned.xpi && npm run sign-firefox",
         "sign-firefox": "node tools/sign_xpi.js dist/firefox_unsigned.xpi dist/firefox.xpi ../../../reproducible-source.zip"
@@ -14,15 +15,20 @@
         "ruffle-core": "^0.1.0"
     },
     "devDependencies": {
-        "@tsconfig/strictest": "^1.0.2",
-        "@types/chrome": "^0.0.222",
-        "@types/firefox-webext-browser": "^111.0.0",
+        "@tsconfig/strictest": "^2.0.1",
+        "@types/archiver": "^5.3.2",
+        "@types/chrome": "^0.0.239",
+        "@types/common-tags": "^1.8.1",
+        "@types/firefox-webext-browser": "^111.0.1",
+        "@types/jsonwebtoken": "^9.0.2",
+        "@types/mz": "^2.7.4",
+        "@types/request": "^2.48.8",
         "archiver": "^5.3.1",
         "json5": "^2.2.3",
-        "sign-addon": "^5.3.0",
+        "sign-addon": "^6.0.0",
         "temp-dir": "^3.0.0",
-        "ts-loader": "^9.4.2",
-        "typescript": "^4.9.5",
-        "webpack-cli": "^5.0.1"
+        "ts-loader": "^9.4.4",
+        "typescript": "^5.1.6",
+        "webpack-cli": "^5.1.4"
     }
 }

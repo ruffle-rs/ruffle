@@ -4,7 +4,9 @@ package flash.display {
     import flash.geom.Point;
     import flash.geom.Matrix;
     import flash.filters.BitmapFilter;
+    import flash.filters.ShaderFilter;
     import flash.utils.ByteArray;
+    import __ruffle__.stub_method;
 
     [Ruffle(InstanceAllocator)]
     public class BitmapData implements IBitmapDrawable {
@@ -28,6 +30,7 @@ package flash.display {
         public native function setPixel(x:int, y:int, color:uint):void;
         public native function setPixel32(x:int, y:int, color:uint):void;
         public native function setPixels(rect:Rectangle, inputByteArray:ByteArray):void;
+        public native function setVector(rect:Rectangle, inputVector:Vector.<uint>):void;
         public native function copyChannel(sourceBitmapData:BitmapData, sourceRect:Rectangle, destPoint:Point, sourceChannel:uint, destChannel:uint):void;
         public native function floodFill(x:int, y:int, color:uint):void;
         public native function noise(randomSeed:int, low:uint = 0, high:uint = 255, channelOptions:uint = 7, grayScale:Boolean = false):void;
@@ -50,8 +53,28 @@ package flash.display {
         public native function dispose():void;
         public native function applyFilter(sourceBitmapData:BitmapData, sourceRect:Rectangle, destPoint:Point, filter:BitmapFilter):void;
         public native function clone():BitmapData;
+        public native function paletteMap(
+            sourceBitmapData:BitmapData, sourceRect:Rectangle, destPoint:Point, redArray:Array = null, greenArray:Array = null, blueArray:Array = null, alphaArray:Array = null
+        ):void;
         public native function perlinNoise(
             baseX:Number, baseY:Number, numOctaves:uint, randomSeed:int, stitch:Boolean, fractalNoise:Boolean, channelOptions:uint = 7, grayScale:Boolean = false, offsets:Array = null
         ):void;
+        public native function threshold(
+            sourceBitmapData:BitmapData, sourceRect:Rectangle, destPoint:Point, operation:String, threshold:uint, color:uint = 0, mask:uint = 0xFFFFFFFF, copySource:Boolean = false
+        ):uint;
+        public native function compare(otherBitmapData:BitmapData):Object;
+        public native function pixelDissolve(
+            sourceBitmapData:BitmapData, sourceRect:Rectangle, destPoint:Point, randomSeed:int = 0, numPixels:int = 0,
+            fillColor:uint = 0
+        ):int;
+
+        public function generateFilterRect(sourceRect:Rectangle, filter:BitmapFilter):Rectangle {
+            // Flash always reports that a ShaderFilter affects the entire BitampData, ignoring SourceRect.
+            if (filter is ShaderFilter) {
+                return this.rect.clone();
+            }
+            stub_method("flash.display.BitmapData", "generateFilterRect");
+            return sourceRect.clone();
+        }
     }
 }

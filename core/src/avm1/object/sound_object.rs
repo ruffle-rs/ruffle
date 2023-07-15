@@ -61,7 +61,7 @@ impl<'gc> SoundObject<'gc> {
         gc_context: MutationContext<'gc, '_>,
         proto: Object<'gc>,
     ) -> SoundObject<'gc> {
-        SoundObject(GcCell::allocate(
+        SoundObject(GcCell::new(
             gc_context,
             SoundObjectData {
                 base: ScriptObject::new(gc_context, Some(proto)),

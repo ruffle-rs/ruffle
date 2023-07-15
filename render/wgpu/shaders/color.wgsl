@@ -23,17 +23,14 @@ struct VertexOutput {
 fn main_vertex(in: VertexInput) -> VertexOutput {
     #if use_push_constants == true
         var transforms = pc.transforms;
+        var colorTransforms = pc.colorTransforms;
     #endif
     let pos = common::globals.view_matrix * transforms.world_matrix * vec4<f32>(in.position.x, in.position.y, 0.0, 1.0);
-    return VertexOutput(pos, in.color);
+    let color = saturate(in.color * colorTransforms.mult_color + colorTransforms.add_color);
+    return VertexOutput(pos, vec4<f32>(color.rgb * color.a, color.a));
 }
 
 @fragment
 fn main_fragment(in: VertexOutput) -> @location(0) vec4<f32> {
-    #if use_push_constants == true
-        var colorTransforms = pc.colorTransforms;
-    #endif
-    let color = saturate(in.color * colorTransforms.mult_color + colorTransforms.add_color);
-    let alpha = saturate(color.a);
-    return vec4<f32>(color.rgb * alpha, alpha);
+    return in.color;
 }

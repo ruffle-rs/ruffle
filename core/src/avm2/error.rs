@@ -3,11 +3,12 @@ use crate::avm2::Activation;
 use crate::avm2::AvmString;
 use crate::avm2::Multiname;
 use crate::avm2::Value;
+use std::fmt::Debug;
+use std::mem::size_of;
 
 use super::ClassObject;
 
 /// An error generated while handling AVM2 logic
-#[derive(Debug)]
 pub enum Error<'gc> {
     /// A thrown error. This can be produced by an explicit 'throw'
     /// opcode, or by a native implementation that throws an exception.
@@ -19,18 +20,31 @@ pub enum Error<'gc> {
     RustError(Box<dyn std::error::Error>),
 }
 
+impl<'gc> Debug for Error<'gc> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Error::AvmError(error) = self {
+            if let Some(error) = error.as_object().and_then(|obj| obj.as_error_object()) {
+                return write!(
+                    f,
+                    "{}",
+                    error.display_full().expect("Failed to display error")
+                );
+            }
+        }
+
+        match self {
+            Error::AvmError(error) => write!(f, "AvmError({:?})", error),
+            Error::RustError(error) => write!(f, "RustError({:?})", error),
+        }
+    }
+}
+
 // This type is used very frequently, so make sure it doesn't unexpectedly grow.
-// For now, we only test on Nightly, since a new niche optimization was recently
-// added (https://github.com/rust-lang/rust/pull/94075) that shrinks the size
-// relative to stable.
+#[cfg(target_family = "wasm")]
+const _: () = assert!(size_of::<Result<Value<'_>, Error<'_>>>() == 24);
 
-#[rustversion::nightly]
-#[cfg(target_arch = "wasm32")]
-static_assertions::assert_eq_size!(Result<Value<'_>, Error<'_>>, [u8; 24]);
-
-#[rustversion::nightly]
 #[cfg(target_pointer_width = "64")]
-static_assertions::assert_eq_size!(Result<Value<'_>, Error<'_>>, [u8; 32]);
+const _: () = assert!(size_of::<Result<Value<'_>, Error<'_>>>() == 32);
 
 #[inline(never)]
 #[cold]
@@ -69,6 +83,7 @@ pub fn make_null_or_undefined_error<'gc>(
 pub enum ReferenceErrorCode {
     AssignToMethod = 1037,
     InvalidWrite = 1056,
+    InvalidLookup = 1065,
     InvalidRead = 1069,
     WriteToReadOnly = 1074,
     ReadFromWriteOnly = 1077,
@@ -100,6 +115,7 @@ pub fn make_reference_error<'gc>(
         ReferenceErrorCode::InvalidWrite => format!(
             "Error #1056: Cannot create property {qualified_name} on {class_name}.",
         ),
+        ReferenceErrorCode::InvalidLookup => format!("Error #1065: Variable {qualified_name} is not defined."),
         ReferenceErrorCode::InvalidRead => format!(
             "Error #1069: Property {qualified_name} not found on {class_name} and there is no default value.",
         ),
@@ -117,6 +133,23 @@ pub fn make_reference_error<'gc>(
     let class = activation.avm2().classes().referenceerror;
     let error = error_constructor(activation, class, &msg, code as u32);
     match error {
+        Ok(err) => Error::AvmError(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_2008<'gc>(activation: &mut Activation<'_, 'gc>, param_name: &str) -> Error<'gc> {
+    let err = argument_error(
+        activation,
+        &format!(
+            "Error #2008: Parameter {} must be one of the accepted values.",
+            param_name
+        ),
+        2008,
+    );
+    match err {
         Ok(err) => Error::AvmError(err),
         Err(err) => err,
     }
@@ -199,6 +232,39 @@ pub fn eof_error<'gc>(
     error_constructor(activation, class, message, code)
 }
 
+#[inline(never)]
+#[cold]
+pub fn uri_error<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    message: &str,
+    code: u32,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let class = activation.avm2().classes().urierror;
+    error_constructor(activation, class, message, code)
+}
+
+#[inline(never)]
+#[cold]
+pub fn syntax_error<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    message: &str,
+    code: u32,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let class = activation.avm2().classes().syntaxerror;
+    error_constructor(activation, class, message, code)
+}
+
+#[inline(never)]
+#[cold]
+pub fn error<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    message: &str,
+    code: u32,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let class = activation.avm2().classes().error;
+    error_constructor(activation, class, message, code)
+}
+
 fn error_constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
     class: ClassObject<'gc>,
@@ -236,14 +302,6 @@ impl<'gc> From<String> for Error<'gc> {
 
 impl<'gc> From<ruffle_render::error::Error> for Error<'gc> {
     fn from(val: ruffle_render::error::Error) -> Error<'gc> {
-        Error::RustError(val.into())
-    }
-}
-
-// TODO - Remove this, and convert `quick_xml` errors into AVM errors,
-// specific to the XML method that was original invoked.
-impl<'gc> From<quick_xml::Error> for Error<'gc> {
-    fn from(val: quick_xml::Error) -> Error<'gc> {
         Error::RustError(val.into())
     }
 }

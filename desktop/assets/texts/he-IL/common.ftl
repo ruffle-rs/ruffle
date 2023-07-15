@@ -1,0 +1,2 @@
+start = התחל
+browse = סייר

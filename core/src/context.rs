@@ -3,7 +3,7 @@
 use crate::avm1::Avm1;
 use crate::avm1::SystemProperties;
 use crate::avm1::{Object as Avm1Object, Value as Avm1Value};
-use crate::avm2::{Avm2, Object as Avm2Object, SoundChannelObject, Value as Avm2Value};
+use crate::avm2::{Avm2, Object as Avm2Object, SoundChannelObject};
 use crate::backend::{
     audio::{AudioBackend, AudioManager, SoundHandle, SoundInstanceHandle},
     log::LogBackend,
@@ -20,20 +20,51 @@ use crate::library::Library;
 use crate::loader::LoadManager;
 use crate::player::Player;
 use crate::prelude::*;
+use crate::streams::StreamManager;
+use crate::string::AvmStringInterner;
 use crate::stub::StubCollection;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::timer::Timers;
 use core::fmt;
-use gc_arena::{Collect, MutationContext};
+use gc_arena::{Collect, Mutation};
 use instant::Instant;
 use rand::rngs::SmallRng;
-use ruffle_render::backend::RenderBackend;
+use ruffle_render::backend::{BitmapCacheEntry, RenderBackend};
 use ruffle_render::commands::CommandList;
 use ruffle_render::transform::TransformStack;
 use ruffle_video::backend::VideoBackend;
 use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
+
+/// Minimal context, useful for manipulating the GC heap.
+pub struct GcContext<'a, 'gc> {
+    /// The mutation context to allocate and mutate `Gc` pointers.
+    pub gc_context: &'gc Mutation<'gc>,
+
+    /// The global string interner.
+    pub interner: &'a mut AvmStringInterner<'gc>,
+}
+
+impl<'a, 'gc> GcContext<'a, 'gc> {
+    #[inline(always)]
+    pub fn reborrow<'b>(&'b mut self) -> GcContext<'b, 'gc>
+    where
+        'a: 'b,
+    {
+        GcContext {
+            gc_context: self.gc_context,
+            interner: self.interner,
+        }
+    }
+
+    /// Convenience method to retrieve the current GC context. Note that explicitely writing
+    /// `self.gc_context` can be sometimes necessary to satisfy the borrow checker.
+    #[inline(always)]
+    pub fn gc(&self) -> &'gc Mutation<'gc> {
+        self.gc_context
+    }
+}
 
 /// `UpdateContext` holds shared data that is used by the various subsystems of Ruffle.
 /// `Player` creates this when it begins a tick and passes it through the call stack to
@@ -43,8 +74,11 @@ pub struct UpdateContext<'a, 'gc> {
     /// Display objects and actions can push actions onto the queue.
     pub action_queue: &'a mut ActionQueue<'gc>,
 
-    /// The mutation context to allocate and mutate `GcCell` types.
-    pub gc_context: MutationContext<'gc, 'a>,
+    /// The mutation context to allocate and mutate `Gc` pointers.
+    pub gc_context: &'gc Mutation<'gc>,
+
+    /// The global string interner.
+    pub interner: &'a mut AvmStringInterner<'gc>,
 
     /// A collection of stubs encountered during this movie.
     pub stub_tracker: &'a mut StubCollection,
@@ -108,7 +142,7 @@ pub struct UpdateContext<'a, 'gc> {
     pub input: &'a InputManager,
 
     /// The location of the mouse when it was last over the player.
-    pub mouse_position: &'a (Twips, Twips),
+    pub mouse_position: &'a Point<Twips>,
 
     /// The object being dragged via a `startDrag` action.
     pub drag_object: &'a mut Option<crate::player::DragObject<'gc>>,
@@ -176,6 +210,9 @@ pub struct UpdateContext<'a, 'gc> {
     /// The current stage frame rate.
     pub frame_rate: &'a mut f64,
 
+    /// Whether movies are prevented from changing the stage frame rate.
+    pub forced_frame_rate: bool,
+
     /// Amount of actions performed since the last timeout check
     pub actions_since_timeout_check: &'a mut u16,
 
@@ -183,19 +220,16 @@ pub struct UpdateContext<'a, 'gc> {
     ///
     /// If we are not doing frame processing, then this is `FramePhase::Enter`.
     pub frame_phase: &'a mut FramePhase,
+
+    /// Manager of in-progress media streams.
+    pub stream_manager: &'a mut StreamManager<'gc>,
+
+    /// Dynamic root for allowing handles to GC objects to exist outside of the GC.
+    pub dynamic_root: gc_arena::DynamicRootSet<'gc>,
 }
 
 /// Convenience methods for controlling audio.
 impl<'a, 'gc> UpdateContext<'a, 'gc> {
-    pub fn update_sounds(&mut self) {
-        self.audio_manager.update_sounds(
-            self.audio,
-            self.gc_context,
-            self.action_queue,
-            self.stage.root_clip(),
-        );
-    }
-
     pub fn global_sound_transform(&self) -> &SoundTransform {
         self.audio_manager.global_sound_transform()
     }
@@ -290,6 +324,13 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
 }
 
 impl<'a, 'gc> UpdateContext<'a, 'gc> {
+    /// Convenience method to retrieve the current GC context. Note that explicitely writing
+    /// `self.gc_context` can be sometimes necessary to satisfy the borrow checker.
+    #[inline(always)]
+    pub fn gc(&self) -> &'gc Mutation<'gc> {
+        self.gc_context
+    }
+
     /// Transform a borrowed update context into an owned update context with
     /// a shorter internal lifetime.
     ///
@@ -297,6 +338,7 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
     /// update context without adding further lifetimes for its borrowing.
     /// Please note that you will not be able to use the original update
     /// context until this reborrowed copy has fallen out of scope.
+    #[inline]
     pub fn reborrow<'b>(&'b mut self) -> UpdateContext<'b, 'gc>
     where
         'a: 'b,
@@ -304,6 +346,7 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
         UpdateContext {
             action_queue: self.action_queue,
             gc_context: self.gc_context,
+            interner: self.interner,
             stub_tracker: self.stub_tracker,
             library: self.library,
             player_version: self.player_version,
@@ -343,8 +386,22 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
             times_get_time_called: self.times_get_time_called,
             time_offset: self.time_offset,
             frame_rate: self.frame_rate,
+            forced_frame_rate: self.forced_frame_rate,
             actions_since_timeout_check: self.actions_since_timeout_check,
             frame_phase: self.frame_phase,
+            stream_manager: self.stream_manager,
+            dynamic_root: self.dynamic_root,
+        }
+    }
+
+    #[inline]
+    pub fn borrow_gc<'b>(&'b mut self) -> GcContext<'b, 'gc>
+    where
+        'a: 'b,
+    {
+        GcContext {
+            gc_context: self.gc_context,
+            interner: self.interner,
         }
     }
 
@@ -426,6 +483,9 @@ impl<'gc> Default for ActionQueue<'gc> {
 
 /// Shared data used during rendering.
 /// `Player` creates this when it renders a frame and passes it down to display objects.
+///
+/// As a convenience, this type can be deref-coerced to `Mutation<'gc>`, but note that explicitely
+/// writing `context.gc_context` can be sometimes necessary to satisfy the borrow checker.
 pub struct RenderContext<'a, 'gc> {
     /// The renderer, used by the display objects to register themselves.
     pub renderer: &'a mut dyn RenderBackend,
@@ -433,9 +493,11 @@ pub struct RenderContext<'a, 'gc> {
     /// The command list, used by the display objects to draw themselves.
     pub commands: CommandList,
 
-    /// The GC MutationContext, used to perform any GcCell writes
-    /// that must occur during rendering.
-    pub gc_context: MutationContext<'gc, 'a>,
+    /// Any offscreen draws that should be used to redraw a cacheAsBitmap
+    pub cache_draws: &'a mut Vec<BitmapCacheEntry>,
+
+    /// The GC context, used to perform any `Gc` writes that must occur during rendering.
+    pub gc_context: &'gc Mutation<'gc>,
 
     /// The library, which provides access to fonts and other definitions when rendering.
     pub library: &'a Library<'gc>,
@@ -446,12 +508,20 @@ pub struct RenderContext<'a, 'gc> {
     /// Whether we're rendering offscreen. This can disable some logic like Ruffle-side render culling
     pub is_offscreen: bool,
 
+    /// Whether or not to use cacheAsBitmap, vs drawing everything explicitly
+    pub use_bitmap_cache: bool,
+
     /// The current player's stage (including all loaded levels)
     pub stage: Stage<'gc>,
+}
 
-    /// Whether to allow pushing a new mask. A masker-inside-a-masker does not work in Flash, instead
-    /// causing the inner mask to be included as part of the outer mask. Maskee-inside-a-maskee works as one expects.
-    pub allow_mask: bool,
+impl<'a, 'gc> RenderContext<'a, 'gc> {
+    /// Convenience method to retrieve the current GC context. Note that explicitely writing
+    /// `self.gc_context` can be sometimes necessary to satisfy the borrow checker.
+    #[inline(always)]
+    pub fn gc(&self) -> &'gc Mutation<'gc> {
+        self.gc_context
+    }
 }
 
 /// The type of action being run.
@@ -482,20 +552,6 @@ pub enum ActionType<'gc> {
         listener: &'static str,
         method: &'static str,
         args: Vec<Avm1Value<'gc>>,
-    },
-
-    /// An AVM2 callable, e.g. a frame script or event handler.
-    Callable2 {
-        callable: Avm2Object<'gc>,
-        reciever: Option<Avm2Object<'gc>>,
-        args: Vec<Avm2Value<'gc>>,
-    },
-
-    /// An AVM2 event to be dispatched. This translates to an Event class instance.
-    /// Creating an Event subclass via this dispatch is TODO.
-    Event2 {
-        event_type: &'static str,
-        target: Avm2Object<'gc>,
     },
 }
 
@@ -543,21 +599,6 @@ impl fmt::Debug for ActionType<'_> {
                 .field("listener", listener)
                 .field("method", method)
                 .field("args", args)
-                .finish(),
-            ActionType::Callable2 {
-                callable,
-                reciever,
-                args,
-            } => f
-                .debug_struct("ActionType::Callable2")
-                .field("callable", callable)
-                .field("reciever", reciever)
-                .field("args", args)
-                .finish(),
-            ActionType::Event2 { event_type, target } => f
-                .debug_struct("ActionType::Event2")
-                .field("event_type", event_type)
-                .field("target", target)
                 .finish(),
         }
     }

@@ -77,6 +77,7 @@ pub struct StageData<'gc> {
     movie_size: (u32, u32),
 
     /// The quality settings of the stage.
+    #[collect(require_static)]
     quality: StageQuality,
 
     /// The dimensions of the stage, as reported to ActionScript.
@@ -94,6 +95,9 @@ pub struct StageData<'gc> {
 
     /// The alignment of the stage.
     align: StageAlign,
+
+    /// Whether to prevent movies from the changing the stage alignment
+    forced_align: bool,
 
     /// Whether or not a RENDER event should be dispatched on the next render
     invalidated: bool,
@@ -147,7 +151,7 @@ impl<'gc> Stage<'gc> {
         fullscreen: bool,
         movie: Arc<SwfMovie>,
     ) -> Stage<'gc> {
-        let stage = Self(GcCell::allocate(
+        let stage = Self(GcCell::new(
             gc_context,
             StageData {
                 base: Default::default(),
@@ -168,6 +172,7 @@ impl<'gc> Stage<'gc> {
                 },
                 invalidated: false,
                 align: Default::default(),
+                forced_align: false,
                 use_bitmap_downsampling: false,
                 view_bounds: Default::default(),
                 window_mode: Default::default(),
@@ -185,7 +190,7 @@ impl<'gc> Stage<'gc> {
     }
 
     pub fn background_color(self) -> Option<Color> {
-        self.0.read().background_color.clone()
+        self.0.read().background_color
     }
 
     pub fn set_background_color(self, gc_context: MutationContext<'gc, '_>, color: Option<Color>) {
@@ -193,10 +198,16 @@ impl<'gc> Stage<'gc> {
     }
 
     pub fn inverse_view_matrix(self) -> Matrix {
-        let mut inverse_view_matrix = self.0.read().viewport_matrix;
-        inverse_view_matrix.invert();
+        self.0
+            .read()
+            .viewport_matrix
+            .inverse()
+            .unwrap_or(Matrix::ZERO)
+    }
 
-        inverse_view_matrix
+    #[allow(dead_code)]
+    pub fn view_matrix(self) -> Matrix {
+        self.0.read().viewport_matrix
     }
 
     pub fn letterbox(self) -> Letterbox {
@@ -380,8 +391,20 @@ impl<'gc> Stage<'gc> {
     /// Set the stage alignment.
     /// This only has an effect if the scale mode is not `StageScaleMode::ExactFit`.
     pub fn set_align(self, context: &mut UpdateContext<'_, 'gc>, align: StageAlign) {
-        self.0.write(context.gc_context).align = align;
-        self.build_matrices(context);
+        if !self.forced_align() {
+            self.0.write(context.gc_context).align = align;
+            self.build_matrices(context);
+        }
+    }
+
+    /// Get whether movies are prevented from changing the stage alignment.
+    pub fn forced_align(self) -> bool {
+        self.0.read().forced_align
+    }
+
+    /// Set whether movies are prevented from changing the stage alignment.
+    pub fn set_forced_align(self, context: &mut UpdateContext<'_, 'gc>, force: bool) {
+        self.0.write(context.gc_context).forced_align = force;
     }
 
     /// Returns whether bitmaps will use high quality downsampling when scaled down.
@@ -630,10 +653,9 @@ impl<'gc> Stage<'gc> {
 
     /// Obtain the root movie on the stage.
     ///
-    /// `Stage` guarantees that there is always a movie clip at depth 0.
-    pub fn root_clip(self) -> DisplayObject<'gc> {
+    /// It is not a guarantee that the root clip exists, as it can be deliberately removed.
+    pub fn root_clip(self) -> Option<DisplayObject<'gc>> {
         self.child_by_depth(0)
-            .expect("Stage must always have a root movie")
     }
 
     /// Fires `Stage.onResize` in AVM1 or `Event.RESIZE` in AVM2.
@@ -641,18 +663,18 @@ impl<'gc> Stage<'gc> {
         // This event fires immediately when scaleMode is changed;
         // it doesn't queue up.
         if !context.is_action_script_3() {
-            crate::avm1::Avm1::notify_system_listeners(
-                self.root_clip(),
-                context,
-                "Stage".into(),
-                "onResize".into(),
-                &[],
-            );
+            if let Some(root_clip) = self.root_clip() {
+                crate::avm1::Avm1::notify_system_listeners(
+                    root_clip,
+                    context,
+                    "Stage".into(),
+                    "onResize".into(),
+                    &[],
+                );
+            }
         } else if let Avm2Value::Object(stage) = self.object2() {
             let resized_event = Avm2EventObject::bare_default_event(context, "resize");
-            if let Err(e) = crate::avm2::Avm2::dispatch_event(context, resized_event, stage) {
-                tracing::error!("Encountered AVM2 error when dispatching event: {}", e);
-            }
+            Avm2::dispatch_event(context, resized_event, stage);
         }
     }
 
@@ -662,15 +684,8 @@ impl<'gc> Stage<'gc> {
     /// broadcast the 'render' event on the first render
     pub fn broadcast_render(&self, context: &mut UpdateContext<'_, 'gc>) {
         let render_evt = Avm2EventObject::bare_default_event(context, "render");
-
         let dobject_constr = context.avm2.classes().display_object;
-
-        if let Err(e) = Avm2::broadcast_event(context, render_evt, dobject_constr) {
-            tracing::error!(
-                "Encountered AVM2 error when broadcasting render event: {}",
-                e
-            );
-        }
+        Avm2::broadcast_event(context, render_evt, dobject_constr);
 
         self.set_invalidated(context.gc_context, false);
     }
@@ -678,13 +693,15 @@ impl<'gc> Stage<'gc> {
     /// Fires `Stage.onFullScreen` in AVM1 or `Event.FULLSCREEN` in AVM2.
     pub fn fire_fullscreen_event(self, context: &mut UpdateContext<'_, 'gc>) {
         if !context.is_action_script_3() {
-            crate::avm1::Avm1::notify_system_listeners(
-                self.root_clip(),
-                context,
-                "Stage".into(),
-                "onFullScreen".into(),
-                &[self.is_fullscreen().into()],
-            );
+            if let Some(root_clip) = self.root_clip() {
+                crate::avm1::Avm1::notify_system_listeners(
+                    root_clip,
+                    context,
+                    "Stage".into(),
+                    "onFullScreen".into(),
+                    &[self.is_fullscreen().into()],
+                );
+            }
         } else if let Avm2Value::Object(stage) = self.object2() {
             let full_screen_event_cls = context.avm2.classes().fullscreenevent;
             let mut activation = Avm2Activation::from_nothing(context.reborrow());
@@ -701,9 +718,7 @@ impl<'gc> Stage<'gc> {
                 )
                 .unwrap(); // we don't expect to break here
 
-            if let Err(e) = crate::avm2::Avm2::dispatch_event(context, full_screen_event, stage) {
-                tracing::error!("Encountered AVM2 error when dispatching event: {}", e);
-            }
+            Avm2::dispatch_event(context, full_screen_event, stage);
         }
     }
 }
@@ -718,7 +733,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
     }
 
     fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc> {
-        Self(GcCell::allocate(gc_context, self.0.read().clone())).into()
+        Self(GcCell::new(gc_context, self.0.read().clone())).into()
     }
 
     fn as_ptr(&self) -> *const DisplayObjectPtr {
@@ -742,7 +757,8 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         // TODO: Replace this when we have a convenience method for constructing AVM2 native objects.
         // TODO: We should only do this if the movie is actually an AVM2 movie.
         // This is necessary for EventDispatcher super-constructor to run.
-        let mut activation = Avm2Activation::from_nothing(context.reborrow());
+        let global_domain = context.avm2.stage_domain();
+        let mut activation = Avm2Activation::from_domain(context.reborrow(), global_domain);
         let avm2_stage = Avm2StageObject::for_display_object_childless(
             &mut activation,
             (*self).into(),
@@ -801,8 +817,11 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         // Note that the stage background color is actually the lowest possible layer,
         // and get applied when we start the frame (before `render` is called).
         for stage3d in self.stage3ds().iter() {
-            if let Some(context3d) = stage3d.as_stage_3d().unwrap().context3d() {
-                context3d.as_context_3d().unwrap().render(context);
+            let stage3d = stage3d.as_stage_3d().unwrap();
+            if stage3d.visible() {
+                if let Some(context3d) = stage3d.context3d() {
+                    context3d.as_context_3d().unwrap().render(context);
+                }
             }
         }
 
@@ -821,15 +840,8 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         }
 
         let enter_frame_evt = Avm2EventObject::bare_default_event(context, "enterFrame");
-
         let dobject_constr = context.avm2.classes().display_object;
-
-        if let Err(e) = Avm2::broadcast_event(context, enter_frame_evt, dobject_constr) {
-            tracing::error!(
-                "Encountered AVM2 error when broadcasting enterFrame event: {}",
-                e
-            );
-        }
+        Avm2::broadcast_event(context, enter_frame_evt, dobject_constr);
     }
 
     fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc>) {
@@ -880,7 +892,11 @@ impl<'gc> TInteractiveObject<'gc> for Stage<'gc> {
         self.into()
     }
 
-    fn filter_clip_event(self, _event: ClipEvent) -> ClipEventResult {
+    fn filter_clip_event(
+        self,
+        _context: &mut UpdateContext<'_, 'gc>,
+        _event: ClipEvent,
+    ) -> ClipEventResult {
         ClipEventResult::Handled
     }
 
@@ -1035,7 +1051,7 @@ bitflags! {
     ///
     /// This is a bitflags instead of an enum to mimic Flash Player behavior.
     /// You can theoretically have both TOP and BOTTOM bits set, for example.
-    #[derive(Default, Collect)]
+    #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Collect)]
     #[collect(require_static)]
     pub struct StageAlign: u8 {
         /// Align to the top of the viewport.

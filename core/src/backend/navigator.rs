@@ -3,6 +3,8 @@
 use crate::loader::Error;
 use crate::string::WStr;
 use indexmap::IndexMap;
+use serde::{Deserialize, Serialize};
+use std::fmt;
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
@@ -19,6 +21,23 @@ pub enum NavigationMethod {
     Post,
 }
 
+/// The handling mode of links opening a new website.
+#[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub enum OpenURLMode {
+    /// Allow all links to open a new website.
+    #[serde(rename = "allow")]
+    Allow,
+
+    /// A confirmation dialog opens with every link trying to open a new website.
+    #[serde(rename = "confirm")]
+    Confirm,
+
+    /// Deny all links to open a new website.
+    #[serde(rename = "deny")]
+    Deny,
+}
+
 impl NavigationMethod {
     /// Convert an SWF method enum into a NavigationMethod.
     pub fn from_send_vars_method(s: SendVarsMethod) -> Option<Self> {
@@ -30,13 +49,25 @@ impl NavigationMethod {
     }
 
     pub fn from_method_str(method: &WStr) -> Option<Self> {
-        if method == b"GET" {
+        // Methods seem to be case insensitive
+        let method = method.to_ascii_lowercase();
+        if &method == b"get" {
             Some(Self::Get)
-        } else if method == b"POST" {
+        } else if &method == b"post" {
             Some(Self::Post)
         } else {
             None
         }
+    }
+}
+
+impl fmt::Display for NavigationMethod {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let method = match self {
+            Self::Get => "GET",
+            Self::Post => "POST",
+        };
+        f.write_str(method)
     }
 }
 
@@ -53,6 +84,13 @@ pub struct Request {
     ///
     /// The body consists of data and a mime type.
     body: Option<(Vec<u8>, String)>,
+
+    /// The headers for the request, as (header_name, header_value) pairs.
+    /// Flash appears to iterate over an internal hash table to determine
+    /// the order of headers sent over the network. We just use an IndexMap
+    /// to give us a consistent order - hopefully, no servers depend on
+    /// the order of headers.
+    headers: IndexMap<String, String>,
 }
 
 impl Request {
@@ -62,6 +100,7 @@ impl Request {
             url,
             method: NavigationMethod::Get,
             body: None,
+            headers: Default::default(),
         }
     }
 
@@ -71,13 +110,19 @@ impl Request {
             url,
             method: NavigationMethod::Post,
             body,
+            headers: Default::default(),
         }
     }
 
     /// Construct a request with the given method and data
     #[allow(clippy::self_named_constructors)]
     pub fn request(method: NavigationMethod, url: String, body: Option<(Vec<u8>, String)>) -> Self {
-        Self { url, method, body }
+        Self {
+            url,
+            method,
+            body,
+            headers: Default::default(),
+        }
     }
 
     /// Retrieve the URL of this request.
@@ -98,6 +143,14 @@ impl Request {
     pub fn set_body(&mut self, body: (Vec<u8>, String)) {
         self.body = Some(body);
     }
+
+    pub fn headers(&self) -> &IndexMap<String, String> {
+        &self.headers
+    }
+
+    pub fn set_headers(&mut self, headers: IndexMap<String, String>) {
+        self.headers = headers;
+    }
 }
 
 /// A response to a fetch request.
@@ -107,6 +160,12 @@ pub struct Response {
 
     /// The contents of the response body.
     pub body: Vec<u8>,
+
+    /// The status code of the response.
+    pub status: u16,
+
+    /// The field to indicate if the request has been redirected.
+    pub redirected: bool,
 }
 
 /// Type alias for pinned, boxed, and owned futures that output a falliable
@@ -139,8 +198,8 @@ pub trait NavigatorBackend {
     /// sandbox.
     fn navigate_to_url(
         &self,
-        url: String,
-        target: String,
+        url: &str,
+        target: &str,
         vars_method: Option<(NavigationMethod, IndexMap<String, String>)>,
     );
 
@@ -280,8 +339,8 @@ impl Default for NullNavigatorBackend {
 impl NavigatorBackend for NullNavigatorBackend {
     fn navigate_to_url(
         &self,
-        _url: String,
-        _target: String,
+        _url: &str,
+        _target: &str,
         _vars_method: Option<(NavigationMethod, IndexMap<String, String>)>,
     ) {
     }
@@ -297,7 +356,12 @@ impl NavigatorBackend for NullNavigatorBackend {
 
             let body = std::fs::read(path).map_err(|e| Error::FetchError(e.to_string()))?;
 
-            Ok(Response { url, body })
+            Ok(Response {
+                url,
+                body,
+                status: 0,
+                redirected: false,
+            })
         })
     }
 

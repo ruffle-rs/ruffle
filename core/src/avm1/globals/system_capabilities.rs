@@ -4,8 +4,8 @@ use crate::avm1::globals::system::SystemCapabilities;
 use crate::avm1::object::Object;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ScriptObject, Value};
+use crate::context::GcContext;
 use crate::string::AvmString;
-use gc_arena::MutationContext;
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "supports64BitProcesses" => property(get_has_64_bit_support);
@@ -143,7 +143,10 @@ pub fn get_screen_resolution_x<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(activation.context.system.screen_resolution.0.into())
+    let viewport_dimensions = activation.context.renderer.viewport_dimensions();
+    // Viewport size is adjusted for HiDPI.
+    let adjusted_width = f64::from(viewport_dimensions.width) / viewport_dimensions.scale_factor;
+    Ok(adjusted_width.round().into())
 }
 
 pub fn get_screen_resolution_y<'gc>(
@@ -151,7 +154,10 @@ pub fn get_screen_resolution_y<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(activation.context.system.screen_resolution.1.into())
+    let viewport_dimensions = activation.context.renderer.viewport_dimensions();
+    // Viewport size is adjusted for HiDPI.
+    let adjusted_height = f64::from(viewport_dimensions.height) / viewport_dimensions.scale_factor;
+    Ok(adjusted_height.round().into())
 }
 
 pub fn get_pixel_aspect_ratio<'gc>(
@@ -159,7 +165,7 @@ pub fn get_pixel_aspect_ratio<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(activation.context.system.aspect_ratio.into())
+    Ok(activation.context.system.pixel_aspect_ratio.into())
 }
 
 pub fn get_screen_dpi<'gc>(
@@ -221,7 +227,7 @@ pub fn get_server_string<'gc>(
     let server_string = activation
         .context
         .system
-        .get_server_string(activation.context.avm1);
+        .get_server_string(&activation.context);
     Ok(AvmString::new_utf8(activation.context.gc_context, server_string).into())
 }
 
@@ -250,11 +256,11 @@ pub fn get_max_idc_level<'gc>(
 }
 
 pub fn create<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let capabilities = ScriptObject::new(gc_context, Some(proto));
-    define_properties_on(OBJECT_DECLS, gc_context, capabilities, fn_proto);
+    let capabilities = ScriptObject::new(context.gc_context, Some(proto));
+    define_properties_on(OBJECT_DECLS, context, capabilities, fn_proto);
     capabilities.into()
 }

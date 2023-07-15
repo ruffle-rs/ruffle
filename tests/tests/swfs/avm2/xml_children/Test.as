@@ -3,11 +3,18 @@
 	
 	public class Test {
 		public static function test() {
+			XML.prettyPrinting = false;
+			
 			var outer = <outer>
 				<child kind="A">First Child</child>
 				<child kind="B">Second Child</child>
 				<child kind="A">Third Child: <p>Inner element</p></child>
 			</outer>;
+			
+			var newChild = <child kind="D">Custom child</child>;
+			outer.appendChild(newChild);
+			trace("New child: " + outer.children()[3]);
+			trace("Equal: " + (newChild === outer.children()[3]));
 			
 			trace("Children length: " + outer.children().length());
 			
@@ -91,6 +98,19 @@
 				// Uncomment this when it does
 				//trace("Caught exception: " + e);
 			}
+		
+			var multiChild = <outer>
+				<child name="First child"/>
+				<inner name ="Hi"/>
+				<child name ="Second child"/>
+			</outer>;
+			var childList = multiChild.child;
+			trace("Before delete: " + childList);
+			trace("childList[0].parent().name() = " + childList[0].parent().name());
+			delete multiChild.child;
+			trace("After delete: " + childList);
+			trace("childList[0].parent() = " + childList[0].parent());
+			trace("multiChild after delete: " + multiChild);
 		}
 	}
 }

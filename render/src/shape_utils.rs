@@ -1,6 +1,30 @@
 use crate::matrix::Matrix;
+use enum_map::Enum;
 use smallvec::SmallVec;
 use swf::{CharacterId, FillStyle, LineStyle, Rectangle, Shape, ShapeRecord, Twips};
+
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum FillRule {
+    EvenOdd,
+    NonZero,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Enum)]
+pub enum GradientType {
+    Linear,
+    Radial,
+    Focal,
+}
+
+#[cfg(feature = "tessellator")]
+impl From<FillRule> for lyon::path::FillRule {
+    fn from(rule: FillRule) -> lyon::path::FillRule {
+        match rule {
+            FillRule::EvenOdd => lyon::path::FillRule::EvenOdd,
+            FillRule::NonZero => lyon::path::FillRule::NonZero,
+        }
+    }
+}
 
 pub fn calculate_shape_bounds(shape_records: &[swf::ShapeRecord]) -> swf::Rectangle<Twips> {
     let mut bounds = swf::Rectangle {
@@ -9,46 +33,39 @@ pub fn calculate_shape_bounds(shape_records: &[swf::ShapeRecord]) -> swf::Rectan
         x_max: Twips::new(i32::MIN),
         y_max: Twips::new(i32::MIN),
     };
-    let mut x = Twips::ZERO;
-    let mut y = Twips::ZERO;
+    let mut cursor = swf::Point::ZERO;
     for record in shape_records {
         match record {
             swf::ShapeRecord::StyleChange(style_change) => {
-                if let Some((move_x, move_y)) = style_change.move_to {
-                    x = move_x;
-                    y = move_y;
-                    bounds.x_min = Twips::min(bounds.x_min, x);
-                    bounds.x_max = Twips::max(bounds.x_max, x);
-                    bounds.y_min = Twips::min(bounds.y_min, y);
-                    bounds.y_max = Twips::max(bounds.y_max, y);
+                if let Some(move_to) = &style_change.move_to {
+                    cursor = *move_to;
+                    bounds.x_min = bounds.x_min.min(cursor.x);
+                    bounds.x_max = bounds.x_max.max(cursor.x);
+                    bounds.y_min = bounds.y_min.min(cursor.y);
+                    bounds.y_max = bounds.y_max.max(cursor.y);
                 }
             }
-            swf::ShapeRecord::StraightEdge { delta_x, delta_y } => {
-                x += *delta_x;
-                y += *delta_y;
-                bounds.x_min = Twips::min(bounds.x_min, x);
-                bounds.x_max = Twips::max(bounds.x_max, x);
-                bounds.y_min = Twips::min(bounds.y_min, y);
-                bounds.y_max = Twips::max(bounds.y_max, y);
+            swf::ShapeRecord::StraightEdge { delta } => {
+                cursor += *delta;
+                bounds.x_min = bounds.x_min.min(cursor.x);
+                bounds.x_max = bounds.x_max.max(cursor.x);
+                bounds.y_min = bounds.y_min.min(cursor.y);
+                bounds.y_max = bounds.y_max.max(cursor.y);
             }
             swf::ShapeRecord::CurvedEdge {
-                control_delta_x,
-                control_delta_y,
-                anchor_delta_x,
-                anchor_delta_y,
+                control_delta,
+                anchor_delta,
             } => {
-                x += *control_delta_x;
-                y += *control_delta_y;
-                bounds.x_min = Twips::min(bounds.x_min, x);
-                bounds.x_max = Twips::max(bounds.x_max, x);
-                bounds.y_min = Twips::min(bounds.y_min, y);
-                bounds.y_max = Twips::max(bounds.y_max, y);
-                x += *anchor_delta_x;
-                y += *anchor_delta_y;
-                bounds.x_min = Twips::min(bounds.x_min, x);
-                bounds.x_max = Twips::max(bounds.x_max, x);
-                bounds.y_min = Twips::min(bounds.y_min, y);
-                bounds.y_max = Twips::max(bounds.y_max, y);
+                cursor += *control_delta;
+                bounds.x_min = bounds.x_min.min(cursor.x);
+                bounds.x_max = bounds.x_max.max(cursor.x);
+                bounds.y_min = bounds.y_min.min(cursor.y);
+                bounds.y_max = bounds.y_max.max(cursor.y);
+                cursor += *anchor_delta;
+                bounds.x_min = bounds.x_min.min(cursor.x);
+                bounds.x_max = bounds.x_max.max(cursor.x);
+                bounds.y_min = bounds.y_min.min(cursor.y);
+                bounds.y_max = bounds.y_max.max(cursor.y);
             }
         }
     }
@@ -61,7 +78,7 @@ pub fn calculate_shape_bounds(shape_records: &[swf::ShapeRecord]) -> swf::Rectan
 /// `DrawPath` represents a solid fill or a stroke.
 /// Fills are always closed paths, while strokes may be open or closed.
 /// Closed paths will have the first point equal to the last point.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum DrawPath<'a> {
     Stroke {
         style: &'a LineStyle,
@@ -71,12 +88,13 @@ pub enum DrawPath<'a> {
     Fill {
         style: &'a FillStyle,
         commands: Vec<DrawCommand>,
+        winding_rule: FillRule,
     },
 }
 
 /// `DistilledShape` represents a ready-to-be-consumed collection of paths (both fills and strokes)
 /// that has been converted down from another source (such as SWF's `swf::Shape` format).
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct DistilledShape<'a> {
     pub paths: Vec<DrawPath<'a>>,
     pub shape_bounds: Rectangle<Twips>,
@@ -99,28 +117,20 @@ impl<'a> From<&'a swf::Shape> for DistilledShape<'a> {
 /// Fills follow the even-odd fill rule, with opposite winding for holes.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DrawCommand {
-    MoveTo {
-        x: Twips,
-        y: Twips,
-    },
-    LineTo {
-        x: Twips,
-        y: Twips,
-    },
+    MoveTo(swf::Point<Twips>),
+    LineTo(swf::Point<Twips>),
     CurveTo {
-        x1: Twips,
-        y1: Twips,
-        x2: Twips,
-        y2: Twips,
+        control: swf::Point<Twips>,
+        anchor: swf::Point<Twips>,
     },
 }
 
 impl DrawCommand {
-    pub fn end_point(&self) -> (Twips, Twips) {
+    pub fn end_point(&self) -> swf::Point<Twips> {
         match self {
-            DrawCommand::MoveTo { x, y } => (*x, *y),
-            DrawCommand::LineTo { x, y } => (*x, *y),
-            DrawCommand::CurveTo { x2, y2, .. } => (*x2, *y2),
+            DrawCommand::MoveTo(point)
+            | DrawCommand::LineTo(point)
+            | DrawCommand::CurveTo { anchor: point, .. } => *point,
         }
     }
 }
@@ -132,6 +142,12 @@ struct Point {
     is_bezier_control: bool,
 }
 
+impl From<Point> for swf::Point<Twips> {
+    fn from(point: Point) -> Self {
+        Self::new(point.x, point.y)
+    }
+}
+
 /// A continuous series of edges in a path.
 /// Fill segments are directed, because the winding determines the fill-rule.
 /// Stroke segments are undirected.
@@ -141,21 +157,21 @@ struct PathSegment {
 }
 
 impl PathSegment {
-    fn new(start: (Twips, Twips)) -> Self {
+    fn new(start: swf::Point<Twips>) -> Self {
         Self {
             points: vec![Point {
-                x: start.0,
-                y: start.1,
+                x: start.x,
+                y: start.y,
                 is_bezier_control: false,
             }],
         }
     }
 
-    fn reset(&mut self, start: (Twips, Twips)) {
+    fn reset(&mut self, start: swf::Point<Twips>) {
         self.points.clear();
         self.points.push(Point {
-            x: start.0,
-            y: start.1,
+            x: start.x,
+            y: start.y,
             is_bezier_control: false,
         });
     }
@@ -177,14 +193,12 @@ impl PathSegment {
         self.points.len() <= 1
     }
 
-    fn start(&self) -> Option<(Twips, Twips)> {
-        let pt = &self.points.first()?;
-        Some((pt.x, pt.y))
+    fn start(&self) -> Option<swf::Point<Twips>> {
+        Some((*self.points.first()?).into())
     }
 
-    fn end(&self) -> Option<(Twips, Twips)> {
-        let pt = &self.points.last()?;
-        Some((pt.x, pt.y))
+    fn end(&self) -> Option<swf::Point<Twips>> {
+        Some((*self.points.last()?).into())
     }
 
     fn is_closed(&self) -> bool {
@@ -195,30 +209,28 @@ impl PathSegment {
         assert!(!self.is_empty());
         let mut i = self.points.iter();
         let first = i.next().expect("Points should not be empty");
-        std::iter::once(DrawCommand::MoveTo {
-            x: first.x,
-            y: first.y,
-        })
-        .chain(std::iter::from_fn(move || match i.next() {
-            Some(&Point {
-                is_bezier_control: false,
-                x,
-                y,
-            }) => Some(DrawCommand::LineTo { x, y }),
-            Some(&Point {
-                is_bezier_control: true,
-                x,
-                y,
-            }) => {
-                let end = i.next().expect("Bezier without endpoint");
-                Some(DrawCommand::CurveTo {
-                    x1: x,
-                    y1: y,
-                    x2: end.x,
-                    y2: end.y,
-                })
+        std::iter::once(DrawCommand::MoveTo((*first).into())).chain(std::iter::from_fn(move || {
+            match i.next() {
+                Some(
+                    point @ Point {
+                        is_bezier_control: false,
+                        ..
+                    },
+                ) => Some(DrawCommand::LineTo((*point).into())),
+                Some(
+                    point @ Point {
+                        is_bezier_control: true,
+                        ..
+                    },
+                ) => {
+                    let end = i.next().expect("Bezier without endpoint");
+                    Some(DrawCommand::CurveTo {
+                        control: (*point).into(),
+                        anchor: (*end).into(),
+                    })
+                }
+                None => None,
             }
-            None => None,
         }))
     }
 }
@@ -290,7 +302,7 @@ impl ActivePath {
     fn new() -> Self {
         Self {
             style_id: 0,
-            segment: PathSegment::new(Default::default()),
+            segment: PathSegment::new(swf::Point::ZERO),
         }
     }
 
@@ -298,7 +310,7 @@ impl ActivePath {
         self.segment.add_point(point)
     }
 
-    fn flush_fill(&mut self, start: (Twips, Twips), pending: &mut [PendingPath], flip: bool) {
+    fn flush_fill(&mut self, start: swf::Point<Twips>, pending: &mut [PendingPath], flip: bool) {
         if self.style_id > 0 && !self.segment.is_empty() {
             if flip {
                 self.segment.flip();
@@ -308,7 +320,7 @@ impl ActivePath {
         self.segment.reset(start);
     }
 
-    fn flush_stroke(&mut self, start: (Twips, Twips), pending: &mut [PendingPath]) {
+    fn flush_stroke(&mut self, start: swf::Point<Twips>, pending: &mut [PendingPath]) {
         if self.style_id > 0 && !self.segment.is_empty() {
             pending[self.style_id as usize - 1].push_path(self.segment.clone());
         }
@@ -321,8 +333,7 @@ pub struct ShapeConverter<'a> {
     iter: std::slice::Iter<'a, swf::ShapeRecord>,
 
     // Pen position.
-    x: Twips,
-    y: Twips,
+    cursor: swf::Point<Twips>,
 
     // Fill styles and line styles.
     // These change from StyleChangeRecords, and a flush occurs when these change.
@@ -332,6 +343,7 @@ pub struct ShapeConverter<'a> {
     fill_style0: ActivePath,
     fill_style1: ActivePath,
     line_style: ActivePath,
+    winding_rule: FillRule,
 
     // Paths. These get flushed for each new layer.
     fills: Vec<PendingPath>,
@@ -348,8 +360,7 @@ impl<'a> ShapeConverter<'a> {
         ShapeConverter {
             iter: shape.shape.iter(),
 
-            x: Twips::ZERO,
-            y: Twips::ZERO,
+            cursor: swf::Point::ZERO,
 
             fill_styles: &shape.styles.fill_styles,
             line_styles: &shape.styles.line_styles,
@@ -362,6 +373,12 @@ impl<'a> ShapeConverter<'a> {
             strokes: vec![PendingPath::new(); shape.styles.line_styles.len()],
 
             commands: Vec::with_capacity(Self::DEFAULT_CAPACITY),
+
+            winding_rule: if shape.flags.contains(swf::ShapeFlag::NON_ZERO_WINDING_RULE) {
+                FillRule::NonZero
+            } else {
+                FillRule::EvenOdd
+            },
         }
     }
 
@@ -372,9 +389,8 @@ impl<'a> ShapeConverter<'a> {
         while let Some(record) = self.iter.next() {
             match record {
                 ShapeRecord::StyleChange(style_change) => {
-                    if let Some((x, y)) = style_change.move_to {
-                        self.x = x;
-                        self.y = y;
+                    if let Some(move_to) = &style_change.move_to {
+                        self.cursor = *move_to;
                         // We've lifted the pen, so we're starting a new path.
                         // Flush the previous path.
                         self.flush_paths();
@@ -383,8 +399,8 @@ impl<'a> ShapeConverter<'a> {
                     if let Some(styles) = &style_change.new_styles {
                         // A new style list is also used to indicate a new drawing layer.
                         self.flush_layer();
-                        self.fill_styles = &styles.fill_styles[..];
-                        self.line_styles = &styles.line_styles[..];
+                        self.fill_styles = &styles.fill_styles;
+                        self.line_styles = &styles.line_styles;
                         self.fills
                             .resize_with(self.fill_styles.len(), PendingPath::new);
                         self.strokes
@@ -395,7 +411,7 @@ impl<'a> ShapeConverter<'a> {
 
                     if let Some(new_style_id) = style_change.fill_style_1 {
                         self.fill_style1
-                            .flush_fill((self.x, self.y), &mut self.fills[..], false);
+                            .flush_fill(self.cursor, &mut self.fills, false);
                         // Validate in case we index an invalid fill style.
                         // <= because fill ID 0 (no fill) is implicit, so the array is actually 1-based
                         self.fill_style1.style_id = if new_style_id <= num_fill_styles {
@@ -407,7 +423,7 @@ impl<'a> ShapeConverter<'a> {
 
                     if let Some(new_style_id) = style_change.fill_style_0 {
                         self.fill_style0
-                            .flush_fill((self.x, self.y), &mut self.fills[..], true);
+                            .flush_fill(self.cursor, &mut self.fills, true);
                         self.fill_style0.style_id = if new_style_id <= num_fill_styles {
                             new_style_id
                         } else {
@@ -416,8 +432,7 @@ impl<'a> ShapeConverter<'a> {
                     }
 
                     if let Some(new_style_id) = style_change.line_style {
-                        self.line_style
-                            .flush_stroke((self.x, self.y), &mut self.strokes[..]);
+                        self.line_style.flush_stroke(self.cursor, &mut self.strokes);
                         self.line_style.style_id = if new_style_id <= num_line_styles {
                             new_style_id
                         } else {
@@ -425,44 +440,19 @@ impl<'a> ShapeConverter<'a> {
                         }
                     }
                 }
-
-                ShapeRecord::StraightEdge { delta_x, delta_y } => {
-                    self.x += *delta_x;
-                    self.y += *delta_y;
-
-                    self.visit_point(Point {
-                        x: self.x,
-                        y: self.y,
-                        is_bezier_control: false,
-                    });
+                ShapeRecord::StraightEdge { delta } => {
+                    self.cursor += *delta;
+                    self.visit_point(false);
                 }
-
                 ShapeRecord::CurvedEdge {
-                    control_delta_x,
-                    control_delta_y,
-                    anchor_delta_x,
-                    anchor_delta_y,
+                    control_delta,
+                    anchor_delta,
                 } => {
-                    let x1 = self.x + *control_delta_x;
-                    let y1 = self.y + *control_delta_y;
+                    self.cursor += *control_delta;
+                    self.visit_point(true);
 
-                    self.visit_point(Point {
-                        x: x1,
-                        y: y1,
-                        is_bezier_control: true,
-                    });
-
-                    let x2 = x1 + *anchor_delta_x;
-                    let y2 = y1 + *anchor_delta_y;
-
-                    self.visit_point(Point {
-                        x: x2,
-                        y: y2,
-                        is_bezier_control: false,
-                    });
-
-                    self.x = x2;
-                    self.y = y2;
+                    self.cursor += *anchor_delta;
+                    self.visit_point(false);
                 }
             }
         }
@@ -473,7 +463,12 @@ impl<'a> ShapeConverter<'a> {
     }
 
     /// Adds a point to the current path for the active fills/strokes.
-    fn visit_point(&mut self, point: Point) {
+    fn visit_point(&mut self, is_bezier_control: bool) {
+        let point = Point {
+            x: self.cursor.x,
+            y: self.cursor.y,
+            is_bezier_control,
+        };
         if self.fill_style1.style_id > 0 {
             self.fill_style1.add_point(point);
         }
@@ -489,11 +484,10 @@ impl<'a> ShapeConverter<'a> {
     fn flush_paths(&mut self) {
         // Move the current paths to the active list.
         self.fill_style1
-            .flush_fill((self.x, self.y), &mut self.fills, false);
+            .flush_fill(self.cursor, &mut self.fills, false);
         self.fill_style0
-            .flush_fill((self.x, self.y), &mut self.fills, true);
-        self.line_style
-            .flush_stroke((self.x, self.y), &mut self.strokes);
+            .flush_fill(self.cursor, &mut self.fills, true);
+        self.line_style.flush_stroke(self.cursor, &mut self.strokes);
     }
 
     /// When a new layer starts, all paths are flushed and turned into drawing commands.
@@ -512,6 +506,7 @@ impl<'a> ShapeConverter<'a> {
             self.commands.push(DrawPath::Fill {
                 style,
                 commands: path.to_draw_commands().collect(),
+                winding_rule: self.winding_rule,
             });
             path.segments.clear();
         }
@@ -534,158 +529,6 @@ impl<'a> ShapeConverter<'a> {
             }
             path.segments.clear();
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    const FILL_STYLES: [FillStyle; 1] = [FillStyle::Color(swf::Color {
-        r: 255,
-        g: 0,
-        b: 0,
-        a: 255,
-    })];
-
-    const LINE_STYLES: [LineStyle; 0] = [];
-
-    /// Convenience method to quickly make a shape,
-    fn build_shape(records: Vec<ShapeRecord>) -> swf::Shape {
-        let bounds = calculate_shape_bounds(&records);
-        swf::Shape {
-            version: 2,
-            id: 1,
-            shape_bounds: bounds.clone(),
-            edge_bounds: bounds,
-            flags: swf::ShapeFlag::HAS_SCALING_STROKES,
-            styles: swf::ShapeStyles {
-                fill_styles: FILL_STYLES.to_vec(),
-                line_styles: LINE_STYLES.to_vec(),
-            },
-            shape: records,
-        }
-    }
-
-    /// A simple solid square.
-    #[test]
-    fn basic_shape() {
-        let shape = build_shape(vec![
-            ShapeRecord::StyleChange(Box::new(swf::StyleChangeData {
-                move_to: Some((Twips::from_pixels(100.0), Twips::from_pixels(100.0))),
-                fill_style_0: None,
-                fill_style_1: Some(1),
-                line_style: None,
-                new_styles: None,
-            })),
-            ShapeRecord::StraightEdge {
-                delta_x: Twips::from_pixels(100.0),
-                delta_y: Twips::from_pixels(0.0),
-            },
-            ShapeRecord::StraightEdge {
-                delta_x: Twips::from_pixels(0.0),
-                delta_y: Twips::from_pixels(100.0),
-            },
-            ShapeRecord::StraightEdge {
-                delta_x: Twips::from_pixels(-100.0),
-                delta_y: Twips::from_pixels(0.0),
-            },
-            ShapeRecord::StraightEdge {
-                delta_x: Twips::from_pixels(0.0),
-                delta_y: Twips::from_pixels(-100.0),
-            },
-        ]);
-        let commands = ShapeConverter::from_shape(&shape).into_commands();
-        let expected = vec![DrawPath::Fill {
-            style: &FILL_STYLES[0],
-            commands: vec![
-                DrawCommand::MoveTo {
-                    x: Twips::from_pixels(100.0),
-                    y: Twips::from_pixels(100.0),
-                },
-                DrawCommand::LineTo {
-                    x: Twips::from_pixels(200.0),
-                    y: Twips::from_pixels(100.0),
-                },
-                DrawCommand::LineTo {
-                    x: Twips::from_pixels(200.0),
-                    y: Twips::from_pixels(200.0),
-                },
-                DrawCommand::LineTo {
-                    x: Twips::from_pixels(100.0),
-                    y: Twips::from_pixels(200.0),
-                },
-                DrawCommand::LineTo {
-                    x: Twips::from_pixels(100.0),
-                    y: Twips::from_pixels(100.0),
-                },
-            ],
-        }];
-        assert_eq!(commands, expected);
-    }
-
-    /// A solid square with one edge flipped (fillstyle0 instead of fillstyle1).
-    #[test]
-    fn flipped_edges() {
-        let shape = build_shape(vec![
-            ShapeRecord::StyleChange(Box::new(swf::StyleChangeData {
-                move_to: Some((Twips::from_pixels(100.0), Twips::from_pixels(100.0))),
-                fill_style_0: None,
-                fill_style_1: Some(1),
-                line_style: None,
-                new_styles: None,
-            })),
-            ShapeRecord::StraightEdge {
-                delta_x: Twips::from_pixels(100.0),
-                delta_y: Twips::from_pixels(0.0),
-            },
-            ShapeRecord::StraightEdge {
-                delta_x: Twips::from_pixels(0.0),
-                delta_y: Twips::from_pixels(100.0),
-            },
-            ShapeRecord::StraightEdge {
-                delta_x: Twips::from_pixels(-100.0),
-                delta_y: Twips::from_pixels(0.0),
-            },
-            ShapeRecord::StyleChange(Box::new(swf::StyleChangeData {
-                move_to: Some((Twips::from_pixels(100.0), Twips::from_pixels(100.0))),
-                fill_style_0: Some(1),
-                fill_style_1: Some(0),
-                line_style: None,
-                new_styles: None,
-            })),
-            ShapeRecord::StraightEdge {
-                delta_x: Twips::from_pixels(0.0),
-                delta_y: Twips::from_pixels(100.0),
-            },
-        ]);
-        let commands = ShapeConverter::from_shape(&shape).into_commands();
-        let expected = vec![DrawPath::Fill {
-            style: &FILL_STYLES[0],
-            commands: vec![
-                DrawCommand::MoveTo {
-                    x: Twips::from_pixels(100.0),
-                    y: Twips::from_pixels(100.0),
-                },
-                DrawCommand::LineTo {
-                    x: Twips::from_pixels(200.0),
-                    y: Twips::from_pixels(100.0),
-                },
-                DrawCommand::LineTo {
-                    x: Twips::from_pixels(200.0),
-                    y: Twips::from_pixels(200.0),
-                },
-                DrawCommand::LineTo {
-                    x: Twips::from_pixels(100.0),
-                    y: Twips::from_pixels(200.0),
-                },
-                DrawCommand::LineTo {
-                    x: Twips::from_pixels(100.0),
-                    y: Twips::from_pixels(100.0),
-                },
-            ],
-        }];
-        assert_eq!(commands, expected);
     }
 }
 
@@ -716,16 +559,14 @@ mod tests {
 /// local_matrix is used to calculate the proper stroke widths.
 pub fn shape_hit_test(
     shape: &swf::Shape,
-    (point_x, point_y): (Twips, Twips),
+    test_point: swf::Point<Twips>,
     local_matrix: &Matrix,
 ) -> bool {
-    // Transform point to local space.
-    let mut x = Twips::ZERO;
-    let mut y = Twips::ZERO;
+    let mut cursor = swf::Point::ZERO;
     let mut winding = 0;
 
-    let mut has_fill_style0: bool = false;
-    let mut has_fill_style1: bool = false;
+    let mut has_fill_style0 = false;
+    let mut has_fill_style1 = false;
 
     let min_width = stroke_minimum_width(local_matrix);
     let mut stroke_width = None;
@@ -744,9 +585,8 @@ pub fn shape_hit_test(
                     winding = 0;
                 }
 
-                if let Some((move_x, move_y)) = style_change.move_to {
-                    x = move_x;
-                    y = move_y;
+                if let Some(move_to) = &style_change.move_to {
+                    cursor = *move_to;
                 }
 
                 if let Some(i) = style_change.fill_style_0 {
@@ -770,57 +610,49 @@ pub fn shape_hit_test(
                     };
                 }
             }
-            swf::ShapeRecord::StraightEdge { delta_x, delta_y } => {
-                let x1 = x + *delta_x;
-                let y1 = y + *delta_y;
+            swf::ShapeRecord::StraightEdge { delta } => {
+                let end = cursor + *delta;
+
                 // If this edge has a fill style on only one-side, check for a crossing.
                 if has_fill_style1 {
                     if !has_fill_style0 {
-                        winding += winding_number_line((point_x, point_y), (x, y), (x1, y1));
+                        winding += winding_number_line(test_point, cursor, end);
                     }
                 } else if has_fill_style0 {
-                    winding += winding_number_line((point_x, point_y), (x1, y1), (x, y));
+                    winding += winding_number_line(test_point, end, cursor);
                 }
 
                 if let Some(width) = stroke_width {
-                    if hit_test_stroke((point_x, point_y), (x, y), (x1, y1), width) {
+                    if hit_test_stroke(test_point, cursor, end, width) {
                         return true;
                     }
                 }
-                x = x1;
-                y = y1;
+
+                cursor = end;
             }
             swf::ShapeRecord::CurvedEdge {
-                control_delta_x,
-                control_delta_y,
-                anchor_delta_x,
-                anchor_delta_y,
+                control_delta,
+                anchor_delta,
             } => {
-                let x1 = x + *control_delta_x;
-                let y1 = y + *control_delta_y;
-
-                let x2 = x1 + *anchor_delta_x;
-                let y2 = y1 + *anchor_delta_y;
+                let control = cursor + *control_delta;
+                let anchor = control + *anchor_delta;
 
                 // If this edge has a fill style on only one-side, check for a crossing.
                 if has_fill_style1 {
                     if !has_fill_style0 {
-                        winding +=
-                            winding_number_curve((point_x, point_y), (x, y), (x1, y1), (x2, y2));
+                        winding += winding_number_curve(test_point, cursor, control, anchor);
                     }
                 } else if has_fill_style0 {
-                    winding += winding_number_curve((point_x, point_y), (x2, y2), (x1, y1), (x, y));
+                    winding += winding_number_curve(test_point, anchor, control, cursor);
                 }
 
                 if let Some(width) = stroke_width {
-                    if hit_test_stroke_curve((point_x, point_y), (x, y), (x1, y1), (x2, y2), width)
-                    {
+                    if hit_test_stroke_curve(test_point, cursor, control, anchor, width) {
                         return true;
                     }
                 }
 
-                x = x2;
-                y = y2;
+                cursor = anchor;
             }
         }
     }
@@ -828,25 +660,25 @@ pub fn shape_hit_test(
 }
 
 /// Test whether the given point is contained within the paths specified by the draw commands.
-pub fn draw_command_fill_hit_test(commands: &[DrawCommand], test_point: (Twips, Twips)) -> bool {
-    let mut cursor = (Twips::ZERO, Twips::ZERO);
-    let mut fill_start = (Twips::ZERO, Twips::ZERO);
+pub fn draw_command_fill_hit_test(commands: &[DrawCommand], test_point: swf::Point<Twips>) -> bool {
+    let mut cursor = swf::Point::ZERO;
+    let mut fill_start = swf::Point::ZERO;
     let mut winding = 0;
 
     // Draw command only contains a single fill, so don't have to worry about fill styles.
     for command in commands {
-        match *command {
-            DrawCommand::MoveTo { x: x1, y: y1 } => {
-                cursor = (x1, y1);
-                fill_start = (x1, y1);
+        match command {
+            DrawCommand::MoveTo(move_to) => {
+                cursor = *move_to;
+                fill_start = *move_to;
             }
-            DrawCommand::LineTo { x: x1, y: y1 } => {
-                winding += winding_number_line(test_point, cursor, (x1, y1));
-                cursor = (x1, y1);
+            DrawCommand::LineTo(line_to) => {
+                winding += winding_number_line(test_point, cursor, *line_to);
+                cursor = *line_to;
             }
-            DrawCommand::CurveTo { x1, y1, x2, y2 } => {
-                winding += winding_number_curve(test_point, cursor, (x1, y1), (x2, y2));
-                cursor = (x2, y2);
+            DrawCommand::CurveTo { control, anchor } => {
+                winding += winding_number_curve(test_point, cursor, *control, *anchor);
+                cursor = *anchor;
             }
         }
     }
@@ -863,39 +695,29 @@ pub fn draw_command_fill_hit_test(commands: &[DrawCommand], test_point: (Twips, 
 pub fn draw_command_stroke_hit_test(
     commands: &[DrawCommand],
     stroke_width: Twips,
-    (point_x, point_y): (Twips, Twips),
+    test_point: swf::Point<Twips>,
     local_matrix: &Matrix,
 ) -> bool {
     let stroke_min_width = stroke_minimum_width(local_matrix);
     let stroke_width = 0.5 * f64::max(stroke_width.get().into(), stroke_min_width);
     let stroke_widths = (stroke_width, stroke_width * stroke_width);
-    let mut x = Twips::default();
-    let mut y = Twips::default();
+    let mut cursor = swf::Point::ZERO;
     for command in commands {
-        match *command {
-            DrawCommand::MoveTo { x: x1, y: y1 } => {
-                x = x1;
-                y = y1;
+        match command {
+            DrawCommand::MoveTo(move_to) => {
+                cursor = *move_to;
             }
-            DrawCommand::LineTo { x: x1, y: y1 } => {
-                if hit_test_stroke((point_x, point_y), (x, y), (x1, y1), stroke_widths) {
+            DrawCommand::LineTo(line_to) => {
+                if hit_test_stroke(test_point, cursor, *line_to, stroke_widths) {
                     return true;
                 }
-                x = x1;
-                y = y1;
+                cursor = *line_to;
             }
-            DrawCommand::CurveTo { x1, y1, x2, y2 } => {
-                if hit_test_stroke_curve(
-                    (point_x, point_y),
-                    (x, y),
-                    (x1, y1),
-                    (x2, y2),
-                    stroke_widths,
-                ) {
+            DrawCommand::CurveTo { control, anchor } => {
+                if hit_test_stroke_curve(test_point, cursor, *control, *anchor, stroke_widths) {
                     return true;
                 }
-                x = x2;
-                y = y2;
+                cursor = *anchor;
             }
         }
     }
@@ -917,17 +739,17 @@ fn stroke_minimum_width(matrix: &Matrix) -> f64 {
 /// Returns whether the given point is inside the stroked line segment.
 /// `width_sq` should be the squared width of the stroke.
 fn hit_test_stroke(
-    (point_x, point_y): (Twips, Twips),
-    (x0, y0): (Twips, Twips),
-    (x1, y1): (Twips, Twips),
+    test_point: swf::Point<Twips>,
+    begin: swf::Point<Twips>,
+    end: swf::Point<Twips>,
     (stroke_width, stroke_width_sq): (f64, f64),
 ) -> bool {
-    let px = point_x.get() as f64;
-    let py = point_y.get() as f64;
-    let x0 = x0.get() as f64;
-    let y0 = y0.get() as f64;
-    let x1 = x1.get() as f64;
-    let y1 = y1.get() as f64;
+    let px = test_point.x.get() as f64;
+    let py = test_point.y.get() as f64;
+    let x0 = begin.x.get() as f64;
+    let y0 = begin.y.get() as f64;
+    let x1 = end.x.get() as f64;
+    let y1 = end.y.get() as f64;
 
     // Early exit: out of bounds
     let x_min = x0.min(x1);
@@ -941,7 +763,7 @@ fn hit_test_stroke(
         return false;
     }
 
-    // AB is the segment from (x0, y0) to (x1, y1) and P is (point_x, point_y).
+    // AB is the segment from `begin` to `end` and P is `test_point`.
     //  P
     //   .
     //    .
@@ -977,20 +799,20 @@ fn hit_test_stroke(
 /// Returns whether the given point is inside the stroked bezier curve.
 /// `width_sq` should be the squared width of the stroke.
 fn hit_test_stroke_curve(
-    (point_x, point_y): (Twips, Twips),
-    (x0, y0): (Twips, Twips),
-    (x1, y1): (Twips, Twips),
-    (x2, y2): (Twips, Twips),
+    test_point: swf::Point<Twips>,
+    begin: swf::Point<Twips>,
+    control: swf::Point<Twips>,
+    anchor: swf::Point<Twips>,
     (stroke_width, stroke_width_sq): (f64, f64),
 ) -> bool {
-    let px = point_x.get() as f64;
-    let py = point_y.get() as f64;
-    let x0 = x0.get() as f64;
-    let y0 = y0.get() as f64;
-    let x1 = x1.get() as f64;
-    let y1 = y1.get() as f64;
-    let x2 = x2.get() as f64;
-    let y2 = y2.get() as f64;
+    let px = test_point.x.get() as f64;
+    let py = test_point.y.get() as f64;
+    let x0 = begin.x.get() as f64;
+    let y0 = begin.y.get() as f64;
+    let x1 = control.x.get() as f64;
+    let y1 = control.y.get() as f64;
+    let x2 = anchor.x.get() as f64;
+    let y2 = anchor.y.get() as f64;
 
     // Early exit: out of bounds
     // TODO: Since this involves an expensive cubic, probably wortwhile to calculate the tight bounds for the curve:
@@ -1055,34 +877,28 @@ fn hit_test_stroke_curve(
 
 /// Calculates the winding number for a line segment relative to the given point.
 fn winding_number_line(
-    (point_x, point_y): (Twips, Twips),
-    (x0, y0): (Twips, Twips),
-    (x1, y1): (Twips, Twips),
+    test_point: swf::Point<Twips>,
+    begin: swf::Point<Twips>,
+    end: swf::Point<Twips>,
 ) -> i32 {
-    let point_x = point_x.get() as f64;
-    let point_y = point_y.get() as f64;
-    let x0 = x0.get() as f64;
-    let y0 = y0.get() as f64;
-    let x1 = x1.get() as f64;
-    let y1 = y1.get() as f64;
+    let d0 = test_point - begin;
+    let d1 = end - begin;
 
     // Adjust winding number if we are on the left side of the segment.
     // An upward segment (-y) increments the winding number (including the initial endpoint).
     // A downward segment (+y) decrements the winding number (including the final endpoint)
     // Perp-dot indicates which side of the segment the point is on.
-    if y0 < point_y {
-        if y1 >= point_y {
-            let val = (x1 - x0) * (point_y - y0) - (y1 - y0) * (point_x - x0);
-            if val > 0.0 {
-                return 1;
-            }
+    if begin.y < test_point.y {
+        if end.y >= test_point.y
+            && (d1.dx.get() as i64) * (d0.dy.get() as i64)
+                > (d1.dy.get() as i64) * (d0.dx.get() as i64)
+        {
+            return 1;
         }
-    } else if y1 < point_y {
-        let val = (x1 - x0) * (point_y - y0) - (y1 - y0) * (point_x - x0);
-
-        if val < 0.0 {
-            return -1;
-        }
+    } else if end.y < test_point.y
+        && (d1.dx.get() as i64) * (d0.dy.get() as i64) < (d1.dy.get() as i64) * (d0.dx.get() as i64)
+    {
+        return -1;
     }
 
     0
@@ -1090,10 +906,10 @@ fn winding_number_line(
 
 /// Calculates the winding number for a bezier curve around the given point.
 fn winding_number_curve(
-    (point_x, point_y): (Twips, Twips),
-    (ax0, ay0): (Twips, Twips),
-    (ax1, ay1): (Twips, Twips),
-    (ax2, ay2): (Twips, Twips),
+    test_point: swf::Point<Twips>,
+    begin: swf::Point<Twips>,
+    control: swf::Point<Twips>,
+    anchor: swf::Point<Twips>,
 ) -> i32 {
     // Intersect a ray on the +x axis with the quadratic bezier.
     //
@@ -1112,27 +928,24 @@ fn winding_number_curve(
     //    b) if the subcurve surrounds the ray, we know it has an intersection without having to check if t is in [0, 1]
     //    c) we know the winding of the segment upward/downward based on which root it contains
 
-    let x0 = ax0.get() - point_x.get();
-    let y0 = ay0.get() - point_y.get();
-    let x1 = ax1.get() - point_x.get();
-    let y1 = ay1.get() - point_y.get();
-    let x2 = ax2.get() - point_x.get();
-    let y2 = ay2.get() - point_y.get();
+    let d0 = begin - test_point;
+    let d1 = control - test_point;
+    let d2 = anchor - test_point;
 
     // Early exit: all control points out of bounds.
-    if (y0 < 0 && y1 < 0 && y2 < 0)
-        || (y0 > 0 && y1 > 0 && y2 > 0)
-        || (x0 <= 0 && x1 <= 0 && x2 <= 0)
+    if (d0.dy < Twips::ZERO && d1.dy < Twips::ZERO && d2.dy < Twips::ZERO)
+        || (d0.dy > Twips::ZERO && d1.dy > Twips::ZERO && d2.dy > Twips::ZERO)
+        || (d0.dx <= Twips::ZERO && d1.dx <= Twips::ZERO && d2.dx <= Twips::ZERO)
     {
         return 0;
     }
 
-    let x0 = x0 as f64;
-    let y0 = y0 as f64;
-    let x1 = x1 as f64;
-    let y1 = y1 as f64;
-    let x2 = x2 as f64;
-    let y2 = y2 as f64;
+    let x0 = d0.dx.get() as f64;
+    let y0 = d0.dy.get() as f64;
+    let x1 = d1.dx.get() as f64;
+    let y1 = d1.dy.get() as f64;
+    let x2 = d2.dx.get() as f64;
+    let y2 = d2.dy.get() as f64;
 
     let a = y0 - 2.0 * y1 + y2;
     let b = 2.0 * (y1 - y0);
@@ -1250,6 +1063,7 @@ fn solve_cubic(a: f64, b: f64, c: f64, d: f64) -> SmallVec<[f64; 3]> {
     if a.abs() <= COEFFICIENT_EPSILON {
         // Fall back to quadratic formula.
         let (t0, t1) = solve_quadratic(b, c, d);
+        #[allow(clippy::tuple_array_conversions)]
         roots.extend_from_slice(&[t0, t1]);
         return roots;
     }
@@ -1300,7 +1114,7 @@ pub fn swf_glyph_to_shape(glyph: &swf::Glyph) -> swf::Shape {
         id: 0,
         shape_bounds: bounds.clone(),
         edge_bounds: bounds,
-        flags: swf::ShapeFlag::HAS_SCALING_STROKES,
+        flags: swf::ShapeFlag::HAS_SCALING_STROKES | swf::ShapeFlag::NON_ZERO_WINDING_RULE,
         styles: swf::ShapeStyles {
             fill_styles: vec![swf::FillStyle::Color(swf::Color {
                 r: 255,
@@ -1356,5 +1170,151 @@ impl<'a> LineScales<'a> {
         // Flash draws all strokes with a minimum width of 1 pixel.
         // This usually occurs in "hairline" strokes (exported with width of 1 twip).
         scaled_width.max(1.0)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use swf::PointDelta;
+
+    const FILL_STYLES: [FillStyle; 1] = [FillStyle::Color(swf::Color {
+        r: 255,
+        g: 0,
+        b: 0,
+        a: 255,
+    })];
+
+    const LINE_STYLES: [LineStyle; 0] = [];
+
+    /// Convenience method to quickly make a shape,
+    fn build_shape(records: Vec<ShapeRecord>) -> swf::Shape {
+        let bounds = calculate_shape_bounds(&records);
+        swf::Shape {
+            version: 2,
+            id: 1,
+            shape_bounds: bounds.clone(),
+            edge_bounds: bounds,
+            flags: swf::ShapeFlag::HAS_SCALING_STROKES,
+            styles: swf::ShapeStyles {
+                fill_styles: FILL_STYLES.to_vec(),
+                line_styles: LINE_STYLES.to_vec(),
+            },
+            shape: records,
+        }
+    }
+
+    /// A simple solid square.
+    #[test]
+    fn basic_shape() {
+        let shape = build_shape(vec![
+            ShapeRecord::StyleChange(Box::new(swf::StyleChangeData {
+                move_to: Some(swf::Point::from_pixels(100.0, 100.0)),
+                fill_style_0: None,
+                fill_style_1: Some(1),
+                line_style: None,
+                new_styles: None,
+            })),
+            ShapeRecord::StraightEdge {
+                delta: PointDelta::from_pixels(100.0, 0.0),
+            },
+            ShapeRecord::StraightEdge {
+                delta: PointDelta::from_pixels(0.0, 100.0),
+            },
+            ShapeRecord::StraightEdge {
+                delta: PointDelta::from_pixels(-100.0, 0.0),
+            },
+            ShapeRecord::StraightEdge {
+                delta: PointDelta::from_pixels(0.0, -100.0),
+            },
+        ]);
+        let commands = ShapeConverter::from_shape(&shape).into_commands();
+        let expected = vec![DrawPath::Fill {
+            style: &FILL_STYLES[0],
+            commands: vec![
+                DrawCommand::MoveTo(swf::Point::from_pixels(100.0, 100.0)),
+                DrawCommand::LineTo(swf::Point::from_pixels(200.0, 100.0)),
+                DrawCommand::LineTo(swf::Point::from_pixels(200.0, 200.0)),
+                DrawCommand::LineTo(swf::Point::from_pixels(100.0, 200.0)),
+                DrawCommand::LineTo(swf::Point::from_pixels(100.0, 100.0)),
+            ],
+            winding_rule: FillRule::EvenOdd,
+        }];
+        assert_eq!(commands, expected);
+    }
+
+    /// A solid square with one edge flipped (fillstyle0 instead of fillstyle1).
+    #[test]
+    fn flipped_edges() {
+        let shape = build_shape(vec![
+            ShapeRecord::StyleChange(Box::new(swf::StyleChangeData {
+                move_to: Some(swf::Point::from_pixels(100.0, 100.0)),
+                fill_style_0: None,
+                fill_style_1: Some(1),
+                line_style: None,
+                new_styles: None,
+            })),
+            ShapeRecord::StraightEdge {
+                delta: PointDelta::from_pixels(100.0, 0.0),
+            },
+            ShapeRecord::StraightEdge {
+                delta: PointDelta::from_pixels(0.0, 100.0),
+            },
+            ShapeRecord::StraightEdge {
+                delta: PointDelta::from_pixels(-100.0, 0.0),
+            },
+            ShapeRecord::StyleChange(Box::new(swf::StyleChangeData {
+                move_to: Some(swf::Point::from_pixels(100.0, 100.0)),
+                fill_style_0: Some(1),
+                fill_style_1: Some(0),
+                line_style: None,
+                new_styles: None,
+            })),
+            ShapeRecord::StraightEdge {
+                delta: PointDelta::from_pixels(0.0, 100.0),
+            },
+        ]);
+        let commands = ShapeConverter::from_shape(&shape).into_commands();
+        let expected = vec![DrawPath::Fill {
+            style: &FILL_STYLES[0],
+            commands: vec![
+                DrawCommand::MoveTo(swf::Point::from_pixels(100.0, 100.0)),
+                DrawCommand::LineTo(swf::Point::from_pixels(200.0, 100.0)),
+                DrawCommand::LineTo(swf::Point::from_pixels(200.0, 200.0)),
+                DrawCommand::LineTo(swf::Point::from_pixels(100.0, 200.0)),
+                DrawCommand::LineTo(swf::Point::from_pixels(100.0, 100.0)),
+            ],
+            winding_rule: FillRule::EvenOdd,
+        }];
+        assert_eq!(commands, expected);
+    }
+
+    use swf::Twips;
+
+    #[test]
+    fn test_winding_number_line() {
+        fn test(
+            test_point: swf::Point<Twips>,
+            begin: swf::Point<Twips>,
+            end: swf::Point<Twips>,
+            expected: i32,
+        ) {
+            let result = winding_number_line(test_point, begin, end);
+
+            assert_eq!(
+                expected, result,
+                "result (winding number line) should match"
+            );
+        }
+
+        // Test data taken from a real-world case:
+        // https://github.com/ruffle-rs/ruffle/issues/11077
+        // Overflow bugs can make this test case fail.
+        test(
+            swf::Point::new(Twips::new(0), Twips::new(-665)),
+            swf::Point::new(Twips::new(44868), Twips::new(-41726)),
+            swf::Point::new(Twips::new(44868), Twips::new(8275)),
+            1,
+        );
     }
 }

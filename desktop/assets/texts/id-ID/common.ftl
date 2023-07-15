@@ -1,0 +1,2 @@
+start = Mulai
+browse = Telusur

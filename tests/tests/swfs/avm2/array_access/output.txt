@@ -1,3 +1,18 @@
 a
 b
 c
+a.removeAt(1) = undefined
+A: First,Second,Third,
+A.length: 4
+a.removeAt(20) = undefined
+A: First,Second,Third,
+A.length: 4
+a.removeAt(-2) = Third
+A: First,Second,
+A.length: 3
+a.removeAt(-30) = First
+A: Second,
+A.length: 2
+a.removeAt(0) = Second
+A: 
+A.length: 1

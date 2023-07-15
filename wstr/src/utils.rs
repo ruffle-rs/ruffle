@@ -1,4 +1,5 @@
-///! Utilities for operating on strings in SWF files.
+//! Utilities for operating on strings in SWF files.
+
 use super::tables::{LOWERCASE_TABLE, UPPERCASE_TABLE};
 use super::Units;
 use alloc::vec::Vec;

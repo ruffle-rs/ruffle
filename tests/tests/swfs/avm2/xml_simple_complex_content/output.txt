@@ -1,0 +1,48 @@
+xmlAndXmlLists[0].hasSimpleContent(): true
+xmlAndXmlLists[0].hasComplexContent(): false
+
+xmlAndXmlLists[1].hasSimpleContent(): true
+xmlAndXmlLists[1].hasComplexContent(): false
+
+xmlAndXmlLists[2].hasSimpleContent(): true
+xmlAndXmlLists[2].hasComplexContent(): false
+
+xmlAndXmlLists[3].hasSimpleContent(): false
+xmlAndXmlLists[3].hasComplexContent(): true
+
+xmlAndXmlLists[4].hasSimpleContent(): false
+xmlAndXmlLists[4].hasComplexContent(): true
+
+xmlAndXmlLists[5].hasSimpleContent(): false
+xmlAndXmlLists[5].hasComplexContent(): true
+
+xmlAndXmlLists[6].hasSimpleContent(): false
+xmlAndXmlLists[6].hasComplexContent(): true
+
+xmlAndXmlLists[7].hasSimpleContent(): false
+xmlAndXmlLists[7].hasComplexContent(): true
+
+xmlAndXmlLists[8].hasSimpleContent(): true
+xmlAndXmlLists[8].hasComplexContent(): false
+
+xmlAndXmlLists[9].hasSimpleContent(): true
+xmlAndXmlLists[9].hasComplexContent(): false
+
+xmlAndXmlLists[10].hasSimpleContent(): true
+xmlAndXmlLists[10].hasComplexContent(): false
+
+xmlAndXmlLists[11].hasSimpleContent(): true
+xmlAndXmlLists[11].hasComplexContent(): false
+
+xmlAndXmlLists[12].hasSimpleContent(): true
+xmlAndXmlLists[12].hasComplexContent(): false
+
+xmlAndXmlLists[13].hasSimpleContent(): true
+xmlAndXmlLists[13].hasComplexContent(): false
+
+xmlAndXmlLists[14].hasSimpleContent(): true
+xmlAndXmlLists[14].hasComplexContent(): false
+
+xmlAndXmlLists[15].hasSimpleContent(): true
+xmlAndXmlLists[15].hasComplexContent(): false
+

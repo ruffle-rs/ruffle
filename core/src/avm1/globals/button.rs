@@ -4,11 +4,9 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{globals, Object, ScriptObject, TObject, Value};
+use crate::context::GcContext;
 use crate::display_object::{Avm1Button, TDisplayObject};
 use crate::string::AvmString;
-use gc_arena::MutationContext;
-use std::str::FromStr;
-use swf::BlendMode;
 
 macro_rules! button_getter {
     ($name:ident) => {
@@ -38,19 +36,19 @@ macro_rules! button_setter {
 }
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "enabled" => property(button_getter!(enabled), button_setter!(set_enabled));
-    "getDepth" => method(globals::get_depth; DONT_ENUM | DONT_DELETE | READ_ONLY | VERSION_6);
-    "useHandCursor" => property(button_getter!(use_hand_cursor), button_setter!(set_use_hand_cursor));
-    "blendMode" => property(button_getter!(blend_mode), button_setter!(set_blend_mode); DONT_DELETE | DONT_ENUM);
+    "enabled" => bool(true);
+    "useHandCursor" => bool(true);
+    "getDepth" => method(globals::get_depth; DONT_DELETE | READ_ONLY | VERSION_6);
+    "blendMode" => property(button_getter!(blend_mode), button_setter!(set_blend_mode); DONT_DELETE | VERSION_8);
 };
 
 pub fn create_proto<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = ScriptObject::new(gc_context, Some(proto));
-    define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
+    let object = ScriptObject::new(context.gc_context, Some(proto));
+    define_properties_on(PROTO_DECLS, context, object, fn_proto);
     object.into()
 }
 
@@ -61,40 +59,6 @@ pub fn constructor<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(this.into())
-}
-
-fn enabled<'gc>(
-    this: Avm1Button<'gc>,
-    _activation: &mut Activation<'_, 'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this.enabled().into())
-}
-
-fn set_enabled<'gc>(
-    this: Avm1Button<'gc>,
-    activation: &mut Activation<'_, 'gc>,
-    value: Value<'gc>,
-) -> Result<(), Error<'gc>> {
-    let enabled = value.as_bool(activation.swf_version());
-    this.set_enabled(&mut activation.context, enabled);
-    Ok(())
-}
-
-fn use_hand_cursor<'gc>(
-    this: Avm1Button<'gc>,
-    _activation: &mut Activation<'_, 'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this.use_hand_cursor().into())
-}
-
-fn set_use_hand_cursor<'gc>(
-    this: Avm1Button<'gc>,
-    activation: &mut Activation<'_, 'gc>,
-    value: Value<'gc>,
-) -> Result<(), Error<'gc>> {
-    let use_hand_cursor = value.as_bool(activation.swf_version());
-    this.set_use_hand_cursor(&mut activation.context, use_hand_cursor);
-    Ok(())
 }
 
 fn blend_mode<'gc>(
@@ -110,13 +74,11 @@ fn set_blend_mode<'gc>(
     activation: &mut Activation<'_, 'gc>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    // No-op if value is not a string.
-    if let Value::String(mode) = value {
-        if let Ok(mode) = BlendMode::from_str(&mode.to_string()) {
-            this.set_blend_mode(activation.context.gc_context, mode);
-        } else {
-            tracing::error!("Unknown blend mode {}", mode);
-        };
+    // No-op if value is not a valid blend mode.
+    if let Some(mode) = value.as_blend_mode() {
+        this.set_blend_mode(activation.context.gc_context, mode);
+    } else {
+        tracing::error!("Unknown blend mode {value:?}");
     }
     Ok(())
 }

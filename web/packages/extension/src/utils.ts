@@ -1,12 +1,11 @@
 import type { Options } from "./common";
-import { LogLevel } from "ruffle-core";
+import { DEFAULT_CONFIG as CORE_DEFAULT_CONFIG } from "ruffle-core";
 
-const DEFAULT_OPTIONS: Options = {
+const DEFAULT_OPTIONS: Required<Options> = {
+    ...CORE_DEFAULT_CONFIG,
     ruffleEnable: true,
     ignoreOptout: false,
-    warnOnUnsupportedContent: true,
-    logLevel: LogLevel.Error,
-    showSwfDownload: false,
+    autostart: false,
 };
 
 export let i18n: {
@@ -14,6 +13,7 @@ export let i18n: {
 };
 
 interface StorageArea {
+    clear: () => Promise<void>;
     get: (keys?: string[]) => Promise<Record<string, unknown>>;
     remove: (keys: string[]) => Promise<void>;
     set: (items: Record<string, unknown>) => Promise<void>;
@@ -83,6 +83,7 @@ function promisifyStorageArea(
     storage: chrome.storage.StorageArea
 ): StorageArea {
     return {
+        clear: () => promisify((cb) => storage.clear(cb)),
         get: (keys?: string[]) =>
             promisify((cb) => storage.get(keys || null, cb)),
         remove: (keys: string[]) => promisify((cb) => storage.remove(keys, cb)),

@@ -1,4 +1,4 @@
-use swf::{Fixed16, Rectangle, Twips};
+use swf::{Fixed16, Point, PointDelta, Rectangle, Twips};
 
 /// The transformation matrix used by Flash display objects.
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -32,7 +32,34 @@ impl Matrix {
         ty: Twips::ZERO,
     };
 
-    pub fn scale(scale_x: f32, scale_y: f32) -> Self {
+    pub const ZERO: Self = Self {
+        a: 0.0,
+        c: 0.0,
+        tx: Twips::ZERO,
+        b: 0.0,
+        d: 0.0,
+        ty: Twips::ZERO,
+    };
+
+    pub const TWIPS_TO_PIXELS: Self = Self {
+        a: 1.0 / Twips::TWIPS_PER_PIXEL as f32,
+        c: 0.0,
+        tx: Twips::ZERO,
+        b: 0.0,
+        d: 1.0 / Twips::TWIPS_PER_PIXEL as f32,
+        ty: Twips::ZERO,
+    };
+
+    pub const PIXELS_TO_TWIPS: Self = Self {
+        a: Twips::TWIPS_PER_PIXEL as f32,
+        c: 0.0,
+        tx: Twips::ZERO,
+        b: 0.0,
+        d: Twips::TWIPS_PER_PIXEL as f32,
+        ty: Twips::ZERO,
+    };
+
+    pub const fn scale(scale_x: f32, scale_y: f32) -> Self {
         Self {
             a: scale_x,
             c: 0.0,
@@ -109,30 +136,41 @@ impl Matrix {
         )
     }
 
-    pub fn invert(&mut self) {
+    #[inline]
+    pub fn determinant(&self) -> f32 {
+        self.a * self.d - self.b * self.c
+    }
+
+    #[inline]
+    pub fn inverse(&self) -> Option<Self> {
         let (tx, ty) = (self.tx.get() as f32, self.ty.get() as f32);
-        let det = self.a * self.d - self.b * self.c;
-        let a = self.d / det;
-        let b = self.b / -det;
-        let c = self.c / -det;
-        let d = self.a / det;
-        let (out_tx, out_ty) = (
-            round_to_i32((self.d * tx - self.c * ty) / -det),
-            round_to_i32((self.b * tx - self.a * ty) / det),
-        );
-        *self = Matrix {
-            a,
-            b,
-            c,
-            d,
-            tx: Twips::new(out_tx),
-            ty: Twips::new(out_ty),
-        };
+        let det = self.determinant();
+        if det.abs() > f32::EPSILON {
+            let a = self.d / det;
+            let b = self.b / -det;
+            let c = self.c / -det;
+            let d = self.a / det;
+            let (out_tx, out_ty) = (
+                round_to_i32((self.d * tx - self.c * ty) / -det),
+                round_to_i32((self.b * tx - self.a * ty) / det),
+            );
+            Some(Matrix {
+                a,
+                b,
+                c,
+                d,
+                tx: Twips::new(out_tx),
+                ty: Twips::new(out_ty),
+            })
+        } else {
+            None
+        }
     }
 }
 
 impl std::ops::Mul for Matrix {
     type Output = Self;
+
     fn mul(self, rhs: Self) -> Self {
         let (rhs_tx, rhs_ty) = (rhs.tx.get() as f32, rhs.ty.get() as f32);
         let (out_tx, out_ty) = (
@@ -150,13 +188,27 @@ impl std::ops::Mul for Matrix {
     }
 }
 
-impl std::ops::Mul<(Twips, Twips)> for Matrix {
-    type Output = (Twips, Twips);
-    fn mul(self, (x, y): (Twips, Twips)) -> (Twips, Twips) {
-        let (x, y) = (x.get() as f32, y.get() as f32);
-        let out_x = round_to_i32(self.a * x + self.c * y).wrapping_add(self.tx.get());
-        let out_y = round_to_i32(self.b * x + self.d * y).wrapping_add(self.ty.get());
-        (Twips::new(out_x), Twips::new(out_y))
+impl std::ops::Mul<Point<Twips>> for Matrix {
+    type Output = Point<Twips>;
+
+    fn mul(self, point: Point<Twips>) -> Point<Twips> {
+        let x = point.x.get() as f32;
+        let y = point.y.get() as f32;
+        let out_x = Twips::new(round_to_i32(self.a * x + self.c * y).wrapping_add(self.tx.get()));
+        let out_y = Twips::new(round_to_i32(self.b * x + self.d * y).wrapping_add(self.ty.get()));
+        Point::new(out_x, out_y)
+    }
+}
+
+impl std::ops::Mul<PointDelta<Twips>> for Matrix {
+    type Output = PointDelta<Twips>;
+
+    fn mul(self, delta: PointDelta<Twips>) -> PointDelta<Twips> {
+        let dx = delta.dx.get() as f32;
+        let dy = delta.dy.get() as f32;
+        let out_dx = Twips::new(round_to_i32(self.a * dx + self.c * dy));
+        let out_dy = Twips::new(round_to_i32(self.b * dx + self.d * dy));
+        PointDelta::new(out_dx, out_dy)
     }
 }
 
@@ -168,15 +220,15 @@ impl std::ops::Mul<Rectangle<Twips>> for Matrix {
             return Default::default();
         }
 
-        let (x0, y0) = self * (rhs.x_min, rhs.y_min);
-        let (x1, y1) = self * (rhs.x_min, rhs.y_max);
-        let (x2, y2) = self * (rhs.x_max, rhs.y_min);
-        let (x3, y3) = self * (rhs.x_max, rhs.y_max);
+        let p0 = self * Point::new(rhs.x_min, rhs.y_min);
+        let p1 = self * Point::new(rhs.x_min, rhs.y_max);
+        let p2 = self * Point::new(rhs.x_max, rhs.y_min);
+        let p3 = self * Point::new(rhs.x_max, rhs.y_max);
         Rectangle {
-            x_min: x0.min(x1).min(x2).min(x3),
-            x_max: x0.max(x1).max(x2).max(x3),
-            y_min: y0.min(y1).min(y2).min(y3),
-            y_max: y0.max(y1).max(y2).max(y3),
+            x_min: p0.x.min(p1.x).min(p2.x).min(p3.x),
+            x_max: p0.x.max(p1.x).max(p2.x).max(p3.x),
+            y_min: p0.y.min(p1.y).min(p2.y).min(p3.y),
+            y_max: p0.y.max(p1.y).max(p2.y).max(p3.y),
         }
     }
 }
@@ -210,21 +262,24 @@ mod tests {
     use super::*;
     use approx::{assert_ulps_eq, AbsDiffEq, UlpsEq};
 
-    macro_rules! test_invert {
-        ( $test: ident, $($args: expr),* ) => {
+    macro_rules! test_inverse {
+        ($test: ident, $($args: expr),* $(,)?) => {
             #[test]
             fn $test() {
                 $(
-                    let (mut input, output) = $args;
-                    input.invert();
-                    assert_ulps_eq!(input, output);
+                    let (input, output) = $args;
+                    match (input.inverse(), output) {
+                        (Some(result), Some(output)) => assert_ulps_eq!(result, output),
+                        (None, None) => (),
+                        (result, output) => panic!("Matrix::inverse: Got {:?}, expected {:?}", result, output),
+                    }
                 )*
             }
         };
     }
 
     macro_rules! test_multiply {
-        ( $test: ident, $($args: expr),* ) => {
+        ($test: ident, $($args: expr),* $(,)?) => {
             #[test]
             fn $test() {
                 $(
@@ -236,7 +291,7 @@ mod tests {
     }
 
     macro_rules! test_multiply_twips {
-        ( $test: ident, $($args: expr),* ) => {
+        ($test: ident, $($args: expr),* $(,)?) => {
             #[test]
             fn $test() {
                 $(
@@ -279,14 +334,14 @@ mod tests {
     }
 
     // Identity matrix inverted should be unchanged.
-    test_invert!(
-        invert_identity_matrix,
-        (Matrix::default(), Matrix::default())
+    test_inverse!(
+        inverse_identity_matrix,
+        (Matrix::default(), Some(Matrix::default())),
     );
 
     // Standard test cases; there's nothing special about these matrices.
-    test_invert!(
-        invert_matrices,
+    test_inverse!(
+        inverse_matrix,
         (
             Matrix {
                 a: 1.0,
@@ -294,16 +349,16 @@ mod tests {
                 tx: Twips::from_pixels(7.0),
                 b: 2.0,
                 d: 5.0,
-                ty: Twips::from_pixels(2.0)
+                ty: Twips::from_pixels(2.0),
             },
-            Matrix {
+            Some(Matrix {
                 a: -1.666_666_6,
                 c: 1.333_333_3,
                 tx: Twips::from_pixels(9.0),
                 b: 0.666_666_6,
                 d: -0.333_333_3,
-                ty: Twips::from_pixels(-4.0)
-            }
+                ty: Twips::from_pixels(-4.0),
+            }),
         ),
         (
             Matrix {
@@ -312,16 +367,16 @@ mod tests {
                 tx: Twips::from_pixels(-7.0),
                 b: -2.0,
                 d: -5.0,
-                ty: Twips::from_pixels(-2.0)
+                ty: Twips::from_pixels(-2.0),
             },
-            Matrix {
+            Some(Matrix {
                 a: 1.666_666_6,
                 c: -1.333_333_3,
                 tx: Twips::from_pixels(9.0),
                 b: -0.666_666_6,
                 d: 0.333_333_3,
-                ty: Twips::from_pixels(-4.0)
-            }
+                ty: Twips::from_pixels(-4.0),
+            }),
         ),
         (
             Matrix {
@@ -330,16 +385,16 @@ mod tests {
                 tx: Twips::from_pixels(1.0),
                 b: -2.7,
                 d: 3.4,
-                ty: Twips::from_pixels(-2.4)
+                ty: Twips::from_pixels(-2.4),
             },
-            Matrix {
+            Some(Matrix {
                 a: 0.407_673_9,
                 c: -0.143_884_9,
                 tx: Twips::from_pixels(-0.752_997_6),
                 b: 0.323_741,
                 d: 0.179_856_1,
-                ty: Twips::from_pixels(0.107_913_67)
-            }
+                ty: Twips::from_pixels(0.107_913_67),
+            }),
         ),
         (
             Matrix {
@@ -348,17 +403,34 @@ mod tests {
                 tx: Twips::from_pixels(10.0),
                 b: 0.0,
                 d: -1.0,
-                ty: Twips::from_pixels(5.0)
+                ty: Twips::from_pixels(5.0),
             },
-            Matrix {
+            Some(Matrix {
                 a: -0.5,
                 c: 0.0,
                 tx: Twips::from_pixels(5.0),
                 b: 0.0,
                 d: -1.0,
-                ty: Twips::from_pixels(5.0)
-            }
-        )
+                ty: Twips::from_pixels(5.0),
+            }),
+        ),
+    );
+
+    // Non-invertible matrices
+    test_inverse!(
+        inverse_uninvertible_matrices,
+        (Matrix::ZERO, None),
+        (
+            Matrix {
+                a: 8.0,
+                b: 2.0,
+                c: 16.0,
+                d: 4.0,
+                tx: Twips::from_pixels(123.0),
+                ty: Twips::from_pixels(234.0),
+            },
+            None,
+        ),
     );
 
     // Anything multiplied by the identity matrix should be unchanged.
@@ -373,7 +445,7 @@ mod tests {
                 tx: Twips::from_pixels(7.0),
                 b: 2.0,
                 d: 5.0,
-                ty: Twips::from_pixels(2.0)
+                ty: Twips::from_pixels(2.0),
             },
             Matrix {
                 a: 1.0,
@@ -381,7 +453,7 @@ mod tests {
                 tx: Twips::from_pixels(7.0),
                 b: 2.0,
                 d: 5.0,
-                ty: Twips::from_pixels(2.0)
+                ty: Twips::from_pixels(2.0),
             }
         ),
         (
@@ -391,7 +463,7 @@ mod tests {
                 tx: Twips::from_pixels(7.0),
                 b: 2.0,
                 d: 5.0,
-                ty: Twips::from_pixels(2.0)
+                ty: Twips::from_pixels(2.0),
             },
             Matrix::default(),
             Matrix {
@@ -400,9 +472,9 @@ mod tests {
                 tx: Twips::from_pixels(7.0),
                 b: 2.0,
                 d: 5.0,
-                ty: Twips::from_pixels(2.0)
-            }
-        )
+                ty: Twips::from_pixels(2.0),
+            },
+        ),
     );
 
     // General test cases for matrix multiplication.
@@ -415,7 +487,7 @@ mod tests {
                 tx: Twips::new(2),
                 b: 5.0,
                 d: 3.0,
-                ty: Twips::new(1)
+                ty: Twips::new(1),
             },
             Matrix {
                 a: 1.0,
@@ -423,7 +495,7 @@ mod tests {
                 tx: Twips::new(5),
                 b: 2.0,
                 d: 4.0,
-                ty: Twips::new(6)
+                ty: Twips::new(6),
             },
             Matrix {
                 a: 14.0,
@@ -431,8 +503,8 @@ mod tests {
                 tx: Twips::new(56),
                 b: 11.0,
                 d: 27.0,
-                ty: Twips::new(44)
-            }
+                ty: Twips::new(44),
+            },
         ),
         (
             Matrix {
@@ -441,7 +513,7 @@ mod tests {
                 tx: Twips::new(5),
                 b: 2.0,
                 d: 4.0,
-                ty: Twips::new(6)
+                ty: Twips::new(6),
             },
             Matrix {
                 a: 6.0,
@@ -449,7 +521,7 @@ mod tests {
                 tx: Twips::new(2),
                 b: 5.0,
                 d: 3.0,
-                ty: Twips::new(1)
+                ty: Twips::new(1),
             },
             Matrix {
                 a: 21.0,
@@ -457,8 +529,8 @@ mod tests {
                 tx: Twips::new(10),
                 b: 32.0,
                 d: 20.0,
-                ty: Twips::new(14)
-            }
+                ty: Twips::new(14),
+            },
         ),
         (
             Matrix {
@@ -467,7 +539,7 @@ mod tests {
                 tx: Twips::new(3),
                 b: 4.0,
                 d: 5.0,
-                ty: Twips::new(6)
+                ty: Twips::new(6),
             },
             Matrix {
                 a: 6.0,
@@ -475,7 +547,7 @@ mod tests {
                 tx: Twips::new(4),
                 b: 3.0,
                 d: 2.0,
-                ty: Twips::new(1)
+                ty: Twips::new(1),
             },
             Matrix {
                 a: 12.0,
@@ -483,8 +555,8 @@ mod tests {
                 tx: Twips::new(9),
                 b: 39.0,
                 d: 30.0,
-                ty: Twips::new(27)
-            }
+                ty: Twips::new(27),
+            },
         ),
         (
             Matrix {
@@ -493,7 +565,7 @@ mod tests {
                 tx: Twips::new(4),
                 b: 3.0,
                 d: 2.0,
-                ty: Twips::new(1)
+                ty: Twips::new(1),
             },
             Matrix {
                 a: 1.0,
@@ -501,7 +573,7 @@ mod tests {
                 tx: Twips::new(3),
                 b: 4.0,
                 d: 5.0,
-                ty: Twips::new(6)
+                ty: Twips::new(6),
             },
             Matrix {
                 a: 26.0,
@@ -509,8 +581,8 @@ mod tests {
                 tx: Twips::new(52),
                 b: 11.0,
                 d: 16.0,
-                ty: Twips::new(22)
-            }
+                ty: Twips::new(22),
+            },
         ),
         (
             Matrix {
@@ -519,7 +591,7 @@ mod tests {
                 tx: Twips::new(3),
                 b: 4.0,
                 d: 5.0,
-                ty: Twips::new(6)
+                ty: Twips::new(6),
             },
             Matrix {
                 a: 1.0,
@@ -527,7 +599,7 @@ mod tests {
                 tx: Twips::new(3),
                 b: 4.0,
                 d: 5.0,
-                ty: Twips::new(6)
+                ty: Twips::new(6),
             },
             Matrix {
                 a: 9.0,
@@ -535,116 +607,98 @@ mod tests {
                 tx: Twips::new(18),
                 b: 24.0,
                 d: 33.0,
-                ty: Twips::new(48)
-            }
-        )
+                ty: Twips::new(48),
+            },
+        ),
     );
 
     // Twips multiplied by the identity/default matrix should be unchanged.
     test_multiply_twips!(
         multiply_twips_identity_matrix,
+        (Matrix::default(), Point::ZERO, Point::ZERO),
+        (Matrix::default(), PointDelta::ZERO, PointDelta::ZERO),
         (
             Matrix::default(),
-            (Twips::ZERO, Twips::ZERO),
-            (Twips::ZERO, Twips::ZERO)
+            Point::new(Twips::ZERO, Twips::new(10)),
+            Point::new(Twips::ZERO, Twips::new(10)),
         ),
         (
             Matrix::default(),
-            (Twips::ZERO, Twips::new(10)),
-            (Twips::ZERO, Twips::new(10))
+            PointDelta::new(Twips::ZERO, Twips::new(10)),
+            PointDelta::new(Twips::ZERO, Twips::new(10)),
         ),
         (
             Matrix::default(),
-            (Twips::new(10), Twips::ZERO),
-            (Twips::new(10), Twips::ZERO)
+            Point::new(Twips::new(10), Twips::ZERO),
+            Point::new(Twips::new(10), Twips::ZERO),
         ),
         (
             Matrix::default(),
-            (Twips::new(-251), Twips::new(152)),
-            (Twips::new(-251), Twips::new(152))
-        )
+            PointDelta::new(Twips::new(10), Twips::ZERO),
+            PointDelta::new(Twips::new(10), Twips::ZERO),
+        ),
+        (
+            Matrix::default(),
+            Point::new(Twips::new(-251), Twips::new(152)),
+            Point::new(Twips::new(-251), Twips::new(152)),
+        ),
+        (
+            Matrix::default(),
+            PointDelta::new(Twips::new(-251), Twips::new(152)),
+            PointDelta::new(Twips::new(-251), Twips::new(152)),
+        ),
     );
 
-    // Multiply by translate matrices; values should be shifted.
+    // Multiply by translate matrices; points should be shifted, point deltas should be unchanged.
     test_multiply_twips!(
         multiply_twips_translate,
         (
-            Matrix {
-                a: 1.0,
-                c: 0.0,
-                tx: Twips::new(10),
-                b: 0.0,
-                d: 1.0,
-                ty: Twips::new(5)
-            },
-            (Twips::ZERO, Twips::ZERO),
-            (Twips::new(10), Twips::new(5))
+            Matrix::translate(Twips::new(10), Twips::new(5)),
+            Point::ZERO,
+            Point::new(Twips::new(10), Twips::new(5)),
         ),
         (
-            Matrix {
-                a: 1.0,
-                c: 0.0,
-                tx: Twips::new(-200),
-                b: 0.0,
-                d: 1.0,
-                ty: Twips::ZERO
-            },
-            (Twips::new(50), Twips::new(20)),
-            (Twips::new(-150), Twips::new(20))
-        )
+            Matrix::translate(Twips::new(10), Twips::new(5)),
+            PointDelta::ZERO,
+            PointDelta::ZERO,
+        ),
+        (
+            Matrix::translate(Twips::new(-200), Twips::ZERO),
+            Point::new(Twips::new(50), Twips::new(20)),
+            Point::new(Twips::new(-150), Twips::new(20)),
+        ),
+        (
+            Matrix::translate(Twips::new(-200), Twips::ZERO),
+            PointDelta::new(Twips::new(50), Twips::new(20)),
+            PointDelta::new(Twips::new(50), Twips::new(20)),
+        ),
     );
 
     // Multiply by scalar matrices; values should be scaled up/down.
     test_multiply_twips!(
         multiply_twips_scale,
+        (Matrix::scale(3.0, 3.0), Point::ZERO, Point::ZERO),
+        (Matrix::scale(3.0, 3.0), PointDelta::ZERO, PointDelta::ZERO),
         (
-            Matrix {
-                a: 3.0,
-                c: 0.0,
-                tx: Twips::ZERO,
-                b: 0.0,
-                d: 3.0,
-                ty: Twips::ZERO
-            },
-            (Twips::ZERO, Twips::ZERO),
-            (Twips::ZERO, Twips::ZERO)
+            Matrix::scale(3.0, 3.0),
+            Point::new(Twips::new(10), Twips::new(10)),
+            Point::new(Twips::new(30), Twips::new(30)),
         ),
         (
-            Matrix {
-                a: 3.0,
-                c: 0.0,
-                tx: Twips::ZERO,
-                b: 0.0,
-                d: 3.0,
-                ty: Twips::ZERO
-            },
-            (Twips::new(10), Twips::new(10)),
-            (Twips::new(30), Twips::new(30))
+            Matrix::scale(3.0, 3.0),
+            PointDelta::new(Twips::new(10), Twips::new(10)),
+            PointDelta::new(Twips::new(30), Twips::new(30)),
         ),
         (
-            Matrix {
-                a: 0.6,
-                c: 0.0,
-                tx: Twips::ZERO,
-                b: 0.0,
-                d: 0.2,
-                ty: Twips::ZERO
-            },
-            (Twips::new(5), Twips::new(10)),
-            (Twips::new(3), Twips::new(2))
+            Matrix::scale(0.6, 0.2),
+            Point::new(Twips::new(5), Twips::new(10)),
+            Point::new(Twips::new(3), Twips::new(2)),
         ),
         (
-            Matrix {
-                a: 0.5,
-                c: 0.0,
-                tx: Twips::ZERO,
-                b: 0.0,
-                d: 0.5,
-                ty: Twips::ZERO
-            },
-            (Twips::new(5), Twips::new(5)),
-            (Twips::new(2), Twips::new(2))
-        )
+            Matrix::scale(0.5, 0.5),
+            Point::new(Twips::new(5), Twips::new(5)),
+            Point::new(Twips::new(2), Twips::new(2)),
+        ),
     );
 
     // Multiply by rotation matrices; values should be rotated around origin.
@@ -659,8 +713,8 @@ mod tests {
                 d: 0.0,
                 ty: Twips::ZERO
             },
-            (Twips::new(10), Twips::ZERO),
-            (Twips::ZERO, Twips::new(10))
+            Point::new(Twips::new(10), Twips::ZERO),
+            Point::new(Twips::ZERO, Twips::new(10)),
         ),
         (
             Matrix {
@@ -671,8 +725,32 @@ mod tests {
                 d: 0.0,
                 ty: Twips::ZERO
             },
-            (Twips::ZERO, Twips::new(10)),
-            (Twips::new(-10), Twips::ZERO)
+            PointDelta::new(Twips::new(10), Twips::ZERO),
+            PointDelta::new(Twips::ZERO, Twips::new(10)),
+        ),
+        (
+            Matrix {
+                a: 0.0,
+                c: -1.0,
+                tx: Twips::ZERO,
+                b: 1.0,
+                d: 0.0,
+                ty: Twips::ZERO
+            },
+            Point::new(Twips::ZERO, Twips::new(10)),
+            Point::new(Twips::new(-10), Twips::ZERO),
+        ),
+        (
+            Matrix {
+                a: 0.0,
+                c: -1.0,
+                tx: Twips::ZERO,
+                b: 1.0,
+                d: 0.0,
+                ty: Twips::ZERO
+            },
+            PointDelta::new(Twips::ZERO, Twips::new(10)),
+            PointDelta::new(Twips::new(-10), Twips::ZERO),
         ),
         (
             Matrix {
@@ -683,33 +761,41 @@ mod tests {
                 d: 0.0,
                 ty: Twips::ZERO
             },
-            (Twips::new(10), Twips::new(10)),
-            (Twips::new(10), Twips::new(-10))
+            Point::new(Twips::new(10), Twips::new(10)),
+            Point::new(Twips::new(10), Twips::new(-10)),
         ),
         (
             Matrix {
-                a: f32::cos(std::f32::consts::FRAC_PI_4),
-                c: f32::sin(std::f32::consts::FRAC_PI_4),
+                a: 0.0,
+                c: 1.0,
                 tx: Twips::ZERO,
-                b: -f32::sin(std::f32::consts::FRAC_PI_4),
-                d: f32::cos(std::f32::consts::FRAC_PI_4),
+                b: -1.0,
+                d: 0.0,
                 ty: Twips::ZERO
             },
-            (Twips::new(100), Twips::ZERO),
-            (Twips::new(71), Twips::new(-71))
+            PointDelta::new(Twips::new(10), Twips::new(10)),
+            PointDelta::new(Twips::new(10), Twips::new(-10)),
         ),
         (
-            Matrix {
-                a: f32::cos(std::f32::consts::FRAC_PI_4),
-                c: f32::sin(std::f32::consts::FRAC_PI_4),
-                tx: Twips::ZERO,
-                b: -f32::sin(std::f32::consts::FRAC_PI_4),
-                d: f32::cos(std::f32::consts::FRAC_PI_4),
-                ty: Twips::ZERO
-            },
-            (Twips::new(100), Twips::new(100)),
-            (Twips::new(141), Twips::ZERO)
-        )
+            Matrix::rotate(-std::f32::consts::FRAC_PI_4),
+            Point::new(Twips::new(100), Twips::ZERO),
+            Point::new(Twips::new(71), Twips::new(-71)),
+        ),
+        (
+            Matrix::rotate(-std::f32::consts::FRAC_PI_4),
+            PointDelta::new(Twips::new(100), Twips::ZERO),
+            PointDelta::new(Twips::new(71), Twips::new(-71)),
+        ),
+        (
+            Matrix::rotate(-std::f32::consts::FRAC_PI_4),
+            Point::new(Twips::new(100), Twips::new(100)),
+            Point::new(Twips::new(141), Twips::ZERO),
+        ),
+        (
+            Matrix::rotate(-std::f32::consts::FRAC_PI_4),
+            PointDelta::new(Twips::new(100), Twips::new(100)),
+            PointDelta::new(Twips::new(141), Twips::ZERO),
+        ),
     );
 
     // Testing transformation matrices that have more than 1 translation applied.
@@ -718,55 +804,107 @@ mod tests {
         (
             // Result of scaling by 3 * rotation by 45 degrees
             Matrix {
-                a: 3.0 * f32::cos(std::f32::consts::FRAC_PI_4),
-                c: 3.0 * f32::sin(std::f32::consts::FRAC_PI_4),
+                a: 3.0 * std::f32::consts::FRAC_PI_4.cos(),
+                c: 3.0 * std::f32::consts::FRAC_PI_4.sin(),
                 tx: Twips::ZERO,
-                b: 3.0 * -f32::sin(std::f32::consts::FRAC_PI_4),
-                d: 3.0 * f32::cos(std::f32::consts::FRAC_PI_4),
+                b: 3.0 * -std::f32::consts::FRAC_PI_4.sin(),
+                d: 3.0 * std::f32::consts::FRAC_PI_4.cos(),
                 ty: Twips::ZERO
             },
-            (Twips::new(100), Twips::new(100)),
-            (Twips::new(424), Twips::ZERO)
+            Point::new(Twips::new(100), Twips::new(100)),
+            Point::new(Twips::new(424), Twips::ZERO),
+        ),
+        (
+            // Result of scaling by 3 * rotation by 45 degrees
+            Matrix {
+                a: 3.0 * std::f32::consts::FRAC_PI_4.cos(),
+                c: 3.0 * std::f32::consts::FRAC_PI_4.sin(),
+                tx: Twips::ZERO,
+                b: 3.0 * -std::f32::consts::FRAC_PI_4.sin(),
+                d: 3.0 * std::f32::consts::FRAC_PI_4.cos(),
+                ty: Twips::ZERO
+            },
+            PointDelta::new(Twips::new(100), Twips::new(100)),
+            PointDelta::new(Twips::new(424), Twips::ZERO),
         ),
         (
             // Result of translating by (-5, 5) * rotation by 45 degrees
             Matrix {
-                a: 3.0 * f32::cos(std::f32::consts::FRAC_PI_4),
-                c: 3.0 * f32::sin(std::f32::consts::FRAC_PI_4),
+                a: 3.0 * std::f32::consts::FRAC_PI_4.cos(),
+                c: 3.0 * std::f32::consts::FRAC_PI_4.sin(),
                 tx: Twips::new(-5),
-                b: 3.0 * -f32::sin(std::f32::consts::FRAC_PI_4),
-                d: 3.0 * f32::cos(std::f32::consts::FRAC_PI_4),
-                ty: Twips::new(5)
+                b: 3.0 * -std::f32::consts::FRAC_PI_4.sin(),
+                d: 3.0 * std::f32::consts::FRAC_PI_4.cos(),
+                ty: Twips::new(5),
             },
-            (Twips::new(100), Twips::new(100)),
-            (Twips::new(419), Twips::new(5))
+            Point::new(Twips::new(100), Twips::new(100)),
+            Point::new(Twips::new(419), Twips::new(5)),
+        ),
+        (
+            // Result of translating by (-5, 5) * rotation by 45 degrees
+            Matrix {
+                a: 3.0 * std::f32::consts::FRAC_PI_4.cos(),
+                c: 3.0 * std::f32::consts::FRAC_PI_4.sin(),
+                tx: Twips::new(-5),
+                b: 3.0 * -std::f32::consts::FRAC_PI_4.sin(),
+                d: 3.0 * std::f32::consts::FRAC_PI_4.cos(),
+                ty: Twips::new(5),
+            },
+            PointDelta::new(Twips::new(100), Twips::new(100)),
+            PointDelta::new(Twips::new(424), Twips::ZERO),
         ),
         (
             // Result of rotation by 45 degrees * translating by (-5, 5)
             Matrix {
-                a: f32::cos(std::f32::consts::FRAC_PI_4),
-                c: f32::sin(std::f32::consts::FRAC_PI_4),
+                a: std::f32::consts::FRAC_PI_4.cos(),
+                c: std::f32::consts::FRAC_PI_4.sin(),
                 tx: Twips::new(-5),
-                b: -f32::sin(std::f32::consts::FRAC_PI_4),
-                d: f32::cos(std::f32::consts::FRAC_PI_4),
-                ty: Twips::new(5)
+                b: -std::f32::consts::FRAC_PI_4.sin(),
+                d: std::f32::consts::FRAC_PI_4.cos(),
+                ty: Twips::new(5),
             },
-            (Twips::new(100), Twips::new(100)),
-            (Twips::new(136), Twips::new(5))
+            Point::new(Twips::new(100), Twips::new(100)),
+            Point::new(Twips::new(136), Twips::new(5)),
+        ),
+        (
+            // Result of rotation by 45 degrees * translating by (-5, 5)
+            Matrix {
+                a: std::f32::consts::FRAC_PI_4.cos(),
+                c: std::f32::consts::FRAC_PI_4.sin(),
+                tx: Twips::new(-5),
+                b: -std::f32::consts::FRAC_PI_4.sin(),
+                d: std::f32::consts::FRAC_PI_4.cos(),
+                ty: Twips::new(5),
+            },
+            PointDelta::new(Twips::new(100), Twips::new(100)),
+            PointDelta::new(Twips::new(141), Twips::ZERO),
         ),
         (
             // Result of translating by (-5, 5) * rotation by 45 degrees
             Matrix {
-                a: f32::cos(std::f32::consts::FRAC_PI_4),
-                c: f32::sin(std::f32::consts::FRAC_PI_4),
+                a: std::f32::consts::FRAC_PI_4.cos(),
+                c: std::f32::consts::FRAC_PI_4.sin(),
                 tx: Twips::ZERO,
-                b: -f32::sin(std::f32::consts::FRAC_PI_4),
-                d: f32::cos(std::f32::consts::FRAC_PI_4),
-                ty: Twips::new((10.0 * f32::sin(std::f32::consts::FRAC_PI_4)) as i32)
+                b: -std::f32::consts::FRAC_PI_4.sin(),
+                d: std::f32::consts::FRAC_PI_4.cos(),
+                ty: Twips::new((10.0 * std::f32::consts::FRAC_PI_4.sin()) as i32),
             },
-            (Twips::new(105), Twips::new(95)),
-            (Twips::new(141), Twips::ZERO)
-        )
+            Point::new(Twips::new(105), Twips::new(95)),
+            Point::new(Twips::new(141), Twips::ZERO),
+        ),
+        (
+            // Result of translating by (-5, 5) * rotation by 45 degrees
+            Matrix {
+                a: std::f32::consts::FRAC_PI_4.cos(),
+                c: std::f32::consts::FRAC_PI_4.sin(),
+                tx: Twips::ZERO,
+                b: -std::f32::consts::FRAC_PI_4.sin(),
+                d: std::f32::consts::FRAC_PI_4.cos(),
+                ty: Twips::new((10.0 * std::f32::consts::FRAC_PI_4.sin()) as i32),
+            },
+            PointDelta::new(Twips::new(105), Twips::new(95)),
+            PointDelta::new(Twips::new(141), Twips::new(-7)),
+        ),
     );
 }
 

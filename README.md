@@ -15,6 +15,9 @@
   <a href="https://discord.gg/ruffle">
     <img alt="Ruffle Discord" src="https://img.shields.io/discord/610531541889581066?label=&color=7389d8&labelColor=6a7ec2&logoColor=ffffff&logo=discord" />
   </a>
+  <a href="https://crowdin.com/project/ruffle">
+    <img alt="Ruffle translations" src="https://badges.crowdin.net/ruffle/localized.svg" />
+  </a>
   <br />
   <strong><a href="https://ruffle.rs">website</a> | <a href="https://ruffle.rs/demo">demo</a> | <a href="https://github.com/ruffle-rs/ruffle/releases">nightly builds</a> | <a href="https://github.com/ruffle-rs/ruffle/wiki">wiki</a></strong>
 </p>
@@ -22,6 +25,22 @@
 # Ruffle
 
 Ruffle is an Adobe Flash Player emulator written in the Rust programming language. Ruffle targets both the desktop and the web using WebAssembly.
+
+## Table of Contents
+* [Project Status](#project-status)
+* [Using Ruffle](#using-ruffle)
+* [Building from source](#building-from-source)
+  * [Desktop](#desktop)
+  * [Ubuntu](#ubuntu)
+* [Homebrew](#homebrew)
+  * [Web or Extension](#web-or-extension)
+  * [Scanner](#scanner)
+  * [Exporter](#exporter)
+* [Structure](#structure)
+* [Sponsors](#sponsors)
+* [License](#license)
+* [Contributing](#contributing)
+
 
 ## Project status
 
@@ -171,7 +190,7 @@ at your option.
 
 Ruffle depends on third-party libraries under compatible licenses. See [LICENSE.md](LICENSE.md) for full information.
 
-### Contribution
+### Contributing
 
 Ruffle welcomes contribution from everyone. See [CONTRIBUTING.md](CONTRIBUTING.md) for help getting started.
 

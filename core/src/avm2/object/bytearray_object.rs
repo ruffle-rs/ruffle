@@ -5,8 +5,9 @@ use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
+use crate::character::Character;
 use core::fmt;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates ByteArray objects.
@@ -14,21 +15,45 @@ pub fn byte_array_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
+    let storage = if let Some((movie, id)) = activation
+        .context
+        .library
+        .avm2_class_registry()
+        .class_symbol(class)
+    {
+        if let Some(lib) = activation.context.library.library_for_movie(movie) {
+            if let Some(Character::BinaryData(binary_data)) = lib.character_by_id(id) {
+                Some(ByteArrayStorage::from_vec(binary_data.as_ref().to_vec()))
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    } else {
+        Some(ByteArrayStorage::new())
+    };
+
+    let storage = storage.unwrap_or_else(|| {
+        unreachable!("A ByteArray subclass should have ByteArray in superclass chain")
+    });
+
     let base = ScriptObjectData::new(class);
 
-    Ok(ByteArrayObject(GcCell::allocate(
+    Ok(ByteArrayObject(GcCell::new(
         activation.context.gc_context,
-        ByteArrayObjectData {
-            base,
-            storage: ByteArrayStorage::new(),
-        },
+        ByteArrayObjectData { base, storage },
     ))
     .into())
 }
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct ByteArrayObject<'gc>(GcCell<'gc, ByteArrayObjectData<'gc>>);
+pub struct ByteArrayObject<'gc>(pub GcCell<'gc, ByteArrayObjectData<'gc>>);
+
+#[derive(Clone, Collect, Copy, Debug)]
+#[collect(no_drop)]
+pub struct ByteArrayObjectWeak<'gc>(pub GcWeakCell<'gc, ByteArrayObjectData<'gc>>);
 
 impl fmt::Debug for ByteArrayObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -55,7 +80,7 @@ impl<'gc> ByteArrayObject<'gc> {
         let class = activation.avm2().classes().bytearray;
         let base = ScriptObjectData::new(class);
 
-        let mut instance: Object<'gc> = ByteArrayObject(GcCell::allocate(
+        let mut instance: Object<'gc> = ByteArrayObject(GcCell::new(
             activation.context.gc_context,
             ByteArrayObjectData {
                 base,
@@ -63,11 +88,15 @@ impl<'gc> ByteArrayObject<'gc> {
             },
         ))
         .into();
-        instance.install_instance_slots(activation);
+        instance.install_instance_slots(activation.context.gc_context);
 
-        class.call_native_init(Some(instance), &[], activation)?;
+        class.call_native_init(instance.into(), &[], activation)?;
 
         Ok(instance)
+    }
+
+    pub fn storage(&self) -> Ref<ByteArrayStorage> {
+        Ref::map(self.0.read(), |d| &d.storage)
     }
 }
 

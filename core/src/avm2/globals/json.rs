@@ -2,8 +2,10 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
+use crate::avm2::error::{syntax_error, type_error};
 use crate::avm2::globals::array::ArrayIter;
 use crate::avm2::object::{ArrayObject, FunctionObject, Object, TObject};
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::ecma_conversions::f64_to_wrapping_i32;
@@ -38,7 +40,7 @@ fn deserialize_json_inner<'gc>(
                 let val = deserialize_json_inner(activation, entry.1.clone(), reviver)?;
                 let mapped_val = match reviver {
                     None => val,
-                    Some(reviver) => reviver.call(None, &[key.into(), val], activation)?,
+                    Some(reviver) => reviver.call(Value::Null, &[key.into(), val], activation)?,
                 };
                 if matches!(mapped_val, Value::Undefined) {
                     obj.delete_public_property(activation, key)?;
@@ -54,7 +56,7 @@ fn deserialize_json_inner<'gc>(
                 let val = deserialize_json_inner(activation, val.clone(), reviver)?;
                 let mapped_val = match reviver {
                     None => val,
-                    Some(reviver) => reviver.call(None, &[key.into(), val], activation)?,
+                    Some(reviver) => reviver.call(Value::Null, &[key.into(), val], activation)?,
                 };
                 arr.push(Some(mapped_val));
             }
@@ -73,7 +75,7 @@ fn deserialize_json<'gc>(
     let val = deserialize_json_inner(activation, json, reviver)?;
     match reviver {
         None => Ok(val),
-        Some(reviver) => reviver.call(None, &["".into(), val], activation),
+        Some(reviver) => reviver.call(Value::Null, &["".into(), val], activation),
     }
 }
 
@@ -129,7 +131,7 @@ impl<'gc> AvmSerializer<'gc> {
         };
         if let Some(Replacer::Function(replacer)) = self.replacer {
             replacer.call(
-                None,
+                Value::Null,
                 &[eval_key.unwrap_or_else(key).into(), value],
                 activation,
             )
@@ -226,10 +228,17 @@ impl<'gc> AvmSerializer<'gc> {
                     return self.serialize_value(activation, *prim);
                 }
                 if self.obj_stack.contains(&obj) {
-                    return Err("TypeError: Error #1129: Cyclic structure cannot be converted to JSON string.".into());
+                    return Err(Error::AvmError(type_error(
+                        activation,
+                        "Error #1129: Cyclic structure cannot be converted to JSON string.",
+                        1129,
+                    )?));
                 }
                 self.obj_stack.push(obj);
-                let value = if obj.is_of_type(activation.avm2().classes().array, activation) {
+                let value = if obj.is_of_type(
+                    activation.avm2().classes().array.inner_class_definition(),
+                    &mut activation.context,
+                ) {
                     // TODO: Vectors
                     self.serialize_iterable(activation, obj)?
                 } else {
@@ -257,40 +266,60 @@ impl<'gc> AvmSerializer<'gc> {
 /// Implements `JSON.parse`.
 pub fn parse<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let input = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_string(activation)?;
-    let reviver = args.get(1).unwrap_or(&Value::Undefined).as_object();
-    let parsed = serde_json::from_str(&input.to_utf8_lossy())
-        .map_err(|_| "SyntaxError: Error #1132: Invalid JSON parse input.")?;
+    let input = args.get_string(activation, 0)?;
+    let reviver = args.try_get_object(activation, 1);
+
+    let parsed = if let Ok(parsed) = serde_json::from_str(&input.to_utf8_lossy()) {
+        parsed
+    } else {
+        return Err(Error::AvmError(syntax_error(
+            activation,
+            "Error #1132: Invalid JSON parse input.",
+            1132,
+        )?));
+    };
+
     deserialize_json(activation, parsed, reviver)
 }
 
 /// Implements `JSON.stringify`.
 pub fn stringify<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let val = args.get(0).unwrap_or(&Value::Undefined);
-    let replacer = args.get(1).unwrap_or(&Value::Undefined).as_object();
-    let spaces = args.get(2).unwrap_or(&Value::Undefined);
+    let val = args.get_value(0);
+    let replacer = args.try_get_object(activation, 1);
+    let spaces = args.get_value(2);
+
+    // If the replacer is None, that means it was either undefined or null.
+    if replacer.is_none() && !matches!(args.get(1).unwrap(), Value::Null) {
+        return Err(Error::AvmError(type_error(
+            activation,
+            "Error #1131: Replacer argument to JSON stringifier must be an array or a two parameter function.",
+            1131,
+        )?));
+    }
+
     let replacer = replacer.map(|replacer| {
         if let Some(func) = replacer.as_function_object() {
             Ok(Replacer::Function(func))
         } else if let Some(arr) = replacer.as_array_object() {
             Ok(Replacer::PropList(arr))
         } else {
-            Err("TypeError: Error #1131: Replacer argument to JSON stringifier must be an array or a two parameter function.")
+            Err(Error::AvmError(type_error(
+                activation,
+                "Error #1131: Replacer argument to JSON stringifier must be an array or a two parameter function.",
+                1131,
+            )?))
         }
     }).transpose()?;
 
     // NOTE: We do not coerce to a string or to a number, the value must already be a string or number.
-    let indent = if let Value::String(s) = spaces {
+    let indent = if let Value::String(s) = &spaces {
         if s.is_empty() {
             None
         } else {
@@ -315,7 +344,7 @@ pub fn stringify<'gc>(
     };
 
     let mut serializer = AvmSerializer::new(replacer);
-    let json = serializer.serialize(activation, *val)?;
+    let json = serializer.serialize(activation, val)?;
     let result = match indent {
         Some(indent) => {
             let mut result = Vec::with_capacity(128);

@@ -11,7 +11,7 @@ use gc_arena::Collect;
 use ruffle_render::shape_utils::DrawCommand;
 use std::cmp::{max, min};
 use std::sync::Arc;
-use swf::Twips;
+use swf::{Point, Twips};
 
 /// Draw an underline on a particular drawing.
 ///
@@ -23,14 +23,14 @@ fn draw_underline(drawing: &mut Drawing, starting_pos: Position<Twips>, width: T
 
     let ending_pos = starting_pos + Position::from((width, Twips::ZERO));
 
-    drawing.draw_command(DrawCommand::MoveTo {
-        x: starting_pos.x(),
-        y: starting_pos.y(),
-    });
-    drawing.draw_command(DrawCommand::LineTo {
-        x: ending_pos.x(),
-        y: ending_pos.y(),
-    });
+    drawing.draw_command(DrawCommand::MoveTo(Point::new(
+        starting_pos.x(),
+        starting_pos.y(),
+    )));
+    drawing.draw_command(DrawCommand::LineTo(Point::new(
+        ending_pos.x(),
+        ending_pos.y(),
+    )));
 }
 
 /// Contains information relating to the current layout operation.
@@ -228,6 +228,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         only_line: bool,
         final_line_of_para: bool,
         text: Option<(&'a WStr, usize, &TextSpan)>,
+        is_device_font: bool,
     ) {
         if self.boxes.get_mut(self.current_line..).is_none() {
             return;
@@ -286,7 +287,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             self.font_leading_adjustment()
         };
         if self.current_line_span.bullet && self.is_first_line && box_count > 0 {
-            self.append_bullet(context, &self.current_line_span.clone());
+            self.append_bullet(context, &self.current_line_span.clone(), is_device_font);
         }
 
         box_count = 0;
@@ -344,8 +345,15 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         text: &'a WStr,
         end: usize,
         span: &TextSpan,
+        is_device_font: bool,
     ) {
-        self.fixup_line(context, false, true, Some((text, end, span)));
+        self.fixup_line(
+            context,
+            false,
+            true,
+            Some((text, end, span)),
+            is_device_font,
+        );
 
         self.cursor.set_x(Twips::from_pixels(0.0));
         self.cursor += (
@@ -372,8 +380,15 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         text: &'a WStr,
         end: usize,
         span: &TextSpan,
+        is_device_font: bool,
     ) {
-        self.fixup_line(context, false, false, Some((text, end, span)));
+        self.fixup_line(
+            context,
+            false,
+            false,
+            Some((text, end, span)),
+            is_device_font,
+        );
 
         self.cursor.set_x(Twips::from_pixels(0.0));
         self.cursor += (
@@ -487,12 +502,17 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     /// The bullet will always be placed at the start of the current line. It
     /// should be appended after line fixup has completed, but before the text
     /// cursor is moved down.
-    fn append_bullet(&mut self, context: &mut UpdateContext<'_, 'gc>, span: &TextSpan) {
+    fn append_bullet(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc>,
+        span: &TextSpan,
+        is_device_font: bool,
+    ) {
         let library = context.library.library_for_movie_mut(self.movie.clone());
 
         if let Some(bullet_font) = library
             .get_font_by_name(&span.font.to_utf8_lossy(), span.bold, span.italic)
-            .filter(|f| f.has_glyphs())
+            .filter(|f| !is_device_font && f.has_glyphs())
             .or_else(|| context.library.device_font())
             .or(self.font)
         {
@@ -570,6 +590,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         mut self,
         context: &mut UpdateContext<'_, 'gc>,
         fs: &'a FormatSpans,
+        is_device_font: bool,
     ) -> (Vec<LayoutBox<'gc>>, BoxBounds<Twips>) {
         self.fixup_line(
             context,
@@ -577,6 +598,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             true,
             fs.last_span()
                 .map(|ls| (fs.displayed_text(), fs.displayed_text().len(), ls)),
+            is_device_font,
         );
 
         (self.boxes, self.exterior_bounds.unwrap_or_default())
@@ -674,7 +696,7 @@ impl<'gc> LayoutBox<'gc> {
                 text_format: span.get_text_format(),
                 font,
                 params,
-                color: span.color.clone(),
+                color: span.color,
             },
         }
     }
@@ -689,7 +711,7 @@ impl<'gc> LayoutBox<'gc> {
                 text_format: span.get_text_format(),
                 font,
                 params,
-                color: span.color.clone(),
+                color: span.color,
             },
         }
     }
@@ -734,7 +756,7 @@ impl<'gc> LayoutBox<'gc> {
 
                     match delimiter {
                         Some(b'\n' | b'\r') => {
-                            layout_context.explicit_newline(context, text, 0, span)
+                            layout_context.explicit_newline(context, text, 0, span, is_device_font)
                         }
                         Some(b'\t') => layout_context.tab(),
                         _ => {}
@@ -769,7 +791,13 @@ impl<'gc> LayoutBox<'gc> {
                             if breakpoint == 0 && layout_context.is_start_of_line() {
                                 break;
                             } else if breakpoint == 0 {
-                                layout_context.newline(context, text, next_breakpoint, span);
+                                layout_context.newline(
+                                    context,
+                                    text,
+                                    next_breakpoint,
+                                    span,
+                                    is_device_font,
+                                );
 
                                 let next_dim = layout_context.wrap_dimensions(span);
 
@@ -795,7 +823,13 @@ impl<'gc> LayoutBox<'gc> {
                                 break;
                             }
 
-                            layout_context.newline(context, text, next_breakpoint, span);
+                            layout_context.newline(
+                                context,
+                                text,
+                                next_breakpoint,
+                                span,
+                                is_device_font,
+                            );
                             let next_dim = layout_context.wrap_dimensions(span);
 
                             width = next_dim.0;
@@ -817,7 +851,7 @@ impl<'gc> LayoutBox<'gc> {
             }
         }
 
-        layout_context.end_layout(context, fs)
+        layout_context.end_layout(context, fs, is_device_font)
     }
 
     pub fn bounds(&self) -> BoxBounds<Twips> {

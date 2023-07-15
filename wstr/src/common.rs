@@ -1,7 +1,14 @@
 use alloc::vec::Vec;
 use core::ops::{Bound, Index, IndexMut, Range, RangeBounds};
 
-use super::{ptr, FromWStr, Pattern, WStr, WString, MAX_STRING_LEN};
+use super::{ptr, FromWStr, Pattern, WString};
+
+/// A UCS2 string slice, analoguous to `&'a str`.
+#[repr(transparent)]
+pub struct WStr {
+    /// See the `ptr` module for more details.
+    _repr: [()],
+}
 
 #[cold]
 pub(super) fn panic_on_invalid_length(len: usize) -> ! {
@@ -10,6 +17,7 @@ pub(super) fn panic_on_invalid_length(len: usize) -> ! {
 
 /// A raw string buffer containing `u8` or `u16` code units.
 #[derive(Copy, Clone, Debug)]
+#[repr(C)]
 pub enum Units<T, U> {
     /// A buffer containing `u8` code units, interpreted as LATIN-1.
     Bytes(T),
@@ -68,14 +76,17 @@ units_from! {
 }
 
 impl WStr {
+    /// The maximum string length, equals to 2³¹-1.
+    pub const MAX_LEN: usize = 0x7FFF_FFFF;
+
     /// Creates a `&WStr` from a buffer containing 1 or 2-bytes code units.
     pub fn from_units<'a>(units: impl Into<Units<&'a [u8], &'a [u16]>>) -> &'a Self {
         let (ptr, len) = match units.into() {
-            Units::Bytes(us) => (Units::Bytes(ptr::ptr_mut(us)), us.len()),
-            Units::Wide(us) => (Units::Wide(ptr::ptr_mut(us)), us.len()),
+            Units::Bytes(us) => (Units::Bytes(us as *const _), us.len()),
+            Units::Wide(us) => (Units::Wide(us as *const _), us.len()),
         };
 
-        if len > MAX_STRING_LEN {
+        if len > WStr::MAX_LEN {
             super::panic_on_invalid_length(len);
         }
 
@@ -92,12 +103,12 @@ impl WStr {
             Units::Wide(us) => (Units::Wide(us as *mut _), us.len()),
         };
 
-        if len > MAX_STRING_LEN {
+        if len > WStr::MAX_LEN {
             super::panic_on_invalid_length(len);
         }
 
         // SAFETY: we validated the slice length above, and the mutable borrow is valid for 'a.
-        unsafe { &mut *ptr::from_units(ptr) }
+        unsafe { &mut *ptr::from_units_mut(ptr) }
     }
 
     /// Creates an empty string.
@@ -117,7 +128,7 @@ impl WStr {
     pub fn units(&self) -> Units<&[u8], &[u16]> {
         // SAFETY: `self` is a valid `WStr` borrowed immutably, so we can deref. the buffers.
         unsafe {
-            match ptr::units(ptr::ptr_mut(self)) {
+            match ptr::units(self) {
                 Units::Bytes(us) => Units::Bytes(&*us),
                 Units::Wide(us) => Units::Wide(&*us),
             }
@@ -129,7 +140,7 @@ impl WStr {
     pub fn units_mut(&mut self) -> super::Units<&mut [u8], &mut [u16]> {
         // SAFETY: `self` is a valid `WStr` borrowed mutably, so we can mut. deref. the buffers.
         unsafe {
-            match ptr::units(self) {
+            match ptr::units_mut(self) {
                 Units::Bytes(us) => Units::Bytes(&mut *us),
                 Units::Wide(us) => Units::Wide(&mut *us),
             }
@@ -140,14 +151,14 @@ impl WStr {
     #[inline]
     pub fn is_wide(&self) -> bool {
         // SAFETY: `self` is a valid `WStr`.
-        unsafe { ptr::metadata(ptr::ptr_mut(self)).is_wide() }
+        unsafe { ptr::WStrMetadata::of(self).is_wide() }
     }
 
     /// Returns the number of code units.
     #[inline]
     pub fn len(&self) -> usize {
         // SAFETY: `self` is a valid `WStr`.
-        unsafe { ptr::metadata(ptr::ptr_mut(self)).len() }
+        unsafe { ptr::WStrMetadata::of(self).len() }
     }
 
     /// Returns `true` if `self` contains no code units.
@@ -167,7 +178,7 @@ impl WStr {
     pub fn get(&self, i: usize) -> Option<u16> {
         if i < self.len() {
             // SAFETY: `self` is a valid `WStr` and `i` is a valid index.
-            Some(unsafe { ptr::read_at(ptr::ptr_mut(self), i) })
+            Some(unsafe { ptr::read_at(self, i) })
         } else {
             None
         }
@@ -179,7 +190,7 @@ impl WStr {
     /// `i` must be less than `self.len()`.
     #[inline]
     pub unsafe fn get_unchecked(&self, i: usize) -> u16 {
-        ptr::read_at(ptr::ptr_mut(self), i)
+        ptr::read_at(self, i)
     }
 
     #[inline(always)]
@@ -211,7 +222,7 @@ impl WStr {
     pub fn slice<R: RangeBounds<usize>>(&self, range: R) -> Option<&Self> {
         self.check_range(range).map(|r| {
             // SAFETY: `self` is a valid `WStr` and `r` is a valid slice range.
-            unsafe { &*ptr::slice(ptr::ptr_mut(self), r) }
+            unsafe { &*ptr::slice(self, r) }
         })
     }
 
@@ -222,7 +233,7 @@ impl WStr {
     pub fn slice_mut<R: RangeBounds<usize>>(&mut self, range: R) -> Option<&mut Self> {
         self.check_range(range).map(|r| {
             // SAFETY: `self` is a valid `WStr` and `r` is a valid slice range.
-            unsafe { &mut *ptr::slice(self, r) }
+            unsafe { &mut *ptr::slice_mut(self, r) }
         })
     }
 
@@ -327,6 +338,12 @@ impl WStr {
     #[inline]
     pub fn to_ascii_lowercase(&self) -> WString {
         super::ops::str_to_ascii_lowercase(self)
+    }
+
+    /// Converts this string to its ASCII lower case equivalent in-place.
+    #[inline]
+    pub fn make_ascii_lowercase(&mut self) {
+        super::ops::str_make_ascii_lowercase(self)
     }
 
     /// Analogue of [`str::replace`].
@@ -475,6 +492,8 @@ impl core::cmp::PartialEq<WStr> for WStr {
     }
 }
 
+impl core::cmp::Eq for WStr {}
+
 impl core::cmp::Ord for WStr {
     #[inline]
     fn cmp(&self, other: &Self) -> core::cmp::Ordering {
@@ -563,9 +582,6 @@ macro_rules! __wstr_impl_internal {
     };
 
     (@eq_ord_self [$($generics:tt)*] for $ty:ty) => {
-
-        impl<$($generics)*> ::core::cmp::Eq for $ty {}
-
         impl<$($generics)*> ::core::cmp::PartialOrd<$ty> for $ty {
             #[inline]
             fn partial_cmp(&self, other: &$ty) -> Option<::core::cmp::Ordering> {
@@ -573,10 +589,21 @@ macro_rules! __wstr_impl_internal {
             }
         }
 
-        __wstr_impl_internal! { @eq_ord_units [$($generics)* const N: usize] for $ty, [u8; N] }
-        __wstr_impl_internal! { @eq_ord_units [$($generics)* const N: usize] for $ty, [u16; N] }
-        __wstr_impl_internal! { @eq_ord_units [$($generics)*] for $ty, [u8] }
-        __wstr_impl_internal! { @eq_ord_units [$($generics)*] for $ty, [u16] }
+        $crate::__wstr_impl_internal! { @eq_ord_units [$($generics)* const N: usize] for $ty, [u8; N] }
+        $crate::__wstr_impl_internal! { @eq_ord_units [$($generics)* const N: usize] for $ty, [u16; N] }
+        $crate::__wstr_impl_internal! { @eq_ord_units [$($generics)*] for $ty, [u8] }
+        $crate::__wstr_impl_internal! { @eq_ord_units [$($generics)*] for $ty, [u16] }
+    };
+
+    (@eq_base [$($generics:tt)*] for $ty:ty) => {
+        impl<$($generics)*> ::core::cmp::PartialEq<$ty> for $ty {
+            #[inline]
+            fn eq(&self, other: &$ty) -> bool {
+                ::core::cmp::PartialEq::eq(::core::ops::Deref::deref(self), ::core::ops::Deref::deref(other))
+            }
+        }
+
+        impl<$($generics)*> ::core::cmp::Eq for $ty {}
     };
 
     (@base [$($generics:tt)*] for $ty:ty) => {
@@ -591,13 +618,6 @@ macro_rules! __wstr_impl_internal {
             #[inline]
             fn borrow(&self) -> &$crate::WStr {
                 ::core::ops::Deref::deref(self)
-            }
-        }
-
-        impl<$($generics)*> ::core::cmp::PartialEq<$ty> for $ty {
-            #[inline]
-            fn eq(&self, other: &$ty) -> bool {
-                ::core::cmp::PartialEq::eq(::core::ops::Deref::deref(self), ::core::ops::Deref::deref(other))
             }
         }
 
@@ -649,13 +669,13 @@ macro_rules! __wstr_impl_internal {
         }
     };
 
-    (@full [$($generics:tt)*] for $ty:ty) => {
-        __wstr_impl_internal!(@base [$($generics)*] for $ty);
-        __wstr_impl_internal!(@eq_ord_self [$($generics)*] for $ty);
-        __wstr_impl_internal!(@eq_ord [$($generics)*] for $ty, $crate::WStr);
-        __wstr_impl_internal!(@eq_ord [$($generics)*] for $crate::WStr, $ty);
-        __wstr_impl_internal!(@eq_ord [$($generics)* 'a,] for $ty, &'a $crate::WStr);
-        __wstr_impl_internal!(@eq_ord [$($generics)* 'a,] for &'a $crate::WStr, $ty);
+    (@full_no_eq [$($generics:tt)*] for $ty:ty) => {
+        $crate::__wstr_impl_internal!(@base [$($generics)*] for $ty);
+        $crate::__wstr_impl_internal!(@eq_ord_self [$($generics)*] for $ty);
+        $crate::__wstr_impl_internal!(@eq_ord [$($generics)*] for $ty, $crate::WStr);
+        $crate::__wstr_impl_internal!(@eq_ord [$($generics)*] for $crate::WStr, $ty);
+        $crate::__wstr_impl_internal!(@eq_ord [$($generics)* 'a,] for $ty, &'a $crate::WStr);
+        $crate::__wstr_impl_internal!(@eq_ord [$($generics)* 'a,] for &'a $crate::WStr, $ty);
     };
 }
 
@@ -665,7 +685,8 @@ macro_rules! __wstr_impl_internal {
 /// delegating impls for the following traits:
 ///
 ///   - [`AsRef<WStr>`], [`Borrow<WStr>`][core::borrow::Borrow];
-///   - [`Eq`], [`PartialEq`], [`Ord`], [`PartialOrd`];
+///   - [`Eq`], [`PartialEq`] (this can be disabled with `manual_eq`);
+///   - [`Ord`], [`PartialOrd`],
 ///   - [`PartialEq<_>`], [`PartialOrd<_>`] for [`WStr`], [`&WStr`][WStr],
 ///     `[u8]`, `[u16]`, `[u8; N]` and `[u16; N]`;
 ///   - [`Display`][core::fmt::Display], [`Debug`][core::fmt::Debug];
@@ -673,11 +694,20 @@ macro_rules! __wstr_impl_internal {
 ///   - [`IntoIterator<Item=u16>`][IntoIterator].
 #[macro_export]
 macro_rules! wstr_impl_traits {
+    (impl manual_eq for $ty_name:ty) => {
+        $crate::__wstr_impl_internal!(@full_no_eq [] for $ty_name);
+    };
     (impl for $ty_name:ty) => {
-        __wstr_impl_internal!(@full [] for $ty_name);
+        $crate::__wstr_impl_internal!(@full_no_eq [] for $ty_name);
+        $crate::__wstr_impl_internal!(@eq_base [] for $ty_name);
+    };
+    (impl[$($generics:tt)+] manual_eq for $ty_name:ty) => {
+        $crate::__wstr_impl_internal!(@full_no_eq [$($generics)*,] for $ty_name);
     };
     (impl [$($generics:tt)+] for $ty_name:ty) => {
-        __wstr_impl_internal!(@full [$($generics)*,] for $ty_name);
+        $crate::__wstr_impl_internal!(@full_no_eq [$($generics)*,] for $ty_name);
+        $crate::__wstr_impl_internal!(@eq_base [$($generics)*,] for $ty_name);
+
     };
 }
 

@@ -1,0 +1,72 @@
+// decodeURI()
+undefined
+
+// decodeURI(undefined)
+null
+
+// typeof(decodeURI(undefined))
+string
+
+// decodeURI(null)
+null
+
+// decodeURI("test")
+test
+
+// decodeURI("%3A")
+%3A
+
+// decodeURI("%E0%A4%A")
+URIError: Error #1052: Invalid URI passed to decodeURI function.
+
+// decodeURI("%FFabcd")
+URIError: Error #1052: Invalid URI passed to decodeURI function.
+
+// decodeURI("%F0%A0%AE%9F")
+𠮟
+
+// decodeURI("\x05")
+
+
+// decodeURI("😭")
+😭
+
+// decodeURI("~!%40%23%24%25%5E%26*()_%2B%5B%5D%5C%7B%7D%7C%3B'%2C.%2F%3C%3E%3F")
+~!%40%23%24%^%26*()_%2B[]\{}|%3B'%2C.%2F<>%3F
+
+// decodeURIComponent()
+undefined
+
+// decodeURIComponent(undefined)
+null
+
+// typeof(decodeURIComponent(undefined))
+string
+
+// decodeURIComponent(null)
+null
+
+// decodeURIComponent("test")
+test
+
+// decodeURIComponent("%3A")
+:
+
+// decodeURIComponent("%E0%A4%A")
+URIError: Error #1052: Invalid URI passed to decodeURIComponent function.
+
+// decodeURIComponent("%FFabcd")
+URIError: Error #1052: Invalid URI passed to decodeURIComponent function.
+
+// decodeURIComponent("%F0%A0%AE%9F")
+𠮟
+
+// decodeURIComponent("\x05")
+
+
+// decodeURIComponent("😭")
+😭
+
+// decodeURIComponent("~!%40%23%24%25%5E%26*()_%2B%5B%5D%5C%7B%7D%7C%3B'%2C.%2F%3C%3E%3F")
+~!@#$%^&*()_+[]\{}|;',./<>?
+

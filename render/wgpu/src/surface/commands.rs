@@ -2,8 +2,7 @@ use crate::backend::RenderTargetMode;
 use crate::blend::TrivialBlend;
 use crate::blend::{BlendType, ComplexBlend};
 use crate::buffer_pool::TexturePool;
-use crate::globals::Globals;
-use crate::mesh::{DrawType, Mesh};
+use crate::mesh::{as_mesh, DrawType, Mesh};
 use crate::surface::target::CommandTarget;
 use crate::surface::Surface;
 use crate::{
@@ -12,19 +11,16 @@ use crate::{
 };
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::bitmap::BitmapHandle;
-use ruffle_render::color_transform::ColorTransform;
 use ruffle_render::commands::Command;
 use ruffle_render::matrix::Matrix;
 use ruffle_render::quality::StageQuality;
 use ruffle_render::transform::Transform;
-use swf::{BlendMode, Color, Fixed8};
-use wgpu::CommandEncoder;
+use swf::{BlendMode, Color, ColorTransform, Fixed8};
 
 use super::target::PoolOrArcTexture;
 
 pub struct CommandRenderer<'pass, 'frame: 'pass, 'global: 'frame> {
     pipelines: &'frame Pipelines,
-    meshes: &'global Vec<Mesh>,
     descriptors: &'global Descriptors,
     num_masks: u32,
     mask_state: MaskState,
@@ -39,7 +35,6 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         pipelines: &'frame Pipelines,
-        meshes: &'global Vec<Mesh>,
         descriptors: &'global Descriptors,
         uniform_buffers: &'frame mut UniformBuffer<'global, Transforms>,
         color_buffers: &'frame mut UniformBuffer<'global, ColorAdjustments>,
@@ -51,7 +46,6 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
     ) -> Self {
         Self {
             pipelines,
-            meshes,
             num_masks,
             mask_state,
             render_pass,
@@ -93,7 +87,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                 transform,
                 blend_mode,
             } => self.render_texture(transform, binds, *blend_mode),
-            DrawCommand::RenderShape { shape, transform } => self.render_shape(*shape, transform),
+            DrawCommand::RenderShape { shape, transform } => self.render_shape(shape, transform),
             DrawCommand::DrawRect { color, matrix } => self.draw_rect(color, matrix),
             DrawCommand::PushMask => self.push_mask(),
             DrawCommand::ActivateMask => self.activate_mask(),
@@ -199,7 +193,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                 0,
                 bytemuck::cast_slice(&[PushConstants {
                     transforms: Transforms { world_matrix },
-                    colors: ColorAdjustments::from(*color_adjustments),
+                    colors: color_adjustments.into(),
                 }]),
             );
         } else {
@@ -225,7 +219,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                     self.uniform_encoder,
                     &mut self.render_pass,
                     2,
-                    &ColorAdjustments::from(*color_adjustments),
+                    &color_adjustments.into(),
                 );
             }
         }
@@ -257,11 +251,10 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         self.prep_bitmap(&bind.bind_group, blend_mode, render_stage3d);
         self.apply_transform(
             &(transform.matrix
-                * Matrix {
-                    a: texture.width as f32,
-                    d: texture.height as f32,
-                    ..Default::default()
-                }),
+                * Matrix::scale(
+                    texture.texture.width() as f32,
+                    texture.texture.height() as f32,
+                )),
             &transform.color_transform,
         );
 
@@ -297,13 +290,12 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         }
     }
 
-    pub fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform) {
+    pub fn render_shape(&mut self, shape: &'frame ShapeHandle, transform: &Transform) {
         if cfg!(feature = "render_debug_labels") {
-            self.render_pass
-                .push_debug_group(&format!("render_shape {}", shape.0));
+            self.render_pass.push_debug_group("render_shape");
         }
 
-        let mesh = &self.meshes[shape.0];
+        let mesh = as_mesh(shape);
         for draw in &mesh.draws {
             let num_indices = if self.mask_state != MaskState::DrawMaskStencil
                 && self.mask_state != MaskState::ClearMaskStencil
@@ -353,10 +345,10 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
             self.apply_transform(
                 matrix,
                 &ColorTransform {
-                    r_mult: Fixed8::from_f32(f32::from(color.r) / 255.0),
-                    g_mult: Fixed8::from_f32(f32::from(color.g) / 255.0),
-                    b_mult: Fixed8::from_f32(f32::from(color.b) / 255.0),
-                    a_mult: Fixed8::from_f32(f32::from(color.a) / 255.0),
+                    r_multiply: Fixed8::from_f32(f32::from(color.r) / 255.0),
+                    g_multiply: Fixed8::from_f32(f32::from(color.g) / 255.0),
+                    b_multiply: Fixed8::from_f32(f32::from(color.b) / 255.0),
+                    a_multiply: Fixed8::from_f32(f32::from(color.a) / 255.0),
                     ..Default::default()
                 },
             );
@@ -447,6 +439,13 @@ pub enum DrawCommand {
     PopMask,
 }
 
+#[derive(Copy, Clone)]
+pub enum LayerRef<'a> {
+    None,
+    Current,
+    Parent(&'a CommandTarget),
+}
+
 /// Replaces every blend with a RenderBitmap, with the subcommands rendered out to a temporary texture
 /// Every complex blend will be its own item, but every other draw will be chunked together
 #[allow(clippy::too_many_arguments)]
@@ -461,7 +460,7 @@ pub fn chunk_blends<'a>(
     quality: StageQuality,
     width: u32,
     height: u32,
-    nearest_layer: &CommandTarget,
+    nearest_layer: LayerRef,
     texture_pool: &mut TexturePool,
 ) -> Vec<Chunk> {
     let mut result = vec![];
@@ -481,7 +480,7 @@ pub fn chunk_blends<'a>(
                 );
                 let clear_color = BlendType::from(blend_mode).default_color();
                 let target = surface.draw_commands(
-                    RenderTargetMode::FreshBuffer(clear_color),
+                    RenderTargetMode::FreshWithColor(clear_color),
                     descriptors,
                     meshes,
                     commands,
@@ -490,9 +489,9 @@ pub fn chunk_blends<'a>(
                     uniform_encoder,
                     draw_encoder,
                     if blend_mode == BlendMode::Layer {
-                        None
+                        LayerRef::Current
                     } else {
-                        Some(nearest_layer)
+                        nearest_layer
                     },
                     texture_pool,
                 );
@@ -607,92 +606,4 @@ pub fn chunk_blends<'a>(
     }
 
     result
-}
-
-#[allow(clippy::too_many_arguments)]
-pub fn run_copy_pipeline(
-    descriptors: &Descriptors,
-    format: wgpu::TextureFormat,
-    actual_surface_format: wgpu::TextureFormat,
-    size: wgpu::Extent3d,
-    frame_view: &wgpu::TextureView,
-    input: &wgpu::TextureView,
-    whole_frame_bind_group: &wgpu::BindGroup,
-    globals: &Globals,
-    sample_count: u32,
-    encoder: &mut CommandEncoder,
-) {
-    let copy_bind_group = descriptors
-        .device
-        .create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &descriptors.bind_layouts.bitmap,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: descriptors.quad.texture_transforms.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: wgpu::BindingResource::TextureView(input),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 2,
-                    resource: wgpu::BindingResource::Sampler(
-                        descriptors.bitmap_samplers.get_sampler(false, false),
-                    ),
-                },
-            ],
-            label: create_debug_label!("Copy sRGB bind group").as_deref(),
-        });
-
-    let pipeline = if actual_surface_format == format {
-        descriptors.copy_pipeline(format, sample_count)
-    } else {
-        descriptors.copy_srgb_pipeline(actual_surface_format, sample_count)
-    };
-
-    // We overwrite the pixels in the target texture (no blending at all),
-    // so this doesn't matter.
-    let load = wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT);
-
-    let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-            view: frame_view,
-            ops: wgpu::Operations { load, store: true },
-            resolve_target: None,
-        })],
-        depth_stencil_attachment: None,
-        label: create_debug_label!("Copy back to render target").as_deref(),
-    });
-
-    render_pass.set_pipeline(&pipeline);
-    render_pass.set_bind_group(0, globals.bind_group(), &[]);
-
-    if descriptors.limits.max_push_constant_size > 0 {
-        render_pass.set_push_constants(
-            wgpu::ShaderStages::VERTEX,
-            0,
-            bytemuck::cast_slice(&[Transforms {
-                world_matrix: [
-                    [size.width as f32, 0.0, 0.0, 0.0],
-                    [0.0, size.height as f32, 0.0, 0.0],
-                    [0.0, 0.0, 1.0, 0.0],
-                    [0.0, 0.0, 0.0, 1.0],
-                ],
-            }]),
-        );
-        render_pass.set_bind_group(1, &copy_bind_group, &[]);
-    } else {
-        render_pass.set_bind_group(1, whole_frame_bind_group, &[0]);
-        render_pass.set_bind_group(2, &copy_bind_group, &[]);
-    }
-
-    render_pass.set_vertex_buffer(0, descriptors.quad.vertices_pos.slice(..));
-    render_pass.set_index_buffer(
-        descriptors.quad.indices.slice(..),
-        wgpu::IndexFormat::Uint32,
-    );
-
-    render_pass.draw_indexed(0..6, 0, 0..1);
-    drop(render_pass);
 }

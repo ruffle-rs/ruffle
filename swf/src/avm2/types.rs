@@ -101,6 +101,7 @@ pub struct Method {
 }
 
 bitflags! {
+    #[derive(Clone, Copy, Debug, PartialEq)]
     pub struct MethodFlags: u8 {
         const NEED_ARGUMENTS  = 1 << 0;
         const NEED_ACTIVATION = 1 << 1;

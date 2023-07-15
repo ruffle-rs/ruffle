@@ -1,42 +1,84 @@
 {
     "settings_ruffle_enable": {
-        "message": "Flash içeriğini Ruffle ile oynat"
-    },
-    "settings_page_ignore_optout": {
-        "message": "Ruffle'a engel olan sitelerde dahi Flash içeriğini oynatmaya çalış"
+        "message": "Flash içeriğini Ruffle'da oynat"
     },
     "settings_ignore_optout": {
-        "message": "Sitelerin uyumsuzluk uyarılarını yoksay"
+        "message": "Ruffle'a izin vermeyen sitelerde bile Flash içeriği oynat"
+    },
+    "settings_show_swf_download": {
+        "message": "Bağlam menüsünde SWF indirmesini göster"
+    },
+    "settings_autostart": {
+        "message": "Açılış ekranı olmadan otomatik olarak oynat (sonrasında sesi açmak için tıkla)"
+    },
+    "settings_warn_on_unsupported_content": {
+        "message": "Desteklenmeyen içerik konusunda uyar"
+    },
+    "settings_log_level": {
+        "message": "Kayıt düzeyi"
+    },
+    "settings_log_level_error": {
+        "message": "Hatalar"
+    },
+    "settings_log_level_warn": {
+        "message": "Uyarılar"
+    },
+    "settings_log_level_info": {
+        "message": "Bilgi"
+    },
+    "settings_max_execution_duration": {
+        "message": "İzin verilen maksimum ActionScript yürütme süresi (saniye olarak)"
+    },
+    "settings_player_version": {
+        "message": "Benzetilecek Flash oynatıcı sürüm numarası (aralık 1-32)"
+    },
+    "settings_preferred_renderer": {
+        "message": "Tercih edilen işleyici"
+    },
+    "settings_preferred_renderer_auto": {
+        "message": "Otomatik"
+    },
+    "settings_advanced_options": {
+        "message": "Gelişmiş Seçenekler"
+    },
+    "settings_reset": {
+        "message": "Ayarları sıfırla"
+    },
+    "settings_reset_confirm": {
+        "message": "Ruffle seçeneklerini orijinal varsayılanlarına geri yüklemek istediğinize emin misiniz?"
     },
     "status_init": {
-        "message": "Mevcut sekme okunuyor…"
+        "message": "Geçerli sekme okunuyor…"
     },
     "status_no_tabs": {
         "message": "Aktif sekme yok."
     },
     "status_tabs_error": {
-        "message": "Mevcut sekmeyi okurken bir hata oluştu"
+        "message": "Geçerli sekme aranırken bir hata oluştu."
     },
     "status_message_init": {
-        "message": "Mevcut sekmede Ruffle'ın durumu inceleniyor…"
+        "message": "Mevcut sekmede Ruffle'ın durumu kontrol ediliyor…"
     },
     "status_result_running": {
-        "message": "Ruffle yüklendi ve mevcut sekmedeki Flash içeriğini oynatmakta."
+        "message": "Ruffle yüklendi ve mevcut sekmede Flash içeriğini çalıştırmaya hazır."
+    },
+    "status_result_running_protected": {
+        "message": "Ruffle yüklendi ve istediğiniz Flash içeriğini çalıştırıyor."
     },
     "status_result_optout": {
-        "message": "Ruffle yüklenmedi çünkü mevcut sayfa kendini uyumsuz olarak işaretledi."
+        "message": "Geçerli sayfa kendisini uyumsuz olarak işaretlediğinden Ruffle yüklenmedi."
     },
     "status_result_disabled": {
-        "message": "Ruffle yüklenmedi çünkü kullanıcısınca kapatılmış."
+        "message": "Ruffle devre dışı olduğu için yüklenmedi."
     },
     "status_result_error": {
-        "message": "Mevcut sekmedeki Ruffle instanceı sorgulanırken bir hata oluştu."
+        "message": "Geçerli sekmenin Ruffle örneği sorgulanırken bir hata oluştu."
     },
     "status_result_protected": {
-        "message": "Korumalı tarayıcı sayfalarında Ruffle yüklenemez."
+        "message": "Ruffle korumalı tarayıcı sayfalarına yüklenemez."
     },
     "action_reload": {
-        "message": "Değişiklikleri uygulamak için sekmeyi yenileyin"
+        "message": "Değişiklikleri uygulamak için sekmeyi yenile"
     },
     "open_settings_page": {
         "message": "Ayarlar Sayfasını Aç"
@@ -45,12 +87,12 @@
         "message": "Ayarlar Sayfası"
     },
     "description": {
-        "message": "Flash'ı ait olduğu Web'de yerini geri verir."
+        "message": "Flash'ı ağda ait olduğu yere geri koyar."
     },
     "save_settings": {
         "message": "Ayarları Kaydet"
     },
     "settings_saved": {
-        "message": "Kaydedildi"
+        "message": "Ayarlar Kaydedildi"
     }
 }

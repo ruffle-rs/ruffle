@@ -6,6 +6,7 @@ use crate::backend::ui::MouseCursor;
 use crate::context::UpdateContext;
 use crate::display_object::avm1_button::Avm1Button;
 use crate::display_object::avm2_button::Avm2Button;
+use crate::display_object::container::DisplayObjectContainer;
 use crate::display_object::edit_text::EditText;
 use crate::display_object::loader_display::LoaderDisplay;
 use crate::display_object::movie_clip::MovieClip;
@@ -21,9 +22,7 @@ use ruffle_macros::enum_trait_object;
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 use std::time::Duration;
-use swf::Twips;
-
-use super::DisplayObjectContainer;
+use swf::{Point, Twips};
 
 /// Find the lowest common ancestor between the display objects in `from` and
 /// `to`.
@@ -65,7 +64,7 @@ fn lowest_common_ancestor<'gc>(
 
 bitflags! {
     /// Boolean state flags used by `InteractiveObject`.
-    #[derive(Collect)]
+    #[derive(Clone, Copy, Collect)]
     #[collect(require_static)]
     struct InteractiveObjectFlags: u8 {
         /// Whether this `InteractiveObject` accepts mouse and other user
@@ -169,7 +168,11 @@ pub trait TInteractiveObject<'gc>:
     /// machinery should run. Otherwise, the event will not be handled, neither
     /// by this interactive object nor it's children. The event will be passed
     /// onto other siblings of the display object instead.
-    fn filter_clip_event(self, event: ClipEvent) -> ClipEventResult;
+    fn filter_clip_event(
+        self,
+        _context: &mut UpdateContext<'_, 'gc>,
+        event: ClipEvent,
+    ) -> ClipEventResult;
 
     /// Propagate the event to children.
     ///
@@ -219,6 +222,16 @@ pub trait TInteractiveObject<'gc>:
         context: &mut UpdateContext<'_, 'gc>,
         event: ClipEvent<'gc>,
     ) -> ClipEventResult {
+        // Flash appears to not fire events *at all* for a targeted EditText
+        // that was originally created by the timeline. Normally, one of the ancestors
+        // of the TextField would get targeted, but instead, the event isn't fired
+        // (not even the Stage receives the event)
+        if let Some(text) = self.as_displayobject().as_edit_text() {
+            if text.is_selectable() && text.was_static() {
+                return ClipEventResult::NotHandled;
+            }
+        }
+
         let target = if let Avm2Value::Object(target) = self.as_displayobject().object2() {
             target
         } else {
@@ -235,11 +248,10 @@ pub trait TInteractiveObject<'gc>:
                     self.as_displayobject(),
                     None,
                     0,
+                    true,
                 );
 
-                if let Err(e) = Avm2::dispatch_event(&mut activation.context, avm2_event, target) {
-                    tracing::error!("Got error when dispatching {:?} to AVM2: {}", event, e);
-                }
+                Avm2::dispatch_event(&mut activation.context, avm2_event, target);
 
                 ClipEventResult::Handled
             }
@@ -250,11 +262,10 @@ pub trait TInteractiveObject<'gc>:
                     self.as_displayobject(),
                     None,
                     0,
+                    true,
                 );
 
-                if let Err(e) = Avm2::dispatch_event(&mut activation.context, avm2_event, target) {
-                    tracing::error!("Got error when dispatching {:?} to AVM2: {}", event, e);
-                }
+                Avm2::dispatch_event(&mut activation.context, avm2_event, target);
 
                 ClipEventResult::Handled
             }
@@ -279,13 +290,10 @@ pub trait TInteractiveObject<'gc>:
                         self.as_displayobject(),
                         None,
                         0,
+                        true,
                     );
 
-                    if let Err(e) =
-                        Avm2::dispatch_event(&mut activation.context, avm2_event, target)
-                    {
-                        tracing::error!("Got error when dispatching {:?} to AVM2: {}", event, e);
-                    }
+                    Avm2::dispatch_event(&mut activation.context, avm2_event, target);
 
                     self.raw_interactive_mut(context.gc_context).last_click = None;
                 } else {
@@ -295,13 +303,10 @@ pub trait TInteractiveObject<'gc>:
                         self.as_displayobject(),
                         None,
                         0,
+                        true,
                     );
 
-                    if let Err(e) =
-                        Avm2::dispatch_event(&mut activation.context, avm2_event, target)
-                    {
-                        tracing::error!("Got error when dispatching {:?} to AVM2: {}", event, e);
-                    }
+                    Avm2::dispatch_event(&mut activation.context, avm2_event, target);
 
                     self.raw_interactive_mut(context.gc_context).last_click = Some(this_click);
                 }
@@ -315,11 +320,10 @@ pub trait TInteractiveObject<'gc>:
                     self.as_displayobject(),
                     None,
                     0,
+                    true,
                 );
 
-                if let Err(e) = Avm2::dispatch_event(&mut activation.context, avm2_event, target) {
-                    tracing::error!("Got error when dispatching {:?} to AVM2: {}", event, e);
-                }
+                Avm2::dispatch_event(&mut activation.context, avm2_event, target);
 
                 self.raw_interactive_mut(context.gc_context).last_click = None;
 
@@ -332,11 +336,10 @@ pub trait TInteractiveObject<'gc>:
                     self.as_displayobject(),
                     to,
                     0,
+                    true,
                 );
 
-                if let Err(e) = Avm2::dispatch_event(&mut activation.context, avm2_event, target) {
-                    tracing::error!("Got error when dispatching {:?} to AVM2: {}", event, e);
-                }
+                Avm2::dispatch_event(&mut activation.context, avm2_event, target);
 
                 let lca = lowest_common_ancestor(
                     self.as_displayobject(),
@@ -351,18 +354,10 @@ pub trait TInteractiveObject<'gc>:
                     }
 
                     let avm2_event =
-                        Avm2EventObject::mouse_event(&mut activation, "rollOut", tgt, to, 0);
+                        Avm2EventObject::mouse_event(&mut activation, "rollOut", tgt, to, 0, false);
 
                     if let Avm2Value::Object(avm2_target) = tgt.object2() {
-                        if let Err(e) =
-                            Avm2::dispatch_event(&mut activation.context, avm2_event, avm2_target)
-                        {
-                            tracing::error!(
-                                "Got error when dispatching {:?} to AVM2: {}",
-                                event,
-                                e
-                            );
-                        }
+                        Avm2::dispatch_event(&mut activation.context, avm2_event, avm2_target);
                     }
 
                     rollout_target = tgt.parent();
@@ -385,19 +380,17 @@ pub trait TInteractiveObject<'gc>:
                         break;
                     }
 
-                    let avm2_event =
-                        Avm2EventObject::mouse_event(&mut activation, "rollOver", tgt, from, 0);
+                    let avm2_event = Avm2EventObject::mouse_event(
+                        &mut activation,
+                        "rollOver",
+                        tgt,
+                        from,
+                        0,
+                        false,
+                    );
 
                     if let Avm2Value::Object(avm2_target) = tgt.object2() {
-                        if let Err(e) =
-                            Avm2::dispatch_event(&mut activation.context, avm2_event, avm2_target)
-                        {
-                            tracing::error!(
-                                "Got error when dispatching {:?} to AVM2: {}",
-                                event,
-                                e
-                            );
-                        }
+                        Avm2::dispatch_event(&mut activation.context, avm2_event, avm2_target);
                     }
 
                     rollover_target = tgt.parent();
@@ -409,11 +402,10 @@ pub trait TInteractiveObject<'gc>:
                     self.as_displayobject(),
                     from,
                     0,
+                    true,
                 );
 
-                if let Err(e) = Avm2::dispatch_event(&mut activation.context, avm2_event, target) {
-                    tracing::error!("Got error when dispatching {:?} to AVM2: {}", event, e);
-                }
+                Avm2::dispatch_event(&mut activation.context, avm2_event, target);
 
                 ClipEventResult::Handled
             }
@@ -424,11 +416,10 @@ pub trait TInteractiveObject<'gc>:
                     self.as_displayobject(),
                     None,
                     delta.lines() as i32,
+                    true,
                 );
 
-                if let Err(e) = Avm2::dispatch_event(&mut activation.context, avm2_event, target) {
-                    tracing::error!("Got error when dispatching {:?} to AVM2: {}", event, e);
-                }
+                Avm2::dispatch_event(&mut activation.context, avm2_event, target);
 
                 ClipEventResult::Handled
             }
@@ -439,11 +430,10 @@ pub trait TInteractiveObject<'gc>:
                     self.as_displayobject(),
                     None,
                     0,
+                    true,
                 );
 
-                if let Err(e) = Avm2::dispatch_event(&mut activation.context, avm2_event, target) {
-                    tracing::error!("Got error when dispatching {:?} to AVM2: {}", event, e);
-                }
+                Avm2::dispatch_event(&mut activation.context, avm2_event, target);
 
                 ClipEventResult::Handled
             }
@@ -463,7 +453,7 @@ pub trait TInteractiveObject<'gc>:
             return ClipEventResult::NotHandled;
         }
 
-        if self.filter_clip_event(event) == ClipEventResult::NotHandled {
+        if self.filter_clip_event(context, event) == ClipEventResult::NotHandled {
             return ClipEventResult::NotHandled;
         }
 
@@ -478,13 +468,13 @@ pub trait TInteractiveObject<'gc>:
     /// mouse cursor.
     ///
     /// Only objects capable of handling mouse input should flag themselves as
-    /// mouse-pickable, as doing so will make them eligible to recieve targeted
+    /// mouse-pickable, as doing so will make them eligible to receive targeted
     /// mouse events. As a result of this, the returned object will always be
     /// an `InteractiveObject`.
     fn mouse_pick_avm1(
         &self,
         _context: &mut UpdateContext<'_, 'gc>,
-        _pos: (Twips, Twips),
+        _point: Point<Twips>,
         _require_button_mode: bool,
     ) -> Option<InteractiveObject<'gc>> {
         None
@@ -493,7 +483,7 @@ pub trait TInteractiveObject<'gc>:
     fn mouse_pick_avm2(
         &self,
         _context: &mut UpdateContext<'_, 'gc>,
-        _pos: (Twips, Twips),
+        _point: Point<Twips>,
         _require_button_mode: bool,
     ) -> Avm2MousePick<'gc> {
         Avm2MousePick::Miss

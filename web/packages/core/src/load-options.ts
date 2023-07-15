@@ -83,7 +83,7 @@ export const enum LogLevel {
  * The window mode of a Ruffle player.
  */
 export const enum WindowMode {
-    /*
+    /**
      * The Flash content is rendered in its own window and layering is done with the browser's
      * default behavior.
      *
@@ -92,29 +92,160 @@ export const enum WindowMode {
      */
     Window = "window",
 
-    /*
+    /**
      * The Flash content is layered together with other HTML elements, and the stage color is
      * opaque. Content can render above or below Ruffle based on CSS rendering order.
      */
     Opaque = "opaque",
 
-    /*
+    /**
      * The Flash content is layered together with other HTML elements, and the SWF stage color is
      * transparent. Content beneath Ruffle will be visible through transparent areas.
      */
     Transparent = "transparent",
 
-    /*
+    /**
      * Request compositing with hardware acceleration when possible.
      * This mode has no effect in Ruffle and will function like `WindowMode.Opaque`.
      */
     Direct = "direct",
 
-    /*
+    /**
      * Request a direct rendering path, bypassing browser compositing when possible.
      * This mode has no effect in Ruffle and will function like `WindowMode::Opaque`.
      */
     Gpu = "gpu",
+}
+
+/**
+ * The render backend of a Ruffle player.
+ *
+ * The available backends may change in future releases.
+ */
+export const enum RenderBackend {
+    /**
+     * An [in-development API](https://caniuse.com/webgpu) that will be preferred if available in the future.
+     * Should behave the same as wgpu-webgl, except with lower overhead and thus better performance.
+     */
+    WebGpu = "webgpu",
+
+    /**
+     * The most featureful and currently preferred backend.
+     * Rendering is done the same way as in the desktop app, then translated to WebGL on-the-fly.
+     */
+    WgpuWebgl = "wgpu-webgl",
+
+    /**
+     * A vanilla WebGL backend. Was the default backend until the start of 2023,
+     * but is now used as a fallback for devices that do not support WebGL 2.
+     * Supports fewer features and has a faster initialization time;
+     * may be useful for content that does not need advanced features like bitmap drawing or blend modes.
+     */
+    Webgl = "webgl",
+
+    /**
+     * The slowest and most basic backend, used as a fallback when all else fails.
+     * However, this is currently the only backend that accurately scales hairline strokes.
+     * If you notice excessively thick strokes in specific content,
+     * you may want to use the canvas renderer for that content until the issue is resolved.
+     */
+    Canvas = "canvas",
+}
+
+/**
+ * Represents the various context menu options that are supported.
+ */
+export const enum ContextMenu {
+    /**
+     * The context menu should appear when right-clicking or long-pressing
+     * the Ruffle instance.
+     */
+    On = "on",
+
+    /**
+     * The context menu should only appear when right-clicking
+     * the Ruffle instance.
+     */
+    RightClickOnly = "rightClickOnly",
+
+    /**
+     * The context menu should not appear when right-clicking or long-pressing
+     * the Ruffle instance.
+     */
+    Off = "off",
+}
+
+/**
+ * Non-negative duration in seconds.
+ */
+export type SecsDuration = number;
+
+/**
+ * Deprecated duration type, use SecsDuration instead.
+ * Based on https://doc.rust-lang.org/stable/std/time/struct.Duration.html#method.new .
+ */
+export interface ObsoleteDuration {
+    secs: number;
+    nanos: number;
+}
+
+/**
+ * Any new duration-based setting should use 'number' or 'SecsDuration' for its type,
+ * instead of this type.
+ */
+export type Duration = SecsDuration | ObsoleteDuration;
+
+/**
+ * The handling mode of links opening a new website.
+ */
+export const enum OpenURLMode {
+    /**
+     * Allow all links to open a new website.
+     */
+    Allow = "allow",
+
+    /**
+     * A confirmation dialog opens with every link trying to open a new website.
+     */
+    Confirm = "confirm",
+
+    /**
+     * Deny all links to open a new website.
+     */
+    Deny = "deny",
+}
+
+/**
+ * The networking API access mode of the Ruffle player.
+ */
+export const enum NetworkingAccessMode {
+    /**
+     * All networking APIs are permitted in the SWF file.
+     */
+    All = "all",
+
+    /**
+     * The SWF file may not call browser navigation or browser interaction APIs.
+     *
+     * The APIs navigateToURL(), fscommand() and ExternalInterface.call() are
+     * prevented in this mode.
+     */
+    Internal = "internal",
+
+    /**
+     * The SWF file may not call browser navigation or browser interaction APIs
+     * and it cannot use any SWF-to-SWF communication APIs.
+     *
+     * Additionally to the ones in internal mode, the APIs sendToURL(),
+     * FileReference.download(), FileReference.upload(), Loader.load(),
+     * LocalConnection.connect(), LocalConnection.send(), NetConnection.connect(),
+     * NetStream.play(), Security.loadPolicyFile(), SharedObject.getLocal(),
+     * SharedObject.getRemote(), Socket.connect(), Sound.load(), URLLoader.load(),
+     * URLStream.load() and XMLSocket.connect() are prevented in this mode.
+     *
+     * This mode is not implemented yet.
+     */
+    None = "none",
 }
 
 /**
@@ -200,6 +331,13 @@ export interface BaseLoadOptions {
     compatibilityRules?: boolean;
 
     /**
+     * Favor using the real Adobe Flash Player over Ruffle if the browser supports it.
+     *
+     * @default true
+     */
+    favorFlash?: boolean;
+
+    /**
      * Whether or not to display an overlay with a warning when
      * loading a movie with unsupported content.
      *
@@ -226,9 +364,9 @@ export interface BaseLoadOptions {
      * Whether or not to show a context menu when right-clicking
      * a Ruffle instance.
      *
-     * @default true
+     * @default ContextMenu.On
      */
-    contextMenu?: boolean;
+    contextMenu?: ContextMenu | boolean;
 
     /**
      * Whether or not to show a splash screen before the SWF has loaded with Ruffle (backwards-compatibility).
@@ -248,12 +386,9 @@ export interface BaseLoadOptions {
      * Maximum amount of time a script can take before scripting
      * is disabled.
      *
-     * @default { secs: 15, nanos: 0 }
+     * @default 15
      */
-    maxExecutionDuration?: {
-        secs: number;
-        nanos: number;
-    };
+    maxExecutionDuration?: Duration;
 
     /**
      * Specifies the base directory or URL used to resolve all relative path statements in the SWF file.
@@ -280,6 +415,13 @@ export interface BaseLoadOptions {
     salign?: string;
 
     /**
+     * If set to true, movies are prevented from changing the stage alignment.
+     *
+     * @default false
+     */
+    forceAlign?: boolean;
+
+    /**
      * This is equivalent to Stage.quality.
      *
      * @default "high"
@@ -301,6 +443,13 @@ export interface BaseLoadOptions {
     forceScale?: boolean;
 
     /**
+     * Sets and locks the player's frame rate, overriding the movie's frame rate.
+     *
+     * @default null
+     */
+    frameRate?: number | null;
+
+    /**
      * The window mode of the Ruffle player.
      *
      * This setting controls how the Ruffle container is layered and rendered with other content on the page.
@@ -318,6 +467,52 @@ export interface BaseLoadOptions {
      * @default null
      */
     playerVersion?: number | null;
+
+    /**
+     * The preferred render backend of the Ruffle player.
+     *
+     * This option should only be used for testing;
+     * the available backends may change in future releases.
+     * By default, Ruffle chooses the most featureful backend supported by the user's system,
+     * falling back to more basic backends if necessary.
+     * The available values in order of default preference are:
+     * "webgpu", "wgpu-webgl", "webgl", "canvas".
+     *
+     * @default null
+     */
+    preferredRenderer?: RenderBackend | null;
+
+    /**
+     * The URL at which Ruffle can load its extra files (i.e. `.wasm`).
+     *
+     * @default null
+     */
+    publicPath?: string | null;
+
+    /**
+     * Whether or not to enable polyfills on the page.
+     *
+     * Polyfills will look for "legacy" flash content like `<object>`
+     * and `<embed>` elements, and replace them with compatible
+     * Ruffle elements.
+     *
+     * @default true
+     */
+    polyfills?: boolean;
+
+    /**
+     * The handling mode of links opening a new website.
+     *
+     * @default OpenURLMode.Allow
+     */
+    openUrlMode?: OpenURLMode;
+
+    /**
+     * Which flash networking APIs may be accessed.
+     *
+     * @default NetworkingAccessMode.All
+     */
+    allowNetworking?: NetworkingAccessMode;
 }
 
 /**

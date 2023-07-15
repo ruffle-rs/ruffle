@@ -4,11 +4,12 @@ use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, ArrayObject, Error, Object, ScriptObject, TObject, Value};
 use crate::avm1_stub;
+use crate::context::GcContext;
 use crate::display_object::{AutoSizeMode, EditText, TDisplayObject};
 use crate::ecma_conversions::round_to_even;
 use crate::html::TextFormat;
 use crate::string::{AvmString, WStr};
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::GcCell;
 
 macro_rules! getter {
     ($name:ident) => {
@@ -608,18 +609,18 @@ pub fn constructor<'gc>(
     )?;
     this.set_native(
         activation.context.gc_context,
-        NativeObject::TextFormat(GcCell::allocate(activation.context.gc_context, text_format)),
+        NativeObject::TextFormat(GcCell::new(activation.context.gc_context, text_format)),
     );
     Ok(this.into())
 }
 
 /// `TextFormat.prototype` constructor
 pub fn create_proto<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = ScriptObject::new(gc_context, Some(proto));
-    define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
+    let object = ScriptObject::new(context.gc_context, Some(proto));
+    define_properties_on(PROTO_DECLS, context, object, fn_proto);
     object.into()
 }

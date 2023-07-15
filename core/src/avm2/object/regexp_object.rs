@@ -8,17 +8,17 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::string::{AvmString, WString};
 use core::fmt;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates RegExp objects.
-pub fn regexp_allocator<'gc>(
+pub fn reg_exp_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
-    Ok(RegExpObject(GcCell::allocate(
+    Ok(RegExpObject(GcCell::new(
         activation.context.gc_context,
         RegExpObjectData {
             base,
@@ -30,7 +30,11 @@ pub fn regexp_allocator<'gc>(
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct RegExpObject<'gc>(GcCell<'gc, RegExpObjectData<'gc>>);
+pub struct RegExpObject<'gc>(pub GcCell<'gc, RegExpObjectData<'gc>>);
+
+#[derive(Clone, Collect, Copy, Debug)]
+#[collect(no_drop)]
+pub struct RegExpObjectWeak<'gc>(pub GcWeakCell<'gc, RegExpObjectData<'gc>>);
 
 impl fmt::Debug for RegExpObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -57,14 +61,14 @@ impl<'gc> RegExpObject<'gc> {
         let class = activation.avm2().classes().regexp;
         let base = ScriptObjectData::new(class);
 
-        let mut this: Object<'gc> = RegExpObject(GcCell::allocate(
+        let mut this: Object<'gc> = RegExpObject(GcCell::new(
             activation.context.gc_context,
             RegExpObjectData { base, regexp },
         ))
         .into();
-        this.install_instance_slots(activation);
+        this.install_instance_slots(activation.context.gc_context);
 
-        class.call_native_init(Some(this), &[], activation)?;
+        class.call_native_init(this.into(), &[], activation)?;
 
         Ok(this)
     }

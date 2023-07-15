@@ -54,7 +54,7 @@ pub struct ClassBoundMethod<'gc> {
 
 impl<'gc> VTable<'gc> {
     pub fn empty(mc: MutationContext<'gc, '_>) -> Self {
-        VTable(GcCell::allocate(
+        VTable(GcCell::new(
             mc,
             VTableData {
                 defining_class: None,
@@ -74,7 +74,7 @@ impl<'gc> VTable<'gc> {
 
         rt.insert(*vname, Property::Slot { slot_id: 1 });
 
-        let vt = VTable(GcCell::allocate(
+        let vt = VTable(GcCell::new(
             mc,
             VTableData {
                 defining_class: None,
@@ -95,7 +95,7 @@ impl<'gc> VTable<'gc> {
     }
 
     pub fn duplicate(self, mc: MutationContext<'gc, '_>) -> Self {
-        VTable(GcCell::allocate(mc, self.0.read().clone()))
+        VTable(GcCell::new(mc, self.0.read().clone()))
     }
 
     pub fn resolved_traits(&self) -> Ref<'_, PropertyMap<'gc, Property>> {
@@ -116,6 +116,10 @@ impl<'gc> VTable<'gc> {
     }
 
     pub fn get_trait(self, name: &Multiname<'gc>) -> Option<Property> {
+        if name.is_attribute() {
+            return None;
+        }
+
         self.0
             .read()
             .resolved_traits
@@ -124,6 +128,10 @@ impl<'gc> VTable<'gc> {
     }
 
     pub fn get_trait_with_ns(self, name: &Multiname<'gc>) -> Option<(Namespace<'gc>, Property)> {
+        if name.is_attribute() {
+            return None;
+        }
+
         self.0
             .read()
             .resolved_traits
@@ -391,21 +399,37 @@ impl<'gc> VTable<'gc> {
                             type_name, unit, ..
                         } => (
                             Property::new_slot(new_slot_id),
-                            PropertyClass::name(activation, type_name.clone(), *unit),
+                            PropertyClass::name(
+                                activation.context.gc_context,
+                                type_name.clone(),
+                                *unit,
+                            ),
                         ),
                         TraitKind::Function { .. } => (
                             Property::new_slot(new_slot_id),
-                            PropertyClass::Class(activation.avm2().classes().function),
+                            PropertyClass::Class(
+                                activation
+                                    .avm2()
+                                    .classes()
+                                    .function
+                                    .inner_class_definition(),
+                            ),
                         ),
                         TraitKind::Const {
                             type_name, unit, ..
                         } => (
                             Property::new_const_slot(new_slot_id),
-                            PropertyClass::name(activation, type_name.clone(), *unit),
+                            PropertyClass::name(
+                                activation.context.gc_context,
+                                type_name.clone(),
+                                *unit,
+                            ),
                         ),
                         TraitKind::Class { .. } => (
                             Property::new_const_slot(new_slot_id),
-                            PropertyClass::Class(activation.avm2().classes().class),
+                            PropertyClass::Class(
+                                activation.avm2().classes().class.inner_class_definition(),
+                            ),
                         ),
                         _ => unreachable!(),
                     };
@@ -425,7 +449,7 @@ impl<'gc> VTable<'gc> {
     /// ID. You will need the additional properties in order to install the
     /// method into your object.
     ///
-    /// You should only call this method once per reciever/name pair, and cache
+    /// You should only call this method once per receiver/name pair, and cache
     /// the result. Otherwise, code that relies on bound methods having stable
     /// object identitities (e.g. `EventDispatcher.removeEventListener`) will
     /// fail.
@@ -470,7 +494,9 @@ impl<'gc> VTable<'gc> {
         write
             .resolved_traits
             .insert(name, Property::new_slot(new_slot_id));
-        write.slot_classes.push(PropertyClass::Class(class));
+        write
+            .slot_classes
+            .push(PropertyClass::Class(class.inner_class_definition()));
 
         new_slot_id
     }

@@ -38,13 +38,16 @@ pub fn serialize_value<'gc>(
                 None
             } else if o.as_display_object().is_some() {
                 Some(AmfValue::Undefined)
-            } else if let Some(array) = o.as_array_storage() {
+            } else if o.as_array_storage().is_some() {
                 let mut values = Vec::new();
                 recursive_serialize(activation, o, &mut values, amf_version).unwrap();
 
                 let mut dense = vec![];
                 let mut sparse = vec![];
-                for (i, elem) in (0..array.length()).zip(values.into_iter()) {
+                // ActionScript `Array`s can have non-number properties, and these properties
+                // are confirmed and tested to also be serialized, so do not limit the values
+                // iterated over by the length of the internal array data.
+                for (i, elem) in values.into_iter().enumerate() {
                     if elem.name == i.to_string() {
                         dense.push(elem.value.clone());
                     } else {
@@ -61,6 +64,17 @@ pub fn serialize_value<'gc>(
             } else if let Some(date) = o.as_date_object() {
                 date.date_time()
                     .map(|date_time| AmfValue::Date(date_time.timestamp_millis() as f64, None))
+            } else if let Some(xml) = o.as_xml_object() {
+                // `is_string` is `true` for the AS3 XML class
+                Some(AmfValue::XML(
+                    xml.node()
+                        .xml_to_xml_string(activation)
+                        .expect("Failed to stringify XML")
+                        .to_string(),
+                    true,
+                ))
+            } else if let Some(bytearray) = o.as_bytearray() {
+                Some(AmfValue::ByteArray(bytearray.bytes().to_vec()))
             } else {
                 let is_object = o
                     .instance_of()

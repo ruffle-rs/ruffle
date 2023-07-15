@@ -10,6 +10,11 @@ undefined
 undefined
 _level0.clip2
 undefined
+target.toString() called
+depth.valueOf() called
+depth.valueOf() called
+target.toString() called
 load: src
 load: clip1
 load: clip2
+load: clip4

@@ -4,8 +4,8 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, Value};
+use crate::context::GcContext;
 use crate::external::{Callback, Value as ExternalValue};
-use gc_arena::MutationContext;
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "available" => property(get_available; DONT_ENUM | DONT_DELETE | READ_ONLY);
@@ -26,7 +26,7 @@ pub fn add_callback<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if args.len() < 3 {
+    if !activation.context.external_interface.available() || args.len() < 3 {
         return Ok(false.into());
     }
 
@@ -53,19 +53,27 @@ pub fn call<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if args.is_empty() {
+    if !activation.context.external_interface.available() {
         return Ok(Value::Null);
     }
 
-    let name = args.get(0).unwrap().coerce_to_string(activation)?;
+    let (name, external_args_len) = if let Some(method_name) = args.get(0) {
+        (*method_name, args.len() - 1)
+    } else {
+        (Value::Undefined, 0)
+    };
+    let name = name.coerce_to_string(activation)?;
+
     if let Some(method) = activation
         .context
         .external_interface
         .get_method_for(&name.to_utf8_lossy())
     {
-        let mut external_args = Vec::with_capacity(args.len() - 1);
-        for arg in &args[1..] {
-            external_args.push(ExternalValue::from_avm1(activation, arg.to_owned())?);
+        let mut external_args = Vec::with_capacity(external_args_len);
+        if external_args_len > 0 {
+            for arg in &args[1..] {
+                external_args.push(ExternalValue::from_avm1(activation, arg.to_owned())?);
+            }
         }
         Ok(method
             .call(&mut activation.context, &external_args)
@@ -76,16 +84,16 @@ pub fn call<'gc>(
 }
 
 pub fn create_external_interface_object<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = ScriptObject::new(gc_context, Some(proto));
-    define_properties_on(OBJECT_DECLS, gc_context, object, fn_proto);
+    let object = ScriptObject::new(context.gc_context, Some(proto));
+    define_properties_on(OBJECT_DECLS, context, object, fn_proto);
     object.into()
 }
 
-pub fn create_proto<'gc>(gc_context: MutationContext<'gc, '_>, proto: Object<'gc>) -> Object<'gc> {
+pub fn create_proto<'gc>(context: &mut GcContext<'_, 'gc>, proto: Object<'gc>) -> Object<'gc> {
     // It's a custom prototype but it's empty.
-    ScriptObject::new(gc_context, Some(proto)).into()
+    ScriptObject::new(context.gc_context, Some(proto)).into()
 }

@@ -3,10 +3,11 @@ package flash.display {
     import flash.events.EventDispatcher;
     import flash.display3D.Context3D;
     import flash.utils.setTimeout;
-    
+    import __ruffle__.stub_method;
+
     [Ruffle(InstanceAllocator)]
     public class Stage3D extends EventDispatcher {
-        
+
         public native function get context3D():Context3D;
         private native function requestContext3D_internal(context3DRenderMode:String, profile:String):void;
 
@@ -21,8 +22,16 @@ package flash.display {
             }, 0);
         }
 
+        public function requestContext3DMatchingProfiles(profiles:Vector.<String>):void {
+            stub_method("flash.display.Stage3D", "requestContext3DMatchingProfiles");
+            requestContext3D();
+        }
+
         // FIXME - actually implement this
         public var x:Number;
         public var y:Number;
+
+        public native function get visible():Boolean;
+        public native function set visible(value:Boolean):void;
     }
 }

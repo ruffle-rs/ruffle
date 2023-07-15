@@ -1,9 +1,11 @@
 use crate::decoder::VideoDecoder;
 use h263_rs::parser::H263Reader;
-use h263_rs::{DecoderOption, H263State, PictureTypeCode};
-use h263_rs_yuv::bt601::yuv420_to_rgba;
+use h263_rs::{DecoderOption, H263State, PictureOption, PictureTypeCode};
+use h263_rs_deblock::deblock::{deblock, QUANT_TO_STRENGTH};
+use ruffle_render::bitmap::BitmapFormat;
 use ruffle_video::error::Error;
 use ruffle_video::frame::{DecodedFrame, EncodedFrame, FrameDependency};
+use swf::VideoDeblocking;
 
 #[derive(thiserror::Error, Debug)]
 pub enum H263Error {
@@ -27,11 +29,14 @@ impl From<H263Error> for Error {
 }
 
 /// H263 video decoder.
-pub struct H263Decoder(H263State);
+pub struct H263Decoder(H263State, VideoDeblocking);
 
 impl H263Decoder {
-    pub fn new() -> Self {
-        Self(H263State::new(DecoderOption::SORENSON_SPARK_BITSTREAM))
+    pub fn new(deblock: VideoDeblocking) -> Self {
+        Self(
+            H263State::new(DecoderOption::SORENSON_SPARK_BITSTREAM),
+            deblock,
+        )
     }
 }
 
@@ -68,20 +73,51 @@ impl VideoDecoder for H263Decoder {
             .format()
             .into_width_and_height()
             .ok_or(H263Error::MissingWidthHeight)?;
-        let chroma_width = picture.chroma_samples_per_row();
-        debug_assert_eq!(chroma_width, (width as usize + 1) / 2);
         let (y, b, r) = picture.as_yuv();
-        let rgba = yuv420_to_rgba(y, b, r, width.into());
-        Ok(DecodedFrame {
-            width,
-            height,
-            rgba,
-        })
+
+        let hdr = picture.as_header();
+
+        if self.1 == VideoDeblocking::Level1
+            || (self.1 == VideoDeblocking::UseVideoPacketValue
+                && hdr.options.contains(PictureOption::USE_DEBLOCKER))
+        {
+            let chroma_width = picture.chroma_samples_per_row();
+            let quantizer = hdr.quantizer as usize;
+            let strength = QUANT_TO_STRENGTH[quantizer];
+
+            let y = deblock(y, width as usize, strength);
+            let b = deblock(b, chroma_width, strength);
+            let r = deblock(r, chroma_width, strength);
+
+            let mut data = Vec::with_capacity(y.len() + b.len() + r.len());
+            data.extend_from_slice(&y);
+            data.extend_from_slice(&b);
+            data.extend_from_slice(&r);
+
+            Ok(DecodedFrame::new(
+                width as u32,
+                height as u32,
+                BitmapFormat::Yuv420p,
+                data,
+            ))
+        } else {
+            let mut data = Vec::with_capacity(y.len() + b.len() + r.len());
+            data.extend_from_slice(y);
+            data.extend_from_slice(b);
+            data.extend_from_slice(r);
+
+            Ok(DecodedFrame::new(
+                width as u32,
+                height as u32,
+                BitmapFormat::Yuv420p,
+                data,
+            ))
+        }
     }
 }
 
 impl Default for H263Decoder {
     fn default() -> Self {
-        Self::new()
+        Self::new(VideoDeblocking::UseVideoPacketValue)
     }
 }

@@ -5,6 +5,11 @@ extends:
   - eslint:recommended
   - plugin:prettier/recommended
 rules:
+  camelcase:
+    - error
+    - properties: never
+      allow:
+        - __webpack_public_path__
   curly: error
   eqeqeq: error
   no-constructor-return: error
@@ -12,6 +17,11 @@ rules:
     - error
     - argsIgnorePattern: ^_
   prefer-const: error
+  spaced-comment:
+    - error
+    - always
+    - block:
+        balanced: true
 overrides:
   # TypeScript rules.
   - files:

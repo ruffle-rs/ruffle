@@ -1,7 +1,7 @@
 const {
-    open_test,
-    inject_ruffle_and_wait,
-    play_and_monitor,
+    openTest,
+    injectRuffleAndWait,
+    playAndMonitor,
 } = require("../../utils");
 const { expect, use } = require("chai");
 const chaiHtml = require("chai-html");
@@ -11,11 +11,11 @@ use(chaiHtml);
 
 describe("Embed with case-insensitive MIME type", () => {
     it("loads the test", async () => {
-        await open_test(browser, __dirname);
+        await openTest(browser, __dirname);
     });
 
     it("Polyfills", async () => {
-        await inject_ruffle_and_wait(browser);
+        await injectRuffleAndWait(browser);
         await browser.$("<ruffle-embed />").waitForExist();
 
         const actual = await browser.$("#test-container").getHTML(false);
@@ -24,7 +24,7 @@ describe("Embed with case-insensitive MIME type", () => {
     });
 
     it("Plays a movie", async () => {
-        await play_and_monitor(
+        await playAndMonitor(
             browser,
             await browser.$("#test-container").$("<ruffle-embed />")
         );

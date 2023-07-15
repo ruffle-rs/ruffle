@@ -1,5 +1,5 @@
 import { strict as assert } from "assert";
-import { swfFileName } from "../src/swf-file-name";
+import { swfFileName } from "../src/swf-utils";
 
 describe("swfFileName", function () {
     it("should extract simple SWF name", function () {

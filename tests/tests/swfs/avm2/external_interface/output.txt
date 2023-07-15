@@ -37,7 +37,7 @@ successful reentry!
 Traced!
 
 /// callWith() end
-null
+undefined
 
 /// parrot() start
 // this
@@ -56,7 +56,7 @@ Hello World!
 After calling `parrot` with a string: String("Hello World!")
 /// freestanding() start
 // this
-null
+[object global]
 
 /// freestanding() end
 /// callWith() start
@@ -80,4 +80,4 @@ string,100,,false
 Traced!
 
 /// callWith() end
-After calling `callWith` with a complex payload: Null
+After calling `callWith` with a complex payload: Undefined

@@ -43,7 +43,7 @@ successful reentry!
 Traced!
 
 /// callWith() end
-null
+undefined
 
 /// parrot() start
 // this
@@ -81,4 +81,4 @@ trace
 Traced!
 
 /// callWith() end
-After calling `callWith` with a complex payload: Null
+After calling `callWith` with a complex payload: Undefined

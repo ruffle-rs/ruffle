@@ -3,8 +3,8 @@
 use crate::avm2::method::Method;
 use crate::avm2::object::TObject;
 use crate::avm2::property::Property;
+use crate::avm2::ClassObject;
 use crate::avm2::{Activation, Error, Object, Value};
-use crate::avm2::{ClassObject, QName};
 use crate::string::AvmString;
 use crate::string::WString;
 use instant::Instant;
@@ -18,7 +18,7 @@ pub mod timer;
 /// Implements `flash.utils.getTimer`
 pub fn get_timer<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok((Instant::now()
@@ -30,7 +30,7 @@ pub fn get_timer<'gc>(
 /// Implements `flash.utils.setInterval`
 pub fn set_interval<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if args.len() < 2 {
@@ -59,7 +59,7 @@ pub fn set_interval<'gc>(
 /// Implements `flash.utils.clearInterval`
 pub fn clear_interval<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let id = args
@@ -73,7 +73,7 @@ pub fn clear_interval<'gc>(
 /// Implements `flash.utils.setTimeout`
 pub fn set_timeout<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if args.len() < 2 {
@@ -102,7 +102,7 @@ pub fn set_timeout<'gc>(
 /// Implements `flash.utils.clearTimeout`
 pub fn clear_timeout<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let id = args
@@ -116,7 +116,7 @@ pub fn clear_timeout<'gc>(
 /// Implements `flash.utils.escapeMultiByte`
 pub fn escape_multi_byte<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let s = args
@@ -150,7 +150,7 @@ where
 /// Implements `flash.utils.unescapeMultiByte`
 pub fn unescape_multi_byte<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let s = args
@@ -162,21 +162,21 @@ pub fn unescape_multi_byte<'gc>(
     let chars = bs.chars().map(|c| c.unwrap_or(char::REPLACEMENT_CHARACTER));
 
     let mut chars = chars.peekable();
+    let mut utf8_bytes = Vec::new();
     while let Some(c) = chars.next() {
         if c == '\0' {
             break;
         }
         if c == '%' {
-            let mut bytes = Vec::new();
             while let Some(b) = handle_percent(&mut chars) {
-                bytes.push(b);
+                utf8_bytes.push(b);
                 if !matches!(chars.peek(), Some('%')) {
                     break;
                 }
                 chars.next();
             }
-            buf.push_str(&WString::from_utf8_bytes(bytes));
-
+            buf.push_utf8_bytes(&utf8_bytes);
+            utf8_bytes.clear();
             continue;
         }
 
@@ -189,7 +189,7 @@ pub fn unescape_multi_byte<'gc>(
 /// Implements `flash.utils.getQualifiedClassName`
 pub fn get_qualified_class_name<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // This is a native method, which enforces the argument count.
@@ -220,7 +220,7 @@ pub fn get_qualified_class_name<'gc>(
 /// Implements `flash.utils.getQualifiedSuperclassName`
 pub fn get_qualified_superclass_name<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let obj = args
@@ -251,22 +251,23 @@ pub fn get_qualified_superclass_name<'gc>(
 /// Implements native method `flash.utils.getDefinitionByName`
 pub fn get_definition_by_name<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let appdomain = activation.caller_domain();
+    let appdomain = activation
+        .caller_domain()
+        .expect("Missing caller domain in getDefinitionByName");
     let name = args
         .get(0)
         .unwrap_or(&Value::Undefined)
         .coerce_to_string(activation)?;
-    let qname = QName::from_qualified_name(name, activation);
-    appdomain.get_defined_value_handling_vector(activation, qname)
+    appdomain.get_defined_value_handling_vector(activation, name)
 }
 
 // Implements `flash.utils.describeType`
 pub fn describe_type<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let value = args[0].coerce_to_object(activation)?;
@@ -277,7 +278,7 @@ pub fn describe_type<'gc>(
             .classes()
             .xml
             .construct(activation, &[])?
-            .into())
+            .into());
     };
     let mut xml_string = String::new();
 

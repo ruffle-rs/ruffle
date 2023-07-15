@@ -9,7 +9,7 @@ use crate::avm2::scope::ScopeChain;
 use crate::avm2::value::Value;
 use crate::avm2::{Error, Multiname};
 use core::fmt;
-use gc_arena::{Collect, Gc, GcCell, MutationContext};
+use gc_arena::{Collect, Gc, GcCell, GcWeakCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates Function objects.
@@ -25,7 +25,7 @@ pub fn function_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
-    let dummy = Gc::allocate(
+    let dummy = Gc::new(
         activation.context.gc_context,
         NativeMethod {
             method: |_, _, _| Ok(Value::Undefined),
@@ -36,7 +36,7 @@ pub fn function_allocator<'gc>(
         },
     );
 
-    Ok(FunctionObject(GcCell::allocate(
+    Ok(FunctionObject(GcCell::new(
         activation.context.gc_context,
         FunctionObjectData {
             base,
@@ -55,7 +55,11 @@ pub fn function_allocator<'gc>(
 /// An Object which can be called to execute its function code.
 #[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
-pub struct FunctionObject<'gc>(GcCell<'gc, FunctionObjectData<'gc>>);
+pub struct FunctionObject<'gc>(pub GcCell<'gc, FunctionObjectData<'gc>>);
+
+#[derive(Collect, Clone, Copy, Debug)]
+#[collect(no_drop)]
+pub struct FunctionObjectWeak<'gc>(pub GcWeakCell<'gc, FunctionObjectData<'gc>>);
 
 impl fmt::Debug for FunctionObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -104,7 +108,7 @@ impl<'gc> FunctionObject<'gc> {
 
     /// Construct a method from an ABC method and the current closure scope.
     ///
-    /// The given `reciever`, if supplied, will override any user-specified
+    /// The given `receiver`, if supplied, will override any user-specified
     /// `this` parameter.
     pub fn from_method(
         activation: &mut Activation<'_, 'gc>,
@@ -116,7 +120,7 @@ impl<'gc> FunctionObject<'gc> {
         let fn_class = activation.avm2().classes().function;
         let exec = Executable::from_method(method, scope, receiver, subclass_object);
 
-        FunctionObject(GcCell::allocate(
+        FunctionObject(GcCell::new(
             activation.context.gc_context,
             FunctionObjectData {
                 base: ScriptObjectData::new(fn_class),
@@ -177,14 +181,14 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
     fn call(
         self,
-        receiver: Option<Object<'gc>>,
+        receiver: Value<'gc>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        self.0
-            .read()
-            .exec
-            .exec(receiver, arguments, activation, self.into())
+        // NOTE: Cloning an executable does not allocate new memory
+        let exec = self.0.read().exec.clone();
+
+        exec.exec(receiver, arguments, activation, self.into())
     }
 
     fn construct(
@@ -197,7 +201,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         let instance =
             ScriptObject::custom_object(activation.context.gc_context, None, Some(prototype));
 
-        self.call(Some(instance), arguments, activation)?;
+        self.call(instance.into(), arguments, activation)?;
 
         Ok(instance)
     }

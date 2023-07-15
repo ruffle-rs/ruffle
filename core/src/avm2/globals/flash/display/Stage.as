@@ -13,7 +13,7 @@ package flash.display {
             throw new Error("You cannot construct new instances of the Stage.")
         }
 
-        public function set accessibilityProperties(value:AccessibilityProperties):void {
+        override public function set accessibilityProperties(value:AccessibilityProperties):void {
             throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
         }
 
@@ -143,11 +143,11 @@ package flash.display {
         public native function get showDefaultContextMenu():Boolean;
         public native function set showDefaultContextMenu(value:Boolean):void;
 
-        public native function get stageWidth():Number;
-        public native function set stageWidth(value:Number):void;
+        public native function get stageWidth():int;
+        public native function set stageWidth(value:int):void;
 
-        public native function get stageHeight():Number;
-        public native function set stageHeight(value:Number):void;
+        public native function get stageHeight():int;
+        public native function set stageHeight(value:int):void;
 
         public native function get stageFocusRect():Boolean;
         public native function set stageFocusRect(value:Boolean):void;

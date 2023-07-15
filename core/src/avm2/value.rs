@@ -2,18 +2,21 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::error;
-use crate::avm2::object::{ClassObject, NamespaceObject, Object, PrimitiveObject, TObject};
+use crate::avm2::error::type_error;
+use crate::avm2::object::{NamespaceObject, Object, PrimitiveObject, TObject};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::ecma_conversions::{f64_to_wrapping_i32, f64_to_wrapping_u32};
-use crate::string::{AvmString, WStr};
-use gc_arena::{Collect, MutationContext};
+use crate::string::{AvmAtom, AvmString, WStr};
+use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::Ref;
+use std::mem::size_of;
 use swf::avm2::types::{DefaultValue as AbcDefaultValue, Index};
 
+use super::class::Class;
 use super::e4x::E4XNode;
 
 /// Indicate what kind of primitive coercion would be preferred when coercing
@@ -48,20 +51,21 @@ pub enum Value<'gc> {
 }
 
 // This type is used very frequently, so make sure it doesn't unexpectedly grow.
-// For now, we only test on Nightly, since a new niche optimization was recently
-// added (https://github.com/rust-lang/rust/pull/94075) that shrinks the size
-// relative to stable.
+#[cfg(target_family = "wasm")]
+const _: () = assert!(size_of::<Value<'_>>() == 16);
 
-#[cfg(target_arch = "wasm32")]
-static_assertions::assert_eq_size!(Value<'_>, [u8; 16]);
-
-#[rustversion::nightly]
 #[cfg(target_pointer_width = "64")]
-static_assertions::assert_eq_size!(Value<'_>, [u8; 24]);
+const _: () = assert!(size_of::<Value<'_>>() == 24);
 
 impl<'gc> From<AvmString<'gc>> for Value<'gc> {
     fn from(string: AvmString<'gc>) -> Self {
         Value::String(string)
+    }
+}
+
+impl<'gc> From<AvmAtom<'gc>> for Value<'gc> {
+    fn from(atom: AvmAtom<'gc>) -> Self {
+        Value::String(atom.into())
     }
 }
 
@@ -519,8 +523,8 @@ pub fn abc_default_value<'gc>(
         AbcDefaultValue::Uint(u) => abc_uint(translation_unit, *u).map(|v| v.into()),
         AbcDefaultValue::Double(d) => abc_double(translation_unit, *d).map(|v| v.into()),
         AbcDefaultValue::String(s) => translation_unit
-            .pool_string(s.0, activation.context.gc_context)
-            .map(|v| v.into()),
+            .pool_string(s.0, &mut activation.borrow_gc())
+            .map(Into::into),
         AbcDefaultValue::True => Ok(true.into()),
         AbcDefaultValue::False => Ok(false.into()),
         AbcDefaultValue::Null => Ok(Value::Null),
@@ -531,11 +535,10 @@ pub fn abc_default_value<'gc>(
         | AbcDefaultValue::Protected(ns)
         | AbcDefaultValue::Explicit(ns)
         | AbcDefaultValue::StaticProtected(ns)
-        | AbcDefaultValue::Private(ns) => Ok(NamespaceObject::from_namespace(
-            activation,
-            translation_unit.pool_namespace(*ns, activation.context.gc_context)?,
-        )?
-        .into()),
+        | AbcDefaultValue::Private(ns) => {
+            let ns = translation_unit.pool_namespace(*ns, &mut activation.borrow_gc())?;
+            NamespaceObject::from_namespace(activation, ns).map(Into::into)
+        }
     }
 }
 
@@ -582,6 +585,20 @@ impl<'gc> Value<'gc> {
             },
             Value::Number(num) => Ok(*num as i32),
             Value::Integer(num) => Ok(*num),
+            _ => Err(format!("Expected Number, int, or uint, found {self:?}").into()),
+        }
+    }
+
+    /// Like `as_number`, but for `u32`
+    pub fn as_u32(&self, mc: MutationContext<'gc, '_>) -> Result<u32, Error<'gc>> {
+        match self {
+            Value::Object(num) => match num.value_of(mc)? {
+                Value::Number(num) => Ok(num as u32),
+                Value::Integer(num) => Ok(num as u32),
+                _ => Err(format!("Expected Number, int, or uint, found {self:?}").into()),
+            },
+            Value::Number(num) => Ok(*num as u32),
+            Value::Integer(num) => Ok(*num as u32),
             _ => Err(format!("Expected Number, int, or uint, found {self:?}").into()),
         }
     }
@@ -639,6 +656,7 @@ impl<'gc> Value<'gc> {
         });
 
         match self {
+            Value::Object(Object::PrimitiveObject(o)) => o.value_of(activation.context.gc_context),
             Value::Object(o) if hint == Hint::String => {
                 let mut prim = *self;
                 let object = *o;
@@ -659,7 +677,14 @@ impl<'gc> Value<'gc> {
                     return Ok(prim);
                 }
 
-                Err("TypeError: cannot convert object to string".into())
+                Err(Error::AvmError(type_error(
+                    activation,
+                    &format!(
+                        "Cannot convert {} to primitive.",
+                        o.instance_of_class_name(activation.context.gc_context)
+                    ),
+                    1050,
+                )?))
             }
             Value::Object(o) if hint == Hint::Number => {
                 let mut prim = *self;
@@ -681,7 +706,14 @@ impl<'gc> Value<'gc> {
                     return Ok(prim);
                 }
 
-                Err("TypeError: cannot convert object to number".into())
+                Err(Error::AvmError(type_error(
+                    activation,
+                    &format!(
+                        "Cannot convert {} to primitive.",
+                        o.instance_of_class_name(activation.context.gc_context)
+                    ),
+                    1050,
+                )?))
             }
             _ => Ok(*self),
         }
@@ -892,36 +924,53 @@ impl<'gc> Value<'gc> {
         &self,
         activation: &mut Activation<'_, 'gc>,
         name: Option<&Multiname<'gc>>,
-        receiver: Option<Object<'gc>>,
+        receiver: Option<Value<'gc>>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        self.as_object()
-            .filter(|o| o.as_class_object().is_some() || o.as_executable().is_some())
-            .ok_or_else(|| {
-                if let Some(receiver) = receiver {
-                    if let Some(name) = name {
-                        format!(
-                            "Cannot call null or undefined method {} of class {}",
-                            name.to_qualified_name(activation.context.gc_context),
-                            receiver.instance_of_class_name(activation.context.gc_context)
-                        )
-                        .into()
-                    } else {
-                        format!(
-                            "Cannot call null or undefined method of class {}",
-                            receiver.instance_of_class_name(activation.context.gc_context)
-                        )
-                        .into()
-                    }
-                } else if let Some(name) = name {
-                    format!(
-                        "Cannot call null or undefined function {}",
-                        name.to_qualified_name(activation.context.gc_context)
-                    )
-                    .into()
+        match self.as_object() {
+            Some(o) if o.as_class_object().is_some() || o.as_executable().is_some() => Ok(o),
+            _ => {
+                // Undefined function
+                let name = if let Some(name) = name {
+                    name.to_qualified_name(activation.context.gc_context)
                 } else {
-                    "Cannot call null or undefined function".into()
-                }
-            })
+                    "value".into()
+                };
+                let msg = if let Some(Value::Object(receiver)) = receiver {
+                    format!(
+                        "Error #1006: {} is not a function of class {}.",
+                        name,
+                        receiver.instance_of_class_name(activation.context.gc_context)
+                    )
+                } else {
+                    format!("Error #1006: {} is not a function.", name)
+                };
+                Err(Error::AvmError(type_error(activation, &msg, 1006)?))
+            }
+        }
+    }
+
+    /// Like `coerce_to_type`, but also performs resolution of the type name.
+    /// This is used to allow coercing to a class while the ClassObject is still
+    /// being initialized. We should eventually be able to remove this, once
+    /// our Class/ClassObject representation is refactored.
+    pub fn coerce_to_type_name(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        type_name: &Multiname<'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        if type_name.is_any_name() {
+            return Ok(*self);
+        }
+        let param_type = activation
+            .domain()
+            .get_class(type_name, activation.context.gc_context)?
+            .ok_or_else(|| {
+                Error::RustError(
+                    format!("Failed to lookup class {:?} during coercion", type_name).into(),
+                )
+            })?;
+
+        self.coerce_to_type(activation, param_type)
     }
 
     /// Coerce the value to another value by type name.
@@ -935,21 +984,33 @@ impl<'gc> Value<'gc> {
     pub fn coerce_to_type(
         &self,
         activation: &mut Activation<'_, 'gc>,
-        class: ClassObject<'gc>,
+        class: GcCell<'gc, Class<'gc>>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        if Object::ptr_eq(class, activation.avm2().classes().int) {
+        if GcCell::ptr_eq(
+            class,
+            activation.avm2().classes().int.inner_class_definition(),
+        ) {
             return Ok(self.coerce_to_i32(activation)?.into());
         }
 
-        if Object::ptr_eq(class, activation.avm2().classes().uint) {
+        if GcCell::ptr_eq(
+            class,
+            activation.avm2().classes().uint.inner_class_definition(),
+        ) {
             return Ok(self.coerce_to_u32(activation)?.into());
         }
 
-        if Object::ptr_eq(class, activation.avm2().classes().number) {
+        if GcCell::ptr_eq(
+            class,
+            activation.avm2().classes().number.inner_class_definition(),
+        ) {
             return Ok(self.coerce_to_number(activation)?.into());
         }
 
-        if Object::ptr_eq(class, activation.avm2().classes().boolean) {
+        if GcCell::ptr_eq(
+            class,
+            activation.avm2().classes().boolean.inner_class_definition(),
+        ) {
             return Ok(self.coerce_to_boolean().into());
         }
 
@@ -957,17 +1018,20 @@ impl<'gc> Value<'gc> {
             return Ok(Value::Null);
         }
 
-        if Object::ptr_eq(class, activation.avm2().classes().string) {
+        if GcCell::ptr_eq(
+            class,
+            activation.avm2().classes().string.inner_class_definition(),
+        ) {
             return Ok(self.coerce_to_string(activation)?.into());
         }
 
         if let Ok(object) = self.coerce_to_object(activation) {
-            if object.is_of_type(class, activation) {
+            if object.is_of_type(class, &mut activation.context) {
                 return Ok(*self);
             }
 
             if let Some(vector) = object.as_vector_storage() {
-                let name = class.inner_class_definition().read().name();
+                let name = class.read().name();
                 let vector_public_namespace = activation.avm2().vector_public_namespace;
                 let vector_internal_namespace = activation.avm2().vector_internal_namespace;
                 if name == QName::new(vector_public_namespace, "Vector")
@@ -985,9 +1049,30 @@ impl<'gc> Value<'gc> {
             }
         }
 
-        let name = class.inner_class_definition().read().name();
+        let name = class
+            .read()
+            .name()
+            .to_qualified_name_err_message(activation.context.gc_context);
 
-        Err(format!("Cannot coerce {self:?} to an {name:?}").into())
+        let debug_str = match self {
+            Value::Object(obj) if obj.as_primitive().is_none() => {
+                // Flash prints the class name (ignoring the toString() impl on the object),
+                // followed by something that looks like an address (it varies between executions).
+                // For now, we just set the "address" to all zeroes, on the off chance that some
+                // application is trying to parse the error message.
+                format!(
+                    "{}@00000000000",
+                    obj.instance_of_class_name(activation.context.gc_context)
+                )
+            }
+            _ => self.coerce_to_debug_string(activation)?.to_string(),
+        };
+
+        Err(Error::AvmError(type_error(
+            activation,
+            &format!("Error #1034: Type Coercion failed: cannot convert {debug_str} to {name}.",),
+            1034,
+        )?))
     }
 
     /// Determine if this value is any kind of number.
@@ -1033,20 +1118,29 @@ impl<'gc> Value<'gc> {
     pub fn is_of_type(
         &self,
         activation: &mut Activation<'_, 'gc>,
-        type_object: ClassObject<'gc>,
+        type_object: GcCell<'gc, Class<'gc>>,
     ) -> bool {
-        if Object::ptr_eq(type_object, activation.avm2().classes().number) {
+        if GcCell::ptr_eq(
+            type_object,
+            activation.avm2().classes().number.inner_class_definition(),
+        ) {
             return self.is_number();
         }
-        if Object::ptr_eq(type_object, activation.avm2().classes().uint) {
+        if GcCell::ptr_eq(
+            type_object,
+            activation.avm2().classes().uint.inner_class_definition(),
+        ) {
             return self.is_u32();
         }
-        if Object::ptr_eq(type_object, activation.avm2().classes().int) {
+        if GcCell::ptr_eq(
+            type_object,
+            activation.avm2().classes().int.inner_class_definition(),
+        ) {
             return self.is_i32();
         }
 
         if let Ok(o) = self.coerce_to_object(activation) {
-            o.is_of_type(type_object, activation)
+            o.is_of_type(type_object, &mut activation.context)
         } else {
             false
         }
@@ -1077,6 +1171,31 @@ impl<'gc> Value<'gc> {
         other: &Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<bool, Error<'gc>> {
+        // ECMA-357 extends the abstract equality algorithm with steps
+        // for XML and XMLList types. Because they are objects in Ruffle we
+        // have to be a bit more complicated and factor out the code into
+        // a separate method.
+        // TODO: QName and Namespace handling
+        if let Value::Object(obj) = self {
+            if let Some(xml_list_obj) = obj.as_xml_list_object() {
+                return xml_list_obj.equals(other, activation);
+            }
+
+            if let Some(xml_obj) = obj.as_xml_object() {
+                return xml_obj.abstract_eq(other, activation);
+            }
+        }
+
+        if let Value::Object(obj) = other {
+            if let Some(xml_list_obj) = obj.as_xml_list_object() {
+                return xml_list_obj.equals(self, activation);
+            }
+
+            if let Some(xml_obj) = obj.as_xml_object() {
+                return xml_obj.abstract_eq(self, activation);
+            }
+        }
+
         match (self, other) {
             (Value::Undefined, Value::Undefined) => Ok(true),
             (Value::Null, Value::Null) => Ok(true),

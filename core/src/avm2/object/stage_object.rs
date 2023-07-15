@@ -8,30 +8,17 @@ use crate::avm2::Error;
 use crate::context::UpdateContext;
 use crate::display_object::DisplayObject;
 use crate::display_object::TDisplayObject;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 
-/// A class instance allocator that allocates Stage objects.
-pub fn stage_allocator<'gc>(
-    class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc>,
-) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class);
-
-    Ok(StageObject(GcCell::allocate(
-        activation.context.gc_context,
-        StageObjectData {
-            base,
-            display_object: None,
-        },
-    ))
-    .into())
-}
-
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct StageObject<'gc>(GcCell<'gc, StageObjectData<'gc>>);
+pub struct StageObject<'gc>(pub GcCell<'gc, StageObjectData<'gc>>);
+
+#[derive(Clone, Collect, Copy, Debug)]
+#[collect(no_drop)]
+pub struct StageObjectWeak<'gc>(pub GcWeakCell<'gc, StageObjectData<'gc>>);
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
@@ -59,14 +46,14 @@ impl<'gc> StageObject<'gc> {
         display_object: DisplayObject<'gc>,
         class: ClassObject<'gc>,
     ) -> Result<Self, Error<'gc>> {
-        let mut instance = Self(GcCell::allocate(
+        let mut instance = Self(GcCell::new(
             activation.context.gc_context,
             StageObjectData {
                 base: ScriptObjectData::new(class),
                 display_object: Some(display_object),
             },
         ));
-        instance.install_instance_slots(activation);
+        instance.install_instance_slots(activation.context.gc_context);
 
         Ok(instance)
     }
@@ -83,7 +70,22 @@ impl<'gc> StageObject<'gc> {
     ) -> Result<Self, Error<'gc>> {
         let this = Self::for_display_object(activation, display_object, class)?;
 
-        class.call_native_init(Some(this.into()), &[], activation)?;
+        class.call_native_init(this.into(), &[], activation)?;
+
+        Ok(this)
+    }
+
+    /// Same as for_display_object_childless, but allows passing
+    /// constructor arguments.
+    pub fn for_display_object_childless_with_args(
+        activation: &mut Activation<'_, 'gc>,
+        display_object: DisplayObject<'gc>,
+        class: ClassObject<'gc>,
+        args: &[Value<'gc>],
+    ) -> Result<Self, Error<'gc>> {
+        let this = Self::for_display_object(activation, display_object, class)?;
+
+        class.call_native_init(this.into(), args, activation)?;
 
         Ok(this)
     }
@@ -94,14 +96,14 @@ impl<'gc> StageObject<'gc> {
         display_object: DisplayObject<'gc>,
     ) -> Result<Self, Error<'gc>> {
         let class = activation.avm2().classes().graphics;
-        let mut this = Self(GcCell::allocate(
+        let mut this = Self(GcCell::new(
             activation.context.gc_context,
             StageObjectData {
                 base: ScriptObjectData::new(class),
                 display_object: Some(display_object),
             },
         ));
-        this.install_instance_slots(activation);
+        this.install_instance_slots(activation.context.gc_context);
 
         // note: for Graphics, there's no need to call init.
 

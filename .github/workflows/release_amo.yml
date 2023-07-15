@@ -1,0 +1,78 @@
+name: Release to addons.mozilla.org
+
+on:
+  #Run weekly every Friday
+  schedule:
+   - cron: "0 2 * * 6"
+  
+  #Allow for manual releases if needed
+  workflow_dispatch:
+
+jobs:
+  submit-amo:
+    name: Submit to addons.mozilla.org
+    runs-on: ubuntu-22.04
+  
+    if: github.repository == 'ruffle-rs/ruffle'
+
+    steps:
+      - name: Get latest release name
+        uses: mathiasvr/command-output@v2.0.0
+        id: release_tag
+        with:
+          run: GH_TOKEN=${{ secrets.GITHUB_TOKEN }} GH_REPO=${{github.repository}} gh release list -L1 | awk '{print $4}'
+      
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{steps.release_tag.outputs.stdout}}
+
+      - name: Install node packages
+        working-directory: web
+        shell: bash -l {0}
+        run: |
+          npm ci
+
+      - name: Compute release date
+        uses: mathiasvr/command-output@v2.0.0
+        id: release_date
+        with:
+          run: GH_TOKEN=${{ secrets.GITHUB_TOKEN }} GH_REPO=${{github.repository}} gh release list -L1 | awk '{print $2}' | sed 's/-/_/g'
+      
+      - name: Download latest release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          export RELEASE_TAG="${{steps.release_tag.outputs.stdout}}"
+          export RELEASE_DATE="${{steps.release_date.outputs.stdout}}"
+
+          export RELEASE_TAG=${RELEASE_TAG//$'\n'/}
+          export RELEASE_DATE=${RELEASE_DATE//$'\n'/}
+
+          mkdir release_assets
+          gh release download --pattern "*.xpi" --pattern "*.zip" --dir release_assets $RELEASE_TAG
+
+          mv release_assets/ruffle-nightly-$RELEASE_DATE-reproducible-source.zip reproducible-source.zip
+
+          cd release_assets
+          unzip ruffle-nightly-$RELEASE_DATE-web-extension-firefox-unsigned.xpi
+          mv manifest.json ../web/packages/extension/assets/manifest.json
+          cd ..
+
+          mkdir web/packages/extension/dist
+          mv release_assets/ruffle-nightly-$RELEASE_DATE-web-extension-firefox-unsigned.xpi web/packages/extension/dist/firefox_unsigned.xpi
+      
+      - name: Publish Firefox extension
+        id: sign-firefox
+        continue-on-error: true
+        env:
+          FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }}
+          MOZILLA_API_KEY: ${{ secrets.MOZILLA_API_KEY }}
+          MOZILLA_API_SECRET: ${{ secrets.MOZILLA_API_SECRET }}
+        working-directory: web/packages/extension
+        shell: bash -l {0}
+        run: |
+          export SOURCE_TAG="${{steps.release_tag.outputs.stdout}}"
+          export SOURCE_TAG=${SOURCE_TAG//$'\n'/}
+
+          npm run sign-firefox

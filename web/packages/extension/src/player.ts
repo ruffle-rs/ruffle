@@ -1,5 +1,6 @@
 import * as utils from "./utils";
-import { PublicAPI, Letterbox } from "ruffle-core";
+import { PublicAPI } from "ruffle-core";
+import type { Letterbox } from "ruffle-core";
 
 const api = PublicAPI.negotiate(window.RufflePlayer!, "local");
 window.RufflePlayer = api;
@@ -21,17 +22,17 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     const player = ruffle.createPlayer();
     player.id = "player";
-    player.setIsExtension(true);
     document.getElementById("main")!.append(player);
 
     const options = await utils.getOptions();
-    const config = {
-        letterbox: Letterbox.On,
-        ...options,
-    };
+
     player.load({
+        ...options,
         url: swfUrl,
         base: swfUrl.substring(0, swfUrl.lastIndexOf("/") + 1),
-        ...config,
+        // Override some default values when playing in the extension player page.
+        letterbox: "on" as Letterbox,
+        forceAlign: true,
+        forceScale: true,
     });
 });

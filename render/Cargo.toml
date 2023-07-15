@@ -10,19 +10,29 @@ version.workspace = true
 [dependencies]
 ruffle_wstr = { path = "../wstr" }
 swf = { path = "../swf"}
-tracing = "0.1.37"
+tracing = { workspace = true }
 gif = "0.12.0"
-png = { version = "0.17.7" }
-flate2 = "1.0.25"
-smallvec = { version = "1.10.0", features = ["union"] }
+png = { version = "0.17.9" }
+flate2 = "1.0.26"
+smallvec = { version = "1.11.0", features = ["union"] }
 downcast-rs = "1.2.0"
 lyon = { version = "1.0.1", optional = true }
 thiserror = "1.0"
-wasm-bindgen = { version = "=0.2.84", optional = true }
-gc-arena = { workspace = true }
-enum-map = "2.4.2"
-serde = { version = "1.0.152", features = ["derive"] }
-clap = { version = "4.1.8", features = ["derive"], optional = true }
+wasm-bindgen = { version = "=0.2.87", optional = true }
+enum-map = "2.6.0"
+serde = { version = "1.0.171", features = ["derive"] }
+clap = { version = "4.3.11", features = ["derive"], optional = true }
+h263-rs-yuv = { git = "https://github.com/ruffle-rs/h263-rs", rev = "128cdbd85455d19783c88927bb535e8a26fe5220"}
+lru = "0.11.0"
+num-traits = "0.2"
+num-derive = "0.4"
+byteorder = "1.4"
+wgpu = { workspace = true, optional = true }
+
+# This crate has a `compile_error!` on apple platforms
+[target.'cfg(not(target_vendor = "apple"))'.dependencies.renderdoc]
+version = "0.11.0"
+optional = true
 
 [dependencies.jpeg-decoder]
 version = "0.3.0"
@@ -35,3 +45,4 @@ approx = "0.5.1"
 default = []
 tessellator = ["lyon"]
 web = ["wasm-bindgen"]
+wgpu = ["dep:wgpu"]

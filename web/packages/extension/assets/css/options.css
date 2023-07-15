@@ -5,5 +5,17 @@
 .container {
     max-width: 400px;
     margin: auto;
-    padding: 16px 32px;
+    padding: 24px 32px;
+}
+
+details > .options {
+    padding-top: 10px;
+}
+
+details > .options.special {
+    padding-top: 30px;
+}
+
+details > summary {
+    cursor: pointer;
 }

@@ -1,0 +1,88 @@
+Invoking exceptionGetSet setter with [object MyChild]
+Invoking nullGetSet setter with [object MyChild]
+Invoking undefinedGetSet setter with [object MyChild]
+Invoking normalGetSet setter with [object MyChild]
+Frame 1
+Event.REMOVED: [Event type="removed" bubbles=true cancelable=false eventPhase=3]
+Event.REMOVED: e.target = [object MyChild] e.target.name = reAdded
+Event.REMOVED: this.myChild=[object MyChild] this.manualRemoval=[object MyChild] this.reAdded=[object MyChild]
+this.reAdded = [object MyChild]
+this.manualRemoval = [object MyChild] this.manualRemoval.name = manualRemoval
+this.myChild = [object MyChild] this.myChild.name = myChild
+Event.REMOVED: [Event type="removed" bubbles=true cancelable=false eventPhase=3]
+Event.REMOVED: e.target = [object MyChild] e.target.name = manualRemoval
+Event.REMOVED: this.myChild=[object Sprite] this.manualRemoval=[object MyChild] this.reAdded=[object MyChild]
+Updated: this.mychild = [object Sprite] this.manualRemoval = [object MyChild]
+Event.REMOVED: [Event type="removed" bubbles=true cancelable=false eventPhase=3]
+Event.REMOVED: e.target = [object MyChild] e.target.name = exceptionGetSet
+Event.REMOVED: this.myChild=[object Sprite] this.manualRemoval=[object MyChild] this.reAdded=[object MyChild]
+Invoking exceptionGetSet
+Event.REMOVED: [Event type="removed" bubbles=true cancelable=false eventPhase=3]
+Event.REMOVED: e.target = [object MyChild] e.target.name = myChild
+Event.REMOVED: this.myChild=[object Sprite] this.manualRemoval=[object MyChild] this.reAdded=[object MyChild]
+Event.REMOVED: [Event type="removed" bubbles=true cancelable=false eventPhase=3]
+Event.REMOVED: e.target = [object MyChild] e.target.name = nullGetSet
+Event.REMOVED: this.myChild=null this.manualRemoval=[object MyChild] this.reAdded=[object MyChild]
+Invoking nullGetSet getter
+Event.REMOVED: [Event type="removed" bubbles=true cancelable=false eventPhase=3]
+Event.REMOVED: e.target = [object MyChild] e.target.name = undefinedGetSet
+Event.REMOVED: this.myChild=null this.manualRemoval=[object MyChild] this.reAdded=[object MyChild]
+Invoking undefinedGetSet getter
+Event.REMOVED: [Event type="removed" bubbles=true cancelable=false eventPhase=3]
+Event.REMOVED: e.target = [object MyChild] e.target.name = normalGetSet
+Event.REMOVED: this.myChild=null this.manualRemoval=[object MyChild] this.reAdded=[object MyChild]
+Invoking normalGetSet getter
+Invoking normalGetSet setter with null
+Frame 2
+this.reAdded = [object MyChild]
+this.manualRemoval = [object MyChild] this.manualRemoval.name = manualRemoval
+this.myChild = null
+After another set: this.myChild.name = [object Sprite]
+Frame 3
+this.reAdded = [object MyChild]
+this.manualRemoval = [object MyChild] this.manualRemoval.name = manualRemoval
+this.myChild = [object Sprite] this.myChild.name = From frame 2
+Invoking exceptionGetSet setter with [object MyChild]
+Invoking nullGetSet setter with [object MyChild]
+Invoking undefinedGetSet setter with [object MyChild]
+Invoking normalGetSet setter with [object MyChild]
+Frame 1
+Event.REMOVED: [Event type="removed" bubbles=true cancelable=false eventPhase=3]
+Event.REMOVED: e.target = [object MyChild] e.target.name = reAdded
+Event.REMOVED: this.myChild=[object MyChild] this.manualRemoval=[object MyChild] this.reAdded=[object MyChild]
+this.reAdded = [object MyChild]
+this.manualRemoval = [object MyChild] this.manualRemoval.name = manualRemoval
+this.myChild = [object MyChild] this.myChild.name = myChild
+Event.REMOVED: [Event type="removed" bubbles=true cancelable=false eventPhase=3]
+Event.REMOVED: e.target = [object MyChild] e.target.name = manualRemoval
+Event.REMOVED: this.myChild=[object Sprite] this.manualRemoval=[object MyChild] this.reAdded=[object MyChild]
+Updated: this.mychild = [object Sprite] this.manualRemoval = [object MyChild]
+Event.REMOVED: [Event type="removed" bubbles=true cancelable=false eventPhase=3]
+Event.REMOVED: e.target = [object MyChild] e.target.name = exceptionGetSet
+Event.REMOVED: this.myChild=[object Sprite] this.manualRemoval=[object MyChild] this.reAdded=[object MyChild]
+Invoking exceptionGetSet
+Event.REMOVED: [Event type="removed" bubbles=true cancelable=false eventPhase=3]
+Event.REMOVED: e.target = [object MyChild] e.target.name = myChild
+Event.REMOVED: this.myChild=[object Sprite] this.manualRemoval=[object MyChild] this.reAdded=[object MyChild]
+Event.REMOVED: [Event type="removed" bubbles=true cancelable=false eventPhase=3]
+Event.REMOVED: e.target = [object MyChild] e.target.name = nullGetSet
+Event.REMOVED: this.myChild=null this.manualRemoval=[object MyChild] this.reAdded=[object MyChild]
+Invoking nullGetSet getter
+Event.REMOVED: [Event type="removed" bubbles=true cancelable=false eventPhase=3]
+Event.REMOVED: e.target = [object MyChild] e.target.name = undefinedGetSet
+Event.REMOVED: this.myChild=null this.manualRemoval=[object MyChild] this.reAdded=[object MyChild]
+Invoking undefinedGetSet getter
+Event.REMOVED: [Event type="removed" bubbles=true cancelable=false eventPhase=3]
+Event.REMOVED: e.target = [object MyChild] e.target.name = normalGetSet
+Event.REMOVED: this.myChild=null this.manualRemoval=[object MyChild] this.reAdded=[object MyChild]
+Invoking normalGetSet getter
+Invoking normalGetSet setter with null
+Frame 2
+this.reAdded = [object MyChild]
+this.manualRemoval = [object MyChild] this.manualRemoval.name = manualRemoval
+this.myChild = null
+After another set: this.myChild.name = [object Sprite]
+Frame 3
+this.reAdded = [object MyChild]
+this.manualRemoval = [object MyChild] this.manualRemoval.name = manualRemoval
+this.myChild = [object Sprite] this.myChild.name = From frame 2

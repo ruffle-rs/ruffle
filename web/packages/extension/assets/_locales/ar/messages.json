@@ -1,0 +1,98 @@
+{
+    "settings_ruffle_enable": {
+        "message": "تشغيل محتوى فلاش في رفل"
+    },
+    "settings_ignore_optout": {
+        "message": "تشغيل محتوى فلاش حتى في المواقع التي لا تسمح برفل"
+    },
+    "settings_show_swf_download": {
+        "message": "إظهار تحميل SWF في قائمة السياق"
+    },
+    "settings_autostart": {
+        "message": "التشغيل تلقائيًا دون شاشة البداية (ثم انقر لإلغاء الكتم)"
+    },
+    "settings_warn_on_unsupported_content": {
+        "message": "التحذير على المحتوى الغير مدعوم"
+    },
+    "settings_log_level": {
+        "message": "مستوى السجل"
+    },
+    "settings_log_level_error": {
+        "message": "الأخطاء"
+    },
+    "settings_log_level_warn": {
+        "message": "التحذيرات"
+    },
+    "settings_log_level_info": {
+        "message": "المعلومات"
+    },
+    "settings_max_execution_duration": {
+        "message": "الحد الأقصى المسموح به لتنفيذ أكشن سكريبت (بالثواني)"
+    },
+    "settings_player_version": {
+        "message": "إصدار فلاش للمحاكاة (من 1-32)"
+    },
+    "settings_preferred_renderer": {
+        "message": "العارض المفضل"
+    },
+    "settings_preferred_renderer_auto": {
+        "message": "تلقائي"
+    },
+    "settings_advanced_options": {
+        "message": "الخيارات المتقدمة"
+    },
+    "settings_reset": {
+        "message": "إعادة ضبط الإعدادات"
+    },
+    "settings_reset_confirm": {
+        "message": "هل أنت متأكد من أنك تريد استعادة إعدادات رفل إلى الإعدادات الافتراضية الأصلية؟"
+    },
+    "status_init": {
+        "message": "قراءة علامة التبويب الحالية…"
+    },
+    "status_no_tabs": {
+        "message": "لا توجد علامة تبويب نشطة."
+    },
+    "status_tabs_error": {
+        "message": "حدث خطأ عند البحث في علامة التبويب الحالية."
+    },
+    "status_message_init": {
+        "message": "التحقق من حالة رفل على التبويب الحالي…"
+    },
+    "status_result_running": {
+        "message": "تم تحميل رفل ومستعد لتشغيل محتوى فلاش في التبويب الحالي."
+    },
+    "status_result_running_protected": {
+        "message": "تم تحميل رفل وتشغيل محتوى فلاش الذي طلبته."
+    },
+    "status_result_optout": {
+        "message": "لم يتم تحميل رفل لأن علامة التبويب الحالية وضعت علامة على نفسها على أنها غير متوافقة."
+    },
+    "status_result_disabled": {
+        "message": "لم يتم تحميل رفل لأنه غير مفعل."
+    },
+    "status_result_error": {
+        "message": "حدث خطأ عند الاستعلام عن مثيل التبويب الحالي من رفل."
+    },
+    "status_result_protected": {
+        "message": "لا يمكن تحميل رفل على صفحات المتصفح المحمية."
+    },
+    "action_reload": {
+        "message": "إعادة تحميل علامة التبويب لتطبيق التغييرات"
+    },
+    "open_settings_page": {
+        "message": "فتح صفحة الإعدادات"
+    },
+    "settings_page": {
+        "message": "صفحة الإعدادات"
+    },
+    "description": {
+        "message": "يضع الفلاش مرة أخرى على الويب حيث تنتمي."
+    },
+    "save_settings": {
+        "message": "حفظ الإعدادات"
+    },
+    "settings_saved": {
+        "message": "تم حفظ الإعدادات"
+    }
+}

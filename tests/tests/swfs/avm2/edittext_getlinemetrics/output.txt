@@ -1,13 +1,13 @@
 //1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0
 /// Text lines:  1
 /// ...ascent: 
-12.85
+16.15
 /// ...descent: 
-3.45
+4.7
 /// ...width: 
-190.9
+195.9
 /// ...height: 
-18.3
+22.85
 /// ...leading: 
 2
 /// ...x: 
@@ -16,13 +16,13 @@
 //Lorem ipsum dolor sit amet!!
 /// Text lines:  1
 /// ...ascent: 
-12.85
+16.15
 /// ...descent: 
-3.45
+4.7
 /// ...width: 
-164.45
+161.75
 /// ...height: 
-18.3
+22.85
 /// ...leading: 
 2
 /// ...x: 
@@ -31,13 +31,13 @@
 //(Empty string...)
 /// Text lines:  1
 /// ...ascent: 
-12.85
+16.15
 /// ...descent: 
-3.45
+4.7
 /// ...width: 
 0
 /// ...height: 
-18.3
+22.85
 /// ...leading: 
 2
 /// ...x: 
@@ -46,49 +46,49 @@
 //(Several newlines)
 /// Text lines:  4
 /// ...ascent: 
-12.85
+16.15
 /// ...descent: 
-3.45
+4.7
 /// ...width: 
 0
 /// ...height: 
-18.3
+22.85
 /// ...leading: 
 2
 /// ...x: 
 2
 /// ...ascent: 
-12.85
+16.15
 /// ...descent: 
-3.45
+4.7
 /// ...width: 
 0
 /// ...height: 
-18.3
+22.85
 /// ...leading: 
 2
 /// ...x: 
 2
 /// ...ascent: 
-12.85
+16.15
 /// ...descent: 
-3.45
+4.7
 /// ...width: 
 0
 /// ...height: 
-18.3
+22.85
 /// ...leading: 
 2
 /// ...x: 
 2
 /// ...ascent: 
-12.85
+16.15
 /// ...descent: 
-3.45
+4.7
 /// ...width: 
 0
 /// ...height: 
-18.3
+22.85
 /// ...leading: 
 2
 /// ...x: 
@@ -97,49 +97,49 @@
 //Lorem ipsum\n\ndolor sit\n amet
 /// Text lines:  4
 /// ...ascent: 
-12.85
+16.15
 /// ...descent: 
-3.45
+4.7
 /// ...width: 
 74.2
 /// ...height: 
-18.3
+22.85
 /// ...leading: 
 2
 /// ...x: 
 2
 /// ...ascent: 
-12.85
+16.15
 /// ...descent: 
-3.45
+4.7
 /// ...width: 
 0
 /// ...height: 
-18.3
+22.85
 /// ...leading: 
 2
 /// ...x: 
 2
 /// ...ascent: 
-12.85
+16.15
 /// ...descent: 
-3.45
+4.7
 /// ...width: 
 46
 /// ...height: 
-18.3
+22.85
 /// ...leading: 
 2
 /// ...x: 
 2
 /// ...ascent: 
-12.85
+16.15
 /// ...descent: 
-3.45
+4.7
 /// ...width: 
 32.05
 /// ...height: 
-18.3
+22.85
 /// ...leading: 
 2
 /// ...x: 

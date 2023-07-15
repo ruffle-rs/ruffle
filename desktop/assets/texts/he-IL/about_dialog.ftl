@@ -1,0 +1,11 @@
+about-ruffle = אודות Ruffle
+about-ruffle-version = גרסה
+about-ruffle-channel = ערוץ
+about-ruffle-build-time = זמן הגרסה
+about-ruffle-build-features = תכונות הגרסה
+about-ruffle-commit-ref = התייחסות הביצוע
+about-ruffle-commit-time = זמן ההוצאה
+about-ruffle-visit-website = אתר
+about-ruffle-visit-github = גיטהאב
+about-ruffle-visit-discord = דיסקורד
+about-ruffle-visit-sponsor = חסות

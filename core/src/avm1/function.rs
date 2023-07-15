@@ -8,7 +8,7 @@ use crate::avm1::scope::Scope;
 use crate::avm1::value::Value;
 use crate::avm1::{ArrayObject, Object, ObjectPtr, ScriptObject, TObject};
 use crate::display_object::{DisplayObject, TDisplayObject};
-use crate::string::AvmString;
+use crate::string::{AvmString, SwfStrExt as _};
 use crate::tag_utils::SwfSlice;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use std::{borrow::Cow, fmt, num::NonZeroU8};
@@ -96,19 +96,18 @@ impl<'gc> Avm1Function<'gc> {
         let name = if swf_function.name.is_empty() {
             None
         } else {
-            let name = swf_function.name.to_str_lossy(encoding);
-            Some(AvmString::new_utf8(gc_context, name))
+            Some(AvmString::new(
+                gc_context,
+                swf_function.name.decode(encoding),
+            ))
         };
 
         let params = swf_function
             .params
             .iter()
-            .map(|p| {
-                let name = p.name.to_str_lossy(encoding);
-                Param {
-                    register: p.register_index,
-                    name: AvmString::new_utf8(gc_context, name),
-                }
+            .map(|p| Param {
+                register: p.register_index,
+                name: AvmString::new(gc_context, p.name.decode(encoding)),
             })
             .collect();
 
@@ -382,7 +381,7 @@ impl<'gc> Executable<'gc> {
                 _ => unreachable!(),
             };
             // TODO: It would be nice to avoid these extra Scope allocs.
-            let scope = Gc::allocate(
+            let scope = Gc::new(
                 activation.context.gc_context,
                 Scope::new(
                     activation.context.avm1.global_scope(),
@@ -393,7 +392,7 @@ impl<'gc> Executable<'gc> {
             (swf_version, scope)
         };
 
-        let child_scope = Gc::allocate(
+        let child_scope = Gc::new(
             activation.context.gc_context,
             Scope::new_local_scope(parent_scope, activation.context.gc_context),
         );
@@ -509,7 +508,7 @@ impl<'gc> FunctionObject<'gc> {
     ) -> Self {
         Self {
             base: ScriptObject::new(gc_context, Some(fn_proto)),
-            data: GcCell::allocate(
+            data: GcCell::new(
                 gc_context,
                 FunctionObjectData {
                     function,
@@ -712,7 +711,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     ) -> Result<Object<'gc>, Error<'gc>> {
         Ok(FunctionObject {
             base: ScriptObject::new(activation.context.gc_context, Some(prototype)),
-            data: GcCell::allocate(
+            data: GcCell::new(
                 activation.context.gc_context,
                 FunctionObjectData {
                     function: None,
@@ -744,6 +743,7 @@ macro_rules! constructor_to_fn {
             this: $crate::avm1::Object<'gc>,
             args: &[$crate::avm1::Value<'gc>],
         ) -> Result<$crate::avm1::Value<'gc>, $crate::avm1::error::Error<'gc>> {
+            #[allow(clippy::redundant_closure_call)]
             let _ = $f(activation, this, args)?;
             Ok($crate::avm1::Value::Undefined)
         }

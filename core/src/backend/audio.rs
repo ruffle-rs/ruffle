@@ -1,6 +1,7 @@
 use crate::{
     avm1::SoundObject,
-    avm2::SoundChannelObject,
+    avm2::{Avm2, EventObject as Avm2EventObject, SoundChannelObject},
+    context::UpdateContext,
     display_object::{self, DisplayObject, MovieClip, TDisplayObject},
 };
 use downcast_rs::Downcast;
@@ -310,65 +311,59 @@ impl<'gc> AudioManager<'gc> {
     }
 
     /// Update state of active sounds. Should be called once per frame.
-    pub fn update_sounds(
-        &mut self,
-        audio: &mut dyn AudioBackend,
-        gc_context: gc_arena::MutationContext<'gc, '_>,
-        action_queue: &mut crate::context::ActionQueue<'gc>,
-        root: DisplayObject<'gc>,
-    ) {
+    pub fn update_sounds(context: &mut UpdateContext<'_, 'gc>) {
+        // We can't use 'context' to construct an event inside the
+        // 'retain()' closure, so we queue the events up here, and fire
+        // them after running 'retain()'
+        let mut event_targets = Vec::new();
+
         // Update the position of sounds, and remove any completed sounds.
-        self.sounds.retain(|sound| {
-            if let Some(pos) = audio.get_sound_position(sound.instance) {
-                // Sounds still playing; update position.
+        context.audio_manager.sounds.retain(|sound| {
+            if let Some(pos) = context.audio.get_sound_position(sound.instance) {
+                // Sounds still playing; update position for AVM1 sounds.
+                // AVM2 sounds do not update position and instead grab the position on demand.
                 if let Some(avm1_object) = sound.avm1_object {
-                    avm1_object.set_position(gc_context, pos.round() as u32);
-                } else if let Some(avm2_object) = sound.avm2_object {
-                    avm2_object.set_position(gc_context, pos);
+                    avm1_object.set_position(context.gc_context, pos.round() as u32);
                 }
                 true
             } else {
                 // Sound ended.
                 let duration = sound
                     .sound
-                    .and_then(|sound| audio.get_sound_duration(sound))
+                    .and_then(|sound| context.audio.get_sound_duration(sound))
                     .unwrap_or_default();
                 if let Some(object) = sound.avm1_object {
-                    object.set_position(gc_context, duration.round() as u32);
+                    object.set_position(context.gc_context, duration.round() as u32);
 
                     // Fire soundComplete event.
-                    action_queue.queue_action(
-                        root,
-                        crate::context::ActionType::Method {
-                            object: object.into(),
-                            name: "onSoundComplete",
-                            args: vec![],
-                        },
-                        false,
-                    );
+                    if let Some(root) = context.stage.root_clip() {
+                        context.action_queue.queue_action(
+                            root,
+                            crate::context::ActionType::Method {
+                                object: object.into(),
+                                name: "onSoundComplete",
+                                args: vec![],
+                            },
+                            false,
+                        );
+                    }
                 }
 
                 if let Some(object) = sound.avm2_object {
-                    object.set_position(gc_context, duration);
-
-                    //TODO: AVM2 events are usually not queued, but we can't
-                    //hold the update context in the audio manager yet.
-                    action_queue.queue_action(
-                        root,
-                        crate::context::ActionType::Event2 {
-                            event_type: "soundComplete",
-                            target: object.into(),
-                        },
-                        false,
-                    )
+                    event_targets.push(object);
                 }
 
                 false
             }
         });
 
+        for target in event_targets {
+            let event = Avm2EventObject::bare_default_event(context, "soundComplete");
+            Avm2::dispatch_event(context, event, target.into());
+        }
+
         // Update sound transforms, if dirty.
-        self.update_sound_transforms(audio);
+        context.audio_manager.update_sound_transforms(context.audio);
     }
 
     pub fn start_sound(

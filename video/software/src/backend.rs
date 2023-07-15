@@ -1,7 +1,7 @@
 use crate::decoder::VideoDecoder;
 use generational_arena::Arena;
 use ruffle_render::backend::RenderBackend;
-use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, BitmapInfo};
+use ruffle_render::bitmap::{BitmapHandle, BitmapInfo, PixelRegion};
 use ruffle_video::backend::VideoBackend;
 use ruffle_video::error::Error;
 use ruffle_video::frame::{EncodedFrame, FrameDependency};
@@ -35,11 +35,11 @@ impl VideoBackend for SoftwareVideoBackend {
         _num_frames: u32,
         size: (u16, u16),
         codec: VideoCodec,
-        _filter: VideoDeblocking,
+        filter: VideoDeblocking,
     ) -> Result<VideoStreamHandle, Error> {
         let decoder: Box<dyn VideoDecoder> = match codec {
             #[cfg(feature = "h263")]
-            VideoCodec::H263 => Box::new(crate::decoder::h263::H263Decoder::new()),
+            VideoCodec::H263 => Box::new(crate::decoder::h263::H263Decoder::new(filter)),
             #[cfg(feature = "vp6")]
             VideoCodec::Vp6 => Box::new(crate::decoder::vp6::Vp6Decoder::new(false, size)),
             #[cfg(feature = "vp6")]
@@ -78,29 +78,22 @@ impl VideoBackend for SoftwareVideoBackend {
             .ok_or(Error::VideoStreamIsNotRegistered)?;
 
         let frame = stream.decoder.decode_frame(encoded_frame)?;
+
+        let w = frame.width();
+        let h = frame.height();
+
         let handle = if let Some(bitmap) = stream.bitmap.clone() {
-            renderer.update_texture(
-                &bitmap,
-                frame.width.into(),
-                frame.height.into(),
-                frame.rgba,
-            )?;
+            renderer.update_texture(&bitmap, frame, PixelRegion::for_whole_size(w, h))?;
             bitmap
         } else {
-            let bitmap = Bitmap::new(
-                frame.width.into(),
-                frame.height.into(),
-                BitmapFormat::Rgba,
-                frame.rgba,
-            );
-            renderer.register_bitmap(bitmap)?
+            renderer.register_bitmap(frame)?
         };
         stream.bitmap = Some(handle.clone());
 
         Ok(BitmapInfo {
             handle,
-            width: frame.width,
-            height: frame.height,
+            width: w as u16,
+            height: h as u16,
         })
     }
 }

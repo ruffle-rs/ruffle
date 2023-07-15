@@ -11,6 +11,7 @@ use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use bitflags::bitflags;
+use fnv::FnvHashMap;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::fmt;
 use std::hash::{Hash, Hasher};
@@ -23,6 +24,7 @@ use super::string::AvmString;
 
 bitflags! {
     /// All possible attributes for a given class.
+    #[derive(Clone, Copy)]
     pub struct ClassAttributes: u8 {
         /// Class is sealed, attempts to set or init dynamic properties on an
         /// object will generate a runtime error.
@@ -75,8 +77,8 @@ pub struct Class<'gc> {
     /// The name of the class.
     name: QName<'gc>,
 
-    /// The type parameters for this class.
-    params: Vec<GcCell<'gc, Class<'gc>>>,
+    /// The type parameter for this class (only supported for Vector)
+    param: Option<GcCell<'gc, Class<'gc>>>,
 
     /// The name of this class's superclass.
     super_class: Option<Multiname<'gc>>,
@@ -151,11 +153,36 @@ pub struct Class<'gc> {
     /// Whether or not this `Class` has loaded its traits or not.
     traits_loaded: bool,
 
+    /// Maps a type parameter to the application of this class with that parameter.
+    ///
+    /// Only applicable if this class is generic.
+    applications: FnvHashMap<ClassKey<'gc>, GcCell<'gc, Class<'gc>>>,
+
     /// Whether or not this is a system-defined class.
     ///
     /// System defined classes are allowed to have illegal trait configurations
     /// without throwing a VerifyError.
     is_system: bool,
+}
+
+/// Allows using a `GcCell<'gc, Class<'gc>>` as a HashMap key,
+/// using the pointer address for hashing/equality.
+#[derive(Collect, Copy, Clone)]
+#[collect(no_drop)]
+struct ClassKey<'gc>(GcCell<'gc, Class<'gc>>);
+
+impl PartialEq for ClassKey<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        GcCell::ptr_eq(self.0, other.0)
+    }
+}
+
+impl Eq for ClassKey<'_> {}
+
+impl Hash for ClassKey<'_> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.0.as_ptr().hash(state);
+    }
 }
 
 impl<'gc> Class<'gc> {
@@ -176,11 +203,11 @@ impl<'gc> Class<'gc> {
     ) -> GcCell<'gc, Self> {
         let native_instance_init = instance_init.clone();
 
-        GcCell::allocate(
+        GcCell::new(
             mc,
             Self {
                 name,
-                params: Vec::new(),
+                param: None,
                 super_class,
                 attributes: ClassAttributes::empty(),
                 protected_namespace: None,
@@ -200,6 +227,7 @@ impl<'gc> Class<'gc> {
                 ),
                 traits_loaded: true,
                 is_system: true,
+                applications: FnvHashMap::default(),
             },
         )
     }
@@ -208,31 +236,31 @@ impl<'gc> Class<'gc> {
     ///
     /// This is used to parameterize a generic type. The returned class will no
     /// longer be generic.
-    pub fn with_type_params(
-        &self,
-        params: &[GcCell<'gc, Class<'gc>>],
+    pub fn with_type_param(
+        this: GcCell<'gc, Class<'gc>>,
+        param: GcCell<'gc, Class<'gc>>,
         mc: MutationContext<'gc, '_>,
     ) -> GcCell<'gc, Class<'gc>> {
-        let mut new_class = self.clone();
+        let read = this.read();
+        let key = ClassKey(param);
 
-        new_class.params = params.to_vec();
+        if let Some(application) = read.applications.get(&key) {
+            return *application;
+        }
+
+        let mut new_class = (*read).clone();
+
+        new_class.param = Some(param);
         new_class.attributes.remove(ClassAttributes::GENERIC);
         new_class.class_init = new_class.specialized_class_init.clone();
         new_class.class_initializer_called = false;
-
-        if params.len() > 1 {
-            panic!(
-                "More than one type parameter is unsupported: {:?}",
-                self.name()
-            );
-        }
 
         // FIXME - we should store a `Multiname` instead of a `QName`, and use the
         // `params` field. For now, this is good enough to get tests passing
         let name_with_params = format!(
             "{}.<{}>",
             new_class.name.local_name(),
-            params[0].read().name().to_qualified_name(mc)
+            param.read().name().to_qualified_name(mc)
         );
 
         new_class.name = QName::new(
@@ -240,7 +268,11 @@ impl<'gc> Class<'gc> {
             AvmString::new_utf8(mc, name_with_params),
         );
 
-        GcCell::allocate(mc, new_class)
+        let new_class = GcCell::new(mc, new_class);
+        drop(read);
+
+        this.write(mc).applications.insert(key, new_class);
+        new_class
     }
 
     /// Set the attributes of the class (sealed/final/interface status).
@@ -271,20 +303,20 @@ impl<'gc> Class<'gc> {
             .ok_or_else(|| "LoadError: Instance index not valid".into());
         let abc_instance = abc_instance?;
 
-        let name =
-            QName::from_abc_multiname(unit, abc_instance.name, activation.context.gc_context)?;
+        let mut context = activation.borrow_gc();
+        let name = QName::from_abc_multiname(unit, abc_instance.name, &mut context)?;
         let super_class = if abc_instance.super_name.0 == 0 {
             None
         } else {
             Some(
-                unit.pool_multiname_static(abc_instance.super_name, activation.context.gc_context)?
+                unit.pool_multiname_static(abc_instance.super_name, &mut context)?
                     .deref()
                     .clone(),
             )
         };
 
         let protected_namespace = if let Some(ns) = &abc_instance.protected_namespace {
-            Some(unit.pool_namespace(*ns, activation.context.gc_context)?)
+            Some(unit.pool_namespace(*ns, &mut context)?)
         } else {
             None
         };
@@ -292,7 +324,7 @@ impl<'gc> Class<'gc> {
         let mut interfaces = Vec::with_capacity(abc_instance.interfaces.len());
         for interface_name in &abc_instance.interfaces {
             interfaces.push(
-                unit.pool_multiname_static(*interface_name, activation.context.gc_context)?
+                unit.pool_multiname_static(*interface_name, &mut context)?
                     .deref()
                     .clone(),
             );
@@ -301,6 +333,7 @@ impl<'gc> Class<'gc> {
         let instance_init = unit.load_method(abc_instance.init_method, false, activation)?;
         let mut native_instance_init = instance_init.clone();
         let class_init = unit.load_method(abc_class.init_method, false, activation)?;
+        let mut native_call_handler = None;
 
         let mut attributes = ClassAttributes::empty();
         attributes.set(ClassAttributes::SEALED, abc_instance.is_sealed);
@@ -311,7 +344,7 @@ impl<'gc> Class<'gc> {
 
         // When loading a class from our playerglobal, grab the corresponding native
         // allocator function from the table (which may be `None`)
-        if unit.domain().is_avm2_global_domain(activation) {
+        if unit.domain().is_playerglobals_domain(activation) {
             instance_allocator = activation.avm2().native_instance_allocator_table
                 [class_index as usize]
                 .map(|(_name, ptr)| Allocator(ptr));
@@ -328,13 +361,28 @@ impl<'gc> Class<'gc> {
                 );
                 native_instance_init = method;
             }
+
+            if let Some((name, table_native_call_handler)) =
+                activation.avm2().native_call_handler_table[class_index as usize]
+            {
+                let method = Method::from_builtin_and_params(
+                    table_native_call_handler,
+                    name,
+                    // A 'callable' class doesn't have a signature - let the
+                    // method do any needed coercions
+                    vec![],
+                    true,
+                    activation.context.gc_context,
+                );
+                native_call_handler = Some(method);
+            }
         }
 
-        Ok(GcCell::allocate(
+        Ok(GcCell::new(
             activation.context.gc_context,
             Self {
                 name,
-                params: Vec::new(),
+                param: None,
                 super_class,
                 attributes,
                 protected_namespace,
@@ -345,7 +393,7 @@ impl<'gc> Class<'gc> {
                 instance_traits: Vec::new(),
                 class_init,
                 class_initializer_called: false,
-                call_handler: None,
+                call_handler: native_call_handler,
                 class_traits: Vec::new(),
                 specialized_class_init: Method::from_builtin(
                     |_, _, _| Ok(Value::Undefined),
@@ -354,6 +402,7 @@ impl<'gc> Class<'gc> {
                 ),
                 traits_loaded: false,
                 is_system: false,
+                applications: Default::default(),
             },
         ))
     }
@@ -463,7 +512,7 @@ impl<'gc> Class<'gc> {
                 }
 
                 if instance_trait.is_override() && !did_override {
-                    return Err(format!("VerifyError: Trait {} in class {} marked as override, does not override any other trait", instance_trait.name().local_name(), self.name().local_name()).into());
+                    return Err(format!("VerifyError: Trait {} in class {:?} marked as override, does not override any other trait", instance_trait.name().local_name(), self.name()).into());
                 }
             }
         }
@@ -478,7 +527,7 @@ impl<'gc> Class<'gc> {
         body: &AbcMethodBody,
     ) -> Result<GcCell<'gc, Self>, Error<'gc>> {
         let name =
-            translation_unit.pool_string(method.name.as_u30(), activation.context.gc_context)?;
+            translation_unit.pool_string(method.name.as_u30(), &mut activation.borrow_gc())?;
         let mut traits = Vec::with_capacity(body.traits.len());
 
         for trait_entry in body.traits.iter() {
@@ -489,11 +538,11 @@ impl<'gc> Class<'gc> {
             )?);
         }
 
-        Ok(GcCell::allocate(
+        Ok(GcCell::new(
             activation.context.gc_context,
             Self {
                 name: QName::new(activation.avm2().public_namespace, name),
-                params: Vec::new(),
+                param: None,
                 super_class: None,
                 attributes: ClassAttributes::empty(),
                 protected_namespace: None,
@@ -525,6 +574,7 @@ impl<'gc> Class<'gc> {
                 class_traits: Vec::new(),
                 traits_loaded: true,
                 is_system: false,
+                applications: Default::default(),
             },
         ))
     }
@@ -798,8 +848,8 @@ impl<'gc> Class<'gc> {
         self.attributes.contains(ClassAttributes::GENERIC)
     }
 
-    pub fn params(&self) -> &[GcCell<'gc, Class<'gc>>] {
-        &self.params[..]
+    pub fn param(&self) -> &Option<GcCell<'gc, Class<'gc>>> {
+        &self.param
     }
 }
 

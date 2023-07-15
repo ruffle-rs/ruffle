@@ -25,3 +25,10 @@ for each (var child in children) {
 for each (var child in xml.child("*")) {
   trace('child("*") child.id: ' + child.@id);
 }
+
+var xml_list = xml.animal;
+trace("xml_list is an " + Object.prototype.toString.call(xml_list));
+
+for each (var child in xml_list.*) {
+  trace("xml_list.* child: " + child);
+}

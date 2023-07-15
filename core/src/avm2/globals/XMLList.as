@@ -1,5 +1,6 @@
 package {
     [Ruffle(InstanceAllocator)]
+    [Ruffle(CallHandler)]
     public final dynamic class XMLList {
 
         public function XMLList(value:* = undefined) {
@@ -8,17 +9,27 @@ package {
 
         private native function init(value:*): void;
 
+        AS3 native function hasComplexContent():Boolean;
         AS3 native function hasSimpleContent():Boolean;
         AS3 native function length():int;
+        AS3 native function child(name:Object):XMLList;
         AS3 native function children():XMLList;
+        AS3 native function copy():XMLList;
         AS3 native function attribute(name:*):XMLList;
         AS3 native function attributes():XMLList;
-
+        AS3 native function descendants(name:Object = "*"):XMLList;
+        AS3 native function text():XMLList;
+        AS3 native function toXMLString():String;
         AS3 native function toString():String;
 
         // The following native methods are not declared in the documentation,
         // but still exist
         AS3 native function name(): Object;
+
+        prototype.hasComplexContent = function():Boolean {
+            var self:XMLList = this;
+            return self.AS3::hasComplexContent();
+        }
 
         prototype.hasSimpleContent = function():Boolean {
             var self:XMLList = this;
@@ -34,9 +45,19 @@ package {
             return self.AS3::length();
         }
 
+        prototype.child = function(name:Object):XMLList {
+            var self:XML = this;
+            return self.AS3::child(name);
+        };
+
         prototype.children = function():XMLList {
             var self:XMLList = this;
             return self.AS3::children();
+        }
+
+        prototype.copy = function():XMLList {
+            var self:XMLList = this;
+            return self.AS3::copy();
         }
 
         prototype.attribute = function(name:*):XMLList {
@@ -54,9 +75,26 @@ package {
             return self.AS3::toString();
         }
 
+        prototype.toXMLString = function():String {
+            var self:XMLList = this;
+            return self.AS3::toXMLString();
+        }
+
         prototype.name = function(): Object {
             var self:XMLList = this;
             return self.AS3::name();
         }
+
+        prototype.descendants = function(name:Object):XMLList {
+            var self:XMLList = this;
+            return self.AS3::descendants(name);
+        }
+
+        prototype.text = function():XMLList {
+            var self:XMLList = this;
+            return self.AS3::text();
+        }
+
+        public static const length:int = 1;
     }
 }

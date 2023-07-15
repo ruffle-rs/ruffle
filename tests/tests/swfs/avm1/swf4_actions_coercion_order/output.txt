@@ -1,0 +1,159 @@
+// Add
+obj_1.valueOf()
+obj_2.valueOf()
+3
+
+// Subtract
+obj_2.valueOf()
+obj_1.valueOf()
+-1
+
+// Multiply
+obj_1.valueOf()
+obj_2.valueOf()
+2
+
+// Divide
+obj_2.valueOf()
+obj_1.valueOf()
+0.5
+
+// Equals
+obj_2.valueOf()
+obj_1.valueOf()
+false
+
+// Less
+obj_1.valueOf()
+obj_2.valueOf()
+true
+
+// And
+true
+
+// Or
+true
+
+// Not
+false
+
+// StringEquals
+obj_2.toString()
+obj_1.toString()
+true
+
+// StringLength
+obj_2.toString()
+13
+
+// StringAdd
+obj_2.toString()
+obj_1.toString()
+[type Object][type Object]
+
+// StringExtract
+obj_3.valueOf()
+obj_2.valueOf()
+obj_1.toString()
+typ
+
+// StringLess
+obj_2.toString()
+obj_1.toString()
+false
+
+// MBStringLength
+obj_2.toString()
+13
+
+// MBStringExtract
+obj_3.valueOf()
+obj_2.valueOf()
+obj_1.toString()
+typ
+
+// ToInteger
+obj_2.valueOf()
+2
+
+// CharToAscii
+obj_2.toString()
+91
+
+// AsciiToChar
+obj_2.valueOf()
+
+
+// MBCharToAscii
+obj_2.toString()
+91
+
+// MBAsciiToChar
+obj_2.valueOf()
+
+
+// Call
+obj_2.toString()
+
+// GetURL2
+obj_2.toString()
+obj_1.toString()
+
+// GotoFrame2
+obj_2.toString()
+
+// SetTarget2
+obj_2.toString()
+Target not found: Target="[type Object]" Base="_level0"
+tellTarget
+
+// GetProperty
+obj_7.valueOf()
+obj_0.toString()
+undefined
+
+// SetProperty
+obj_7.valueOf()
+obj_0.toString()
+obj_1.valueOf()
+
+obj_0.toString()
+obj_2.valueOf()
+
+obj_0.toString()
+obj_3.valueOf()
+
+obj_0.toString()
+obj_4.toString()
+
+obj_0.toString()
+
+// CloneSprite
+obj_3.valueOf()
+obj_2.toString()
+obj_1.toString()
+
+// RemoveSprite
+obj_1.toString()
+
+// StartDrag
+obj_0.toString()
+obj_1.valueOf()
+obj_7.valueOf()
+
+obj_0.toString()
+obj_2.valueOf()
+obj_1.valueOf()
+obj_6.valueOf()
+obj_5.valueOf()
+obj_4.valueOf()
+obj_3.valueOf()
+
+// WaitForFrame2
+obj_1.toString()
+ifFrameLoaded
+
+// RandomNumber
+obj_0.valueOf()
+0
+

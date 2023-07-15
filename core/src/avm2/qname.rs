@@ -1,7 +1,6 @@
 use crate::avm2::script::TranslationUnit;
-use crate::avm2::Activation;
-use crate::avm2::Error;
-use crate::avm2::{Namespace, NamespaceData};
+use crate::avm2::{Activation, Error, Namespace};
+use crate::context::GcContext;
 use crate::either::Either;
 use crate::string::{AvmString, WStr, WString};
 use gc_arena::{Collect, MutationContext};
@@ -48,7 +47,7 @@ impl<'gc> QName<'gc> {
     pub fn from_abc_multiname(
         translation_unit: TranslationUnit<'gc>,
         multiname_index: Index<AbcMultiname>,
-        mc: MutationContext<'gc, '_>,
+        context: &mut GcContext<'_, 'gc>,
     ) -> Result<Self, Error<'gc>> {
         if multiname_index.0 == 0 {
             return Err("Attempted to load a trait name of index zero".into());
@@ -64,8 +63,8 @@ impl<'gc> QName<'gc> {
 
         Ok(match abc_multiname? {
             AbcMultiname::QName { namespace, name } => Self {
-                ns: translation_unit.pool_namespace(*namespace, mc)?,
-                name: translation_unit.pool_string(name.0, mc)?,
+                ns: translation_unit.pool_namespace(*namespace, context)?,
+                name: translation_unit.pool_string(name.0, context)?.into(),
             },
             _ => return Err("Attempted to pull QName from non-QName multiname".into()),
         })
@@ -77,35 +76,22 @@ impl<'gc> QName<'gc> {
     /// NAMESPACE::LOCAL_NAME
     /// NAMESPACE.LOCAL_NAME (Where the LAST dot is used to split the namespace & local_name)
     /// LOCAL_NAME (Use the public namespace)
+    ///
+    /// This does *not* handle `Vector.<SomeTypeParam>` - use `get_defined_value_handling_vector` for that
     pub fn from_qualified_name(name: AvmString<'gc>, activation: &mut Activation<'_, 'gc>) -> Self {
-        let mc = activation.context.gc_context;
-        // If we have a type like 'some::namespace::Vector.<other::namespace::MyType>',
-        // we want to look at 'some::namespace::Vector' when splitting out the namespace
-        let before_type_param = if let Some(type_param_start) = name.find(WStr::from_units(b".<")) {
-            &name[..type_param_start]
-        } else {
-            &name
-        };
-
-        // We unfortunately can't use 'rsplit' here, because we would need to split
-        // the entire string, but only before the first '.<'
-        //
-        // Get the last '::' or '.', only considering the string before '.<' (if any).
-        // This will ignore any namespaces that are part of a type parameter (e.g 'Vector.<other::namespace::MyType>').
-        // The type parameter will stay combined with the type name (so we'll have 'Vector.<other::namespace::MyType>')
-        // in some namespace, depending on whether or not anything comes before 'Vector')
-        let parts = if let Some(last_separator) = before_type_param.rfind(WStr::from_units(b"::")) {
-            Some((&name[..last_separator], &name[(last_separator + 2)..]))
-        } else if let Some(last_separator) = before_type_param.rfind(b".".as_slice()) {
-            Some((&name[..last_separator], &name[(last_separator + 1)..]))
-        } else {
-            None
-        };
+        let parts = name
+            .rsplit_once(WStr::from_units(b"::"))
+            .or_else(|| name.rsplit_once(WStr::from_units(b".")));
 
         if let Some((package_name, local_name)) = parts {
+            let mut context = activation.borrow_gc();
+            let package_name = context
+                .interner
+                .intern_wstr(context.gc_context, package_name);
+
             Self {
-                ns: Namespace::package(AvmString::new(mc, package_name), mc),
-                name: AvmString::new(mc, local_name),
+                ns: Namespace::package(package_name, &mut context),
+                name: AvmString::new(context.gc_context, local_name),
             }
         } else {
             Self {
@@ -169,19 +155,12 @@ impl<'gc> QName<'gc> {
 
     /// Get the string value of this QName, including the namespace URI.
     pub fn as_uri(&self, mc: MutationContext<'gc, '_>) -> AvmString<'gc> {
-        let ns = match &*self.ns.0 {
-            NamespaceData::Namespace(s) => s,
-            NamespaceData::PackageInternal(s) => s,
-            NamespaceData::Protected(s) => s,
-            NamespaceData::Explicit(s) => s,
-            NamespaceData::StaticProtected(s) => s,
-            NamespaceData::Private(s) => s,
-            NamespaceData::Any => WStr::from_units(b"*"),
+        let ns_uri = self.ns.as_uri_opt();
+        let ns = match &ns_uri {
+            Some(s) if s.is_empty() => return self.name,
+            Some(s) => s,
+            None => WStr::from_units(b"*"),
         };
-
-        if ns.is_empty() {
-            return self.name;
-        }
 
         let mut uri = WString::from(ns);
         uri.push_str(WStr::from_units(b"::"));

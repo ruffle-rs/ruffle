@@ -18,6 +18,7 @@ use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::{Collect, GcCell, MutationContext};
+use ruffle_render::filters::Filter;
 use std::cell::{Ref, RefMut};
 use std::sync::Arc;
 
@@ -109,11 +110,11 @@ impl<'gc> Avm2Button<'gc> {
             over_to_up_sound: None,
         };
 
-        Avm2Button(GcCell::allocate(
+        Avm2Button(GcCell::new(
             context.gc_context,
             Avm2ButtonData {
                 base: Default::default(),
-                static_data: GcCell::allocate(context.gc_context, static_data),
+                static_data: GcCell::new(context.gc_context, static_data),
                 state: self::ButtonState::Up,
                 hit_area: None,
                 up_state: None,
@@ -137,7 +138,7 @@ impl<'gc> Avm2Button<'gc> {
     }
 
     pub fn empty_button(context: &mut UpdateContext<'_, 'gc>) -> Self {
-        let movie = Arc::new(SwfMovie::empty(context.swf.version()));
+        let movie = context.swf.clone();
         let button_record = swf::Button {
             id: 0,
             is_track_as_menu: false,
@@ -171,7 +172,7 @@ impl<'gc> Avm2Button<'gc> {
         // It applies color transforms to every character in a button, in sequence(?).
         for (record, color_transform) in static_data.records.iter_mut().zip(color_transforms.iter())
         {
-            record.color_transform = color_transform.clone();
+            record.color_transform = *color_transform;
         }
     }
 
@@ -210,9 +211,11 @@ impl<'gc> Avm2Button<'gc> {
                         child.set_depth(context.gc_context, record.depth.into());
 
                         if swf_state != swf::ButtonState::HIT_TEST {
-                            child.set_color_transform(
+                            child.set_color_transform(context.gc_context, record.color_transform);
+                            child.set_blend_mode(context.gc_context, record.blend_mode);
+                            child.set_filters(
                                 context.gc_context,
-                                record.color_transform.clone().into(),
+                                record.filters.iter().map(Filter::from).collect(),
                             );
                         }
 
@@ -230,17 +233,23 @@ impl<'gc> Avm2Button<'gc> {
             }
         }
 
+        self.invalidate_cached_bitmap(context.gc_context);
+
+        // We manually call `construct_frame` for `child` and `state_sprite` - normally
+        // this would be done in the `DisplayObject` constructor, but SimpleButton does
+        // not have children in the normal DisplayObjectContainer sense.
+
         if children.len() == 1 {
             let child = children.first().cloned().unwrap().0;
 
             child.set_parent(context, Some(self.into()));
             child.post_instantiation(context, None, Instantiator::Movie, false);
             catchup_display_object_to_frame(context, child);
+            child.construct_frame(context);
 
             (child, false)
         } else {
             let state_sprite = MovieClip::new(movie, context.gc_context);
-
             state_sprite.set_avm2_class(context.gc_context, Some(sprite_class));
             state_sprite.set_parent(context, Some(self.into()));
             catchup_display_object_to_frame(context, state_sprite.into());
@@ -255,7 +264,10 @@ impl<'gc> Avm2Button<'gc> {
                 child.post_instantiation(context, None, Instantiator::Movie, false);
                 catchup_display_object_to_frame(context, child);
                 child.set_parent(context, Some(state_sprite.into()));
+                child.construct_frame(context);
             }
+
+            state_sprite.construct_frame(context);
 
             (state_sprite.into(), true)
         }
@@ -399,7 +411,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
     }
 
     fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc> {
-        Self(GcCell::allocate(gc_context, self.0.read().clone())).into()
+        Self(GcCell::new(gc_context, self.0.read().clone())).into()
     }
 
     fn as_ptr(&self) -> *const DisplayObjectPtr {
@@ -557,7 +569,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
             if let Some(avm2_object) = avm2_object {
                 let mut constr_thing = || {
                     let mut activation = Avm2Activation::from_nothing(context.reborrow());
-                    class.call_native_init(Some(avm2_object), &[], &mut activation)?;
+                    class.call_native_init(avm2_object.into(), &[], &mut activation)?;
 
                     Ok(())
                 };
@@ -613,7 +625,8 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         // Add the bounds of the child, dictated by current state
         let state = self.0.read().state;
         if let Some(child) = self.get_state_child(state.into()) {
-            let child_bounds = child.bounds_with_transform(matrix);
+            let matrix = *matrix * *child.base().matrix();
+            let child_bounds = child.bounds_with_transform(&matrix);
             bounds = bounds.union(&child_bounds);
         }
 
@@ -623,7 +636,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
     fn hit_test_shape(
         &self,
         context: &mut UpdateContext<'_, 'gc>,
-        point: (Twips, Twips),
+        point: Point<Twips>,
         options: HitTestOptions,
     ) -> bool {
         if !options.contains(HitTestOptions::SKIP_INVISIBLE) || self.visible() {
@@ -634,7 +647,11 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
                 let mut point = point;
                 if child.parent().is_none() {
                     // hit_area is not actually a child, so transform point into local space before passing it down.
-                    point = self.global_to_local(point);
+                    point = if let Some(point) = self.global_to_local(point) {
+                        point
+                    } else {
+                        return false;
+                    }
                 }
 
                 if child.hit_test_shape(context, point, options) {
@@ -677,7 +694,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         }
     }
 
-    fn is_focusable(&self) -> bool {
+    fn is_focusable(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
         true
     }
 
@@ -702,7 +719,11 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
         self.into()
     }
 
-    fn filter_clip_event(self, event: ClipEvent) -> ClipEventResult {
+    fn filter_clip_event(
+        self,
+        _context: &mut UpdateContext<'_, 'gc>,
+        event: ClipEvent,
+    ) -> ClipEventResult {
         if !self.visible() {
             return ClipEventResult::NotHandled;
         }
@@ -770,7 +791,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
     fn mouse_pick_avm2(
         &self,
         context: &mut UpdateContext<'_, 'gc>,
-        point: (Twips, Twips),
+        mut point: Point<Twips>,
         require_button_mode: bool,
     ) -> Avm2MousePick<'gc> {
         // The button is hovered if the mouse is over any child nodes.
@@ -793,10 +814,13 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
             if let Some(hit_area) = hit_area {
                 //TODO: the if below should probably always be taken, why does the hit area
                 // sometimes have a parent?
-                let mut point = point;
                 if hit_area.parent().is_none() {
                     // hit_area is not actually a child, so transform point into local space before passing it down.
-                    point = self.global_to_local(point);
+                    point = if let Some(point) = self.global_to_local(point) {
+                        point
+                    } else {
+                        return Avm2MousePick::Miss;
+                    }
                 }
                 if hit_area.hit_test_shape(context, point, HitTestOptions::MOUSE_PICK) {
                     return Avm2MousePick::Hit((*self).into());

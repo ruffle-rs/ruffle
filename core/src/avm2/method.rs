@@ -21,18 +21,13 @@ use swf::avm2::types::{
 /// Parameters are as follows:
 ///
 ///  * The AVM2 runtime
-///  * The action context
 ///  * The current `this` object
 ///  * The arguments this function was called with
 ///
-/// Native functions are allowed to return a value or `None`. `None` indicates
-/// that the given value will not be returned on the stack and instead will
-/// resolve on the AVM stack, as if you had called a non-native function. If
-/// your function yields `None`, you must ensure that the top-most activation
-/// in the AVM1 runtime will return with the value of this function.
+/// Native functions are allowed to return a Value or an Error.
 pub type NativeMethodImpl = for<'gc> fn(
     &mut Activation<'_, 'gc>,
-    Option<Object<'gc>>,
+    Object<'gc>,
     &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>>;
 
@@ -57,12 +52,14 @@ impl<'gc> ParamConfig<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Self, Error<'gc>> {
         let param_name = if let Some(name) = &config.name {
-            txunit.pool_string(name.0, activation.context.gc_context)?
+            txunit
+                .pool_string(name.0, &mut activation.borrow_gc())?
+                .into()
         } else {
-            "<Unnamed Parameter>".into()
+            AvmString::from("<Unnamed Parameter>")
         };
         let param_type_name = txunit
-            .pool_multiname_static_any(config.kind, activation.context.gc_context)?
+            .pool_multiname_static_any(config.kind, &mut activation.borrow_gc())?
             .deref()
             .clone();
 
@@ -151,12 +148,12 @@ impl<'gc> BytecodeMethod<'gc> {
             }
 
             let return_type = txunit
-                .pool_multiname_static_any(method.return_type, activation.context.gc_context)?
+                .pool_multiname_static_any(method.return_type, &mut activation.borrow_gc())?
                 .deref()
                 .clone();
 
             let activation_class = if method.flags.contains(AbcMethodFlags::NEED_ACTIVATION) {
-                Some(GcCell::allocate(activation.context.gc_context, None))
+                Some(GcCell::new(activation.context.gc_context, None))
             } else {
                 None
             };
@@ -326,7 +323,7 @@ impl<'gc> Method<'gc> {
         is_variadic: bool,
         mc: MutationContext<'gc, '_>,
     ) -> Self {
-        Self::Native(Gc::allocate(
+        Self::Native(Gc::new(
             mc,
             NativeMethod {
                 method,
@@ -345,7 +342,7 @@ impl<'gc> Method<'gc> {
         name: &'static str,
         mc: MutationContext<'gc, '_>,
     ) -> Self {
-        Self::Native(Gc::allocate(
+        Self::Native(Gc::new(
             mc,
             NativeMethod {
                 method,

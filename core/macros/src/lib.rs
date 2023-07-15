@@ -3,7 +3,7 @@ extern crate proc_macro;
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{
-    parse_macro_input, parse_quote, FnArg, ImplItem, ImplItemMethod, ItemEnum, ItemTrait, Pat,
+    parse_macro_input, parse_quote, FnArg, ImplItem, ImplItemFn, ItemEnum, ItemTrait, Pat,
     TraitItem, Visibility,
 };
 
@@ -36,10 +36,10 @@ use syn::{
 pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
     // Parse the input.
     let input_trait = parse_macro_input!(item as ItemTrait);
-    let trait_name = input_trait.ident.clone();
-    let trait_generics = input_trait.generics.clone();
+    let trait_name = &input_trait.ident;
+    let trait_generics = &input_trait.generics;
     let enum_input = parse_macro_input!(args as ItemEnum);
-    let enum_name = enum_input.ident.clone();
+    let enum_name = &enum_input.ident;
 
     // TODO: Revise whether the first two asserts are needed at all, and whether
     // the second condition should be `== 0` instead, based on the error message.
@@ -54,7 +54,7 @@ pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
     );
 
     assert_eq!(
-        trait_generics, enum_input.generics,
+        trait_generics, &enum_input.generics,
         "Trait and enum should have the same generic parameters"
     );
 
@@ -64,8 +64,8 @@ pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
         .items
         .iter()
         .map(|item| match item {
-            TraitItem::Method(method) => {
-                let method_name = method.sig.ident.clone();
+            TraitItem::Fn(method) => {
+                let method_name = &method.sig.ident;
                 let params: Vec<_> = method
                     .sig
                     .inputs
@@ -73,7 +73,7 @@ pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
                     .filter_map(|arg| {
                         if let FnArg::Typed(arg) = arg {
                             if let Pat::Ident(i) = &*arg.pat {
-                                let arg_name = i.ident.clone();
+                                let arg_name = &i.ident;
                                 return Some(quote!(#arg_name,));
                             }
                         }
@@ -85,7 +85,7 @@ pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
                     .variants
                     .iter()
                     .map(|variant| {
-                        let variant_name = variant.ident.clone();
+                        let variant_name = &variant.ident;
                         quote! {
                             #enum_name::#variant_name(o) => o.#method_name(#(#params)*),
                         }
@@ -97,7 +97,7 @@ pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
                     }
                 });
 
-                ImplItem::Method(ImplItemMethod {
+                ImplItem::Fn(ImplItemFn {
                     attrs: method.attrs.clone(),
                     vis: Visibility::Inherited,
                     defaultness: None,
@@ -116,14 +116,13 @@ pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
         .variants
         .iter()
         .map(|variant| {
-            let variant_name = variant.ident.clone();
-            let variant_type = variant
+            let variant_name = &variant.ident;
+            let variant_type = &variant
                 .fields
                 .iter()
                 .next()
                 .expect("Missing field for enum variant")
-                .ty
-                .clone();
+                .ty;
 
             quote!(
                 impl #impl_generics From<#variant_type> for #enum_name #ty_generics {

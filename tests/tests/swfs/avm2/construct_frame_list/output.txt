@@ -1,0 +1,22 @@
+Main constructor
+Main after super
+Enter frame!
+Constructed MyChild with name: mychild1
+Constructed MyChild with name: mychild2
+Constructing as3child
+Constructed MyChild with name: instance6
+as3child constructed
+Constructed MyChild with name: mychild3
+Constructed MyChild with name: mychild4
+Constructed MyChild with name: mychild5
+Enter frame!
+Enter frame!
+Constructed MyChild with name: mychild1
+Constructed MyChild with name: mychild2
+Constructing as3child
+Constructed MyChild with name: instance13
+as3child constructed
+Constructed MyChild with name: mychild3
+Constructed MyChild with name: mychild4
+Constructed MyChild with name: mychild5
+Enter frame!

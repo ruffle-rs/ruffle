@@ -1,4 +1,5 @@
 use crate::display_object::InteractiveObject;
+use serde::Deserialize;
 use swf::ClipEventFlag;
 
 #[derive(Debug, Clone, Copy)]
@@ -31,6 +32,9 @@ pub enum PlayerEvent {
     },
     TextInput {
         codepoint: char,
+    },
+    TextControl {
+        code: TextControlCode,
     },
 }
 
@@ -213,7 +217,7 @@ pub enum ClipEvent<'gc> {
     ///
     /// This is a targeted event with no anycast equivalent. It is targeted to
     /// any interactive object under the mouse cursor, including the stage
-    /// itself. Only AVM2 can recieve these events.
+    /// itself. Only AVM2 can receive these events.
     MouseWheel {
         delta: MouseWheelDelta,
     },
@@ -327,6 +331,33 @@ impl<'gc> ClipEvent<'gc> {
             | ClipEvent::MouseMoveInside
             | ClipEvent::MouseUpInside => None,
         }
+    }
+}
+
+/// Control inputs to a text field
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Deserialize)]
+pub enum TextControlCode {
+    // TODO: Add control codes for Ctrl+Arrows and Home/End keys
+    MoveLeft,
+    MoveRight,
+    SelectLeft,
+    SelectRight,
+    SelectAll,
+    Copy,
+    Paste,
+    Cut,
+    Backspace,
+    Enter,
+    Delete,
+}
+
+impl TextControlCode {
+    /// Indicates whether this is an event that edits the text content
+    pub fn is_edit_input(self) -> bool {
+        matches!(
+            self,
+            Self::Paste | Self::Cut | Self::Backspace | Self::Enter | Self::Delete
+        )
     }
 }
 

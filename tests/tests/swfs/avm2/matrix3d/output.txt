@@ -2,3 +2,45 @@ Mat:
 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1
 after appendScale(1, 2, 3):
 1,0,0,0,0,2,0,0,0,0,3,0,0,0,0,1
+Mat:
+1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+mat.position = Vector3D(13, 14, 15)
+// set mat.position = new Vector3D(12, 13, 14)
+mat.position = Vector3D(12, 13, 14)
+after mat.prependTranslation(-1, 0, 2)
+mat.position = Vector3D(29, 31, 33)
+Mat:
+1,2,3,4,5,6,7,8,9,10,11,12,29,31,33,36
+after mat.prepend(mat):
+154,168,182,200,330,364,398,440,506,560,614,680,1525,1690,1855,2056
+Other:
+154,168,182,200,330,364,398,440,506,560,614,680,1525,1690,1855,2056
+Out: 0,154,168,182,200,330,364,398,440,506,560,614,680,1525,1690,1855,2056,0,0,0
+Out: 0,154,154,330,506,1525,168,364,560,1690,182,398,614,1855,200,440,680,2056,0,0
+mat.transformVector(v):
+3857 4266 4675 5176
+mat.deltaTransformVector(v):
+2332 2576 2820 3120
+Too short: 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1
+Too long: 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1
+Before modification: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+After modification: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+Column: Vector3D(1, 2, 3) w=4
+Column: Vector3D(5, 6, 7) w=8
+Column: Vector3D(9, 10, 11) w=12
+Column: Vector3D(13, 14, 15) w=16
+Column 4: ArgumentError: Error #2004: One of the parameters is invalid.
+Row: Vector3D(1, 5, 9) w=13
+Row: Vector3D(2, 6, 10) w=14
+Row: Vector3D(3, 7, 11) w=15
+Row: Vector3D(4, 8, 12) w=16
+Row 4: ArgumentError: Error #2004: One of the parameters is invalid.
+Copy from row 4: ArgumentError: Error #2004: One of the parameters is invalid.
+After row copies: 100,500,900,1300,200,600,1000,1400,300,700,1100,1500,400,800,1200,1600
+After prependRotation: 100,500,900,1300,300,700,1100,1500,-200,-600,-1000,-1400,400,800,1200,1600
+// copyColumnFrom tests
+Matrix raw data: 3,4,5,6,0,0,0,0,0,0,0,0,0,0,0,0
+Matrix raw data: 3,4,5,6,3,4,5,6,0,0,0,0,0,0,0,0
+Matrix raw data: 3,4,5,6,3,4,5,6,3,4,5,6,0,0,0,0
+Matrix raw data: 3,4,5,6,3,4,5,6,3,4,5,6,3,4,5,6
+Column 4: ArgumentError: Error #2004: One of the parameters is invalid.

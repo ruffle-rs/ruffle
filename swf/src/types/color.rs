@@ -1,7 +1,7 @@
 /// An RGBA (red, green, blue, alpha) color.
 ///
 /// All components are stored as [`u8`] and have a color range of 0-255.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, Eq, PartialEq)]
 pub struct Color {
     /// The red component value.
     pub r: u8,
@@ -19,6 +19,9 @@ pub struct Color {
 impl Color {
     pub const BLACK: Self = Self::from_rgb(0, 255);
     pub const WHITE: Self = Self::from_rgb(0xFFFFFF, 255);
+    pub const RED: Self = Self::from_rgb(0xFF0000, 255);
+    pub const GREEN: Self = Self::from_rgb(0x00FF00, 255);
+    pub const BLUE: Self = Self::from_rgb(0x0000FF, 255);
 
     /// Creates a `Color` from a 32-bit `rgb` value and an `alpha` value.
     ///
@@ -37,6 +40,7 @@ impl Color {
     /// let green = Color::from_rgb(0x00FF00, 255);
     /// let blue = Color::from_rgb(0x0000FF, 255);
     /// ```
+    #[inline]
     pub const fn from_rgb(rgb: u32, alpha: u8) -> Self {
         let [b, g, r, _] = rgb.to_le_bytes();
         Self { r, g, b, a: alpha }
@@ -55,6 +59,7 @@ impl Color {
     /// let green = Color::from_rgba(0xFF00FF00);
     /// let blue = Color::from_rgba(0xFF0000FF);
     /// ```
+    #[inline]
     pub const fn from_rgba(rgba: u32) -> Self {
         let [b, g, r, a] = rgba.to_le_bytes();
         Self { r, g, b, a }
@@ -82,6 +87,7 @@ impl Color {
     /// let color2 = Color::from_rgb(0xFF00FF, 0);
     /// assert_eq!(color1.to_rgb(), color2.to_rgb());
     /// ```
+    #[inline]
     pub const fn to_rgb(&self) -> u32 {
         u32::from_le_bytes([self.b, self.g, self.r, 0])
     }
@@ -97,6 +103,7 @@ impl Color {
     /// let color = Color::from_rgb(0xFF00FF, 255);
     /// assert_eq!(color.to_rgba(), 0xFFFF00FF);
     /// ```
+    #[inline]
     pub const fn to_rgba(&self) -> u32 {
         u32::from_le_bytes([self.b, self.g, self.r, self.a])
     }

@@ -29,22 +29,25 @@ body {
 
 .logo {
     width: 100%;
-    transition: opacity 0.5s;
+    transition: transform 0.2s;
 }
 
 .logo:hover {
-    opacity: 0.5;
+    transform: scale(104%);
 }
 
-/* Based on "Pure CSS Slider Checkboxes": https://codepen.io/Qvcool/pen/bdzVYW */
+/* Controls */
+
+.options {
+    display: flex;
+    flex-flow: column;
+    gap: 24px;
+}
+
 .option {
     position: relative;
     display: flex;
     align-items: center;
-}
-
-.option:not(:first-child) {
-    margin-top: 24px;
 }
 
 .option input,
@@ -53,6 +56,13 @@ body {
     right: 0;
 }
 
+.option label {
+    display: inline-block;
+    padding-right: 80px;
+}
+
+/* Checkbox (Based on "Pure CSS Slider Checkboxes": https://codepen.io/Qvcool/pen/bdzVYW) */
+
 .option.checkbox input {
     width: 40px;
     height: 20px;
@@ -60,11 +70,6 @@ body {
     cursor: pointer;
     z-index: 1;
     opacity: 0;
-}
-
-.option label {
-    display: inline-block;
-    padding-right: 40px;
 }
 
 .option.checkbox label::before,
@@ -99,4 +104,12 @@ body {
 .option.checkbox input:checked + label::after {
     background: var(--ruffle-orange);
     right: 1px;
+}
+
+/* Number input */
+
+.option.number-input input {
+    width: 60px;
+    height: 20px;
+    margin: auto;
 }

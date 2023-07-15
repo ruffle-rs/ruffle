@@ -59,3 +59,14 @@ export function copyToAudioBufferInterleaved(
         i += 2;
     }
 }
+
+/**
+ * Gets a property of an arbitrary JavaScript value.
+ * This is necessary because Reflect.get does not work for primitive targets.
+ *
+ * @internal
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function getProperty(target: any, key: string): any {
+    return target[key];
+}

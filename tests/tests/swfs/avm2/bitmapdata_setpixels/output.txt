@@ -1,0 +1,288 @@
+/// new ByteArray(3, 3, false, 0).setPixels(new Rectangle(0, 0, 3, 3), ba)
+// bmd.getPixel32(0, 0)
+4278388491
+
+// bmd.getPixel32(0, 1)
+4281546555
+
+// bmd.getPixel32(0, 2)
+4284704619
+
+// bmd.getPixel32(1, 0)
+4279441179
+
+// bmd.getPixel32(1, 1)
+4282599243
+
+// bmd.getPixel32(1, 2)
+4285757307
+
+// bmd.getPixel32(2, 0)
+4280493867
+
+// bmd.getPixel32(2, 1)
+4283651931
+
+// bmd.getPixel32(2, 2)
+4286809995
+
+// ba.position
+36
+
+
+/// new ByteArray(3, 3, true, 0).setPixels(new Rectangle(0, 0, 3, 3), ba)
+// bmd.getPixel32(0, 0)
+0
+
+// bmd.getPixel32(0, 1)
+791754300
+
+// bmd.getPixel32(0, 2)
+1600349803
+
+// bmd.getPixel32(1, 0)
+252776738
+
+// bmd.getPixel32(1, 1)
+1061505357
+
+// bmd.getPixel32(1, 2)
+1869838204
+
+// bmd.getPixel32(2, 0)
+522266921
+
+// bmd.getPixel32(2, 1)
+1330927450
+
+// bmd.getPixel32(2, 2)
+2139326347
+
+// ba.position
+36
+
+
+/// new ByteArray(3, 3, true, 0).setPixels(new Rectangle(0, 0, 3, 3), ba)
+// bmd.getPixel32(0, 0)
+657337908
+
+// bmd.getPixel32(0, 1)
+1465605732
+
+// bmd.getPixel32(0, 2)
+2274135955
+
+// bmd.getPixel32(1, 0)
+926695745
+
+// bmd.getPixel32(1, 1)
+1735028594
+
+// bmd.getPixel32(1, 2)
+2543558564
+
+// bmd.getPixel32(2, 0)
+1196117843
+
+// bmd.getPixel32(2, 1)
+2004516483
+
+// bmd.getPixel32(2, 2)
+2813046706
+
+// ba.position
+46
+
+
+/// new ByteArray(3, 3, true, 0).setPixels(new Rectangle(-1, -1, 3, 3), ba)
+// bmd.getPixel32(0, 0)
+0
+
+// bmd.getPixel32(0, 1)
+522266921
+
+// bmd.getPixel32(0, 2)
+0
+
+// bmd.getPixel32(1, 0)
+252776738
+
+// bmd.getPixel32(1, 1)
+791754300
+
+// bmd.getPixel32(1, 2)
+0
+
+// bmd.getPixel32(2, 0)
+0
+
+// bmd.getPixel32(2, 1)
+0
+
+// bmd.getPixel32(2, 2)
+0
+
+// ba.position
+16
+
+
+/// new ByteArray(3, 3, true, 0).setPixels(new Rectangle(-1, -1, 4, 4), ba)
+// bmd.getPixel32(0, 0)
+0
+
+// bmd.getPixel32(0, 1)
+791754300
+
+// bmd.getPixel32(0, 2)
+1600349803
+
+// bmd.getPixel32(1, 0)
+252776738
+
+// bmd.getPixel32(1, 1)
+1061505357
+
+// bmd.getPixel32(1, 2)
+1869838204
+
+// bmd.getPixel32(2, 0)
+522266921
+
+// bmd.getPixel32(2, 1)
+1330927450
+
+// bmd.getPixel32(2, 2)
+2139326347
+
+// ba.position
+36
+
+
+/// new ByteArray(3, 3, true, 0).setPixels(new Rectangle(-5, -4, 3, 2), ba)
+// bmd.getPixel32(0, 0)
+0
+
+// bmd.getPixel32(0, 1)
+0
+
+// bmd.getPixel32(0, 2)
+0
+
+// bmd.getPixel32(1, 0)
+0
+
+// bmd.getPixel32(1, 1)
+0
+
+// bmd.getPixel32(1, 2)
+0
+
+// bmd.getPixel32(2, 0)
+0
+
+// bmd.getPixel32(2, 1)
+0
+
+// bmd.getPixel32(2, 2)
+0
+
+// ba.position
+0
+
+
+/// new ByteArray(3, 3, true, 0).setPixels(new Rectangle(1, 1, 1, 1), ba)
+// bmd.getPixel32(0, 0)
+0
+
+// bmd.getPixel32(0, 1)
+0
+
+// bmd.getPixel32(0, 2)
+0
+
+// bmd.getPixel32(1, 0)
+0
+
+// bmd.getPixel32(1, 1)
+0
+
+// bmd.getPixel32(1, 2)
+0
+
+// bmd.getPixel32(2, 0)
+0
+
+// bmd.getPixel32(2, 1)
+0
+
+// bmd.getPixel32(2, 2)
+0
+
+// ba.position
+4
+
+
+/// new ByteArray(3, 3, true, 0).setPixels(new Rectangle(1, 1, 10, 10), ba)
+// bmd.getPixel32(0, 0)
+0
+
+// bmd.getPixel32(0, 1)
+0
+
+// bmd.getPixel32(0, 2)
+0
+
+// bmd.getPixel32(1, 0)
+0
+
+// bmd.getPixel32(1, 1)
+0
+
+// bmd.getPixel32(1, 2)
+522266921
+
+// bmd.getPixel32(2, 0)
+0
+
+// bmd.getPixel32(2, 1)
+252776738
+
+// bmd.getPixel32(2, 2)
+791754300
+
+// ba.position
+16
+
+
+/// new ByteArray(3, 3, true, 0).setPixels(new Rectangle(1, 1, 1, 1), ba)
+// bmd.getPixel32(0, 0)
+0
+
+// bmd.getPixel32(0, 1)
+0
+
+// bmd.getPixel32(0, 2)
+0
+
+// bmd.getPixel32(1, 0)
+0
+
+// bmd.getPixel32(1, 1)
+2004516483
+
+// bmd.getPixel32(1, 2)
+0
+
+// bmd.getPixel32(2, 0)
+0
+
+// bmd.getPixel32(2, 1)
+0
+
+// bmd.getPixel32(2, 2)
+0
+
+// ba.position
+34
+
+

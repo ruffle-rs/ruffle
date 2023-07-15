@@ -3,6 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::events::{dispatch_event as dispatch_event_internal, parent_of};
 use crate::avm2::object::{DispatchObject, Object, TObject};
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Multiname;
 use crate::avm2::{Avm2, Error};
@@ -33,40 +34,22 @@ fn dispatch_list<'gc>(
 /// Implements `EventDispatcher.addEventListener`.
 pub fn add_event_listener<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this {
-        let dispatch_list = dispatch_list(activation, this)?;
-        let event_type = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_string(activation)?;
-        let listener = args
-            .get(1)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .as_callable(activation, None, None)?;
-        let use_capture = args
-            .get(2)
-            .cloned()
-            .unwrap_or(Value::Bool(false))
-            .coerce_to_boolean();
-        let priority = args
-            .get(3)
-            .cloned()
-            .unwrap_or(Value::Integer(0))
-            .coerce_to_i32(activation)?;
+    let dispatch_list = dispatch_list(activation, this)?;
+    let event_type = args.get_string(activation, 0)?;
+    let listener = args.get_value(1).as_callable(activation, None, None)?;
+    let use_capture = args.get_bool(2);
+    let priority = args.get_i32(activation, 3)?;
 
-        //TODO: If we ever get weak GC references, we should respect `useWeakReference`.
-        dispatch_list
-            .as_dispatch_mut(activation.context.gc_context)
-            .ok_or_else(|| Error::from("Internal properties should have what I put in them"))?
-            .add_event_listener(event_type, priority, listener, use_capture);
+    //TODO: If we ever get weak GC references, we should respect `useWeakReference`.
+    dispatch_list
+        .as_dispatch_mut(activation.context.gc_context)
+        .ok_or_else(|| Error::from("Internal properties should have what I put in them"))?
+        .add_event_listener(event_type, priority, listener, use_capture);
 
-        Avm2::register_broadcast_listener(&mut activation.context, this, event_type);
-    }
+    Avm2::register_broadcast_listener(&mut activation.context, this, event_type);
 
     Ok(Value::Undefined)
 }
@@ -74,32 +57,18 @@ pub fn add_event_listener<'gc>(
 /// Implements `EventDispatcher.removeEventListener`.
 pub fn remove_event_listener<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this {
-        let dispatch_list = dispatch_list(activation, this)?;
-        let event_type = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_string(activation)?;
-        let listener = args
-            .get(1)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .as_callable(activation, None, None)?;
-        let use_capture = args
-            .get(2)
-            .cloned()
-            .unwrap_or(Value::Bool(false))
-            .coerce_to_boolean();
+    let dispatch_list = dispatch_list(activation, this)?;
+    let event_type = args.get_string(activation, 0)?;
+    let listener = args.get_value(1).as_callable(activation, None, None)?;
+    let use_capture = args.get_bool(2);
 
-        dispatch_list
-            .as_dispatch_mut(activation.context.gc_context)
-            .ok_or_else(|| Error::from("Internal properties should have what I put in them"))?
-            .remove_event_listener(event_type, listener, use_capture);
-    }
+    dispatch_list
+        .as_dispatch_mut(activation.context.gc_context)
+        .ok_or_else(|| Error::from("Internal properties should have what I put in them"))?
+        .remove_event_listener(event_type, listener, use_capture);
 
     Ok(Value::Undefined)
 }
@@ -107,60 +76,48 @@ pub fn remove_event_listener<'gc>(
 /// Implements `EventDispatcher.hasEventListener`.
 pub fn has_event_listener<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this {
-        let dispatch_list = dispatch_list(activation, this)?;
-        let event_type = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_string(activation)?;
+    let dispatch_list = dispatch_list(activation, this)?;
+    let event_type = args.get_string(activation, 0)?;
 
-        return Ok(dispatch_list
-            .as_dispatch_mut(activation.context.gc_context)
-            .ok_or_else(|| Error::from("Internal properties should have what I put in them"))?
-            .has_event_listener(event_type)
-            .into());
-    }
+    let does_have = dispatch_list
+        .as_dispatch_mut(activation.context.gc_context)
+        .ok_or_else(|| Error::from("Internal properties should have what I put in them"))?
+        .has_event_listener(event_type)
+        .into();
 
-    Ok(Value::Undefined)
+    Ok(does_have)
 }
 
 /// Implements `EventDispatcher.willTrigger`.
 pub fn will_trigger<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this {
-        let dispatch_list = dispatch_list(activation, this)?;
-        let event_type = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_string(activation)?;
+    let dispatch_list = dispatch_list(activation, this)?;
+    let event_type = args.get_string(activation, 0)?;
 
-        if dispatch_list
-            .as_dispatch_mut(activation.context.gc_context)
-            .ok_or_else(|| Error::from("Internal properties should have what I put in them"))?
-            .has_event_listener(event_type)
-        {
-            return Ok(true.into());
-        }
+    if dispatch_list
+        .as_dispatch_mut(activation.context.gc_context)
+        .ok_or_else(|| Error::from("Internal properties should have what I put in them"))?
+        .has_event_listener(event_type)
+    {
+        return Ok(true.into());
+    }
 
-        let target = this
-            .get_property(
-                &Multiname::new(activation.avm2().flash_events_internal, "_target"),
-                activation,
-            )?
-            .as_object()
-            .unwrap_or(this);
+    let target = this
+        .get_property(
+            &Multiname::new(activation.avm2().flash_events_internal, "_target"),
+            activation,
+        )?
+        .as_object()
+        .unwrap_or(this);
 
-        if let Some(parent) = parent_of(target) {
-            return will_trigger(activation, Some(parent), args);
-        }
+    if let Some(parent) = parent_of(target) {
+        return will_trigger(activation, parent, args);
     }
 
     Ok(false.into())
@@ -169,20 +126,16 @@ pub fn will_trigger<'gc>(
 /// Implements `EventDispatcher.dispatchEvent`.
 pub fn dispatch_event<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let event = args.get(0).cloned().unwrap_or(Value::Undefined).as_object();
+    let event = args.get_object(activation, 0, "event")?;
 
-    if event.map(|o| o.as_event().is_none()).unwrap_or(true) {
+    if event.as_event().is_none() {
         return Err("Dispatched Events must be subclasses of Event.".into());
     }
 
-    if let Some(this) = this {
-        Ok(dispatch_event_internal(activation, this, event.unwrap())?.into())
-    } else {
-        Ok(false.into())
-    }
+    Ok(dispatch_event_internal(activation, this, event)?.into())
 }
 
 /// Implements `EventDispatcher.toString`.
@@ -191,13 +144,14 @@ pub fn dispatch_event<'gc>(
 /// present.
 pub fn to_string<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let object_proto = activation.avm2().classes().object.prototype();
     let name = Multiname::new(activation.avm2().public_namespace, "toString");
+
     object_proto
         .get_property(&name, activation)?
-        .as_callable(activation, Some(&name), Some(object_proto))?
-        .call(this, args, activation)
+        .as_callable(activation, Some(&name), Some(object_proto.into()))?
+        .call(this.into(), args, activation)
 }

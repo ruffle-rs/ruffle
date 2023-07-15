@@ -6,14 +6,15 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ArrayObject, Object, TObject, Value};
+use crate::context::GcContext;
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::string::AvmString;
 use bitflags::bitflags;
-use gc_arena::MutationContext;
 use std::cmp::Ordering;
 
 bitflags! {
     /// Options used by `Array.sort` and `Array.sortOn`.
+    #[derive(Clone, Copy)]
     struct SortOptions: i32 {
         const CASE_INSENSITIVE     = 1 << 0;
         const DESCENDING           = 1 << 1;
@@ -61,12 +62,12 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
 };
 
 pub fn create_array_object<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    context: &mut GcContext<'_, 'gc>,
     array_proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let array = FunctionObject::constructor(
-        gc_context,
+        context.gc_context,
         Executable::Native(constructor),
         Executable::Native(constructor),
         fn_proto,
@@ -77,7 +78,7 @@ pub fn create_array_object<'gc>(
     // TODO: These were added in Flash Player 7, but are available even to SWFv6 and lower
     // when run in Flash Player 7. Make these conditional if we add a parameter to control
     // target Flash Player version.
-    define_properties_on(OBJECT_DECLS, gc_context, object, fn_proto);
+    define_properties_on(OBJECT_DECLS, context, object, fn_proto);
     array
 }
 
@@ -742,12 +743,12 @@ fn qsort<'gc>(
 }
 
 pub fn create_proto<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let array = ArrayObject::empty_with_proto(gc_context, proto);
+    let array = ArrayObject::empty_with_proto(context.gc_context, proto);
     let object = array.raw_script_object();
-    define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
+    define_properties_on(PROTO_DECLS, context, object, fn_proto);
     object.into()
 }

@@ -5,7 +5,7 @@ use crate::avm2::value::{Hint, Value};
 use crate::avm2::Error;
 use chrono::{DateTime, Utc};
 use core::fmt;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates Date objects.
@@ -15,7 +15,7 @@ pub fn date_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
-    Ok(DateObject(GcCell::allocate(
+    Ok(DateObject(GcCell::new(
         activation.context.gc_context,
         DateObjectData {
             base,
@@ -26,7 +26,11 @@ pub fn date_allocator<'gc>(
 }
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct DateObject<'gc>(GcCell<'gc, DateObjectData<'gc>>);
+pub struct DateObject<'gc>(pub GcCell<'gc, DateObjectData<'gc>>);
+
+#[derive(Clone, Collect, Copy, Debug)]
+#[collect(no_drop)]
+pub struct DateObjectWeak<'gc>(pub GcWeakCell<'gc, DateObjectData<'gc>>);
 
 impl fmt::Debug for DateObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

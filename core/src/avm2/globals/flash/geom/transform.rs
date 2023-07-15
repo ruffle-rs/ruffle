@@ -1,12 +1,11 @@
-#![allow(non_snake_case)]
-
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::Multiname;
 use crate::avm2::{Activation, Error, Object, TObject, Value};
 use crate::avm2_stub_getter;
 use crate::display_object::TDisplayObject;
-use crate::prelude::{ColorTransform, DisplayObject, Matrix, Twips};
+use crate::prelude::{DisplayObject, Matrix, Twips};
 use ruffle_render::quality::StageQuality;
-use swf::Fixed8;
+use swf::{ColorTransform, Fixed8, Rectangle};
 
 fn get_display_object<'gc>(
     this: Object<'gc>,
@@ -25,12 +24,12 @@ fn get_display_object<'gc>(
 
 pub fn init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    mut this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    this.unwrap().set_property(
+    this.set_property(
         &Multiname::new(activation.avm2().flash_geom_internal, "_displayObject"),
-        args[0],
+        args.get_value(0),
         activation,
     )?;
     Ok(Value::Undefined)
@@ -38,59 +37,58 @@ pub fn init<'gc>(
 
 pub fn get_color_transform<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.unwrap();
-    let ct_obj = *get_display_object(this, activation)?
-        .base()
-        .color_transform();
-    color_transform_to_object(&ct_obj, activation)
+    let display_object = get_display_object(this, activation)?;
+    let display_object = display_object.base();
+    color_transform_to_object(display_object.color_transform(), activation)
 }
 
 pub fn set_color_transform<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.unwrap();
-    let ct = object_to_color_transform(args[0].coerce_to_object(activation)?, activation)?;
-    get_display_object(this, activation)?
-        .base_mut(activation.context.gc_context)
-        .set_color_transform(ct);
+    let ct = object_to_color_transform(args.get_object(activation, 0, "value")?, activation)?;
+    let dobj = get_display_object(this, activation)?;
+    dobj.set_color_transform(activation.context.gc_context, ct);
+    if let Some(parent) = dobj.parent() {
+        parent.invalidate_cached_bitmap(activation.context.gc_context);
+    }
     Ok(Value::Undefined)
 }
 
 pub fn get_matrix<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.unwrap();
     let matrix = *get_display_object(this, activation)?.base().matrix();
     matrix_to_object(matrix, activation)
 }
 
 pub fn set_matrix<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.unwrap();
-    let matrix = object_to_matrix(args[0].coerce_to_object(activation)?, activation)?;
-    get_display_object(this, activation)?
-        .base_mut(activation.context.gc_context)
-        .set_matrix(matrix);
+    let matrix = object_to_matrix(args.get_object(activation, 0, "value")?, activation)?;
+    let dobj = get_display_object(this, activation)?;
+    dobj.set_matrix(activation.context.gc_context, matrix);
+    if let Some(parent) = dobj.parent() {
+        // Self-transform changes are automatically handled,
+        // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
+        parent.invalidate_cached_bitmap(activation.context.gc_context);
+    }
     Ok(Value::Undefined)
 }
 
 pub fn get_concatenated_matrix<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.unwrap();
-
     let dobj = get_display_object(this, activation)?;
     let mut node = Some(dobj);
     while let Some(obj) = node {
@@ -127,7 +125,7 @@ pub fn get_concatenated_matrix<'gc>(
 
 pub fn get_concatenated_color_transform<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(
@@ -169,10 +167,10 @@ pub fn object_to_color_transform<'gc>(
         .get_public_property("alphaOffset", activation)?
         .coerce_to_number(activation)?;
     Ok(ColorTransform {
-        r_mult: Fixed8::from_f64(red_multiplier),
-        g_mult: Fixed8::from_f64(green_multiplier),
-        b_mult: Fixed8::from_f64(blue_multiplier),
-        a_mult: Fixed8::from_f64(alpha_multiplier),
+        r_multiply: Fixed8::from_f64(red_multiplier),
+        g_multiply: Fixed8::from_f64(green_multiplier),
+        b_multiply: Fixed8::from_f64(blue_multiplier),
+        a_multiply: Fixed8::from_f64(alpha_multiplier),
         r_add: red_offset as i16,
         g_add: green_offset as i16,
         b_add: blue_offset as i16,
@@ -185,10 +183,10 @@ pub fn color_transform_to_object<'gc>(
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let args = [
-        color_transform.r_mult.to_f64().into(),
-        color_transform.g_mult.to_f64().into(),
-        color_transform.b_mult.to_f64().into(),
-        color_transform.a_mult.to_f64().into(),
+        color_transform.r_multiply.to_f64().into(),
+        color_transform.g_multiply.to_f64().into(),
+        color_transform.b_multiply.to_f64().into(),
+        color_transform.a_multiply.to_f64().into(),
         color_transform.r_add.into(),
         color_transform.g_add.into(),
         color_transform.b_add.into(),
@@ -247,4 +245,29 @@ pub fn object_to_matrix<'gc>(
     );
 
     Ok(Matrix { a, b, c, d, tx, ty })
+}
+
+pub fn get_pixel_bounds<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let display_object = get_display_object(this, activation)?;
+    rectangle_to_object(display_object.world_bounds(), activation)
+}
+
+fn rectangle_to_object<'gc>(
+    rectangle: Rectangle<Twips>,
+    activation: &mut Activation<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let object = activation.avm2().classes().rectangle.construct(
+        activation,
+        &[
+            rectangle.x_min.to_pixels().into(),
+            rectangle.y_min.to_pixels().into(),
+            rectangle.width().to_pixels().into(),
+            rectangle.height().to_pixels().into(),
+        ],
+    )?;
+    Ok(object.into())
 }

@@ -64,6 +64,7 @@ function injectScriptURL(url: string): Promise<void> {
         script.addEventListener("load", () => resolve());
         script.addEventListener("error", (e) => reject(e));
     });
+    script.charset = "utf-8";
     script.src = url;
     (document.head || document.documentElement).append(script);
     return promise;
@@ -170,9 +171,10 @@ function isXMLDocument(): boolean {
     await sendMessageToPage({
         type: "load",
         config: {
-            warnOnUnsupportedContent: options.warnOnUnsupportedContent,
-            logLevel: options.logLevel,
-            showSwfDownload: options.showSwfDownload,
+            ...options,
+            autoplay: options.autostart ? "on" : "auto",
+            unmuteOverlay: options.autostart ? "hidden" : "visible",
+            splashScreen: !options.autostart,
         },
     });
 })();

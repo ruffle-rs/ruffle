@@ -46,7 +46,9 @@ class RuffleMimeTypeArray implements MimeTypeArray {
     }
 
     item(index: number): MimeType {
-        return this.__mimeTypes[index]!;
+        // This behavior is done to emulate a 32-bit uint,
+        // which browsers use.
+        return this.__mimeTypes[index >>> 0]!;
     }
 
     namedItem(name: string): MimeType {
@@ -117,7 +119,10 @@ class RufflePluginArray implements PluginArray {
     }
 
     item(index: number): Plugin {
-        return this.__plugins[index]!;
+        // This behavior is done to emulate a 32-bit uint,
+        // which browsers use. Cloudflare's anti-bot
+        // checks rely on this.
+        return this.__plugins[index >>> 0]!;
     }
 
     namedItem(name: string): Plugin {
@@ -150,6 +155,15 @@ export const FLASH_PLUGIN = new RufflePlugin(
     "ruffle.js"
 );
 
+/**
+ * A fake plugin designed to allow early detection of if the Ruffle extension is in use.
+ */
+export const RUFFLE_EXTENSION = new RufflePlugin(
+    "Ruffle Extension",
+    "Ruffle Extension",
+    "ruffle.js"
+);
+
 FLASH_PLUGIN.install({
     type: FUTURESPLASH_MIMETYPE,
     description: "Shockwave Flash",
@@ -173,6 +187,12 @@ FLASH_PLUGIN.install({
     description: "Shockwave Flash",
     suffixes: "swf",
     enabledPlugin: FLASH_PLUGIN,
+});
+RUFFLE_EXTENSION.install({
+    type: "",
+    description: "Ruffle Detection",
+    suffixes: "",
+    enabledPlugin: RUFFLE_EXTENSION,
 });
 
 declare global {

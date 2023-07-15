@@ -32,7 +32,7 @@ package flash.events
         //  Returns a string that contains all the properties of the HTTPStatusEvent object.
         override public function toString():String
         {
-            return this.formatToString("HTTPStatusEvent","type","bubbles","cancelable","eventPhase","status");
+            return this.formatToString("HTTPStatusEvent","type","bubbles","cancelable","eventPhase","status","redirected","responseURL");
         }
 
         public function get status() : int

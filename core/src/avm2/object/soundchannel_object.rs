@@ -6,19 +6,20 @@ use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::backend::audio::SoundInstanceHandle;
+use crate::context::UpdateContext;
 use crate::display_object::SoundTransform;
 use core::fmt;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates SoundChannel objects.
-pub fn soundchannel_allocator<'gc>(
+pub fn sound_channel_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
-    Ok(SoundChannelObject(GcCell::allocate(
+    Ok(SoundChannelObject(GcCell::new(
         activation.context.gc_context,
         SoundChannelObjectData {
             base,
@@ -34,7 +35,11 @@ pub fn soundchannel_allocator<'gc>(
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct SoundChannelObject<'gc>(GcCell<'gc, SoundChannelObjectData<'gc>>);
+pub struct SoundChannelObject<'gc>(pub GcCell<'gc, SoundChannelObjectData<'gc>>);
+
+#[derive(Clone, Collect, Copy, Debug)]
+#[collect(no_drop)]
+pub struct SoundChannelObjectWeak<'gc>(pub GcWeakCell<'gc, SoundChannelObjectData<'gc>>);
 
 impl fmt::Debug for SoundChannelObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -76,7 +81,7 @@ impl<'gc> SoundChannelObject<'gc> {
         let class = activation.avm2().classes().soundchannel;
         let base = ScriptObjectData::new(class);
 
-        let mut sound_object = SoundChannelObject(GcCell::allocate(
+        let mut sound_object = SoundChannelObject(GcCell::new(
             activation.context.gc_context,
             SoundChannelObjectData {
                 base,
@@ -87,21 +92,25 @@ impl<'gc> SoundChannelObject<'gc> {
                 position: 0.0,
             },
         ));
-        sound_object.install_instance_slots(activation);
+        sound_object.install_instance_slots(activation.context.gc_context);
 
-        class.call_native_init(Some(sound_object.into()), &[], activation)?;
+        class.call_native_init(Value::Object(sound_object.into()), &[], activation)?;
 
         Ok(sound_object)
     }
 
     /// Return the position of the playing sound in seconds.
-    pub fn position(self) -> f64 {
-        self.0.read().position
-    }
+    pub fn position(self, context: &mut UpdateContext<'_, 'gc>) -> f64 {
+        // The position is cached on read. This means that if the position isn't read until after
+        // the sound has played, the position will be 0 (#9952).
+        let mut write = self.0.write(context.gc_context);
+        if let SoundChannelData::Loaded { sound_instance } = write.sound_channel_data {
+            if let Some(pos) = context.audio.get_sound_position(sound_instance) {
+                write.position = pos;
+            }
+        }
 
-    /// Set the position of the playing sound in seconds.
-    pub fn set_position(self, mc: MutationContext<'gc, '_>, value: f64) {
-        self.0.write(mc).position = value;
+        write.position
     }
 
     pub fn instance(self) -> Option<SoundInstanceHandle> {

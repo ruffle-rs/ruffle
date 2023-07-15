@@ -1,0 +1,108 @@
+/// hitTest with bmd
+// bmd.hitTest(new Point(0, 0), 0, bmd, new Point(0, 0), 0)
+true
+
+// bmd.hitTest(new Point(1, 1), 255, bmd, new Point(3, 3), 160)
+false
+
+// bmd.hitTest(new Point(2, 1), 160, bmd, new Point(1, 3), 160)
+true
+
+// bmd.hitTest(new Point(3, 1), 160, bmd, new Point(1, 2), 255)
+false
+
+// bmd.hitTest(new Point(0, 0), 160, bmd, new Point(1, 0), 255)
+true
+
+// bmd.hitTest(new Point(1, 1), 255, bmd, new Point(1, 1), 255)
+true
+
+// bmd.hitTest(new Point(-1, -1), 160, bmd, new Point(1, 1), 160)
+true
+
+
+/// hitTest with other bmd
+// bmd.hitTest(new Point(0, 0), 0, otherBitmapData, new Point(0, 0), 0)
+true
+
+// bmd.hitTest(new Point(1, 1), 255, otherBitmapData, new Point(3, 3), 160)
+false
+
+// bmd.hitTest(new Point(2, 1), 160, otherBitmapData, new Point(1, 3), 160)
+true
+
+// bmd.hitTest(new Point(3, 1), 160, otherBitmapData, new Point(1, 2), 255)
+false
+
+// bmd.hitTest(new Point(0, 0), 160, otherBitmapData, new Point(1, 0), 255)
+true
+
+// bmd.hitTest(new Point(1, 1), 255, otherBitmapData, new Point(1, 1), 255)
+true
+
+
+/// hitTest with bitmap
+// bmd.hitTest(new Point(0, 0), 0, otherBitmap, new Point(0, 0), 0)
+true
+
+// bmd.hitTest(new Point(1, 1), 255, otherBitmap, new Point(3, 3), 160)
+false
+
+// bmd.hitTest(new Point(2, 1), 160, otherBitmap, new Point(1, 3), 160)
+true
+
+// bmd.hitTest(new Point(3, 1), 160, otherBitmap, new Point(1, 2), 255)
+false
+
+
+/// hitTest with rect
+// bmd.hitTest(new Point(0, 0), 160, new Rectangle(2, 2, 2, 2), null, 1)
+true
+
+// bmd.hitTest(new Point(0, 0), 255, new Rectangle(0, 0, 3, 4), null, 1)
+true
+
+// bmd.hitTest(new Point(0, 0), 255, new Rectangle(2, 2, 1, 1), null, 1)
+true
+
+// bmd.hitTest(new Point(2, 2), 255, new Rectangle(4, 4, 1, 1), null, 1)
+true
+
+// bmd.hitTest(new Point(-1, 0), 160, new Rectangle(2, 2, 5, 5), null, 1)
+true
+
+// bmd.hitTest(new Point(-10, 10), 0, new Rectangle(0, 0, 1, 1), null, 1)
+false
+
+
+/// hitTest with point
+// bmd.hitTest(new Point(0, 0), 160, new Point(2, 2), null, 1)
+true
+
+// bmd.hitTest(new Point(0, 0), 255, new Point(0, 0), null, 1)
+false
+
+// bmd.hitTest(new Point(0, 0), 255, new Point(2, 2), null, 1)
+true
+
+// bmd.hitTest(new Point(2, 2), 255, new Point(4, 4), null, 1)
+true
+
+// bmd.hitTest(new Point(3, 3), 255, new Point(-1, -1), null, 1)
+false
+
+// bmd.hitTest(new Point(-1, -1), 160, new Point(2, 2), null, 1)
+true
+
+// bmd.hitTest(new Point(-1, -1), 160, new Point(0, 0), null, 1)
+true
+
+// bmd.hitTest(new Point(-10, -10), 0, new Point(0, 0), null, 1)
+false
+
+
+/// Error cases
+// bmd.hitTest(new Point(0, 0), 0, bmd, null, 1)
+- Error 2007
+// bmd.hitTest(new Point(0, 0), 0, {}, null, 1)
+- Error 2005

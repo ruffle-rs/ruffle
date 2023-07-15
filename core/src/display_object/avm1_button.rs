@@ -1,4 +1,4 @@
-use crate::avm1::{Object, StageObject, Value};
+use crate::avm1::{Activation, ActivationIdentifier, Object, StageObject, TObject, Value};
 use crate::backend::ui::MouseCursor;
 use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::container::{
@@ -14,6 +14,7 @@ use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::{Collect, GcCell, MutationContext};
+use ruffle_render::filters::Filter;
 use std::cell::{Ref, RefMut};
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -43,8 +44,6 @@ pub struct Avm1ButtonData<'gc> {
     object: Option<Object<'gc>>,
     initialized: bool,
     has_focus: bool,
-    enabled: bool,
-    use_hand_cursor: bool,
 }
 
 impl<'gc> Avm1Button<'gc> {
@@ -53,22 +52,15 @@ impl<'gc> Avm1Button<'gc> {
         source_movie: &SwfSlice,
         gc_context: gc_arena::MutationContext<'gc, '_>,
     ) -> Self {
-        let mut actions = vec![];
-        for action in &button.actions {
-            let action_data = source_movie.to_unbounded_subslice(action.action_data);
-            let bits = action.conditions.bits();
-            let mut bit = 1u16;
-            while bits & !(bit - 1) != 0 {
-                if bits & bit != 0 {
-                    actions.push(ButtonAction {
-                        action_data: action_data.clone(),
-                        condition: ButtonActionCondition::from_bits_truncate(bit),
-                        key_code: action.key_code.and_then(ButtonKeyCode::from_u8),
-                    });
-                }
-                bit <<= 1;
-            }
-        }
+        let actions = button
+            .actions
+            .iter()
+            .map(|action| ButtonAction {
+                action_data: source_movie.to_unbounded_subslice(action.action_data),
+                conditions: action.conditions,
+                key_code: action.key_code.and_then(ButtonKeyCode::from_u8),
+            })
+            .collect();
 
         let static_data = ButtonStatic {
             swf: source_movie.movie.clone(),
@@ -81,11 +73,11 @@ impl<'gc> Avm1Button<'gc> {
             over_to_up_sound: None,
         };
 
-        Avm1Button(GcCell::allocate(
+        Avm1Button(GcCell::new(
             gc_context,
             Avm1ButtonData {
                 base: Default::default(),
-                static_data: GcCell::allocate(gc_context, static_data),
+                static_data: GcCell::new(gc_context, static_data),
                 container: ChildContainer::new(),
                 hit_area: BTreeMap::new(),
                 state: self::ButtonState::Up,
@@ -97,8 +89,6 @@ impl<'gc> Avm1Button<'gc> {
                     ButtonTracking::Push
                 },
                 has_focus: false,
-                enabled: true,
-                use_hand_cursor: true,
             },
         ))
     }
@@ -126,7 +116,7 @@ impl<'gc> Avm1Button<'gc> {
         // It applies color transforms to every character in a button, in sequence(?).
         for (record, color_transform) in static_data.records.iter_mut().zip(color_transforms.iter())
         {
-            record.color_transform = color_transform.clone();
+            record.color_transform = *color_transform;
         }
     }
 
@@ -134,7 +124,7 @@ impl<'gc> Avm1Button<'gc> {
     ///
     /// This function instantiates children and thus must not be called whilst
     /// the caller is holding a write lock on the button data.
-    fn set_state(
+    pub fn set_state(
         mut self,
         context: &mut crate::context::UpdateContext<'_, 'gc>,
         state: ButtonState,
@@ -151,7 +141,9 @@ impl<'gc> Avm1Button<'gc> {
         // TODO: This behavior probably differs in AVM2 (I suspect they always get recreated).
         let mut children = Vec::new();
 
-        for record in &self.0.read().static_data.read().records {
+        // [NA] This copies static_data so we can borrow it without keeping `self.0` borrowed
+        let static_data = self.0.read().static_data;
+        for record in &static_data.read().records {
             if record.states.contains(state.into()) {
                 // State contains this depth, so we don't have to remove it.
                 removed_depths.remove(&record.depth.into());
@@ -181,8 +173,12 @@ impl<'gc> Avm1Button<'gc> {
 
                 // Set transform of child (and modify previous child if it already existed)
                 child.set_matrix(context.gc_context, record.matrix.into());
-                child
-                    .set_color_transform(context.gc_context, record.color_transform.clone().into());
+                child.set_color_transform(context.gc_context, record.color_transform);
+                child.set_blend_mode(context.gc_context, record.blend_mode);
+                child.set_filters(
+                    context.gc_context,
+                    record.filters.iter().map(Filter::from).collect(),
+                );
             }
         }
 
@@ -203,25 +199,44 @@ impl<'gc> Avm1Button<'gc> {
                 dispatch_removed_event(removed_child, context);
             }
         }
+
+        self.invalidate_cached_bitmap(context.gc_context);
     }
 
-    pub fn enabled(self) -> bool {
-        self.0.read().enabled
+    pub fn state(&self) -> Option<ButtonState> {
+        Some(self.0.read().state)
     }
 
-    pub fn set_enabled(self, context: &mut UpdateContext<'_, 'gc>, enabled: bool) {
-        self.0.write(context.gc_context).enabled = enabled;
-        if !enabled {
-            self.set_state(context, ButtonState::Up);
+    fn get_boolean_property(
+        self,
+        context: &mut UpdateContext<'_, 'gc>,
+        name: &'static str,
+        default: bool,
+    ) -> bool {
+        if let Value::Object(object) = self.object() {
+            let mut activation = Activation::from_stub(
+                context.reborrow(),
+                ActivationIdentifier::root("[AVM1 Boolean Property]"),
+            );
+            if let Ok(value) = object.get(name, &mut activation) {
+                match value {
+                    Value::Undefined => default,
+                    _ => value.as_bool(activation.swf_version()),
+                }
+            } else {
+                default
+            }
+        } else {
+            false
         }
     }
 
-    pub fn use_hand_cursor(self) -> bool {
-        self.0.read().use_hand_cursor
+    fn enabled(self, context: &mut UpdateContext<'_, 'gc>) -> bool {
+        self.get_boolean_property(context, "enabled", true)
     }
 
-    pub fn set_use_hand_cursor(self, context: &mut UpdateContext<'_, 'gc>, use_hand_cursor: bool) {
-        self.0.write(context.gc_context).use_hand_cursor = use_hand_cursor;
+    fn use_hand_cursor(self, context: &mut UpdateContext<'_, 'gc>) -> bool {
+        self.get_boolean_property(context, "useHandCursor", true)
     }
 }
 
@@ -235,7 +250,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
     }
 
     fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc> {
-        Self(GcCell::allocate(gc_context, self.0.read().clone())).into()
+        Self(GcCell::new(gc_context, self.0.read().clone())).into()
     }
 
     fn as_ptr(&self) -> *const DisplayObjectPtr {
@@ -344,7 +359,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
     fn hit_test_shape(
         &self,
         context: &mut UpdateContext<'_, 'gc>,
-        point: (Twips, Twips),
+        point: Point<Twips>,
         options: HitTestOptions,
     ) -> bool {
         for child in self.iter_render_list() {
@@ -380,7 +395,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         !self.is_empty()
     }
 
-    fn is_focusable(&self) -> bool {
+    fn is_focusable(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
         true
     }
 
@@ -432,12 +447,26 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
         self.into()
     }
 
-    fn filter_clip_event(self, event: ClipEvent) -> ClipEventResult {
-        if !self.visible() && !matches!(event, ClipEvent::ReleaseOutside) {
+    fn filter_clip_event(
+        self,
+        _context: &mut UpdateContext<'_, 'gc>,
+        event: ClipEvent,
+    ) -> ClipEventResult {
+        // An invisible button can still run its `rollOut` or `releaseOutside` event.
+        // A disabled button doesn't run its events (`KeyPress` being the exception) but
+        // its state can still change. This is tested at "avm1/mouse_events_visible_enabled".
+        if !self.visible() && self.0.read().state == ButtonState::Up {
             return ClipEventResult::NotHandled;
         }
 
-        if !self.enabled() && !matches!(event, ClipEvent::KeyPress { .. }) {
+        // The `keyPress` event doesn't fire if the button is inside another button.
+        if matches!(event, ClipEvent::KeyPress { .. })
+            && self
+                .base()
+                .parent
+                .and_then(|p| p.as_avm1_button())
+                .is_some()
+        {
             return ClipEventResult::NotHandled;
         }
 
@@ -450,6 +479,8 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
         event: ClipEvent,
     ) -> ClipEventResult {
         let self_display_object = self.into();
+        let is_enabled = self.enabled(context);
+
         let mut write = self.0.write(context.gc_context);
 
         // Translate the clip event to a button event, based on how the button state changes.
@@ -501,26 +532,41 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
             _ => return ClipEventResult::NotHandled,
         };
 
-        write.run_actions(context, condition, None);
-        write.play_sound(context, sound);
+        let (update_state, new_state) = if is_enabled {
+            write.run_actions(context, condition, None);
+            write.play_sound(context, sound);
 
-        // Queue ActionScript-defined event handlers after the SWF defined ones.
-        // (e.g., clip.onRelease = foo).
-        if context.swf.version() >= 6 {
-            if let Some(name) = event.method_name() {
-                context.action_queue.queue_action(
-                    self_display_object,
-                    ActionType::Method {
-                        object: write.object.unwrap(),
-                        name,
-                        args: vec![],
-                    },
-                    false,
-                );
+            // Queue ActionScript-defined event handlers after the SWF defined ones.
+            // (e.g., clip.onRelease = foo).
+            if context.swf.version() >= 6 {
+                if let Some(name) = event.method_name() {
+                    context.action_queue.queue_action(
+                        self_display_object,
+                        ActionType::Method {
+                            object: write.object.unwrap(),
+                            name,
+                            args: vec![],
+                        },
+                        false,
+                    );
+                }
             }
-        }
 
-        if write.state != new_state {
+            (write.state != new_state, new_state)
+        } else {
+            // Remove the current mouse hovered and mouse down objects.
+            // This is required to make sure the button will fire its events if it gets enabled.
+            if InteractiveObject::option_ptr_eq(self.as_interactive(), context.mouse_over_object) {
+                context.mouse_over_object = None;
+            }
+            if InteractiveObject::option_ptr_eq(self.as_interactive(), context.mouse_down_object) {
+                context.mouse_down_object = None;
+            }
+
+            (new_state != ButtonState::Over, ButtonState::Up)
+        };
+
+        if update_state {
             drop(write);
             self.set_state(context, new_state);
         }
@@ -531,7 +577,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
     fn mouse_pick_avm1(
         &self,
         context: &mut UpdateContext<'_, 'gc>,
-        point: (Twips, Twips),
+        point: Point<Twips>,
         require_button_mode: bool,
     ) -> Option<InteractiveObject<'gc>> {
         // The button is hovered if the mouse is over any child nodes.
@@ -554,8 +600,8 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
         None
     }
 
-    fn mouse_cursor(self, _context: &mut UpdateContext<'_, 'gc>) -> MouseCursor {
-        if self.use_hand_cursor() && self.enabled() {
+    fn mouse_cursor(self, context: &mut UpdateContext<'_, 'gc>) -> MouseCursor {
+        if self.use_hand_cursor(context) && self.enabled(context) {
             MouseCursor::Hand
         } else {
             MouseCursor::Arrow
@@ -575,6 +621,7 @@ impl<'gc> Avm1ButtonData<'gc> {
             }
         }
     }
+
     fn run_actions(
         &mut self,
         context: &mut UpdateContext<'_, 'gc>,
@@ -584,8 +631,8 @@ impl<'gc> Avm1ButtonData<'gc> {
         let mut handled = ClipEventResult::NotHandled;
         if let Some(parent) = self.base.base.parent {
             for action in &self.static_data.read().actions {
-                if action.condition == condition
-                    && (action.condition != swf::ButtonActionCondition::KEY_PRESS
+                if action.conditions.contains(condition)
+                    && (condition != swf::ButtonActionCondition::KEY_PRESS
                         || action.key_code == key_code)
                 {
                     // Note that AVM1 buttons run actions relative to their parent, not themselves.
@@ -630,7 +677,7 @@ impl From<ButtonState> for swf::ButtonState {
 #[derive(Clone, Debug)]
 struct ButtonAction {
     action_data: SwfSlice,
-    condition: swf::ButtonActionCondition,
+    conditions: swf::ButtonActionCondition,
     key_code: Option<ButtonKeyCode>,
 }
 

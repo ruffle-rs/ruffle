@@ -1,6 +1,9 @@
+use crate::buffer_pool::PoolEntry;
 use crate::utils::BufferDimensions;
 use crate::Error;
+use ruffle_render::bitmap::PixelRegion;
 use std::fmt::Debug;
+use std::ops::Deref;
 use std::sync::Arc;
 use tracing::instrument;
 
@@ -139,11 +142,32 @@ impl RenderTarget for SwapChainTarget {
 }
 
 #[derive(Debug)]
+pub enum MaybeOwnedBuffer {
+    Borrowed(PoolEntry<wgpu::Buffer, BufferDimensions>, BufferDimensions),
+    Owned(wgpu::Buffer, BufferDimensions),
+}
+
+impl MaybeOwnedBuffer {
+    pub fn inner(&self) -> (&wgpu::Buffer, &BufferDimensions) {
+        match &self {
+            MaybeOwnedBuffer::Borrowed(entry, dimensions) => ((*entry).deref(), dimensions),
+            MaybeOwnedBuffer::Owned(buffer, dimensions) => (buffer, dimensions),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct TextureBufferInfo {
+    pub buffer: MaybeOwnedBuffer,
+    pub copy_area: PixelRegion,
+}
+
+#[derive(Debug)]
 pub struct TextureTarget {
     pub size: wgpu::Extent3d,
     pub texture: Arc<wgpu::Texture>,
     pub format: wgpu::TextureFormat,
-    pub buffer: Option<(Arc<wgpu::Buffer>, BufferDimensions)>,
+    pub buffer: Option<TextureBufferInfo>,
 }
 
 #[derive(Debug)]
@@ -190,13 +214,14 @@ impl TextureTarget {
             dimension: wgpu::TextureDimension::D2,
             format,
             view_formats: &[format],
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT
+                | wgpu::TextureUsages::COPY_SRC
+                | wgpu::TextureUsages::TEXTURE_BINDING,
         });
         let buffer_label = create_debug_label!("Render target buffer");
         let buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: buffer_label.as_deref(),
-            size: (buffer_dimensions.padded_bytes_per_row.get() as u64
-                * buffer_dimensions.height as u64),
+            size: (buffer_dimensions.padded_bytes_per_row as u64 * buffer_dimensions.height as u64),
             usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
             mapped_at_creation: false,
         });
@@ -204,12 +229,19 @@ impl TextureTarget {
             size,
             texture: Arc::new(texture),
             format,
-            buffer: Some((Arc::new(buffer), buffer_dimensions)),
+            buffer: Some(TextureBufferInfo {
+                buffer: MaybeOwnedBuffer::Owned(buffer, buffer_dimensions),
+                copy_area: PixelRegion::for_whole_size(size.width, size.height),
+            }),
         })
     }
 
     pub fn get_texture(&self) -> Arc<wgpu::Texture> {
         self.texture.clone()
+    }
+
+    pub fn take_buffer(self) -> Option<TextureBufferInfo> {
+        self.buffer
     }
 }
 
@@ -247,16 +279,21 @@ impl RenderTarget for TextureTarget {
         command_buffers: I,
         _frame: Self::Frame,
     ) -> wgpu::SubmissionIndex {
-        if let Some((buffer, dimensions)) = &self.buffer {
+        if let Some(TextureBufferInfo { buffer, copy_area }) = &self.buffer {
             let label = create_debug_label!("Render target transfer encoder");
             let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
                 label: label.as_deref(),
             });
+            let (buffer, dimensions) = buffer.inner();
             encoder.copy_texture_to_buffer(
                 wgpu::ImageCopyTexture {
                     texture: &self.texture,
                     mip_level: 0,
-                    origin: wgpu::Origin3d::ZERO,
+                    origin: wgpu::Origin3d {
+                        x: copy_area.x_min,
+                        y: copy_area.y_min,
+                        z: 0,
+                    },
                     aspect: wgpu::TextureAspect::All,
                 },
                 wgpu::ImageCopyBuffer {
@@ -267,7 +304,11 @@ impl RenderTarget for TextureTarget {
                         rows_per_image: None,
                     },
                 },
-                self.size,
+                wgpu::Extent3d {
+                    width: copy_area.width(),
+                    height: copy_area.height(),
+                    depth_or_array_layers: 1,
+                },
             );
             queue.submit(command_buffers.into_iter().chain(Some(encoder.finish())))
         } else {

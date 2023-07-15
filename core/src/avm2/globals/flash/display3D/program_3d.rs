@@ -6,10 +6,10 @@ use crate::avm2::{Error, Object};
 
 pub fn upload<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.and_then(|this| this.as_program_3d()) {
+    if let Some(this) = this.as_program_3d() {
         let vertex_agal = args
             .get(0)
             .unwrap_or(&Value::Undefined)
@@ -29,7 +29,7 @@ pub fn upload<'gc>(
         let fragment_agal = fragment_agal.bytes().to_vec();
 
         this.context3d()
-            .upload_shaders(activation, this, vertex_agal, fragment_agal);
+            .upload_shaders(this, vertex_agal, fragment_agal);
     }
     Ok(Value::Undefined)
 }

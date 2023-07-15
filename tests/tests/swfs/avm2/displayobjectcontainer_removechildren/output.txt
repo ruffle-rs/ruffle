@@ -9,6 +9,11 @@ true
 //this.removeChildren(0,0x7fffffff)
 //this.numChildren
 0
+//this.removeChildren()
+//this.removeChildren(0, 0)
+RangeError 2006
+//this.numChildren
+0
 //var chx = this.getChildAt(0)
 //var chy = this.getChildAt(1)
 //var chz = this.getChildAt(2)

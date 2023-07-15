@@ -1,5 +1,5 @@
 use std::{
-    cell::Ref,
+    cell::{Ref, RefMut},
     fmt::{self, Debug},
 };
 
@@ -9,7 +9,12 @@ use quick_xml::{
     Reader,
 };
 
-use super::{object::E4XOrXml, string::AvmString, Activation, Error, Multiname, Value};
+use crate::{avm2::TObject, xml::custom_unescape};
+
+use super::{
+    error::type_error, object::E4XOrXml, string::AvmString, Activation, Error, Multiname, Value,
+};
+use crate::string::{WStr, WString};
 
 /// The underlying XML node data, based on E4XNode in avmplus
 /// This wrapped by XMLObject when necessary (see `E4XOrXml`)
@@ -36,6 +41,17 @@ impl<'gc> Debug for E4XNodeData<'gc> {
     }
 }
 
+fn malformed_element<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    Error::AvmError(
+        type_error(
+            activation,
+            "Error #1090: XML parser failure: element is malformed.",
+            1090,
+        )
+        .expect("Failed to construct XML TypeError"),
+    )
+}
+
 #[derive(Collect, Debug)]
 #[collect(no_drop)]
 pub enum E4XNodeKind<'gc> {
@@ -52,7 +68,7 @@ pub enum E4XNodeKind<'gc> {
 
 impl<'gc> E4XNode<'gc> {
     pub fn dummy(mc: MutationContext<'gc, '_>) -> Self {
-        E4XNode(GcCell::allocate(
+        E4XNode(GcCell::new(
             mc,
             E4XNodeData {
                 parent: None,
@@ -65,18 +81,156 @@ impl<'gc> E4XNode<'gc> {
         ))
     }
 
-    pub fn text(mc: MutationContext<'gc, '_>, text: AvmString<'gc>) -> Self {
-        E4XNode(GcCell::allocate(
+    pub fn text(mc: MutationContext<'gc, '_>, text: AvmString<'gc>, parent: Option<Self>) -> Self {
+        E4XNode(GcCell::new(
             mc,
             E4XNodeData {
-                parent: None,
+                parent,
                 local_name: None,
                 kind: E4XNodeKind::Text(text),
             },
         ))
     }
 
-    fn append_child(
+    pub fn element(mc: MutationContext<'gc, '_>, name: AvmString<'gc>, parent: Self) -> Self {
+        E4XNode(GcCell::new(
+            mc,
+            E4XNodeData {
+                parent: Some(parent),
+                local_name: Some(name),
+                kind: E4XNodeKind::Element {
+                    attributes: vec![],
+                    children: vec![],
+                },
+            },
+        ))
+    }
+
+    pub fn attribute(
+        mc: MutationContext<'gc, '_>,
+        name: AvmString<'gc>,
+        value: AvmString<'gc>,
+        parent: E4XNode<'gc>,
+    ) -> Self {
+        E4XNode(GcCell::new(
+            mc,
+            E4XNodeData {
+                parent: Some(parent),
+                local_name: Some(name),
+                kind: E4XNodeKind::Attribute(value),
+            },
+        ))
+    }
+
+    pub fn equals(&self, other: &Self) -> bool {
+        if self.local_name() != other.local_name() {
+            return false;
+        }
+
+        let this = self.0.read();
+        let other = other.0.read();
+
+        match (&this.kind, &other.kind) {
+            (
+                E4XNodeKind::Text(a) | E4XNodeKind::CData(a),
+                E4XNodeKind::Text(b) | E4XNodeKind::CData(b),
+            ) => a == b,
+            (E4XNodeKind::Comment(a), E4XNodeKind::Comment(b)) => a == b,
+            (E4XNodeKind::ProcessingInstruction(a), E4XNodeKind::ProcessingInstruction(b)) => {
+                a == b
+            }
+            (E4XNodeKind::Attribute(a), E4XNodeKind::Attribute(b)) => a == b,
+            (
+                E4XNodeKind::Element {
+                    children: children_a,
+                    attributes: attributes_a,
+                },
+                E4XNodeKind::Element {
+                    children: children_b,
+                    attributes: attributes_b,
+                },
+            ) => {
+                if children_a.len() != children_b.len() || attributes_a.len() != attributes_b.len()
+                {
+                    return false;
+                }
+
+                // The attributes can be in a different order.
+                for attr_a in attributes_a {
+                    if !attributes_b.iter().any(|attr_b| attr_a.equals(attr_b)) {
+                        return false;
+                    }
+                }
+
+                children_a
+                    .iter()
+                    .zip(children_b.iter())
+                    .all(|(a, b)| a.equals(b))
+            }
+            _ => false,
+        }
+    }
+
+    pub fn deep_copy(&self, mc: MutationContext<'gc, '_>) -> Self {
+        let this = self.0.read();
+
+        let kind = match &this.kind {
+            E4XNodeKind::Text(string) => E4XNodeKind::Text(*string),
+            E4XNodeKind::CData(string) => E4XNodeKind::CData(*string),
+            E4XNodeKind::Comment(string) => E4XNodeKind::Comment(*string),
+            E4XNodeKind::ProcessingInstruction(string) => {
+                E4XNodeKind::ProcessingInstruction(*string)
+            }
+            E4XNodeKind::Attribute(string) => E4XNodeKind::Attribute(*string),
+            E4XNodeKind::Element {
+                attributes,
+                children,
+            } => E4XNodeKind::Element {
+                attributes: attributes.iter().map(|attr| attr.deep_copy(mc)).collect(),
+                children: children.iter().map(|child| child.deep_copy(mc)).collect(),
+            },
+        };
+
+        let node = E4XNode(GcCell::new(
+            mc,
+            E4XNodeData {
+                parent: None,
+                local_name: this.local_name,
+                kind,
+            },
+        ));
+
+        if let E4XNodeKind::Element {
+            attributes,
+            children,
+        } = &mut node.0.write(mc).kind
+        {
+            for attr in attributes.iter_mut() {
+                let mut data = attr.0.write(mc);
+                data.parent = Some(node);
+            }
+
+            for child in children.iter_mut() {
+                let mut data = child.0.write(mc);
+                data.parent = Some(node);
+            }
+        }
+
+        node
+    }
+
+    pub fn remove_all_children(&self, gc_context: MutationContext<'gc, '_>) {
+        let mut this = self.0.write(gc_context);
+        if let E4XNodeKind::Element { children, .. } = &mut this.kind {
+            for child in children.iter_mut() {
+                let mut child_data = child.0.write(gc_context);
+                child_data.parent = None;
+            }
+            children.clear()
+        }
+    }
+
+    pub fn append_child(
         &self,
         gc_context: MutationContext<'gc, '_>,
         child: Self,
@@ -116,19 +270,25 @@ impl<'gc> E4XNode<'gc> {
     /// The caller is responsible for validating that the number of top-level nodes
     /// is correct (for XML, there should be exactly one.)
     pub fn parse(
-        value: Value<'gc>,
+        mut value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Vec<Self>, Error<'gc>> {
-        let string = match value {
+        let string = match &value {
             // The docs claim that this throws a TypeError, but it actually doesn't
             Value::Null | Value::Undefined => AvmString::default(),
             // The docs claim that only String, Number or Boolean are accepted, but that's also a lie
-            value => value.coerce_to_string(activation)?,
+            val => {
+                if let Some(obj) = val.as_object() {
+                    if obj.as_xml_object().is_some() || obj.as_xml_list_object().is_some() {
+                        value = obj.call_public_property("toXMLString", &[], activation)?;
+                    }
+                }
+                value.coerce_to_string(activation)?
+            }
         };
 
         let data_utf8 = string.to_utf8_lossy();
         let mut parser = Reader::from_str(&data_utf8);
-        let mut buf = Vec::new();
         let mut open_tags: Vec<E4XNode<'gc>> = vec![];
 
         // FIXME - look these up from static property and settings
@@ -158,14 +318,74 @@ impl<'gc> E4XNode<'gc> {
             Ok(())
         }
 
+        // Inbuilt trim_ascii is behind an unstable feature
+        // So the method was moved out in order to use it for the time being
+        const fn trim_ascii(bytes: &[u8]) -> &[u8] {
+            let mut bytes = bytes;
+            while let [first, rest @ ..] = bytes {
+                if first.is_ascii_whitespace() {
+                    bytes = rest;
+                } else {
+                    break;
+                }
+            }
+            while let [rest @ .., last] = bytes {
+                if last.is_ascii_whitespace() {
+                    bytes = rest;
+                } else {
+                    break;
+                }
+            }
+
+            bytes
+        }
+
+        fn handle_text_cdata<'gc>(
+            text: &[u8],
+            ignore_white: bool,
+            open_tags: &mut [E4XNode<'gc>],
+            top_level: &mut Vec<E4XNode<'gc>>,
+            depth: usize,
+            is_text: bool,
+            activation: &mut Activation<'_, 'gc>,
+        ) -> Result<(), Error<'gc>> {
+            let is_whitespace_char = |c: &u8| matches!(*c, b'\t' | b'\n' | b'\r' | b' ');
+            let is_whitespace_text = text.iter().all(is_whitespace_char);
+            if !(text.is_empty() || ignore_white && is_whitespace_text) {
+                let text = AvmString::new_utf8_bytes(
+                    activation.context.gc_context,
+                    if is_text && ignore_white {
+                        trim_ascii(text)
+                    } else {
+                        text
+                    },
+                );
+                let node = E4XNode(GcCell::new(
+                    activation.context.gc_context,
+                    E4XNodeData {
+                        parent: None,
+                        local_name: None,
+                        kind: if is_text {
+                            E4XNodeKind::Text(text)
+                        } else {
+                            E4XNodeKind::CData(text)
+                        },
+                    },
+                ));
+                push_childless_node(node, open_tags, top_level, depth, activation)?;
+            }
+            Ok(())
+        }
+
         loop {
-            let event = parser.read_event(&mut buf).map_err(|error| {
-                Error::RustError(format!("XML parsing error: {error:?}").into())
-            })?;
+            let event = parser
+                .read_event()
+                .map_err(|_| malformed_element(activation))?;
 
             match &event {
                 Event::Start(bs) => {
-                    let child = E4XNode::from_start_event(activation, bs)?;
+                    let child = E4XNode::from_start_event(activation, bs, parser.decoder())
+                        .map_err(|_| malformed_element(activation))?;
 
                     if let Some(current_tag) = open_tags.last_mut() {
                         current_tag.append_child(activation.context.gc_context, child)?;
@@ -174,7 +394,8 @@ impl<'gc> E4XNode<'gc> {
                     depth += 1;
                 }
                 Event::Empty(bs) => {
-                    let node = E4XNode::from_start_event(activation, bs)?;
+                    let node = E4XNode::from_start_event(activation, bs, parser.decoder())
+                        .map_err(|_| malformed_element(activation))?;
                     push_childless_node(node, &mut open_tags, &mut top_level, depth, activation)?;
                 }
                 Event::End(_) => {
@@ -184,32 +405,30 @@ impl<'gc> E4XNode<'gc> {
                         top_level.push(node);
                     }
                 }
-                Event::Text(bt) | Event::CData(bt) => {
-                    let text = bt.unescaped()?;
-                    let is_whitespace_char = |c: &u8| matches!(*c, b'\t' | b'\n' | b'\r' | b' ');
-                    let is_whitespace_text = text.iter().all(is_whitespace_char);
-                    if !(text.is_empty() || ignore_white && is_whitespace_text) {
-                        let text = AvmString::new_utf8_bytes(activation.context.gc_context, &text);
-                        let node = E4XNode(GcCell::allocate(
-                            activation.context.gc_context,
-                            E4XNodeData {
-                                parent: None,
-                                local_name: None,
-                                kind: match &event {
-                                    Event::Text(_) => E4XNodeKind::Text(text),
-                                    Event::CData(_) => E4XNodeKind::CData(text),
-                                    _ => unreachable!(),
-                                },
-                            },
-                        ));
-                        push_childless_node(
-                            node,
-                            &mut open_tags,
-                            &mut top_level,
-                            depth,
-                            activation,
-                        )?;
-                    }
+                Event::Text(bt) => {
+                    handle_text_cdata(
+                        custom_unescape(bt, parser.decoder())
+                            .map_err(|_| malformed_element(activation))?
+                            .as_bytes(),
+                        ignore_white,
+                        &mut open_tags,
+                        &mut top_level,
+                        depth,
+                        true,
+                        activation,
+                    )?;
+                }
+                Event::CData(bt) => {
+                    // This is already unescaped
+                    handle_text_cdata(
+                        bt,
+                        ignore_white,
+                        &mut open_tags,
+                        &mut top_level,
+                        depth,
+                        false,
+                        activation,
+                    )?;
                 }
                 Event::Comment(bt) | Event::PI(bt) => {
                     if (matches!(event, Event::Comment(_)) && ignore_comments)
@@ -217,14 +436,16 @@ impl<'gc> E4XNode<'gc> {
                     {
                         continue;
                     }
-                    let text = bt.unescaped()?;
-                    let text = AvmString::new_utf8_bytes(activation.context.gc_context, &text);
+                    let text = custom_unescape(bt, parser.decoder())
+                        .map_err(|_| malformed_element(activation))?;
+                    let text =
+                        AvmString::new_utf8_bytes(activation.context.gc_context, text.as_bytes());
                     let kind = match event {
                         Event::Comment(_) => E4XNodeKind::Comment(text),
                         Event::PI(_) => E4XNodeKind::ProcessingInstruction(text),
                         _ => unreachable!(),
                     };
-                    let node = E4XNode(GcCell::allocate(
+                    let node = E4XNode(GcCell::new(
                         activation.context.gc_context,
                         E4XNodeData {
                             parent: None,
@@ -250,27 +471,30 @@ impl<'gc> E4XNode<'gc> {
     pub fn from_start_event(
         activation: &mut Activation<'_, 'gc>,
         bs: &BytesStart<'_>,
+        decoder: quick_xml::Decoder,
     ) -> Result<Self, quick_xml::Error> {
         // FIXME - handle namespace
-        let name = AvmString::new_utf8_bytes(activation.context.gc_context, bs.local_name());
+        let name =
+            AvmString::new_utf8_bytes(activation.context.gc_context, bs.local_name().into_inner());
 
         let mut attribute_nodes = Vec::new();
 
         let attributes: Result<Vec<_>, _> = bs.attributes().collect();
         for attribute in attributes? {
-            let key = AvmString::new_utf8_bytes(activation.context.gc_context, attribute.key);
-            let value_bytes = attribute.unescaped_value()?;
-            let value = AvmString::new_utf8_bytes(activation.context.gc_context, &value_bytes);
+            let key = AvmString::new_utf8_bytes(
+                activation.context.gc_context,
+                attribute.key.into_inner(),
+            );
+            let value_str = custom_unescape(&attribute.value, decoder)?;
+            let value =
+                AvmString::new_utf8_bytes(activation.context.gc_context, value_str.as_bytes());
 
             let attribute_data = E4XNodeData {
                 parent: None,
                 local_name: Some(key),
                 kind: E4XNodeKind::Attribute(value),
             };
-            let attribute = E4XNode(GcCell::allocate(
-                activation.context.gc_context,
-                attribute_data,
-            ));
+            let attribute = E4XNode(GcCell::new(activation.context.gc_context, attribute_data));
             attribute_nodes.push(attribute);
         }
 
@@ -283,17 +507,27 @@ impl<'gc> E4XNode<'gc> {
             },
         };
 
-        Ok(E4XNode(GcCell::allocate(
-            activation.context.gc_context,
-            data,
-        )))
+        Ok(E4XNode(GcCell::new(activation.context.gc_context, data)))
     }
 
     pub fn local_name(&self) -> Option<AvmString<'gc>> {
         self.0.read().local_name
     }
 
+    pub fn set_parent(&self, parent: Option<E4XNode<'gc>>, mc: MutationContext<'gc, '_>) {
+        self.0.write(mc).parent = parent;
+    }
+
+    pub fn parent(&self) -> Option<E4XNode<'gc>> {
+        self.0.read().parent
+    }
+
     pub fn matches_name(&self, name: &Multiname<'gc>) -> bool {
+        let self_is_attr = matches!(self.0.read().kind, E4XNodeKind::Attribute(_));
+        if self_is_attr != name.is_attribute() {
+            return false;
+        }
+
         // FIXME - we need to handle namespaces here
         if name.is_any_name() {
             return true;
@@ -303,6 +537,41 @@ impl<'gc> E4XNode<'gc> {
             Some(local_name) == name.local_name()
         } else {
             false
+        }
+    }
+
+    pub fn descendants(&self, name: &Multiname<'gc>, out: &mut Vec<E4XOrXml<'gc>>) {
+        if let E4XNodeKind::Element {
+            children,
+            attributes,
+            ..
+        } = &self.0.read().kind
+        {
+            if name.is_attribute() {
+                for attribute in attributes {
+                    if attribute.matches_name(name) {
+                        out.push(E4XOrXml::E4X(*attribute));
+                    }
+                }
+            }
+            for child in children {
+                if child.matches_name(name) {
+                    out.push(E4XOrXml::E4X(*child));
+                }
+                child.descendants(name, out)
+            }
+        }
+    }
+
+    pub fn has_complex_content(&self) -> bool {
+        match &self.0.read().kind {
+            E4XNodeKind::Element { children, .. } => children
+                .iter()
+                .any(|child| matches!(&*child.kind(), E4XNodeKind::Element { .. })),
+            E4XNodeKind::Text(_) | E4XNodeKind::CData(_) => false,
+            E4XNodeKind::Attribute(_) => false,
+            E4XNodeKind::Comment(_) => false,
+            E4XNodeKind::ProcessingInstruction(_) => false,
         }
     }
 
@@ -333,11 +602,7 @@ impl<'gc> E4XNode<'gc> {
                     );
                 }
 
-                Err(format!(
-                    "XML.toString(): Not yet implemented non-simple {:?} children {:?}",
-                    self, children
-                )
-                .into())
+                return to_xml_string(E4XOrXml::E4X(*self), activation);
             }
             other => Err(format!("XML.toString(): Not yet implemented for {other:?}").into()),
         }
@@ -345,19 +610,17 @@ impl<'gc> E4XNode<'gc> {
 
     pub fn xml_to_xml_string(
         &self,
-        _activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<AvmString<'gc>, Error<'gc>> {
-        match &self.0.read().kind {
-            E4XNodeKind::Text(text) => Ok(*text),
-            E4XNodeKind::Element { .. } => {
-                Err(format!("XML.toXMLString(): Not yet implemented element {:?}", self).into())
-            }
-            other => Err(format!("XML.toXMLString(): Not yet implemented for {other:?}").into()),
-        }
+        return to_xml_string(E4XOrXml::E4X(*self), activation);
     }
 
     pub fn kind(&self) -> Ref<'_, E4XNodeKind<'gc>> {
         Ref::map(self.0.read(), |r| &r.kind)
+    }
+
+    pub fn kind_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<'_, E4XNodeKind<'gc>> {
+        RefMut::map(self.0.write(mc), |r| &mut r.kind)
     }
 
     pub fn ptr_eq(first: E4XNode<'gc>, second: E4XNode<'gc>) -> bool {
@@ -381,4 +644,145 @@ pub fn simple_content_to_string<'gc>(
         out = AvmString::concat(activation.context.gc_context, out, child_str);
     }
     Ok(out)
+}
+
+// Implementation of `EscapeAttributeValue` from ECMA-357 (10.2.1.2)
+pub fn escape_attribute_value(s: AvmString) -> WString {
+    let mut r = WString::with_capacity(s.len(), s.is_wide());
+    for c in &s {
+        let escape: &[u8] = match u8::try_from(c) {
+            Ok(b'"') => b"&quot;",
+            Ok(b'<') => b"&lt;",
+            Ok(b'&') => b"&amp;",
+            Ok(b'\x0A') => b"&#xA;",
+            Ok(b'\x0D') => b"&#xD;",
+            Ok(b'\x09') => b"&#x9;",
+            _ => {
+                r.push(c);
+                continue;
+            }
+        };
+
+        r.push_str(WStr::from_units(escape));
+    }
+    r
+}
+
+// Implementation of `EscapeElementValue` from ECMA-357 (10.2.1.1)
+pub fn escape_element_value(s: AvmString) -> WString {
+    let mut r = WString::with_capacity(s.len(), s.is_wide());
+    for c in &s {
+        let escape: &[u8] = match u8::try_from(c) {
+            Ok(b'<') => b"&lt;",
+            Ok(b'>') => b"&gt;",
+            Ok(b'&') => b"&amp;",
+            _ => {
+                r.push(c);
+                continue;
+            }
+        };
+
+        r.push_str(WStr::from_units(escape));
+    }
+    r
+}
+
+fn to_xml_string_inner<'gc>(xml: E4XOrXml<'gc>, buf: &mut WString) -> Result<(), Error<'gc>> {
+    // FIXME: Implement pretty printing and namespace support.
+
+    let node = xml.node();
+    let node_kind = node.kind();
+    let (children, attributes) = match &*node_kind {
+        E4XNodeKind::Text(text) => {
+            buf.push_str(&escape_element_value(*text));
+            return Ok(());
+        }
+        E4XNodeKind::Attribute(_)
+        | E4XNodeKind::Comment(_)
+        | E4XNodeKind::ProcessingInstruction(_) => {
+            return Err(format!("ToXMLString: Not yet implemented node {:?}", node_kind).into())
+        }
+        E4XNodeKind::CData(data) => {
+            buf.push_utf8("<![CDATA[");
+            buf.push_str(data);
+            buf.push_utf8("]]>");
+            return Ok(());
+        }
+        E4XNodeKind::Element {
+            children,
+            attributes,
+        } => (children, attributes),
+    };
+
+    buf.push_char('<');
+    buf.push_str(&node.local_name().unwrap());
+
+    for attribute in attributes {
+        if let E4XNodeKind::Attribute(value) = &*attribute.kind() {
+            buf.push_char(' ');
+            buf.push_str(&attribute.local_name().unwrap());
+            buf.push_char('=');
+            buf.push_char('"');
+            buf.push_str(&escape_attribute_value(*value));
+            buf.push_char('"');
+        }
+    }
+
+    if children.is_empty() {
+        buf.push_utf8("/>");
+        return Ok(());
+    }
+
+    buf.push_char('>');
+
+    for child in children {
+        to_xml_string_inner(E4XOrXml::E4X(*child), buf)?;
+    }
+
+    buf.push_utf8("</");
+    buf.push_str(&node.local_name().unwrap());
+    buf.push_char('>');
+
+    Ok(())
+}
+
+// Implementation of `ToXMLString` from ECMA-357 (10.2.1)
+pub fn to_xml_string<'gc>(
+    xml: E4XOrXml<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+) -> Result<AvmString<'gc>, Error<'gc>> {
+    let mut buf = WString::new();
+    to_xml_string_inner(xml, &mut buf)?;
+    Ok(AvmString::new(activation.context.gc_context, buf))
+}
+
+pub fn name_to_multiname<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    name: &Value<'gc>,
+    force_attribute: bool,
+) -> Result<Multiname<'gc>, Error<'gc>> {
+    if let Value::Object(o) = name {
+        if let Some(qname) = o.as_qname_object() {
+            let mut name = qname.name().clone();
+            if force_attribute {
+                name.set_is_attribute(true);
+            }
+            return Ok(name);
+        }
+    }
+
+    let name = name.coerce_to_string(activation)?;
+
+    let mut multiname = if let Some(name) = name.strip_prefix(b'@') {
+        let name = AvmString::new(activation.context.gc_context, name);
+        Multiname::attribute(activation.avm2().public_namespace, name)
+    } else if &*name == b"*" {
+        Multiname::any(activation.context.gc_context)
+    } else {
+        Multiname::new(activation.avm2().public_namespace, name)
+    };
+    if force_attribute {
+        multiname.set_is_attribute(true);
+    };
+    Ok(multiname)
 }

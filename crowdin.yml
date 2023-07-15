@@ -1,0 +1,39 @@
+# To use the crowdin-cli, set an access token in CROWDIN_PERSONAL_TOKEN or a ~/.crowdin.yml
+# File structure documentation can be found at: https://developer.crowdin.com/configuration-file/
+
+"api_token_env": "CROWDIN_PERSONAL_TOKEN"
+"project_id": 582621 # This is https://crowdin.com/project/ruffle
+"preserve_hierarchy": true # Keep the directory structure so that we know, for example, "messages.json" belongs to the extension
+
+# Files we want to translate
+"files": [
+  {
+    "source" : "/web/packages/extension/assets/_locales/en/messages.json",
+    "translation" : "/web/packages/extension/assets/_locales/%two_letters_code%/messages.json",
+
+    # The crowdin path doesn't actually matter, so let's make it slightly more intelligible than what we have
+    "dest": "/web/extension.json",
+
+    # Even though it's used by other browsers, the schema used is called "chrome" on crowdin
+    # https://store.crowdin.com/chrome-json
+    "type": "chrome",
+  },
+  {
+    "source" : "/core/assets/texts/en-US/*.ftl",
+    "translation" : "/core/assets/texts/%locale%/%original_file_name%",
+    "dest": "/core/%original_file_name%",
+    "type": "ftl",
+  },
+  {
+    "source" : "/desktop/assets/texts/en-US/*.ftl",
+    "translation" : "/desktop/assets/texts/%locale%/%original_file_name%",
+    "dest": "/desktop/%original_file_name%",
+    "type": "ftl",
+  },
+  {
+    "source" : "/web/packages/core/texts/en-US/*.ftl",
+    "translation" : "/web/packages/core/texts/%locale%/%original_file_name%",
+    "dest": "/web/core/%original_file_name%",
+    "type": "ftl",
+  },
+]

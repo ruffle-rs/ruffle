@@ -1,5 +1,6 @@
 package flash.display {
-
+    
+    import flash.accessibility.AccessibilityProperties;
     import flash.geom.Rectangle;
     import flash.geom.Transform;
     import flash.display.DisplayObject;
@@ -15,9 +16,17 @@ package flash.display {
     [Ruffle(InstanceAllocator)]
     [Ruffle(NativeInstanceInit)]
     public class DisplayObject extends EventDispatcher implements IBitmapDrawable {
+        private var _accessibilityProperties:AccessibilityProperties;
 
         public function DisplayObject() {
             throw new Error("Cannot instantiate abstract DisplayObject class");
+        }
+        
+        public function get accessibilityProperties():AccessibilityProperties {
+            return this._accessibilityProperties;
+        }
+        public function set accessibilityProperties(value:AccessibilityProperties):void {
+            this._accessibilityProperties = value;
         }
 
         public native function get alpha():Number;

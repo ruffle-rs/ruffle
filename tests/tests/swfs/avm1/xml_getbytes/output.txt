@@ -1,0 +1,17 @@
+// XML before loading request
+xml.getBytesLoaded(): undefined
+xml.getBytesTotal(): undefined
+xml._bytesLoaded: undefined
+xml._bytesTotal: undefined
+
+// XML loading requested
+xml.getBytesLoaded(): 0
+xml.getBytesTotal(): undefined
+xml._bytesLoaded: 0
+xml._bytesTotal: undefined
+
+// XML received data: <test>Héllo Wörld!</test>
+xml.getBytesLoaded(): 27
+xml.getBytesTotal(): 27
+xml._bytesLoaded: 27
+xml._bytesTotal: 27

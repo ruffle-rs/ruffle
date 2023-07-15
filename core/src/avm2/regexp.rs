@@ -6,7 +6,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::object::FunctionObject;
 use crate::avm2::object::TObject;
 use crate::avm2::Error;
-use crate::avm2::{ArrayObject, ArrayStorage, Object};
+use crate::avm2::{ArrayObject, ArrayStorage, Object, Value};
 use crate::string::WString;
 use crate::string::{AvmString, Units, WStrToUtf8};
 use bitflags::bitflags;
@@ -37,7 +37,7 @@ impl<'gc> Clone for RegExp<'gc> {
 }
 
 bitflags! {
-    #[derive(Collect)]
+    #[derive(Clone, Copy, Collect, Debug)]
     #[collect(require_static)]
     pub struct RegExpFlags: u8 {
         const GLOBAL       = 1 << 0;
@@ -103,6 +103,7 @@ impl<'gc> RegExp<'gc> {
                     multiline: self.flags.contains(RegExpFlags::MULTILINE),
                     dot_all: self.flags.contains(RegExpFlags::DOTALL),
                     no_opt: false,
+                    unicode: false,
                 },
             );
             self.cached_regex = Some(re.map_err(drop));
@@ -224,7 +225,7 @@ impl<'gc> RegExp<'gc> {
                 .chain(std::iter::once(m.range.start.into()))
                 .chain(std::iter::once((*txt).into()))
                 .collect::<Vec<_>>();
-            let r = f.call(activation.global_scope(), &args, activation)?;
+            let r = f.call(Value::Null, &args, activation)?;
             return Ok(WString::from(r.coerce_to_string(activation)?.as_wstr()));
         })
     }
@@ -407,6 +408,8 @@ impl<'gc> CachedText<'gc> {
                 // SAFETY: because `self.utf8` is None, we know `text` contains
                 // a valid UTF8 string.
                 Units::Bytes(s) => unsafe { std::str::from_utf8_unchecked(s) },
+                // NOTES: The only case where a wide string could be valid UTF8 is if it's empty.
+                Units::Wide([]) => "",
                 _ => unreachable!(),
             })
     }

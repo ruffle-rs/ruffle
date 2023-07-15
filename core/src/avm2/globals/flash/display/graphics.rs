@@ -1,16 +1,23 @@
 //! `flash.display.Graphics` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::object::{Object, TObject};
+use crate::avm2::error::make_error_2008;
+use crate::avm2::globals::flash::geom::transform::object_to_matrix;
+use crate::avm2::object::{Object, TObject, VectorObject};
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
+use crate::avm2::vector::VectorStorage;
+use crate::avm2::{ArrayStorage, Error};
 use crate::avm2_stub_method;
 use crate::display_object::TDisplayObject;
 use crate::drawing::Drawing;
-use crate::string::WStr;
-use ruffle_render::shape_utils::DrawCommand;
+use crate::string::{AvmString, WStr};
+use ruffle_render::shape_utils::{DrawCommand, GradientType};
 use std::f64::consts::FRAC_1_SQRT_2;
-use swf::{Color, FillStyle, Fixed8, LineCapStyle, LineJoinStyle, LineStyle, Twips};
+use swf::{
+    Color, FillStyle, Fixed16, Fixed8, Gradient, GradientInterpolation, GradientRecord,
+    GradientSpread, LineCapStyle, LineJoinStyle, LineStyle, Matrix, Point, Twips,
+};
 
 /// Convert an RGB `color` and `alpha` argument pair into a `swf::Color`.
 /// `alpha` is normalized from 0.0 - 1.0.
@@ -21,20 +28,12 @@ fn color_from_args(rgb: u32, alpha: f64) -> Color {
 /// Implements `Graphics.beginFill`.
 pub fn begin_fill<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.and_then(|t| t.as_display_object()) {
-        let color = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_u32(activation)?;
-        let alpha = args
-            .get(1)
-            .cloned()
-            .unwrap_or_else(|| 1.0.into())
-            .coerce_to_number(activation)?;
+    if let Some(this) = this.as_display_object() {
+        let color = args.get_u32(activation, 0)?;
+        let alpha = args.get_f64(activation, 1)?;
 
         if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
             draw.set_fill_style(Some(FillStyle::Color(color_from_args(color, alpha))));
@@ -47,30 +46,180 @@ pub fn begin_fill<'gc>(
 /// Implements `Graphics.beginBitmapFill`.
 pub fn begin_bitmap_fill<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
+    this: Object<'gc>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.display.Graphics", "beginBitmapFill");
+    if let Some(this) = this.as_display_object() {
+        let bitmap = args
+            .get_object(activation, 0, "bitmap")?
+            .as_bitmap_data()
+            .expect("Bitmap argument is ensured to be a BitmapData from actionscript");
+        let matrix = if let Some(matrix) = args.try_get_object(activation, 1) {
+            Matrix::from(object_to_matrix(matrix, activation)?)
+        } else {
+            // Users can explicitly pass in `null` to mean identity matrix
+            Matrix::IDENTITY
+        };
+        let is_repeating = args.get_bool(2);
+        let is_smoothed = args.get_bool(3);
+
+        let handle =
+            bitmap.bitmap_handle(activation.context.gc_context, activation.context.renderer);
+
+        let bitmap = ruffle_render::bitmap::BitmapInfo {
+            handle,
+            width: bitmap.width() as u16,
+            height: bitmap.height() as u16,
+        };
+        let scale_matrix = Matrix::scale(
+            (Twips::TWIPS_PER_PIXEL as i16).into(),
+            (Twips::TWIPS_PER_PIXEL as i16).into(),
+        );
+
+        if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
+            let id = draw.add_bitmap(bitmap);
+            draw.set_fill_style(Some(FillStyle::Bitmap {
+                id,
+                matrix: matrix * scale_matrix,
+                is_smoothed,
+                is_repeating,
+            }));
+        }
+    }
+
     Ok(Value::Undefined)
 }
 
 /// Implements `Graphics.beginGradientFill`.
 pub fn begin_gradient_fill<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
+    this: Object<'gc>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.display.Graphics", "beginGradientFill");
+    if let Some(this) = this.as_display_object() {
+        let gradient_type = args.get_string(activation, 0);
+        let gradient_type = parse_gradient_type(activation, gradient_type?)?;
+        let colors = args.get_object(activation, 1, "colors")?;
+        let alphas = args.get_object(activation, 2, "alphas")?;
+        let ratios = args.get_object(activation, 3, "ratios")?;
+        let records = build_gradient_records(
+            activation,
+            &colors.as_array_storage().expect("Guaranteed by AS"),
+            &alphas.as_array_storage().expect("Guaranteed by AS"),
+            &ratios.as_array_storage().expect("Guaranteed by AS"),
+        )?;
+        let matrix = if let Some(matrix) = args.try_get_object(activation, 4) {
+            Matrix::from(object_to_matrix(matrix, activation)?)
+        } else {
+            // Users can explicitly pass in `null` to mean identity matrix
+            Matrix::IDENTITY
+        };
+        let spread = args.get_string(activation, 5);
+        let spread = parse_spread_method(spread?);
+        let interpolation = args.get_string(activation, 6);
+        let interpolation = parse_interpolation_method(interpolation?);
+        let focal_point = args.get_f64(activation, 7)?;
+
+        if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
+            match gradient_type {
+                GradientType::Linear => {
+                    draw.set_fill_style(Some(FillStyle::LinearGradient(Gradient {
+                        matrix,
+                        spread,
+                        interpolation,
+                        records,
+                    })))
+                }
+                GradientType::Radial if focal_point == 0.0 => {
+                    draw.set_fill_style(Some(FillStyle::RadialGradient(Gradient {
+                        matrix,
+                        spread,
+                        interpolation,
+                        records,
+                    })))
+                }
+                _ => draw.set_fill_style(Some(FillStyle::FocalGradient {
+                    gradient: Gradient {
+                        matrix,
+                        spread,
+                        interpolation,
+                        records,
+                    },
+                    focal_point: Fixed8::from_f64(focal_point),
+                })),
+            }
+        }
+    }
     Ok(Value::Undefined)
+}
+
+fn build_gradient_records<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    colors: &ArrayStorage<'gc>,
+    alphas: &ArrayStorage<'gc>,
+    ratios: &ArrayStorage<'gc>,
+) -> Result<Vec<GradientRecord>, Error<'gc>> {
+    let length = colors.length().min(alphas.length()).min(ratios.length());
+    let mut records = Vec::with_capacity(length);
+    for i in 0..length {
+        let color = colors
+            .get(i)
+            .expect("Length should be guaranteed")
+            .coerce_to_u32(activation)?;
+        let alpha = alphas
+            .get(i)
+            .expect("Length should be guaranteed")
+            .coerce_to_number(activation)? as f32;
+        let ratio = ratios
+            .get(i)
+            .expect("Length should be guaranteed")
+            .coerce_to_u32(activation)?;
+        records.push(GradientRecord {
+            ratio: ratio.clamp(0, 255) as u8,
+            color: Color::from_rgb(color, (alpha * 255.0) as u8),
+        })
+    }
+    Ok(records)
+}
+
+fn parse_gradient_type<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    gradient_type: AvmString<'gc>,
+) -> Result<GradientType, Error<'gc>> {
+    if &gradient_type == b"linear" {
+        Ok(GradientType::Linear)
+    } else if &gradient_type == b"radial" {
+        Ok(GradientType::Radial)
+    } else {
+        Err(make_error_2008(activation, "type"))
+    }
+}
+
+fn parse_interpolation_method(gradient_type: AvmString) -> GradientInterpolation {
+    if &gradient_type == b"linearRGB" {
+        GradientInterpolation::LinearRgb
+    } else {
+        GradientInterpolation::Rgb
+    }
+}
+
+fn parse_spread_method(spread_method: AvmString) -> GradientSpread {
+    if &spread_method == b"repeat" {
+        GradientSpread::Repeat
+    } else if &spread_method == b"reflect" {
+        GradientSpread::Reflect
+    } else {
+        GradientSpread::Pad
+    }
 }
 
 /// Implements `Graphics.clear`
 pub fn clear<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.and_then(|t| t.as_display_object()) {
+    if let Some(this) = this.as_display_object() {
         if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
             draw.clear()
         }
@@ -82,37 +231,20 @@ pub fn clear<'gc>(
 /// Implements `Graphics.curveTo`.
 pub fn curve_to<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.and_then(|t| t.as_display_object()) {
-        let x1 = Twips::from_pixels(
-            args.get(0)
-                .cloned()
-                .unwrap_or(Value::Undefined)
-                .coerce_to_number(activation)?,
-        );
-        let y1 = Twips::from_pixels(
-            args.get(1)
-                .cloned()
-                .unwrap_or(Value::Undefined)
-                .coerce_to_number(activation)?,
-        );
-        let x2 = Twips::from_pixels(
-            args.get(2)
-                .cloned()
-                .unwrap_or(Value::Undefined)
-                .coerce_to_number(activation)?,
-        );
-        let y2 = Twips::from_pixels(
-            args.get(3)
-                .cloned()
-                .unwrap_or(Value::Undefined)
-                .coerce_to_number(activation)?,
-        );
+    if let Some(this) = this.as_display_object() {
+        let control_x = args.get_f64(activation, 0)?;
+        let control_y = args.get_f64(activation, 1)?;
+        let anchor_x = args.get_f64(activation, 2)?;
+        let anchor_y = args.get_f64(activation, 3)?;
 
         if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
-            draw.draw_command(DrawCommand::CurveTo { x1, y1, x2, y2 });
+            draw.draw_command(DrawCommand::CurveTo {
+                control: Point::from_pixels(control_x, control_y),
+                anchor: Point::from_pixels(anchor_x, anchor_y),
+            });
         }
     }
 
@@ -122,10 +254,10 @@ pub fn curve_to<'gc>(
 /// Implements `Graphics.endFill`.
 pub fn end_fill<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.and_then(|t| t.as_display_object()) {
+    if let Some(this) = this.as_display_object() {
         if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
             draw.set_fill_style(None);
         }
@@ -134,40 +266,31 @@ pub fn end_fill<'gc>(
     Ok(Value::Undefined)
 }
 
-fn caps_to_cap_style<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    caps: Value<'gc>,
-) -> Result<LineCapStyle, Error<'gc>> {
-    if let Value::Null = caps {
-        return Ok(LineCapStyle::None);
-    }
-
-    let caps = caps.coerce_to_string(activation)?;
-    if &caps == b"none" {
-        Ok(LineCapStyle::None)
-    } else if &caps == b"square" {
-        Ok(LineCapStyle::Square)
+fn caps_to_cap_style(caps: Option<AvmString>) -> LineCapStyle {
+    if let Some(caps) = caps {
+        if &caps == b"none" {
+            LineCapStyle::None
+        } else if &caps == b"square" {
+            LineCapStyle::Square
+        } else {
+            LineCapStyle::Round
+        }
     } else {
-        Ok(LineCapStyle::Round)
+        LineCapStyle::None
     }
 }
 
-fn joints_to_join_style<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    joints: Value<'gc>,
-    miter_limit: f64,
-) -> Result<LineJoinStyle, Error<'gc>> {
-    if let Value::Null = joints {
-        return Ok(LineJoinStyle::Round);
-    }
-
-    let joints = joints.coerce_to_string(activation)?;
-    if &joints == b"miter" {
-        Ok(LineJoinStyle::Miter(Fixed8::from_f64(miter_limit)))
-    } else if &joints == b"bevel" {
-        Ok(LineJoinStyle::Bevel)
+fn joints_to_join_style(joints: Option<AvmString>, miter_limit: f64) -> LineJoinStyle {
+    if let Some(joints) = joints {
+        if &joints == b"miter" {
+            LineJoinStyle::Miter(Fixed8::from_f64(miter_limit))
+        } else if &joints == b"bevel" {
+            LineJoinStyle::Bevel
+        } else {
+            LineJoinStyle::Round
+        }
     } else {
-        Ok(LineJoinStyle::Round)
+        LineJoinStyle::Round
     }
 }
 
@@ -186,52 +309,28 @@ fn scale_mode_to_allow_scale_bits<'gc>(scale_mode: &WStr) -> Result<(bool, bool)
 /// Implements `Graphics.lineStyle`.
 pub fn line_style<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.and_then(|t| t.as_display_object()) {
-        let thickness = args
-            .get(0)
-            .cloned()
-            .unwrap_or_else(|| f64::NAN.into())
-            .coerce_to_number(activation)?;
+    if let Some(this) = this.as_display_object() {
+        let thickness = args.get_f64(activation, 0)?;
 
         if thickness.is_nan() {
             if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
                 draw.set_line_style(None);
             }
         } else {
-            let color = args
-                .get(1)
-                .cloned()
-                .unwrap_or_else(|| 0.into())
-                .coerce_to_u32(activation)?;
-            let alpha = args
-                .get(2)
-                .cloned()
-                .unwrap_or_else(|| 1.0.into())
-                .coerce_to_number(activation)?;
-            let is_pixel_hinted = args
-                .get(3)
-                .cloned()
-                .unwrap_or_else(|| false.into())
-                .coerce_to_boolean();
-            let scale_mode = args
-                .get(4)
-                .cloned()
-                .unwrap_or_else(|| "normal".into())
-                .coerce_to_string(activation)?;
-            let caps = caps_to_cap_style(activation, args.get(5).cloned().unwrap_or(Value::Null))?;
-            let joints = args.get(6).cloned().unwrap_or(Value::Null);
-            let miter_limit = args
-                .get(7)
-                .cloned()
-                .unwrap_or_else(|| 3.0.into())
-                .coerce_to_number(activation)?;
+            let color = args.get_u32(activation, 1)?;
+            let alpha = args.get_f64(activation, 2)?;
+            let is_pixel_hinted = args.get_bool(3);
+            let scale_mode = args.get_string(activation, 4)?;
+            let caps = caps_to_cap_style(args.try_get_string(activation, 5)?);
+            let joints = args.try_get_string(activation, 6)?;
+            let miter_limit = args.get_f64(activation, 7)?;
 
             let width = Twips::from_pixels(thickness.clamp(0.0, 255.0));
             let color = color_from_args(color, alpha);
-            let join_style = joints_to_join_style(activation, joints, miter_limit)?;
+            let join_style = joints_to_join_style(joints, miter_limit);
             let (allow_scale_x, allow_scale_y) = scale_mode_to_allow_scale_bits(&scale_mode)?;
 
             let line_style = LineStyle::new()
@@ -257,25 +356,15 @@ pub fn line_style<'gc>(
 /// Implements `Graphics.lineTo`.
 pub fn line_to<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.and_then(|t| t.as_display_object()) {
-        let x = Twips::from_pixels(
-            args.get(0)
-                .cloned()
-                .unwrap_or(Value::Undefined)
-                .coerce_to_number(activation)?,
-        );
-        let y = Twips::from_pixels(
-            args.get(1)
-                .cloned()
-                .unwrap_or(Value::Undefined)
-                .coerce_to_number(activation)?,
-        );
+    if let Some(this) = this.as_display_object() {
+        let x = Twips::from_pixels(args.get_f64(activation, 0)?);
+        let y = Twips::from_pixels(args.get_f64(activation, 1)?);
 
         if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
-            draw.draw_command(DrawCommand::LineTo { x, y });
+            draw.draw_command(DrawCommand::LineTo(Point::new(x, y)));
         }
     }
 
@@ -285,25 +374,15 @@ pub fn line_to<'gc>(
 /// Implements `Graphics.moveTo`.
 pub fn move_to<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.and_then(|t| t.as_display_object()) {
-        let x = Twips::from_pixels(
-            args.get(0)
-                .cloned()
-                .unwrap_or(Value::Undefined)
-                .coerce_to_number(activation)?,
-        );
-        let y = Twips::from_pixels(
-            args.get(1)
-                .cloned()
-                .unwrap_or(Value::Undefined)
-                .coerce_to_number(activation)?,
-        );
+    if let Some(this) = this.as_display_object() {
+        let x = Twips::from_pixels(args.get_f64(activation, 0)?);
+        let y = Twips::from_pixels(args.get_f64(activation, 1)?);
 
         if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
-            draw.draw_command(DrawCommand::MoveTo { x, y });
+            draw.draw_command(DrawCommand::MoveTo(Point::new(x, y)));
         }
     }
 
@@ -313,44 +392,21 @@ pub fn move_to<'gc>(
 /// Implements `Graphics.drawRect`.
 pub fn draw_rect<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.and_then(|t| t.as_display_object()) {
-        let x = Twips::from_pixels(
-            args.get(0)
-                .cloned()
-                .unwrap_or(Value::Undefined)
-                .coerce_to_number(activation)?,
-        );
-        let y = Twips::from_pixels(
-            args.get(1)
-                .cloned()
-                .unwrap_or(Value::Undefined)
-                .coerce_to_number(activation)?,
-        );
-        let width = Twips::from_pixels(
-            args.get(2)
-                .cloned()
-                .unwrap_or(Value::Undefined)
-                .coerce_to_number(activation)?,
-        );
-        let height = Twips::from_pixels(
-            args.get(3)
-                .cloned()
-                .unwrap_or(Value::Undefined)
-                .coerce_to_number(activation)?,
-        );
+    if let Some(this) = this.as_display_object() {
+        let x = Twips::from_pixels(args.get_f64(activation, 0)?);
+        let y = Twips::from_pixels(args.get_f64(activation, 1)?);
+        let width = Twips::from_pixels(args.get_f64(activation, 2)?);
+        let height = Twips::from_pixels(args.get_f64(activation, 3)?);
 
         if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
-            draw.draw_command(DrawCommand::MoveTo { x, y });
-            draw.draw_command(DrawCommand::LineTo { x: x + width, y });
-            draw.draw_command(DrawCommand::LineTo {
-                x: x + width,
-                y: y + height,
-            });
-            draw.draw_command(DrawCommand::LineTo { x, y: y + height });
-            draw.draw_command(DrawCommand::LineTo { x, y });
+            draw.draw_command(DrawCommand::MoveTo(Point::new(x, y)));
+            draw.draw_command(DrawCommand::LineTo(Point::new(x + width, y)));
+            draw.draw_command(DrawCommand::LineTo(Point::new(x + width, y + height)));
+            draw.draw_command(DrawCommand::LineTo(Point::new(x, y + height)));
+            draw.draw_command(DrawCommand::LineTo(Point::new(x, y)));
         }
     }
 
@@ -470,23 +526,21 @@ fn draw_round_rect_internal(
 
     let br_point_x = br_ellipse_center_x + ellipse_width / 2.0 * ucp[2].0;
     let br_point_y = br_ellipse_center_y + ellipse_height / 2.0 * ucp[2].1;
+    let br_point = Point::from_pixels(br_point_x, br_point_y);
 
-    draw.draw_command(DrawCommand::MoveTo {
-        x: Twips::from_pixels(br_point_x),
-        y: Twips::from_pixels(br_point_y),
-    });
+    draw.draw_command(DrawCommand::MoveTo(br_point));
 
     let br_b_curve_x = br_ellipse_center_x + ellipse_width / 2.0 * ucp[3].0;
     let br_b_curve_y = br_ellipse_center_y + ellipse_height / 2.0 * ucp[3].1;
+    let br_b_curve = Point::from_pixels(br_b_curve_x, br_b_curve_y);
 
     let right_b_point_x = br_ellipse_center_x + ellipse_width / 2.0 * ucp[4].0;
     let right_b_point_y = br_ellipse_center_y + ellipse_height / 2.0 * ucp[4].1;
+    let right_b_point = Point::from_pixels(right_b_point_x, right_b_point_y);
 
     draw.draw_command(DrawCommand::CurveTo {
-        x1: Twips::from_pixels(br_b_curve_x),
-        y1: Twips::from_pixels(br_b_curve_y),
-        x2: Twips::from_pixels(right_b_point_x),
-        y2: Twips::from_pixels(right_b_point_y),
+        control: br_b_curve,
+        anchor: right_b_point,
     });
 
     // Oh, since we're drawing roundrects, we also need to draw lines
@@ -496,168 +550,135 @@ fn draw_round_rect_internal(
 
     let left_b_point_x = tl_ellipse_center_x + ellipse_width / -2.0 * ucp[4].0;
     let left_b_point_y = br_ellipse_center_y + ellipse_height / 2.0 * ucp[4].1;
+    let left_b_point = Point::from_pixels(left_b_point_x, left_b_point_y);
 
-    draw.draw_command(DrawCommand::LineTo {
-        x: Twips::from_pixels(left_b_point_x),
-        y: Twips::from_pixels(left_b_point_y),
-    });
+    draw.draw_command(DrawCommand::LineTo(left_b_point));
 
     // Bottom-left ellipse
     let b_bl_curve_x = tl_ellipse_center_x + ellipse_width / -2.0 * ucp[3].0;
     let b_bl_curve_y = br_ellipse_center_y + ellipse_height / 2.0 * ucp[3].1;
+    let b_bl_curve = Point::from_pixels(b_bl_curve_x, b_bl_curve_y);
 
     let bl_point_x = tl_ellipse_center_x + ellipse_width / -2.0 * ucp[2].0;
     let bl_point_y = br_ellipse_center_y + ellipse_height / 2.0 * ucp[2].1;
+    let bl_point = Point::from_pixels(bl_point_x, bl_point_y);
 
     draw.draw_command(DrawCommand::CurveTo {
-        x1: Twips::from_pixels(b_bl_curve_x),
-        y1: Twips::from_pixels(b_bl_curve_y),
-        x2: Twips::from_pixels(bl_point_x),
-        y2: Twips::from_pixels(bl_point_y),
+        control: b_bl_curve,
+        anchor: bl_point,
     });
 
     let bl_l_curve_x = tl_ellipse_center_x + ellipse_width / -2.0 * ucp[1].0;
     let bl_l_curve_y = br_ellipse_center_y + ellipse_height / 2.0 * ucp[1].1;
+    let bl_l_curve = Point::from_pixels(bl_l_curve_x, bl_l_curve_y);
 
     let bottom_l_point_x = tl_ellipse_center_x + ellipse_width / -2.0 * ucp[0].0;
     let bottom_l_point_y = br_ellipse_center_y + ellipse_height / 2.0 * ucp[0].1;
+    let bottom_l_point = Point::from_pixels(bottom_l_point_x, bottom_l_point_y);
 
     draw.draw_command(DrawCommand::CurveTo {
-        x1: Twips::from_pixels(bl_l_curve_x),
-        y1: Twips::from_pixels(bl_l_curve_y),
-        x2: Twips::from_pixels(bottom_l_point_x),
-        y2: Twips::from_pixels(bottom_l_point_y),
+        control: bl_l_curve,
+        anchor: bottom_l_point,
     });
 
     // Left side
     let top_l_point_x = tl_ellipse_center_x + ellipse_width / -2.0 * ucp[0].0;
     let top_l_point_y = tl_ellipse_center_y + ellipse_height / -2.0 * ucp[0].1;
+    let top_l_point = Point::from_pixels(top_l_point_x, top_l_point_y);
 
-    draw.draw_command(DrawCommand::LineTo {
-        x: Twips::from_pixels(top_l_point_x),
-        y: Twips::from_pixels(top_l_point_y),
-    });
+    draw.draw_command(DrawCommand::LineTo(top_l_point));
 
     // Top-left ellipse
     let l_tl_curve_x = tl_ellipse_center_x + ellipse_width / -2.0 * ucp[1].0;
     let l_tl_curve_y = tl_ellipse_center_y + ellipse_height / -2.0 * ucp[1].1;
+    let l_tl_curve = Point::from_pixels(l_tl_curve_x, l_tl_curve_y);
 
     let tl_point_x = tl_ellipse_center_x + ellipse_width / -2.0 * ucp[2].0;
     let tl_point_y = tl_ellipse_center_y + ellipse_height / -2.0 * ucp[2].1;
+    let tl_point = Point::from_pixels(tl_point_x, tl_point_y);
 
     draw.draw_command(DrawCommand::CurveTo {
-        x1: Twips::from_pixels(l_tl_curve_x),
-        y1: Twips::from_pixels(l_tl_curve_y),
-        x2: Twips::from_pixels(tl_point_x),
-        y2: Twips::from_pixels(tl_point_y),
+        control: l_tl_curve,
+        anchor: tl_point,
     });
 
     let tl_t_curve_x = tl_ellipse_center_x + ellipse_width / -2.0 * ucp[3].0;
     let tl_t_curve_y = tl_ellipse_center_y + ellipse_height / -2.0 * ucp[3].1;
+    let tl_t_curve = Point::from_pixels(tl_t_curve_x, tl_t_curve_y);
 
     let left_t_point_x = tl_ellipse_center_x + ellipse_width / -2.0 * ucp[4].0;
     let left_t_point_y = tl_ellipse_center_y + ellipse_height / -2.0 * ucp[4].1;
+    let left_t_point = Point::from_pixels(left_t_point_x, left_t_point_y);
 
     draw.draw_command(DrawCommand::CurveTo {
-        x1: Twips::from_pixels(tl_t_curve_x),
-        y1: Twips::from_pixels(tl_t_curve_y),
-        x2: Twips::from_pixels(left_t_point_x),
-        y2: Twips::from_pixels(left_t_point_y),
+        control: tl_t_curve,
+        anchor: left_t_point,
     });
 
     // Top side
     let right_t_point_x = br_ellipse_center_x + ellipse_width / 2.0 * ucp[4].0;
     let right_t_point_y = tl_ellipse_center_y + ellipse_height / -2.0 * ucp[4].1;
+    let right_t_point = Point::from_pixels(right_t_point_x, right_t_point_y);
 
-    draw.draw_command(DrawCommand::LineTo {
-        x: Twips::from_pixels(right_t_point_x),
-        y: Twips::from_pixels(right_t_point_y),
-    });
+    draw.draw_command(DrawCommand::LineTo(right_t_point));
 
     // Top-right ellipse
     let t_tr_curve_x = br_ellipse_center_x + ellipse_width / 2.0 * ucp[3].0;
     let t_tr_curve_y = tl_ellipse_center_y + ellipse_height / -2.0 * ucp[3].1;
+    let t_tr_curve = Point::from_pixels(t_tr_curve_x, t_tr_curve_y);
 
     let tr_point_x = br_ellipse_center_x + ellipse_width / 2.0 * ucp[2].0;
     let tr_point_y = tl_ellipse_center_y + ellipse_height / -2.0 * ucp[2].1;
+    let tr_point = Point::from_pixels(tr_point_x, tr_point_y);
 
     draw.draw_command(DrawCommand::CurveTo {
-        x1: Twips::from_pixels(t_tr_curve_x),
-        y1: Twips::from_pixels(t_tr_curve_y),
-        x2: Twips::from_pixels(tr_point_x),
-        y2: Twips::from_pixels(tr_point_y),
+        control: t_tr_curve,
+        anchor: tr_point,
     });
 
     let tr_r_curve_x = br_ellipse_center_x + ellipse_width / 2.0 * ucp[1].0;
     let tr_r_curve_y = tl_ellipse_center_y + ellipse_height / -2.0 * ucp[1].1;
+    let tr_r_curve = Point::from_pixels(tr_r_curve_x, tr_r_curve_y);
 
     let top_r_point_x = br_ellipse_center_x + ellipse_width / 2.0 * ucp[0].0;
     let top_r_point_y = tl_ellipse_center_y + ellipse_height / -2.0 * ucp[0].1;
+    let top_r_point = Point::from_pixels(top_r_point_x, top_r_point_y);
 
     draw.draw_command(DrawCommand::CurveTo {
-        x1: Twips::from_pixels(tr_r_curve_x),
-        y1: Twips::from_pixels(tr_r_curve_y),
-        x2: Twips::from_pixels(top_r_point_x),
-        y2: Twips::from_pixels(top_r_point_y),
+        control: tr_r_curve,
+        anchor: top_r_point,
     });
 
     // Right side & other half of bottom-right ellipse
     let bottom_r_point_x = br_ellipse_center_x + ellipse_width / 2.0 * ucp[0].0;
     let bottom_r_point_y = br_ellipse_center_y + ellipse_height / 2.0 * ucp[0].1;
+    let bottom_r_point = Point::from_pixels(bottom_r_point_x, bottom_r_point_y);
 
-    draw.draw_command(DrawCommand::LineTo {
-        x: Twips::from_pixels(bottom_r_point_x),
-        y: Twips::from_pixels(bottom_r_point_y),
-    });
+    draw.draw_command(DrawCommand::LineTo(bottom_r_point));
 
     let r_br_curve_x = br_ellipse_center_x + ellipse_width / 2.0 * ucp[1].0;
     let r_br_curve_y = br_ellipse_center_y + ellipse_height / 2.0 * ucp[1].1;
+    let r_br_curve = Point::from_pixels(r_br_curve_x, r_br_curve_y);
 
     draw.draw_command(DrawCommand::CurveTo {
-        x1: Twips::from_pixels(r_br_curve_x),
-        y1: Twips::from_pixels(r_br_curve_y),
-        x2: Twips::from_pixels(br_point_x),
-        y2: Twips::from_pixels(br_point_y),
+        control: r_br_curve,
+        anchor: br_point,
     });
 }
 
 /// Implements `Graphics.drawRoundRect`.
 pub fn draw_round_rect<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.and_then(|t| t.as_display_object()) {
-        let x = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_number(activation)?;
-        let y = args
-            .get(1)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_number(activation)?;
-        let width = args
-            .get(2)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_number(activation)?;
-        let height = args
-            .get(3)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_number(activation)?;
-        let ellipse_width = args
-            .get(4)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_number(activation)?;
-        let ellipse_height = args
-            .get(5)
-            .cloned()
-            .unwrap_or(Value::Number(f64::NAN))
-            .coerce_to_number(activation)?;
+    if let Some(this) = this.as_display_object() {
+        let x = args.get_f64(activation, 0)?;
+        let y = args.get_f64(activation, 1)?;
+        let width = args.get_f64(activation, 2)?;
+        let height = args.get_f64(activation, 3)?;
+        let ellipse_width = args.get_f64(activation, 4)?;
+        let ellipse_height = args.get_f64(activation, 5)?;
 
         if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
             draw_round_rect_internal(
@@ -678,25 +699,13 @@ pub fn draw_round_rect<'gc>(
 /// Implements `Graphics.drawCircle`.
 pub fn draw_circle<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.and_then(|t| t.as_display_object()) {
-        let x = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_number(activation)?;
-        let y = args
-            .get(1)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_number(activation)?;
-        let radius = args
-            .get(2)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_number(activation)?;
+    if let Some(this) = this.as_display_object() {
+        let x = args.get_f64(activation, 0)?;
+        let y = args.get_f64(activation, 1)?;
+        let radius = args.get_f64(activation, 2)?;
 
         if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
             draw_round_rect_internal(
@@ -717,30 +726,14 @@ pub fn draw_circle<'gc>(
 /// Implements `Graphics.drawEllipse`.
 pub fn draw_ellipse<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.and_then(|t| t.as_display_object()) {
-        let x = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_number(activation)?;
-        let y = args
-            .get(1)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_number(activation)?;
-        let width = args
-            .get(2)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_number(activation)?;
-        let height = args
-            .get(3)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_number(activation)?;
+    if let Some(this) = this.as_display_object() {
+        let x = args.get_f64(activation, 0)?;
+        let y = args.get_f64(activation, 1)?;
+        let width = args.get_f64(activation, 2)?;
+        let height = args.get_f64(activation, 3)?;
 
         if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
             draw_round_rect_internal(&mut draw, x, y, width, height, width, height)
@@ -748,4 +741,296 @@ pub fn draw_ellipse<'gc>(
     }
 
     Ok(Value::Undefined)
+}
+
+/// Implements `Graphics.lineGradientStyle`
+pub fn line_gradient_style<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this.as_display_object() {
+        let gradient_type = args.get_string(activation, 0);
+        let gradient_type = parse_gradient_type(activation, gradient_type?)?;
+        let colors = args.get_object(activation, 1, "colors")?;
+        let alphas = args.get_object(activation, 2, "alphas")?;
+        let ratios = args.get_object(activation, 3, "ratios")?;
+        let records = build_gradient_records(
+            activation,
+            &colors.as_array_storage().expect("Guaranteed by AS"),
+            &alphas.as_array_storage().expect("Guaranteed by AS"),
+            &ratios.as_array_storage().expect("Guaranteed by AS"),
+        )?;
+        let matrix = if let Some(matrix) = args.try_get_object(activation, 4) {
+            Matrix::from(object_to_matrix(matrix, activation)?)
+        } else {
+            // Users can explicitly pass in `null` to mean identity matrix
+            Matrix::IDENTITY
+        };
+        let spread = args.get_string(activation, 5);
+        let spread = parse_spread_method(spread?);
+        let interpolation = args.get_string(activation, 6);
+        let interpolation = parse_interpolation_method(interpolation?);
+        let focal_point = args.get_f64(activation, 7)?;
+
+        if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
+            match gradient_type {
+                GradientType::Linear => {
+                    draw.set_line_fill_style(FillStyle::LinearGradient(Gradient {
+                        matrix,
+                        spread,
+                        interpolation,
+                        records,
+                    }))
+                }
+                GradientType::Radial if focal_point == 0.0 => {
+                    draw.set_line_fill_style(FillStyle::RadialGradient(Gradient {
+                        matrix,
+                        spread,
+                        interpolation,
+                        records,
+                    }))
+                }
+                _ => draw.set_line_fill_style(FillStyle::FocalGradient {
+                    gradient: Gradient {
+                        matrix,
+                        spread,
+                        interpolation,
+                        records,
+                    },
+                    focal_point: Fixed8::from_f64(focal_point),
+                }),
+            }
+        }
+    }
+    Ok(Value::Undefined)
+}
+
+/// Implements `Graphics.cubicCurveTo`
+pub fn cubic_curve_to<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_method!(activation, "flash.display.Graphics", "cubicCurveTo");
+    Ok(Value::Undefined)
+}
+
+/// Implements `Graphics.copyFrom`
+pub fn copy_from<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this.as_display_object() {
+        let source = args
+            .get_object(activation, 0, "sourceGraphics")?
+            .as_display_object()
+            .expect("Bad sourceGraphics");
+
+        let source = source
+            .as_drawing(activation.context.gc_context)
+            .expect("Missing drawing for sourceGraphics");
+
+        let mut target_drawing = this
+            .as_drawing(activation.context.gc_context)
+            .expect("Missing drawing for target");
+
+        target_drawing.copy_from(&source);
+    }
+    Ok(Value::Undefined)
+}
+
+/// Implements `Graphics.drawPath`
+pub fn draw_path<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_display_object().unwrap();
+    let mut drawing = this.as_drawing(activation.context.gc_context).unwrap();
+    let commands = args.get_object(activation, 0, "commands")?;
+    let data = args.get_object(activation, 1, "data")?;
+    // FIXME - implement winding, and fill  behavior described in the Flash docs
+    // (which is different from just running each command sequentially on `Graphics`)
+    let _winding = args.get_string(activation, 2)?;
+
+    avm2_stub_method!(
+        activation,
+        "flash.display.Graphics",
+        "drawPath",
+        "winding and fill behavior"
+    );
+
+    let commands = commands
+        .as_vector_storage()
+        .expect("commands is not a Vector");
+    let data = &*data.as_vector_storage().expect("data is not a Vector");
+
+    let mut data_index = 0;
+
+    for i in 0..commands.length() {
+        let command = commands
+            .get(i, activation)
+            .expect("missing command")
+            .as_integer(activation.context.gc_context)
+            .expect("commands is not a Vec.<int>");
+
+        let mut read_point = || {
+            let x = data
+                .get(data_index, activation)
+                .expect("missing data")
+                .as_number(activation.context.gc_context)
+                .expect("data is not a Vec.<Number>");
+
+            let y = data
+                .get(data_index + 1, activation)
+                .expect("missing data")
+                .as_number(activation.context.gc_context)
+                .expect("data is not a Vec.<Number>");
+
+            data_index += 2;
+
+            Point {
+                x: Twips::from_pixels(x),
+                y: Twips::from_pixels(y),
+            }
+        };
+
+        // FIXME - determine correct behavior when data is missing or invalid commands
+        // are used. Flash doesn't throw an error, and it's unclear what the correct
+        // behavior is, exactly. For now, just panic when this happens, so we can determine
+        // if there are any SWFS in the wild relying on this.
+        let draw_command = match command {
+            // NO_OP
+            0 => None,
+            // MOVE_TO
+            1 => Some(DrawCommand::MoveTo(read_point())),
+            // LINE_TO
+            2 => Some(DrawCommand::LineTo(read_point())),
+            // CURVE_TO
+            3 => Some(DrawCommand::CurveTo {
+                control: read_point(),
+                anchor: read_point(),
+            }),
+            // WIDE_MOVE_TO
+            4 => {
+                let _dummy = read_point();
+                Some(DrawCommand::MoveTo(read_point()))
+            }
+            // WIDE_LINE_TO
+            5 => {
+                let _dummy = read_point();
+                Some(DrawCommand::LineTo(read_point()))
+            }
+            // CUBIC_CURVE_TO
+            6 => {
+                let _first = read_point();
+                let _second = read_point();
+                avm2_stub_method!(
+                    activation,
+                    "flash.display.Graphics",
+                    "drawPath",
+                    "CUBIC_CURVE_TO"
+                );
+                None
+            }
+            _ => panic!("Unexpected command value {command}"),
+        };
+
+        if let Some(draw_command) = draw_command {
+            drawing.draw_command(draw_command);
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `Graphics.drawRoundRectComplex`
+pub fn draw_round_rect_complex<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_method!(activation, "flash.display.Graphics", "drawRoundRectComplex");
+    Ok(Value::Undefined)
+}
+
+/// Implements `Graphics.drawTriangles`
+pub fn draw_triangles<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_method!(activation, "flash.display.Graphics", "drawTriangles");
+    Ok(Value::Undefined)
+}
+
+/// Implements `Graphics.drawGraphicsData`
+pub fn draw_graphics_data<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_method!(activation, "flash.display.Graphics", "drawGraphicsData");
+    Ok(Value::Undefined)
+}
+
+/// Implements `Graphics.lineBitmapStyle`
+pub fn line_bitmap_style<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this.as_display_object() {
+        let bitmap = args
+            .get_object(activation, 0, "bitmap")?
+            .as_bitmap_data()
+            .expect("Bitmap argument is ensured to be a BitmapData from actionscript");
+        let matrix = if let Some(matrix) = args.try_get_object(activation, 1) {
+            Matrix::from(object_to_matrix(matrix, activation)?)
+        } else {
+            // Users can explicitly pass in `null` to mean identity matrix
+            Matrix::IDENTITY
+        };
+        let is_repeating = args.get_bool(2);
+        let is_smoothed = args.get_bool(3);
+
+        let handle =
+            bitmap.bitmap_handle(activation.context.gc_context, activation.context.renderer);
+
+        let bitmap = ruffle_render::bitmap::BitmapInfo {
+            handle,
+            width: bitmap.width() as u16,
+            height: bitmap.height() as u16,
+        };
+        let scale_matrix = Matrix::scale(
+            Fixed16::from_f64(bitmap.width as f64),
+            Fixed16::from_f64(bitmap.height as f64),
+        );
+
+        if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
+            let id = draw.add_bitmap(bitmap);
+            draw.set_line_fill_style(FillStyle::Bitmap {
+                id,
+                matrix: matrix * scale_matrix,
+                is_smoothed,
+                is_repeating,
+            });
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `Graphics.readGraphicsData`
+pub fn read_graphics_data<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_method!(activation, "flash.display.Graphics", "readGraphicsData");
+    let value_type = activation.avm2().classes().igraphicsdata;
+    let new_storage = VectorStorage::new(0, false, value_type, activation);
+    Ok(VectorObject::from_vector(new_storage, activation)?.into())
 }

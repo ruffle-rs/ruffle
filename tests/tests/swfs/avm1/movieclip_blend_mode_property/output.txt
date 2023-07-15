@@ -1,0 +1,36 @@
+// mc.blendMode = layer
+layer
+
+// mc.blendMode = null
+normal
+
+// mc.blendMode = undefined
+normal
+
+// mc.blendMode = 3
+multiply
+
+// mc.blendMode = 259
+multiply
+
+// mc.blendMode = 3.5
+multiply
+
+// mc.blendMode = true
+invert
+
+// mc.blendMode = false
+invert
+
+// mc.blendMode = -1
+invert
+
+// mc.blendMode = lAyEr
+invert
+
+// mc.blendMode = [object Object]
+invert
+
+// mc.blendMode = _level0
+invert
+

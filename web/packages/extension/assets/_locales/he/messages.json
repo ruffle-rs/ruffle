@@ -1,0 +1,98 @@
+{
+    "settings_ruffle_enable": {
+        "message": "נגן תוכן פלאש בתוך Ruffle"
+    },
+    "settings_ignore_optout": {
+        "message": "נגן תוכן פלאש גם באתרים אשר אינם מאפשרים שימוש בRuffle"
+    },
+    "settings_show_swf_download": {
+        "message": "הצג אפשרות להורדת הSWF בתפריט התכנים"
+    },
+    "settings_autostart": {
+        "message": "נגן אוטומטית ללא מסך פתיחה (עליך להקיש על מנת לבטל השתקה)"
+    },
+    "settings_warn_on_unsupported_content": {
+        "message": "אזהר אם תוכן אינו נתמך"
+    },
+    "settings_log_level": {
+        "message": "רמת רישום"
+    },
+    "settings_log_level_error": {
+        "message": "שגיאות"
+    },
+    "settings_log_level_warn": {
+        "message": "אזהרות"
+    },
+    "settings_log_level_info": {
+        "message": "מידע"
+    },
+    "settings_max_execution_duration": {
+        "message": "משך זמן ביצוע ActionScript מורשה מירבי (בשניות)"
+    },
+    "settings_player_version": {
+        "message": "גרסת נגן הפלאש לדמות (טווח של 1-32)"
+    },
+    "settings_preferred_renderer": {
+        "message": "עיבוד מועדף"
+    },
+    "settings_preferred_renderer_auto": {
+        "message": "אוטומטי"
+    },
+    "settings_advanced_options": {
+        "message": "אפשרויות מתקדמות"
+    },
+    "settings_reset": {
+        "message": "אפס הגדרות"
+    },
+    "settings_reset_confirm": {
+        "message": "האם אתה בטוח שברצונך לאפס את הגדרות Ruffle לברירת המחדל המקורי שלהן?"
+    },
+    "status_init": {
+        "message": "קורא לשונית נוכחית זו…"
+    },
+    "status_no_tabs": {
+        "message": "אין לשונית פעילה."
+    },
+    "status_tabs_error": {
+        "message": "התרחשה שגיאה כאשר נבדקה לשונית נוכחית זו."
+    },
+    "status_message_init": {
+        "message": "בודק את מצב Ruffle תחת לשונית נוכחית זו…"
+    },
+    "status_result_running": {
+        "message": "נטען ומוכן להפעיל תוכן Ruffle פלאש תחת לשונית נוכחית זו."
+    },
+    "status_result_running_protected": {
+        "message": "נטען ומפעיל את תוכן Ruffle הפלאש אשר ביקשת להפעיל."
+    },
+    "status_result_optout": {
+        "message": "Ruffle לא נטען בגלל שדף זה סימן את עצמו כלא תואם."
+    },
+    "status_result_disabled": {
+        "message": "Ruffle לא נטען כי הוא מושבת."
+    },
+    "status_result_error": {
+        "message": "אירעה שגיאה בעת שאילתה למופע של Ruffle בכרטיסייה הנוכחית."
+    },
+    "status_result_protected": {
+        "message": "Ruffle אינו יכול להיטען על גבי דפי דפדפן מוגנים."
+    },
+    "action_reload": {
+        "message": "טען מחדש לשונית זו כדי לבצע שינויים"
+    },
+    "open_settings_page": {
+        "message": "פתח את עמוד ההגדרות"
+    },
+    "settings_page": {
+        "message": "עמוד ההגדרות"
+    },
+    "description": {
+        "message": "שם את פלאש בחזרה באינטרנט איפה שהוא אמור להיות."
+    },
+    "save_settings": {
+        "message": "שמור הגדרות"
+    },
+    "settings_saved": {
+        "message": "ההגדרות נשמרו"
+    }
+}

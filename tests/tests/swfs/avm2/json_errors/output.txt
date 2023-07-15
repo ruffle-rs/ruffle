@@ -1,0 +1,9 @@
+Invalid JSON:SyntaxError|1132
+Recursive JSON:TypeError|1129
+Invalid replacer:TypeError|1131
+Recursive JSON, invalid replacer:TypeError|1131
+Recursive JSON, invalid object replacer:TypeError|1131
+{}
+Recursive, with null replacer:TypeError|1129
+{"a":8}
+Valid, with undefined replacer:TypeError|1131

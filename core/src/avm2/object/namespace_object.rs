@@ -7,7 +7,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Namespace;
 use core::fmt;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates namespace objects.
@@ -17,7 +17,7 @@ pub fn namespace_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
-    Ok(NamespaceObject(GcCell::allocate(
+    Ok(NamespaceObject(GcCell::new(
         activation.context.gc_context,
         NamespaceObjectData {
             base,
@@ -30,7 +30,11 @@ pub fn namespace_allocator<'gc>(
 /// An Object which represents a boxed namespace name.
 #[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
-pub struct NamespaceObject<'gc>(GcCell<'gc, NamespaceObjectData<'gc>>);
+pub struct NamespaceObject<'gc>(pub GcCell<'gc, NamespaceObjectData<'gc>>);
+
+#[derive(Collect, Clone, Copy, Debug)]
+#[collect(no_drop)]
+pub struct NamespaceObjectWeak<'gc>(pub GcWeakCell<'gc, NamespaceObjectData<'gc>>);
 
 impl fmt::Debug for NamespaceObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -59,16 +63,24 @@ impl<'gc> NamespaceObject<'gc> {
         let class = activation.avm2().classes().namespace;
         let base = ScriptObjectData::new(class);
 
-        let mut this: Object<'gc> = NamespaceObject(GcCell::allocate(
+        let mut this: Object<'gc> = NamespaceObject(GcCell::new(
             activation.context.gc_context,
             NamespaceObjectData { base, namespace },
         ))
         .into();
-        this.install_instance_slots(activation);
+        this.install_instance_slots(activation.context.gc_context);
 
-        class.call_native_init(Some(this), &[], activation)?;
+        class.call_native_init(this.into(), &[], activation)?;
 
         Ok(this)
+    }
+
+    pub fn init_namespace(&self, mc: MutationContext<'gc, '_>, namespace: Namespace<'gc>) {
+        self.0.write(mc).namespace = namespace;
+    }
+
+    pub fn namespace(self) -> Namespace<'gc> {
+        return self.0.read().namespace;
     }
 }
 
@@ -95,5 +107,9 @@ impl<'gc> TObject<'gc> for NamespaceObject<'gc> {
 
     fn as_namespace(&self) -> Option<Ref<Namespace<'gc>>> {
         Some(Ref::map(self.0.read(), |s| &s.namespace))
+    }
+
+    fn as_namespace_object(&self) -> Option<Self> {
+        Some(*self)
     }
 }

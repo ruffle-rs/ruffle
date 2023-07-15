@@ -2,9 +2,9 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Object, ScriptObject, TObject, Value};
+use crate::avm1::{Object, ScriptObject, Value};
+use crate::context::GcContext;
 use crate::display_object::{EditText, TDisplayObject, TextSelection};
-use gc_arena::MutationContext;
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "getBeginIndex" => method(get_begin_index; DONT_ENUM | DONT_DELETE | READ_ONLY);
@@ -108,10 +108,14 @@ pub fn get_focus<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let focus = activation.context.focus_tracker.get();
-    match focus {
-        Some(focus) => Ok(focus.object()),
-        None => Ok(Value::Null),
-    }
+    Ok(match focus {
+        Some(focus) => focus
+            .object()
+            .coerce_to_string(activation)
+            .unwrap_or_default()
+            .into(),
+        None => Value::Null,
+    })
 }
 
 pub fn set_focus<'gc>(
@@ -121,54 +125,39 @@ pub fn set_focus<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let tracker = activation.context.focus_tracker;
     match args.get(0) {
+        None => Ok(false.into()),
         Some(Value::Undefined | Value::Null) => {
             tracker.set(None, &mut activation.context);
             Ok(true.into())
         }
-        Some(Value::Object(obj)) => {
-            if let Some(display_object) = obj.as_display_object() {
-                if display_object.is_focusable() {
-                    tracker.set(Some(display_object), &mut activation.context);
+        Some(focus) => {
+            let start_clip = activation.target_clip_or_root();
+            let object = activation.resolve_target_display_object(start_clip, *focus, false)?;
+            if let Some(display_object) = object {
+                if display_object.is_focusable(&mut activation.context) {
+                    tracker.set(object, &mut activation.context);
+                    return Ok(true.into());
                 }
-                // [NA] Note: The documentation says true is success and false is failure,
-                // but from testing this seems to be opposite.
-                Ok(false.into())
-            } else {
-                Ok(true.into())
             }
+            Ok(false.into())
         }
-        Some(Value::MovieClip(_)) => {
-            let obj = args.get(0).unwrap().coerce_to_object(activation);
-
-            if let Some(display_object) = obj.as_display_object() {
-                if display_object.is_focusable() {
-                    tracker.set(Some(display_object), &mut activation.context);
-                }
-                // [NA] Note: The documentation says true is success and false is failure,
-                // but from testing this seems to be opposite.
-                Ok(false.into())
-            } else {
-                Ok(true.into())
-            }
-        }
-        _ => Ok(false.into()),
     }
 }
 
 pub fn create_selection_object<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
     broadcaster_functions: BroadcasterFunctions<'gc>,
     array_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = ScriptObject::new(gc_context, Some(proto));
-    broadcaster_functions.initialize(gc_context, object.into(), array_proto);
-    define_properties_on(OBJECT_DECLS, gc_context, object, fn_proto);
+    let object = ScriptObject::new(context.gc_context, Some(proto));
+    broadcaster_functions.initialize(context.gc_context, object.into(), array_proto);
+    define_properties_on(OBJECT_DECLS, context, object, fn_proto);
     object.into()
 }
 
-pub fn create_proto<'gc>(gc_context: MutationContext<'gc, '_>, proto: Object<'gc>) -> Object<'gc> {
+pub fn create_proto<'gc>(context: &mut GcContext<'_, 'gc>, proto: Object<'gc>) -> Object<'gc> {
     // It's a custom prototype but it's empty.
-    ScriptObject::new(gc_context, Some(proto)).into()
+    ScriptObject::new(context.gc_context, Some(proto)).into()
 }

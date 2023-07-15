@@ -28,10 +28,10 @@ profiling = []
 
 [dependencies]
 console_error_panic_hook = { version = "0.1.7", optional = true }
-generational-arena = "0.2.8"
-js-sys = "0.3.61"
-tracing = { version = "0.1.37", features = ["log"] }
-tracing-subscriber = { version = "0.3.16", default-features = false, features = ["registry"] }
+generational-arena = "0.2.9"
+js-sys = "0.3.64"
+tracing = { workspace = true, features = ["log"] }
+tracing-subscriber = { version = "0.3.17", default-features = false, features = ["registry"] }
 tracing-log = "0.1.3"
 tracing-wasm = "0.2.1"
 ruffle_render_canvas = { path = "../render/canvas", optional = true }
@@ -40,15 +40,15 @@ ruffle_render = { path = "../render" }
 ruffle_render_webgl = { path = "../render/webgl", optional = true }
 ruffle_render_wgpu = { path = "../render/wgpu", optional = true }
 ruffle_video_software = { path = "../video/software" }
-url = "2.3.1"
-wasm-bindgen = "=0.2.84"
-wasm-bindgen-futures = "0.4.34"
-serde-wasm-bindgen = "0.4.5"
+url = "2.4.0"
+wasm-bindgen = "=0.2.87"
+wasm-bindgen-futures = "0.4.37"
+serde-wasm-bindgen = "0.5.0"
 chrono = { version = "0.4", default-features = false, features = ["wasmbind", "clock"] }
 getrandom = { version = "0.2", features = ["js"] }
-serde = { version = "1.0.152", features = ["derive"] }
+serde = { version = "1.0.171", features = ["derive"] }
 thiserror = "1.0"
-base64 = "0.21.0"
+base64 = "0.21.2"
 
 [dependencies.ruffle_core]
 path = "../core"
@@ -56,11 +56,12 @@ default-features = false
 features = ["audio", "mp3", "nellymoser", "wasm-bindgen", "default", "default_compatibility_rules"]
 
 [dependencies.web-sys]
-version = "0.3.61"
+version = "0.3.64"
 features = [
-    "AddEventListenerOptions", "AudioBuffer", "AudioBufferSourceNode", "AudioContext", "AudioDestinationNode",
-    "AudioNode", "AudioParam", "Blob", "BlobPropertyBag", "ChannelMergerNode",
-    "ChannelSplitterNode", "Element", "Event", "EventTarget", "GainNode", "HtmlCanvasElement",
-    "HtmlElement", "HtmlFormElement", "KeyboardEvent", "Location", "PointerEvent", "Request", "RequestInit", "Response",
-    "Storage", "WheelEvent", "Window",
+    "AddEventListenerOptions", "AudioBuffer", "AudioBufferSourceNode", "AudioContext",
+    "AudioDestinationNode", "AudioNode", "AudioParam", "Blob", "BlobPropertyBag",
+    "ChannelMergerNode", "ChannelSplitterNode", "ClipboardEvent", "DataTransfer", "Element", "Event",
+    "EventTarget", "GainNode", "Headers", "HtmlCanvasElement", "HtmlDocument", "HtmlElement", "HtmlFormElement",
+    "HtmlInputElement", "HtmlTextAreaElement", "KeyboardEvent", "Location", "PointerEvent", 
+    "Request", "RequestInit", "Response", "Storage", "WheelEvent", "Window",
 ]

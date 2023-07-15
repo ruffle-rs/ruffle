@@ -2,20 +2,50 @@
     "settings_ruffle_enable": {
         "message": "Play Flash content in Ruffle"
     },
-    "settings_page_ignore_optout": {
-        "message": "Play Flash content even on sites that disable Ruffle"
-    },
     "settings_ignore_optout": {
-        "message": "Ignore website compatibility warnings"
+        "message": "Play Flash content even on sites that disallow Ruffle"
     },
     "settings_show_swf_download": {
         "message": "Show SWF download in context menu"
+    },
+    "settings_autostart": {
+        "message": "Play automatically without splash screen (then click to unmute)"
     },
     "settings_warn_on_unsupported_content": {
         "message": "Warn on unsupported content"
     },
     "settings_log_level": {
         "message": "Log level"
+    },
+    "settings_log_level_error": {
+        "message": "Errors"
+    },
+    "settings_log_level_warn": {
+        "message": "Warnings"
+    },
+    "settings_log_level_info": {
+        "message": "Info"
+    },
+    "settings_max_execution_duration": {
+        "message": "Maximum allowed ActionScript execution duration (in seconds)"
+    },
+    "settings_player_version": {
+        "message": "Flash player version number to emulate (range 1-32)"
+    },
+    "settings_preferred_renderer": {
+        "message": "Preferred renderer"
+    },
+    "settings_preferred_renderer_auto": {
+        "message": "Automatic"
+    },
+    "settings_advanced_options": {
+        "message": "Advanced Options"
+    },
+    "settings_reset": {
+        "message": "Reset settings"
+    },
+    "settings_reset_confirm": {
+        "message": "Are you sure you want to restore Ruffle settings to their original defaults?"
     },
     "status_init": {
         "message": "Reading current tab…"
@@ -30,13 +60,16 @@
         "message": "Checking Ruffle status on current tab…"
     },
     "status_result_running": {
-        "message": "Ruffle is loaded and running Flash content on the current tab."
+        "message": "Ruffle is loaded and ready to run Flash content on the current tab."
+    },
+    "status_result_running_protected": {
+        "message": "Ruffle is loaded and running the Flash content that you requested."
     },
     "status_result_optout": {
         "message": "Ruffle is not loaded because the current page has marked itself as incompatible."
     },
     "status_result_disabled": {
-        "message": "Ruffle is not loaded because it was disabled by the user."
+        "message": "Ruffle is not loaded because it is disabled."
     },
     "status_result_error": {
         "message": "An error occurred when querying the current tab's instance of Ruffle."

@@ -1,7 +1,6 @@
 use crate::decoder::VideoDecoder;
+use ruffle_render::bitmap::BitmapFormat;
 use ruffle_video::error::Error;
-
-use h263_rs_yuv::bt601::yuv420_to_rgba;
 
 use nihav_codec_support::codecs::{NABufferRef, NAVideoBuffer, NAVideoInfo};
 use nihav_codec_support::codecs::{NABufferType::Video, YUV420_FORMAT};
@@ -68,6 +67,31 @@ impl Vp6Decoder {
             last_frame: None,
         }
     }
+}
+
+fn crop(data: &[u8], mut width: usize, to_size: (u16, u16)) -> Vec<u8> {
+    debug_assert!(data.len() % width == 0);
+    let mut height = data.len() / width;
+    let mut data = data.to_vec();
+
+    if width > to_size.0 as usize {
+        // Removing the unwanted pixels on the right edge
+        // by squishing all the rows tightly next to each other.
+        let new_width = to_size.0 as usize;
+        let new_height = usize::min(height, to_size.1 as usize);
+        // no need to move the first row, nor any rows on the bottom that will end up being cropped entirely
+        for row in 1..new_height {
+            data.copy_within(row * width..(row * width + new_width), row * new_width);
+        }
+        width = new_width;
+        height = new_height;
+    }
+
+    // Cropping the unwanted rows on the bottom, also dropping any unused space at the end left by the squish above
+    height = usize::min(height, to_size.1 as usize);
+    data.truncate(width * height);
+
+    data
 }
 
 impl VideoDecoder for Vp6Decoder {
@@ -150,8 +174,6 @@ impl VideoDecoder for Vp6Decoder {
             frame
         };
 
-        // Converting it from YUV420 to RGBA.
-
         let yuv = frame.get_data();
 
         let (mut width, mut height) = frame.get_dimensions(0);
@@ -171,32 +193,9 @@ impl VideoDecoder for Vp6Decoder {
             frame.get_offset(2),
         );
 
-        let mut rgba = yuv420_to_rgba(
-            &yuv[offsets.0..offsets.0 + width * height],
-            &yuv[offsets.1..offsets.1 + chroma_width * chroma_height],
-            &yuv[offsets.2..offsets.2 + chroma_width * chroma_height],
-            width,
-        );
-
-        // Adding in the alpha component, if present.
-
-        if self.with_alpha {
-            debug_assert!(frame.get_stride(3) == frame.get_dimensions(3).0);
-            let alpha_offset = frame.get_offset(3);
-            let alpha = &yuv[alpha_offset..alpha_offset + width * height];
-            for (alpha, rgba) in alpha.iter().zip(rgba.chunks_mut(4)) {
-                // The SWF spec mandates the `min` to avoid any accidental "invalid"
-                // premultiplied colors, which would cause strange results after blending.
-                // And the alpha data is encoded in full range (0-255), unlike the Y
-                // component of the main color data, so no remapping is needed.
-                rgba.copy_from_slice(&[
-                    u8::min(rgba[0], *alpha),
-                    u8::min(rgba[1], *alpha),
-                    u8::min(rgba[2], *alpha),
-                    *alpha,
-                ]);
-            }
-        }
+        let y = &yuv[offsets.0..offsets.0 + width * height];
+        let u = &yuv[offsets.1..offsets.1 + chroma_width * chroma_height];
+        let v = &yuv[offsets.2..offsets.2 + chroma_width * chroma_height];
 
         // Cropping the encoded frame (containing whole macroblocks) to the
         // size requested by the the bounds attribute.
@@ -208,32 +207,49 @@ impl VideoDecoder for Vp6Decoder {
             // Flash Player just produces a black image in this case!
         }
 
-        if width > bounds.0 as usize {
-            // Removing the unwanted pixels on the right edge (most commonly: unused pieces of macroblocks)
-            // by squishing all the rows tightly next to each other.
-            // Bitmap at the moment does not allow these gaps, so we need to remove them.
-            let new_width = bounds.0 as usize;
-            let new_height = usize::min(height, bounds.1 as usize);
-            // no need to move the first row, nor any rows on the bottom that will end up being cropped entirely
-            for row in 1..new_height {
-                rgba.copy_within(
-                    row * width * 4..(row * width + new_width) * 4,
-                    row * new_width * 4,
-                );
-            }
-            width = new_width;
-            height = new_height;
+        //(most commonly: unused pieces of macroblocks)
+        // Bitmap at the moment does not allow these gaps, so we need to remove them.
+
+        let y = crop(y, width, bounds);
+        let u = crop(u, chroma_width, ((bounds.0 + 1) / 2, (bounds.1 + 1) / 2));
+        let v = crop(v, chroma_width, ((bounds.0 + 1) / 2, (bounds.1 + 1) / 2));
+
+        width = bounds.0 as usize;
+        height = bounds.1 as usize;
+
+        // Adding in the alpha component, if present.
+        if self.with_alpha {
+            // Apparently it's possible for the alpha channel to be coded in a different size than the Y channel.
+            let (alpha_width, alpha_height) = frame.get_dimensions(3);
+            debug_assert!(frame.get_stride(3) == frame.get_dimensions(3).0);
+
+            let alpha_offset = frame.get_offset(3);
+            let alpha = &yuv[alpha_offset..alpha_offset + alpha_width * alpha_height];
+            let a = crop(alpha, alpha_width, bounds);
+
+            let mut data = y.to_vec();
+            data.extend(u);
+            data.extend(v);
+            data.extend(a);
+
+            Ok(DecodedFrame::new(
+                width as u32,
+                height as u32,
+                BitmapFormat::Yuva420p,
+                data,
+            ))
+        } else {
+            let mut data = y.to_vec();
+            data.extend(u);
+            data.extend(v);
+
+            Ok(DecodedFrame::new(
+                width as u32,
+                height as u32,
+                BitmapFormat::Yuv420p,
+                data,
+            ))
         }
-
-        // Cropping the unwanted rows on the bottom, also dropping any unused space at the end left by the squish above
-        height = usize::min(height, bounds.1 as usize);
-        rgba.truncate(width * height * 4);
-
-        Ok(DecodedFrame {
-            width: width as u16,
-            height: height as u16,
-            rgba,
-        })
     }
 }
 

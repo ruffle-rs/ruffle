@@ -1,0 +1,7 @@
+xml.childIndex(): -1
+xml.children()[0].childIndex(): 0
+xml.a.childIndex(): 1
+xml.b.childIndex(): 2
+xml.b.x.childIndex(): 0
+xml.b.children()[1].childIndex() 1
+xml.a.@attr.childIndex() -1

@@ -14,6 +14,7 @@ mod bevel_filter;
 mod blur_filter;
 mod color;
 mod color_matrix_filter;
+mod color_transform;
 mod convolution_filter;
 mod drop_shadow_filter;
 mod fixed;
@@ -28,13 +29,14 @@ pub use bevel_filter::{BevelFilter, BevelFilterFlags};
 pub use blur_filter::{BlurFilter, BlurFilterFlags};
 pub use color::Color;
 pub use color_matrix_filter::ColorMatrixFilter;
+pub use color_transform::ColorTransform;
 pub use convolution_filter::{ConvolutionFilter, ConvolutionFilterFlags};
 pub use drop_shadow_filter::{DropShadowFilter, DropShadowFilterFlags};
 pub use fixed::{Fixed16, Fixed8};
 pub use glow_filter::{GlowFilter, GlowFilterFlags};
 pub use gradient_filter::{GradientFilter, GradientFilterFlags};
 pub use matrix::Matrix;
-pub use point::Point;
+pub use point::{Point, PointDelta};
 pub use rectangle::Rectangle;
 pub use twips::Twips;
 
@@ -110,12 +112,29 @@ impl HeaderExt {
         }
     }
 
+    /// Returns the header for a loaded image (JPEG, GIF or PNG).
+    pub fn default_with_uncompressed_len(length: u32) -> Self {
+        let header = Header {
+            compression: Compression::None,
+            version: 0,
+            stage_size: Default::default(),
+            frame_rate: Fixed8::ONE,
+            num_frames: 1,
+        };
+        Self {
+            header,
+            file_attributes: Default::default(),
+            background_color: None,
+            uncompressed_len: length,
+        }
+    }
+
     /// The background color of the SWF from the SetBackgroundColor tag.
     ///
     /// `None` will be returned if the SetBackgroundColor tag was not found.
     #[inline]
     pub fn background_color(&self) -> Option<Color> {
-        self.background_color.clone()
+        self.background_color
     }
 
     /// The compression format used by the SWF.
@@ -208,39 +227,6 @@ pub enum Compression {
     Lzma,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ColorTransform {
-    pub r_multiply: Fixed8,
-    pub g_multiply: Fixed8,
-    pub b_multiply: Fixed8,
-    pub a_multiply: Fixed8,
-    pub r_add: i16,
-    pub g_add: i16,
-    pub b_add: i16,
-    pub a_add: i16,
-}
-
-impl ColorTransform {
-    pub const fn new() -> ColorTransform {
-        ColorTransform {
-            r_multiply: Fixed8::ONE,
-            g_multiply: Fixed8::ONE,
-            b_multiply: Fixed8::ONE,
-            a_multiply: Fixed8::ONE,
-            r_add: 0,
-            g_add: 0,
-            b_add: 0,
-            a_add: 0,
-        }
-    }
-}
-
-impl Default for ColorTransform {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 #[derive(Clone, Copy, Debug, Eq, FromPrimitive, PartialEq)]
 pub enum Language {
     Unknown = 0,
@@ -261,6 +247,7 @@ bitflags! {
     /// Flags that define various characteristic of an SWF file.
     ///
     /// [SWF19 pp.57-58 ClipEvent](https://www.adobe.com/content/dam/acom/en/devnet/pdf/swf-file-format-spec.pdf#page=47)
+    #[derive(Clone, Copy, Debug, PartialEq)]
     pub struct FileAttributes: u8 {
         /// Whether this SWF requests hardware acceleration to blit to the screen.
         const USE_DIRECT_BLIT = 1 << 6;
@@ -462,6 +449,7 @@ bitflags! {
     /// An event that can be attached to a MovieClip instance using an `onClipEvent` or `on` block.
     ///
     /// [SWF19 pp.48-50 ClipEvent](https://www.adobe.com/content/dam/acom/en/devnet/pdf/swf-file-format-spec.pdf#page=50)
+    #[derive(Clone, Copy, Debug, Eq, PartialEq)]
     pub struct ClipEventFlag: u32 {
         const LOAD            = 1 << 0;
         const ENTER_FRAME     = 1 << 1;
@@ -643,10 +631,11 @@ pub struct Shape {
 }
 
 bitflags! {
+    #[derive(Clone, Copy, Debug, Eq, PartialEq)]
     pub struct ShapeFlag: u8 {
         const HAS_SCALING_STROKES     = 1 << 0;
         const HAS_NON_SCALING_STROKES = 1 << 1;
-        const HAS_FILL_WINDING_RULE   = 1 << 2;
+        const NON_ZERO_WINDING_RULE   = 1 << 2;
     }
 }
 
@@ -715,20 +704,28 @@ pub struct ShapeStyles {
 pub enum ShapeRecord {
     StyleChange(Box<StyleChangeData>),
     StraightEdge {
-        delta_x: Twips,
-        delta_y: Twips,
+        delta: PointDelta<Twips>,
     },
     CurvedEdge {
-        control_delta_x: Twips,
-        control_delta_y: Twips,
-        anchor_delta_x: Twips,
-        anchor_delta_y: Twips,
+        control_delta: PointDelta<Twips>,
+        anchor_delta: PointDelta<Twips>,
     },
+}
+
+bitflags! {
+    #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+    pub struct ShapeRecordFlag: u8 {
+        const MOVE_TO      = 1 << 0;
+        const FILL_STYLE_0 = 1 << 1;
+        const FILL_STYLE_1 = 1 << 2;
+        const LINE_STYLE   = 1 << 3;
+        const NEW_STYLES   = 1 << 4;
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct StyleChangeData {
-    pub move_to: Option<(Twips, Twips)>,
+    pub move_to: Option<Point<Twips>>,
     pub fill_style_0: Option<u32>,
     pub fill_style_1: Option<u32>,
     pub line_style: Option<u32>,
@@ -868,7 +865,7 @@ impl LineStyle {
     #[inline]
     pub fn with_start_cap(mut self, val: LineCapStyle) -> Self {
         self.flags -= LineStyleFlag::START_CAP_STYLE;
-        self.flags |= LineStyleFlag::from_bits_truncate((val as u16) << 6);
+        self.flags |= LineStyleFlag::from_bits_retain((val as u16) << 6);
         self
     }
 
@@ -881,7 +878,7 @@ impl LineStyle {
     #[inline]
     pub fn with_end_cap(mut self, val: LineCapStyle) -> Self {
         self.flags -= LineStyleFlag::END_CAP_STYLE;
-        self.flags |= LineStyleFlag::from_bits_truncate((val as u16) << 8);
+        self.flags |= LineStyleFlag::from_bits_retain((val as u16) << 8);
         self
     }
 
@@ -955,6 +952,7 @@ impl Default for LineStyle {
 }
 
 bitflags! {
+    #[derive(Clone, Copy, Debug, Eq, PartialEq)]
     pub struct LineStyleFlag: u16 {
         // First byte.
         const PIXEL_HINTING = 1 << 0;
@@ -1061,6 +1059,7 @@ pub struct ButtonRecord {
 }
 
 bitflags! {
+    #[derive(Clone, Copy, Debug, Eq, PartialEq)]
     pub struct ButtonState: u8 {
         const UP       = 1 << 0;
         const OVER     = 1 << 1;
@@ -1094,6 +1093,7 @@ pub struct ButtonAction<'a> {
 }
 
 bitflags! {
+    #[derive(Clone, Copy, Debug, Eq, PartialEq)]
     pub struct ButtonActionCondition: u16 {
         const IDLE_TO_OVER_UP       = 1 << 0;
         const OVER_UP_TO_IDLE       = 1 << 1;
@@ -1118,6 +1118,7 @@ pub struct DefineMorphShape {
 }
 
 bitflags! {
+    #[derive(Clone, Copy, Debug, Eq, PartialEq)]
     pub struct DefineMorphShapeFlag: u8 {
         const HAS_SCALING_STROKES     = 1 << 0;
         const HAS_NON_SCALING_STROKES = 1 << 1;
@@ -1151,6 +1152,7 @@ pub struct Font<'a> {
 }
 
 bitflags! {
+    #[derive(Clone, Copy, Debug, Eq, PartialEq)]
     pub struct FontFlag: u8 {
         const IS_BOLD = 1 << 0;
         const IS_ITALIC = 1 << 1;
@@ -1206,6 +1208,7 @@ pub struct FontInfo<'a> {
 }
 
 bitflags! {
+    #[derive(Clone, Copy, Debug, Eq, PartialEq)]
     pub struct FontInfoFlag: u8 {
         const HAS_WIDE_CODES = 1 << 0;
         const IS_BOLD = 1 << 1;
@@ -1559,6 +1562,7 @@ impl<'a> Default for EditText<'a> {
 }
 
 bitflags! {
+    #[derive(Clone, Copy, Debug, Eq, PartialEq)]
     pub struct EditTextFlag: u16 {
         const HAS_FONT = 1 << 0;
         const HAS_MAX_LENGTH = 1 << 1;
@@ -1694,6 +1698,7 @@ impl VideoDeblocking {
 
 #[derive(Clone, Copy, Debug, Eq, FromPrimitive, PartialEq)]
 pub enum VideoCodec {
+    None = 0,
     H263 = 2,
     ScreenVideo = 3,
     Vp6 = 4,
@@ -1731,6 +1736,7 @@ pub struct DoAbc2<'a> {
 }
 
 bitflags! {
+    #[derive(Clone, Copy, Debug, Eq, PartialEq)]
     pub struct DoAbc2Flag: u32 {
         const LAZY_INITIALIZE = 1 << 0;
     }

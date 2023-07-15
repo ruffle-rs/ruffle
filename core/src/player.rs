@@ -8,7 +8,7 @@ use crate::avm1::{Activation, ActivationIdentifier};
 use crate::avm1::{ScriptObject, TObject, Value};
 use crate::avm2::{
     object::LoaderInfoObject, object::TObject as _, Activation as Avm2Activation, Avm2, CallStack,
-    Domain as Avm2Domain, EventObject as Avm2EventObject, Object as Avm2Object,
+    Object as Avm2Object,
 };
 use crate::backend::{
     audio::{AudioBackend, AudioManager},
@@ -19,6 +19,7 @@ use crate::backend::{
 };
 use crate::compatibility_rules::CompatibilityRules;
 use crate::config::Letterbox;
+use crate::context::GcContext;
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
 use crate::context_menu::{
     BuiltInItemFlags, ContextMenuCallback, ContextMenuItem, ContextMenuState,
@@ -39,12 +40,13 @@ use crate::limits::ExecutionLimit;
 use crate::loader::{LoadBehavior, LoadManager};
 use crate::locale::get_current_date_time;
 use crate::prelude::*;
-use crate::string::AvmString;
+use crate::streams::StreamManager;
+use crate::string::{AvmString, AvmStringInterner};
 use crate::stub::StubCollection;
 use crate::tag_utils::SwfMovie;
 use crate::timer::Timers;
 use crate::vminterface::Instantiator;
-use gc_arena::{ArenaParameters, Collect, GcCell};
+use gc_arena::{ArenaParameters, Collect, DynamicRootSet, GcCell, Rootable};
 use instant::Instant;
 use rand::{rngs::SmallRng, SeedableRng};
 use ruffle_render::backend::{null::NullRenderer, RenderBackend, ViewportDimensions};
@@ -128,6 +130,7 @@ struct GcRootData<'gc> {
     avm2: Avm2<'gc>,
 
     action_queue: ActionQueue<'gc>,
+    interner: AvmStringInterner<'gc>,
 
     /// Object which manages asynchronous processes that need to interact with
     /// data in the GC arena.
@@ -153,6 +156,12 @@ struct GcRootData<'gc> {
 
     /// Manager of active sound instances.
     audio_manager: AudioManager<'gc>,
+
+    /// List of actively playing streams to decode.
+    stream_manager: StreamManager<'gc>,
+
+    /// Dynamic root for allowing handles to GC objects to exist outside of the GC.
+    dynamic_root: DynamicRootSet<'gc>,
 }
 
 impl<'gc> GcRootData<'gc> {
@@ -165,6 +174,7 @@ impl<'gc> GcRootData<'gc> {
         Stage<'gc>,
         &mut Library<'gc>,
         &mut ActionQueue<'gc>,
+        &mut AvmStringInterner<'gc>,
         &mut Avm1<'gc>,
         &mut Avm2<'gc>,
         &mut Option<DragObject<'gc>>,
@@ -176,11 +186,14 @@ impl<'gc> GcRootData<'gc> {
         &mut Option<ContextMenuState<'gc>>,
         &mut ExternalInterface<'gc>,
         &mut AudioManager<'gc>,
+        &mut StreamManager<'gc>,
+        DynamicRootSet<'gc>,
     ) {
         (
             self.stage,
             &mut self.library,
             &mut self.action_queue,
+            &mut self.interner,
             &mut self.avm1,
             &mut self.avm2,
             &mut self.drag_object,
@@ -192,11 +205,13 @@ impl<'gc> GcRootData<'gc> {
             &mut self.current_context_menu,
             &mut self.external_interface,
             &mut self.audio_manager,
+            &mut self.stream_manager,
+            self.dynamic_root,
         )
     }
 }
 
-type GcArena = gc_arena::Arena<gc_arena::Rootable![GcRoot<'gc>]>;
+type GcArena = gc_arena::Arena<Rootable![GcRoot<'_>]>;
 
 type Audio = Box<dyn AudioBackend>;
 type Navigator = Box<dyn NavigatorBackend>;
@@ -241,6 +256,7 @@ pub struct Player {
     gc_arena: Rc<RefCell<GcArena>>,
 
     frame_rate: f64,
+    forced_frame_rate: bool,
     actions_since_timeout_check: u16,
 
     frame_phase: FramePhase,
@@ -259,7 +275,8 @@ pub struct Player {
 
     input: InputManager,
 
-    mouse_pos: (Twips, Twips),
+    mouse_in_stage: bool,
+    mouse_position: Point<Twips>,
 
     /// The current mouse cursor icon.
     mouse_cursor: MouseCursor,
@@ -300,6 +317,10 @@ pub struct Player {
 
     /// Any compatibility rules to apply for this movie.
     compatibility_rules: CompatibilityRules,
+
+    /// Debug UI windows
+    #[cfg(feature = "egui")]
+    debug_ui: Rc<RefCell<crate::debug_ui::DebugUi>>,
 }
 
 impl Player {
@@ -307,6 +328,9 @@ impl Player {
     ///
     /// This should not be called if a root movie fetch has already been kicked
     /// off.
+    ///
+    /// `parameters` are *extra* parameters to set on the LoaderInfo -
+    /// parameters from `movie_url` query parameters will be automatically added.
     pub fn fetch_root_movie(
         &mut self,
         movie_url: String,
@@ -330,15 +354,18 @@ impl Player {
     /// previous stage contents. If you need to load a new root movie, you
     /// should destroy and recreate the player instance.
     pub fn set_root_movie(&mut self, movie: SwfMovie) {
+        if !self.forced_frame_rate {
+            self.frame_rate = movie.frame_rate().into();
+        }
+
         info!(
             "Loaded SWF version {}, resolution {}x{} @ {} FPS",
             movie.version(),
             movie.width(),
             movie.height(),
-            movie.frame_rate()
+            self.frame_rate(),
         );
 
-        self.frame_rate = movie.frame_rate().into();
         self.swf = Arc::new(movie);
         self.instance_counter = 0;
 
@@ -352,15 +379,14 @@ impl Player {
                 .stage
                 .set_movie(context.gc_context, context.swf.clone());
 
-            let mut activation = Avm2Activation::from_nothing(context.reborrow());
-            let global_domain = activation.avm2().global_domain();
-            let domain = Avm2Domain::movie_domain(&mut activation, global_domain);
+            let stage_domain = context.avm2.stage_domain();
+            let mut activation = Avm2Activation::from_domain(context.reborrow(), stage_domain);
 
             activation
                 .context
                 .library
                 .library_for_movie_mut(activation.context.swf.clone())
-                .set_avm2_domain(domain);
+                .set_avm2_domain(stage_domain);
             activation.context.ui.set_mouse_visible(true);
 
             let swf = activation.context.swf.clone();
@@ -526,10 +552,12 @@ impl Player {
             });
 
             self.update_timers(dt);
+            self.update(|context| {
+                StreamManager::tick(context, dt);
+            });
             self.audio.tick();
         }
     }
-
     pub fn time_til_next_timer(&self) -> Option<f64> {
         self.time_til_next_timer
     }
@@ -559,6 +587,14 @@ impl Player {
         self.is_playing
     }
 
+    pub fn mouse_in_stage(&self) -> bool {
+        self.mouse_in_stage
+    }
+
+    pub fn set_mouse_in_stage(&mut self, is_in: bool) {
+        self.mouse_in_stage = is_in;
+    }
+
     /// Returns the master volume of the player. 1.0 is 100% volume.
     pub fn volume(&self) -> f32 {
         self.audio.volume()
@@ -578,7 +614,7 @@ impl Player {
             // TODO: This should use a pointed display object with `.menu`
             let root_dobj = context.stage.root_clip();
 
-            let menu = if let Value::Object(obj) = root_dobj.object() {
+            let menu = if let Some(Value::Object(obj)) = root_dobj.map(|root| root.object()) {
                 let mut activation = Activation::from_stub(
                     context.reborrow(),
                     ActivationIdentifier::root("[ContextMenu]"),
@@ -597,13 +633,14 @@ impl Player {
                     None
                 };
                 crate::avm1::make_context_menu_state(menu_object, &mut activation)
-            } else if let Avm2Value::Object(_obj) = root_dobj.object2() {
+            } else if let Some(Avm2Value::Object(_obj)) = root_dobj.map(|root| root.object2()) {
                 // TODO: send "menuSelect" event
                 tracing::warn!("AVM2 Context menu callbacks are not implemented");
 
                 let mut activation = Avm2Activation::from_nothing(context.reborrow());
 
                 let menu_object = root_dobj
+                    .expect("Root is confirmed to exist here")
                     .as_interactive()
                     .map(|iobj| iobj.context_menu())
                     .and_then(|v| v.as_object());
@@ -613,7 +650,7 @@ impl Player {
                 // no AVM1 or AVM2 object - so just prepare the builtin items
                 let mut menu = ContextMenuState::new();
                 let builtin_items = BuiltInItemFlags::for_stage(context.stage);
-                menu.build_builtin_items(builtin_items, context.stage);
+                menu.build_builtin_items(builtin_items, context.stage, context.ui.language());
                 menu
             };
 
@@ -666,23 +703,24 @@ impl Player {
         callback: Object<'gc>,
         context: &mut UpdateContext<'_, 'gc>,
     ) {
-        let root_clip = context.stage.root_clip();
-        let mut activation = Activation::from_nothing(
-            context.reborrow(),
-            ActivationIdentifier::root("[Context Menu Callback]"),
-            root_clip,
-        );
+        if let Some(root_clip) = context.stage.root_clip() {
+            let mut activation = Activation::from_nothing(
+                context.reborrow(),
+                ActivationIdentifier::root("[Context Menu Callback]"),
+                root_clip,
+            );
 
-        // TODO: Remember to also change the first arg
-        // when we support contextmenu on non-root-movie
-        let params = vec![root_clip.object(), Value::Object(item)];
+            // TODO: Remember to also change the first arg
+            // when we support contextmenu on non-root-movie
+            let params = vec![root_clip.object(), Value::Object(item)];
 
-        let _ = callback.call(
-            "[Context Menu Callback]".into(),
-            &mut activation,
-            Value::Undefined,
-            &params,
-        );
+            let _ = callback.call(
+                "[Context Menu Callback]".into(),
+                &mut activation,
+                Value::Undefined,
+                &params,
+            );
+        }
     }
 
     pub fn set_fullscreen(&mut self, is_fullscreen: bool) {
@@ -697,7 +735,11 @@ impl Player {
     }
 
     fn toggle_play_root_movie(context: &mut UpdateContext<'_, '_>) {
-        if let Some(mc) = context.stage.root_clip().as_movie_clip() {
+        if let Some(mc) = context
+            .stage
+            .root_clip()
+            .and_then(|root| root.as_movie_clip())
+        {
             if mc.playing() {
                 mc.stop(context);
             } else {
@@ -706,17 +748,29 @@ impl Player {
         }
     }
     fn rewind_root_movie(context: &mut UpdateContext<'_, '_>) {
-        if let Some(mc) = context.stage.root_clip().as_movie_clip() {
+        if let Some(mc) = context
+            .stage
+            .root_clip()
+            .and_then(|root| root.as_movie_clip())
+        {
             mc.goto_frame(context, 1, true)
         }
     }
     fn forward_root_movie(context: &mut UpdateContext<'_, '_>) {
-        if let Some(mc) = context.stage.root_clip().as_movie_clip() {
+        if let Some(mc) = context
+            .stage
+            .root_clip()
+            .and_then(|root| root.as_movie_clip())
+        {
             mc.next_frame(context);
         }
     }
     fn back_root_movie(context: &mut UpdateContext<'_, '_>) {
-        if let Some(mc) = context.stage.root_clip().as_movie_clip() {
+        if let Some(mc) = context
+            .stage
+            .root_clip()
+            .and_then(|root| root.as_movie_clip())
+        {
             mc.prev_frame(context);
         }
     }
@@ -780,15 +834,6 @@ impl Player {
         self.mutate_with_update_context(|context| {
             let stage = context.stage;
             stage.set_show_menu(context, show_menu);
-        })
-    }
-
-    pub fn set_stage_align(&mut self, stage_align: &str) {
-        self.mutate_with_update_context(|context| {
-            let stage = context.stage;
-            if let Ok(stage_align) = StageAlign::from_str(stage_align) {
-                stage.set_align(context, stage_align);
-            }
         })
     }
 
@@ -943,16 +988,6 @@ impl Player {
                     if state == ClipEventResult::Handled {
                         key_press_handled = true;
                         break;
-                    } else if let Some(text) =
-                        context.focus_tracker.get().and_then(|o| o.as_edit_text())
-                    {
-                        // Text fields listen for arrow key presses, etc.
-                        if text.handle_text_control_event(context, button_event)
-                            == ClipEventResult::Handled
-                        {
-                            key_press_handled = true;
-                            break;
-                        }
                     }
                 }
             }
@@ -1007,15 +1042,7 @@ impl Player {
                         .coerce_to_object(&mut activation)
                         .expect("DisplayObject is not an object!");
 
-                    if let Err(e) =
-                        Avm2::dispatch_event(&mut activation.context, keyboard_event, target)
-                    {
-                        tracing::error!(
-                            "Encountered AVM2 error when broadcasting `{}` event: {}",
-                            event_name,
-                            e
-                        );
-                    }
+                    Avm2::dispatch_event(&mut activation.context, keyboard_event, target);
                 }
             }
 
@@ -1024,6 +1051,11 @@ impl Player {
                 if let PlayerEvent::TextInput { codepoint } = event {
                     if let Some(text) = context.focus_tracker.get().and_then(|o| o.as_edit_text()) {
                         text.text_input(codepoint, context);
+                    }
+                }
+                if let PlayerEvent::TextControl { code } = event {
+                    if let Some(text) = context.focus_tracker.get().and_then(|o| o.as_edit_text()) {
+                        text.text_control_input(code, context);
                     }
                 }
             }
@@ -1072,15 +1104,17 @@ impl Player {
 
             // Fire event listener on appropriate object
             if let Some((listener_type, event_name, args)) = listener {
-                context.action_queue.queue_action(
-                    context.stage.root_clip(),
-                    ActionType::NotifyListeners {
-                        listener: listener_type,
-                        method: event_name,
-                        args,
-                    },
-                    false,
-                );
+                if let Some(root_clip) = context.stage.root_clip() {
+                    context.action_queue.queue_action(
+                        root_clip,
+                        ActionType::NotifyListeners {
+                            listener: listener_type,
+                            method: event_name,
+                            args,
+                        },
+                        false,
+                    );
+                }
             }
 
             Self::run_actions(context);
@@ -1101,15 +1135,15 @@ impl Player {
         {
             let inverse_view_matrix =
                 self.mutate_with_update_context(|context| context.stage.inverse_view_matrix());
-            let old_pos = self.mouse_pos;
-            self.mouse_pos = inverse_view_matrix * (Twips::from_pixels(x), Twips::from_pixels(y));
+            let prev_mouse_position = self.mouse_position;
+            self.mouse_position = inverse_view_matrix * Point::from_pixels(x, y);
 
             // Update the dragged object here to keep it constantly in sync with the mouse position.
             self.mutate_with_update_context(|context| {
                 Self::update_drag(context);
             });
 
-            let is_mouse_moved = old_pos != self.mouse_pos;
+            let is_mouse_moved = prev_mouse_position != self.mouse_position;
 
             // This fires button rollover/press events, which should run after the above mouseMove events.
             if self.update_mouse_state(is_mouse_button_changed, is_mouse_moved) {
@@ -1132,41 +1166,65 @@ impl Player {
                 }
             });
         }
+
+        if let PlayerEvent::MouseLeave = event {
+            if self.update_mouse_state(is_mouse_button_changed, true) {
+                self.needs_render = true;
+            }
+        }
     }
 
     /// Update dragged object, if any.
     pub fn update_drag(context: &mut UpdateContext<'_, '_>) {
-        let (mouse_x, mouse_y) = *context.mouse_position;
+        let mouse_position = *context.mouse_position;
         let is_action_script_3 = context.is_action_script_3();
-        if let Some(drag_object) = &mut context.drag_object {
+        if let Some(drag_object) = context.drag_object {
             let display_object = drag_object.display_object;
-            if !is_action_script_3 && drag_object.display_object.avm1_removed() {
+            if !is_action_script_3 && display_object.avm1_removed() {
                 // Be sure to clear the drag if the object was removed.
                 *context.drag_object = None;
-            } else {
-                let (offset_x, offset_y) = drag_object.offset;
-                let mut drag_point = (mouse_x + offset_x, mouse_y + offset_y);
-                if let Some(parent) = display_object.parent() {
-                    drag_point = parent.global_to_local(drag_point);
-                }
-                drag_point = drag_object.constraint.clamp(drag_point);
-                display_object.set_x(context.gc_context, drag_point.0.to_pixels());
-                display_object.set_y(context.gc_context, drag_point.1.to_pixels());
+                return;
+            }
 
-                // Update _droptarget property of dragged object.
-                if let Some(movie_clip) = display_object.as_movie_clip() {
-                    // Turn the dragged object invisible so that we don't pick it.
-                    // TODO: This could be handled via adding a `HitTestOptions::SKIP_DRAGGED`.
-                    let was_visible = display_object.visible();
-                    display_object.set_visible(context.gc_context, false);
-                    // Set _droptarget to the object the mouse is hovering over.
-                    let drop_target_object = run_mouse_pick(context, false);
-                    movie_clip.set_drop_target(
-                        context.gc_context,
-                        drop_target_object.map(|d| d.as_displayobject()),
-                    );
-                    display_object.set_visible(context.gc_context, was_visible);
-                }
+            let local_to_global_matrix = match display_object.parent() {
+                Some(parent) => parent.local_to_global_matrix(),
+                None => Matrix::IDENTITY,
+            };
+            let global_to_local_matrix = local_to_global_matrix.inverse().unwrap_or_default();
+
+            let new_position = if drag_object.lock_center {
+                let new_position = global_to_local_matrix * mouse_position;
+                drag_object.constraint.clamp(new_position)
+            } else {
+                // TODO: Introduce `DisplayObject::position()`?
+                let position = Point::new(display_object.x(), display_object.y());
+                let mouse_delta = mouse_position - drag_object.last_mouse_position;
+                let new_position = position + global_to_local_matrix * mouse_delta;
+                let new_position = drag_object.constraint.clamp(new_position);
+
+                let mouse_delta = local_to_global_matrix * (new_position - position);
+                drag_object.last_mouse_position += mouse_delta;
+
+                new_position
+            };
+
+            // TODO: Introduce `DisplayObject::set_position()`?
+            display_object.set_x(context.gc_context, new_position.x);
+            display_object.set_y(context.gc_context, new_position.y);
+
+            // Update `_droptarget` property of dragged object.
+            if let Some(movie_clip) = display_object.as_movie_clip() {
+                // Turn the dragged object invisible so that we don't pick it.
+                // TODO: This could be handled via adding a `HitTestOptions::SKIP_DRAGGED`.
+                let was_visible = display_object.visible();
+                display_object.set_visible(context.gc_context, false);
+                // Set `_droptarget` to the object the mouse is hovering over.
+                let drop_target_object = run_mouse_pick(context, false);
+                movie_clip.set_drop_target(
+                    context.gc_context,
+                    drop_target_object.map(|d| d.as_displayobject()),
+                );
+                display_object.set_visible(context.gc_context, was_visible);
             }
         }
     }
@@ -1175,11 +1233,16 @@ impl Player {
     fn update_mouse_state(&mut self, is_mouse_button_changed: bool, is_mouse_moved: bool) -> bool {
         let mut new_cursor = self.mouse_cursor;
         let mut mouse_cursor_needs_check = self.mouse_cursor_needs_check;
+        let mouse_in_stage = self.mouse_in_stage();
 
         // Determine the display object the mouse is hovering over.
         // Search through levels from top-to-bottom, returning the first display object that is under the mouse.
         let needs_render = self.mutate_with_update_context(|context| {
-            let new_over_object = run_mouse_pick(context, true);
+            let new_over_object = if mouse_in_stage {
+                run_mouse_pick(context, true)
+            } else {
+                None
+            };
             let mut events: smallvec::SmallVec<[(InteractiveObject<'_>, ClipEvent); 2]> =
                 Default::default();
 
@@ -1190,15 +1253,44 @@ impl Player {
                 ));
             }
 
+            let mut new_over_object_updated = false;
             // Cancel hover if an object is removed from the stage.
             if let Some(hovered) = context.mouse_over_object {
                 if !context.is_action_script_3() && hovered.as_displayobject().avm1_removed() {
                     context.mouse_over_object = None;
+                    if let Some(new_object) = new_over_object {
+                        if Self::check_display_object_equality(
+                            new_object.as_displayobject(),
+                            hovered.as_displayobject(),
+                        ) {
+                            if let Some(state) = hovered.as_displayobject().state() {
+                                new_object.as_displayobject().set_state(context, state);
+                            }
+                            context.mouse_over_object = Some(new_object);
+                            new_over_object_updated = true;
+                        }
+                    }
                 }
             }
+
             if let Some(pressed) = context.mouse_down_object {
                 if !context.is_action_script_3() && pressed.as_displayobject().avm1_removed() {
                     context.mouse_down_object = None;
+                    let mut display_object = None;
+                    if let Some(root_clip) = context.stage.root_clip() {
+                        display_object = Self::find_first_character_instance(
+                            root_clip,
+                            pressed.as_displayobject(),
+                        );
+                    }
+
+                    if let Some(new_down_object) = display_object {
+                        if let Some(state) = pressed.as_displayobject().state() {
+                            new_down_object.set_state(context, state);
+                        }
+
+                        context.mouse_down_object = new_down_object.as_interactive();
+                    }
                 }
             }
 
@@ -1283,8 +1375,9 @@ impl Player {
                     }
                 }
             }
-            context.mouse_over_object = new_over_object;
-
+            if !new_over_object_updated {
+                context.mouse_over_object = new_over_object;
+            }
             // Handle presses and releases.
             if is_mouse_button_changed {
                 if context.input.is_mouse_down() {
@@ -1302,10 +1395,20 @@ impl Player {
                         events.push((context.stage.into(), ClipEvent::MouseUpInside));
                     }
 
-                    let released_inside = InteractiveObject::option_ptr_eq(
+                    let mut released_inside = InteractiveObject::option_ptr_eq(
                         context.mouse_down_object,
                         context.mouse_over_object,
                     );
+                    if let Some(down) = context.mouse_down_object {
+                        if let Some(over) = context.mouse_over_object {
+                            if !released_inside {
+                                released_inside = Self::check_display_object_equality(
+                                    down.as_displayobject(),
+                                    over.as_displayobject(),
+                                );
+                            }
+                        }
+                    }
                     if released_inside {
                         // Released inside the clicked object.
                         if let Some(down_object) = context.mouse_down_object {
@@ -1379,6 +1482,35 @@ impl Player {
         needs_render
     }
 
+    //Checks if two displayObjects have the same depth and id and accur in the same movie.s
+    fn check_display_object_equality(object1: DisplayObject, object2: DisplayObject) -> bool {
+        object1.depth() == object2.depth()
+            && object1.id() == object2.id()
+            && Arc::ptr_eq(&object1.movie(), &object2.movie())
+    }
+    ///This searches for a display object by it's id.
+    ///When a button is being held down but the mouse stops hovering over the object
+    ///we need to know if th button is still there after goto.
+    //TODO: is there a better place to place next two functions?
+    fn find_first_character_instance<'gc>(
+        obj: DisplayObject<'gc>,
+        previous_object: DisplayObject<'gc>,
+    ) -> Option<DisplayObject<'gc>> {
+        if let Some(parent) = obj.as_container() {
+            for child in parent.iter_render_list() {
+                if Self::check_display_object_equality(child, previous_object) {
+                    return Some(child);
+                }
+
+                let display_object = Self::find_first_character_instance(child, previous_object);
+                if display_object.is_some() {
+                    return display_object;
+                }
+            }
+        }
+        None
+    }
+
     /// Preload all pending movies in the player, including the root movie.
     ///
     /// This should be called periodically with a reasonable execution limit.
@@ -1394,40 +1526,35 @@ impl Player {
         self.mutate_with_update_context(|context| {
             let mut did_finish = true;
 
-            if let Some(root) = context.stage.root_clip().as_movie_clip() {
+            if let Some(root) = context
+                .stage
+                .root_clip()
+                .and_then(|root| root.as_movie_clip())
+            {
                 let was_root_movie_loaded = root.loaded_bytes() == root.total_bytes();
                 did_finish = root.preload(context, limit);
 
-                if !was_root_movie_loaded {
-                    if let Some(loader_info) = root.loader_info() {
-                        let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                if let Some(loader_info) = root.loader_info().filter(|_| !was_root_movie_loaded) {
+                    let mut activation = Avm2Activation::from_nothing(context.reborrow());
 
-                        let progress_evt = activation.avm2().classes().progressevent.construct(
-                            &mut activation,
-                            &[
-                                "progress".into(),
-                                false.into(),
-                                false.into(),
-                                root.compressed_loaded_bytes().into(),
-                                root.compressed_total_bytes().into(),
-                            ],
-                        );
+                    let progress_evt = activation.avm2().classes().progressevent.construct(
+                        &mut activation,
+                        &[
+                            "progress".into(),
+                            false.into(),
+                            false.into(),
+                            root.compressed_loaded_bytes().into(),
+                            root.compressed_total_bytes().into(),
+                        ],
+                    );
 
-                        match progress_evt {
-                            Err(e) => tracing::error!(
-                                "Encountered AVM2 error when broadcasting `progress` event: {}",
-                                e
-                            ),
-                            Ok(progress_evt) => {
-                                if let Err(e) =
-                                    Avm2::dispatch_event(context, progress_evt, loader_info)
-                                {
-                                    tracing::error!(
-                                        "Encountered AVM2 error when broadcasting `progress` event: {}",
-                                        e
-                                    );
-                                }
-                            }
+                    match progress_evt {
+                        Err(e) => tracing::error!(
+                            "Encountered AVM2 error when constructing `progress` event: {}",
+                            e,
+                        ),
+                        Ok(progress_evt) => {
+                            Avm2::dispatch_event(context, progress_evt, loader_info);
                         }
                     }
                 }
@@ -1467,7 +1594,7 @@ impl Player {
             } else {
                 Avm1::run_frame(context);
             }
-            context.update_sounds();
+            AudioManager::update_sounds(context);
         });
 
         self.needs_render = true;
@@ -1488,22 +1615,32 @@ impl Player {
 
         let mut background_color = Color::WHITE;
 
-        let commands = self.gc_arena.borrow().mutate(|gc_context, gc_root| {
+        let (cache_draws, commands) = self.gc_arena.borrow().mutate(|gc_context, gc_root| {
             let root_data = gc_root.data.read();
             let stage = root_data.stage;
 
+            let mut cache_draws = vec![];
             let mut render_context = RenderContext {
                 renderer: self.renderer.deref_mut(),
                 commands: CommandList::new(),
+                cache_draws: &mut cache_draws,
                 gc_context,
                 library: &root_data.library,
                 transform_stack: &mut self.transform_stack,
                 is_offscreen: false,
+                use_bitmap_cache: true,
                 stage,
-                allow_mask: true,
             };
 
             stage.render(&mut render_context);
+
+            #[cfg(feature = "egui")]
+            {
+                let debug_ui = self.debug_ui.clone();
+                debug_ui
+                    .borrow_mut()
+                    .draw_debug_rects(&mut render_context, root_data.dynamic_root);
+            }
 
             background_color =
                 if stage.window_mode() != WindowMode::Transparent || stage.is_fullscreen() {
@@ -1512,10 +1649,12 @@ impl Player {
                     Color::from_rgba(0)
                 };
 
-            render_context.commands
+            let commands = render_context.commands;
+            (cache_draws, commands)
         });
 
-        self.renderer.submit_frame(background_color, commands);
+        self.renderer
+            .submit_frame(background_color, commands, cache_draws);
 
         self.needs_render = false;
     }
@@ -1603,7 +1742,7 @@ impl Player {
                                 activation.context.gc_context,
                                 "__proto__",
                                 prototype,
-                                Attribute::empty(),
+                                Attribute::DONT_ENUM | Attribute::DONT_DELETE,
                             );
                             for event in events {
                                 let _ = activation.run_child_frame_for_action(
@@ -1658,25 +1797,6 @@ impl Player {
                         &args,
                     );
                 }
-
-                ActionType::Callable2 {
-                    callable,
-                    reciever,
-                    args,
-                } => {
-                    if let Err(e) =
-                        Avm2::run_stack_frame_for_callable(callable, reciever, &args[..], context)
-                    {
-                        tracing::error!("Unhandled AVM2 exception in event handler: {}", e);
-                    }
-                }
-
-                ActionType::Event2 { event_type, target } => {
-                    let event = Avm2EventObject::bare_default_event(context, event_type);
-                    if let Err(e) = Avm2::dispatch_event(context, event, target) {
-                        tracing::error!("Unhandled AVM2 exception in event handler: {}", e);
-                    }
-                }
             }
 
             // AVM1 bytecode may leave the stack unbalanced, so do not let garbage values accumulate
@@ -1696,10 +1816,13 @@ impl Player {
             let mouse_hovered_object = root_data.mouse_hovered_object;
             let mouse_pressed_object = root_data.mouse_pressed_object;
             let focus_tracker = root_data.focus_tracker;
+
+            #[allow(unused_variables)]
             let (
                 stage,
                 library,
                 action_queue,
+                interner,
                 avm1,
                 avm2,
                 drag_object,
@@ -1711,6 +1834,8 @@ impl Player {
                 current_context_menu,
                 external_interface,
                 audio_manager,
+                stream_manager,
+                dynamic_root,
             ) = root_data.update_context_params();
 
             let mut update_context = UpdateContext {
@@ -1724,11 +1849,12 @@ impl Player {
                 ui: self.ui.deref_mut(),
                 action_queue,
                 gc_context,
+                interner,
                 stage,
                 mouse_over_object: mouse_hovered_object,
                 mouse_down_object: mouse_pressed_object,
                 input: &self.input,
-                mouse_position: &self.mouse_pos,
+                mouse_position: &self.mouse_position,
                 drag_object,
                 player: self.self_reference.clone(),
                 load_manager,
@@ -1754,27 +1880,30 @@ impl Player {
                 time_offset: &mut self.time_offset,
                 audio_manager,
                 frame_rate: &mut self.frame_rate,
+                forced_frame_rate: self.forced_frame_rate,
                 actions_since_timeout_check: &mut self.actions_since_timeout_check,
                 frame_phase: &mut self.frame_phase,
                 stub_tracker: &mut self.stub_tracker,
+                stream_manager,
+                dynamic_root,
             };
 
-            let old_frame_rate = *update_context.frame_rate;
+            let prev_frame_rate = *update_context.frame_rate;
 
             let ret = f(&mut update_context);
 
-            let new_frame_rate = *update_context.frame_rate;
-
             // If we changed the framerate, let the audio handler now.
             #[allow(clippy::float_cmp)]
-            if old_frame_rate != new_frame_rate {
-                update_context.audio.set_frame_rate(new_frame_rate);
+            if *update_context.frame_rate != prev_frame_rate {
+                update_context
+                    .audio
+                    .set_frame_rate(*update_context.frame_rate);
             }
 
             self.current_frame = update_context
                 .stage
                 .root_clip()
-                .as_movie_clip()
+                .and_then(|root| root.as_movie_clip())
                 .map(|clip| clip.current_frame());
 
             // Hovered object may have been updated; copy it back to the GC root.
@@ -1788,7 +1917,7 @@ impl Player {
     }
 
     pub fn load_device_font<'gc>(
-        gc_context: gc_arena::MutationContext<'gc, '_>,
+        gc_context: &'gc gc_arena::Mutation<'gc>,
         renderer: &mut dyn RenderBackend,
     ) -> Font<'gc> {
         const DEVICE_FONT_TAG: &[u8] = include_bytes!("../assets/noto-sans-definefont3.bin");
@@ -1801,6 +1930,23 @@ impl Player {
                 .expect("Built-in font should compile"),
             reader.encoding(),
         )
+    }
+
+    #[cfg(feature = "egui")]
+    pub fn show_debug_ui(&mut self, egui_ctx: &egui::Context, movie_offset: f64) {
+        // To allow using `mutate_with_update_context` and passing the context inside the debug ui,
+        // we avoid borrowing directly from self here.
+        // This method should only be called once and it will panic if it tries to recursively render.
+        let debug_ui = self.debug_ui.clone();
+        let mut debug_ui = debug_ui.borrow_mut();
+        self.mutate_with_update_context(|context| {
+            debug_ui.show(egui_ctx, context, movie_offset);
+        });
+    }
+
+    #[cfg(feature = "egui")]
+    pub fn debug_ui(&mut self) -> core::cell::RefMut<'_, crate::debug_ui::DebugUi> {
+        self.debug_ui.borrow_mut()
     }
 
     /// Update the current state of the player.
@@ -1837,20 +1983,21 @@ impl Player {
 
     pub fn flush_shared_objects(&mut self) {
         self.update(|context| {
-            let mut avm1_activation =
-                Activation::from_stub(context.reborrow(), ActivationIdentifier::root("[Flush]"));
-            for so in avm1_activation.context.avm1_shared_objects.clone().values() {
-                if let Err(e) = crate::avm1::flush(&mut avm1_activation, *so, &[]) {
-                    tracing::error!("Error flushing AVM1 shared object `{:?}`: {:?}", so, e);
+            if let Some(mut avm1_activation) =
+                Activation::try_from_stub(context.reborrow(), ActivationIdentifier::root("[Flush]"))
+            {
+                for so in avm1_activation.context.avm1_shared_objects.clone().values() {
+                    if let Err(e) = crate::avm1::flush(&mut avm1_activation, *so, &[]) {
+                        tracing::error!("Error flushing AVM1 shared object `{:?}`: {:?}", so, e);
+                    }
                 }
             }
 
-            let mut avm2_activation =
-                Avm2Activation::from_nothing(avm1_activation.context.reborrow());
+            let mut avm2_activation = Avm2Activation::from_nothing(context.reborrow());
             for so in avm2_activation.context.avm2_shared_objects.clone().values() {
                 if let Err(e) = crate::avm2::globals::flash::net::shared_object::flush(
                     &mut avm2_activation,
-                    Some(*so),
+                    *so,
                     &[],
                 ) {
                     tracing::error!("Error flushing AVM2 shared object `{:?}`: {:?}", so, e);
@@ -1934,6 +2081,8 @@ pub struct PlayerBuilder {
 
     // Misc. player configuration
     autoplay: bool,
+    align: StageAlign,
+    forced_align: bool,
     scale_mode: StageScaleMode,
     forced_scale_mode: bool,
     fullscreen: bool,
@@ -1949,6 +2098,8 @@ pub struct PlayerBuilder {
     player_version: Option<u8>,
     quality: StageQuality,
     sandbox_type: SandboxType,
+    frame_rate: Option<f64>,
+    external_interface_providers: Vec<Box<dyn ExternalInterfaceProvider>>,
 }
 
 impl PlayerBuilder {
@@ -1970,7 +2121,9 @@ impl PlayerBuilder {
             video: None,
 
             autoplay: false,
-            scale_mode: StageScaleMode::ShowAll,
+            align: StageAlign::default(),
+            forced_align: false,
+            scale_mode: StageScaleMode::default(),
             forced_scale_mode: false,
             fullscreen: false,
             // Disable script timeout in debug builds by default.
@@ -1990,6 +2143,8 @@ impl PlayerBuilder {
             player_version: None,
             quality: StageQuality::High,
             sandbox_type: SandboxType::LocalTrusted,
+            frame_rate: None,
+            external_interface_providers: vec![],
         }
     }
 
@@ -2046,6 +2201,14 @@ impl PlayerBuilder {
     #[inline]
     pub fn with_video(mut self, video: impl 'static + VideoBackend) -> Self {
         self.video = Some(Box::new(video));
+        self
+    }
+
+    /// Sets the stage scale mode and optionally prevents movies from changing it.
+    #[inline]
+    pub fn with_align(mut self, align: StageAlign, force: bool) -> Self {
+        self.align = align;
+        self.forced_align = force;
         self
     }
 
@@ -2129,16 +2292,72 @@ impl PlayerBuilder {
         self
     }
 
-    // Configures the target player version.
+    /// Configures the target player version.
     pub fn with_player_version(mut self, version: Option<u8>) -> Self {
         self.player_version = version;
         self
     }
 
-    // Configured the security sandbox type (default is `SandboxType::LocalTrusted`)
+    /// Configures the security sandbox type (default is `SandboxType::LocalTrusted`)
     pub fn with_sandbox_type(mut self, sandbox_type: SandboxType) -> Self {
         self.sandbox_type = sandbox_type;
         self
+    }
+
+    /// Sets and locks the player's frame rate. If None is provided, this has no effect.
+    pub fn with_frame_rate(mut self, frame_rate: Option<f64>) -> Self {
+        self.frame_rate = frame_rate;
+        self
+    }
+
+    /// Adds an External Interface provider for movies to communicate with
+    pub fn with_external_interface(mut self, provider: Box<dyn ExternalInterfaceProvider>) -> Self {
+        self.external_interface_providers.push(provider);
+        self
+    }
+
+    fn create_gc_root<'gc>(
+        gc_context: &'gc gc_arena::Mutation<'gc>,
+        player_version: u8,
+        fullscreen: bool,
+        fake_movie: Arc<SwfMovie>,
+        external_interface_providers: Vec<Box<dyn ExternalInterfaceProvider>>,
+    ) -> GcRoot<'gc> {
+        let mut interner = AvmStringInterner::new();
+        let mut init = GcContext {
+            gc_context,
+            interner: &mut interner,
+        };
+        let dynamic_root = DynamicRootSet::new(gc_context);
+
+        GcRoot {
+            callstack: GcCell::new(gc_context, GcCallstack::default()),
+            data: GcCell::new(
+                gc_context,
+                GcRootData {
+                    audio_manager: AudioManager::new(),
+                    action_queue: ActionQueue::new(),
+                    avm1: Avm1::new(&mut init, player_version),
+                    avm2: Avm2::new(&mut init, player_version),
+                    interner,
+                    current_context_menu: None,
+                    drag_object: None,
+                    external_interface: ExternalInterface::new(external_interface_providers),
+                    focus_tracker: FocusTracker::new(gc_context),
+                    library: Library::empty(),
+                    load_manager: LoadManager::new(),
+                    mouse_hovered_object: None,
+                    mouse_pressed_object: None,
+                    avm1_shared_objects: HashMap::new(),
+                    avm2_shared_objects: HashMap::new(),
+                    stage: Stage::empty(gc_context, fullscreen, fake_movie),
+                    timers: Timers::new(),
+                    unbound_text_fields: Vec::new(),
+                    stream_manager: StreamManager::new(),
+                    dynamic_root,
+                },
+            ),
+        }
     }
 
     /// Builds the player, wiring up the backends and configuring the specified settings.
@@ -2175,7 +2394,8 @@ impl PlayerBuilder {
 
         // Instantiate the player.
         let fake_movie = Arc::new(SwfMovie::empty(player_version));
-        let frame_rate = 12.0;
+        let frame_rate = self.frame_rate.unwrap_or(12.0);
+        let forced_frame_rate = self.frame_rate.is_some();
         let player = Arc::new_cyclic(|self_ref| {
             Mutex::new(Player {
                 // Backends
@@ -2193,6 +2413,7 @@ impl PlayerBuilder {
 
                 // Timing
                 frame_rate,
+                forced_frame_rate,
                 frame_phase: Default::default(),
                 frame_accumulator: 0.0,
                 recent_run_frame_timings: VecDeque::with_capacity(10),
@@ -2204,7 +2425,8 @@ impl PlayerBuilder {
 
                 // Input
                 input: Default::default(),
-                mouse_pos: (Twips::ZERO, Twips::ZERO),
+                mouse_in_stage: true,
+                mouse_position: Point::ZERO,
                 mouse_cursor: MouseCursor::Arrow,
                 mouse_cursor_needs_check: false,
 
@@ -2222,38 +2444,20 @@ impl PlayerBuilder {
                 spoofed_url: self.spoofed_url.clone(),
                 compatibility_rules: self.compatibility_rules.clone(),
                 stub_tracker: StubCollection::new(),
+                #[cfg(feature = "egui")]
+                debug_ui: Default::default(),
 
                 // GC data
                 gc_arena: Rc::new(RefCell::new(GcArena::new(
                     ArenaParameters::default(),
-                    |gc_context| GcRoot {
-                        callstack: GcCell::allocate(gc_context, GcCallstack::default()),
-                        data: GcCell::allocate(
+                    |gc_context| {
+                        Self::create_gc_root(
                             gc_context,
-                            GcRootData {
-                                audio_manager: AudioManager::new(),
-                                action_queue: ActionQueue::new(),
-                                avm1: Avm1::new(gc_context, player_version),
-                                avm2: Avm2::new(gc_context),
-                                current_context_menu: None,
-                                drag_object: None,
-                                external_interface: ExternalInterface::new(),
-                                focus_tracker: FocusTracker::new(gc_context),
-                                library: Library::empty(),
-                                load_manager: LoadManager::new(),
-                                mouse_hovered_object: None,
-                                mouse_pressed_object: None,
-                                avm1_shared_objects: HashMap::new(),
-                                avm2_shared_objects: HashMap::new(),
-                                stage: Stage::empty(
-                                    gc_context,
-                                    self.fullscreen,
-                                    fake_movie.clone(),
-                                ),
-                                timers: Timers::new(),
-                                unbound_text_fields: Vec::new(),
-                            },
-                        ),
+                            player_version,
+                            self.fullscreen,
+                            fake_movie.clone(),
+                            self.external_interface_providers,
+                        )
                     },
                 ))),
             })
@@ -2262,12 +2466,10 @@ impl PlayerBuilder {
         // Finalize configuration and load the movie.
         let mut player_lock = player.lock().unwrap();
         player_lock.mutate_with_update_context(|context| {
-            // Instantiate an empty root before the main movie loads.
-            let fake_root = MovieClip::new(fake_movie, context.gc_context);
-            fake_root.post_instantiation(context, None, Instantiator::Movie, false);
-            context.stage.replace_at_depth(context, fake_root.into(), 0);
             Avm2::load_player_globals(context).expect("Unable to load AVM2 globals");
             let stage = context.stage;
+            stage.set_align(context, self.align);
+            stage.set_forced_align(context, self.forced_align);
             stage.set_scale_mode(context, self.scale_mode);
             stage.set_forced_scale_mode(context, self.forced_scale_mode);
             stage.post_instantiation(context, None, Instantiator::Movie, false);
@@ -2308,9 +2510,14 @@ pub struct DragObject<'gc> {
     /// The display object being dragged.
     pub display_object: DisplayObject<'gc>,
 
-    /// The offset from the mouse position to the center of the clip.
+    /// The last seen mouse position.
     #[collect(require_static)]
-    pub offset: (Twips, Twips),
+    pub last_mouse_position: Point<Twips>,
+
+    /// Whether the dragged object is locked to the center of the mouse position, or locked to the
+    /// point where the user first clicked it.
+    #[collect(require_static)]
+    pub lock_center: bool,
 
     /// The bounding rectangle where the clip will be maintained.
     #[collect(require_static)]

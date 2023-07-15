@@ -1,6 +1,6 @@
 Creating the H.263 test SWF was straightforward:
     $ ffmpeg -i testcard.png -vcodec flv1 test.swf
-
+Then the deblocking flag on the DefineVideoStream tag was set to "off".
 
 The VP6 one was a bit more involved:
 

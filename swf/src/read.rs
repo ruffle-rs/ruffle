@@ -73,6 +73,16 @@ pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
     let version = input.read_u8()?;
     let uncompressed_len = input.read_u32::<LittleEndian>()?;
 
+    // Check whether the SWF version is 0.
+    // Note that the behavior should actually vary, depending on the player version:
+    // - Flash Player 9 and later bail out (the behavior we implement).
+    // - Flash Player 8 loops through all the frames, without running any AS code.
+    // - Flash Player 7 and older don't fail and use the player version instead: a
+    // function like `getSWFVersion()` in AVM1 will then return the player version.
+    if version == 0 {
+        return Err(Error::invalid_data("Invalid SWF version"));
+    }
+
     // Now the SWF switches to a compressed stream.
     let mut decompress_stream: Box<dyn Read> = match compression {
         Compression::None => Box::new(input),
@@ -846,7 +856,7 @@ impl<'a> Reader<'a> {
         let color_transform = if version >= 2 {
             self.read_color_transform(true)?
         } else {
-            ColorTransform::new()
+            ColorTransform::IDENTITY
         };
         let mut filters = vec![];
         if (flags & 0b1_0000) != 0 {
@@ -1342,7 +1352,7 @@ impl<'a> Reader<'a> {
             ))
         } else {
             // MorphLineStyle2 in DefineMorphShape2.
-            let mut flags = LineStyleFlag::from_bits_truncate(self.read_u16()?);
+            let mut flags = LineStyleFlag::from_bits_retain(self.read_u16()?);
             // Verify valid cap and join styles.
             if flags.contains(LineStyleFlag::JOIN_STYLE) {
                 log::warn!("Invalid line join style");
@@ -1657,7 +1667,7 @@ impl<'a> Reader<'a> {
             Ok(LineStyle::new().with_width(width).with_color(color))
         } else {
             // LineStyle2 in DefineShape4
-            let mut flags = LineStyleFlag::from_bits_truncate(self.read_u16()?);
+            let mut flags = LineStyleFlag::from_bits_retain(self.read_u16()?);
             // Verify valid cap and join styles.
             if flags.contains(LineStyleFlag::JOIN_STYLE) {
                 log::warn!("Invalid line join style");
@@ -1744,67 +1754,79 @@ impl<'a> Reader<'a> {
                 let delta_x = if !is_axis_aligned || !is_vertical {
                     bits.read_sbits_twips(num_bits)?
                 } else {
-                    Default::default()
+                    Twips::ZERO
                 };
                 let delta_y = if !is_axis_aligned || is_vertical {
                     bits.read_sbits_twips(num_bits)?
                 } else {
-                    Default::default()
+                    Twips::ZERO
                 };
-                Some(ShapeRecord::StraightEdge { delta_x, delta_y })
+                Some(ShapeRecord::StraightEdge {
+                    delta: PointDelta::new(delta_x, delta_y),
+                })
             } else {
                 // CurvedEdge
+                let control_delta_x = bits.read_sbits_twips(num_bits)?;
+                let control_delta_y = bits.read_sbits_twips(num_bits)?;
+                let anchor_delta_x = bits.read_sbits_twips(num_bits)?;
+                let anchor_delta_y = bits.read_sbits_twips(num_bits)?;
                 Some(ShapeRecord::CurvedEdge {
-                    control_delta_x: bits.read_sbits_twips(num_bits)?,
-                    control_delta_y: bits.read_sbits_twips(num_bits)?,
-                    anchor_delta_x: bits.read_sbits_twips(num_bits)?,
-                    anchor_delta_y: bits.read_sbits_twips(num_bits)?,
+                    control_delta: PointDelta::new(control_delta_x, control_delta_y),
+                    anchor_delta: PointDelta::new(anchor_delta_x, anchor_delta_y),
                 })
             }
         } else {
-            let flags = bits.read_ubits(5)?;
-            if flags != 0 {
+            let flags = ShapeRecordFlag::from_bits_truncate(bits.read_ubits(5)? as u8);
+            if !flags.is_empty() {
                 // StyleChange
                 let num_fill_bits = context.num_fill_bits as u32;
                 let num_line_bits = context.num_line_bits as u32;
-                let mut new_style = StyleChangeData {
-                    move_to: None,
-                    fill_style_0: None,
-                    fill_style_1: None,
-                    line_style: None,
-                    new_styles: None,
-                };
-                if (flags & 0b1) != 0 {
-                    // move
+                let move_to = if flags.contains(ShapeRecordFlag::MOVE_TO) {
                     let num_bits = bits.read_ubits(5)?;
-                    new_style.move_to = Some((
-                        bits.read_sbits_twips(num_bits)?,
-                        bits.read_sbits_twips(num_bits)?,
-                    ));
-                }
-                if (flags & 0b10) != 0 {
-                    new_style.fill_style_0 = Some(bits.read_ubits(num_fill_bits)?);
-                }
-                if (flags & 0b100) != 0 {
-                    new_style.fill_style_1 = Some(bits.read_ubits(num_fill_bits)?);
-                }
-                if (flags & 0b1000) != 0 {
-                    new_style.line_style = Some(bits.read_ubits(num_line_bits)?);
-                }
+                    let move_x = bits.read_sbits_twips(num_bits)?;
+                    let move_y = bits.read_sbits_twips(num_bits)?;
+                    Some(Point::new(move_x, move_y))
+                } else {
+                    None
+                };
+                let fill_style_0 = if flags.contains(ShapeRecordFlag::FILL_STYLE_0) {
+                    Some(bits.read_ubits(num_fill_bits)?)
+                } else {
+                    None
+                };
+                let fill_style_1 = if flags.contains(ShapeRecordFlag::FILL_STYLE_1) {
+                    Some(bits.read_ubits(num_fill_bits)?)
+                } else {
+                    None
+                };
+                let line_style = if flags.contains(ShapeRecordFlag::LINE_STYLE) {
+                    Some(bits.read_ubits(num_line_bits)?)
+                } else {
+                    None
+                };
                 // The spec says that StyleChangeRecord can only occur in DefineShape2+,
                 // but SWFs in the wild exist with them in DefineShape1 (generated by third party tools),
                 // and these run correctly in the Flash Player.
-                if (flags & 0b10000) != 0 {
+                let new_styles = if flags.contains(ShapeRecordFlag::NEW_STYLES) {
                     let mut reader = Reader::new(bits.reader(), context.swf_version);
                     let (new_styles, num_fill_bits, num_line_bits) =
                         reader.read_shape_styles(context.shape_version)?;
+                    *bits.reader() = reader.input;
                     context.num_fill_bits = num_fill_bits;
                     context.num_line_bits = num_line_bits;
-                    new_style.new_styles = Some(new_styles);
-                    *bits.reader() = reader.input;
-                }
-                Some(ShapeRecord::StyleChange(Box::new(new_style)))
+                    Some(new_styles)
+                } else {
+                    None
+                };
+                Some(ShapeRecord::StyleChange(Box::new(StyleChangeData {
+                    move_to,
+                    fill_style_0,
+                    fill_style_1,
+                    line_style,
+                    new_styles,
+                })))
             } else {
+                // EndShapeRecord
                 None
             }
         };
@@ -2074,7 +2096,7 @@ impl<'a> Reader<'a> {
             angle: self.read_fixed16()?,
             distance: self.read_fixed16()?,
             strength: self.read_fixed8()?,
-            flags: DropShadowFilterFlags::from_bits_truncate(self.read_u8()?),
+            flags: DropShadowFilterFlags::from_bits_retain(self.read_u8()?),
         })
     }
 
@@ -2082,7 +2104,7 @@ impl<'a> Reader<'a> {
         Ok(BlurFilter {
             blur_x: self.read_fixed16()?,
             blur_y: self.read_fixed16()?,
-            flags: BlurFilterFlags::from_bits_truncate(self.read_u8()?),
+            flags: BlurFilterFlags::from_bits_retain(self.read_u8()?),
         })
     }
 
@@ -2092,7 +2114,7 @@ impl<'a> Reader<'a> {
             blur_x: self.read_fixed16()?,
             blur_y: self.read_fixed16()?,
             strength: self.read_fixed8()?,
-            flags: GlowFilterFlags::from_bits_truncate(self.read_u8()?),
+            flags: GlowFilterFlags::from_bits_retain(self.read_u8()?),
         })
     }
 
@@ -2106,7 +2128,7 @@ impl<'a> Reader<'a> {
             angle: self.read_fixed16()?,
             distance: self.read_fixed16()?,
             strength: self.read_fixed8()?,
-            flags: BevelFilterFlags::from_bits_truncate(self.read_u8()?),
+            flags: BevelFilterFlags::from_bits_retain(self.read_u8()?),
         })
     }
 
@@ -2130,7 +2152,7 @@ impl<'a> Reader<'a> {
             angle: self.read_fixed16()?,
             distance: self.read_fixed16()?,
             strength: self.read_fixed8()?,
-            flags: GradientFilterFlags::from_bits_truncate(self.read_u8()?),
+            flags: GradientFilterFlags::from_bits_retain(self.read_u8()?),
         })
     }
 
@@ -2955,8 +2977,7 @@ pub mod tests {
         };
 
         let shape_record = ShapeRecord::StraightEdge {
-            delta_x: Twips::from_pixels(1.0),
-            delta_y: Twips::from_pixels(1.0),
+            delta: PointDelta::from_pixels(1.0, 1.0),
         };
         assert_eq!(
             read(&[0b11_0100_1_0, 0b1010_0010, 0b100_00000]),
@@ -2964,14 +2985,12 @@ pub mod tests {
         );
 
         let shape_record = ShapeRecord::StraightEdge {
-            delta_x: Twips::from_pixels(0.0),
-            delta_y: Twips::from_pixels(-1.0),
+            delta: PointDelta::from_pixels(0.0, -1.0),
         };
         assert_eq!(read(&[0b11_0100_0_1, 0b101100_00]), shape_record);
 
         let shape_record = ShapeRecord::StraightEdge {
-            delta_x: Twips::from_pixels(-1.5),
-            delta_y: Twips::from_pixels(0.0),
+            delta: PointDelta::from_pixels(-1.5, 0.0),
         };
         assert_eq!(read(&[0b11_0100_0_0, 0b100010_00]), shape_record);
     }

@@ -1,30 +1,30 @@
 //Bullet-bearing HTML
 //field.textWidth
-126.15
+124.9
 //field.textHeight
-160.75
+201.7
 //Bullet-bearing HTML with left margin
 //field.textWidth
-98
+96.75
 //field.textHeight
-179.05
+224.55
 //Bullet-bearing HTML with indent
 //field.textWidth
 124.3
 //field.textHeight
-160.75
+201.7
 //Bullet-bearing HTML with block indent
 //field.textWidth
-98
+96.75
 //field.textHeight
-179.05
+224.55
 //Bullet-bearing HTML with right margin
 //field.textWidth
-98
+96.75
 //field.textHeight
-179.05
+224.55
 //Bullet-bearing HTML with right margin and explicit newlines
 //field.textWidth
-98
+96.75
 //field.textHeight
-197.35
+247.4

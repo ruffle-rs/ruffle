@@ -102,7 +102,7 @@
         private function setupScene():void
         {
             renderContext.enableErrorChecking = true; //Can slow rendering - only turn on when developing/testing
-            renderContext.configureBackBuffer( viewWidth, viewHeight, 2, false );
+            renderContext.configureBackBuffer( viewWidth, viewHeight, 4, false );
             renderContext.setCulling( Context3DTriangleFace.BACK );
             
             //Create vertex index list for the triangles forming a cube

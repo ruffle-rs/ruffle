@@ -1,0 +1,7 @@
+xml.text(): ABC
+xml.text(): BeforeAfter
+xml.text(): BeforeAfter
+xml.text(): ABC
+texts.length(): 5
+texts.toString(): abcbeforeafterac
+xml.child("unknown").text(): 

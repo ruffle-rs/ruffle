@@ -1,4 +1,4 @@
-use crate::avm1::PropertyMap as Avm1PropertyMap;
+use crate::avm1::{PropertyMap as Avm1PropertyMap, PropertyMap};
 use crate::avm2::{ClassObject as Avm2ClassObject, Domain as Avm2Domain};
 use crate::backend::audio::SoundHandle;
 use crate::character::Character;
@@ -49,7 +49,7 @@ pub struct Avm2ClassRegistry<'gc> {
 }
 
 unsafe impl Collect for Avm2ClassRegistry<'_> {
-    fn trace(&self, cc: gc_arena::CollectionContext) {
+    fn trace(&self, cc: &gc_arena::Collection) {
         for (k, _) in self.class_map.iter() {
             k.trace(cc);
         }
@@ -90,6 +90,27 @@ impl<'gc> Avm2ClassRegistry<'gc> {
         movie: Arc<SwfMovie>,
         symbol: CharacterId,
     ) {
+        if let Some(old) = self.class_map.get(&class_object) {
+            if Arc::ptr_eq(&movie, &old.0) && symbol != old.1 {
+                // Flash player actually allows using the same class in multiple SymbolClass
+                // entires in the same swf, with *different* symbol ids. Whichever one
+                // is processed first will *win*, and the second one will be ignored.
+                // We still log a warning, since we wouldn't expect this to happen outside
+                // of deliberately crafted SWFs.
+                tracing::warn!(
+                    "Tried to overwrite class {:?} id={:?} with symbol id={:?} from same movie",
+                    class_object,
+                    old.1,
+                    symbol,
+                );
+            }
+            // If we're trying to overwrite the class with a symbol from a *different* SwfMovie,
+            // then just ignore it. This handles the case where a Loader has a class that shadows
+            // a class in the main swf (possibly with a different ApplicationDomain). This will
+            // result in the original class from the parent being used, even when the child swf
+            // instantiates the clip on the timeline.
+            return;
+        }
         self.class_map
             .insert(class_object, MovieSymbol(movie, symbol));
     }
@@ -100,7 +121,7 @@ impl<'gc> Avm2ClassRegistry<'gc> {
 #[collect(no_drop)]
 pub struct MovieLibrary<'gc> {
     characters: HashMap<CharacterId, Character<'gc>>,
-    export_characters: Avm1PropertyMap<'gc, Character<'gc>>,
+    export_characters: Avm1PropertyMap<'gc, CharacterId>,
     jpeg_tables: Option<Vec<u8>>,
     fonts: HashMap<FontDescriptor, Font<'gc>>,
     avm2_domain: Option<Avm2Domain<'gc>>,
@@ -121,7 +142,10 @@ impl<'gc> MovieLibrary<'gc> {
         // TODO(Herschel): What is the behavior if id already exists?
         if !self.contains_character(id) {
             if let Character::Font(font) = character {
-                self.fonts.insert(font.descriptor().clone(), font);
+                // The first font with a given descriptor wins
+                if !self.fonts.contains_key(font.descriptor()) {
+                    self.fonts.insert(font.descriptor().clone(), font);
+                }
             }
 
             self.characters.insert(id, character);
@@ -132,23 +156,18 @@ impl<'gc> MovieLibrary<'gc> {
 
     /// Registers an export name for a given character ID.
     /// This character will then be instantiable from AVM1.
-    pub fn register_export(
-        &mut self,
-        id: CharacterId,
-        export_name: AvmString<'gc>,
-    ) -> Option<&Character<'gc>> {
-        if let Some(character) = self.characters.get(&id) {
-            self.export_characters
-                .insert(export_name, character.clone(), false);
-            Some(character)
-        } else {
-            tracing::warn!(
-                "Can't register export {}: Character ID {} doesn't exist",
-                export_name,
-                id,
-            );
-            None
-        }
+    pub fn register_export(&mut self, id: CharacterId, export_name: AvmString<'gc>) {
+        self.export_characters.insert(export_name, id, false);
+    }
+
+    #[allow(dead_code)]
+    pub fn characters(&self) -> &HashMap<CharacterId, Character<'gc>> {
+        &self.characters
+    }
+
+    #[allow(dead_code)]
+    pub fn export_characters(&self) -> &PropertyMap<'gc, CharacterId> {
+        &self.export_characters
     }
 
     pub fn contains_character(&self, id: CharacterId) -> bool {
@@ -160,7 +179,10 @@ impl<'gc> MovieLibrary<'gc> {
     }
 
     pub fn character_by_export_name(&self, name: AvmString<'gc>) -> Option<&Character<'gc>> {
-        self.export_characters.get(name, false)
+        if let Some(id) = self.export_characters.get(name, false) {
+            return self.characters.get(id);
+        }
+        None
     }
 
     /// Instantiates the library item with the given character ID into a display object.
@@ -185,7 +207,7 @@ impl<'gc> MovieLibrary<'gc> {
         export_name: AvmString<'gc>,
         gc_context: MutationContext<'gc, '_>,
     ) -> Result<DisplayObject<'gc>, &'static str> {
-        if let Some(character) = self.export_characters.get(export_name, false) {
+        if let Some(character) = self.character_by_export_name(export_name) {
             self.instantiate_display_object(character, gc_context)
         } else {
             tracing::error!(
@@ -241,8 +263,17 @@ impl<'gc> MovieLibrary<'gc> {
         is_italic: bool,
     ) -> Option<Font<'gc>> {
         let descriptor = FontDescriptor::from_parts(name, is_bold, is_italic);
-
-        self.fonts.get(&descriptor).copied()
+        if let Some(font) = self.fonts.get(&descriptor) {
+            return Some(*font);
+        }
+        // If we don't have a direct match, fallback to something with the same name
+        // [NA]TODO: This isn't *entirely* correct. I think we're storing fonts wrong.
+        // We might need to merge fonts as they're defined, and there should only be one font per name.
+        self.fonts
+            .iter()
+            .find(|(d, _)| d.class() == name)
+            .map(|(_, f)| f)
+            .copied()
     }
 
     /// Returns the `Graphic` with the given character ID.
@@ -334,11 +365,10 @@ impl<'a, 'gc> ruffle_render::bitmap::BitmapSource for MovieLibrarySource<'a, 'gc
     }
 
     fn bitmap_handle(&self, id: u16, backend: &mut dyn RenderBackend) -> Option<BitmapHandle> {
-        self.library.get_bitmap(id).and_then(|bitmap| {
+        self.library.get_bitmap(id).map(|bitmap| {
             bitmap
-                .bitmap_data()
-                .write(self.gc_context)
-                .bitmap_handle(backend)
+                .bitmap_data_wrapper()
+                .bitmap_handle(self.gc_context, backend)
         })
     }
 }
@@ -364,7 +394,7 @@ pub struct Library<'gc> {
 
 unsafe impl<'gc> gc_arena::Collect for Library<'gc> {
     #[inline]
-    fn trace(&self, cc: gc_arena::CollectionContext) {
+    fn trace(&self, cc: &gc_arena::Collection) {
         for (_, val) in self.movie_libraries.iter() {
             val.trace(cc);
         }
@@ -390,6 +420,10 @@ impl<'gc> Library<'gc> {
         self.movie_libraries
             .entry(movie)
             .or_insert_with(MovieLibrary::new)
+    }
+
+    pub fn known_movies(&self) -> Vec<Arc<SwfMovie>> {
+        self.movie_libraries.keys().collect()
     }
 
     /// Returns the device font for use when a font is unavailable.

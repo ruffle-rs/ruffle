@@ -1,29 +1,28 @@
 //! Object trait to expose objects to AVM
 
 use crate::avm1::function::{Executable, ExecutionName, ExecutionReason, FunctionObject};
-use crate::avm1::globals::bevel_filter::BevelFilterObject;
-use crate::avm1::globals::blur_filter::BlurFilterObject;
+use crate::avm1::globals::bevel_filter::BevelFilter;
+use crate::avm1::globals::blur_filter::BlurFilter;
+use crate::avm1::globals::color_matrix_filter::ColorMatrixFilter;
 use crate::avm1::globals::color_transform::ColorTransformObject;
+use crate::avm1::globals::convolution_filter::ConvolutionFilter;
 use crate::avm1::globals::date::Date;
+use crate::avm1::globals::displacement_map_filter::DisplacementMapFilter;
+use crate::avm1::globals::drop_shadow_filter::DropShadowFilter;
+use crate::avm1::globals::glow_filter::GlowFilter;
+use crate::avm1::globals::gradient_filter::GradientFilter;
+use crate::avm1::globals::transform::TransformObject;
+use crate::avm1::globals::xml::Xml;
 use crate::avm1::object::array_object::ArrayObject;
-use crate::avm1::object::bitmap_data::BitmapDataObject;
-use crate::avm1::object::color_matrix_filter::ColorMatrixFilterObject;
-use crate::avm1::object::convolution_filter::ConvolutionFilterObject;
-use crate::avm1::object::displacement_map_filter::DisplacementMapFilterObject;
-use crate::avm1::object::drop_shadow_filter::DropShadowFilterObject;
-use crate::avm1::object::glow_filter::GlowFilterObject;
-use crate::avm1::object::gradient_bevel_filter::GradientBevelFilterObject;
-use crate::avm1::object::gradient_glow_filter::GradientGlowFilterObject;
 use crate::avm1::object::shared_object::SharedObject;
 use crate::avm1::object::super_object::SuperObject;
-use crate::avm1::object::transform_object::TransformObject;
 use crate::avm1::object::value_object::ValueObject;
-use crate::avm1::object::xml_node_object::XmlNodeObject;
-use crate::avm1::object::xml_object::XmlObject;
 use crate::avm1::{Activation, Attribute, Error, ScriptObject, SoundObject, StageObject, Value};
+use crate::bitmap::bitmap_data::BitmapDataWrapper;
 use crate::display_object::DisplayObject;
 use crate::display_object::TDisplayObject;
 use crate::html::TextFormat;
+use crate::streams::NetStream;
 use crate::string::AvmString;
 use crate::xml::XmlNode;
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -31,34 +30,35 @@ use ruffle_macros::enum_trait_object;
 use std::fmt::Debug;
 
 pub mod array_object;
-pub mod bitmap_data;
-pub mod color_matrix_filter;
-pub mod convolution_filter;
 mod custom_object;
-pub mod displacement_map_filter;
-pub mod drop_shadow_filter;
-pub mod glow_filter;
-pub mod gradient_bevel_filter;
-pub mod gradient_glow_filter;
 pub mod script_object;
 pub mod shared_object;
 pub mod sound_object;
 pub mod stage_object;
 pub mod super_object;
-pub mod transform_object;
 pub mod value_object;
-pub mod xml_node_object;
-pub mod xml_object;
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub enum NativeObject<'gc> {
     None,
     Date(GcCell<'gc, Date>),
-    BlurFilter(GcCell<'gc, BlurFilterObject>),
-    BevelFilter(GcCell<'gc, BevelFilterObject>),
+    BlurFilter(BlurFilter<'gc>),
+    BevelFilter(BevelFilter<'gc>),
+    GlowFilter(GlowFilter<'gc>),
+    DropShadowFilter(DropShadowFilter<'gc>),
+    ColorMatrixFilter(ColorMatrixFilter<'gc>),
+    DisplacementMapFilter(DisplacementMapFilter<'gc>),
+    ConvolutionFilter(ConvolutionFilter<'gc>),
+    GradientBevelFilter(GradientFilter<'gc>),
+    GradientGlowFilter(GradientFilter<'gc>),
     ColorTransform(GcCell<'gc, ColorTransformObject>),
+    Transform(TransformObject<'gc>),
     TextFormat(GcCell<'gc, TextFormat>),
+    NetStream(NetStream<'gc>),
+    BitmapData(BitmapDataWrapper<'gc>),
+    Xml(Xml<'gc>),
+    XmlNode(XmlNode<'gc>),
 }
 
 /// Represents an object that can be directly interacted with by the AVM
@@ -73,20 +73,9 @@ pub enum NativeObject<'gc> {
         SoundObject(SoundObject<'gc>),
         StageObject(StageObject<'gc>),
         SuperObject(SuperObject<'gc>),
-        XmlObject(XmlObject<'gc>),
-        XmlNodeObject(XmlNodeObject<'gc>),
         ValueObject(ValueObject<'gc>),
         FunctionObject(FunctionObject<'gc>),
         SharedObject(SharedObject<'gc>),
-        TransformObject(TransformObject<'gc>),
-        GlowFilterObject(GlowFilterObject<'gc>),
-        DropShadowFilterObject(DropShadowFilterObject<'gc>),
-        ColorMatrixFilterObject(ColorMatrixFilterObject<'gc>),
-        DisplacementMapFilterObject(DisplacementMapFilterObject<'gc>),
-        ConvolutionFilterObject(ConvolutionFilterObject<'gc>),
-        GradientBevelFilterObject(GradientBevelFilterObject<'gc>),
-        GradientGlowFilterObject(GradientGlowFilterObject<'gc>),
-        BitmapData(BitmapDataObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
@@ -485,8 +474,13 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
     }
 
     /// Enumerate the object.
-    fn get_keys(&self, activation: &mut Activation<'_, 'gc>) -> Vec<AvmString<'gc>> {
-        self.raw_script_object().get_keys(activation)
+    fn get_keys(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        include_hidden: bool,
+    ) -> Vec<AvmString<'gc>> {
+        self.raw_script_object()
+            .get_keys(activation, include_hidden)
     }
 
     /// Enumerate all interfaces implemented by this object.
@@ -583,14 +577,13 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
         None
     }
 
-    /// Get the underlying XML document for this object, if it exists.
-    fn as_xml(&self) -> Option<XmlObject<'gc>> {
-        None
-    }
-
     /// Get the underlying XML node for this object, if it exists.
     fn as_xml_node(&self) -> Option<XmlNode<'gc>> {
-        None
+        match self.native() {
+            NativeObject::Xml(xml) => Some(xml.root()),
+            NativeObject::XmlNode(xml_node) => Some(xml_node),
+            _ => None,
+        }
     }
 
     /// Get the underlying `ValueObject`, if it exists.
@@ -600,51 +593,6 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
 
     /// Get the underlying `SharedObject`, if it exists
     fn as_shared_object(&self) -> Option<SharedObject<'gc>> {
-        None
-    }
-
-    /// Get the underlying `TransformObject`, if it exists
-    fn as_transform_object(&self) -> Option<TransformObject<'gc>> {
-        None
-    }
-
-    /// Get the underlying `GlowFilterObject`, if it exists
-    fn as_glow_filter_object(&self) -> Option<GlowFilterObject<'gc>> {
-        None
-    }
-
-    /// Get the underlying `DropShadowFilterObject`, if it exists
-    fn as_drop_shadow_filter_object(&self) -> Option<DropShadowFilterObject<'gc>> {
-        None
-    }
-
-    /// Get the underlying `ColorMatrixFilterObject`, if it exists
-    fn as_color_matrix_filter_object(&self) -> Option<ColorMatrixFilterObject<'gc>> {
-        None
-    }
-
-    /// Get the underlying `DisplacementMapFilterObject`, if it exists
-    fn as_displacement_map_filter_object(&self) -> Option<DisplacementMapFilterObject<'gc>> {
-        None
-    }
-
-    /// Get the underlying `ConvolutionFilterObject`, if it exists
-    fn as_convolution_filter_object(&self) -> Option<ConvolutionFilterObject<'gc>> {
-        None
-    }
-
-    /// Get the underlying `GradientBevelFilterObject`, if it exists
-    fn as_gradient_bevel_filter_object(&self) -> Option<GradientBevelFilterObject<'gc>> {
-        None
-    }
-
-    /// Get the underlying `GradientGlowFilterObject`, if it exists
-    fn as_gradient_glow_filter_object(&self) -> Option<GradientGlowFilterObject<'gc>> {
-        None
-    }
-
-    /// Get the underlying `BitmapDataObject`, if it exists
-    fn as_bitmap_data_object(&self) -> Option<BitmapDataObject<'gc>> {
         None
     }
 

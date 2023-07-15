@@ -28,7 +28,20 @@ use std::io::{self, Write};
 /// let output = Vec::new();
 /// swf::write_swf(&header, &tags, output).unwrap();
 /// ```
-pub fn write_swf<W: Write>(header: &Header, tags: &[Tag<'_>], mut output: W) -> Result<()> {
+pub fn write_swf<W: Write>(header: &Header, tags: &[Tag<'_>], output: W) -> Result<()> {
+    // Write SWF body.
+    let mut swf_body = Vec::new();
+    {
+        let mut writer = Writer::new(&mut swf_body, header.version);
+        // Write main timeline tag list.
+        writer.write_tag_list(tags)?;
+    }
+    write_swf_raw_tags(header, &swf_body, output)
+}
+
+/// Writes a SWF to the output stream, where the tag list has already been serialized to bytes.
+/// This still appends other header information such as stage size.
+pub fn write_swf_raw_tags<W: Write>(header: &Header, tags: &[u8], mut output: W) -> Result<()> {
     let signature = match header.compression {
         Compression::None => b"FWS",
         Compression::Zlib => b"CWS",
@@ -45,10 +58,8 @@ pub fn write_swf<W: Write>(header: &Header, tags: &[Tag<'_>], mut output: W) -> 
         writer.write_rectangle(&header.stage_size)?;
         writer.write_fixed8(header.frame_rate)?;
         writer.write_u16(header.num_frames)?;
-
-        // Write main timeline tag list.
-        writer.write_tag_list(tags)?;
     }
+    swf_body.extend_from_slice(tags);
 
     // Write SWF header.
     // Uncompressed SWF length.
@@ -1414,62 +1425,69 @@ impl<W: Write> Writer<W> {
         bits: &mut BitWriter<T>,
         context: &mut ShapeContext,
     ) -> Result<()> {
-        match *record {
-            ShapeRecord::StraightEdge { delta_x, delta_y } => {
+        match record {
+            ShapeRecord::StraightEdge { delta } => {
                 bits.write_ubits(2, 0b11)?; // Straight edge
                                             // TODO: Check underflow?
-                let mut num_bits = max(count_sbits_twips(delta_x), count_sbits_twips(delta_y));
-                num_bits = max(2, num_bits);
-                let is_axis_aligned = delta_x.get() == 0 || delta_y.get() == 0;
+                let num_bits = count_sbits_twips(delta.dx)
+                    .max(count_sbits_twips(delta.dy))
+                    .max(2);
+                let is_axis_aligned = delta.dx == Twips::ZERO || delta.dy == Twips::ZERO;
                 bits.write_ubits(4, num_bits - 2)?;
                 bits.write_bit(!is_axis_aligned)?;
                 if is_axis_aligned {
-                    bits.write_bit(delta_x.get() == 0)?;
+                    bits.write_bit(delta.dx == Twips::ZERO)?;
                 }
-                if delta_x.get() != 0 {
-                    bits.write_sbits_twips(num_bits, delta_x)?;
+                if delta.dx != Twips::ZERO {
+                    bits.write_sbits_twips(num_bits, delta.dx)?;
                 }
-                if delta_y.get() != 0 {
-                    bits.write_sbits_twips(num_bits, delta_y)?;
+                if delta.dy != Twips::ZERO {
+                    bits.write_sbits_twips(num_bits, delta.dy)?;
                 }
             }
             ShapeRecord::CurvedEdge {
-                control_delta_x,
-                control_delta_y,
-                anchor_delta_x,
-                anchor_delta_y,
+                control_delta,
+                anchor_delta,
             } => {
                 bits.write_ubits(2, 0b10)?; // Curved edge
-                let num_bits = [
-                    control_delta_x,
-                    control_delta_y,
-                    anchor_delta_x,
-                    anchor_delta_y,
-                ]
-                .iter()
-                .map(|x| count_sbits_twips(*x))
-                .max()
-                .unwrap();
+                let num_bits = count_sbits_twips(control_delta.dx)
+                    .max(count_sbits_twips(control_delta.dy))
+                    .max(count_sbits_twips(anchor_delta.dx))
+                    .max(count_sbits_twips(anchor_delta.dy));
                 bits.write_ubits(4, num_bits - 2)?;
-                bits.write_sbits_twips(num_bits, control_delta_x)?;
-                bits.write_sbits_twips(num_bits, control_delta_y)?;
-                bits.write_sbits_twips(num_bits, anchor_delta_x)?;
-                bits.write_sbits_twips(num_bits, anchor_delta_y)?;
+                bits.write_sbits_twips(num_bits, control_delta.dx)?;
+                bits.write_sbits_twips(num_bits, control_delta.dy)?;
+                bits.write_sbits_twips(num_bits, anchor_delta.dx)?;
+                bits.write_sbits_twips(num_bits, anchor_delta.dy)?;
             }
-            ShapeRecord::StyleChange(ref style_change) => {
+            ShapeRecord::StyleChange(style_change) => {
                 bits.write_bit(false)?; // Style change
                 let num_fill_bits = context.num_fill_bits.into();
                 let num_line_bits = context.num_line_bits.into();
-                bits.write_bit(style_change.new_styles.is_some())?;
-                bits.write_bit(style_change.line_style.is_some())?;
-                bits.write_bit(style_change.fill_style_1.is_some())?;
-                bits.write_bit(style_change.fill_style_0.is_some())?;
-                bits.write_bit(style_change.move_to.is_some())?;
-                if let Some((move_x, move_y)) = style_change.move_to {
-                    let num_bits = max(count_sbits_twips(move_x), count_sbits_twips(move_y));
+                let mut flags = ShapeRecordFlag::empty();
+                flags.set(ShapeRecordFlag::MOVE_TO, style_change.move_to.is_some());
+                flags.set(
+                    ShapeRecordFlag::FILL_STYLE_0,
+                    style_change.fill_style_0.is_some(),
+                );
+                flags.set(
+                    ShapeRecordFlag::FILL_STYLE_1,
+                    style_change.fill_style_1.is_some(),
+                );
+                flags.set(
+                    ShapeRecordFlag::LINE_STYLE,
+                    style_change.line_style.is_some(),
+                );
+                flags.set(
+                    ShapeRecordFlag::NEW_STYLES,
+                    style_change.new_styles.is_some(),
+                );
+                bits.write_ubits(5, flags.bits().into())?;
+                if let Some(move_to) = &style_change.move_to {
+                    let num_bits = count_sbits_twips(move_to.x).max(count_sbits_twips(move_to.y));
                     bits.write_ubits(5, num_bits)?;
-                    bits.write_sbits_twips(num_bits, move_x)?;
-                    bits.write_sbits_twips(num_bits, move_y)?;
+                    bits.write_sbits_twips(num_bits, move_to.x)?;
+                    bits.write_sbits_twips(num_bits, move_to.y)?;
                 }
                 if let Some(fill_style_index) = style_change.fill_style_0 {
                     bits.write_ubits(num_fill_bits, fill_style_index)?;

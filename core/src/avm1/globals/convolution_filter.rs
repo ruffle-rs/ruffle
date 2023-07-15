@@ -1,327 +1,460 @@
 //! flash.filters.ConvolutionFilter object
 
-use crate::avm1::activation::Activation;
 use crate::avm1::clamp::Clamp;
-use crate::avm1::error::Error;
-use crate::avm1::object::convolution_filter::ConvolutionFilterObject;
+use crate::avm1::function::{Executable, FunctionObject};
+use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{ArrayObject, Object, TObject, Value};
-use gc_arena::MutationContext;
+use crate::avm1::{Activation, ArrayObject, Error, Object, ScriptObject, TObject, Value};
+use crate::context::{GcContext, UpdateContext};
+use gc_arena::{Collect, GcCell, MutationContext};
+use std::ops::Deref;
+use swf::{Color, ConvolutionFilterFlags, Fixed16};
 
-const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "alpha" => property(alpha, set_alpha);
-    "bias" => property(bias, set_bias);
-    "clamp" => property(clamp, set_clamp);
-    "color" => property(color, set_color);
-    "divisor" => property(divisor, set_divisor);
-    "matrix" => property(matrix, set_matrix);
-    "matrixX" => property(matrix_x, set_matrix_x);
-    "matrixY" => property(matrix_y, set_matrix_y);
-    "preserveAlpha" => property(preserve_alpha, set_preserve_alpha);
-};
-
-pub fn constructor<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    set_matrix_x(activation, this, args.get(0..1).unwrap_or_default())?;
-    set_matrix_y(activation, this, args.get(1..2).unwrap_or_default())?;
-    set_matrix(activation, this, args.get(2..3).unwrap_or_default())?;
-    set_divisor(activation, this, args.get(3..4).unwrap_or_default())?;
-    set_bias(activation, this, args.get(4..5).unwrap_or_default())?;
-    set_preserve_alpha(activation, this, args.get(5..6).unwrap_or_default())?;
-    set_clamp(activation, this, args.get(6..7).unwrap_or_default())?;
-    set_color(activation, this, args.get(7..8).unwrap_or_default())?;
-    set_alpha(activation, this, args.get(8..9).unwrap_or_default())?;
-
-    Ok(this.into())
+#[derive(Clone, Debug, Collect)]
+#[collect(require_static)]
+struct ConvolutionFilterData {
+    matrix_x: u8,
+    matrix_y: u8,
+    matrix: Vec<f32>,
+    divisor: f32,
+    bias: f32,
+    preserve_alpha: bool,
+    clamp: bool,
+    color: Color,
 }
 
-pub fn alpha<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(filter) = this.as_convolution_filter_object() {
-        return Ok(filter.alpha().into());
+impl ConvolutionFilterData {
+    fn reset_matrix(&mut self) {
+        let len = (self.matrix_x * self.matrix_y) as usize;
+        self.matrix = vec![0.0; len];
     }
 
-    Ok(Value::Undefined)
-}
-
-pub fn set_alpha<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let alpha = args
-        .get(0)
-        .unwrap_or(&0.into())
-        .coerce_to_f64(activation)
-        .map(|x| x.clamp_also_nan(0.0, 1.0))?;
-
-    if let Some(filter) = this.as_convolution_filter_object() {
-        filter.set_alpha(activation.context.gc_context, alpha);
-    }
-
-    Ok(Value::Undefined)
-}
-
-pub fn bias<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(filter) = this.as_convolution_filter_object() {
-        return Ok(filter.bias().into());
-    }
-
-    Ok(Value::Undefined)
-}
-
-pub fn set_bias<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let bias = args.get(0).unwrap_or(&0.into()).coerce_to_f64(activation)?;
-
-    if let Some(filter) = this.as_convolution_filter_object() {
-        filter.set_bias(activation.context.gc_context, bias);
-    }
-
-    Ok(Value::Undefined)
-}
-
-pub fn clamp<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(filter) = this.as_convolution_filter_object() {
-        return Ok(filter.clamp().into());
-    }
-
-    Ok(Value::Undefined)
-}
-
-pub fn set_clamp<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let clamp = args
-        .get(0)
-        .unwrap_or(&true.into())
-        .as_bool(activation.swf_version());
-
-    if let Some(filter) = this.as_convolution_filter_object() {
-        filter.set_clamp(activation.context.gc_context, clamp);
-    }
-
-    Ok(Value::Undefined)
-}
-
-pub fn color<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(object) = this.as_convolution_filter_object() {
-        return Ok(object.color().into());
-    }
-
-    Ok(Value::Undefined)
-}
-
-pub fn set_color<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let color = args
-        .get(0)
-        .unwrap_or(&0x000000.into())
-        .coerce_to_u32(activation)?;
-
-    if let Some(object) = this.as_convolution_filter_object() {
-        object.set_color(activation.context.gc_context, color & 0xFFFFFF);
-    }
-
-    Ok(Value::Undefined)
-}
-
-pub fn divisor<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(filter) = this.as_convolution_filter_object() {
-        return Ok(filter.divisor().into());
-    }
-
-    Ok(Value::Undefined)
-}
-
-pub fn set_divisor<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let divisor = args.get(0).unwrap_or(&1.into()).coerce_to_f64(activation)?;
-
-    if let Some(filter) = this.as_convolution_filter_object() {
-        filter.set_divisor(activation.context.gc_context, divisor);
-    }
-
-    Ok(Value::Undefined)
-}
-
-pub fn matrix<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(filter) = this.as_convolution_filter_object() {
-        return Ok(ArrayObject::new(
-            activation.context.gc_context,
-            activation.context.avm1.prototypes().array,
-            filter.matrix().iter().map(|&x| x.into()),
-        )
-        .into());
-    }
-
-    Ok(Value::Undefined)
-}
-
-pub fn set_matrix<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let matrix = args.get(0).unwrap_or(&Value::Undefined);
-
-    if let Some(filter) = this.as_convolution_filter_object() {
-        if let Value::Object(obj) = matrix {
-            let length = obj.length(activation)? as usize;
-
-            let arr_len = length.max(filter.matrix_x() as usize * filter.matrix_y() as usize);
-            let mut new_matrix = vec![0.0; arr_len];
-
-            for (i, item) in new_matrix.iter_mut().enumerate().take(length) {
-                *item = obj
-                    .get_element(activation, i as i32)
-                    .coerce_to_f64(activation)?;
-            }
-
-            filter.set_matrix(activation.context.gc_context, new_matrix);
-        } else {
-            let arr_len = filter.matrix_x() * filter.matrix_y();
-            let new_matrix = (0..arr_len).map(|_| 0.0).collect::<Vec<_>>();
-            filter.set_matrix(activation.context.gc_context, new_matrix);
+    fn resize_matrix(&mut self) {
+        let new_len = (self.matrix_x * self.matrix_y) as usize;
+        if new_len > self.matrix.len() {
+            self.matrix.resize(new_len, 0.0);
         }
     }
 
-    Ok(Value::Undefined)
-}
-
-pub fn matrix_x<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(filter) = this.as_convolution_filter_object() {
-        return Ok(filter.matrix_x().into());
+    fn set_matrix_x(&mut self, matrix_x: u8) {
+        self.matrix_x = matrix_x;
+        self.resize_matrix();
     }
 
-    Ok(Value::Undefined)
+    fn set_matrix_y(&mut self, matrix_y: u8) {
+        self.matrix_y = matrix_y;
+        self.resize_matrix();
+    }
 }
 
-pub fn set_matrix_x<'gc>(
+impl From<&ConvolutionFilterData> for swf::ConvolutionFilter {
+    fn from(filter: &ConvolutionFilterData) -> swf::ConvolutionFilter {
+        let mut flags = ConvolutionFilterFlags::empty();
+        flags.set(
+            ConvolutionFilterFlags::PRESERVE_ALPHA,
+            filter.preserve_alpha,
+        );
+        flags.set(ConvolutionFilterFlags::CLAMP, filter.clamp);
+        swf::ConvolutionFilter {
+            num_matrix_rows: filter.matrix_y,
+            num_matrix_cols: filter.matrix_x,
+            matrix: filter
+                .matrix
+                .iter()
+                .copied()
+                .map(Fixed16::from_f32)
+                .collect(),
+            divisor: Fixed16::from_f32(filter.divisor),
+            bias: Fixed16::from_f32(filter.bias),
+            default_color: filter.color,
+            flags,
+        }
+    }
+}
+
+impl From<swf::ConvolutionFilter> for ConvolutionFilterData {
+    fn from(filter: swf::ConvolutionFilter) -> ConvolutionFilterData {
+        let preserve_alpha = filter.is_preserve_alpha();
+        let clamp = filter.is_clamped();
+        Self {
+            matrix_x: filter.num_matrix_cols,
+            matrix_y: filter.num_matrix_rows,
+            matrix: filter.matrix.into_iter().map(Fixed16::to_f32).collect(),
+            divisor: filter.divisor.to_f32(),
+            bias: filter.bias.to_f32(),
+            preserve_alpha,
+            clamp,
+            color: filter.default_color,
+        }
+    }
+}
+
+impl Default for ConvolutionFilterData {
+    fn default() -> Self {
+        Self {
+            matrix_x: 0,
+            matrix_y: 0,
+            matrix: vec![],
+            divisor: 1.0,
+            bias: 0.0,
+            preserve_alpha: true,
+            clamp: true,
+            color: Color::from_rgba(0),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Collect)]
+#[collect(no_drop)]
+#[repr(transparent)]
+pub struct ConvolutionFilter<'gc>(GcCell<'gc, ConvolutionFilterData>);
+
+impl<'gc> ConvolutionFilter<'gc> {
+    fn new(activation: &mut Activation<'_, 'gc>, args: &[Value<'gc>]) -> Result<Self, Error<'gc>> {
+        let convolution_filter = Self(GcCell::new(
+            activation.context.gc_context,
+            Default::default(),
+        ));
+        convolution_filter.set_matrix_x(activation, args.get(0))?;
+        convolution_filter.set_matrix_y(activation, args.get(1))?;
+        if let Some(Value::Object(object)) = args.get(2) {
+            convolution_filter.fill_matrix(activation, object)?;
+        }
+        if let Some(value) = args.get(3) {
+            convolution_filter.set_divisor(activation, Some(value))?;
+        } else if !args.is_empty() {
+            let divisor = convolution_filter.0.read().matrix.iter().sum();
+            convolution_filter
+                .0
+                .write(activation.context.gc_context)
+                .divisor = divisor;
+        }
+        convolution_filter.set_bias(activation, args.get(4))?;
+        convolution_filter.set_preserve_alpha(activation, args.get(5))?;
+        convolution_filter.set_clamp(activation, args.get(6))?;
+        convolution_filter.set_color(activation, args.get(7))?;
+        convolution_filter.set_alpha(activation, args.get(8))?;
+        Ok(convolution_filter)
+    }
+
+    pub fn from_filter(
+        gc_context: MutationContext<'gc, '_>,
+        filter: swf::ConvolutionFilter,
+    ) -> Self {
+        Self(GcCell::new(gc_context, filter.into()))
+    }
+
+    pub(crate) fn duplicate(&self, gc_context: MutationContext<'gc, '_>) -> Self {
+        Self(GcCell::new(gc_context, self.0.read().clone()))
+    }
+
+    fn matrix_x(&self) -> u8 {
+        self.0.read().matrix_x
+    }
+
+    fn set_matrix_x(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        value: Option<&Value<'gc>>,
+    ) -> Result<(), Error<'gc>> {
+        if let Some(value) = value {
+            let matrix_x = value.coerce_to_i32(activation)?.clamp(0, 15) as u8;
+            self.0
+                .write(activation.context.gc_context)
+                .set_matrix_x(matrix_x);
+        }
+        Ok(())
+    }
+
+    fn matrix_y(&self) -> u8 {
+        self.0.read().matrix_y
+    }
+
+    fn set_matrix_y(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        value: Option<&Value<'gc>>,
+    ) -> Result<(), Error<'gc>> {
+        if let Some(value) = value {
+            let matrix_y = value.coerce_to_i32(activation)?.clamp(0, 15) as u8;
+            self.0
+                .write(activation.context.gc_context)
+                .set_matrix_y(matrix_y);
+        }
+        Ok(())
+    }
+
+    fn matrix(&self, context: &mut UpdateContext<'_, 'gc>) -> ArrayObject<'gc> {
+        ArrayObject::new(
+            context.gc_context,
+            context.avm1.prototypes().array,
+            self.0.read().matrix.iter().map(|&x| x.into()),
+        )
+    }
+
+    fn fill_matrix(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        object: &Object<'gc>,
+    ) -> Result<(), Error<'gc>> {
+        let matrix_len = self.0.read().matrix.len();
+        for i in 0..matrix_len {
+            let length = object.length(activation)? as usize;
+            let item = if i < length {
+                object
+                    .get_element(activation, i as i32)
+                    .coerce_to_f64(activation)? as f32
+            } else {
+                0.0
+            };
+            self.0.write(activation.context.gc_context).matrix[i] = item;
+        }
+        Ok(())
+    }
+
+    fn set_matrix(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        value: Option<&Value<'gc>>,
+    ) -> Result<(), Error<'gc>> {
+        if let Some(value) = value {
+            if let Value::Object(object) = value {
+                let length = object.length(activation)?;
+                self.0.write(activation.context.gc_context).matrix = vec![0.0; length as usize];
+                self.fill_matrix(activation, object)?;
+                self.0.write(activation.context.gc_context).resize_matrix();
+            } else {
+                self.0.write(activation.context.gc_context).reset_matrix();
+            }
+        }
+        Ok(())
+    }
+
+    fn divisor(&self) -> f32 {
+        self.0.read().divisor
+    }
+
+    fn set_divisor(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        value: Option<&Value<'gc>>,
+    ) -> Result<(), Error<'gc>> {
+        if let Some(value) = value {
+            let divisor = value.coerce_to_f64(activation)? as f32;
+            self.0.write(activation.context.gc_context).divisor = divisor;
+        }
+        Ok(())
+    }
+
+    fn bias(&self) -> f32 {
+        self.0.read().bias
+    }
+
+    fn set_bias(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        value: Option<&Value<'gc>>,
+    ) -> Result<(), Error<'gc>> {
+        if let Some(value) = value {
+            let bias = value.coerce_to_f64(activation)? as f32;
+            self.0.write(activation.context.gc_context).bias = bias;
+        }
+        Ok(())
+    }
+
+    fn preserve_alpha(&self) -> bool {
+        self.0.read().preserve_alpha
+    }
+
+    fn set_preserve_alpha(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        value: Option<&Value<'gc>>,
+    ) -> Result<(), Error<'gc>> {
+        if let Some(value) = value {
+            let preserve_alpha = value.as_bool(activation.swf_version());
+            self.0.write(activation.context.gc_context).preserve_alpha = preserve_alpha;
+        }
+        Ok(())
+    }
+
+    fn clamp(&self) -> bool {
+        self.0.read().clamp
+    }
+
+    fn set_clamp(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        value: Option<&Value<'gc>>,
+    ) -> Result<(), Error<'gc>> {
+        if let Some(value) = value {
+            let clamp = value.as_bool(activation.swf_version());
+            self.0.write(activation.context.gc_context).clamp = clamp;
+        }
+        Ok(())
+    }
+
+    fn color(&self) -> Color {
+        self.0.read().color
+    }
+
+    fn set_color(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        value: Option<&Value<'gc>>,
+    ) -> Result<(), Error<'gc>> {
+        if let Some(value) = value {
+            let color = Color::from_rgb(value.coerce_to_u32(activation)?, u8::MAX);
+            self.0.write(activation.context.gc_context).color = color;
+        }
+        Ok(())
+    }
+
+    fn set_alpha(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        value: Option<&Value<'gc>>,
+    ) -> Result<(), Error<'gc>> {
+        if let Some(value) = value {
+            let alpha = value.coerce_to_f64(activation)?.clamp_also_nan(0.0, 1.0);
+            self.0.write(activation.context.gc_context).color.a = (alpha * 255.0) as u8;
+        }
+        Ok(())
+    }
+
+    pub fn filter(&self) -> swf::ConvolutionFilter {
+        self.0.read().deref().into()
+    }
+}
+
+macro_rules! convolution_filter_method {
+    ($index:literal) => {
+        |activation, this, args| method(activation, this, args, $index)
+    };
+}
+
+const PROTO_DECLS: &[Declaration] = declare_properties! {
+    "matrixX" => property(convolution_filter_method!(1), convolution_filter_method!(2); VERSION_8);
+    "matrixY" => property(convolution_filter_method!(3), convolution_filter_method!(4); VERSION_8);
+    "matrix" => property(convolution_filter_method!(5), convolution_filter_method!(6); VERSION_8);
+    "divisor" => property(convolution_filter_method!(7), convolution_filter_method!(8); VERSION_8);
+    "bias" => property(convolution_filter_method!(9), convolution_filter_method!(10); VERSION_8);
+    "preserveAlpha" => property(convolution_filter_method!(11), convolution_filter_method!(12); VERSION_8);
+    "clamp" => property(convolution_filter_method!(13), convolution_filter_method!(14); VERSION_8);
+    "color" => property(convolution_filter_method!(15), convolution_filter_method!(16); VERSION_8);
+    "alpha" => property(convolution_filter_method!(17), convolution_filter_method!(18); VERSION_8);
+};
+
+fn method<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
+    index: u8,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let matrix_x = args
-        .get(0)
-        .unwrap_or(&0.into())
-        .coerce_to_i32(activation)
-        .map(|x| x.clamp(0, 15))? as u8;
+    const CONSTRUCTOR: u8 = 0;
+    const GET_MATRIX_X: u8 = 1;
+    const SET_MATRIX_X: u8 = 2;
+    const GET_MATRIX_Y: u8 = 3;
+    const SET_MATRIX_Y: u8 = 4;
+    const GET_MATRIX: u8 = 5;
+    const SET_MATRIX: u8 = 6;
+    const GET_DIVISOR: u8 = 7;
+    const SET_DIVISOR: u8 = 8;
+    const GET_BIAS: u8 = 9;
+    const SET_BIAS: u8 = 10;
+    const GET_PRESERVE_ALPHA: u8 = 11;
+    const SET_PRESERVE_ALPHA: u8 = 12;
+    const GET_CLAMP: u8 = 13;
+    const SET_CLAMP: u8 = 14;
+    const GET_COLOR: u8 = 15;
+    const SET_COLOR: u8 = 16;
+    const GET_ALPHA: u8 = 17;
+    const SET_ALPHA: u8 = 18;
 
-    if let Some(filter) = this.as_convolution_filter_object() {
-        filter.set_matrix_x(activation.context.gc_context, matrix_x);
+    if index == CONSTRUCTOR {
+        let convolution_filter = ConvolutionFilter::new(activation, args)?;
+        this.set_native(
+            activation.context.gc_context,
+            NativeObject::ConvolutionFilter(convolution_filter),
+        );
+        return Ok(this.into());
     }
 
-    Ok(Value::Undefined)
-}
+    let this = match this.native() {
+        NativeObject::ConvolutionFilter(convolution_filter) => convolution_filter,
+        _ => return Ok(Value::Undefined),
+    };
 
-pub fn matrix_y<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(filter) = this.as_convolution_filter_object() {
-        return Ok(filter.matrix_y().into());
-    }
-
-    Ok(Value::Undefined)
-}
-
-pub fn set_matrix_y<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let matrix_y = args
-        .get(0)
-        .unwrap_or(&0.into())
-        .coerce_to_i32(activation)
-        .map(|x| x.clamp(0, 15))? as u8;
-
-    if let Some(filter) = this.as_convolution_filter_object() {
-        filter.set_matrix_y(activation.context.gc_context, matrix_y);
-    }
-
-    Ok(Value::Undefined)
-}
-
-pub fn preserve_alpha<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(filter) = this.as_convolution_filter_object() {
-        return Ok(filter.preserve_alpha().into());
-    }
-
-    Ok(Value::Undefined)
-}
-
-pub fn set_preserve_alpha<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let preserve_alpha = args
-        .get(0)
-        .unwrap_or(&true.into())
-        .as_bool(activation.swf_version());
-
-    if let Some(filter) = this.as_convolution_filter_object() {
-        filter.set_preserve_alpha(activation.context.gc_context, preserve_alpha);
-    }
-
-    Ok(Value::Undefined)
+    Ok(match index {
+        GET_MATRIX_X => this.matrix_x().into(),
+        SET_MATRIX_X => {
+            this.set_matrix_x(activation, args.get(0))?;
+            Value::Undefined
+        }
+        GET_MATRIX_Y => this.matrix_y().into(),
+        SET_MATRIX_Y => {
+            this.set_matrix_y(activation, args.get(0))?;
+            Value::Undefined
+        }
+        GET_MATRIX => this.matrix(&mut activation.context).into(),
+        SET_MATRIX => {
+            this.set_matrix(activation, args.get(0))?;
+            Value::Undefined
+        }
+        GET_DIVISOR => this.divisor().into(),
+        SET_DIVISOR => {
+            this.set_divisor(activation, args.get(0))?;
+            Value::Undefined
+        }
+        GET_BIAS => this.bias().into(),
+        SET_BIAS => {
+            this.set_bias(activation, args.get(0))?;
+            Value::Undefined
+        }
+        GET_PRESERVE_ALPHA => this.preserve_alpha().into(),
+        SET_PRESERVE_ALPHA => {
+            this.set_preserve_alpha(activation, args.get(0))?;
+            Value::Undefined
+        }
+        GET_CLAMP => this.clamp().into(),
+        SET_CLAMP => {
+            this.set_clamp(activation, args.get(0))?;
+            Value::Undefined
+        }
+        GET_COLOR => this.color().to_rgb().into(),
+        SET_COLOR => {
+            this.set_color(activation, args.get(0))?;
+            Value::Undefined
+        }
+        GET_ALPHA => (this.color().a as f64 / 255.0).into(),
+        SET_ALPHA => {
+            this.set_alpha(activation, args.get(0))?;
+            Value::Undefined
+        }
+        _ => Value::Undefined,
+    })
 }
 
 pub fn create_proto<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let filter = ConvolutionFilterObject::empty_object(gc_context, proto);
-    let object = filter.raw_script_object();
-    define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
-    filter.into()
+    let convolution_filter_proto = ScriptObject::new(context.gc_context, Some(proto));
+    define_properties_on(PROTO_DECLS, context, convolution_filter_proto, fn_proto);
+    convolution_filter_proto.into()
+}
+
+pub fn create_constructor<'gc>(
+    context: &mut GcContext<'_, 'gc>,
+    proto: Object<'gc>,
+    fn_proto: Object<'gc>,
+) -> Object<'gc> {
+    FunctionObject::constructor(
+        context.gc_context,
+        Executable::Native(convolution_filter_method!(0)),
+        constructor_to_fn!(convolution_filter_method!(0)),
+        fn_proto,
+        proto,
+    )
 }

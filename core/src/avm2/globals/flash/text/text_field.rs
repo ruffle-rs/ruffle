@@ -1,40 +1,55 @@
 //! `flash.text.TextField` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::object::{Object, TObject, TextFormatObject};
+use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
+use crate::avm2::object::{ClassObject, Object, TObject, TextFormatObject};
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::{AutoSizeMode, EditText, TDisplayObject, TextSelection};
 use crate::html::TextFormat;
 use crate::string::AvmString;
-use crate::tag_utils::SwfMovie;
 use crate::{avm2_stub_getter, avm2_stub_setter};
-use std::sync::Arc;
 use swf::Color;
 
-/// Implements `flash.text.TextField`'s `init` method, which is called from the constructor.
-pub fn init<'gc>(
+pub fn text_field_allocator<'gc>(
+    class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this {
-        activation.super_init(this, &[])?;
+) -> Result<Object<'gc>, Error<'gc>> {
+    let textfield_cls = activation.avm2().classes().textfield;
 
-        if this.as_display_object().is_none() {
-            let movie = Arc::new(SwfMovie::empty(activation.context.swf.version()));
-            let new_do = EditText::new(&mut activation.context, movie, 0.0, 0.0, 100.0, 100.0);
-
-            this.init_display_object(&mut activation.context, new_do.into());
+    let mut class_object = Some(class);
+    let orig_class = class;
+    while let Some(class) = class_object {
+        if class == textfield_cls {
+            let movie = activation.context.swf.clone();
+            let display_object =
+                EditText::new(&mut activation.context, movie, 0.0, 0.0, 100.0, 100.0).into();
+            return initialize_for_allocator(activation, display_object, orig_class);
         }
-    }
 
-    Ok(Value::Undefined)
+        if let Some((movie, symbol)) = activation
+            .context
+            .library
+            .avm2_class_registry()
+            .class_symbol(class)
+        {
+            let child = activation
+                .context
+                .library
+                .library_for_movie_mut(movie)
+                .instantiate_by_id(symbol, activation.context.gc_context)?;
+
+            return initialize_for_allocator(activation, child, orig_class);
+        }
+        class_object = class.superclass_object();
+    }
+    unreachable!("A TextField subclass should have TextField in superclass chain");
 }
 
 pub fn get_always_show_selection<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(activation, "flash.text.TextField", "alwaysShowSelection");
@@ -43,7 +58,7 @@ pub fn get_always_show_selection<'gc>(
 
 pub fn set_always_show_selection<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_setter!(activation, "flash.text.TextField", "alwaysShowSelection");
@@ -52,11 +67,11 @@ pub fn set_always_show_selection<'gc>(
 
 pub fn get_auto_size<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         return Ok(match this.autosize() {
@@ -72,18 +87,14 @@ pub fn get_auto_size<'gc>(
 
 pub fn set_auto_size<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let value = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_string(activation)?;
+        let value = args.get_string(activation, 0)?;
         this.set_autosize(
             if &value == b"left" {
                 AutoSizeMode::Left
@@ -103,11 +114,11 @@ pub fn set_auto_size<'gc>(
 
 pub fn get_background<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         return Ok((this.has_background()).into());
@@ -118,18 +129,14 @@ pub fn get_background<'gc>(
 
 pub fn set_background<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let has_background = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_boolean();
+        let has_background = args.get_bool(0);
         this.set_has_background(activation.context.gc_context, has_background);
     }
 
@@ -138,11 +145,11 @@ pub fn set_background<'gc>(
 
 pub fn get_background_color<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         return Ok(this.background_color().to_rgb().into());
@@ -153,17 +160,14 @@ pub fn get_background_color<'gc>(
 
 pub fn set_background_color<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let rgb = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_u32(activation)?;
+        let rgb = args.get_u32(activation, 0)?;
         let color = Color::from_rgb(rgb, 255);
         this.set_background_color(activation.context.gc_context, color);
     }
@@ -173,11 +177,11 @@ pub fn set_background_color<'gc>(
 
 pub fn get_border<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         return Ok(this.has_border().into());
@@ -188,18 +192,14 @@ pub fn get_border<'gc>(
 
 pub fn set_border<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let border = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_boolean();
+        let border = args.get_bool(0);
         this.set_has_border(activation.context.gc_context, border);
     }
 
@@ -208,11 +208,11 @@ pub fn set_border<'gc>(
 
 pub fn get_border_color<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         return Ok(this.border_color().to_rgb().into());
@@ -223,17 +223,14 @@ pub fn get_border_color<'gc>(
 
 pub fn set_border_color<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let rgb = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_u32(activation)?;
+        let rgb = args.get_u32(activation, 0)?;
         let color = Color::from_rgb(rgb, 255);
         this.set_border_color(activation.context.gc_context, color);
     }
@@ -243,7 +240,7 @@ pub fn set_border_color<'gc>(
 
 pub fn get_condense_white<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(activation, "flash.text.TextField", "condenseWhite");
@@ -252,7 +249,7 @@ pub fn get_condense_white<'gc>(
 
 pub fn set_condense_white<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_setter!(activation, "flash.text.TextField", "condenseWhite");
@@ -261,11 +258,11 @@ pub fn set_condense_white<'gc>(
 
 pub fn get_default_text_format<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         return Ok(TextFormatObject::from_text_format(activation, this.new_text_format())?.into());
@@ -276,11 +273,11 @@ pub fn get_default_text_format<'gc>(
 
 pub fn set_default_text_format<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         let new_text_format = args.get(0).unwrap_or(&Value::Undefined).as_object();
@@ -297,11 +294,11 @@ pub fn set_default_text_format<'gc>(
 
 pub fn get_display_as_password<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         return Ok(this.is_password().into());
@@ -312,18 +309,14 @@ pub fn get_display_as_password<'gc>(
 
 pub fn set_display_as_password<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let is_password = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_boolean();
+        let is_password = args.get_bool(0);
 
         this.set_password(is_password, &mut activation.context);
     }
@@ -333,11 +326,11 @@ pub fn set_display_as_password<'gc>(
 
 pub fn get_embed_fonts<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         return Ok((!this.is_device_font()).into());
@@ -348,18 +341,14 @@ pub fn get_embed_fonts<'gc>(
 
 pub fn set_embed_fonts<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let is_embed_fonts = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_boolean();
+        let is_embed_fonts = args.get_bool(0);
 
         this.set_is_device_font(&mut activation.context, !is_embed_fonts);
     }
@@ -369,11 +358,11 @@ pub fn set_embed_fonts<'gc>(
 
 pub fn get_html_text<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         return Ok(AvmString::new(activation.context.gc_context, this.html_text()).into());
@@ -384,17 +373,14 @@ pub fn get_html_text<'gc>(
 
 pub fn set_html_text<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let html_text = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_string(activation)?;
+        let html_text = args.get_string(activation, 0)?;
 
         this.set_is_html(&mut activation.context, true);
         this.set_html_text(&html_text, &mut activation.context);
@@ -405,11 +391,11 @@ pub fn set_html_text<'gc>(
 
 pub fn get_length<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         return Ok(this.text_length().into());
@@ -420,11 +406,11 @@ pub fn get_length<'gc>(
 
 pub fn get_multiline<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         return Ok(this.is_multiline().into());
@@ -435,18 +421,14 @@ pub fn get_multiline<'gc>(
 
 pub fn set_multiline<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let is_multiline = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_boolean();
+        let is_multiline = args.get_bool(0);
 
         this.set_multiline(is_multiline, &mut activation.context);
     }
@@ -456,11 +438,11 @@ pub fn set_multiline<'gc>(
 
 pub fn get_selectable<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         return Ok(this.is_selectable().into());
@@ -471,18 +453,14 @@ pub fn get_selectable<'gc>(
 
 pub fn set_selectable<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let is_selectable = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_boolean();
+        let is_selectable = args.get_bool(0);
 
         this.set_selectable(is_selectable, &mut activation.context);
     }
@@ -492,11 +470,11 @@ pub fn set_selectable<'gc>(
 
 pub fn get_text<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         return Ok(AvmString::new(activation.context.gc_context, this.text()).into());
@@ -507,17 +485,14 @@ pub fn get_text<'gc>(
 
 pub fn set_text<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let text = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_string(activation)?;
+        let text = args.get_string(activation, 0)?;
 
         this.set_is_html(&mut activation.context, false);
         this.set_text(&text, &mut activation.context);
@@ -528,11 +503,11 @@ pub fn set_text<'gc>(
 
 pub fn get_text_color<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         if let Some(color) = this.new_text_format().color {
@@ -547,11 +522,11 @@ pub fn get_text_color<'gc>(
 
 pub fn set_text_color<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         let text_color = args
@@ -578,11 +553,11 @@ pub fn set_text_color<'gc>(
 
 pub fn get_text_height<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         let metrics = this.measure_text(&mut activation.context);
@@ -594,11 +569,11 @@ pub fn get_text_height<'gc>(
 
 pub fn get_text_width<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         let metrics = this.measure_text(&mut activation.context);
@@ -610,11 +585,11 @@ pub fn get_text_width<'gc>(
 
 pub fn get_type<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         match this.is_editable() {
@@ -628,18 +603,14 @@ pub fn get_type<'gc>(
 
 pub fn set_type<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let is_editable = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_string(activation)?;
+        let is_editable = args.get_string(activation, 0)?;
 
         if &is_editable == b"input" {
             this.set_editable(true, &mut activation.context);
@@ -655,11 +626,11 @@ pub fn set_type<'gc>(
 
 pub fn get_word_wrap<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         return Ok(this.is_word_wrap().into());
@@ -670,18 +641,14 @@ pub fn get_word_wrap<'gc>(
 
 pub fn set_word_wrap<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let is_word_wrap = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_boolean();
+        let is_word_wrap = args.get_bool(0);
 
         this.set_word_wrap(is_word_wrap, &mut activation.context);
     }
@@ -691,18 +658,14 @@ pub fn set_word_wrap<'gc>(
 
 pub fn append_text<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let new_text = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_string(activation)?;
+        let new_text = args.get_string(activation, 0)?;
         let existing_length = this.text_length();
 
         this.replace_text(
@@ -718,11 +681,11 @@ pub fn append_text<'gc>(
 
 pub fn get_text_format<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         let mut begin_index = args
@@ -753,18 +716,14 @@ pub fn get_text_format<'gc>(
 
 pub fn replace_selected_text<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let value = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_string(activation)?;
+        let value = args.get_string(activation, 0)?;
         let selection = this
             .selection()
             .unwrap_or_else(|| TextSelection::for_position(0));
@@ -782,11 +741,11 @@ pub fn replace_selected_text<'gc>(
 
 pub fn replace_text<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         let begin_index = args
@@ -799,11 +758,7 @@ pub fn replace_text<'gc>(
             .cloned()
             .unwrap_or(Value::Undefined)
             .coerce_to_u32(activation)?;
-        let value = args
-            .get(2)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_string(activation)?;
+        let value = args.get_string(activation, 2)?;
 
         this.replace_text(
             begin_index as usize,
@@ -818,11 +773,11 @@ pub fn replace_text<'gc>(
 
 pub fn get_caret_index<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         return if let Some(selection) = this.selection() {
@@ -837,11 +792,11 @@ pub fn get_caret_index<'gc>(
 
 pub fn get_selection_begin_index<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         return if let Some(selection) = this.selection() {
@@ -856,11 +811,11 @@ pub fn get_selection_begin_index<'gc>(
 
 pub fn get_selection_end_index<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         return if let Some(selection) = this.selection() {
@@ -875,11 +830,11 @@ pub fn get_selection_end_index<'gc>(
 
 pub fn set_selection<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         let begin_index = args
@@ -907,11 +862,11 @@ pub fn set_selection<'gc>(
 
 pub fn set_text_format<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         let tf = args.get(0).unwrap_or(&Value::Undefined).as_object();
@@ -957,11 +912,11 @@ pub fn set_text_format<'gc>(
 
 pub fn get_anti_alias_type<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         return if this.render_settings().is_advanced() {
@@ -976,19 +931,15 @@ pub fn get_anti_alias_type<'gc>(
 
 pub fn set_anti_alias_type<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         let old_settings = this.render_settings();
-        let new_type = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_string(activation)?;
+        let new_type = args.get_string(activation, 0)?;
 
         if &new_type == b"advanced" {
             this.set_render_settings(
@@ -1007,11 +958,11 @@ pub fn set_anti_alias_type<'gc>(
 
 pub fn get_grid_fit_type<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         return match this.render_settings().grid_fit() {
@@ -1026,19 +977,15 @@ pub fn get_grid_fit_type<'gc>(
 
 pub fn set_grid_fit_type<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         let old_settings = this.render_settings();
-        let new_type = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_string(activation)?;
+        let new_type = args.get_string(activation, 0)?;
 
         if &new_type == b"pixel" {
             this.set_render_settings(
@@ -1063,11 +1010,11 @@ pub fn set_grid_fit_type<'gc>(
 
 pub fn get_thickness<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         return Ok(this.render_settings().thickness().into());
@@ -1078,11 +1025,11 @@ pub fn get_thickness<'gc>(
 
 pub fn set_thickness<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         let old_settings = this.render_settings();
@@ -1106,11 +1053,11 @@ pub fn set_thickness<'gc>(
 
 pub fn get_sharpness<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         return Ok(this.render_settings().sharpness().into());
@@ -1121,11 +1068,11 @@ pub fn get_sharpness<'gc>(
 
 pub fn set_sharpness<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         let old_settings = this.render_settings();
@@ -1149,11 +1096,11 @@ pub fn set_sharpness<'gc>(
 
 pub fn get_num_lines<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         return Ok(this.layout_lines().into());
@@ -1164,11 +1111,11 @@ pub fn get_num_lines<'gc>(
 
 pub fn get_line_metrics<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         let line_num = args
@@ -1203,11 +1150,11 @@ pub fn get_line_metrics<'gc>(
 
 pub fn get_bottom_scroll_v<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         return Ok(this.bottom_scroll().into());
@@ -1218,11 +1165,11 @@ pub fn get_bottom_scroll_v<'gc>(
 
 pub fn get_max_scroll_v<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         return Ok(this.maxscroll().into());
@@ -1233,11 +1180,11 @@ pub fn get_max_scroll_v<'gc>(
 
 pub fn get_max_scroll_h<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         return Ok(this.maxhscroll().into());
@@ -1248,11 +1195,11 @@ pub fn get_max_scroll_h<'gc>(
 
 pub fn get_scroll_v<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         return Ok(this.scroll().into());
@@ -1263,11 +1210,11 @@ pub fn get_scroll_v<'gc>(
 
 pub fn set_scroll_v<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         let input = args
@@ -1283,11 +1230,11 @@ pub fn set_scroll_v<'gc>(
 
 pub fn get_scroll_h<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         return Ok(this.hscroll().into());
@@ -1298,11 +1245,11 @@ pub fn get_scroll_h<'gc>(
 
 pub fn set_scroll_h<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         // NOTE: The clamping behavior here is identical to AVM1.
@@ -1322,11 +1269,11 @@ pub fn set_scroll_h<'gc>(
 
 pub fn get_max_chars<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         return Ok(this.max_chars().into());
@@ -1337,11 +1284,11 @@ pub fn get_max_chars<'gc>(
 
 pub fn set_max_chars<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
         let input = args
@@ -1355,9 +1302,27 @@ pub fn set_max_chars<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn get_mouse_wheel_enabled<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_getter!(activation, "flash.text.TextField", "mouseWheelEnabled");
+    Ok(true.into())
+}
+
+pub fn set_mouse_wheel_enabled<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_setter!(activation, "flash.text.TextField", "mouseWheelEnabled");
+    Ok(Value::Undefined)
+}
+
 pub fn get_restrict<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(activation, "flash.text.TextField", "restrict");
@@ -1366,7 +1331,7 @@ pub fn get_restrict<'gc>(
 
 pub fn set_restrict<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_setter!(activation, "flash.text.TextField", "restrict");

@@ -9,6 +9,9 @@ pub enum Error {
     #[error("Bitmap texture is larger than the rendering device supports")]
     TooLarge,
 
+    #[error("Bitmap texture has a size of 0 and is invalid")]
+    InvalidSize,
+
     #[error("Unknown bitmap format")]
     UnknownType,
 

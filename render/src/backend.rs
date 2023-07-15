@@ -1,18 +1,28 @@
 pub mod null;
 
-use crate::bitmap::{Bitmap, BitmapHandle, BitmapSource, SyncHandle};
+use crate::bitmap::{Bitmap, BitmapHandle, BitmapSource, PixelRegion, SyncHandle};
 use crate::commands::CommandList;
 use crate::error::Error;
 use crate::filters::Filter;
+use crate::pixel_bender::{PixelBenderShader, PixelBenderShaderArgument, PixelBenderShaderHandle};
 use crate::quality::StageQuality;
 use crate::shape_utils::DistilledShape;
 use downcast_rs::{impl_downcast, Downcast};
-use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_wstr::WStr;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
+use std::cell::RefCell;
+use std::fmt::Debug;
 use std::rc::Rc;
-use swf;
+use std::sync::Arc;
+use swf::{self, Color, Rectangle, Twips};
+
+pub struct BitmapCacheEntry {
+    pub handle: BitmapHandle,
+    pub commands: CommandList,
+    pub clear: Color,
+    pub filters: Vec<Filter>,
+}
 
 pub trait RenderBackend: Downcast {
     fn viewport_dimensions(&self) -> ViewportDimensions;
@@ -24,30 +34,13 @@ pub trait RenderBackend: Downcast {
         shape: DistilledShape,
         bitmap_source: &dyn BitmapSource,
     ) -> ShapeHandle;
-    fn replace_shape(
-        &mut self,
-        shape: DistilledShape,
-        bitmap_source: &dyn BitmapSource,
-        handle: ShapeHandle,
-    );
-    fn register_glyph_shape(&mut self, shape: &swf::Glyph) -> ShapeHandle;
 
-    /// Creates a new `RenderBackend` which renders directly
-    /// to the texture specified by `BitmapHandle` with the given
-    /// `width` and `height`. This backend is passed to the callback
-    /// `f`, which performs the desired draw operations.
-    ///
-    /// After the callback `f` exectures, the texture data is copied
-    /// from the GPU texture to an `RgbaImage`. There is no need to call
-    /// `update_texture` with the pixels from this image, as they
-    /// reflect data that is already stored on the GPU texture.
     fn render_offscreen(
         &mut self,
         handle: BitmapHandle,
-        width: u32,
-        height: u32,
         commands: CommandList,
         quality: StageQuality,
+        bounds: PixelRegion,
     ) -> Option<Box<dyn SyncHandle>>;
 
     /// Applies the given filter with a `BitmapHandle` source onto a destination `BitmapHandle`.
@@ -68,44 +61,77 @@ pub trait RenderBackend: Downcast {
         None
     }
 
-    fn submit_frame(&mut self, clear: swf::Color, commands: CommandList);
+    /// Calculates the destination rect needed to hold a filter upon a source of the given area.
+    fn calculate_dest_rect(&self, _filter: &Filter, source_rect: Rectangle<i32>) -> Rectangle<i32> {
+        source_rect
+    }
+
+    fn is_filter_supported(&self, _filter: &Filter) -> bool {
+        false
+    }
+
+    fn is_offscreen_supported(&self) -> bool {
+        false
+    }
+
+    fn submit_frame(
+        &mut self,
+        clear: swf::Color,
+        commands: CommandList,
+        cache_entries: Vec<BitmapCacheEntry>,
+    );
+
+    fn create_empty_texture(&mut self, width: u32, height: u32) -> Result<BitmapHandle, Error>;
 
     fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, Error>;
     fn update_texture(
         &mut self,
-        bitmap: &BitmapHandle,
-        width: u32,
-        height: u32,
-        rgba: Vec<u8>,
+        handle: &BitmapHandle,
+        bitmap: Bitmap,
+        region: PixelRegion,
     ) -> Result<(), Error>;
 
     fn create_context3d(&mut self) -> Result<Box<dyn Context3D>, Error>;
-    fn context3d_present<'gc>(
-        &mut self,
-        context: &mut dyn Context3D,
-        commands: Vec<Context3DCommand<'gc>>,
-        mc: MutationContext<'gc, '_>,
-    ) -> Result<(), Error>;
+    fn context3d_present(&mut self, context: &mut dyn Context3D) -> Result<(), Error>;
 
     fn debug_info(&self) -> Cow<'static, str>;
+    /// An internal name that is used to identify the render-backend.
+    fn name(&self) -> &'static str;
 
     fn set_quality(&mut self, quality: StageQuality);
+
+    fn compile_pixelbender_shader(
+        &mut self,
+        shader: PixelBenderShader,
+    ) -> Result<PixelBenderShaderHandle, Error>;
+
+    fn run_pixelbender_shader(
+        &mut self,
+        handle: PixelBenderShaderHandle,
+        arguments: &[PixelBenderShaderArgument],
+        target: BitmapHandle,
+    ) -> Result<Box<dyn SyncHandle>, Error>;
 }
 impl_downcast!(RenderBackend);
 
-pub trait IndexBuffer: Downcast + Collect {}
+pub trait IndexBuffer: Downcast {}
 impl_downcast!(IndexBuffer);
-pub trait VertexBuffer: Downcast + Collect {}
+pub trait VertexBuffer: Downcast {}
 impl_downcast!(VertexBuffer);
 
-pub trait ShaderModule: Downcast + Collect {}
+pub trait ShaderModule: Downcast {}
 impl_downcast!(ShaderModule);
 
-pub trait Texture: Downcast + Collect {}
+pub trait Texture: Downcast {}
 impl_downcast!(Texture);
 
-#[derive(Collect, Debug)]
-#[collect(require_static)]
+pub trait RawTexture: Downcast + Debug {}
+impl_downcast!(RawTexture);
+
+#[cfg(feature = "wgpu")]
+impl RawTexture for wgpu::Texture {}
+
+#[derive(Debug, Copy, Clone)]
 pub enum Context3DTextureFormat {
     Bgra,
     BgraPacked,
@@ -115,8 +141,27 @@ pub enum Context3DTextureFormat {
     RgbaHalfFloat,
 }
 
-#[derive(Collect, Debug, Copy, Clone)]
-#[collect(require_static)]
+impl Context3DTextureFormat {
+    pub fn from_wstr(wstr: &WStr) -> Option<Context3DTextureFormat> {
+        if wstr == b"bgra" {
+            Some(Context3DTextureFormat::Bgra)
+        } else if wstr == b"bgraPacked4444" {
+            Some(Context3DTextureFormat::BgraPacked)
+        } else if wstr == b"bgrPacked565" {
+            Some(Context3DTextureFormat::BgrPacked)
+        } else if wstr == b"compressed" {
+            Some(Context3DTextureFormat::Compressed)
+        } else if wstr == b"compressedAlpha" {
+            Some(Context3DTextureFormat::CompressedAlpha)
+        } else if wstr == b"rgbaHalfFloat" {
+            Some(Context3DTextureFormat::RgbaHalfFloat)
+        } else {
+            None
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
 pub enum Context3DBlendFactor {
     DestinationAlpha,
     DestinationColor,
@@ -158,21 +203,17 @@ impl Context3DBlendFactor {
     }
 }
 
-#[derive(Collect)]
-#[collect(require_static)]
 pub enum BufferUsage {
     DynamicDraw,
     StaticDraw,
 }
 
-#[derive(Collect)]
-#[collect(require_static)]
 pub enum ProgramType {
     Vertex,
     Fragment,
 }
 
-pub trait Context3D: Collect + Downcast {
+pub trait Context3D: Downcast {
     // The BitmapHandle for the texture we're rendering to
     fn bitmap_handle(&self) -> BitmapHandle;
     // Whether or not we should actually render the texture
@@ -187,7 +228,8 @@ pub trait Context3D: Collect + Downcast {
     // objects after dispose() has been called.
     fn disposed_vertex_buffer_handle(&self) -> Rc<dyn VertexBuffer>;
 
-    fn create_index_buffer(&mut self, usage: BufferUsage, num_indices: u32) -> Rc<dyn IndexBuffer>;
+    fn create_index_buffer(&mut self, usage: BufferUsage, num_indices: u32)
+        -> Box<dyn IndexBuffer>;
     fn create_vertex_buffer(
         &mut self,
         usage: BufferUsage,
@@ -210,11 +252,12 @@ pub trait Context3D: Collect + Downcast {
         optimize_for_render_to_texture: bool,
         streaming_levels: u32,
     ) -> Result<Rc<dyn Texture>, Error>;
+
+    fn process_command(&mut self, command: Context3DCommand<'_>);
 }
 impl_downcast!(Context3D);
 
-#[derive(Collect, Copy, Clone, Debug)]
-#[collect(require_static)]
+#[derive(Copy, Clone, Debug)]
 pub enum Context3DVertexBufferFormat {
     Float1,
     Float2,
@@ -223,8 +266,7 @@ pub enum Context3DVertexBufferFormat {
     Bytes4,
 }
 
-#[derive(Collect, Copy, Clone, Debug)]
-#[collect(require_static)]
+#[derive(Copy, Clone, Debug)]
 pub enum Context3DTriangleFace {
     None,
     Back,
@@ -232,8 +274,7 @@ pub enum Context3DTriangleFace {
     FrontAndBack,
 }
 
-#[derive(Collect, Copy, Clone, Debug)]
-#[collect(require_static)]
+#[derive(Copy, Clone, Debug)]
 pub enum Context3DCompareMode {
     Never,
     Less,
@@ -269,9 +310,60 @@ impl Context3DCompareMode {
     }
 }
 
-#[derive(Collect)]
-#[collect(no_drop)]
-pub enum Context3DCommand<'gc> {
+#[derive(Copy, Clone, Debug)]
+pub enum Context3DWrapMode {
+    Clamp,
+    ClampURepeatV,
+    Repeat,
+    RepeatUClampV,
+}
+
+impl Context3DWrapMode {
+    pub fn from_wstr(s: &WStr) -> Option<Self> {
+        if s == b"clamp" {
+            Some(Context3DWrapMode::Clamp)
+        } else if s == b"clamp_u_repeat_v" {
+            Some(Context3DWrapMode::ClampURepeatV)
+        } else if s == b"repeat" {
+            Some(Context3DWrapMode::Repeat)
+        } else if s == b"repeat_u_clamp_v" {
+            Some(Context3DWrapMode::RepeatUClampV)
+        } else {
+            None
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum Context3DTextureFilter {
+    Anisotropic16X,
+    Anisotropic2X,
+    Anisotropic4X,
+    Anisotropic8X,
+    Linear,
+    Nearest,
+}
+
+impl Context3DTextureFilter {
+    pub fn from_wstr(s: &WStr) -> Option<Self> {
+        if s == b"anisotropic16x" {
+            Some(Context3DTextureFilter::Anisotropic16X)
+        } else if s == b"anisotropic2x" {
+            Some(Context3DTextureFilter::Anisotropic2X)
+        } else if s == b"anisotropic4x" {
+            Some(Context3DTextureFilter::Anisotropic4X)
+        } else if s == b"anisotropic8x" {
+            Some(Context3DTextureFilter::Anisotropic8X)
+        } else if s == b"linear" {
+            Some(Context3DTextureFilter::Linear)
+        } else if s == b"nearest" {
+            Some(Context3DTextureFilter::Nearest)
+        } else {
+            None
+        }
+    }
+}
+pub enum Context3DCommand<'a> {
     Clear {
         red: f64,
         green: f64,
@@ -289,9 +381,16 @@ pub enum Context3DCommand<'gc> {
         wants_best_resolution: bool,
         wants_best_resolution_on_browser_zoom: bool,
     },
+    SetRenderToTexture {
+        texture: Rc<dyn Texture>,
+        enable_depth_and_stencil: bool,
+        anti_alias: u32,
+        surface_selector: u32,
+    },
+    SetRenderToBackBuffer,
 
     UploadToIndexBuffer {
-        buffer: Rc<dyn IndexBuffer>,
+        buffer: &'a mut dyn IndexBuffer,
         start_offset: usize,
         data: Vec<u8>,
     },
@@ -299,33 +398,30 @@ pub enum Context3DCommand<'gc> {
     UploadToVertexBuffer {
         buffer: Rc<dyn VertexBuffer>,
         start_vertex: usize,
-        data_per_vertex: usize,
+        data32_per_vertex: u8,
         data: Vec<u8>,
     },
 
     DrawTriangles {
-        index_buffer: Rc<dyn IndexBuffer>,
+        index_buffer: &'a dyn IndexBuffer,
         first_index: usize,
         num_triangles: isize,
     },
 
     SetVertexBufferAt {
         index: u32,
-        buffer: Option<Rc<dyn VertexBuffer>>,
+        buffer: Option<(Rc<dyn VertexBuffer>, Context3DVertexBufferFormat)>,
         buffer_offset: u32,
-        format: Context3DVertexBufferFormat,
     },
 
     UploadShaders {
-        vertex_shader: GcCell<'gc, Option<Rc<dyn ShaderModule>>>,
+        module: &'a RefCell<Option<Rc<dyn ShaderModule>>>,
         vertex_shader_agal: Vec<u8>,
-        fragment_shader: GcCell<'gc, Option<Rc<dyn ShaderModule>>>,
         fragment_shader_agal: Vec<u8>,
     },
 
     SetShaders {
-        vertex_shader: GcCell<'gc, Option<Rc<dyn ShaderModule>>>,
-        fragment_shader: GcCell<'gc, Option<Rc<dyn ShaderModule>>>,
+        module: Option<Rc<dyn ShaderModule>>,
     },
     SetProgramConstantsFromVector {
         program_type: ProgramType,
@@ -336,7 +432,7 @@ pub enum Context3DCommand<'gc> {
         face: Context3DTriangleFace,
     },
     CopyBitmapToTexture {
-        source: crate::bitmap::Bitmap,
+        source: Bitmap,
         dest: Rc<dyn Texture>,
         layer: u32,
     },
@@ -344,6 +440,12 @@ pub enum Context3DCommand<'gc> {
         sampler: u32,
         texture: Option<Rc<dyn Texture>>,
         cube: bool,
+    },
+    SetColorMask {
+        red: bool,
+        green: bool,
+        blue: bool,
+        alpha: bool,
     },
     SetDepthTest {
         depth_mask: bool,
@@ -353,10 +455,21 @@ pub enum Context3DCommand<'gc> {
         source_factor: Context3DBlendFactor,
         destination_factor: Context3DBlendFactor,
     },
+    SetSamplerStateAt {
+        sampler: u32,
+        wrap: Context3DWrapMode,
+        filter: Context3DTextureFilter,
+    },
+    SetScissorRectangle {
+        rect: Option<Rectangle<Twips>>,
+    },
 }
 
-#[derive(Copy, Clone, Debug)]
-pub struct ShapeHandle(pub usize);
+#[derive(Clone, Debug)]
+pub struct ShapeHandle(pub Arc<dyn ShapeHandleImpl>);
+
+pub trait ShapeHandleImpl: Downcast + Debug {}
+impl_downcast!(ShapeHandleImpl);
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]

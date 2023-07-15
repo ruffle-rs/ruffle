@@ -1,55 +1,57 @@
 //! `flash.display.Sprite` builtin/prototype
 
 use crate::avm2::activation::Activation;
+use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
 use crate::avm2::object::{Object, StageObject, TObject};
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 use crate::avm2::Multiname;
+use crate::avm2::{ClassObject, Error};
 use crate::display_object::{MovieClip, SoundTransform, TDisplayObject};
-use crate::tag_utils::SwfMovie;
-use std::sync::Arc;
 use swf::{Rectangle, Twips};
 
-/// Implements `flash.display.Sprite`'s `init` method, which is called from the constructor
-pub fn init<'gc>(
+pub fn sprite_allocator<'gc>(
+    class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this {
-        activation.super_init(this, &[])?;
+) -> Result<Object<'gc>, Error<'gc>> {
+    let sprite_cls = activation.avm2().classes().sprite;
 
-        if this.as_display_object().is_none() {
-            init_empty_sprite(activation, this)?;
+    let mut class_object = Some(class);
+    let orig_class = class;
+    while let Some(class) = class_object {
+        if class == sprite_cls {
+            let movie = activation.context.swf.clone();
+            let display_object = MovieClip::new(movie, activation.context.gc_context).into();
+            return initialize_for_allocator(activation, display_object, orig_class);
         }
+
+        if let Some((movie, symbol)) = activation
+            .context
+            .library
+            .avm2_class_registry()
+            .class_symbol(class)
+        {
+            let child = activation
+                .context
+                .library
+                .library_for_movie_mut(movie)
+                .instantiate_by_id(symbol, activation.context.gc_context)?;
+
+            return initialize_for_allocator(activation, child, orig_class);
+        }
+        class_object = class.superclass_object();
     }
-
-    Ok(Value::Undefined)
-}
-
-pub fn init_empty_sprite<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-) -> Result<(), Error<'gc>> {
-    let class_object = this
-        .instance_of()
-        .ok_or("Attempted to construct Sprite on a bare object")?;
-    let movie = Arc::new(SwfMovie::empty(activation.context.swf.version()));
-    let new_do = MovieClip::new_with_avm2(movie, this, class_object, activation.context.gc_context);
-
-    this.init_display_object(&mut activation.context, new_do.into());
-
-    Ok(())
+    unreachable!("A Sprite subclass should have Sprite in superclass chain");
 }
 
 /// Implements `dropTarget`'s getter
 pub fn get_drop_target<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mc) = this
-        .and_then(|o| o.as_display_object())
+        .as_display_object()
         .and_then(|o| o.as_movie_clip())
         .and_then(|o| o.drop_target())
     {
@@ -62,29 +64,27 @@ pub fn get_drop_target<'gc>(
 /// Implements `graphics`.
 pub fn get_graphics<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    mut this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut this) = this {
-        if let Some(dobj) = this.as_display_object() {
-            // Lazily initialize the `Graphics` object in a hidden property.
-            let graphics = match this.get_property(
-                &Multiname::new(activation.avm2().flash_display_internal, "_graphics"),
-                activation,
-            )? {
-                Value::Undefined | Value::Null => {
-                    let graphics = Value::from(StageObject::graphics(activation, dobj)?);
-                    this.set_property(
-                        &Multiname::new(activation.avm2().flash_display_internal, "_graphics"),
-                        graphics,
-                        activation,
-                    )?;
-                    graphics
-                }
-                graphics => graphics,
-            };
-            return Ok(graphics);
-        }
+    if let Some(dobj) = this.as_display_object() {
+        // Lazily initialize the `Graphics` object in a hidden property.
+        let graphics = match this.get_property(
+            &Multiname::new(activation.avm2().flash_display_internal, "_graphics"),
+            activation,
+        )? {
+            Value::Undefined | Value::Null => {
+                let graphics = Value::from(StageObject::graphics(activation, dobj)?);
+                this.set_property(
+                    &Multiname::new(activation.avm2().flash_display_internal, "_graphics"),
+                    graphics,
+                    activation,
+                )?;
+                graphics
+            }
+            graphics => graphics,
+        };
+        return Ok(graphics);
     }
 
     Ok(Value::Undefined)
@@ -93,10 +93,10 @@ pub fn get_graphics<'gc>(
 /// Implements `soundTransform`'s getter
 pub fn get_sound_transform<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(dobj) = this.and_then(|o| o.as_display_object()) {
+    if let Some(dobj) = this.as_display_object() {
         let dobj_st = dobj.base().sound_transform().clone();
 
         return Ok(dobj_st.into_avm2_object(activation)?.into());
@@ -108,15 +108,11 @@ pub fn get_sound_transform<'gc>(
 /// Implements `soundTransform`'s setter
 pub fn set_sound_transform<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(dobj) = this.and_then(|o| o.as_display_object()) {
-        let as3_st = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_object(activation)?;
+    if let Some(dobj) = this.as_display_object() {
+        let as3_st = args.get_object(activation, 0, "value")?;
         let dobj_st = SoundTransform::from_avm2_object(activation, as3_st)?;
 
         dobj.set_sound_transform(&mut activation.context, dobj_st);
@@ -128,13 +124,10 @@ pub fn set_sound_transform<'gc>(
 /// Implements `buttonMode`'s getter
 pub fn get_button_mode<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mc) = this
-        .and_then(|o| o.as_display_object())
-        .and_then(|o| o.as_movie_clip())
-    {
+    if let Some(mc) = this.as_display_object().and_then(|o| o.as_movie_clip()) {
         return Ok(mc.forced_button_mode().into());
     }
 
@@ -144,18 +137,11 @@ pub fn get_button_mode<'gc>(
 /// Implements `buttonMode`'s setter
 pub fn set_button_mode<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mc) = this
-        .and_then(|o| o.as_display_object())
-        .and_then(|o| o.as_movie_clip())
-    {
-        let forced_button_mode = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_boolean();
+    if let Some(mc) = this.as_display_object().and_then(|o| o.as_movie_clip()) {
+        let forced_button_mode = args.get_bool(0);
 
         mc.set_forced_button_mode(&mut activation.context, forced_button_mode);
     }
@@ -164,41 +150,29 @@ pub fn set_button_mode<'gc>(
 }
 
 /// Starts dragging this display object, making it follow the cursor.
-/// Runs via the `startDrag` method or `StartDrag` AVM1 action.
 pub fn start_drag<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(display_object) = this.and_then(|this| this.as_display_object()) {
-        let lock_center = args.get(0).map(|o| o.coerce_to_boolean()).unwrap_or(false);
+    if let Some(display_object) = this.as_display_object() {
+        let lock_center = args.get_bool(0);
 
-        let offset = if lock_center {
-            // The object's origin point is locked to the mouse.
-            Default::default()
-        } else {
-            // The object moves relative to current mouse position.
-            // Calculate the offset from the mouse to the object in world space.
-            let (object_x, object_y) = display_object.local_to_global(Default::default());
-            let (mouse_x, mouse_y) = *activation.context.mouse_position;
-            (object_x - mouse_x, object_y - mouse_y)
-        };
-
-        let constraint = if !matches!(args[1], Value::Null) {
-            let rect = args[1].coerce_to_object(activation)?;
-            let x = rect
+        let rectangle = args.try_get_object(activation, 1);
+        let constraint = if let Some(rectangle) = rectangle {
+            let x = rectangle
                 .get_public_property("x", activation)?
                 .coerce_to_number(activation)?;
 
-            let y = rect
+            let y = rectangle
                 .get_public_property("y", activation)?
                 .coerce_to_number(activation)?;
 
-            let width = rect
+            let width = rectangle
                 .get_public_property("width", activation)?
                 .coerce_to_number(activation)?;
 
-            let height = rect
+            let height = rectangle
                 .get_public_property("height", activation)?
                 .coerce_to_number(activation)?;
 
@@ -227,7 +201,8 @@ pub fn start_drag<'gc>(
 
         let drag_object = crate::player::DragObject {
             display_object,
-            offset,
+            last_mouse_position: *activation.context.mouse_position,
+            lock_center,
             constraint,
         };
         *activation.context.drag_object = Some(drag_object);
@@ -237,14 +212,14 @@ pub fn start_drag<'gc>(
 
 pub fn stop_drag<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // It doesn't matter which clip we call this on; it simply stops any active drag.
 
-    // we might not have had an opportunity to call `update_drag`
-    // if AS did `startDrag(mc);stopDrag();` in one go
-    // so let's do it here
+    // We might not have had an opportunity to call `update_drag`
+    // if AS did `startDrag(mc); stopDrag();` in one go,
+    // so let's do it here.
     crate::player::Player::update_drag(&mut activation.context);
 
     *activation.context.drag_object = None;
@@ -254,14 +229,14 @@ pub fn stop_drag<'gc>(
 /// Implements `useHandCursor`'s getter
 pub fn get_use_hand_cursor<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mc) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_movie_clip())
     {
-        return Ok(mc.use_hand_cursor().into());
+        return Ok(mc.avm2_use_hand_cursor().into());
     }
 
     Ok(Value::Undefined)
@@ -270,20 +245,14 @@ pub fn get_use_hand_cursor<'gc>(
 /// Implements `useHandCursor`'s setter
 pub fn set_use_hand_cursor<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mc) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_movie_clip())
     {
-        mc.set_use_hand_cursor(
-            &mut activation.context,
-            args.get(0)
-                .cloned()
-                .unwrap_or(Value::Undefined)
-                .coerce_to_boolean(),
-        );
+        mc.set_avm2_use_hand_cursor(&mut activation.context, args.get_bool(0));
     }
 
     Ok(Value::Undefined)
@@ -292,11 +261,11 @@ pub fn set_use_hand_cursor<'gc>(
 /// Implements `hitArea`'s getter
 pub fn get_hit_area<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mc) = this
-        .and_then(|o| o.as_display_object())
+        .as_display_object()
         .and_then(|o| o.as_movie_clip())
         .and_then(|o| o.hit_area())
     {
@@ -309,19 +278,17 @@ pub fn get_hit_area<'gc>(
 /// Implements `hitArea`'s setter
 pub fn set_hit_area<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mc) = this
-        .and_then(|this| this.as_display_object())
+        .as_display_object()
         .and_then(|this| this.as_movie_clip())
     {
-        mc.set_hit_area(
-            &mut activation.context,
-            args.get(0)
-                .and_then(|hit_area| hit_area.as_object())
-                .and_then(|hit_area| hit_area.as_display_object()),
-        );
+        let object = args
+            .try_get_object(activation, 0)
+            .and_then(|hit_area| hit_area.as_display_object());
+        mc.set_hit_area(&mut activation.context, object);
     }
 
     Ok(Value::Undefined)

@@ -1,12 +1,10 @@
 import * as utils from "./utils";
-import type { LogLevel } from "ruffle-core";
+import type { BaseLoadOptions } from "ruffle-core";
 
-export interface Options {
+export interface Options extends BaseLoadOptions {
     ruffleEnable: boolean;
     ignoreOptout: boolean;
-    warnOnUnsupportedContent: boolean;
-    logLevel: LogLevel;
-    showSwfDownload: boolean;
+    autostart: boolean;
 }
 
 interface OptionElement<T> {
@@ -34,11 +32,61 @@ class CheckboxOption implements OptionElement<boolean> {
     }
 }
 
-class SelectOption implements OptionElement<string> {
+class NumberOption implements OptionElement<number | null> {
+    constructor(
+        private readonly numberInput: HTMLInputElement,
+        readonly label: HTMLLabelElement
+    ) {
+        this.numberInput.addEventListener("input", () => {
+            this.numberInput.reportValidity();
+        });
+    }
+
+    get input() {
+        return this.numberInput;
+    }
+
+    get value(): number | null {
+        const ni = this.numberInput;
+        const num = ni.valueAsNumber;
+        if (Number.isNaN(num)) {
+            return null;
+        }
+        if (ni.min) {
+            const min = Number(ni.min);
+            if (min > num) {
+                return min;
+            }
+        }
+        if (ni.max) {
+            const max = Number(ni.max);
+            if (num > max) {
+                return max;
+            }
+        }
+        return num;
+    }
+
+    set value(value: number | null) {
+        this.numberInput.value = value?.toString() ?? "";
+    }
+}
+
+class SelectOption implements OptionElement<string | null> {
     constructor(
         private readonly select: HTMLSelectElement,
         readonly label: HTMLLabelElement
-    ) {}
+    ) {
+        // Localize each `option`, if relevant.
+        Array.prototype.forEach.call(select.options, (option) => {
+            if (option.hasAttribute("id")) {
+                const message = utils.i18n.getMessage(`settings_${option.id}`);
+                if (message) {
+                    option.textContent = message;
+                }
+            }
+        });
+    }
 
     get input() {
         return this.select;
@@ -47,10 +95,13 @@ class SelectOption implements OptionElement<string> {
     get value() {
         const index = this.select.selectedIndex;
         const option = this.select.options[index]!;
-        return option.value;
+        // Convert the empty string to `null`.
+        return option.value || null;
     }
 
-    set value(value: string) {
+    set value(value: string | null) {
+        // Convert `null` to the empty string.
+        value ??= "";
         const options = Array.from(this.select.options);
         const index = options.findIndex((option) => option.value === value);
         this.select.selectedIndex = index;
@@ -60,9 +111,15 @@ class SelectOption implements OptionElement<string> {
 function getElement(option: Element): OptionElement<unknown> {
     const label = option.getElementsByTagName("label")[0]!;
 
-    const [checkbox] = option.getElementsByTagName("input");
-    if (checkbox && checkbox.type === "checkbox") {
-        return new CheckboxOption(checkbox, label);
+    const [input] = option.getElementsByTagName("input");
+    if (input) {
+        if (input.type === "checkbox") {
+            return new CheckboxOption(input, label);
+        }
+
+        if (input.type === "number") {
+            return new NumberOption(input, label);
+        }
     }
 
     const [select] = option.getElementsByTagName("select");
@@ -139,4 +196,8 @@ export async function bindOptions(
     if (onChange) {
         onChange(options);
     }
+}
+
+export async function resetOptions(): Promise<void> {
+    utils.storage.sync.clear();
 }

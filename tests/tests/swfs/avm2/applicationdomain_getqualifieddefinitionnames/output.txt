@@ -1,0 +1,8 @@
+getQualifiedDefinitionNames() is Vector.<String>: true
+getQualifiedDefinitionNames().fixed: false
+getQualifiedDefinitionNames().length: 5
+getQualifiedDefinitionNames() contains Test: true
+getQualifiedDefinitionNames() contains VisibleFunction: true
+getQualifiedDefinitionNames() contains VisibleNamespace: true
+getQualifiedDefinitionNames() contains foo.bar::Baz: true
+getQualifiedDefinitionNames() contains foo.bar::Internal: true

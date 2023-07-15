@@ -30,7 +30,7 @@
         },
         {
             "matchManagers": ["github-actions"],
-            "groupName": "Github Actions dependencies",
+            "groupName": "GitHub Actions dependencies",
             "extends": ["schedule:monthly"],
         },
     ],

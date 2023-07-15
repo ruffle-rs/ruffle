@@ -2,11 +2,44 @@
     "settings_ruffle_enable": {
         "message": "Redă conținut Flash în Ruffle"
     },
-    "settings_page_ignore_optout": {
-        "message": "Redă conținut Flash chiar și pe site-uri care dezactivează Ruffle"
-    },
     "settings_ignore_optout": {
-        "message": "Ignoră avertismentele privind compatibilitatea site-urilor web"
+        "message": "Joacă conținut Flash chiar și pe site-urile care nu permit Ruffle"
+    },
+    "settings_show_swf_download": {
+        "message": "Arată descărcarea SWF în meniul contextual"
+    },
+    "settings_autostart": {
+        "message": "Redă automat fără ecranul de pornire (apoi apasă pentru a dezactiva)"
+    },
+    "settings_warn_on_unsupported_content": {
+        "message": "Avertizare la conținutul neacceptat"
+    },
+    "settings_log_level": {
+        "message": "Nivel jurnale"
+    },
+    "settings_log_level_error": {
+        "message": "Erori"
+    },
+    "settings_log_level_warn": {
+        "message": "Avertismente"
+    },
+    "settings_log_level_info": {
+        "message": "Informații"
+    },
+    "settings_max_execution_duration": {
+        "message": "Durata maximă permisă de execuție a ActionScript (în secunde)"
+    },
+    "settings_player_version": {
+        "message": "Numărul versiunii player-ului Flash de emulat (interval 1-32)"
+    },
+    "settings_preferred_renderer": {
+        "message": "Dispozitiv de redare preferat"
+    },
+    "settings_preferred_renderer_auto": {
+        "message": "Automat"
+    },
+    "settings_advanced_options": {
+        "message": "Opţiuni avansate"
     },
     "status_init": {
         "message": "Se citește fila actuală…"
@@ -21,13 +54,13 @@
         "message": "Se verifică starea Ruffle în fila actuală…"
     },
     "status_result_running": {
-        "message": "Ruffle este încărcat și rulează conținut Flash în fila actuală."
+        "message": "Ruffle este încărcat şi gata să ruleze conţinutul Flash din fila curentă."
     },
     "status_result_optout": {
         "message": "Ruffle nu este încărcat, deoarece pagina actuală s-a marcat ca fiind incompatibilă."
     },
     "status_result_disabled": {
-        "message": "Ruffle nu este încărcat, deoarece a fost dezactivat de utilizator."
+        "message": "Ruffle nu este încărcat deoarece este dezactivat."
     },
     "status_result_error": {
         "message": "A apărut o eroare la interogarea instanței Ruffle în fila actuală."

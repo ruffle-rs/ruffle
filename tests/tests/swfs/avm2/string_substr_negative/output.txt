@@ -1,0 +1,22 @@
+"abcdefg".substr(3, 5)
+defg
+"abcdefg".substr(0, -2)
+abcde
+"abcdefg".substr(1, -2)
+bcdef
+"abcdefg".substr(2, -2)
+
+"abcdefg".substr(1, -4)
+bcd
+"abcdefg".substr(1, -Infinity)
+
+"abcdefg".substr(2, -1)
+
+"abcdefg".substr(2, 9)
+cdefg
+"abcdefg".substr(0, -3)
+abcd
+"abcdefg".substr(2, -7)
+
+"abcdefg".substr(5, -10)
+

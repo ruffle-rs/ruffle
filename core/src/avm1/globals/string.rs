@@ -7,8 +7,8 @@ use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ArrayObject, Object, TObject, Value};
+use crate::context::GcContext;
 use crate::string::{utils as string_utils, AvmString, WString};
-use gc_arena::MutationContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "toString" => method(to_string_value_of; DONT_ENUM | DONT_DELETE);
@@ -72,31 +72,31 @@ pub fn string_function<'gc>(
 }
 
 pub fn create_string_object<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    context: &mut GcContext<'_, 'gc>,
     string_proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let string = FunctionObject::constructor(
-        gc_context,
+        context.gc_context,
         Executable::Native(string),
         Executable::Native(string_function),
         fn_proto,
         string_proto,
     );
     let object = string.raw_script_object();
-    define_properties_on(OBJECT_DECLS, gc_context, object, fn_proto);
+    define_properties_on(OBJECT_DECLS, context, object, fn_proto);
     string
 }
 
 /// Creates `String.prototype`.
 pub fn create_proto<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let string_proto = ValueObject::empty_box(gc_context, proto);
+    let string_proto = ValueObject::empty_box(context.gc_context, proto);
     let object = string_proto.raw_script_object();
-    define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
+    define_properties_on(PROTO_DECLS, context, object, fn_proto);
     string_proto
 }
 

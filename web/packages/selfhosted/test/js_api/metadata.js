@@ -1,11 +1,11 @@
-const { js_api_before } = require("../utils");
+const { jsApiBefore } = require("../utils");
 const { expect, use } = require("chai");
 const chaiHtml = require("chai-html");
 
 use(chaiHtml);
 
 describe("RufflePlayer.metadata", () => {
-    js_api_before("/test_assets/example.swf");
+    jsApiBefore("/test_assets/example.swf");
 
     it("has metadata after load", async () => {
         const player = await browser.$("<ruffle-player>");

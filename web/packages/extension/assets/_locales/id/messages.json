@@ -1,0 +1,98 @@
+{
+    "settings_ruffle_enable": {
+        "message": "Mainkan Konten Flash di Ruffle"
+    },
+    "settings_ignore_optout": {
+        "message": "Jalankan konten Flash bahkan di situs web yang tidak mengizinkan Ruffle"
+    },
+    "settings_show_swf_download": {
+        "message": "Tunjukan tombol unduh SWF di menu konteks"
+    },
+    "settings_autostart": {
+        "message": "Putar secara otomatis tanpa layar pembuka (lalu klik untuk membunyikan)"
+    },
+    "settings_warn_on_unsupported_content": {
+        "message": "Ingatkan konten yang tidak didukung"
+    },
+    "settings_log_level": {
+        "message": "Tingkat log"
+    },
+    "settings_log_level_error": {
+        "message": "Kesalahan"
+    },
+    "settings_log_level_warn": {
+        "message": "Peringatan"
+    },
+    "settings_log_level_info": {
+        "message": "Info"
+    },
+    "settings_max_execution_duration": {
+        "message": "Batas waktu eksekusi ActionScript (dalam detik)"
+    },
+    "settings_player_version": {
+        "message": "Versi Flash Player yang di emulasikan (jangka 1-32)"
+    },
+    "settings_preferred_renderer": {
+        "message": "Renderer yang diutamakan"
+    },
+    "settings_preferred_renderer_auto": {
+        "message": "Otomatis"
+    },
+    "settings_advanced_options": {
+        "message": "Pilihan Lanjutan"
+    },
+    "settings_reset": {
+        "message": "Reset setelan"
+    },
+    "settings_reset_confirm": {
+        "message": "Apakah Anda yakin ingin mengembalikan pengaturan Ruffle ke pengaturan semula?"
+    },
+    "status_init": {
+        "message": "Sedang membaca tab ini…"
+    },
+    "status_no_tabs": {
+        "message": "Tidak ada tab aktif."
+    },
+    "status_tabs_error": {
+        "message": "Terjadi kesalahan saat membaca tab ini."
+    },
+    "status_message_init": {
+        "message": "Sedang mengecek status Ruffle pada tab ini…"
+    },
+    "status_result_running": {
+        "message": "Ruffle telah dimuat dan siap menjalankan konten Flash di tab ini."
+    },
+    "status_result_running_protected": {
+        "message": "Ruffle telah dimuat dan sedang menjalankan konten Flash yang Anda minta."
+    },
+    "status_result_optout": {
+        "message": "Ruffle tidak dimuat karena halaman saat ini telah ditandai sebagai tidak kompatibel."
+    },
+    "status_result_disabled": {
+        "message": "Ruffle tidak dimuat karena dinonaktifkan."
+    },
+    "status_result_error": {
+        "message": "Telah terjadi kesalahan saat meminta instansi Ruffle di tab ini."
+    },
+    "status_result_protected": {
+        "message": "Ruffle tidak bisa dimuat pada halaman browser yang diproteksi."
+    },
+    "action_reload": {
+        "message": "Muat ulang untuk menerapkan perubahan"
+    },
+    "open_settings_page": {
+        "message": "Buka Halaman Pengaturan"
+    },
+    "settings_page": {
+        "message": "Halaman Pengaturan"
+    },
+    "description": {
+        "message": "Mengembalikan Flash kepada tempat yang semestinya."
+    },
+    "save_settings": {
+        "message": "Simpan Pengaturan"
+    },
+    "settings_saved": {
+        "message": "Pengaturan telah disimpan"
+    }
+}

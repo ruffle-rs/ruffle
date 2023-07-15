@@ -1,0 +1,11 @@
+about-ruffle = Névjegy
+about-ruffle-version = Verzió
+about-ruffle-channel = Csatorna
+about-ruffle-build-time = Build ideje
+about-ruffle-build-features = Build feature-ök
+about-ruffle-commit-ref = Commit ref.
+about-ruffle-commit-time = Commit ideje
+about-ruffle-visit-website = Honlap
+about-ruffle-visit-github = GitHub
+about-ruffle-visit-discord = Discord
+about-ruffle-visit-sponsor = Támogatás

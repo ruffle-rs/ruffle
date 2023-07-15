@@ -1,7 +1,10 @@
 // This is a new lint with false positives, see https://github.com/rust-lang/rust-clippy/issues/10318
 #![allow(clippy::extra_unused_type_parameters)]
+// Remove this when we decide on how to handle multithreaded rendering (especially on wasm)
+#![allow(clippy::arc_with_non_send_sync)]
 
 use crate::bitmaps::BitmapSamplers;
+use crate::buffer_pool::{BufferPool, PoolEntry};
 use crate::descriptors::Quad;
 use crate::mesh::BitmapBinds;
 use crate::pipelines::Pipelines;
@@ -13,11 +16,11 @@ use crate::utils::{
 use bytemuck::{Pod, Zeroable};
 use descriptors::Descriptors;
 use enum_map::Enum;
-use once_cell::sync::OnceCell;
-use ruffle_render::bitmap::{BitmapHandle, BitmapHandleImpl, RgbaBufRead, SyncHandle};
-use ruffle_render::color_transform::ColorTransform;
-use ruffle_render::tessellator::{Gradient as TessGradient, GradientType, Vertex as TessVertex};
-use std::cell::Cell;
+use ruffle_render::backend::RawTexture;
+use ruffle_render::bitmap::{BitmapHandle, BitmapHandleImpl, PixelRegion, RgbaBufRead, SyncHandle};
+use ruffle_render::shape_utils::GradientType;
+use ruffle_render::tessellator::{Gradient as TessGradient, Vertex as TessVertex};
+use std::cell::{Cell, OnceCell};
 use std::sync::Arc;
 use swf::GradientSpread;
 pub use wgpu;
@@ -25,12 +28,13 @@ pub use wgpu;
 type Error = Box<dyn std::error::Error>;
 
 #[macro_use]
-mod utils;
+pub mod utils;
 
 mod bitmaps;
 mod context3d;
 mod globals;
 mod pipelines;
+mod pixel_bender;
 pub mod target;
 mod uniform_buffer;
 
@@ -41,6 +45,7 @@ mod buffer_pool;
 #[cfg(feature = "clap")]
 pub mod clap;
 pub mod descriptors;
+mod filters;
 mod layouts;
 mod mesh;
 mod shaders;
@@ -50,6 +55,10 @@ impl BitmapHandleImpl for Texture {}
 
 pub fn as_texture(handle: &BitmapHandle) -> &Texture {
     <dyn BitmapHandleImpl>::downcast_ref(&*handle.0).unwrap()
+}
+
+pub fn raw_texture_as_texture(handle: &dyn RawTexture) -> &wgpu::Texture {
+    <dyn RawTexture>::downcast_ref(handle).unwrap()
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Enum)]
@@ -91,15 +100,11 @@ pub const DEFAULT_COLOR_ADJUSTMENTS: ColorAdjustments = ColorAdjustments {
     add_color: [0.0, 0.0, 0.0, 0.0],
 };
 
-impl From<ColorTransform> for ColorAdjustments {
-    fn from(transform: ColorTransform) -> Self {
-        if transform == ColorTransform::IDENTITY {
-            DEFAULT_COLOR_ADJUSTMENTS
-        } else {
-            Self {
-                mult_color: transform.mult_rgba_normalized(),
-                add_color: transform.add_rgba_normalized(),
-            }
+impl From<&swf::ColorTransform> for ColorAdjustments {
+    fn from(transform: &swf::ColorTransform) -> Self {
+        Self {
+            mult_color: transform.mult_rgba_normalized(),
+            add_color: transform.add_rgba_normalized(),
         }
     }
 }
@@ -171,14 +176,15 @@ impl From<TessGradient> for GradientUniforms {
 pub enum QueueSyncHandle {
     AlreadyCopied {
         index: wgpu::SubmissionIndex,
-        buffer: Arc<wgpu::Buffer>,
-        buffer_dimensions: BufferDimensions,
+        buffer: PoolEntry<wgpu::Buffer, BufferDimensions>,
+        copy_dimensions: BufferDimensions,
         descriptors: Arc<Descriptors>,
     },
     NotCopied {
         handle: BitmapHandle,
-        size: wgpu::Extent3d,
+        copy_area: PixelRegion,
         descriptors: Arc<Descriptors>,
+        pool: Arc<BufferPool<wgpu::Buffer, BufferDimensions>>,
     },
 }
 
@@ -198,32 +204,26 @@ impl QueueSyncHandle {
             QueueSyncHandle::AlreadyCopied {
                 index,
                 buffer,
-                buffer_dimensions,
+                copy_dimensions,
                 descriptors,
             } => capture_image(
                 &descriptors.device,
                 &buffer,
-                &buffer_dimensions,
+                &copy_dimensions,
                 Some(index),
                 with_rgba,
             ),
             QueueSyncHandle::NotCopied {
                 handle,
-                size,
+                copy_area,
                 descriptors,
+                pool,
             } => {
                 let texture = as_texture(&handle);
 
-                let buffer_label = create_debug_label!("Render target buffer");
                 let buffer_dimensions =
-                    BufferDimensions::new(size.width as usize, size.height as usize);
-                let buffer = descriptors.device.create_buffer(&wgpu::BufferDescriptor {
-                    label: buffer_label.as_deref(),
-                    size: (buffer_dimensions.padded_bytes_per_row.get() as u64
-                        * buffer_dimensions.height as u64),
-                    usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
-                    mapped_at_creation: false,
-                });
+                    BufferDimensions::new(copy_area.width() as usize, copy_area.height() as usize);
+                let buffer = pool.take(&descriptors, buffer_dimensions.clone());
                 let label = create_debug_label!("Render target transfer encoder");
                 let mut encoder =
                     descriptors
@@ -235,7 +235,11 @@ impl QueueSyncHandle {
                     wgpu::ImageCopyTexture {
                         texture: &texture.texture,
                         mip_level: 0,
-                        origin: wgpu::Origin3d::ZERO,
+                        origin: wgpu::Origin3d {
+                            x: copy_area.x_min,
+                            y: copy_area.y_min,
+                            z: 0,
+                        },
                         aspect: wgpu::TextureAspect::All,
                     },
                     wgpu::ImageCopyBuffer {
@@ -246,7 +250,11 @@ impl QueueSyncHandle {
                             rows_per_image: None,
                         },
                     },
-                    size,
+                    wgpu::Extent3d {
+                        width: copy_area.width(),
+                        height: copy_area.height(),
+                        depth_or_array_layers: 1,
+                    },
                 );
                 let index = descriptors.queue.submit(Some(encoder.finish()));
 
@@ -260,13 +268,9 @@ impl QueueSyncHandle {
 
                 // After we've read pixels from a texture enough times, we'll store this buffer so that
                 // future reads will be faster (it'll copy as part of the draw process instead)
-                texture.copy_count.set(texture.copy_count.get() + 1);
-                if texture.copy_count.get() >= 2 {
-                    let _ = texture.texture_offscreen.set(TextureOffscreen {
-                        buffer: Arc::new(buffer),
-                        buffer_dimensions,
-                    });
-                }
+                texture
+                    .copy_count
+                    .set(texture.copy_count.get().saturating_add(1));
 
                 image
             }
@@ -276,13 +280,10 @@ impl QueueSyncHandle {
 
 #[derive(Debug)]
 pub struct Texture {
-    texture: Arc<wgpu::Texture>,
+    pub(crate) texture: Arc<wgpu::Texture>,
     bind_linear: OnceCell<BitmapBinds>,
     bind_nearest: OnceCell<BitmapBinds>,
-    texture_offscreen: OnceCell<TextureOffscreen>,
     copy_count: Cell<u8>,
-    width: u32,
-    height: u32,
 }
 
 impl Texture {
@@ -311,10 +312,4 @@ impl Texture {
             )
         })
     }
-}
-
-#[derive(Debug)]
-struct TextureOffscreen {
-    buffer: Arc<wgpu::Buffer>,
-    buffer_dimensions: BufferDimensions,
 }

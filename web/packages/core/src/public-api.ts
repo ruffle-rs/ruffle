@@ -1,7 +1,7 @@
 import { Version } from "./version";
 import { VersionRange } from "./version-range";
 import { SourceAPI } from "./source-api";
-import type { Config } from "./config";
+import type { DataLoadOptions, URLLoadOptions } from "./load-options";
 
 declare global {
     interface Window {
@@ -11,7 +11,12 @@ declare global {
          * [[PublicAPI]] via [[PublicAPI.negotiate]], or an actual
          * [[PublicAPI]] instance itself.
          */
-        RufflePlayer?: { config?: Config } | PublicAPI;
+        RufflePlayer?:
+            | {
+                  config?: DataLoadOptions | URLLoadOptions | object;
+                  conflict?: Record<string, unknown> | null;
+              }
+            | PublicAPI;
     }
 }
 
@@ -30,12 +35,12 @@ export class PublicAPI {
     /**
      * The configuration object used when Ruffle is instantiated.
      */
-    config: Config;
+    config: DataLoadOptions | URLLoadOptions | object;
+    conflict: Record<string, unknown> | null;
 
     private sources: Record<string, typeof SourceAPI>;
     private invoked: boolean;
     private newestName: string | null;
-    private conflict: Record<string, unknown> | null;
 
     /**
      * Construct the Ruffle public API.
@@ -51,7 +56,6 @@ export class PublicAPI {
      *
      * This is used to upgrade from a prior version of the public API, or from
      * a user-defined configuration object placed in the public API slot.
-     * @protected
      */
     protected constructor(prev: PublicAPI | null | Record<string, unknown>) {
         this.sources = {};
@@ -62,7 +66,7 @@ export class PublicAPI {
 
         if (prev !== undefined && prev !== null) {
             if (prev instanceof PublicAPI) {
-                /// We're upgrading from a previous API to a new one.
+                // We're upgrading from a previous API to a new one.
                 this.sources = prev.sources;
                 this.config = prev.config;
                 this.invoked = prev.invoked;
@@ -74,10 +78,10 @@ export class PublicAPI {
                 prev.constructor === Object &&
                 prev["config"] instanceof Object
             ) {
-                /// We're the first, install user configuration
+                // We're the first, install user configuration.
                 this.config = prev["config"];
             } else {
-                /// We're the first, but conflicting with someone else.
+                // We're the first, but conflicting with someone else.
                 this.conflict = prev;
             }
         }
@@ -156,11 +160,10 @@ export class PublicAPI {
                 throw new Error("No registered Ruffle source!");
             }
 
-            const polyfills = this.config.polyfills;
+            const polyfills =
+                "polyfills" in this.config ? this.config.polyfills : true;
             if (polyfills !== false) {
-                this.sources[this.newestName]!.polyfill(
-                    this.newestName === "extension"
-                );
+                this.sources[this.newestName]!.polyfill();
             }
         }
     }
@@ -179,13 +182,14 @@ export class PublicAPI {
      * Look up a specific Ruffle version (or any version satisfying a given set
      * of requirements) and return it's API.
      *
-     * @param ver_requirement A set of semantic version requirement
+     * @param requirementString A set of semantic version requirement
      * strings that the player version must satisfy.
      * @returns An instance of the Source API, if one or more
      * sources satisfied the requirement.
      */
-    satisfying(ver_requirement: string): typeof SourceAPI | null {
-        const requirement = VersionRange.fromRequirementString(ver_requirement);
+    satisfying(requirementString: string): typeof SourceAPI | null {
+        const requirement =
+            VersionRange.fromRequirementString(requirementString);
         let valid = null;
 
         for (const k in this.sources) {
@@ -239,8 +243,6 @@ export class PublicAPI {
      *
      * Unfortunately, we can't disable polyfills after-the-fact, so this
      * only lets you disable the init event...
-     *
-     * @protected
      */
     protected superseded(): void {
         this.invoked = true;
@@ -284,7 +286,10 @@ export class PublicAPI {
             // This is necessary because scripts such as SWFObject check for the
             // Flash Player immediately when they load.
             // TODO: Maybe there's a better place for this.
-            const polyfills = publicAPI.config.polyfills;
+            const polyfills =
+                "polyfills" in publicAPI.config
+                    ? publicAPI.config.polyfills
+                    : true;
             if (polyfills !== false) {
                 SourceAPI.pluginPolyfill();
             }

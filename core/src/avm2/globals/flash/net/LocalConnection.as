@@ -13,11 +13,7 @@ package flash.net {
             this.client = this;
         }
 
-        public function get domain():String {
-            // FIXME - implement this - this is unrelated to the messaging functionality.
-            stub_getter("flash.net.LocalConnection", "domain");
-            return "localhost";
-        }
+        public native function get domain():String;
 
         public function close(): void {
             stub_method("flash.net.LocalConnection", "close");

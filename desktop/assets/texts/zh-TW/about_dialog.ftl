@@ -1,0 +1,11 @@
+about-ruffle = 關於 Ruffle...
+about-ruffle-version = 版本
+about-ruffle-channel = 分支
+about-ruffle-build-time = 建置時間
+about-ruffle-build-features = 建置特點
+about-ruffle-commit-ref = 提交參考
+about-ruffle-commit-time = 提交時間
+about-ruffle-visit-website = 官網網站
+about-ruffle-visit-github = GitHub
+about-ruffle-visit-discord = Discord
+about-ruffle-visit-sponsor = 贊助
