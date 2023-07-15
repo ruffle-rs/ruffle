@@ -13,7 +13,12 @@ struct Filter {
 
 @group(0) @binding(0) var texture: texture_2d<f32>;
 @group(0) @binding(1) var texture_sampler: sampler;
-@group(0) @binding(2) var<uniform> filter_args: Filter;
+
+#if use_push_constants == true
+    var<push_constant> filter_args: Filter;
+#else
+    @group(0) @binding(2) var<uniform> filter_args: Filter;
+#endif
 
 @vertex
 fn main_vertex(in: filter::VertexInput) -> filter::VertexOutput {
