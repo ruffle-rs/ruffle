@@ -247,6 +247,18 @@ fn deserialize_lso<'gc>(
     Ok(obj.into())
 }
 
+fn new_lso<'gc>(activation: &mut Activation<'_, 'gc>, name: &str, data: Object<'gc>) -> Lso {
+    let mut w = Amf0Writer::default();
+    recursive_serialize(activation, data, &mut w);
+    w.commit_lso(
+        &name
+            .split('/')
+            .last()
+            .map(|e| e.to_string())
+            .unwrap_or_else(|| "<unknown>".to_string()),
+    )
+}
+
 pub fn get_local<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
@@ -510,32 +522,35 @@ pub fn flush<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let data = this.get("data", activation)?.coerce_to_object(activation);
-
     let this_obj = this.as_shared_object().unwrap();
     let name = this_obj.get_name();
-
-    let mut w = Amf0Writer::default();
-    recursive_serialize(activation, data, &mut w);
-    let mut lso = w.commit_lso(
-        &name
-            .split('/')
-            .last()
-            .map(|e| e.to_string())
-            .unwrap_or_else(|| "<unknown>".to_string()),
-    );
-
-    let bytes = flash_lso::write::write_to_bytes(&mut lso).unwrap_or_default();
-
-    Ok(activation.context.storage.put(&name, &bytes).into())
+    let mut lso = new_lso(activation, &name, data);
+    flash_lso::write::write_to_bytes(&mut lso).unwrap_or_default();
+    // Flash does not write empty LSOs to disk
+    if lso.body.is_empty() {
+        Ok(true.into())
+    } else {
+        let bytes = flash_lso::write::write_to_bytes(&mut lso).unwrap_or_default();
+        Ok(activation.context.storage.put(&name, &bytes).into())
+    }
 }
 
 pub fn get_size<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "SharedObject", "getSize");
-    Ok(Value::Undefined)
+    let data = this.get("data", activation)?.coerce_to_object(activation);
+    let this_obj = this.as_shared_object().unwrap();
+    let name = this_obj.get_name();
+    let mut lso = new_lso(activation, &name, data);
+    // Flash returns 0 for empty LSOs, but the actual number of bytes (including the header) otherwise
+    if lso.body.is_empty() {
+        Ok(0.into())
+    } else {
+        let bytes = flash_lso::write::write_to_bytes(&mut lso).unwrap_or_default();
+        Ok(bytes.len().into())
+    }
 }
 
 pub fn send<'gc>(
