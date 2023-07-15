@@ -6,9 +6,9 @@ use ruffle_core::backend::navigator::{
 };
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
-use ruffle_core::socket::{SocketHandle, SocketAction};
+use ruffle_core::socket::{SocketAction, SocketHandle};
 use std::path::{Path, PathBuf};
-use std::sync::mpsc::{Sender, Receiver};
+use std::sync::mpsc::{Receiver, Sender};
 use url::{ParseError, Url};
 
 /// A `NavigatorBackend` used by tests that supports logging fetch requests.

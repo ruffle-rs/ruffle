@@ -137,13 +137,21 @@ impl<'gc> Sockets<'gc> {
                             .expect("only valid handles in SocketAction")
                             .target;
 
-                        let io_error_evt = activation.avm2().classes().ioerrorevent.construct(&mut activation, &[
-                            "ioError".into(),
-                            false.into(),
-                            false.into(),
-                            "TODO".into(),
-                            0.into()
-                        ]).expect("IOErrorEvent should be constructed");
+                        let io_error_evt = activation
+                            .avm2()
+                            .classes()
+                            .ioerrorevent
+                            .construct(
+                                &mut activation,
+                                &[
+                                    "ioError".into(),
+                                    false.into(),
+                                    false.into(),
+                                    "TODO".into(),
+                                    0.into(),
+                                ],
+                            )
+                            .expect("IOErrorEvent should be constructed");
 
                         Avm2::dispatch_event(&mut activation.context, io_error_evt, target.into());
                     }
