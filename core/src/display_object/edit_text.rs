@@ -258,7 +258,7 @@ impl<'gc> EditText<'gc> {
 
         // Selections are mandatory in AS3.
         let selection = if swf_movie.is_action_script_3() {
-            Some(TextSelection::for_position(0))
+            Some(TextSelection::for_position(text_spans.text().len()))
         } else {
             None
         };
