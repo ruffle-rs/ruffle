@@ -16,13 +16,23 @@ use swf::{Point, Twips};
 /// Draw an underline on a particular drawing.
 ///
 /// This will not draw underlines shorter than a pixel in width.
-fn draw_underline(drawing: &mut Drawing, starting_pos: Position<Twips>, width: Twips) {
+fn draw_underline(
+    drawing: &mut Drawing,
+    starting_pos: Position<Twips>,
+    width: Twips,
+    color: swf::Color,
+) {
     if width < Twips::from_pixels(1.0) {
         return;
     }
 
     let ending_pos = starting_pos + Position::from((width, Twips::ZERO));
 
+    drawing.set_line_style(Some(
+        swf::LineStyle::new()
+            .with_width(Twips::new(1))
+            .with_color(color),
+    ));
     drawing.draw_command(DrawCommand::MoveTo(Point::new(
         starting_pos.x(),
         starting_pos.y(),
@@ -142,29 +152,27 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     fn append_underlines(&mut self) {
         let mut starting_pos: Option<Position<Twips>> = None;
         let mut current_width: Option<Twips> = None;
+        let mut underline_color: Option<swf::Color> = None;
         let mut line_drawing = Drawing::new();
         let mut has_underline: bool = false;
-
-        line_drawing.set_line_style(Some(
-            swf::LineStyle::new()
-                .with_width(Twips::new(1))
-                .with_color(swf::Color::BLACK),
-        ));
 
         if let Some(linelist) = self.boxes.get(self.current_line..) {
             for linebox in linelist {
                 if linebox.is_text_box() {
-                    if let Some((_t, tf, font, params, _color)) =
+                    if let Some((_t, tf, font, params, color)) =
                         linebox.as_renderable_text(self.text)
                     {
                         let underline_baseline =
                             font.get_baseline_for_height(params.height()) + Twips::from_pixels(2.0);
                         let mut line_extended = false;
 
-                        if let Some(starting_pos) = starting_pos {
+                        if let (Some(starting_pos), Some(underline_color)) =
+                            (starting_pos, underline_color)
+                        {
                             if tf.underline.unwrap_or(false)
                                 && underline_baseline + linebox.bounds().origin().y()
                                     == starting_pos.y()
+                                && underline_color == color
                             {
                                 //Underline is at the same baseline, extend it
                                 current_width =
@@ -178,11 +186,14 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
                             //For whatever reason, we cannot extend the current underline.
                             //This can happen if we don't have an underline to extend, the
                             //underlines don't match, or this span doesn't call for one.
-                            if let (Some(pos), Some(width)) = (starting_pos, current_width) {
-                                draw_underline(&mut line_drawing, pos, width);
+                            if let (Some(pos), Some(width), Some(color)) =
+                                (starting_pos, current_width, underline_color)
+                            {
+                                draw_underline(&mut line_drawing, pos, width, color);
                                 has_underline = true;
                                 starting_pos = None;
                                 current_width = None;
+                                underline_color = None;
                             }
 
                             if tf.underline.unwrap_or(false) {
@@ -191,6 +202,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
                                         + Position::from((Twips::ZERO, underline_baseline)),
                                 );
                                 current_width = Some(linebox.bounds().width());
+                                underline_color = Some(color);
                             }
                         }
                     }
@@ -198,8 +210,15 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             }
         }
 
-        if let (Some(starting_pos), Some(current_width)) = (starting_pos, current_width) {
-            draw_underline(&mut line_drawing, starting_pos, current_width);
+        if let (Some(starting_pos), Some(current_width), Some(underline_color)) =
+            (starting_pos, current_width, underline_color)
+        {
+            draw_underline(
+                &mut line_drawing,
+                starting_pos,
+                current_width,
+                underline_color,
+            );
             has_underline = true;
         }
 
