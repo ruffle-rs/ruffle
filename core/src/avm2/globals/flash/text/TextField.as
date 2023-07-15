@@ -117,6 +117,11 @@ package flash.text {
         
         public native function get numLines():int;
 
+        public native function get caretIndex(): int;
+
+        public native function get selectionBeginIndex(): int;
+        public native function get selectionEndIndex(): int;
+
         public native function appendText(text:String):void;
         public native function getLineMetrics(lineIndex:int):TextLineMetrics;
         public native function getTextFormat(beginIndex:int = -1, endIndex:int = -1):TextFormat;

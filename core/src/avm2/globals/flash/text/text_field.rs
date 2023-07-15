@@ -771,6 +771,63 @@ pub fn replace_text<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn get_caret_index<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this
+        .as_display_object()
+        .and_then(|this| this.as_edit_text())
+    {
+        return if let Some(selection) = this.selection() {
+            Ok(selection.to().into())
+        } else {
+            Ok(0.into())
+        };
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn get_selection_begin_index<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this
+        .as_display_object()
+        .and_then(|this| this.as_edit_text())
+    {
+        return if let Some(selection) = this.selection() {
+            Ok(selection.start().into())
+        } else {
+            Ok(0.into())
+        };
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn get_selection_end_index<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this
+        .as_display_object()
+        .and_then(|this| this.as_edit_text())
+    {
+        return if let Some(selection) = this.selection() {
+            Ok(selection.end().into())
+        } else {
+            Ok(0.into())
+        };
+    }
+
+    Ok(Value::Undefined)
+}
+
 pub fn set_selection<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
