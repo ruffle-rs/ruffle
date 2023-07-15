@@ -1987,7 +1987,9 @@ impl Player {
                 Activation::try_from_stub(context.reborrow(), ActivationIdentifier::root("[Flush]"))
             {
                 for so in avm1_activation.context.avm1_shared_objects.clone().values() {
-                    if let Err(e) = crate::avm1::flush(&mut avm1_activation, *so, &[]) {
+                    if let Err(e) =
+                        crate::avm1::globals::shared_object::flush(&mut avm1_activation, *so, &[])
+                    {
                         tracing::error!("Error flushing AVM1 shared object `{:?}`: {:?}", so, e);
                     }
                 }

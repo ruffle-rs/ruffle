@@ -487,7 +487,6 @@ pub struct SystemPrototypes<'gc> {
     pub rectangle: Object<'gc>,
     pub rectangle_constructor: Object<'gc>,
     pub transform_constructor: Object<'gc>,
-    pub shared_object: Object<'gc>,
     pub shared_object_constructor: Object<'gc>,
     pub color_transform: Object<'gc>,
     pub color_transform_constructor: Object<'gc>,
@@ -924,14 +923,11 @@ pub fn create_globals<'gc>(
     globals.define_value(gc_context, "Boolean", boolean.into(), Attribute::DONT_ENUM);
     globals.define_value(gc_context, "Date", date.into(), Attribute::DONT_ENUM);
 
-    let shared_object_proto = shared_object::create_proto(context, object_proto, function_proto);
-
-    let shared_obj =
-        shared_object::create_shared_object_object(context, shared_object_proto, function_proto);
+    let shared_object = shared_object::create_constructor(context, object_proto, function_proto);
     globals.define_value(
         gc_context,
         "SharedObject",
-        shared_obj.into(),
+        shared_object.into(),
         Attribute::DONT_ENUM,
     );
 
@@ -1082,8 +1078,7 @@ pub fn create_globals<'gc>(
             rectangle: rectangle_proto,
             rectangle_constructor: rectangle,
             transform_constructor: transform,
-            shared_object: shared_object_proto,
-            shared_object_constructor: shared_obj,
+            shared_object_constructor: shared_object,
             color_transform: color_transform_proto,
             color_transform_constructor: color_transform,
             context_menu: context_menu_proto,

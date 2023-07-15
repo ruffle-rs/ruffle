@@ -1,11 +1,8 @@
-use crate::avm1::activation::Activation;
-use crate::avm1::error::Error;
-use crate::avm1::function::{Executable, FunctionObject};
-use crate::avm1::object::shared_object::SharedObject;
-use crate::avm1::object::NativeObject;
-use crate::avm1::property::Attribute;
+use crate::avm1::function::FunctionObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Object, ScriptObject, TObject, Value};
+use crate::avm1::{
+    Activation, Attribute, Error, Executable, NativeObject, Object, ScriptObject, TObject, Value,
+};
 use crate::avm1_stub;
 use crate::context::GcContext;
 use crate::display_object::TDisplayObject;
@@ -13,8 +10,27 @@ use crate::string::AvmString;
 use flash_lso::amf0::read::AMF0Decoder;
 use flash_lso::amf0::writer::{Amf0Writer, CacheKey, ObjWriter};
 use flash_lso::types::{Lso, Reference, Value as AmfValue};
+use gc_arena::{Collect, GcCell};
 use std::borrow::Cow;
 use std::collections::BTreeMap;
+
+#[derive(Default, Clone, Collect)]
+#[collect(require_static)]
+pub struct SharedObject {
+    /// The local name of this shared object
+    name: Option<String>,
+    // In future this will also handle remote SharedObjects
+}
+
+impl SharedObject {
+    fn name(&self) -> String {
+        self.name.clone().unwrap_or_default()
+    }
+
+    fn set_name(&mut self, name: String) {
+        self.name = Some(name);
+    }
+}
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "clear" => method(clear; DONT_ENUM | DONT_DELETE);
@@ -33,12 +49,9 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "getDiskUsage" => method(get_disk_usage; DONT_ENUM);
     "getLocal" => method(get_local);
     "getRemote" => method(get_remote);
-    "getMaxSize" => method(get_max_size);
-    "addListener" => method(add_listener);
-    "removeListener" => method(remove_listener);
 };
 
-pub fn delete_all<'gc>(
+fn delete_all<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -47,7 +60,7 @@ pub fn delete_all<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn get_disk_usage<'gc>(
+fn get_disk_usage<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -259,7 +272,7 @@ fn new_lso<'gc>(activation: &mut Activation<'_, 'gc>, name: &str, data: Object<'
     )
 }
 
-pub fn get_local<'gc>(
+fn get_local<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
@@ -389,8 +402,11 @@ pub fn get_local<'gc>(
         .coerce_to_object(activation);
 
     // Set the internal name
-    let obj_so = this.as_shared_object().unwrap();
-    obj_so.set_name(activation.context.gc_context, full_name.clone());
+    if let NativeObject::SharedObject(shared_object) = this.native() {
+        shared_object
+            .write(activation.context.gc_context)
+            .set_name(full_name.clone());
+    }
 
     let mut data = Value::Undefined;
 
@@ -426,7 +442,7 @@ pub fn get_local<'gc>(
     Ok(this.into())
 }
 
-pub fn get_remote<'gc>(
+fn get_remote<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -435,51 +451,7 @@ pub fn get_remote<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn get_max_size<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "SharedObject", "getMaxSize");
-    Ok(Value::Undefined)
-}
-
-pub fn add_listener<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "SharedObject", "addListener");
-    Ok(Value::Undefined)
-}
-
-pub fn remove_listener<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "SharedObject", "removeListener");
-    Ok(Value::Undefined)
-}
-
-pub fn create_shared_object_object<'gc>(
-    context: &mut GcContext<'_, 'gc>,
-    shared_object_proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let shared_obj = FunctionObject::constructor(
-        context.gc_context,
-        Executable::Native(constructor),
-        constructor_to_fn!(constructor),
-        fn_proto,
-        shared_object_proto,
-    );
-    let object = shared_obj.raw_script_object();
-    define_properties_on(OBJECT_DECLS, context, object, fn_proto);
-    shared_obj
-}
-
-pub fn clear<'gc>(
+fn clear<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -490,15 +462,15 @@ pub fn clear<'gc>(
         data.delete(activation, *k);
     }
 
-    let so = this.as_shared_object().unwrap();
-    let name = so.get_name();
-
-    activation.context.storage.remove_key(&name);
+    if let NativeObject::SharedObject(shared_object) = this.native() {
+        let name = shared_object.read().name();
+        activation.context.storage.remove_key(&name);
+    }
 
     Ok(Value::Undefined)
 }
 
-pub fn close<'gc>(
+fn close<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -507,7 +479,7 @@ pub fn close<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn connect<'gc>(
+fn connect<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -516,14 +488,16 @@ pub fn connect<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn flush<'gc>(
+pub(crate) fn flush<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let NativeObject::SharedObject(shared_object) = this.native() else {
+        return Ok(Value::Undefined);
+    };
+    let name = shared_object.read().name();
     let data = this.get("data", activation)?.coerce_to_object(activation);
-    let this_obj = this.as_shared_object().unwrap();
-    let name = this_obj.get_name();
     let mut lso = new_lso(activation, &name, data);
     flash_lso::write::write_to_bytes(&mut lso).unwrap_or_default();
     // Flash does not write empty LSOs to disk
@@ -535,14 +509,16 @@ pub fn flush<'gc>(
     }
 }
 
-pub fn get_size<'gc>(
+fn get_size<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let NativeObject::SharedObject(shared_object) = this.native() else {
+        return Ok(Value::Undefined);
+    };
+    let name = shared_object.read().name();
     let data = this.get("data", activation)?.coerce_to_object(activation);
-    let this_obj = this.as_shared_object().unwrap();
-    let name = this_obj.get_name();
     let mut lso = new_lso(activation, &name, data);
     // Flash returns 0 for empty LSOs, but the actual number of bytes (including the header) otherwise
     if lso.body.is_empty() {
@@ -553,7 +529,7 @@ pub fn get_size<'gc>(
     }
 }
 
-pub fn send<'gc>(
+fn send<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -562,7 +538,7 @@ pub fn send<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn set_fps<'gc>(
+fn set_fps<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -571,7 +547,7 @@ pub fn set_fps<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn on_status<'gc>(
+fn on_status<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -580,7 +556,7 @@ pub fn on_status<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn on_sync<'gc>(
+fn on_sync<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -589,21 +565,40 @@ pub fn on_sync<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn create_proto<'gc>(
+fn constructor<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    this.set_native(
+        activation.context.gc_context,
+        NativeObject::SharedObject(GcCell::new(
+            activation.context.gc_context,
+            Default::default(),
+        )),
+    );
+    Ok(this.into())
+}
+
+pub fn create_constructor<'gc>(
     context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let shared_obj = SharedObject::empty_shared_obj(context.gc_context, proto);
-    let object = shared_obj.raw_script_object();
-    define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    shared_obj.into()
-}
-
-pub fn constructor<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this.into())
+    let shared_object_proto = ScriptObject::new(context.gc_context, Some(proto));
+    define_properties_on(PROTO_DECLS, context, shared_object_proto, fn_proto);
+    let constructor = FunctionObject::constructor(
+        context.gc_context,
+        Executable::Native(constructor),
+        constructor_to_fn!(constructor),
+        fn_proto,
+        shared_object_proto.into(),
+    );
+    define_properties_on(
+        OBJECT_DECLS,
+        context,
+        constructor.raw_script_object(),
+        fn_proto,
+    );
+    constructor
 }
