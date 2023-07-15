@@ -26,7 +26,7 @@ function length_based_comparison(a, b) {
 }
 
 function sub_comparison(a, b) {
-	return a - b;
+	return b - a;
 }
 
 function lbc(a, b) {
