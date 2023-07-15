@@ -129,7 +129,23 @@ impl<'gc> Sockets<'gc> {
                             EventObject::bare_default_event(&mut activation.context, "connect");
                         Avm2::dispatch_event(&mut activation.context, connect_evt, target.into());
                     } else {
-                        // FIXME: Dispatch ioError event as connection failed.
+                        let target = activation
+                            .context
+                            .sockets
+                            .sockets
+                            .get(handle)
+                            .expect("only valid handles in SocketAction")
+                            .target;
+
+                        let io_error_evt = activation.avm2().classes().ioerrorevent.construct(&mut activation, &[
+                            "ioError".into(),
+                            false.into(),
+                            false.into(),
+                            "TODO".into(),
+                            0.into()
+                        ]).expect("IOErrorEvent should be constructed");
+
+                        Avm2::dispatch_event(&mut activation.context, io_error_evt, target.into());
                     }
                 }
                 SocketAction::Data(handle, data) => {
