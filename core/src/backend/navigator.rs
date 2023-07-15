@@ -1,7 +1,7 @@
 //! Browser-related platform functions
 
 use crate::loader::Error;
-use crate::socket::SocketConnection;
+use crate::socket::{SocketAction, SocketHandle};
 use crate::string::WStr;
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
@@ -10,6 +10,7 @@ use std::fmt::Display;
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
+use std::sync::mpsc::{Receiver, Sender};
 use swf::avm1::types::SendVarsMethod;
 use url::{ParseError, Url};
 
@@ -242,11 +243,21 @@ pub trait NavigatorBackend {
 
     /// Handle any Socket connection request
     ///
-    /// Returning `None` makes `Socket.connect()` returns `false`,
-    /// as if network access was disabled.
+    /// Use [SocketAction::Connect] to notify AVM that the connection failed or succeeded.
     ///
-    /// See [SocketConnection] for more details about implementation.
-    fn connect_socket(&mut self, host: &str, port: u16) -> Option<Box<dyn SocketConnection>>;
+    /// Use [SocketAction::Close] to close the connection on AVM side.
+    ///
+    /// Use [SocketAction::Data] to send data to AVM side.
+    ///
+    /// When the Sender of the Receiver is dropped then this task should end.
+    fn connect_socket(
+        &mut self,
+        host: String,
+        port: u16,
+        handle: SocketHandle,
+        receiver: Receiver<Vec<u8>>,
+        sender: Sender<SocketAction>,
+    );
 }
 
 #[cfg(not(target_family = "wasm"))]
@@ -377,8 +388,17 @@ impl NavigatorBackend for NullNavigatorBackend {
         url
     }
 
-    fn connect_socket(&mut self, _host: &str, _port: u16) -> Option<Box<dyn SocketConnection>> {
-        None
+    fn connect_socket(
+        &mut self,
+        _host: String,
+        _port: u16,
+        handle: SocketHandle,
+        _receiver: Receiver<Vec<u8>>,
+        sender: Sender<SocketAction>,
+    ) {
+        sender
+            .send(SocketAction::Connect(handle, false))
+            .expect("working channel send");
     }
 }
 

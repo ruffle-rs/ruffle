@@ -1,89 +1,54 @@
 use crate::{
-    avm2::{Activation, Avm2, EventObject, Object, TObject},
+    avm2::{object::SocketObject, Activation, Avm2, EventObject, TObject},
     backend::navigator::NavigatorBackend,
     context::UpdateContext,
 };
 use gc_arena::Collect;
 use generational_arena::{Arena, Index};
-use std::collections::VecDeque;
-
-/// Socket backend implementation
-///
-/// When `Socket.connect()` is called, the backend may provide a
-/// [SocketConnection] instance, that will be polled every tick.
-/// Methods must not block.
-///
-/// For performances reasons, only 1 message will be polled per tick per connection
-/// and at most 1 message will be sent per tick per connection.
-///
-/// When the Socket gets closed, the underlying [SocketConnection]
-/// is dropped, so simply implement [Drop] to handle cleanup stuff.
-///
-/// See [SocketConnection::is_connected] for details about how
-/// Ruffle infer connection state, [SocketConnection::send] for details
-/// about forwarding messages, [SocketConnection::poll] for details
-/// about polling incoming messages.
-pub trait SocketConnection {
-    /// Return socket connection state
-    ///
-    /// Possibles values:
-    ///  * `None`: connecting ([SocketConnection::send] and
-    ///            [SocketConnection::poll] not yet called)
-    ///  * `Some(true)`: connected ([SocketConnection::send] and
-    ///                 [SocketConnection::poll] got called)
-    ///  * `Some(false)`: disconnected, or connection refused socket wasn't connected
-    ///                   (called only after [SocketConnection::poll] return `None`;
-    ///                    [SocketConnection::send] and [SocketConnection::poll]
-    ///                    won't be called after `Some(false)` is returned)
-    ///
-    /// Returning `None` after `Some(true)` was returned
-    /// will be considered as `Some(false)` (i.e. connection closed).
-    fn is_connected(&self) -> Option<bool>;
-
-    /// Send a message to the remote side
-    ///
-    /// `buf` contains all bytes for the message to send, it's up to the backend to
-    /// decide how to encode and transport them.
-    ///
-    /// Only called if there is at least 1 pending message to send.
-    fn send(&mut self, buf: Vec<u8>);
-
-    /// Poll the next available message, if any
-    ///
-    /// Called every ticks, so can be used to try to
-    /// flush message not sent yet for instance.
-    fn poll(&mut self) -> Option<Vec<u8>>;
-}
+use std::{
+    cell::RefCell,
+    collections::VecDeque,
+    sync::mpsc::{channel, Receiver, Sender},
+};
 
 pub type SocketHandle = Index;
 
 #[derive(Collect)]
 #[collect(no_drop)]
 struct Socket<'gc> {
-    target: Object<'gc>,
-    #[collect(require_static)]
-    internal: Box<dyn SocketConnection>,
+    target: SocketObject<'gc>,
+    sender: RefCell<Sender<Vec<u8>>>,
     send_buffer: VecDeque<Vec<u8>>,
-    pending_connect: bool,
 }
 
 impl<'gc> Socket<'gc> {
-    fn new(target: Object<'gc>, internal: Box<dyn SocketConnection>) -> Self {
+    fn new(target: SocketObject<'gc>, sender: Sender<Vec<u8>>) -> Self {
         Self {
             target,
-            internal,
-            pending_connect: true,
+            sender: RefCell::new(sender),
             send_buffer: Default::default(),
         }
     }
 }
 
+#[derive(Debug)]
+pub enum SocketAction {
+    Connect(SocketHandle, bool),
+    Data(SocketHandle, Vec<u8>),
+    Close(SocketHandle),
+}
+
 /// Manages the collection of Sockets.
-pub struct Sockets<'gc>(Arena<Socket<'gc>>);
+pub struct Sockets<'gc> {
+    sockets: Arena<Socket<'gc>>,
+
+    receiver: Receiver<SocketAction>,
+    sender: Sender<SocketAction>,
+}
 
 unsafe impl<'gc> Collect for Sockets<'gc> {
     fn trace(&self, cc: &gc_arena::Collection) {
-        for (_, socket) in self.0.iter() {
+        for (_, socket) in self.sockets.iter() {
             socket.trace(cc)
         }
     }
@@ -91,145 +56,97 @@ unsafe impl<'gc> Collect for Sockets<'gc> {
 
 impl<'gc> Sockets<'gc> {
     pub fn empty() -> Self {
-        Self(Arena::new())
+        let (sender, receiver) = channel();
+
+        Self {
+            sockets: Arena::new(),
+            receiver,
+            sender,
+        }
     }
 
     pub fn connect(
         &mut self,
         backend: &mut dyn NavigatorBackend,
-        target: Object<'gc>,
-        host: &str,
+        target: SocketObject<'gc>,
+        host: String,
         port: u16,
-    ) -> Option<SocketHandle> {
-        if let Some(internal) = backend.connect_socket(host, port) {
-            let socket = Socket::new(target, internal);
+    ) {
+        let (sender, receiver) = channel();
 
-            let handle = self.0.insert(socket);
-            Some(handle)
-        } else {
-            None
+        let socket = Socket::new(target, sender);
+        let handle = self.sockets.insert(socket);
+
+        // NOTE: This call will send SocketAction::Connect to sender when successfully connected
+        //       or SocketAction::Failed when connection failed.
+        backend.connect_socket(host, port, handle, receiver, self.sender.clone());
+
+        if let Some(existing_handle) = target.set_handle(handle) {
+            // As written in the AS3 docs, we are supposed to close the existing connection,
+            // when a new one is created.
+            self.close(existing_handle)
         }
     }
 
-    pub fn is_connected(&self, handle: SocketHandle) -> Option<bool> {
-        if let Some(Socket { internal, .. }) = self.0.get(handle) {
-            internal.is_connected()
+    pub fn is_connected(&self, handle: SocketHandle) -> bool {
+        if let Some(Socket { .. }) = self.sockets.get(handle) {
+            true
         } else {
-            None
+            false
         }
     }
 
     pub fn send(&mut self, handle: SocketHandle, data: Vec<u8>) {
-        if let Some(Socket { send_buffer, .. }) = self.0.get_mut(handle) {
+        if let Some(Socket { send_buffer, .. }) = self.sockets.get_mut(handle) {
             send_buffer.push_back(data);
         }
     }
 
     pub fn close(&mut self, handle: SocketHandle) {
-        if let Some(Socket { internal, .. }) = self.0.remove(handle) {
-            drop(internal); // explicitly close connections via `Drop::drop`
+        if let Some(Socket { sender, .. }) = self.sockets.remove(handle) {
+            drop(sender); // NOTE: By dropping the sender, the reading task will close automatically.
         }
     }
 
     pub fn update_sockets(context: &mut UpdateContext<'_, 'gc>) {
-        #[derive(Debug)]
-        enum SocketAction {
-            Connect(SocketHandle, bool),
-            Data(SocketHandle, Vec<u8>),
-            Close(SocketHandle),
-        }
+        let mut activation = Activation::from_nothing(context.reborrow());
 
         let mut actions = vec![];
 
-        for (handle, socket) in context.sockets.0.iter_mut() {
-            let Socket {
-                pending_connect: is_connecting,
-                internal,
-                send_buffer,
-                ..
-            } = socket;
-
-            let is_connected = internal.is_connected();
-
-            match is_connected {
-                Some(success) if *is_connecting => {
-                    *is_connecting = false;
-                    actions.push(SocketAction::Connect(handle, success));
-                    if !success {
-                        continue;
-                    }
-                }
-                None => continue,
-
-                _ => {}
-            }
-
-            if let Some(received) = internal.poll() {
-                actions.push(SocketAction::Data(handle, received));
-            } else if matches!(is_connected, Some(false) | None) {
-                actions.push(SocketAction::Close(handle));
-                continue;
-            }
-
-            if let Some(to_send) = send_buffer.pop_front() {
-                internal.send(to_send);
-            }
+        while let Ok(action) = activation.context.sockets.receiver.try_recv() {
+            actions.push(action)
         }
-
-        if actions.is_empty() {
-            return;
-        }
-
-        let mut activation = Activation::from_nothing(context.reborrow());
 
         for action in actions {
             match action {
                 SocketAction::Connect(handle, success) => {
-                    let arena = &mut activation.context.sockets.0;
-                    let target = if success {
-                        arena
-                            .get(handle)
-                            .expect("only valid handles in SocketAction")
-                            .target
-                    } else {
-                        arena
-                            .remove(handle)
-                            .expect("only valid handles in SocketAction")
-                            .target
-                    };
-
                     if success {
+                        let target = activation
+                            .context
+                            .sockets
+                            .sockets
+                            .get_mut(handle)
+                            .expect("only valid handles in SocketAction")
+                            .target;
+
                         let connect_evt =
                             EventObject::bare_default_event(&mut activation.context, "connect");
-                        Avm2::dispatch_event(&mut activation.context, connect_evt, target);
+                        Avm2::dispatch_event(&mut activation.context, connect_evt, target.into());
+                    } else {
+                        // FIXME: Dispatch ioError event as connection failed.
                     }
-                }
-                SocketAction::Close(handle) => {
-                    let target = activation
-                        .context
-                        .sockets
-                        .0
-                        .remove(handle)
-                        .expect("only valid handles in SocketAction")
-                        .target;
-
-                    let close_evt =
-                        EventObject::bare_default_event(&mut activation.context, "close");
-                    Avm2::dispatch_event(&mut activation.context, close_evt, target);
                 }
                 SocketAction::Data(handle, data) => {
                     let target = activation
                         .context
                         .sockets
-                        .0
+                        .sockets
                         .get(handle)
                         .expect("only valid handles in SocketAction")
                         .target;
 
                     let bytes_loaded = data.len();
-
-                    let socket = target.as_socket().expect("only SocketObjects in handles");
-                    socket.read_buffer().extend(data);
+                    target.read_buffer().extend(data);
 
                     let progress_evt = activation
                         .avm2()
@@ -248,9 +165,33 @@ impl<'gc> Sockets<'gc> {
                         )
                         .expect("ProgressEvent should be constructed");
 
-                    Avm2::dispatch_event(&mut activation.context, progress_evt, target);
+                    Avm2::dispatch_event(&mut activation.context, progress_evt, target.into());
                 }
-            };
+                SocketAction::Close(handle) => {
+                    let socket = activation
+                        .context
+                        .sockets
+                        .sockets
+                        .remove(handle)
+                        .expect("only valid handles in SocketAction");
+
+                    let close_evt =
+                        EventObject::bare_default_event(&mut activation.context, "close");
+                    Avm2::dispatch_event(&mut activation.context, close_evt, socket.target.into());
+                }
+            }
+        }
+
+        for (_handle, socket) in context.sockets.sockets.iter_mut() {
+            let Socket {
+                sender,
+                send_buffer,
+                ..
+            } = socket;
+
+            if let Some(to_send) = send_buffer.pop_front() {
+                let _ = sender.borrow().send(to_send);
+            }
         }
     }
 }
