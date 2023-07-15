@@ -23,31 +23,33 @@ struct Filter {
 
 @vertex
 fn main_vertex(in: filter::VertexInput) -> filter::VertexOutput {
-    return filter::main_vertex(in);
+    var result = filter::main_vertex(in);
+
+    // Shift the uv over to the leftmost sample
+    let direction = vec2<f32>(filter_args.dir_x, filter_args.dir_y);
+    result.uv -= (direction * floor(filter_args.full_size / 2.0));
+
+    return result;
 }
 
 @fragment
 fn main_fragment(in: filter::VertexOutput) -> @location(0) vec4<f32> {
     let direction = vec2<f32>(filter_args.dir_x, filter_args.dir_y);
 
-    // Left edge. Always lands in the middle of the first pixel inside this blur.
-    let left_uv = in.uv - (direction * floor(filter_args.full_size / 2.0));
-
     // We always start off with the left edge. Everything else is optional.
     var center_length = filter_args.full_size - filter_args.left_weight;
-    var total = textureSample(texture, texture_sampler, left_uv) * filter_args.left_weight;
+    var total = textureSample(texture, texture_sampler, in.uv) * filter_args.left_weight;
 
     if (filter_args.full_size % 2.0 == 0.0) {
         // If the width is even, we have a right edge of a fixed weight and offset
         center_length -= 1.5;
-        total += textureSample(texture, texture_sampler, left_uv + (direction * (filter_args.full_size - 0.75))) * 1.5;
+        total += textureSample(texture, texture_sampler, in.uv + (direction * (filter_args.full_size - 0.75))) * 1.5;
     }
 
     // At this point, the center_length must be a whole number, divisible by 2.
-    center_length /= 2.0;
-    for (var i = 0.0; i < center_length; i += 1.0) {
+    for (var i = 0.0; i < center_length; i += 2.0) {
         // The center of the kernel is always going to be 1,1 weight pairs. We can just sample between the two pixels.
-        total += textureSample(texture, texture_sampler, left_uv + (direction * (1.5 + (i * 2.0)))) * 2.0;
+        total += textureSample(texture, texture_sampler, in.uv + (direction * (1.5 + i))) * 2.0;
     }
 
     // The sum of every weight is full_size

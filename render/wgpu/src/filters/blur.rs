@@ -62,7 +62,7 @@ impl BlurFilter {
                     sampling,
                     wgpu::BindGroupLayoutEntry {
                         binding: 2,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        visibility: wgpu::ShaderStages::FRAGMENT | wgpu::ShaderStages::VERTEX,
                         ty: wgpu::BindingType::Buffer {
                             ty: wgpu::BufferBindingType::Uniform,
                             has_dynamic_offset: false,
@@ -82,7 +82,7 @@ impl BlurFilter {
             bind_group_layouts: &[&bind_group_layout],
             push_constant_ranges: if device.limits().max_push_constant_size > 0 {
                 &[wgpu::PushConstantRange {
-                    stages: wgpu::ShaderStages::FRAGMENT,
+                    stages: wgpu::ShaderStages::VERTEX_FRAGMENT,
                     range: 0..(std::mem::size_of::<BlurUniform>() as u32),
                 }]
             } else {
@@ -311,7 +311,7 @@ impl BlurFilter {
         render_pass.set_pipeline(pipeline);
 
         render_pass.set_push_constants(
-            wgpu::ShaderStages::FRAGMENT,
+            wgpu::ShaderStages::FRAGMENT | wgpu::ShaderStages::VERTEX,
             0,
             bytemuck::cast_slice(&[uniform]),
         );
