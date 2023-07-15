@@ -25,14 +25,7 @@ pub fn connect<'gc>(
         sockets, navigator, ..
     } = &mut activation.context;
 
-    if let Some(handle) = sockets.connect(*navigator, this, &host.to_utf8_lossy(), port) {
-        if let Some(previous_handle) = socket.set_handle(handle) {
-            // As written in the AS3 docs, we are supposed to close the existing connection,
-            // when a new one is created.
-            sockets.close(previous_handle);
-        }
-    };
-
+    sockets.connect(*navigator, socket, host.to_utf8_lossy().into_owned(), port);
     // FIXME: Are we supposed to throw and IOError when a connection fails?
 
     Ok(Value::Undefined)
@@ -120,9 +113,7 @@ pub fn get_connected<'gc>(
         None => return Ok(Value::Bool(false)),
     };
 
-    let is_connected = sockets.is_connected(handle).unwrap_or(false);
-
-    Ok(Value::Bool(is_connected))
+    Ok(Value::Bool(sockets.is_connected(handle)))
 }
 
 pub fn flush<'gc>(
