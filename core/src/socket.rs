@@ -89,11 +89,7 @@ impl<'gc> Sockets<'gc> {
     }
 
     pub fn is_connected(&self, handle: SocketHandle) -> bool {
-        if let Some(Socket { .. }) = self.sockets.get(handle) {
-            true
-        } else {
-            false
-        }
+        matches!(self.sockets.get(handle), Some(Socket { .. }))
     }
 
     pub fn send(&mut self, handle: SocketHandle, data: Vec<u8>) {
