@@ -7,9 +7,9 @@ use ruffle_core::backend::navigator::{
 use ruffle_core::config::NetworkingAccessMode;
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
-use ruffle_core::socket::{SocketHandle, SocketAction};
-use std::sync::Arc;
+use ruffle_core::socket::{SocketAction, SocketHandle};
 use std::sync::mpsc::{Receiver, Sender};
+use std::sync::Arc;
 use tracing_subscriber::layer::Layered;
 use tracing_subscriber::Registry;
 use tracing_wasm::WASMLayer;
