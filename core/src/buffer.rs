@@ -248,12 +248,49 @@ impl Slice {
         self.end - self.start
     }
 
+    pub fn start(&self) -> usize {
+        self.start
+    }
+
+    pub fn end(&self) -> usize {
+        self.end
+    }
+
     pub fn data(&self) -> SliceRef {
         SliceRef {
             guard: self.buf.0.read().expect("unlock read"),
             start: self.start,
             end: self.end,
         }
+    }
+
+    /// Create a readable cursor into the `Slice`.
+    pub fn as_cursor(&self) -> SliceCursor {
+        SliceCursor {
+            slice: self.clone(),
+            pos: 0,
+        }
+    }
+}
+
+/// A readable cursor into a buffer slice.
+pub struct SliceCursor {
+    slice: Slice,
+    pos: usize,
+}
+
+impl Read for SliceCursor {
+    fn read(&mut self, data: &mut [u8]) -> IoResult<usize> {
+        let copy_count = min(data.len(), self.slice.len() - self.pos);
+        let slice = self
+            .slice
+            .get(self.pos..self.pos + copy_count)
+            .expect("Slice offsets are always valid");
+        let slice_data = slice.data();
+
+        data[..copy_count].copy_from_slice(&slice_data);
+        self.pos += copy_count;
+        Ok(copy_count)
     }
 }
 
