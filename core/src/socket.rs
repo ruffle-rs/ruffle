@@ -121,7 +121,7 @@ impl<'gc> Sockets<'gc> {
                             .context
                             .sockets
                             .sockets
-                            .get_mut(handle)
+                            .get(handle)
                             .expect("only valid handles in SocketAction")
                             .target;
 
