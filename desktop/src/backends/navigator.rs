@@ -1,6 +1,10 @@
 //! Navigator backend for web
 
 use crate::custom_event::RuffleEvent;
+use async_io::Timer;
+use async_net::TcpStream;
+use futures::{AsyncReadExt, AsyncWriteExt};
+use futures_lite::FutureExt;
 use isahc::http::{HeaderName, HeaderValue};
 use isahc::{
     config::RedirectPolicy, prelude::*, AsyncReadResponseExt, HttpClient, Request as IsahcRequest,
@@ -12,13 +16,14 @@ use ruffle_core::backend::navigator::{
 };
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
-use ruffle_core::socket::SocketConnection;
-use std::collections::VecDeque;
-use std::io::{ErrorKind, Read, Write};
-use std::net::TcpStream;
+use ruffle_core::socket::{SocketAction, SocketHandle};
+use std::io;
+use std::io::ErrorKind;
 use std::rc::Rc;
 use std::str::FromStr;
-use std::sync::mpsc::Sender;
+use std::sync::mpsc::{Receiver, Sender, TryRecvError};
+use std::time::Duration;
+use tracing::warn;
 use url::{ParseError, Url};
 use winit::event_loop::EventLoopProxy;
 
@@ -312,73 +317,99 @@ impl NavigatorBackend for ExternalNavigatorBackend {
         url
     }
 
-    fn connect_socket(&mut self, host: &str, port: u16) -> Option<Box<dyn SocketConnection>> {
+    fn connect_socket(
+        &mut self,
+        host: String,
+        port: u16,
+        handle: SocketHandle,
+        receiver: Receiver<Vec<u8>>,
+        sender: Sender<SocketAction>,
+    ) {
         // FIXME: Add connection permissions
-        Some(Box::new(TcpSocket::connect(host, port)))
-    }
-}
+        let future = Box::pin(async move {
+            let host2 = host.clone();
 
-struct TcpSocket {
-    stream: Option<TcpStream>,
-    pending_write: Vec<u8>,
-    pending_read: VecDeque<u8>,
-}
+            let mut pending_write = vec![];
 
-impl TcpSocket {
-    fn connect(host: &str, port: u16) -> Self {
-        // FIXME: make connect asynchronous
-        Self {
-            stream: TcpStream::connect((host, port)).ok().and_then(|socket| {
-                if socket.set_nonblocking(true).is_ok() {
-                    Some(socket)
-                } else {
-                    None
+            let mut stream = match TcpStream::connect((host, port)).await {
+                Ok(stream) => {
+                    sender
+                        .send(SocketAction::Connect(handle, true))
+                        .expect("working channel send");
+
+                    stream
                 }
-            }),
-            pending_read: Default::default(),
-            pending_write: Default::default(),
-        }
-    }
-}
+                Err(err) => {
+                    warn!("Failed to connect to {}:{}, error: {}", host2, port, err);
+                    sender
+                        .send(SocketAction::Connect(handle, false))
+                        .expect("working channel send");
+                    return Ok(());
+                }
+            };
 
-impl SocketConnection for TcpSocket {
-    fn is_connected(&self) -> Option<bool> {
-        Some(self.stream.is_some())
-    }
+            loop {
+                loop {
+                    match receiver.try_recv() {
+                        Ok(val) => {
+                            pending_write.extend(val);
+                        }
+                        Err(TryRecvError::Disconnected) => {
+                            //NOTE: Channel sender has been dropped.
+                            //      This means we have to close the connection.
+                            drop(stream);
+                            return Ok(());
+                        }
+                        Err(_) => break,
+                    }
+                }
 
-    fn send(&mut self, buf: Vec<u8>) {
-        if self.stream.is_some() {
-            self.pending_write.extend(buf)
-        }
-    }
+                let mut buffer = [0; 4096];
 
-    fn poll(&mut self) -> Option<Vec<u8>> {
-        if let Some(stream) = &mut self.stream {
-            if !self.pending_write.is_empty() {
-                match stream.write(&self.pending_write) {
-                    Err(e) if e.kind() == ErrorKind::WouldBlock => {} // just try later
+                match stream
+                    .read(&mut buffer)
+                    .or(async {
+                        Timer::after(Duration::from_millis(50)).await;
+                        Result::<usize, io::Error>::Err(io::Error::new(ErrorKind::TimedOut, ""))
+                    })
+                    .await
+                {
+                    Err(e) if e.kind() == ErrorKind::TimedOut => {} // try again later.
                     Err(_) | Ok(0) => {
-                        self.stream = None;
-                        return None;
+                        sender
+                            .send(SocketAction::Close(handle))
+                            .expect("working channel send");
+                        drop(stream);
+                        break;
                     }
-                    Ok(written) => {
-                        let _ = self.pending_write.drain(..written);
+                    Ok(read) => {
+                        let buffer = buffer.into_iter().take(read).collect::<Vec<_>>();
+
+                        sender
+                            .send(SocketAction::Data(handle, buffer))
+                            .expect("working channel send");
+                    }
+                };
+
+                if !pending_write.is_empty() {
+                    match stream.write(&pending_write).await {
+                        Err(_) | Ok(0) => {
+                            sender
+                                .send(SocketAction::Close(handle))
+                                .expect("working channel send");
+                            drop(stream);
+                            break;
+                        }
+                        Ok(written) => {
+                            let _ = pending_write.drain(..written);
+                        }
                     }
                 }
             }
 
-            let mut buffer = [0; 4096];
+            Ok(())
+        });
 
-            match stream.read(&mut buffer) {
-                Err(e) if e.kind() == ErrorKind::WouldBlock => return None, // just try later
-                Err(_) | Ok(0) => {
-                    self.stream = None;
-                    return None;
-                }
-                Ok(_read) => return Some(buffer.to_vec()),
-            }
-        } else {
-            None
-        }
+        self.spawn_future(future);
     }
 }
