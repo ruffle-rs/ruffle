@@ -7,6 +7,7 @@ use std::io::{Error as IoError, ErrorKind as IoErrorKind, Read, Result as IoResu
 use std::iter::Iterator;
 use std::ops::{Bound, Deref, RangeBounds};
 use std::sync::{Arc, RwLock, RwLockReadGuard};
+use thiserror::Error;
 
 /// A shared data buffer.
 ///
@@ -294,43 +295,60 @@ impl Read for SliceCursor {
     }
 }
 
+#[derive(Debug, Error)]
+pub enum SubstreamError {
+    #[error("Attempted to add substream chunk from a foreign buffer")]
+    ForeignBuffer,
+}
+
 /// A list of multiple slices of the same buffer.
 ///
-/// `Substream` represents a substream of the underlying buffer. Slices can be
-/// appended to the chunks list
+/// `Substream` represents a substream of the underlying `Buffer`. `Slice`s can
+/// be appended to the chunks list in order to extend the substream, in the
+/// same way that the underlying `Buffer` can be extended. All `Slice`s must be
+/// backed by the same `Buffer` in order to be part of the same `Substream`.
+///
+/// Clones of a `Substream` share a single chunk list, and appending chunks
+/// will extend all clones of the `Substream`.
 #[derive(Clone, Debug)]
 pub struct Substream {
-    buf: Option<Buffer>,
-    chunks: Vec<(usize, usize)>,
+    buf: Buffer,
+
+    /// Shared list of chunks. Chunks are stored as (start, end) pairs.
+    chunks: Arc<RwLock<Vec<(usize, usize)>>>,
 }
 
 impl Substream {
-    pub fn new() -> Self {
+    pub fn new(buf: Buffer) -> Self {
         Self {
-            buf: None,
-            chunks: vec![],
+            buf,
+            chunks: Arc::new(RwLock::new(vec![])),
         }
     }
 
-    pub fn append(&mut self, slice: Slice) -> Result<(), ()> {
-        if self.buf.is_none() {
-            self.buf = Some(slice.buf);
-            self.chunks.push((slice.start, slice.end));
-
-            Ok(())
-        } else if self.buf == Some(slice.buf) {
-            self.chunks.push((slice.start, slice.end));
+    /// Append another `Slice` onto the end of the `Substream`.
+    ///
+    /// Appended chunks will be present in all clones of the `Substream`.
+    pub fn append(&mut self, slice: Slice) -> Result<(), SubstreamError> {
+        let mut chunks = self.chunks.write().unwrap();
+        if self.buf == slice.buf {
+            chunks.push((slice.start, slice.end));
 
             Ok(())
         } else {
-            Err(())
+            Err(SubstreamError::ForeignBuffer)
         }
     }
 
+    /// Calculate the number of chunks in the `Substream`.
     pub fn num_chunks(&self) -> usize {
-        self.chunks.len()
+        self.chunks.read().unwrap().len()
     }
 
+    /// Create a readable cursor into the `Substream`.
+    ///
+    /// The returned cursor clones the `Substream` and thus shares a chunk list
+    /// with it.
     pub fn as_cursor(&self) -> SubstreamCursor {
         SubstreamCursor {
             substream: self.clone(),
@@ -339,28 +357,43 @@ impl Substream {
         }
     }
 
+    /// Calculate the number of bytes in the `Substream`.
     pub fn len(&self) -> usize {
         let mut tally = 0;
-        for (chunk_start, chunk_end) in &self.chunks {
+        let chunks = self.chunks.read().unwrap();
+        for (chunk_start, chunk_end) in chunks.iter() {
             tally += chunk_end - chunk_start;
         }
 
         tally
     }
 
+    /// Determine if the `Substream` is empty.
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    /// Create a chunk iterator into the `Substream`.
+    ///
+    /// The returned iterator clones the `Substream` and thus shares a chunk
+    /// list with it.
     pub fn iter_chunks(&self) -> SubstreamChunksIter {
         SubstreamChunksIter {
             substream: self.clone(),
             next_buf: 0,
         }
     }
+
+    pub fn buffer(&self) -> &Buffer {
+        &self.buf
+    }
 }
 
 impl From<Buffer> for Substream {
     fn from(buf: Buffer) -> Self {
         Self {
-            buf: Some(buf),
-            chunks: vec![],
+            buf,
+            chunks: Arc::new(RwLock::new(vec![])),
         }
     }
 }
@@ -368,8 +401,8 @@ impl From<Buffer> for Substream {
 impl From<Slice> for Substream {
     fn from(slice: Slice) -> Self {
         Self {
-            buf: Some(slice.buf),
-            chunks: vec![(slice.start, slice.end)],
+            buf: slice.buf,
+            chunks: Arc::new(RwLock::new(vec![(slice.start, slice.end)])),
         }
     }
 }
@@ -389,11 +422,7 @@ pub struct SubstreamCursor {
 impl Read for SubstreamCursor {
     fn read(&mut self, data: &mut [u8]) -> IoResult<usize> {
         let mut out_count = 0;
-        if self.substream.buf.is_none() {
-            return Ok(out_count);
-        }
-
-        let buf_owned = self.substream.buf.clone().expect("buffer");
+        let buf_owned = self.substream.buf.clone();
         let buf = buf_owned.0.read().map_err(|_| {
             IoError::new(
                 IoErrorKind::Other,
@@ -401,9 +430,12 @@ impl Read for SubstreamCursor {
             )
         })?;
 
+        let chunks = self.substream.chunks.read().unwrap();
+
         while out_count < data.len() {
-            let cur_chunk = self.substream.chunks.get(self.chunk_pos);
+            let cur_chunk = chunks.get(self.chunk_pos);
             if cur_chunk.is_none() {
+                //out of chunks to read
                 return Ok(out_count);
             }
 
@@ -418,9 +450,11 @@ impl Read for SubstreamCursor {
             );
             self.bytes_pos += copy_count;
             if self.bytes_pos < chunk_len {
+                //`data` is full
                 break;
             }
 
+            //`data` not full, move onto next chunk
             out_count += copy_count;
 
             self.chunk_pos += 1;
@@ -441,14 +475,12 @@ impl Iterator for SubstreamChunksIter {
     type Item = Slice;
 
     fn next(&mut self) -> Option<Slice> {
-        if let Some((start, end)) = self.substream.chunks.get(self.next_buf) {
-            if let Some(buf) = &self.substream.buf {
-                return Some(Slice {
-                    buf: buf.clone(),
-                    start: *start,
-                    end: *end,
-                });
-            }
+        if let Some((start, end)) = self.substream.chunks.read().unwrap().get(self.next_buf) {
+            return Some(Slice {
+                buf: self.substream.buf.clone(),
+                start: *start,
+                end: *end,
+            });
         }
 
         None
@@ -508,7 +540,7 @@ mod test {
         let buf = Buffer::from(vec![
             38, 26, 99, 1, 1, 1, 1, 38, 12, 14, 1, 1, 93, 86, 1, 88,
         ]);
-        let mut substream = Substream::new();
+        let mut substream = Substream::new(buf.clone());
 
         substream.append(buf.get(3..7).unwrap()).unwrap();
         substream.append(buf.get(10..12).unwrap()).unwrap();
@@ -526,7 +558,7 @@ mod test {
         let buf = Buffer::from(vec![
             38, 26, 99, 1, 1, 1, 1, 38, 12, 14, 1, 1, 93, 86, 1, 88,
         ]);
-        let mut substream = Substream::new();
+        let mut substream = Substream::new(buf.clone());
 
         substream.append(buf.get(0..3).unwrap()).unwrap();
         substream.append(buf.get(7..10).unwrap()).unwrap();
