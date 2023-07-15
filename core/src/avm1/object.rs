@@ -11,10 +11,10 @@ use crate::avm1::globals::displacement_map_filter::DisplacementMapFilter;
 use crate::avm1::globals::drop_shadow_filter::DropShadowFilter;
 use crate::avm1::globals::glow_filter::GlowFilter;
 use crate::avm1::globals::gradient_filter::GradientFilter;
+use crate::avm1::globals::shared_object::SharedObject;
 use crate::avm1::globals::transform::TransformObject;
 use crate::avm1::globals::xml::Xml;
 use crate::avm1::object::array_object::ArrayObject;
-use crate::avm1::object::shared_object::SharedObject;
 use crate::avm1::object::super_object::SuperObject;
 use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::{Activation, Attribute, Error, ScriptObject, SoundObject, StageObject, Value};
@@ -32,7 +32,6 @@ use std::fmt::Debug;
 pub mod array_object;
 mod custom_object;
 pub mod script_object;
-pub mod shared_object;
 pub mod sound_object;
 pub mod stage_object;
 pub mod super_object;
@@ -59,6 +58,7 @@ pub enum NativeObject<'gc> {
     BitmapData(BitmapDataWrapper<'gc>),
     Xml(Xml<'gc>),
     XmlNode(XmlNode<'gc>),
+    SharedObject(GcCell<'gc, SharedObject>),
 }
 
 /// Represents an object that can be directly interacted with by the AVM
@@ -75,7 +75,6 @@ pub enum NativeObject<'gc> {
         SuperObject(SuperObject<'gc>),
         ValueObject(ValueObject<'gc>),
         FunctionObject(FunctionObject<'gc>),
-        SharedObject(SharedObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
@@ -588,11 +587,6 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
 
     /// Get the underlying `ValueObject`, if it exists.
     fn as_value_object(&self) -> Option<ValueObject<'gc>> {
-        None
-    }
-
-    /// Get the underlying `SharedObject`, if it exists
-    fn as_shared_object(&self) -> Option<SharedObject<'gc>> {
         None
     }
 
