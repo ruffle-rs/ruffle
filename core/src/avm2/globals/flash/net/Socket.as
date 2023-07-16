@@ -60,11 +60,7 @@ package flash.net {
 
         public native function flush():void;
 
-        public function readBoolean():Boolean {
-            stub_method("flash.net.Socket", "readBoolean");
-            return false;
-        }
-
+        public native function readBoolean():Boolean;
         public native function readByte():int;
 
         public function readBytes(bytes:ByteArray, offset:uint = 0, length:uint = 0):void {
@@ -100,10 +96,7 @@ package flash.net {
             return "";
         }
 
-        public function writeBoolean(value:Boolean):void {
-            stub_method("flash.net.Socket", "writeBoolean");
-        }
-
+        public native function writeBoolean(value:Boolean):void;
         public native function writeByte(value:int):void;
         public native function writeBytes(bytes:ByteArray, offset:uint = 0, length:uint = 0):void;
         public native function writeDouble(value:Number):void;
