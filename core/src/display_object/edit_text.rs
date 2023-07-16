@@ -1691,6 +1691,21 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.0.write(context.gc_context).object = Some(to.into());
     }
 
+    fn set_parent(&self, context: &mut UpdateContext<'_, 'gc>, parent: Option<DisplayObject<'gc>>) {
+        let had_parent = self.parent().is_some();
+        self.base_mut(context.gc_context)
+            .set_parent_ignoring_orphan_list(parent);
+        let has_parent = self.parent().is_some();
+
+        if self.movie().is_action_script_3() && had_parent && !has_parent {
+            let had_focus = self.0.read().flags.contains(EditTextFlag::HAS_FOCUS);
+            if had_focus {
+                let tracker = context.focus_tracker;
+                tracker.set(None, context);
+            }
+        }
+    }
+
     fn self_bounds(&self) -> Rectangle<Twips> {
         self.0.read().bounds.clone()
     }
