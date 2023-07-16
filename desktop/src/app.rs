@@ -3,8 +3,8 @@ use crate::custom_event::RuffleEvent;
 use crate::gui::{GuiController, MENU_HEIGHT};
 use crate::player::{PlayerController, PlayerOptions};
 use crate::util::{
-    get_screen_size, parse_url, pick_file, winit_key_to_char, winit_to_ruffle_key_code,
-    winit_to_ruffle_text_control,
+    get_screen_size, parse_url, pick_file, plot_stats_in_tracy, winit_key_to_char,
+    winit_to_ruffle_key_code, winit_to_ruffle_text_control,
 };
 use anyhow::{Context, Error};
 use ruffle_core::{PlayerEvent, StageDisplayState};
@@ -136,10 +136,7 @@ impl App {
                         } else {
                             self.gui.borrow_mut().render(None);
                         }
-                        #[cfg(feature = "tracy")]
-                        tracing_tracy::client::Client::running()
-                            .expect("tracy client must be running")
-                            .frame_mark();
+                        plot_stats_in_tracy(&self.gui.borrow().descriptors().wgpu_instance);
                     }
                 }
 
