@@ -126,7 +126,9 @@ pub fn flush<'gc>(
             .ok_or(invalid_socket_error(activation))?;
         let UpdateContext { sockets, .. } = &mut activation.context;
 
-        let data = socket.drain_write_buf();
+        let mut buffer = socket.write_buffer();
+        let len = buffer.len();
+        let data = buffer.drain(..len).collect::<Vec<_>>();
 
         sockets.send(handle, data)
     }
