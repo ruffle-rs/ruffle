@@ -1,5 +1,6 @@
 use crate::avm2::bytearray::ByteArrayStorage;
-use crate::avm2::object::{ByteArrayObject, TObject};
+use crate::avm2::object::{ByteArrayObject, TObject, VectorObject};
+use crate::avm2::vector::VectorStorage;
 use crate::avm2::ArrayObject;
 use crate::avm2::ArrayStorage;
 use crate::avm2::{Activation, Error, Object, Value};
@@ -60,6 +61,50 @@ pub fn serialize_value<'gc>(
                 } else {
                     let len = sparse.len() as u32;
                     Some(AmfValue::ECMAArray(dense, sparse, len))
+                }
+            } else if let Some(vec) = o.as_vector_storage() {
+                let val_type = vec.value_type();
+                if val_type == activation.avm2().classes().int {
+                    let int_vec: Vec<_> = vec
+                        .iter()
+                        .map(|v| {
+                            v.as_integer(activation.context.gc_context)
+                                .expect("Unexpected non-int value in int vector")
+                        })
+                        .collect();
+                    Some(AmfValue::VectorInt(int_vec, vec.is_fixed()))
+                } else if val_type == activation.avm2().classes().uint {
+                    let uint_vec: Vec<_> = vec
+                        .iter()
+                        .map(|v| {
+                            v.as_u32(activation.context.gc_context)
+                                .expect("Unexpected non-uint value in int vector")
+                        })
+                        .collect();
+                    Some(AmfValue::VectorUInt(uint_vec, vec.is_fixed()))
+                } else if val_type == activation.avm2().classes().number {
+                    let num_vec: Vec<_> = vec
+                        .iter()
+                        .map(|v| {
+                            v.as_number(activation.context.gc_context)
+                                .expect("Unexpected non-uint value in int vector")
+                        })
+                        .collect();
+                    Some(AmfValue::VectorDouble(num_vec, vec.is_fixed()))
+                } else {
+                    let obj_vec: Vec<_> = vec
+                        .iter()
+                        .map(|v| {
+                            serialize_value(activation, v, amf_version)
+                                .expect("Unexpected non-object value in object vector")
+                        })
+                        .collect();
+                    // Flash always uses an empty type name
+                    Some(AmfValue::VectorObject(
+                        obj_vec,
+                        "".to_string(),
+                        vec.is_fixed(),
+                    ))
                 }
             } else if let Some(date) = o.as_date_object() {
                 date.date_time()
@@ -208,13 +253,46 @@ pub fn deserialize_value<'gc>(
                 ))],
             )?
             .into(),
-        AmfValue::VectorDouble(..)
-        | AmfValue::VectorUInt(..)
-        | AmfValue::VectorInt(..)
-        | AmfValue::VectorObject(..)
-        | AmfValue::Dictionary(..)
-        | AmfValue::Custom(..)
-        | AmfValue::Reference(_) => {
+        AmfValue::VectorDouble(vec, is_fixed) => {
+            let storage = VectorStorage::from_values(
+                vec.iter().map(|v| (*v).into()).collect(),
+                *is_fixed,
+                activation.avm2().classes().number,
+            );
+            VectorObject::from_vector(storage, activation)?.into()
+        }
+        AmfValue::VectorUInt(vec, is_fixed) => {
+            let storage = VectorStorage::from_values(
+                vec.iter().map(|v| (*v).into()).collect(),
+                *is_fixed,
+                activation.avm2().classes().uint,
+            );
+            VectorObject::from_vector(storage, activation)?.into()
+        }
+        AmfValue::VectorInt(vec, is_fixed) => {
+            let storage = VectorStorage::from_values(
+                vec.iter().map(|v| (*v).into()).collect(),
+                *is_fixed,
+                activation.avm2().classes().int,
+            );
+            VectorObject::from_vector(storage, activation)?.into()
+        }
+        AmfValue::VectorObject(vec, ty_name, is_fixed) => {
+            // Flash always serializes Vector.<SomeType> with an empty type name
+            if !ty_name.is_empty() {
+                tracing::error!("Tried to deserialize Vector with type name: {}", ty_name);
+            }
+            let value_type = activation.avm2().classes().object;
+            let storage = VectorStorage::from_values(
+                vec.iter()
+                    .map(|v| deserialize_value(activation, v))
+                    .collect::<Result<Vec<_>, _>>()?,
+                *is_fixed,
+                value_type,
+            );
+            VectorObject::from_vector(storage, activation)?.into()
+        }
+        AmfValue::Dictionary(..) | AmfValue::Custom(..) | AmfValue::Reference(_) => {
             tracing::error!("Deserialization not yet implemented: {:?}", val);
             Value::Undefined
         }

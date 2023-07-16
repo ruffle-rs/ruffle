@@ -1,0 +1,18 @@
+Original: [100,200,300] fixed: false class: __AS3__.vec::Vector.<uint>
+Serialized: 14,7,0,0,0,0,100,0,0,0,200,0,0,1,44
+Deserialized: [100,200,300] fixed: false class: __AS3__.vec::Vector.<uint>
+Original: [500,600] fixed: true class: __AS3__.vec::Vector.<uint>
+Serialized: 14,5,1,0,0,1,244,0,0,2,88
+Deserialized: [500,600] fixed: true class: __AS3__.vec::Vector.<uint>
+Original: [] fixed: false class: __AS3__.vec::Vector.<uint>
+Serialized: 14,1,0
+Deserialized: [] fixed: false class: __AS3__.vec::Vector.<uint>
+Original: [-1,-200,4] fixed: false class: __AS3__.vec::Vector.<int>
+Serialized: 13,7,0,255,255,255,255,255,255,255,56,0,0,0,4
+Deserialized: [-1,-200,4] fixed: false class: __AS3__.vec::Vector.<int>
+Original: [-100] fixed: true class: __AS3__.vec::Vector.<int>
+Serialized: 13,3,1,255,255,255,156
+Deserialized: [-100] fixed: true class: __AS3__.vec::Vector.<int>
+Original: [0,0,-1,Infinity,5,NaN] fixed: false class: __AS3__.vec::Vector.<Number>
+Serialized: 15,13,0,128,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,191,240,0,0,0,0,0,0,127,240,0,0,0,0,0,0,64,20,0,0,0,0,0,0,255,248,0,0,0,0,0,0
+Deserialized: [0,0,-1,Infinity,5,NaN] fixed: false class: __AS3__.vec::Vector.<Number>
