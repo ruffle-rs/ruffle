@@ -24,6 +24,19 @@ pub enum NavigationMethod {
     Post,
 }
 
+#[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum SocketBehavior {
+    /// Allows movies to connect to any host using sockets.
+    Unrestricted,
+
+    /// Refuse all socket connection requests
+    Deny,
+
+    /// Ask the user every time a socket connection is requested
+    Ask,
+}
+
 /// The handling mode of links opening a new website.
 #[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
