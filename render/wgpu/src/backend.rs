@@ -73,7 +73,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
             None,
         )
         .await?;
-        let descriptors = Descriptors::new(adapter, device, queue);
+        let descriptors = Descriptors::new(instance, adapter, device, queue);
         let target =
             SwapChainTarget::new(surface, &descriptors.adapter, (1, 1), &descriptors.device);
         Self::new(Arc::new(descriptors), target)
@@ -107,7 +107,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
             power_preference,
             trace_path,
         ))?;
-        let descriptors = Descriptors::new(adapter, device, queue);
+        let descriptors = Descriptors::new(instance, adapter, device, queue);
         let target = SwapChainTarget::new(surface, &descriptors.adapter, size, &descriptors.device);
         Self::new(Arc::new(descriptors), target)
     }
@@ -138,7 +138,7 @@ impl WgpuRenderBackend<crate::target::TextureTarget> {
             power_preference,
             trace_path,
         ))?;
-        let descriptors = Descriptors::new(adapter, device, queue);
+        let descriptors = Descriptors::new(instance, adapter, device, queue);
         let target = crate::target::TextureTarget::new(&descriptors.device, size)?;
         Self::new(Arc::new(descriptors), target)
     }

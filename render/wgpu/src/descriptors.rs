@@ -12,6 +12,7 @@ use std::mem;
 use std::sync::{Arc, Mutex};
 
 pub struct Descriptors {
+    pub wgpu_instance: wgpu::Instance,
     pub adapter: wgpu::Adapter,
     pub device: wgpu::Device,
     pub limits: wgpu::Limits,
@@ -34,7 +35,12 @@ impl Debug for Descriptors {
 }
 
 impl Descriptors {
-    pub fn new(adapter: wgpu::Adapter, device: wgpu::Device, queue: wgpu::Queue) -> Self {
+    pub fn new(
+        instance: wgpu::Instance,
+        adapter: wgpu::Adapter,
+        device: wgpu::Device,
+        queue: wgpu::Queue,
+    ) -> Self {
         let limits = device.limits();
         let bind_layouts = BindLayouts::new(&device);
         let bitmap_samplers = BitmapSamplers::new(&device);
@@ -57,6 +63,7 @@ impl Descriptors {
         let filters = Filters::new(&device);
 
         Self {
+            wgpu_instance: instance,
             adapter,
             device,
             limits,
