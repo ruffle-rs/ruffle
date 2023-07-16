@@ -147,8 +147,8 @@ impl<'gc> Sockets<'gc> {
                                     "ioError".into(),
                                     false.into(),
                                     false.into(),
-                                    "TODO".into(),
-                                    0.into(),
+                                    "Error #2031: Socket Error.".into(),
+                                    2031.into(),
                                 ],
                             )
                             .expect("IOErrorEvent should be constructed");
