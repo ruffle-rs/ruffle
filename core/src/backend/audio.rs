@@ -528,6 +528,32 @@ impl<'gc> AudioManager<'gc> {
         }
     }
 
+    pub fn start_substream(
+        &mut self,
+        audio: &mut dyn AudioBackend,
+        stream_data: Substream,
+        movie_clip: MovieClip<'gc>,
+        stream_info: &swf::SoundStreamHead,
+    ) -> Option<SoundInstanceHandle> {
+        if self.sounds.len() < Self::MAX_SOUNDS {
+            let handle = audio.start_substream(stream_data, stream_info).ok()?;
+            let instance = SoundInstance {
+                sound: None,
+                instance: handle,
+                display_object: Some(movie_clip.into()),
+                transform: display_object::SoundTransform::default(),
+                avm1_object: None,
+                avm2_object: None,
+                stream_start_frame: None,
+            };
+            audio.set_sound_transform(handle, self.transform_for_sound(&instance));
+            self.sounds.push(instance);
+            Some(handle)
+        } else {
+            None
+        }
+    }
+
     /// Returns the difference in seconds between the primary audio stream's time and the player's time.
     pub fn audio_skew_time(&mut self, audio: &mut dyn AudioBackend, offset_ms: f64) -> f64 {
         // Consider the first playing "stream" sound to be the primary audio track.
