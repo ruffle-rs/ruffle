@@ -1,6 +1,4 @@
-﻿// compiled with mxmlc
-
-package {
+﻿package {
     import flash.display.MovieClip;
     public class Test extends MovieClip {
     	public function Test(){
@@ -59,19 +57,32 @@ function describeXMLNormalized(val: *) {
 
 class C {}
 
-class Base {
+class Base implements BaseInterfaceOne, BaseInterfaceTwo {
 	public function Base(optParam:* = null) {}
 	public var baseProp:Object;
 	public function baseMethod(): Boolean { return true }
 	public function overridenMethod(firstParam: *, secondParam: Dictionary, thirdParam: DisplayObject = null): Object { return null; }
+	private function basePrivate() {}
+	//WeirdNS function baseWeirdNS() {}
 	AS3 function as3Method() {}
+	AS3 function get as3BaseGetter(): Boolean { return true; }
+	AS3 function set as3BaseSetter(val: Boolean) { }
 }
 
-class Subclass extends Base {
+class Subclass extends Base implements BaseInterfaceOne, OtherInterface {
 	public var subProp:Object;
 	public function subMethod() {}
+	private function subPrivate() {}
+	AS3 function subAs3() {}
+	//WeirdNS function subWeirdNS() {}
 	public override function overridenMethod(firstParam: *, secondParam: Dictionary, thirdParam: DisplayObject = null): Object { return null; }
+	AS3 function get as3SubGetter(): Boolean { return true; }
+	AS3 function set as3SubSetter(val: Boolean) { }
 }
+
+interface BaseInterfaceOne {}
+interface BaseInterfaceTwo {}
+interface OtherInterface {}
 
 class HasVector {
     public var vec1: Vector.<int>;
@@ -79,6 +90,8 @@ class HasVector {
 
 describeXMLNormalized(Object);
 describeXMLNormalized(new Object());
+describeXMLNormalized(Base);
+describeXMLNormalized(new Base());
 describeXMLNormalized(Subclass);
 describeXMLNormalized(new Subclass());
 describeXMLNormalized(C);

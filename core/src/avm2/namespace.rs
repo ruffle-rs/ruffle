@@ -121,6 +121,10 @@ impl<'gc> Namespace<'gc> {
         matches!(*self.0, NamespaceData::Namespace(name) if name.as_wstr().is_empty())
     }
 
+    pub fn is_public_ignoring_ns(&self) -> bool {
+        matches!(*self.0, NamespaceData::Namespace(_))
+    }
+
     pub fn is_any(&self) -> bool {
         matches!(*self.0, NamespaceData::Any)
     }

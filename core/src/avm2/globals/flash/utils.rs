@@ -329,11 +329,41 @@ pub fn describe_type<'gc>(
         .into())
 }
 
+bitflags::bitflags! {
+    pub struct DescribeTypeFlags: u32 {
+        const HIDE_NSURI_METHODS      = 1 << 0;
+        const INCLUDE_BASES           = 1 << 1;
+        const INCLUDE_INTERFACES      = 1 << 2;
+        const INCLUDE_VARIABLES       = 1 << 3;
+        const INCLUDE_ACCESSORS       = 1 << 4;
+        const INCLUDE_METHODS         = 1 << 5;
+        const INCLUDE_METADATA        = 1 << 6;
+        const INCLUDE_CONSTRUCTOR     = 1 << 7;
+        const INCLUDE_TRAITS          = 1 << 8;
+        const USE_ITRAITS             = 1 << 9;
+        const HIDE_OBJECT             = 1 << 10;
+    }
+}
+
 fn describe_internal_body<'gc>(
     activation: &mut Activation<'_, 'gc>,
     class_obj: ClassObject<'gc>,
     is_static: bool,
 ) -> Result<String, Error<'gc>> {
+    // This should be a const, but we can't use BitOr for bitflags in a const.
+    let flash10_flags = DescribeTypeFlags::INCLUDE_BASES
+        | DescribeTypeFlags::INCLUDE_INTERFACES
+        | DescribeTypeFlags::INCLUDE_VARIABLES
+        | DescribeTypeFlags::INCLUDE_ACCESSORS
+        | DescribeTypeFlags::INCLUDE_METHODS
+        | DescribeTypeFlags::INCLUDE_METADATA
+        | DescribeTypeFlags::INCLUDE_CONSTRUCTOR
+        | DescribeTypeFlags::INCLUDE_TRAITS
+        | DescribeTypeFlags::HIDE_NSURI_METHODS
+        | DescribeTypeFlags::HIDE_OBJECT;
+
+    // FIXME - take this in from `avmplus.describeTypeJSON`
+    let flags = flash10_flags;
     let mut xml_string = String::new();
 
     let class = class_obj.inner_class_definition();
@@ -368,25 +398,100 @@ fn describe_internal_body<'gc>(
         class_obj.instance_vtable()
     };
 
-    for interface in class_obj.interfaces() {
-        let interface_name = interface
-            .read()
-            .name()
-            .to_qualified_name(activation.context.gc_context);
-        write!(
-            xml_string,
-            "<implementsInterface type=\"{interface_name}\"/>"
-        )
-        .unwrap();
+    let super_vtable = if is_static {
+        class_obj.superclass_object().map(|c| c.class_vtable())
+    } else {
+        class_obj.superclass_object().map(|c| c.instance_vtable())
+    };
+
+    if !is_static {
+        for interface in class_obj.interfaces() {
+            let interface_name = interface
+                .read()
+                .name()
+                .to_qualified_name(activation.context.gc_context);
+            write!(
+                xml_string,
+                "<implementsInterface type=\"{interface_name}\"/>"
+            )
+            .unwrap();
+        }
     }
+
+    // Implement the weird 'HIDE_NSURI_METHODS' behavior from avmplus:
+    // https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/TypeDescriber.cpp#L237
+    let mut skip_ns = Vec::new();
+    if let Some(super_vtable) = super_vtable {
+        for (_, ns, prop) in super_vtable.resolved_traits().iter() {
+            if !ns.as_uri().is_empty() {
+                if let Property::Method { disp_id } = prop {
+                    let method = vtable
+                        .get_full_method(*disp_id)
+                        .unwrap_or_else(|| panic!("Missing method for id {disp_id:?}"));
+                    let is_playerglobals = method
+                        .class
+                        .class_scope()
+                        .domain()
+                        .is_playerglobals_domain(activation);
+                    if !skip_ns.contains(&(ns, is_playerglobals)) {
+                        skip_ns.push((ns, is_playerglobals));
+                    }
+                }
+            }
+        }
+    }
+
+    let class_is_playerglobals = class_obj
+        .class_scope()
+        .domain()
+        .is_playerglobals_domain(activation);
 
     // FIXME - avmplus iterates over their own hashtable, so the order in the final XML
     // is different
     for (prop_name, ns, prop) in vtable.resolved_traits().iter() {
-        // All non-public properties (including properties in the AS3 namespace) are hidden
-        if !ns.is_public() {
+        if !ns.is_public_ignoring_ns() {
             continue;
         }
+
+        // Hack around our lack of namespace versioning.
+        // This is hack to work around the fact that we don't have namespace versioning
+        // Once we do, methods from playerglobals should end up distinct public and AS3
+        // namespaces, due to the special `kApiVersion_VM_ALLVERSIONS` used:
+        // https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/AbcParser.cpp#L1497
+        //
+        // The main way this is
+        // observable is by having a class like this:
+        //
+        // ``
+        // class SubClass extends SuperClass {
+        //   AS3 function subclassMethod {}
+        // }
+        // class SuperClass {}
+        // ```
+        //
+        // Here, `subclassMethod` will not get hidden - even though `Object`
+        // has AS3 methods, they are in the playerglobal AS3 namespace
+        // (with version kApiVersion_VM_ALLVERSIONS), which is distinct
+        // from the AS3 namespace used by SubClass. However, if we have any
+        // user-defined classes in the inheritance chain, then the namespace
+        // *should* match (if the swf version numbers match).
+        //
+        // For now, we approximate this by checking if the declaring class
+        // and our starting class are both in the playerglobals domain
+        // or both not in the playerglobals domain. If not, then we ignore
+        // `skip_ns`, since we should really have two different namespaces here.
+        if flags.contains(DescribeTypeFlags::HIDE_NSURI_METHODS)
+            && skip_ns.contains(&(ns, class_is_playerglobals))
+        {
+            continue;
+        }
+
+        let uri = if ns.as_uri().is_empty() {
+            String::new()
+        } else {
+            format!("uri=\"{}\"", ns.as_uri())
+        };
+
         match prop {
             Property::ConstSlot { slot_id } | Property::Slot { slot_id } => {
                 let prop_class_name = vtable
@@ -419,8 +524,15 @@ fn describe_internal_body<'gc>(
                     .method
                     .return_type()
                     .to_qualified_name_or_star(activation.context.gc_context);
-                let declared_by = method
-                    .class
+                let declared_by = method.class;
+
+                if flags.contains(DescribeTypeFlags::HIDE_OBJECT)
+                    && declared_by == activation.avm2().classes().object
+                {
+                    continue;
+                }
+
+                let declared_by_name = declared_by
                     .inner_class_definition()
                     .read()
                     .name()
@@ -428,7 +540,7 @@ fn describe_internal_body<'gc>(
 
                 let trait_metadata = vtable.get_metadata_for_disp(disp_id);
 
-                write!(xml_string, "<method name=\"{prop_name}\" declaredBy=\"{declared_by}\" returnType=\"{return_type_name}\">").unwrap();
+                write!(xml_string, "<method name=\"{prop_name}\" declaredBy=\"{declared_by_name}\" returnType=\"{return_type_name}\" {uri}>").unwrap();
                 write_params(&mut xml_string, &method.method, activation);
                 if let Some(metadata) = trait_metadata {
                     write_metadata(&mut xml_string, &metadata);
@@ -462,6 +574,12 @@ fn describe_internal_body<'gc>(
                     unreachable!();
                 };
 
+                let uri = if ns.as_uri().is_empty() {
+                    String::new()
+                } else {
+                    format!("uri=\"{}\"", ns.as_uri())
+                };
+
                 let accessor_type =
                     method_type.to_qualified_name_or_star(activation.context.gc_context);
                 let declared_by = defining_class
@@ -470,7 +588,7 @@ fn describe_internal_body<'gc>(
                     .name()
                     .to_qualified_name(activation.context.gc_context);
 
-                write!(xml_string, "<accessor name=\"{prop_name}\" access=\"{access}\" type=\"{accessor_type}\" declaredBy=\"{declared_by}\">").unwrap();
+                write!(xml_string, "<accessor name=\"{prop_name}\" access=\"{access}\" type=\"{accessor_type}\" declaredBy=\"{declared_by}\" {uri}>").unwrap();
 
                 if let Some(get_disp_id) = get {
                     if let Some(metadata) = vtable.get_metadata_for_disp(get_disp_id) {
