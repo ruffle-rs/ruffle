@@ -1,0 +1,40 @@
+Frame 1
+null
+null
+null
+
+Frame 2
+null
+[object TextField]
+null
+
+stage.focus = text_input
+text_input
+[object TextField]
+null
+
+this.removeChild(text_input)
+null
+[object TextField]
+null
+
+Frame 3
+null
+[object TextField]
+null
+
+Frame 4
+null
+[object TextField]
+[object TextField]
+
+stage.focus = text_input2
+text_input2
+[object TextField]
+[object TextField]
+
+Frame 5
+null
+[object TextField]
+null
+
