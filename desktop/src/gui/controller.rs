@@ -58,7 +58,7 @@ impl GuiController {
         let surface = unsafe { instance.create_surface(window.as_ref()) }?;
         let (adapter, device, queue) = futures::executor::block_on(request_adapter_and_device(
             backend,
-            instance,
+            &instance,
             Some(&surface),
             opt.power.into(),
             opt.trace_path(),

@@ -18,7 +18,7 @@ use std::sync::{Arc, OnceLock};
 fn create_wgpu_device() -> Option<(wgpu::Adapter, wgpu::Device, wgpu::Queue)> {
     futures::executor::block_on(request_adapter_and_device(
         wgpu::Backends::all(),
-        wgpu::Instance::new(Default::default()),
+        &wgpu::Instance::new(Default::default()),
         None,
         Default::default(),
         None,
