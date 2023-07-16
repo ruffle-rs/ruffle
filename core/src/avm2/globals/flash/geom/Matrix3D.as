@@ -371,6 +371,12 @@ package flash.geom {
 			this._rawData[15] = m141 * m214 + m142 * m224 + m143 * m234 + m144 * m244;
 		}
 
+		public function prependScale(xScale:Number, yScale:Number, zScale:Number):void {
+			var m = new Matrix3D();
+			m.appendScale(xScale, yScale, zScale);
+			this.prepend(m);
+		}
+
 		public function copyFrom(other:Matrix3D):void {
 			// This makes a copy of other.rawData
 			this._rawData = other.rawData;

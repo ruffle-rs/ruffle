@@ -149,6 +149,9 @@
 			newMat.prependRotation(90, Vector3D.X_AXIS);
 			trace("After prependRotation: " + newMat.rawData);
 
+			newMat.prependScale(1, 2, 3);
+			trace("After prependScale: " + newMat.rawData);
+
 
 			trace("// copyColumnFrom tests");
 			var columnMatrix:Matrix3D = new Matrix3D(Vector.<Number>([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]));
