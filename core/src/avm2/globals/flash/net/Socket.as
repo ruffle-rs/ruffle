@@ -62,11 +62,7 @@ package flash.net {
 
         public native function readBoolean():Boolean;
         public native function readByte():int;
-
-        public function readBytes(bytes:ByteArray, offset:uint = 0, length:uint = 0):void {
-            stub_method("flash.net.Socket", "readBytes");
-        }
-
+        public native function readBytes(bytes:ByteArray, offset:uint = 0, length:uint = 0):void;
         public native function readDouble():Number;
         public native function readFloat():Number;
         public native function readInt():int;
