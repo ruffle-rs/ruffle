@@ -70,10 +70,23 @@ impl<'gc> VectorObject<'gc> {
         vector: VectorStorage<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        let value_type = vector.value_type();
+        Self::from_vector_any(vector, false, activation)
+    }
+
+    /// Like `from_vector`, but creates a `Vector.<*>` is `is_any` is true.
+    pub fn from_vector_any(
+        vector: VectorStorage<'gc>,
+        is_any: bool,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Object<'gc>, Error<'gc>> {
+        let mut value_type: Value<'_> = vector.value_type().into();
+        if is_any {
+            assert_eq!(value_type, activation.avm2().classes().object.into());
+            value_type = Value::Null;
+        }
         let vector_class = activation.avm2().classes().vector;
 
-        let applied_class = vector_class.apply(activation, value_type.into())?;
+        let applied_class = vector_class.apply(activation, value_type)?;
 
         let mut object: Object<'gc> = VectorObject(GcCell::new(
             activation.context.gc_context,

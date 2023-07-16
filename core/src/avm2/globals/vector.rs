@@ -56,8 +56,10 @@ fn class_call<'gc>(
     let this_class = activation.subclass_object().unwrap();
     let value_type = this_class
         .as_class_params()
-        .ok_or("Cannot convert to Vector")? // note: ideally, an untyped Vector shouldn't have a call handler at all
-        .unwrap_or(activation.avm2().classes().object);
+        .ok_or("Cannot convert to Vector")?; // note: ideally, an untyped Vector shouldn't have a call handler at all;
+
+    let is_any = value_type.is_none();
+    let value_type = value_type.unwrap_or(activation.avm2().classes().object);
 
     let arg = args.get(0).cloned().unwrap();
     let arg = arg.as_object().ok_or("Cannot convert to Vector")?;
@@ -81,7 +83,7 @@ fn class_call<'gc>(
         new_storage.push(coerced_item, activation)?;
     }
 
-    Ok(VectorObject::from_vector(new_storage, activation)?.into())
+    Ok(VectorObject::from_vector_any(new_storage, is_any, activation)?.into())
 }
 
 /// Implements `Vector`'s class constructor.
@@ -378,7 +380,7 @@ where
 
         for (_, item) in vector.iter().enumerate() {
             if matches!(item, Value::Undefined) || matches!(item, Value::Null) {
-                accum.push("".into());
+                accum.push("null".into());
             } else {
                 accum.push(conv(item, activation)?.coerce_to_string(activation)?);
             }

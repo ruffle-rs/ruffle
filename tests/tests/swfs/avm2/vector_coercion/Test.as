@@ -3,6 +3,8 @@
 	}
 }
 
+import flash.utils.getQualifiedClassName;
+
 trace("/// var a_bool: Vector.<Boolean> = new <Boolean>[1,2,3,4];");
 var a_bool:Vector.<Boolean> = new <Boolean>[1,2,3,4];
 
@@ -184,3 +186,11 @@ try {
 	var normalized = e.toString().replace(/@[0-9A-Fa-f]+/, "@ADDRESS")
 	trace("Caught error: " + normalized);
 }
+
+var obj_vec = Vector.<Object>([1, true, null, undefined, "Hello"]);
+var any_vec: Vector.<*> = obj_vec;
+trace("obj_vec: " + obj_vec);
+trace("obj_vec class name: " + getQualifiedClassName(any_vec));
+
+var orig_any = Vector.<*>([1, 2]);
+trace("orig_any class name: " + getQualifiedClassName(orig_any));

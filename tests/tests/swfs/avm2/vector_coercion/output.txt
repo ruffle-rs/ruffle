@@ -64,3 +64,6 @@ true
 1,2
 5,16
 Caught error: TypeError: Error #1034: Type Coercion failed: cannot convert __AS3__.vec::Vector.<Test.as$38::MyObject>@ADDRESS to __AS3__.vec.Vector.<int>.
+obj_vec: 1,true,null,null,Hello
+obj_vec class name: __AS3__.vec::Vector.<Object>
+orig_any class name: __AS3__.vec::Vector.<*>

@@ -78,7 +78,7 @@ pub struct Class<'gc> {
     name: QName<'gc>,
 
     /// The type parameter for this class (only supported for Vector)
-    param: Option<GcCell<'gc, Class<'gc>>>,
+    param: Option<Option<GcCell<'gc, Class<'gc>>>>,
 
     /// The name of this class's superclass.
     super_class: Option<Multiname<'gc>>,
@@ -156,7 +156,7 @@ pub struct Class<'gc> {
     /// Maps a type parameter to the application of this class with that parameter.
     ///
     /// Only applicable if this class is generic.
-    applications: FnvHashMap<ClassKey<'gc>, GcCell<'gc, Class<'gc>>>,
+    applications: FnvHashMap<Option<ClassKey<'gc>>, GcCell<'gc, Class<'gc>>>,
 
     /// Whether or not this is a system-defined class.
     ///
@@ -238,11 +238,11 @@ impl<'gc> Class<'gc> {
     /// longer be generic.
     pub fn with_type_param(
         this: GcCell<'gc, Class<'gc>>,
-        param: GcCell<'gc, Class<'gc>>,
+        param: Option<GcCell<'gc, Class<'gc>>>,
         mc: MutationContext<'gc, '_>,
     ) -> GcCell<'gc, Class<'gc>> {
         let read = this.read();
-        let key = ClassKey(param);
+        let key = param.map(ClassKey);
 
         if let Some(application) = read.applications.get(&key) {
             return *application;
@@ -260,7 +260,11 @@ impl<'gc> Class<'gc> {
         let name_with_params = format!(
             "{}.<{}>",
             new_class.name.local_name(),
-            param.read().name().to_qualified_name(mc)
+            param.map_or("*".to_string(), |p| p
+                .read()
+                .name()
+                .to_qualified_name(mc)
+                .to_string())
         );
 
         new_class.name = QName::new(
@@ -848,7 +852,7 @@ impl<'gc> Class<'gc> {
         self.attributes.contains(ClassAttributes::GENERIC)
     }
 
-    pub fn param(&self) -> &Option<GcCell<'gc, Class<'gc>>> {
+    pub fn param(&self) -> &Option<Option<GcCell<'gc, Class<'gc>>>> {
         &self.param
     }
 }

@@ -469,7 +469,12 @@ impl<'gc> ClassObject<'gc> {
             if let (Some(Some(my_param)), Some(other_single_param)) =
                 (class.as_class_params(), test_class_read.param())
             {
-                if my_param.has_class_in_chain(*other_single_param) {
+                if let Some(other_single_param) = other_single_param {
+                    if my_param.has_class_in_chain(*other_single_param) {
+                        return true;
+                    }
+                } else {
+                    // This is '*', which matches anything
                     return true;
                 }
             }
@@ -933,9 +938,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             return Ok(*application);
         }
 
-        let class_param = object_param
-            .unwrap_or(activation.avm2().classes().object)
-            .inner_class_definition();
+        let class_param = object_param.map(|p| p.inner_class_definition());
 
         let parameterized_class: GcCell<'_, Class<'_>> =
             Class::with_type_param(self_class, class_param, activation.context.gc_context);
