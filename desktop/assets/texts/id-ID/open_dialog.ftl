@@ -1,5 +1,3 @@
 open-dialog = Buka Berkas atau URL
 open-dialog-path = Berkas atau URL
 open-dialog-add-parameter = Tambah
-open-dialog-delete-parameter = Hapus
-open-dialog-clear-parameters = Kosongkan semua
