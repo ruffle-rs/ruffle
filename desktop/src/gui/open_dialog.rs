@@ -158,7 +158,9 @@ impl OpenDialog {
                 ui.label(text(&self.locale, "socket-behavior"));
                 ComboBox::from_id_source("open-file-advanced-options-socket-behavior")
                     .selected_text(match self.options.socket_behavior {
-                        SocketBehavior::Unrestricted => text(&self.locale, "socket-behavior-unrestricted"),
+                        SocketBehavior::Unrestricted => {
+                            text(&self.locale, "socket-behavior-unrestricted")
+                        }
                         SocketBehavior::Ask => text(&self.locale, "socket-behavior-ask"),
                         SocketBehavior::Deny => text(&self.locale, "socket-behavior-deny"),
                     })
