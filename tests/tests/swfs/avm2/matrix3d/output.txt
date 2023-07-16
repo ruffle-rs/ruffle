@@ -48,6 +48,7 @@ Row 4: ArgumentError: Error #2004: One of the parameters is invalid.
 Copy from row 4: ArgumentError: Error #2004: One of the parameters is invalid.
 After row copies: 100,500,900,1300,200,600,1000,1400,300,700,1100,1500,400,800,1200,1600
 After prependRotation: 100,500,900,1300,300,700,1100,1500,-200,-600,-1000,-1400,400,800,1200,1600
+After prependScale: 100,500,900,1300,600,1400,2200,3000,-600,-1800,-3000,-4200,400,800,1200,1600
 // copyColumnFrom tests
 Matrix raw data: 3,4,5,6,0,0,0,0,0,0,0,0,0,0,0,0
 Matrix raw data: 3,4,5,6,3,4,5,6,0,0,0,0,0,0,0,0
