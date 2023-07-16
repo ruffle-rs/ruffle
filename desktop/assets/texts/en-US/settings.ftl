@@ -11,6 +11,11 @@ proxy = Proxy
 upgrade-http = Upgrade HTTP to HTTPS
 upgrade-http-check = Upgrade
 
+socket-behavior = Socket Behavior
+socket-behavior-unrestricted = Unrestricted
+socket-behavior-ask = Ask
+socket-behavior-deny = Deny
+
 open-url-mode = Open URL Mode
 open-url-mode-allow = Allow
 open-url-mode-confirm = Confirm
