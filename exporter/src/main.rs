@@ -407,7 +407,7 @@ fn main() -> Result<()> {
     });
     let (adapter, device, queue) = futures::executor::block_on(request_adapter_and_device(
         opt.graphics.into(),
-        instance,
+        &instance,
         None,
         opt.power.into(),
         trace_path(&opt),

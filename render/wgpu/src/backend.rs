@@ -67,7 +67,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
         let surface = instance.create_surface_from_canvas(canvas)?;
         let (adapter, device, queue) = request_adapter_and_device(
             wgpu::Backends::BROWSER_WEBGPU | wgpu::Backends::GL,
-            instance,
+            &instance,
             Some(&surface),
             wgpu::PowerPreference::HighPerformance,
             None,
@@ -102,7 +102,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
         let surface = unsafe { instance.create_surface(window) }?;
         let (adapter, device, queue) = futures::executor::block_on(request_adapter_and_device(
             backend,
-            instance,
+            &instance,
             Some(&surface),
             power_preference,
             trace_path,
@@ -133,7 +133,7 @@ impl WgpuRenderBackend<crate::target::TextureTarget> {
         });
         let (adapter, device, queue) = futures::executor::block_on(request_adapter_and_device(
             backend,
-            instance,
+            &instance,
             None,
             power_preference,
             trace_path,
@@ -1031,7 +1031,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
 pub async fn request_adapter_and_device(
     backend: wgpu::Backends,
-    instance: wgpu::Instance,
+    instance: &wgpu::Instance,
     surface: Option<&wgpu::Surface>,
     power_preference: wgpu::PowerPreference,
     trace_path: Option<&Path>,
