@@ -99,12 +99,16 @@ impl NavigatorBackend for TestNavigatorBackend {
 
     fn connect_socket(
         &mut self,
-        _host: String,
-        _port: u16,
+        host: String,
+        port: u16,
         handle: SocketHandle,
         _receiver: Receiver<Vec<u8>>,
         sender: Sender<SocketAction>,
     ) {
+        if let Some(log) = &self.log {
+            log.avm_trace("Navigator::connect_socket");
+            log.avm_trace(&format!("    Host: {}; Port: {}", host, port));
+        }
         sender
             .send(SocketAction::Connect(handle, false))
             .expect("working channel send");
