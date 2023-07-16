@@ -9,13 +9,14 @@ use crate::gui::MovieView;
 use crate::{CALLSTACK, RENDER_INFO, SWF_INFO};
 use anyhow::anyhow;
 use ruffle_core::backend::audio::AudioBackend;
-use ruffle_core::backend::navigator::OpenURLMode;
+use ruffle_core::backend::navigator::{OpenURLMode, SocketBehavior};
 use ruffle_core::config::Letterbox;
 use ruffle_core::{LoadBehavior, Player, PlayerBuilder, PlayerEvent, StageAlign, StageScaleMode};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::quality::StageQuality;
 use ruffle_render_wgpu::backend::WgpuRenderBackend;
 use ruffle_render_wgpu::descriptors::Descriptors;
+use std::collections::HashSet;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::Duration;
@@ -37,6 +38,8 @@ pub struct PlayerOptions {
     pub volume: f32,
     pub force_scale: bool,
     pub proxy: Option<Url>,
+    pub socket_allowed: HashSet<String>,
+    pub socket_behavior: SocketBehavior,
     pub upgrade_to_https: bool,
     pub fullscreen: bool,
     pub load_behavior: LoadBehavior,
@@ -70,6 +73,8 @@ impl From<&Opt> for PlayerOptions {
             frame_rate: value.frame_rate,
             open_url_mode: value.open_url_mode,
             dummy_external_interface: value.dummy_external_interface,
+            socket_allowed: HashSet::from_iter(value.socket_allow.iter().cloned()),
+            socket_behavior: value.socket_behavior,
         }
     }
 }
@@ -110,6 +115,8 @@ impl ActivePlayer {
             opt.proxy.clone(),
             opt.upgrade_to_https,
             opt.open_url_mode,
+            opt.socket_allowed.clone(),
+            opt.socket_behavior,
         );
 
         if cfg!(feature = "software_video") {

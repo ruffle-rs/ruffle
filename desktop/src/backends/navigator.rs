@@ -9,14 +9,15 @@ use isahc::http::{HeaderName, HeaderValue};
 use isahc::{
     config::RedirectPolicy, prelude::*, AsyncReadResponseExt, HttpClient, Request as IsahcRequest,
 };
-use rfd::{MessageButtons, MessageDialog, MessageLevel};
+use rfd::{AsyncMessageDialog, MessageButtons, MessageDialog, MessageLevel};
 use ruffle_core::backend::navigator::{
     async_return, create_fetch_error, create_specific_fetch_error, ErrorResponse, NavigationMethod,
-    NavigatorBackend, OpenURLMode, OwnedFuture, Request, SuccessResponse,
+    NavigatorBackend, OpenURLMode, OwnedFuture, Request, SuccessResponse, SocketBehavior,
 };
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
 use ruffle_core::socket::{SocketAction, SocketHandle};
+use std::collections::HashSet;
 use std::io;
 use std::io::ErrorKind;
 use std::rc::Rc;
@@ -42,6 +43,10 @@ pub struct ExternalNavigatorBackend {
     // Client to use for network requests
     client: Option<Rc<HttpClient>>,
 
+    socket_allowed: HashSet<String>,
+
+    socket_behavior: SocketBehavior,
+
     upgrade_to_https: bool,
 
     open_url_mode: OpenURLMode,
@@ -56,6 +61,8 @@ impl ExternalNavigatorBackend {
         proxy: Option<Url>,
         upgrade_to_https: bool,
         open_url_mode: OpenURLMode,
+        socket_allowed: HashSet<String>,
+        socket_behavior: SocketBehavior,
     ) -> Self {
         let proxy = proxy.and_then(|url| url.as_str().parse().ok());
         let builder = HttpClient::builder()
@@ -77,6 +84,8 @@ impl ExternalNavigatorBackend {
             base_url,
             upgrade_to_https,
             open_url_mode,
+            socket_allowed,
+            socket_behavior,
         }
     }
 }
@@ -325,8 +334,42 @@ impl NavigatorBackend for ExternalNavigatorBackend {
         receiver: Receiver<Vec<u8>>,
         sender: Sender<SocketAction>,
     ) {
+        let addr = format!("{}:{}", host, port);
+        let is_allowed = self.socket_allowed.contains(&addr);
+        let socket_behavior = self.socket_behavior;
+
         // FIXME: Add connection permissions
         let future = Box::pin(async move {
+            match (is_allowed, socket_behavior) {
+                (false, SocketBehavior::Unrestricted) | (true, _) => {} // the process is allowed to continue. just dont do anything.
+                (false, SocketBehavior::Deny) => {
+                    // Just fail the connection.
+                    sender
+                        .send(SocketAction::Connect(handle, true))
+                        .expect("working channel send");
+
+                    tracing::warn!(
+                        "SWF tried to open a socket, but opening a socket is not allowed"
+                    );
+
+                    return Ok(());
+                }
+                (false, SocketBehavior::Ask) => {
+                    let attempt_sandbox_connect = AsyncMessageDialog::new().set_level(MessageLevel::Warning).set_description(&format!("The current movie is attempting to connect to {:?} (port {}).\n\nTo allow it to do so, click Yes to grant network access to that host.\n\nOtherwise, click No to deny access.", host, port)).set_buttons(MessageButtons::YesNo)
+                    .show()
+                    .await;
+
+                    if !attempt_sandbox_connect {
+                        // fail the connection.
+                        sender
+                            .send(SocketAction::Connect(handle, true))
+                            .expect("working channel send");
+
+                        return Ok(());
+                    }
+                }
+            }
+
             let host2 = host.clone();
 
             let mut pending_write = vec![];
