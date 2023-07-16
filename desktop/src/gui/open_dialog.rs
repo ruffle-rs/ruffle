@@ -5,7 +5,7 @@ use crate::util::pick_file;
 use egui::{
     Align2, Button, Checkbox, ComboBox, DragValue, Grid, Slider, TextEdit, Ui, Widget, Window,
 };
-use ruffle_core::backend::navigator::OpenURLMode;
+use ruffle_core::backend::navigator::{OpenURLMode, SocketBehavior};
 use ruffle_core::config::Letterbox;
 use ruffle_core::{LoadBehavior, StageAlign, StageScaleMode};
 use ruffle_render::quality::StageQuality;
@@ -153,6 +153,32 @@ impl OpenDialog {
                     &mut self.options.upgrade_to_https,
                     text(&self.locale, "upgrade-http-check"),
                 );
+                ui.end_row();
+
+                ui.label(text(&self.locale, "socket-behavior"));
+                ComboBox::from_id_source("open-file-advanced-options-socket-behavior")
+                    .selected_text(match self.options.socket_behavior {
+                        SocketBehavior::Unrestricted => text(&self.locale, "socket-behavior-unrestricted"),
+                        SocketBehavior::Ask => text(&self.locale, "socket-behavior-ask"),
+                        SocketBehavior::Deny => text(&self.locale, "socket-behavior-deny"),
+                    })
+                    .show_ui(ui, |ui| {
+                        ui.selectable_value(
+                            &mut self.options.socket_behavior,
+                            SocketBehavior::Unrestricted,
+                            text(&self.locale, "socket-behavior-unrestricted"),
+                        );
+                        ui.selectable_value(
+                            &mut self.options.socket_behavior,
+                            SocketBehavior::Ask,
+                            text(&self.locale, "socket-behavior-ask"),
+                        );
+                        ui.selectable_value(
+                            &mut self.options.socket_behavior,
+                            SocketBehavior::Deny,
+                            text(&self.locale, "socket-behavior-deny"),
+                        );
+                    });
                 ui.end_row();
 
                 // TODO: This should probably be a global setting somewhere, not per load
