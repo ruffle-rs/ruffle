@@ -414,7 +414,7 @@ fn main() -> Result<()> {
     ))
     .map_err(|e| anyhow!(e.to_string()))?;
 
-    let descriptors = Arc::new(Descriptors::new(adapter, device, queue));
+    let descriptors = Arc::new(Descriptors::new(instance, adapter, device, queue));
 
     if opt.swf.is_file() {
         capture_single_swf(descriptors, &opt)?;
