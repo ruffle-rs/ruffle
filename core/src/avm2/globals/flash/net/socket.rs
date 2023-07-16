@@ -163,6 +163,34 @@ pub fn read_byte<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn read_bytes<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(socket) = this.as_socket() {
+        let bytearray = args.get_object(activation, 0, "bytes")?;
+        let offset = args.get_u32(activation, 1)? as usize;
+        let length = args.get_u32(activation, 2)? as usize;
+
+        let to_write = socket
+            .read_bytes(if length != 0 {
+                length
+            } else {
+                socket.read_buffer().len()
+            })
+            .map_err(|e| e.to_avm(activation))?;
+
+        let mut ba_write = bytearray
+            .as_bytearray_mut(activation.gc())
+            .expect("Parameter must be a bytearray!");
+
+        ba_write.write_at(&to_write, offset)?;
+    }
+
+    Ok(Value::Undefined)
+}
+
 pub fn read_double<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
