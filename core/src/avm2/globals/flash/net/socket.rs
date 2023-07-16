@@ -134,6 +134,21 @@ pub fn flush<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn read_boolean<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(socket) = this.as_socket() {
+        return Ok(socket
+            .read_boolean()
+            .map_err(|e| e.to_avm(activation))?
+            .into());
+    }
+
+    Ok(Value::Undefined)
+}
+
 pub fn read_byte<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
@@ -243,6 +258,19 @@ pub fn read_unsigned_short<'gc>(
             .read_unsigned_short()
             .map_err(|e| e.to_avm(activation))?
             .into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn write_boolean<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(socket) = this.as_socket() {
+        let byte = args.get_bool(0);
+        socket.write_boolean(byte);
     }
 
     Ok(Value::Undefined)

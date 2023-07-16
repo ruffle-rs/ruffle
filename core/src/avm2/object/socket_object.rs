@@ -104,6 +104,14 @@ impl<'gc> SocketObject<'gc> {
         let len = buf.len();
         buf.drain(..len).collect::<Vec<u8>>()
     }
+
+    pub fn read_boolean(&self) -> Result<bool, EofError> {
+        Ok(self.read_bytes(1)? != [0])
+    }
+
+    pub fn write_boolean(&self, val: bool) {
+        self.write_bytes(&[val as u8; 1])
+    }
 }
 
 macro_rules! impl_write{
