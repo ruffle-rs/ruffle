@@ -36,6 +36,31 @@ pub fn connect<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn get_timeout<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(socket) = this.as_socket() {
+        return Ok(socket.timeout().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn set_timeout<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(socket) = this.as_socket() {
+        let new_timeout = args.get_u32(activation, 0)?;
+        socket.set_timeout(new_timeout)
+    }
+
+    Ok(Value::Undefined)
+}
+
 pub fn close<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
