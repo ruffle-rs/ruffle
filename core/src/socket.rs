@@ -125,25 +125,21 @@ impl<'gc> Sockets<'gc> {
             match action {
                 SocketAction::Connect(handle, success) => {
                     if success {
-                        let target = activation
-                            .context
-                            .sockets
-                            .sockets
-                            .get(handle)
-                            .expect("only valid handles in SocketAction")
-                            .target;
+                        let target = match activation.context.sockets.sockets.get(handle) {
+                            Some(socket) => socket.target,
+                            // Socket must have been closed before we could send event.
+                            None => continue,
+                        };
 
                         let connect_evt =
                             EventObject::bare_default_event(&mut activation.context, "connect");
                         Avm2::dispatch_event(&mut activation.context, connect_evt, target.into());
                     } else {
-                        let target = activation
-                            .context
-                            .sockets
-                            .sockets
-                            .get(handle)
-                            .expect("only valid handles in SocketAction")
-                            .target;
+                        let target = match activation.context.sockets.sockets.get(handle) {
+                            Some(socket) => socket.target,
+                            // Socket must have been closed before we could send event.
+                            None => continue,
+                        };
 
                         let io_error_evt = activation
                             .avm2()
