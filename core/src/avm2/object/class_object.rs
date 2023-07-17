@@ -465,15 +465,6 @@ impl<'gc> ClassObject<'gc> {
                 return true;
             }
 
-            let test_class_read = test_class.read();
-            if let (Some(Some(my_param)), Some(other_single_param)) =
-                (class.as_class_params(), test_class_read.param())
-            {
-                if my_param.has_class_in_chain(*other_single_param) {
-                    return true;
-                }
-            }
-
             my_class = class.superclass_object()
         }
 
@@ -727,6 +718,18 @@ impl<'gc> ClassObject<'gc> {
         }
     }
 
+    pub fn add_application(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        param: Option<ClassObject<'gc>>,
+        cls: ClassObject<'gc>,
+    ) {
+        self.0
+            .write(activation.context.gc_context)
+            .applications
+            .insert(param, cls);
+    }
+
     pub fn translation_unit(self) -> Option<TranslationUnit<'gc>> {
         if let Method::Bytecode(bc) = self.0.read().constructor {
             Some(bc.txunit)
@@ -778,6 +781,14 @@ impl<'gc> ClassObject<'gc> {
 
     pub fn superclass_object(self) -> Option<ClassObject<'gc>> {
         self.0.read().superclass_object
+    }
+
+    pub fn set_param(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        param: Option<Option<ClassObject<'gc>>>,
+    ) {
+        self.0.write(activation.context.gc_context).params = param;
     }
 
     pub fn as_class_params(self) -> Option<Option<ClassObject<'gc>>> {
@@ -908,10 +919,6 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             return Err(format!("Class {:?} is not generic", self_class.read().name()).into());
         }
 
-        if !self_class.read().param().is_none() {
-            return Err(format!("Class {:?} was already applied", self_class.read().name()).into());
-        }
-
         //Because `null` is a valid parameter, we have to accept values as
         //parameters instead of objects. We coerce them to objects now.
         let object_param = match nullable_param {
@@ -933,75 +940,23 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             return Ok(*application);
         }
 
-        let class_param = object_param
-            .unwrap_or(activation.avm2().classes().object)
-            .inner_class_definition();
+        // if it's not a known application, then it's not int/uint/Number/*,
+        // so it must be a simple Vector.<*>-derived class.
+
+        let class_param = object_param.map(|c| c.inner_class_definition());
 
         let parameterized_class: GcCell<'_, Class<'_>> =
             Class::with_type_param(self_class, class_param, activation.context.gc_context);
 
-        let class_scope = self.0.read().class_scope;
-        let instance_scope = self.0.read().instance_scope;
-        let instance_allocator = self.0.read().instance_allocator.clone();
-        let superclass_object = self.0.read().superclass_object;
+        // NOTE: this isn't fully accurate, but much simpler.
+        // FP's Vector is more of special case that literally copies some parent class's properties
+        // main example: Vector.<Object>.prototype === Vector.<*>.prototype
 
-        let class_proto = self.allocate_prototype(activation, superclass_object)?;
+        let vector_star_cls = activation.avm2().classes().object_vector;
+        let class_object =
+            Self::from_class(activation, parameterized_class, Some(vector_star_cls))?;
 
-        let class_class = activation.avm2().classes().class;
-
-        let constructor = self.0.read().constructor.clone();
-        let native_constructor = self.0.read().native_constructor.clone();
-        let call_handler = self.0.read().call_handler.clone();
-
-        let mut class_object = ClassObject(GcCell::new(
-            activation.context.gc_context,
-            ClassObjectData {
-                base: ScriptObjectData::new(class_class),
-                class: parameterized_class,
-                prototype: None,
-                class_scope,
-                instance_scope,
-                superclass_object,
-                instance_allocator,
-                constructor,
-                native_constructor,
-                call_handler,
-                params: Some(object_param),
-                applications: Default::default(),
-                interfaces: Vec::new(),
-                instance_vtable: VTable::empty(activation.context.gc_context),
-                class_vtable: VTable::empty(activation.context.gc_context),
-            },
-        ));
-
-        class_object
-            .inner_class_definition()
-            .read()
-            .validate_class(class_object.superclass_object())?;
-
-        class_object.instance_vtable().init_vtable(
-            class_object,
-            parameterized_class.read().instance_traits(),
-            class_object.instance_scope(),
-            class_object
-                .superclass_object()
-                .map(|cls| cls.instance_vtable()),
-            activation,
-        )?;
-
-        // class vtable == class traits + Class instance traits
-        class_object.class_vtable().init_vtable(
-            class_object,
-            parameterized_class.read().class_traits(),
-            class_object.class_scope(),
-            Some(class_object.instance_of().unwrap().instance_vtable()),
-            activation,
-        )?;
-
-        class_object.link_prototype(activation, class_proto)?;
-        class_object.link_interfaces(activation)?;
-        class_object.install_class_vtable_and_slots(activation.context.gc_context);
-        class_object.run_class_initializer(activation)?;
+        class_object.0.write(activation.context.gc_context).params = Some(object_param);
 
         self.0
             .write(activation.context.gc_context)
