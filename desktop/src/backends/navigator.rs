@@ -339,7 +339,6 @@ impl NavigatorBackend for ExternalNavigatorBackend {
         let is_allowed = self.socket_allowed.contains(&addr);
         let socket_behavior = self.socket_behavior;
 
-        // FIXME: Add connection permissions
         let future = Box::pin(async move {
             match (is_allowed, socket_behavior) {
                 (false, SocketBehavior::Unrestricted) | (true, _) => {} // the process is allowed to continue. just dont do anything.
