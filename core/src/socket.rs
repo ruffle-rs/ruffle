@@ -33,8 +33,15 @@ impl<'gc> Socket<'gc> {
 }
 
 #[derive(Debug)]
+pub enum ConnectionState {
+    Connected,
+    Failed,
+    TimedOut,
+}
+
+#[derive(Debug)]
 pub enum SocketAction {
-    Connect(SocketHandle, bool),
+    Connect(SocketHandle, ConnectionState),
     Data(SocketHandle, Vec<u8>),
     Close(SocketHandle),
 }
@@ -78,8 +85,7 @@ impl<'gc> Sockets<'gc> {
         let socket = Socket::new(target, sender);
         let handle = self.sockets.insert(socket);
 
-        // NOTE: This call will send SocketAction::Connect to sender when successfully connected
-        //       or SocketAction::Failed when connection failed.
+        // NOTE: This call will send SocketAction::Connect to sender with connection status.
         backend.connect_socket(
             host,
             port,
@@ -123,42 +129,44 @@ impl<'gc> Sockets<'gc> {
 
         for action in actions {
             match action {
-                SocketAction::Connect(handle, success) => {
-                    if success {
-                        let target = match activation.context.sockets.sockets.get(handle) {
-                            Some(socket) => socket.target,
-                            // Socket must have been closed before we could send event.
-                            None => continue,
-                        };
+                SocketAction::Connect(handle, ConnectionState::Connected) => {
+                    let target = match activation.context.sockets.sockets.get(handle) {
+                        Some(socket) => socket.target,
+                        // Socket must have been closed before we could send event.
+                        None => continue,
+                    };
 
-                        let connect_evt =
-                            EventObject::bare_default_event(&mut activation.context, "connect");
-                        Avm2::dispatch_event(&mut activation.context, connect_evt, target.into());
-                    } else {
-                        let target = match activation.context.sockets.sockets.get(handle) {
-                            Some(socket) => socket.target,
-                            // Socket must have been closed before we could send event.
-                            None => continue,
-                        };
+                    let connect_evt =
+                        EventObject::bare_default_event(&mut activation.context, "connect");
+                    Avm2::dispatch_event(&mut activation.context, connect_evt, target.into());
+                }
+                SocketAction::Connect(
+                    handle,
+                    ConnectionState::Failed | ConnectionState::TimedOut,
+                ) => {
+                    let target = match activation.context.sockets.sockets.get(handle) {
+                        Some(socket) => socket.target,
+                        // Socket must have been closed before we could send event.
+                        None => continue,
+                    };
 
-                        let io_error_evt = activation
-                            .avm2()
-                            .classes()
-                            .ioerrorevent
-                            .construct(
-                                &mut activation,
-                                &[
-                                    "ioError".into(),
-                                    false.into(),
-                                    false.into(),
-                                    "Error #2031: Socket Error.".into(),
-                                    2031.into(),
-                                ],
-                            )
-                            .expect("IOErrorEvent should be constructed");
+                    let io_error_evt = activation
+                        .avm2()
+                        .classes()
+                        .ioerrorevent
+                        .construct(
+                            &mut activation,
+                            &[
+                                "ioError".into(),
+                                false.into(),
+                                false.into(),
+                                "Error #2031: Socket Error.".into(),
+                                2031.into(),
+                            ],
+                        )
+                        .expect("IOErrorEvent should be constructed");
 
-                        Avm2::dispatch_event(&mut activation.context, io_error_evt, target.into());
-                    }
+                    Avm2::dispatch_event(&mut activation.context, io_error_evt, target.into());
                 }
                 SocketAction::Data(handle, data) => {
                     let target = activation
