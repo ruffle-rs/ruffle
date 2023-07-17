@@ -1,0 +1,10 @@
+# Test adapted from Shumway at https://github.com/mozilla/shumway/tree/master/test/swfs/acid
+# todo: capture frame 3 too (to match shumway)
+
+num_frames = 10
+
+[image_comparison]
+tolerance = 0
+
+[player_options]
+with_renderer = { optional = false, sample_count = 1 }

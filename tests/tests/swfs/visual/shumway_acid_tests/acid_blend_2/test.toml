@@ -1,0 +1,10 @@
+# Test adapted from Shumway at https://github.com/mozilla/shumway/tree/master/test/swfs/acid
+
+num_frames = 30
+
+[image_comparison]
+tolerance = 15
+max_outliers = 24
+
+[player_options]
+with_renderer = { optional = false, sample_count = 1 }

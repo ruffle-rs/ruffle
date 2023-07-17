@@ -1,0 +1,5 @@
+Correct max horizontal scrolling position: yes
+Max vertical scrolling position: 3
+Current vertical scrolling position: 3
+Current bottomScrollV: 4
+Current horizontal scrolling position: 50
