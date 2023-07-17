@@ -24,6 +24,8 @@ pub fn socket_allocator<'gc>(
             // Default endianness is Big.
             endian: Cell::new(Endian::Big),
             object_encoding: Cell::new(ObjectEncoding::Amf3),
+            // Default is 20_000 milliseconds or 20 seconds.
+            timeout: Cell::new(20000),
             handle: Cell::new(None),
             read_buffer: RefCell::new(vec![]),
             write_buffer: RefCell::new(vec![]),
@@ -77,6 +79,16 @@ impl<'gc> SocketObject<'gc> {
 
     pub fn set_object_encoding(&self, object_encoding: ObjectEncoding) {
         self.0.object_encoding.set(object_encoding)
+    }
+
+    pub fn timeout(&self) -> u32 {
+        self.0.timeout.get()
+    }
+
+    pub fn set_timeout(&self, timeout: u32) {
+        // NOTE: When a timeout of smaller than 250 milliseconds is provided,
+        //       we clamp it to 250 milliseconds.
+        self.0.timeout.set(std::cmp::max(250, timeout));
     }
 
     pub fn get_handle(&self) -> Option<SocketHandle> {
@@ -196,6 +208,8 @@ pub struct SocketObjectData<'gc> {
 
     endian: Cell<Endian>,
     object_encoding: Cell<ObjectEncoding>,
+    /// Socket connection timeout in milliseconds.
+    timeout: Cell<u32>,
 
     read_buffer: RefCell<Vec<u8>>,
     write_buffer: RefCell<Vec<u8>>,

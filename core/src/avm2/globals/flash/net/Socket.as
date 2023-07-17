@@ -9,10 +9,8 @@ package flash.net {
 
     [Ruffle(InstanceAllocator)]
     public class Socket extends EventDispatcher implements IDataOutput, IDataInput {
-        private var _timeout:uint;
 
         public function Socket(host:String = null, port:int = 0) {
-            this._timeout = 20000;
             if (host != null) {
                 this.connect(host, port);
             }
@@ -20,18 +18,8 @@ package flash.net {
 
         public native function connect(host: String, port: int):void;
 
-
-        public function get timeout():uint {
-            return this._timeout;
-        }
-
-        public function set timeout(value:uint):void {
-            if (value < 250) {
-                this._timeout = 250;
-            } else {
-                this._timeout = value;
-            }
-        }
+        public native function get timeout():uint;
+        public native function set timeout(value:uint):void;
 
         public native function close():void;
 
