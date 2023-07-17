@@ -10,6 +10,7 @@ use ruffle_core::loader::Error;
 use ruffle_core::socket::{SocketAction, SocketHandle};
 use std::sync::mpsc::{Receiver, Sender};
 use std::sync::Arc;
+use std::time::Duration;
 use tracing_subscriber::layer::Layered;
 use tracing_subscriber::Registry;
 use tracing_wasm::WASMLayer;
@@ -362,6 +363,7 @@ impl NavigatorBackend for WebNavigatorBackend {
         &mut self,
         _host: String,
         _port: u16,
+        _timeout: Option<Duration>,
         handle: SocketHandle,
         _receiver: Receiver<Vec<u8>>,
         sender: Sender<SocketAction>,

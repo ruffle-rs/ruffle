@@ -9,6 +9,7 @@ use ruffle_core::loader::Error;
 use ruffle_core::socket::{SocketAction, SocketHandle};
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::{Receiver, Sender};
+use std::time::Duration;
 use url::{ParseError, Url};
 
 /// A `NavigatorBackend` used by tests that supports logging fetch requests.
@@ -101,6 +102,7 @@ impl NavigatorBackend for TestNavigatorBackend {
         &mut self,
         host: String,
         port: u16,
+        timeout: Option<Duration>,
         handle: SocketHandle,
         _receiver: Receiver<Vec<u8>>,
         sender: Sender<SocketAction>,
