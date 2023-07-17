@@ -11,8 +11,8 @@ package flash.globalization {
         }
 
         public function format(value:Number, withCurrencySymbol:Boolean = false):String {
-            return value.toString();
             stub_method("flash.globalization.CurrencyFormatter", "format");
+            return value.toString();
         }
     }
 }
