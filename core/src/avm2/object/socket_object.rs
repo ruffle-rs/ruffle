@@ -124,6 +124,23 @@ impl<'gc> SocketObject<'gc> {
         }
         Ok(bytes.to_vec())
     }
+
+    pub fn read_utf(&self) -> Result<Vec<u8>, EofError> {
+        let len = self.read_unsigned_short()?;
+        let val = self.read_utf_bytes(len.into())?;
+        Ok(val)
+    }
+
+    // Writes a UTF String into the buffer, with its length as a prefix
+    pub fn write_utf(&self, utf_string: &str) -> Result<(), Error<'gc>> {
+        if let Ok(str_size) = u16::try_from(utf_string.len()) {
+            self.write_unsigned_short(str_size);
+            self.write_bytes(utf_string.as_bytes());
+            Ok(())
+        } else {
+            Err("RangeError: UTF String length must fit into a short".into())
+        }
+    }
 }
 
 macro_rules! impl_write{
