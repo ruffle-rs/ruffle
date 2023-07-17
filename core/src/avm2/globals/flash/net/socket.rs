@@ -5,6 +5,8 @@ use crate::avm2::parameters::ParametersExt;
 use crate::avm2::string::AvmString;
 use crate::avm2::{Activation, Error, Object, TObject, Value};
 use crate::context::UpdateContext;
+use encoding_rs::Encoding;
+use encoding_rs::UTF_8;
 
 pub fn connect<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -234,6 +236,33 @@ pub fn read_int<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn read_multi_byte<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(socket) = this.as_socket() {
+        let len = args.get_u32(activation, 0)?;
+        let charset_label = args.get_string(activation, 1)?;
+        let mut bytes = &*socket
+            .read_bytes(len as usize)
+            .map_err(|e| e.to_avm(activation))?;
+
+        // Flash cuts off the string at the first null byte (after checking that
+        // the original length fits in the ByteArray)
+        if let Some(null) = bytes.iter().position(|b| *b == b'\0') {
+            bytes = &bytes[..null];
+        }
+
+        let encoder =
+            Encoding::for_label(charset_label.to_utf8_lossy().as_bytes()).unwrap_or(UTF_8);
+        let (decoded_str, _, _) = encoder.decode(bytes);
+        return Ok(AvmString::new_utf8(activation.gc(), decoded_str).into());
+    }
+
+    Ok(Value::Undefined)
+}
+
 pub fn read_short<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
@@ -422,6 +451,25 @@ pub fn write_int<'gc>(
     if let Some(socket) = this.as_socket() {
         let num = args.get_i32(activation, 0)?;
         socket.write_int(num);
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn write_multi_byte<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(socket) = this.as_socket() {
+        let string = args.get_string(activation, 0)?;
+        let charset_label = args.get_string(activation, 1)?;
+
+        let encoder =
+            Encoding::for_label(charset_label.to_utf8_lossy().as_bytes()).unwrap_or(UTF_8);
+        let utf8 = string.to_utf8_lossy();
+        let (encoded_bytes, _, _) = encoder.encode(&utf8);
+        socket.write_bytes(&encoded_bytes);
     }
 
     Ok(Value::Undefined)
