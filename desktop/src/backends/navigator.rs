@@ -54,6 +54,7 @@ pub struct ExternalNavigatorBackend {
 
 impl ExternalNavigatorBackend {
     /// Construct a navigator backend with fetch and async capability.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         mut base_url: Url,
         channel: Sender<OwnedFuture<(), Error>>,
