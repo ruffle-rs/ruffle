@@ -83,7 +83,7 @@ impl<'gc> Sockets<'gc> {
         backend.connect_socket(
             host,
             port,
-            Some(Duration::from_millis(target.timeout().into())),
+            Duration::from_millis(target.timeout().into()),
             handle,
             receiver,
             self.sender.clone(),
