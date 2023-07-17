@@ -1,4 +1,4 @@
-use crate::avm2::bytearray::{Endian, EofError};
+use crate::avm2::bytearray::{Endian, EofError, ObjectEncoding};
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
@@ -23,6 +23,7 @@ pub fn socket_allocator<'gc>(
             base,
             // Default endianness is Big.
             endian: Cell::new(Endian::Big),
+            object_encoding: Cell::new(ObjectEncoding::Amf3),
             handle: Cell::new(None),
             read_buffer: RefCell::new(vec![]),
             write_buffer: RefCell::new(vec![]),
@@ -69,6 +70,14 @@ impl<'gc> SocketObject<'gc> {
     pub fn set_endian(&self, endian: Endian) {
         self.0.endian.set(endian)
     }
+
+    pub fn object_encoding(&self) -> ObjectEncoding {
+        self.0.object_encoding.get()
+    }
+    
+    pub fn set_object_encoding(&self, object_encoding: ObjectEncoding) {
+        self.0.object_encoding.set(object_encoding)
+    } 
 
     pub fn get_handle(&self) -> Option<SocketHandle> {
         self.0.handle.get()
@@ -184,7 +193,10 @@ pub struct SocketObjectData<'gc> {
     base: RefLock<ScriptObjectData<'gc>>,
     #[collect(require_static)]
     handle: Cell<Option<SocketHandle>>,
+    
     endian: Cell<Endian>,
+    object_encoding: Cell<ObjectEncoding>,
+
     read_buffer: RefCell<Vec<u8>>,
     write_buffer: RefCell<Vec<u8>>,
 }

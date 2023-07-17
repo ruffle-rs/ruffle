@@ -1,4 +1,4 @@
-use crate::avm2::bytearray::Endian;
+use crate::avm2::bytearray::{Endian, ObjectEncoding};
 use crate::avm2::error::{io_error, make_error_2008, security_error};
 pub use crate::avm2::object::socket_allocator;
 use crate::avm2::parameters::ParametersExt;
@@ -116,6 +116,35 @@ pub fn get_connected<'gc>(
     };
 
     Ok(Value::Bool(sockets.is_connected(handle)))
+}
+
+pub fn get_object_encoding<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(socket) = this.as_socket() {
+        return Ok((socket.object_encoding() as u8).into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn set_object_encoding<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(socket) = this.as_socket() {
+        let new_encoding = args.get_u32(activation, 0)?;
+        match new_encoding {
+            0 => socket.set_object_encoding(ObjectEncoding::Amf0),
+            3 => socket.set_object_encoding(ObjectEncoding::Amf3),
+            _ => return Err(make_error_2008(activation, "objectEncoding")),
+        }
+    }
+
+    Ok(Value::Undefined)
 }
 
 pub fn flush<'gc>(

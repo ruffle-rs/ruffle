@@ -7,7 +7,6 @@ package flash.net {
 
     import __ruffle__.stub_method;
     import __ruffle__.stub_getter;
-    import __ruffle__.stub_setter;
 
     [Ruffle(InstanceAllocator)]
     public class Socket extends EventDispatcher implements IDataOutput, IDataInput {
@@ -49,14 +48,8 @@ package flash.net {
 
         public native function get connected():Boolean;
 
-        public function get objectEncoding():uint {
-            stub_getter("flash.net.Socket", "objectEncoding");
-            return 0;
-        }
-
-        public function set objectEncoding(value:uint):void {
-            stub_setter("flash.net.Socket", "objectEncoding");
-        }
+        public native function get objectEncoding():uint;
+        public native function set objectEncoding(value:uint):void;
 
         public native function flush():void;
 
