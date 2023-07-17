@@ -110,6 +110,20 @@ impl<'gc> SocketObject<'gc> {
     pub fn write_boolean(&self, val: bool) {
         self.write_bytes(&[val as u8; 1])
     }
+
+    /// Same as `read_bytes`, but:
+    /// - cuts the result at the first null byte to recreate a bug in FP
+    /// - strips off an optional UTF8 BOM at the beginning
+    pub fn read_utf_bytes(&self, amnt: usize) -> Result<Vec<u8>, EofError> {
+        let mut bytes = &*self.read_bytes(amnt)?;
+        if let Some(without_bom) = bytes.strip_prefix(&[0xEF, 0xBB, 0xBF]) {
+            bytes = without_bom;
+        }
+        if let Some(null) = bytes.iter().position(|b| *b == b'\0') {
+            bytes = &bytes[..null];
+        }
+        Ok(bytes.to_vec())
+    }
 }
 
 macro_rules! impl_write{

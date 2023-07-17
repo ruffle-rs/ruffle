@@ -2,6 +2,7 @@ use crate::avm2::bytearray::Endian;
 use crate::avm2::error::{io_error, make_error_2008, security_error};
 pub use crate::avm2::object::socket_allocator;
 use crate::avm2::parameters::ParametersExt;
+use crate::avm2::string::AvmString;
 use crate::avm2::{Activation, Error, Object, TObject, Value};
 use crate::context::UpdateContext;
 
@@ -293,6 +294,26 @@ pub fn read_unsigned_short<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn read_utf_bytes<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(socket) = this.as_socket() {
+        let length = args.get_u32(activation, 0)?;
+
+        return Ok(AvmString::new_utf8_bytes(
+            activation.gc(),
+            &socket
+                .read_utf_bytes(length as usize)
+                .map_err(|e| e.to_avm(activation))?,
+        )
+        .into());
+    }
+
+    Ok(Value::Undefined)
+}
+
 pub fn write_boolean<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
@@ -411,6 +432,20 @@ pub fn write_unsigned_int<'gc>(
     if let Some(socket) = this.as_socket() {
         let num = args.get_u32(activation, 0)?;
         socket.write_unsigned_int(num);
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn write_utf_bytes<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(socket) = this.as_socket() {
+        let string = args.get_string(activation, 0)?;
+
+        socket.write_bytes(string.to_utf8_lossy().as_bytes());
     }
 
     Ok(Value::Undefined)
