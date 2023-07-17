@@ -66,11 +66,7 @@ package flash.net {
         public native function readDouble():Number;
         public native function readFloat():Number;
         public native function readInt():int;
-
-        public function readMultiByte(length:uint, charSet:String):String {
-            stub_method("flash.net.Socket", "readMultiByte");
-            return "";
-        }
+        public native function readMultiByte(length:uint, charSet:String):String;
 
         public function readObject():* {
             stub_method("flash.net.Socket", "readObject");
@@ -90,10 +86,7 @@ package flash.net {
         public native function writeDouble(value:Number):void;
         public native function writeFloat(value:Number):void;
         public native function writeInt(value:int):void;
-
-        public function writeMultiByte(value:String, charSet:String):void {
-            stub_method("flash.net.Socket", "writeMultiByte");
-        }
+        public native function writeMultiByte(value:String, charSet:String):void;
 
         public function writeObject(value:*):void {
             stub_method("flash.net.Socket", "writeObject");
