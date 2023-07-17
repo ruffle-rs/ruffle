@@ -331,7 +331,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
         &mut self,
         host: String,
         port: u16,
-        timeout: Option<Duration>,
+        timeout: Duration,
         handle: SocketHandle,
         receiver: Receiver<Vec<u8>>,
         sender: Sender<SocketAction>,
@@ -375,18 +375,13 @@ impl NavigatorBackend for ExternalNavigatorBackend {
 
             let mut pending_write = vec![];
 
-            let stream = if let Some(timeout) = timeout {
-                TcpStream::connect((host, port))
-                    .or(async {
-                        Timer::after(timeout).await;
-                        Result::<TcpStream, io::Error>::Err(io::Error::new(ErrorKind::TimedOut, ""))
-                    })
-                    .await
-            } else {
-                TcpStream::connect((host, port)).await
-            };
-
-            let mut stream = match stream {
+            let mut stream = match TcpStream::connect((host, port))
+                .or(async {
+                    Timer::after(timeout).await;
+                    Result::<TcpStream, io::Error>::Err(io::Error::new(ErrorKind::TimedOut, ""))
+                })
+                .await
+            {
                 Ok(stream) => {
                     sender
                         .send(SocketAction::Connect(handle, true))
