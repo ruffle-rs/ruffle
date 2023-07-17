@@ -7,7 +7,7 @@ use ruffle_core::backend::navigator::{
 use ruffle_core::config::NetworkingAccessMode;
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
-use ruffle_core::socket::{SocketAction, SocketHandle};
+use ruffle_core::socket::{ConnectionState, SocketAction, SocketHandle};
 use std::sync::mpsc::{Receiver, Sender};
 use std::sync::Arc;
 use std::time::Duration;
@@ -370,7 +370,7 @@ impl NavigatorBackend for WebNavigatorBackend {
     ) {
         // FIXME: Add way to call out to JS code.
         sender
-            .send(SocketAction::Connect(handle, false))
+            .send(SocketAction::Connect(handle, ConnectionState::Failed))
             .expect("working channel send");
     }
 }
