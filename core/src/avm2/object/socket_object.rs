@@ -74,10 +74,10 @@ impl<'gc> SocketObject<'gc> {
     pub fn object_encoding(&self) -> ObjectEncoding {
         self.0.object_encoding.get()
     }
-    
+
     pub fn set_object_encoding(&self, object_encoding: ObjectEncoding) {
         self.0.object_encoding.set(object_encoding)
-    } 
+    }
 
     pub fn get_handle(&self) -> Option<SocketHandle> {
         self.0.handle.get()
@@ -193,7 +193,7 @@ pub struct SocketObjectData<'gc> {
     base: RefLock<ScriptObjectData<'gc>>,
     #[collect(require_static)]
     handle: Cell<Option<SocketHandle>>,
-    
+
     endian: Cell<Endian>,
     object_encoding: Cell<ObjectEncoding>,
 
