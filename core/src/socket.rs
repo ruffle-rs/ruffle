@@ -9,6 +9,7 @@ use std::{
     cell::RefCell,
     collections::VecDeque,
     sync::mpsc::{channel, Receiver, Sender},
+    time::Duration,
 };
 
 pub type SocketHandle = Index;
@@ -79,7 +80,14 @@ impl<'gc> Sockets<'gc> {
 
         // NOTE: This call will send SocketAction::Connect to sender when successfully connected
         //       or SocketAction::Failed when connection failed.
-        backend.connect_socket(host, port, handle, receiver, self.sender.clone());
+        backend.connect_socket(
+            host,
+            port,
+            Some(Duration::from_millis(target.timeout().into())),
+            handle,
+            receiver,
+            self.sender.clone(),
+        );
 
         if let Some(existing_handle) = target.set_handle(handle) {
             // As written in the AS3 docs, we are supposed to close the existing connection,
