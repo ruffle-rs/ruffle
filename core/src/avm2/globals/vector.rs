@@ -2,12 +2,15 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
+use crate::avm2::error::type_error;
 use crate::avm2::globals::array::{
     compare_numeric, compare_string_case_insensitive, compare_string_case_sensitive, ArrayIter,
     SortOptions,
 };
 use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::object::{vector_allocator, FunctionObject, Object, TObject, VectorObject};
+use crate::avm2::object::{
+    vector_allocator, ClassObject, FunctionObject, Object, TObject, VectorObject,
+};
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
@@ -16,6 +19,17 @@ use crate::avm2::QName;
 use crate::string::AvmString;
 use gc_arena::GcCell;
 use std::cmp::{max, min, Ordering};
+
+pub fn generic_vector_allocator<'gc>(
+    _class: ClassObject<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+) -> Result<Object<'gc>, Error<'gc>> {
+    return Err(Error::AvmError(type_error(
+        activation,
+        "Error #1007: Instantiation attempted on a non-constructor.",
+        1007,
+    )?));
+}
 
 /// Implements `Vector`'s instance constructor.
 pub fn instance_init<'gc>(
@@ -56,7 +70,7 @@ fn class_call<'gc>(
     let this_class = activation.subclass_object().unwrap();
     let value_type = this_class
         .as_class_params()
-        .ok_or("Cannot convert to Vector")? // note: ideally, an untyped Vector shouldn't have a call handler at all
+        .ok_or("Cannot convert to Vector")? // technically unreachable
         .unwrap_or(activation.avm2().classes().object);
 
     let arg = args.get(0).cloned().unwrap();
@@ -84,96 +98,15 @@ fn class_call<'gc>(
     Ok(VectorObject::from_vector(new_storage, activation)?.into())
 }
 
-/// Implements `Vector`'s class constructor.
-pub fn class_init<'gc>(
+pub fn generic_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let mut globals = activation.global_scope().unwrap();
-    let mut domain = activation.domain();
-
-    let vector_internal_namespace = activation.avm2().vector_internal_namespace;
-
-    //We have to grab Object's defining script instead of our own, because
-    //at this point Vector hasn't actually been defined yet. It doesn't
-    //matter because we only have one script for our globals.
-    let (_, script) = domain
-        .get_defining_script(&Multiname::new(
-            activation.avm2().public_namespace,
-            "Object",
-        ))?
-        .unwrap();
-
-    let class_class = activation.avm2().classes().class;
-    let int_class = activation.avm2().classes().int;
-    let int_vector_class = this.apply(activation, int_class.into())?;
-    let int_vector_name_legacy = QName::new(vector_internal_namespace, "Vector$int");
-
-    globals.install_const_late(
-        activation.context.gc_context,
-        int_vector_name_legacy,
-        int_vector_class.into(),
-        class_class,
-    );
-    domain.export_definition(
-        int_vector_name_legacy,
-        script,
-        activation.context.gc_context,
-    );
-
-    let uint_class = activation.avm2().classes().uint;
-    let uint_vector_class = this.apply(activation, uint_class.into())?;
-    let uint_vector_name_legacy = QName::new(vector_internal_namespace, "Vector$uint");
-
-    globals.install_const_late(
-        activation.context.gc_context,
-        uint_vector_name_legacy,
-        uint_vector_class.into(),
-        class_class,
-    );
-    domain.export_definition(
-        uint_vector_name_legacy,
-        script,
-        activation.context.gc_context,
-    );
-
-    let number_class = activation.avm2().classes().number;
-    let number_vector_class = this.apply(activation, number_class.into())?;
-    let number_vector_name_legacy = QName::new(vector_internal_namespace, "Vector$double");
-
-    globals.install_const_late(
-        activation.context.gc_context,
-        number_vector_name_legacy,
-        number_vector_class.into(),
-        class_class,
-    );
-    domain.export_definition(
-        number_vector_name_legacy,
-        script,
-        activation.context.gc_context,
-    );
-
-    let plain_vector_class = this.apply(activation, Value::Null)?;
-    let object_vector_name_legacy = QName::new(vector_internal_namespace, "Vector$object");
-
-    globals.install_const_late(
-        activation.context.gc_context,
-        object_vector_name_legacy,
-        plain_vector_class.into(),
-        class_class,
-    );
-    domain.export_definition(
-        object_vector_name_legacy,
-        script,
-        activation.context.gc_context,
-    );
-
-    Ok(Value::Undefined)
+    activation.super_init(this, args)
 }
 
-/// Implements `Vector`'s specialized-class constructor.
-pub fn specialized_class_init<'gc>(
+fn class_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -307,9 +240,6 @@ pub fn concat<'gc>(
         return Err("Not a vector-structured object".into());
     };
 
-    let my_class = this
-        .instance_of()
-        .ok_or("TypeError: Tried to concat into a bare object")?;
     let val_class = new_vector_storage.value_type().inner_class_definition();
 
     for arg in args {
@@ -319,11 +249,16 @@ pub fn concat<'gc>(
         let arg_class = arg_obj
             .instance_of_class_definition()
             .ok_or("TypeError: Tried to concat from a bare object")?;
-        if !arg.is_of_type(activation, my_class.inner_class_definition()) {
+
+        // this is Vector.<int/uint/Number/*>
+        let my_base_vector_class = activation
+            .subclass_object()
+            .expect("Method call without bound class?");
+        if !arg.is_of_type(activation, my_base_vector_class.inner_class_definition()) {
             return Err(format!(
                 "TypeError: Cannot coerce argument of type {:?} to argument of type {:?}",
                 arg_class.read().name(),
-                my_class.inner_class_definition().read().name()
+                my_base_vector_class.inner_class_definition().read().name()
             )
             .into());
         }
@@ -945,28 +880,61 @@ pub fn splice<'gc>(
 }
 
 /// Construct `Vector`'s class.
-pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_generic_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
     let mc = activation.context.gc_context;
     let class = Class::new(
         QName::new(activation.avm2().vector_public_namespace, "Vector"),
         Some(Multiname::new(activation.avm2().public_namespace, "Object")),
-        Method::from_builtin(instance_init, "<Vector instance initializer>", mc),
-        Method::from_builtin(class_init, "<Vector class initializer>", mc),
+        Method::from_builtin(generic_init, "<Vector instance initializer>", mc),
+        Method::from_builtin(generic_init, "<Vector class initializer>", mc),
+        mc,
+    );
+
+    let mut write = class.write(mc);
+    write.set_attributes(ClassAttributes::GENERIC | ClassAttributes::FINAL);
+    write.set_instance_allocator(generic_vector_allocator);
+    class
+}
+
+/// Construct `Vector.<int/uint/Number/*>`'s class.
+pub fn create_builtin_class<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    param: Option<GcCell<'gc, Class<'gc>>>,
+) -> GcCell<'gc, Class<'gc>> {
+    let mc = activation.context.gc_context;
+
+    // FIXME - we should store a `Multiname` instead of a `QName`, and use the
+    // `params` field. For now, this is good enough to get tests passing
+    let name = if let Some(param) = param {
+        let name = format!("Vector.<{}>", param.read().name().to_qualified_name(mc));
+        QName::new(
+            activation.avm2().vector_public_namespace,
+            AvmString::new_utf8(mc, name),
+        )
+    } else {
+        QName::new(activation.avm2().vector_public_namespace, "Vector.<*>")
+    };
+
+    let class = Class::new(
+        name,
+        Some(Multiname::new(activation.avm2().public_namespace, "Object")),
+        Method::from_builtin(instance_init, "<Vector.<T> instance initializer>", mc),
+        Method::from_builtin(class_init, "<Vector.<T> class initializer>", mc),
         mc,
     );
 
     let mut write = class.write(mc);
 
-    write.set_attributes(ClassAttributes::GENERIC | ClassAttributes::FINAL);
+    // TODO: Vector.<*> is also supposed to be final, but currently
+    // that'd make it impossible for us to create derived Vector.<MyType>.
+    if param.is_some() {
+        write.set_attributes(ClassAttributes::FINAL);
+    }
+    write.set_param(Some(param));
     write.set_instance_allocator(vector_allocator);
-    write.set_specialized_init(Method::from_builtin(
-        specialized_class_init,
-        "<Vector specialized class initializer>",
-        mc,
-    ));
     write.set_call_handler(Method::from_builtin(
         class_call,
-        "<Vector call handler>",
+        "<Vector.<T> call handler>",
         mc,
     ));
 

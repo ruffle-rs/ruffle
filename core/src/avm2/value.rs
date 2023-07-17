@@ -8,7 +8,6 @@ use crate::avm2::script::TranslationUnit;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
-use crate::avm2::QName;
 use crate::ecma_conversions::{f64_to_wrapping_i32, f64_to_wrapping_u32};
 use crate::string::{AvmAtom, AvmString, WStr};
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -1028,24 +1027,6 @@ impl<'gc> Value<'gc> {
         if let Ok(object) = self.coerce_to_object(activation) {
             if object.is_of_type(class, &mut activation.context) {
                 return Ok(*self);
-            }
-
-            if let Some(vector) = object.as_vector_storage() {
-                let name = class.read().name();
-                let vector_public_namespace = activation.avm2().vector_public_namespace;
-                let vector_internal_namespace = activation.avm2().vector_internal_namespace;
-                if name == QName::new(vector_public_namespace, "Vector")
-                    || (name == QName::new(vector_internal_namespace, "Vector$int")
-                        && vector.value_type() == activation.avm2().classes().int)
-                    || (name == QName::new(vector_internal_namespace, "Vector$uint")
-                        && vector.value_type() == activation.avm2().classes().uint)
-                    || (name == QName::new(vector_internal_namespace, "Vector$number")
-                        && vector.value_type() == activation.avm2().classes().number)
-                    || (name == QName::new(vector_internal_namespace, "Vector$object")
-                        && vector.value_type() == activation.avm2().classes().object)
-                {
-                    return Ok(*self);
-                }
             }
         }
 

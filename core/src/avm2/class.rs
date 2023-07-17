@@ -78,7 +78,7 @@ pub struct Class<'gc> {
     name: QName<'gc>,
 
     /// The type parameter for this class (only supported for Vector)
-    param: Option<GcCell<'gc, Class<'gc>>>,
+    param: Option<Option<GcCell<'gc, Class<'gc>>>>,
 
     /// The name of this class's superclass.
     super_class: Option<Multiname<'gc>>,
@@ -139,12 +139,6 @@ pub struct Class<'gc> {
     /// If None, a simple coercion is done.
     call_handler: Option<Method<'gc>>,
 
-    /// The class initializer for specializations of this class.
-    ///
-    /// Only applies for generic classes. Must be called once and only once
-    /// per specialization, prior to any use of the specialized class.
-    specialized_class_init: Method<'gc>,
-
     /// Static traits for a given class.
     ///
     /// These are accessed as class object properties.
@@ -156,7 +150,7 @@ pub struct Class<'gc> {
     /// Maps a type parameter to the application of this class with that parameter.
     ///
     /// Only applicable if this class is generic.
-    applications: FnvHashMap<ClassKey<'gc>, GcCell<'gc, Class<'gc>>>,
+    applications: FnvHashMap<Option<ClassKey<'gc>>, GcCell<'gc, Class<'gc>>>,
 
     /// Whether or not this is a system-defined class.
     ///
@@ -220,16 +214,20 @@ impl<'gc> Class<'gc> {
                 class_initializer_called: false,
                 call_handler: None,
                 class_traits: Vec::new(),
-                specialized_class_init: Method::from_builtin(
-                    |_, _, _| Ok(Value::Undefined),
-                    "<Null specialization constructor>",
-                    mc,
-                ),
                 traits_loaded: true,
                 is_system: true,
                 applications: FnvHashMap::default(),
             },
         )
+    }
+
+    pub fn add_application(
+        &mut self,
+        param: Option<GcCell<'gc, Class<'gc>>>,
+        cls: GcCell<'gc, Class<'gc>>,
+    ) {
+        let key = param.map(ClassKey);
+        self.applications.insert(key, cls);
     }
 
     /// Apply type parameters to an existing class.
@@ -238,39 +236,40 @@ impl<'gc> Class<'gc> {
     /// longer be generic.
     pub fn with_type_param(
         this: GcCell<'gc, Class<'gc>>,
-        param: GcCell<'gc, Class<'gc>>,
+        param: Option<GcCell<'gc, Class<'gc>>>,
         mc: MutationContext<'gc, '_>,
     ) -> GcCell<'gc, Class<'gc>> {
         let read = this.read();
-        let key = ClassKey(param);
+        let key = param.map(ClassKey);
 
         if let Some(application) = read.applications.get(&key) {
             return *application;
         }
 
-        let mut new_class = (*read).clone();
+        // This can only happen for non-builtin Vector types,
+        // so let's create one here directly.
 
-        new_class.param = Some(param);
-        new_class.attributes.remove(ClassAttributes::GENERIC);
-        new_class.class_init = new_class.specialized_class_init.clone();
-        new_class.class_initializer_called = false;
+        let object_vector_cls = read
+            .applications
+            .get(&None)
+            .expect("Vector.<*> not initialized?");
 
-        // FIXME - we should store a `Multiname` instead of a `QName`, and use the
-        // `params` field. For now, this is good enough to get tests passing
-        let name_with_params = format!(
-            "{}.<{}>",
-            new_class.name.local_name(),
-            param.read().name().to_qualified_name(mc)
+        let param = param.expect("Trying to create Vector<*>, which shouldn't happen here");
+        let name = format!("Vector.<{}>", param.read().name().to_qualified_name(mc));
+
+        let new_class = Self::new(
+            // FIXME - we should store a `Multiname` instead of a `QName`, and use the
+            // `params` field. For now, this is good enough to get tests passing
+            QName::new(read.name.namespace(), AvmString::new_utf8(mc, name)),
+            Some(Multiname::new(read.name.namespace(), "Vector.<*>")),
+            object_vector_cls.read().instance_init(),
+            object_vector_cls.read().class_init(),
+            mc,
         );
+        new_class.write(mc).param = Some(Some(param));
+        new_class.write(mc).call_handler = object_vector_cls.read().call_handler();
 
-        new_class.name = QName::new(
-            new_class.name.namespace(),
-            AvmString::new_utf8(mc, name_with_params),
-        );
-
-        let new_class = GcCell::new(mc, new_class);
         drop(read);
-
         this.write(mc).applications.insert(key, new_class);
         new_class
     }
@@ -395,11 +394,6 @@ impl<'gc> Class<'gc> {
                 class_initializer_called: false,
                 call_handler: native_call_handler,
                 class_traits: Vec::new(),
-                specialized_class_init: Method::from_builtin(
-                    |_, _, _| Ok(Value::Undefined),
-                    "<Null specialization constructor>",
-                    activation.context.gc_context,
-                ),
                 traits_loaded: false,
                 is_system: false,
                 applications: Default::default(),
@@ -564,11 +558,6 @@ impl<'gc> Class<'gc> {
                     "<Activation object class constructor>",
                     activation.context.gc_context,
                 ),
-                specialized_class_init: Method::from_builtin(
-                    |_, _, _| Ok(Value::Undefined),
-                    "<Activation object specialization constructor>",
-                    activation.context.gc_context,
-                ),
                 class_initializer_called: false,
                 call_handler: None,
                 class_traits: Vec::new(),
@@ -585,6 +574,10 @@ impl<'gc> Class<'gc> {
 
     pub fn set_name(&mut self, name: QName<'gc>) {
         self.name = name;
+    }
+
+    pub fn set_param(&mut self, param: Option<Option<GcCell<'gc, Class<'gc>>>>) {
+        self.param = param;
     }
 
     pub fn super_class_name(&self) -> &Option<Multiname<'gc>> {
@@ -815,11 +808,6 @@ impl<'gc> Class<'gc> {
         self.class_initializer_called = true;
     }
 
-    /// Set the class initializer for specializations of this class.
-    pub fn set_specialized_init(&mut self, specialized_init: Method<'gc>) {
-        self.specialized_class_init = specialized_init;
-    }
-
     pub fn direct_interfaces(&self) -> &[Multiname<'gc>] {
         &self.direct_interfaces
     }
@@ -846,10 +834,6 @@ impl<'gc> Class<'gc> {
     /// Determine if this class is generic (can be specialized)
     pub fn is_generic(&self) -> bool {
         self.attributes.contains(ClassAttributes::GENERIC)
-    }
-
-    pub fn param(&self) -> &Option<GcCell<'gc, Class<'gc>>> {
-        &self.param
     }
 }
 

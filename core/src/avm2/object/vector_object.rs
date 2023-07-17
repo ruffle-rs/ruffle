@@ -71,7 +71,7 @@ impl<'gc> VectorObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let value_type = vector.value_type();
-        let vector_class = activation.avm2().classes().vector;
+        let vector_class = activation.avm2().classes().generic_vector;
 
         let applied_class = vector_class.apply(activation, value_type.into())?;
 
