@@ -1,0 +1,15 @@
+Number of text runs before replaceText: 14
+Number of text runs after replaceText: 15
+Number of text runs after replaceText: 15
+Number of text runs after replaceText: 15
+Number of text runs after replaceText: 14
+Number of text runs after appendText: 15
+Number of text runs after setTextFormat: 16
+Text length: 32
+Number of lines: 5
+Combined font for range 1-3: InputMono Light
+Combined size for range 1-3: 37
+Combined color for range 1-3: 16711680
+Combined font for range 2-7: InputMono Light
+Combined size for range 2-7: 37
+Combined color for range 2-7: null
