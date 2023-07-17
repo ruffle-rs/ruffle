@@ -7,6 +7,9 @@ use crate::avm2::{Activation, Error, Object, TObject, Value};
 use crate::context::UpdateContext;
 use encoding_rs::Encoding;
 use encoding_rs::UTF_8;
+use flash_lso::amf0::read::AMF0Decoder;
+use flash_lso::amf3::read::AMF3Decoder;
+use flash_lso::types::{AMFVersion, Element};
 
 pub fn connect<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -292,6 +295,45 @@ pub fn read_multi_byte<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn read_object<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(socket) = this.as_socket() {
+        let mut bytes = socket.read_buffer();
+
+        let (bytes_left, value) = match socket.object_encoding() {
+            ObjectEncoding::Amf0 => {
+                let mut decoder = AMF0Decoder::default();
+                let (extra, amf) = decoder
+                    .parse_single_element(&bytes)
+                    .map_err(|_| "Error: Invalid object")?;
+                (
+                    extra.len(),
+                    crate::avm2::amf::deserialize_value(activation, &amf)?,
+                )
+            }
+            ObjectEncoding::Amf3 => {
+                let mut decoder = AMF3Decoder::default();
+                let (extra, amf) = decoder
+                    .parse_single_element(&bytes)
+                    .map_err(|_| "Error: Invalid object")?;
+                (
+                    extra.len(),
+                    crate::avm2::amf::deserialize_value(activation, &amf)?,
+                )
+            }
+        };
+
+        let len = bytes.len();
+        let _ = bytes.drain(..(len - bytes_left));
+        return Ok(value);
+    }
+
+    Ok(Value::Undefined)
+}
+
 pub fn read_short<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
@@ -499,6 +541,38 @@ pub fn write_multi_byte<'gc>(
         let utf8 = string.to_utf8_lossy();
         let (encoded_bytes, _, _) = encoder.encode(&utf8);
         socket.write_bytes(&encoded_bytes);
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn write_object<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(socket) = this.as_socket() {
+        let obj = args.get_value(0);
+        let amf_version = match socket.object_encoding() {
+            ObjectEncoding::Amf0 => AMFVersion::AMF0,
+            ObjectEncoding::Amf3 => AMFVersion::AMF3,
+        };
+        if let Some(amf) = crate::avm2::amf::serialize_value(activation, obj, amf_version) {
+            let element = Element::new("", amf);
+            let mut lso = flash_lso::types::Lso::new(vec![element], "", amf_version);
+            let bytes = flash_lso::write::write_to_bytes(&mut lso)
+                .map_err(|_| "Failed to serialize object")?;
+            // This is kind of hacky: We need to strip out the header and any padding so that we only write
+            // the value. In the future, there should be a method to do this in the flash_lso crate.
+            let element_padding = match amf_version {
+                AMFVersion::AMF0 => 8,
+                AMFVersion::AMF3 => 7,
+            };
+            socket.write_bytes(
+                &bytes[flash_lso::write::header_length(&lso.header) + element_padding
+                    ..bytes.len() - 1],
+            );
+        }
     }
 
     Ok(Value::Undefined)

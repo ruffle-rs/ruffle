@@ -5,7 +5,6 @@ package flash.net {
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
 
-    import __ruffle__.stub_method;
     import __ruffle__.stub_getter;
 
     [Ruffle(InstanceAllocator)]
@@ -60,12 +59,7 @@ package flash.net {
         public native function readFloat():Number;
         public native function readInt():int;
         public native function readMultiByte(length:uint, charSet:String):String;
-
-        public function readObject():* {
-            stub_method("flash.net.Socket", "readObject");
-            return null;
-        }
-
+        public native function readObject():*;
         public native function readShort():int;
         public native function readUnsignedByte():uint;
         public native function readUnsignedInt():uint;
@@ -80,11 +74,7 @@ package flash.net {
         public native function writeFloat(value:Number):void;
         public native function writeInt(value:int):void;
         public native function writeMultiByte(value:String, charSet:String):void;
-
-        public function writeObject(value:*):void {
-            stub_method("flash.net.Socket", "writeObject");
-        }
-
+        public native function writeObject(value:*):void;
         public native function writeShort(value:int):void;
         public native function writeUnsignedInt(value:uint):void;
         public native function writeUTF(value:String):void;
