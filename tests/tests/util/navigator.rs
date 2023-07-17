@@ -102,7 +102,7 @@ impl NavigatorBackend for TestNavigatorBackend {
         &mut self,
         host: String,
         port: u16,
-        timeout: Option<Duration>,
+        _timeout: Duration,
         handle: SocketHandle,
         _receiver: Receiver<Vec<u8>>,
         sender: Sender<SocketAction>,

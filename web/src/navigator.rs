@@ -363,7 +363,7 @@ impl NavigatorBackend for WebNavigatorBackend {
         &mut self,
         _host: String,
         _port: u16,
-        _timeout: Option<Duration>,
+        _timeout: Duration,
         handle: SocketHandle,
         _receiver: Receiver<Vec<u8>>,
         sender: Sender<SocketAction>,
