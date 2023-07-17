@@ -11,6 +11,7 @@ use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::sync::mpsc::{Receiver, Sender};
+use std::time::Duration;
 use swf::avm1::types::SendVarsMethod;
 use url::{ParseError, Url};
 
@@ -267,6 +268,7 @@ pub trait NavigatorBackend {
         &mut self,
         host: String,
         port: u16,
+        timeout: Option<Duration>,
         handle: SocketHandle,
         receiver: Receiver<Vec<u8>>,
         sender: Sender<SocketAction>,
@@ -405,6 +407,7 @@ impl NavigatorBackend for NullNavigatorBackend {
         &mut self,
         _host: String,
         _port: u16,
+        _timeout: Option<Duration>,
         handle: SocketHandle,
         _receiver: Receiver<Vec<u8>>,
         sender: Sender<SocketAction>,
