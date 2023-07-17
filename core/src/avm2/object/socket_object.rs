@@ -24,8 +24,7 @@ pub fn socket_allocator<'gc>(
             // Default endianness is Big.
             endian: Cell::new(Endian::Big),
             object_encoding: Cell::new(ObjectEncoding::Amf3),
-            // Default is 20_000 milliseconds or 20 seconds.
-            timeout: Cell::new(20000),
+            timeout: Cell::new(0),
             handle: Cell::new(None),
             read_buffer: RefCell::new(vec![]),
             write_buffer: RefCell::new(vec![]),

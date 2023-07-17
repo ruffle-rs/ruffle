@@ -11,6 +11,7 @@ package flash.net {
     public class Socket extends EventDispatcher implements IDataOutput, IDataInput {
 
         public function Socket(host:String = null, port:int = 0) {
+            this.timeout = 20000;
             if (host != null) {
                 this.connect(host, port);
             }
