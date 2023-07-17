@@ -294,6 +294,22 @@ pub fn read_unsigned_short<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn read_utf<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(socket) = this.as_socket() {
+        return Ok(AvmString::new_utf8_bytes(
+            activation.gc(),
+            &socket.read_utf().map_err(|e| e.to_avm(activation))?,
+        )
+        .into());
+    }
+
+    Ok(Value::Undefined)
+}
+
 pub fn read_utf_bytes<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
@@ -432,6 +448,20 @@ pub fn write_unsigned_int<'gc>(
     if let Some(socket) = this.as_socket() {
         let num = args.get_u32(activation, 0)?;
         socket.write_unsigned_int(num);
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn write_utf<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(socket) = this.as_socket() {
+        let string = args.get_string(activation, 0)?;
+
+        socket.write_utf(&string.to_utf8_lossy())?;
     }
 
     Ok(Value::Undefined)

@@ -81,12 +81,7 @@ package flash.net {
         public native function readUnsignedByte():uint;
         public native function readUnsignedInt():uint;
         public native function readUnsignedShort():uint;
-
-        public function readUTF():String {
-            stub_method("flash.net.Socket", "readUTF");
-            return "";
-        }
-
+        public native function readUTF():String;
         public native function readUTFBytes(length:uint):String;
 
         public native function writeBoolean(value:Boolean):void;
@@ -106,11 +101,7 @@ package flash.net {
 
         public native function writeShort(value:int):void;
         public native function writeUnsignedInt(value:uint):void;
-
-        public function writeUTF(value:String):void {
-            stub_method("flash.net.Socket", "writeUTF");
-        }
-
+        public native function writeUTF(value:String):void;
         public native function writeUTFBytes(value:String):void;
     }
 }
