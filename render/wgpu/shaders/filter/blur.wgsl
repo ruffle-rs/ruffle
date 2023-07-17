@@ -47,10 +47,12 @@ fn main_fragment(in: filter::VertexOutput) -> @location(0) vec4<f32> {
     }
 
     // At this point, the center_length must be a whole number, divisible by 2.
+    var center = vec4<f32>();
     for (var i = 0.0; i < center_length; i += 2.0) {
         // The center of the kernel is always going to be 1,1 weight pairs. We can just sample between the two pixels.
-        total += textureSample(texture, texture_sampler, in.uv + (direction * (1.5 + i))) * 2.0;
+        center += textureSample(texture, texture_sampler, in.uv + (direction * (1.5 + i)));
     }
+    total += center * 2.0;
 
     // The sum of every weight is full_size
     return total / filter_args.full_size;
