@@ -6,7 +6,7 @@ use ruffle_core::backend::navigator::{
 };
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
-use ruffle_core::socket::{SocketAction, SocketHandle};
+use ruffle_core::socket::{ConnectionState, SocketAction, SocketHandle};
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::{Receiver, Sender};
 use std::time::Duration;
@@ -112,7 +112,7 @@ impl NavigatorBackend for TestNavigatorBackend {
             log.avm_trace(&format!("    Host: {}; Port: {}", host, port));
         }
         sender
-            .send(SocketAction::Connect(handle, false))
+            .send(SocketAction::Connect(handle, ConnectionState::Failed))
             .expect("working channel send");
     }
 }
