@@ -16,7 +16,7 @@ use ruffle_core::backend::navigator::{
 };
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
-use ruffle_core::socket::{SocketAction, SocketHandle};
+use ruffle_core::socket::{ConnectionState, SocketAction, SocketHandle};
 use std::collections::HashSet;
 use std::io;
 use std::io::ErrorKind;
@@ -346,7 +346,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                 (false, SocketBehavior::Deny) => {
                     // Just fail the connection.
                     sender
-                        .send(SocketAction::Connect(handle, true))
+                        .send(SocketAction::Connect(handle, ConnectionState::Failed))
                         .expect("working channel send");
 
                     tracing::warn!(
@@ -363,7 +363,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                     if !attempt_sandbox_connect {
                         // fail the connection.
                         sender
-                            .send(SocketAction::Connect(handle, true))
+                            .send(SocketAction::Connect(handle, ConnectionState::Failed))
                             .expect("working channel send");
 
                         return Ok(());
@@ -382,9 +382,16 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                 })
                 .await
             {
+                Err(e) if e.kind() == ErrorKind::TimedOut => {
+                    warn!("Connection to {}:{} timed out", host2, port);
+                    sender
+                        .send(SocketAction::Connect(handle, ConnectionState::TimedOut))
+                        .expect("working channel send");
+                    return Ok(());
+                }
                 Ok(stream) => {
                     sender
-                        .send(SocketAction::Connect(handle, true))
+                        .send(SocketAction::Connect(handle, ConnectionState::Connected))
                         .expect("working channel send");
 
                     stream
@@ -392,7 +399,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                 Err(err) => {
                     warn!("Failed to connect to {}:{}, error: {}", host2, port, err);
                     sender
-                        .send(SocketAction::Connect(handle, false))
+                        .send(SocketAction::Connect(handle, ConnectionState::Failed))
                         .expect("working channel send");
                     return Ok(());
                 }
