@@ -169,13 +169,11 @@ impl<'gc> Sockets<'gc> {
                     Avm2::dispatch_event(&mut activation.context, io_error_evt, target.into());
                 }
                 SocketAction::Data(handle, data) => {
-                    let target = activation
-                        .context
-                        .sockets
-                        .sockets
-                        .get(handle)
-                        .expect("only valid handles in SocketAction")
-                        .target;
+                    let target = match activation.context.sockets.sockets.get(handle) {
+                        Some(socket) => socket.target,
+                        // Socket must have been closed before we could send event.
+                        None => continue,
+                    };
 
                     let bytes_loaded = data.len();
                     target.read_buffer().extend(data);
@@ -200,16 +198,15 @@ impl<'gc> Sockets<'gc> {
                     Avm2::dispatch_event(&mut activation.context, progress_evt, target.into());
                 }
                 SocketAction::Close(handle) => {
-                    let socket = activation
-                        .context
-                        .sockets
-                        .sockets
-                        .remove(handle)
-                        .expect("only valid handles in SocketAction");
+                    let target = match activation.context.sockets.sockets.get(handle) {
+                        Some(socket) => socket.target,
+                        // Socket must have been closed before we could send event.
+                        None => continue,
+                    };
 
                     let close_evt =
                         EventObject::bare_default_event(&mut activation.context, "close");
-                    Avm2::dispatch_event(&mut activation.context, close_evt, socket.target.into());
+                    Avm2::dispatch_event(&mut activation.context, close_evt, target.into());
                 }
             }
         }
