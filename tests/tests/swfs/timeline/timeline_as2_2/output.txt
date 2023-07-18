@@ -1,0 +1,3 @@
+sym1: construct
+frame1
+sym1: load

@@ -1,0 +1,8 @@
+Element placed on frame 1
+Number of filters: 0
+New object placed on frame 2: false
+Number of filters: 1
+New object placed on frame 3: false
+Number of filters: 1
+New object placed on frame 1: false
+Number of filters: 0
