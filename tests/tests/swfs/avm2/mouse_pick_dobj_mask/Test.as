@@ -13,6 +13,15 @@
 			mask.graphics.beginFill(0xFF0000);
 			mask.graphics.drawCircle(20, 20, 50);
 			mask.graphics.endFill();
+			mask.visible = false;
+			
+			var child = new Sprite();
+			child.graphics.beginFill(0x00FF00);
+			child.graphics.drawRect(0, 0, 100, 50);
+			child.graphics.endFill();
+			child.visible = false;
+			
+			mask.addChild(child);
 			
 			target.mask = mask;
 			main.addChild(target);

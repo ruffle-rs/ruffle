@@ -53,6 +53,10 @@ impl CommandList {
             }
         }
     }
+
+    pub fn drawing_mask(&self) -> bool {
+        self.maskers_in_progress > 0
+    }
 }
 
 impl CommandHandler for CommandList {
