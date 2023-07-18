@@ -1,0 +1,7 @@
+start
+loop: 3
+rewind: 3
+rewind: 2
+rewind: 1
+loop: 2
+loop: 1

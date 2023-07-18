@@ -1,0 +1,4 @@
+# Test adapted from Shumway at https://github.com/mozilla/shumway/tree/master/test/swfs/timeline
+
+num_frames = 20 # very long to meet the timer requirements
+sleep_to_meet_frame_rate = true
