@@ -218,11 +218,15 @@ impl Drawing {
             if self.fill_start == self.cursor {
                 // If this is the initial command after a move, include the starting point.
                 let command = DrawCommand::MoveTo(self.cursor);
-                self.shape_bounds = stretch_bounds(&self.shape_bounds, &command, stroke_width);
-                self.edge_bounds = stretch_bounds(&self.edge_bounds, &command, Twips::ZERO);
+                self.shape_bounds =
+                    stretch_bounds(&self.shape_bounds, &command, stroke_width, self.cursor);
+                self.edge_bounds =
+                    stretch_bounds(&self.edge_bounds, &command, Twips::ZERO, self.cursor);
             }
-            self.shape_bounds = stretch_bounds(&self.shape_bounds, &command, stroke_width);
-            self.edge_bounds = stretch_bounds(&self.edge_bounds, &command, Twips::ZERO);
+            self.shape_bounds =
+                stretch_bounds(&self.shape_bounds, &command, stroke_width, self.cursor);
+            self.edge_bounds =
+                stretch_bounds(&self.edge_bounds, &command, Twips::ZERO, self.cursor);
         }
 
         self.cursor = command.end_point();
@@ -441,6 +445,7 @@ fn stretch_bounds(
     bounds: &Rectangle<Twips>,
     command: &DrawCommand,
     stroke_width: Twips,
+    from: Point<Twips>,
 ) -> Rectangle<Twips> {
     let radius = stroke_width / 2;
     let bounds = bounds.clone();
@@ -448,10 +453,49 @@ fn stretch_bounds(
         DrawCommand::MoveTo(point) | DrawCommand::LineTo(point) => bounds
             .encompass(Point::new(point.x - radius, point.y - radius))
             .encompass(Point::new(point.x + radius, point.y + radius)),
-        DrawCommand::CurveTo { control, anchor } => bounds
-            .encompass(Point::new(control.x - radius, control.y - radius))
-            .encompass(Point::new(control.x + radius, control.y + radius))
-            .encompass(Point::new(anchor.x - radius, anchor.y - radius))
-            .encompass(Point::new(anchor.x + radius, anchor.y + radius)),
+        DrawCommand::CurveTo { control, anchor } => {
+            // extremes
+            let from_x = from.x.to_pixels();
+            let from_y = from.y.to_pixels();
+            let anchor_x = anchor.x.to_pixels();
+            let anchor_y = anchor.y.to_pixels();
+            let control_x = control.x.to_pixels();
+            let control_y = control.y.to_pixels();
+
+            let mut min_x = from_x.min(anchor_x);
+            let mut min_y = from_y.min(anchor_y);
+            let mut max_x = from_x.max(anchor_x);
+            let mut max_y = from_y.max(anchor_y);
+
+            if control_x < min_x || control_x > max_x {
+                let t_x = ((from_x - control_x) / (from_x - (control_x * 2.0) + anchor_x))
+                    .clamp(0.0, 1.0);
+                let s_x = 1.0 - t_x;
+                let q_x = s_x * s_x * from_x + (s_x * 2.0) * t_x * control_x + t_x * t_x * anchor_x;
+
+                min_x = min_x.min(q_x);
+                max_x = max_x.max(q_x);
+            }
+
+            if control_y < min_y || control_y > max_y {
+                let t_y = ((from_y - control_y) / (from_y - (control_y * 2.0) + anchor_y))
+                    .clamp(0.0, 1.0);
+                let s_y = 1.0 - t_y;
+                let q_y = s_y * s_y * from_y + (s_y * 2.0) * t_y * control_y + t_y * t_y * anchor_y;
+
+                min_y = min_y.min(q_y);
+                max_y = max_y.max(q_y);
+            }
+
+            bounds
+                .encompass(Point::new(
+                    Twips::from_pixels(min_x) - radius,
+                    Twips::from_pixels(min_y) - radius,
+                ))
+                .encompass(Point::new(
+                    Twips::from_pixels(max_x) + radius,
+                    Twips::from_pixels(max_y) + radius,
+                ))
+        }
     }
 }
