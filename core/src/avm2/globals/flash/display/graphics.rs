@@ -276,7 +276,7 @@ fn caps_to_cap_style(caps: Option<AvmString>) -> LineCapStyle {
             LineCapStyle::Round
         }
     } else {
-        LineCapStyle::None
+        LineCapStyle::Round
     }
 }
 
