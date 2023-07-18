@@ -12,7 +12,7 @@ use isahc::{
 use rfd::{AsyncMessageDialog, MessageButtons, MessageDialog, MessageLevel};
 use ruffle_core::backend::navigator::{
     async_return, create_fetch_error, create_specific_fetch_error, ErrorResponse, NavigationMethod,
-    NavigatorBackend, OpenURLMode, OwnedFuture, Request, SuccessResponse, SocketBehavior,
+    NavigatorBackend, OpenURLMode, OwnedFuture, Request, SocketBehavior, SuccessResponse,
 };
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
