@@ -40,7 +40,7 @@ pub fn send<'gc>(
     if matches!(args.get_value(0), Value::Null) {
         return Err(Error::AvmError(type_error(
             activation,
-            &format!("Error #2007: Parameter connectionName must be non-null."),
+            "Error #2007: Parameter connectionName must be non-null.",
             2007,
         )?));
     }
@@ -48,7 +48,7 @@ pub fn send<'gc>(
     if matches!(args.get_value(1), Value::Null) {
         return Err(Error::AvmError(type_error(
             activation,
-            &format!("Error #2007: Parameter methodName must be non-null."),
+            "Error #2007: Parameter methodName must be non-null.",
             2007,
         )?));
     }
@@ -66,6 +66,7 @@ pub fn send<'gc>(
         ],
     )?;
 
+    // FIXME: Adding the event listener after calling `send` works in FP.
     Avm2::dispatch_event(&mut activation.context, event, this);
 
     Ok(Value::Undefined)

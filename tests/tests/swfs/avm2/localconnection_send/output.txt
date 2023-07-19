@@ -1,0 +1,4 @@
+TypeError: Error #2007: Parameter connectionName must be non-null.
+TypeError: Error #2007: Parameter connectionName must be non-null.
+TypeError: Error #2007: Parameter methodName must be non-null.
+[StatusEvent type="status" bubbles=false cancelable=false eventPhase=2 code=null level="error"]
