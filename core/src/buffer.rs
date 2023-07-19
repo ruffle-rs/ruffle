@@ -265,6 +265,10 @@ impl Slice {
         }
     }
 
+    pub fn buffer(&self) -> &Buffer {
+        &self.buf
+    }
+
     /// Create a readable cursor into the `Slice`.
     pub fn as_cursor(&self) -> SliceCursor {
         SliceCursor {
