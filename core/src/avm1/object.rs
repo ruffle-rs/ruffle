@@ -26,8 +26,9 @@ use crate::html::TextFormat;
 use crate::streams::NetStream;
 use crate::string::AvmString;
 use crate::xml::XmlNode;
-use gc_arena::{Collect, GcCell, Mutation};
+use gc_arena::{Collect, Gc, GcCell, Mutation};
 use ruffle_macros::enum_trait_object;
+use std::cell::Cell;
 use std::fmt::Debug;
 
 pub mod array_object;
@@ -42,7 +43,7 @@ pub mod value_object;
 #[collect(no_drop)]
 pub enum NativeObject<'gc> {
     None,
-    Date(GcCell<'gc, Date>),
+    Date(Gc<'gc, Cell<Date>>),
     BlurFilter(BlurFilter<'gc>),
     BevelFilter(BevelFilter<'gc>),
     GlowFilter(GlowFilter<'gc>),
