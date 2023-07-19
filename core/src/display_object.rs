@@ -747,6 +747,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
         let bounds: Rectangle<Twips> = this.bounds_with_transform(&base_transform.matrix);
         let name = this.name();
         let mut filters: Vec<Filter> = this.filters();
+        filters.retain(|f| !f.impotent());
 
         if let Some(cache) = this.base_mut(context.gc_context).bitmap_cache_mut() {
             let width = bounds.width().to_pixels().ceil().max(0.0);

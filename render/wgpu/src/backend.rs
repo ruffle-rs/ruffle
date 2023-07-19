@@ -548,13 +548,20 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     &mut self.offscreen_texture_pool,
                 );
             } else {
+                // We're relying on there being no impotent filters here,
+                // so that we can safely start by using the actual CAB texture.
+                // It's guaranteed that at least one filter would have used it and moved the target to something else,
+                // letting us safely copy back to it later.
                 let mut target = surface.draw_commands(
-                    RenderTargetMode::FreshWithColor(wgpu::Color {
-                        r: f64::from(entry.clear.r) / 255.0,
-                        g: f64::from(entry.clear.g) / 255.0,
-                        b: f64::from(entry.clear.b) / 255.0,
-                        a: f64::from(entry.clear.a) / 255.0,
-                    }),
+                    RenderTargetMode::ExistingWithColor(
+                        texture.texture.clone(),
+                        wgpu::Color {
+                            r: f64::from(entry.clear.r) / 255.0,
+                            g: f64::from(entry.clear.g) / 255.0,
+                            b: f64::from(entry.clear.b) / 255.0,
+                            a: f64::from(entry.clear.a) / 255.0,
+                        },
+                    ),
                     &self.descriptors,
                     &self.meshes,
                     entry.commands,
