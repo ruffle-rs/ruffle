@@ -11,6 +11,7 @@ use crate::avm2::error::{
 use crate::avm2::method::{BytecodeMethod, Method, ParamConfig};
 use crate::avm2::object::{
     ArrayObject, ByteArrayObject, ClassObject, FunctionObject, NamespaceObject, ScriptObject,
+    XmlListObject,
 };
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::scope::{search_scope_stack, Scope, ScopeChain};
@@ -2114,6 +2115,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 value1.coerce_to_string(self)?,
                 s,
             )),
+            (
+                Value::Object(Object::XmlListObject(value1)),
+                Value::Object(Object::XmlListObject(value2)),
+            ) => Value::Object(XmlListObject::concat(self, value1, value2).into()),
             (value1, value2) => {
                 let prim_value1 = value1.coerce_to_primitive(None, self)?;
                 let prim_value2 = value2.coerce_to_primitive(None, self)?;
