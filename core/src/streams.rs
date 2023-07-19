@@ -10,16 +10,19 @@ use crate::avm2::{
     Activation as Avm2Activation, Avm2, Error as Avm2Error, EventObject as Avm2EventObject,
     FlvValueAvm2Ext, Object as Avm2Object,
 };
+use crate::backend::audio::{DecodeError, SoundInstanceHandle};
 use crate::backend::navigator::Request;
-use crate::buffer::Buffer;
+use crate::buffer::{Buffer, Substream};
 use crate::context::UpdateContext;
 use crate::loader::Error;
 use crate::string::AvmString;
 use crate::vminterface::AvmObject;
 use flv_rs::{
-    AudioData as FlvAudioData, Error as FlvError, FlvReader, Header as FlvHeader,
-    ScriptData as FlvScriptData, Tag as FlvTag, TagData as FlvTagData, Value as FlvValue,
-    VideoData as FlvVideoData, VideoPacket as FlvVideoPacket,
+    AudioData as FlvAudioData, AudioDataType as FlvAudioDataType, Error as FlvError, FlvReader,
+    Header as FlvHeader, ScriptData as FlvScriptData, SoundFormat as FlvSoundFormat,
+    SoundRate as FlvSoundRate, SoundSize as FlvSoundSize, SoundType as FlvSoundType, Tag as FlvTag,
+    TagData as FlvTagData, Value as FlvValue, VideoData as FlvVideoData,
+    VideoPacket as FlvVideoPacket,
 };
 use gc_arena::{Collect, GcCell, Mutation};
 use ruffle_render::bitmap::BitmapInfo;
@@ -27,9 +30,8 @@ use ruffle_video::frame::EncodedFrame;
 use ruffle_video::VideoStreamHandle;
 use std::cmp::max;
 use std::io::Seek;
-use swf::{VideoCodec, VideoDeblocking};
+use swf::{AudioCompression, SoundFormat, SoundStreamHead, VideoCodec, VideoDeblocking};
 use url::Url;
-
 /// Manager for all media streams.
 ///
 /// This does *not* handle data transport; which is delegated to `LoadManager`.
@@ -135,7 +137,9 @@ pub enum NetStreamType {
     /// The stream is an FLV.
     Flv {
         header: FlvHeader,
-        stream: Option<VideoStreamHandle>,
+
+        /// The currently playing video track's stream instance.
+        video_stream: Option<VideoStreamHandle>,
 
         /// The index of the last processed frame.
         ///
@@ -143,6 +147,10 @@ pub enum NetStreamType {
         /// onto a table of data buffers like `Video` does, so we must maintain
         /// frame IDs ourselves for various API related purposes.
         frame_id: u32,
+
+        /// The currently playing audio track's `Substream` and associated
+        /// audio instance.
+        audio_stream: Option<(Substream, SoundInstanceHandle)>,
     },
 }
 
@@ -314,8 +322,9 @@ impl<'gc> NetStream<'gc> {
                             write.preload_offset = write.offset;
                             write.stream_type = Some(NetStreamType::Flv {
                                 header,
-                                stream: None,
+                                video_stream: None,
                                 frame_id: 0,
+                                audio_stream: None,
                             });
                         }
                         Err(FlvError::EndOfData) => return,
@@ -393,14 +402,126 @@ impl<'gc> NetStream<'gc> {
                     >= write.preload_offset;
 
                 match tag.data {
-                    FlvTagData::Audio(FlvAudioData { .. }) => {
-                        tracing::warn!("Stub: Stream audio processing");
+                    FlvTagData::Audio(FlvAudioData {
+                        format,
+                        rate,
+                        size,
+                        sound_type,
+                        data,
+                    }) => {
+                        let mut substream = match &mut write.stream_type {
+                            Some(NetStreamType::Flv {
+                                audio_stream: Some((substream, audio_handle)),
+                                ..
+                            }) if context.audio.is_sound_playing(*audio_handle) => {
+                                substream.clone()
+                            }
+                            Some(NetStreamType::Flv {
+                                audio_stream, //None or not playing
+                                ..
+                            }) => {
+                                let substream = Substream::new(slice.buffer().clone());
+                                let audio_handle = (|| {
+                                    let swf_format = SoundFormat {
+                                        compression: match format {
+                                            FlvSoundFormat::LinearPCMPlatformEndian => {
+                                                AudioCompression::UncompressedUnknownEndian
+                                            }
+                                            FlvSoundFormat::Adpcm => AudioCompression::Adpcm,
+                                            FlvSoundFormat::MP3 => AudioCompression::Mp3,
+                                            FlvSoundFormat::LinearPCMLittleEndian => {
+                                                AudioCompression::Uncompressed
+                                            }
+                                            FlvSoundFormat::Nellymoser16kHz => {
+                                                AudioCompression::Nellymoser16Khz
+                                            }
+                                            FlvSoundFormat::Nellymoser8kHz => {
+                                                AudioCompression::Nellymoser8Khz
+                                            }
+                                            FlvSoundFormat::Nellymoser => {
+                                                AudioCompression::Nellymoser
+                                            }
+                                            FlvSoundFormat::G711ALawPCM => {
+                                                return Err(DecodeError::UnhandledCompression(
+                                                    AudioCompression::Uncompressed,
+                                                ))
+                                            }
+                                            FlvSoundFormat::G711MuLawPCM => {
+                                                return Err(DecodeError::UnhandledCompression(
+                                                    AudioCompression::Uncompressed,
+                                                ))
+                                            }
+                                            FlvSoundFormat::Aac => {
+                                                return Err(DecodeError::UnhandledCompression(
+                                                    AudioCompression::Uncompressed,
+                                                ))
+                                            }
+                                            FlvSoundFormat::Speex => AudioCompression::Speex,
+                                            FlvSoundFormat::MP38kHz => AudioCompression::Mp3,
+                                            FlvSoundFormat::DeviceSpecific => {
+                                                return Err(DecodeError::UnhandledCompression(
+                                                    AudioCompression::Uncompressed,
+                                                ))
+                                            }
+                                        },
+                                        sample_rate: match (format, rate) {
+                                            (FlvSoundFormat::MP38kHz, _) => 8_000,
+                                            (_, FlvSoundRate::R5_500) => 5_500,
+                                            (_, FlvSoundRate::R11_000) => 11_000,
+                                            (_, FlvSoundRate::R22_000) => 22_000,
+                                            (_, FlvSoundRate::R44_000) => 44_000,
+                                        },
+                                        is_stereo: match sound_type {
+                                            FlvSoundType::Mono => false,
+                                            FlvSoundType::Stereo => true,
+                                        },
+                                        is_16_bit: match size {
+                                            FlvSoundSize::Bits8 => false,
+                                            FlvSoundSize::Bits16 => true,
+                                        },
+                                    };
+                                    context.audio.start_substream(
+                                        substream.clone(),
+                                        &SoundStreamHead {
+                                            stream_format: swf_format.clone(),
+                                            playback_format: swf_format,
+                                            num_samples_per_block: 0,
+                                            latency_seek: 0,
+                                        },
+                                    )
+                                })();
+
+                                if let Err(e) = audio_handle {
+                                    tracing::error!("Error encountered appending substream: {}", e);
+                                } else {
+                                    *audio_stream =
+                                        Some((substream.clone(), audio_handle.unwrap()));
+                                }
+
+                                substream
+                            }
+                            _ => unreachable!(),
+                        };
+
+                        let result = match data {
+                            FlvAudioDataType::Raw(data)
+                            | FlvAudioDataType::AacSequenceHeader(data)
+                            | FlvAudioDataType::AacRaw(data) => {
+                                substream.append(slice.to_subslice(data))
+                            }
+                        };
+
+                        if let Err(e) = result {
+                            tracing::error!("Error encountered appending substream: {}", e);
+                        }
                     }
                     FlvTagData::Video(FlvVideoData { codec_id, data, .. }) => {
                         let (video_handle, frame_id) = match write.stream_type {
                             Some(NetStreamType::Flv {
-                                stream, frame_id, ..
-                            }) => (stream, frame_id),
+                                video_stream,
+                                frame_id,
+                                ..
+                            }) => (video_stream, frame_id),
                             _ => unreachable!(),
                         };
                         let codec = VideoCodec::from_u8(codec_id as u8);
@@ -430,9 +551,10 @@ impl<'gc> NetStream<'gc> {
                                         ) {
                                             Ok(new_handle) => {
                                                 match &mut write.stream_type {
-                                                    Some(NetStreamType::Flv { stream, .. }) => {
-                                                        *stream = Some(new_handle)
-                                                    }
+                                                    Some(NetStreamType::Flv {
+                                                        video_stream,
+                                                        ..
+                                                    }) => *video_stream = Some(new_handle),
                                                     _ => unreachable!(),
                                                 }
 
@@ -534,7 +656,7 @@ impl<'gc> NetStream<'gc> {
                     }
                     FlvTagData::Script(FlvScriptData(vars)) => {
                         let has_stream_already = match write.stream_type {
-                            Some(NetStreamType::Flv { stream, .. }) => stream.is_some(),
+                            Some(NetStreamType::Flv { video_stream, .. }) => video_stream.is_some(),
                             _ => unreachable!(),
                         };
 
@@ -606,8 +728,8 @@ impl<'gc> NetStream<'gc> {
                                         VideoDeblocking::UseVideoPacketValue,
                                     ) {
                                         Ok(stream_handle) => match &mut write.stream_type {
-                                            Some(NetStreamType::Flv { stream, .. }) => {
-                                                *stream = Some(stream_handle)
+                                            Some(NetStreamType::Flv { video_stream, .. }) => {
+                                                *video_stream = Some(stream_handle)
                                             }
                                             _ => unreachable!(),
                                         },
