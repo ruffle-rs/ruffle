@@ -136,6 +136,23 @@ impl<'gc> XmlListObject<'gc> {
 
         Ok(false)
     }
+
+    pub fn concat(
+        activation: &mut Activation<'_, 'gc>,
+        left: XmlListObject<'gc>,
+        right: XmlListObject<'gc>,
+    ) -> XmlListObject<'gc> {
+        if left.length() == 0 {
+            right
+        } else if right.length() == 0 {
+            left
+        } else {
+            let mut out = vec![];
+            out.extend(left.children().clone());
+            out.extend(right.children().clone());
+            Self::new(activation, out, None)
+        }
+    }
 }
 
 #[derive(Clone, Collect)]
