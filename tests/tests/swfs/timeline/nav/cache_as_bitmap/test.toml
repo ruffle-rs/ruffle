@@ -1,0 +1,3 @@
+# Test adapted from Shumway at https://github.com/mozilla/shumway/tree/master/test/swfs/timeline/nav
+
+num_frames = 3

@@ -1,0 +1,70 @@
+FRAME 1
+currentFrameLabel: MC_F1
+currentLabel: MC_F1
+currentLabels: [FrameLabel 'MC_F1':1], [FrameLabel 'MC_F5':5], [FrameLabel 'MC_F10':10], [FrameLabel 'MC_F15':15]
+currentScene: [Scene '', frames: 15, labels: [FrameLabel 'MC_F1':1], [FrameLabel 'MC_F5':5], [FrameLabel 'MC_F10':10], [FrameLabel 'MC_F15':15]]
+FRAME 2
+currentFrameLabel: null
+currentLabel: MC_F1
+currentLabels: [FrameLabel 'MC_F1':1], [FrameLabel 'MC_F5':5], [FrameLabel 'MC_F10':10], [FrameLabel 'MC_F15':15]
+currentScene: [Scene '', frames: 15, labels: [FrameLabel 'MC_F1':1], [FrameLabel 'MC_F5':5], [FrameLabel 'MC_F10':10], [FrameLabel 'MC_F15':15]]
+FRAME 3
+currentFrameLabel: null
+currentLabel: MC_F1
+currentLabels: [FrameLabel 'MC_F1':1], [FrameLabel 'MC_F5':5], [FrameLabel 'MC_F10':10], [FrameLabel 'MC_F15':15]
+currentScene: [Scene '', frames: 15, labels: [FrameLabel 'MC_F1':1], [FrameLabel 'MC_F5':5], [FrameLabel 'MC_F10':10], [FrameLabel 'MC_F15':15]]
+FRAME 4
+currentFrameLabel: null
+currentLabel: MC_F1
+currentLabels: [FrameLabel 'MC_F1':1], [FrameLabel 'MC_F5':5], [FrameLabel 'MC_F10':10], [FrameLabel 'MC_F15':15]
+currentScene: [Scene '', frames: 15, labels: [FrameLabel 'MC_F1':1], [FrameLabel 'MC_F5':5], [FrameLabel 'MC_F10':10], [FrameLabel 'MC_F15':15]]
+FRAME 5
+currentFrameLabel: MC_F5
+currentLabel: MC_F5
+currentLabels: [FrameLabel 'MC_F1':1], [FrameLabel 'MC_F5':5], [FrameLabel 'MC_F10':10], [FrameLabel 'MC_F15':15]
+currentScene: [Scene '', frames: 15, labels: [FrameLabel 'MC_F1':1], [FrameLabel 'MC_F5':5], [FrameLabel 'MC_F10':10], [FrameLabel 'MC_F15':15]]
+FRAME 6
+currentFrameLabel: null
+currentLabel: MC_F5
+currentLabels: [FrameLabel 'MC_F1':1], [FrameLabel 'MC_F5':5], [FrameLabel 'MC_F10':10], [FrameLabel 'MC_F15':15]
+currentScene: [Scene '', frames: 15, labels: [FrameLabel 'MC_F1':1], [FrameLabel 'MC_F5':5], [FrameLabel 'MC_F10':10], [FrameLabel 'MC_F15':15]]
+FRAME 7
+currentFrameLabel: null
+currentLabel: MC_F5
+currentLabels: [FrameLabel 'MC_F1':1], [FrameLabel 'MC_F5':5], [FrameLabel 'MC_F10':10], [FrameLabel 'MC_F15':15]
+currentScene: [Scene '', frames: 15, labels: [FrameLabel 'MC_F1':1], [FrameLabel 'MC_F5':5], [FrameLabel 'MC_F10':10], [FrameLabel 'MC_F15':15]]
+FRAME 8
+currentFrameLabel: null
+currentLabel: MC_F5
+currentLabels: [FrameLabel 'MC_F1':1], [FrameLabel 'MC_F5':5], [FrameLabel 'MC_F10':10], [FrameLabel 'MC_F15':15]
+currentScene: [Scene '', frames: 15, labels: [FrameLabel 'MC_F1':1], [FrameLabel 'MC_F5':5], [FrameLabel 'MC_F10':10], [FrameLabel 'MC_F15':15]]
+FRAME 9
+currentFrameLabel: null
+currentLabel: MC_F5
+currentLabels: [FrameLabel 'MC_F1':1], [FrameLabel 'MC_F5':5], [FrameLabel 'MC_F10':10], [FrameLabel 'MC_F15':15]
+currentScene: [Scene '', frames: 15, labels: [FrameLabel 'MC_F1':1], [FrameLabel 'MC_F5':5], [FrameLabel 'MC_F10':10], [FrameLabel 'MC_F15':15]]
+FRAME 10
+currentFrameLabel: MC_F10
+currentLabel: MC_F10
+currentLabels: [FrameLabel 'MC_F1':1], [FrameLabel 'MC_F5':5], [FrameLabel 'MC_F10':10], [FrameLabel 'MC_F15':15]
+currentScene: [Scene '', frames: 15, labels: [FrameLabel 'MC_F1':1], [FrameLabel 'MC_F5':5], [FrameLabel 'MC_F10':10], [FrameLabel 'MC_F15':15]]
+FRAME 11
+currentFrameLabel: null
+currentLabel: MC_F10
+currentLabels: [FrameLabel 'MC_F1':1], [FrameLabel 'MC_F5':5], [FrameLabel 'MC_F10':10], [FrameLabel 'MC_F15':15]
+currentScene: [Scene '', frames: 15, labels: [FrameLabel 'MC_F1':1], [FrameLabel 'MC_F5':5], [FrameLabel 'MC_F10':10], [FrameLabel 'MC_F15':15]]
+FRAME 12
+currentFrameLabel: null
+currentLabel: MC_F10
+currentLabels: [FrameLabel 'MC_F1':1], [FrameLabel 'MC_F5':5], [FrameLabel 'MC_F10':10], [FrameLabel 'MC_F15':15]
+currentScene: [Scene '', frames: 15, labels: [FrameLabel 'MC_F1':1], [FrameLabel 'MC_F5':5], [FrameLabel 'MC_F10':10], [FrameLabel 'MC_F15':15]]
+FRAME 13
+currentFrameLabel: null
+currentLabel: MC_F10
+currentLabels: [FrameLabel 'MC_F1':1], [FrameLabel 'MC_F5':5], [FrameLabel 'MC_F10':10], [FrameLabel 'MC_F15':15]
+currentScene: [Scene '', frames: 15, labels: [FrameLabel 'MC_F1':1], [FrameLabel 'MC_F5':5], [FrameLabel 'MC_F10':10], [FrameLabel 'MC_F15':15]]
+FRAME 14
+currentFrameLabel: null
+currentLabel: MC_F10
+currentLabels: [FrameLabel 'MC_F1':1], [FrameLabel 'MC_F5':5], [FrameLabel 'MC_F10':10], [FrameLabel 'MC_F15':15]
+currentScene: [Scene '', frames: 15, labels: [FrameLabel 'MC_F1':1], [FrameLabel 'MC_F5':5], [FrameLabel 'MC_F10':10], [FrameLabel 'MC_F15':15]]

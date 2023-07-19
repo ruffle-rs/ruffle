@@ -89,8 +89,28 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
         &self,
         name: impl Into<AvmString<'gc>>,
         activation: &mut Activation<'_, 'gc>,
+        is_slash_path: bool,
     ) -> Option<Value<'gc>> {
-        self.raw_script_object().get_local_stored(name, activation)
+        self.raw_script_object()
+            .get_local_stored(name, activation, is_slash_path)
+    }
+
+    /// Retrieve a named property from the object, or its prototype.
+    fn get_non_slash_path(
+        &self,
+        name: impl Into<AvmString<'gc>>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        // TODO: Extract logic to a `lookup` function.
+        let (this, proto) = if let Some(super_object) = self.as_super_object() {
+            (super_object.this(), super_object.proto(activation))
+        } else {
+            ((*self).into(), Value::Object((*self).into()))
+        };
+        match search_prototype(proto, name.into(), activation, this, false)? {
+            Some((value, _depth)) => Ok(value),
+            None => Ok(Value::Undefined),
+        }
     }
 
     /// Retrieve a named property from the object, or its prototype.
@@ -105,7 +125,7 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
         } else {
             ((*self).into(), Value::Object((*self).into()))
         };
-        match search_prototype(proto, name.into(), activation, this)? {
+        match search_prototype(proto, name.into(), activation, this, true)? {
             Some((value, _depth)) => Ok(value),
             None => Ok(Value::Undefined),
         }
@@ -127,7 +147,7 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
                 return Err(Error::PrototypeRecursionLimit);
             }
 
-            if let Some(value) = p.get_local_stored(name, activation) {
+            if let Some(value) = p.get_local_stored(name, activation, true) {
                 return Ok(value);
             }
 
@@ -257,10 +277,11 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
             }
         }
 
-        let (method, depth) = match search_prototype(Value::Object(this), name, activation, this)? {
-            Some((Value::Object(method), depth)) => (method, depth),
-            _ => return Ok(Value::Undefined),
-        };
+        let (method, depth) =
+            match search_prototype(Value::Object(this), name, activation, this, false)? {
+                Some((Value::Object(method), depth)) => (method, depth),
+                _ => return Ok(Value::Undefined),
+            };
 
         // If the method was found on the object itself, change `depth` as-if
         // the method was found on the object's prototype.
@@ -669,6 +690,7 @@ pub fn search_prototype<'gc>(
     name: AvmString<'gc>,
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
+    is_slash_path: bool,
 ) -> Result<Option<(Value<'gc>, u8)>, Error<'gc>> {
     let mut depth = 0;
 
@@ -697,7 +719,7 @@ pub fn search_prototype<'gc>(
             }
         }
 
-        if let Some(value) = p.get_local_stored(name, activation) {
+        if let Some(value) = p.get_local_stored(name, activation, is_slash_path) {
             return Ok(Some((value, depth)));
         }
 

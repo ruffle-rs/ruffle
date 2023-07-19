@@ -407,14 +407,14 @@ fn main() -> Result<()> {
     });
     let (adapter, device, queue) = futures::executor::block_on(request_adapter_and_device(
         opt.graphics.into(),
-        instance,
+        &instance,
         None,
         opt.power.into(),
         trace_path(&opt),
     ))
     .map_err(|e| anyhow!(e.to_string()))?;
 
-    let descriptors = Arc::new(Descriptors::new(adapter, device, queue));
+    let descriptors = Arc::new(Descriptors::new(instance, adapter, device, queue));
 
     if opt.swf.is_file() {
         capture_single_swf(descriptors, &opt)?;

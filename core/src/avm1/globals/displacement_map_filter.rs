@@ -177,9 +177,9 @@ impl<'gc> DisplacementMapFilter<'gc> {
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(Value::Object(object)) = value {
-            if let Some(x) = object.get_local_stored("x", activation) {
+            if let Some(x) = object.get_local_stored("x", activation, false) {
                 let x = x.coerce_to_f64(activation)?.clamp_to_i32();
-                if let Some(y) = object.get_local_stored("y", activation) {
+                if let Some(y) = object.get_local_stored("y", activation, false) {
                     let y = y.coerce_to_f64(activation)?.clamp_to_i32();
                     self.0.write(activation.context.gc_context).map_point = Point::new(x, y);
                 }

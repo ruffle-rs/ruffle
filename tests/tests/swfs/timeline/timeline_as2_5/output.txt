@@ -1,0 +1,4 @@
+gotoAndPlay
+stop
+play
+end

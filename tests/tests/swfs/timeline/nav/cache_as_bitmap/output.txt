@@ -1,0 +1,8 @@
+Element placed on frame 1
+Cache as bitmap: false
+New object placed on frame 2: false
+Cache as bitmap: true
+New object placed on frame 3: false
+Cache as bitmap: true
+New object placed on frame 1: false
+Cache as bitmap: false

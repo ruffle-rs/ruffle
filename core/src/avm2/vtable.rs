@@ -1,4 +1,5 @@
 use crate::avm2::activation::Activation;
+use crate::avm2::metadata::Metadata;
 use crate::avm2::method::Method;
 use crate::avm2::object::{ClassObject, FunctionObject, Object};
 use crate::avm2::property::{Property, PropertyClass};
@@ -13,6 +14,7 @@ use crate::avm2::QName;
 use crate::string::AvmString;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::Ref;
+use std::collections::HashMap;
 use std::ops::DerefMut;
 
 #[derive(Collect, Clone, Copy)]
@@ -32,10 +34,16 @@ pub struct VTableData<'gc> {
 
     resolved_traits: PropertyMap<'gc, Property>,
 
+    /// Use hashmaps for the metadata tables because metadata will rarely be present on traits
+    slot_metadata_table: HashMap<u32, Box<[Metadata<'gc>]>>,
+
+    disp_metadata_table: HashMap<u32, Box<[Metadata<'gc>]>>,
+
     /// Stores the `PropertyClass` for each slot,
     /// indexed by `slot_id`
     slot_classes: Vec<PropertyClass<'gc>>,
 
+    /// method_table is indexed by `disp_id`
     method_table: Vec<ClassBoundMethod<'gc>>,
 
     default_slots: Vec<Option<Value<'gc>>>,
@@ -61,6 +69,8 @@ impl<'gc> VTable<'gc> {
                 scope: None,
                 protected_namespace: None,
                 resolved_traits: PropertyMap::new(),
+                slot_metadata_table: HashMap::new(),
+                disp_metadata_table: HashMap::new(),
                 slot_classes: vec![],
                 method_table: vec![],
                 default_slots: vec![],
@@ -81,6 +91,8 @@ impl<'gc> VTable<'gc> {
                 scope: None,
                 protected_namespace: None,
                 resolved_traits: rt,
+                slot_metadata_table: HashMap::new(),
+                disp_metadata_table: HashMap::new(),
                 method_table: vec![],
                 // Compilers expect `setslot 1` to work on the `newcatch` object.
                 // `setslot 1` maps to index 1, so we need two slots here, because Ruffle
@@ -100,6 +112,14 @@ impl<'gc> VTable<'gc> {
 
     pub fn resolved_traits(&self) -> Ref<'_, PropertyMap<'gc, Property>> {
         Ref::map(self.0.read(), |v| &v.resolved_traits)
+    }
+
+    pub fn get_metadata_for_slot(&self, slot_id: &u32) -> Option<Box<[Metadata<'gc>]>> {
+        self.0.read().slot_metadata_table.get(slot_id).cloned()
+    }
+
+    pub fn get_metadata_for_disp(&self, disp_id: &u32) -> Option<Box<[Metadata<'gc>]>> {
+        self.0.read().disp_metadata_table.get(disp_id).cloned()
     }
 
     pub fn slot_class_name(
@@ -262,6 +282,8 @@ impl<'gc> VTable<'gc> {
 
         if let Some(superclass_vtable) = superclass_vtable {
             write.resolved_traits = superclass_vtable.0.read().resolved_traits.clone();
+            write.slot_metadata_table = superclass_vtable.0.read().slot_metadata_table.clone();
+            write.disp_metadata_table = superclass_vtable.0.read().disp_metadata_table.clone();
             write.slot_classes = superclass_vtable.0.read().slot_classes.clone();
             write.method_table = superclass_vtable.0.read().method_table.clone();
             write.default_slots = superclass_vtable.0.read().default_slots.clone();
@@ -283,8 +305,17 @@ impl<'gc> VTable<'gc> {
             }
         }
 
-        let (resolved_traits, method_table, default_slots, slot_classes) = (
+        let (
+            resolved_traits,
+            slot_metadata_table,
+            disp_metadata_table,
+            method_table,
+            default_slots,
+            slot_classes,
+        ) = (
             &mut write.resolved_traits,
+            &mut write.slot_metadata_table,
+            &mut write.disp_metadata_table,
             &mut write.method_table,
             &mut write.default_slots,
             &mut write.slot_classes,
@@ -300,8 +331,11 @@ impl<'gc> VTable<'gc> {
                     };
                     match resolved_traits.get(trait_data.name()) {
                         Some(Property::Method { disp_id, .. }) => {
-                            let disp_id = *disp_id as usize;
-                            method_table[disp_id] = entry;
+                            if let Some(metadata) = trait_data.metadata() {
+                                disp_metadata_table.insert(*disp_id, metadata);
+                            }
+
+                            method_table[*disp_id as usize] = entry;
                         }
                         // note: ideally overwriting other property types
                         // should be a VerifyError
@@ -310,6 +344,10 @@ impl<'gc> VTable<'gc> {
                             method_table.push(entry);
                             resolved_traits
                                 .insert(trait_data.name(), Property::new_method(disp_id));
+
+                            if let Some(metadata) = trait_data.metadata() {
+                                disp_metadata_table.insert(disp_id, metadata);
+                            }
                         }
                     }
                 }
@@ -323,19 +361,30 @@ impl<'gc> VTable<'gc> {
                         Some(Property::Virtual {
                             get: Some(disp_id), ..
                         }) => {
-                            let disp_id = *disp_id as usize;
-                            method_table[disp_id] = entry;
+                            if let Some(metadata) = trait_data.metadata() {
+                                disp_metadata_table.insert(*disp_id, metadata);
+                            }
+
+                            method_table[*disp_id as usize] = entry;
                         }
                         Some(Property::Virtual { get, .. }) => {
                             let disp_id = method_table.len() as u32;
                             *get = Some(disp_id);
                             method_table.push(entry);
+
+                            if let Some(metadata) = trait_data.metadata() {
+                                disp_metadata_table.insert(disp_id, metadata);
+                            }
                         }
                         _ => {
                             let disp_id = method_table.len() as u32;
                             method_table.push(entry);
                             resolved_traits
                                 .insert(trait_data.name(), Property::new_getter(disp_id));
+
+                            if let Some(metadata) = trait_data.metadata() {
+                                disp_metadata_table.insert(disp_id, metadata);
+                            }
                         }
                     }
                 }
@@ -349,18 +398,30 @@ impl<'gc> VTable<'gc> {
                         Some(Property::Virtual {
                             set: Some(disp_id), ..
                         }) => {
+                            if let Some(metadata) = trait_data.metadata() {
+                                disp_metadata_table.insert(*disp_id, metadata);
+                            }
+
                             method_table[*disp_id as usize] = entry;
                         }
                         Some(Property::Virtual { set, .. }) => {
                             let disp_id = method_table.len() as u32;
                             method_table.push(entry);
                             *set = Some(disp_id);
+
+                            if let Some(metadata) = trait_data.metadata() {
+                                disp_metadata_table.insert(disp_id, metadata);
+                            }
                         }
                         _ => {
                             let disp_id = method_table.len() as u32;
                             method_table.push(entry);
                             resolved_traits
                                 .insert(trait_data.name(), Property::new_setter(disp_id));
+
+                            if let Some(metadata) = trait_data.metadata() {
+                                disp_metadata_table.insert(disp_id, metadata);
+                            }
                         }
                     }
                 }
@@ -435,6 +496,11 @@ impl<'gc> VTable<'gc> {
                     };
 
                     resolved_traits.insert(trait_data.name(), new_prop);
+
+                    if let Some(metadata) = trait_data.metadata() {
+                        slot_metadata_table.insert(new_slot_id, metadata);
+                    }
+
                     slot_classes[new_slot_id as usize] = new_class;
                 }
             }

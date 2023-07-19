@@ -58,7 +58,7 @@ impl GuiController {
         let surface = unsafe { instance.create_surface(window.as_ref()) }?;
         let (adapter, device, queue) = futures::executor::block_on(request_adapter_and_device(
             backend,
-            instance,
+            &instance,
             Some(&surface),
             opt.power.into(),
             opt.trace_path(),
@@ -83,7 +83,7 @@ impl GuiController {
                 view_formats: Default::default(),
             },
         );
-        let descriptors = Descriptors::new(adapter, device, queue);
+        let descriptors = Descriptors::new(instance, adapter, device, queue);
         let egui_ctx = Context::default();
         if let Some(Theme::Light) = window.theme() {
             egui_ctx.set_visuals(egui::Visuals::light());

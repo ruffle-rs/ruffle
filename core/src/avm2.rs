@@ -39,6 +39,7 @@ mod filters;
 mod flv;
 mod function;
 pub mod globals;
+mod metadata;
 mod method;
 mod multiname;
 mod namespace;

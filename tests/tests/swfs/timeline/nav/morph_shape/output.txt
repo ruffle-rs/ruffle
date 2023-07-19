@@ -1,0 +1,4 @@
+Element placed on frame 1
+New object placed on frame 2: false
+New object placed on frame 3: false
+New object placed on frame 1: true

@@ -485,8 +485,10 @@ pub trait TDisplayObjectContainer<'gc>:
                 context.commands.push_mask();
                 child.render(context);
                 context.commands.activate_mask();
-            } else if child.visible() {
-                // Normal child.
+            } else if child.visible() || context.commands.drawing_mask() {
+                // Either a normal visible child, or a descendant of a mask object
+                // that we're drawing. The 'visible' flag is ignored for all descendants
+                // of a mask.
                 child.render(context);
             }
         }

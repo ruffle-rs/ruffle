@@ -40,5 +40,19 @@
     "type": "MouseUp",
     "pos": [68, 55],
     "btn": "Left"
+  },
+  {
+    "type": "MouseMove",
+    "pos": [76, 38]
+  },
+  {
+    "type": "MouseDown",
+    "pos": [76, 38],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseUp",
+    "pos": [76, 38],
+    "btn": "Left"
   }
 ]

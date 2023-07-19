@@ -1,5 +1,6 @@
 //! `flash.utils` namespace
 
+use crate::avm2::metadata::Metadata;
 use crate::avm2::method::Method;
 use crate::avm2::object::TObject;
 use crate::avm2::property::Property;
@@ -398,11 +399,17 @@ fn describe_internal_body<'gc>(
                     _ => unreachable!(),
                 };
 
+                let trait_metadata = vtable.get_metadata_for_slot(slot_id);
+
                 write!(
                     xml_string,
-                    "<{elem_name} name=\"{prop_name}\" type=\"{prop_class_name}\"/>"
+                    "<{elem_name} name=\"{prop_name}\" type=\"{prop_class_name}\">"
                 )
                 .unwrap();
+                if let Some(metadata) = trait_metadata {
+                    write_metadata(&mut xml_string, &metadata);
+                }
+                write!(xml_string, "</{elem_name}>").unwrap();
             }
             Property::Method { disp_id } => {
                 let method = vtable
@@ -419,8 +426,13 @@ fn describe_internal_body<'gc>(
                     .name()
                     .to_qualified_name(activation.context.gc_context);
 
+                let trait_metadata = vtable.get_metadata_for_disp(disp_id);
+
                 write!(xml_string, "<method name=\"{prop_name}\" declaredBy=\"{declared_by}\" returnType=\"{return_type_name}\">").unwrap();
                 write_params(&mut xml_string, &method.method, activation);
+                if let Some(metadata) = trait_metadata {
+                    write_metadata(&mut xml_string, &metadata);
+                }
                 xml_string += "</method>";
             }
             Property::Virtual { get, set } => {
@@ -432,7 +444,7 @@ fn describe_internal_body<'gc>(
                 };
 
                 // For getters, obtain the type by looking at the getter return type.
-                // For setters, obtain the type by looking at the setter's  first parameter.
+                // For setters, obtain the type by looking at the setter's first parameter.
                 let (method_type, defining_class) = if let Some(get) = get {
                     let getter = vtable
                         .get_full_method(*get)
@@ -458,7 +470,21 @@ fn describe_internal_body<'gc>(
                     .name()
                     .to_qualified_name(activation.context.gc_context);
 
-                write!(xml_string, "<accessor name=\"{prop_name}\" access=\"{access}\" type=\"{accessor_type}\" declaredBy=\"{declared_by}\"/>").unwrap();
+                write!(xml_string, "<accessor name=\"{prop_name}\" access=\"{access}\" type=\"{accessor_type}\" declaredBy=\"{declared_by}\">").unwrap();
+
+                if let Some(get_disp_id) = get {
+                    if let Some(metadata) = vtable.get_metadata_for_disp(get_disp_id) {
+                        write_metadata(&mut xml_string, &metadata);
+                    }
+                }
+
+                if let Some(set_disp_id) = set {
+                    if let Some(metadata) = vtable.get_metadata_for_disp(set_disp_id) {
+                        write_metadata(&mut xml_string, &metadata);
+                    }
+                }
+
+                write!(xml_string, "</accessor>").unwrap();
             }
         }
     }
@@ -496,5 +522,11 @@ fn write_params<'gc>(
             "<parameter index=\"{index}\" type=\"{param_type_name}\" optional=\"{optional}\"/>"
         )
         .unwrap();
+    }
+}
+
+fn write_metadata(xml_string: &mut String, trait_metadata: &[Metadata<'_>]) {
+    for single_trait in trait_metadata.iter() {
+        write!(xml_string, "{}", single_trait.as_xml_string()).unwrap();
     }
 }

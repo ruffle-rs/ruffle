@@ -15,20 +15,22 @@ use std::sync::{Arc, OnceLock};
    but for `cargo nextest run` it's a big cost per test if it's not going to use it.
 */
 
-fn create_wgpu_device() -> Option<(wgpu::Adapter, wgpu::Device, wgpu::Queue)> {
+fn create_wgpu_device() -> Option<(wgpu::Instance, wgpu::Adapter, wgpu::Device, wgpu::Queue)> {
+    let instance = wgpu::Instance::new(Default::default());
     futures::executor::block_on(request_adapter_and_device(
         wgpu::Backends::all(),
-        wgpu::Instance::new(Default::default()),
+        &instance,
         None,
         Default::default(),
         None,
     ))
     .ok()
+    .map(|(adapter, device, queue)| (instance, adapter, device, queue))
 }
 
 fn build_wgpu_descriptors() -> Option<Arc<Descriptors>> {
-    if let Some((adapter, device, queue)) = create_wgpu_device() {
-        Some(Arc::new(Descriptors::new(adapter, device, queue)))
+    if let Some((instance, adapter, device, queue)) = create_wgpu_device() {
+        Some(Arc::new(Descriptors::new(instance, adapter, device, queue)))
     } else {
         None
     }

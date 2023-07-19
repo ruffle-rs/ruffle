@@ -85,7 +85,7 @@ function buildWasm(profile, filename, optimise, extensions) {
         flags: wasmBindgenFlags,
     });
     if (optimise) {
-        console.log(`Running wasn-opt on ${flavor}...`);
+        console.log(`Running wasm-opt on ${flavor}...`);
         runWasmOpt({
             path: `dist/${filename}_bg.wasm`,
             flags: wasmOptFlags,

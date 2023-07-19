@@ -3050,6 +3050,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
             };
 
             if let Some(masker) = self.masker() {
+                // FIXME - should this really use `SKIP_INVISIBLE`? Avm2 doesn't.
                 if !masker.hit_test_shape(context, point, HitTestOptions::SKIP_INVISIBLE) {
                     return None;
                 }
@@ -3137,7 +3138,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
             };
 
             if let Some(masker) = self.masker() {
-                if !masker.hit_test_shape(context, point, HitTestOptions::SKIP_INVISIBLE) {
+                if !masker.hit_test_shape(context, point, HitTestOptions::empty()) {
                     return Avm2MousePick::Miss;
                 }
             }
