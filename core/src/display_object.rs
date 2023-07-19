@@ -1550,7 +1550,7 @@ pub trait TDisplayObject<'gc>:
     fn set_visible(&self, gc_context: MutationContext<'gc, '_>, value: bool) {
         if self.base_mut(gc_context).set_visible(value) {
             if let Some(parent) = self.parent() {
-                // We don't need to invalidate ourselves, we're just toggling if it's rendered.
+                // We don't need to invalidate ourselves, we're just toggling if the bitmap is rendered.
                 parent.invalidate_cached_bitmap(gc_context);
             }
         }
@@ -1566,9 +1566,13 @@ pub trait TDisplayObject<'gc>:
     /// Values other than the default `BlendMode::Normal` implicitly cause cache-as-bitmap behavior.
     fn set_blend_mode(&self, gc_context: MutationContext<'gc, '_>, value: BlendMode) {
         if self.base_mut(gc_context).set_blend_mode(value) {
-            // Note that Flash does not always invalidate on changing the blend mode;
-            // but that's a bug we don't need to copy :)
-            self.invalidate_cached_bitmap(gc_context);
+            if let Some(parent) = self.parent() {
+                // We don't need to invalidate ourselves, we're just toggling how the bitmap is rendered.
+
+                // Note that Flash does not always invalidate on changing the blend mode;
+                // but that's a bug we don't need to copy :)
+                parent.invalidate_cached_bitmap(gc_context);
+            }
         }
     }
 
