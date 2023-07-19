@@ -59,6 +59,17 @@ impl Filter {
             _ => {}
         }
     }
+
+    /// Checks if this filter is impotent.
+    /// Impotent filters will have no effect if applied, and can safely be skipped.
+    pub fn impotent(&self) -> bool {
+        // TODO: There's more cases here, find them!
+        match self {
+            Filter::BlurFilter(filter) => filter.impotent(),
+            Filter::ColorMatrixFilter(filter) => filter.impotent(),
+            _ => false,
+        }
+    }
 }
 
 impl From<&swf::Filter> for Filter {

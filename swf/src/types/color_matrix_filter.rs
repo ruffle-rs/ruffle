@@ -15,3 +15,9 @@ impl Default for ColorMatrixFilter {
         }
     }
 }
+
+impl ColorMatrixFilter {
+    pub fn impotent(&self) -> bool {
+        self == &Default::default()
+    }
+}

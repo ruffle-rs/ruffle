@@ -18,6 +18,10 @@ impl BlurFilter {
         self.blur_x *= Fixed16::from_f32(x);
         self.blur_y *= Fixed16::from_f32(y);
     }
+
+    pub fn impotent(&self) -> bool {
+        self.blur_x == Fixed16::ZERO && self.blur_y == Fixed16::ZERO
+    }
 }
 
 bitflags! {
