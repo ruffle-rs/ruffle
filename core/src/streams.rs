@@ -24,7 +24,6 @@ use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_render::bitmap::BitmapInfo;
 use ruffle_video::frame::EncodedFrame;
 use ruffle_video::VideoStreamHandle;
-use ruffle_wstr::WStr;
 use std::cmp::max;
 use std::io::Seek;
 use std::sync::{Arc, Mutex};
@@ -713,66 +712,43 @@ impl<'gc> NetStream<'gc> {
     ) -> Result<(), Avm2Error<'gc>> {
         match avm_object {
             Some(AvmObject::Avm1(object)) => {
-                match variable_name {
-                    b"onCuePoint" | b"onMetaData" => {
-                        let avm_string_name =
-                            AvmString::new_utf8_bytes(context.gc_context, variable_name);
+                let avm_string_name = AvmString::new_utf8_bytes(context.gc_context, variable_name);
 
-                        let root = context.stage.root_clip().expect("root");
-                        let mut activation = Avm1Activation::from_nothing(
-                            context.reborrow(),
-                            Avm1ActivationIdentifier::root(format!("[FLV {}]", avm_string_name)),
-                            root,
-                        );
+                let root = context.stage.root_clip().expect("root");
+                let mut activation = Avm1Activation::from_nothing(
+                    context.reborrow(),
+                    Avm1ActivationIdentifier::root(format!("[FLV {}]", avm_string_name)),
+                    root,
+                );
 
-                        let avm1_object_value = variable_data.to_avm1_value(&mut activation);
+                let avm1_object_value = variable_data.to_avm1_value(&mut activation);
 
-                        if let Err(e) = object.call_method(
-                            avm_string_name,
-                            &[avm1_object_value],
-                            &mut activation,
-                            Avm1ExecutionReason::Special,
-                        ) {
-                            tracing::error!(
-                                "Got error when dispatching AVM1 onCuePoint event from NetStream: {}",
-                                e
-                            );
-                        }
-                    }
-                    b"onXMPData" => {
-                        tracing::warn!("Stub: FLV stream data onXMPData for AVM1");
-                    }
-                    _ => {
-                        tracing::warn!(
-                            "Stub: FLV stream data {} for AVM1",
-                            WStr::from_units(variable_name)
-                        );
-                    }
-                };
+                if let Err(e) = object.call_method(
+                    avm_string_name,
+                    &[avm1_object_value],
+                    &mut activation,
+                    Avm1ExecutionReason::Special,
+                ) {
+                    tracing::error!(
+                        "Got error when dispatching AVM1 {} script data handler from NetStream: {}",
+                        avm_string_name,
+                        e,
+                    );
+                }
             }
             Some(AvmObject::Avm2(_object)) => {
-                match variable_name {
-                    b"onCuePoint" | b"onMetaData" => {
-                        let mut activation = Avm2Activation::from_nothing(context.reborrow());
-                        let client_object = self.client().expect(
-                            "Client should be initialized if script data is being accessed",
-                        );
+                let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                let client_object = self
+                    .client()
+                    .expect("Client should be initialized if script data is being accessed");
 
-                        let data_object = variable_data.to_avm2_value(&mut activation);
+                let data_object = variable_data.to_avm2_value(&mut activation);
 
-                        client_object.call_public_property(
-                            AvmString::new_utf8_bytes(activation.context.gc_context, variable_name),
-                            &[data_object],
-                            &mut activation,
-                        )?;
-                    }
-                    _ => {
-                        tracing::warn!(
-                            "Stub: FLV stream data {} for AVM2",
-                            WStr::from_units(variable_name)
-                        );
-                    }
-                };
+                client_object.call_public_property(
+                    AvmString::new_utf8_bytes(activation.context.gc_context, variable_name),
+                    &[data_object],
+                    &mut activation,
+                )?;
             }
             None => {}
         };
