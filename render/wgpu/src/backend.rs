@@ -991,9 +991,12 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         if width == 0 || height == 0 {
             return Err(BitmapError::InvalidSize);
         }
-        if width > self.descriptors.limits.max_texture_dimension_2d
-            || height > self.descriptors.limits.max_texture_dimension_2d
-        {
+
+        // NOTE: this used to compare with self.descriptors.limits.max_texture_dimension_2d
+        // but in practice, some very large cached bitmaps introduce
+        // slowness and extreme resource use, so for now we're using a hardcoded value.
+        // This fixes slowdowns and (hopefully) crashes in Winnie the Pooh's Home Run Derby.
+        if width > 4096 || height > 4096 {
             return Err(BitmapError::TooLarge);
         }
 
