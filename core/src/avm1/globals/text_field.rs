@@ -9,7 +9,7 @@ use crate::display_object::{AutoSizeMode, EditText, TDisplayObject, TextSelectio
 use crate::font::round_down_to_pixel;
 use crate::html::TextFormat;
 use crate::string::{AvmString, WStr};
-use gc_arena::GcCell;
+use gc_arena::Gc;
 use swf::Color;
 
 macro_rules! tf_method {
@@ -137,7 +137,7 @@ fn new_text_format<'gc>(
     let object = ScriptObject::new(activation.context.gc_context, Some(proto));
     object.set_native(
         activation.context.gc_context,
-        NativeObject::TextFormat(GcCell::new(activation.context.gc_context, text_format)),
+        NativeObject::TextFormat(Gc::new(activation.context.gc_context, text_format.into())),
     );
     object
 }
@@ -158,7 +158,7 @@ fn set_new_text_format<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let [Value::Object(text_format), ..] = args {
         if let NativeObject::TextFormat(text_format) = text_format.native() {
-            text_field.set_new_text_format(text_format.read().clone(), &mut activation.context);
+            text_field.set_new_text_format(text_format.borrow().clone(), &mut activation.context);
         }
     }
 
@@ -221,7 +221,7 @@ fn set_text_format<'gc>(
             text_field.set_text_format(
                 begin_index,
                 end_index,
-                text_format.read().clone(),
+                text_format.borrow().clone(),
                 &mut activation.context,
             );
         }

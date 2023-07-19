@@ -34,7 +34,7 @@ pub fn set_align<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut text_format) = this.as_text_format_mut(activation.context.gc_context) {
+    if let Some(mut text_format) = this.as_text_format_mut() {
         let value = args.get(0).unwrap_or(&Value::Undefined);
         let value = match value {
             Value::Undefined | Value::Null => {
@@ -80,7 +80,7 @@ pub fn set_block_indent<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut text_format) = this.as_text_format_mut(activation.context.gc_context) {
+    if let Some(mut text_format) = this.as_text_format_mut() {
         let value = args.get(0).unwrap_or(&Value::Undefined);
         text_format.block_indent = match value {
             Value::Undefined | Value::Null => None,
@@ -107,11 +107,11 @@ pub fn get_bold<'gc>(
 }
 
 pub fn set_bold<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut text_format) = this.as_text_format_mut(activation.context.gc_context) {
+    if let Some(mut text_format) = this.as_text_format_mut() {
         let value = args.get(0).unwrap_or(&Value::Undefined);
         text_format.bold = match value {
             Value::Undefined | Value::Null => None,
@@ -138,11 +138,11 @@ pub fn get_bullet<'gc>(
 }
 
 pub fn set_bullet<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut text_format) = this.as_text_format_mut(activation.context.gc_context) {
+    if let Some(mut text_format) = this.as_text_format_mut() {
         let value = args.get(0).unwrap_or(&Value::Undefined);
         text_format.bullet = match value {
             Value::Undefined | Value::Null => None,
@@ -173,7 +173,7 @@ pub fn set_color<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut text_format) = this.as_text_format_mut(activation.context.gc_context) {
+    if let Some(mut text_format) = this.as_text_format_mut() {
         let value = args.get(0).unwrap_or(&Value::Undefined);
         text_format.color = match value {
             Value::Undefined | Value::Null => None,
@@ -221,7 +221,7 @@ pub fn set_font<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut text_format) = this.as_text_format_mut(activation.context.gc_context) {
+    if let Some(mut text_format) = this.as_text_format_mut() {
         let value = args.get(0).unwrap_or(&Value::Undefined);
         text_format.font = match value {
             Value::Undefined | Value::Null => None,
@@ -252,7 +252,7 @@ pub fn set_indent<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut text_format) = this.as_text_format_mut(activation.context.gc_context) {
+    if let Some(mut text_format) = this.as_text_format_mut() {
         let value = args.get(0).unwrap_or(&Value::Undefined);
         text_format.indent = match value {
             Value::Undefined | Value::Null => None,
@@ -279,11 +279,11 @@ pub fn get_italic<'gc>(
 }
 
 pub fn set_italic<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut text_format) = this.as_text_format_mut(activation.context.gc_context) {
+    if let Some(mut text_format) = this.as_text_format_mut() {
         let value = args.get(0).unwrap_or(&Value::Undefined);
         text_format.italic = match value {
             Value::Undefined | Value::Null => None,
@@ -310,11 +310,11 @@ pub fn get_kerning<'gc>(
 }
 
 pub fn set_kerning<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut text_format) = this.as_text_format_mut(activation.context.gc_context) {
+    if let Some(mut text_format) = this.as_text_format_mut() {
         let value = args.get(0).unwrap_or(&Value::Undefined);
         text_format.kerning = match value {
             Value::Undefined | Value::Null => None,
@@ -345,7 +345,7 @@ pub fn set_leading<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut text_format) = this.as_text_format_mut(activation.context.gc_context) {
+    if let Some(mut text_format) = this.as_text_format_mut() {
         let value = args.get(0).unwrap_or(&Value::Undefined);
         text_format.leading = match value {
             Value::Undefined | Value::Null => None,
@@ -376,7 +376,7 @@ pub fn set_left_margin<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut text_format) = this.as_text_format_mut(activation.context.gc_context) {
+    if let Some(mut text_format) = this.as_text_format_mut() {
         let value = args.get(0).unwrap_or(&Value::Undefined);
         text_format.left_margin = match value {
             Value::Undefined | Value::Null => None,
@@ -407,7 +407,7 @@ pub fn set_letter_spacing<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut text_format) = this.as_text_format_mut(activation.context.gc_context) {
+    if let Some(mut text_format) = this.as_text_format_mut() {
         let value = args.get(0).unwrap_or(&Value::Undefined);
         text_format.letter_spacing = match value {
             Value::Undefined | Value::Null => None,
@@ -438,7 +438,7 @@ pub fn set_right_margin<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut text_format) = this.as_text_format_mut(activation.context.gc_context) {
+    if let Some(mut text_format) = this.as_text_format_mut() {
         let value = args.get(0).unwrap_or(&Value::Undefined);
         text_format.right_margin = match value {
             Value::Undefined | Value::Null => None,
@@ -469,7 +469,7 @@ pub fn set_size<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut text_format) = this.as_text_format_mut(activation.context.gc_context) {
+    if let Some(mut text_format) = this.as_text_format_mut() {
         let value = args.get(0).unwrap_or(&Value::Undefined);
         text_format.size = match value {
             Value::Undefined | Value::Null => None,
@@ -503,7 +503,7 @@ pub fn set_tab_stops<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut text_format) = this.as_text_format_mut(activation.context.gc_context) {
+    if let Some(mut text_format) = this.as_text_format_mut() {
         let value = args.get(0).unwrap_or(&Value::Undefined);
         text_format.tab_stops = match value {
             Value::Undefined | Value::Null => None,
@@ -547,7 +547,7 @@ pub fn set_target<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut text_format) = this.as_text_format_mut(activation.context.gc_context) {
+    if let Some(mut text_format) = this.as_text_format_mut() {
         let value = args.get(0).unwrap_or(&Value::Undefined);
         text_format.target = match value {
             Value::Undefined | Value::Null => None,
@@ -574,11 +574,11 @@ pub fn get_underline<'gc>(
 }
 
 pub fn set_underline<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut text_format) = this.as_text_format_mut(activation.context.gc_context) {
+    if let Some(mut text_format) = this.as_text_format_mut() {
         let value = args.get(0).unwrap_or(&Value::Undefined);
         text_format.underline = match value {
             Value::Undefined | Value::Null => None,
@@ -608,7 +608,7 @@ pub fn set_url<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut text_format) = this.as_text_format_mut(activation.context.gc_context) {
+    if let Some(mut text_format) = this.as_text_format_mut() {
         let value = args.get(0).unwrap_or(&Value::Undefined);
         text_format.url = match value {
             Value::Undefined | Value::Null => None,

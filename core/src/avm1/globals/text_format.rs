@@ -9,13 +9,13 @@ use crate::display_object::{AutoSizeMode, EditText, TDisplayObject};
 use crate::ecma_conversions::round_to_even;
 use crate::html::TextFormat;
 use crate::string::{AvmString, WStr};
-use gc_arena::GcCell;
+use gc_arena::Gc;
 
 macro_rules! getter {
     ($name:ident) => {
         |activation, this, _args| {
             if let NativeObject::TextFormat(text_format) = this.native() {
-                return Ok($name(activation, &text_format.read()));
+                return Ok($name(activation, &text_format.borrow()));
             }
             Ok(Value::Undefined)
         }
@@ -27,11 +27,7 @@ macro_rules! setter {
         |activation, this, args| {
             if let NativeObject::TextFormat(text_format) = this.native() {
                 let value = args.get(0).unwrap_or(&Value::Undefined);
-                $name(
-                    activation,
-                    &mut text_format.write(activation.context.gc_context),
-                    value,
-                )?;
+                $name(activation, &mut text_format.borrow_mut(), value)?;
             }
             Ok(Value::Undefined)
         }
@@ -42,7 +38,7 @@ macro_rules! method {
     ($name:ident) => {
         |activation, this, args| {
             if let NativeObject::TextFormat(text_format) = this.native() {
-                return $name(activation, &text_format.read(), args);
+                return $name(activation, &text_format.borrow(), args);
             }
             Ok(Value::Undefined)
         }
@@ -74,7 +70,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
 
 fn font<'gc>(activation: &mut Activation<'_, 'gc>, text_format: &TextFormat) -> Value<'gc> {
     text_format.font.as_ref().map_or(Value::Null, |font| {
-        AvmString::new(activation.context.gc_context, font.clone()).into()
+        AvmString::new(activation.gc(), font.clone()).into()
     })
 }
 
@@ -130,7 +126,7 @@ fn set_color<'gc>(
 
 fn url<'gc>(activation: &mut Activation<'_, 'gc>, text_format: &TextFormat) -> Value<'gc> {
     text_format.url.as_ref().map_or(Value::Null, |url| {
-        AvmString::new(activation.context.gc_context, url.clone()).into()
+        AvmString::new(activation.gc(), url.clone()).into()
     })
 }
 
@@ -148,7 +144,7 @@ fn set_url<'gc>(
 
 fn target<'gc>(activation: &mut Activation<'_, 'gc>, text_format: &TextFormat) -> Value<'gc> {
     text_format.target.as_ref().map_or(Value::Null, |target| {
-        AvmString::new(activation.context.gc_context, target.clone()).into()
+        AvmString::new(activation.gc(), target.clone()).into()
     })
 }
 
@@ -366,7 +362,7 @@ fn tab_stops<'gc>(activation: &mut Activation<'_, 'gc>, text_format: &TextFormat
         .as_ref()
         .map_or(Value::Null, |tab_stops| {
             ArrayObject::new(
-                activation.context.gc_context,
+                activation.gc(),
                 activation.context.avm1.prototypes().array,
                 tab_stops.iter().map(|&x| x.into()),
             )
@@ -500,7 +496,7 @@ fn get_text_extent<'gc>(
     temp_edittext.set_new_text_format(text_format.clone(), &mut activation.context);
     temp_edittext.set_text(&text, &mut activation.context);
 
-    let result = ScriptObject::new(activation.context.gc_context, None);
+    let result = ScriptObject::new(activation.gc(), None);
     let metrics = temp_edittext
         .layout_metrics(None)
         .expect("All text boxes should have at least one line at all times");
@@ -608,8 +604,8 @@ pub fn constructor<'gc>(
         args.get(12).unwrap_or(&Value::Undefined),
     )?;
     this.set_native(
-        activation.context.gc_context,
-        NativeObject::TextFormat(GcCell::new(activation.context.gc_context, text_format)),
+        activation.gc(),
+        NativeObject::TextFormat(Gc::new(activation.gc(), text_format.into())),
     );
     Ok(this.into())
 }
@@ -620,7 +616,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = ScriptObject::new(context.gc_context, Some(proto));
+    let object = ScriptObject::new(context.gc(), Some(proto));
     define_properties_on(PROTO_DECLS, context, object, fn_proto);
     object.into()
 }
