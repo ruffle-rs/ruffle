@@ -585,7 +585,7 @@ macro_rules! __wstr_impl_internal {
         impl<$($generics)*> ::core::cmp::PartialOrd<$ty> for $ty {
             #[inline]
             fn partial_cmp(&self, other: &$ty) -> Option<::core::cmp::Ordering> {
-                Some(::core::cmp::Ord::cmp(self, other))
+                Some(self.cmp(other))
             }
         }
 
