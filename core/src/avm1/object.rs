@@ -28,7 +28,7 @@ use crate::string::AvmString;
 use crate::xml::XmlNode;
 use gc_arena::{Collect, Gc, GcCell, Mutation};
 use ruffle_macros::enum_trait_object;
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::fmt::Debug;
 
 pub mod array_object;
@@ -55,7 +55,7 @@ pub enum NativeObject<'gc> {
     GradientGlowFilter(GradientFilter<'gc>),
     ColorTransform(GcCell<'gc, ColorTransformObject>),
     Transform(TransformObject<'gc>),
-    TextFormat(GcCell<'gc, TextFormat>),
+    TextFormat(Gc<'gc, RefCell<TextFormat>>),
     NetStream(NetStream<'gc>),
     BitmapData(BitmapDataWrapper<'gc>),
     Xml(Xml<'gc>),
