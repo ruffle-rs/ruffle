@@ -23,9 +23,7 @@ package flash.net {
             stub_method("flash.net.LocalConnection", "connect");
         }
 
-        public function send(connectionName: String, methodName: String, ... arguments): void {
-            stub_method("flash.net.LocalConnection", "send");
-        }
+        public native function send(connectionName: String, methodName: String, ... arguments);
 
         public function allowDomain(... domains): void {
             stub_method("flash.net.LocalConnection", "allowDomain");
