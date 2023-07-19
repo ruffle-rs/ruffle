@@ -1242,11 +1242,15 @@ impl<'a> ShaderBuilder<'a> {
                             });
                             self.pad_result(res, src_reg.is_scalar())
                         }
-                        Opcode::Equal | Opcode::NotEqual | Opcode::LessThan => {
+                        Opcode::Equal
+                        | Opcode::NotEqual
+                        | Opcode::LessThan
+                        | Opcode::LessThanEqual => {
                             let bin_op: BinaryOperator = match opcode {
                                 Opcode::Equal => BinaryOperator::Equal,
                                 Opcode::NotEqual => BinaryOperator::NotEqual,
                                 Opcode::LessThan => BinaryOperator::Less,
+                                Opcode::LessThanEqual => BinaryOperator::LessEqual,
                                 _ => unreachable!(),
                             };
                             let left = self.load_src_register(&dst)?;
