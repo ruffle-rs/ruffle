@@ -6,7 +6,8 @@ use crate::avm1::{Activation, Error, Object, ScriptObject, TObject, Value};
 use crate::context::GcContext;
 use crate::locale::{get_current_date_time, get_timezone};
 use crate::string::AvmString;
-use gc_arena::{Collect, GcCell};
+use gc_arena::Gc;
+use std::cell::Cell;
 use std::fmt;
 
 #[inline]
@@ -20,8 +21,7 @@ fn rem_euclid_i32(lhs: f64, rhs: i32) -> i32 {
 }
 
 /// Date and time, represented by milliseconds since epoch.
-#[derive(Clone, PartialEq, PartialOrd, Debug, Collect)]
-#[collect(require_static)]
+#[derive(Copy, Clone, PartialEq, PartialOrd, Debug)]
 #[repr(transparent)]
 pub struct Date(f64);
 
@@ -181,7 +181,7 @@ impl Date {
 
     /// Get timezone offset in minutes.
     fn timezone_offset(&self) -> f64 {
-        (self.0 - self.clone().local().0) / f64::from(Self::MS_PER_MINUTE)
+        (self.0 - self.local().0) / f64::from(Self::MS_PER_MINUTE)
     }
 
     /// ECMA-262 HourFromTime - Get hours (0-23).
@@ -371,8 +371,8 @@ fn constructor<'gc>(
         }
     };
     this.set_native(
-        activation.context.gc_context,
-        NativeObject::Date(GcCell::new(activation.context.gc_context, date)),
+        activation.gc(),
+        NativeObject::Date(Gc::new(activation.gc(), Cell::new(date))),
     );
     Ok(this.into())
 }
@@ -383,11 +383,7 @@ fn function<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(AvmString::new_utf8(
-        activation.context.gc_context,
-        Date::now().local().to_string(),
-    )
-    .into())
+    Ok(AvmString::new_utf8(activation.gc(), Date::now().local().to_string()).into())
 }
 
 /// ECMA-262 Date.UTC
@@ -451,20 +447,21 @@ fn method<'gc>(
         _ => {}
     }
 
-    let date = match this.native() {
+    let date_ref = match this.native() {
         NativeObject::Date(date) => date,
         _ => return Ok(Value::Undefined),
     };
-    let mut date_ref = date.write(activation.context.gc_context);
+    let date = date_ref.get();
 
     match index {
-        GET_TIME => return Ok(date_ref.time().into()),
+        GET_TIME => return Ok(date.time().into()),
         SET_TIME => {
             let timestamp = args.first().copied().unwrap_or(f64::NAN);
-            *date_ref = Date(timestamp).clip();
-            return Ok(date_ref.time().into());
+            let new_date = Date(timestamp).clip();
+            date_ref.set(new_date);
+            return Ok(new_date.time().into());
         }
-        GET_TIMEZONE_OFFSET => return Ok(date_ref.timezone_offset().into()),
+        GET_TIMEZONE_OFFSET => return Ok(date.timezone_offset().into()),
         _ => {}
     }
 
@@ -479,7 +476,7 @@ fn method<'gc>(
         index,
         GET_FULL_YEAR..=GET_MILLISECONDS | GET_TIME | GET_TIMEZONE_OFFSET
     );
-    if is_get && date_ref.time().is_nan() {
+    if is_get && date.time().is_nan() {
         return Ok(f64::NAN.into());
     }
 
@@ -496,19 +493,16 @@ fn method<'gc>(
             .or_else(|| (i == index).then_some(f64::NAN))
     };
 
-    let date = if is_utc {
-        date_ref.clone()
-    } else {
-        date_ref.clone().local()
-    };
+    let date = if is_utc { date } else { date.local() };
 
-    let mut set_date = |day: f64, time: f64| {
+    let set_date = |day: f64, time: f64| {
         let mut date = Date::make_date(day, time);
         if !is_utc {
             date = date.utc();
         }
-        *date_ref = date.clip();
-        date_ref.time()
+        date = date.clip();
+        date_ref.set(date);
+        date.time()
     };
 
     Ok(match index {
@@ -567,7 +561,7 @@ fn method<'gc>(
             )
             .into()
         }
-        TO_STRING => AvmString::new_utf8(activation.context.gc_context, date.to_string()).into(),
+        TO_STRING => AvmString::new_utf8(activation.gc(), date.to_string()).into(),
         GET_TIME..=GET_TIMEZONE_OFFSET | SET_YEAR.. => unreachable!(), // Handled above.
     })
 }
@@ -577,11 +571,11 @@ pub fn create_constructor<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let date_proto = ScriptObject::new(context.gc_context, Some(proto));
+    let date_proto = ScriptObject::new(context.gc(), Some(proto));
     define_properties_on(PROTO_DECLS, context, date_proto, fn_proto);
 
     let date_constructor = FunctionObject::constructor(
-        context.gc_context,
+        context.gc(),
         Executable::Native(date_method!(256)),
         Executable::Native(function),
         fn_proto,
