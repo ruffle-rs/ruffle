@@ -143,6 +143,7 @@ pub struct SystemClasses<'gc> {
     pub shaderparameter: ClassObject<'gc>,
     pub netstatusevent: ClassObject<'gc>,
     pub shaderfilter: ClassObject<'gc>,
+    pub statusevent: ClassObject<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -261,6 +262,7 @@ impl<'gc> SystemClasses<'gc> {
             shaderparameter: object,
             netstatusevent: object,
             shaderfilter: object,
+            statusevent: object,
         }
     }
 }
@@ -720,6 +722,7 @@ fn load_playerglobal<'gc>(
             ("flash.events", "FullScreenEvent", fullscreenevent),
             ("flash.events", "UncaughtErrorEvents", uncaughterrorevents),
             ("flash.events", "NetStatusEvent", netstatusevent),
+            ("flash.events", "StatusEvent", statusevent),
             ("flash.geom", "Matrix", matrix),
             ("flash.geom", "Point", point),
             ("flash.geom", "Rectangle", rectangle),
