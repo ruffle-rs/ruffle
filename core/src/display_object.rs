@@ -1549,7 +1549,10 @@ pub trait TDisplayObject<'gc>:
     /// Returned by the `_visible`/`visible` ActionScript properties.
     fn set_visible(&self, gc_context: MutationContext<'gc, '_>, value: bool) {
         if self.base_mut(gc_context).set_visible(value) {
-            self.invalidate_cached_bitmap(gc_context);
+            if let Some(parent) = self.parent() {
+                // We don't need to invalidate ourselves, we're just toggling if it's rendered.
+                parent.invalidate_cached_bitmap(gc_context);
+            }
         }
     }
 
