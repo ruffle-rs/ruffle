@@ -741,11 +741,11 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
         None
     };
 
-    let cache_info = if context.use_bitmap_cache {
+    let cache_info = if context.use_bitmap_cache && this.is_bitmap_cached() {
         let mut cache_info: Option<DrawCacheInfo> = None;
         let base_transform = context.transform_stack.transform();
         let bounds: Rectangle<Twips> = this.bounds_with_transform(&base_transform.matrix);
-        let path = this.path();
+        let name = this.name();
         let mut filters: Vec<Filter> = this.filters();
 
         if let Some(cache) = this.base_mut(context.gc_context).bitmap_cache_mut() {
@@ -798,8 +798,8 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
             } else {
                 if !cache.warned_for_oversize {
                     tracing::warn!(
-                        "Skipping cacheAsBitmap for incredibly large object at {:?} ({width} x {height})",
-                        path
+                        "Skipping cacheAsBitmap for incredibly large object {:?} ({width} x {height})",
+                        name
                     );
                     cache.warned_for_oversize = true;
                 }
