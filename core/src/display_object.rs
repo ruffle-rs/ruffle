@@ -323,18 +323,22 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.transform.matrix.tx
     }
 
-    fn set_x(&mut self, x: Twips) {
+    fn set_x(&mut self, x: Twips) -> bool {
+        let changed = self.transform.matrix.tx != x;
         self.set_transformed_by_script(true);
         self.transform.matrix.tx = x;
+        changed
     }
 
     fn y(&self) -> Twips {
         self.transform.matrix.ty
     }
 
-    fn set_y(&mut self, y: Twips) {
+    fn set_y(&mut self, y: Twips) -> bool {
+        let changed = self.transform.matrix.ty != y;
         self.set_transformed_by_script(true);
         self.transform.matrix.ty = y;
+        changed
     }
 
     /// Caches the scale and rotation factors for this display object, if necessary.
@@ -378,9 +382,10 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.rotation
     }
 
-    fn set_rotation(&mut self, degrees: Degrees) {
+    fn set_rotation(&mut self, degrees: Degrees) -> bool {
         self.set_transformed_by_script(true);
         self.cache_scale_rotation();
+        let changed = self.rotation != degrees;
         self.rotation = degrees;
 
         // FIXME - this isn't quite correct. In Flash player,
@@ -393,7 +398,7 @@ impl<'gc> DisplayObjectBase<'gc> {
         // rotation is NaN. Hopefully, there are no SWFs depending
         // on the weird behavior when b or d is non-zero.
         if degrees.into_radians().is_nan() {
-            return;
+            return changed;
         }
 
         let cos_x = f64::cos(degrees.into_radians());
@@ -405,6 +410,8 @@ impl<'gc> DisplayObjectBase<'gc> {
         matrix.b = (self.scale_x.unit() * sin_x) as f32;
         matrix.c = (self.scale_y.unit() * -sin_y) as f32;
         matrix.d = (self.scale_y.unit() * cos_y) as f32;
+
+        changed
     }
 
     fn scale_x(&mut self) -> Percent {
@@ -412,7 +419,8 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.scale_x
     }
 
-    fn set_scale_x(&mut self, mut value: Percent) {
+    fn set_scale_x(&mut self, mut value: Percent) -> bool {
+        let changed = self.scale_x != value;
         self.set_transformed_by_script(true);
         self.cache_scale_rotation();
         self.scale_x = value;
@@ -429,6 +437,8 @@ impl<'gc> DisplayObjectBase<'gc> {
         let matrix = &mut self.transform.matrix;
         matrix.a = (cos * value.unit()) as f32;
         matrix.b = (sin * value.unit()) as f32;
+
+        changed
     }
 
     fn scale_y(&mut self) -> Percent {
@@ -436,7 +446,8 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.scale_y
     }
 
-    fn set_scale_y(&mut self, mut value: Percent) {
+    fn set_scale_y(&mut self, mut value: Percent) -> bool {
+        let changed = self.scale_y != value;
         self.set_transformed_by_script(true);
         self.cache_scale_rotation();
         self.scale_y = value;
@@ -453,6 +464,8 @@ impl<'gc> DisplayObjectBase<'gc> {
         let matrix = &mut self.transform.matrix;
         matrix.c = (-sin * value.unit()) as f32;
         matrix.d = (cos * value.unit()) as f32;
+
+        changed
     }
 
     fn name(&self) -> AvmString<'gc> {
@@ -476,9 +489,11 @@ impl<'gc> DisplayObjectBase<'gc> {
         f64::from(self.color_transform().a_multiply)
     }
 
-    fn set_alpha(&mut self, value: f64) {
+    fn set_alpha(&mut self, value: f64) -> bool {
+        let changed = self.alpha() != value;
         self.set_transformed_by_script(true);
         self.color_transform_mut().a_multiply = Fixed8::from_f64(value);
+        changed
     }
 
     fn clip_depth(&self) -> Depth {
@@ -550,16 +565,20 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.flags.contains(DisplayObjectFlags::VISIBLE)
     }
 
-    fn set_visible(&mut self, value: bool) {
+    fn set_visible(&mut self, value: bool) -> bool {
+        let changed = self.visible() != value;
         self.flags.set(DisplayObjectFlags::VISIBLE, value);
+        changed
     }
 
     fn blend_mode(&self) -> BlendMode {
         self.blend_mode
     }
 
-    fn set_blend_mode(&mut self, value: BlendMode) {
+    fn set_blend_mode(&mut self, value: BlendMode) -> bool {
+        let changed = self.blend_mode != value;
         self.blend_mode = value;
+        changed
     }
 
     /// The opaque background color of this display object.
@@ -572,11 +591,14 @@ impl<'gc> DisplayObjectBase<'gc> {
     /// The bounding box of the display object will be filled with the given color. This also
     /// triggers cache-as-bitmap behavior. Only solid backgrounds are supported; the alpha channel
     /// is ignored.
-    fn set_opaque_background(&mut self, value: Option<Color>) {
-        self.opaque_background = value.map(|mut color| {
+    fn set_opaque_background(&mut self, value: Option<Color>) -> bool {
+        let value = value.map(|mut color| {
             color.a = 255;
             color
         });
+        let changed = self.opaque_background != value;
+        self.opaque_background = value;
+        changed
     }
 
     fn is_root(&self) -> bool {
@@ -1134,11 +1156,12 @@ pub trait TDisplayObject<'gc>:
     /// Set by the `_x`/`x` ActionScript properties.
     /// This invalidates any ancestors cacheAsBitmap automatically.
     fn set_x(&self, gc_context: MutationContext<'gc, '_>, x: Twips) {
-        self.base_mut(gc_context).set_x(x);
-        if let Some(parent) = self.parent() {
-            // Self-transform changes are automatically handled,
-            // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
-            parent.invalidate_cached_bitmap(gc_context);
+        if self.base_mut(gc_context).set_x(x) {
+            if let Some(parent) = self.parent() {
+                // Self-transform changes are automatically handled,
+                // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
+                parent.invalidate_cached_bitmap(gc_context);
+            }
         }
     }
 
@@ -1152,11 +1175,12 @@ pub trait TDisplayObject<'gc>:
     /// Set by the `_y`/`y` ActionScript properties.
     /// This invalidates any ancestors cacheAsBitmap automatically.
     fn set_y(&self, gc_context: MutationContext<'gc, '_>, y: Twips) {
-        self.base_mut(gc_context).set_y(y);
-        if let Some(parent) = self.parent() {
-            // Self-transform changes are automatically handled,
-            // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
-            parent.invalidate_cached_bitmap(gc_context);
+        if self.base_mut(gc_context).set_y(y) {
+            if let Some(parent) = self.parent() {
+                // Self-transform changes are automatically handled,
+                // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
+                parent.invalidate_cached_bitmap(gc_context);
+            }
         }
     }
 
@@ -1172,12 +1196,13 @@ pub trait TDisplayObject<'gc>:
     /// Set by the `_rotation`/`rotation` ActionScript properties.
     /// This invalidates any ancestors cacheAsBitmap automatically.
     fn set_rotation(&self, gc_context: MutationContext<'gc, '_>, radians: Degrees) {
-        self.base_mut(gc_context).set_rotation(radians);
-        self.set_scale_rotation_cached(gc_context);
-        if let Some(parent) = self.parent() {
-            // Self-transform changes are automatically handled,
-            // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
-            parent.invalidate_cached_bitmap(gc_context);
+        if self.base_mut(gc_context).set_rotation(radians) {
+            self.set_scale_rotation_cached(gc_context);
+            if let Some(parent) = self.parent() {
+                // Self-transform changes are automatically handled,
+                // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
+                parent.invalidate_cached_bitmap(gc_context);
+            }
         }
     }
 
@@ -1193,12 +1218,13 @@ pub trait TDisplayObject<'gc>:
     /// Set by the `_xscale`/`scaleX` ActionScript properties.
     /// This invalidates any ancestors cacheAsBitmap automatically.
     fn set_scale_x(&self, gc_context: MutationContext<'gc, '_>, value: Percent) {
-        self.base_mut(gc_context).set_scale_x(value);
-        self.set_scale_rotation_cached(gc_context);
-        if let Some(parent) = self.parent() {
-            // Self-transform changes are automatically handled,
-            // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
-            parent.invalidate_cached_bitmap(gc_context);
+        if self.base_mut(gc_context).set_scale_x(value) {
+            self.set_scale_rotation_cached(gc_context);
+            if let Some(parent) = self.parent() {
+                // Self-transform changes are automatically handled,
+                // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
+                parent.invalidate_cached_bitmap(gc_context);
+            }
         }
     }
 
@@ -1214,12 +1240,13 @@ pub trait TDisplayObject<'gc>:
     /// Returned by the `_yscale`/`scaleY` ActionScript properties.
     /// This invalidates any ancestors cacheAsBitmap automatically.
     fn set_scale_y(&self, gc_context: MutationContext<'gc, '_>, value: Percent) {
-        self.base_mut(gc_context).set_scale_y(value);
-        self.set_scale_rotation_cached(gc_context);
-        if let Some(parent) = self.parent() {
-            // Self-transform changes are automatically handled,
-            // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
-            parent.invalidate_cached_bitmap(gc_context);
+        if self.base_mut(gc_context).set_scale_y(value) {
+            self.set_scale_rotation_cached(gc_context);
+            if let Some(parent) = self.parent() {
+                // Self-transform changes are automatically handled,
+                // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
+                parent.invalidate_cached_bitmap(gc_context);
+            }
         }
     }
 
@@ -1330,10 +1357,11 @@ pub trait TDisplayObject<'gc>:
     /// Set by the `_alpha`/`alpha` ActionScript properties.
     /// This invalidates any cacheAsBitmap automatically.
     fn set_alpha(&self, gc_context: MutationContext<'gc, '_>, value: f64) {
-        self.base_mut(gc_context).set_alpha(value);
-        if let Some(parent) = self.parent() {
-            // Self-transform changes are automatically handled
-            parent.invalidate_cached_bitmap(gc_context);
+        if self.base_mut(gc_context).set_alpha(value) {
+            if let Some(parent) = self.parent() {
+                // Self-transform changes are automatically handled
+                parent.invalidate_cached_bitmap(gc_context);
+            }
         }
     }
 
@@ -1520,8 +1548,9 @@ pub trait TDisplayObject<'gc>:
     /// Invisible objects are not rendered, but otherwise continue to exist normally.
     /// Returned by the `_visible`/`visible` ActionScript properties.
     fn set_visible(&self, gc_context: MutationContext<'gc, '_>, value: bool) {
-        self.base_mut(gc_context).set_visible(value);
-        self.invalidate_cached_bitmap(gc_context);
+        if self.base_mut(gc_context).set_visible(value) {
+            self.invalidate_cached_bitmap(gc_context);
+        }
     }
 
     /// The blend mode used when rendering this display object.
@@ -1533,11 +1562,11 @@ pub trait TDisplayObject<'gc>:
     /// Sets the blend mode used when rendering this display object.
     /// Values other than the default `BlendMode::Normal` implicitly cause cache-as-bitmap behavior.
     fn set_blend_mode(&self, gc_context: MutationContext<'gc, '_>, value: BlendMode) {
-        self.base_mut(gc_context).set_blend_mode(value);
-
-        // Note that Flash does not always invalidate on changing the blend mode;
-        // but that's a bug we don't need to copy :)
-        self.invalidate_cached_bitmap(gc_context);
+        if self.base_mut(gc_context).set_blend_mode(value) {
+            // Note that Flash does not always invalidate on changing the blend mode;
+            // but that's a bug we don't need to copy :)
+            self.invalidate_cached_bitmap(gc_context);
+        }
     }
 
     /// The opaque background color of this display object.
@@ -1550,8 +1579,9 @@ pub trait TDisplayObject<'gc>:
     /// triggers cache-as-bitmap behavior. Only solid backgrounds are supported; the alpha channel
     /// is ignored.
     fn set_opaque_background(&self, gc_context: MutationContext<'gc, '_>, value: Option<Color>) {
-        self.base_mut(gc_context).set_opaque_background(value);
-        self.invalidate_cached_bitmap(gc_context);
+        if self.base_mut(gc_context).set_opaque_background(value) {
+            self.invalidate_cached_bitmap(gc_context);
+        }
     }
 
     /// Whether this display object represents the root of loaded content.
