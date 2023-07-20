@@ -129,7 +129,7 @@ export class VersionRange {
                 if (match) {
                     const comparator = component.slice(0, match.index).trim();
                     const version = Version.fromSemver(
-                        component.slice(match.index).trim()
+                        component.slice(match.index).trim(),
                     );
 
                     set.push({ comparator, version });

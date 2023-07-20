@@ -29,7 +29,7 @@ function polyfillArrayPrototypeReduce() {
             const callback = args[0];
             if (this === null) {
                 throw new TypeError(
-                    "Array.prototype.reduce called on null or undefined"
+                    "Array.prototype.reduce called on null or undefined",
                 );
             }
             if (typeof callback !== "function") {
@@ -49,7 +49,7 @@ function polyfillArrayPrototypeReduce() {
                 }
                 if (k >= len) {
                     throw new TypeError(
-                        "Reduce of empty array with no initial value"
+                        "Reduce of empty array with no initial value",
                     );
                 }
                 value = o[k++];

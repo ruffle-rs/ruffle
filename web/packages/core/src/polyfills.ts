@@ -61,7 +61,7 @@ function polyfillFlashInstances(): void {
         }
     } catch (err) {
         console.error(
-            `Serious error encountered when polyfilling native Flash elements: ${err}`
+            `Serious error encountered when polyfilling native Flash elements: ${err}`,
         );
     }
 }
@@ -117,7 +117,7 @@ function polyfillFrames(): void {
                 () => {
                     injectRuffle(elementWindow!, errorMessage);
                 },
-                false
+                false,
             );
         }
     });
@@ -129,7 +129,7 @@ function polyfillFrames(): void {
  */
 async function injectRuffle(
     elementWindow: Window,
-    errorMessage: string
+    errorMessage: string,
 ): Promise<void> {
     // The document is supposed to be completely loaded when this function is run.
     // As Chrome may be unable to access the document properties, we have to delay the execution a little bit.
@@ -191,7 +191,7 @@ function initMutationObserver(): void {
     const observer = new MutationObserver(function (mutationsList) {
         // If any nodes were added, re-run the polyfill to detect any new instances.
         const nodesAdded = mutationsList.some(
-            (mutation) => mutation.addedNodes.length > 0
+            (mutation) => mutation.addedNodes.length > 0,
         );
         if (nodesAdded) {
             polyfillFlashInstances();

@@ -23,7 +23,7 @@ function transformManifest(content, env) {
     if (process.env["ENABLE_VERSION_SEAL"] === "true") {
         if (fs.existsSync("../../version_seal.json")) {
             const versionSeal = JSON.parse(
-                fs.readFileSync("../../version_seal.json", "utf8")
+                fs.readFileSync("../../version_seal.json", "utf8"),
             );
 
             packageVersion = versionSeal.version_number;
@@ -33,7 +33,7 @@ function transformManifest(content, env) {
             firefoxExtensionId = versionSeal.firefox_extension_id;
         } else {
             throw new Error(
-                "Version seal requested but not found. Please run web/packages/core/tools/set_version.js with ENABLE_VERSION_SEAL to generate it."
+                "Version seal requested but not found. Please run web/packages/core/tools/set_version.js with ENABLE_VERSION_SEAL to generate it.",
             );
         }
     }
@@ -67,7 +67,7 @@ function transformManifest(content, env) {
         manifest.content_security_policy =
             manifest.content_security_policy.replace(
                 /(script-src\s+[^;]*)(;|$)/i,
-                "$1 'wasm-eval'$2"
+                "$1 'wasm-eval'$2",
             );
 
         // Chrome runs the extension in a single shared process by default,
@@ -135,7 +135,7 @@ export default function (env, _argv) {
                         transform: (content) =>
                             transformManifest(
                                 content,
-                                /** @type {Record<string, any>} */ (env)
+                                /** @type {Record<string, any>} */ (env),
                             ),
                     },
                     { from: "LICENSE*" },

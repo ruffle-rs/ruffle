@@ -25,7 +25,7 @@ import { NetworkingAccessMode } from "./load-options";
 function findCaseInsensitive(
     obj: Record<string, string>,
     key: string,
-    defaultValue: string | null
+    defaultValue: string | null,
 ): string | null {
     key = key.toLowerCase();
     for (const [k, value] of Object.entries(obj)) {
@@ -98,31 +98,31 @@ export class RuffleObject extends RufflePlayer {
         const allowScriptAccess = findCaseInsensitive(
             this.params,
             "allowScriptAccess",
-            null
+            null,
         );
 
         const parameters = findCaseInsensitive(
             this.params,
             "flashvars",
-            this.getAttribute("flashvars")
+            this.getAttribute("flashvars"),
         );
 
         const backgroundColor = findCaseInsensitive(
             this.params,
             "bgcolor",
-            this.getAttribute("bgcolor")
+            this.getAttribute("bgcolor"),
         );
 
         const allowNetworking = findCaseInsensitive(
             this.params,
             "allowNetworking",
-            this.getAttribute("allowNetworking")
+            this.getAttribute("allowNetworking"),
         );
 
         const base = findCaseInsensitive(
             this.params,
             "base",
-            this.getAttribute("base")
+            this.getAttribute("base"),
         );
 
         const menu = findCaseInsensitive(this.params, "menu", null);
@@ -135,7 +135,7 @@ export class RuffleObject extends RufflePlayer {
             const options: URLLoadOptions = { url };
             options.allowScriptAccess = isScriptAccessAllowed(
                 allowScriptAccess,
-                url
+                url,
             );
             if (parameters) {
                 options.parameters = parameters;
@@ -185,9 +185,8 @@ export class RuffleObject extends RufflePlayer {
         });
 
         Object.keys(this.attributes).forEach((key) => {
-            result += `Attribute ${key}: ${
-                this.attributes.getNamedItem(key)?.value
-            }\n`;
+            result += `Attribute ${key}: ${this.attributes.getNamedItem(key)
+                ?.value}\n`;
         });
 
         return result;
@@ -286,10 +285,10 @@ export class RuffleObject extends RufflePlayer {
             // another <object> that would be supported on modern browsers.
             return (
                 !Array.from(elem.getElementsByTagName("object")).some(
-                    RuffleObject.isInterdictable
+                    RuffleObject.isInterdictable,
                 ) &&
                 !Array.from(elem.getElementsByTagName("embed")).some(
-                    RuffleEmbed.isInterdictable
+                    RuffleEmbed.isInterdictable,
                 )
             );
         } else if (classid) {
@@ -314,7 +313,7 @@ export class RuffleObject extends RufflePlayer {
 
         // Avoid copying embeds-inside-objects to avoid double polyfilling.
         for (const embedElem of Array.from(
-            elem.getElementsByTagName("embed")
+            elem.getElementsByTagName("embed"),
         )) {
             if (RuffleEmbed.isInterdictable(embedElem)) {
                 embedElem.remove();
@@ -324,7 +323,7 @@ export class RuffleObject extends RufflePlayer {
         // Avoid copying objects-inside-objects to avoid double polyfilling.
         // This may happen when Internet Explorer's conditional comments are used.
         for (const objectElem of Array.from(
-            elem.getElementsByTagName("object")
+            elem.getElementsByTagName("object"),
         )) {
             if (RuffleObject.isInterdictable(objectElem)) {
                 objectElem.remove();

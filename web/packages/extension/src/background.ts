@@ -4,7 +4,7 @@ import { isSwf as isSwfCore } from "ruffle-core";
 function isSwf(
     details:
         | chrome.webRequest.WebResponseHeadersDetails
-        | browser.webRequest._OnHeadersReceivedDetails
+        | browser.webRequest._OnHeadersReceivedDetails,
 ) {
     // TypeScript doesn't compile without this explicit type declaration.
     const headers: (
@@ -12,7 +12,7 @@ function isSwf(
         | browser.webRequest._HttpHeaders
     )[] = details.responseHeaders!;
     const typeHeader = headers.find(
-        ({ name }) => name.toLowerCase() === "content-type"
+        ({ name }) => name.toLowerCase() === "content-type",
     );
     if (!typeHeader) {
         return false;
@@ -28,7 +28,7 @@ function isSwf(
 function onHeadersReceived(
     details:
         | chrome.webRequest.WebResponseHeadersDetails
-        | browser.webRequest._OnHeadersReceivedDetails
+        | browser.webRequest._OnHeadersReceivedDetails,
 ) {
     if (isSwf(details)) {
         const baseUrl = utils.runtime.getURL("player.html");
@@ -46,13 +46,13 @@ function enable() {
             urls: ["<all_urls>"],
             types: ["main_frame", "sub_frame"],
         },
-        ["blocking", "responseHeaders"]
+        ["blocking", "responseHeaders"],
     );
 }
 
 function disable() {
     (chrome || browser).webRequest.onHeadersReceived.removeListener(
-        onHeadersReceived
+        onHeadersReceived,
     );
 }
 

@@ -11,7 +11,7 @@ describe("RufflePlayer.metadata", () => {
         const player = await browser.$("<ruffle-player>");
         const metadata = await browser.execute(
             (player) => player.metadata,
-            player
+            player,
         );
         expect(metadata).to.eql({
             width: 550,

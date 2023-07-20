@@ -16,7 +16,7 @@ interface OptionElement<T> {
 class CheckboxOption implements OptionElement<boolean> {
     constructor(
         private readonly checkbox: HTMLInputElement,
-        readonly label: HTMLLabelElement
+        readonly label: HTMLLabelElement,
     ) {}
 
     get input() {
@@ -35,7 +35,7 @@ class CheckboxOption implements OptionElement<boolean> {
 class NumberOption implements OptionElement<number | null> {
     constructor(
         private readonly numberInput: HTMLInputElement,
-        readonly label: HTMLLabelElement
+        readonly label: HTMLLabelElement,
     ) {
         this.numberInput.addEventListener("input", () => {
             this.numberInput.reportValidity();
@@ -75,7 +75,7 @@ class NumberOption implements OptionElement<number | null> {
 class SelectOption implements OptionElement<string | null> {
     constructor(
         private readonly select: HTMLSelectElement,
-        readonly label: HTMLLabelElement
+        readonly label: HTMLLabelElement,
     ) {
         // Localize each `option`, if relevant.
         Array.prototype.forEach.call(select.options, (option) => {
@@ -144,7 +144,7 @@ function findOptionElements() {
 }
 
 export async function bindOptions(
-    onChange?: (options: Options) => void
+    onChange?: (options: Options) => void,
 ): Promise<void> {
     const elements = findOptionElements();
     const options = await utils.getOptions();

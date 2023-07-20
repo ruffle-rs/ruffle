@@ -26,7 +26,7 @@ const STATUS_COLORS = {
 };
 
 async function queryTabStatus(
-    listener: (status: keyof typeof STATUS_COLORS) => void
+    listener: (status: keyof typeof STATUS_COLORS) => void,
 ) {
     listener("status_init");
 
@@ -44,7 +44,7 @@ async function queryTabStatus(
 
         if (tabs.length > 1) {
             throw new Error(
-                `Got ${tabs.length} tabs in response to active tab query.`
+                `Got ${tabs.length} tabs in response to active tab query.`,
             );
         }
     } catch (e) {
@@ -152,17 +152,17 @@ window.addEventListener("DOMContentLoaded", () => {
     });
 
     statusIndicator = document.getElementById(
-        "status-indicator"
+        "status-indicator",
     ) as HTMLDivElement;
     statusText = document.getElementById("status-text") as HTMLSpanElement;
 
     const versionText = document.getElementById(
-        "version-text"
+        "version-text",
     ) as HTMLDivElement;
     versionText.textContent = `Ruffle extension ${buildInfo.versionName}`;
 
     const optionsButton = document.getElementById(
-        "options-button"
+        "options-button",
     ) as HTMLButtonElement;
     optionsButton.textContent = utils.i18n.getMessage("open_settings_page");
     optionsButton.addEventListener("click", async () => {
@@ -171,7 +171,7 @@ window.addEventListener("DOMContentLoaded", () => {
     });
 
     reloadButton = document.getElementById(
-        "reload-button"
+        "reload-button",
     ) as HTMLButtonElement;
     reloadButton.textContent = utils.i18n.getMessage("action_reload");
     reloadButton.addEventListener("click", async () => {

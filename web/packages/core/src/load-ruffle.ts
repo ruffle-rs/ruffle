@@ -33,7 +33,7 @@ type ProgressCallback = (bytesLoaded: number, bytesTotal: number) => void;
  */
 async function fetchRuffle(
     config: URLLoadOptions | DataLoadOptions | object,
-    progressCallback?: ProgressCallback
+    progressCallback?: ProgressCallback,
 ): Promise<typeof Ruffle> {
     // Apply some pure JavaScript polyfills to prevent conflicts with external
     // libraries, if needed.
@@ -52,7 +52,7 @@ async function fetchRuffle(
 
     if (!extensionsSupported) {
         console.log(
-            "Some WebAssembly extensions are NOT available, falling back to the vanilla WebAssembly module"
+            "Some WebAssembly extensions are NOT available, falling back to the vanilla WebAssembly module",
         );
     }
 
@@ -100,7 +100,7 @@ async function fetchRuffle(
                     controller.close();
                 },
             }),
-            wasmResponse
+            wasmResponse,
         );
     } else {
         response = wasmResponse;
@@ -129,7 +129,7 @@ let lastLoaded: Promise<Ruffle> | null = null;
  */
 export function loadRuffle(
     config: URLLoadOptions | DataLoadOptions | object,
-    progressCallback?: ProgressCallback
+    progressCallback?: ProgressCallback,
 ): Promise<Ruffle> {
     if (lastLoaded === null) {
         lastLoaded = fetchRuffle(config, progressCallback);

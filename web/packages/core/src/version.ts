@@ -19,7 +19,7 @@ export class Version {
         private readonly patch: number,
         private readonly prIdent: string[] | null,
         // @ts-expect-error: Property 'buildIdent' is declared but its value is never read.
-        private readonly buildIdent: string[] | null
+        private readonly buildIdent: string[] | null,
     ) {}
 
     /**

@@ -75,7 +75,7 @@ class RufflePlugin extends RuffleMimeTypeArray implements Plugin {
     constructor(
         readonly name: string,
         readonly description: string,
-        readonly filename: string
+        readonly filename: string,
     ) {
         super();
     }
@@ -152,7 +152,7 @@ class RufflePluginArray implements PluginArray {
 export const FLASH_PLUGIN = new RufflePlugin(
     "Shockwave Flash",
     "Shockwave Flash 32.0 r0",
-    "ruffle.js"
+    "ruffle.js",
 );
 
 /**
@@ -161,7 +161,7 @@ export const FLASH_PLUGIN = new RufflePlugin(
 export const RUFFLE_EXTENSION = new RufflePlugin(
     "Ruffle Extension",
     "Ruffle Extension",
-    "ruffle.js"
+    "ruffle.js",
 );
 
 FLASH_PLUGIN.install({

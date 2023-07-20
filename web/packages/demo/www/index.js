@@ -12,7 +12,7 @@ const overlay = document.getElementById("overlay");
 const authorContainer = document.getElementById("author-container");
 const author = document.getElementById("author");
 const sampleFileInputContainer = document.getElementById(
-    "sample-swfs-container"
+    "sample-swfs-container",
 );
 const localFileInput = document.getElementById("local-file");
 const sampleFileInput = document.getElementById("sample-swfs");
@@ -111,7 +111,7 @@ function load(options) {
                             break;
                         case "swfVersion":
                             document.getElementById(
-                                "flashVersion"
+                                "flashVersion",
                             ).textContent = swfToFlashVersion[value];
                         // falls through and executes the default case as well
                         default:
@@ -256,7 +256,7 @@ window.onclick = (event) => {
             } else {
                 sampleFileInput.insertBefore(
                     option,
-                    sampleFileInput.firstChild
+                    sampleFileInput.firstChild,
                 );
             }
         }
@@ -269,7 +269,7 @@ window.onclick = (event) => {
         const options = Array.from(sampleFileInput.options);
         sampleFileInput.selectedIndex = Math.max(
             options.findIndex((swfData) => swfData.value.endsWith(initialFile)),
-            0
+            0,
         );
     }
     loadSample();

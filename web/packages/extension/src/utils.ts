@@ -28,8 +28,8 @@ export let storage: {
                 changes:
                     | Record<string, chrome.storage.StorageChange>
                     | Record<string, browser.storage.StorageChange>,
-                areaName: string
-            ) => void
+                areaName: string,
+            ) => void,
         ) => void;
     };
 };
@@ -37,13 +37,13 @@ export let storage: {
 export let tabs: {
     reload: (tabId: number) => Promise<void>;
     query: (
-        query: chrome.tabs.QueryInfo & browser.tabs._QueryQueryInfo
+        query: chrome.tabs.QueryInfo & browser.tabs._QueryQueryInfo,
     ) => Promise<chrome.tabs.Tab[] | browser.tabs.Tab[]>;
     sendMessage: (
         tabId: number,
         message: unknown,
         options?: chrome.tabs.MessageSendOptions &
-            browser.tabs._SendMessageOptions
+            browser.tabs._SendMessageOptions,
     ) => Promise<any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 };
 
@@ -55,8 +55,8 @@ export let runtime: {
                 sender:
                     | chrome.runtime.MessageSender
                     | browser.runtime.MessageSender,
-                sendResponse: (response?: unknown) => void
-            ) => void
+                sendResponse: (response?: unknown) => void,
+            ) => void,
         ) => void;
     };
     getURL: (path: string) => string;
@@ -65,7 +65,7 @@ export let runtime: {
 export let openOptionsPage: () => Promise<void>;
 
 function promisify<T>(
-    func: (callback: (result: T) => void) => void
+    func: (callback: (result: T) => void) => void,
 ): Promise<T> {
     return new Promise((resolve, reject) => {
         func((result) => {
@@ -80,7 +80,7 @@ function promisify<T>(
 }
 
 function promisifyStorageArea(
-    storage: chrome.storage.StorageArea
+    storage: chrome.storage.StorageArea,
 ): StorageArea {
     return {
         clear: () => promisify((cb) => storage.clear(cb)),
@@ -102,8 +102,8 @@ if (typeof chrome !== "undefined") {
             addListener: (
                 listener: (
                     changes: Record<string, chrome.storage.StorageChange>,
-                    areaName: string
-                ) => void
+                    areaName: string,
+                ) => void,
             ) => chrome.storage.onChanged.addListener(listener),
         },
     };
@@ -116,10 +116,10 @@ if (typeof chrome !== "undefined") {
         sendMessage: (
             tabId: number,
             message: unknown,
-            options?: chrome.tabs.MessageSendOptions
+            options?: chrome.tabs.MessageSendOptions,
         ) =>
             promisify((cb) =>
-                chrome.tabs.sendMessage(tabId, message, options || {}, cb)
+                chrome.tabs.sendMessage(tabId, message, options || {}, cb),
             ),
     };
 
@@ -127,7 +127,7 @@ if (typeof chrome !== "undefined") {
 
     openOptionsPage = () =>
         promisify((cb: () => void) =>
-            chrome.tabs.create({ url: "/options.html" }, cb)
+            chrome.tabs.create({ url: "/options.html" }, cb),
         );
 } else if (typeof browser !== "undefined") {
     i18n = browser.i18n;

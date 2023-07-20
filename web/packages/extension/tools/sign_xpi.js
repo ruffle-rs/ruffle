@@ -23,7 +23,7 @@ async function sign(
     version,
     destination,
     sourcePath,
-    sourceTag
+    sourceTag,
 ) {
     const result = await signAddon({
         xpiPath: unsignedPath,
@@ -47,7 +47,7 @@ async function sign(
     // NOTE: The extension ID is already wrapped in curly braces in GitHub.
     var sourceCodeUpload = client.patch({
         url: `/addons/addon/${encodeURIComponent(
-            extensionId
+            extensionId,
         )}/versions/${encodeURIComponent(version)}/`,
         formData: {
             source: fsSync.createReadStream(sourcePath),
@@ -56,7 +56,7 @@ async function sign(
 
     var notesUpload = client.patch({
         url: `/addons/addon/${encodeURIComponent(
-            extensionId
+            extensionId,
         )}/versions/${encodeURIComponent(version)}/`,
         json: {
             approval_notes: `This version was derived from the source code available at https://github.com/ruffle-rs/ruffle/releases/tag/${sourceTag} - a ZIP file from this Git tag has been attached. If you download it yourself instead of using the ZIP file provided, make sure to grab the reproducible version of the ZIP, as it contains versioning information that will not be present on the main source download.\n\
@@ -101,7 +101,7 @@ As this is indeed a complicated build process, please let me know if there is an
         await fs.unlink(downloadedFile);
     } else {
         console.warn(
-            "Unexpected downloads for signed Firefox extension, expected 1."
+            "Unexpected downloads for signed Firefox extension, expected 1.",
         );
         console.warn(result);
     }
@@ -116,7 +116,7 @@ try {
     ) {
         // TODO: Import as a JSON module once it becomes stable.
         const manifestPath = url.fileURLToPath(
-            new URL("../assets/manifest.json", import.meta.url)
+            new URL("../assets/manifest.json", import.meta.url),
         );
         const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8"));
         await sign(
@@ -127,11 +127,11 @@ try {
             manifest.version,
             /** @type {string} */ (process.argv[3]),
             /** @type {string} */ (process.argv[4]),
-            process.env["SOURCE_TAG"]
+            process.env["SOURCE_TAG"],
         );
     } else {
         console.log(
-            "Skipping signing of Firefox extension. To enable this, please provide MOZILLA_API_KEY, MOZILLA_API_SECRET, FIREFOX_EXTENSION_ID, and SOURCE_TAG environment variables"
+            "Skipping signing of Firefox extension. To enable this, please provide MOZILLA_API_KEY, MOZILLA_API_SECRET, FIREFOX_EXTENSION_ID, and SOURCE_TAG environment variables",
         );
     }
 } catch (error) {
