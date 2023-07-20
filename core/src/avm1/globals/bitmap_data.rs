@@ -2,6 +2,7 @@
 
 use super::matrix::object_to_matrix;
 use crate::avm1::function::{Executable, FunctionObject};
+use crate::avm1::globals::bitmap_filter;
 use crate::avm1::globals::color_transform::ColorTransformObject;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
@@ -571,10 +572,72 @@ fn draw<'gc>(
 
 fn apply_filter<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    this: Object<'gc>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "BitmapData", "applyFilter");
+    if let NativeObject::BitmapData(bitmap_data) = this.native() {
+        if !bitmap_data.disposed() {
+            let source = args
+                .get(0)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_object(activation);
+            let source = if let NativeObject::BitmapData(source_bitmap) = source.native() {
+                source_bitmap
+            } else {
+                tracing::warn!(
+                    "Invalid bitmapdata source for apply_filter: got {:?}",
+                    source
+                );
+                return Ok((-1).into());
+            };
+
+            let source_rect = args
+                .get(1)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_object(activation);
+
+            let src_min_x = source_rect
+                .get("x", activation)?
+                .coerce_to_f64(activation)? as u32;
+            let src_min_y = source_rect
+                .get("y", activation)?
+                .coerce_to_f64(activation)? as u32;
+            let src_width = source_rect
+                .get("width", activation)?
+                .coerce_to_f64(activation)? as u32;
+            let src_height = source_rect
+                .get("height", activation)?
+                .coerce_to_f64(activation)? as u32;
+
+            let dest_point = args
+                .get(2)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_object(activation);
+
+            let dest_x = dest_point.get("x", activation)?.coerce_to_f64(activation)? as u32;
+            let dest_y = dest_point.get("y", activation)?.coerce_to_f64(activation)? as u32;
+
+            let filter_object = args
+                .get(3)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_object(activation);
+            let filter = bitmap_filter::avm1_to_filter(filter_object, &mut activation.context);
+
+            if let Some(filter) = filter {
+                operations::apply_filter(
+                    &mut activation.context,
+                    bitmap_data,
+                    source,
+                    (src_min_x, src_min_y),
+                    (src_width, src_height),
+                    (dest_x, dest_y),
+                    filter,
+                );
+                return Ok(0.into());
+            }
+        }
+    }
+
     Ok((-1).into())
 }
 
