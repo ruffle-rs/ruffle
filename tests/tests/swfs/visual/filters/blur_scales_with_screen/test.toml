@@ -5,4 +5,4 @@ tolerance = 2
 
 [player_options]
 with_renderer = { optional = false, sample_count = 1, exclude_warp = true }
-viewport_dimensions = { width = 2000, height = 2000, scale_factor = 1.0 }
+viewport_dimensions = { width = 400, height = 400, scale_factor = 1.0 }
