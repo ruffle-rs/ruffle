@@ -131,6 +131,7 @@ impl BitmapCache {
         actual_width: u16,
         actual_height: u16,
         draw_offset: Point<i32>,
+        swf_version: u8,
     ) {
         self.matrix_a = matrix.a;
         self.matrix_b = matrix.b;
@@ -144,7 +145,18 @@ impl BitmapCache {
                 return; // No need to resize it
             }
         }
-        if renderer.is_offscreen_supported() && actual_width > 0 && actual_height > 0 {
+        let acceptable_size = if swf_version > 9 {
+            let total = actual_width as u32 * actual_height as u32;
+            actual_width < 8191 && actual_height < 8191 && total < 1677215
+        } else {
+            actual_width < 2880 && actual_height < 2880
+        };
+        if renderer.is_offscreen_supported()
+            && actual_width > 0
+            && actual_height > 0
+            && acceptable_size
+        {
+            tracing::info!("{} x {}", actual_width, actual_height);
             let handle = renderer.create_empty_texture(actual_width as u32, actual_height as u32);
             self.bitmap = handle.ok().map(|handle| BitmapInfo {
                 width: actual_width,
@@ -747,6 +759,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
         let bounds: Rectangle<Twips> = this.bounds_with_transform(&base_transform.matrix);
         let name = this.name();
         let mut filters: Vec<Filter> = this.filters();
+        let swf_version = this.swf_version();
         filters.retain(|f| !f.impotent());
 
         if let Some(cache) = this.base_mut(context.gc_context).bitmap_cache_mut() {
@@ -777,6 +790,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
                         filter_rect.width() as u16,
                         filter_rect.height() as u16,
                         draw_offset,
+                        swf_version,
                     );
                     cache_info = cache.handle().map(|handle| DrawCacheInfo {
                         handle,
