@@ -35,7 +35,7 @@ function cargoBuild({ profile, features, rustFlags }) {
     }
     if (process.env["CARGO_FEATURES"]) {
         features = (features || []).concat(
-            process.env["CARGO_FEATURES"].split(",")
+            process.env["CARGO_FEATURES"].split(","),
         );
     }
     if (features) {
@@ -67,7 +67,7 @@ function buildWasm(profile, filename, optimise, extensions) {
     if (extensions) {
         rustFlags.push(
             "-C",
-            "target-feature=+bulk-memory,+simd128,+nontrapping-fptoint,+sign-ext,+reference-types"
+            "target-feature=+bulk-memory,+simd128,+nontrapping-fptoint,+sign-ext,+reference-types",
         );
         wasmBindgenFlags.push("--reference-types");
         wasmOptFlags.push("--enable-reference-types");
@@ -111,7 +111,7 @@ const buildExtensions = !!process.env["ENABLE_WASM_EXTENSIONS"];
 const hasWasmOpt = detectWasmOpt();
 if (!hasWasmOpt) {
     console.log(
-        "NOTE: Since wasm-opt could not be found (or it failed), the resulting module might not perform that well, but it should still work."
+        "NOTE: Since wasm-opt could not be found (or it failed), the resulting module might not perform that well, but it should still work.",
     );
 }
 buildWasm("web-vanilla-wasm", "ruffle_web", hasWasmOpt, false);
@@ -120,7 +120,7 @@ if (buildExtensions) {
         "web-wasm-extensions",
         "ruffle_web-wasm_extensions",
         hasWasmOpt,
-        true
+        true,
     );
 } else {
     copyStandIn("ruffle_web", "ruffle_web-wasm_extensions");

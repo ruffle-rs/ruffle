@@ -270,7 +270,7 @@ export class PublicAPI {
      */
     static negotiate(
         prevRuffle: PublicAPI | null | Record<string, unknown>,
-        sourceName: string | undefined
+        sourceName: string | undefined,
     ): PublicAPI {
         let publicAPI: PublicAPI;
         if (prevRuffle instanceof PublicAPI) {

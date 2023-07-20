@@ -24,7 +24,7 @@ describe("Object for old IE must work everywhere", () => {
     it("Plays a movie", async () => {
         await playAndMonitor(
             browser,
-            await browser.$("#test-container").$("<ruffle-object />")
+            await browser.$("#test-container").$("<ruffle-object />"),
         );
     });
 });

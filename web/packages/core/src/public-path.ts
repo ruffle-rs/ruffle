@@ -19,7 +19,7 @@ import { currentScriptURL, isExtension } from "./current-script";
  * @returns The public path for the given source.
  */
 export function publicPath(
-    config: URLLoadOptions | DataLoadOptions | object
+    config: URLLoadOptions | DataLoadOptions | object,
 ): string {
     // Default to the directory where this script resides.
     let path = currentScriptURL?.href ?? "";

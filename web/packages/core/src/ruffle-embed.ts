@@ -47,7 +47,7 @@ export class RuffleEmbed extends RufflePlayer {
                 url: src.value,
                 allowScriptAccess: isScriptAccessAllowed(
                     allowScriptAccess,
-                    src.value
+                    src.value,
                 ),
                 parameters:
                     this.attributes.getNamedItem("flashvars")?.value ?? null,
@@ -112,7 +112,7 @@ export class RuffleEmbed extends RufflePlayer {
     override attributeChangedCallback(
         name: string,
         oldValue: string | undefined,
-        newValue: string | undefined
+        newValue: string | undefined,
     ): void {
         super.attributeChangedCallback(name, oldValue, newValue);
         if (this.isConnected && name === "src") {

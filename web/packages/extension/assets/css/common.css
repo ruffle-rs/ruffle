@@ -14,7 +14,9 @@
 
 body {
     background: var(--ruffle-blue);
-    font: 14px Arial, sans-serif;
+    font:
+        14px Arial,
+        sans-serif;
     margin: auto;
     color: white;
 }
@@ -80,7 +82,9 @@ body {
     top: 0;
     bottom: 0;
     margin: auto;
-    transition: background 0.2s, right 0.2s;
+    transition:
+        background 0.2s,
+        right 0.2s;
 }
 
 .option.checkbox label::before {

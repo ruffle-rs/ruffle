@@ -14,7 +14,7 @@ async function zip(source, destination) {
 
     output.on("close", () => {
         console.log(
-            `Extension is ${archive.pointer()} total bytes when packaged.`
+            `Extension is ${archive.pointer()} total bytes when packaged.`,
         );
     });
 

@@ -5,7 +5,7 @@ async function isRuffleLoaded(browser) {
         () =>
             window !== undefined &&
             window.RufflePlayer !== undefined &&
-            window.RufflePlayer.invoked
+            window.RufflePlayer.invoked,
     );
 }
 
@@ -27,7 +27,7 @@ async function setupErrorHandler(browser) {
 
 async function hasError(browser) {
     return await browser.execute(
-        () => window.ruffleErrors && window.ruffleErrors.length > 0
+        () => window.ruffleErrors && window.ruffleErrors.length > 0,
     );
 }
 
@@ -60,7 +60,7 @@ async function playAndMonitor(browser, player, expectedOutput) {
             (await browser.execute((player) => player.instance, player)),
         {
             timeoutMsg: "Expected player to have initialized",
-        }
+        },
     );
 
     await browser.execute((player) => {
@@ -79,11 +79,11 @@ async function playAndMonitor(browser, player, expectedOutput) {
         async () =>
             (await browser.execute(
                 (player) => player.__ruffle_log__,
-                player
+                player,
             )) === expectedOutput,
         {
             timeoutMsg: "Expected Ruffle to trace a message",
-        }
+        },
     );
 }
 
@@ -98,7 +98,7 @@ async function openTest(browser, absoluteDir, filename) {
         filename = "index.html";
     }
     await browser.url(
-        `http://localhost:4567/test/polyfill/${dirname}/${filename}`
+        `http://localhost:4567/test/polyfill/${dirname}/${filename}`,
     );
 }
 

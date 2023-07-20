@@ -88,7 +88,7 @@ function sanitizeParameters(
     parameters:
         | (URLSearchParams | string | Record<string, string>)
         | undefined
-        | null
+        | null,
 ): Record<string, string> {
     if (parameters === null || parameters === undefined) {
         return {};
@@ -107,7 +107,10 @@ function sanitizeParameters(
 }
 
 class Point {
-    constructor(public x: number, public y: number) {}
+    constructor(
+        public x: number,
+        public y: number,
+    ) {}
 
     distanceTo(other: Point) {
         const dx = other.x - this.x;
@@ -235,24 +238,24 @@ export class RufflePlayer extends HTMLElement {
         );
         this.virtualKeyboard.addEventListener(
             "input",
-            this.virtualKeyboardInput.bind(this)
+            this.virtualKeyboardInput.bind(this),
         );
         this.saveManager = <HTMLDivElement>(
             this.shadow.getElementById("save-manager")!
         );
         this.saveManager.addEventListener("click", () =>
-            this.saveManager.classList.add("hidden")
+            this.saveManager.classList.add("hidden"),
         );
         const modalArea = this.saveManager.querySelector("#modal-area");
         if (modalArea) {
             modalArea.addEventListener("click", (event) =>
-                event.stopPropagation()
+                event.stopPropagation(),
             );
         }
         const closeSaveManager = this.saveManager.querySelector("#close-modal");
         if (closeSaveManager) {
             closeSaveManager.addEventListener("click", () =>
-                this.saveManager.classList.add("hidden")
+                this.saveManager.classList.add("hidden"),
             );
         }
         const backupSaves = <HTMLElement>(
@@ -274,35 +277,35 @@ export class RufflePlayer extends HTMLElement {
         }
 
         this.contextMenuOverlay = this.shadow.getElementById(
-            "context-menu-overlay"
+            "context-menu-overlay",
         )!;
         this.contextMenuElement = this.shadow.getElementById("context-menu")!;
         window.addEventListener("pointerdown", this.checkIfTouch.bind(this));
         this.addEventListener("contextmenu", this.showContextMenu.bind(this));
         this.container.addEventListener(
             "pointerdown",
-            this.pointerDown.bind(this)
+            this.pointerDown.bind(this),
         );
         this.container.addEventListener(
             "pointermove",
-            this.checkLongPressMovement.bind(this)
+            this.checkLongPressMovement.bind(this),
         );
         this.container.addEventListener(
             "pointerup",
-            this.checkLongPress.bind(this)
+            this.checkLongPress.bind(this),
         );
         this.container.addEventListener(
             "pointercancel",
-            this.clearLongPressTimer.bind(this)
+            this.clearLongPressTimer.bind(this),
         );
 
         this.addEventListener(
             "fullscreenchange",
-            this.fullScreenChange.bind(this)
+            this.fullScreenChange.bind(this),
         );
         this.addEventListener(
             "webkitfullscreenchange",
-            this.fullScreenChange.bind(this)
+            this.fullScreenChange.bind(this),
         );
 
         this.instance = null;
@@ -342,7 +345,7 @@ export class RufflePlayer extends HTMLElement {
                     this.instance.play();
                 }
             },
-            false
+            false,
         );
     }
 
@@ -369,7 +372,7 @@ export class RufflePlayer extends HTMLElement {
     attributeChangedCallback(
         name: string,
         _oldValue: string | undefined,
-        _newValue: string | undefined
+        _newValue: string | undefined,
     ): void {
         if (name === "width" || name === "height") {
             this.updateStyles();
@@ -403,11 +406,11 @@ export class RufflePlayer extends HTMLElement {
             const widthAttr = this.attributes.getNamedItem("width");
             if (widthAttr !== undefined && widthAttr !== null) {
                 const width = RufflePlayer.htmlDimensionToCssDimension(
-                    widthAttr.value
+                    widthAttr.value,
                 );
                 if (width !== null) {
                     this.dynamicStyles.sheet.insertRule(
-                        `:host { width: ${width}; }`
+                        `:host { width: ${width}; }`,
                     );
                 }
             }
@@ -415,11 +418,11 @@ export class RufflePlayer extends HTMLElement {
             const heightAttr = this.attributes.getNamedItem("height");
             if (heightAttr !== undefined && heightAttr !== null) {
                 const height = RufflePlayer.htmlDimensionToCssDimension(
-                    heightAttr.value
+                    heightAttr.value,
                 );
                 if (height !== null) {
                     this.dynamicStyles.sheet.insertRule(
-                        `:host { height: ${height}; }`
+                        `:host { height: ${height}; }`,
                     );
                 }
             }
@@ -472,7 +475,7 @@ export class RufflePlayer extends HTMLElement {
         }
         if (this.loadedConfig && this.loadedConfig.preloader === false) {
             console.warn(
-                "The configuration option preloader has been replaced with splashScreen. If you own this website, please update the configuration."
+                "The configuration option preloader has been replaced with splashScreen. If you own this website, please update the configuration.",
             );
         }
         if (
@@ -483,7 +486,7 @@ export class RufflePlayer extends HTMLElement {
             console.warn(
                 "Configuration: An obsolete format for duration for 'maxExecutionDuration' was used, " +
                     "please use a single number indicating seconds instead. For instance '15' instead of " +
-                    "'{secs: 15, nanos: 0}'."
+                    "'{secs: 15, nanos: 0}'.",
             );
         }
         if (
@@ -491,12 +494,12 @@ export class RufflePlayer extends HTMLElement {
             typeof this.loadedConfig.contextMenu === "boolean"
         ) {
             console.warn(
-                'The configuration option contextMenu no longer takes a boolean. Use "on", "off", or "rightClickOnly".'
+                'The configuration option contextMenu no longer takes a boolean. Use "on", "off", or "rightClickOnly".',
             );
         }
         const ruffleConstructor = await loadRuffle(
             this.loadedConfig || {},
-            this.onRuffleDownloadProgress.bind(this)
+            this.onRuffleDownloadProgress.bind(this),
         ).catch((e) => {
             console.error(`Serious error loading Ruffle: ${e}`);
 
@@ -539,7 +542,7 @@ export class RufflePlayer extends HTMLElement {
         this.instance = await new ruffleConstructor(
             this.container,
             this,
-            this.loadedConfig
+            this.loadedConfig,
         );
         this.rendererDebugInfo = this.instance!.renderer_debug_info();
 
@@ -552,7 +555,7 @@ export class RufflePlayer extends HTMLElement {
                 " | Used renderer: " +
                 (actuallyUsedRendererName ?? "") +
                 ")",
-            "background: #37528C; color: #FFAD33"
+            "background: #37528C; color: #FFAD33",
         );
 
         // In Firefox, AudioContext.state is always "suspended" when the object has just been created.
@@ -572,7 +575,7 @@ export class RufflePlayer extends HTMLElement {
         // On Android, the virtual keyboard needs to be dismissed as otherwise it re-focuses when clicking elsewhere
         if (navigator.userAgent.toLowerCase().includes("android")) {
             this.container.addEventListener("click", () =>
-                this.virtualKeyboard.blur()
+                this.virtualKeyboard.blur(),
             );
         }
 
@@ -599,7 +602,7 @@ export class RufflePlayer extends HTMLElement {
                     this.unmuteOverlayClicked.bind(this),
                     {
                         once: true,
-                    }
+                    },
                 );
 
                 const audioContext = this.instance?.audio_context();
@@ -653,7 +656,7 @@ export class RufflePlayer extends HTMLElement {
     }
 
     private checkOptions(
-        options: string | URLLoadOptions | DataLoadOptions
+        options: string | URLLoadOptions | DataLoadOptions,
     ): URLLoadOptions | DataLoadOptions {
         if (typeof options === "string") {
             return { url: options };
@@ -661,7 +664,7 @@ export class RufflePlayer extends HTMLElement {
 
         const check: (
             condition: boolean,
-            message: string
+            message: string,
         ) => asserts condition = (condition, message) => {
             if (!condition) {
                 const error = new TypeError(message);
@@ -672,15 +675,15 @@ export class RufflePlayer extends HTMLElement {
         };
         check(
             options !== null && typeof options === "object",
-            "Argument 0 must be a string or object"
+            "Argument 0 must be a string or object",
         );
         check(
             "url" in options || "data" in options,
-            "Argument 0 must contain a `url` or `data` key"
+            "Argument 0 must contain a `url` or `data` key",
         );
         check(
             !("url" in options) || typeof options.url === "string",
-            "`url` must be a string"
+            "`url` must be a string",
         );
         return options;
     }
@@ -717,13 +720,13 @@ export class RufflePlayer extends HTMLElement {
      * is defaulted by a global `window.RufflePlayer.config`.
      */
     async load(
-        options: string | URLLoadOptions | DataLoadOptions
+        options: string | URLLoadOptions | DataLoadOptions,
     ): Promise<void> {
         options = this.checkOptions(options);
 
         if (!this.isConnected || this.isUnusedFallbackObject()) {
             console.warn(
-                "Ignoring attempt to play a disconnected or suspended Ruffle element"
+                "Ignoring attempt to play a disconnected or suspended Ruffle element",
             );
             return;
         }
@@ -760,14 +763,14 @@ export class RufflePlayer extends HTMLElement {
 
                 this.instance!.stream_from(
                     this.swfUrl.href,
-                    sanitizeParameters(options.parameters)
+                    sanitizeParameters(options.parameters),
                 );
             } else if ("data" in options) {
                 console.log("Loading SWF data");
                 this.instance!.load_data(
                     new Uint8Array(options.data),
                     sanitizeParameters(options.parameters),
-                    options.swfFileName || "movie.swf"
+                    options.swfFileName || "movie.swf",
                 );
             }
         } catch (e) {
@@ -954,7 +957,7 @@ export class RufflePlayer extends HTMLElement {
     private confirmReloadSave(
         solKey: string,
         b64SolData: string,
-        replace: boolean
+        replace: boolean,
     ) {
         if (this.isB64SOL(b64SolData)) {
             if (localStorage[solKey]) {
@@ -973,7 +976,7 @@ export class RufflePlayer extends HTMLElement {
                     const confirmReload = confirm(
                         text("save-reload-prompt", {
                             action: replace ? "replace" : "delete",
-                        })
+                        }),
                     );
                     if (confirmReload && this.loadedConfig) {
                         this.destroy();
@@ -1064,7 +1067,7 @@ export class RufflePlayer extends HTMLElement {
                 downloadSpan.addEventListener("click", () => {
                     const blob = this.base64ToBlob(
                         solData,
-                        "application/octet-stream"
+                        "application/octet-stream",
                     );
                     this.saveFile(blob, solName + ".sol");
                 });
@@ -1084,7 +1087,7 @@ export class RufflePlayer extends HTMLElement {
                 replaceLabel.textContent = text("save-replace");
                 replaceLabel.className = "save-option";
                 replaceInput.addEventListener("change", (event) =>
-                    this.replaceSOL(event, key)
+                    this.replaceSOL(event, key),
                 );
                 replaceCol.appendChild(replaceInput);
                 replaceCol.appendChild(replaceLabel);
@@ -1093,7 +1096,7 @@ export class RufflePlayer extends HTMLElement {
                 deleteSpan.textContent = text("save-delete");
                 deleteSpan.className = "save-option";
                 deleteSpan.addEventListener("click", () =>
-                    this.deleteSave(key)
+                    this.deleteSave(key),
                 );
                 deleteCol.appendChild(deleteSpan);
                 row.appendChild(keyCol);
@@ -1117,10 +1120,10 @@ export class RufflePlayer extends HTMLElement {
             if (solData && this.isB64SOL(solData)) {
                 const blob = this.base64ToBlob(
                     solData,
-                    "application/octet-stream"
+                    "application/octet-stream",
                 );
                 const duplicate = duplicateNames.filter(
-                    (value) => value === solName
+                    (value) => value === solName,
                 ).length;
                 duplicateNames.push(solName);
                 if (duplicate > 0) {
@@ -1170,7 +1173,7 @@ export class RufflePlayer extends HTMLElement {
                     new KeyboardEvent(eventType, {
                         key: char,
                         bubbles: true,
-                    })
+                    }),
                 );
             }
         }
@@ -1309,7 +1312,7 @@ export class RufflePlayer extends HTMLElement {
         this.clearLongPressTimer();
         this.longPressTimer = setTimeout(
             () => this.clearLongPressTimer(),
-            longPressTimeout
+            longPressTimeout,
         );
     }
 
@@ -1356,14 +1359,14 @@ export class RufflePlayer extends HTMLElement {
             window.addEventListener(
                 "pointerup",
                 this.hideContextMenu.bind(this),
-                { once: true }
+                { once: true },
             );
             event.stopPropagation();
         }
 
         if (
             [false, ContextMenu.Off].includes(
-                this.loadedConfig?.contextMenu ?? ContextMenu.On
+                this.loadedConfig?.contextMenu ?? ContextMenu.On,
             ) ||
             (this.isTouch &&
                 this.loadedConfig?.contextMenu ===
@@ -1376,7 +1379,7 @@ export class RufflePlayer extends HTMLElement {
         // Clear all context menu items.
         while (this.contextMenuElement.firstChild) {
             this.contextMenuElement.removeChild(
-                this.contextMenuElement.firstChild
+                this.contextMenuElement.firstChild,
             );
         }
 
@@ -1398,7 +1401,7 @@ export class RufflePlayer extends HTMLElement {
                 if (enabled !== false) {
                     menuItem.addEventListener(
                         this.contextMenuSupported ? "click" : "pointerup",
-                        onClick
+                        onClick,
                     );
                 } else {
                     menuItem.classList.add("disabled");
@@ -1503,7 +1506,7 @@ export class RufflePlayer extends HTMLElement {
                     dataView.setUint16(8, 1, true);
                     const missingCharacters = window
                         .btoa(
-                            String.fromCharCode(...new Uint8Array(arrayBuffer))
+                            String.fromCharCode(...new Uint8Array(arrayBuffer)),
                         )
                         .slice(0, 13);
                     return `data:audio/wav;base64,UklGRisAAABXQVZFZm10IBAAAAABAAEA${missingCharacters}AgAZGF0YQcAAACAgICAgICAAAA=`;
@@ -1519,7 +1522,7 @@ export class RufflePlayer extends HTMLElement {
                         console.warn(`Failed to play dummy sound: ${err}`);
                     });
             },
-            { once: true }
+            { once: true },
         );
     }
 
@@ -1546,7 +1549,7 @@ export class RufflePlayer extends HTMLElement {
                     } catch (err) {
                         // The embed may have invalid attributes, so handle these gracefully.
                         console.warn(
-                            `Unable to set attribute ${attribute.name} on Ruffle instance`
+                            `Unable to set attribute ${attribute.name} on Ruffle instance`,
                         );
                     }
                 }
@@ -1569,7 +1572,7 @@ export class RufflePlayer extends HTMLElement {
      * @private
      */
     private static htmlDimensionToCssDimension(
-        attribute: string
+        attribute: string,
     ): string | null {
         if (attribute) {
             const match = attribute.match(DIMENSION_REGEX);
@@ -1705,14 +1708,14 @@ export class RufflePlayer extends HTMLElement {
             if (error.stack) {
                 const stackIndex =
                     errorArray.push(
-                        `Error stack:\n\`\`\`\n${error.stack}\n\`\`\`\n`
+                        `Error stack:\n\`\`\`\n${error.stack}\n\`\`\`\n`,
                     ) - 1;
                 if (error.avmStack) {
                     const avmStackIndex =
                         errorArray.push(
                             `AVM2 stack:\n\`\`\`\n    ${error.avmStack
                                 .trim()
-                                .replace(/\t/g, "    ")}\n\`\`\`\n`
+                                .replace(/\t/g, "    ")}\n\`\`\`\n`,
                         ) - 1;
                     errorArray.avmStackIndex = avmStackIndex;
                 }
@@ -1747,7 +1750,7 @@ export class RufflePlayer extends HTMLElement {
 
             const issueTitle = `Error on ${url}`;
             let issueLink = `https://github.com/ruffle-rs/ruffle/issues/new?title=${encodeURIComponent(
-                issueTitle
+                issueTitle,
             )}&template=error_report.md&labels=error-report&body=`;
             let issueBody = encodeURIComponent(errorText);
             if (
@@ -1764,11 +1767,11 @@ export class RufflePlayer extends HTMLElement {
             }
             issueLink += issueBody;
             actionTag = `<a target="_top" href="${issueLink}">${text(
-                "report-bug"
+                "report-bug",
             )}</a>`;
         } else {
             actionTag = `<a target="_top" href="${RUFFLE_ORIGIN}#downloads">${text(
-                "update-ruffle"
+                "update-ruffle",
             )}</a>`;
         }
 
@@ -1780,11 +1783,11 @@ export class RufflePlayer extends HTMLElement {
                 errorBody = textAsParagraphs("error-file-protocol");
                 errorFooter = `
                     <li><a target="_top" href="${RUFFLE_ORIGIN}/demo">${text(
-                    "ruffle-demo"
-                )}</a></li>
+                        "ruffle-demo",
+                    )}</a></li>
                     <li><a target="_top" href="${RUFFLE_ORIGIN}#downloads">${text(
-                    "ruffle-desktop"
-                )}</a></li>
+                        "ruffle-desktop",
+                    )}</a></li>
                 `;
                 break;
             case PanicError.JavascriptConfiguration:
@@ -1792,10 +1795,10 @@ export class RufflePlayer extends HTMLElement {
                 errorBody = textAsParagraphs("error-javascript-config");
                 errorFooter = `
                     <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#javascript-api">${text(
-                        "ruffle-wiki"
+                        "ruffle-wiki",
                     )}</a></li>
                     <li><a href="#" id="panic-view-details">${text(
-                        "view-error-details"
+                        "view-error-details",
                     )}</a></li>
                 `;
                 break;
@@ -1804,10 +1807,10 @@ export class RufflePlayer extends HTMLElement {
                 errorBody = textAsParagraphs("error-wasm-not-found");
                 errorFooter = `
                     <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configuration-options">${text(
-                        "ruffle-wiki"
+                        "ruffle-wiki",
                     )}</a></li>
                     <li><a href="#" id="panic-view-details">${text(
-                        "view-error-details"
+                        "view-error-details",
                     )}</a></li>
                 `;
                 break;
@@ -1816,10 +1819,10 @@ export class RufflePlayer extends HTMLElement {
                 errorBody = textAsParagraphs("error-wasm-mime-type");
                 errorFooter = `
                     <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-webassembly-mime-type">${text(
-                        "ruffle-wiki"
+                        "ruffle-wiki",
                     )}</a></li>
                     <li><a href="#" id="panic-view-details">${text(
-                        "view-error-details"
+                        "view-error-details",
                     )}</a></li>
                 `;
                 break;
@@ -1827,7 +1830,7 @@ export class RufflePlayer extends HTMLElement {
                 errorBody = textAsParagraphs("error-swf-fetch");
                 errorFooter = `
                     <li><a href="#" id="panic-view-details">${text(
-                        "view-error-details"
+                        "view-error-details",
                     )}</a></li>
                 `;
                 break;
@@ -1836,10 +1839,10 @@ export class RufflePlayer extends HTMLElement {
                 errorBody = textAsParagraphs("error-swf-cors");
                 errorFooter = `
                     <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-cors-header">${text(
-                        "ruffle-wiki"
+                        "ruffle-wiki",
                     )}</a></li>
                     <li><a href="#" id="panic-view-details">${text(
-                        "view-error-details"
+                        "view-error-details",
                     )}</a></li>
                 `;
                 break;
@@ -1848,10 +1851,10 @@ export class RufflePlayer extends HTMLElement {
                 errorBody = textAsParagraphs("error-wasm-cors");
                 errorFooter = `
                     <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-cors-header">${text(
-                        "ruffle-wiki"
+                        "ruffle-wiki",
                     )}</a></li>
                     <li><a href="#" id="panic-view-details">${text(
-                        "view-error-details"
+                        "view-error-details",
                     )}</a></li>
                 `;
                 break;
@@ -1860,10 +1863,10 @@ export class RufflePlayer extends HTMLElement {
                 errorBody = textAsParagraphs("error-wasm-invalid");
                 errorFooter = `
                     <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#addressing-a-compileerror">${text(
-                        "ruffle-wiki"
+                        "ruffle-wiki",
                     )}</a></li>
                     <li><a href="#" id="panic-view-details">${text(
-                        "view-error-details"
+                        "view-error-details",
                     )}</a></li>
                 `;
                 break;
@@ -1872,7 +1875,7 @@ export class RufflePlayer extends HTMLElement {
                 errorBody = textAsParagraphs("error-wasm-download");
                 errorFooter = `
                     <li><a href="#" id="panic-view-details">${text(
-                        "view-error-details"
+                        "view-error-details",
                     )}</a></li>
                 `;
                 break;
@@ -1882,10 +1885,10 @@ export class RufflePlayer extends HTMLElement {
                 errorBody = textAsParagraphs("error-wasm-disabled-on-edge");
                 errorFooter = `
                     <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Frequently-Asked-Questions-For-Users#edge-webassembly-error">${text(
-                        "more-info"
+                        "more-info",
                     )}</a></li>
                     <li><a href="#" id="panic-view-details">${text(
-                        "view-error-details"
+                        "view-error-details",
                     )}</a></li>
                 `;
                 break;
@@ -1895,13 +1898,13 @@ export class RufflePlayer extends HTMLElement {
                 if (isBuildOutdated) {
                     errorBody += textAsParagraphs(
                         "error-javascript-conflict-outdated",
-                        { buildDate: buildInfo.buildDate }
+                        { buildDate: buildInfo.buildDate },
                     );
                 }
                 errorFooter = `
                     <li>${actionTag}</li>
                     <li><a href="#" id="panic-view-details">${text(
-                        "view-error-details"
+                        "view-error-details",
                     )}</a></li>
                 `;
                 break;
@@ -1910,10 +1913,10 @@ export class RufflePlayer extends HTMLElement {
                 errorBody = textAsParagraphs("error-csp-conflict");
                 errorFooter = `
                     <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-wasm-csp">${text(
-                        "ruffle-wiki"
+                        "ruffle-wiki",
                     )}</a></li>
                     <li><a href="#" id="panic-view-details">${text(
-                        "view-error-details"
+                        "view-error-details",
                     )}</a></li>
                 `;
                 break;
@@ -1926,7 +1929,7 @@ export class RufflePlayer extends HTMLElement {
                 errorFooter = `
                     <li>${actionTag}</li>
                     <li><a href="#" id="panic-view-details">${text(
-                        "view-error-details"
+                        "view-error-details",
                     )}</a></li>
                 `;
                 break;
@@ -1967,7 +1970,7 @@ export class RufflePlayer extends HTMLElement {
             const url = new URL(this.swfUrl!);
             if (this.loadedConfig?.parameters) {
                 const parameters = sanitizeParameters(
-                    this.loadedConfig.parameters
+                    this.loadedConfig.parameters,
                 );
                 Object.entries(parameters).forEach(([key, value]) => {
                     url.searchParams.set(key, value);
@@ -1980,8 +1983,8 @@ export class RufflePlayer extends HTMLElement {
                 ${textAsParagraphs("message-cant-embed")}
                 <div>
                     <a target="_blank" href="${url}">${text(
-                "open-in-new-tab"
-            )}</a>
+                        "open-in-new-tab",
+                    )}</a>
                 </div>
             </div>`;
             this.container.prepend(div);
@@ -2008,7 +2011,7 @@ export class RufflePlayer extends HTMLElement {
             ${textAsParagraphs("message-unsupported-avm2")}
             <div>
                 <a target="_blank" class="more-info-link" href="https://github.com/ruffle-rs/ruffle/wiki/Frequently-Asked-Questions-For-Users">${text(
-                    "more-info"
+                    "more-info",
                 )}</a>
                 <button id="run-anyway-btn">${text("run-anyway")}</button>
             </div>
@@ -2096,7 +2099,7 @@ export const enum ReadyState {
  */
 export function isScriptAccessAllowed(
     access: string | null,
-    url: string
+    url: string,
 ): boolean {
     if (!access) {
         access = "sameDomain";
@@ -2154,7 +2157,7 @@ export function isYoutubeFlashSource(filename: string | null): boolean {
         if (
             pathname.startsWith("/v/") &&
             /^(?:(?:www\.|m\.)?youtube(?:-nocookie)?\.com)|(?:youtu\.be)$/i.test(
-                hostname
+                hostname,
             )
         ) {
             return true;
@@ -2171,7 +2174,7 @@ export function isYoutubeFlashSource(filename: string | null): boolean {
  */
 export function workaroundYoutubeMixedContent(
     elem: Element,
-    attr: string
+    attr: string,
 ): void {
     const value = elem.getAttribute(attr);
     const config = window.RufflePlayer?.config ?? {};

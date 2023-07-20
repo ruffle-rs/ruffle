@@ -85,7 +85,7 @@ function checkPageOptout(): boolean {
             window.top.document &&
             window.top.document.documentElement &&
             window.top.document.documentElement.hasAttribute(
-                "data-ruffle-optout"
+                "data-ruffle-optout",
             )
         ) {
             // In case the opting-out page uses iframes.

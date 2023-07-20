@@ -74,7 +74,7 @@ describe("VersionRange", function () {
 
         it("should ignore empty ranges", function () {
             const range = VersionRange.fromRequirementString(
-                "|| || 1.2.4 || || 1.2.5 ||"
+                "|| || 1.2.4 || || 1.2.5 ||",
             );
             assert.deepEqual(range.requirements, [
                 [{ comparator: "", version: Version.fromSemver("1.2.4") }],
@@ -140,7 +140,7 @@ describe("VersionRange", function () {
 
         groups.forEach(function (group) {
             const range = VersionRange.fromRequirementString(
-                group.requirements
+                group.requirements,
             );
             describe(`with requirements '${group.requirements}'`, function () {
                 group.tests.forEach(function (test) {

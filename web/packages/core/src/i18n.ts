@@ -23,10 +23,10 @@ for (const [locale, files] of Object.entries(BUNDLED_TEXTS)) {
         for (const [filename, text] of Object.entries(files)) {
             if (text) {
                 for (const error of bundle.addResource(
-                    new FluentResource(text)
+                    new FluentResource(text),
                 )) {
                     console.error(
-                        `Error in text for ${locale} ${filename}: ${error}`
+                        `Error in text for ${locale} ${filename}: ${error}`,
                     );
                 }
             }
@@ -48,7 +48,7 @@ for (const [locale, files] of Object.entries(BUNDLED_TEXTS)) {
 function tryText(
     locale: string,
     id: string,
-    args?: Record<string, FluentVariable> | null
+    args?: Record<string, FluentVariable> | null,
 ): string | null {
     const bundle = bundles[locale];
     if (bundle !== undefined) {
@@ -74,12 +74,12 @@ function tryText(
  */
 export function text(
     id: string,
-    args?: Record<string, FluentVariable> | null
+    args?: Record<string, FluentVariable> | null,
 ): string {
     const locales = negotiateLanguages(
         navigator.languages,
         Object.keys(bundles),
-        { defaultLocale: "en-US" }
+        { defaultLocale: "en-US" },
     );
 
     for (const i in locales) {
@@ -107,7 +107,7 @@ export function text(
  */
 export function textAsParagraphs(
     id: string,
-    args?: Record<string, FluentVariable> | null
+    args?: Record<string, FluentVariable> | null,
 ): string {
     const result = document.createElement("div");
     text(id, args)

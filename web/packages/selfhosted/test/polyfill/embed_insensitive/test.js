@@ -26,7 +26,7 @@ describe("Embed with case-insensitive MIME type", () => {
     it("Plays a movie", async () => {
         await playAndMonitor(
             browser,
-            await browser.$("#test-container").$("<ruffle-embed />")
+            await browser.$("#test-container").$("<ruffle-embed />"),
         );
     });
 });

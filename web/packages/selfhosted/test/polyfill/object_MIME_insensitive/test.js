@@ -26,7 +26,7 @@ describe("Object with case-insensitive MIME type", () => {
     it("Plays a movie", async () => {
         await playAndMonitor(
             browser,
-            await browser.$("#test-container").$("<ruffle-object />")
+            await browser.$("#test-container").$("<ruffle-object />"),
         );
     });
 });

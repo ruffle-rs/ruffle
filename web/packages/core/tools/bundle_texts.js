@@ -21,7 +21,7 @@ locales.forEach((locale) => {
             if (entry.isFile() && entry.name.endsWith(".ftl")) {
                 files.push(entry.name);
             }
-        }
+        },
     );
     files.sort();
     if (files.length > 0) {

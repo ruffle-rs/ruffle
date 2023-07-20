@@ -61,7 +61,7 @@ export function lookupElement(elementName: string): Registration | null {
  */
 export function registerElement(
     elementName: string,
-    elementClass: CustomElementConstructor
+    elementClass: CustomElementConstructor,
 ): string {
     const registration = privateRegistry[elementName];
     if (registration !== undefined) {

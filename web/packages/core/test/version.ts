@@ -33,35 +33,35 @@ describe("Version", function () {
         it("should parse valid semver strings", function () {
             assert.deepEqual(
                 Version.fromSemver("1.2"),
-                new Version(1, 2, 0, null, null)
+                new Version(1, 2, 0, null, null),
             );
             assert.deepEqual(
                 Version.fromSemver("1.2.3"),
-                new Version(1, 2, 3, null, null)
+                new Version(1, 2, 3, null, null),
             );
             assert.deepEqual(
                 Version.fromSemver("1.09.3"),
-                new Version(1, 9, 3, null, null)
+                new Version(1, 9, 3, null, null),
             );
             assert.deepEqual(
                 Version.fromSemver("1.2.3-pr"),
-                new Version(1, 2, 3, ["pr"], null)
+                new Version(1, 2, 3, ["pr"], null),
             );
             assert.deepEqual(
                 Version.fromSemver("1.2.3-pr1.pr2"),
-                new Version(1, 2, 3, ["pr1", "pr2"], null)
+                new Version(1, 2, 3, ["pr1", "pr2"], null),
             );
             assert.deepEqual(
                 Version.fromSemver("1.2.3+build"),
-                new Version(1, 2, 3, null, ["build"])
+                new Version(1, 2, 3, null, ["build"]),
             );
             assert.deepEqual(
                 Version.fromSemver("1.2.3+build1.build2"),
-                new Version(1, 2, 3, null, ["build1", "build2"])
+                new Version(1, 2, 3, null, ["build1", "build2"]),
             );
             assert.deepEqual(
                 Version.fromSemver("1-pr1.pr2+build1.build2"),
-                new Version(1, 0, 0, ["pr1", "pr2"], ["build1", "build2"])
+                new Version(1, 0, 0, ["pr1", "pr2"], ["build1", "build2"]),
             );
         });
     });
@@ -73,9 +73,9 @@ describe("Version", function () {
                     for (const b of test) {
                         assert(
                             Version.fromSemver(a).isCompatibleWith(
-                                Version.fromSemver(b)
+                                Version.fromSemver(b),
                             ),
-                            `${a} is compatible with ${b}`
+                            `${a} is compatible with ${b}`,
                         );
                     }
                 }
@@ -91,9 +91,9 @@ describe("Version", function () {
                         for (const b of otherTest) {
                             assert(
                                 !Version.fromSemver(a).isCompatibleWith(
-                                    Version.fromSemver(b)
+                                    Version.fromSemver(b),
                                 ),
-                                `${a} is not compatible with ${b}`
+                                `${a} is not compatible with ${b}`,
                             );
                         }
                     }
@@ -116,9 +116,9 @@ describe("Version", function () {
                     }
                     assert(
                         Version.fromSemver(tests[a]!).hasPrecedenceOver(
-                            Version.fromSemver(tests[b]!)
+                            Version.fromSemver(tests[b]!),
                         ),
-                        `${tests[a]} has precedence over ${tests[b]}`
+                        `${tests[a]} has precedence over ${tests[b]}`,
                     );
                 }
             }
@@ -136,9 +136,9 @@ describe("Version", function () {
                     }
                     assert(
                         !Version.fromSemver(tests[a]!).hasPrecedenceOver(
-                            Version.fromSemver(tests[b]!)
+                            Version.fromSemver(tests[b]!),
                         ),
-                        `${tests[a]} doesn't have precedence over ${tests[b]}`
+                        `${tests[a]} doesn't have precedence over ${tests[b]}`,
                     );
                 }
             }
@@ -151,9 +151,9 @@ describe("Version", function () {
             for (const version of tests) {
                 assert(
                     Version.fromSemver(version).isEqual(
-                        Version.fromSemver(version)
+                        Version.fromSemver(version),
                     ),
-                    `${version} is equal to itself`
+                    `${version} is equal to itself`,
                 );
             }
         });
@@ -172,9 +172,9 @@ describe("Version", function () {
                     }
                     assert(
                         !Version.fromSemver(tests[a]!).isEqual(
-                            Version.fromSemver(tests[b]!)
+                            Version.fromSemver(tests[b]!),
                         ),
-                        `${tests[a]} does not equal ${tests[b]}`
+                        `${tests[a]} does not equal ${tests[b]}`,
                     );
                 }
             }
@@ -187,9 +187,9 @@ describe("Version", function () {
             for (const version of tests) {
                 assert(
                     Version.fromSemver(version).isStableOrCompatiblePrerelease(
-                        Version.fromSemver(version)
+                        Version.fromSemver(version),
                     ),
-                    `${version} is compatible with itself`
+                    `${version} is compatible with itself`,
                 );
             }
         });
@@ -199,9 +199,9 @@ describe("Version", function () {
                 for (const b of tests) {
                     assert(
                         Version.fromSemver(a).isStableOrCompatiblePrerelease(
-                            Version.fromSemver(b)
+                            Version.fromSemver(b),
                         ),
-                        `${a} is compatible with ${b}`
+                        `${a} is compatible with ${b}`,
                     );
                 }
             }
@@ -215,9 +215,9 @@ describe("Version", function () {
                     }
                     assert(
                         !Version.fromSemver(a).isStableOrCompatiblePrerelease(
-                            Version.fromSemver(b)
+                            Version.fromSemver(b),
                         ),
-                        `${a} is not compatible with ${b}`
+                        `${a} is not compatible with ${b}`,
                     );
                 }
             }

@@ -14,7 +14,7 @@
 export function copyToAudioBuffer(
     audioBuffer: AudioBuffer,
     leftData: ArrayLike<number>,
-    rightData: ArrayLike<number>
+    rightData: ArrayLike<number>,
 ): void {
     if (leftData) {
         const dstBuffer = audioBuffer.getChannelData(0);
@@ -45,7 +45,7 @@ export function getAudioOutputTimestamp(context: AudioContext): number {
  */
 export function copyToAudioBufferInterleaved(
     audioBuffer: AudioBuffer,
-    interleavedData: ArrayLike<number>
+    interleavedData: ArrayLike<number>,
 ): void {
     const numSamples = audioBuffer.length;
     const leftBuffer = audioBuffer.getChannelData(0);
