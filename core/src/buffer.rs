@@ -449,18 +449,19 @@ impl Read for SubstreamCursor {
             let copy_count = min(data.len() - out_count, chunk_len - self.bytes_pos);
 
             data[out_count..out_count + copy_count].copy_from_slice(
-                buf.get(cur_chunk.0..cur_chunk.0 + copy_count)
+                buf.get(cur_chunk.0 + self.bytes_pos..cur_chunk.0 + self.bytes_pos + copy_count)
                     .expect("Slice offsets are always valid"),
             );
+
             self.bytes_pos += copy_count;
+            out_count += copy_count;
+
             if self.bytes_pos < chunk_len {
                 //`data` is full
                 break;
             }
 
             //`data` not full, move onto next chunk
-            out_count += copy_count;
-
             self.chunk_pos += 1;
             self.bytes_pos = 0;
         }
@@ -573,6 +574,28 @@ mod test {
         let mut data = vec![0; 7];
         let result = cursor.read(&mut data);
         assert_eq!(result.unwrap(), 7);
+        assert_eq!(data, vec![38, 26, 99, 38, 12, 14, 93]);
+
+        let mut data = vec![0; 2];
+        let result = cursor.read(&mut data);
+        assert_eq!(result.unwrap(), 2);
+        assert_eq!(data, vec![86, 88]);
+
+        let mut cursor = substream.as_cursor();
+        let mut data = vec![0; 8];
+        let result = cursor.read(&mut data);
+        assert_eq!(result.unwrap(), 8);
+        assert_eq!(data, vec![38, 26, 99, 38, 12, 14, 93, 86]);
+
+        let mut data = vec![0; 1];
+        let result = cursor.read(&mut data);
+        assert_eq!(result.unwrap(), 1);
+        assert_eq!(data, vec![88]);
+
+        let mut cursor = substream.as_cursor();
+        let mut data = vec![0; 9];
+        let result = cursor.read(&mut data);
+        assert_eq!(result.unwrap(), 9);
         assert_eq!(data, vec![38, 26, 99, 38, 12, 14, 93, 86, 88]);
     }
 }
