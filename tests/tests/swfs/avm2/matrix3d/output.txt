@@ -21,6 +21,10 @@ mat.transformVector(v):
 3857 4266 4675 5176
 mat.transformVectors(vecs, vecsOut):
 3857,4266,4675,6827,7542,8257,9797,10818,11839
+mat.transformVectors(vecs, vecsOutFixed):
+3857,4266,4675,6827,7542,8257,9797,10818,11839,0
+mat.transformVectors(vecs, vecsOutFixedTooSmall):
+RangeError: Error #1126: Cannot change the length of a fixed Vector.
 mat.transformVectors(null, vecsOut):
 TypeError: Error #2007: Parameter vin must be non-null.
 mat.transformVectors(vecs, null):

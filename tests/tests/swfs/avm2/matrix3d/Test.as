@@ -62,6 +62,19 @@
 			mat.transformVectors(vecs, vecsOut);
 			trace(vecsOut);
 
+			var vecsOutFixed:Vector.<Number> = new Vector.<Number>(vecs.length, true);
+			trace("mat.transformVectors(vecs, vecsOutFixed):");
+			mat.transformVectors(vecs, vecsOutFixed);
+			trace(vecsOutFixed);
+
+			var vecsOutFixedTooSmall:Vector.<Number> = new Vector.<Number>(4, true);
+			trace("mat.transformVectors(vecs, vecsOutFixedTooSmall):");
+			try {
+				mat.transformVectors(vecs, vecsOutFixedTooSmall);
+			} catch (e) {
+				trace(e);
+			}
+
 			trace("mat.transformVectors(null, vecsOut):");
 			try {
 				mat.transformVectors(null, vecsOut);
