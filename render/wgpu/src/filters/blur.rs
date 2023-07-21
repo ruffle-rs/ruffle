@@ -18,12 +18,20 @@ const PASS_SCALES: [f32; 15] = [
     1.0, 2.1, 2.7, 3.1, 3.5, 3.8, 4.0, 4.2, 4.4, 4.6, 5.0, 6.0, 6.0, 7.0, 7.0,
 ];
 
+/// This is a 1:1 match of of `struct Filter` in `blur.wgsl`. See that, and the usage below, for more info.
+/// Since WebGL requires 16 byte struct size (alignment), some of these fields (namely m2 and last_weight)
+/// are passed in precomputed, even though they are trivial to get (addition/multiplication by constant).
+/// The struct would have to be padded with dummy data otherwise anyway - these are at least useful.
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable, PartialEq)]
 struct BlurUniform {
     direction: [f32; 2],
     full_size: f32,
-    left_weight: f32,
+    m: f32,
+    m2: f32,
+    first_weight: f32,
+    last_offset: f32,
+    last_weight: f32,
 }
 
 pub struct BlurFilter {
@@ -207,7 +215,7 @@ impl BlurFilter {
                     filter.blur_y.to_f32()
                 };
                 // Full width of the kernel (left edge to right edge)
-                let full_size = (strength.min(255.0) * pass_scale).round();
+                let full_size = strength.min(255.0) * pass_scale;
                 if full_size <= 1.0 {
                     // A width of 1 or less is a noop (it'd just sample itself and nothing else)
                     continue;
@@ -229,6 +237,33 @@ impl BlurFilter {
                         flip.height() as f32,
                     )
                 };
+
+                // See this article for additional information on the fractional blur algorithm, as this
+                // implementation was inspired by it: https://fgiesen.wordpress.com/2012/08/01/fast-blurs-2/
+
+                // This is how much the blur "extends past" the center pixel to either side.
+                let radius = (full_size - 1.0) / 2.0;
+
+                // This is how many simple double-1 weighted pixel pairs we can sample in the center.
+                // Note how we're not using floor() here. This is to guarantee that alpha is not 0 when
+                // radius is a whole number: That would cause the division below to end the universe,
+                // and more importantly, also waste at least one sampling of the texture (the first one).
+                // This way, alpha is 1 instead in those cases (with m being one smaller), and the last
+                // two samplings can be fused into one, at the right place and with the right weight.
+                let m = radius.ceil() - 1.0;
+                // Not the transparency kind. It's almost the fractional part of radius.
+                // If radius is a whole number, however, it's 1 instead of 0.
+                // The rounding is done to imitate the fixed-point calculations in Flash Player,
+                // improving emulation accuracy somewhat.
+                let alpha = ((radius - m) * 255.0).floor() / 255.0;
+
+                // These control how and where the last pair of pixels are to be sampled,
+                // so that the next-to-last will end up with an effective weight of 1.0,
+                // and the last one with a weight of alpha. Note that the offset is relative
+                // to the center of the next-to-last sampled pixel, in the range of 0 to 0.5.
+                let last_offset = 1.0 / ((1.0 / alpha) + 1.0);
+                let last_weight = alpha + 1.0;
+
                 let uniform = BlurUniform {
                     direction: if horizontal {
                         [1.0 / previous_width, 0.0]
@@ -236,7 +271,11 @@ impl BlurFilter {
                         [0.0, 1.0 / previous_height]
                     },
                     full_size,
-                    left_weight: ((full_size % 2.0) * 0.5) + 0.5,
+                    m,
+                    m2: m * 2.0,
+                    first_weight: alpha,
+                    last_offset,
+                    last_weight,
                 };
 
                 if descriptors.limits.max_push_constant_size > 0 {
