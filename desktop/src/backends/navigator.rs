@@ -12,7 +12,7 @@ use isahc::{
 use rfd::{AsyncMessageDialog, MessageButtons, MessageDialog, MessageLevel};
 use ruffle_core::backend::navigator::{
     async_return, create_fetch_error, create_specific_fetch_error, ErrorResponse, NavigationMethod,
-    NavigatorBackend, OpenURLMode, OwnedFuture, Request, SocketBehavior, SuccessResponse,
+    NavigatorBackend, OpenURLMode, OwnedFuture, Request, SocketMode, SuccessResponse,
 };
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
@@ -45,7 +45,7 @@ pub struct ExternalNavigatorBackend {
 
     socket_allowed: HashSet<String>,
 
-    socket_behavior: SocketBehavior,
+    socket_mode: SocketMode,
 
     upgrade_to_https: bool,
 
@@ -63,7 +63,7 @@ impl ExternalNavigatorBackend {
         upgrade_to_https: bool,
         open_url_mode: OpenURLMode,
         socket_allowed: HashSet<String>,
-        socket_behavior: SocketBehavior,
+        socket_mode: SocketMode,
     ) -> Self {
         let proxy = proxy.and_then(|url| url.as_str().parse().ok());
         let builder = HttpClient::builder()
@@ -86,7 +86,7 @@ impl ExternalNavigatorBackend {
             upgrade_to_https,
             open_url_mode,
             socket_allowed,
-            socket_behavior,
+            socket_mode,
         }
     }
 }
@@ -338,12 +338,12 @@ impl NavigatorBackend for ExternalNavigatorBackend {
     ) {
         let addr = format!("{}:{}", host, port);
         let is_allowed = self.socket_allowed.contains(&addr);
-        let socket_behavior = self.socket_behavior;
+        let socket_mode = self.socket_mode;
 
         let future = Box::pin(async move {
-            match (is_allowed, socket_behavior) {
-                (false, SocketBehavior::Unrestricted) | (true, _) => {} // the process is allowed to continue. just dont do anything.
-                (false, SocketBehavior::Deny) => {
+            match (is_allowed, socket_mode) {
+                (false, SocketMode::Unrestricted) | (true, _) => {} // the process is allowed to continue. just dont do anything.
+                (false, SocketMode::Deny) => {
                     // Just fail the connection.
                     sender
                         .send(SocketAction::Connect(handle, ConnectionState::Failed))
@@ -355,7 +355,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
 
                     return Ok(());
                 }
-                (false, SocketBehavior::Ask) => {
+                (false, SocketMode::Ask) => {
                     let attempt_sandbox_connect = AsyncMessageDialog::new().set_level(MessageLevel::Warning).set_description(&format!("The current movie is attempting to connect to {:?} (port {}).\n\nTo allow it to do so, click Yes to grant network access to that host.\n\nOtherwise, click No to deny access.", host, port)).set_buttons(MessageButtons::YesNo)
                     .show()
                     .await;

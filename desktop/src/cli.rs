@@ -1,7 +1,7 @@
 use crate::RUFFLE_VERSION;
 use anyhow::Error;
 use clap::Parser;
-use ruffle_core::backend::navigator::{OpenURLMode, SocketBehavior};
+use ruffle_core::backend::navigator::{OpenURLMode, SocketMode};
 use ruffle_core::config::Letterbox;
 use ruffle_core::{LoadBehavior, StageAlign, StageScaleMode};
 use ruffle_render::quality::StageQuality;
@@ -90,8 +90,8 @@ pub struct Opt {
     pub socket_allow: Vec<String>,
 
     /// Define how to deal with sockets.
-    #[clap(long = "socket", default_value = "ask")]
-    pub socket_behavior: SocketBehavior,
+    #[clap(long = "socket-mode", default_value = "ask")]
+    pub socket_mode: SocketMode,
 
     /// Replace all embedded HTTP URLs with HTTPS.
     #[clap(long, action)]
