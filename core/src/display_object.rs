@@ -147,7 +147,7 @@ impl BitmapCache {
         }
         let acceptable_size = if swf_version > 9 {
             let total = actual_width as u32 * actual_height as u32;
-            actual_width < 8191 && actual_height < 8191 && total < 1677215
+            actual_width < 8191 && actual_height < 8191 && total < 16777215
         } else {
             actual_width < 2880 && actual_height < 2880
         };
@@ -156,7 +156,6 @@ impl BitmapCache {
             && actual_height > 0
             && acceptable_size
         {
-            tracing::info!("{} x {}", actual_width, actual_height);
             let handle = renderer.create_empty_texture(actual_width as u32, actual_height as u32);
             self.bitmap = handle.ok().map(|handle| BitmapInfo {
                 width: actual_width,
