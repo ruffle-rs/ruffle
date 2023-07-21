@@ -1167,7 +1167,7 @@ impl CommandHandler for WebGlRenderBackend {
         bitmap: BitmapHandle,
         transform: Transform,
         smoothing: bool,
-        _pixel_snapping: PixelSnapping,
+        pixel_snapping: PixelSnapping,
     ) {
         self.set_stencil_state();
         let entry = as_registry_data(&bitmap);
@@ -1181,8 +1181,9 @@ impl CommandHandler for WebGlRenderBackend {
         };
 
         // Scale the quad to the bitmap's dimensions.
-        let matrix = transform.matrix
-            * ruffle_render::matrix::Matrix::scale(entry.width as f32, entry.height as f32);
+        let mut matrix = transform.matrix;
+        pixel_snapping.apply(&mut matrix);
+        matrix *= ruffle_render::matrix::Matrix::scale(entry.width as f32, entry.height as f32);
 
         let world_matrix = [
             [matrix.a, matrix.b, 0.0, 0.0],
