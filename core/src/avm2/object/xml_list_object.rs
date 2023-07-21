@@ -1,5 +1,5 @@
 use crate::avm2::activation::Activation;
-use crate::avm2::e4x::E4XNode;
+use crate::avm2::e4x::{E4XNode, E4XNodeKind};
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
@@ -437,5 +437,43 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                 .get_enumerant_name(index - children_len)
                 .unwrap_or(Value::Undefined))
         }
+    }
+
+    fn delete_property_local(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        name: &Multiname<'gc>,
+    ) -> Result<bool, Error<'gc>> {
+        let mut write = self.0.write(activation.context.gc_context);
+
+        if !name.is_any_name() && !name.is_attribute() {
+            if let Some(local_name) = name.local_name() {
+                if let Ok(index) = local_name.parse::<usize>() {
+                    if index < write.children.len() {
+                        let removed = write.children.remove(index);
+                        let removed_node = removed.node();
+                        if let Some(parent) = removed_node.parent() {
+                            if let E4XNodeKind::Attribute(_) = &*removed_node.kind() {
+                                parent
+                                    .remove_attribute(activation.context.gc_context, &removed_node);
+                            } else {
+                                parent.remove_child(activation.context.gc_context, &removed_node);
+                            }
+                        }
+                    }
+                    return Ok(true);
+                }
+            }
+        }
+
+        for child in write.children.iter_mut() {
+            if matches!(&*child.node().kind(), E4XNodeKind::Element { .. }) {
+                child
+                    .get_or_create_xml(activation)
+                    .delete_property_local(activation, name)?;
+            }
+        }
+
+        Ok(true)
     }
 }

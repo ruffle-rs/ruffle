@@ -1,0 +1,95 @@
+// xml
+<list><a>a</a><b>b</b><c>c</c></list>
+
+// list
+<a>a</a>
+<b>b</b>
+<c>c</c>
+
+// list[0]
+a
+
+// delete list[0]
+true
+// xml
+<list><b>b</b><c>c</c></list>
+
+// list
+<b>b</b>
+<c>c</c>
+
+// list[0]
+b
+
+// delete list[0]
+true
+// xml
+<list><c>c</c></list>
+
+// list
+c
+
+// list[0]
+c
+
+// delete list[0]
+true
+// xml
+
+
+// list
+
+
+// list[0]
+undefined
+
+--------
+// xml
+<list><item special="yep" id="a">a</item><item id="b">b</item><item special="very" id="c"><name>foo</name>c</item></list>
+
+// list
+<item special="yep" id="a">a</item>
+<item id="b">b</item>
+<item special="very" id="c"><name>foo</name>c</item>
+
+/// delete list.@special
+true
+
+// xml
+<list><item id="a">a</item><item id="b">b</item><item id="c"><name>foo</name>c</item></list>
+
+// list
+<item id="a">a</item>
+<item id="b">b</item>
+<item id="c"><name>foo</name>c</item>
+
+// delete list[5]
+true
+
+// delete list["name"]
+true
+
+// xml
+<list><item id="a">a</item><item id="b">b</item><item id="c">c</item></list>
+
+// list
+<item id="a">a</item>
+<item id="b">b</item>
+<item id="c">c</item>
+
+--------
+// xml
+<list><item special="yep" id="a">a</item><item id="b">b</item><item special="very" id="c"><name>foo</name>c</item></list>
+
+// list
+yepvery
+
+// delete list[0]
+true
+
+// xml
+<list><item id="a">a</item><item id="b">b</item><item special="very" id="c"><name>foo</name>c</item></list>
+
+// list
+very
+
