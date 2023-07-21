@@ -1,7 +1,7 @@
 //! `flash.display.DisplayObject` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::error::{argument_error, illegal_operation_error, make_error_2008};
+use crate::avm2::error::{argument_error, illegal_operation_error, make_error_2008, type_error};
 use crate::avm2::filters::FilterAvm2Ext;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::parameters::ParametersExt;
@@ -1030,5 +1030,34 @@ pub fn set_opaque_background<'gc>(
         dobj.set_opaque_background(activation.context.gc_context, color);
     }
 
+    Ok(Value::Undefined)
+}
+
+pub fn set_blend_shader<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(dobj) = this.as_display_object() {
+        let Some(shader_data) = args
+            .get_object(activation, 0, "shader")?
+            .get_public_property("data", activation)?
+            .as_object()
+        else {
+            return Err(Error::AvmError(type_error(
+                activation,
+                "Error #2007: Parameter data must be non-null.",
+                2007,
+            )?));
+        };
+
+        let shader_handle = shader_data
+            .as_shader_data()
+            .expect("Shader.data is not a ShaderData instance")
+            .pixel_bender_shader()
+            .expect("Missing compiled PixelBender shader");
+
+        dobj.set_blend_shader(activation.context.gc_context, Some(shader_handle));
+    }
     Ok(Value::Undefined)
 }

@@ -387,6 +387,8 @@ pub enum BlendMode {
     Erase = 12,
     Overlay = 13,
     HardLight = 14,
+    // FIXME - prevent this from being read from SWF
+    Shader = 15,
 }
 
 impl BlendMode {
@@ -415,6 +417,7 @@ impl Display for BlendMode {
             BlendMode::Erase => "erase",
             BlendMode::Overlay => "overlay",
             BlendMode::HardLight => "hardlight",
+            BlendMode::Shader => "shader",
         };
         f.write_str(s)
     }
@@ -439,6 +442,7 @@ impl FromStr for BlendMode {
             "erase" => BlendMode::Erase,
             "overlay" => BlendMode::Overlay,
             "hardlight" => BlendMode::HardLight,
+            "shader" => BlendMode::Shader,
             _ => return Err(()),
         };
         Ok(mode)

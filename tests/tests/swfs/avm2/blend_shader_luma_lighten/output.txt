@@ -1,0 +1,3 @@
+Loaded!
+Caught error: TypeError: Error #2007: Parameter data must be non-null.
+After blendShader: shader

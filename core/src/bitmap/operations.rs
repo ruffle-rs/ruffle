@@ -11,7 +11,7 @@ use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::TDisplayObject;
 use gc_arena::MutationContext;
 use ruffle_render::bitmap::{PixelRegion, PixelSnapping};
-use ruffle_render::commands::{CommandHandler, CommandList};
+use ruffle_render::commands::{CommandHandler, CommandList, RenderBlendMode};
 use ruffle_render::filters::Filter;
 use ruffle_render::matrix::Matrix;
 use ruffle_render::quality::StageQuality;
@@ -1518,7 +1518,10 @@ pub fn draw<'gc>(
         render_context.commands
     } else {
         let mut commands = CommandList::new();
-        commands.blend(render_context.commands, blend_mode);
+        commands.blend(
+            render_context.commands,
+            RenderBlendMode::Builtin(blend_mode),
+        );
         commands
     };
 

@@ -696,6 +696,7 @@ fn blend_mode_name(mode: BlendMode) -> &'static str {
         BlendMode::Erase => "Erase",
         BlendMode::Overlay => "Overlay",
         BlendMode::HardLight => "HardLight",
+        BlendMode::Shader => "Shader",
     }
 }
 

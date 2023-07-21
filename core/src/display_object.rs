@@ -13,6 +13,7 @@ use crate::vminterface::Instantiator;
 use bitflags::bitflags;
 use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
+use ruffle_render::pixel_bender::PixelBenderShaderHandle;
 use ruffle_render::transform::{Transform, TransformStack};
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
@@ -50,7 +51,7 @@ pub use morph_shape::{MorphShape, MorphShapeStatic};
 pub use movie_clip::{MovieClip, MovieClipWeak, Scene};
 use ruffle_render::backend::{BitmapCacheEntry, RenderBackend};
 use ruffle_render::bitmap::{BitmapHandle, BitmapInfo, PixelSnapping};
-use ruffle_render::commands::{CommandHandler, CommandList};
+use ruffle_render::commands::{CommandHandler, CommandList, RenderBlendMode};
 use ruffle_render::filters::Filter;
 pub use stage::{Stage, StageAlign, StageDisplayState, StageScaleMode, WindowMode};
 pub use text::Text;
@@ -223,6 +224,9 @@ pub struct DisplayObjectBase<'gc> {
     #[collect(require_static)]
     blend_mode: BlendMode,
 
+    #[collect(require_static)]
+    blend_shader: Option<PixelBenderShaderHandle>,
+
     /// The opaque background color of this display object.
     /// The bounding box of the display object will be filled with the given color. This also
     /// triggers cache-as-bitmap behavior. Only solid backgrounds are supported; the alpha channel
@@ -269,6 +273,7 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
             maskee: None,
             sound_transform: Default::default(),
             blend_mode: Default::default(),
+            blend_shader: None,
             opaque_background: Default::default(),
             flags: DisplayObjectFlags::VISIBLE,
             scroll_rect: None,
@@ -592,6 +597,14 @@ impl<'gc> DisplayObjectBase<'gc> {
         changed
     }
 
+    fn blend_shader(&self) -> Option<PixelBenderShaderHandle> {
+        self.blend_shader.clone()
+    }
+
+    fn set_blend_shader(&mut self, value: Option<PixelBenderShaderHandle>) {
+        self.blend_shader = value;
+    }
+
     /// The opaque background color of this display object.
     /// The bounding box of the display object will be filled with this color.
     fn opaque_background(&self) -> Option<Color> {
@@ -902,7 +915,16 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
 
     if let Some(original_commands) = original_commands {
         let sub_commands = std::mem::replace(&mut context.commands, original_commands);
-        context.commands.blend(sub_commands, blend_mode);
+        let render_blend_mode = if let BlendMode::Shader = blend_mode {
+            // Note - Flash appears to let you set `dobj.blendMode = BlendMode.SHADER` without
+            // having `dobj.blendShader` result, but the resulting rendered displayobject
+            // seems to be corrupted. For now, let's panic, and see if any swfs actually
+            // rely on this behavior.
+            RenderBlendMode::Shader(this.blend_shader().expect("Missing blend shader"))
+        } else {
+            RenderBlendMode::Builtin(blend_mode)
+        };
+        context.commands.blend(sub_commands, render_blend_mode);
     }
 
     context.transform_stack.pop();
@@ -1589,6 +1611,19 @@ pub trait TDisplayObject<'gc>:
                 parent.invalidate_cached_bitmap(gc_context);
             }
         }
+    }
+
+    fn blend_shader(&self) -> Option<PixelBenderShaderHandle> {
+        self.base().blend_shader()
+    }
+
+    fn set_blend_shader(
+        &self,
+        gc_context: MutationContext<'gc, '_>,
+        value: Option<PixelBenderShaderHandle>,
+    ) {
+        self.base_mut(gc_context).set_blend_shader(value);
+        self.set_blend_mode(gc_context, BlendMode::Shader);
     }
 
     /// The opaque background color of this display object.
