@@ -87,7 +87,7 @@ As this is indeed a complicated build process, please let me know if there is an
         console.error(`Got exception when uploading submission data: ${e}`);
     }
 
-    if (!result.success) {
+    if (!result.success && result.errorCode !== 'ADDON_NOT_AUTO_SIGNED') {
         throw result;
     }
 
@@ -99,7 +99,7 @@ As this is indeed a complicated build process, please let me know if there is an
         );
         await fs.copyFile(downloadedFile, destination);
         await fs.unlink(downloadedFile);
-    } else {
+    } else if (result.success) {
         console.warn(
             "Unexpected downloads for signed Firefox extension, expected 1.",
         );
