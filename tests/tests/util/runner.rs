@@ -17,6 +17,7 @@ use ruffle_input_format::{
     AutomatedEvent, InputInjector, MouseButton as InputMouseButton,
     TextControlCode as InputTextControlCode,
 };
+use ruffle_socket_format::SocketEvent;
 use std::cell::RefCell;
 use std::path::Path;
 use std::rc::Rc;
@@ -81,10 +82,11 @@ impl LogBackend for TestLogBackend {
 }
 
 /// Loads an SWF and runs it through the Ruffle core for a number of frames.
-/// Tests that the trace output matches the given expected output.
+/// Tests that the trace output matches the given expectedrun_swf output.
 pub fn run_swf(
     test: &Test,
     mut injector: InputInjector,
+    socket_events: Option<Vec<SocketEvent>>,
     before_start: impl FnOnce(Arc<Mutex<Player>>) -> Result<()>,
     before_end: impl FnOnce(Arc<Mutex<Player>>) -> Result<()>,
 ) -> Result<String> {
@@ -102,6 +104,7 @@ pub fn run_swf(
     let navigator = TestNavigatorBackend::new(
         base_path,
         &executor,
+        socket_events,
         test.options.log_fetch.then(|| log.clone()),
     )?;
 
