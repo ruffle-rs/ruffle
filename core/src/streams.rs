@@ -14,6 +14,7 @@ use crate::backend::audio::{DecodeError, SoundInstanceHandle};
 use crate::backend::navigator::Request;
 use crate::buffer::{Buffer, Substream};
 use crate::context::UpdateContext;
+use crate::display_object::MovieClip;
 use crate::loader::Error;
 use crate::string::AvmString;
 use crate::vminterface::AvmObject;
@@ -31,7 +32,30 @@ use ruffle_video::VideoStreamHandle;
 use std::cmp::max;
 use std::io::Seek;
 use swf::{AudioCompression, SoundFormat, SoundStreamHead, VideoCodec, VideoDeblocking};
+use thiserror::Error;
 use url::Url;
+
+#[derive(Debug, Error)]
+enum NetstreamError {
+    #[error("Decoding failed because {0}")]
+    DecodeError(DecodeError),
+
+    #[error("Could not play back audio and no error was given")]
+    NoPlayback,
+
+    #[error("Unknown codec")]
+    UnknownCodec,
+
+    #[error("AVM1 NetStream not attached to MovieClip")]
+    NotAttached,
+}
+
+impl From<DecodeError> for NetstreamError {
+    fn from(err: DecodeError) -> NetstreamError {
+        NetstreamError::DecodeError(err)
+    }
+}
+
 /// Manager for all media streams.
 ///
 /// This does *not* handle data transport; which is delegated to `LoadManager`.
@@ -147,10 +171,6 @@ pub enum NetStreamType {
         /// onto a table of data buffers like `Video` does, so we must maintain
         /// frame IDs ourselves for various API related purposes.
         frame_id: u32,
-
-        /// The currently playing audio track's `Substream` and associated
-        /// audio instance.
-        audio_stream: Option<(Substream, SoundInstanceHandle)>,
     },
 }
 
@@ -197,6 +217,14 @@ pub struct NetStreamData<'gc> {
 
     /// The URL of the requested FLV if one exists.
     url: Option<String>,
+
+    /// The currently playing audio track's `Substream` and associated
+    /// audio instance.
+    #[collect(require_static)]
+    audio_stream: Option<(Substream, SoundInstanceHandle)>,
+
+    /// The MovieClip this `NetStream` is attached to.
+    attached_to: Option<MovieClip<'gc>>,
 }
 
 impl<'gc> NetStream<'gc> {
@@ -213,6 +241,8 @@ impl<'gc> NetStream<'gc> {
                 avm_object,
                 avm2_client: None,
                 url: None,
+                audio_stream: None,
+                attached_to: None,
             },
         ))
     }
@@ -298,6 +328,38 @@ impl<'gc> NetStream<'gc> {
         StreamManager::toggle_paused(context, self);
     }
 
+    /// Indicates that this `NetStream`'s audio was detached from a `MovieClip` (AVM1)
+    pub fn was_detached(self, context: &mut UpdateContext<'_, 'gc>) {
+        let mut write = self.0.write(context.gc_context);
+
+        if let Some((_substream, sound_instance)) = &write.audio_stream {
+            context
+                .audio_manager
+                .stop_sound(context.audio, *sound_instance);
+        }
+
+        write.audio_stream = None;
+        write.attached_to = None;
+    }
+
+    /// Indicates that this `NetStream`'s audio was attached to a `MovieClip` (AVM1)
+    pub fn was_attached(self, context: &mut UpdateContext<'_, 'gc>, clip: MovieClip<'gc>) {
+        let mut write = self.0.write(context.gc_context);
+
+        // A `NetStream` cannot be attached to two `MovieClip`s at once.
+        // Stop the old sound; the new one will stream at the next tag read.
+        // TODO: Change this to have `audio_manager` just switch the sound
+        // transforms around
+        if let Some((_substream, sound_instance)) = &write.audio_stream {
+            context
+                .audio_manager
+                .stop_sound(context.audio, *sound_instance);
+        }
+
+        write.audio_stream = None;
+        write.attached_to = Some(clip);
+    }
+
     pub fn tick(self, context: &mut UpdateContext<'_, 'gc>, dt: f64) {
         #![allow(clippy::explicit_auto_deref)] //Erroneous lint
         let mut write = self.0.write(context.gc_context);
@@ -324,7 +386,6 @@ impl<'gc> NetStream<'gc> {
                                 header,
                                 video_stream: None,
                                 frame_id: 0,
-                                audio_stream: None,
                             });
                         }
                         Err(FlvError::EndOfData) => return,
@@ -409,17 +470,15 @@ impl<'gc> NetStream<'gc> {
                         sound_type,
                         data,
                     }) => {
-                        let mut substream = match &mut write.stream_type {
-                            Some(NetStreamType::Flv {
-                                audio_stream: Some((substream, audio_handle)),
-                                ..
-                            }) if context.audio.is_sound_playing(*audio_handle) => {
+                        let attached_to = write.attached_to;
+                        let mut substream = match &mut write.audio_stream {
+                            Some((substream, audio_handle))
+                                if context.audio.is_sound_playing(*audio_handle) =>
+                            {
                                 substream.clone()
                             }
-                            Some(NetStreamType::Flv {
-                                audio_stream, //None or not playing
-                                ..
-                            }) => {
+                            audio_stream => {
+                                //None or not playing
                                 let substream = Substream::new(slice.buffer().clone());
                                 let audio_handle = (|| {
                                     let swf_format = SoundFormat {
@@ -442,26 +501,18 @@ impl<'gc> NetStream<'gc> {
                                                 AudioCompression::Nellymoser
                                             }
                                             FlvSoundFormat::G711ALawPCM => {
-                                                return Err(DecodeError::UnhandledCompression(
-                                                    AudioCompression::Uncompressed,
-                                                ))
+                                                return Err(NetstreamError::UnknownCodec)
                                             }
                                             FlvSoundFormat::G711MuLawPCM => {
-                                                return Err(DecodeError::UnhandledCompression(
-                                                    AudioCompression::Uncompressed,
-                                                ))
+                                                return Err(NetstreamError::UnknownCodec)
                                             }
                                             FlvSoundFormat::Aac => {
-                                                return Err(DecodeError::UnhandledCompression(
-                                                    AudioCompression::Uncompressed,
-                                                ))
+                                                return Err(NetstreamError::UnknownCodec)
                                             }
                                             FlvSoundFormat::Speex => AudioCompression::Speex,
                                             FlvSoundFormat::MP38kHz => AudioCompression::Mp3,
                                             FlvSoundFormat::DeviceSpecific => {
-                                                return Err(DecodeError::UnhandledCompression(
-                                                    AudioCompression::Uncompressed,
-                                                ))
+                                                return Err(NetstreamError::UnknownCodec)
                                             }
                                         },
                                         sample_rate: match (format, rate) {
@@ -480,19 +531,36 @@ impl<'gc> NetStream<'gc> {
                                             FlvSoundSize::Bits16 => true,
                                         },
                                     };
-                                    context.audio.start_substream(
-                                        substream.clone(),
-                                        &SoundStreamHead {
-                                            stream_format: swf_format.clone(),
-                                            playback_format: swf_format,
-                                            num_samples_per_block: 0,
-                                            latency_seek: 0,
-                                        },
-                                    )
+
+                                    let sound_stream_head = SoundStreamHead {
+                                        stream_format: swf_format.clone(),
+                                        playback_format: swf_format,
+                                        num_samples_per_block: 0,
+                                        latency_seek: 0,
+                                    };
+
+                                    if context.is_action_script_3() {
+                                        Ok(context.audio.start_substream(
+                                            substream.clone(),
+                                            &sound_stream_head,
+                                        )?)
+                                    } else if let Some(mc) = attached_to {
+                                        context
+                                            .audio_manager
+                                            .start_substream(
+                                                context.audio,
+                                                substream.clone(),
+                                                mc,
+                                                &sound_stream_head,
+                                            )
+                                            .ok_or(NetstreamError::NoPlayback)
+                                    } else {
+                                        return Err(NetstreamError::NotAttached);
+                                    }
                                 })();
 
                                 if let Err(e) = audio_handle {
-                                    tracing::error!("Error encountered appending substream: {}", e);
+                                    tracing::error!("Error encountered starting stream: {}", e);
                                 } else {
                                     *audio_stream =
                                         Some((substream.clone(), audio_handle.unwrap()));
@@ -500,7 +568,6 @@ impl<'gc> NetStream<'gc> {
 
                                 substream
                             }
-                            _ => unreachable!(),
                         };
 
                         let result = match data {
