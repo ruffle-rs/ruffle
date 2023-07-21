@@ -198,10 +198,21 @@ package flash.geom {
 				throw new TypeError("Error #2007: Parameter vout must be non-null.", 2007);
 			}
 
+			var resultVecsLength:Number = Math.floor(vin.length / 3) * 3;
+			if (resultVecsLength > vout.length && vout.fixed) {
+				throw new RangeError("Error #1126: Cannot change the length of a fixed Vector.")
+			}
+
 			var result3D:Vector3D;
-			for (var i = 0; i < Math.floor(vin.length / 3) * 3; i += 3) {
+			for (var i = 0; i < resultVecsLength; i += 3) {
 				result3D = transformVector(new Vector3D(vin[i], vin[i + 1], vin[i + 2]));
-				vout.push(result3D.x, result3D.y, result3D.z);
+				if (i <= vout.length) {
+					vout[i] = result3D.x;
+					vout[i + 1] = result3D.y;
+					vout[i + 2] = result3D.z;
+				} else {
+					vout.push(result3D.x, result3D.y, result3D.z);
+				}
 			}
 		}
 
