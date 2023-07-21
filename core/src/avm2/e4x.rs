@@ -230,6 +230,20 @@ impl<'gc> E4XNode<'gc> {
         }
     }
 
+    pub fn remove_child(&self, gc_context: MutationContext<'gc, '_>, child: &Self) {
+        let mut this = self.0.write(gc_context);
+        if let E4XNodeKind::Element { children, .. } = &mut this.kind {
+            children.retain(|c| !GcCell::ptr_eq(c.0, child.0));
+        }
+    }
+
+    pub fn remove_attribute(&self, gc_context: MutationContext<'gc, '_>, attribute: &Self) {
+        let mut this = self.0.write(gc_context);
+        if let E4XNodeKind::Element { attributes, .. } = &mut this.kind {
+            attributes.retain(|a| !GcCell::ptr_eq(a.0, attribute.0));
+        }
+    }
+
     pub fn append_child(
         &self,
         gc_context: MutationContext<'gc, '_>,
@@ -500,7 +514,16 @@ impl<'gc> E4XNode<'gc> {
             },
         };
 
-        Ok(E4XNode(GcCell::new(activation.context.gc_context, data)))
+        let result = E4XNode(GcCell::new(activation.context.gc_context, data));
+
+        let mut result_kind = result.kind_mut(activation.context.gc_context);
+        if let E4XNodeKind::Element { attributes, .. } = &mut *result_kind {
+            for attribute in attributes {
+                attribute.set_parent(Some(result), activation.context.gc_context);
+            }
+        }
+
+        Ok(result)
     }
 
     pub fn local_name(&self) -> Option<AvmString<'gc>> {
