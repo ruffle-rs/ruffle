@@ -65,6 +65,7 @@ macro_rules! mc_setter {
 }
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
+    "attachAudio" => method(mc_method!(attach_audio); DONT_ENUM | DONT_DELETE | VERSION_6);
     "attachBitmap" => method(mc_method!(attach_bitmap); DONT_ENUM | DONT_DELETE | VERSION_8);
     "attachMovie" => method(mc_method!(attach_movie); DONT_ENUM | DONT_DELETE);
     "beginFill" => method(mc_method!(begin_fill); DONT_ENUM | DONT_DELETE | VERSION_6);
@@ -281,6 +282,22 @@ fn attach_bitmap<'gc>(
                 );
             }
         }
+    }
+
+    Ok(Value::Undefined)
+}
+
+fn attach_audio<'gc>(
+    movie_clip: MovieClip<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let [Value::Object(netstream_obj), ..] = args {
+        if let NativeObject::NetStream(netstream) = netstream_obj.native() {
+            movie_clip.attach_audio(&mut activation.context, Some(netstream));
+        }
+    } else if let [Value::Bool(false), ..] = args {
+        movie_clip.attach_audio(&mut activation.context, None);
     }
 
     Ok(Value::Undefined)
