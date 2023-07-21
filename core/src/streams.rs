@@ -40,9 +40,6 @@ enum NetstreamError {
     #[error("Decoding failed because {0}")]
     DecodeError(DecodeError),
 
-    #[error("Could not play back audio and no error was given")]
-    NoPlayback,
-
     #[error("Unknown codec")]
     UnknownCodec,
 
@@ -545,15 +542,12 @@ impl<'gc> NetStream<'gc> {
                                             &sound_stream_head,
                                         )?)
                                     } else if let Some(mc) = attached_to {
-                                        context
-                                            .audio_manager
-                                            .start_substream(
-                                                context.audio,
-                                                substream.clone(),
-                                                mc,
-                                                &sound_stream_head,
-                                            )
-                                            .ok_or(NetstreamError::NoPlayback)
+                                        Ok(context.audio_manager.start_substream(
+                                            context.audio,
+                                            substream.clone(),
+                                            mc,
+                                            &sound_stream_head,
+                                        )?)
                                     } else {
                                         return Err(NetstreamError::NotAttached);
                                     }
