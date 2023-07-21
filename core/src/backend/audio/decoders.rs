@@ -31,6 +31,9 @@ pub enum Error {
 
     #[error("Unhandled compression {0:?}")]
     UnhandledCompression(AudioCompression),
+
+    #[error("Too many sounds are playing")]
+    TooManySounds,
 }
 
 /// An audio decoder. Can be used as an `Iterator` to return stero sample frames.

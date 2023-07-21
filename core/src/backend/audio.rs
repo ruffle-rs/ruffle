@@ -534,9 +534,9 @@ impl<'gc> AudioManager<'gc> {
         stream_data: Substream,
         movie_clip: MovieClip<'gc>,
         stream_info: &swf::SoundStreamHead,
-    ) -> Option<SoundInstanceHandle> {
+    ) -> Result<SoundInstanceHandle, DecodeError> {
         if self.sounds.len() < Self::MAX_SOUNDS {
-            let handle = audio.start_substream(stream_data, stream_info).ok()?;
+            let handle = audio.start_substream(stream_data, stream_info)?;
             let instance = SoundInstance {
                 sound: None,
                 instance: handle,
@@ -548,9 +548,9 @@ impl<'gc> AudioManager<'gc> {
             };
             audio.set_sound_transform(handle, self.transform_for_sound(&instance));
             self.sounds.push(instance);
-            Some(handle)
+            Ok(handle)
         } else {
-            None
+            Err(DecodeError::TooManySounds)
         }
     }
 
