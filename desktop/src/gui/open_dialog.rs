@@ -5,7 +5,7 @@ use crate::util::pick_file;
 use egui::{
     Align2, Button, Checkbox, ComboBox, DragValue, Grid, Slider, TextEdit, Ui, Widget, Window,
 };
-use ruffle_core::backend::navigator::{OpenURLMode, SocketBehavior};
+use ruffle_core::backend::navigator::{OpenURLMode, SocketMode};
 use ruffle_core::config::Letterbox;
 use ruffle_core::{LoadBehavior, StageAlign, StageScaleMode};
 use ruffle_render::quality::StageQuality;
@@ -155,30 +155,30 @@ impl OpenDialog {
                 );
                 ui.end_row();
 
-                ui.label(text(&self.locale, "socket-behavior"));
-                ComboBox::from_id_source("open-file-advanced-options-socket-behavior")
-                    .selected_text(match self.options.socket_behavior {
-                        SocketBehavior::Unrestricted => {
-                            text(&self.locale, "socket-behavior-unrestricted")
+                ui.label(text(&self.locale, "socket-mode"));
+                ComboBox::from_id_source("open-file-advanced-options-socket-mode")
+                    .selected_text(match self.options.socket_mode {
+                        SocketMode::Unrestricted => {
+                            text(&self.locale, "socket-mode-unrestricted")
                         }
-                        SocketBehavior::Ask => text(&self.locale, "socket-behavior-ask"),
-                        SocketBehavior::Deny => text(&self.locale, "socket-behavior-deny"),
+                        SocketMode::Ask => text(&self.locale, "socket-mode-ask"),
+                        SocketMode::Deny => text(&self.locale, "socket-mode-deny"),
                     })
                     .show_ui(ui, |ui| {
                         ui.selectable_value(
-                            &mut self.options.socket_behavior,
-                            SocketBehavior::Unrestricted,
-                            text(&self.locale, "socket-behavior-unrestricted"),
+                            &mut self.options.socket_mode,
+                            SocketMode::Unrestricted,
+                            text(&self.locale, "socket-mode-unrestricted"),
                         );
                         ui.selectable_value(
-                            &mut self.options.socket_behavior,
-                            SocketBehavior::Ask,
-                            text(&self.locale, "socket-behavior-ask"),
+                            &mut self.options.socket_mode,
+                            SocketMode::Ask,
+                            text(&self.locale, "socket-mode-ask"),
                         );
                         ui.selectable_value(
-                            &mut self.options.socket_behavior,
-                            SocketBehavior::Deny,
-                            text(&self.locale, "socket-behavior-deny"),
+                            &mut self.options.socket_mode,
+                            SocketMode::Deny,
+                            text(&self.locale, "socket-mode-deny"),
                         );
                     });
                 ui.end_row();

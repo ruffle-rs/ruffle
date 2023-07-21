@@ -27,7 +27,7 @@ pub enum NavigationMethod {
 
 #[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum SocketBehavior {
+pub enum SocketMode {
     /// Allows movies to connect to any host using sockets.
     Unrestricted,
 
