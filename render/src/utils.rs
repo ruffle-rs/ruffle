@@ -141,6 +141,18 @@ pub fn remove_invalid_jpeg_data(data: &[u8]) -> Cow<[u8]> {
     }
 }
 
+/// Some SWFs report unreasonable bitmap dimensions (#1191).
+/// Fail before decoding such bitmaps to avoid panics.
+fn validate_size(width: u16, height: u16) -> Result<(), Error> {
+    const INVALID_SIZE: usize = 0x8000000; // 128MB
+
+    let size = (width as usize).saturating_mul(height as usize);
+    if size >= INVALID_SIZE {
+        return Err(Error::TooLarge);
+    }
+    Ok(())
+}
+
 /// Decodes a JPEG with optional alpha data.
 /// The decoded bitmap will have pre-multiplied alpha.
 fn decode_jpeg(jpeg_data: &[u8], alpha_data: Option<&[u8]>) -> Result<Bitmap, Error> {
@@ -151,6 +163,7 @@ fn decode_jpeg(jpeg_data: &[u8], alpha_data: Option<&[u8]>) -> Result<Bitmap, Er
     let metadata = decoder
         .info()
         .expect("info() should always return Some if read_info returned Ok");
+    validate_size(metadata.width, metadata.height)?;
     let decoded_data = decoder.decode()?;
 
     let decoded_data = match metadata.pixel_format {
@@ -224,11 +237,14 @@ pub fn decode_define_bits_lossless(swf_tag: &swf::DefineBitsLossless) -> Result<
     // Decompress the image data (DEFLATE compression).
     let mut decoded_data = decompress_zlib(swf_tag.data)?;
 
+    let has_alpha = swf_tag.version == 2;
+
     // Swizzle/de-palettize the bitmap.
     let out_data = match (swf_tag.version, swf_tag.format) {
         (1, swf::BitmapFormat::Rgb15) => {
             let padded_width = (swf_tag.width + 0b1) & !0b1;
-            let mut out_data: Vec<u8> =
+            validate_size(swf_tag.width, swf_tag.height)?;
+            let mut out_data =
                 Vec::with_capacity(swf_tag.width as usize * swf_tag.height as usize * 4);
             let mut i = 0;
             for _ in 0..swf_tag.height {
@@ -242,7 +258,7 @@ pub fn decode_define_bits_lossless(swf_tag: &swf::DefineBitsLossless) -> Result<
                         rgb5_component(10),
                         rgb5_component(5),
                         rgb5_component(0),
-                        0xff,
+                        u8::MAX,
                     ]);
                     i += 2;
                 }
@@ -251,63 +267,45 @@ pub fn decode_define_bits_lossless(swf_tag: &swf::DefineBitsLossless) -> Result<
             out_data
         }
         (1 | 2, swf::BitmapFormat::Rgb32) => {
-            let has_alpha = swf_tag.version == 2;
             for rgba in decoded_data.chunks_exact_mut(4) {
                 rgba.rotate_left(1);
                 if !has_alpha {
-                    rgba[3] = 0xff;
+                    rgba[3] = u8::MAX;
                 }
             }
             decoded_data
         }
-        (1, swf::BitmapFormat::ColorMap8 { num_colors }) => {
+        (1 | 2, swf::BitmapFormat::ColorMap8 { num_colors }) => {
             let mut i = 0;
             let padded_width = (swf_tag.width + 0b11) & !0b11;
 
             let mut palette = Vec::with_capacity(num_colors as usize + 1);
             for _ in 0..=num_colors {
+                let a = if has_alpha {
+                    decoded_data[i + 3]
+                } else {
+                    u8::MAX
+                };
                 palette.push(Color {
                     r: decoded_data[i],
                     g: decoded_data[i + 1],
                     b: decoded_data[i + 2],
-                    a: 255,
+                    a,
                 });
-                i += 3;
+                i += if has_alpha { 4 } else { 3 };
             }
-            let mut out_data: Vec<u8> =
-                Vec::with_capacity(swf_tag.width as usize * swf_tag.height as usize * 4);
-            for _ in 0..swf_tag.height {
-                for _ in 0..swf_tag.width {
-                    let entry = decoded_data[i] as usize;
-                    let color = palette.get(entry).unwrap_or(&Color::BLACK);
-                    out_data.extend([color.r, color.g, color.b, color.a]);
-                    i += 1;
-                }
-                i += (padded_width - swf_tag.width) as usize;
-            }
-            out_data
-        }
-        (2, swf::BitmapFormat::ColorMap8 { num_colors }) => {
-            let mut i = 0;
-            let padded_width = (swf_tag.width + 0b11) & !0b11;
 
-            let mut palette = Vec::with_capacity(num_colors as usize + 1);
-            for _ in 0..=num_colors {
-                palette.push(Color {
-                    r: decoded_data[i],
-                    g: decoded_data[i + 1],
-                    b: decoded_data[i + 2],
-                    a: decoded_data[i + 3],
-                });
-                i += 4;
-            }
-            let mut out_data: Vec<u8> =
+            validate_size(swf_tag.width, swf_tag.height)?;
+            let mut out_data =
                 Vec::with_capacity(swf_tag.width as usize * swf_tag.height as usize * 4);
             for _ in 0..swf_tag.height {
                 for _ in 0..swf_tag.width {
                     let entry = decoded_data[i] as usize;
-                    const TRANSPARENT: Color = Color::from_rgb(0, 0);
-                    let color = palette.get(entry).unwrap_or(&TRANSPARENT);
+                    let color = palette.get(entry).unwrap_or(if has_alpha {
+                        &Color::TRANSPARENT
+                    } else {
+                        &Color::BLACK
+                    });
                     out_data.extend([color.r, color.g, color.b, color.a]);
                     i += 1;
                 }
