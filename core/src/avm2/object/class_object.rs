@@ -924,16 +924,20 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         let object_param = match nullable_param {
             Value::Null => None,
             Value::Undefined => return Err("Undefined is not a valid type parameter".into()),
-            v => Some(v.as_object().unwrap()),
+            v => Some(v),
         };
         let object_param = match object_param {
             None => None,
-            Some(cls) => Some(cls.as_class_object().ok_or_else(|| {
-                format!(
-                    "Cannot apply class {:?} with non-class parameter",
-                    self_class.read().name()
-                )
-            })?),
+            Some(cls) => Some(
+                cls.as_object()
+                    .and_then(|c| c.as_class_object())
+                    .ok_or_else(|| {
+                        format!(
+                            "Cannot apply class {:?} with non-class parameter",
+                            self_class.read().name()
+                        )
+                    })?,
+            ),
         };
 
         if let Some(application) = self.0.read().applications.get(&object_param) {
