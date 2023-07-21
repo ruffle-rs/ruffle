@@ -4048,6 +4048,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "ruffle_socket_mock"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "ruffle_video"
 version = "0.1.0"
 dependencies = [
