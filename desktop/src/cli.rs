@@ -90,7 +90,7 @@ pub struct Opt {
     pub socket_allow: Vec<String>,
 
     /// Define how to deal with sockets.
-    #[clap(long = "socket", default_value = "deny")]
+    #[clap(long = "socket", default_value = "ask")]
     pub socket_behavior: SocketBehavior,
 
     /// Replace all embedded HTTP URLs with HTTPS.
