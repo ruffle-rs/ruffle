@@ -87,7 +87,7 @@ As this is indeed a complicated build process, please let me know if there is an
         console.error(`Got exception when uploading submission data: ${e}`);
     }
 
-    if (!result.success && result.errorCode !== 'ADDON_NOT_AUTO_SIGNED') {
+    if (!result.success && result.errorCode !== "ADDON_NOT_AUTO_SIGNED") {
         throw result;
     }
 
