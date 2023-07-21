@@ -5,6 +5,7 @@ use crate::util::runner::run_swf;
 use anyhow::{Context, Result};
 use ruffle_core::Player;
 use ruffle_input_format::InputInjector;
+use ruffle_socket_format::SocketEvent;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
@@ -12,6 +13,7 @@ pub struct Test {
     pub options: TestOptions,
     pub swf_path: PathBuf,
     pub input_path: PathBuf,
+    pub socket_path: PathBuf,
     pub output_path: PathBuf,
     pub name: String,
 }
@@ -20,11 +22,13 @@ impl Test {
     pub fn from_options(options: TestOptions, test_dir: &Path, name: String) -> Result<Self> {
         let swf_path = test_dir.join("test.swf");
         let input_path = test_dir.join("input.json");
+        let socket_path = test_dir.join("socket.json");
         let output_path = options.output_path(test_dir);
         Ok(Self {
             options,
             swf_path,
             input_path,
+            socket_path,
             output_path,
             name,
         })
@@ -51,7 +55,12 @@ impl Test {
         } else {
             InputInjector::empty()
         };
-        let output = run_swf(&self, injector, before_start, before_end)?;
+        let socket_events = if self.socket_path.is_file() {
+            Some(SocketEvent::from_file(&self.socket_path)?)
+        } else {
+            None
+        };
+        let output = run_swf(&self, injector, socket_events, before_start, before_end)?;
         self.compare_output(&output)?;
         Ok(())
     }

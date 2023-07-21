@@ -7,8 +7,9 @@ use ruffle_core::backend::navigator::{
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
 use ruffle_core::socket::{ConnectionState, SocketAction, SocketHandle};
+use ruffle_socket_format::SocketEvent;
 use std::path::{Path, PathBuf};
-use std::sync::mpsc::{Receiver, Sender};
+use std::sync::mpsc::{Receiver, Sender, TryRecvError, RecvError};
 use std::time::Duration;
 use url::{ParseError, Url};
 
@@ -18,6 +19,7 @@ use url::{ParseError, Url};
 pub struct TestNavigatorBackend {
     spawner: NullSpawner,
     relative_base_path: PathBuf,
+    socket_events: Option<Vec<SocketEvent>>,
     log: Option<TestLogBackend>,
 }
 
@@ -25,11 +27,13 @@ impl TestNavigatorBackend {
     pub fn new(
         path: &Path,
         executor: &NullExecutor,
+        socket_events: Option<Vec<SocketEvent>>,
         log: Option<TestLogBackend>,
     ) -> Result<Self, std::io::Error> {
         Ok(Self {
             spawner: executor.spawner(),
             relative_base_path: path.canonicalize()?,
+            socket_events,
             log,
         })
     }
@@ -104,15 +108,63 @@ impl NavigatorBackend for TestNavigatorBackend {
         port: u16,
         _timeout: Duration,
         handle: SocketHandle,
-        _receiver: Receiver<Vec<u8>>,
+        receiver: Receiver<Vec<u8>>,
         sender: Sender<SocketAction>,
     ) {
         if let Some(log) = &self.log {
             log.avm_trace("Navigator::connect_socket");
             log.avm_trace(&format!("    Host: {}; Port: {}", host, port));
         }
-        sender
-            .send(SocketAction::Connect(handle, ConnectionState::Failed))
-            .expect("working channel send");
+
+        if let Some(events) = self.socket_events.clone() {
+            std::thread::spawn(move || {
+                sender
+                                .send(SocketAction::Connect(handle, ConnectionState::Connected))
+                                .expect("working channel send");
+
+                for event in events {
+                    match event {
+                        SocketEvent::Disconnect => {
+                            sender
+                                .send(SocketAction::Close(handle))
+                                .expect("working channel send");
+
+                            return;
+                        },
+                        SocketEvent::WaitForDisconnect => {
+                            loop {
+                                match receiver.recv() {
+                                    Err(_) => return,
+                                    Ok(_) => panic!("Expected client to disconnect, data was sent instead"),
+                                }
+
+                                //NOTE: We need to yield to executor.
+                                //Timer::after(Duration::from_millis(30)).await;
+                            }
+                        },
+                        SocketEvent::Receive { expected } => {
+                            loop {
+                                match receiver.recv() {
+                                    Ok(val) => {
+                                        if expected != val {
+                                            panic!("Received data did not match expected data\nExpected: {:?}\nActual: {:?}", expected, val);
+                                        }
+
+                                        break;
+                                    }
+                                    Err(_) => panic!("Expected client to send data, but connection was closed instead"),
+                                }
+
+                                //NOTE: We need to yield to executor.
+                                //Timer::after(Duration::from_millis(30)).await;
+                            }
+                        },
+                        SocketEvent::Send { payload } => {
+                            sender.send(SocketAction::Data(handle, payload)).expect("working channel send");
+                        }
+                    }
+                }
+            });
+        }
     }
 }
