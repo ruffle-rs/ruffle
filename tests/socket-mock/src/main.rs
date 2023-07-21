@@ -1,35 +1,6 @@
-use std::{net::TcpListener, io::{self, Read, Write}, path::Path, fs::File};
-use serde::{Serialize, Deserialize};
-use serde_json::from_reader;
+use std::{net::TcpListener, io::{Read, Write}};
+use ruffle_socket_format::SocketEvent;
 use tracing_subscriber::filter::{EnvFilter, LevelFilter};
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(tag = "type")]
-pub enum SocketEvent {
-    /// Wait for input data that matches this.
-    Receive {
-        expected: Vec<u8>,
-    },
-    /// Send data to client.
-    Send {
-        payload: Vec<u8>,
-    },
-    /// Expect client to disconnect.
-    WaitForDisconnect,
-    /// Disconnect the client.
-    Disconnect,
-}
-
-impl SocketEvent {
-    pub fn from_file<P>(path: P) -> Result<Vec<Self>, io::Error>
-    where
-        P: AsRef<Path>,
-    {
-        let file = File::open(path)?;
-
-        Ok(from_reader(file)?)
-    }
-}
 
 static POLICY: &'static [u8] = &*b"<?xml version=\"1.0\"?>
 <!DOCTYPE cross-domain-policy SYSTEM \"http://www.adobe.com/xml/dtds/cross-domain-policy.dtd\">

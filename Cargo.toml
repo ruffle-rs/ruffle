@@ -25,6 +25,7 @@ members = [
 
     "tests",
     "tests/input-format",
+    "tests/socket-format",
     "tests/socket-mock",
 ]
 default-members = ["desktop"]
