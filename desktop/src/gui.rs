@@ -64,7 +64,6 @@ pub const MENU_HEIGHT: u32 = 24;
 pub struct RuffleGui {
     event_loop: EventLoopProxy<RuffleEvent>,
     is_about_visible: bool,
-    is_as3_warning_visible: bool,
     is_open_dialog_visible: bool,
     context_menu: Vec<ruffle_core::ContextMenuItem>,
     open_dialog: OpenDialog,
@@ -90,7 +89,6 @@ impl RuffleGui {
 
         Self {
             is_about_visible: false,
-            is_as3_warning_visible: false,
             is_open_dialog_visible: false,
             was_suspended_before_debug: false,
 
@@ -123,8 +121,6 @@ impl RuffleGui {
 
         self.about_window(egui_ctx);
         self.open_dialog(egui_ctx);
-
-        self.as3_warning(egui_ctx);
 
         if let Some(player) = player {
             let was_suspended = player.debug_ui().should_suspend_player();
@@ -165,10 +161,6 @@ impl RuffleGui {
 
     pub fn is_context_menu_visible(&self) -> bool {
         !self.context_menu.is_empty()
-    }
-
-    pub fn display_unsupported_message(&mut self) {
-        self.is_as3_warning_visible = true;
     }
 
     /// Notifies the GUI that a new player was created.
@@ -312,35 +304,6 @@ impl RuffleGui {
                 });
             });
         });
-    }
-
-    fn as3_warning(&mut self, egui_ctx: &egui::Context) {
-        let mut keep_open = true;
-        egui::Window::new("AS3 warning")
-            .collapsible(false)
-            .resizable(false)
-            .title_bar(false)
-            .anchor(Align2::CENTER_TOP, (0.0, 50.0))
-            .open(&mut self.is_as3_warning_visible)
-            .show(egui_ctx, |ui| {
-                ui.set_min_width(400.0);
-                ui.label("The Ruffle emulator may not yet fully support all of ActionScript 3 used by this content.");
-                ui.label("Some parts of the content may not work as expected.");
-
-                ui.label("See the following link for more info:");
-                ui.hyperlink_to(
-                    "https://github.com/ruffle-rs/ruffle/wiki/Frequently-Asked-Questions-For-Users",
-                    "https://github.com/ruffle-rs/ruffle/wiki/Frequently-Asked-Questions-For-Users",
-                );
-                ui.label("(click anywhere to continue)");
-
-                if ui.input(|i| i.key_pressed(Key::Escape) || i.pointer.any_click()) {
-                    keep_open = false;
-                }
-            });
-        if !keep_open {
-            self.is_as3_warning_visible = false;
-        }
     }
 
     fn about_window(&mut self, egui_ctx: &egui::Context) {

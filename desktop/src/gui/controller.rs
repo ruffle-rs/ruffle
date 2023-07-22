@@ -182,10 +182,6 @@ impl GuiController {
         self.gui.on_player_created(opt, movie_url);
     }
 
-    pub fn display_unsupported_message(&mut self) {
-        self.gui.display_unsupported_message();
-    }
-
     pub fn render(&mut self, mut player: Option<MutexGuard<Player>>) {
         let surface_texture = self
             .surface

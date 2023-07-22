@@ -236,8 +236,6 @@ pub struct Player {
 
     swf: Arc<SwfMovie>,
 
-    warn_on_unsupported_content: bool,
-
     is_playing: bool,
     needs_render: bool,
 
@@ -453,10 +451,6 @@ impl Player {
             let stage = activation.context.stage;
             stage.build_matrices(&mut activation.context);
         });
-
-        if self.swf.is_action_script_3() && self.warn_on_unsupported_content {
-            self.ui.display_unsupported_message();
-        }
 
         self.audio.set_frame_rate(self.frame_rate);
     }
@@ -2093,7 +2087,6 @@ pub struct PlayerBuilder {
     viewport_width: u32,
     viewport_height: u32,
     viewport_scale_factor: f64,
-    warn_on_unsupported_content: bool,
     load_behavior: LoadBehavior,
     spoofed_url: Option<String>,
     compatibility_rules: CompatibilityRules,
@@ -2138,7 +2131,6 @@ impl PlayerBuilder {
             viewport_width: 550,
             viewport_height: 400,
             viewport_scale_factor: 1.0,
-            warn_on_unsupported_content: true,
             load_behavior: LoadBehavior::Streaming,
             spoofed_url: None,
             compatibility_rules: CompatibilityRules::default(),
@@ -2232,13 +2224,6 @@ impl PlayerBuilder {
     #[inline]
     pub fn with_max_execution_duration(mut self, duration: Duration) -> Self {
         self.max_execution_duration = duration;
-        self
-    }
-
-    /// Configures the player to warn if unsupported content is detected (ActionScript 3.0).
-    #[inline]
-    pub fn with_warn_on_unsupported_content(mut self, value: bool) -> Self {
-        self.warn_on_unsupported_content = value;
         self
     }
 
@@ -2440,7 +2425,6 @@ impl PlayerBuilder {
                 player_version,
                 is_playing: self.autoplay,
                 needs_render: true,
-                warn_on_unsupported_content: self.warn_on_unsupported_content,
                 self_reference: self_ref.clone(),
                 load_behavior: self.load_behavior,
                 spoofed_url: self.spoofed_url.clone(),

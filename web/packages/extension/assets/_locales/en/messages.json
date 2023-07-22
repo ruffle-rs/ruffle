@@ -11,9 +11,6 @@
     "settings_autostart": {
         "message": "Play automatically without splash screen (then click to unmute)"
     },
-    "settings_warn_on_unsupported_content": {
-        "message": "Warn on unsupported content"
-    },
     "settings_log_level": {
         "message": "Log level"
     },

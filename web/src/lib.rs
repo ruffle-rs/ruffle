@@ -101,9 +101,6 @@ extern "C" {
     #[wasm_bindgen(method)]
     fn panic(this: &JavascriptPlayer, error: &JsError);
 
-    #[wasm_bindgen(method, js_name = "displayUnsupportedMessage")]
-    fn display_unsupported_message(this: &JavascriptPlayer);
-
     #[wasm_bindgen(method, js_name = "displayRootMovieDownloadFailedMessage")]
     fn display_root_movie_download_failed_message(this: &JavascriptPlayer);
 
@@ -273,8 +270,6 @@ struct Config {
     frame_rate: Option<f64>,
 
     wmode: Option<String>,
-
-    warn_on_unsupported_content: bool,
 
     #[serde(deserialize_with = "deserialize_log_level")]
     log_level: tracing::Level,
@@ -573,7 +568,6 @@ impl Ruffle {
             .with_video(SoftwareVideoBackend::new())
             .with_letterbox(config.letterbox)
             .with_max_execution_duration(config.max_execution_duration)
-            .with_warn_on_unsupported_content(config.warn_on_unsupported_content)
             .with_player_version(config.player_version)
             .with_compatibility_rules(if config.compatibility_rules {
                 CompatibilityRules::default()
