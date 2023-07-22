@@ -20,7 +20,6 @@ export const DEFAULT_CONFIG: Required<BaseLoadOptions> = {
     upgradeToHttps: true,
     compatibilityRules: true,
     favorFlash: true,
-    warnOnUnsupportedContent: true,
     logLevel: LogLevel.Error,
     showSwfDownload: false,
     contextMenu: ContextMenu.On,

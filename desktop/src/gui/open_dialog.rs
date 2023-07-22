@@ -430,14 +430,6 @@ impl OpenDialog {
                 );
                 ui.end_row();
 
-                // TODO: This should probably be a global setting somewhere, not per load
-                ui.label(text(&self.locale, "warn-if-unsupported"));
-                ui.checkbox(
-                    &mut self.options.warn_on_unsupported_content,
-                    text(&self.locale, "warn-if-unsupported-check"),
-                );
-                ui.end_row();
-
                 ui.label(text(&self.locale, "player-version"));
                 DragValue::new(&mut self.options.player_version)
                     .clamp_range(1..=32)

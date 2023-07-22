@@ -24,10 +24,6 @@ pub trait UiBackend: Downcast {
 
     fn set_fullscreen(&mut self, is_full: bool) -> Result<(), FullscreenError>;
 
-    /// Displays a warning about unsupported content in Ruffle.
-    /// The user can still click an "OK" or "run anyway" message to dismiss the warning.
-    fn display_unsupported_message(&self);
-
     /// Displays a message about an error during root movie download.
     /// In particular, on web this can be a CORS error, which we can sidestep
     /// by providing a direct .swf link instead.
@@ -169,8 +165,6 @@ impl UiBackend for NullUiBackend {
     fn set_fullscreen(&mut self, _is_full: bool) -> Result<(), FullscreenError> {
         Ok(())
     }
-
-    fn display_unsupported_message(&self) {}
 
     fn display_root_movie_download_failed_message(&self) {}
 

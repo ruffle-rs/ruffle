@@ -432,10 +432,6 @@ impl App {
                         .create_movie(&mut self.player, *options, url);
                 }
 
-                winit::event::Event::UserEvent(RuffleEvent::DisplayUnsupportedMessage) => {
-                    self.gui.borrow_mut().display_unsupported_message();
-                }
-
                 winit::event::Event::UserEvent(RuffleEvent::CloseFile) => {
                     self.player.destroy();
                 }

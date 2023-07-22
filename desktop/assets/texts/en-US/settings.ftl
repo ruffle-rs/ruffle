@@ -58,9 +58,6 @@ scale-mode-noscale = No Scale
 scale-mode-showall = Show All
 scale-mode-force = Force
 
-warn-if-unsupported = Warn if Unsupported
-warn-if-unsupported-check = Warn
-
 player-version = Player Version
 
 custom-framerate = Custom Framerate

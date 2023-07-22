@@ -96,10 +96,6 @@ pub struct Opt {
     #[clap(long, action)]
     pub timedemo: bool,
 
-    /// Start application without ActionScript 3 warning.
-    #[clap(long, action)]
-    pub dont_warn_on_unsupported_content: bool,
-
     #[clap(long, default_value = "streaming")]
     pub load_behavior: LoadBehavior,
 

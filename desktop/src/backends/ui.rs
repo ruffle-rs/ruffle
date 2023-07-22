@@ -1,4 +1,3 @@
-use crate::custom_event::RuffleEvent;
 use anyhow::{Context, Error};
 use arboard::Clipboard;
 use rfd::{MessageButtons, MessageDialog, MessageLevel};
@@ -8,11 +7,9 @@ use ruffle_core::backend::ui::{
 use std::rc::Rc;
 use sys_locale::get_locale;
 use tracing::error;
-use winit::event_loop::EventLoopProxy;
 use winit::window::{Fullscreen, Window};
 
 pub struct DesktopUiBackend {
-    event_loop: EventLoopProxy<RuffleEvent>,
     window: Rc<Window>,
     cursor_visible: bool,
     clipboard: Clipboard,
@@ -21,13 +18,12 @@ pub struct DesktopUiBackend {
 }
 
 impl DesktopUiBackend {
-    pub fn new(event_loop: EventLoopProxy<RuffleEvent>, window: Rc<Window>) -> Result<Self, Error> {
+    pub fn new(window: Rc<Window>) -> Result<Self, Error> {
         let preferred_language = get_locale();
         let language = preferred_language
             .and_then(|l| l.parse().ok())
             .unwrap_or_else(|| US_ENGLISH.clone());
         Ok(Self {
-            event_loop,
             window,
             cursor_visible: true,
             clipboard: Clipboard::new().context("Couldn't get platform clipboard")?,
@@ -82,12 +78,6 @@ impl UiBackend for DesktopUiBackend {
             None
         });
         Ok(())
-    }
-
-    fn display_unsupported_message(&self) {
-        let _ = self
-            .event_loop
-            .send_event(RuffleEvent::DisplayUnsupportedMessage);
     }
 
     fn display_root_movie_download_failed_message(&self) {

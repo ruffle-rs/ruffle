@@ -39,7 +39,6 @@ pub struct PlayerOptions {
     pub proxy: Option<Url>,
     pub upgrade_to_https: bool,
     pub fullscreen: bool,
-    pub warn_on_unsupported_content: bool,
     pub load_behavior: LoadBehavior,
     pub letterbox: Letterbox,
     pub spoof_url: Option<Url>,
@@ -64,7 +63,6 @@ impl From<&Opt> for PlayerOptions {
             proxy: value.proxy.clone(),
             upgrade_to_https: value.upgrade_to_https,
             fullscreen: value.fullscreen,
-            warn_on_unsupported_content: !value.dont_warn_on_unsupported_content,
             load_behavior: value.load_behavior,
             letterbox: value.letterbox,
             spoof_url: value.spoof_url.clone(),
@@ -139,15 +137,11 @@ impl ActivePlayer {
             .with_navigator(navigator)
             .with_renderer(renderer)
             .with_storage(DiskStorageBackend::new().expect("Couldn't create storage backend"))
-            .with_ui(
-                DesktopUiBackend::new(event_loop.clone(), window.clone())
-                    .expect("Couldn't create ui backend"),
-            )
+            .with_ui(DesktopUiBackend::new(window.clone()).expect("Couldn't create ui backend"))
             .with_autoplay(true)
             .with_letterbox(opt.letterbox)
             .with_max_execution_duration(max_execution_duration)
             .with_quality(opt.quality)
-            .with_warn_on_unsupported_content(opt.warn_on_unsupported_content)
             .with_align(opt.align, opt.force_align)
             .with_scale_mode(opt.scale, opt.force_scale)
             .with_fullscreen(opt.fullscreen)

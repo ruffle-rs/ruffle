@@ -338,14 +338,6 @@ export interface BaseLoadOptions {
     favorFlash?: boolean;
 
     /**
-     * Whether or not to display an overlay with a warning when
-     * loading a movie with unsupported content.
-     *
-     * @default true
-     */
-    warnOnUnsupportedContent?: boolean;
-
-    /**
      * Console logging level.
      *
      * @default LogLevel.Error

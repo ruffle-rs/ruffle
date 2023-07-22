@@ -2002,27 +2002,6 @@ export class RufflePlayer extends HTMLElement {
         }
     }
 
-    protected displayUnsupportedMessage(): void {
-        const div = document.createElement("div");
-        div.id = "message_overlay";
-        // TODO: Change link to https://ruffle.rs/faq or similar
-        // TODO: Pause content until message is dismissed
-        div.innerHTML = `<div class="message">
-            ${textAsParagraphs("message-unsupported-avm2")}
-            <div>
-                <a target="_blank" class="more-info-link" href="https://github.com/ruffle-rs/ruffle/wiki/Frequently-Asked-Questions-For-Users">${text(
-                    "more-info",
-                )}</a>
-                <button id="run-anyway-btn">${text("run-anyway")}</button>
-            </div>
-        </div>`;
-        this.container.prepend(div);
-        const button = <HTMLButtonElement>div.querySelector("#run-anyway-btn");
-        button.onclick = () => {
-            div.parentNode!.removeChild(div);
-        };
-    }
-
     /**
      * Show a dismissible message in front of the player.
      *
