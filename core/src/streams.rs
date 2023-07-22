@@ -10,7 +10,9 @@ use crate::avm2::{
     Activation as Avm2Activation, Avm2, Error as Avm2Error, EventObject as Avm2EventObject,
     FlvValueAvm2Ext, Object as Avm2Object,
 };
-use crate::backend::audio::{DecodeError, SoundInstanceHandle};
+use crate::backend::audio::{
+    DecodeError, SoundInstanceHandle, SoundStreamInfo, SoundStreamWrapping,
+};
 use crate::backend::navigator::Request;
 use crate::buffer::{Buffer, Substream, SubstreamError};
 use crate::context::UpdateContext;
@@ -31,7 +33,7 @@ use ruffle_video::frame::EncodedFrame;
 use ruffle_video::VideoStreamHandle;
 use std::cmp::max;
 use std::io::Seek;
-use swf::{AudioCompression, SoundFormat, SoundStreamHead, VideoCodec, VideoDeblocking};
+use swf::{AudioCompression, SoundFormat, VideoCodec, VideoDeblocking};
 use thiserror::Error;
 use url::Url;
 
@@ -548,9 +550,9 @@ impl<'gc> NetStream<'gc> {
                                         },
                                     };
 
-                                    let sound_stream_head = SoundStreamHead {
-                                        stream_format: swf_format.clone(),
-                                        playback_format: swf_format,
+                                    let sound_stream_head = SoundStreamInfo {
+                                        wrapping: SoundStreamWrapping::Unwrapped,
+                                        stream_format: swf_format,
                                         num_samples_per_block: 0,
                                         latency_seek: 0,
                                     };

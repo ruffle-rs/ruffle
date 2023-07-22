@@ -1,5 +1,5 @@
 use super::decoders::{self, AdpcmDecoder, Decoder, PcmDecoder, SeekableDecoder};
-use super::{SoundHandle, SoundInstanceHandle, SoundTransform};
+use super::{SoundHandle, SoundInstanceHandle, SoundStreamInfo, SoundTransform};
 use crate::backend::audio::{DecodeError, RegisterError};
 use crate::buffer::Substream;
 use crate::tag_utils::SwfSlice;
@@ -412,7 +412,7 @@ impl AudioMixer {
 
     fn make_stream_from_buffer_substream(
         &self,
-        stream_info: &swf::SoundStreamHead,
+        stream_info: &SoundStreamInfo,
         data_stream: Substream,
     ) -> Result<Box<dyn Stream>, DecodeError> {
         // Instantiate a decoder for the compression that the sound data uses.
@@ -608,7 +608,7 @@ impl AudioMixer {
     pub fn start_substream(
         &mut self,
         stream_data: Substream,
-        stream_info: &swf::SoundStreamHead,
+        stream_info: &SoundStreamInfo,
     ) -> Result<SoundInstanceHandle, DecodeError> {
         // The audio data for substream sounds is already de-multiplexed by the
         // caller. The substream tag reader will feed the decoder audio data
@@ -1111,7 +1111,7 @@ macro_rules! impl_audio_mixer_backend {
         fn start_substream(
             &mut self,
             stream_data: ruffle_core::buffer::Substream,
-            stream_info: &swf::SoundStreamHead,
+            stream_info: &SoundStreamInfo,
         ) -> Result<SoundInstanceHandle, DecodeError> {
             self.$mixer.start_substream(stream_data, stream_info)
         }

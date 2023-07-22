@@ -6,7 +6,7 @@ use crate::util::test::Test;
 use anyhow::{anyhow, Result};
 use ruffle_core::backend::audio::{
     swf, AudioBackend, AudioMixer, DecodeError, RegisterError, SoundHandle, SoundInstanceHandle,
-    SoundTransform,
+    SoundStreamInfo, SoundTransform,
 };
 use ruffle_core::backend::log::LogBackend;
 use ruffle_core::backend::navigator::NullExecutor;

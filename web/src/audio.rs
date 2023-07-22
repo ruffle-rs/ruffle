@@ -1,6 +1,6 @@
 use ruffle_core::backend::audio::{
     swf, AudioBackend, AudioMixer, AudioMixerProxy, DecodeError, RegisterError, SoundHandle,
-    SoundInstanceHandle, SoundTransform,
+    SoundInstanceHandle, SoundStreamInfo, SoundTransform,
 };
 use ruffle_core::impl_audio_mixer_backend;
 use ruffle_web_common::JsResult;

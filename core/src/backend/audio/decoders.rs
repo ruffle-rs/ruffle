@@ -14,6 +14,7 @@ pub use mp3::{mp3_metadata, Mp3Decoder};
 pub use nellymoser::NellymoserDecoder;
 pub use pcm::PcmDecoder;
 
+use crate::backend::audio::{SoundStreamInfo, SoundStreamWrapping};
 use crate::buffer::{Slice, SliceCursor, Substream, SubstreamChunksIter};
 use crate::tag_utils::{ControlFlow, SwfSlice};
 use std::io::{Cursor, Read};
@@ -387,6 +388,9 @@ struct SubstreamTagReader {
     /// The compression used by the audio data.
     compression: AudioCompression,
 
+    /// The wrapping used by audio chunks in the stream.
+    wrapping: SoundStreamWrapping,
+
     /// The number of audio samples for use in future animation frames.
     ///
     /// Only used in MP3 encoding to properly handle gaps in the audio track.
@@ -402,10 +406,11 @@ impl SubstreamTagReader {
     /// Builds a new `SubstreamTagReader` from the given `Substream`.
     ///
     /// `Substream` should reference audio data.
-    fn new(stream_info: &swf::SoundStreamHead, data_stream: Substream) -> Self {
+    fn new(stream_info: &SoundStreamInfo, data_stream: Substream) -> Self {
         Self {
             data_stream: data_stream.iter_chunks(),
             compression: stream_info.stream_format.compression,
+            wrapping: stream_info.wrapping,
             current_audio_data: None,
             mp3_samples_buffered: 0,
             _mp3_samples_per_block: stream_info.num_samples_per_block,
@@ -422,7 +427,10 @@ impl Iterator for SubstreamTagReader {
         let data = next_chunk.data();
 
         let mut audio_block = &data[..];
-        if compression == AudioCompression::Mp3 && next_chunk.len() >= 4 {
+        if compression == AudioCompression::Mp3
+            && self.wrapping == SoundStreamWrapping::Swf
+            && next_chunk.len() >= 4
+        {
             // MP3s deliver audio in frames of 576 samples, which means we may have SoundStreamBlocks with
             // lots of extra samples, followed by a block with 0 samples. Worse, there may be frames without
             // blocks at all despite SWF19 saying this shouldn't happen. This may or may not indicate a gap
@@ -480,7 +488,7 @@ impl Read for SubstreamTagReader {
 /// The substream is shared in order to allow appending additional data into
 /// the stream.
 pub fn make_substream_decoder(
-    stream_info: &swf::SoundStreamHead,
+    stream_info: &SoundStreamInfo,
     data_stream: Substream,
 ) -> Result<Box<dyn Decoder + Send>, Error> {
     let decoder: Box<dyn Decoder + Send> =
@@ -502,7 +510,7 @@ struct StandardSubstreamDecoder {
 impl StandardSubstreamDecoder {
     /// Constructs a new `StandardSubstreamDecoder`.
     /// `swf_data` should be the tag data of the MovieClip that contains the stream.
-    fn new(stream_info: &swf::SoundStreamHead, data_stream: Substream) -> Result<Self, Error> {
+    fn new(stream_info: &SoundStreamInfo, data_stream: Substream) -> Result<Self, Error> {
         // Create a tag reader to get the audio data from SoundStreamBlock tags.
         let tag_reader = SubstreamTagReader::new(stream_info, data_stream);
         // Wrap the tag reader in the decoder.
@@ -540,7 +548,7 @@ pub struct AdpcmSubstreamDecoder {
 }
 
 impl AdpcmSubstreamDecoder {
-    fn new(stream_info: &swf::SoundStreamHead, data_stream: Substream) -> Result<Self, Error> {
+    fn new(stream_info: &SoundStreamInfo, data_stream: Substream) -> Result<Self, Error> {
         let empty_buffer = data_stream.buffer().to_empty_slice();
         let mut tag_reader = SubstreamTagReader::new(stream_info, data_stream);
         let audio_data = tag_reader.next().unwrap_or(empty_buffer);
