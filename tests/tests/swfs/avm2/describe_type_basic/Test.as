@@ -67,6 +67,9 @@ class Base implements BaseInterfaceOne, BaseInterfaceTwo {
 	AS3 function as3Method() {}
 	AS3 function get as3BaseGetter(): Boolean { return true; }
 	AS3 function set as3BaseSetter(val: Boolean) { }
+
+	public static function baseNormalStatic() {}
+	AS3 static function baseAS3Static() {}
 }
 
 class Subclass extends Base implements BaseInterfaceOne, OtherInterface {
@@ -78,6 +81,9 @@ class Subclass extends Base implements BaseInterfaceOne, OtherInterface {
 	public override function overridenMethod(firstParam: *, secondParam: Dictionary, thirdParam: DisplayObject = null): Object { return null; }
 	AS3 function get as3SubGetter(): Boolean { return true; }
 	AS3 function set as3SubSetter(val: Boolean) { }
+
+	public static function subNormalStatic() {}
+	AS3 static function subAS3Static() {}
 }
 
 interface BaseInterfaceOne {}
