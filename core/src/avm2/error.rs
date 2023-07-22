@@ -212,6 +212,17 @@ pub fn verify_error<'gc>(
 
 #[inline(never)]
 #[cold]
+pub fn illegal_operation_error<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    message: &str,
+    code: u32,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let class = activation.avm2().classes().illegaloperationerror;
+    error_constructor(activation, class, message, code)
+}
+
+#[inline(never)]
+#[cold]
 pub fn io_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,

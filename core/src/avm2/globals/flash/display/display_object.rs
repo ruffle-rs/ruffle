@@ -1,7 +1,7 @@
 //! `flash.display.DisplayObject` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::error::{argument_error, make_error_2008};
+use crate::avm2::error::{argument_error, illegal_operation_error, make_error_2008};
 use crate::avm2::filters::FilterAvm2Ext;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::parameters::ParametersExt;
@@ -490,10 +490,11 @@ pub fn set_name<'gc>(
         let new_name = args.get_string(activation, 0)?;
 
         if dobj.instantiated_by_timeline() {
-            return Err(format!(
-                "Display object {new_name} was placed by the timeline and cannot have it's name changed.",
-            )
-            .into());
+            return Err(Error::AvmError(illegal_operation_error(
+                activation,
+                "Error #2078: The name property of a Timeline-placed object cannot be modified.",
+                2078,
+            )?));
         }
 
         dobj.set_name(activation.context.gc_context, new_name);

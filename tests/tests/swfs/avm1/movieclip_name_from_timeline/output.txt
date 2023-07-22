@@ -1,0 +1,14 @@
+// circle.
+_level0.circle
+
+// circle._name
+circle
+
+// circle._name = "square"
+
+// circle
+undefined
+
+// square
+_level0.square
+
