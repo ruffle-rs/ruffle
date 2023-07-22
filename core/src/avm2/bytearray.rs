@@ -308,6 +308,7 @@ impl ByteArrayStorage {
     #[inline]
     pub fn set_length(&mut self, new_len: usize) {
         self.bytes.resize(new_len, 0);
+        self.position.set(self.position().min(new_len));
     }
 
     pub fn get(&self, pos: usize) -> Option<u8> {
