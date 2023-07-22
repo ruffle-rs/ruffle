@@ -203,7 +203,7 @@ pub fn flush<'gc>(
         if !activation.context.sockets.is_connected(handle) {
             return Err(invalid_socket_error(activation));
         }
-        
+
         let UpdateContext { sockets, .. } = &mut activation.context;
 
         let mut buffer = socket.write_buffer();
