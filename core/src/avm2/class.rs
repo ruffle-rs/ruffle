@@ -196,7 +196,7 @@ impl<'gc> Class<'gc> {
         class_init: Method<'gc>,
         mc: &Mutation<'gc>,
     ) -> GcCell<'gc, Self> {
-        let native_instance_init = instance_init.clone();
+        let native_instance_init = instance_init;
 
         GcCell::new(
             mc,
@@ -331,7 +331,7 @@ impl<'gc> Class<'gc> {
         }
 
         let instance_init = unit.load_method(abc_instance.init_method, false, activation)?;
-        let mut native_instance_init = instance_init.clone();
+        let mut native_instance_init = instance_init;
         let class_init = unit.load_method(abc_class.init_method, false, activation)?;
         let mut native_call_handler = None;
 
@@ -794,12 +794,12 @@ impl<'gc> Class<'gc> {
 
     /// Get this class's instance initializer.
     pub fn instance_init(&self) -> Method<'gc> {
-        self.instance_init.clone()
+        self.instance_init
     }
 
     /// Get this class's native-code instance initializer.
     pub fn native_instance_init(&self) -> Method<'gc> {
-        self.native_instance_init.clone()
+        self.native_instance_init
     }
 
     /// Set a native-code instance initializer for this class.
@@ -809,7 +809,7 @@ impl<'gc> Class<'gc> {
 
     /// Get this class's class initializer.
     pub fn class_init(&self) -> Method<'gc> {
-        self.class_init.clone()
+        self.class_init
     }
 
     /// Set a call handler for this class.
@@ -819,7 +819,7 @@ impl<'gc> Class<'gc> {
 
     /// Get this class's call handler.
     pub fn call_handler(&self) -> Option<Method<'gc>> {
-        self.call_handler.clone()
+        self.call_handler
     }
 
     /// Check if the class has already been initialized.

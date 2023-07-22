@@ -495,7 +495,7 @@ impl<'gc> ClassObject<'gc> {
     ) -> Result<Value<'gc>, Error<'gc>> {
         let scope = self.0.read().instance_scope;
         let constructor =
-            Executable::from_method(self.0.read().constructor.clone(), scope, None, Some(self));
+            Executable::from_method(self.0.read().constructor, scope, None, Some(self));
 
         constructor.exec(receiver, arguments, activation, self.into())
     }
@@ -512,12 +512,8 @@ impl<'gc> ClassObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let scope = self.0.read().instance_scope;
-        let constructor = Executable::from_method(
-            self.0.read().native_constructor.clone(),
-            scope,
-            None,
-            Some(self),
-        );
+        let constructor =
+            Executable::from_method(self.0.read().native_constructor, scope, None, Some(self));
 
         constructor.exec(receiver, arguments, activation, self.into())
     }
@@ -741,7 +737,7 @@ impl<'gc> ClassObject<'gc> {
     }
 
     pub fn constructor(self) -> Method<'gc> {
-        self.0.read().constructor.clone()
+        self.0.read().constructor
     }
 
     pub fn instance_vtable(self) -> VTable<'gc> {
@@ -858,7 +854,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        if let Some(call_handler) = self.0.read().call_handler.clone() {
+        if let Some(call_handler) = self.0.read().call_handler {
             let scope = self.0.read().class_scope;
             let func = Executable::from_method(call_handler, scope, None, Some(self));
 

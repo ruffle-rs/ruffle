@@ -323,7 +323,7 @@ impl<'gc> fmt::Debug for NativeMethod<'gc> {
 
 /// An uninstantiated method that can either be natively implemented or sourced
 /// from an ABC file.
-#[derive(Clone, Collect)]
+#[derive(Copy, Clone, Collect)]
 #[collect(no_drop)]
 pub enum Method<'gc> {
     /// A native method.

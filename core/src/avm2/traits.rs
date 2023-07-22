@@ -383,10 +383,10 @@ impl<'gc> Trait<'gc> {
     /// Get the method contained within this trait, if it has one.
     pub fn as_method(&self) -> Option<Method<'gc>> {
         match &self.kind {
-            TraitKind::Method { method, .. } => Some(method.clone()),
-            TraitKind::Getter { method, .. } => Some(method.clone()),
-            TraitKind::Setter { method, .. } => Some(method.clone()),
-            TraitKind::Function { function, .. } => Some(function.clone()),
+            TraitKind::Method { method, .. } => Some(*method),
+            TraitKind::Getter { method, .. } => Some(*method),
+            TraitKind::Setter { method, .. } => Some(*method),
+            TraitKind::Function { function, .. } => Some(*function),
             _ => None,
         }
     }

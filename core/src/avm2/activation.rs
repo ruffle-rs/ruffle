@@ -5,8 +5,8 @@ use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
 use crate::avm2::e4x::{escape_attribute_value, escape_element_value};
 use crate::avm2::error::{
-    argument_error, make_error_1127, make_error_1506, make_null_or_undefined_error,
-    make_reference_error, type_error, ReferenceErrorCode,
+    make_error_1127, make_error_1506, make_null_or_undefined_error, make_reference_error,
+    type_error, ReferenceErrorCode,
 };
 use crate::avm2::method::{BytecodeMethod, Method, ParamConfig};
 use crate::avm2::object::{
@@ -35,6 +35,8 @@ use swf::avm2::types::{
     Class as AbcClass, Exception, Index, Method as AbcMethod, MethodFlags as AbcMethodFlags,
     Multiname as AbcMultiname, Namespace as AbcNamespace, Op,
 };
+
+use super::error::make_mismatch_error;
 
 /// Represents a particular register set.
 ///
@@ -309,10 +311,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// signature of the current called method).
     fn resolve_parameter(
         &mut self,
-        method_name: &str,
+        method: Method<'gc>,
         value: Option<&Value<'gc>>,
         param_config: &ParamConfig<'gc>,
-        index: usize,
+        user_arguments: &[Value<'gc>],
+        callee: Option<Object<'gc>>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let arg = if let Some(value) = value {
             Cow::Borrowed(value)
@@ -321,13 +324,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         } else if param_config.param_type_name.is_any_name() {
             return Ok(Value::Undefined);
         } else {
-            return Err(Error::AvmError(argument_error(
+            return Err(Error::AvmError(make_mismatch_error(
                 self,
-                &format!(
-                    "Error #1063: Argument count mismatch on {} on index {}.",
-                    method_name, index
-                ),
-                1063,
+                method,
+                user_arguments,
+                callee,
             )?));
         };
 
@@ -343,13 +344,20 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// the signature, with missing parameters filled in with defaults.
     pub fn resolve_parameters(
         &mut self,
-        method_name: &str,
+        method: Method<'gc>,
         user_arguments: &[Value<'gc>],
         signature: &[ParamConfig<'gc>],
+        callee: Option<Object<'gc>>,
     ) -> Result<Vec<Value<'gc>>, Error<'gc>> {
         let mut arguments_list = Vec::new();
-        for (i, (arg, param_config)) in user_arguments.iter().zip(signature.iter()).enumerate() {
-            arguments_list.push(self.resolve_parameter(method_name, Some(arg), param_config, i)?);
+        for (arg, param_config) in user_arguments.iter().zip(signature.iter()) {
+            arguments_list.push(self.resolve_parameter(
+                method,
+                Some(arg),
+                param_config,
+                user_arguments,
+                callee,
+            )?);
         }
 
         match user_arguments.len().cmp(&signature.len()) {
@@ -359,12 +367,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             }
             Ordering::Less => {
                 //Apply remaining default parameters
-                for (i, param_config) in signature[user_arguments.len()..].iter().enumerate() {
+                for param_config in signature[user_arguments.len()..].iter() {
                     arguments_list.push(self.resolve_parameter(
-                        method_name,
+                        method,
                         None,
                         param_config,
-                        i + user_arguments.len(),
+                        user_arguments,
+                        callee,
                     )?);
                 }
             }
@@ -392,17 +401,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let num_locals = body.num_locals;
         let has_rest_or_args = method.is_variadic();
         let arg_register = if has_rest_or_args { 1 } else { 0 };
-
-        let signature = method.signature();
-        if user_arguments.len() > signature.len() && !has_rest_or_args {
-            return Err(format!(
-                "Attempted to call {:?} with {} arguments (more than {} is prohibited)",
-                method.method_name(),
-                user_arguments.len(),
-                signature.len()
-            )
-            .into());
-        }
+        let signature: &[ParamConfig<'_>] = method.signature();
 
         let num_declared_arguments = signature.len() as u32;
 
@@ -441,9 +440,22 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             context,
         };
 
+        if user_arguments.len() > signature.len() && !has_rest_or_args {
+            return Err(Error::AvmError(make_mismatch_error(
+                &mut activation,
+                Method::Bytecode(method),
+                user_arguments,
+                Some(callee),
+            )?));
+        }
+
         //Statically verify all non-variadic, provided parameters.
-        let arguments_list =
-            activation.resolve_parameters(method.method_name(), user_arguments, signature)?;
+        let arguments_list = activation.resolve_parameters(
+            Method::Bytecode(method),
+            user_arguments,
+            signature,
+            Some(callee),
+        )?;
 
         {
             for (i, arg) in arguments_list[0..min(signature.len(), arguments_list.len())]

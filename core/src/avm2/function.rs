@@ -146,9 +146,10 @@ impl<'gc> Executable<'gc> {
                 }
 
                 let arguments = activation.resolve_parameters(
-                    bm.method.name,
+                    Method::Native(bm.method),
                     arguments,
                     &bm.method.signature,
+                    Some(callee),
                 )?;
                 activation
                     .context

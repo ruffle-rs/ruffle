@@ -327,7 +327,7 @@ impl<'gc> VTable<'gc> {
                     let entry = ClassBoundMethod {
                         class: defining_class,
                         scope,
-                        method: method.clone(),
+                        method: *method,
                     };
                     match resolved_traits.get(trait_data.name()) {
                         Some(Property::Method { disp_id, .. }) => {
@@ -355,7 +355,7 @@ impl<'gc> VTable<'gc> {
                     let entry = ClassBoundMethod {
                         class: defining_class,
                         scope,
-                        method: method.clone(),
+                        method: *method,
                     };
                     match resolved_traits.get_mut(trait_data.name()) {
                         Some(Property::Virtual {
@@ -392,7 +392,7 @@ impl<'gc> VTable<'gc> {
                     let entry = ClassBoundMethod {
                         class: defining_class,
                         scope,
-                        method: method.clone(),
+                        method: *method,
                     };
                     match resolved_traits.get_mut(trait_data.name()) {
                         Some(Property::Virtual {
@@ -607,7 +607,7 @@ fn trait_to_default_value<'gc>(
         TraitKind::Slot { default_value, .. } => *default_value,
         TraitKind::Const { default_value, .. } => *default_value,
         TraitKind::Function { function, .. } => {
-            FunctionObject::from_function(activation, function.clone(), scope)
+            FunctionObject::from_function(activation, *function, scope)
                 .unwrap()
                 .into()
         }
