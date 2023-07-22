@@ -12,7 +12,7 @@ use crate::avm2::{
 };
 use crate::backend::audio::{DecodeError, SoundInstanceHandle};
 use crate::backend::navigator::Request;
-use crate::buffer::{Buffer, Substream};
+use crate::buffer::{Buffer, Substream, SubstreamError};
 use crate::context::UpdateContext;
 use crate::display_object::MovieClip;
 use crate::loader::Error;
@@ -40,6 +40,9 @@ enum NetstreamError {
     #[error("Decoding failed because {0}")]
     DecodeError(DecodeError),
 
+    #[error("Substream management error {0}")]
+    SubstreamError(SubstreamError),
+
     #[error("Unknown codec")]
     UnknownCodec,
 
@@ -50,6 +53,12 @@ enum NetstreamError {
 impl From<DecodeError> for NetstreamError {
     fn from(err: DecodeError) -> NetstreamError {
         NetstreamError::DecodeError(err)
+    }
+}
+
+impl From<SubstreamError> for NetstreamError {
+    fn from(err: SubstreamError) -> NetstreamError {
+        NetstreamError::SubstreamError(err)
     }
 }
 
@@ -468,15 +477,25 @@ impl<'gc> NetStream<'gc> {
                         data,
                     }) => {
                         let attached_to = write.attached_to;
-                        let mut substream = match &mut write.audio_stream {
+                        match &mut write.audio_stream {
                             Some((substream, audio_handle))
                                 if context.audio.is_sound_playing(*audio_handle) =>
                             {
-                                substream.clone()
+                                let result = match data {
+                                    FlvAudioDataType::Raw(data)
+                                    | FlvAudioDataType::AacSequenceHeader(data)
+                                    | FlvAudioDataType::AacRaw(data) => {
+                                        substream.append(slice.to_subslice(data))
+                                    }
+                                };
+
+                                if let Err(e) = result {
+                                    tracing::error!("Error encountered appending substream: {}", e);
+                                }
                             }
                             audio_stream => {
                                 //None or not playing
-                                let substream = Substream::new(slice.buffer().clone());
+                                let mut substream = Substream::new(slice.buffer().clone());
                                 let audio_handle = (|| {
                                     let swf_format = SoundFormat {
                                         compression: match format {
@@ -536,6 +555,14 @@ impl<'gc> NetStream<'gc> {
                                         latency_seek: 0,
                                     };
 
+                                    match data {
+                                        FlvAudioDataType::Raw(data)
+                                        | FlvAudioDataType::AacSequenceHeader(data)
+                                        | FlvAudioDataType::AacRaw(data) => {
+                                            substream.append(slice.to_subslice(data))?
+                                        }
+                                    };
+
                                     if context.is_action_script_3() {
                                         Ok(context.audio.start_substream(
                                             substream.clone(),
@@ -559,22 +586,8 @@ impl<'gc> NetStream<'gc> {
                                     *audio_stream =
                                         Some((substream.clone(), audio_handle.unwrap()));
                                 }
-
-                                substream
                             }
                         };
-
-                        let result = match data {
-                            FlvAudioDataType::Raw(data)
-                            | FlvAudioDataType::AacSequenceHeader(data)
-                            | FlvAudioDataType::AacRaw(data) => {
-                                substream.append(slice.to_subslice(data))
-                            }
-                        };
-
-                        if let Err(e) = result {
-                            tracing::error!("Error encountered appending substream: {}", e);
-                        }
                     }
                     FlvTagData::Video(FlvVideoData { codec_id, data, .. }) => {
                         let (video_handle, frame_id) = match write.stream_type {
