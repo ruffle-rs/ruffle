@@ -13,12 +13,14 @@ use flash_lso::types::{AMFVersion, Element};
 
 macro_rules! assert_socket_open {
     ($activation:expr, $socket:expr) => {
-        let handle = $socket.get_handle().ok_or_else(|| invalid_socket_error($activation))?;
+        let handle = $socket
+            .get_handle()
+            .ok_or_else(|| invalid_socket_error($activation))?;
 
         if !$activation.context.sockets.is_connected(handle) {
             return Err(invalid_socket_error($activation));
         }
-    }
+    };
 }
 
 pub fn connect<'gc>(
