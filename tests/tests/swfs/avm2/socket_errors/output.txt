@@ -1,0 +1,56 @@
+flush()
+Error: Error #2002: Operation attempted on invalid socket.
+close()
+Error: Error #2002: Operation attempted on invalid socket.
+readBoolean()
+Error: Error #2002: Operation attempted on invalid socket.
+readByte()
+Error: Error #2002: Operation attempted on invalid socket.
+readBytes()
+Error: Error #2002: Operation attempted on invalid socket.
+readDouble()
+Error: Error #2002: Operation attempted on invalid socket.
+readFloat()
+Error: Error #2002: Operation attempted on invalid socket.
+readInt()
+Error: Error #2002: Operation attempted on invalid socket.
+readMultiByte()
+Error: Error #2002: Operation attempted on invalid socket.
+readObject()
+Error: Error #2002: Operation attempted on invalid socket.
+readShort()
+Error: Error #2002: Operation attempted on invalid socket.
+readUnsignedByte()
+Error: Error #2002: Operation attempted on invalid socket.
+readUnsignedInt()
+Error: Error #2002: Operation attempted on invalid socket.
+readUnsignedShort()
+Error: Error #2002: Operation attempted on invalid socket.
+readUTF()
+Error: Error #2002: Operation attempted on invalid socket.
+readUTFBytes()
+Error: Error #2002: Operation attempted on invalid socket.
+writeBoolean()
+Error: Error #2002: Operation attempted on invalid socket.
+writeByte()
+Error: Error #2002: Operation attempted on invalid socket.
+writeBytes()
+Error: Error #2002: Operation attempted on invalid socket.
+writeDouble()
+Error: Error #2002: Operation attempted on invalid socket.
+writeFloat()
+Error: Error #2002: Operation attempted on invalid socket.
+writeInt()
+Error: Error #2002: Operation attempted on invalid socket.
+writeMultiByte()
+Error: Error #2002: Operation attempted on invalid socket.
+writeObject()
+Error: Error #2002: Operation attempted on invalid socket.
+writeShort()
+Error: Error #2002: Operation attempted on invalid socket.
+writeUnsignedInt()
+Error: Error #2002: Operation attempted on invalid socket.
+writeUTF()
+Error: Error #2002: Operation attempted on invalid socket.
+writeUTFBytes()
+Error: Error #2002: Operation attempted on invalid socket.
