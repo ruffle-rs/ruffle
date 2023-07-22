@@ -36,6 +36,40 @@ pub type SoundHandle = Index;
 pub type SoundInstanceHandle = Index;
 pub type DecodeError = decoders::Error;
 
+#[derive(Eq, PartialEq, Clone, Copy, Debug)]
+pub enum SoundStreamWrapping {
+    /// Sound is being streamed from an SWF.
+    ///
+    /// MP3 chunks within SWFs are wrapped in a header that lists the number of
+    /// samples in the chunk.
+    Swf,
+
+    /// Sound is being streamed from an unwrapped bitstream.
+    ///
+    /// Container formats that expose unwrapped bitstreams - that is, without
+    /// needing additional unwrapping - may also use `Unwrapped`.
+    Unwrapped,
+}
+
+#[derive(Eq, PartialEq, Clone, Debug)]
+pub struct SoundStreamInfo {
+    pub wrapping: SoundStreamWrapping,
+    pub stream_format: swf::SoundFormat,
+    pub num_samples_per_block: u16,
+    pub latency_seek: i16,
+}
+
+impl From<swf::SoundStreamHead> for SoundStreamInfo {
+    fn from(swfhead: swf::SoundStreamHead) -> SoundStreamInfo {
+        SoundStreamInfo {
+            wrapping: SoundStreamWrapping::Swf,
+            stream_format: swfhead.stream_format,
+            num_samples_per_block: swfhead.num_samples_per_block,
+            latency_seek: swfhead.latency_seek,
+        }
+    }
+}
+
 #[derive(Debug, Error)]
 pub enum RegisterError {
     #[error("MP3 sound is too short")]
@@ -91,7 +125,7 @@ pub trait AudioBackend: Downcast {
     fn start_substream(
         &mut self,
         stream_data: Substream,
-        stream_info: &swf::SoundStreamHead,
+        stream_info: &SoundStreamInfo,
     ) -> Result<SoundInstanceHandle, DecodeError>;
 
     /// Stops a playing sound instance.
@@ -248,7 +282,7 @@ impl AudioBackend for NullAudioBackend {
     fn start_substream(
         &mut self,
         _stream_data: Substream,
-        _handle: &swf::SoundStreamHead,
+        _handle: &SoundStreamInfo,
     ) -> Result<SoundInstanceHandle, DecodeError> {
         Ok(SoundInstanceHandle::from_raw_parts(0, 0))
     }
@@ -533,7 +567,7 @@ impl<'gc> AudioManager<'gc> {
         audio: &mut dyn AudioBackend,
         stream_data: Substream,
         movie_clip: MovieClip<'gc>,
-        stream_info: &swf::SoundStreamHead,
+        stream_info: &SoundStreamInfo,
     ) -> Result<SoundInstanceHandle, DecodeError> {
         if self.sounds.len() < Self::MAX_SOUNDS {
             let handle = audio.start_substream(stream_data, stream_info)?;
