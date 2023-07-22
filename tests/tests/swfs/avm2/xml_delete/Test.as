@@ -105,6 +105,30 @@
 			trace("// list");
 			trace(list);
 			trace("");
+			
+			trace("--------");
+			xml = <list><item special="yep" id="a">a</item><item id="b">b</item><item special="very" id="c"><name>foo</name>c</item></list>;
+			list = xml.item;
+			
+			trace("// xml");
+			trace(xml);
+			trace("");
+			
+			trace("// list");
+			trace(list);
+			trace("");
+			
+			trace("// delete list.@*");
+			trace(delete list.@*);
+			trace("");
+			
+			trace("// xml");
+			trace(xml);
+			trace("");
+			
+			trace("// list");
+			trace(list);
+			trace("");
 		}
 	}
 	

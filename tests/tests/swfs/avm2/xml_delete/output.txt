@@ -93,3 +93,23 @@ true
 // list
 very
 
+--------
+// xml
+<list><item special="yep" id="a">a</item><item id="b">b</item><item special="very" id="c"><name>foo</name>c</item></list>
+
+// list
+<item special="yep" id="a">a</item>
+<item id="b">b</item>
+<item special="very" id="c"><name>foo</name>c</item>
+
+// delete list.@*
+true
+
+// xml
+<list><item>a</item><item>b</item><item><name>foo</name>c</item></list>
+
+// list
+<item>a</item>
+<item>b</item>
+<item><name>foo</name>c</item>
+
