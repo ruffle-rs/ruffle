@@ -11,6 +11,16 @@ use flash_lso::amf0::read::AMF0Decoder;
 use flash_lso::amf3::read::AMF3Decoder;
 use flash_lso::types::{AMFVersion, Element};
 
+macro_rules! assert_socket_open {
+    ($activation:expr, $socket:expr) => {
+        let handle = $socket.get_handle().ok_or_else(|| invalid_socket_error($activation))?;
+
+        if !$activation.context.sockets.is_connected(handle) {
+            return Err(invalid_socket_error($activation));
+        }
+    }
+}
+
 pub fn connect<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
@@ -202,6 +212,8 @@ pub fn read_boolean<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(socket) = this.as_socket() {
+        assert_socket_open!(activation, socket);
+
         return Ok(socket
             .read_boolean()
             .map_err(|e| e.to_avm(activation))?
@@ -217,6 +229,8 @@ pub fn read_byte<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(socket) = this.as_socket() {
+        assert_socket_open!(activation, socket);
+
         return Ok(socket.read_byte().map_err(|e| e.to_avm(activation))?.into());
     }
 
@@ -229,6 +243,8 @@ pub fn read_bytes<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(socket) = this.as_socket() {
+        assert_socket_open!(activation, socket);
+
         let bytearray = args.get_object(activation, 0, "bytes")?;
         let offset = args.get_u32(activation, 1)? as usize;
         let length = args.get_u32(activation, 2)? as usize;
@@ -257,6 +273,8 @@ pub fn read_double<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(socket) = this.as_socket() {
+        assert_socket_open!(activation, socket);
+
         return Ok(socket
             .read_double()
             .map_err(|e| e.to_avm(activation))?
@@ -272,6 +290,8 @@ pub fn read_float<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(socket) = this.as_socket() {
+        assert_socket_open!(activation, socket);
+
         return Ok(socket
             .read_float()
             .map_err(|e| e.to_avm(activation))?
@@ -287,6 +307,8 @@ pub fn read_int<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(socket) = this.as_socket() {
+        assert_socket_open!(activation, socket);
+
         return Ok(socket.read_int().map_err(|e| e.to_avm(activation))?.into());
     }
 
@@ -299,6 +321,8 @@ pub fn read_multi_byte<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(socket) = this.as_socket() {
+        assert_socket_open!(activation, socket);
+
         let len = args.get_u32(activation, 0)?;
         let charset_label = args.get_string(activation, 1)?;
         let mut bytes = &*socket
@@ -326,6 +350,8 @@ pub fn read_object<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(socket) = this.as_socket() {
+        assert_socket_open!(activation, socket);
+
         let mut bytes = socket.read_buffer();
 
         let (bytes_left, value) = match socket.object_encoding() {
@@ -365,6 +391,8 @@ pub fn read_short<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(socket) = this.as_socket() {
+        assert_socket_open!(activation, socket);
+
         return Ok(socket
             .read_short()
             .map_err(|e| e.to_avm(activation))?
@@ -380,6 +408,8 @@ pub fn read_unsigned_byte<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(socket) = this.as_socket() {
+        assert_socket_open!(activation, socket);
+
         return Ok(socket
             .read_unsigned_byte()
             .map_err(|e| e.to_avm(activation))?
@@ -395,6 +425,8 @@ pub fn read_unsigned_int<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(socket) = this.as_socket() {
+        assert_socket_open!(activation, socket);
+
         return Ok(socket
             .read_unsigned_int()
             .map_err(|e| e.to_avm(activation))?
@@ -410,6 +442,8 @@ pub fn read_unsigned_short<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(socket) = this.as_socket() {
+        assert_socket_open!(activation, socket);
+
         return Ok(socket
             .read_unsigned_short()
             .map_err(|e| e.to_avm(activation))?
@@ -425,6 +459,8 @@ pub fn read_utf<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(socket) = this.as_socket() {
+        assert_socket_open!(activation, socket);
+
         return Ok(AvmString::new_utf8_bytes(
             activation.gc(),
             &socket.read_utf().map_err(|e| e.to_avm(activation))?,
@@ -441,6 +477,8 @@ pub fn read_utf_bytes<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(socket) = this.as_socket() {
+        assert_socket_open!(activation, socket);
+
         let length = args.get_u32(activation, 0)?;
 
         return Ok(AvmString::new_utf8_bytes(
@@ -456,11 +494,13 @@ pub fn read_utf_bytes<'gc>(
 }
 
 pub fn write_boolean<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(socket) = this.as_socket() {
+        assert_socket_open!(activation, socket);
+
         let byte = args.get_bool(0);
         socket.write_boolean(byte);
     }
@@ -474,6 +514,8 @@ pub fn write_byte<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(socket) = this.as_socket() {
+        assert_socket_open!(activation, socket);
+
         let byte = args.get_u32(activation, 0)?;
         socket.write_bytes(&[byte as u8]);
     }
@@ -487,6 +529,8 @@ pub fn write_bytes<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(socket) = this.as_socket() {
+        assert_socket_open!(activation, socket);
+
         let bytearray = args.get_object(activation, 0, "bytes")?;
         let offset = args.get_u32(activation, 1)? as usize;
         let length = args.get_u32(activation, 2)? as usize;
@@ -519,6 +563,8 @@ pub fn write_double<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(socket) = this.as_socket() {
+        assert_socket_open!(activation, socket);
+
         let num = args.get_f64(activation, 0)?;
         socket.write_double(num);
     }
@@ -532,6 +578,8 @@ pub fn write_float<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(socket) = this.as_socket() {
+        assert_socket_open!(activation, socket);
+
         let num = args.get_f64(activation, 0)?;
         socket.write_float(num as f32);
     }
@@ -545,6 +593,8 @@ pub fn write_int<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(socket) = this.as_socket() {
+        assert_socket_open!(activation, socket);
+
         let num = args.get_i32(activation, 0)?;
         socket.write_int(num);
     }
@@ -558,6 +608,8 @@ pub fn write_multi_byte<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(socket) = this.as_socket() {
+        assert_socket_open!(activation, socket);
+
         let string = args.get_string(activation, 0)?;
         let charset_label = args.get_string(activation, 1)?;
 
@@ -577,6 +629,8 @@ pub fn write_object<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(socket) = this.as_socket() {
+        assert_socket_open!(activation, socket);
+
         let obj = args.get_value(0);
         let amf_version = match socket.object_encoding() {
             ObjectEncoding::Amf0 => AMFVersion::AMF0,
@@ -609,6 +663,8 @@ pub fn write_short<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(socket) = this.as_socket() {
+        assert_socket_open!(activation, socket);
+
         let num = args.get_i32(activation, 0)?;
         socket.write_short(num as i16);
     }
@@ -622,6 +678,8 @@ pub fn write_unsigned_int<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(socket) = this.as_socket() {
+        assert_socket_open!(activation, socket);
+
         let num = args.get_u32(activation, 0)?;
         socket.write_unsigned_int(num);
     }
@@ -635,6 +693,8 @@ pub fn write_utf<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(socket) = this.as_socket() {
+        assert_socket_open!(activation, socket);
+
         let string = args.get_string(activation, 0)?;
 
         socket.write_utf(&string.to_utf8_lossy())?;
@@ -649,6 +709,8 @@ pub fn write_utf_bytes<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(socket) = this.as_socket() {
+        assert_socket_open!(activation, socket);
+
         let string = args.get_string(activation, 0)?;
 
         socket.write_bytes(string.to_utf8_lossy().as_bytes());
