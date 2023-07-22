@@ -28,6 +28,8 @@
     </method>
       <variable name="baseProp" type="Object"/>
   </factory>
+  <method name="baseAS3Static" declaredBy="Test.as$38::Base" returnType="*" uri="http://adobe.com/AS3/2006/builtin"/>
+  <method name="baseNormalStatic" declaredBy="Test.as$38::Base" returnType="*"/>
 </type>
 <type name="Test.as$38::Base" base="Object" isDynamic="false" isFinal="false" isStatic="false">
   <accessor name="as3BaseGetter" access="readonly" type="Boolean" declaredBy="Test.as$38::Base" uri="http://adobe.com/AS3/2006/builtin"/>
@@ -67,6 +69,8 @@
       <variable name="baseProp" type="Object"/>
       <variable name="subProp" type="Object"/>
   </factory>
+  <method name="subAS3Static" declaredBy="Test.as$38::Subclass" returnType="*" uri="http://adobe.com/AS3/2006/builtin"/>
+  <method name="subNormalStatic" declaredBy="Test.as$38::Subclass" returnType="*"/>
 </type>
 <type name="Test.as$38::Subclass" base="Test.as$38::Base" isDynamic="false" isFinal="false" isStatic="false">
   <extendsClass type="Object"/>

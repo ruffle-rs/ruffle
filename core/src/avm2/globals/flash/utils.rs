@@ -399,7 +399,7 @@ fn describe_internal_body<'gc>(
     };
 
     let super_vtable = if is_static {
-        class_obj.superclass_object().map(|c| c.class_vtable())
+        class_obj.instance_of().map(|c| c.instance_vtable())
     } else {
         class_obj.superclass_object().map(|c| c.instance_vtable())
     };
@@ -425,7 +425,7 @@ fn describe_internal_body<'gc>(
         for (_, ns, prop) in super_vtable.resolved_traits().iter() {
             if !ns.as_uri().is_empty() {
                 if let Property::Method { disp_id } = prop {
-                    let method = vtable
+                    let method = super_vtable
                         .get_full_method(*disp_id)
                         .unwrap_or_else(|| panic!("Missing method for id {disp_id:?}"));
                     let is_playerglobals = method
@@ -433,6 +433,7 @@ fn describe_internal_body<'gc>(
                         .class_scope()
                         .domain()
                         .is_playerglobals_domain(activation);
+
                     if !skip_ns.contains(&(ns, is_playerglobals)) {
                         skip_ns.push((ns, is_playerglobals));
                     }
