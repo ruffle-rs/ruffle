@@ -1,0 +1,25 @@
+// circle.
+[object MovieClip]
+
+// circle.name
+circle
+
+// circle.name = "square"
+Error: Error #2078: The name property of a Timeline-placed object cannot be modified.
+
+// circle
+[object MovieClip]
+
+// circle.name
+circle
+
+// removeChild(circle)
+
+// circle.name = "square"
+Error: Error #2078: The name property of a Timeline-placed object cannot be modified.
+
+// addChild(circle)
+
+// circle.name = "square"
+Error: Error #2078: The name property of a Timeline-placed object cannot be modified.
+
