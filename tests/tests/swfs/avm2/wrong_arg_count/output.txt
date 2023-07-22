@@ -1,0 +1,7 @@
+Caught error: ArgumentError: Error #1063: Argument count mismatch on com.ruffle::MyClass(). Expected 0, got 2.
+Caught error: ArgumentError: Error #1063: Argument count mismatch on Function/Test.as$38:someFunc(). Expected 1, got 3.
+Caught error: ArgumentError: Error #1063: Argument count mismatch on com.ruffle::MyClass/myMethod(). Expected 0, got 3.
+Caught error: ArgumentError: Error #1063: Argument count mismatch on com.ruffle::MyClass/singleArgMethod(). Expected 1, got 0.
+Caught error: ArgumentError: Error #1063: Argument count mismatch on com.ruffle::MyClass/varArgMethod(). Expected 1, got 0.
+Caught error: ArgumentError: Error #1063: Argument count mismatch on com.ruffle::MyClass/defaultArgs(). Expected 1, got 0.
+Caught error: ArgumentError: Error #1063: Argument count mismatch on com.ruffle::MyClass/defaultArgVarargs(). Expected 1, got 0.

@@ -1,3 +1,5 @@
+use ruffle_wstr::WString;
+
 use crate::avm2::object::TObject;
 use crate::avm2::Activation;
 use crate::avm2::AvmString;
@@ -6,7 +8,10 @@ use crate::avm2::Value;
 use std::fmt::Debug;
 use std::mem::size_of;
 
+use super::function::display_function;
+use super::method::Method;
 use super::ClassObject;
+use super::Object;
 
 /// An error generated while handling AVM2 logic
 pub enum Error<'gc> {
@@ -428,6 +433,44 @@ pub fn error<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let class = activation.avm2().classes().error;
     error_constructor(activation, class, message, code)
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_mismatch_error<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    method: Method<'gc>,
+    user_arguments: &[Value<'gc>],
+    callee: Option<Object<'gc>>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let expected_num_params = method
+        .signature()
+        .iter()
+        .filter(|param| param.default_value.is_none())
+        .count();
+
+    let mut function_name = WString::new();
+    let bound_superclass = callee.and_then(|callee| {
+        if let Some(cls) = callee.as_class_object() {
+            Some(cls)
+        } else {
+            callee
+                .as_function_object()
+                .and_then(|f| f.as_executable().and_then(|e| e.bound_superclass()))
+        }
+    });
+
+    display_function(&mut function_name, &method, bound_superclass);
+
+    return Err(Error::AvmError(argument_error(
+        activation,
+        &format!(
+            "Error #1063: Argument count mismatch on {function_name}. Expected {}, got {}.",
+            expected_num_params,
+            user_arguments.len(),
+        ),
+        1063,
+    )?));
 }
 
 fn error_constructor<'gc>(

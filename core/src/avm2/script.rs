@@ -140,7 +140,7 @@ impl<'gc> TranslationUnit<'gc> {
     ) -> Result<Method<'gc>, Error<'gc>> {
         let read = self.0.read();
         if let Some(Some(method)) = read.methods.get(method_index.0 as usize) {
-            return Ok(method.clone());
+            return Ok(*method);
         }
 
         let is_global = read.domain.is_playerglobals_domain(activation);
@@ -175,8 +175,7 @@ impl<'gc> TranslationUnit<'gc> {
             Gc::new(activation.context.gc_context, bc_method).into()
         })();
 
-        self.0.write(activation.context.gc_context).methods[method_index.0 as usize] =
-            Some(method.clone());
+        self.0.write(activation.context.gc_context).methods[method_index.0 as usize] = Some(method);
 
         Ok(method)
     }
@@ -516,7 +515,7 @@ impl<'gc> Script<'gc> {
     /// Return the entrypoint for the script and the scope it should run in.
     pub fn init(self) -> (Method<'gc>, Object<'gc>, Domain<'gc>) {
         let read = self.0.read();
-        (read.init.clone(), read.globals, read.domain)
+        (read.init, read.globals, read.domain)
     }
 
     pub fn domain(self) -> Domain<'gc> {
