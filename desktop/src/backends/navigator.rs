@@ -3,6 +3,7 @@
 use crate::custom_event::RuffleEvent;
 use async_io::Timer;
 use async_net::TcpStream;
+use futures::future::select;
 use futures::{AsyncReadExt, AsyncWriteExt};
 use futures_lite::FutureExt;
 use isahc::http::{HeaderName, HeaderValue};
@@ -373,9 +374,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
 
             let host2 = host.clone();
 
-            let mut pending_write = vec![];
-
-            let mut stream = match TcpStream::connect((host, port))
+            let stream = match TcpStream::connect((host, port))
                 .or(async {
                     Timer::after(timeout).await;
                     Result::<TcpStream, io::Error>::Err(io::Error::new(ErrorKind::TimedOut, ""))
@@ -405,64 +404,79 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                 }
             };
 
-            loop {
+            let sender = sender;
+            //NOTE: We clone the sender here as we cant share it between async tasks.
+            let sender2 = sender.clone();
+            let (mut read, mut write) = stream.split();
+
+            let read = std::pin::pin!(async move {
                 loop {
-                    match receiver.try_recv() {
-                        Ok(val) => {
-                            pending_write.extend(val);
-                        }
-                        Err(TryRecvError::Disconnected) => {
-                            //NOTE: Channel sender has been dropped.
-                            //      This means we have to close the connection.
-                            drop(stream);
-                            return Ok(());
-                        }
-                        Err(_) => break,
-                    }
-                }
+                    let mut buffer = [0; 4096];
 
-                let mut buffer = [0; 4096];
-
-                match stream
-                    .read(&mut buffer)
-                    .or(async {
-                        Timer::after(Duration::from_millis(50)).await;
-                        Result::<usize, io::Error>::Err(io::Error::new(ErrorKind::TimedOut, ""))
-                    })
-                    .await
-                {
-                    Err(e) if e.kind() == ErrorKind::TimedOut => {} // try again later.
-                    Err(_) | Ok(0) => {
-                        sender
-                            .send(SocketAction::Close(handle))
-                            .expect("working channel send");
-                        drop(stream);
-                        break;
-                    }
-                    Ok(read) => {
-                        let buffer = buffer.into_iter().take(read).collect::<Vec<_>>();
-
-                        sender
-                            .send(SocketAction::Data(handle, buffer))
-                            .expect("working channel send");
-                    }
-                };
-
-                if !pending_write.is_empty() {
-                    match stream.write(&pending_write).await {
+                    match read.read(&mut buffer).await {
+                        Err(e) if e.kind() == ErrorKind::TimedOut => {} // try again later.
                         Err(_) | Ok(0) => {
                             sender
                                 .send(SocketAction::Close(handle))
                                 .expect("working channel send");
-                            drop(stream);
+                            drop(read);
                             break;
                         }
-                        Ok(written) => {
-                            let _ = pending_write.drain(..written);
+                        Ok(read) => {
+                            let buffer = buffer.into_iter().take(read).collect::<Vec<_>>();
+
+                            sender
+                                .send(SocketAction::Data(handle, buffer))
+                                .expect("working channel send");
+                        }
+                    };
+                }
+            });
+
+            let write = std::pin::pin!(async move {
+                let mut pending_write = vec![];
+
+                loop {
+                    loop {
+                        match receiver.try_recv() {
+                            Ok(val) => {
+                                pending_write.extend(val);
+                            }
+                            Err(TryRecvError::Disconnected) => {
+                                //NOTE: Channel sender has been dropped.
+                                //      This means we have to close the connection.
+                                drop(write);
+                                return;
+                            }
+                            Err(_) => break,
                         }
                     }
+
+                    if !pending_write.is_empty() {
+                        match write.write(&pending_write).await {
+                            Err(e) if e.kind() == ErrorKind::TimedOut => {} // try again later.
+                            Err(_) => {
+                                sender2
+                                    .send(SocketAction::Close(handle))
+                                    .expect("working channel send");
+                                drop(write);
+                                return;
+                            }
+                            Ok(written) => {
+                                let _ = pending_write.drain(..written);
+                            }
+                        }
+                    } else {
+                        //NOTE: We wait here as if the buffer is empty the syscall (at least on linux),
+                        //      will return immediately, and because of that we get stuck in a infinite loop
+                        //      as we never yield to the executor.
+                        Timer::after(Duration::from_millis(10)).await;
+                    }
                 }
-            }
+            });
+
+            //NOTE: If one future exits, this will take the other one down too.
+            select(read, write).await;
 
             Ok(())
         });
