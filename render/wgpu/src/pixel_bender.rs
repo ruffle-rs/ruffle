@@ -414,24 +414,43 @@ pub(super) fn run_pixelbender_shader_impl(
                     continue;
                 }
 
-                let (value_vec, is_float): (Vec<f32>, bool) = match value {
-                    PixelBenderType::TFloat(f1) => (vec![*f1, 0.0, 0.0, 0.0], true),
-                    PixelBenderType::TFloat2(f1, f2) => (vec![*f1, *f2, 0.0, 0.0], true),
-                    PixelBenderType::TFloat3(f1, f2, f3) => (vec![*f1, *f2, *f3, 0.0], true),
-                    PixelBenderType::TFloat4(f1, f2, f3, f4) => (vec![*f1, *f2, *f3, *f4], true),
-                    PixelBenderType::TInt(i1) => (vec![*i1 as f32, 0.0, 0.0, 0.0], false),
+                #[derive(Debug)]
+                enum FloatOrInt {
+                    Float(Vec<f32>),
+                    Int(Vec<i32>),
+                }
+
+                impl FloatOrInt {
+                    fn len(&self) -> usize {
+                        match self {
+                            FloatOrInt::Float(v) => v.len(),
+                            FloatOrInt::Int(v) => v.len(),
+                        }
+                    }
+                }
+
+                let value_vec = match value {
+                    PixelBenderType::TFloat(f1) => FloatOrInt::Float(vec![*f1, 0.0, 0.0, 0.0]),
+                    PixelBenderType::TFloat2(f1, f2) => FloatOrInt::Float(vec![*f1, *f2, 0.0, 0.0]),
+                    PixelBenderType::TFloat3(f1, f2, f3) => {
+                        FloatOrInt::Float(vec![*f1, *f2, *f3, 0.0])
+                    }
+                    PixelBenderType::TFloat4(f1, f2, f3, f4) => {
+                        FloatOrInt::Float(vec![*f1, *f2, *f3, *f4])
+                    }
+                    PixelBenderType::TInt(i1) => FloatOrInt::Int(vec![*i1 as i32, 0, 0, 0]),
                     PixelBenderType::TInt2(i1, i2) => {
-                        (vec![*i1 as f32, *i2 as f32, 0.0, 0.0], false)
+                        FloatOrInt::Int(vec![*i1 as i32, *i2 as i32, 0, 0])
                     }
                     PixelBenderType::TInt3(i1, i2, i3) => {
-                        (vec![*i1 as f32, *i2 as f32, *i3 as f32, 0.0], false)
+                        FloatOrInt::Int(vec![*i1 as i32, *i2 as i32, *i3 as i32, 0])
                     }
                     PixelBenderType::TInt4(i1, i2, i3, i4) => {
-                        (vec![*i1 as f32, *i2 as f32, *i3 as f32, *i4 as f32], false)
+                        FloatOrInt::Int(vec![*i1 as i32, *i2 as i32, *i3 as i32, *i4 as i32])
                     }
                     // We treat the input as being in column-major order. Despite what the Flash docs claim,
                     // this seems to be what Flash Player does.
-                    PixelBenderType::TFloat2x2(arr) => (arr.to_vec(), true),
+                    PixelBenderType::TFloat2x2(arr) => FloatOrInt::Float(arr.to_vec()),
                     PixelBenderType::TFloat3x3(arr) => {
                         // Add a zero after every 3 values to created zero-padded vec4s
                         let mut vec4_arr = Vec::with_capacity(16);
@@ -441,9 +460,9 @@ pub(super) fn run_pixelbender_shader_impl(
                                 vec4_arr.push(0.0);
                             }
                         }
-                        (vec4_arr, true)
+                        FloatOrInt::Float(vec4_arr)
                     }
-                    PixelBenderType::TFloat4x4(arr) => (arr.to_vec(), true),
+                    PixelBenderType::TFloat4x4(arr) => FloatOrInt::Float(arr.to_vec()),
                     _ => unreachable!("Unimplemented value {value:?}"),
                 };
 
@@ -456,7 +475,7 @@ pub(super) fn run_pixelbender_shader_impl(
                 // Both float32 and int are 4 bytes
                 let component_size_bytes = 4;
 
-                let (buffer, vec4_count) = if is_float {
+                let (buffer, vec4_count) = if matches!(value_vec, FloatOrInt::Float(_)) {
                     let res = (&compiled_shader.float_parameters_buffer, float_offset);
                     float_offset += num_vec4s;
                     res
@@ -473,7 +492,14 @@ pub(super) fn run_pixelbender_shader_impl(
                     NonZeroU64::new(value_vec.len() as u64 * component_size_bytes).unwrap(),
                     &descriptors.device,
                 );
-                buffer_slice.copy_from_slice(bytemuck::cast_slice(&value_vec));
+                match value_vec {
+                    FloatOrInt::Float(v) => {
+                        buffer_slice.copy_from_slice(bytemuck::cast_slice(&v));
+                    }
+                    FloatOrInt::Int(v) => {
+                        buffer_slice.copy_from_slice(bytemuck::cast_slice(&v));
+                    }
+                }
             }
         }
     }
