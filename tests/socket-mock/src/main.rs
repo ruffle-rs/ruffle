@@ -1,5 +1,8 @@
-use std::{net::TcpListener, io::{Read, Write}};
 use ruffle_socket_format::SocketEvent;
+use std::{
+    io::{Read, Write},
+    net::TcpListener,
+};
 use tracing_subscriber::filter::{EnvFilter, LevelFilter};
 
 static POLICY: &'static [u8] = &*b"<?xml version=\"1.0\"?>
@@ -8,10 +11,13 @@ static POLICY: &'static [u8] = &*b"<?xml version=\"1.0\"?>
 <allow-access-from domain=\"*\" to-ports=\"*\"/>
 </cross-domain-policy>\0";
 
-
 fn main() {
     let subscriber = tracing_subscriber::fmt::Subscriber::builder()
-        .with_env_filter(EnvFilter::builder().with_default_directive(LevelFilter::INFO.into()).from_env_lossy())
+        .with_env_filter(
+            EnvFilter::builder()
+                .with_default_directive(LevelFilter::INFO.into())
+                .from_env_lossy(),
+        )
         .finish();
     // Ignore error if it's already been set
     let _ = tracing::subscriber::set_global_default(subscriber);
@@ -62,9 +68,13 @@ fn main() {
                 }
 
                 if output != expected {
-                    tracing::error!("Received data did not match expected data\nExpected: {:?}\nActual: {:?}", expected, output);
+                    tracing::error!(
+                        "Received data did not match expected data\nExpected: {:?}\nActual: {:?}",
+                        expected,
+                        output
+                    );
                 }
-            },
+            }
             SocketEvent::Send { mut payload } => {
                 while !payload.is_empty() {
                     match stream.write(&payload) {
@@ -77,7 +87,7 @@ fn main() {
                         }
                     }
                 }
-            },
+            }
             SocketEvent::WaitForDisconnect => {
                 let mut buffer = [0; 4096];
 
@@ -87,10 +97,12 @@ fn main() {
                         return;
                     }
                     Ok(_) => {
-                        tracing::error!("Expected client to close connection, but data was sent instead.");
+                        tracing::error!(
+                            "Expected client to close connection, but data was sent instead."
+                        );
                     }
                 }
-            },
+            }
             SocketEvent::Disconnect => {
                 tracing::info!("Disconnecting client.");
                 drop(stream);
