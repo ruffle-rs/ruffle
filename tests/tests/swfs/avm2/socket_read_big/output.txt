@@ -1,0 +1,54 @@
+connected
+data received
+[ProgressEvent type="socketData" bubbles=false cancelable=false eventPhase=2 bytesLoaded=86 bytesTotal=0]
+Bytes available:
+86
+--------
+readBoolean()
+true
+
+readByte()
+67
+
+readUnsignedByte()
+255
+
+readBytes()
+10
+20
+65
+
+readDouble()
+8090.76
+
+readFloat()
+76.6500015258789
+
+readInt()
+-2076553554
+
+readMultiByte()
+Hello!
+
+readObject() (AMF3)
+[object Object]
+
+readObject() (AMF0)
+[object Object]
+
+readUnsignedShort()
+65535
+
+readShort()
+-30562
+
+readUnsignedInt()
+4000565000
+
+readUTF()
+Hello from Ruffle Socket!
+
+readUTFBytes()
+Raw UTF is cool
+
+close()
