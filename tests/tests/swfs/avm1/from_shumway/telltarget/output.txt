@@ -1,0 +1,18 @@
+this = _level0
+x = 1
+_x = 0
+xx = 100
+_level0.xx = undefined
+this = _level0
+a.x = 2
+a._x = 20
+xx = 100
+b.x = 3
+a/b:_x = 30
+in function
+x = 4
+_x = 0
+xx = 100
+x = 4
+b._x = 30
+end

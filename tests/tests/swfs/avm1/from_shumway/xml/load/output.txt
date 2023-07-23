@@ -1,0 +1,5 @@
+data: 18 string
+load: true true
+bytes: 18/18
+xml: <test>data</test>
+

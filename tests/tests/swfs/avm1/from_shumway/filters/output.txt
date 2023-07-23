@@ -1,0 +1,150 @@
+Filters (7)
+DropShadowFilter
+  distance 5
+  angle 0
+  color 0
+  alpha 1
+  blurX 5
+  blurY 5
+  strength 1
+  quality 1
+  inner false
+  knockout false
+  hideObject false
+BlurFilter
+  blurX 5
+  blurY 5
+  quality 1
+GlowFilter
+  color 16711680
+  alpha 1
+  blurX 5
+  blurY 5
+  strength 1
+  quality 1
+  inner false
+  knockout false
+BevelFilter
+  distance 5
+  angle 0
+  highlightColor 16777215
+  highlightAlpha 1
+  shadowColor 0
+  shadowAlpha 1
+  blurX 5
+  blurY 5
+  strength 1
+  quality 1
+  type inner
+  knockout false
+GradientGlowFilter
+  distance 5
+  angle 0
+  colors 16777215,0
+  alphas 0,1
+  ratios 0,255
+  blurX 5
+  blurY 5
+  strength 1
+  quality 1
+  type outer
+  knockout false
+GradientBevelFilter
+  distance 5
+  angle 0
+  colors 16777215,16711680,0
+  alphas 1,0,1
+  ratios 0,128,255
+  blurX 5
+  blurY 5
+  strength 1
+  quality 1
+  type inner
+  knockout false
+ColorMatrixFilter
+  matrix 1,0,0,0,50,0,1,0,0,50,0,0,1,0,50,0,0,0,1,0
+Filters (9)
+BevelFilter
+  distance 1
+  angle 1
+  highlightColor 12
+  highlightAlpha 1
+  shadowColor 34
+  shadowAlpha 1
+  blurX 2
+  blurY 3
+  strength 1
+  quality 1
+  type inner
+  knockout false
+BlurFilter
+  blurX 2
+  blurY 3
+  quality 1
+ColorMatrixFilter
+  matrix 1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0
+ConvolutionFilter
+  matrixX 3
+  matrixY 3
+  matrix 1,2,3,4,5,6,7,8,9
+  divisor 1
+  bias 1
+  preserveAlpha false
+  clamp false
+  color 123
+  alpha 1
+DisplacementMapFilter
+  mapBitmap [object Object]
+  mapPoint (x=1, y=2)
+  componentX 1
+  componentY 1
+  scaleX 2
+  scaleY 2
+  mode clamp
+  color 2
+  alpha 1
+DropShadowFilter
+  distance 2
+  angle 1
+  color 23
+  alpha 1
+  blurX 4
+  blurY 2
+  strength 1
+  quality 1
+  inner true
+  knockout true
+  hideObject false
+GlowFilter
+  color 321
+  alpha 1
+  blurX 4
+  blurY 2
+  strength 1
+  quality 1
+  inner false
+  knockout false
+GradientBevelFilter
+  distance 2
+  angle 1
+  colors 23,12,42
+  alphas 0,1,1
+  ratios 0,25,255
+  blurX 5
+  blurY 4
+  strength 5
+  quality 2
+  type full
+  knockout true
+GradientGlowFilter
+  distance 1
+  angle 1
+  colors 3,4,5
+  alphas 1,1,1
+  ratios 0,50,255
+  blurX 1
+  blurY 2
+  strength 1
+  quality 1
+  type inner
+  knockout false

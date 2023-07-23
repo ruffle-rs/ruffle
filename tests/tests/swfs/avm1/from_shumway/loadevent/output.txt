@@ -1,0 +1,9 @@
+start
+1b2
+b
+1b2c
+c
+1b3
+b
+1b3c
+c

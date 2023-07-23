@@ -1,0 +1,17 @@
+setTimeout tests:
+setTimeout without arguments does nothing: undefined
+setTimeout without interval does nothing: undefined
+setTimeout with null argument 0 does nothing: undefined
+setTimeout with undefined argument 0 does nothing: undefined
+setTimeout with numeric argument 0 does nothing: undefined
+setTimeout with stringy argument 0 does nothing: undefined
+setTimeout with boolean argument 0 does nothing: undefined
+setTimeout with object argument 0 and no argument 1 does nothing: undefined
+setTimeout with object argument 0 and numeric argument 1 does nothing: undefined
+clearTimeout cancels setTimeout: 1
+non-numeric interval is treated as 0: 2
+non-numeric interval triggered
+setTimeout forwards rest arguments: 3
+function callback called
+arg1: arg 1
+arg2: 2

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<swf version="17" compressed="1">
+  <Header framerate="24" frames="1">
+    <size>
+      <Rectangle left="0" right="11000" top="0" bottom="8000"/>
+    </size>
+    <tags>
+      <FileAttributes hasMetaData="0" allowABC="0" suppressCrossDomainCaching="0" swfRelativeURLs="0" useNetwork="0"/>
+      <SetBackgroundColor>
+        <color>
+          <Color red="255" green="255" blue="255"/>
+        </color>
+      </SetBackgroundColor>
+      <DefineSprite objectID="1" frames="1">
+        <tags>
+          <End/>
+        </tags>
+      </DefineSprite>
+      <Export>
+        <symbols>
+          <Symbol objectID="1" name="A"/>
+        </symbols>
+      </Export>
+      <DoAction>
+        <actions>
+          <Dictionary>
+            <strings>
+              <String value="A"/>
+              <String value="attachMovie"/>
+              <String value="_x"/>
+              <String value="Sprite with no ShowFrame"/>
+            </strings>
+          </Dictionary>
+          <PushData>
+            <items>
+              <StackInteger value="1"/>
+              <StackDictionaryLookup index="0"/>
+              <StackDictionaryLookup index="0"/>
+              <StackInteger value="3"/>
+              <StackDictionaryLookup index="1"/>
+            </items>
+          </PushData>
+          <CallFunction/>
+          <Pop/>
+          <PushData>
+            <items>
+              <StackDictionaryLookup index="0"/>
+            </items>
+          </PushData>
+          <GetVariable/>
+          <PushData>
+            <items>
+              <StackDictionaryLookup index="2"/>
+            </items>
+          </PushData>
+          <GetMember/>
+          <Trace/>
+          <PushData>
+            <items>
+              <StackDictionaryLookup index="3"/>
+            </items>
+          </PushData>
+          <Trace/>
+          <GetURL url="FSCommand:quit" target=""/>
+          <EndAction/>
+        </actions>
+      </DoAction>
+      <ShowFrame/>
+      <End/>
+    </tags>
+  </Header>
+</swf>

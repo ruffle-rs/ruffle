@@ -1,0 +1,16 @@
+run_test = function (t, file) {
+  print ("Testing " + file);
+  t.reset (file);
+  var expected = Buffer.load (file + ".trace");
+  t.mouse_move (50, 40);
+  t.advance (200);
+  t.mouse_press (50, 40);
+  t.advance (200);
+  t.mouse_release (50, 40);
+  var diff = t.trace.diff (expected);
+};
+
+t = new Test ();
+for (var i = 0; i < filenames.length; i++) {
+  run_test (t, filenames[i]);
+}

@@ -1,0 +1,7 @@
+loadVariables completed. Loaded the following vars:
+varsLoaded=1
+
+escaped=with&amp;amp;
+spacedvalue=multi word
+spaced var=value
+foo=bar

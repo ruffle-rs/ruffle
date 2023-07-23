@@ -1,0 +1,330 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<swf version="17" compressed="1">
+  <Header framerate="24" frames="1">
+    <size>
+      <Rectangle left="0" right="11000" top="0" bottom="8000"/>
+    </size>
+    <tags>
+      <FileAttributes hasMetaData="1" allowABC="0" suppressCrossDomainCaching="0" swfRelativeURLs="0" useNetwork="0"/>
+      <Metadata>
+        <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"> <rdf:Description xmlns:xmp="http://ns.adobe.com/xap/1.0/" rdf:about=""> <xmp:CreatorTool>Adobe Flash Professional CS6 - build 537</xmp:CreatorTool> <xmp:CreateDate>2015-04-28T13:11:50-05:00</xmp:CreateDate> <xmp:MetadataDate>2015-04-28T13:35:05-05:00</xmp:MetadataDate> <xmp:ModifyDate>2015-04-28T13:35:05-05:00</xmp:ModifyDate> </rdf:Description> <rdf:Description xmlns:dc="http://purl.org/dc/elements/1.1/" rdf:about=""> <dc:format>application/x-shockwave-flash</dc:format> </rdf:Description> <rdf:Description xmlns:xmpMM="http://ns.adobe.com/xap/1.0/mm/" xmlns:stRef="http://ns.adobe.com/xap/1.0/sType/ResourceRef#" rdf:about=""> <xmpMM:InstanceID>xmp.iid:CAAB283ED5EDE41185DF942595CE2973</xmpMM:InstanceID> <xmpMM:DocumentID>xmp.did:CAAB283ED5EDE41185DF942595CE2973</xmpMM:DocumentID> <xmpMM:OriginalDocumentID>xmp.did:550A6EC8BDEDE41185DF942595CE2973</xmpMM:OriginalDocumentID> <xmpMM:DerivedFrom rdf:parseType="Resource"> <stRef:instanceID>xmp.iid:550A6EC8BDEDE41185DF942595CE2973</stRef:instanceID> <stRef:documentID>xmp.did:550A6EC8BDEDE41185DF942595CE2973</stRef:documentID> <stRef:originalDocumentID>xmp.did:550A6EC8BDEDE41185DF942595CE2973</stRef:originalDocumentID> </xmpMM:DerivedFrom> </rdf:Description> </rdf:RDF>
+      </Metadata>
+      <SetBackgroundColor>
+        <color>
+          <Color red="255" green="255" blue="255"/>
+        </color>
+      </SetBackgroundColor>
+      <DoAction>
+        <actions>
+          <Dictionary>
+            <strings>
+              <String value="root1"/>
+              <String value="sym1: "/>
+              <String value="sym1"/>
+              <String value="log"/>
+              <String value="text"/>
+              <String value="test1="/>
+              <String value="test"/>
+              <String value="&#10;"/>
+              <String value="test1: "/>
+            </strings>
+          </Dictionary>
+          <PushData>
+            <items>
+              <StackDictionaryLookup index="0"/>
+            </items>
+          </PushData>
+          <Trace/>
+          <PushData>
+            <items>
+              <StackDictionaryLookup index="1"/>
+              <StackDictionaryLookup index="2"/>
+            </items>
+          </PushData>
+          <GetVariable/>
+          <AddTyped/>
+          <Trace/>
+          <PushData>
+            <items>
+              <StackDictionaryLookup index="3"/>
+            </items>
+          </PushData>
+          <GetVariable/>
+          <PushData>
+            <items>
+              <StackDictionaryLookup index="4"/>
+              <StackDictionaryLookup index="3"/>
+            </items>
+          </PushData>
+          <GetVariable/>
+          <PushData>
+            <items>
+              <StackDictionaryLookup index="4"/>
+            </items>
+          </PushData>
+          <GetMember/>
+          <PushData>
+            <items>
+              <StackDictionaryLookup index="5"/>
+              <StackDictionaryLookup index="2"/>
+            </items>
+          </PushData>
+          <GetVariable/>
+          <PushData>
+            <items>
+              <StackDictionaryLookup index="6"/>
+            </items>
+          </PushData>
+          <GetMember/>
+          <AddTyped/>
+          <PushData>
+            <items>
+              <StackDictionaryLookup index="7"/>
+            </items>
+          </PushData>
+          <AddTyped/>
+          <AddTyped/>
+          <SetMember/>
+          <PushData>
+            <items>
+              <StackDictionaryLookup index="8"/>
+              <StackDictionaryLookup index="2"/>
+            </items>
+          </PushData>
+          <GetVariable/>
+          <PushData>
+            <items>
+              <StackDictionaryLookup index="6"/>
+            </items>
+          </PushData>
+          <GetMember/>
+          <AddTyped/>
+          <Trace/>
+          <EndAction/>
+        </actions>
+      </DoAction>
+      <DefineShape objectID="1">
+        <bounds>
+          <Rectangle left="0" right="1520" top="0" bottom="920"/>
+        </bounds>
+        <styles>
+          <StyleList>
+            <fillStyles>
+              <Solid>
+                <color>
+                  <Color red="0" green="102" blue="51"/>
+                </color>
+              </Solid>
+            </fillStyles>
+            <lineStyles/>
+          </StyleList>
+        </styles>
+        <shapes>
+          <Shape>
+            <edges>
+              <ShapeSetup x="1520" y="920" fillStyle1="1"/>
+              <LineTo x="-1520" y="0"/>
+              <LineTo x="0" y="-920"/>
+              <LineTo x="1520" y="0"/>
+              <LineTo x="0" y="920"/>
+              <ShapeSetup/>
+            </edges>
+          </Shape>
+        </shapes>
+      </DefineShape>
+      <DefineSprite objectID="2" frames="1">
+        <tags>
+          <DoAction>
+            <actions>
+              <Dictionary>
+                <strings>
+                  <String value="test"/>
+                  <String value="hello"/>
+                  <String value="sym1"/>
+                  <String value="_parent"/>
+                  <String value="log"/>
+                  <String value="text"/>
+                  <String value="sym1&#10;"/>
+                </strings>
+              </Dictionary>
+              <PushData>
+                <items>
+                  <StackDictionaryLookup index="0"/>
+                  <StackDictionaryLookup index="1"/>
+                </items>
+              </PushData>
+              <SetLocalVariable/>
+              <PushData>
+                <items>
+                  <StackDictionaryLookup index="2"/>
+                </items>
+              </PushData>
+              <Trace/>
+              <PushData>
+                <items>
+                  <StackDictionaryLookup index="3"/>
+                </items>
+              </PushData>
+              <GetVariable/>
+              <PushData>
+                <items>
+                  <StackDictionaryLookup index="4"/>
+                </items>
+              </PushData>
+              <GetMember/>
+              <PushData>
+                <items>
+                  <StackDictionaryLookup index="5"/>
+                  <StackDictionaryLookup index="3"/>
+                </items>
+              </PushData>
+              <GetVariable/>
+              <PushData>
+                <items>
+                  <StackDictionaryLookup index="4"/>
+                </items>
+              </PushData>
+              <GetMember/>
+              <PushData>
+                <items>
+                  <StackDictionaryLookup index="5"/>
+                </items>
+              </PushData>
+              <GetMember/>
+              <PushData>
+                <items>
+                  <StackDictionaryLookup index="6"/>
+                </items>
+              </PushData>
+              <AddTyped/>
+              <SetMember/>
+              <EndAction/>
+            </actions>
+          </DoAction>
+          <PlaceObject2 replace="0" depth="1" objectID="1">
+            <transform>
+              <Transform transX="0" transY="0"/>
+            </transform>
+          </PlaceObject2>
+          <ShowFrame/>
+          <End/>
+        </tags>
+      </DefineSprite>
+      <PlaceObject2 replace="0" depth="1" objectID="2" name="sym1">
+        <transform>
+          <Transform transX="2460" transY="2900"/>
+        </transform>
+      </PlaceObject2>
+      <DefineFont3 objectID="3" isShiftJIS="0" isUnicode="0" isANSII="0" wideGlyphOffsets="0" italic="0" bold="0" language="1" name="_sans">
+        <glyphs/>
+      </DefineFont3>
+      <DefineFontAlignZones objectID="3" csmTableHint="1">
+        <zoneArrays/>
+      </DefineFontAlignZones>
+      <DefineEditText objectID="4" wordWrap="1" multiLine="1" password="0" readOnly="1" autoSize="0" hasLayout="1" notSelectable="1" hasBorder="0" isHTML="1" useOutlines="0" fontRef="3" fontHeight="160" align="0" leftMargin="0" rightMargin="0" indent="0" leading="40" variableName="" initialText="&lt;p align=&quot;left&quot;&gt;&lt;/p&gt;">
+        <size>
+          <Rectangle left="-40" right="3600" top="-40" bottom="7100"/>
+        </size>
+        <color>
+          <Color red="0" green="102" blue="51" alpha="255"/>
+        </color>
+      </DefineEditText>
+      <PlaceObject2 replace="0" depth="3" objectID="4" name="log">
+        <transform>
+          <Transform transX="11139" transY="360"/>
+        </transform>
+      </PlaceObject2>
+      <DoAction>
+        <actions>
+          <Dictionary>
+            <strings>
+              <String value="root2"/>
+              <String value="sym1: "/>
+              <String value="sym1"/>
+              <String value="log"/>
+              <String value="text"/>
+              <String value="test2="/>
+              <String value="test"/>
+              <String value="&#10;"/>
+              <String value="test2: "/>
+            </strings>
+          </Dictionary>
+          <PushData>
+            <items>
+              <StackDictionaryLookup index="0"/>
+            </items>
+          </PushData>
+          <Trace/>
+          <PushData>
+            <items>
+              <StackDictionaryLookup index="1"/>
+              <StackDictionaryLookup index="2"/>
+            </items>
+          </PushData>
+          <GetVariable/>
+          <AddTyped/>
+          <Trace/>
+          <PushData>
+            <items>
+              <StackDictionaryLookup index="3"/>
+            </items>
+          </PushData>
+          <GetVariable/>
+          <PushData>
+            <items>
+              <StackDictionaryLookup index="4"/>
+              <StackDictionaryLookup index="3"/>
+            </items>
+          </PushData>
+          <GetVariable/>
+          <PushData>
+            <items>
+              <StackDictionaryLookup index="4"/>
+            </items>
+          </PushData>
+          <GetMember/>
+          <PushData>
+            <items>
+              <StackDictionaryLookup index="5"/>
+              <StackDictionaryLookup index="2"/>
+            </items>
+          </PushData>
+          <GetVariable/>
+          <PushData>
+            <items>
+              <StackDictionaryLookup index="6"/>
+            </items>
+          </PushData>
+          <GetMember/>
+          <AddTyped/>
+          <PushData>
+            <items>
+              <StackDictionaryLookup index="7"/>
+            </items>
+          </PushData>
+          <AddTyped/>
+          <AddTyped/>
+          <SetMember/>
+          <PushData>
+            <items>
+              <StackDictionaryLookup index="8"/>
+              <StackDictionaryLookup index="2"/>
+            </items>
+          </PushData>
+          <GetVariable/>
+          <PushData>
+            <items>
+              <StackDictionaryLookup index="6"/>
+            </items>
+          </PushData>
+          <GetMember/>
+          <AddTyped/>
+          <Trace/>
+          <EndAction/>
+        </actions>
+      </DoAction>
+      <ShowFrame/>
+      <End/>
+    </tags>
+  </Header>
+</swf>

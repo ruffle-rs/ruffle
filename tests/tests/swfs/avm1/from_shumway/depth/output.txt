@@ -1,0 +1,6 @@
+getNextHighestDepth before 0
+getNextHighestDepth after 2
+-16383 t1 -16383
+-16381 t2 -16381
+0 s1 0
+1 s2 1

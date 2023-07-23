@@ -1,0 +1,14 @@
+---this
+_level0
+---t()
+_level0
+---b.t()
+[object Object]
+---b.t2()
+_level0
+---b.t3()
+[object Object]
+---b.t4()
+[type Object]
+---_global
+[type Object]
