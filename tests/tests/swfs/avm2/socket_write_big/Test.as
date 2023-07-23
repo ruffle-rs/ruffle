@@ -39,10 +39,10 @@ socket.addEventListener(Event.CONNECT, function(evt:Event):void
     socket.writeDouble(8090.76);
 
     trace("writeFloat()");
-    socket.writeFloat(76.6555);
+    socket.writeFloat(76.65);
 
     trace("writeInt()");
-    socket.writeInt(-2376553554);
+    socket.writeInt(-2076553554);
 
     trace("writeMultiByte()");
     socket.writeMultiByte("Hello!", "utf-8");
