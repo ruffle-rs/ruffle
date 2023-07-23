@@ -57,6 +57,7 @@ socket.addEventListener(Event.CONNECT, function(evt:Event):void
 
     trace("writeShort()");
     socket.writeShort(65535);
+    socket.writeShort(-30562);
 
     trace("writeUnsignedInt()");
     socket.writeUnsignedInt(4000565000);
