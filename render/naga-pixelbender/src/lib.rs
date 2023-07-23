@@ -1304,7 +1304,13 @@ impl<'a> ShaderBuilder<'a> {
                             });
                             self.pad_result(res, src_reg.is_scalar())
                         }
-
+                        Opcode::Fract => self.evaluate_expr(Expression::Math {
+                            fun: MathFunction::Fract,
+                            arg: src,
+                            arg1: None,
+                            arg2: None,
+                            arg3: None,
+                        }),
                         _ => {
                             panic!("Unimplemented opcode {opcode:?}");
                         }
