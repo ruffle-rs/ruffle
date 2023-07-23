@@ -82,7 +82,7 @@ impl LogBackend for TestLogBackend {
 }
 
 /// Loads an SWF and runs it through the Ruffle core for a number of frames.
-/// Tests that the trace output matches the given expectedrun_swf output.
+/// Tests that the trace output matches the given expected output.
 pub fn run_swf(
     test: &Test,
     mut injector: InputInjector,
