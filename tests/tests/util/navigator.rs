@@ -1,4 +1,5 @@
 use crate::util::runner::TestLogBackend;
+use async_io::Timer;
 use ruffle_core::backend::log::LogBackend;
 use ruffle_core::backend::navigator::{
     fetch_path, resolve_url_with_relative_base_path, ErrorResponse, NavigationMethod,
@@ -9,7 +10,7 @@ use ruffle_core::loader::Error;
 use ruffle_core::socket::{ConnectionState, SocketAction, SocketHandle};
 use ruffle_socket_format::SocketEvent;
 use std::path::{Path, PathBuf};
-use std::sync::mpsc::{Receiver, Sender, TryRecvError, RecvError};
+use std::sync::mpsc::{Receiver, Sender, TryRecvError};
 use std::time::Duration;
 use url::{ParseError, Url};
 
@@ -117,7 +118,7 @@ impl NavigatorBackend for TestNavigatorBackend {
         }
 
         if let Some(events) = self.socket_events.clone() {
-            std::thread::spawn(move || {
+            self.spawn_future(Box::pin(async move {
                 sender
                                 .send(SocketAction::Connect(handle, ConnectionState::Connected))
                                 .expect("working channel send");
@@ -128,23 +129,22 @@ impl NavigatorBackend for TestNavigatorBackend {
                             sender
                                 .send(SocketAction::Close(handle))
                                 .expect("working channel send");
-
-                            return;
                         },
                         SocketEvent::WaitForDisconnect => {
                             loop {
-                                match receiver.recv() {
-                                    Err(_) => return,
+                                match receiver.try_recv() {
+                                    Err(TryRecvError::Empty) => {
+                                        //NOTE: We need to yield to executor.
+                                        Timer::after(Duration::from_millis(30)).await;
+                                    }
+                                    Err(_) => break,
                                     Ok(_) => panic!("Expected client to disconnect, data was sent instead"),
                                 }
-
-                                //NOTE: We need to yield to executor.
-                                //Timer::after(Duration::from_millis(30)).await;
                             }
                         },
                         SocketEvent::Receive { expected } => {
                             loop {
-                                match receiver.recv() {
+                                match receiver.try_recv() {
                                     Ok(val) => {
                                         if expected != val {
                                             panic!("Received data did not match expected data\nExpected: {:?}\nActual: {:?}", expected, val);
@@ -152,11 +152,12 @@ impl NavigatorBackend for TestNavigatorBackend {
 
                                         break;
                                     }
+                                    Err(TryRecvError::Empty) => {
+                                        //NOTE: We need to yield to executor.
+                                        Timer::after(Duration::from_millis(30)).await;
+                                    }
                                     Err(_) => panic!("Expected client to send data, but connection was closed instead"),
                                 }
-
-                                //NOTE: We need to yield to executor.
-                                //Timer::after(Duration::from_millis(30)).await;
                             }
                         },
                         SocketEvent::Send { payload } => {
@@ -164,7 +165,9 @@ impl NavigatorBackend for TestNavigatorBackend {
                         }
                     }
                 }
-            });
+
+                Ok(())
+            }));
         }
     }
 }

@@ -4702,6 +4702,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "approx",
+ "async-io",
  "env_logger",
  "futures",
  "image",
