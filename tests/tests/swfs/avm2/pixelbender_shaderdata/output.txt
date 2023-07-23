@@ -4,6 +4,12 @@ name: DoNothing (String)
 namespace: Adobe::Example (String)
 otherSrc: [object ShaderInput] (flash.display::ShaderInput)
  name: otherSrc (String)
+ channels: 4
+ height: 0
+ index: 1
+ height: 0
+ input: null
+ width: 0
 radius: [object ShaderParameter] (flash.display::ShaderParameter)
  defaultValue: 25 (Array)
   0: 25 (int)
@@ -13,6 +19,9 @@ radius: [object ShaderParameter] (flash.display::ShaderParameter)
  minValue: 0 (Array)
   0: 0 (int)
  name: radius (String)
+ index: 1
+ type: float
+ value: 25
 size: [object ShaderParameter] (flash.display::ShaderParameter)
  defaultValue: 50,50 (Array)
   0: 50 (int)
@@ -25,7 +34,16 @@ size: [object ShaderParameter] (flash.display::ShaderParameter)
   0: 0 (int)
   1: 0 (int)
  name: size (String)
+ index: 0
+ type: float2
+ value: 50,50
 src: [object ShaderInput] (flash.display::ShaderInput)
  name: src (String)
+ channels: 4
+ height: 0
+ index: 0
+ height: 0
+ input: null
+ width: 0
 vendor: Adobe examples (String)
 version: 1 (int)

@@ -25,7 +25,9 @@ pub fn init<'gc>(
 
     for meta in &shader.metadata {
         let name = AvmString::new_utf8(activation.context.gc_context, &meta.key);
-        let value = meta.value.as_avm2_value(activation)?;
+        // Top-level metadata appears to turn `TInt` into a plain integer value,
+        // rather than a single-element array.
+        let value = meta.value.as_avm2_value(activation, true)?;
         this.set_public_property(name, value, activation)?;
     }
     this.set_public_property(
@@ -34,8 +36,11 @@ pub fn init<'gc>(
         activation,
     )?;
 
-    for (index, param) in shader.params.iter().enumerate() {
-        let name = match &param {
+    let mut normal_index = 0;
+    let mut texture_index = 0;
+
+    for param in &shader.params {
+        let (name, index) = match &param {
             PixelBenderParam::Normal {
                 name, qualifier, ..
             } => {
@@ -44,9 +49,15 @@ pub fn init<'gc>(
                 {
                     continue;
                 }
-                name
+                let index = normal_index;
+                normal_index += 1;
+                (name, index)
             }
-            PixelBenderParam::Texture { name, .. } => name,
+            PixelBenderParam::Texture { name, .. } => {
+                let index = texture_index;
+                texture_index += 1;
+                (name, index)
+            }
         };
 
         let name = AvmString::new_utf8(activation.context.gc_context, name);

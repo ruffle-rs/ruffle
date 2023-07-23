@@ -31,8 +31,12 @@ pub fn make_shader_parameter<'gc>(
             obj.set_property(&Multiname::new(ns, "_type"), type_name.into(), activation)?;
             for meta in metadata {
                 let name = AvmString::new_utf8(activation.context.gc_context, &meta.key);
-                let value = meta.value.clone().as_avm2_value(activation)?;
+                let value = meta.value.clone().as_avm2_value(activation, false)?;
                 obj.set_public_property(name, value, activation)?;
+
+                if &*name == b"defaultValue" {
+                    obj.set_public_property("value", value, activation)?;
+                }
             }
             obj.set_public_property(
                 "name",
