@@ -298,6 +298,8 @@ impl WgpuContext3D {
                 || rect.y_min.to_pixels() < 0.0
                 || rect.x_max.to_pixels() as u32 > current_size.width
                 || rect.y_max.to_pixels() as u32 > current_size.height
+                || rect.x_min == rect.x_max
+                || rect.y_min == rect.y_max
             {
                 // FIXME - throw an error when Context3D.enableErrorChecking is set
                 tracing::error!(

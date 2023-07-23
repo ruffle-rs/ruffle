@@ -1,0 +1,1 @@
+Setting rect: (x=10, y=20, w=0, h=300)
