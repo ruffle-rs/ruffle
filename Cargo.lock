@@ -2846,6 +2846,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "mocket"
+version = "0.1.0"
+dependencies = [
+ "ruffle_socket_format",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "naga"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4053,15 +4062,6 @@ version = "0.1.0"
 dependencies = [
  "serde",
  "serde_json",
-]
-
-[[package]]
-name = "ruffle_socket_mock"
-version = "0.1.0"
-dependencies = [
- "ruffle_socket_format",
- "tracing",
- "tracing-subscriber",
 ]
 
 [[package]]

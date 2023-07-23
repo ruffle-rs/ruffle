@@ -1,5 +1,5 @@
 [package]
-name = "ruffle_socket_mock"
+name = "mocket"
 authors.workspace = true
 edition.workspace = true
 homepage.workspace = true
