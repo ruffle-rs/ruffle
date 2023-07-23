@@ -18,6 +18,7 @@ pub trait PixelBenderTypeExt {
     fn as_avm2_value<'gc>(
         &self,
         activation: &mut Activation<'_, 'gc>,
+        tint_as_int: bool,
     ) -> Result<Value<'gc>, Error<'gc>>;
 }
 
@@ -121,6 +122,7 @@ impl PixelBenderTypeExt for PixelBenderType {
     fn as_avm2_value<'gc>(
         &self,
         activation: &mut Activation<'_, 'gc>,
+        tint_as_int: bool,
     ) -> Result<Value<'gc>, Error<'gc>> {
         // Flash appears to use a uint/int if the float has no fractional part
         let cv = |f: &f32| -> Value<'gc> {
@@ -134,7 +136,13 @@ impl PixelBenderTypeExt for PixelBenderType {
             PixelBenderType::TString(string) => {
                 return Ok(AvmString::new_utf8(activation.context.gc_context, string).into());
             }
-            PixelBenderType::TInt(i) => return Ok((*i).into()),
+            PixelBenderType::TInt(i) => {
+                if tint_as_int {
+                    return Ok((*i).into());
+                } else {
+                    vec![(*i).into()]
+                }
+            }
             PixelBenderType::TFloat(f) => vec![cv(f)],
             PixelBenderType::TFloat2(f1, f2) => vec![cv(f1), cv(f2)],
             PixelBenderType::TFloat3(f1, f2, f3) => vec![cv(f1), cv(f2), cv(f3)],

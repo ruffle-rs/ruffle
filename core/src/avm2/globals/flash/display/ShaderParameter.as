@@ -8,6 +8,9 @@ package flash.display {
         public function get index():int {
             return this._index;
         }
+        public function get type():String {
+            return this._type;
+        }
         public function get value():Array {
             return this._value.concat();
         }

@@ -3,6 +3,9 @@
 	import flash.utils.ByteArray;
 	import flash.display.Shader;
 	import flash.utils.getQualifiedClassName;
+	import flash.display.ShaderInput;
+	import flash.display.ShaderParameter;
+	
 
 	public class Test {
 
@@ -25,6 +28,18 @@
 			for each (var key in keys) {
 				trace(prefix + key + ": " + obj[key] + " (" + getQualifiedClassName(obj[key])+ ")");
 				dumpObject(obj[key], prefix + " ");
+			}
+			if (obj is ShaderInput) {
+				trace(prefix + "channels: " + obj.channels);
+				trace(prefix + "height: " + obj.height);
+				trace(prefix + "index: " + obj.index);
+				trace(prefix + "height: " + obj.height);
+				trace(prefix + "input: " + obj.input);
+				trace(prefix + "width: " + obj.width);
+			} else if (obj is ShaderParameter) {
+				trace(prefix + "index: " + obj.index);
+				trace(prefix + "type: " + obj.type);
+				trace(prefix + "value: " + obj.value);
 			}
 		}
 	}
