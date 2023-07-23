@@ -2849,6 +2849,8 @@ dependencies = [
 name = "mocket"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
+ "clap",
  "ruffle_socket_format",
  "tracing",
  "tracing-subscriber",
