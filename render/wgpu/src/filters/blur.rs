@@ -202,11 +202,7 @@ impl BlurFilter {
 
         let source_view = source.texture.create_view(&Default::default());
         let mut first = true;
-        let mut last_scale_total = 0.0;
-        for current_scale_total in PASS_SCALES.into_iter().take(filter.num_passes() as usize) {
-            let pass_scale = current_scale_total - last_scale_total;
-            last_scale_total = current_scale_total;
-
+        for _ in 0..(filter.num_passes() as usize) {
             for i in 0..2 {
                 let horizontal = i % 2 == 0;
                 let strength = if horizontal {
@@ -215,7 +211,7 @@ impl BlurFilter {
                     filter.blur_y.to_f32()
                 };
                 // Full width of the kernel (left edge to right edge)
-                let full_size = strength.min(255.0) * pass_scale;
+                let full_size = strength.min(255.0);
                 if full_size <= 1.0 {
                     // A width of 1 or less is a noop (it'd just sample itself and nothing else)
                     continue;
