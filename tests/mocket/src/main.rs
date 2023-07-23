@@ -1,7 +1,10 @@
+use anyhow::Error;
+use clap::Parser;
 use ruffle_socket_format::SocketEvent;
 use std::{
     io::{Read, Write},
     net::TcpListener,
+    path::PathBuf,
 };
 use tracing_subscriber::filter::{EnvFilter, LevelFilter};
 
@@ -11,7 +14,16 @@ static POLICY: &[u8] = b"<?xml version=\"1.0\"?>
 <allow-access-from domain=\"*\" to-ports=\"*\"/>
 </cross-domain-policy>\0";
 
-fn main() {
+#[derive(Parser, Debug)]
+struct Opt {
+    /// Path to a `socket.json` file.
+    #[clap(name = "FILE")]
+    file_path: PathBuf,
+}
+
+fn main() -> Result<(), Error> {
+    let opt = Opt::parse();
+
     let subscriber = tracing_subscriber::fmt::Subscriber::builder()
         .with_env_filter(
             EnvFilter::builder()
@@ -22,22 +34,22 @@ fn main() {
     // Ignore error if it's already been set
     let _ = tracing::subscriber::set_global_default(subscriber);
 
-    let events = SocketEvent::from_file("socket.json").unwrap();
+    let events = SocketEvent::from_file(opt.file_path)?;
     let event_count = events.len();
 
-    let listener = TcpListener::bind("0.0.0.0:8001").unwrap();
-    tracing::info!("Listening on {}", listener.local_addr().unwrap());
-    let (mut stream, addr) = listener.accept().unwrap();
+    let listener = TcpListener::bind("0.0.0.0:8001")?;
+    tracing::info!("Listening on {}", listener.local_addr()?);
+    let (mut stream, addr) = listener.accept()?;
     tracing::info!("Incoming connection from {}", addr);
 
     // Handle socket policy stuff. (Required as Flash Player wont want to connect otherwise.)
     let mut buffer = [0; 4096];
     let _ = stream.read(&mut buffer);
-    stream.write_all(POLICY).unwrap();
+    stream.write_all(POLICY)?;
     tracing::info!("Policy sent successfully!");
 
     // Now we listen again as flash reopens socket connection.
-    let (mut stream, addr) = listener.accept().unwrap();
+    let (mut stream, addr) = listener.accept()?;
     tracing::info!("Incoming connection from {}", addr);
 
     for (index, event) in events.into_iter().enumerate() {
@@ -53,7 +65,7 @@ fn main() {
                     match stream.read(&mut buffer) {
                         Err(_) | Ok(0) => {
                             tracing::error!("Expected data, but socket was closed.");
-                            return;
+                            return Ok(());
                         }
                         Ok(read) => {
                             if read == 4096 {
@@ -80,7 +92,7 @@ fn main() {
                     match stream.write(&payload) {
                         Err(_) | Ok(0) => {
                             tracing::error!("Socket was closed in middle of writing.");
-                            return;
+                            return Ok(());
                         }
                         Ok(written) => {
                             let _ = payload.drain(..written);
@@ -94,7 +106,7 @@ fn main() {
                 match stream.read(&mut buffer) {
                     Err(_) | Ok(0) => {
                         tracing::info!("Client has closed the connection!");
-                        return;
+                        return Ok(());
                     }
                     Ok(_) => {
                         tracing::error!(
@@ -110,4 +122,6 @@ fn main() {
             }
         }
     }
+
+    Ok(())
 }
