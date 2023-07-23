@@ -289,7 +289,7 @@ impl NullExecutor {
     }
 
     pub fn run(&mut self) {
-        self.0.run();
+        self.0.run_until_stalled();
     }
 }
 
