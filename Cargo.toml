@@ -26,7 +26,7 @@ members = [
     "tests",
     "tests/input-format",
     "tests/socket-format",
-    "tests/socket-mock",
+    "tests/mocket",
 ]
 default-members = ["desktop"]
 resolver = "2"
