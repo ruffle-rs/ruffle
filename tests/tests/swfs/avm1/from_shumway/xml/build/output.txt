@@ -1,0 +1,1 @@
+<test><string value="test" />text<string value="&quot;&amp;&apos;&lt;&gt;" /></test>

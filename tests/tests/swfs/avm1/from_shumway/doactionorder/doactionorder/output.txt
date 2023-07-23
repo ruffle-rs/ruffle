@@ -1,0 +1,7 @@
+root1
+sym1: _level0.sym1
+test1: undefined
+sym1
+root2
+sym1: _level0.sym1
+test2: hello

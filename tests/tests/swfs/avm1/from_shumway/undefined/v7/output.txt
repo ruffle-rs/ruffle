@@ -1,0 +1,39 @@
+undefined
+[object Object]
+undefined
+NaN
+true
+'s' + undefined => sundefined
+undefined + 's' => undefineds
+0 + undefined => NaN
+undefined + 0 => NaN
+'undefined' == undefined => false
+undefined == 'undefined' => false
+0 == undefined => false
+undefined == 0 => false
+1 == undefined => false
+undefined == 1 => false
+'undefined' < undefined => undefined
+undefined < 'undefined' => undefined
+0 < undefined => undefined
+undefined < 0 => undefined
+1 < undefined => undefined
+undefined < 1 => undefined
+'undefined' <= undefined => true
+undefined <= 'undefined' => true
+0 <= undefined => true
+undefined <= 0 => true
+1 <= undefined => true
+undefined <= 1 => true
+'undefined' > undefined => undefined
+undefined > 'undefined' => undefined
+0 > undefined => undefined
+undefined > 0 => undefined
+1 > undefined => undefined
+undefined > 1 => undefined
+'undefined' >= undefined => true
+undefined >= 'undefined' => true
+0 >= undefined => true
+undefined >= 0 => true
+1 >= undefined => true
+undefined >= 1 => true

@@ -1,0 +1,20 @@
+setInterval tests:
+setInterval without arguments does nothing: undefined
+setInterval without interval does nothing: undefined
+setInterval with null argument 0 does nothing: undefined
+setInterval with undefined argument 0 does nothing: undefined
+setInterval with numeric argument 0 does nothing: undefined
+setInterval with stringy argument 0 does nothing: undefined
+setInterval with boolean argument 0 does nothing: undefined
+setInterval with object argument 0 and no argument 1 does nothing: undefined
+setInterval with object argument 0 and non-string argument 1 does nothing: undefined
+setInterval with object argument 0, string argument 1, and no interval does nothing: undefined
+non-numeric interval is treated as 0: 1
+non-numeric interval triggered
+setInterval forwards rest arguments: 2
+function callback called
+arg1: arg 1
+arg2: 2
+object-callback called
+arg1: arg 1
+arg2: 2

@@ -1,0 +1,17 @@
+// mouse-transparency.swf test script
+
+run_test = function (t, file) {
+  print ("Testing " + file);
+  t.reset (file);
+  var expected = Buffer.load (file + ".trace");
+  t.advance (50);
+  t.mouse_press (55, 55);
+  t.mouse_release (55, 55);
+  var diff = t.trace.diff (expected);
+};
+
+t = new Test ();
+for (var i = 0; i < filenames.length; i++) {
+  run_test (t, filenames[i]);
+}
+

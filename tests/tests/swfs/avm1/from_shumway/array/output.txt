@@ -1,0 +1,7 @@
+concat: a,1,b,[object Object]
+pop: b undefined
+push: 2 c 2
+shift: a b
+slice: b true
+splice1: b true 2 c
+splice2:  true 4 d c

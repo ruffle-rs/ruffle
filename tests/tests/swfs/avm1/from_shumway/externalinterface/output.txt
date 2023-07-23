@@ -1,0 +1,4 @@
+available: undefined
+after addCallback
+call result: undefined
+after call

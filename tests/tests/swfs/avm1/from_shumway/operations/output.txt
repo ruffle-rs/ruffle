@@ -1,0 +1,13 @@
+false == [object Object]: false
+[object Object] == test: false
+false == 0: true
+1 == true: true
+12 == 12: true
+0.1 == [object Object]: false
+2 == null: false
+10 == 10: true
+test == [object Object]: false
+false == false: true
+true == true: true
+test == test: false
+0 == : false

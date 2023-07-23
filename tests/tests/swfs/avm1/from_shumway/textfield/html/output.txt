@@ -1,0 +1,4 @@
+<a>foo</a>
+<a>foo</a>
+foo
+true

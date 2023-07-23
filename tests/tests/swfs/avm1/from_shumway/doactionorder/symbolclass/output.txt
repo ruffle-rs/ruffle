@@ -1,0 +1,4 @@
+Class1 constructed
+timeline
+_level0.test1
+test function called
