@@ -5,7 +5,7 @@ use std::{
 };
 use tracing_subscriber::filter::{EnvFilter, LevelFilter};
 
-static POLICY: &'static [u8] = &*b"<?xml version=\"1.0\"?>
+static POLICY: &[u8] = b"<?xml version=\"1.0\"?>
 <!DOCTYPE cross-domain-policy SYSTEM \"http://www.adobe.com/xml/dtds/cross-domain-policy.dtd\">
 <cross-domain-policy>
 <allow-access-from domain=\"*\" to-ports=\"*\"/>
