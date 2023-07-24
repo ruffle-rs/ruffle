@@ -26,7 +26,7 @@ bitflags = "2.3.3"
 smallvec = { version = "1.11.0", features = ["union"] }
 num-traits = "0.2"
 num-derive = "0.4"
-quick-xml = "0.29.0"
+quick-xml = "0.30.0"
 downcast-rs = "1.2.0"
 url = "2.4.0"
 weak-table = "0.3.2"
@@ -36,7 +36,7 @@ chrono = { version = "0.4", default-features = false, features = ["clock"] }
 instant = "0.1"
 encoding_rs = "0.8.32"
 rand = { version = "0.8.5", features = ["std", "small_rng"], default-features = false }
-serde = { version = "1.0.171", features = ["derive"] }
+serde = { version = "1.0.175", features = ["derive"] }
 serde_json = { version = "1.0", features = ["preserve_order"] }
 nellymoser-rs = { git = "https://github.com/ruffle-rs/nellymoser", rev = "4a33521c29a918950df8ae9fe07e527ac65553f5", optional = true }
 regress = "0.6"
@@ -46,10 +46,10 @@ dasp = { git = "https://github.com/RustAudio/dasp", rev = "f05a703", features = 
 symphonia = { version = "0.5.3", default-features = false, features = ["mp3"], optional = true }
 enumset = "1.1.2"
 bytemuck = "1.13.1"
-clap = { version = "4.3.12", features = ["derive"], optional=true }
+clap = { version = "4.3.19", features = ["derive"], optional=true }
 realfft = "3.3.0"
 hashbrown = { version = "0.14.0", features = ["raw"] }
-scopeguard = "1.1.0"
+scopeguard = "1.2.0"
 fluent-templates = "0.8.0"
 egui = { version = "0.22.0", optional = true }
 egui_extras = { version = "0.22.0", optional = true }
