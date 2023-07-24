@@ -1,0 +1,5 @@
+slice no args on empty vector PASSED!
+slice startIndex only PASSED!
+slice -1 to -1 PASSED!
+slice -2 to -1 PASSED!
+verify return type PASSED!

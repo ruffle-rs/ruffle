@@ -1,0 +1,10 @@
+assign vector variable to mismatched builtin type, throws runtime error PASSED!
+assign vector variable to mismatched types, throws runtime error PASSED!
+push inherited type into Vector is allowed PASSED!
+push wrong type into Vector, throws runtime error PASSED!
+unshift inherited types is allowed PASSED!
+unshift inherited types is allowed, verify toString PASSED!
+unshift wrong type into Vector, throws runtime error PASSED!
+concat inherited types returns correct vector PASSED!
+vector concat throws runtime error PASSED!
+vector assignment on incorrect type throws runtime error PASSED!

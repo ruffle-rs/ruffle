@@ -1,0 +1,55 @@
+standard 0 uint index PASSED!
+uint 1 as string index PASSED!
+number 3.0 as string index PASSED!
+number 2.0 index PASSED!
+read index 5.1 throws exception because non-uint property PASSED!
+write index 5.1 throws exception because non-uint property PASSED!
+read index 5.1 throws exception because non-uint property PASSED!
+write index 5.1 throws exception because non-uint property PASSED!
+read index '5.1' throws exception because non-uint property PASSED!
+write index '5.1' throws exception because non-uint property PASSED!
+read index -5.1 throws exception because non-uint property PASSED!
+write index -5.1 throws exception because non-uint property PASSED!
+read index -5.1 throws exception because non-uint property PASSED!
+write index -5.1 throws exception because non-uint property PASSED!
+read index '-5.1' throws exception because non-uint property PASSED!
+write index '-5.1' throws exception because non-uint property PASSED!
+read index -6 throws exception because non-uint property PASSED!
+write index -6 throws exception because non-uint property PASSED!
+read index -6 throws exception because non-uint property PASSED!
+write index -6 throws exception because non-uint property PASSED!
+read index -6.0 throws exception because non-uint property PASSED!
+write index -6.0 throws exception because non-uint property PASSED!
+read index -6.0 throws exception because non-uint property PASSED!
+write index -6.0 throws exception because non-uint property PASSED!
+read index '-6' throws exception because non-uint property PASSED!
+write index '-6' throws exception because non-uint property PASSED!
+read index '-6.0' throws exception because non-uint property PASSED!
+write index '-6.0' throws exception because non-uint property PASSED!
+read index 'foo' throws exception because non-uint property PASSED!
+write index 'foo' throws exception because non-uint property PASSED!
+when Vector.<*>.prototype[3.14] is set throws exception because non-uint property PASSED!
+read index max_uint_p1 throws exception because non-uint property PASSED!
+write index max_uint_p1 throws exception because non-uint property PASSED!
+read index max_uint throws exception because non-uint property PASSED!
+write index max_uint throws exception because non-uint property PASSED!
+read index max_uint_m1 throws exception because non-uint property PASSED!
+write index max_uint_m1 throws exception because non-uint property PASSED!
+read index max_int_p1 throws exception because non-uint property PASSED!
+write index max_int_p1 throws exception because non-uint property PASSED!
+read index max_int throws exception because non-uint property PASSED!
+write index max_int throws exception because non-uint property PASSED!
+read index max_int_m1 throws exception because non-uint property PASSED!
+write index max_int_m1 throws exception because non-uint property PASSED!
+read index max_int28_p1 throws exception because non-uint property PASSED!
+write index max_int28_p1 throws exception because non-uint property PASSED!
+read index max_int28 throws exception because non-uint property PASSED!
+write index max_int28 throws exception because non-uint property PASSED!
+read index max_int28_m1 throws exception because non-uint property PASSED!
+write index max_int28_m1 throws exception because non-uint property PASSED!
+read index min_int_p1 throws exception because non-uint property PASSED!
+write index min_int_p1 throws exception because non-uint property PASSED!
+read index min_int throws exception because non-uint property PASSED!
+write index min_int throws exception because non-uint property PASSED!
+read index min_int_m1 throws exception because non-uint property PASSED!
+write index min_int_m1 throws exception because non-uint property PASSED!

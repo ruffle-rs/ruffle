@@ -1,0 +1,5 @@
+forEach eacher is undefined PASSED!
+forEach eacher is not a function PASSED!
+forEach simple vector PASSED!
+for-in loop PASSED!
+for-each-in loop PASSED!

@@ -1,0 +1,12 @@
+pop empty vector PASSED!
+pop empty vector, original vector change PASSED!
+pop single length vector element PASSED!
+pop single length vector, original vector change PASSED!
+pop simple vector element PASSED!
+pop simple vector element, original vector changed PASSED!
+pop vector with initialized size PASSED!
+pop vector with initialized size original vector changed PASSED!
+pop fixed vector should throw exception PASSED!
+pop fixed vector should not change vector PASSED!
+pop fixed object vector should throw exception PASSED!
+pop empty object vector PASSED!

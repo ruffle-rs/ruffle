@@ -1,0 +1,9 @@
+length of empty vector PASSED!
+length of initialized vector of size 1999 PASSED!
+length of initialized vector PASSED!
+length of empty vector with 100 elements set PASSED!
+length of fixed size vector PASSED!
+reduce length of vector removes elements reduces length PASSED!
+reduce length of vector removes elements past new length PASSED!
+increase length of array with removed elements increases length PASSED!
+increase length of array with removed elements adds empty elements PASSED!
