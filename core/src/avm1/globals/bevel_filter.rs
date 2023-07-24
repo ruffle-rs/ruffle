@@ -99,6 +99,12 @@ struct BevelFilterData {
     type_: BevelFilterType,
 }
 
+impl<'gc> From<BevelFilter<'gc>> for swf::BevelFilter {
+    fn from(filter: BevelFilter<'gc>) -> swf::BevelFilter {
+        (&filter.0.read().to_owned()).into()
+    }
+}
+
 impl From<&BevelFilterData> for swf::BevelFilter {
     fn from(filter: &BevelFilterData) -> swf::BevelFilter {
         let mut flags = BevelFilterFlags::COMPOSITE_SOURCE;

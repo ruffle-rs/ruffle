@@ -141,7 +141,7 @@ fn new_rectangle<'gc>(
     proto.construct(activation, args)
 }
 
-fn object_to_rectangle<'gc>(
+pub fn object_to_rectangle<'gc>(
     activation: &mut Activation<'_, 'gc>,
     object: Object<'gc>,
 ) -> Result<Option<Rectangle<Twips>>, Error<'gc>> {

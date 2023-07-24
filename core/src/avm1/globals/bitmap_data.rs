@@ -2,7 +2,6 @@
 
 use super::matrix::object_to_matrix;
 use crate::avm1::function::{Executable, FunctionObject};
-use crate::avm1::globals::bitmap_filter;
 use crate::avm1::globals::color_transform::ColorTransformObject;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
@@ -18,6 +17,7 @@ use crate::swf::BlendMode;
 use crate::{avm1_stub, avm_error};
 use gc_arena::{GcCell, MutationContext};
 use ruffle_render::transform::Transform;
+use crate::avm1::globals::movie_clip::object_to_rectangle;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "height" => property(height);
@@ -570,75 +570,62 @@ fn draw<'gc>(
     Ok((-1).into())
 }
 
+
 fn apply_filter<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let NativeObject::BitmapData(bitmap_data) = this.native() {
-        if !bitmap_data.disposed() {
-            let source = args
-                .get(0)
-                .unwrap_or(&Value::Undefined)
-                .coerce_to_object(activation);
-            let source = if let NativeObject::BitmapData(source_bitmap) = source.native() {
-                source_bitmap
-            } else {
-                tracing::warn!(
-                    "Invalid bitmapdata source for apply_filter: got {:?}",
-                    source
-                );
-                return Ok((-1).into());
-            };
+    if let Some(dest_bitmap) = this.as_bitmap_data() {
+        if !dest_bitmap.disposed() {
+            match args {
+                [src_bitmap, rect, point, filter, ..] => {
+                    let src_bitmap = src_bitmap
+                        .coerce_to_object(activation)
+                        .as_bitmap_data()
+                        .unwrap();
 
-            let source_rect = args
-                .get(1)
-                .unwrap_or(&Value::Undefined)
-                .coerce_to_object(activation);
+                    let rect = rect.coerce_to_object(activation);
+                    let rect = object_to_rectangle(activation, rect)?.unwrap();
 
-            let src_min_x = source_rect
-                .get("x", activation)?
-                .coerce_to_f64(activation)? as u32;
-            let src_min_y = source_rect
-                .get("y", activation)?
-                .coerce_to_f64(activation)? as u32;
-            let src_width = source_rect
-                .get("width", activation)?
-                .coerce_to_f64(activation)? as u32;
-            let src_height = source_rect
-                .get("height", activation)?
-                .coerce_to_f64(activation)? as u32;
+                    let dest_point = point.coerce_to_object(activation);
 
-            let dest_point = args
-                .get(2)
-                .unwrap_or(&Value::Undefined)
-                .coerce_to_object(activation);
+                    let filter = filter.coerce_to_object(activation).as_filter().unwrap();
 
-            let dest_x = dest_point.get("x", activation)?.coerce_to_f64(activation)? as u32;
-            let dest_y = dest_point.get("y", activation)?.coerce_to_f64(activation)? as u32;
+                    let dest_point = (
+                        dest_point
+                            .get("x", activation)?
+                            .coerce_to_u32(activation)?,
+                        dest_point
+                            .get("y", activation)?
+                            .coerce_to_u32(activation)?,
+                    );
 
-            let filter_object = args
-                .get(3)
-                .unwrap_or(&Value::Undefined)
-                .coerce_to_object(activation);
-            let filter = bitmap_filter::avm1_to_filter(filter_object, &mut activation.context);
+                    let source_point = (
+                        rect.x_min.to_pixels().floor() as u32,
+                        rect.y_min.to_pixels().floor() as u32,
+                    );
+                    let source_size = (
+                        rect.width().to_pixels().ceil() as u32,
+                        rect.height().to_pixels().ceil() as u32,
+                    );
 
-            if let Some(filter) = filter {
-                operations::apply_filter(
-                    &mut activation.context,
-                    bitmap_data,
-                    source,
-                    (src_min_x, src_min_y),
-                    (src_width, src_height),
-                    (dest_x, dest_y),
-                    filter,
-                );
-                return Ok(0.into());
+                    operations::apply_filter(
+                        &mut activation.context,
+                        dest_bitmap,
+                        src_bitmap,
+                        source_point,
+                        source_size,
+                        dest_point,
+                        filter,
+                    );
+                }
+                _ => {}
             }
         }
     }
 
-    Ok((-1).into())
+    return Ok(Value::Undefined);
 }
 
 fn generate_filter_rect<'gc>(
