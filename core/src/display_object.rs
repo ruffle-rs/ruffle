@@ -187,7 +187,7 @@ pub struct DisplayObjectBase<'gc> {
     depth: Depth,
     #[collect(require_static)]
     transform: Transform,
-    name: AvmString<'gc>,
+    name: Option<AvmString<'gc>>,
     #[collect(require_static)]
     filters: Vec<Filter>,
     clip_depth: Depth,
@@ -257,7 +257,7 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
             place_frame: Default::default(),
             depth: Default::default(),
             transform: Default::default(),
-            name: Default::default(),
+            name: None,
             filters: Default::default(),
             clip_depth: Default::default(),
             rotation: Degrees::from_radians(0.0),
@@ -479,12 +479,12 @@ impl<'gc> DisplayObjectBase<'gc> {
         changed
     }
 
-    fn name(&self) -> AvmString<'gc> {
+    fn name(&self) -> Option<AvmString<'gc>> {
         self.name
     }
 
     fn set_name(&mut self, name: AvmString<'gc>) {
-        self.name = name;
+        self.name = Some(name);
     }
 
     fn filters(&self) -> Vec<Filter> {
@@ -1381,7 +1381,7 @@ pub trait TDisplayObject<'gc>:
     }
 
     fn name(&self) -> AvmString<'gc> {
-        self.base().name()
+        self.base().name().unwrap_or_default()
     }
     fn set_name(&self, gc_context: MutationContext<'gc, '_>, name: AvmString<'gc>) {
         self.base_mut(gc_context).set_name(name)
@@ -2180,7 +2180,7 @@ pub trait TDisplayObject<'gc>:
 
     /// Assigns a default instance name `instanceN` to this object.
     fn set_default_instance_name(&self, context: &mut UpdateContext<'_, 'gc>) {
-        if self.name().is_empty() {
+        if self.base().name().is_none() {
             let name = format!("instance{}", *context.instance_counter);
             self.set_name(
                 context.gc_context,
