@@ -493,6 +493,7 @@ impl Iterator for SubstreamChunksIter {
 
     fn next(&mut self) -> Option<Slice> {
         if let Some((start, end)) = self.substream.chunks.read().unwrap().get(self.next_buf) {
+            self.next_buf += 1;
             return Some(Slice {
                 buf: self.substream.buf.clone(),
                 start: *start,
