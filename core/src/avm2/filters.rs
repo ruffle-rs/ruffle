@@ -230,7 +230,7 @@ fn avm2_to_bevel_filter<'gc>(
         flags |= BevelFilterFlags::ON_TOP;
     }
     flags.set(BevelFilterFlags::KNOCKOUT, knockout);
-    flags |= BevelFilterFlags::from_passes(quality.clamp(1, 15) as u8);
+    flags |= BevelFilterFlags::from_passes(quality.clamp(0, 15) as u8);
     Ok(Filter::BevelFilter(BevelFilter {
         shadow_color: Color::from_rgb(shadow_color, (shadow_alpha * 255.0) as u8),
         highlight_color: Color::from_rgb(highlight_color, (highlight_alpha * 255.0) as u8),
@@ -289,7 +289,7 @@ fn avm2_to_blur_filter<'gc>(
     Ok(Filter::BlurFilter(BlurFilter {
         blur_x: Fixed16::from_f64(blur_x.max(0.0)),
         blur_y: Fixed16::from_f64(blur_y.max(0.0)),
-        flags: BlurFilterFlags::from_passes(quality.clamp(1, 15) as u8),
+        flags: BlurFilterFlags::from_passes(quality.clamp(0, 15) as u8),
     }))
 }
 
@@ -586,7 +586,7 @@ fn avm2_to_drop_shadow_filter<'gc>(
     }
     flags.set(DropShadowFilterFlags::INNER_SHADOW, inner);
     flags.set(DropShadowFilterFlags::KNOCKOUT, knockout);
-    flags |= DropShadowFilterFlags::from_passes(quality.clamp(1, 15) as u8);
+    flags |= DropShadowFilterFlags::from_passes(quality.clamp(0, 15) as u8);
     Ok(Filter::DropShadowFilter(DropShadowFilter {
         color: Color::from_rgb(color, (alpha * 255.0) as u8),
         angle: Fixed16::from_f64(angle.to_radians()),
@@ -651,7 +651,7 @@ fn avm2_to_glow_filter<'gc>(
     let mut flags = GlowFilterFlags::COMPOSITE_SOURCE;
     flags.set(GlowFilterFlags::INNER_GLOW, inner);
     flags.set(GlowFilterFlags::KNOCKOUT, knockout);
-    flags |= GlowFilterFlags::from_passes(quality.clamp(1, 15) as u8);
+    flags |= GlowFilterFlags::from_passes(quality.clamp(0, 15) as u8);
     Ok(Filter::GlowFilter(GlowFilter {
         color: Color::from_rgb(color, (alpha * 255.0) as u8),
         blur_x: Fixed16::from_f64(blur_x.max(0.0)),
@@ -716,7 +716,7 @@ fn avm2_to_gradient_filter<'gc>(
     } else if &bevel_type != b"outer" {
         flags |= GradientFilterFlags::ON_TOP;
     }
-    flags |= GradientFilterFlags::from_passes(quality.clamp(1, 15) as u8);
+    flags |= GradientFilterFlags::from_passes(quality.clamp(0, 15) as u8);
     Ok(GradientFilter {
         colors,
         blur_x: Fixed16::from_f64(blur_x.max(0.0)),
