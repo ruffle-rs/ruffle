@@ -1902,3 +1902,22 @@ pub fn pixel_dissolve<'gc>(
 
     raw_perm_index as i32
 }
+
+// note that this should also work with negative blur sizes,
+// but the accepted BlurFilter can't represent that...
+pub fn generate_filter_rect(
+    source_bitmap: BitmapDataWrapper,
+    src_rect: (i32, i32, i32, i32),
+    filter: Filter,
+) -> (i32, i32, i32, i32) {
+    match filter {
+        // Flash always reports that a ShaderFilter affects the entire BitampData, ignoring SourceRect.
+        Filter::ShaderFilter(_) => (
+            0,
+            0,
+            source_bitmap.width() as i32,
+            source_bitmap.height() as i32,
+        ),
+        _ => src_rect,
+    }
+}

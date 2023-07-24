@@ -1459,3 +1459,39 @@ pub fn pixel_dissolve<'gc>(
 
     Ok(Value::Undefined)
 }
+
+/// Implements `BitmapData.generateFilterRect`
+pub fn generate_filter_rect<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(bitmap_data) = this.as_bitmap_data() {
+        bitmap_data.check_valid(activation)?;
+
+        let source_rect = args.get_object(activation, 0, "sourceRect")?;
+        let (src_min_x, src_min_y, src_width, src_height) =
+            get_rectangle_x_y_width_height(activation, source_rect)?;
+
+        let filter = args.get_object(activation, 1, "filter")?;
+        let filter = Filter::from_avm2_object(activation, filter)?;
+
+        let result = operations::generate_filter_rect(
+            bitmap_data,
+            (src_min_x, src_min_y, src_width, src_height),
+            filter,
+        );
+
+        let object = activation.avm2().classes().rectangle.construct(
+            activation,
+            &[
+                result.0.into(),
+                result.1.into(),
+                result.2.into(),
+                result.3.into(),
+            ],
+        )?;
+        return Ok(object.into());
+    }
+    Ok(Value::Undefined)
+}
