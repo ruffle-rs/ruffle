@@ -1,3 +1,4 @@
+use crate::util::fs_commands::{FsCommand, TestFsCommandProvider};
 use crate::util::navigator::TestNavigatorBackend;
 use crate::util::test::Test;
 use anyhow::{anyhow, Result};
@@ -101,6 +102,7 @@ pub fn run_swf(
     let frame_time_duration = Duration::from_millis(frame_time as u64);
 
     let log = TestLogBackend::new();
+    let (fs_command_provider, fs_commands) = TestFsCommandProvider::new();
     let navigator = TestNavigatorBackend::new(
         base_path,
         &executor,
@@ -112,6 +114,7 @@ pub fn run_swf(
         .with_log(log.clone())
         .with_navigator(navigator)
         .with_max_execution_duration(Duration::from_secs(300))
+        .with_fs_commands(Box::new(fs_command_provider))
         .with_viewport_dimensions(
             movie.width().to_pixels() as u32,
             movie.height().to_pixels() as u32,
@@ -136,13 +139,13 @@ pub fn run_swf(
         ));
     }
 
-    let num_iterations = test
+    let mut remaining_iterations = test
         .options
         .num_frames
         .or(test.options.num_ticks)
         .expect("valid iteration count");
 
-    for _ in 0..num_iterations {
+    while remaining_iterations > 0 {
         // If requested, ensure that the 'expected' amount of
         // time actually elapses between frames. This is useful for
         // tests that call 'flash.utils.getTimer()' and use
@@ -173,7 +176,16 @@ pub fn run_swf(
             player.lock().unwrap().update_timers(frame_time);
             player.lock().unwrap().audio_mut().tick();
         }
+        remaining_iterations -= 1;
         executor.run();
+
+        for command in fs_commands.try_iter() {
+            match command {
+                FsCommand::Quit => {
+                    remaining_iterations = 0;
+                }
+            }
+        }
 
         injector.next(|evt, _btns_down| {
             player.lock().unwrap().handle_event(match evt {
