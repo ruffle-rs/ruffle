@@ -7,8 +7,19 @@ package
     }
 }
 
-var val:Function = new Function();
+function f():void{};
 
-val.prototype = null;
-trace("Worked!");
-trace(val.prototype);
+f.prototype = null;
+
+trace(f.prototype); // undefined
+
+var x = new f();
+
+trace(f.prototype); // [object Object]
+trace(x.prototype); // undefined
+
+trace(x.valueOf()); // [object Object]
+trace(x.toString()); // [object Object]
+
+trace(x); // [object Object]
+trace(x.asdf); // undefined
