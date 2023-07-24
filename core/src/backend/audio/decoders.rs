@@ -472,7 +472,7 @@ impl Read for SubstreamTagReader {
         buf[..len].copy_from_slice(&data[..len]);
 
         drop(data);
-        *chunk = chunk.to_start_and_end(chunk.start() + len, chunk.end());
+        *chunk = chunk.to_start_and_end(len, 0);
 
         if chunk.is_empty() {
             self.current_audio_data = None;
