@@ -395,7 +395,7 @@ fn clone<'gc>(
                 this.get_local_stored("__proto__", activation, false),
                 operations::clone(bitmap_data),
             )
-                .into());
+            .into());
         }
     }
 
@@ -1244,7 +1244,7 @@ fn pixel_dissolve<'gc>(
                         num_pixels,
                         fill_color,
                     )
-                        .into());
+                    .into());
                 }
             }
         }
@@ -1417,7 +1417,7 @@ fn compare<'gc>(
             this.get_local_stored("__proto__", activation, false),
             bitmap_data,
         )
-            .into()),
+        .into()),
         None => Ok(EQUIVALENT.into()),
     }
 }
@@ -1458,7 +1458,7 @@ fn load_bitmap<'gc>(
         this.get_local_stored("prototype", activation, false),
         bitmap_data,
     )
-        .into())
+    .into())
 }
 
 pub fn create_constructor<'gc>(
