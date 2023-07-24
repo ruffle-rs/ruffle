@@ -1680,7 +1680,7 @@ impl<'gc> MovieClip<'gc> {
             read.tag_frame_boundaries
                 .get(&read.current_frame)
                 .map(|(_start, end)| *end), // Yes, this is correct, at least for AVM1.
-            "[{}] Gotos must start from the correct tag position for frame {}",
+            "[{:?}] Gotos must start from the correct tag position for frame {}",
             read.base.base.name,
             read.current_frame
         );
@@ -1709,7 +1709,7 @@ impl<'gc> MovieClip<'gc> {
                 read.tag_frame_boundaries
                     .get(&read.current_frame)
                     .map(|(_start, end)| *end),
-                "[{}] Gotos must end at the correct tag position for frame {}",
+                "[{:?}] Gotos must end at the correct tag position for frame {}",
                 read.base.base.name,
                 read.current_frame
             );
