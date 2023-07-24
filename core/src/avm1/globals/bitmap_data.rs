@@ -621,13 +621,10 @@ fn apply_filter<'gc>(
                 }
                 _ => {}
             }
-
-            avm1_stub!(activation, "BitmapData", "generateFilterRect");
-            return Ok(Value::Undefined);
         }
     }
 
-    Ok((-1).into())
+    Ok(Value::Undefined)
 }
 
 fn generate_filter_rect<'gc>(
