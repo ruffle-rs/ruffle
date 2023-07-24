@@ -500,17 +500,9 @@ impl<'gc> ActionQueue<'gc> {
         is_front: bool,
     ) {
         if is_front {
-            self.queue_front_action(
-                clip,
-                action_type,
-                is_unload,
-            );
+            self.queue_front_action(clip, action_type, is_unload);
         } else {
-            self.queue_action(
-                clip,
-                action_type,
-                is_unload,
-            );
+            self.queue_action(clip, action_type, is_unload);
         }
     }
 
