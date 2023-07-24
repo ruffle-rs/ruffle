@@ -1762,7 +1762,7 @@ fn set_filters<'gc>(
 ) -> Result<(), Error<'gc>> {
     let mut filters = vec![];
     if let Value::Object(value) = value {
-        for index in value.get_keys(activation, false) {
+        for index in value.get_keys(activation, false).into_iter().rev() {
             let filter_object = value.get(index, activation)?.coerce_to_object(activation);
             if let Some(filter) =
                 bitmap_filter::avm1_to_filter(filter_object, &mut activation.context)

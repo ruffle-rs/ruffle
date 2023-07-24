@@ -94,7 +94,6 @@ ConvolutionFilter
   color 123
   alpha 1
 DisplacementMapFilter
-  mapBitmap [object Object]
   mapPoint (x=1, y=2)
   componentX 1
   componentY 1
