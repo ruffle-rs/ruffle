@@ -57,3 +57,9 @@ Tests that use video or other tick processing must not use `num_frames`, and in 
 num_frames = 1 # The amount of frames of the swf to run
 sleep_to_meet_frame_rate = false # If true, slow the tick rate to match the movies requested fps rate
 ```
+
+## Quit on demand
+
+`fscommand("quit")` is enabled for tests, and will end the test at the end of this frame or tick.
+
+You can use this to end a test prematurely before the set number of iterations elapses, which may be useful for timer tests.
