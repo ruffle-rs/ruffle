@@ -1,0 +1,7 @@
+map mapper is undefined PASSED!
+map mapper is not a function PASSED!
+map empty vector PASSED!
+map small vector PASSED!
+map fixed size small vector PASSED!
+map vector passing new object PASSED!
+map vector of int PASSED!

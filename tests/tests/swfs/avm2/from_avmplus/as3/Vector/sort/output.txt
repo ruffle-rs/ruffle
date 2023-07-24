@@ -1,0 +1,9 @@
+sort() after sort, compare lengths PASSED!
+sort() after sort, compare items PASSED!
+sort() after sort, compare lengths PASSED!
+sort() after sort, compare items PASSED!
+sort() after sort, compare lengths PASSED!
+sort() after sort, compare items PASSED!
+Sort a custom vector PASSED!
+Custom vector sort - object (alpha) sort PASSED!
+Custom vector sort using sort function with non-standard values PASSED!

@@ -1,0 +1,5 @@
+lastIndexOf single match found PASSED!
+lastIndexOf first match found PASSED!
+lastIndexOf first match found setting start parameter PASSED!
+lastIndexOf start parameter greater than vector length PASSED!
+lastIndexOf start parameter negative PASSED!
