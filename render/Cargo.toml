@@ -20,8 +20,8 @@ lyon = { version = "1.0.1", optional = true }
 thiserror = "1.0"
 wasm-bindgen = { version = "=0.2.87", optional = true }
 enum-map = "2.6.0"
-serde = { version = "1.0.171", features = ["derive"] }
-clap = { version = "4.3.12", features = ["derive"], optional = true }
+serde = { version = "1.0.175", features = ["derive"] }
+clap = { version = "4.3.19", features = ["derive"], optional = true }
 h263-rs-yuv = { git = "https://github.com/ruffle-rs/h263-rs", rev = "128cdbd85455d19783c88927bb535e8a26fe5220"}
 lru = "0.11.0"
 num-traits = "0.2"

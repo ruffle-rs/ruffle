@@ -8,7 +8,7 @@ repository.workspace = true
 version.workspace = true
 
 [dependencies]
-clap = { version = "4.3.12", features = ["derive"] }
+clap = { version = "4.3.19", features = ["derive"] }
 ruffle_core = { path = "../core", features = ["deterministic"] }
 log = "0.4"
 walkdir = "2.3.3"
