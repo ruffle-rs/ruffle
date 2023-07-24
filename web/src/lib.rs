@@ -15,7 +15,8 @@ use ruffle_core::config::{Letterbox, NetworkingAccessMode};
 use ruffle_core::context::UpdateContext;
 use ruffle_core::events::{KeyCode, MouseButton, MouseWheelDelta, TextControlCode};
 use ruffle_core::external::{
-    ExternalInterfaceMethod, ExternalInterfaceProvider, Value as ExternalValue, Value,
+    ExternalInterfaceMethod, ExternalInterfaceProvider, FsCommandProvider, Value as ExternalValue,
+    Value,
 };
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{
@@ -1436,7 +1437,9 @@ impl ExternalInterfaceProvider for JavascriptInterface {
     fn on_callback_available(&self, name: &str) {
         self.js_player.on_callback_available(name);
     }
+}
 
+impl FsCommandProvider for JavascriptInterface {
     fn on_fs_command(&self, command: &str, args: &str) -> bool {
         self.js_player
             .on_fs_command(command, args)

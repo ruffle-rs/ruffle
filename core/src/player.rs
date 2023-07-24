@@ -30,8 +30,8 @@ use crate::display_object::{
     TInteractiveObject, WindowMode,
 };
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, MouseButton, PlayerEvent};
-use crate::external::Value as ExternalValue;
-use crate::external::{ExternalInterface, ExternalInterfaceProvider};
+use crate::external::{ExternalInterface, ExternalInterfaceProvider, NullFsCommandProvider};
+use crate::external::{FsCommandProvider, Value as ExternalValue};
 use crate::focus_tracker::FocusTracker;
 use crate::font::Font;
 use crate::frame_lifecycle::{run_all_phases_avm2, FramePhase};
@@ -2110,6 +2110,7 @@ pub struct PlayerBuilder {
     sandbox_type: SandboxType,
     frame_rate: Option<f64>,
     external_interface_providers: Vec<Box<dyn ExternalInterfaceProvider>>,
+    fs_command_provider: Box<dyn FsCommandProvider>,
 }
 
 impl PlayerBuilder {
@@ -2154,6 +2155,7 @@ impl PlayerBuilder {
             sandbox_type: SandboxType::LocalTrusted,
             frame_rate: None,
             external_interface_providers: vec![],
+            fs_command_provider: Box::new(NullFsCommandProvider),
         }
     }
 
@@ -2318,12 +2320,19 @@ impl PlayerBuilder {
         self
     }
 
+    /// Adds an FSCommand implementation for movies to communicate with
+    pub fn with_fs_commands(mut self, provider: Box<dyn FsCommandProvider>) -> Self {
+        self.fs_command_provider = provider;
+        self
+    }
+
     fn create_gc_root<'gc>(
         gc_context: &'gc gc_arena::Mutation<'gc>,
         player_version: u8,
         fullscreen: bool,
         fake_movie: Arc<SwfMovie>,
         external_interface_providers: Vec<Box<dyn ExternalInterfaceProvider>>,
+        fs_command_provider: Box<dyn FsCommandProvider>,
     ) -> GcRoot<'gc> {
         let mut interner = AvmStringInterner::new();
         let mut init = GcContext {
@@ -2344,7 +2353,10 @@ impl PlayerBuilder {
                     interner,
                     current_context_menu: None,
                     drag_object: None,
-                    external_interface: ExternalInterface::new(external_interface_providers),
+                    external_interface: ExternalInterface::new(
+                        external_interface_providers,
+                        fs_command_provider,
+                    ),
                     focus_tracker: FocusTracker::new(gc_context),
                     library: Library::empty(),
                     load_manager: LoadManager::new(),
@@ -2459,6 +2471,7 @@ impl PlayerBuilder {
                             self.fullscreen,
                             fake_movie.clone(),
                             self.external_interface_providers,
+                            self.fs_command_provider,
                         )
                     },
                 ))),

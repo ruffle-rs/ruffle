@@ -47,8 +47,4 @@ impl ExternalInterfaceProvider for ExternalInterfaceTestProvider {
     }
 
     fn on_callback_available(&self, _name: &str) {}
-
-    fn on_fs_command(&self, _command: &str, _args: &str) -> bool {
-        false
-    }
 }
