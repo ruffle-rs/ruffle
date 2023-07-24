@@ -2,7 +2,7 @@
 
 use gc_arena::Collect;
 use std::cmp::min;
-use std::fmt::Debug;
+use std::fmt::{Debug, Formatter, LowerHex, UpperHex};
 use std::io::{Error as IoError, ErrorKind as IoErrorKind, Read, Result as IoResult};
 use std::iter::Iterator;
 use std::ops::{Bound, Deref, RangeBounds};
@@ -278,6 +278,18 @@ impl Slice {
     }
 }
 
+impl LowerHex for Slice {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        LowerHex::fmt(&self.data(), f)
+    }
+}
+
+impl UpperHex for Slice {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        UpperHex::fmt(&self.data(), f)
+    }
+}
+
 /// A readable cursor into a buffer slice.
 pub struct SliceCursor {
     slice: Slice,
@@ -512,6 +524,36 @@ impl PartialEq for SliceRef<'_> {
         self.guard.as_ptr() == other.guard.as_ptr()
             && self.start == other.start
             && self.end == other.end
+    }
+}
+
+impl LowerHex for SliceRef<'_> {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        write!(f, "[")?;
+        for (index, byte) in self[..].iter().enumerate() {
+            if index > 0 {
+                write!(f, " ")?;
+            }
+            LowerHex::fmt(byte, f)?;
+        }
+        write!(f, "]")?;
+
+        Ok(())
+    }
+}
+
+impl UpperHex for SliceRef<'_> {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        write!(f, "[")?;
+        for (index, byte) in self[..].iter().enumerate() {
+            if index > 0 {
+                write!(f, " ")?;
+            }
+            UpperHex::fmt(byte, f)?;
+        }
+        write!(f, "]")?;
+
+        Ok(())
     }
 }
 
