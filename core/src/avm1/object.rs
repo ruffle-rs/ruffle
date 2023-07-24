@@ -28,6 +28,7 @@ use crate::xml::XmlNode;
 use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_macros::enum_trait_object;
 use std::fmt::Debug;
+use ruffle_render::filters::Filter;
 
 pub mod array_object;
 mod custom_object;
@@ -64,18 +65,18 @@ pub enum NativeObject<'gc> {
 /// Represents an object that can be directly interacted with by the AVM
 /// runtime.
 #[enum_trait_object(
-    #[allow(clippy::enum_variant_names)]
-    #[derive(Clone, Collect, Debug, Copy)]
-    #[collect(no_drop)]
-    pub enum Object<'gc> {
-        ScriptObject(ScriptObject<'gc>),
-        ArrayObject(ArrayObject<'gc>),
-        SoundObject(SoundObject<'gc>),
-        StageObject(StageObject<'gc>),
-        SuperObject(SuperObject<'gc>),
-        ValueObject(ValueObject<'gc>),
-        FunctionObject(FunctionObject<'gc>),
-    }
+# [allow(clippy::enum_variant_names)]
+# [derive(Clone, Collect, Debug, Copy)]
+# [collect(no_drop)]
+pub enum Object < 'gc > {
+ScriptObject(ScriptObject < 'gc >),
+ArrayObject(ArrayObject < 'gc >),
+SoundObject(SoundObject < 'gc >),
+StageObject(StageObject < 'gc >),
+SuperObject(SuperObject < 'gc >),
+ValueObject(ValueObject < 'gc >),
+FunctionObject(FunctionObject < 'gc >),
+}
 )]
 pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
     /// Get the underlying raw script object.
@@ -604,6 +605,28 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
             NativeObject::XmlNode(xml_node) => Some(xml_node),
             _ => None,
         }
+    }
+
+    fn as_bitmap_data(&self) -> Option<BitmapDataWrapper<'gc>> {
+        match self.native() {
+            NativeObject::BitmapData(bitmap_data) => Some(bitmap_data),
+            _ => None,
+        }
+    }
+
+    fn as_filter(&self) -> Option<Filter> {
+        let filter = match self.native() {
+            NativeObject::ConvolutionFilter(f) => Filter::ConvolutionFilter(f.into()),
+            NativeObject::DropShadowFilter(f) => Filter::DropShadowFilter(f.into()),
+            NativeObject::GlowFilter(f) => Filter::GlowFilter(f.into()),
+            NativeObject::BevelFilter(f) => Filter::BevelFilter(f.into()),
+            NativeObject::GradientGlowFilter(f) => Filter::GradientGlowFilter(f.into()),
+            NativeObject::GradientBevelFilter(f) => Filter::GradientBevelFilter(f.into()),
+            NativeObject::BlurFilter(f) => Filter::BlurFilter(f.into()),
+            _ => return None,
+        };
+
+        Some(filter)
     }
 
     /// Get the underlying `ValueObject`, if it exists.

@@ -34,6 +34,12 @@ struct GradientFilterData {
     knockout: bool,
 }
 
+impl<'gc> From<GradientFilter<'gc>> for swf::GradientFilter {
+    fn from(filter: GradientFilter<'gc>) -> swf::GradientFilter {
+        (&filter.0.read().to_owned()).into()
+    }
+}
+
 impl From<&GradientFilterData> for swf::GradientFilter {
     fn from(filter: &GradientFilterData) -> swf::GradientFilter {
         let mut flags = GradientFilterFlags::COMPOSITE_SOURCE;

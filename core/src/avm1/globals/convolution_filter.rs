@@ -47,6 +47,12 @@ impl ConvolutionFilterData {
     }
 }
 
+impl<'gc> From<ConvolutionFilter<'_>> for swf::ConvolutionFilter {
+    fn from(filter: ConvolutionFilter) -> swf::ConvolutionFilter {
+        (&filter.0.read().to_owned()).into()
+    }
+}
+
 impl From<&ConvolutionFilterData> for swf::ConvolutionFilter {
     fn from(filter: &ConvolutionFilterData) -> swf::ConvolutionFilter {
         let mut flags = ConvolutionFilterFlags::empty();

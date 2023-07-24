@@ -46,6 +46,12 @@ impl GlowFilterData {
     }
 }
 
+impl<'gc> From<GlowFilter<'gc>> for swf::GlowFilter {
+    fn from(filter: GlowFilter<'gc>) -> swf::GlowFilter {
+        (&filter.0.read().to_owned()).into()
+    }
+}
+
 impl From<&GlowFilterData> for swf::GlowFilter {
     fn from(filter: &GlowFilterData) -> swf::GlowFilter {
         let mut flags = GlowFilterFlags::COMPOSITE_SOURCE;

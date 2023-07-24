@@ -27,6 +27,12 @@ impl Default for BlurFilterData {
     }
 }
 
+impl<'gc> From<BlurFilter<'gc>> for swf::BlurFilter {
+    fn from(filter: BlurFilter<'gc>) -> swf::BlurFilter {
+        (&filter.0.read().to_owned()).into()
+    }
+}
+
 impl From<&BlurFilterData> for swf::BlurFilter {
     fn from(filter: &BlurFilterData) -> swf::BlurFilter {
         swf::BlurFilter {

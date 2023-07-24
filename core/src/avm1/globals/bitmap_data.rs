@@ -17,6 +17,7 @@ use crate::swf::BlendMode;
 use crate::{avm1_stub, avm_error};
 use gc_arena::{GcCell, MutationContext};
 use ruffle_render::transform::Transform;
+use crate::avm1::globals::movie_clip::object_to_rectangle;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "height" => property(height);
@@ -394,7 +395,7 @@ fn clone<'gc>(
                 this.get_local_stored("__proto__", activation, false),
                 operations::clone(bitmap_data),
             )
-            .into());
+                .into());
         }
     }
 
@@ -571,10 +572,61 @@ fn draw<'gc>(
 
 fn apply_filter<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    this: Object<'gc>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "BitmapData", "applyFilter");
+    if let Some(dest_bitmap) = this.as_bitmap_data() {
+        if !dest_bitmap.disposed() {
+            match args {
+                [src_bitmap, rect, point, filter, ..] => {
+                    let src_bitmap = src_bitmap
+                        .coerce_to_object(activation)
+                        .as_bitmap_data()
+                        .unwrap();
+
+                    let rect = rect.coerce_to_object(activation);
+                    let rect = object_to_rectangle(activation, rect)?.unwrap();
+
+                    let dest_point = point.coerce_to_object(activation);
+
+                    let filter = filter.coerce_to_object(activation).as_filter().unwrap();
+
+                    let dest_point = (
+                        dest_point
+                            .get("x", activation)?
+                            .coerce_to_u32(activation)?,
+                        dest_point
+                            .get("y", activation)?
+                            .coerce_to_u32(activation)?,
+                    );
+
+                    let source_point = (
+                        rect.x_min.to_pixels().floor() as u32,
+                        rect.y_min.to_pixels().floor() as u32,
+                    );
+                    let source_size = (
+                        rect.width().to_pixels().ceil() as u32,
+                        rect.height().to_pixels().ceil() as u32,
+                    );
+
+                    operations::apply_filter(
+                        &mut activation.context,
+                        dest_bitmap,
+                        src_bitmap,
+                        source_point,
+                        source_size,
+                        dest_point,
+                        filter,
+                    );
+                }
+                _ => {}
+            }
+
+            avm1_stub!(activation, "BitmapData", "generateFilterRect");
+            return Ok(Value::Undefined);
+        }
+    }
+
     Ok((-1).into())
 }
 
@@ -1195,7 +1247,7 @@ fn pixel_dissolve<'gc>(
                         num_pixels,
                         fill_color,
                     )
-                    .into());
+                        .into());
                 }
             }
         }
@@ -1368,7 +1420,7 @@ fn compare<'gc>(
             this.get_local_stored("__proto__", activation, false),
             bitmap_data,
         )
-        .into()),
+            .into()),
         None => Ok(EQUIVALENT.into()),
     }
 }
@@ -1409,7 +1461,7 @@ fn load_bitmap<'gc>(
         this.get_local_stored("prototype", activation, false),
         bitmap_data,
     )
-    .into())
+        .into())
 }
 
 pub fn create_constructor<'gc>(

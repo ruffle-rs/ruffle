@@ -26,6 +26,12 @@ struct DropShadowFilterData {
     hide_object: bool,
 }
 
+impl<'gc> From<DropShadowFilter<'gc>> for swf::DropShadowFilter {
+    fn from(filter: DropShadowFilter<'gc>) -> swf::DropShadowFilter {
+        (&filter.0.read().to_owned()).into()
+    }
+}
+
 impl From<&DropShadowFilterData> for swf::DropShadowFilter {
     fn from(filter: &DropShadowFilterData) -> swf::DropShadowFilter {
         let mut flags = DropShadowFilterFlags::empty();
