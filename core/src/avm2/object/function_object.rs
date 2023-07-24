@@ -196,9 +196,15 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         arguments: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error<'gc>> {
-        let prototype = self.prototype();
+        let prototype = if let Some(proto) = self.prototype() {
+            proto
+        } else {
+            let proto = activation.avm2().classes().object.prototype();
+            self.set_prototype(Some(proto), activation.gc());
+            proto
+        };
 
-        let instance = ScriptObject::custom_object(activation.context.gc_context, None, prototype);
+        let instance = ScriptObject::custom_object(activation.context.gc_context, None, Some(prototype));
 
         self.call(instance.into(), arguments, activation)?;
 
