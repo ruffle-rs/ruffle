@@ -134,8 +134,8 @@ impl<'gc> FunctionObject<'gc> {
         self.0.read().prototype
     }
 
-    pub fn set_prototype(&self, proto: Object<'gc>, mc: MutationContext<'gc, '_>) {
-        self.0.write(mc).prototype = Some(proto);
+    pub fn set_prototype(&self, proto: Option<Object<'gc>>, mc: MutationContext<'gc, '_>) {
+        self.0.write(mc).prototype = proto;
     }
 
     pub fn num_parameters(&self) -> usize {
@@ -196,7 +196,13 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         arguments: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error<'gc>> {
-        let prototype = self.prototype().unwrap();
+        let prototype = if let Some(proto) = self.prototype() {
+            proto
+        } else {
+            let proto = activation.avm2().classes().object.prototype();
+            self.set_prototype(Some(proto), activation.gc());
+            proto
+        };
 
         let instance =
             ScriptObject::custom_object(activation.context.gc_context, None, Some(prototype));
