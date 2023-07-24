@@ -395,7 +395,7 @@ fn clone<'gc>(
                 this.get_local_stored("__proto__", activation, false),
                 operations::clone(bitmap_data),
             )
-            .into());
+                .into());
         }
     }
 
@@ -619,15 +619,12 @@ fn apply_filter<'gc>(
                         filter,
                     );
                 }
-                _ => {}
+                _ => avm_error!(activation, "Bad arguments to BitmapData.applyFilter"),
             }
-
-            avm1_stub!(activation, "BitmapData", "generateFilterRect");
-            return Ok(Value::Undefined);
         }
     }
 
-    Ok((-1).into())
+    Ok(Value::Undefined)
 }
 
 fn generate_filter_rect<'gc>(
