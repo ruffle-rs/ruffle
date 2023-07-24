@@ -149,11 +149,7 @@ fn set_prototype<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(function) = this.as_function_object() {
-        let new_proto = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .as_object()
-            .ok_or("Cannot set prototype of class to null or undefined")?;
+        let new_proto = args.get(0).unwrap_or(&Value::Undefined).as_object();
         function.set_prototype(new_proto, activation.context.gc_context);
     }
 
