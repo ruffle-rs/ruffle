@@ -342,6 +342,20 @@ impl<'gc> Avm1<'gc> {
         self.stack.push(value);
     }
 
+    pub fn peek(&self, n: usize) -> Value<'gc> {
+        if n < self.stack.len() {
+            let value = self.stack.get(self.stack.len() - n - 1).copied().unwrap_or_else(|| {
+                tracing::warn!("Avm1::peek: Stack underflow");
+                Value::Undefined
+            });
+
+            avm_debug!(self, "Stack peek {}: {value:?}", self.stack.len());
+            value
+        } else {
+            Value::Undefined
+        }
+    }
+
     #[allow(clippy::let_and_return)]
     pub fn pop(&mut self) -> Value<'gc> {
         let value = self.stack.pop().unwrap_or_else(|| {

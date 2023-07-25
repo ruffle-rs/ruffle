@@ -919,9 +919,29 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             self.context.avm1.prototypes().function,
             prototype,
         );
+
         if let Some(name) = name {
+            self.base_clip().update_clip_events(self.context.gc_context, name.to_string().as_str());
             self.define_local(name, func_obj.into())?;
         } else {
+            match self.context.avm1.peek(0) {
+                Value::String(name) => {
+                    let mut clip = match self.context.avm1.peek(1) {
+                        Value::MovieClip(movie_clip) => {
+                            if let Some((_, _, clip)) = movie_clip.resolve_reference(self) {
+                                clip
+                            } else {
+                                self.base_clip()
+                            }
+                        },
+                        _ => {
+                            self.base_clip()
+                        },
+                    };
+                    clip.update_clip_events(self.context.gc_context, name.to_string().as_str());
+                },
+                _ => {},
+            };
             self.context.avm1.push(func_obj.into());
         }
 
