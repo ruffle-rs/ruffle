@@ -109,7 +109,7 @@ pub fn set_pixel<'gc>(
     } else {
         write.set_pixel32_raw(x, y, color.with_alpha(0xFF));
     }
-    write.set_cpu_dirty(PixelRegion::for_whole_size(x, y));
+    write.set_cpu_dirty(PixelRegion::for_pixel(x, y));
 }
 
 pub fn get_pixel(target: BitmapDataWrapper, x: u32, y: u32) -> u32 {
