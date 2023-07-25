@@ -313,9 +313,7 @@ impl Eq for Timer<'_> {}
 
 impl PartialOrd for Timer<'_> {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.tick_time
-            .partial_cmp(&other.tick_time)
-            .map(|o| o.reverse())
+        Some(self.cmp(other))
     }
 }
 

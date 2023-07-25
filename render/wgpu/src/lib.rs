@@ -2,6 +2,9 @@
 #![allow(clippy::extra_unused_type_parameters)]
 // Remove this when we decide on how to handle multithreaded rendering (especially on wasm)
 #![allow(clippy::arc_with_non_send_sync)]
+// This lint is helpful, but right now we have too many instances of it.
+// TODO: Remove this once all instances are fixed.
+#![allow(clippy::needless_pass_by_ref_mut)]
 
 use crate::bitmaps::BitmapSamplers;
 use crate::buffer_pool::{BufferPool, PoolEntry};
