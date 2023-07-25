@@ -563,9 +563,9 @@ impl<'gc> DisplayObjectBase<'gc> {
     }
 
     fn set_propagate_to_children(&mut self, propagate: bool) {
-        self.flags.set(DisplayObjectFlags::PROPAGATE_TO_CHILDREN, propagate);
+        self.flags
+            .set(DisplayObjectFlags::PROPAGATE_TO_CHILDREN, propagate);
     }
-
 
     fn set_avm1_removed(&mut self, value: bool) {
         self.flags.set(DisplayObjectFlags::AVM1_REMOVED, value);
@@ -1589,9 +1589,12 @@ pub trait TDisplayObject<'gc>:
 
     /// Sets whether we should propagate `ClipEvent`s down to our children.
     fn set_propagate_to_children(&mut self, gc_context: MutationContext<'gc, '_>, propagate: bool) {
-        self.base_mut(gc_context).set_propagate_to_children(propagate);
+        self.base_mut(gc_context)
+            .set_propagate_to_children(propagate);
         if let Some(parent) = self.parent() {
-            parent.base_mut(gc_context).set_propagate_to_children(propagate);
+            parent
+                .base_mut(gc_context)
+                .set_propagate_to_children(propagate);
         }
     }
 
@@ -1689,12 +1692,15 @@ pub trait TDisplayObject<'gc>:
         if let Some(flag) = event.flag() {
             return self.clip_events().contains(flag.into());
         }
-        return false;
+        false
     }
 
     fn update_clip_events(&mut self, gc_context: MutationContext<'gc, '_>, name: &str) {
         if let Some(event) = crate::events::method_name_to_clip_event(name) {
-            self.set_clip_events(gc_context, self.clip_events() | event.flag().unwrap().into());
+            self.set_clip_events(
+                gc_context,
+                self.clip_events() | event.flag().unwrap().into(),
+            );
             if let Some(mut parent) = self.parent() {
                 if event.propagates() && !parent.should_propagate_to_children() {
                     parent.set_propagate_to_children(gc_context, true);

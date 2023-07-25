@@ -183,7 +183,10 @@ pub trait TInteractiveObject<'gc>:
         context: &mut UpdateContext<'_, 'gc>,
         event: ClipEvent<'gc>,
     ) -> ClipEventResult {
-        if event.propagates() && (matches!(event, ClipEvent::KeyPress {..}) || self.as_displayobject().should_propagate_to_children()) {
+        if event.propagates()
+            && (matches!(event, ClipEvent::KeyPress { .. })
+                || self.as_displayobject().should_propagate_to_children())
+        {
             if let Some(container) = self.as_displayobject().as_container() {
                 for child in container.iter_render_list() {
                     if let Some(interactive) = child.as_interactive() {
@@ -461,10 +464,13 @@ pub trait TInteractiveObject<'gc>:
             return ClipEventResult::Handled;
         }
 
-        if !event.propagates() || matches!(event, ClipEvent::KeyPress {..}) || self.as_displayobject().has_clip_event(event) {
+        if !event.propagates()
+            || matches!(event, ClipEvent::KeyPress { .. })
+            || self.as_displayobject().has_clip_event(event)
+        {
             self.event_dispatch(context, event)
         } else {
-            return ClipEventResult::NotHandled;
+            ClipEventResult::NotHandled
         }
     }
 

@@ -344,10 +344,14 @@ impl<'gc> Avm1<'gc> {
 
     pub fn peek(&self, n: usize) -> Value<'gc> {
         if n < self.stack.len() {
-            let value = self.stack.get(self.stack.len() - n - 1).copied().unwrap_or_else(|| {
-                tracing::warn!("Avm1::peek: Stack underflow");
-                Value::Undefined
-            });
+            let value = self
+                .stack
+                .get(self.stack.len() - n - 1)
+                .copied()
+                .unwrap_or_else(|| {
+                    tracing::warn!("Avm1::peek: Stack underflow");
+                    Value::Undefined
+                });
 
             avm_debug!(self, "Stack peek {}: {value:?}", self.stack.len());
             value

@@ -335,24 +335,24 @@ impl<'gc> ClipEvent<'gc> {
 }
 
 pub fn method_name_to_clip_event(name: &str) -> Option<ClipEvent<'static>> {
-        match name {
-            "onDragOut" => Some(ClipEvent::DragOut { to: None }),
-            "onDragOver" => Some(ClipEvent::DragOver { from: None }),
-            "onEnterFrame" => Some(ClipEvent::EnterFrame),
-            "onKeyDown" => Some(ClipEvent::KeyDown),
-            "onKeyUp" => Some(ClipEvent::KeyUp),
-            "onLoad" => Some(ClipEvent::Load),
-            "onMouseDown" => Some(ClipEvent::MouseDown),
-            "onMouseMove" => Some(ClipEvent::MouseMove),
-            "onMouseUp" => Some(ClipEvent::MouseUp),
-            "onPress" => Some(ClipEvent::Press),
-            "onRollOut" => Some(ClipEvent::RollOut { to: None }),
-            "onRollOver" => Some(ClipEvent::RollOver { from: None }),
-            "onRelease" => Some(ClipEvent::Release),
-            "onReleaseOutside" => Some(ClipEvent::ReleaseOutside),
-            "onUnload" => Some(ClipEvent::Unload),
-            _ => None,
-        }
+    match name {
+        "onDragOut" => Some(ClipEvent::DragOut { to: None }),
+        "onDragOver" => Some(ClipEvent::DragOver { from: None }),
+        "onEnterFrame" => Some(ClipEvent::EnterFrame),
+        "onKeyDown" => Some(ClipEvent::KeyDown),
+        "onKeyUp" => Some(ClipEvent::KeyUp),
+        "onLoad" => Some(ClipEvent::Load),
+        "onMouseDown" => Some(ClipEvent::MouseDown),
+        "onMouseMove" => Some(ClipEvent::MouseMove),
+        "onMouseUp" => Some(ClipEvent::MouseUp),
+        "onPress" => Some(ClipEvent::Press),
+        "onRollOut" => Some(ClipEvent::RollOut { to: None }),
+        "onRollOver" => Some(ClipEvent::RollOver { from: None }),
+        "onRelease" => Some(ClipEvent::Release),
+        "onReleaseOutside" => Some(ClipEvent::ReleaseOutside),
+        "onUnload" => Some(ClipEvent::Unload),
+        _ => None,
+    }
 }
 
 /// Control inputs to a text field
