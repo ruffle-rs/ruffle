@@ -205,6 +205,9 @@ pub struct UpdateContext<'a, 'gc> {
     /// How many times getTimer() was called so far. Used to detect busy-loops.
     pub times_get_time_called: u32,
 
+    /// The previous fake time offset since calling `getTimer()`.
+    pub last_time_offset: &'a mut u32,
+
     /// This frame's current fake time offset, used to pretend passage of time in time functions
     pub time_offset: &'a mut u32,
 
@@ -387,6 +390,7 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
             max_execution_duration: self.max_execution_duration,
             focus_tracker: self.focus_tracker,
             times_get_time_called: self.times_get_time_called,
+            last_time_offset: self.last_time_offset,
             time_offset: self.time_offset,
             frame_rate: self.frame_rate,
             forced_frame_rate: self.forced_frame_rate,
