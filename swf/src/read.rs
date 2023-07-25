@@ -2035,14 +2035,7 @@ impl<'a> Reader<'a> {
     }
 
     pub fn read_blend_mode(&mut self) -> Result<BlendMode> {
-        let mode = BlendMode::from_u8(self.read_u8()?)
-            .ok_or_else(|| Error::invalid_data("Invalid blend mode"))?;
-        // `Shader` is part of the enum to support ActionScript, but the discriminant isn't real,
-        // and we shouldn't be able to read it directly from an SWF.
-        if mode == BlendMode::Shader {
-            return Err(Error::invalid_data("Invalid blend mode"));
-        }
-        Ok(mode)
+        BlendMode::from_u8(self.read_u8()?).ok_or_else(|| Error::invalid_data("Invalid blend mode"))
     }
 
     fn read_clip_actions(&mut self) -> Result<Vec<ClipAction<'a>>> {

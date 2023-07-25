@@ -57,7 +57,6 @@ impl BlendType {
             RenderBlendMode::Builtin(BlendMode::HardLight) => {
                 BlendType::Complex(ComplexBlend::HardLight)
             }
-            RenderBlendMode::Builtin(BlendMode::Shader) => unreachable!(),
             RenderBlendMode::Shader(shader) => BlendType::Shader(shader),
         }
     }

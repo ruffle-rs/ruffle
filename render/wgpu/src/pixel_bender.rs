@@ -560,7 +560,7 @@ pub(super) fn run_pixelbender_shader_impl(
         depth_stencil_attachment: None,
     });
     render_pass.set_bind_group(0, &bind_group, &[]);
-    render_pass.set_pipeline(&pipeline);
+    render_pass.set_pipeline(pipeline);
 
     render_pass.set_vertex_buffer(0, vertices.slice(..));
     render_pass.set_index_buffer(

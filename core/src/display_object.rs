@@ -19,7 +19,7 @@ use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::sync::Arc;
-use swf::{BlendMode, ColorTransform, Fixed8};
+use swf::{ColorTransform, Fixed8};
 
 mod avm1_button;
 mod avm2_button;
@@ -51,6 +51,7 @@ pub use morph_shape::{MorphShape, MorphShapeStatic};
 pub use movie_clip::{MovieClip, MovieClipWeak, Scene};
 use ruffle_render::backend::{BitmapCacheEntry, RenderBackend};
 use ruffle_render::bitmap::{BitmapHandle, BitmapInfo, PixelSnapping};
+use ruffle_render::blend::ExtendedBlendMode;
 use ruffle_render::commands::{CommandHandler, CommandList, RenderBlendMode};
 use ruffle_render::filters::Filter;
 pub use stage::{Stage, StageAlign, StageDisplayState, StageScaleMode, WindowMode};
@@ -222,7 +223,7 @@ pub struct DisplayObjectBase<'gc> {
     /// The blend mode used when rendering this display object.
     /// Values other than the default `BlendMode::Normal` implicitly cause cache-as-bitmap behavior.
     #[collect(require_static)]
-    blend_mode: BlendMode,
+    blend_mode: ExtendedBlendMode,
 
     #[collect(require_static)]
     blend_shader: Option<PixelBenderShaderHandle>,
@@ -587,11 +588,11 @@ impl<'gc> DisplayObjectBase<'gc> {
         changed
     }
 
-    fn blend_mode(&self) -> BlendMode {
+    fn blend_mode(&self) -> ExtendedBlendMode {
         self.blend_mode
     }
 
-    fn set_blend_mode(&mut self, value: BlendMode) -> bool {
+    fn set_blend_mode(&mut self, value: ExtendedBlendMode) -> bool {
         let changed = self.blend_mode != value;
         self.blend_mode = value;
         changed
@@ -759,7 +760,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
     }
     context.transform_stack.push(this.base().transform());
     let blend_mode = this.blend_mode();
-    let original_commands = if blend_mode != BlendMode::Normal {
+    let original_commands = if blend_mode != ExtendedBlendMode::Normal {
         Some(std::mem::take(&mut context.commands))
     } else {
         None
@@ -915,14 +916,14 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
 
     if let Some(original_commands) = original_commands {
         let sub_commands = std::mem::replace(&mut context.commands, original_commands);
-        let render_blend_mode = if let BlendMode::Shader = blend_mode {
+        let render_blend_mode = if let ExtendedBlendMode::Shader = blend_mode {
             // Note - Flash appears to let you set `dobj.blendMode = BlendMode.SHADER` without
             // having `dobj.blendShader` result, but the resulting rendered displayobject
             // seems to be corrupted. For now, let's panic, and see if any swfs actually
             // rely on this behavior.
             RenderBlendMode::Shader(this.blend_shader().expect("Missing blend shader"))
         } else {
-            RenderBlendMode::Builtin(blend_mode)
+            RenderBlendMode::Builtin(blend_mode.try_into().unwrap())
         };
         context.commands.blend(sub_commands, render_blend_mode);
     }
@@ -1595,13 +1596,13 @@ pub trait TDisplayObject<'gc>:
 
     /// The blend mode used when rendering this display object.
     /// Values other than the default `BlendMode::Normal` implicitly cause cache-as-bitmap behavior.
-    fn blend_mode(&self) -> BlendMode {
+    fn blend_mode(&self) -> ExtendedBlendMode {
         self.base().blend_mode()
     }
 
     /// Sets the blend mode used when rendering this display object.
     /// Values other than the default `BlendMode::Normal` implicitly cause cache-as-bitmap behavior.
-    fn set_blend_mode(&self, gc_context: MutationContext<'gc, '_>, value: BlendMode) {
+    fn set_blend_mode(&self, gc_context: MutationContext<'gc, '_>, value: ExtendedBlendMode) {
         if self.base_mut(gc_context).set_blend_mode(value) {
             if let Some(parent) = self.parent() {
                 // We don't need to invalidate ourselves, we're just toggling how the bitmap is rendered.
@@ -1623,7 +1624,7 @@ pub trait TDisplayObject<'gc>:
         value: Option<PixelBenderShaderHandle>,
     ) {
         self.base_mut(gc_context).set_blend_shader(value);
-        self.set_blend_mode(gc_context, BlendMode::Shader);
+        self.set_blend_mode(gc_context, ExtendedBlendMode::Shader);
     }
 
     /// The opaque background color of this display object.
@@ -2044,7 +2045,7 @@ pub trait TDisplayObject<'gc>:
                 self.set_bitmap_cached_preference(context.gc_context, is_bitmap_cached);
             }
             if let Some(blend_mode) = place_object.blend_mode {
-                self.set_blend_mode(context.gc_context, blend_mode);
+                self.set_blend_mode(context.gc_context, blend_mode.into());
             }
             if self.swf_version() >= 11 {
                 if let Some(visible) = place_object.is_visible {

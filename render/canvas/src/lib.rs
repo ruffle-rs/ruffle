@@ -379,7 +379,6 @@ impl WebCanvasRenderBackend {
             RenderBlendMode::Builtin(BlendMode::Erase) => "source-over", // Requires intermediate buffer.
             RenderBlendMode::Builtin(BlendMode::Overlay) => "overlay",
             RenderBlendMode::Builtin(BlendMode::HardLight) => "hard-light",
-            RenderBlendMode::Builtin(BlendMode::Shader) => unreachable!(),
             RenderBlendMode::Shader(_) => "source-over", // Canvas does not support shaders
         };
         self.context

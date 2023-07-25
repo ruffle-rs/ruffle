@@ -16,10 +16,11 @@ use crate::string::AvmString;
 use crate::types::{Degrees, Percent};
 use crate::vminterface::Instantiator;
 use crate::{avm2_stub_getter, avm2_stub_setter};
+use ruffle_render::blend::ExtendedBlendMode;
 use ruffle_render::filters::Filter;
 use std::str::FromStr;
+use swf::Rectangle;
 use swf::Twips;
-use swf::{BlendMode, Rectangle};
 
 pub fn display_object_allocator<'gc>(
     class: ClassObject<'gc>,
@@ -752,7 +753,7 @@ pub fn set_blend_mode<'gc>(
     if let Some(dobj) = this.as_display_object() {
         let mode = args.get_string(activation, 0)?;
 
-        if let Ok(mode) = BlendMode::from_str(&mode.to_string()) {
+        if let Ok(mode) = ExtendedBlendMode::from_str(&mode.to_string()) {
             dobj.set_blend_mode(activation.context.gc_context, mode);
         } else {
             tracing::error!("Unknown blend mode {}", mode);
