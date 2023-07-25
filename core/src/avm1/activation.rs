@@ -1173,7 +1173,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.context.times_get_time_called += 1;
         // heuristic to detect busy loops used for delays and slowly progress fake time
         if self.context.times_get_time_called >= 20 && self.context.times_get_time_called % 5 == 0 {
-            *self.context.time_offset = *self.context.time_offset.max(self.context.last_time_offset);
+            *self.context.time_offset =
+                *self.context.time_offset.max(self.context.last_time_offset);
             *self.context.time_offset = self.context.time_offset.wrapping_add(1);
             *self.context.last_time_offset = *self.context.time_offset;
         }
