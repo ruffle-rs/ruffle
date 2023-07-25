@@ -6,6 +6,12 @@
 true
 //this.numChildren
 1
+//this.removeChildren(1)
+//this.numChildren
+1
+//this.removeChildren(100)
+//this.numChildren
+1
 //this.removeChildren(0,0x7fffffff)
 //this.numChildren
 0
