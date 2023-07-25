@@ -1,8 +1,8 @@
-use std::cell::{RefCell, RefMut};
+use std::cell::RefCell;
 use std::num::NonZeroU64;
+use std::sync::OnceLock;
 use std::{borrow::Cow, cell::Cell, sync::Arc};
 
-use fnv::FnvHashMap;
 use indexmap::IndexMap;
 use ruffle_render::error::Error as BitmapError;
 use ruffle_render::pixel_bender::{
@@ -23,6 +23,7 @@ use wgpu::{
 
 use crate::filters::{FilterSource, VERTEX_BUFFERS_DESCRIPTION_FILTERS};
 use crate::raw_texture_as_texture;
+use crate::utils::SampleCountMap;
 use crate::{
     as_texture, backend::WgpuRenderBackend, descriptors::Descriptors, target::RenderTarget, Texture,
 };
@@ -31,7 +32,7 @@ use crate::{
 pub struct PixelBenderWgpuShader {
     bind_group_layout: wgpu::BindGroupLayout,
     pipeline_layout: PipelineLayout,
-    pipelines: RefCell<FnvHashMap<u32, RenderPipeline>>,
+    pipelines: SampleCountMap<OnceLock<RenderPipeline>>,
     vertex_shader: wgpu::ShaderModule,
     fragment_shader: wgpu::ShaderModule,
     shader: PixelBenderShader,
@@ -45,51 +46,44 @@ pub struct PixelBenderWgpuShader {
 
 impl PixelBenderWgpuShader {
     /// Gets a `RenderPipeline` for the specified sample count
-    fn get_pipeline(
-        &self,
-        descriptors: &Descriptors,
-        samples: u32,
-    ) -> RefMut<'_, wgpu::RenderPipeline> {
-        let pipelines = self.pipelines.borrow_mut();
-        RefMut::map(pipelines, |pipelines| {
-            pipelines.entry(samples).or_insert_with(|| {
-                descriptors
-                    .device
-                    .create_render_pipeline(&RenderPipelineDescriptor {
-                        label: create_debug_label!("PixelBender shader pipeline").as_deref(),
-                        layout: Some(&self.pipeline_layout),
-                        vertex: VertexState {
-                            module: &self.vertex_shader,
-                            entry_point: naga_pixelbender::VERTEX_SHADER_ENTRYPOINT,
-                            buffers: &VERTEX_BUFFERS_DESCRIPTION_FILTERS,
-                        },
-                        fragment: Some(wgpu::FragmentState {
-                            module: &self.fragment_shader,
-                            entry_point: naga_pixelbender::FRAGMENT_SHADER_ENTRYPOINT,
-                            targets: &[Some(ColorTargetState {
-                                format: TextureFormat::Rgba8Unorm,
-                                // FIXME - what should this be?
-                                blend: Some(wgpu::BlendState {
-                                    color: BlendComponent::OVER,
-                                    alpha: BlendComponent::OVER,
-                                }),
-                                write_mask: ColorWrites::all(),
-                            })],
-                        }),
-                        primitive: wgpu::PrimitiveState {
-                            front_face: FrontFace::Ccw,
-                            cull_mode: None,
-                            ..Default::default()
-                        },
-                        depth_stencil: None,
-                        multisample: wgpu::MultisampleState {
-                            count: samples,
-                            mask: !0,
-                            alpha_to_coverage_enabled: false,
-                        },
-                        multiview: Default::default(),
-                    })
-            })
+    fn get_pipeline(&self, descriptors: &Descriptors, samples: u32) -> &wgpu::RenderPipeline {
+        self.pipelines.get_or_init(samples, || {
+            descriptors
+                .device
+                .create_render_pipeline(&RenderPipelineDescriptor {
+                    label: create_debug_label!("PixelBender shader pipeline").as_deref(),
+                    layout: Some(&self.pipeline_layout),
+                    vertex: VertexState {
+                        module: &self.vertex_shader,
+                        entry_point: naga_pixelbender::VERTEX_SHADER_ENTRYPOINT,
+                        buffers: &VERTEX_BUFFERS_DESCRIPTION_FILTERS,
+                    },
+                    fragment: Some(wgpu::FragmentState {
+                        module: &self.fragment_shader,
+                        entry_point: naga_pixelbender::FRAGMENT_SHADER_ENTRYPOINT,
+                        targets: &[Some(ColorTargetState {
+                            format: TextureFormat::Rgba8Unorm,
+                            // FIXME - what should this be?
+                            blend: Some(wgpu::BlendState {
+                                color: BlendComponent::OVER,
+                                alpha: BlendComponent::OVER,
+                            }),
+                            write_mask: ColorWrites::all(),
+                        })],
+                    }),
+                    primitive: wgpu::PrimitiveState {
+                        front_face: FrontFace::Ccw,
+                        cull_mode: None,
+                        ..Default::default()
+                    },
+                    depth_stencil: None,
+                    multisample: wgpu::MultisampleState {
+                        count: samples,
+                        mask: !0,
+                        alpha_to_coverage_enabled: false,
+                    },
+                    multiview: Default::default(),
+                })
         })
     }
 }
@@ -245,7 +239,7 @@ impl PixelBenderWgpuShader {
         PixelBenderWgpuShader {
             bind_group_layout,
             pipeline_layout,
-            pipelines: RefCell::new(FnvHashMap::default()),
+            pipelines: Default::default(),
             shader,
             vertex_shader,
             fragment_shader,
