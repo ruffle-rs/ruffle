@@ -22,20 +22,3 @@ impl<'a> std::fmt::Debug for PrettyString<'a> {
         f.write_str(self.0)
     }
 }
-
-#[macro_export]
-macro_rules! assert_eq {
-    ($left:expr, $right:expr) => {
-        pretty_assertions::assert_eq!(
-            $crate::util::PrettyString($left.as_ref()),
-            $crate::util::PrettyString($right.as_ref())
-        );
-    };
-    ($left:expr, $right:expr, $message:expr) => {
-        pretty_assertions::assert_eq!(
-            $crate::util::PrettyString($left.as_ref()),
-            $crate::util::PrettyString($right.as_ref()),
-            $message
-        );
-    };
-}

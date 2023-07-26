@@ -266,8 +266,10 @@ pub fn run_swf(
                     expected_image,
                     base_path,
                     renderer.descriptors().adapter.get_info(),
+                    test.options.known_failure,
                 )?;
-            } else {
+            } else if !test.options.known_failure {
+                // If we're expecting this to be wrong, don't save a likely wrong image
                 actual_image.save(expected_image_path)?;
             }
         }

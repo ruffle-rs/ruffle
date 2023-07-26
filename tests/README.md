@@ -21,6 +21,7 @@ num_ticks = 1 # The amount of frames of the SWF to run.
 tick_rate = 16.666 # The amount of time to process per tick. By default this uses the SWF frame rate.
 sleep_to_meet_frame_rate = false # If true, sleep in between ticks to run at realtime speed. Necessary for some timer tests.
 ignore = false # If true, ignore this test. Please comment why, ideally link to an issue, so we know what's up
+known_failure = false # If true, this test is known to fail and the result will be inverted. When the test passes in the future, it'll fail and alert that it now passes.
 output_path = "output.txt" # Path (relative to the directory containing test.toml) to the expected output
 
 # Sometimes floating point math doesn't exactly 100% match between flash and rust.
