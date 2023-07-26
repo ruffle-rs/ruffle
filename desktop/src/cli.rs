@@ -89,9 +89,9 @@ pub struct Opt {
     #[clap(long = "socket-allow", number_of_values = 1, action = clap::ArgAction::Append)]
     pub socket_allow: Vec<String>,
 
-    /// Define how to deal with sockets.
-    #[clap(long = "socket-mode", default_value = "ask")]
-    pub socket_mode: SocketMode,
+    /// Define how to deal with TCP Socket connections.
+    #[clap(long = "tcp-connections", default_value = "ask")]
+    pub tcp_connections: SocketMode,
 
     /// Replace all embedded HTTP URLs with HTTPS.
     #[clap(long, action)]

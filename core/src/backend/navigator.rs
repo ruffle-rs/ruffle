@@ -29,7 +29,7 @@ pub enum NavigationMethod {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum SocketMode {
     /// Allows movies to connect to any host using sockets.
-    Unrestricted,
+    Allow,
 
     /// Refuse all socket connection requests
     Deny,
