@@ -124,6 +124,7 @@ extern "C" {
     fn is_virtual_keyboard_focused(this: &JavascriptPlayer) -> bool;
 }
 
+#[derive(Clone)]
 struct JavascriptInterface {
     js_player: JavascriptPlayer,
 }
@@ -558,8 +559,10 @@ impl Ruffle {
 
         // Create the external interface.
         if allow_script_access && allow_networking == NetworkingAccessMode::All {
+            let interface = Box::new(JavascriptInterface::new(js_player.clone()));
             builder = builder
-                .with_external_interface(Box::new(JavascriptInterface::new(js_player.clone())));
+                .with_external_interface(interface.clone())
+                .with_fs_commands(interface);
         }
 
         let trace_observer = Rc::new(RefCell::new(JsValue::UNDEFINED));
