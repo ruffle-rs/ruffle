@@ -26,7 +26,10 @@ pub use mixer::*;
 #[cfg(not(feature = "audio"))]
 mod decoders {
     #[derive(Debug, thiserror::Error)]
-    pub enum Error {}
+    pub enum Error {
+        #[error("Too many sounds are playing")]
+        TooManySounds,
+    }
 }
 
 use instant::Duration;

@@ -608,6 +608,40 @@ mod test {
     }
 
     #[test]
+    fn slice_cursor_read() {
+        let buf = Buffer::from(vec![
+            38, 26, 99, 1, 1, 1, 1, 38, 12, 14, 1, 1, 93, 86, 1, 88,
+        ]);
+        let slice = buf.to_full_slice();
+        let mut cursor = slice.as_cursor();
+        let refdata = slice.data();
+
+        let mut data = vec![0; 1];
+
+        for byte in &refdata[..] {
+            let result = cursor.read(&mut data);
+            assert_eq!(result.unwrap(), 1);
+            assert_eq!(data[0], *byte);
+        }
+    }
+
+    #[test]
+    fn slice_cursor_read_all() {
+        let buf = Buffer::from(vec![
+            38, 26, 99, 1, 1, 1, 1, 38, 12, 14, 1, 1, 93, 86, 1, 88,
+        ]);
+        let slice = buf.to_full_slice();
+        let mut cursor = slice.as_cursor();
+        let refdata = slice.data();
+
+        let mut data = vec![0; slice.len() + 32];
+
+        let result = cursor.read(&mut data);
+        assert_eq!(result.unwrap(), slice.len());
+        assert_eq!(&data[..slice.len()], &refdata[..]);
+    }
+
+    #[test]
     fn substream_cursor_read_inside() {
         let buf = Buffer::from(vec![
             38, 26, 99, 1, 1, 1, 1, 38, 12, 14, 1, 1, 93, 86, 1, 88,
