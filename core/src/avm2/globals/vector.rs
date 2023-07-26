@@ -70,8 +70,7 @@ fn class_call<'gc>(
     let this_class = activation.subclass_object().unwrap();
     let value_type = this_class
         .as_class_params()
-        .ok_or("Cannot convert to Vector")? // technically unreachable
-        .unwrap_or(activation.avm2().classes().object);
+        .ok_or("Cannot convert to unparametrized Vector")?; // technically unreachable
 
     let arg = args.get(0).cloned().unwrap();
     let arg = arg.as_object().ok_or("Cannot convert to Vector")?;
@@ -87,11 +86,15 @@ fn class_call<'gc>(
     let mut new_storage = VectorStorage::new(0, false, value_type, activation);
     new_storage.reserve_exact(length as usize);
 
+    let value_type_for_coercion = new_storage
+        .value_type_for_coercion(activation)
+        .inner_class_definition();
+
     let mut iter = ArrayIter::new(activation, arg)?;
 
     while let Some(r) = iter.next(activation) {
         let (_, item) = r?;
-        let coerced_item = item.coerce_to_type(activation, value_type.inner_class_definition())?;
+        let coerced_item = item.coerce_to_type(activation, value_type_for_coercion)?;
         new_storage.push(coerced_item, activation)?;
     }
 
@@ -240,7 +243,9 @@ pub fn concat<'gc>(
         return Err("Not a vector-structured object".into());
     };
 
-    let val_class = new_vector_storage.value_type().inner_class_definition();
+    let val_class = new_vector_storage
+        .value_type_for_coercion(activation)
+        .inner_class_definition();
 
     for arg in args {
         let arg_obj = arg
@@ -437,8 +442,7 @@ pub fn filter<'gc>(
         .instance_of()
         .unwrap()
         .as_class_params()
-        .ok_or("Cannot filter unparameterized vector")?
-        .unwrap_or(activation.avm2().classes().object);
+        .ok_or("Cannot filter unparameterized vector")?; // technically unreachable
     let mut new_storage = VectorStorage::new(0, false, value_type, activation);
     let mut iter = ArrayIter::new(activation, this)?;
 
@@ -567,17 +571,18 @@ pub fn map<'gc>(
         .instance_of()
         .unwrap()
         .as_class_params()
-        .ok_or("Cannot filter unparameterized vector")?
-        .unwrap_or(activation.avm2().classes().object);
+        .ok_or("Cannot filter unparameterized vector")?; // technically unreachable
     let mut new_storage = VectorStorage::new(0, false, value_type, activation);
+    let value_type_for_coercion = new_storage
+        .value_type_for_coercion(activation)
+        .inner_class_definition();
     let mut iter = ArrayIter::new(activation, this)?;
 
     while let Some(r) = iter.next(activation) {
         let (i, item) = r?;
 
         let new_item = callback.call(receiver, &[item, i.into(), this.into()], activation)?;
-        let coerced_item =
-            new_item.coerce_to_type(activation, value_type.inner_class_definition())?;
+        let coerced_item = new_item.coerce_to_type(activation, value_type_for_coercion)?;
 
         new_storage.push(coerced_item, activation)?;
     }
@@ -605,7 +610,9 @@ pub fn push<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
-        let value_type = vs.value_type().inner_class_definition();
+        let value_type = vs
+            .value_type_for_coercion(activation)
+            .inner_class_definition();
 
         for arg in args {
             let coerced_arg = arg.coerce_to_type(activation, value_type)?;
@@ -639,7 +646,9 @@ pub fn unshift<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
-        let value_type = vs.value_type().inner_class_definition();
+        let value_type = vs
+            .value_type_for_coercion(activation)
+            .inner_class_definition();
 
         for arg in args.iter().rev() {
             let coerced_arg = arg.coerce_to_type(activation, value_type)?;
@@ -665,7 +674,9 @@ pub fn insert_at<'gc>(
             .cloned()
             .unwrap_or(Value::Undefined)
             .coerce_to_i32(activation)?;
-        let value_type = vs.value_type().inner_class_definition();
+        let value_type = vs
+            .value_type_for_coercion(activation)
+            .inner_class_definition();
         let value = args
             .get(1)
             .cloned()
@@ -850,6 +861,9 @@ pub fn splice<'gc>(
             .unwrap_or(Value::Undefined)
             .coerce_to_i32(activation)?;
         let value_type = vs.value_type();
+        let value_type_for_coercion = vs
+            .value_type_for_coercion(activation)
+            .inner_class_definition();
 
         let start = vs.clamp_parameter_index(start_len);
         let end = max(
@@ -866,7 +880,7 @@ pub fn splice<'gc>(
         let mut to_coerce = Vec::new();
 
         for value in args[2..].iter() {
-            to_coerce.push(value.coerce_to_type(activation, value_type.inner_class_definition())?);
+            to_coerce.push(value.coerce_to_type(activation, value_type_for_coercion)?);
         }
 
         let new_vs =
