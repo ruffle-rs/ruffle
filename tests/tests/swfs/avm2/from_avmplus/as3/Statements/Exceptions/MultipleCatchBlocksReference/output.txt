@@ -1,0 +1,1 @@
+Testing catch block with Reference Error PASSED!
