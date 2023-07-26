@@ -489,7 +489,7 @@ impl<'gc> Avm1<'gc> {
             }
         }
 
-        // Fire "onLoadInit" events.
+        // Fire "onLoadInit" events and remove completed movie loaders.
         context
             .load_manager
             .movie_clip_on_load(context.action_queue);

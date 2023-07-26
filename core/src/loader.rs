@@ -211,8 +211,12 @@ impl<'gc> LoadManager<'gc> {
     /// Add a new loader to the `LoadManager`.
     ///
     /// Returns the loader handle for later inspection. A loader handle is
-    /// valid for as long as the load operation. Once the load finishes,
-    /// the handle will be invalidated (and the underlying loader deleted).
+    /// valid for as long as the load operation.
+    ///
+    /// After the load finishes, the loader should be removed (and the handle
+    /// invalidated). This can be done with remove_loader.
+    /// Movie loaders are removed automatically after the loader status is set
+    /// accordingly.
     pub fn add_loader(&mut self, loader: Loader<'gc>) -> Handle {
         let handle = self.0.insert(loader);
         match self.get_loader_mut(handle).unwrap() {
@@ -227,6 +231,12 @@ impl<'gc> LoadManager<'gc> {
             | Loader::MovieUnloader { self_handle, .. } => *self_handle = Some(handle),
         }
         handle
+    }
+
+    /// Remove a completed loader.
+    /// This is used to remove a loader after the loading or unloading process has completed.
+    pub fn remove_loader(&mut self, handle: Handle) {
+        self.0.remove(handle);
     }
 
     /// Retrieve a loader by handle.
@@ -303,9 +313,10 @@ impl<'gc> LoadManager<'gc> {
         loader.movie_loader_bytes(player, bytes)
     }
 
-    /// Indicates that a movie clip has initialized (ran its first frame).
+    /// Fires the `onLoad` listener event for every MovieClip that has been
+    /// initialized (ran its first frame).
     ///
-    /// Interested loaders will be invoked from here.
+    /// This also removes all movie loaders that have completed.
     pub fn movie_clip_on_load(&mut self, queue: &mut ActionQueue<'gc>) {
         let mut invalidated_loaders = vec![];
 
