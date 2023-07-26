@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::num::NonZeroU64;
+use std::sync::OnceLock;
 use std::{borrow::Cow, cell::Cell, sync::Arc};
 
 use indexmap::IndexMap;
@@ -15,13 +16,14 @@ use ruffle_render::{
 use wgpu::util::StagingBelt;
 use wgpu::{
     BindGroupEntry, BindingResource, BlendComponent, BufferDescriptor, BufferUsages,
-    ColorTargetState, ColorWrites, CommandEncoder, FrontFace, ImageCopyTexture,
-    RenderPipelineDescriptor, SamplerBindingType, ShaderModuleDescriptor, TextureDescriptor,
-    TextureFormat, TextureView, VertexState,
+    ColorTargetState, ColorWrites, CommandEncoder, FrontFace, ImageCopyTexture, PipelineLayout,
+    RenderPipeline, RenderPipelineDescriptor, SamplerBindingType, ShaderModuleDescriptor,
+    TextureDescriptor, TextureFormat, TextureView, VertexState,
 };
 
 use crate::filters::{FilterSource, VERTEX_BUFFERS_DESCRIPTION_FILTERS};
 use crate::raw_texture_as_texture;
+use crate::utils::SampleCountMap;
 use crate::{
     as_texture, backend::WgpuRenderBackend, descriptors::Descriptors, target::RenderTarget, Texture,
 };
@@ -29,7 +31,10 @@ use crate::{
 #[derive(Debug)]
 pub struct PixelBenderWgpuShader {
     bind_group_layout: wgpu::BindGroupLayout,
-    pipeline: wgpu::RenderPipeline,
+    pipeline_layout: PipelineLayout,
+    pipelines: SampleCountMap<OnceLock<RenderPipeline>>,
+    vertex_shader: wgpu::ShaderModule,
+    fragment_shader: wgpu::ShaderModule,
     shader: PixelBenderShader,
     float_parameters_buffer: wgpu::Buffer,
     float_parameters_buffer_size: u64,
@@ -37,6 +42,50 @@ pub struct PixelBenderWgpuShader {
     int_parameters_buffer_size: u64,
     zeroed_out_of_range_mode: wgpu::Buffer,
     staging_belt: RefCell<StagingBelt>,
+}
+
+impl PixelBenderWgpuShader {
+    /// Gets a `RenderPipeline` for the specified sample count
+    fn get_pipeline(&self, descriptors: &Descriptors, samples: u32) -> &wgpu::RenderPipeline {
+        self.pipelines.get_or_init(samples, || {
+            descriptors
+                .device
+                .create_render_pipeline(&RenderPipelineDescriptor {
+                    label: create_debug_label!("PixelBender shader pipeline").as_deref(),
+                    layout: Some(&self.pipeline_layout),
+                    vertex: VertexState {
+                        module: &self.vertex_shader,
+                        entry_point: naga_pixelbender::VERTEX_SHADER_ENTRYPOINT,
+                        buffers: &VERTEX_BUFFERS_DESCRIPTION_FILTERS,
+                    },
+                    fragment: Some(wgpu::FragmentState {
+                        module: &self.fragment_shader,
+                        entry_point: naga_pixelbender::FRAGMENT_SHADER_ENTRYPOINT,
+                        targets: &[Some(ColorTargetState {
+                            format: TextureFormat::Rgba8Unorm,
+                            // FIXME - what should this be?
+                            blend: Some(wgpu::BlendState {
+                                color: BlendComponent::OVER,
+                                alpha: BlendComponent::OVER,
+                            }),
+                            write_mask: ColorWrites::all(),
+                        })],
+                    }),
+                    primitive: wgpu::PrimitiveState {
+                        front_face: FrontFace::Ccw,
+                        cull_mode: None,
+                        ..Default::default()
+                    },
+                    depth_stencil: None,
+                    multisample: wgpu::MultisampleState {
+                        count: samples,
+                        mask: !0,
+                        alpha_to_coverage_enabled: false,
+                    },
+                    multiview: Default::default(),
+                })
+        })
+    }
 }
 
 impl PixelBenderShaderImpl for PixelBenderWgpuShader {
@@ -187,47 +236,13 @@ impl PixelBenderWgpuShader {
                 source: wgpu::ShaderSource::Naga(Cow::Owned(shaders.fragment)),
             });
 
-        let pipeline = descriptors
-            .device
-            .create_render_pipeline(&RenderPipelineDescriptor {
-                label: create_debug_label!("RenderPipeline").as_deref(),
-                layout: Some(&pipeline_layout),
-                vertex: VertexState {
-                    module: &vertex_shader,
-                    entry_point: naga_pixelbender::VERTEX_SHADER_ENTRYPOINT,
-                    buffers: &VERTEX_BUFFERS_DESCRIPTION_FILTERS,
-                },
-                fragment: Some(wgpu::FragmentState {
-                    module: &fragment_shader,
-                    entry_point: naga_pixelbender::FRAGMENT_SHADER_ENTRYPOINT,
-                    targets: &[Some(ColorTargetState {
-                        format: TextureFormat::Rgba8Unorm,
-                        // FIXME - what should this be?
-                        blend: Some(wgpu::BlendState {
-                            color: BlendComponent::OVER,
-                            alpha: BlendComponent::OVER,
-                        }),
-                        write_mask: ColorWrites::all(),
-                    })],
-                }),
-                primitive: wgpu::PrimitiveState {
-                    front_face: FrontFace::Ccw,
-                    cull_mode: None,
-                    ..Default::default()
-                },
-                depth_stencil: None,
-                multisample: wgpu::MultisampleState {
-                    count: 1,
-                    mask: !0,
-                    alpha_to_coverage_enabled: false,
-                },
-                multiview: Default::default(),
-            });
-
         PixelBenderWgpuShader {
             bind_group_layout,
-            pipeline,
+            pipeline_layout,
+            pipelines: Default::default(),
             shader,
+            vertex_shader,
+            fragment_shader,
             float_parameters_buffer,
             float_parameters_buffer_size: shaders.float_parameters_buffer_size,
             int_parameters_buffer,
@@ -270,6 +285,7 @@ pub(super) fn run_pixelbender_shader_impl(
     target: &wgpu::Texture,
     render_command_encoder: &mut CommandEncoder,
     color_attachment: Option<wgpu::RenderPassColorAttachment>,
+    sample_count: u32,
     // FIXME - do we cover the whole source or the whole dest?
     source: &FilterSource,
 ) -> Result<(), BitmapError> {
@@ -536,13 +552,15 @@ pub(super) fn run_pixelbender_shader_impl(
 
     let vertices = source.vertices(&descriptors.device);
 
+    let pipeline = compiled_shader.get_pipeline(descriptors, sample_count);
+
     let mut render_pass = render_command_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
         label: Some("PixelBender render pass"),
         color_attachments: &[color_attachment],
         depth_stencil_attachment: None,
     });
     render_pass.set_bind_group(0, &bind_group, &[]);
-    render_pass.set_pipeline(&compiled_shader.pipeline);
+    render_pass.set_pipeline(pipeline);
 
     render_pass.set_vertex_buffer(0, vertices.slice(..));
     render_pass.set_index_buffer(

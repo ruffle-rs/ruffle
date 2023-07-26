@@ -10,7 +10,7 @@ use ruffle_render::bitmap::{
     Bitmap, BitmapFormat, BitmapHandle, BitmapHandleImpl, BitmapSource, PixelRegion, PixelSnapping,
     SyncHandle,
 };
-use ruffle_render::commands::{CommandHandler, CommandList};
+use ruffle_render::commands::{CommandHandler, CommandList, RenderBlendMode};
 use ruffle_render::error::Error as BitmapError;
 use ruffle_render::quality::StageQuality;
 use ruffle_render::shape_utils::{DistilledShape, GradientType};
@@ -137,7 +137,7 @@ pub struct WebGlRenderBackend {
     is_transparent: bool,
 
     active_program: *const ShaderProgram,
-    blend_modes: Vec<BlendMode>,
+    blend_modes: Vec<RenderBlendMode>,
     mult_color: Option<[f32; 4]>,
     add_color: Option<[f32; 4]>,
 
@@ -318,7 +318,7 @@ impl WebGlRenderBackend {
             viewport_scale_factor: 1.0,
         };
 
-        renderer.push_blend_mode(BlendMode::Normal);
+        renderer.push_blend_mode(RenderBlendMode::Builtin(BlendMode::Normal));
 
         let mut color_quad_mesh = renderer.build_quad_mesh(&renderer.color_program)?;
         let mut bitmap_quad_mesh = renderer.build_quad_mesh(&renderer.bitmap_program)?;
@@ -754,17 +754,17 @@ impl WebGlRenderBackend {
         }
     }
 
-    fn apply_blend_mode(&mut self, mode: BlendMode) {
+    fn apply_blend_mode(&mut self, mode: RenderBlendMode) {
         let (blend_op, src_rgb, dst_rgb) = match mode {
-            BlendMode::Normal => {
+            RenderBlendMode::Builtin(BlendMode::Normal) => {
                 // src + (1-a)
                 (Gl::FUNC_ADD, Gl::ONE, Gl::ONE_MINUS_SRC_ALPHA)
             }
-            BlendMode::Add => {
+            RenderBlendMode::Builtin(BlendMode::Add) => {
                 // src + dst
                 (Gl::FUNC_ADD, Gl::ONE, Gl::ONE)
             }
-            BlendMode::Subtract => {
+            RenderBlendMode::Builtin(BlendMode::Subtract) => {
                 // dst - src
                 (Gl::FUNC_REVERSE_SUBTRACT, Gl::ONE, Gl::ONE)
             }
@@ -894,20 +894,29 @@ impl WebGlRenderBackend {
         }
     }
 
-    fn push_blend_mode(&mut self, blend: BlendMode) {
-        if self.blend_modes.last() != Some(&blend) {
-            self.apply_blend_mode(blend);
+    fn push_blend_mode(&mut self, blend: RenderBlendMode) {
+        if !same_blend_mode(self.blend_modes.last(), &blend) {
+            self.apply_blend_mode(blend.clone());
         }
         self.blend_modes.push(blend);
     }
-
     fn pop_blend_mode(&mut self) {
         let old = self.blend_modes.pop();
         // We never pop our base 'BlendMode::Normal'
-        let current = *self.blend_modes.last().unwrap_or(&BlendMode::Normal);
-        if old != Some(current) {
-            self.apply_blend_mode(current);
+        let current = self
+            .blend_modes
+            .last()
+            .unwrap_or(&RenderBlendMode::Builtin(BlendMode::Normal));
+        if !same_blend_mode(old.as_ref(), current) {
+            self.apply_blend_mode(current.clone());
         }
+    }
+}
+
+fn same_blend_mode(first: Option<&RenderBlendMode>, second: &RenderBlendMode) -> bool {
+    match (first, second) {
+        (Some(RenderBlendMode::Builtin(old)), RenderBlendMode::Builtin(new)) => old == new,
+        _ => false,
     }
 }
 
@@ -1498,7 +1507,7 @@ impl CommandHandler for WebGlRenderBackend {
         self.mask_state_dirty = true;
     }
 
-    fn blend(&mut self, commands: CommandList, blend: BlendMode) {
+    fn blend(&mut self, commands: CommandList, blend: RenderBlendMode) {
         self.push_blend_mode(blend);
         commands.execute(self);
         self.pop_blend_mode();

@@ -8,7 +8,7 @@ use ruffle_render::backend::{
 use ruffle_render::bitmap::{
     Bitmap, BitmapHandle, BitmapHandleImpl, BitmapSource, PixelRegion, PixelSnapping, SyncHandle,
 };
-use ruffle_render::commands::{CommandHandler, CommandList};
+use ruffle_render::commands::{CommandHandler, CommandList, RenderBlendMode};
 use ruffle_render::error::Error;
 use ruffle_render::matrix::Matrix;
 use ruffle_render::quality::StageQuality;
@@ -34,7 +34,7 @@ pub struct WebCanvasRenderBackend {
     viewport_height: u32,
     rect: Path2d,
     mask_state: MaskState,
-    blend_modes: Vec<BlendMode>,
+    blend_modes: Vec<RenderBlendMode>,
 
     // This is currnetly unused - we just store it to report
     // in `get_viewport_dimensions`
@@ -301,7 +301,7 @@ impl WebCanvasRenderBackend {
             viewport_scale_factor: 1.0,
             rect,
             mask_state: MaskState::DrawContent,
-            blend_modes: vec![BlendMode::Normal],
+            blend_modes: vec![RenderBlendMode::Builtin(BlendMode::Normal)],
         };
         Ok(renderer)
     }
@@ -359,26 +359,27 @@ impl WebCanvasRenderBackend {
         self.context.set_global_alpha(1.0);
     }
 
-    fn apply_blend_mode(&mut self, blend: BlendMode) {
+    fn apply_blend_mode(&mut self, blend: RenderBlendMode) {
         // TODO: Objects with a blend mode need to be rendered to an intermediate buffer first,
         // but for now we render each child directly to the canvas. This should look reasonable for most
         // common cases.
         // While canvas has built in support for most of the blend modes, a few aren't supported.
         let mode = match blend {
-            BlendMode::Normal => "source-over",
-            BlendMode::Layer => "source-over", // Requires intermediate buffer.
-            BlendMode::Multiply => "multiply",
-            BlendMode::Screen => "screen",
-            BlendMode::Lighten => "lighten",
-            BlendMode::Darken => "darken",
-            BlendMode::Difference => "difference",
-            BlendMode::Add => "lighter",
-            BlendMode::Subtract => "difference", // Not exposed by canvas, rendered as difference.
-            BlendMode::Invert => "source-over",  // Not exposed by canvas.
-            BlendMode::Alpha => "source-over",   // Requires intermediate buffer.
-            BlendMode::Erase => "source-over",   // Requires intermediate buffer.
-            BlendMode::Overlay => "overlay",
-            BlendMode::HardLight => "hard-light",
+            RenderBlendMode::Builtin(BlendMode::Normal) => "source-over",
+            RenderBlendMode::Builtin(BlendMode::Layer) => "source-over", // Requires intermediate buffer.
+            RenderBlendMode::Builtin(BlendMode::Multiply) => "multiply",
+            RenderBlendMode::Builtin(BlendMode::Screen) => "screen",
+            RenderBlendMode::Builtin(BlendMode::Lighten) => "lighten",
+            RenderBlendMode::Builtin(BlendMode::Darken) => "darken",
+            RenderBlendMode::Builtin(BlendMode::Difference) => "difference",
+            RenderBlendMode::Builtin(BlendMode::Add) => "lighter",
+            RenderBlendMode::Builtin(BlendMode::Subtract) => "difference", // Not exposed by canvas, rendered as difference.
+            RenderBlendMode::Builtin(BlendMode::Invert) => "source-over",  // Not exposed by canvas.
+            RenderBlendMode::Builtin(BlendMode::Alpha) => "source-over", // Requires intermediate buffer.
+            RenderBlendMode::Builtin(BlendMode::Erase) => "source-over", // Requires intermediate buffer.
+            RenderBlendMode::Builtin(BlendMode::Overlay) => "overlay",
+            RenderBlendMode::Builtin(BlendMode::HardLight) => "hard-light",
+            RenderBlendMode::Shader(_) => "source-over", // Canvas does not support shaders
         };
         self.context
             .set_global_composite_operation(mode)
@@ -407,9 +408,9 @@ impl WebCanvasRenderBackend {
         self.mask_state = MaskState::DrawContent;
     }
 
-    fn push_blend_mode(&mut self, blend: BlendMode) {
-        if Some(&blend) != self.blend_modes.last() {
-            self.apply_blend_mode(blend);
+    fn push_blend_mode(&mut self, blend: RenderBlendMode) {
+        if !same_blend_mode(self.blend_modes.last(), &blend) {
+            self.apply_blend_mode(blend.clone());
         }
         self.blend_modes.push(blend);
     }
@@ -417,9 +418,12 @@ impl WebCanvasRenderBackend {
     fn pop_blend_mode(&mut self) {
         let old = self.blend_modes.pop();
         // We should never pop our base 'BlendMode::Normal'
-        let current = *self.blend_modes.last().unwrap_or(&BlendMode::Normal);
-        if old != Some(current) {
-            self.apply_blend_mode(current);
+        let current = self
+            .blend_modes
+            .last()
+            .unwrap_or(&RenderBlendMode::Builtin(BlendMode::Normal));
+        if !same_blend_mode(old.as_ref(), current) {
+            self.apply_blend_mode(current.clone());
         }
     }
 }
@@ -797,7 +801,7 @@ impl CommandHandler for WebCanvasRenderBackend {
         }
     }
 
-    fn blend(&mut self, commands: CommandList, blend: BlendMode) {
+    fn blend(&mut self, commands: CommandList, blend: RenderBlendMode) {
         self.push_blend_mode(blend);
         commands.execute(self);
         self.pop_blend_mode();
@@ -1280,5 +1284,12 @@ impl MatrixExt for swf::Matrix {
             .as_mut_slice(),
         )
         .expect("DomMatrix constructor must succeed")
+    }
+}
+
+fn same_blend_mode(first: Option<&RenderBlendMode>, second: &RenderBlendMode) -> bool {
+    match (first, second) {
+        (Some(RenderBlendMode::Builtin(old)), RenderBlendMode::Builtin(new)) => old == new,
+        _ => false,
     }
 }

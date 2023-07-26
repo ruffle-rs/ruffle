@@ -4,11 +4,14 @@ pub mod target;
 use crate::backend::RenderTargetMode;
 use crate::blend::ComplexBlend;
 use crate::buffer_pool::TexturePool;
+use crate::filters::FilterSource;
 use crate::mesh::Mesh;
+use crate::pixel_bender::{run_pixelbender_shader_impl, ShaderMode};
 use crate::surface::commands::{chunk_blends, Chunk, CommandRenderer};
 use crate::utils::{remove_srgb, supported_sample_count};
 use crate::{ColorAdjustments, Descriptors, MaskState, Pipelines, Transforms, UniformBuffer};
 use ruffle_render::commands::CommandList;
+use ruffle_render::pixel_bender::{ImageInputTexture, PixelBenderShaderArgument};
 use ruffle_render::quality::StageQuality;
 use std::sync::Arc;
 use target::CommandTarget;
@@ -17,6 +20,8 @@ use tracing::instrument;
 use crate::utils::run_copy_pipeline;
 
 pub use crate::surface::commands::LayerRef;
+
+use self::commands::ChunkBlendMode;
 
 #[derive(Debug)]
 pub struct Surface {
@@ -185,16 +190,50 @@ impl Surface {
                     num_masks = renderer.num_masks();
                     mask_state = renderer.mask_state();
                 }
-                Chunk::Blend(texture, blend_mode, needs_depth) => {
+                Chunk::Blend(texture, ChunkBlendMode::Shader(shader), needs_depth) => {
+                    assert!(!needs_depth, "Shader blend should not need depth buffer");
+                    let parent_blend_buffer =
+                        target.update_blend_buffer(descriptors, texture_pool, draw_encoder);
+                    run_pixelbender_shader_impl(
+                        descriptors,
+                        shader,
+                        ShaderMode::Filter,
+                        &[
+                            PixelBenderShaderArgument::ImageInput {
+                                index: 0,
+                                channels: 0xFF,
+                                name: "background".to_string(),
+                                texture: Some(ImageInputTexture::TextureRef(
+                                    parent_blend_buffer.texture(),
+                                )),
+                            },
+                            PixelBenderShaderArgument::ImageInput {
+                                index: 1,
+                                channels: 0xff,
+                                name: "foreground".to_string(),
+                                texture: Some(ImageInputTexture::TextureRef(texture.texture())),
+                            },
+                        ],
+                        parent_blend_buffer.texture(),
+                        draw_encoder,
+                        target.color_attachments(),
+                        target.sample_count(),
+                        &FilterSource::for_entire_texture(texture.texture()),
+                    )
+                    .expect("Failed to run PixelBender blend mode");
+                }
+                Chunk::Blend(texture, ChunkBlendMode::Complex(blend_mode), needs_depth) => {
                     let parent = match blend_mode {
-                        ComplexBlend::Alpha | ComplexBlend::Erase => match nearest_layer {
-                            LayerRef::None => {
-                                // An Alpha or Erase with no Layer above it should be ignored
-                                continue;
+                        ComplexBlend::Alpha | ComplexBlend::Erase => {
+                            match nearest_layer {
+                                LayerRef::None => {
+                                    // An Alpha or Erase with no Layer above it should be ignored
+                                    continue;
+                                }
+                                LayerRef::Current => &target,
+                                LayerRef::Parent(layer) => layer,
                             }
-                            LayerRef::Current => &target,
-                            LayerRef::Parent(layer) => layer,
-                        },
+                        }
                         _ => &target,
                     };
 

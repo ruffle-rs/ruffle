@@ -1,6 +1,7 @@
 use crate::backend::ShapeHandle;
 use crate::bitmap::{BitmapHandle, PixelSnapping};
 use crate::matrix::Matrix;
+use crate::pixel_bender::PixelBenderShaderHandle;
 use crate::transform::Transform;
 use swf::{BlendMode, Color};
 
@@ -20,7 +21,17 @@ pub trait CommandHandler {
     fn deactivate_mask(&mut self);
     fn pop_mask(&mut self);
 
-    fn blend(&mut self, commands: CommandList, blend_mode: BlendMode);
+    fn blend(&mut self, commands: CommandList, blend_mode: RenderBlendMode);
+}
+
+/// Holds either a normal BlendMode, or the shader for BlendMode.SHADER.
+/// We cannot store the `PixelBenderShaderHandle` directly in `ExtendedBlendMode`,
+/// since we need to remember the shader even if the blend mode is changed
+/// to something else (so that the shader will still be used if we switch back)
+#[derive(Debug, Clone)]
+pub enum RenderBlendMode {
+    Builtin(BlendMode),
+    Shader(PixelBenderShaderHandle),
 }
 
 #[derive(Debug, Default, Clone)]
@@ -141,7 +152,7 @@ impl CommandHandler for CommandList {
     }
 
     #[inline]
-    fn blend(&mut self, commands: CommandList, blend_mode: BlendMode) {
+    fn blend(&mut self, commands: CommandList, blend_mode: RenderBlendMode) {
         if self.maskers_in_progress <= 1 {
             self.commands.push(Command::Blend(commands, blend_mode));
         }
@@ -172,5 +183,5 @@ pub enum Command {
     ActivateMask,
     DeactivateMask,
     PopMask,
-    Blend(CommandList, BlendMode),
+    Blend(CommandList, RenderBlendMode),
 }

@@ -73,6 +73,12 @@ pub enum PoolOrArcTexture {
 }
 
 impl PoolOrArcTexture {
+    pub fn texture(&self) -> &wgpu::Texture {
+        match self {
+            PoolOrArcTexture::Pool(ref texture) => &texture.0,
+            PoolOrArcTexture::Manual(ref texture) => &texture.0,
+        }
+    }
     pub fn view(&self) -> &wgpu::TextureView {
         match self {
             PoolOrArcTexture::Pool(ref texture) => &texture.1,
@@ -365,6 +371,10 @@ impl CommandTarget {
         })
     }
 
+    pub fn sample_count(&self) -> u32 {
+        self.sample_count
+    }
+
     pub fn depth_attachment(
         &self,
         descriptors: &Descriptors,
@@ -402,7 +412,9 @@ impl CommandTarget {
                 descriptors,
                 self.size,
                 self.format,
-                wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+                wgpu::TextureUsages::TEXTURE_BINDING
+                    | wgpu::TextureUsages::COPY_DST
+                    | wgpu::TextureUsages::COPY_SRC,
                 pool,
             )
         });
