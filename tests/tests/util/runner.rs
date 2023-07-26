@@ -239,13 +239,18 @@ pub fn run_swf(
 
     // Render the image to disk
     // FIXME: Determine how we want to compare against on on-disk image
-    #[cfg(feature = "imgtests")]
+    #[allow(unused_variables)]
     if let Some(image_comparison) = &test.options.image_comparison {
+        #[allow(unused_mut)]
+        let mut checked_image = false;
+
+        #[cfg(feature = "imgtests")]
         if crate::util::environment::wgpu_descriptors().is_some() {
             use anyhow::Context;
             use ruffle_render_wgpu::backend::WgpuRenderBackend;
             use ruffle_render_wgpu::target::TextureTarget;
 
+            checked_image = true;
             let mut player_lock = player.lock().unwrap();
             player_lock.render();
             let renderer = player_lock
@@ -272,6 +277,14 @@ pub fn run_swf(
                 // If we're expecting this to be wrong, don't save a likely wrong image
                 actual_image.save(expected_image_path)?;
             }
+        }
+
+        if test.options.known_failure && !checked_image {
+            // It's possible that the trace output matched but the image might not.
+            // If we aren't checking the image, pretend the match failed (which makes it actually pass, since it's expecting failure).
+            return Err(anyhow!(
+                "Not checking images, pretending this failed since we don't know if it worked."
+            ));
         }
     }
 
