@@ -22,6 +22,7 @@ pub struct TestOptions {
     pub sleep_to_meet_frame_rate: bool,
     pub image_comparison: Option<ImageComparison>,
     pub ignore: bool,
+    pub known_failure: bool,
     pub approximations: Option<Approximations>,
     pub player_options: PlayerOptions,
     pub log_fetch: bool,
@@ -37,6 +38,7 @@ impl Default for TestOptions {
             sleep_to_meet_frame_rate: false,
             image_comparison: None,
             ignore: false,
+            known_failure: false,
             approximations: None,
             player_options: PlayerOptions::default(),
             log_fetch: false,
@@ -197,15 +199,21 @@ impl ImageComparison {
         expected_image: image::RgbaImage,
         test_path: &Path,
         adapter_info: wgpu::AdapterInfo,
+        known_failure: bool,
     ) -> Result<()> {
         use anyhow::Context;
 
         let suffix = format!("{}-{:?}", std::env::consts::OS, adapter_info.backend);
 
         let save_actual_image = || {
-            actual_image
-                .save(test_path.join(format!("actual-{suffix}.png")))
-                .context("Couldn't save actual image")
+            if !known_failure {
+                // If we're expecting failure, spamming files isn't productive.
+                actual_image
+                    .save(test_path.join(format!("actual-{suffix}.png")))
+                    .context("Couldn't save actual image")
+            } else {
+                Ok(())
+            }
         };
 
         if actual_image.width() != expected_image.width()
@@ -267,14 +275,17 @@ impl ImageComparison {
                 difference_color.extend_from_slice(&p[..3]);
             }
 
-            image::RgbImage::from_raw(
-                actual_image.width(),
-                actual_image.height(),
-                difference_color,
-            )
-            .context("Couldn't create color difference image")?
-            .save(test_path.join(format!("difference-color-{suffix}.png")))
-            .context("Couldn't save color difference image")?;
+            if !known_failure {
+                // If we're expecting failure, spamming files isn't productive.
+                image::RgbImage::from_raw(
+                    actual_image.width(),
+                    actual_image.height(),
+                    difference_color,
+                )
+                .context("Couldn't create color difference image")?
+                .save(test_path.join(format!("difference-color-{suffix}.png")))
+                .context("Couldn't save color difference image")?;
+            }
 
             if is_alpha_different {
                 let mut difference_alpha = Vec::with_capacity(
@@ -284,14 +295,17 @@ impl ImageComparison {
                     difference_alpha.push(p[3])
                 }
 
-                image::GrayImage::from_raw(
-                    actual_image.width(),
-                    actual_image.height(),
-                    difference_alpha,
-                )
-                .context("Couldn't create alpha difference image")?
-                .save(test_path.join(format!("difference-alpha-{suffix}.png")))
-                .context("Couldn't save alpha difference image")?;
+                if !known_failure {
+                    // If we're expecting failure, spamming files isn't productive.
+                    image::GrayImage::from_raw(
+                        actual_image.width(),
+                        actual_image.height(),
+                        difference_alpha,
+                    )
+                    .context("Couldn't create alpha difference image")?
+                    .save(test_path.join(format!("difference-alpha-{suffix}.png")))
+                    .context("Couldn't save alpha difference image")?;
+                }
             }
 
             return Err(anyhow!(
