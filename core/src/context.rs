@@ -410,10 +410,6 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
         }
     }
 
-    pub fn is_action_script_3(&self) -> bool {
-        self.swf.is_action_script_3()
-    }
-
     pub fn avm_trace(&self, message: &str) {
         self.log.avm_trace(&message.replace('\r', "\n"));
     }
