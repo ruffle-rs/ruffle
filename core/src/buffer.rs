@@ -403,6 +403,30 @@ impl Substream {
     pub fn buffer(&self) -> &Buffer {
         &self.buf
     }
+
+    pub fn first_chunk(&self) -> Option<Slice> {
+        if let Some((start, end)) = self.chunks.read().unwrap().first() {
+            Some(Slice {
+                buf: self.buf.clone(),
+                start: *start,
+                end: *end,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn last_chunk(&self) -> Option<Slice> {
+        if let Some((start, end)) = self.chunks.read().unwrap().last() {
+            Some(Slice {
+                buf: self.buf.clone(),
+                start: *start,
+                end: *end,
+            })
+        } else {
+            None
+        }
+    }
 }
 
 impl From<Buffer> for Substream {

@@ -382,6 +382,17 @@ impl<'gc> NetStream<'gc> {
         let attached_to = write.attached_to;
         match &mut write.audio_stream {
             Some((substream, audio_handle)) if context.audio.is_sound_playing(*audio_handle) => {
+                if substream
+                    .last_chunk()
+                    .map(|lc| lc.end() > slice.start())
+                    .unwrap_or(false)
+                {
+                    // Reject repeats of existing tags.
+                    // This assumes that tags are processed in-order - which
+                    // should always be the case.
+                    return;
+                }
+
                 let result = match audio_data.data {
                     FlvAudioDataType::Raw(data)
                     | FlvAudioDataType::AacSequenceHeader(data)
@@ -778,6 +789,8 @@ impl<'gc> NetStream<'gc> {
         let end_time = write.stream_time + dt;
         let mut end_of_video = false;
         let mut error = false;
+        let mut max_lookahead_audio_tags = 5;
+        let mut is_lookahead_tag = false;
 
         //At this point we should know our stream type.
         if matches!(write.stream_type, Some(NetStreamType::Flv { .. })) {
@@ -786,10 +799,14 @@ impl<'gc> NetStream<'gc> {
             loop {
                 let tag = FlvTag::parse(&mut reader);
                 if let Err(e) = tag {
-                    if matches!(e, FlvError::EndOfData) {
+                    // `is_lookahead_tag` gets set once we start reading tags
+                    // after the end & won't ever be set back. We don't want
+                    // error states or playback ending to trip until we run
+                    // those tags "for realsies"
+                    if !is_lookahead_tag && matches!(e, FlvError::EndOfData) {
                         //TODO: Check expected total length for streaming / progressive download
                         end_of_video = true;
-                    } else {
+                    } else if !is_lookahead_tag {
                         //Corrupt tag or out of data
                         tracing::error!("FLV tag parsing failed: {}", e);
                         error = true;
@@ -799,12 +816,8 @@ impl<'gc> NetStream<'gc> {
                 }
 
                 let tag = tag.expect("valid tag");
-                if tag.timestamp as f64 >= end_time {
-                    //All tags processed
-                    if let Err(e) = FlvTag::skip_back(&mut reader) {
-                        tracing::error!("FLV skip back failed: {}", e);
-                    }
-
+                is_lookahead_tag = tag.timestamp as f64 >= end_time;
+                if is_lookahead_tag && max_lookahead_audio_tags == 0 {
                     break;
                 }
 
@@ -814,16 +827,20 @@ impl<'gc> NetStream<'gc> {
 
                 match tag.data {
                     FlvTagData::Audio(audio_data) => {
+                        if is_lookahead_tag {
+                            max_lookahead_audio_tags -= 1;
+                        }
+
                         self.flv_audio_tag(context, &mut write, &slice, audio_data)
                     }
-                    FlvTagData::Video(video_data) => self.flv_video_tag(
+                    FlvTagData::Video(video_data) if !is_lookahead_tag => self.flv_video_tag(
                         context,
                         &mut write,
                         &slice,
                         video_data,
                         tag_needs_preloading,
                     ),
-                    FlvTagData::Script(script_data) => {
+                    FlvTagData::Script(script_data) if !is_lookahead_tag => {
                         drop(write);
                         self.flv_script_tag(context, script_data, tag_needs_preloading);
                         write = self.0.write(context.gc_context);
@@ -831,12 +848,16 @@ impl<'gc> NetStream<'gc> {
                     FlvTagData::Invalid(e) => {
                         tracing::error!("FLV data parsing failed: {}", e)
                     }
+                    FlvTagData::Video(_) | FlvTagData::Script(_) => {}
                 }
 
-                write.offset = reader
-                    .stream_position()
-                    .expect("FLV reader stream position") as usize;
-                write.preload_offset = max(write.offset, write.preload_offset);
+                if !is_lookahead_tag {
+                    write.offset = reader
+                        .stream_position()
+                        .expect("FLV reader stream position")
+                        as usize;
+                    write.preload_offset = max(write.offset, write.preload_offset);
+                }
             }
         }
 
