@@ -1,0 +1,2 @@
+Testing Nested try block with multiple catch block inside the fourth catch block of the outer try block PASSED!
+Inner TypeError thrown gets caught PASSED!
