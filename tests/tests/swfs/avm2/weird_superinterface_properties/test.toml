@@ -1,4 +1,4 @@
 num_frames = 1
 # FIXME - match Flash's verification behavior, and fix interface property copying
 # See `ClassObject::link_interfaces` for more details
-ignore = true
+known_failure = true

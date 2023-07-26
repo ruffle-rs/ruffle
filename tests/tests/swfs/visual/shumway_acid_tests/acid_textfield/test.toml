@@ -1,7 +1,7 @@
 # Test adapted from Shumway at https://github.com/mozilla/shumway/tree/master/test/swfs/acid
 
 num_frames = 1
-ignore = true # https://github.com/ruffle-rs/ruffle/issues/12123
+known_failure = true # https://github.com/ruffle-rs/ruffle/issues/12123
 
 [image_comparison]
 tolerance = 0

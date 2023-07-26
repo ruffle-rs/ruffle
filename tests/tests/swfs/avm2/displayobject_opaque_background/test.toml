@@ -1,6 +1,6 @@
 num_frames = 1
 # FIXME - does not rendered correctly
-ignore = true
+known_failure = true
 
 [image_comparison]
 tolerance = 1
