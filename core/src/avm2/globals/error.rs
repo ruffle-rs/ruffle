@@ -6,6 +6,19 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::TObject;
 
+pub fn call_handler<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(activation
+        .avm2()
+        .classes()
+        .error
+        .construct(activation, args)?
+        .into())
+}
+
 pub fn get_stack_trace<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
