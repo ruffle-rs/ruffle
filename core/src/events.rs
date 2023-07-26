@@ -332,6 +332,26 @@ impl<'gc> ClipEvent<'gc> {
             | ClipEvent::MouseUpInside => None,
         }
     }
+    pub const fn has_method_name(self) -> bool {
+        matches!(
+            self,
+            ClipEvent::DragOut { .. }
+                | ClipEvent::DragOver { .. }
+                | ClipEvent::EnterFrame
+                | ClipEvent::KeyDown
+                | ClipEvent::KeyUp
+                | ClipEvent::Load
+                | ClipEvent::MouseDown
+                | ClipEvent::MouseMove
+                | ClipEvent::MouseUp
+                | ClipEvent::Press
+                | ClipEvent::RollOut { .. }
+                | ClipEvent::RollOver { .. }
+                | ClipEvent::Release
+                | ClipEvent::ReleaseOutside
+                | ClipEvent::Unload
+        )
+    }
 }
 
 pub fn method_name_to_clip_event(name: &str) -> Option<ClipEvent<'static>> {

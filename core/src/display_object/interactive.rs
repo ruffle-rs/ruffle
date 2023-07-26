@@ -464,10 +464,7 @@ pub trait TInteractiveObject<'gc>:
             return ClipEventResult::Handled;
         }
 
-        if !event.propagates()
-            || matches!(event, ClipEvent::KeyPress { .. })
-            || self.as_displayobject().has_clip_event(event)
-        {
+        if !event.has_method_name() || self.as_displayobject().has_clip_event(event) {
             self.event_dispatch(context, event)
         } else {
             ClipEventResult::NotHandled
