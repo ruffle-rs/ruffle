@@ -353,8 +353,16 @@ include "flash/text/engine/Kerning.as"
 include "flash/text/engine/LigatureLevel.as"
 include "flash/text/engine/LineJustification.as"
 include "flash/text/engine/RenderingMode.as"
+
+include "flash/text/engine/TextJustifier.as" // TextJustifier needs to come before SpaceJustifier as the latter is a subclass
+include "flash/text/engine/SpaceJustifier.as"
+
 include "flash/text/engine/TabAlignment.as"
+include "flash/text/engine/TabStop.as"
 include "flash/text/engine/TextBaseline.as"
+include "flash/text/engine/TextBlock.as"
+include "flash/text/engine/TextElement.as"
+include "flash/text/engine/TextLine.as"
 include "flash/text/engine/TextLineCreationResult.as"
 include "flash/text/engine/TextLineValidity.as"
 include "flash/text/engine/TextRotation.as"
