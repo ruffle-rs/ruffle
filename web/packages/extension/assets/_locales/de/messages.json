@@ -11,9 +11,6 @@
     "settings_autostart": {
         "message": "Automatisch ohne Splash-Screen abspielen (zum Entstummen klicken)"
     },
-    "settings_warn_on_unsupported_content": {
-        "message": "Bei nicht unterstützten Inhalten warnen"
-    },
     "settings_log_level": {
         "message": "Protokoll-Stufe"
     },

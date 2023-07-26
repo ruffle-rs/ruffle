@@ -11,9 +11,6 @@
     "settings_autostart": {
         "message": "Reprodueix automàticament sense pantalla de benvinguda (feu clic per activar el so)"
     },
-    "settings_warn_on_unsupported_content": {
-        "message": "Mostra un avís en reproduir contingut no suportat"
-    },
     "settings_log_level": {
         "message": "Nivell de registre"
     },

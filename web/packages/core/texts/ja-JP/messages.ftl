@@ -1,4 +1,3 @@
-message-unsupported-avm2 = Ruffleは、このコンテンツで使用されているActionScript3の一部をサポートしていない可能性があり、コンテンツの一部が期待どおりに動作しない場合があります。
 message-cant-embed =
     Ruffleはこのページに埋め込まれた Flash を実行できませんでした。
     別のタブでファイルを開くことで、この問題を解決できるかもしれません。

@@ -1,6 +1,3 @@
-message-unsupported-avm2 =
-    目前Ruffle還沒辦法完整模擬所有的ActionScript 3內容。
-    有些地方還沒辦法正常顯示。
 message-cant-embed =
     目前Ruffle沒辦法執行嵌入式Flash。
     你可以在新分頁中開啟來解決這個問題。

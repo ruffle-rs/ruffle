@@ -1,6 +1,3 @@
-message-unsupported-avm2 =
-    Der Ruffle-Emulator unterstützt möglicherweise noch nicht alle ActionScript 3, die von diesem Inhalt verwendet werden.
-    Einige Teile des Inhalts funktionieren möglicherweise nicht wie erwartet.
 message-cant-embed =
     Ruffle konnte den Flash in dieser Seite nicht ausführen.
     Du kannst versuchen, die Datei in einem separaten Tab zu öffnen, um dieses Problem zu umgehen.

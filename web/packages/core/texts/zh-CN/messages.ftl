@@ -1,6 +1,3 @@
-message-unsupported-avm2 =
-    Ruffle 模拟器可能不完全支持这个内容所使用的所有 ActionScript 3。
-    部分内容可能无法工作
 message-cant-embed =
     Ruffle 无法运行嵌入在此页面中的 Flash。
     您可以尝试在单独的标签页中打开该文件，以回避此问题。

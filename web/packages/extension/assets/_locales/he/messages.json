@@ -11,9 +11,6 @@
     "settings_autostart": {
         "message": "נגן אוטומטית ללא מסך פתיחה (עליך להקיש על מנת לבטל השתקה)"
     },
-    "settings_warn_on_unsupported_content": {
-        "message": "אזהר אם תוכן אינו נתמך"
-    },
     "settings_log_level": {
         "message": "רמת רישום"
     },

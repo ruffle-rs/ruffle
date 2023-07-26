@@ -11,9 +11,6 @@
     "settings_autostart": {
         "message": "Kör automatiskt utan startskärm (klicka sedan för ljud)"
     },
-    "settings_warn_on_unsupported_content": {
-        "message": "Varna för innehåll som inte stöds"
-    },
     "settings_log_level": {
         "message": "Loggnivå"
     },

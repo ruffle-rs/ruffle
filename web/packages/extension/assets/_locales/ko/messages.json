@@ -11,9 +11,6 @@
     "settings_autostart": {
         "message": "시작 화면 없이 자동으로 실행 (이후 클릭하여 음소거 해제)"
     },
-    "settings_warn_on_unsupported_content": {
-        "message": "지원되지 않는 콘텐츠에 대해 경고 표시"
-    },
     "settings_log_level": {
         "message": "로그 수준"
     },

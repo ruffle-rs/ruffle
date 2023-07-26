@@ -25,3 +25,6 @@ help-menu-translate-ruffle = Traducir Ruffle...
 help-menu-about = Sobre Ruffle
 debug-menu = Herramientas de depuración
 debug-menu-open-stage = Ver información de la página
+debug-menu-open-movie = Ver película
+debug-menu-open-movie-list = Mostrar películas conocidas
+debug-menu-search-display-objects = Buscar los objetos de rendimiento...

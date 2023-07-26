@@ -11,9 +11,6 @@
     "settings_autostart": {
         "message": "Redă automat fără ecranul de pornire (apoi apasă pentru a dezactiva)"
     },
-    "settings_warn_on_unsupported_content": {
-        "message": "Avertizare la conținutul neacceptat"
-    },
     "settings_log_level": {
         "message": "Nivel jurnale"
     },
