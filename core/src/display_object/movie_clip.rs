@@ -2438,12 +2438,15 @@ impl<'gc> MovieClip<'gc> {
                 .update(|uc| -> Result<(), loader::Error> {
                     let clip = match uc.load_manager.get_loader(handle) {
                         Some(Loader::MovieUnloader { target_clip, .. }) => *target_clip,
+                        None => return Err(loader::Error::Cancelled),
                         _ => unreachable!(),
                     };
                     if let Some(mc) = clip.as_movie_clip() {
                         mc.avm1_unload(uc);
                         mc.transform_to_unloaded_state(uc);
                     }
+
+                    uc.load_manager.remove_loader(handle);
 
                     Ok(())
                 })?;
