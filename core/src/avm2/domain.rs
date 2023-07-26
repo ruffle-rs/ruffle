@@ -323,7 +323,7 @@ impl<'gc> Domain<'gc> {
         domain_memory: Option<ByteArrayObject<'gc>>,
     ) -> Result<(), Error<'gc>> {
         let mut write = self.0.write(activation.context.gc_context);
-        if let Some(domain_memory) = domain_memory {
+        let memory = if let Some(domain_memory) = domain_memory {
             if domain_memory.storage().len() < MIN_DOMAIN_MEMORY_LENGTH {
                 return Err(Error::AvmError(error(
                     activation,
@@ -331,12 +331,13 @@ impl<'gc> Domain<'gc> {
                     1504,
                 )?));
             }
-        }
-        write.domain_memory = Some(domain_memory.unwrap_or_else(|| {
+            domain_memory
+        } else {
             write
                 .default_domain_memory
                 .expect("Default domain memory not initialized")
-        }));
+        };
+        write.domain_memory = Some(memory);
         Ok(())
     }
 
@@ -369,8 +370,10 @@ impl<'gc> Domain<'gc> {
             "Already initialized domain memory!"
         );
 
-        write.domain_memory = Some(domain_memory.as_bytearray_object().unwrap());
-        write.default_domain_memory = Some(domain_memory.as_bytearray_object().unwrap());
+        let bytearray = domain_memory.as_bytearray_object().unwrap();
+
+        write.domain_memory = Some(bytearray);
+        write.default_domain_memory = Some(bytearray);
 
         Ok(())
     }
