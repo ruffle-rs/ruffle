@@ -12,6 +12,7 @@ use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_wstr::WStr;
 
 use super::class::Class;
+use super::error::error;
 use super::string::AvmString;
 
 /// Represents a set of scripts and movies that share traits across different
@@ -40,7 +41,11 @@ struct DomainData<'gc> {
     /// player globals setup (we need a global domain to put globals into, but
     /// that domain needs the bytearray global)
     pub domain_memory: Option<ByteArrayObject<'gc>>,
+
+    pub default_domain_memory: Option<ByteArrayObject<'gc>>,
 }
+
+const MIN_DOMAIN_MEMORY_LENGTH: usize = 1024;
 
 impl<'gc> Domain<'gc> {
     /// Create a new domain with no parent.
@@ -62,6 +67,7 @@ impl<'gc> Domain<'gc> {
                 classes: PropertyMap::new(),
                 parent,
                 domain_memory: None,
+                default_domain_memory: None,
             },
         ))
     }
@@ -82,6 +88,7 @@ impl<'gc> Domain<'gc> {
                 classes: PropertyMap::new(),
                 parent: Some(parent),
                 domain_memory: None,
+                default_domain_memory: None,
             },
         ));
 
@@ -294,6 +301,15 @@ impl<'gc> Domain<'gc> {
         self.0.write(mc).classes.insert(class.read().name(), class);
     }
 
+    pub fn is_default_domain_memory(&self) -> bool {
+        let read = self.0.read();
+        read.domain_memory.expect("Missing domain memory").as_ptr()
+            == read
+                .default_domain_memory
+                .expect("Missing default domain memory")
+                .as_ptr()
+    }
+
     pub fn domain_memory(&self) -> ByteArrayObject<'gc> {
         self.0
             .read()
@@ -303,10 +319,26 @@ impl<'gc> Domain<'gc> {
 
     pub fn set_domain_memory(
         &self,
-        mc: MutationContext<'gc, '_>,
-        domain_memory: ByteArrayObject<'gc>,
-    ) {
-        self.0.write(mc).domain_memory = Some(domain_memory)
+        activation: &mut Activation<'_, 'gc>,
+        domain_memory: Option<ByteArrayObject<'gc>>,
+    ) -> Result<(), Error<'gc>> {
+        let mut write = self.0.write(activation.context.gc_context);
+        let memory = if let Some(domain_memory) = domain_memory {
+            if domain_memory.storage().len() < MIN_DOMAIN_MEMORY_LENGTH {
+                return Err(Error::AvmError(error(
+                    activation,
+                    "Error #1504: End of file.",
+                    1504,
+                )?));
+            }
+            domain_memory
+        } else {
+            write
+                .default_domain_memory
+                .expect("Default domain memory not initialized")
+        };
+        write.domain_memory = Some(memory);
+        Ok(())
     }
 
     /// Allocate the default domain memory for this domain, if it does not
@@ -325,12 +357,23 @@ impl<'gc> Domain<'gc> {
         domain_memory
             .as_bytearray_mut(activation.context.gc_context)
             .unwrap()
-            .set_length(1024);
+            .set_length(MIN_DOMAIN_MEMORY_LENGTH);
 
         let mut write = self.0.write(activation.context.gc_context);
-        write
-            .domain_memory
-            .get_or_insert(domain_memory.as_bytearray_object().unwrap());
+
+        assert!(
+            write.domain_memory.is_none(),
+            "Already initialized domain memory!"
+        );
+        assert!(
+            write.default_domain_memory.is_none(),
+            "Already initialized domain memory!"
+        );
+
+        let bytearray = domain_memory.as_bytearray_object().unwrap();
+
+        write.domain_memory = Some(bytearray);
+        write.default_domain_memory = Some(bytearray);
 
         Ok(())
     }

@@ -1,5 +1,11 @@
+// ApplicationDomain.currentDomain.domainMemory
+null
+// ApplicationDomain.currentDomain.domainMemory after si8(65, 0)
+null
 // li8(0) after si8(65, 0)
 65
+// ApplicationDomain.currentDomain.domainMemory after li8(0)
+null
 // li8(0) after si8(255, 0)
 255
 // li8(0) after si8(0xFFFFFFFF, 0)
@@ -114,3 +120,14 @@ NaN
 10
 // sxi16(255)
 255
+// si8(42, 0)
+// ApplicationDomain.currentDomain.domainMemory = bytes
+// li8(0) after explicit overwrite
+0
+// si8(45, 0)
+// ApplicationDomain.currentDomain.domainMemory = null
+// li8(0)
+42
+// ApplicationDomain.MIN_DOMAIN_MEMORY_LENGTH
+1024
+Caught error: Error: Error #1504: End of file.
