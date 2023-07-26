@@ -11,9 +11,6 @@
     "settings_autostart": {
         "message": "Automatikus lejátszás indítóképernyő nélkül (majd hang kattintásra)"
     },
-    "settings_warn_on_unsupported_content": {
-        "message": "Figyelmeztessen ha a tartalom nem támogatott"
-    },
     "settings_log_level": {
         "message": "Naplózási szint"
     },

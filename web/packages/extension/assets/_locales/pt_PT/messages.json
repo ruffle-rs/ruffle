@@ -11,9 +11,6 @@
     "settings_autostart": {
         "message": "Reproduzir automaticamente sem ecrã inicial (depois clique para ativar o som)"
     },
-    "settings_warn_on_unsupported_content": {
-        "message": "Avisar em conteúdo não suportado"
-    },
     "settings_log_level": {
         "message": "Nível de registo"
     },

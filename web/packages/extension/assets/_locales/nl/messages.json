@@ -11,9 +11,6 @@
     "settings_autostart": {
         "message": "Automatisch afspelen zonder startscherm (daarna klikken om dempen op te heffen)"
     },
-    "settings_warn_on_unsupported_content": {
-        "message": "Waarschuw bij niet ondersteunde inhoud"
-    },
     "settings_log_level": {
         "message": "Logniveau"
     },

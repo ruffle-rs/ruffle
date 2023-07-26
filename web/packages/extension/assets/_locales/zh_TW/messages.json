@@ -11,9 +11,6 @@
     "settings_autostart": {
         "message": "自動播放(無啟動畫面)"
     },
-    "settings_warn_on_unsupported_content": {
-        "message": "警告未支援項目"
-    },
     "settings_log_level": {
         "message": "日誌層級(用在於開發人員工具裡的主控台)"
     },

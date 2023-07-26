@@ -11,9 +11,6 @@
     "settings_autostart": {
         "message": "Riproduci automaticamente senza schermata iniziale (quindi fai clic per disattivare)"
     },
-    "settings_warn_on_unsupported_content": {
-        "message": "Avviso su contenuti non supportati"
-    },
     "settings_log_level": {
         "message": "Livello di registrazione"
     },

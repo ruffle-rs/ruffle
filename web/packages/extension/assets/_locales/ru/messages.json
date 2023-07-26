@@ -11,9 +11,6 @@
     "settings_autostart": {
         "message": "Воспроизводить автоматически без отображения заставки"
     },
-    "settings_warn_on_unsupported_content": {
-        "message": "Предупреждать о неподдерживаемом контенте"
-    },
     "settings_log_level": {
         "message": "Уровень логирования"
     },

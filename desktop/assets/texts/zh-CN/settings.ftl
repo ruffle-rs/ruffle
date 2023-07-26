@@ -1,6 +1,6 @@
 network-settings = 网络设置
 player-settings = 播放器设置
-movie-parameters = 视频参数
+movie-parameters = 影片参数
 custom-base-url = 自定义基础网址
 spoof-swf-url = SWF 网址欺骗
 proxy = 代理
@@ -46,8 +46,6 @@ scale-mode-noborder = 无边框
 scale-mode-noscale = 无缩放
 scale-mode-showall = 显示全部
 scale-mode-force = 强制
-warn-if-unsupported = 不支持时警告
-warn-if-unsupported-check = 警告
 player-version = 播放器版本
 custom-framerate = 自定义帧率
 custom-framerate-suffix = { " " } fps

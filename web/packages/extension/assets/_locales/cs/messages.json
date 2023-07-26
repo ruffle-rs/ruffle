@@ -11,9 +11,6 @@
     "settings_autostart": {
         "message": "Spustit automaticky bez úvodní obrazovky (pak kliknutím zrušíte ztlumení)"
     },
-    "settings_warn_on_unsupported_content": {
-        "message": "Upozornit na nepodporovaný obsah"
-    },
     "settings_log_level": {
         "message": "Úroveň logu"
     },
