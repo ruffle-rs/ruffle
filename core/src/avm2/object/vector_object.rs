@@ -19,13 +19,9 @@ pub fn vector_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
-    //Because allocators are still called to build prototypes, especially for
-    //the unspecialized Vector class, we have to fall back to Object when
-    //getting the parameter type for our storage.
     let param_type = class
         .as_class_params()
-        .flatten()
-        .unwrap_or_else(|| activation.avm2().classes().object);
+        .ok_or("Cannot convert to unparametrized Vector")?;
 
     Ok(VectorObject(GcCell::new(
         activation.context.gc_context,
@@ -70,10 +66,10 @@ impl<'gc> VectorObject<'gc> {
         vector: VectorStorage<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        let value_type = vector.value_type();
+        let value_type = vector.value_type().map(|o| o.into()).unwrap_or(Value::Null);
         let vector_class = activation.avm2().classes().generic_vector;
 
-        let applied_class = vector_class.apply(activation, value_type.into())?;
+        let applied_class = vector_class.apply(activation, value_type)?;
 
         let mut object: Object<'gc> = VectorObject(GcCell::new(
             activation.context.gc_context,
@@ -133,7 +129,12 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         if name.contains_public_namespace() {
             if let Some(name) = name.local_name() {
                 if let Ok(index) = name.parse::<usize>() {
-                    let type_of = self.0.read().vector.value_type().inner_class_definition();
+                    let type_of = self
+                        .0
+                        .read()
+                        .vector
+                        .value_type_for_coercion(activation)
+                        .inner_class_definition();
                     let value = match value.coerce_to_type(activation, type_of)? {
                         Value::Undefined => self.0.read().vector.default(activation),
                         Value::Null => self.0.read().vector.default(activation),
@@ -164,7 +165,12 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         if name.contains_public_namespace() {
             if let Some(name) = name.local_name() {
                 if let Ok(index) = name.parse::<usize>() {
-                    let type_of = self.0.read().vector.value_type().inner_class_definition();
+                    let type_of = self
+                        .0
+                        .read()
+                        .vector
+                        .value_type_for_coercion(activation)
+                        .inner_class_definition();
                     let value = match value.coerce_to_type(activation, type_of)? {
                         Value::Undefined => self.0.read().vector.default(activation),
                         Value::Null => self.0.read().vector.default(activation),

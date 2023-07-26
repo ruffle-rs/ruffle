@@ -319,7 +319,7 @@ pub fn get_vector<'gc>(
         let pixels = operations::get_vector(bitmap_data, x, y, width, height);
 
         let value_type = activation.avm2().classes().uint;
-        let new_storage = VectorStorage::from_values(pixels, false, value_type);
+        let new_storage = VectorStorage::from_values(pixels, false, Some(value_type));
 
         return Ok(VectorObject::from_vector(new_storage, activation)?.into());
     }

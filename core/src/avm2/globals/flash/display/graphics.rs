@@ -1031,6 +1031,6 @@ pub fn read_graphics_data<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_method!(activation, "flash.display.Graphics", "readGraphicsData");
     let value_type = activation.avm2().classes().igraphicsdata;
-    let new_storage = VectorStorage::new(0, false, value_type, activation);
+    let new_storage = VectorStorage::new(0, false, Some(value_type), activation);
     Ok(VectorObject::from_vector(new_storage, activation)?.into())
 }

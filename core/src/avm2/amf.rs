@@ -64,7 +64,7 @@ pub fn serialize_value<'gc>(
                 }
             } else if let Some(vec) = o.as_vector_storage() {
                 let val_type = vec.value_type();
-                if val_type == activation.avm2().classes().int {
+                if val_type == Some(activation.avm2().classes().int) {
                     let int_vec: Vec<_> = vec
                         .iter()
                         .map(|v| {
@@ -73,7 +73,7 @@ pub fn serialize_value<'gc>(
                         })
                         .collect();
                     Some(AmfValue::VectorInt(int_vec, vec.is_fixed()))
-                } else if val_type == activation.avm2().classes().uint {
+                } else if val_type == Some(activation.avm2().classes().uint) {
                     let uint_vec: Vec<_> = vec
                         .iter()
                         .map(|v| {
@@ -82,7 +82,7 @@ pub fn serialize_value<'gc>(
                         })
                         .collect();
                     Some(AmfValue::VectorUInt(uint_vec, vec.is_fixed()))
-                } else if val_type == activation.avm2().classes().number {
+                } else if val_type == Some(activation.avm2().classes().number) {
                     let num_vec: Vec<_> = vec
                         .iter()
                         .map(|v| {
@@ -257,7 +257,7 @@ pub fn deserialize_value<'gc>(
             let storage = VectorStorage::from_values(
                 vec.iter().map(|v| (*v).into()).collect(),
                 *is_fixed,
-                activation.avm2().classes().number,
+                Some(activation.avm2().classes().number),
             );
             VectorObject::from_vector(storage, activation)?.into()
         }
@@ -265,7 +265,7 @@ pub fn deserialize_value<'gc>(
             let storage = VectorStorage::from_values(
                 vec.iter().map(|v| (*v).into()).collect(),
                 *is_fixed,
-                activation.avm2().classes().uint,
+                Some(activation.avm2().classes().uint),
             );
             VectorObject::from_vector(storage, activation)?.into()
         }
@@ -273,7 +273,7 @@ pub fn deserialize_value<'gc>(
             let storage = VectorStorage::from_values(
                 vec.iter().map(|v| (*v).into()).collect(),
                 *is_fixed,
-                activation.avm2().classes().int,
+                Some(activation.avm2().classes().int),
             );
             VectorObject::from_vector(storage, activation)?.into()
         }
@@ -282,13 +282,12 @@ pub fn deserialize_value<'gc>(
             if !ty_name.is_empty() {
                 tracing::error!("Tried to deserialize Vector with type name: {}", ty_name);
             }
-            let value_type = activation.avm2().classes().object;
             let storage = VectorStorage::from_values(
                 vec.iter()
                     .map(|v| deserialize_value(activation, v))
                     .collect::<Result<Vec<_>, _>>()?,
                 *is_fixed,
-                value_type,
+                None,
             );
             VectorObject::from_vector(storage, activation)?.into()
         }
