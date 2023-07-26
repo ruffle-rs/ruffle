@@ -11,12 +11,39 @@ pub fn get_stage_x<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    local_to_stage_x(activation, this, "localX", "localY")
+}
+
+/// Implements `stageY`'s getter.
+pub fn get_stage_y<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    local_to_stage_y(activation, this, "localX", "localY")
+}
+
+pub fn update_after_event<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    *activation.context.needs_render = true;
+    Ok(Value::Undefined)
+}
+
+pub(super) fn local_to_stage_x<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    label_x: &'static str,
+    label_y: &'static str,
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(evt) = this.as_event() {
         let local_x = this
-            .get_public_property("localX", activation)?
+            .get_public_property(label_x, activation)?
             .coerce_to_number(activation)?;
         let local_y = this
-            .get_public_property("localY", activation)?
+            .get_public_property(label_y, activation)?
             .coerce_to_number(activation)?;
 
         if local_x.is_nan() || local_y.is_nan() {
@@ -35,18 +62,18 @@ pub fn get_stage_x<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements `stageY`'s getter.
-pub fn get_stage_y<'gc>(
+pub(super) fn local_to_stage_y<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
-    _args: &[Value<'gc>],
+    label_x: &'static str,
+    label_y: &'static str,
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(evt) = this.as_event() {
         let local_x = this
-            .get_public_property("localX", activation)?
+            .get_public_property(label_x, activation)?
             .coerce_to_number(activation)?;
         let local_y = this
-            .get_public_property("localY", activation)?
+            .get_public_property(label_y, activation)?
             .coerce_to_number(activation)?;
 
         if local_x.is_nan() || local_y.is_nan() {
@@ -62,14 +89,5 @@ pub fn get_stage_y<'gc>(
         }
     }
 
-    Ok(Value::Undefined)
-}
-
-pub fn update_after_event<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    *activation.context.needs_render = true;
     Ok(Value::Undefined)
 }
