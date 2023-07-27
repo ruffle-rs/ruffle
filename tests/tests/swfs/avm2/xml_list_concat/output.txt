@@ -6,9 +6,15 @@ XMLList + XMLList
 XML + XMLList
 <a><b>A</b></a>
 <c><d>B</d></c>
+undefined
+undefined
 XMLList + XML
 <c><d>B</d></c>
 <a><b>A</b></a>
+undefined
+undefined
 XML + XML
 <c>D</c>
 <a><b>A</b></a>
+undefined
+undefined
