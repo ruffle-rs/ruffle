@@ -46,6 +46,10 @@ with_video = false # If this test requires a video decoder backend to run.
 [image_comparison]
 tolerance = 0 # The tolerance per pixel channel to be considered "the same". Increase as needed with tests that aren't pixel perfect across platforms.
 max_outliers = 0 # Maximum number of outliers allowed over the given tolerance levels. Increase as needed with tests that aren't pixel perfect across platforms.
+
+# Which build features are required for this test to run.
+[required_features]
+lzma = false # If LZMA support is enabled in this build
 ```
 
 ## Frame-based tests

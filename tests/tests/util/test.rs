@@ -71,7 +71,8 @@ impl Test {
         if self.options.ignore {
             return false;
         }
-        self.options.player_options.can_run(check_renderer)
+        self.options.required_features.can_run()
+            && self.options.player_options.can_run(check_renderer)
     }
 
     pub fn compare_output(&self, actual_output: &str) -> Result<()> {

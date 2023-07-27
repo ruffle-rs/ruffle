@@ -26,6 +26,7 @@ pub struct TestOptions {
     pub approximations: Option<Approximations>,
     pub player_options: PlayerOptions,
     pub log_fetch: bool,
+    pub required_features: RequiredFeatures,
 }
 
 impl Default for TestOptions {
@@ -42,6 +43,7 @@ impl Default for TestOptions {
             approximations: None,
             player_options: PlayerOptions::default(),
             log_fetch: false,
+            required_features: RequiredFeatures::default(),
         }
     }
 }
@@ -86,6 +88,18 @@ impl Approximations {
             .iter()
             .map(|p| Regex::new(p).unwrap())
             .collect()
+    }
+}
+
+#[derive(Deserialize, Default)]
+#[serde(default, deny_unknown_fields)]
+pub struct RequiredFeatures {
+    lzma: bool,
+}
+
+impl RequiredFeatures {
+    pub fn can_run(&self) -> bool {
+        !self.lzma || cfg!(feature = "lzma")
     }
 }
 
