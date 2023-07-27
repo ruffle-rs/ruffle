@@ -1,6 +1,7 @@
 use crate::set_logger;
 use crate::util::options::TestOptions;
 use crate::util::runner::run_swf;
+use crate::util::PrettyString;
 use anyhow::{anyhow, Context, Result};
 use pretty_assertions::Comparison;
 use ruffle_core::Player;
@@ -157,7 +158,9 @@ impl Test {
 
 fn assert_text_matches(ruffle: &str, flash: &str) -> Result<()> {
     if flash != ruffle {
-        let comparison = Comparison::new(ruffle, flash);
+        let left_pretty = PrettyString(ruffle);
+        let right_pretty = PrettyString(flash);
+        let comparison = Comparison::new(&left_pretty, &right_pretty);
 
         Err(anyhow!(
             "assertion failed: `(flash_expected == ruffle_actual)`\
