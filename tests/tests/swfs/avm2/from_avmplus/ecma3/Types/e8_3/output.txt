@@ -1,0 +1,4 @@
+var x:Boolean; typeof x PASSED!
+var x:Boolean; typeof x == 'boolean' PASSED!
+var x:Boolean; x == false PASSED!
+var x:Boolean; !x == true PASSED!

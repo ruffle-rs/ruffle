@@ -1,0 +1,22 @@
+var s:Number = 'string' PASSED!
+Two NaN values are different from each other PASSED!
+The special value positive Infinity PASSED!
+The special value negative Infinity PASSED!
+positive zero PASSED!
+positive zero PASSED!
+Negative zero PASSED!
+Negative zero PASSED!
+Negative zero==Positive zero PASSED!
+Positive finite Non zero values where e is -1074 PASSED!
+Positive finite Non zero values where e is -1074 PASSED!
+Positive finite Non zero values where e is 971 PASSED!
+Positive finite Non zero values where e is 971 PASSED!
+Negative finite Non zero values where e is -1074 PASSED!
+Negative finite Non zero values where e is 971 PASSED!
+Positive finite Non zero values where e is -1074 PASSED!
+Positive finite Non zero values where e is -1074 PASSED!
+the number value for x closest to 2**1024 PASSED!
+the number value for x closest to 2**1024 PASSED!
+the number value for x closest to -2**1024 PASSED!
+the number value for x closest to +0 PASSED!
+the number value for x closest to +0 PASSED!
