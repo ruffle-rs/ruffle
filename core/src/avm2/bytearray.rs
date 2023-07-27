@@ -1,4 +1,4 @@
-use crate::avm2::error::eof_error;
+use crate::avm2::error::{eof_error, range_error};
 use crate::avm2::Activation;
 use crate::avm2::Error;
 use crate::string::{FromWStr, WStr};
@@ -285,12 +285,20 @@ impl ByteArrayStorage {
     }
 
     // Writes a UTF String into the buffer, with its length as a prefix
-    pub fn write_utf<'gc>(&mut self, utf_string: &str) -> Result<(), Error<'gc>> {
+    pub fn write_utf<'gc>(
+        &mut self,
+        activation: &mut Activation<'_, 'gc>,
+        utf_string: &str,
+    ) -> Result<(), Error<'gc>> {
         if let Ok(str_size) = u16::try_from(utf_string.len()) {
             self.write_unsigned_short(str_size)?;
             self.write_bytes(utf_string.as_bytes())
         } else {
-            Err("RangeError: UTF String length must fit into a short".into())
+            Err(Error::AvmError(range_error(
+                activation,
+                "Error #2006: The supplied index is out of bounds.",
+                2006,
+            )?))
         }
     }
 

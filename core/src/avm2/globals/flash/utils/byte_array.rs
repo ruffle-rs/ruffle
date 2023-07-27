@@ -145,7 +145,7 @@ pub fn write_utf<'gc>(
             // write ends with an unpaired high surrogate, the routine bails out and nothing
             // is written.
             // The bug is fixed on newer FP versions (e.g. v32), but the fix isn't SWF-version-gated.
-            bytearray.write_utf(&utf_string.to_utf8_lossy())?;
+            bytearray.write_utf(activation, &utf_string.to_utf8_lossy())?;
         }
     }
 
