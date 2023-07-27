@@ -38,12 +38,22 @@ var xml: XML = new XML("<a><b>A</b></a>");
 var list: XMLList = new XMLList("<c><d>B</d></c>");
 
 trace("XML + XMLList");
-trace(xml + list);
+
+var out:XMLList = xml + list;
+trace(out);
+trace(out[0].parent());
+trace(out[1].parent());
 
 trace("XMLList + XML");
-trace(list + xml);
+var out:XMLList = list + xml;
+trace(out);
+trace(out[0].parent());
+trace(out[1].parent());
 
 trace("XML + XML");
 var xml2: XML = new XML("<c>D</c>");
+var out:XMLList = xml2 + xml;
+trace(out);
+trace(out[0].parent());
+trace(out[1].parent());
 
-trace(xml2 + xml);
