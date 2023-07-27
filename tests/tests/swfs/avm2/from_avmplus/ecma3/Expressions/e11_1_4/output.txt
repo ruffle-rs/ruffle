@@ -1,0 +1,28 @@
+typeof Array_One PASSED!
+Array_One=[]; Array_One.getClass = Object.prototype.toString; Array_One.getClass() PASSED!
+Array_One = []; Array_One.toString == Array.prototype.toString PASSED!
+Array_One.length PASSED!
+Array_Two PASSED!
+typeof Array_Two PASSED!
+Array_Two=[1,2,3]; arr.getClass = Object.prototype.toString; arr.getClass() PASSED!
+Array_Two.toString == Array.prototype.toString PASSED!
+Array_Two.length PASSED!
+typeof Array_Three PASSED!
+Array_Three=[12345]; Array_Three.getClass = Object.prototype.toString; Array_Three.getClass() PASSED!
+Array_Four.toString == Array.prototype.toString PASSED!
+Array_Five.length PASSED!
+Array_Five[1] PASSED!
+Array_Six.length PASSED!
+Array_Six[14] PASSED!
+Array_Seven.length PASSED!
+Array_Eight.length PASSED!
+Array_Nine.length PASSED!
+Array_Nine[1] PASSED!
+Array_Nine[0] PASSED!
+Array_Nine[11] PASSED!
+Array_Nine[12] PASSED!
+Array_Nine[19] PASSED!
+Array_Nine[20] PASSED!
+Array_Nine[32] PASSED!
+Multi dimensional array PASSED!
+Using array initializers to dynamically set and retrieve values of an object PASSED!

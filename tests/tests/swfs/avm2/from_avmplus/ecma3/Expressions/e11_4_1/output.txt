@@ -1,0 +1,18 @@
+x=[9,8,7];delete(x[2]);x.length PASSED!
+x=[9,8,7];delete(x[2]);x.toString() PASSED!
+obj=new Object();delete obj.name; PASSED!
+obj=new Object();delete obj;obj.toString() PASSED!
+delete(new String( 'string object' ) ) PASSED!
+delete(new Number(12345)) PASSED!
+delete(Math.PI) PASSED!
+delete(x=new Date()) PASSED!
+var abc; delete abc PASSED!
+var OB = new MyObject(); for ( p in OB ) { delete OB[p] } PASSED!
+var OB = new MyObject(); for ( p in OB ) { delete OB[p] } PASSED!
+var OB = new MyObject(); for ( p in OB ) { delete OB[p] } PASSED!
+var OB = new MyObject(); for ( p in OB ) { delete OB[p] } PASSED!
+var OB = new MyObject(); for ( p in OB ) { delete OB[p] } PASSED!
+var OB = new MyObject(); for ( p in OB ) { delete OB[p] } PASSED!
+var OB = new MyObject(); for ( p in OB ) { delete OB[p] } PASSED!
+var OB = new MyObject(); for ( p in OB ) { delete OB[p] } PASSED!
+var OB = new MyObject();delete OB; OB.toString() PASSED!

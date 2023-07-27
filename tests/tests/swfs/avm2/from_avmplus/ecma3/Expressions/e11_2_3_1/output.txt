@@ -1,0 +1,4 @@
+OBJECT.toString() PASSED!
+(new Array())['length'].valueOf() PASSED!
+(new Array()).length.valueOf() PASSED!
+(new Array(20))['length'].valueOf() PASSED!

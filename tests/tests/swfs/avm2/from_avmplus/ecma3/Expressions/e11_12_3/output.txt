@@ -1,0 +1,1 @@
+var MYVAR =  true ? ('FAIL1', 'PASSED') : 'FAIL2'; MYVAR PASSED!

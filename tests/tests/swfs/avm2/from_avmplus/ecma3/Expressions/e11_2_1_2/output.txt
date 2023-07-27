@@ -1,0 +1,8 @@
+hi.valueOf() PASSED!
+hi.toString() PASSED!
+NaN.valueOf() PASSED!
+NaN.toString() PASSED!
+true.valueOf() PASSED!
+true.toString() PASSED!
+false.valueOf() PASSED!
+false.toString() PASSED!

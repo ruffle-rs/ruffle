@@ -1,0 +1,7 @@
+true === true PASSED!
+false === false PASSED!
+ ===  PASSED!
+hi === hi PASSED!
+NaN === NaN PASSED!
+NaN === 0 PASSED!
+0 === NaN PASSED!

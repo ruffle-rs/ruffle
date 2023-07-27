@@ -1,0 +1,7 @@
+Global Code: this.toString() PASSED!
+Anonymous Code: var MYFUNC = new Function('return this.toString()'); MYFUNC() PASSED!
+Anonymous Code: var MYFUNC = function(){return this.toString;} PASSED!
+Anonymous Code: var MYFUNC = new Function('this.THIS = this'); ((new MYFUNC()).THIS).toString() PASSED!
+Anonymous Code: var MYFUNC = new Function('this.THIS = this'); var FUN1 = new MYFUNC(); FUN1.THIS == FUN1 PASSED!
+Function Code:  ReturnThis() PASSED!
+var MYOBJECT = new ReturnThis(); MYOBJECT.toString() PASSED!

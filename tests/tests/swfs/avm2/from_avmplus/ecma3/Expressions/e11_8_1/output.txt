@@ -1,0 +1,53 @@
+true < false PASSED!
+false < true PASSED!
+false < false PASSED!
+true < true PASSED!
+new Boolean(true) < new Boolean(true) PASSED!
+new Boolean(true) < new Boolean(false) PASSED!
+new Boolean(false) < new Boolean(true) PASSED!
+new Boolean(false) < new Boolean(false) PASSED!
+new MyObject(Infinity) < new MyObject(Infinity) PASSED!
+new MyObject(-Infinity) < new MyObject(Infinity) PASSED!
+new MyObject(-Infinity) < new MyObject(-Infinity) PASSED!
+new MyValueObject(false) < new MyValueObject(true) PASSED!
+new MyValueObject(true) < new MyValueObject(true) PASSED!
+new MyValueObject(false) < new MyValueObject(false) PASSED!
+new MyStringObject(false) < new MyStringObject(true) PASSED!
+new MyStringObject(true) < new MyStringObject(true) PASSED!
+new MyStringObject(false) < new MyStringObject(false) PASSED!
+Number.NaN < Number.NaN PASSED!
+0 < Number.NaN PASSED!
+Number.NaN < 0 PASSED!
+0 < -0 PASSED!
+-0 < 0 PASSED!
+Infinity < 0 PASSED!
+Infinity < Number.MAX_VALUE PASSED!
+Infinity < Infinity PASSED!
+0 < Infinity PASSED!
+Number.MAX_VALUE < Infinity PASSED!
+0 < -Infinity PASSED!
+Number.MAX_VALUE < -Infinity PASSED!
+-Infinity < -Infinity PASSED!
+-Infinity < 0 PASSED!
+-Infinity < -Number.MAX_VALUE PASSED!
+-Infinity < Number.MIN_VALUE PASSED!
+'string' < 'string' PASSED!
+'astring' < 'string' PASSED!
+'strings' < 'stringy' PASSED!
+'strings' < 'stringier' PASSED!
+'string' < 'astring' PASSED!
+'string' < 'strings' PASSED!
+'string' < 'str' PASSED!
+44 < 55 PASSED!
+55 < 44 PASSED!
+56.43 < 65.0 PASSED!
+65.0 < 56.43 PASSED!
+43247503.43 < 945540654.654 PASSED!
+43247503.43<945540654.654 PASSED!
+43247503.43< 945540654.654 PASSED!
+43247503.43   <  945540654.654 PASSED!
+-56.43 < 65.0 PASSED!
+-56.43 < -65.0 PASSED!
+-56.43 < -56.43 PASSED!
+100 < 100 PASSED!
+if (NaN < 0.0001) ... PASSED!
