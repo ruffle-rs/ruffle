@@ -1,0 +1,425 @@
+ByteArray constructor no args PASSED!
+ByteArray length of empty PASSED!
+ByteArray toString empty PASSED!
+ByteArray available on empty PASSED!
+ByteArray position on empty PASSED!
+ByteArray endianness on empty PASSED!
+ByteArray trivial length PASSED!
+ByteArray trivial position PASSED!
+ByteArray position after clearing PASSED!
+ByteArray position can exceed length, #1 PASSED!
+ByteArray position can exceed length, #2 PASSED!
+ByteArray position can exceed length, #3 PASSED!
+ByteArray position can exceed length, #4 PASSED!
+ByteArray position can exceed length, #5 PASSED!
+ByteArray position can exceed length, #6 PASSED!
+ByteArray position after writing Booleans PASSED!
+ByteArray move position to 0 PASSED!
+ByteArray write/read boolean true PASSED!
+ByteArray write/read boolean false PASSED!
+ByteArray readShort_1 #1 bigEndian PASSED!
+ByteArray readShort_1 #2 bigEndian PASSED!
+ByteArray readShort_1 #3bigEndian PASSED!
+ByteArray readShort_1 #1 littleEndian PASSED!
+ByteArray readShort_1 #2 littleEndian PASSED!
+ByteArray readShort_1 #3littleEndian PASSED!
+ByteArray readShort_2 #1 PASSED!
+ByteArray readShort_2 #2 PASSED!
+ByteArray readShort_2 #3 PASSED!
+ByteArray readShort_3 #1 0 1 PASSED!
+ByteArray readShort_3 #1 0 2 PASSED!
+ByteArray readShort_1 #1 bigEndian PASSED!
+ByteArray readShort_1 #2 bigEndian PASSED!
+ByteArray readShort_1 #3bigEndian PASSED!
+ByteArray readShort_1 #1 littleEndian PASSED!
+ByteArray readShort_1 #2 littleEndian PASSED!
+ByteArray readShort_1 #3littleEndian PASSED!
+ByteArray readShort_2 #1 PASSED!
+ByteArray readShort_2 #2 PASSED!
+ByteArray readShort_2 #3 PASSED!
+ByteArray readShort_3 #1 1 1 PASSED!
+ByteArray readShort_3 #1 1 2 PASSED!
+ByteArray readShort_1 #1 bigEndian PASSED!
+ByteArray readShort_1 #2 bigEndian PASSED!
+ByteArray readShort_1 #3bigEndian PASSED!
+ByteArray readShort_1 #1 littleEndian PASSED!
+ByteArray readShort_1 #2 littleEndian PASSED!
+ByteArray readShort_1 #3littleEndian PASSED!
+ByteArray readShort_2 #1 PASSED!
+ByteArray readShort_2 #2 PASSED!
+ByteArray readShort_2 #3 PASSED!
+ByteArray readShort_3 #1 2 1 PASSED!
+ByteArray readShort_3 #1 2 2 PASSED!
+ByteArray readShort_1 #1 bigEndian PASSED!
+ByteArray readShort_1 #2 bigEndian PASSED!
+ByteArray readShort_1 #3bigEndian PASSED!
+ByteArray readShort_1 #1 littleEndian PASSED!
+ByteArray readShort_1 #2 littleEndian PASSED!
+ByteArray readShort_1 #3littleEndian PASSED!
+ByteArray readShort_2 #1 PASSED!
+ByteArray readShort_2 #2 PASSED!
+ByteArray readShort_2 #3 PASSED!
+ByteArray readShort_3 #1 3 1 PASSED!
+ByteArray readShort_3 #1 3 2 PASSED!
+ByteArray readUShort_1 #1 bigEndian PASSED!
+ByteArray readUShort_1 #2 bigEndian PASSED!
+ByteArray readUShort_1 #3bigEndian PASSED!
+ByteArray readUShort_1 #1 littleEndian PASSED!
+ByteArray readUShort_1 #2 littleEndian PASSED!
+ByteArray readUShort_1 #3littleEndian PASSED!
+ByteArray readUShort_2 #1 PASSED!
+ByteArray readUShort_2 #2 PASSED!
+ByteArray readUShort_2 #3 PASSED!
+ByteArray readUShort_3 #1 0 1 PASSED!
+ByteArray readUShort_3 #1 0 2 PASSED!
+ByteArray readUShort_1 #1 bigEndian PASSED!
+ByteArray readUShort_1 #2 bigEndian PASSED!
+ByteArray readUShort_1 #3bigEndian PASSED!
+ByteArray readUShort_1 #1 littleEndian PASSED!
+ByteArray readUShort_1 #2 littleEndian PASSED!
+ByteArray readUShort_1 #3littleEndian PASSED!
+ByteArray readUShort_2 #1 PASSED!
+ByteArray readUShort_2 #2 PASSED!
+ByteArray readUShort_2 #3 PASSED!
+ByteArray readUShort_3 #1 1 1 PASSED!
+ByteArray readUShort_3 #1 1 2 PASSED!
+ByteArray readUShort_1 #1 bigEndian PASSED!
+ByteArray readUShort_1 #2 bigEndian PASSED!
+ByteArray readUShort_1 #3bigEndian PASSED!
+ByteArray readUShort_1 #1 littleEndian PASSED!
+ByteArray readUShort_1 #2 littleEndian PASSED!
+ByteArray readUShort_1 #3littleEndian PASSED!
+ByteArray readUShort_2 #1 PASSED!
+ByteArray readUShort_2 #2 PASSED!
+ByteArray readUShort_2 #3 PASSED!
+ByteArray readUShort_3 #1 2 1 PASSED!
+ByteArray readUShort_3 #1 2 2 PASSED!
+ByteArray readUShort_1 #1 bigEndian PASSED!
+ByteArray readUShort_1 #2 bigEndian PASSED!
+ByteArray readUShort_1 #3bigEndian PASSED!
+ByteArray readUShort_1 #1 littleEndian PASSED!
+ByteArray readUShort_1 #2 littleEndian PASSED!
+ByteArray readUShort_1 #3littleEndian PASSED!
+ByteArray readUShort_2 #1 PASSED!
+ByteArray readUShort_2 #2 PASSED!
+ByteArray readUShort_2 #3 PASSED!
+ByteArray readUShort_3 #1 3 1 PASSED!
+ByteArray readUShort_3 #1 3 2 PASSED!
+ByteArray readInt_1 #1 bigEndian PASSED!
+ByteArray readInt_1 #2 bigEndian PASSED!
+ByteArray readInt_1 #3bigEndian PASSED!
+ByteArray readInt_1 #1 littleEndian PASSED!
+ByteArray readInt_1 #2 littleEndian PASSED!
+ByteArray readInt_1 #3littleEndian PASSED!
+ByteArray readInt_2 #1 PASSED!
+ByteArray readInt_2 #2 PASSED!
+ByteArray readInt_2 #3 PASSED!
+ByteArray readInt_3 #1 0 1 PASSED!
+ByteArray readInt_3 #1 0 2 PASSED!
+ByteArray readInt_3 #1 0 3 PASSED!
+ByteArray readInt_3 #1 0 4 PASSED!
+ByteArray readInt_3 #2 at position=2^32-16 PASSED!
+ByteArray readInt_1 #1 bigEndian PASSED!
+ByteArray readInt_1 #2 bigEndian PASSED!
+ByteArray readInt_1 #3bigEndian PASSED!
+ByteArray readInt_1 #1 littleEndian PASSED!
+ByteArray readInt_1 #2 littleEndian PASSED!
+ByteArray readInt_1 #3littleEndian PASSED!
+ByteArray readInt_2 #1 PASSED!
+ByteArray readInt_2 #2 PASSED!
+ByteArray readInt_2 #3 PASSED!
+ByteArray readInt_3 #1 1 1 PASSED!
+ByteArray readInt_3 #1 1 2 PASSED!
+ByteArray readInt_3 #1 1 3 PASSED!
+ByteArray readInt_3 #1 1 4 PASSED!
+ByteArray readInt_3 #2 at position=2^32-16 PASSED!
+ByteArray readInt_1 #1 bigEndian PASSED!
+ByteArray readInt_1 #2 bigEndian PASSED!
+ByteArray readInt_1 #3bigEndian PASSED!
+ByteArray readInt_1 #1 littleEndian PASSED!
+ByteArray readInt_1 #2 littleEndian PASSED!
+ByteArray readInt_1 #3littleEndian PASSED!
+ByteArray readInt_2 #1 PASSED!
+ByteArray readInt_2 #2 PASSED!
+ByteArray readInt_2 #3 PASSED!
+ByteArray readInt_3 #1 2 1 PASSED!
+ByteArray readInt_3 #1 2 2 PASSED!
+ByteArray readInt_3 #1 2 3 PASSED!
+ByteArray readInt_3 #1 2 4 PASSED!
+ByteArray readInt_3 #2 at position=2^32-16 PASSED!
+ByteArray readInt_1 #1 bigEndian PASSED!
+ByteArray readInt_1 #2 bigEndian PASSED!
+ByteArray readInt_1 #3bigEndian PASSED!
+ByteArray readInt_1 #1 littleEndian PASSED!
+ByteArray readInt_1 #2 littleEndian PASSED!
+ByteArray readInt_1 #3littleEndian PASSED!
+ByteArray readInt_2 #1 PASSED!
+ByteArray readInt_2 #2 PASSED!
+ByteArray readInt_2 #3 PASSED!
+ByteArray readInt_3 #1 3 1 PASSED!
+ByteArray readInt_3 #1 3 2 PASSED!
+ByteArray readInt_3 #1 3 3 PASSED!
+ByteArray readInt_3 #1 3 4 PASSED!
+ByteArray readInt_3 #2 at position=2^32-16 PASSED!
+ByteArray readUnsignedInt_1 #1 bigEndian PASSED!
+ByteArray readUnsignedInt_1 #2 bigEndian PASSED!
+ByteArray readUnsignedInt_1 #3bigEndian PASSED!
+ByteArray readUnsignedInt_1 #1 littleEndian PASSED!
+ByteArray readUnsignedInt_1 #2 littleEndian PASSED!
+ByteArray readUnsignedInt_1 #3littleEndian PASSED!
+ByteArray readUnsignedInt_2 #1 PASSED!
+ByteArray readUnsignedInt_2 #2 PASSED!
+ByteArray readUnsignedInt_2 #3 PASSED!
+ByteArray readUInt_3 #1 0 1 PASSED!
+ByteArray readUInt_3 #1 0 2 PASSED!
+ByteArray readUInt_3 #1 0 3 PASSED!
+ByteArray readUInt_3 #1 0 4 PASSED!
+ByteArray readUnsignedInt_1 #1 bigEndian PASSED!
+ByteArray readUnsignedInt_1 #2 bigEndian PASSED!
+ByteArray readUnsignedInt_1 #3bigEndian PASSED!
+ByteArray readUnsignedInt_1 #1 littleEndian PASSED!
+ByteArray readUnsignedInt_1 #2 littleEndian PASSED!
+ByteArray readUnsignedInt_1 #3littleEndian PASSED!
+ByteArray readUnsignedInt_2 #1 PASSED!
+ByteArray readUnsignedInt_2 #2 PASSED!
+ByteArray readUnsignedInt_2 #3 PASSED!
+ByteArray readUInt_3 #1 1 1 PASSED!
+ByteArray readUInt_3 #1 1 2 PASSED!
+ByteArray readUInt_3 #1 1 3 PASSED!
+ByteArray readUInt_3 #1 1 4 PASSED!
+ByteArray readUnsignedInt_1 #1 bigEndian PASSED!
+ByteArray readUnsignedInt_1 #2 bigEndian PASSED!
+ByteArray readUnsignedInt_1 #3bigEndian PASSED!
+ByteArray readUnsignedInt_1 #1 littleEndian PASSED!
+ByteArray readUnsignedInt_1 #2 littleEndian PASSED!
+ByteArray readUnsignedInt_1 #3littleEndian PASSED!
+ByteArray readUnsignedInt_2 #1 PASSED!
+ByteArray readUnsignedInt_2 #2 PASSED!
+ByteArray readUnsignedInt_2 #3 PASSED!
+ByteArray readUInt_3 #1 2 1 PASSED!
+ByteArray readUInt_3 #1 2 2 PASSED!
+ByteArray readUInt_3 #1 2 3 PASSED!
+ByteArray readUInt_3 #1 2 4 PASSED!
+ByteArray readUnsignedInt_1 #1 bigEndian PASSED!
+ByteArray readUnsignedInt_1 #2 bigEndian PASSED!
+ByteArray readUnsignedInt_1 #3bigEndian PASSED!
+ByteArray readUnsignedInt_1 #1 littleEndian PASSED!
+ByteArray readUnsignedInt_1 #2 littleEndian PASSED!
+ByteArray readUnsignedInt_1 #3littleEndian PASSED!
+ByteArray readUnsignedInt_2 #1 PASSED!
+ByteArray readUnsignedInt_2 #2 PASSED!
+ByteArray readUnsignedInt_2 #3 PASSED!
+ByteArray readUInt_3 #1 3 1 PASSED!
+ByteArray readUInt_3 #1 3 2 PASSED!
+ByteArray readUInt_3 #1 3 3 PASSED!
+ByteArray readUInt_3 #1 3 4 PASSED!
+ByteArray writeFloat_1 #1 bigEndian PASSED!
+ByteArray readFloat_1 #1 bigEndian PASSED!
+ByteArray readFloat_1 #2 bigEndian PASSED!
+ByteArray readFloat_1 #3bigEndian PASSED!
+ByteArray writeFloat_1 #1 littleEndian PASSED!
+ByteArray readFloat_1 #1 littleEndian PASSED!
+ByteArray readFloat_1 #2 littleEndian PASSED!
+ByteArray readFloat_1 #3littleEndian PASSED!
+ByteArray readFloat_2 #1 PASSED!
+ByteArray readFloat_2 #2 PASSED!
+ByteArray readFloat_3 #1 0 1 PASSED!
+ByteArray readFloat_3 #1 0 2 PASSED!
+ByteArray readFloat_3 #1 0 3 PASSED!
+ByteArray readFloat_3 #1 0 4 PASSED!
+ByteArray writeFloat_1 #1 bigEndian PASSED!
+ByteArray readFloat_1 #1 bigEndian PASSED!
+ByteArray readFloat_1 #2 bigEndian PASSED!
+ByteArray readFloat_1 #3bigEndian PASSED!
+ByteArray writeFloat_1 #1 littleEndian PASSED!
+ByteArray readFloat_1 #1 littleEndian PASSED!
+ByteArray readFloat_1 #2 littleEndian PASSED!
+ByteArray readFloat_1 #3littleEndian PASSED!
+ByteArray readFloat_2 #1 PASSED!
+ByteArray readFloat_2 #2 PASSED!
+ByteArray readFloat_3 #1 1 1 PASSED!
+ByteArray readFloat_3 #1 1 2 PASSED!
+ByteArray readFloat_3 #1 1 3 PASSED!
+ByteArray readFloat_3 #1 1 4 PASSED!
+ByteArray writeFloat_1 #1 bigEndian PASSED!
+ByteArray readFloat_1 #1 bigEndian PASSED!
+ByteArray readFloat_1 #2 bigEndian PASSED!
+ByteArray readFloat_1 #3bigEndian PASSED!
+ByteArray writeFloat_1 #1 littleEndian PASSED!
+ByteArray readFloat_1 #1 littleEndian PASSED!
+ByteArray readFloat_1 #2 littleEndian PASSED!
+ByteArray readFloat_1 #3littleEndian PASSED!
+ByteArray readFloat_2 #1 PASSED!
+ByteArray readFloat_2 #2 PASSED!
+ByteArray readFloat_3 #1 2 1 PASSED!
+ByteArray readFloat_3 #1 2 2 PASSED!
+ByteArray readFloat_3 #1 2 3 PASSED!
+ByteArray readFloat_3 #1 2 4 PASSED!
+ByteArray writeFloat_1 #1 bigEndian PASSED!
+ByteArray readFloat_1 #1 bigEndian PASSED!
+ByteArray readFloat_1 #2 bigEndian PASSED!
+ByteArray readFloat_1 #3bigEndian PASSED!
+ByteArray writeFloat_1 #1 littleEndian PASSED!
+ByteArray readFloat_1 #1 littleEndian PASSED!
+ByteArray readFloat_1 #2 littleEndian PASSED!
+ByteArray readFloat_1 #3littleEndian PASSED!
+ByteArray readFloat_2 #1 PASSED!
+ByteArray readFloat_2 #2 PASSED!
+ByteArray readFloat_3 #1 3 1 PASSED!
+ByteArray readFloat_3 #1 3 2 PASSED!
+ByteArray readFloat_3 #1 3 3 PASSED!
+ByteArray readFloat_3 #1 3 4 PASSED!
+ByteArray writeDouble_1 #1 bigEndian PASSED!
+ByteArray readDouble_1 #1 bigEndian PASSED!
+ByteArray readDouble_1 #2 bigEndian PASSED!
+ByteArray readDouble_1 #3bigEndian PASSED!
+ByteArray writeDouble_1 #1 littleEndian PASSED!
+ByteArray readDouble_1 #1 littleEndian PASSED!
+ByteArray readDouble_1 #2 littleEndian PASSED!
+ByteArray readDouble_1 #3littleEndian PASSED!
+ByteArray readDouble_2 #1 PASSED!
+ByteArray readDouble_2 #2 PASSED!
+ByteArray readDouble_3 #1 0 1 PASSED!
+ByteArray readDouble_3 #1 0 2 PASSED!
+ByteArray readDouble_3 #1 0 3 PASSED!
+ByteArray readDouble_3 #1 0 4 PASSED!
+ByteArray readDouble_3 #1 0 5 PASSED!
+ByteArray readDouble_3 #1 0 6 PASSED!
+ByteArray readDouble_3 #1 0 7 PASSED!
+ByteArray readDouble_3 #1 0 8 PASSED!
+ByteArray writeDouble_1 #1 bigEndian PASSED!
+ByteArray readDouble_1 #1 bigEndian PASSED!
+ByteArray readDouble_1 #2 bigEndian PASSED!
+ByteArray readDouble_1 #3bigEndian PASSED!
+ByteArray writeDouble_1 #1 littleEndian PASSED!
+ByteArray readDouble_1 #1 littleEndian PASSED!
+ByteArray readDouble_1 #2 littleEndian PASSED!
+ByteArray readDouble_1 #3littleEndian PASSED!
+ByteArray readDouble_2 #1 PASSED!
+ByteArray readDouble_2 #2 PASSED!
+ByteArray readDouble_3 #1 1 1 PASSED!
+ByteArray readDouble_3 #1 1 2 PASSED!
+ByteArray readDouble_3 #1 1 3 PASSED!
+ByteArray readDouble_3 #1 1 4 PASSED!
+ByteArray readDouble_3 #1 1 5 PASSED!
+ByteArray readDouble_3 #1 1 6 PASSED!
+ByteArray readDouble_3 #1 1 7 PASSED!
+ByteArray readDouble_3 #1 1 8 PASSED!
+ByteArray writeDouble_1 #1 bigEndian PASSED!
+ByteArray readDouble_1 #1 bigEndian PASSED!
+ByteArray readDouble_1 #2 bigEndian PASSED!
+ByteArray readDouble_1 #3bigEndian PASSED!
+ByteArray writeDouble_1 #1 littleEndian PASSED!
+ByteArray readDouble_1 #1 littleEndian PASSED!
+ByteArray readDouble_1 #2 littleEndian PASSED!
+ByteArray readDouble_1 #3littleEndian PASSED!
+ByteArray readDouble_2 #1 PASSED!
+ByteArray readDouble_2 #2 PASSED!
+ByteArray readDouble_3 #1 2 1 PASSED!
+ByteArray readDouble_3 #1 2 2 PASSED!
+ByteArray readDouble_3 #1 2 3 PASSED!
+ByteArray readDouble_3 #1 2 4 PASSED!
+ByteArray readDouble_3 #1 2 5 PASSED!
+ByteArray readDouble_3 #1 2 6 PASSED!
+ByteArray readDouble_3 #1 2 7 PASSED!
+ByteArray readDouble_3 #1 2 8 PASSED!
+ByteArray writeDouble_1 #1 bigEndian PASSED!
+ByteArray readDouble_1 #1 bigEndian PASSED!
+ByteArray readDouble_1 #2 bigEndian PASSED!
+ByteArray readDouble_1 #3bigEndian PASSED!
+ByteArray writeDouble_1 #1 littleEndian PASSED!
+ByteArray readDouble_1 #1 littleEndian PASSED!
+ByteArray readDouble_1 #2 littleEndian PASSED!
+ByteArray readDouble_1 #3littleEndian PASSED!
+ByteArray readDouble_2 #1 PASSED!
+ByteArray readDouble_2 #2 PASSED!
+ByteArray readDouble_3 #1 3 1 PASSED!
+ByteArray readDouble_3 #1 3 2 PASSED!
+ByteArray readDouble_3 #1 3 3 PASSED!
+ByteArray readDouble_3 #1 3 4 PASSED!
+ByteArray readDouble_3 #1 3 5 PASSED!
+ByteArray readDouble_3 #1 3 6 PASSED!
+ByteArray readDouble_3 #1 3 7 PASSED!
+ByteArray readDouble_3 #1 3 8 PASSED!
+testByte: ByteArray position PASSED!
+testByte: ByteArray length PASSED!
+ByteArray readByte PASSED!
+ByteArray readByte PASSED!
+ByteArray readByte EOF PASSED!
+testUnsignedByte: ByteArray position PASSED!
+testUnsignedByte: ByteArray length PASSED!
+ByteArray readUnsignedByte PASSED!
+ByteArray readUnsignedByte PASSED!
+ByteArray readUnsignedByte EOF PASSED!
+ByteArray position of utf string PASSED!
+ByteArray length of utf string PASSED!
+ByteArray readUTF PASSED!
+ByteArray readUTF on contents containing NUL: contents PASSED!
+ByteArray readUTF on contents containing NUL: position PASSED!
+ReadUTF EOF in content PASSED!
+ReadUTF EOF in length, #1 PASSED!
+ReadUTF EOF in length, #2 PASSED!
+RangeError in writeUTF PASSED!
+ByteArray readUTF skips UTF8 BOM after length bytes but includes it in the length PASSED!
+ByteArray length of utf bytes string PASSED!
+ByteArray readUTFBytes PASSED!
+ByteArray readUTFBytes on contents containing NUL: contents PASSED!
+ByteArray readUTFBytes on contents containing NUL: position PASSED!
+ReadUTFBytes EOF in content PASSED!
+ByteArray readUTFBytes skips UTF8 BOM but includes it in the length PASSED!
+get default endian PASSED!
+set endian littleEndian PASSED!
+set endian bigEndian PASSED!
+exception thrown when endian is to littleEndian or bigEndian PASSED!
+endian value is uchanged after invalid set PASSED!
+ByteArray get [] syntax PASSED!
+ByteArray set [] syntax PASSED!
+ByteArray set [] / get [] syntax PASSED!
+Bytearray get[] out of range PASSED!
+ByteArray set[] out of range: changed element PASSED!
+ByteArray set[] out of range: length PASSED!
+ByteArray set[] out of range: zero-fill PASSED!
+ByteArray get[] and set[]: position PASSED!
+ByteArray set[] with Atom index PASSED!
+ByteArray get[] with Atom index PASSED!
+ByteArray empty slots filled with 0 PASSED!
+ByteArray shrink length PASSED!
+readBytes correct content PASSED!
+readBytes correct content PASSED!
+readBytes correct content PASSED!
+readBytes correct content PASSED!
+readBytes correct content PASSED!
+readBytes correct content PASSED!
+readBytes correct content PASSED!
+readBytes correct content PASSED!
+readBytes correct content PASSED!
+readBytes correct content PASSED!
+readBytes correct content PASSED!
+ByteArray readBytes 8 length copies values, check size PASSED!
+ByteArray readBytes 8 length copies values, check position PASSED!
+EOF in readBytes PASSED!
+RangeError in readBytes PASSED!
+ByteArray writeBytes: length PASSED!
+ByteArray writeBytes: position PASSED!
+ByteArray writeBytes: content PASSED!
+ByteArray writeBytes: content PASSED!
+ByteArray writeBytes: content PASSED!
+ByteArray writeBytes: content PASSED!
+ByteArray writeBytes: content PASSED!
+ByteArray writeBytes: content PASSED!
+ByteArray writeBytes: content PASSED!
+ByteArray writeBytes: content PASSED!
+ByteArray writeBytes: content PASSED!
+ByteArray writeBytes: content PASSED!
+ByteArray writeBytes PASSED!
+ByteArray hasAtomProperty true PASSED!
+ByteArray hasAtomProperty false PASSED!
+ByteArray with bom toString PASSED!
+ByteArray with no bom toString PASSED!
+ByteArray with partial bad utf-8 sequence PASSED!
+ByteArray with truncated utf-8 sequence PASSED!
+ByteArray with out-of-range utf-8 sequence PASSED!
+ByteArray.compress bytearray length is different PASSED!
+ByteArray.compress bytearray contents differ PASSED!
+ByteArray.uncompress bytearray length matches before compress PASSED!
+ByteArray.uncompress uncompressing compressed string matches original PASSED!
