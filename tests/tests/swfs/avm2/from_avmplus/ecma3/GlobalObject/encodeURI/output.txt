@@ -1,0 +1,38 @@
+encodeURI('Empty String') PASSED!
+encodeURI('Single Character') PASSED!
+encodeURI(str2) PASSED!
+encodeURI('http://www.macromedia.com') PASSED!
+encodeURI('http://www.macromedia.com') PASSED!
+encodeURI('http://www.macromedia.com/flash player') PASSED!
+encodeURI('http://www.macromedia.com/flasha player') PASSED!
+encodeURI('http://www.macromedia.com/flashA player') PASSED!
+encodeURI('http://www.macromedia.com/flash_ player') PASSED!
+encodeURI('http://www.macromedia.com/flash- player') PASSED!
+encodeURI('http://www.macromedia.com/flash. player') PASSED!
+encodeURI('http://www.macromedia.com/flash! player') PASSED!
+encodeURI('http://www.macromedia.com/flash~ player') PASSED!
+encodeURI('http://www.macromedia.com/flash* player') PASSED!
+encodeURI('http://www.macromedia.com/'flash player'') PASSED!
+encodeURI('http://www.macromedia.com/(flash player)') PASSED!
+encodeURI('http://www.macromedia.com//tflash player') PASSED!
+encodeURI('http://www.macromedia.com/	flash player') PASSED!
+encodeURI('http://www.macromedia.com/0987654321flash player') PASSED!
+encodeURI('http://www.macromedia.com/flash; player') PASSED!
+encodeURI('http://www.macromedia.com/flash player?') PASSED!
+encodeURI('http://www.macromedia.com/flash player@') PASSED!
+encodeURI('http://www.macromedia.com/flash player&') PASSED!
+encodeURI('http://www.macromedia.com/flash player=') PASSED!
+encodeURI('http://www.macromedia.com/flash player$') PASSED!
+encodeURI('http://www.macromedia.com/flash player,') PASSED!
+encodeURI('aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ') PASSED!
+encodeURI('aA_bB-cC.dD!eE~fF*gG'hH(iI)jJ;kK/lL?mM:nN@oO&pP=qQ+rR$sS,tT9uU8vV7wW6xX5yY4zZ') PASSED!
+encodeURI('http://www.macromedia.com/flash
+ player,') PASSED!
+encodeURI('http://www.macromedia.com/flash player,') PASSED!
+encodeURI('http://www.macromedia.com/flash player,') PASSED!
+encodeURI('http://www.macromedia.com/flash player,') PASSED!
+encodeURI('http://www.macromedia.com/flash" player,') PASSED!
+encodeURI('http://www.macromedia.com/flash' player,') PASSED!
+encodeURI('http://www.macromedia.com/flash\ player,') PASSED!
+encodeURI('http://www.macromedia.com/flash# player,') PASSED!
+encodeURI('http://www.macromedia.com/flashAplayer,') PASSED!

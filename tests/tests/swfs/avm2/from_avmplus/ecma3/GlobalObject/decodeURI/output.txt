@@ -1,0 +1,38 @@
+decodeURI('') PASSED!
+decodeURI(str1) PASSED!
+decodeURI('http://www.macromedia.com/flashA1player') PASSED!
+decodeURI('http://www.macromedia.com/flasha%20player') PASSED!
+decodeURI('http://www.macromedia.com/flashA%20player') PASSED!
+decodeURI('http://www.macromedia.com/flash_%20player') PASSED!
+decodeURI('http://www.macromedia.com/flash-%20player') PASSED!
+decodeURI('http://www.macromedia.com/flash.%20player') PASSED!
+decodeURI('http://www.macromedia.com/flash!%20player') PASSED!
+decodeURI('http://www.macromedia.com/flash~%20player') PASSED!
+decodeURI('http://www.macromedia.com/flash*%20player') PASSED!
+decodeURI('http://www.macromedia.com/'flash%20player'') PASSED!
+decodeURI('http://www.macromedia.com/(flash%20player)') PASSED!
+decodeURI('http://www.macromedia.com/%09flash%20player PASSED!
+decodeURI('http://www.macromedia.com/0987654321flash%20player') PASSED!
+decodeURI('http://www.macromedia.com/flash;%20player') PASSED!
+decodeURI('http://www.macromedia.com/flash%20player?') PASSED!
+decodeURI('http://www.macromedia.com/flash%20player@') PASSED!
+decodeURI('http://www.macromedia.com/flash%20player&') PASSED!
+decodeURI('http://www.macromedia.com/flash%20player=') PASSED!
+decodeURI('http://www.macromedia.com/flash%20player$') PASSED!
+decodeURI('http://www.macromedia.com/flash%20player,') PASSED!
+decodeURI('aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ') PASSED!
+decodeURI('aA_bB-cC.dD!eE~fF*gG'hH(iI)jJ;kK/lL?mM:nN@oO&pP=qQ+rR$sS,tT9uU8vV7wW6xX5yY4zZ') PASSED!
+decodeURI('http://www.macromedia.com/flash%0Aplayer') PASSED!
+decodeURI('http://www.macromedia.com/flash%0Bplayer') PASSED!
+decodeURI('http://www.macromedia.com/flash%0Cplayer') PASSED!
+decodeURI('http://www.macromedia.com/flash%0Dplayer') PASSED!
+decodeURI('http://www.macromedia.com/flash%22player') PASSED!
+decodeURI('http://www.macromedia.com/flash%27player') PASSED!
+decodeURI('http://www.macromedia.com/flash%5Cplayer') PASSED!
+decodeURI('http://www.macromedia.com/flash#player') PASSED!
+decodeURI('http://www.macromedia.com/flash%00Aplayer') PASSED!
+decodeURI('http://www.macromedia.com') PASSED!
+decodeURI('http://www.macromedia.com/flash%20player') PASSED!
+Characters following % should be hexa decimal digits PASSED!
+If the last character of string is % throw URIError PASSED!
+If the character at position k  of string is not % throw URIError PASSED!
