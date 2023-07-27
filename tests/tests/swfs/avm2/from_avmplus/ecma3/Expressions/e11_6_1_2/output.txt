@@ -1,0 +1,13 @@
+var EXP_1 = 'string'; var EXP_2 = false; EXP_1 + EXP_2 PASSED!
+var EXP_1 = true; var EXP_2 = 'string'; EXP_1 + EXP_2 PASSED!
+var EXP_1 = new Boolean(true); var EXP_2 = new String('string'); EXP_1 + EXP_2 PASSED!
+var EXP_1 = new Object(true); var EXP_2 = new Object('string'); EXP_1 + EXP_2 PASSED!
+var EXP_1 = new Object(new String('string')); var EXP_2 = new Object(new Boolean(false)); EXP_1 + EXP_2 PASSED!
+var EXP_1 = new MyObject(true); var EXP_2 = new MyObject('string'); EXP_1 + EXP_2 PASSED!
+var EXP_1 = new MyObject(new String('string')); var EXP_2 = new MyObject(new Boolean(false)); EXP_1 + EXP_2 PASSED!
+var EXP_1 = 100; var EXP_2 = 'string'; EXP_1 + EXP_2 PASSED!
+var EXP_1 = new String('string'); var EXP_2 = new Number(-1); EXP_1 + EXP_2 PASSED!
+var EXP_1 = new Object(100); var EXP_2 = new Object('string'); EXP_1 + EXP_2 PASSED!
+var EXP_1 = new Object(new String('string')); var EXP_2 = new Object(new Number(-1)); EXP_1 + EXP_2 PASSED!
+var EXP_1 = new MyObject(100); var EXP_2 = new MyObject('string'); EXP_1 + EXP_2 PASSED!
+var EXP_1 = new MyObject(new String('string')); var EXP_2 = new MyObject(new Number(-1)); EXP_1 + EXP_2 PASSED!

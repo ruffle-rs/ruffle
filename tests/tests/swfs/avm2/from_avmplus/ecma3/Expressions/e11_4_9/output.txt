@@ -1,0 +1,27 @@
+!(null) PASSED!
+!(void 0) PASSED!
+!(false) PASSED!
+!(true) PASSED!
+!(0) PASSED!
+!(-0) PASSED!
+!(NaN) PASSED!
+!(Infinity) PASSED!
+!(-Infinity) PASSED!
+!(Math.PI) PASSED!
+!(1) PASSED!
+!(-1) PASSED!
+!('') PASSED!
+!('	') PASSED!
+!('0') PASSED!
+!('string') PASSED!
+!(new String('')) PASSED!
+!(new String('string')) PASSED!
+!(new String()) PASSED!
+!(new Boolean(true)) PASSED!
+!(new Boolean(false)) PASSED!
+!(new Array()) PASSED!
+!(new Array(1,2,3) PASSED!
+!(new Number()) PASSED!
+!(new Number(0)) PASSED!
+!(new Number(NaN)) PASSED!
+!(new Number(Infinity)) PASSED!

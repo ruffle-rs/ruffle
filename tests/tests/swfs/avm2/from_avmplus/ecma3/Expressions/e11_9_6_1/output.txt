@@ -1,0 +1,6 @@
+: if(undefined === null) PASSED!
+: case(undefined === null) PASSED!
+: f3(x); undefined === null PASSED!
+: f4(array); undefined === null PASSED!
+: f5(array); undefined === null PASSED!
+: f6(array); undefined === null PASSED!

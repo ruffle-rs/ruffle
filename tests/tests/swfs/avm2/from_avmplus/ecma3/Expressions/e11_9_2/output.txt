@@ -1,0 +1,47 @@
+void 0 == void 0 PASSED!
+null == null PASSED!
+NaN != NaN PASSED!
+NaN != 0 PASSED!
+0 != NaN PASSED!
+NaN != Infinity PASSED!
+Infinity != NaN PASSED!
+Number.MAX_VALUE != Number.MAX_VALUE PASSED!
+Number.MIN_VALUE != Number.MIN_VALUE PASSED!
+Number.POSITIVE_INFINITY != Number.POSITIVE_INFINITY PASSED!
+Number.NEGATIVE_INFINITY != Number.NEGATIVE_INFINITY PASSED!
+0 != 0 PASSED!
+0 != -0 PASSED!
+-0 != 0 PASSED!
+-0 != -0 PASSED!
+0.9 != 1 PASSED!
+0.999999 != 1 PASSED!
+0.9999999999 != 1 PASSED!
+0.9999999999999 != 1 PASSED!
+'hello' != 'hello' PASSED!
+true != true PASSED!
+false != false PASSED!
+true != false PASSED!
+false != true PASSED!
+new MyObject(true) != new MyObject(true) PASSED!
+new Boolean(true) != new Boolean(true) PASSED!
+new Boolean(false) != new Boolean(false) PASSED!
+x = new MyObject(true); y = x; z = x; z != y PASSED!
+x = new MyObject(false); y = x; z = x; z != y PASSED!
+x = new Boolean(true); y = x; z = x; z != y PASSED!
+x = new Boolean(false); y = x; z = x; z != y PASSED!
+new Boolean(true) != new Boolean(true) PASSED!
+new Boolean(false) != new Boolean(false) PASSED!
+null != void 0 PASSED!
+void 0 != null PASSED!
+1 != '1' PASSED!
+255 != '0xff' PASSED!
+0 != '\r' PASSED!
+1e19 != '1e19' PASSED!
+new Boolean(true) != true PASSED!
+new MyObject(true) != true PASSED!
+new Boolean(false) != false PASSED!
+new MyObject(false) != false PASSED!
+true != new Boolean(true) PASSED!
+true != new MyObject(true) PASSED!
+false != new Boolean(false) PASSED!
+false != new MyObject(false) PASSED!

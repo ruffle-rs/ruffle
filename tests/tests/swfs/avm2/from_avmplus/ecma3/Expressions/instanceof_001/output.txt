@@ -1,0 +1,14 @@
+(true) instanceof [class Boolean] PASSED!
+(false) instanceof [class Boolean] PASSED!
+(Gen2 instance) instanceof 0 object PASSED!
+(Gen2 instance) instanceof 1 object PASSED!
+(Gen2 instance) instanceof 2 object PASSED!
+(Gen2 instance) instanceof 3 object PASSED!
+(Gen0 instance) instanceof 0 object PASSED!
+(Gen0 instance) instanceof 1 object PASSED!
+(Gen0 instance) instanceof 2 object PASSED!
+(Gen0 instance) instanceof 3 object PASSED!
+(Gen0 instance) instanceof [class Object] PASSED!
+(Gen0 instance) instanceof [class Function] PASSED!
+(0 object) instanceof [class Function] PASSED!
+(0 object) instanceof [class Object] PASSED!
