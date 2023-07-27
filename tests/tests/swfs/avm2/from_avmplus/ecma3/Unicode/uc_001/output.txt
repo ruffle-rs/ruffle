@@ -1,0 +1,4 @@
+Number(00) PASSED!
+Number(01) PASSED!
+Number(02) PASSED!
+Number(03) PASSED!

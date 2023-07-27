@@ -1,0 +1,63 @@
+Unicode String.search from 0x1400 to 0x1400 PASSED!
+Unicode String.search for 3 chars from 0x1400 to 0x1400 PASSED!
+Unicode String.match PASSED!
+Unicode String.split PASSED!
+Unicode String.replace PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Unicode String.search from 0x14FB to 0x14FB PASSED!
+Unicode String.search for 3 chars from 0x14FB to 0x14FB PASSED!
+Unicode String.match PASSED!
+Unicode String.split PASSED!
+Unicode String.replace PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Unicode String.search from 0x15F6 to 0x15F6 PASSED!
+Unicode String.search for 3 chars from 0x15F6 to 0x15F6 PASSED!
+Unicode String.match PASSED!
+Unicode String.split PASSED!
+Unicode String.replace PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Negative String.search PASSED!
+0x1400 to 0x14FA String.search(undefined) PASSED!
+0x1400 to 0x14FA String.search() PASSED!
+Negative String.match PASSED!
+0x1400 to 0x14FA String.match(undefined) PASSED!
+0x1400 to 0x14FA String.match() PASSED!
+String.split('') PASSED!
+String.split(new RegExp()) PASSED!
+String.split(new RegExp('')) PASSED!
+String.split(undefined) result length PASSED!
+String.split(undefined)[0] PASSED!
+String.replace(0x14000x14FA) PASSED!
+Negative String.search PASSED!
+0x14FB to 0x15F5 String.search(undefined) PASSED!
+0x14FB to 0x15F5 String.search() PASSED!
+Negative String.match PASSED!
+0x14FB to 0x15F5 String.match(undefined) PASSED!
+0x14FB to 0x15F5 String.match() PASSED!
+String.split('') PASSED!
+String.split(new RegExp()) PASSED!
+String.split(new RegExp('')) PASSED!
+String.split(undefined) result length PASSED!
+String.split(undefined)[0] PASSED!
+String.replace(0x14FB0x15F5) PASSED!
+Negative String.search PASSED!
+0x15F6 to 0x167F String.search(undefined) PASSED!
+0x15F6 to 0x167F String.search() PASSED!
+Negative String.match PASSED!
+0x15F6 to 0x167F String.match(undefined) PASSED!
+0x15F6 to 0x167F String.match() PASSED!
+String.split('') PASSED!
+String.split(new RegExp()) PASSED!
+String.split(new RegExp('')) PASSED!
+String.split(undefined) result length PASSED!
+String.split(undefined)[0] PASSED!
+String.replace(0x15F60x167F) PASSED!

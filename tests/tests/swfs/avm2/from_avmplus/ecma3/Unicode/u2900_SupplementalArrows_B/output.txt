@@ -1,0 +1,21 @@
+Unicode String.search from 0x2900 to 0x2900 PASSED!
+Unicode String.search for 3 chars from 0x2900 to 0x2900 PASSED!
+Unicode String.match PASSED!
+Unicode String.split PASSED!
+Unicode String.replace PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Negative String.search PASSED!
+0x2900 to 0x297F String.search(undefined) PASSED!
+0x2900 to 0x297F String.search() PASSED!
+Negative String.match PASSED!
+0x2900 to 0x297F String.match(undefined) PASSED!
+0x2900 to 0x297F String.match() PASSED!
+String.split('') PASSED!
+String.split(new RegExp()) PASSED!
+String.split(new RegExp('')) PASSED!
+String.split(undefined) result length PASSED!
+String.split(undefined)[0] PASSED!
+String.replace(0x29000x297F) PASSED!
