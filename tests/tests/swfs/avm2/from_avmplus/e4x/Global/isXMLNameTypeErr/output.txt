@@ -1,0 +1,4 @@
+Asserting for TypeError PASSED!
+var object1 = { toString: function() { return this; } }; isXMLName(object1) PASSED!
+Asserting for TypeError PASSED!
+var object2 = { toString: function() { return String(object1); } }; isXMLName(object2) PASSED!
