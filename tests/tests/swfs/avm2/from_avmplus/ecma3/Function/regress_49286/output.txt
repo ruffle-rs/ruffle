@@ -1,0 +1,2 @@
+Section A of test: direct call of f PASSED!
+Section B of test: indirect call of f PASSED!
