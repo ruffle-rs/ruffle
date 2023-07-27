@@ -2991,7 +2991,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         let address =
             usize::try_from(address).map_err(|_| "RangeError: The specified range is invalid")?;
-        dm.write_at_nongrowing(&val.to_le_bytes(), address)?;
+        dm.write_at_nongrowing(&val.to_le_bytes(), address)
+            .map_err(|e| e.to_avm(self))?;
 
         Ok(FrameControl::Continue)
     }
@@ -3008,7 +3009,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         let address =
             usize::try_from(address).map_err(|_| "RangeError: The specified range is invalid")?;
-        dm.write_at_nongrowing(&val.to_le_bytes(), address)?;
+        dm.write_at_nongrowing(&val.to_le_bytes(), address)
+            .map_err(|e| e.to_avm(self))?;
 
         Ok(FrameControl::Continue)
     }
@@ -3025,7 +3027,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         let address =
             usize::try_from(address).map_err(|_| "RangeError: The specified range is invalid")?;
-        dm.write_at_nongrowing(&val.to_le_bytes(), address)?;
+        dm.write_at_nongrowing(&val.to_le_bytes(), address)
+            .map_err(|e| e.to_avm(self))?;
 
         Ok(FrameControl::Continue)
     }
@@ -3042,7 +3045,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         let address =
             usize::try_from(address).map_err(|_| "RangeError: The specified range is invalid")?;
-        dm.write_at_nongrowing(&val.to_le_bytes(), address)?;
+        dm.write_at_nongrowing(&val.to_le_bytes(), address)
+            .map_err(|e| e.to_avm(self))?;
 
         Ok(FrameControl::Continue)
     }
@@ -3059,7 +3063,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         let address =
             usize::try_from(address).map_err(|_| "RangeError: The specified range is invalid")?;
-        dm.write_at_nongrowing(&val.to_le_bytes(), address)?;
+        dm.write_at_nongrowing(&val.to_le_bytes(), address)
+            .map_err(|e| e.to_avm(self))?;
 
         Ok(FrameControl::Continue)
     }

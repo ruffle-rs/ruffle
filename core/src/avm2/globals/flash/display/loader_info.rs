@@ -402,13 +402,17 @@ pub fn get_bytes<'gc>(
         // the implicit end tag we want to get rid of.
         let correct_header_length = ba_write.len() - 2;
         ba_write.set_position(correct_header_length);
-        ba_write.write_bytes(root.data())?;
+        ba_write
+            .write_bytes(root.data())
+            .map_err(|e| e.to_avm(activation))?;
 
         // `swf` wrote the wrong length (since we wrote the data
         // ourselves), so we need to overwrite it ourselves.
         ba_write.set_position(4);
         ba_write.set_endian(Endian::Little);
-        ba_write.write_unsigned_int((root.data().len() + correct_header_length) as u32)?;
+        ba_write
+            .write_unsigned_int((root.data().len() + correct_header_length) as u32)
+            .map_err(|e| e.to_avm(activation))?;
 
         // Finally, reset the array to the correct state.
         ba_write.set_position(0);

@@ -271,7 +271,9 @@ pub fn read_bytes<'gc>(
             .as_bytearray_mut(activation.gc())
             .expect("Parameter must be a bytearray!");
 
-        ba_write.write_at(&to_write, offset)?;
+        ba_write
+            .write_at(&to_write, offset)
+            .map_err(|e| e.to_avm(activation))?;
     }
 
     Ok(Value::Undefined)
