@@ -639,6 +639,10 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.clip_events = value;
     }
 
+    pub fn set_clip_events_inplace(&mut self, value: swf::ClipEventFlag) {
+        self.clip_events |= value;
+    }
+
     fn has_clip_event(&self, event: crate::events::ClipEvent<'gc>) -> bool {
         if let Some(flag) = event.flag() {
             return self.clip_events().contains(flag);
@@ -1670,16 +1674,17 @@ pub trait TDisplayObject<'gc>:
         self.base_mut(gc_context).set_clip_events(value);
     }
 
+    fn set_clip_events_inplace(&mut self, gc_context: MutationContext<'gc, '_>, value: swf::ClipEventFlag) {
+        self.base_mut(gc_context).set_clip_events_inplace(value);
+    }
+
     fn has_clip_event(&self, event: crate::events::ClipEvent<'gc>) -> bool {
         self.base().has_clip_event(event)
     }
 
     fn update_clip_events(&mut self, gc_context: MutationContext<'gc, '_>, name: &str) {
         if let Some(event) = crate::events::method_name_to_clip_event(name) {
-            self.set_clip_events(
-                gc_context,
-                self.clip_events() | event.flag().unwrap(),
-            );
+            self.set_clip_events_inplace(gc_context, event.flag().unwrap());
         }
     }
 
