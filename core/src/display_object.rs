@@ -557,16 +557,6 @@ impl<'gc> DisplayObjectBase<'gc> {
             .set(DisplayObjectFlags::SKIP_NEXT_ENTER_FRAME, skip);
     }
 
-    fn should_propagate_to_children(&self) -> bool {
-        self.flags
-            .contains(DisplayObjectFlags::PROPAGATE_TO_CHILDREN)
-    }
-
-    fn set_propagate_to_children(&mut self, propagate: bool) {
-        self.flags
-            .set(DisplayObjectFlags::PROPAGATE_TO_CHILDREN, propagate);
-    }
-
     fn set_avm1_removed(&mut self, value: bool) {
         self.flags.set(DisplayObjectFlags::AVM1_REMOVED, value);
     }
@@ -1582,22 +1572,6 @@ pub trait TDisplayObject<'gc>:
         self.invalidate_cached_bitmap(gc_context);
     }
 
-    /// Whether we should propagate `ClipEvent`s down to our children.
-    fn should_propagate_to_children(&self) -> bool {
-        self.base().should_propagate_to_children()
-    }
-
-    /// Sets whether we should propagate `ClipEvent`s down to our children.
-    fn set_propagate_to_children(&mut self, gc_context: MutationContext<'gc, '_>, propagate: bool) {
-        self.base_mut(gc_context)
-            .set_propagate_to_children(propagate);
-        if let Some(parent) = self.parent() {
-            parent
-                .base_mut(gc_context)
-                .set_propagate_to_children(propagate);
-        }
-    }
-
     /// Whether this object has been removed. Only applies to AVM1.
     fn avm1_removed(&self) -> bool {
         self.base().avm1_removed()
@@ -1701,11 +1675,6 @@ pub trait TDisplayObject<'gc>:
                 gc_context,
                 self.clip_events() | event.flag().unwrap().into(),
             );
-            if let Some(mut parent) = self.parent() {
-                if event.propagates() && !parent.should_propagate_to_children() {
-                    parent.set_propagate_to_children(gc_context, true);
-                }
-            }
         }
     }
 
@@ -2408,12 +2377,6 @@ bitflags! {
 
         /// If this object has already had `invalidate_cached_bitmap` called this frame
         const CACHE_INVALIDATED          = 1 << 12;
-
-        /// Flag set if any of our children have a propagating event (eg. `onMouseDown`).
-        /// This is done to allow for skipping event propagation,
-        /// if none of our children (and their children) have a
-        /// propagating event.
-        const PROPAGATE_TO_CHILDREN    = 1 << 13;
     }
 }
 
