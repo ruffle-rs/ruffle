@@ -1,0 +1,7 @@
+1 PASSED!
+x.a.* PASSED!
+xmllist.a.* PASSED!
+xmllist.* PASSED!
+xmllist[0].* PASSED!
+xmllist[0].e.* PASSED!
+xml.a.@* PASSED!

@@ -1,0 +1,14 @@
+2 PASSED!
+3 PASSED!
+4 PASSED!
+6 PASSED!
+7 PASSED!
+7 PASSED!
+property name is not array index : PASSED!
+Adding new nested node at root:  PASSED!
+property name exists in XMLList     : PASSED!
+property name does NOT exist in XMLList : PASSED!
+property is XML with non-null parent    : PASSED!
+AssignmentExpression = XML value        : PASSED!
+AssignmentExpression = XMLList object   : PASSED!
+AssignmentExpression != XML/XMLList     : PASSED!
