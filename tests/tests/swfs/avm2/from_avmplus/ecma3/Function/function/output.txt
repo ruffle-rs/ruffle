@@ -1,0 +1,2 @@
+var f:Function = function():void{}; f.someProperty=new Array(1,2,3,) PASSED!
+The optional identifier for a function expression should be valid within the body of the function PASSED!
