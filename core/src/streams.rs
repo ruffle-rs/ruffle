@@ -226,10 +226,14 @@ pub struct NetStreamData<'gc> {
     /// The URL of the requested FLV if one exists.
     url: Option<String>,
 
-    /// The currently playing audio track's `Substream` and associated
-    /// audio instance.
+    /// The `Substream` associated with the currently playing audio track and
+    /// the expected playback format of that audio.
     #[collect(require_static)]
-    audio_stream: Option<(Substream, SoundInstanceHandle)>,
+    audio_stream: Option<(Substream, SoundStreamInfo)>,
+
+    /// The currently playing sound stream
+    #[collect(require_static)]
+    sound_instance: Option<SoundInstanceHandle>,
 
     /// The MovieClip this `NetStream` is attached to.
     attached_to: Option<MovieClip<'gc>>,
@@ -250,6 +254,7 @@ impl<'gc> NetStream<'gc> {
                 avm2_client: None,
                 url: None,
                 audio_stream: None,
+                sound_instance: None,
                 attached_to: None,
             },
         ))
@@ -340,7 +345,7 @@ impl<'gc> NetStream<'gc> {
     pub fn was_detached(self, context: &mut UpdateContext<'_, 'gc>) {
         let mut write = self.0.write(context.gc_context);
 
-        if let Some((_substream, sound_instance)) = &write.audio_stream {
+        if let Some(sound_instance) = &write.sound_instance {
             context
                 .audio_manager
                 .stop_sound(context.audio, *sound_instance);
@@ -358,7 +363,7 @@ impl<'gc> NetStream<'gc> {
         // Stop the old sound; the new one will stream at the next tag read.
         // TODO: Change this to have `audio_manager` just switch the sound
         // transforms around
-        if let Some((_substream, sound_instance)) = &write.audio_stream {
+        if let Some(sound_instance) = &write.sound_instance {
             context
                 .audio_manager
                 .stop_sound(context.audio, *sound_instance);
@@ -378,114 +383,147 @@ impl<'gc> NetStream<'gc> {
         write: &mut NetStreamData<'gc>,
         slice: &Slice,
         audio_data: FlvAudioData<'_>,
-    ) {
+    ) -> Result<(), NetstreamError> {
         let attached_to = write.attached_to;
-        match &mut write.audio_stream {
-            Some((substream, audio_handle)) if context.audio.is_sound_playing(*audio_handle) => {
+        let data = match audio_data.data {
+            FlvAudioDataType::Raw(data)
+            | FlvAudioDataType::AacSequenceHeader(data)
+            | FlvAudioDataType::AacRaw(data) => slice.to_subslice(data),
+        };
+        let substream = match &mut write.audio_stream {
+            Some((substream, sound_stream_info)) => {
                 if substream
                     .last_chunk()
-                    .map(|lc| lc.end() > slice.start())
+                    .map(|lc| lc.end() > data.start())
                     .unwrap_or(false)
                 {
                     // Reject repeats of existing tags.
                     // This assumes that tags are processed in-order - which
                     // should always be the case.
-                    return;
+                    return Ok(());
                 }
 
-                let result = match audio_data.data {
-                    FlvAudioDataType::Raw(data)
-                    | FlvAudioDataType::AacSequenceHeader(data)
-                    | FlvAudioDataType::AacRaw(data) => substream.append(slice.to_subslice(data)),
-                };
-
-                if let Err(e) = result {
-                    tracing::error!("Error encountered appending substream: {}", e);
-                }
+                substream
             }
             audio_stream => {
-                //None or not playing
+                // None
                 let mut substream = Substream::new(slice.buffer().clone());
-                let audio_handle = (|| {
-                    let swf_format = SoundFormat {
-                        compression: match audio_data.format {
-                            FlvSoundFormat::LinearPCMPlatformEndian => {
-                                AudioCompression::UncompressedUnknownEndian
-                            }
-                            FlvSoundFormat::Adpcm => AudioCompression::Adpcm,
-                            FlvSoundFormat::MP3 => AudioCompression::Mp3,
-                            FlvSoundFormat::LinearPCMLittleEndian => AudioCompression::Uncompressed,
-                            FlvSoundFormat::Nellymoser16kHz => AudioCompression::Nellymoser16Khz,
-                            FlvSoundFormat::Nellymoser8kHz => AudioCompression::Nellymoser8Khz,
-                            FlvSoundFormat::Nellymoser => AudioCompression::Nellymoser,
-                            FlvSoundFormat::G711ALawPCM => {
-                                return Err(NetstreamError::UnknownCodec)
-                            }
-                            FlvSoundFormat::G711MuLawPCM => {
-                                return Err(NetstreamError::UnknownCodec)
-                            }
-                            FlvSoundFormat::Aac => return Err(NetstreamError::UnknownCodec),
-                            FlvSoundFormat::Speex => AudioCompression::Speex,
-                            FlvSoundFormat::MP38kHz => AudioCompression::Mp3,
-                            FlvSoundFormat::DeviceSpecific => {
-                                return Err(NetstreamError::UnknownCodec)
-                            }
-                        },
-                        sample_rate: match (audio_data.format, audio_data.rate) {
-                            (FlvSoundFormat::MP38kHz, _) => 8_000,
-                            (_, FlvSoundRate::R5_500) => 5_500,
-                            (_, FlvSoundRate::R11_000) => 11_000,
-                            (_, FlvSoundRate::R22_000) => 22_000,
-                            (_, FlvSoundRate::R44_000) => 44_000,
-                        },
-                        is_stereo: match audio_data.sound_type {
-                            FlvSoundType::Mono => false,
-                            FlvSoundType::Stereo => true,
-                        },
-                        is_16_bit: match audio_data.size {
-                            FlvSoundSize::Bits8 => false,
-                            FlvSoundSize::Bits16 => true,
-                        },
-                    };
-
-                    let sound_stream_head = SoundStreamInfo {
-                        wrapping: SoundStreamWrapping::Unwrapped,
-                        stream_format: swf_format,
-                        num_samples_per_block: 0,
-                        latency_seek: 0,
-                    };
-
-                    match audio_data.data {
-                        FlvAudioDataType::Raw(data)
-                        | FlvAudioDataType::AacSequenceHeader(data)
-                        | FlvAudioDataType::AacRaw(data) => {
-                            substream.append(slice.to_subslice(data))?
+                let swf_format = SoundFormat {
+                    compression: match audio_data.format {
+                        FlvSoundFormat::LinearPCMPlatformEndian => {
+                            AudioCompression::UncompressedUnknownEndian
                         }
-                    };
+                        FlvSoundFormat::Adpcm => AudioCompression::Adpcm,
+                        FlvSoundFormat::MP3 => AudioCompression::Mp3,
+                        FlvSoundFormat::LinearPCMLittleEndian => AudioCompression::Uncompressed,
+                        FlvSoundFormat::Nellymoser16kHz => AudioCompression::Nellymoser16Khz,
+                        FlvSoundFormat::Nellymoser8kHz => AudioCompression::Nellymoser8Khz,
+                        FlvSoundFormat::Nellymoser => AudioCompression::Nellymoser,
+                        FlvSoundFormat::G711ALawPCM => return Err(NetstreamError::UnknownCodec),
+                        FlvSoundFormat::G711MuLawPCM => return Err(NetstreamError::UnknownCodec),
+                        FlvSoundFormat::Aac => return Err(NetstreamError::UnknownCodec),
+                        FlvSoundFormat::Speex => AudioCompression::Speex,
+                        FlvSoundFormat::MP38kHz => AudioCompression::Mp3,
+                        FlvSoundFormat::DeviceSpecific => return Err(NetstreamError::UnknownCodec),
+                    },
+                    sample_rate: match (audio_data.format, audio_data.rate) {
+                        (FlvSoundFormat::MP38kHz, _) => 8_000,
+                        (_, FlvSoundRate::R5_500) => 5_500,
+                        (_, FlvSoundRate::R11_000) => 11_000,
+                        (_, FlvSoundRate::R22_000) => 22_000,
+                        (_, FlvSoundRate::R44_000) => 44_000,
+                    },
+                    is_stereo: match audio_data.sound_type {
+                        FlvSoundType::Mono => false,
+                        FlvSoundType::Stereo => true,
+                    },
+                    is_16_bit: match audio_data.size {
+                        FlvSoundSize::Bits8 => false,
+                        FlvSoundSize::Bits16 => true,
+                    },
+                };
 
-                    if context.is_action_script_3() {
-                        Ok(context
-                            .audio
-                            .start_substream(substream.clone(), &sound_stream_head)?)
-                    } else if let Some(mc) = attached_to {
-                        Ok(context.audio_manager.start_substream(
-                            context.audio,
-                            substream.clone(),
-                            mc,
-                            &sound_stream_head,
-                        )?)
-                    } else {
-                        return Err(NetstreamError::NotAttached);
-                    }
-                })();
+                let sound_stream_head = SoundStreamInfo {
+                    wrapping: SoundStreamWrapping::Unwrapped,
+                    stream_format: swf_format,
+                    num_samples_per_block: 0,
+                    latency_seek: 0,
+                };
 
-                if let Err(e) = audio_handle {
-                    tracing::error!("Error encountered starting stream: {}", e);
-                } else {
-                    *audio_stream = Some((substream, audio_handle.unwrap()));
-                }
+                *audio_stream = Some((substream, sound_stream_head));
+
+                &mut audio_stream.as_mut().unwrap().0
             }
         };
+
+        Ok(substream.append(data)?)
+    }
+
+    /// Determine if the given sound is currently playing.
+    fn sound_currently_playing(
+        context: &mut UpdateContext<'_, 'gc>,
+        sound: &Option<SoundInstanceHandle>,
+    ) -> bool {
+        sound
+            .map(|si| context.audio.is_sound_playing(si))
+            .unwrap_or(false)
+    }
+
+    /// Clean up after a sound instance that has finished playing.
+    ///
+    /// Generally speaking, streams are only to be used once. However, the
+    /// audio backend will only retain information about sounds that are
+    /// currently playing, so if the sound has finished since the last tick, we
+    /// need to restart it.
+    ///
+    /// Intended to be called at the start of tag processing, before any new
+    /// audio data has been streamed.
+    fn collect_sound_stream(
+        self,
+        context: &mut UpdateContext<'_, 'gc>,
+        write: &mut NetStreamData<'gc>,
+    ) {
+        if !Self::sound_currently_playing(context, &write.sound_instance) {
+            write.audio_stream = None;
+            write.sound_instance = None;
+        }
+    }
+
+    /// Ensure that if we have queued up audio into a sound stream, that said
+    /// stream gets sent over to the audio backend.
+    ///
+    /// Intended to be called at the end of tag processing. Audio processing
+    /// should occur only after a minimum number of tags have been processed to
+    /// avoid audio underruns.
+    fn commit_sound_stream(
+        self,
+        context: &mut UpdateContext<'_, 'gc>,
+        write: &mut NetStreamData<'gc>,
+    ) -> Result<(), NetstreamError> {
+        if !Self::sound_currently_playing(context, &write.sound_instance) {
+            if let Some((substream, sound_stream_head)) = &mut write.audio_stream {
+                let attached_to = write.attached_to;
+
+                if context.is_action_script_3() {
+                    write.sound_instance = Some(
+                        context
+                            .audio
+                            .start_substream(substream.clone(), &sound_stream_head)?,
+                    );
+                } else if let Some(mc) = attached_to {
+                    write.sound_instance = Some(context.audio_manager.start_substream(
+                        context.audio,
+                        substream.clone(),
+                        mc,
+                        &sound_stream_head,
+                    )?);
+                } else {
+                    return Err(NetstreamError::NotAttached);
+                };
+            }
+        }
+
+        Ok(())
     }
 
     /// Process a parsed FLV video tag.
@@ -724,6 +762,8 @@ impl<'gc> NetStream<'gc> {
     pub fn tick(self, context: &mut UpdateContext<'_, 'gc>, dt: f64) {
         #![allow(clippy::explicit_auto_deref)] //Erroneous lint
         let mut write = self.0.write(context.gc_context);
+
+        self.collect_sound_stream(context, &mut write);
         let slice = write.buffer.to_full_slice();
         let buffer = slice.data();
 
@@ -831,7 +871,7 @@ impl<'gc> NetStream<'gc> {
                             max_lookahead_audio_tags -= 1;
                         }
 
-                        self.flv_audio_tag(context, &mut write, &slice, audio_data)
+                        self.flv_audio_tag(context, &mut write, &slice, audio_data);
                     }
                     FlvTagData::Video(video_data) if !is_lookahead_tag => self.flv_video_tag(
                         context,
@@ -862,6 +902,7 @@ impl<'gc> NetStream<'gc> {
         }
 
         write.stream_time = end_time;
+        self.commit_sound_stream(context, &mut write);
         drop(write);
 
         if end_of_video {
