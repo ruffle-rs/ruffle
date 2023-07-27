@@ -235,8 +235,9 @@ pub struct DisplayObjectBase<'gc> {
     #[collect(require_static)]
     opaque_background: Option<Color>,
 
+    #[collect(require_static)]
     /// `ClipEvent`s this display object handles.
-    clip_events: ClipEventFlags,
+    clip_events: swf::ClipEventFlag,
 
     /// Bit flags for various display object properties.
     flags: DisplayObjectFlags,
@@ -279,7 +280,7 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
             blend_mode: Default::default(),
             blend_shader: None,
             opaque_background: Default::default(),
-            clip_events: Default::default(),
+            clip_events: swf::ClipEventFlag::empty(),
             flags: DisplayObjectFlags::VISIBLE,
             scroll_rect: None,
             next_scroll_rect: Default::default(),
@@ -630,12 +631,19 @@ impl<'gc> DisplayObjectBase<'gc> {
         changed
     }
 
-    fn clip_events(&self) -> ClipEventFlags {
+    pub fn clip_events(&self) -> swf::ClipEventFlag {
         self.clip_events
     }
 
-    fn set_clip_events(&mut self, value: ClipEventFlags) {
+    pub fn set_clip_events(&mut self, value: swf::ClipEventFlag) {
         self.clip_events = value;
+    }
+
+    fn has_clip_event(&self, event: crate::events::ClipEvent<'gc>) -> bool {
+        if let Some(flag) = event.flag() {
+            return self.clip_events().contains(flag);
+        }
+        false
     }
 
     fn is_root(&self) -> bool {
@@ -1654,26 +1662,23 @@ pub trait TDisplayObject<'gc>:
         }
     }
 
-    fn clip_events(&self) -> ClipEventFlags {
+    fn clip_events(&self) -> swf::ClipEventFlag {
         self.base().clip_events()
     }
 
-    fn set_clip_events(&mut self, gc_context: MutationContext<'gc, '_>, value: ClipEventFlags) {
+    fn set_clip_events(&mut self, gc_context: MutationContext<'gc, '_>, value: swf::ClipEventFlag) {
         self.base_mut(gc_context).set_clip_events(value);
     }
 
     fn has_clip_event(&self, event: crate::events::ClipEvent<'gc>) -> bool {
-        if let Some(flag) = event.flag() {
-            return self.clip_events().contains(flag.into());
-        }
-        false
+        self.base().has_clip_event(event)
     }
 
     fn update_clip_events(&mut self, gc_context: MutationContext<'gc, '_>, name: &str) {
         if let Some(event) = crate::events::method_name_to_clip_event(name) {
             self.set_clip_events(
                 gc_context,
-                self.clip_events() | event.flag().unwrap().into(),
+                self.clip_events() | event.flag().unwrap(),
             );
         }
     }
@@ -2377,52 +2382,6 @@ bitflags! {
 
         /// If this object has already had `invalidate_cached_bitmap` called this frame
         const CACHE_INVALIDATED          = 1 << 12;
-    }
-}
-
-bitflags! {
-    /// `ClipEvent`s this display object handles.
-    /// NOTE: Same as `swf::ClipEventFlag`.
-    #[derive(Clone, Collect, Copy, Default)]
-    #[collect(require_static)]
-    pub struct ClipEventFlags: u32 {
-        const LOAD            = 1 << 0;
-        const ENTER_FRAME     = 1 << 1;
-        const UNLOAD          = 1 << 2;
-        const MOUSE_MOVE      = 1 << 3;
-        const MOUSE_DOWN      = 1 << 4;
-        const MOUSE_UP        = 1 << 5;
-        const KEY_DOWN        = 1 << 6;
-        const KEY_UP          = 1 << 7;
-
-        // Added in SWF6, but not version-gated.
-        const DATA            = 1 << 8;
-        const INITIALIZE      = 1 << 9;
-        const PRESS           = 1 << 10;
-        const RELEASE         = 1 << 11;
-        const RELEASE_OUTSIDE = 1 << 12;
-        const ROLL_OVER       = 1 << 13;
-        const ROLL_OUT        = 1 << 14;
-        const DRAG_OVER       = 1 << 15;
-        const DRAG_OUT        = 1 << 16;
-        const KEY_PRESS       = 1 << 17;
-
-        // Construct was only added in SWF7, but it's not version-gated;
-        // Construct events will still fire in SWF6 in a v7+ player (#1424).
-        const CONSTRUCT       = 1 << 18;
-    }
-
-}
-
-impl From<swf::ClipEventFlag> for ClipEventFlags {
-    fn from(other: swf::ClipEventFlag) -> Self {
-        Self::from_bits(other.bits()).unwrap_or_default()
-    }
-}
-
-impl From<ClipEventFlags> for bool {
-    fn from(_other: ClipEventFlags) -> bool {
-        false
     }
 }
 
