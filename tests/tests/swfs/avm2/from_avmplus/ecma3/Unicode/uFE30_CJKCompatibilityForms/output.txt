@@ -1,0 +1,21 @@
+Unicode String.search from 0xFE30 to 0xFE30 PASSED!
+Unicode String.search for 3 chars from 0xFE30 to 0xFE30 PASSED!
+Unicode String.match PASSED!
+Unicode String.split PASSED!
+Unicode String.replace PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Negative String.search PASSED!
+0xFE30 to 0xFE4F String.search(undefined) PASSED!
+0xFE30 to 0xFE4F String.search() PASSED!
+Negative String.match PASSED!
+0xFE30 to 0xFE4F String.match(undefined) PASSED!
+0xFE30 to 0xFE4F String.match() PASSED!
+String.split('') PASSED!
+String.split(new RegExp()) PASSED!
+String.split(new RegExp('')) PASSED!
+String.split(undefined) result length PASSED!
+String.split(undefined)[0] PASSED!
+String.replace(0xFE300xFE4F) PASSED!

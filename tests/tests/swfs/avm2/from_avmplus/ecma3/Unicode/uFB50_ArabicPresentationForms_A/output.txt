@@ -1,0 +1,63 @@
+Unicode String.search from 0xFB50 to 0xFB50 PASSED!
+Unicode String.search for 3 chars from 0xFB50 to 0xFB50 PASSED!
+Unicode String.match PASSED!
+Unicode String.split PASSED!
+Unicode String.replace PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Unicode String.search from 0xFC4B to 0xFC4B PASSED!
+Unicode String.search for 3 chars from 0xFC4B to 0xFC4B PASSED!
+Unicode String.match PASSED!
+Unicode String.split PASSED!
+Unicode String.replace PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Unicode String.search from 0xFD46 to 0xFD46 PASSED!
+Unicode String.search for 3 chars from 0xFD46 to 0xFD46 PASSED!
+Unicode String.match PASSED!
+Unicode String.split PASSED!
+Unicode String.replace PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Negative String.search PASSED!
+0xFB50 to 0xFC4A String.search(undefined) PASSED!
+0xFB50 to 0xFC4A String.search() PASSED!
+Negative String.match PASSED!
+0xFB50 to 0xFC4A String.match(undefined) PASSED!
+0xFB50 to 0xFC4A String.match() PASSED!
+String.split('') PASSED!
+String.split(new RegExp()) PASSED!
+String.split(new RegExp('')) PASSED!
+String.split(undefined) result length PASSED!
+String.split(undefined)[0] PASSED!
+String.replace(0xFB500xFC4A) PASSED!
+Negative String.search PASSED!
+0xFC4B to 0xFD45 String.search(undefined) PASSED!
+0xFC4B to 0xFD45 String.search() PASSED!
+Negative String.match PASSED!
+0xFC4B to 0xFD45 String.match(undefined) PASSED!
+0xFC4B to 0xFD45 String.match() PASSED!
+String.split('') PASSED!
+String.split(new RegExp()) PASSED!
+String.split(new RegExp('')) PASSED!
+String.split(undefined) result length PASSED!
+String.split(undefined)[0] PASSED!
+String.replace(0xFC4B0xFD45) PASSED!
+Negative String.search PASSED!
+0xFD46 to 0xFDFF String.search(undefined) PASSED!
+0xFD46 to 0xFDFF String.search() PASSED!
+Negative String.match PASSED!
+0xFD46 to 0xFDFF String.match(undefined) PASSED!
+0xFD46 to 0xFDFF String.match() PASSED!
+String.split('') PASSED!
+String.split(new RegExp()) PASSED!
+String.split(new RegExp('')) PASSED!
+String.split(undefined) result length PASSED!
+String.split(undefined)[0] PASSED!
+String.replace(0xFD460xFDFF) PASSED!
