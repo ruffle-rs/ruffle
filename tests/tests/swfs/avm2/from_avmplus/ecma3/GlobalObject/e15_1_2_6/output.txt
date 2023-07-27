@@ -1,0 +1,62 @@
+isNaN.length PASSED!
+var MYPROPS='', for ( var p in isNaN ) { MYPROPS+= p }, MYPROPS PASSED!
+isNaN.length = null PASSED!
+delete isNaN.length PASSED!
+delete isNaN.length; isNaN.length PASSED!
+isNaN() PASSED!
+isNaN( null ) PASSED!
+isNaN( void 0 ) PASSED!
+isNaN( true ) PASSED!
+isNaN( false) PASSED!
+isNaN( ' ' ) PASSED!
+isNaN( 0 ) PASSED!
+isNaN( 1 ) PASSED!
+isNaN( 2 ) PASSED!
+isNaN( 3 ) PASSED!
+isNaN( 4 ) PASSED!
+isNaN( 5 ) PASSED!
+isNaN( 6 ) PASSED!
+isNaN( 7 ) PASSED!
+isNaN( 8 ) PASSED!
+isNaN( 9 ) PASSED!
+isNaN( -1 ) PASSED!
+isNaN( '-1' ) PASSED!
+isNaN( 1.23 ) PASSED!
+isNaN('1.23') PASSED!
+isNaN( -1.23 ) PASSED!
+isNaN( '-1.23' ) PASSED!
+isNaN( '0' ) PASSED!
+isNaN( '1' ) PASSED!
+isNaN( '2' ) PASSED!
+isNaN( '3' ) PASSED!
+isNaN( '4' ) PASSED!
+isNaN( '5' ) PASSED!
+isNaN( '6' ) PASSED!
+isNaN( '7' ) PASSED!
+isNaN( '8' ) PASSED!
+isNaN( '9' ) PASSED!
+isNaN( 0x0a ) PASSED!
+isNaN( 0xaa ) PASSED!
+isNaN( 0x0A ) PASSED!
+isNaN( 0xAA ) PASSED!
+isNaN( '0x0a' ) PASSED!
+isNaN( '0xaa' ) PASSED!
+isNaN( '0x0A' ) PASSED!
+isNaN( '0xAA' ) PASSED!
+isNaN( 077 ) PASSED!
+isNaN( '077' ) PASSED!
+isNaN( Number.NaN ) PASSED!
+isNaN( Number.POSITIVE_INFINITY ) PASSED!
+isNaN( Number.NEGATIVE_INFINITY ) PASSED!
+isNaN( Number.MAX_VALUE ) PASSED!
+isNaN( Number.MIN_VALUE ) PASSED!
+isNaN( NaN ) PASSED!
+isNaN( Infinity ) PASSED!
+isNaN( 'Infinity' ) PASSED!
+isNaN( '-Infinity' ) PASSED!
+isNaN( 'string' ) PASSED!
+isNaN({} ) PASSED!
+isNaN(undefined) PASSED!
+isNaN(arr) PASSED!
+isNaN(obj) PASSED!
+isNaN(mydate) PASSED!

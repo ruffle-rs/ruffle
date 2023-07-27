@@ -1,0 +1,23 @@
+encodeURIComponent('') PASSED!
+encodeURIComponent(str1) PASSED!
+encodeURIComponent('Hello{[World]}') PASSED!
+encodeURIComponent('Macromedia - Flash') PASSED!
+encodeURIComponent('2 * 4 + [8 + 5 ] - 3') PASSED!
+encodeURIComponent('Flash(Macromedia)') PASSED!
+encodeURIComponent('BugID #17485') PASSED!
+encodeURIComponent('http://www.macromedia.com/flasha player') PASSED!
+encodeURIComponent('http://www.macromedia.com/flashA player') PASSED!
+encodeURIComponent('http://www.macromedia.com/flash_ player') PASSED!
+encodeURIComponent('http://www.macromedia.com/flash- player') PASSED!
+encodeURIComponent('http://www.macromedia.com/flash. player') PASSED!
+encodeURIComponent('http://www.macromedia.com/flash! player') PASSED!
+encodeURIComponent('http://www.macromedia.com/flash~ player') PASSED!
+encodeURIComponent('http://www.macromedia.com/flash* player') PASSED!
+encodeURIComponent('http://www.macromedia.com/'flash player'') PASSED!
+encodeURIComponent('http://www.macromedia.com/(flash player)') PASSED!
+encodeURIComponent('http%3A%2F%2Fwww.macromedia.com/flash; player') PASSED!
+encodeURIComponent('http://www.macromedia.com/flash player?') PASSED!
+encodeURIComponent('http://www.macromedia.com/flash player@') PASSED!
+encodeURIComponent('http://www.macromedia.com/flash player&') PASSED!
+encodeURIComponent('http://www.macromedia.com/flash player=') PASSED!
+encodeURIComponent('http://www.macromedia.com/flash player$') PASSED!

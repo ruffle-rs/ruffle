@@ -1,0 +1,55 @@
+isFinite.length PASSED!
+isFinite.length = null PASSED!
+delete isFinite.length PASSED!
+delete isFinite.length; isFinite.length PASSED!
+var MYPROPS='', for ( var p in isFinite ) { MYPROPS+= p }, MYPROPS PASSED!
+isFinite() PASSED!
+isFinite( null ) PASSED!
+isFinite( void 0 ) PASSED!
+isFinite( false ) PASSED!
+isFinite( true) PASSED!
+isFinite( ' ' ) PASSED!
+isFinite( new Boolean(true) ) PASSED!
+isFinite( new Boolean(false) ) PASSED!
+isFinite( 0 ) PASSED!
+isFinite( 1 ) PASSED!
+isFinite( 2 ) PASSED!
+isFinite( 3 ) PASSED!
+isFinite( 4 ) PASSED!
+isFinite( 5 ) PASSED!
+isFinite( 6 ) PASSED!
+isFinite( 7 ) PASSED!
+isFinite( 8 ) PASSED!
+isFinite( 9 ) PASSED!
+isFinite( '0' ) PASSED!
+isFinite( '1' ) PASSED!
+isFinite( '2' ) PASSED!
+isFinite( '3' ) PASSED!
+isFinite( '4' ) PASSED!
+isFinite( '5' ) PASSED!
+isFinite( '6' ) PASSED!
+isFinite( '7' ) PASSED!
+isFinite( '8' ) PASSED!
+isFinite( '9' ) PASSED!
+isFinite( 0x0a ) PASSED!
+isFinite( 0xaa ) PASSED!
+isFinite( 0x0A ) PASSED!
+isFinite( 0xAA ) PASSED!
+isFinite( '0x0a' ) PASSED!
+isFinite( '0xaa' ) PASSED!
+isFinite( '0x0A' ) PASSED!
+isFinite( '0xAA' ) PASSED!
+isFinite( 077 ) PASSED!
+isFinite( '077' ) PASSED!
+isFinite( new String('Infinity') ) PASSED!
+isFinite( new String('-Infinity') ) PASSED!
+isFinite( 'Infinity' ) PASSED!
+isFinite( '-Infinity' ) PASSED!
+isFinite( Number.POSITIVE_INFINITY ) PASSED!
+isFinite( Number.NEGATIVE_INFINITY ) PASSED!
+isFinite( Number.NaN ) PASSED!
+isFinite( Infinity ) PASSED!
+isFinite( -Infinity ) PASSED!
+isFinite( NaN ) PASSED!
+isFinite( Number.MAX_VALUE ) PASSED!
+isFinite( Number.MIN_VALUE ) PASSED!
