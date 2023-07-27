@@ -1,0 +1,10 @@
+<a><child1/><child2/></a>
+<a><child1/><child2/><child3/><child4/></a>
+<a><child1/><child2/><child3/><child4/></a>
+true
+<child3>4</child3>
+<child4/>
+<a><child1/><child2/><child3>4</child3><child4/><child4>qwerty</child4></a>
+<a><child1/><child2/><child3>4</child3><child4/><child4>qwerty</child4><child4>[object Object]</child4></a>
+<b>abcdtext1</b>
+<b>text2</b>
