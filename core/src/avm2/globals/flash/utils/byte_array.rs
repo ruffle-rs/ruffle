@@ -1,5 +1,6 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::{Endian, ObjectEncoding};
+use crate::avm2::error::make_error_2008;
 pub use crate::avm2::object::byte_array_allocator;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
@@ -294,7 +295,7 @@ pub fn set_endian<'gc>(
         } else if &endian == b"littleEndian" {
             bytearray.set_endian(Endian::Little);
         } else {
-            return Err("Parameter type must be one of the accepted values.".into());
+            return Err(make_error_2008(activation, "endian"));
         }
     }
 
