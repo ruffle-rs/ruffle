@@ -1,4 +1,4 @@
-use crate::avm2::bytearray::{ByteArrayStorage, EofError};
+use crate::avm2::bytearray::{ByteArrayError, ByteArrayStorage};
 use crate::avm2::error::range_error;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::{Activation, Error, Value as Avm2Value};
@@ -1648,7 +1648,7 @@ pub fn set_pixels_from_byte_array<'gc>(
     width: i32,
     height: i32,
     bytearray: &mut ByteArrayStorage,
-) -> Result<(), EofError> {
+) -> Result<(), ByteArrayError> {
     let mut region = PixelRegion::for_region_i32(x, y, width, height);
     region.clamp(target.width(), target.height());
     let transparency = target.transparency();
