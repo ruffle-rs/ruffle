@@ -25,3 +25,6 @@ help-menu-translate-ruffle = Vertaal Ruffle...
 help-menu-about = Over Ruffle
 debug-menu = Foutopsporingsmiddelen
 debug-menu-open-stage = Scherminformatie
+debug-menu-open-movie = Bekijk film
+debug-menu-open-movie-list = Laat bekende films zien
+debug-menu-search-display-objects = Bekijk weergaveobjecten...
