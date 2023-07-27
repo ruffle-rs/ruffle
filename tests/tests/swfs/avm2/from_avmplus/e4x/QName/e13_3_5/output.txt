@@ -1,0 +1,12 @@
+1 PASSED!
+2 PASSED!
+5 PASSED!
+6 PASSED!
+7 PASSED!
+8 PASSED!
+QName.localName PASSED!
+QName.localName PASSED!
+qn = new QName('validname'), QName.uri PASSED!
+qn = new QName(null, 'validname'), QName.uri PASSED!
+QName.uri PASSED!
+qn = new QName('', 'validname'), QName.uri PASSED!

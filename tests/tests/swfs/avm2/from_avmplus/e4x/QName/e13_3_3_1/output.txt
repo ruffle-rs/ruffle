@@ -1,0 +1,2 @@
+typeof QName.prototype PASSED!
+QName.prototype instanceof QName PASSED!

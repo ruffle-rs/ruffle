@@ -1,0 +1,3 @@
+QName.prototype.toString PASSED!
+qn.toString PASSED!
+qn = new QName(''), qn.toString PASSED!
