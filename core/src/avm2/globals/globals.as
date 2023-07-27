@@ -354,7 +354,8 @@ include "flash/text/engine/LigatureLevel.as"
 include "flash/text/engine/LineJustification.as"
 include "flash/text/engine/RenderingMode.as"
 
-include "flash/text/engine/TextJustifier.as" // TextJustifier needs to come before SpaceJustifier as the latter is a subclass
+include "flash/text/engine/TextJustifier.as" // TextJustifier needs to come before SpaceJustifier and EastAsianJustifier since the latter two extend the first
+include "flash/text/engine/EastAsianJustifier.as"
 include "flash/text/engine/SpaceJustifier.as"
 
 include "flash/text/engine/TabAlignment.as"
