@@ -180,7 +180,9 @@ pub fn compute_spectrum<'gc>(
     // Writing out the left channel values.
     'outer: for sample in &hist[..256] {
         for _ in 0..repeats {
-            bytearray.write_float(sample[0])?;
+            bytearray
+                .write_float(sample[0])
+                .map_err(|e| e.to_avm(activation))?;
             if bytearray.position() >= 1024 {
                 break 'outer;
             }
@@ -189,7 +191,9 @@ pub fn compute_spectrum<'gc>(
     // Writing out the right channel values.
     'outer: for sample in &hist[..256] {
         for _ in 0..repeats {
-            bytearray.write_float(sample[1])?;
+            bytearray
+                .write_float(sample[1])
+                .map_err(|e| e.to_avm(activation))?;
             if bytearray.position() >= 2048 {
                 break 'outer;
             }

@@ -1619,6 +1619,7 @@ pub fn set_vector<'gc>(
 }
 
 pub fn get_pixels_as_byte_array<'gc>(
+    activation: &mut Activation<'_, 'gc>,
     target: BitmapDataWrapper,
     x: i32,
     y: i32,
@@ -1633,7 +1634,9 @@ pub fn get_pixels_as_byte_array<'gc>(
     for y in region.y_min..region.y_max {
         for x in region.x_min..region.x_max {
             let color = read.get_pixel32_raw(x, y);
-            result.write_unsigned_int(color.to_un_multiplied_alpha().into())?;
+            result
+                .write_unsigned_int(color.to_un_multiplied_alpha().into())
+                .map_err(|e| e.to_avm(activation))?;
         }
     }
 
