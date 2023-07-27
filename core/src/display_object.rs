@@ -5,6 +5,7 @@ use crate::avm2::{
 };
 use crate::context::{RenderContext, UpdateContext};
 use crate::drawing::Drawing;
+use crate::events::ClipEvent;
 use crate::prelude::*;
 use crate::string::{AvmString, WString};
 use crate::tag_utils::SwfMovie;
@@ -648,6 +649,20 @@ impl<'gc> DisplayObjectBase<'gc> {
             return self.clip_events().contains(flag);
         }
         false
+    }
+
+    fn add_button_actions_to_clip_events(&mut self, button: swf::Button<'_>) {
+        let mut all_button_actions = swf::ButtonActionCondition::empty();
+        for action in &button.actions {
+            all_button_actions |= action.conditions;
+        }
+        self.set_clip_events_inplace(crate::events::button_action_conditions_to_clip_events(
+            all_button_actions,
+        ));
+    }
+
+    fn update_clip_events(&mut self, event: ClipEvent<'_>) {
+        self.set_clip_events_inplace(event.flag().unwrap_or(swf::ClipEventFlag::empty()));
     }
 
     fn is_root(&self) -> bool {
@@ -1674,7 +1689,11 @@ pub trait TDisplayObject<'gc>:
         self.base_mut(gc_context).set_clip_events(value);
     }
 
-    fn set_clip_events_inplace(&mut self, gc_context: MutationContext<'gc, '_>, value: swf::ClipEventFlag) {
+    fn set_clip_events_inplace(
+        &mut self,
+        gc_context: MutationContext<'gc, '_>,
+        value: swf::ClipEventFlag,
+    ) {
         self.base_mut(gc_context).set_clip_events_inplace(value);
     }
 
@@ -1682,10 +1701,17 @@ pub trait TDisplayObject<'gc>:
         self.base().has_clip_event(event)
     }
 
-    fn update_clip_events(&mut self, gc_context: MutationContext<'gc, '_>, name: &str) {
-        if let Some(event) = crate::events::method_name_to_clip_event(name) {
-            self.set_clip_events_inplace(gc_context, event.flag().unwrap());
-        }
+    fn add_button_actions_to_clip_events<'a>(
+        &mut self,
+        gc_context: MutationContext<'gc, '_>,
+        button: swf::Button<'a>,
+    ) {
+        self.base_mut(gc_context)
+            .add_button_actions_to_clip_events(button);
+    }
+
+    fn update_clip_events(&mut self, gc_context: MutationContext<'gc, '_>, event: ClipEvent<'_>) {
+        self.base_mut(gc_context).update_clip_events(event);
     }
 
     /// Whether this display object represents the root of loaded content.
@@ -2057,6 +2083,10 @@ pub trait TDisplayObject<'gc>:
     }
     fn as_interactive(self) -> Option<InteractiveObject<'gc>> {
         None
+    }
+
+    fn is_button(self) -> bool {
+        self.as_avm1_button().is_some() || self.as_avm2_button().is_some()
     }
 
     fn apply_place_object(

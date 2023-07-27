@@ -110,7 +110,7 @@ impl<'gc> Avm2Button<'gc> {
             over_to_up_sound: None,
         };
 
-        Avm2Button(GcCell::new(
+        let result = Avm2Button(GcCell::new(
             context.gc_context,
             Avm2ButtonData {
                 base: Default::default(),
@@ -134,7 +134,11 @@ impl<'gc> Avm2Button<'gc> {
                 use_hand_cursor: true,
                 skip_current_frame: false,
             },
-        ))
+        ));
+        result
+            .base_mut(context.gc_context)
+            .add_button_actions_to_clip_events(button.clone());
+        result
     }
 
     pub fn empty_button(context: &mut UpdateContext<'_, 'gc>) -> Self {

@@ -354,6 +354,38 @@ impl<'gc> ClipEvent<'gc> {
     }
 }
 
+pub fn button_action_condition_to_clip_event(
+    condition: swf::ButtonActionCondition,
+) -> Option<ClipEvent<'static>> {
+    match condition {
+        swf::ButtonActionCondition::IDLE_TO_OVER_UP => Some(ClipEvent::RollOver { from: None }),
+        swf::ButtonActionCondition::OVER_UP_TO_IDLE => Some(ClipEvent::RollOut { to: None }),
+        swf::ButtonActionCondition::OVER_UP_TO_OVER_DOWN => Some(ClipEvent::Press),
+        swf::ButtonActionCondition::OVER_DOWN_TO_OVER_UP => Some(ClipEvent::Release),
+        swf::ButtonActionCondition::OVER_DOWN_TO_OUT_DOWN => Some(ClipEvent::DragOut { to: None }),
+        swf::ButtonActionCondition::OUT_DOWN_TO_OVER_DOWN => {
+            Some(ClipEvent::DragOver { from: None })
+        }
+        swf::ButtonActionCondition::OUT_DOWN_TO_IDLE => Some(ClipEvent::ReleaseOutside),
+        swf::ButtonActionCondition::KEY_PRESS => Some(ClipEvent::KeyPress {
+            key_code: ButtonKeyCode::Unknown,
+        }),
+        _ => None,
+    }
+}
+
+pub fn button_action_conditions_to_clip_events(
+    conditions: swf::ButtonActionCondition,
+) -> ClipEventFlag {
+    let mut events = ClipEventFlag::empty();
+    for condition in conditions {
+        if let Some(event) = button_action_condition_to_clip_event(condition) {
+            events |= event.flag().unwrap_or(ClipEventFlag::empty());
+        }
+    }
+    events
+}
+
 pub fn method_name_to_clip_event(name: &str) -> Option<ClipEvent<'static>> {
     match name {
         "onDragOut" => Some(ClipEvent::DragOut { to: None }),
@@ -366,9 +398,12 @@ pub fn method_name_to_clip_event(name: &str) -> Option<ClipEvent<'static>> {
         "onMouseMove" => Some(ClipEvent::MouseMove),
         "onMouseUp" => Some(ClipEvent::MouseUp),
         "onPress" => Some(ClipEvent::Press),
-        "onRollOut" => Some(ClipEvent::RollOut { to: None }),
-        "onRollOver" => Some(ClipEvent::RollOver { from: None }),
-        "onRelease" => Some(ClipEvent::Release),
+        "onRollOut" | "onRollout" => Some(ClipEvent::RollOut { to: None }),
+        "onRollOver" | "onRollover" => Some(ClipEvent::RollOver { from: None }),
+        "onRelease" => {
+            tracing::info!("found onRelease");
+            Some(ClipEvent::Release)
+        }
         "onReleaseOutside" => Some(ClipEvent::ReleaseOutside),
         "onUnload" => Some(ClipEvent::Unload),
         _ => None,
