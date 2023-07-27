@@ -1,0 +1,4 @@
+myvar = new MyObject( true );  myvar.toString() PASSED!
+myvar = function() {};  myvar.toString() PASSED!
+Function.prototype.toString() PASSED!
+myvar = Function();  myvar.toString() PASSED!

@@ -1,0 +1,3 @@
+ToString.call( this, this ) PASSED!
+ToString.call( Boolean, Boolean.prototype ) PASSED!
+ToString.call( Boolean, Boolean.prototype.valueOf() ) PASSED!

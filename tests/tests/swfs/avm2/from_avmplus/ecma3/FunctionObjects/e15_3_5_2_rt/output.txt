@@ -1,0 +1,4 @@
+Function('function body') not supported PASSED!
+MyObject.length PASSED!
+typeof MyObject.prototype PASSED!
+typeof MyObject.prototype.constructor PASSED!
