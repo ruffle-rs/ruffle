@@ -7,6 +7,10 @@ package
     }
 }
 
+XML.prettyPrinting = false;
+
+trace("XMLList + XMLList");
+
 var test:XML = <root>
                 <list1>
                     <item>
@@ -28,9 +32,18 @@ var test:XML = <root>
 
 var list:XMLList = test.list1.item + test.list2.item;
 
-for (var i:int = 0; i < list.length(); i++)
-{
-    var val:XML = list[i];
+trace(list);
 
-    trace(val.text[0].toString());
-}
+var xml: XML = new XML("<a><b>A</b></a>");
+var list: XMLList = new XMLList("<c><d>B</d></c>");
+
+trace("XML + XMLList");
+trace(xml + list);
+
+trace("XMLList + XML");
+trace(list + xml);
+
+trace("XML + XML");
+var xml2: XML = new XML("<c>D</c>");
+
+trace(xml2 + xml);
