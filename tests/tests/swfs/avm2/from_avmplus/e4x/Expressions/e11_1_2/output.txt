@@ -1,0 +1,19 @@
+1 PASSED!
+2 PASSED!
+3 PASSED!
+4 PASSED!
+5 PASSED!
+body.ns2::GetLastTradePrice.symbol = "MACR" PASSED!
+ms1.ns1::Body == msg1[QName(ns1, "Body")] PASSED!
+msg1 == msg2 PASSED!
+msg1.@ns1::encodingStyle PASSED!
+msg3.ns1::Body.ns2::GetLastTradePrice.@ns2 PASSED!
+msg4.bakery.ns3::g.@* PASSED!
+x1.ns::* PASSED!
+x1.ns::a PASSED!
+x1.*::a PASSED!
+x1.ns::a PASSED!
+x1.@ns::['v'] PASSED!
+x1.@ns::['v'] PASSED!
+y1.@ns::*.length() PASSED!
+x1.* PASSED!

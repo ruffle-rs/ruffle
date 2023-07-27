@@ -1,0 +1,38 @@
+1 PASSED!
+2 PASSED!
+3 PASSED!
+4 PASSED!
+5 PASSED!
+6 PASSED!
+7.3 PASSED!
+7.4 PASSED!
+7 PASSED!
+7.1 PASSED!
+7.2 PASSED!
+8 PASSED!
+9 PASSED!
+10 PASSED!
+11 PASSED!
+12 PASSED!
+q3 = y.name() PASSED!
+x1.bravo.@[q3] PASSED!
+Attribute with apostrophe in it PASSED!
+Attribute with apostrophe in it PASSED!
+x1.node1[i].@attr PASSED!
+x1.node1[i].@attr = "new value" PASSED!
+x1.node1[i].@[placeHolder] PASSED!
+x1.node1[i].@[placeHolder] = "new value" PASSED!
+x1.node1[i].@attr PASSED!
+x1.node1[i].@attr = "new value" PASSED!
+x1.node1.@[attr-with-hyphen] PASSED!
+x1.node1.@[attr-with-hyphen] = "new value" PASSED!
+x1.namespace1::node1.@attr PASSED!
+x1.namespace1::node1.@attr = "new value" PASSED!
+y1.@a PASSED!
+y1.@[an] PASSED!
+y1.@* PASSED!
+y1.@ns::* PASSED!
+y1.@b PASSED!
+y1.@* PASSED!
+Reserved keyword used as attribute name PASSED!
+Access non-existent attribute PASSED!

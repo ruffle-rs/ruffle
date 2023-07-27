@@ -1,0 +1,33 @@
+1 PASSED!
+2 PASSED!
+3 PASSED!
+4 PASSED!
+5 PASSED!
+6 PASSED!
+7 PASSED!
+8 PASSED!
+9 PASSED!
+10 PASSED!
+11 PASSED!
+12 PASSED!
+13 PASSED!
+14 PASSED!
+15 PASSED!
+16 PASSED!
+17 PASSED!
+18 PASSED!
+19 PASSED!
+x = <{tagname} {attributename}={attributevalue}>{content}</{tagname}> PASSED!
+Evaluating expressions in a for loop PASSED!
+x = <person><name>John</name><age>25</age></person> PASSED!
+<xml><![CDATA[<hey>]]></xml> PASSED!
+<xml><b>heh            hey</b></xml> PASSED!
+x = new XML(""), xml = "", (xml == x) PASSED!
+<xml><![CDATA[characteristics:<ul> <li>A</li> <li>B</li>   </ul>]]></xml>, xml.toXMLString() PASSED!
+<xml><![CDATA[characteristics:<ul> <li>A</li> <li>B</li>   </ul>]]></xml>, xml.description.text() PASSED!
+<xml><![CDATA[characteristics:<ul> <li>A</li> <li>B</li>   </ul>]]></xml>, xml.description.child(0) PASSED!
+<xml><![CDATA[characteristics:<ul> <li>A</li> <li>B</li>   </ul>]]></xml>, xml.description.child(0).nodeKind() PASSED!
+desc = "this is the <i>text</i>"; x = <description>{"<![CDATA[" + desc + "]]>"}</description>; PASSED!
+desc = "this is the <i>text</i>"; x = <description>{"<![CDATA[" + desc + "]]>"}</description>; PASSED!
+Testing for extra directives PASSED!
+Testing for extra directives PASSED!

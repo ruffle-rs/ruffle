@@ -1,0 +1,14 @@
+1 PASSED!
+2 PASSED!
+3 PASSED!
+4 PASSED!
+5 PASSED!
+6 PASSED!
+7 PASSED!
+e.employee.(fname == "Joe") PASSED!
+employees with id's 1 & 2 PASSED!
+name of employee with id 1 PASSED!
+Compare to equivalent XMLList PASSED!
+1
+2
+employees.employee.(@id == idToFind) PASSED!
