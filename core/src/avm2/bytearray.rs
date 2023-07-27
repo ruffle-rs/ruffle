@@ -25,18 +25,23 @@ pub enum CompressionAlgorithm {
     Lzma,
 }
 
-pub struct EofError;
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ByteArrayError {
+    EndOfFile,
+}
 
-impl EofError {
+impl ByteArrayError {
     #[inline(never)]
-    pub fn to_avm<'gc>(&self, activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-        match eof_error(
-            activation,
-            "Error #2030: End of file was encountered.",
-            2030,
-        ) {
-            Ok(e) => Error::AvmError(e),
-            Err(e) => e,
+    pub fn to_avm<'gc>(self, activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+        match self {
+            ByteArrayError::EndOfFile => match eof_error(
+                activation,
+                "Error #2030: End of file was encountered.",
+                2030,
+            ) {
+                Ok(e) => Error::AvmError(e),
+                Err(e) => e,
+            },
         }
     }
 }
@@ -130,7 +135,7 @@ impl ByteArrayStorage {
 
     /// Reads any amount of bytes from the current position in the ByteArray
     #[inline]
-    pub fn read_bytes(&self, amnt: usize) -> Result<&[u8], EofError> {
+    pub fn read_bytes(&self, amnt: usize) -> Result<&[u8], ByteArrayError> {
         let bytes = self.read_at(amnt, self.position.get())?;
         self.position.set(self.position.get() + amnt);
         Ok(bytes)
@@ -139,7 +144,7 @@ impl ByteArrayStorage {
     /// Same as `read_bytes`, but:
     /// - cuts the result at the first null byte to recreate a bug in FP
     /// - strips off an optional UTF8 BOM at the beginning
-    pub fn read_utf_bytes(&self, amnt: usize) -> Result<&[u8], EofError> {
+    pub fn read_utf_bytes(&self, amnt: usize) -> Result<&[u8], ByteArrayError> {
         let mut bytes = self.read_bytes(amnt)?;
         if let Some(without_bom) = bytes.strip_prefix(&[0xEF, 0xBB, 0xBF]) {
             bytes = without_bom;
@@ -152,11 +157,11 @@ impl ByteArrayStorage {
 
     /// Reads any amount of bytes at any offset in the ByteArray
     #[inline]
-    pub fn read_at(&self, amnt: usize, offset: usize) -> Result<&[u8], EofError> {
+    pub fn read_at(&self, amnt: usize, offset: usize) -> Result<&[u8], ByteArrayError> {
         self.bytes
             .get(offset..)
             .and_then(|bytes| bytes.get(..amnt))
-            .ok_or(EofError)
+            .ok_or(ByteArrayError::EndOfFile)
     }
 
     /// Write bytes at any offset in the ByteArray
@@ -270,7 +275,7 @@ impl ByteArrayStorage {
         }
     }
 
-    pub fn read_utf(&self) -> Result<&[u8], EofError> {
+    pub fn read_utf(&self) -> Result<&[u8], ByteArrayError> {
         let len = self.read_unsigned_short()?;
         let val = self.read_utf_bytes(len.into())?;
         Ok(val)
@@ -280,7 +285,7 @@ impl ByteArrayStorage {
         self.write_bytes(&[val as u8; 1])
     }
 
-    pub fn read_boolean(&self) -> Result<bool, EofError> {
+    pub fn read_boolean(&self) -> Result<bool, ByteArrayError> {
         Ok(self.read_bytes(1)? != [0])
     }
 
@@ -465,14 +470,14 @@ macro_rules! impl_read{
     =>
     {
         impl ByteArrayStorage {
-            $( pub fn $method_name (&self) -> Result<$data_type, EofError> {
+            $( pub fn $method_name (&self) -> Result<$data_type, ByteArrayError> {
                 Ok(match self.endian {
                     Endian::Big => <$data_type>::from_be_bytes(self.read_bytes($size)?.try_into().unwrap()),
                     Endian::Little => <$data_type>::from_le_bytes(self.read_bytes($size)?.try_into().unwrap())
                 })
              } )*
 
-             $( pub fn $at_method_name (&self, offset: usize) -> Result<$data_type, EofError> {
+             $( pub fn $at_method_name (&self, offset: usize) -> Result<$data_type, ByteArrayError> {
                 Ok(match self.endian {
                     Endian::Big => <$data_type>::from_be_bytes(self.read_at($size, offset)?.try_into().unwrap()),
                     Endian::Little => <$data_type>::from_le_bytes(self.read_at($size, offset)?.try_into().unwrap())
