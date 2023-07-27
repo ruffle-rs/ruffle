@@ -1,0 +1,7 @@
+GetCallee() PASSED!
+GetLength(0,1,2,3,4) PASSED!
+GetArguments() PASSED!
+GetArguments() PASSED!
+GetArguments() PASSED!
+GetArguments() PASSED!
+GetArguments() PASSED!

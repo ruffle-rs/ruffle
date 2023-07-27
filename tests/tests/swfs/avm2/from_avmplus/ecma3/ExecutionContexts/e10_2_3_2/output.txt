@@ -1,0 +1,2 @@
+MyFunction("PASSED!") PASSED!
+MyOtherFunction(true); PASSED!
