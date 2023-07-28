@@ -1,5 +1,10 @@
-﻿package {
-	public class Test {
+﻿// compiled with mxmlc
+
+package {
+	import flash.display.MovieClip;
+	public class Test extends MovieClip {
+		public function Test(){
+		}
 	}
 }
 
@@ -56,6 +61,12 @@ var c_class = a_class.concat(b_class);
 
 trace("/// (contents of c_class...)");
 trace_vector(c_class);
+
+trace("var c_class_flipped = b_class.concat(new<Superclass>[new Subclass()]);");
+var c_class_flipped = b_class.concat(new<Superclass>[new Subclass()]);
+
+trace("/// (contents of c_class_flipped...)");
+trace_vector(c_class_flipped);
 
 interface Interface {
 	

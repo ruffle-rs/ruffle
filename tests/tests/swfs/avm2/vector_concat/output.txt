@@ -21,6 +21,11 @@ false
 [object Superclass]
 [object Subclass]
 [object Subclass]
+var c_class_flipped = b_class.concat(new<Superclass>[new Subclass()]);
+/// (contents of c_class_flipped...)
+///length:  2
+[object Subclass]
+[object Subclass]
 /// var a_iface: Vector.<Interface> = new <Interface>[];
 /// a_iface.length = 1;
 /// a_iface[0] = new Implementer();
