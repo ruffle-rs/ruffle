@@ -447,10 +447,16 @@ pub fn dispatch_event<'gc>(
         .unwrap_or(this);
 
     let mut ancestor_list = Vec::new();
-    let mut parent = parent_of(target);
-    while let Some(par) = parent {
-        ancestor_list.push(par);
-        parent = parent_of(par);
+    // Edge case - during button construction, we fire bubbling events for objects
+    // that are in the hierarchy (and have `DisplayObject.stage` return the actual stage),
+    // but do not yet have their *parent* object constructed. As a result, we walk through
+    // the parent DisplayObject hierarchy, only adding ancestors that have objects constructed.
+    let mut parent = target.as_display_object().and_then(|dobj| dobj.parent());
+    while let Some(parent_dobj) = parent {
+        if let Value::Object(parent_obj) = parent_dobj.object2() {
+            ancestor_list.push(parent_obj);
+        }
+        parent = parent_dobj.parent();
     }
 
     let dispatched = event.as_event().unwrap().dispatched;

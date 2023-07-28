@@ -1,0 +1,16 @@
+Main.onFrameConstructed: this.firstChild = null this.secondChild = null
+Main.onExitFrame: this.firstChild = null this.secondChild = null
+Main.onEnterFrame: this.firstChild = null this.secondChild = null
+FirstChild: before super() call - this.parent["firstChild"] = null
+FirstChild: after super() call - this.parent["firstChild"] = null
+FirstChild: running gotoAndStop on parent
+SecondChild: before super() call - this.parent["secondChild"] = null
+SecondChild: after super() call - this.parent["secondChild"] = null
+Main.onFrameConstructed: this.firstChild = null this.secondChild = [object SecondChild]
+Main.onExitFrame: this.firstChild = null this.secondChild = [object SecondChild]
+FirstChild: ran gotoAndStop on parent
+Main.onFrameConstructed: this.firstChild = [object FirstChild] this.secondChild = [object SecondChild]
+Main.onExitFrame: this.firstChild = [object FirstChild] this.secondChild = [object SecondChild]
+Main.onEnterFrame: this.firstChild = [object FirstChild] this.secondChild = [object SecondChild]
+Main.onFrameConstructed: this.firstChild = [object FirstChild] this.secondChild = [object SecondChild]
+Main.onExitFrame: this.firstChild = [object FirstChild] this.secondChild = [object SecondChild]
