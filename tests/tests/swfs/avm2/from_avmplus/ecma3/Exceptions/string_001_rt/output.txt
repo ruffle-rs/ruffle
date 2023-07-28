@@ -1,0 +1,1 @@
+OBJECT = new Object();  OBJECT.toString = String.prototype.toString; OBJECT.toString() (threw TypeError: Error #1004) PASSED!

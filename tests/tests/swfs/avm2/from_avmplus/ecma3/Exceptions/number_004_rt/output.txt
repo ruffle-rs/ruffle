@@ -1,0 +1,4 @@
+Assigning Number.prototype.toString as the toString of a String object  (threw ReferenceError: Error #1037) PASSED!
+Assigning Number.prototype.toString as the toString of new Number()  (threw ReferenceError: Error #1037) PASSED!
+Assigning Number.prototype.toString as the toString of new Number(4)  (threw ReferenceError: Error #1037) PASSED!
+Assigning Number.prototype.toString as the toString of '4'  (threw ReferenceError: Error #1037) PASSED!

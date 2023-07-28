@@ -1,0 +1,1 @@
+UNDEFINED = void 0; result = UNDEFINED() (threw TypeError: Error #1006: Call attempted on an object that is not a function.) PASSED!
