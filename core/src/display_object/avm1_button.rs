@@ -174,7 +174,7 @@ impl<'gc> Avm1Button<'gc> {
                 // Set transform of child (and modify previous child if it already existed)
                 child.set_matrix(context.gc_context, record.matrix.into());
                 child.set_color_transform(context.gc_context, record.color_transform);
-                child.set_blend_mode(context.gc_context, record.blend_mode);
+                child.set_blend_mode(context.gc_context, record.blend_mode.into());
                 child.set_filters(
                     context.gc_context,
                     record.filters.iter().map(Filter::from).collect(),

@@ -1,0 +1,9 @@
+filter checker is undefined PASSED!
+filter checker is not a function PASSED!
+filter empty vector PASSED!
+filter small vector PASSED!
+filter small Number vector PASSED!
+filter small vector PASSED!
+filter use thisobj PASSED!
+Bug 513095: Type-check filter function PASSED!
+Filtered custom class PASSED!

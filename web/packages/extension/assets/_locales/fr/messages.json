@@ -11,9 +11,6 @@
     "settings_autostart": {
         "message": "Lire automatiquement sans écran de démarrage (requiert un clic pour activer le son)"
     },
-    "settings_warn_on_unsupported_content": {
-        "message": "Avertir des contenus non pris en charge"
-    },
     "settings_log_level": {
         "message": "Niveau des logs"
     },

@@ -1,5 +1,6 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::{Endian, ObjectEncoding};
+use crate::avm2::error::make_error_2008;
 pub use crate::avm2::object::byte_array_allocator;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
@@ -23,7 +24,9 @@ pub fn write_byte<'gc>(
             .cloned()
             .unwrap_or(Value::Undefined)
             .coerce_to_i32(activation)?;
-        bytearray.write_bytes(&[byte as u8])?;
+        bytearray
+            .write_bytes(&[byte as u8])
+            .map_err(|e| e.to_avm(activation))?;
     }
 
     Ok(Value::Undefined)
@@ -67,7 +70,9 @@ pub fn write_bytes<'gc>(
             .map_err(|e| e.to_avm(activation))?;
 
         if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
-            bytearray.write_bytes(to_write)?;
+            bytearray
+                .write_bytes(to_write)
+                .map_err(|e| e.to_avm(activation))?;
         }
     } else if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
         // The ByteArray we are reading from is the same as the ByteArray we are writing to,
@@ -77,7 +82,9 @@ pub fn write_bytes<'gc>(
         } else {
             bytearray.len().saturating_sub(offset)
         };
-        bytearray.write_bytes_within(offset, amnt)?;
+        bytearray
+            .write_bytes_within(offset, amnt)
+            .map_err(|e| e.to_avm(activation))?;
     }
 
     Ok(Value::Undefined)
@@ -119,7 +126,9 @@ pub fn read_bytes<'gc>(
                 .as_bytearray_mut(activation.context.gc_context)
                 .ok_or("ArgumentError: Parameter must be a bytearray")?;
 
-            ba_write.write_at(to_write, offset)?;
+            ba_write
+                .write_at(to_write, offset)
+                .map_err(|e| e.to_avm(activation))?;
         }
     } else if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
         let amnt = if length != 0 {
@@ -128,7 +137,9 @@ pub fn read_bytes<'gc>(
             bytearray.bytes_available()
         };
         let pos = bytearray.position();
-        bytearray.write_at_within(pos, amnt, offset)?;
+        bytearray
+            .write_at_within(pos, amnt, offset)
+            .map_err(|e| e.to_avm(activation))?;
     }
 
     Ok(Value::Undefined)
@@ -145,7 +156,9 @@ pub fn write_utf<'gc>(
             // write ends with an unpaired high surrogate, the routine bails out and nothing
             // is written.
             // The bug is fixed on newer FP versions (e.g. v32), but the fix isn't SWF-version-gated.
-            bytearray.write_utf(&utf_string.to_utf8_lossy())?;
+            bytearray
+                .write_utf(&utf_string.to_utf8_lossy())
+                .map_err(|e| e.to_avm(activation))?;
         }
     }
 
@@ -294,7 +307,7 @@ pub fn set_endian<'gc>(
         } else if &endian == b"littleEndian" {
             bytearray.set_endian(Endian::Little);
         } else {
-            return Err("Parameter type must be one of the accepted values.".into());
+            return Err(make_error_2008(activation, "endian"));
         }
     }
 
@@ -470,7 +483,9 @@ pub fn write_float<'gc>(
             .get(0)
             .unwrap_or(&Value::Undefined)
             .coerce_to_number(activation)?;
-        bytearray.write_float(num as f32)?;
+        bytearray
+            .write_float(num as f32)
+            .map_err(|e| e.to_avm(activation))?;
     }
 
     Ok(Value::Undefined)
@@ -486,7 +501,9 @@ pub fn write_double<'gc>(
             .get(0)
             .unwrap_or(&Value::Undefined)
             .coerce_to_number(activation)?;
-        bytearray.write_double(num)?;
+        bytearray
+            .write_double(num)
+            .map_err(|e| e.to_avm(activation))?;
     }
 
     Ok(Value::Undefined)
@@ -499,7 +516,9 @@ pub fn write_boolean<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
         let num = args.get(0).unwrap_or(&Value::Undefined).coerce_to_boolean();
-        bytearray.write_boolean(num)?;
+        bytearray
+            .write_boolean(num)
+            .map_err(|e| e.to_avm(activation))?;
     }
 
     Ok(Value::Undefined)
@@ -515,7 +534,7 @@ pub fn write_int<'gc>(
             .get(0)
             .unwrap_or(&Value::Undefined)
             .coerce_to_i32(activation)?;
-        bytearray.write_int(num)?;
+        bytearray.write_int(num).map_err(|e| e.to_avm(activation))?;
     }
 
     Ok(Value::Undefined)
@@ -531,7 +550,9 @@ pub fn write_unsigned_int<'gc>(
             .get(0)
             .unwrap_or(&Value::Undefined)
             .coerce_to_u32(activation)?;
-        bytearray.write_unsigned_int(num)?;
+        bytearray
+            .write_unsigned_int(num)
+            .map_err(|e| e.to_avm(activation))?;
     }
 
     Ok(Value::Undefined)
@@ -547,7 +568,9 @@ pub fn write_short<'gc>(
             .get(0)
             .unwrap_or(&Value::Undefined)
             .coerce_to_i32(activation)?;
-        bytearray.write_short(num as i16)?;
+        bytearray
+            .write_short(num as i16)
+            .map_err(|e| e.to_avm(activation))?;
     }
 
     Ok(Value::Undefined)
@@ -571,7 +594,9 @@ pub fn write_multi_byte<'gc>(
             Encoding::for_label(charset_label.to_utf8_lossy().as_bytes()).unwrap_or(UTF_8);
         let utf8 = string.to_utf8_lossy();
         let (encoded_bytes, _, _) = encoder.encode(&utf8);
-        bytearray.write_bytes(&encoded_bytes)?;
+        bytearray
+            .write_bytes(&encoded_bytes)
+            .map_err(|e| e.to_avm(activation))?;
     }
 
     Ok(Value::Undefined)
@@ -620,7 +645,9 @@ pub fn write_utf_bytes<'gc>(
             .get(0)
             .unwrap_or(&Value::Undefined)
             .coerce_to_string(activation)?;
-        bytearray.write_bytes(string.to_utf8_lossy().as_bytes())?;
+        bytearray
+            .write_bytes(string.to_utf8_lossy().as_bytes())
+            .map_err(|e| e.to_avm(activation))?;
     }
 
     Ok(Value::Undefined)
@@ -648,7 +675,9 @@ pub fn compress<'gc>(
         };
         let buffer = bytearray.compress(algorithm);
         bytearray.clear();
-        bytearray.write_bytes(&buffer)?;
+        bytearray
+            .write_bytes(&buffer)
+            .map_err(|e| e.to_avm(activation))?;
         bytearray.set_position(bytearray.len());
     }
 
@@ -686,7 +715,9 @@ pub fn uncompress<'gc>(
             }
         };
         bytearray.clear();
-        bytearray.write_bytes(&buffer)?;
+        bytearray
+            .write_bytes(&buffer)
+            .map_err(|e| e.to_avm(activation))?;
         bytearray.set_position(0);
     }
 
@@ -754,10 +785,12 @@ pub fn write_object<'gc>(
                 AMFVersion::AMF0 => 8,
                 AMFVersion::AMF3 => 7,
             };
-            bytearray.write_bytes(
-                &bytes[flash_lso::write::header_length(&lso.header) + element_padding
-                    ..bytes.len() - 1],
-            )?;
+            bytearray
+                .write_bytes(
+                    &bytes[flash_lso::write::header_length(&lso.header) + element_padding
+                        ..bytes.len() - 1],
+                )
+                .map_err(|e| e.to_avm(activation))?;
         }
     }
 

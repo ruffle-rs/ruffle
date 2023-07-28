@@ -1,0 +1,5 @@
+return Vector.<Object> PASSED!
+return Vector.<String> PASSED!
+return Vector.<C> PASSED!
+return Vector.<int> PASSED!
+return Vector.<*> PASSED!

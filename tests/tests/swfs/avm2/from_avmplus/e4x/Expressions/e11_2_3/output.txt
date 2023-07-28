@@ -1,0 +1,9 @@
+1 PASSED!
+xml..validnode: PASSED!
+xml..validnode length: PASSED!
+xml..invalidnode: PASSED!
+xmllist..validnode: PASSED!
+xmllist..invalidnode: PASSED!
+xmllist..invalidnode length: PASSED!
+2 PASSED!
+3 PASSED!

@@ -1,5 +1,5 @@
 num_frames = 1
-ignore = true
+known_failure = true
 
 [approximations]
 epsilon = 5.0

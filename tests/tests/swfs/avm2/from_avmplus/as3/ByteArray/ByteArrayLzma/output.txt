@@ -1,0 +1,397 @@
+empty bytearray: expecting no exception PASSED!
+empty bytearray: expecting length no change  PASSED!
+zero length bytearray: expecting no exception PASSED!
+zero length bytearray: expecting length no change  PASSED!
+expecting thrown exception PASSED!
+expecting thrown exception compressWithZlibUncompressLzma PASSED!
+expecting thrown exception uncompressWithZlibUncompressLzma PASSED!
+uncompressWithoutCompressionLzma bytearray length matches before uncompress PASSED!
+ByteArray position after writing Booleans PASSED!
+boolean bytearray: expecting no exception PASSED!
+boolean bytearray: expecting length no change  PASSED!
+ByteArray move position to 0 PASSED!
+ByteArray write/read boolean true PASSED!
+ByteArray write/read boolean false PASSED!
+bytearray of short: expecting no exception PASSED!
+bytearray of short: expecting length no change  PASSED!
+ByteArray readShort_1 #1 bigEndian PASSED!
+ByteArray readShort_1 #2 bigEndian PASSED!
+ByteArray readShort_1 #3bigEndian PASSED!
+bytearray of short: expecting no exception PASSED!
+bytearray of short: expecting length no change  PASSED!
+ByteArray readShort_1 #1 littleEndian PASSED!
+ByteArray readShort_1 #2 littleEndian PASSED!
+ByteArray readShort_1 #3littleEndian PASSED!
+bytearray of short mixed endianness: expecting no exception PASSED!
+bytearray of short mixed endianness: expecting length no change  PASSED!
+ByteArray readShort_2 #1 PASSED!
+ByteArray readShort_2 #2 PASSED!
+ByteArray readShort_2 #3 PASSED!
+bytearray of shorts with EOFs at various offsets: expecting no exception PASSED!
+bytearray of shorts with EOFs at various offsets: expecting length no change  PASSED!
+ByteArray readShort_3 #1 0 1 PASSED!
+ByteArray readShort_3 #1 0 2 PASSED!
+bytearray of short: expecting no exception PASSED!
+bytearray of short: expecting length no change  PASSED!
+ByteArray readShort_1 #1 bigEndian PASSED!
+ByteArray readShort_1 #2 bigEndian PASSED!
+ByteArray readShort_1 #3bigEndian PASSED!
+bytearray of short: expecting no exception PASSED!
+bytearray of short: expecting length no change  PASSED!
+ByteArray readShort_1 #1 littleEndian PASSED!
+ByteArray readShort_1 #2 littleEndian PASSED!
+ByteArray readShort_1 #3littleEndian PASSED!
+bytearray of short mixed endianness: expecting no exception PASSED!
+bytearray of short mixed endianness: expecting length no change  PASSED!
+ByteArray readShort_2 #1 PASSED!
+ByteArray readShort_2 #2 PASSED!
+ByteArray readShort_2 #3 PASSED!
+bytearray of shorts with EOFs at various offsets: expecting no exception PASSED!
+bytearray of shorts with EOFs at various offsets: expecting length no change  PASSED!
+ByteArray readShort_3 #1 1 1 PASSED!
+ByteArray readShort_3 #1 1 2 PASSED!
+bytearray of short: expecting no exception PASSED!
+bytearray of short: expecting length no change  PASSED!
+ByteArray readShort_1 #1 bigEndian PASSED!
+ByteArray readShort_1 #2 bigEndian PASSED!
+ByteArray readShort_1 #3bigEndian PASSED!
+bytearray of short: expecting no exception PASSED!
+bytearray of short: expecting length no change  PASSED!
+ByteArray readShort_1 #1 littleEndian PASSED!
+ByteArray readShort_1 #2 littleEndian PASSED!
+ByteArray readShort_1 #3littleEndian PASSED!
+bytearray of short mixed endianness: expecting no exception PASSED!
+bytearray of short mixed endianness: expecting length no change  PASSED!
+ByteArray readShort_2 #1 PASSED!
+ByteArray readShort_2 #2 PASSED!
+ByteArray readShort_2 #3 PASSED!
+bytearray of shorts with EOFs at various offsets: expecting no exception PASSED!
+bytearray of shorts with EOFs at various offsets: expecting length no change  PASSED!
+ByteArray readShort_3 #1 2 1 PASSED!
+ByteArray readShort_3 #1 2 2 PASSED!
+bytearray of short: expecting no exception PASSED!
+bytearray of short: expecting length no change  PASSED!
+ByteArray readShort_1 #1 bigEndian PASSED!
+ByteArray readShort_1 #2 bigEndian PASSED!
+ByteArray readShort_1 #3bigEndian PASSED!
+bytearray of short: expecting no exception PASSED!
+bytearray of short: expecting length no change  PASSED!
+ByteArray readShort_1 #1 littleEndian PASSED!
+ByteArray readShort_1 #2 littleEndian PASSED!
+ByteArray readShort_1 #3littleEndian PASSED!
+bytearray of short mixed endianness: expecting no exception PASSED!
+bytearray of short mixed endianness: expecting length no change  PASSED!
+ByteArray readShort_2 #1 PASSED!
+ByteArray readShort_2 #2 PASSED!
+ByteArray readShort_2 #3 PASSED!
+bytearray of shorts with EOFs at various offsets: expecting no exception PASSED!
+bytearray of shorts with EOFs at various offsets: expecting length no change  PASSED!
+ByteArray readShort_3 #1 3 1 PASSED!
+ByteArray readShort_3 #1 3 2 PASSED!
+unsigned short: expecting no exception PASSED!
+unsigned short: expecting length no change  PASSED!
+ByteArray readUShort_1 #1 bigEndian PASSED!
+ByteArray readUShort_1 #2 bigEndian PASSED!
+ByteArray readUShort_1 #3bigEndian PASSED!
+unsigned short: expecting no exception PASSED!
+unsigned short: expecting length no change  PASSED!
+ByteArray readUShort_1 #1 littleEndian PASSED!
+ByteArray readUShort_1 #2 littleEndian PASSED!
+ByteArray readUShort_1 #3littleEndian PASSED!
+unsigned short mixed endianness: expecting no exception PASSED!
+unsigned short mixed endianness: expecting length no change  PASSED!
+ByteArray readUShort_2 #1 PASSED!
+ByteArray readUShort_2 #2 PASSED!
+ByteArray readUShort_2 #3 PASSED!
+unsigned short eof at various offsets: expecting no exception PASSED!
+unsigned short eof at various offsets: expecting length no change  PASSED!
+ByteArray readUShort_3 #1 0 1 PASSED!
+ByteArray readUShort_3 #1 0 2 PASSED!
+unsigned short: expecting no exception PASSED!
+unsigned short: expecting length no change  PASSED!
+ByteArray readUShort_1 #1 bigEndian PASSED!
+ByteArray readUShort_1 #2 bigEndian PASSED!
+ByteArray readUShort_1 #3bigEndian PASSED!
+unsigned short: expecting no exception PASSED!
+unsigned short: expecting length no change  PASSED!
+ByteArray readUShort_1 #1 littleEndian PASSED!
+ByteArray readUShort_1 #2 littleEndian PASSED!
+ByteArray readUShort_1 #3littleEndian PASSED!
+unsigned short mixed endianness: expecting no exception PASSED!
+unsigned short mixed endianness: expecting length no change  PASSED!
+ByteArray readUShort_2 #1 PASSED!
+ByteArray readUShort_2 #2 PASSED!
+ByteArray readUShort_2 #3 PASSED!
+unsigned short eof at various offsets: expecting no exception PASSED!
+unsigned short eof at various offsets: expecting length no change  PASSED!
+ByteArray readUShort_3 #1 1 1 PASSED!
+ByteArray readUShort_3 #1 1 2 PASSED!
+unsigned short: expecting no exception PASSED!
+unsigned short: expecting length no change  PASSED!
+ByteArray readUShort_1 #1 bigEndian PASSED!
+ByteArray readUShort_1 #2 bigEndian PASSED!
+ByteArray readUShort_1 #3bigEndian PASSED!
+unsigned short: expecting no exception PASSED!
+unsigned short: expecting length no change  PASSED!
+ByteArray readUShort_1 #1 littleEndian PASSED!
+ByteArray readUShort_1 #2 littleEndian PASSED!
+ByteArray readUShort_1 #3littleEndian PASSED!
+unsigned short mixed endianness: expecting no exception PASSED!
+unsigned short mixed endianness: expecting length no change  PASSED!
+ByteArray readUShort_2 #1 PASSED!
+ByteArray readUShort_2 #2 PASSED!
+ByteArray readUShort_2 #3 PASSED!
+unsigned short eof at various offsets: expecting no exception PASSED!
+unsigned short eof at various offsets: expecting length no change  PASSED!
+ByteArray readUShort_3 #1 2 1 PASSED!
+ByteArray readUShort_3 #1 2 2 PASSED!
+unsigned short: expecting no exception PASSED!
+unsigned short: expecting length no change  PASSED!
+ByteArray readUShort_1 #1 bigEndian PASSED!
+ByteArray readUShort_1 #2 bigEndian PASSED!
+ByteArray readUShort_1 #3bigEndian PASSED!
+unsigned short: expecting no exception PASSED!
+unsigned short: expecting length no change  PASSED!
+ByteArray readUShort_1 #1 littleEndian PASSED!
+ByteArray readUShort_1 #2 littleEndian PASSED!
+ByteArray readUShort_1 #3littleEndian PASSED!
+unsigned short mixed endianness: expecting no exception PASSED!
+unsigned short mixed endianness: expecting length no change  PASSED!
+ByteArray readUShort_2 #1 PASSED!
+ByteArray readUShort_2 #2 PASSED!
+ByteArray readUShort_2 #3 PASSED!
+unsigned short eof at various offsets: expecting no exception PASSED!
+unsigned short eof at various offsets: expecting length no change  PASSED!
+ByteArray readUShort_3 #1 3 1 PASSED!
+ByteArray readUShort_3 #1 3 2 PASSED!
+int endianness: expecting no exception PASSED!
+int endianness: expecting length no change  PASSED!
+ByteArray readInt_1 #1 bigEndian PASSED!
+ByteArray readInt_1 #2 bigEndian PASSED!
+ByteArray readInt_1 #3bigEndian PASSED!
+int endianness: expecting no exception PASSED!
+int endianness: expecting length no change  PASSED!
+ByteArray readInt_1 #1 littleEndian PASSED!
+ByteArray readInt_1 #2 littleEndian PASSED!
+ByteArray readInt_1 #3littleEndian PASSED!
+int mixed endianness: expecting no exception PASSED!
+int mixed endianness: expecting length no change  PASSED!
+ByteArray readInt_2 #1 PASSED!
+ByteArray readInt_2 #2 PASSED!
+ByteArray readInt_2 #3 PASSED!
+int endianness: expecting no exception PASSED!
+int endianness: expecting length no change  PASSED!
+ByteArray readInt_1 #1 bigEndian PASSED!
+ByteArray readInt_1 #2 bigEndian PASSED!
+ByteArray readInt_1 #3bigEndian PASSED!
+int endianness: expecting no exception PASSED!
+int endianness: expecting length no change  PASSED!
+ByteArray readInt_1 #1 littleEndian PASSED!
+ByteArray readInt_1 #2 littleEndian PASSED!
+ByteArray readInt_1 #3littleEndian PASSED!
+int mixed endianness: expecting no exception PASSED!
+int mixed endianness: expecting length no change  PASSED!
+ByteArray readInt_2 #1 PASSED!
+ByteArray readInt_2 #2 PASSED!
+ByteArray readInt_2 #3 PASSED!
+int endianness: expecting no exception PASSED!
+int endianness: expecting length no change  PASSED!
+ByteArray readInt_1 #1 bigEndian PASSED!
+ByteArray readInt_1 #2 bigEndian PASSED!
+ByteArray readInt_1 #3bigEndian PASSED!
+int endianness: expecting no exception PASSED!
+int endianness: expecting length no change  PASSED!
+ByteArray readInt_1 #1 littleEndian PASSED!
+ByteArray readInt_1 #2 littleEndian PASSED!
+ByteArray readInt_1 #3littleEndian PASSED!
+int mixed endianness: expecting no exception PASSED!
+int mixed endianness: expecting length no change  PASSED!
+ByteArray readInt_2 #1 PASSED!
+ByteArray readInt_2 #2 PASSED!
+ByteArray readInt_2 #3 PASSED!
+int endianness: expecting no exception PASSED!
+int endianness: expecting length no change  PASSED!
+ByteArray readInt_1 #1 bigEndian PASSED!
+ByteArray readInt_1 #2 bigEndian PASSED!
+ByteArray readInt_1 #3bigEndian PASSED!
+int endianness: expecting no exception PASSED!
+int endianness: expecting length no change  PASSED!
+ByteArray readInt_1 #1 littleEndian PASSED!
+ByteArray readInt_1 #2 littleEndian PASSED!
+ByteArray readInt_1 #3littleEndian PASSED!
+int mixed endianness: expecting no exception PASSED!
+int mixed endianness: expecting length no change  PASSED!
+ByteArray readInt_2 #1 PASSED!
+ByteArray readInt_2 #2 PASSED!
+ByteArray readInt_2 #3 PASSED!
+float: expecting no exception PASSED!
+float: expecting length no change  PASSED!
+ByteArray writeFloat_1 #1 bigEndian PASSED!
+ByteArray readFloat_1 #1 bigEndian PASSED!
+ByteArray readFloat_1 #2 bigEndian PASSED!
+ByteArray readFloat_1 #3bigEndian PASSED!
+float: expecting no exception PASSED!
+float: expecting length no change  PASSED!
+ByteArray writeFloat_1 #1 littleEndian PASSED!
+ByteArray readFloat_1 #1 littleEndian PASSED!
+ByteArray readFloat_1 #2 littleEndian PASSED!
+ByteArray readFloat_1 #3littleEndian PASSED!
+float mixed endianness: expecting no exception PASSED!
+float mixed endianness: expecting length no change  PASSED!
+ByteArray readFloat_2 #1 PASSED!
+ByteArray readFloat_2 #2 PASSED!
+float: expecting no exception PASSED!
+float: expecting length no change  PASSED!
+ByteArray writeFloat_1 #1 bigEndian PASSED!
+ByteArray readFloat_1 #1 bigEndian PASSED!
+ByteArray readFloat_1 #2 bigEndian PASSED!
+ByteArray readFloat_1 #3bigEndian PASSED!
+float: expecting no exception PASSED!
+float: expecting length no change  PASSED!
+ByteArray writeFloat_1 #1 littleEndian PASSED!
+ByteArray readFloat_1 #1 littleEndian PASSED!
+ByteArray readFloat_1 #2 littleEndian PASSED!
+ByteArray readFloat_1 #3littleEndian PASSED!
+float mixed endianness: expecting no exception PASSED!
+float mixed endianness: expecting length no change  PASSED!
+ByteArray readFloat_2 #1 PASSED!
+ByteArray readFloat_2 #2 PASSED!
+float: expecting no exception PASSED!
+float: expecting length no change  PASSED!
+ByteArray writeFloat_1 #1 bigEndian PASSED!
+ByteArray readFloat_1 #1 bigEndian PASSED!
+ByteArray readFloat_1 #2 bigEndian PASSED!
+ByteArray readFloat_1 #3bigEndian PASSED!
+float: expecting no exception PASSED!
+float: expecting length no change  PASSED!
+ByteArray writeFloat_1 #1 littleEndian PASSED!
+ByteArray readFloat_1 #1 littleEndian PASSED!
+ByteArray readFloat_1 #2 littleEndian PASSED!
+ByteArray readFloat_1 #3littleEndian PASSED!
+float mixed endianness: expecting no exception PASSED!
+float mixed endianness: expecting length no change  PASSED!
+ByteArray readFloat_2 #1 PASSED!
+ByteArray readFloat_2 #2 PASSED!
+float: expecting no exception PASSED!
+float: expecting length no change  PASSED!
+ByteArray writeFloat_1 #1 bigEndian PASSED!
+ByteArray readFloat_1 #1 bigEndian PASSED!
+ByteArray readFloat_1 #2 bigEndian PASSED!
+ByteArray readFloat_1 #3bigEndian PASSED!
+float: expecting no exception PASSED!
+float: expecting length no change  PASSED!
+ByteArray writeFloat_1 #1 littleEndian PASSED!
+ByteArray readFloat_1 #1 littleEndian PASSED!
+ByteArray readFloat_1 #2 littleEndian PASSED!
+ByteArray readFloat_1 #3littleEndian PASSED!
+float mixed endianness: expecting no exception PASSED!
+float mixed endianness: expecting length no change  PASSED!
+ByteArray readFloat_2 #1 PASSED!
+ByteArray readFloat_2 #2 PASSED!
+double: expecting no exception PASSED!
+double: expecting length no change  PASSED!
+ByteArray writeDouble_1 #1 bigEndian PASSED!
+ByteArray readDouble_1 #1 bigEndian PASSED!
+ByteArray readDouble_1 #2 bigEndian PASSED!
+ByteArray readDouble_1 #3bigEndian PASSED!
+double: expecting no exception PASSED!
+double: expecting length no change  PASSED!
+ByteArray writeDouble_1 #1 littleEndian PASSED!
+ByteArray readDouble_1 #1 littleEndian PASSED!
+ByteArray readDouble_1 #2 littleEndian PASSED!
+ByteArray readDouble_1 #3littleEndian PASSED!
+double mixed endianness: expecting no exception PASSED!
+double mixed endianness: expecting length no change  PASSED!
+ByteArray readDouble_2 #1 PASSED!
+ByteArray readDouble_2 #2 PASSED!
+double: expecting no exception PASSED!
+double: expecting length no change  PASSED!
+ByteArray writeDouble_1 #1 bigEndian PASSED!
+ByteArray readDouble_1 #1 bigEndian PASSED!
+ByteArray readDouble_1 #2 bigEndian PASSED!
+ByteArray readDouble_1 #3bigEndian PASSED!
+double: expecting no exception PASSED!
+double: expecting length no change  PASSED!
+ByteArray writeDouble_1 #1 littleEndian PASSED!
+ByteArray readDouble_1 #1 littleEndian PASSED!
+ByteArray readDouble_1 #2 littleEndian PASSED!
+ByteArray readDouble_1 #3littleEndian PASSED!
+double mixed endianness: expecting no exception PASSED!
+double mixed endianness: expecting length no change  PASSED!
+ByteArray readDouble_2 #1 PASSED!
+ByteArray readDouble_2 #2 PASSED!
+double: expecting no exception PASSED!
+double: expecting length no change  PASSED!
+ByteArray writeDouble_1 #1 bigEndian PASSED!
+ByteArray readDouble_1 #1 bigEndian PASSED!
+ByteArray readDouble_1 #2 bigEndian PASSED!
+ByteArray readDouble_1 #3bigEndian PASSED!
+double: expecting no exception PASSED!
+double: expecting length no change  PASSED!
+ByteArray writeDouble_1 #1 littleEndian PASSED!
+ByteArray readDouble_1 #1 littleEndian PASSED!
+ByteArray readDouble_1 #2 littleEndian PASSED!
+ByteArray readDouble_1 #3littleEndian PASSED!
+double mixed endianness: expecting no exception PASSED!
+double mixed endianness: expecting length no change  PASSED!
+ByteArray readDouble_2 #1 PASSED!
+ByteArray readDouble_2 #2 PASSED!
+double: expecting no exception PASSED!
+double: expecting length no change  PASSED!
+ByteArray writeDouble_1 #1 bigEndian PASSED!
+ByteArray readDouble_1 #1 bigEndian PASSED!
+ByteArray readDouble_1 #2 bigEndian PASSED!
+ByteArray readDouble_1 #3bigEndian PASSED!
+double: expecting no exception PASSED!
+double: expecting length no change  PASSED!
+ByteArray writeDouble_1 #1 littleEndian PASSED!
+ByteArray readDouble_1 #1 littleEndian PASSED!
+ByteArray readDouble_1 #2 littleEndian PASSED!
+ByteArray readDouble_1 #3littleEndian PASSED!
+double mixed endianness: expecting no exception PASSED!
+double mixed endianness: expecting length no change  PASSED!
+ByteArray readDouble_2 #1 PASSED!
+ByteArray readDouble_2 #2 PASSED!
+byte: expecting no exception PASSED!
+byte: expecting length no change  PASSED!
+testByte: ByteArray position PASSED!
+testByte: ByteArray length PASSED!
+ByteArray readByte PASSED!
+ByteArray readByte PASSED!
+ByteArray readByte EOF PASSED!
+UTF: expecting no exception PASSED!
+UTF: expecting length no change  PASSED!
+ByteArray position of utf string PASSED!
+ByteArray length of utf string PASSED!
+ByteArray readUTF PASSED!
+bytes: expecting no exception PASSED!
+bytes: expecting length no change  PASSED!
+ByteArray readUTF on contents containing NUL: contents PASSED!
+ByteArray readUTF on contents containing NUL: position PASSED!
+ReadUTF EOF in content PASSED!
+ReadUTF EOF in length, #1 PASSED!
+ReadUTF EOF in length, #2 PASSED!
+RangeError in writeUTF PASSED!
+skip UTF-8 BOM: expecting no exception PASSED!
+skip UTF-8 BOM: expecting length no change  PASSED!
+ByteArray readUTF skips UTF8 BOM after length bytes but includes it in the length PASSED!
+UTF bytes: expecting no exception PASSED!
+UTF bytes: expecting length no change  PASSED!
+ByteArray length of utf bytes string PASSED!
+ByteArray readUTFBytes PASSED!
+bytes contains NULL: expecting no exception PASSED!
+bytes contains NULL: expecting length no change  PASSED!
+ByteArray readUTFBytes on contents containing NUL: contents PASSED!
+ByteArray readUTFBytes on contents containing NUL: position PASSED!
+ReadUTFBytes EOF in content PASSED!
+bytes contain high value bytes: expecting no exception PASSED!
+bytes contain high value bytes: expecting length no change  PASSED!
+ByteArray readUTFBytes skips UTF8 BOM but includes it in the length PASSED!
+bracket syntax: expecting no exception PASSED!
+bracket syntax: expecting length no change  PASSED!
+ByteArray get [] syntax PASSED!
+ByteArray set [] syntax PASSED!
+ByteArray.compress bytearray length is different PASSED!
+ByteArray.compress bytearray contents differ PASSED!
+ByteArray.uncompress bytearray length matches before compress PASSED!
+ByteArray.uncompress uncompressing compressed string matches original PASSED!

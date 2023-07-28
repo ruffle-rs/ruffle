@@ -1,0 +1,9 @@
+concat uint vector, original vector is unchanged PASSED!
+concat uint vector, new vector concat worked PASSED!
+concat two differently typed vectors PASSED!
+concat custom vector class PASSED!
+concat vector to itself multiple times PASSED!
+concat with no parameters duplicates original vector PASSED!
+concat boolean vectors PASSED!
+concat XML vectors PASSED!
+concat multiple int vectors PASSED!

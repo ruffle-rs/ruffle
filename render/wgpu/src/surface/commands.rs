@@ -11,8 +11,9 @@ use crate::{
 };
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::bitmap::{BitmapHandle, PixelSnapping};
-use ruffle_render::commands::Command;
+use ruffle_render::commands::{Command, RenderBlendMode};
 use ruffle_render::matrix::Matrix;
+use ruffle_render::pixel_bender::PixelBenderShaderHandle;
 use ruffle_render::quality::StageQuality;
 use ruffle_render::transform::Transform;
 use swf::{BlendMode, Color, ColorTransform, Fixed8};
@@ -415,7 +416,13 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
 
 pub enum Chunk {
     Draw(Vec<DrawCommand>, bool),
-    Blend(PoolOrArcTexture, ComplexBlend, bool),
+    Blend(PoolOrArcTexture, ChunkBlendMode, bool),
+}
+
+#[derive(Debug)]
+pub enum ChunkBlendMode {
+    Complex(ComplexBlend),
+    Shader(PixelBenderShaderHandle),
 }
 
 #[derive(Debug)]
@@ -487,7 +494,13 @@ pub fn chunk_blends<'a>(
                     height,
                     wgpu::TextureFormat::Rgba8Unorm,
                 );
-                let clear_color = BlendType::from(blend_mode).default_color();
+                let target_layer = if let RenderBlendMode::Builtin(BlendMode::Layer) = &blend_mode {
+                    LayerRef::Current
+                } else {
+                    nearest_layer
+                };
+                let blend_type = BlendType::from(blend_mode);
+                let clear_color = blend_type.default_color();
                 let target = surface.draw_commands(
                     RenderTargetMode::FreshWithColor(clear_color),
                     descriptors,
@@ -497,16 +510,12 @@ pub fn chunk_blends<'a>(
                     color_buffers,
                     uniform_encoder,
                     draw_encoder,
-                    if blend_mode == BlendMode::Layer {
-                        LayerRef::Current
-                    } else {
-                        nearest_layer
-                    },
+                    target_layer,
                     texture_pool,
                 );
                 target.ensure_cleared(draw_encoder);
 
-                match BlendType::from(blend_mode) {
+                match blend_type {
                     BlendType::Trivial(blend_mode) => {
                         let transform = Transform {
                             matrix: Matrix::scale(target.width() as f32, target.height() as f32),
@@ -550,13 +559,18 @@ pub fn chunk_blends<'a>(
                             blend_mode,
                         })
                     }
-                    BlendType::Complex(blend_mode) => {
+                    blend_type => {
                         if !current.is_empty() {
                             result.push(Chunk::Draw(std::mem::take(&mut current), needs_depth));
                         }
+                        let chunk_blend_mode = match blend_type {
+                            BlendType::Complex(complex) => ChunkBlendMode::Complex(complex),
+                            BlendType::Shader(shader) => ChunkBlendMode::Shader(shader),
+                            _ => unreachable!(),
+                        };
                         result.push(Chunk::Blend(
                             target.take_color_texture(),
-                            blend_mode,
+                            chunk_blend_mode,
                             num_masks > 0,
                         ));
                         needs_depth = num_masks > 0;

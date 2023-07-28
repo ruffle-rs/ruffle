@@ -21,3 +21,4 @@ Array.length is: 1
 uint.length is: 1
 Date.length is: 7
 Error.length is: 1
+UninitializedError.length is: 1

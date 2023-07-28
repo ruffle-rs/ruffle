@@ -1,0 +1,4 @@
+splice small vector delete 2 items, no add PASSED!
+splice small vector delete 2 items, add 2 items PASSED!
+splice small vector start is negative PASSED!
+startIndex greater than vector length PASSED!

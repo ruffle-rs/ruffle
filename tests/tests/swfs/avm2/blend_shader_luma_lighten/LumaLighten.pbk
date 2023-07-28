@@ -1,0 +1,30 @@
+<languageVersion : 1.0;> 
+kernel LumaLighten 
+< 
+    namespace : "com.quasimondo.blendModes"; 
+    vendor : "Quasimondo.com"; 
+    version : 1; 
+    description : "Luminance based lighten blend mode"; 
+> 
+{ 
+    input image4 background; 
+    input image4 foreground; 
+ 
+    output pixel4 dst; 
+     
+    const float3 LUMA = float3(0.212671, 0.715160, 0.072169); 
+ 
+    void evaluatePixel() 
+    { 
+        float4 a = sampleNearest(foreground, outCoord()); 
+        float4 b = sampleNearest(background, outCoord()); 
+        float luma_a = a.r * LUMA.r + a.g * LUMA.g + a.b * LUMA.b; 
+        float luma_b = b.r * LUMA.r + b.g * LUMA.g + b.b * LUMA.b;
+        
+        if (luma_a > luma_b) {
+            dst = a;
+        } else {
+            dst = b;
+        }
+    } 
+}

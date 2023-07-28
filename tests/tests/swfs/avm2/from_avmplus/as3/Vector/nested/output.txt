@@ -1,0 +1,8 @@
+push nested vector.<int> PASSED!
+push nested vector.<String> PASSED!
+push nested vector.<vector.<int>> PASSED!
+test vector of custom classes PASSED!
+Nested vector typecheck PASSED!
+Nested vector length PASSED!
+500 Nested vectors PASSED!
+Instantiate deeply nested vector PASSED!

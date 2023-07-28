@@ -1,0 +1,6 @@
+1 PASSED!
+2 PASSED!
+typeof XML             : PASSED!
+typeof XML             : PASSED!
+typeof XMLList         : PASSED!
+typeof XMLList         : PASSED!

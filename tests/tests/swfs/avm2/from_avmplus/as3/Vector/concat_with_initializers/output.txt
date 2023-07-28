@@ -1,0 +1,4 @@
+concat uint vector, original vector is unchanged PASSED!
+concat uint vector, new vector concat worked PASSED!
+concat two differently typed vectors PASSED!
+concat two differently typed vectors - uint and int PASSED!

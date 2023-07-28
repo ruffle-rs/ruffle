@@ -1,0 +1,12 @@
+<flex-config>
+    <compiler>
+        <source-path>
+            <path-element>.</path-element>
+            <path-element>../../../lib</path-element>
+        </source-path>
+        <debug>true</debug>
+        <show-actionscript-warnings>false</show-actionscript-warnings>
+        <strict>false</strict>
+    </compiler>
+    <output>test.swf</output>
+</flex-config>

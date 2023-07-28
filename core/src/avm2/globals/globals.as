@@ -15,6 +15,7 @@ include "ReferenceError.as"
 include "RegExp.as"
 include "SecurityError.as"
 include "SyntaxError.as"
+include "UninitializedError.as"
 include "URIError.as"
 include "VerifyError.as"
 

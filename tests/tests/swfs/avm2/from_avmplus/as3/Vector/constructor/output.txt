@@ -1,0 +1,18 @@
+constructor no arg no parens syntax PASSED!
+constructor no arg empty parens syntax PASSED!
+constructor to typed var no arg empty parens syntax PASSED!
+constructor length parameters PASSED!
+constructor fixed parameter default is false PASSED!
+constructor fixed parameter false produces unfixed vector PASSED!
+constructor fixed parameter set to true write beyond length-1 throws exception PASSED!
+constructor fixed parameter set to true length is unchanged PASSED!
+constructor type uint PASSED!
+constructor type int PASSED!
+constructor type Number PASSED!
+constructor type Boolean PASSED!
+constructor type String PASSED!
+constructor type custom class c1 PASSED!
+constructor type custom class class mismatch PASSED!
+constructor type custom class can caste to custom class PASSED!
+constructor type uint castes other types PASSED!
+Bug 449468: Crash with vector constructor in interp mode PASSED!

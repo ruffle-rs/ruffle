@@ -1,4 +1,20 @@
-Hello
-World
-from
-Ruffle!
+XMLList + XMLList
+<item><text>Hello</text></item>
+<item><text>World</text></item>
+<item><text>from</text></item>
+<item><text>Ruffle!</text></item>
+XML + XMLList
+<a><b>A</b></a>
+<c><d>B</d></c>
+undefined
+undefined
+XMLList + XML
+<c><d>B</d></c>
+<a><b>A</b></a>
+undefined
+undefined
+XML + XML
+<c>D</c>
+<a><b>A</b></a>
+undefined
+undefined

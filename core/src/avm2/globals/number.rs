@@ -260,6 +260,18 @@ pub fn print_with_radix<'gc>(
         return Value::from(number).coerce_to_string(activation);
     }
 
+    if number.is_nan() {
+        return Ok("NaN".into());
+    }
+
+    if number.is_infinite() {
+        if number < 0.0 {
+            return Ok("-Infinity".into());
+        } else if number > 0.0 {
+            return Ok("Infinity".into());
+        }
+    }
+
     let mut digits = vec![];
     let sign = number.signum();
     number = number.abs();

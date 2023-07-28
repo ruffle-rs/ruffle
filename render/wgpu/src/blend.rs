@@ -1,5 +1,6 @@
 use enum_map::Enum;
 
+use ruffle_render::{commands::RenderBlendMode, pixel_bender::PixelBenderShaderHandle};
 use swf::BlendMode;
 
 #[derive(Enum, Debug, Copy, Clone)]
@@ -15,32 +16,48 @@ pub enum ComplexBlend {
     HardLight,  // Can't be trivial, big math expression
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub enum BlendType {
     /// Trivial blends can be expressed with just a "draw bitmap" with blend states
     Trivial(TrivialBlend),
 
     /// Complex blends require a shader to express, so they are separated out into their own render
     Complex(ComplexBlend),
+
+    /// Invoke a custom `PixelBender` shader.
+    Shader(PixelBenderShaderHandle),
 }
 
 impl BlendType {
-    pub fn from(mode: BlendMode) -> BlendType {
+    pub fn from(mode: RenderBlendMode) -> BlendType {
         match mode {
-            BlendMode::Normal => BlendType::Trivial(TrivialBlend::Normal),
-            BlendMode::Layer => BlendType::Trivial(TrivialBlend::Normal),
-            BlendMode::Multiply => BlendType::Complex(ComplexBlend::Multiply),
-            BlendMode::Screen => BlendType::Trivial(TrivialBlend::Screen),
-            BlendMode::Lighten => BlendType::Complex(ComplexBlend::Lighten),
-            BlendMode::Darken => BlendType::Complex(ComplexBlend::Darken),
-            BlendMode::Difference => BlendType::Complex(ComplexBlend::Difference),
-            BlendMode::Add => BlendType::Trivial(TrivialBlend::Add),
-            BlendMode::Subtract => BlendType::Trivial(TrivialBlend::Subtract),
-            BlendMode::Invert => BlendType::Complex(ComplexBlend::Invert),
-            BlendMode::Alpha => BlendType::Complex(ComplexBlend::Alpha),
-            BlendMode::Erase => BlendType::Complex(ComplexBlend::Erase),
-            BlendMode::Overlay => BlendType::Complex(ComplexBlend::Overlay),
-            BlendMode::HardLight => BlendType::Complex(ComplexBlend::HardLight),
+            RenderBlendMode::Builtin(BlendMode::Normal) => BlendType::Trivial(TrivialBlend::Normal),
+            RenderBlendMode::Builtin(BlendMode::Layer) => BlendType::Trivial(TrivialBlend::Normal),
+            RenderBlendMode::Builtin(BlendMode::Multiply) => {
+                BlendType::Complex(ComplexBlend::Multiply)
+            }
+            RenderBlendMode::Builtin(BlendMode::Screen) => BlendType::Trivial(TrivialBlend::Screen),
+            RenderBlendMode::Builtin(BlendMode::Lighten) => {
+                BlendType::Complex(ComplexBlend::Lighten)
+            }
+            RenderBlendMode::Builtin(BlendMode::Darken) => BlendType::Complex(ComplexBlend::Darken),
+            RenderBlendMode::Builtin(BlendMode::Difference) => {
+                BlendType::Complex(ComplexBlend::Difference)
+            }
+            RenderBlendMode::Builtin(BlendMode::Add) => BlendType::Trivial(TrivialBlend::Add),
+            RenderBlendMode::Builtin(BlendMode::Subtract) => {
+                BlendType::Trivial(TrivialBlend::Subtract)
+            }
+            RenderBlendMode::Builtin(BlendMode::Invert) => BlendType::Complex(ComplexBlend::Invert),
+            RenderBlendMode::Builtin(BlendMode::Alpha) => BlendType::Complex(ComplexBlend::Alpha),
+            RenderBlendMode::Builtin(BlendMode::Erase) => BlendType::Complex(ComplexBlend::Erase),
+            RenderBlendMode::Builtin(BlendMode::Overlay) => {
+                BlendType::Complex(ComplexBlend::Overlay)
+            }
+            RenderBlendMode::Builtin(BlendMode::HardLight) => {
+                BlendType::Complex(ComplexBlend::HardLight)
+            }
+            RenderBlendMode::Shader(shader) => BlendType::Shader(shader),
         }
     }
 

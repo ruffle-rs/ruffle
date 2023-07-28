@@ -11,9 +11,6 @@
     "settings_autostart": {
         "message": "スプラッシュ画面なしで自動再生(クリックでミュートを解除)"
     },
-    "settings_warn_on_unsupported_content": {
-        "message": "サポートされていないコンテンツで警告を表示する"
-    },
     "settings_log_level": {
         "message": "ログレベル"
     },

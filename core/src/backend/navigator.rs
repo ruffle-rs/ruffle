@@ -29,7 +29,7 @@ pub enum NavigationMethod {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum SocketMode {
     /// Allows movies to connect to any host using sockets.
-    Unrestricted,
+    Allow,
 
     /// Refuse all socket connection requests
     Deny,
@@ -289,7 +289,7 @@ impl NullExecutor {
     }
 
     pub fn run(&mut self) {
-        self.0.run();
+        self.0.run_until_stalled();
     }
 }
 

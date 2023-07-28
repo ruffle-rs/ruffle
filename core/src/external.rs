@@ -309,12 +309,22 @@ impl<'gc> Callback<'gc> {
     }
 }
 
+pub trait FsCommandProvider {
+    fn on_fs_command(&self, command: &str, args: &str) -> bool;
+}
+
+pub struct NullFsCommandProvider;
+
+impl FsCommandProvider for NullFsCommandProvider {
+    fn on_fs_command(&self, _command: &str, _args: &str) -> bool {
+        false
+    }
+}
+
 pub trait ExternalInterfaceProvider {
     fn get_method(&self, name: &str) -> Option<Box<dyn ExternalInterfaceMethod>>;
 
     fn on_callback_available(&self, name: &str);
-
-    fn on_fs_command(&self, command: &str, args: &str) -> bool;
 }
 
 pub trait ExternalInterfaceMethod {
@@ -330,19 +340,25 @@ where
     }
 }
 
-#[derive(Default, Collect)]
+#[derive(Collect)]
 #[collect(no_drop)]
 pub struct ExternalInterface<'gc> {
     #[collect(require_static)]
     providers: Vec<Box<dyn ExternalInterfaceProvider>>,
     callbacks: BTreeMap<String, Callback<'gc>>,
+    #[collect(require_static)]
+    fs_commands: Box<dyn FsCommandProvider>,
 }
 
 impl<'gc> ExternalInterface<'gc> {
-    pub fn new(providers: Vec<Box<dyn ExternalInterfaceProvider>>) -> Self {
+    pub fn new(
+        providers: Vec<Box<dyn ExternalInterfaceProvider>>,
+        fs_commands: Box<dyn FsCommandProvider>,
+    ) -> Self {
         Self {
             providers,
-            ..Default::default()
+            callbacks: Default::default(),
+            fs_commands,
         }
     }
 
@@ -375,11 +391,6 @@ impl<'gc> ExternalInterface<'gc> {
     }
 
     pub fn invoke_fs_command(&self, command: &str, args: &str) -> bool {
-        for provider in &self.providers {
-            if provider.on_fs_command(command, args) {
-                return true;
-            }
-        }
-        false
+        self.fs_commands.on_fs_command(command, args)
     }
 }

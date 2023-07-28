@@ -1,5 +1,5 @@
 num_frames = 1
-ignore = true
+known_failure = true
 
 [image_comparison]
 tolerance = 0

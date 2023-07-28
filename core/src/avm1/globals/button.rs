@@ -79,7 +79,7 @@ fn set_blend_mode<'gc>(
 ) -> Result<(), Error<'gc>> {
     // No-op if value is not a valid blend mode.
     if let Some(mode) = value.as_blend_mode() {
-        this.set_blend_mode(activation.context.gc_context, mode);
+        this.set_blend_mode(activation.context.gc_context, mode.into());
     } else {
         tracing::error!("Unknown blend mode {value:?}");
     }

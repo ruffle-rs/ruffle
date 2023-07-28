@@ -11,9 +11,6 @@
     "settings_autostart": {
         "message": "Juegue automáticamente sin la pantalla de presentación (y luego, haga un clic para habilitar el audio)"
     },
-    "settings_warn_on_unsupported_content": {
-        "message": "Avise sobre contenido no soportado"
-    },
     "settings_log_level": {
         "message": "Nivel de log"
     },

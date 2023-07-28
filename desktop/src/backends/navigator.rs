@@ -343,7 +343,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
 
         let future = Box::pin(async move {
             match (is_allowed, socket_mode) {
-                (false, SocketMode::Unrestricted) | (true, _) => {} // the process is allowed to continue. just dont do anything.
+                (false, SocketMode::Allow) | (true, _) => {} // the process is allowed to continue. just dont do anything.
                 (false, SocketMode::Deny) => {
                     // Just fail the connection.
                     sender

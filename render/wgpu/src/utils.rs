@@ -289,6 +289,7 @@ pub fn run_copy_pipeline(
     drop(render_pass);
 }
 
+#[derive(Debug)]
 pub struct SampleCountMap<T> {
     one: T,
     two: T,

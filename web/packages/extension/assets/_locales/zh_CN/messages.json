@@ -11,9 +11,6 @@
     "settings_autostart": {
         "message": "不带启动画面的自动播放 (点击内容取消静音)"
     },
-    "settings_warn_on_unsupported_content": {
-        "message": "对不受支持的内容发出警告"
-    },
     "settings_log_level": {
         "message": "日志级别"
     },

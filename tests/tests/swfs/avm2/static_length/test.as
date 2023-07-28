@@ -31,9 +31,5 @@ trace("Array.length is: " + Array.length);
 trace("uint.length is: " + uint.length);
 trace("Date.length is: " + Date.length);
 trace("Error.length is: " + Error.length);
-// Once the class UninitializedError has been implemented, please:
-// - Implement UninitializedError.length .
-// - Replace the file "output.txt" with "output_original.txt".
-// - Comment in the line below.
-//trace("UninitializedError.length is: " + UninitializedError.length);
+trace("UninitializedError.length is: " + UninitializedError.length);
 

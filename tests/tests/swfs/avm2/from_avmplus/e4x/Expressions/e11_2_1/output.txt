@@ -1,0 +1,39 @@
+1 PASSED!
+2 PASSED!
+3 PASSED!
+4 PASSED!
+5 PASSED!
+6 PASSED!
+7 PASSED!
+8 PASSED!
+9 PASSED!
+10 PASSED!
+11 PASSED!
+12 PASSED!
+XML.c.f: PASSED!
+XML.c['f']: PASSED!
+XML.c.f[0]: PASSED!
+XML.i[1].p: PASSED!
+XML.i[1]['p]' PASSED!
+High ASCII node value: PASSED!
+XMLList.c.f: PASSED!
+XMLList.c["f"]: PASSED!
+XMLList.c.f[0]: PASSED!
+XMLList.c.f[0] = "Peter": PASSED!
+XMLList.i[1].p: PASSED!
+XMLList.i[1]["p"]: PASSED!
+XMLList[1] = <a>b</a> PASSED!
+XMLList[1] = <a>b</a>; XMLList[0] = <c>d</c> PASSED!
+XMLList[0] = <a>b</a>; XMLList[1] = <c>d</c> PASSED!
+x1.f == x1.f[0] + x1.f[1] + x1.f[2] PASSED!
+XML[0].fname[1] == XMLList[1]: PASSED!
+XML[0].fname[0] == XMLList.fname[0]: PASSED!
+hyphenatedXML.["b-c"]: PASSED!
+hyphenatedXML.["b-c"][1] = "new color": PASSED!
+x['*'] PASSED!
+x['@*'] PASSED!
+x['@a'] PASSED!
+x1.@prop PASSED!
+use namespace foo; x1.@prop PASSED!
+use namespace foo2; x1.@prop PASSED!
+use namespace foo2; x1.@prop PASSED!

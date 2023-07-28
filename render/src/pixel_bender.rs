@@ -570,6 +570,7 @@ fn read_op<R: Read>(
             let size = (mask & 0x3) + 1;
             let matrix = (mask >> 2) & 3;
             let src = read_uint24(data)?;
+
             assert_eq!(data.read_u8()?, 0, "Unexpected u8 for opcode {opcode:?}");
             mask >>= 4;
 
