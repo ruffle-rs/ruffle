@@ -923,7 +923,6 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         //parameters instead of objects. We coerce them to objects now.
         let object_param = match nullable_param {
             Value::Null => None,
-            Value::Undefined => return Err("Undefined is not a valid type parameter".into()),
             v => Some(v),
         };
         let object_param = match object_param {
