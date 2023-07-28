@@ -1,3 +1,2 @@
 num_ticks = 1
-ignore = true # infinite loop?
 known_failure = true # https://github.com/ruffle-rs/ruffle/issues/12354
