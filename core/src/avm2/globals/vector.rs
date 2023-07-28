@@ -318,7 +318,7 @@ where
 
         for (_, item) in vector.iter().enumerate() {
             if matches!(item, Value::Undefined) || matches!(item, Value::Null) {
-                accum.push("".into());
+                accum.push("null".into());
             } else {
                 accum.push(conv(item, activation)?.coerce_to_string(activation)?);
             }
