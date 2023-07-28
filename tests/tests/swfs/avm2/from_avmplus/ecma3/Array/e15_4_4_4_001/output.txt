@@ -1,0 +1,9 @@
+concat(x).toString() PASSED!
+[].concat(999).toString() PASSED!
+[].concat(/Hello/g).toString() PASSED!
+[].concat(new Error('hello')).toString() PASSED!
+[].concat([function() {return 'Hello';}).toString() PASSED!
+[].concat([1,2,3].concat([4,5,6]).toString() PASSED!
+[].concat(this).toString() PASSED!
+[].concat({length:0}).toString() PASSED!
+[].concat({length:2, 0:0, 1:1}).toString() PASSED!

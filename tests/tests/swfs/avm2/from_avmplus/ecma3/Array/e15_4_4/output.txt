@@ -1,0 +1,4 @@
+Array.prototype.length PASSED!
+Array.length PASSED!
+typeof Array.prototype PASSED!
+Array.prototype.toString = Object.prototype.toString; Array.prototype.toString() PASSED!

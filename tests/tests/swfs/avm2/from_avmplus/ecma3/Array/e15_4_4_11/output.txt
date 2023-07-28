@@ -1,0 +1,16 @@
+MYARR = [2,1,8,6]; MYARR.sort() PASSED!
+MYARR = [2,1,8,6]; MYARR.sort() PASSED!
+MYARR = [2,1,8,6]; MYARR.sort() PASSED!
+MYARR = [2,1,8,6]; MYARR.sort() PASSED!
+MYARR = ['a','d','Z','f','M']; MYARR.sort() PASSED!
+MYARR = ['a','d','Z','f','M']; MYARR.sort() PASSED!
+MYARR = ['a','d','Z','f','M']; MYARR.sort() PASSED!
+MYARR = ['a','d','Z','f','M']; MYARR.sort() PASSED!
+MYARR = ['a','d','Z','f','M']; MYARR.sort() PASSED!
+MYARR = [2, 1, 'M', 'X', 'y', 66, 104]; MYARR.sort() PASSED!
+MYARR = [2, 1, 'M', 'X', 'y', 66, 104]; MYARR.sort() PASSED!
+MYARR = [2, 1, 'M', 'X', 'y', 66, 104]; MYARR.sort() PASSED!
+MYARR = [2, 1, 'M', 'X', 'y', 66, 104]; MYARR.sort() PASSED!
+MYARR = [2, 1, 'M', 'X', 'y', 66, 104]; MYARR.sort() PASSED!
+MYARR = [2, 1, 'M', 'X', 'y', 66, 104]; MYARR.sort() PASSED!
+MYARR = [2, 1, 'M', 'X', 'y', 66, 104]; MYARR.sort() PASSED!
