@@ -1,0 +1,8 @@
+(new Array(new Number(1073741823))).length PASSED!
+(new Array(new Number(0))).length PASSED!
+(new Array(new Number(1000))).length PASSED!
+(new Array('mozilla, larryzilla, curlyzilla')).length PASSED!
+(new Array(true)).length PASSED!
+(new Array(false)).length PASSED!
+(new Array(new Boolean(true)).length PASSED!
+(new Array(new Boolean(false)).length PASSED!

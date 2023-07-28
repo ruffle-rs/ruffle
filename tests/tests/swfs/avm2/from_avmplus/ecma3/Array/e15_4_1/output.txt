@@ -1,0 +1,14 @@
+Array() +'' PASSED!
+typeof Array() PASSED!
+var arr = Array(); arr.getClass = Object.prototype.toString; arr.getClass() PASSED!
+var arr = Array(); arr.toString == Array.prototype.toString PASSED!
+Array().length PASSED!
+Array(1,2,3) +'' PASSED!
+typeof Array(1,2,3) PASSED!
+var arr = Array(1,2,3); arr.getClass = Object.prototype.toString; arr.getClass() PASSED!
+var arr = Array(1,2,3); arr.toString == Array.prototype.toString PASSED!
+Array(1,2,3).length PASSED!
+typeof Array(12345) PASSED!
+var arr = Array(12345); arr.getClass = Object.prototype.toString; arr.getClass() PASSED!
+var arr = Array(1,2,3,4,5); arr.toString == Array.prototype.toString PASSED!
+Array(12345).length PASSED!

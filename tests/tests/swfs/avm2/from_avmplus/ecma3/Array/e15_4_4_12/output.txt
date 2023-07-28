@@ -1,0 +1,4 @@
+MYARR = new Array( 0, 2, 3, 4, 5 ); MYARR.splice(1); PASSED!
+MYARR = new Array( 0, 2, 3, 4, 5 ); MYARR.splice(1); PASSED!
+MYARR = new Array( 0, 2, 3, 4, 5 ); MYARR.splice(1); PASSED!
+MYARR = new Array( 0, 2, 3, 4, 5 ); MYARR.splice(1); PASSED!

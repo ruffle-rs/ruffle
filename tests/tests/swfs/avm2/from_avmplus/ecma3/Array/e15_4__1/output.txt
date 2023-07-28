@@ -1,0 +1,12 @@
+var myarr = new Array(); myarr[Math.pow(2,32)-2]='hi'; myarr[Math.pow(2,32)-2] PASSED!
+var myarr = new Array(); myarr[Math.pow(2,32)-2]='hi'; myarr.length PASSED!
+var myarr = new Array(); myarr[Math.pow(2,32)-3]='hi'; myarr[Math.pow(2,32)-3] PASSED!
+var myarr = new Array(); myarr[Math.pow(2,32)-3]='hi'; myarr.length PASSED!
+var myarr = new Array(); myarr[Math.pow(2,31)-2]='hi'; myarr[Math.pow(2,31)-2] PASSED!
+var myarr = new Array(); myarr[Math.pow(2,31)-2]='hi'; myarr.length PASSED!
+var myarr = new Array(); myarr[Math.pow(2,31)-1]='hi'; myarr[Math.pow(2,31)-1] PASSED!
+var myarr = new Array(); myarr[Math.pow(2,31)-1]='hi'; myarr.length PASSED!
+var myarr = new Array(); myarr[Math.pow(2,31)]='hi'; myarr[Math.pow(2,31)] PASSED!
+var myarr = new Array(); myarr[Math.pow(2,31)]='hi'; myarr.length PASSED!
+var myarr = new Array(); myarr[Math.pow(2,30)-2]='hi'; myarr[Math.pow(2,30)-2] PASSED!
+var myarr = new Array(); myarr[Math.pow(2,30)-2]='hi'; myarr.length PASSED!

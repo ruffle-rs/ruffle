@@ -1,0 +1,6 @@
+exhaustive slice test 1 PASSED!
+exhaustive slice test 2 PASSED!
+slice with end parameter undefined PASSED!
+slice with both parameters undefined PASSED!
+slice with start parameter undefined PASSED!
+Length property of slice method PASSED!

@@ -1,0 +1,16 @@
+(Array()).length PASSED!
+(Array(0)).length PASSED!
+(Array(1)).length PASSED!
+(Array(10)).length PASSED!
+(Array('1')).length PASSED!
+(Array(1000)).length PASSED!
+(Array('1000')).length PASSED!
+(Array(4294967295)).length PASSED!
+(Array(Math.pow(2,31)-1)).length PASSED!
+(Array(Math.pow(2,31))).length PASSED!
+(Array(Math.pow(2,31)+1)).length PASSED!
+(Array('8589934592')).length PASSED!
+(Array('4294967296')).length PASSED!
+(Array(1073741823)).length PASSED!
+(Array(1073741824)).length PASSED!
+(Array('a string')).length PASSED!

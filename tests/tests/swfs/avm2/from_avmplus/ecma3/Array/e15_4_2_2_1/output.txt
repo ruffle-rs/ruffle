@@ -1,0 +1,17 @@
+new Array(0) PASSED!
+typeof new Array(0) PASSED!
+(new Array(0)).length PASSED!
+(new Array(0)).toString PASSED!
+new Array(1) PASSED!
+new Array(1).length PASSED!
+(new Array(1)).toString PASSED!
+(new Array(-0)).length PASSED!
+(new Array(0)).length PASSED!
+(new Array(10)).length PASSED!
+(new Array('1')).length PASSED!
+(new Array(1000)).length PASSED!
+(new Array('1000')).length PASSED!
+(new Array(4294967295)).length PASSED!
+(new Array('8589934592')).length PASSED!
+(new Array('4294967296')).length PASSED!
+(new Array(1073741824)).length PASSED!

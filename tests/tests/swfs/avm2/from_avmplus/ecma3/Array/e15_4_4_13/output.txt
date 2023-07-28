@@ -1,0 +1,7 @@
+Array.prototype.unshift.length; PASSED!
+MYEMPTYARR = new Array();MYEMPTYARR.unshift(); PASSED!
+MYEMPTYARR = new Array();MYEMPTYARR.unshift(0); PASSED!
+MYARR = new Array(); MYARR.push(1, 2); MYARR.unshift(0); PASSED!
+MYARR = new Array(); MYARR.push(1, 2); MYARR.unshift(0);MYARR PASSED!
+MYARR = new Array(); MYARR.push(1, 2); MYARR.unshift(0);MYARR PASSED!
+MYARR = new Array(); MYARR.push(1, 2); MYARR.unshift(0);MYARR PASSED!

@@ -1,0 +1,6 @@
+array1.pop() PASSED!
+array1.shift() PASSED!
+state of array PASSED!
+array1.length PASSED!
+array1.shift() PASSED!
+array1.shift() PASSED!

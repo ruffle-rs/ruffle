@@ -1,0 +1,27 @@
+var A = new Array(); A.length = 1000; A.length PASSED!
+var A = new Array(1000); A.name = 'name of this array'; A.name PASSED!
+var A = new Array(1000); A.name = 'name of this array'; A.length PASSED!
+var A = new Array(1000); A[123] = 'hola'; A[123] PASSED!
+var A = new Array(1000); A[123] = 'hola'; A.length PASSED!
+undefined A[150] = 'hello'; A[150] PASSED!
+undefined A[150] = 'hello', A.length PASSED!
+var A = new Array(); A[123] = true; A.length PASSED!
+var A = new Array(0,1,2,3,4,5,6,7,8,9,10); A[15] ='15'; A.length PASSED!
+var A = new Array(0,1,2,3,4,5,6,7,8,9,10); A[15] ='15'; A[0] PASSED!
+var A = new Array(0,1,2,3,4,5,6,7,8,9,10); A[15] ='15'; A[1] PASSED!
+var A = new Array(0,1,2,3,4,5,6,7,8,9,10); A[15] ='15'; A[2] PASSED!
+var A = new Array(0,1,2,3,4,5,6,7,8,9,10); A[15] ='15'; A[3] PASSED!
+var A = new Array(0,1,2,3,4,5,6,7,8,9,10); A[15] ='15'; A[4] PASSED!
+var A = new Array(0,1,2,3,4,5,6,7,8,9,10); A[15] ='15'; A[5] PASSED!
+var A = new Array(0,1,2,3,4,5,6,7,8,9,10); A[15] ='15'; A[6] PASSED!
+var A = new Array(0,1,2,3,4,5,6,7,8,9,10); A[15] ='15'; A[7] PASSED!
+var A = new Array(0,1,2,3,4,5,6,7,8,9,10); A[15] ='15'; A[8] PASSED!
+var A = new Array(0,1,2,3,4,5,6,7,8,9,10); A[15] ='15'; A[9] PASSED!
+var A = new Array(0,1,2,3,4,5,6,7,8,9,10); A[15] ='15'; A[10] PASSED!
+var A = new Array(0,1,2,3,4,5,6,7,8,9,10); A[15] ='15'; A[11] PASSED!
+var A = new Array(0,1,2,3,4,5,6,7,8,9,10); A[15] ='15'; A[12] PASSED!
+var A = new Array(0,1,2,3,4,5,6,7,8,9,10); A[15] ='15'; A[13] PASSED!
+var A = new Array(0,1,2,3,4,5,6,7,8,9,10); A[15] ='15'; A[14] PASSED!
+var A = new Array(0,1,2,3,4,5,6,7,8,9,10); A[15] ='15'; A[15] PASSED!
+var A = new Array(); A.join.length = 4; A.join.length PASSED!
+var A = new Array(); A.join.length = 4; A.length PASSED!

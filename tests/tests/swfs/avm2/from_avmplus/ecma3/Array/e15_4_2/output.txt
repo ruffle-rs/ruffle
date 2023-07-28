@@ -1,0 +1,9 @@
+var arr=new Array(),  arr[Math.pow(2,16)] = 'hi', arr.length PASSED!
+var arr=new Array(),  arr[Math.pow(2,30)-2] = 'hi', arr.length PASSED!
+var arr=new Array(),  arr[Math.pow(2,30)-1] = 'hi', arr.length PASSED!
+var arr=new Array(),  arr[Math.pow(2,30)] = 'hi', arr.length PASSED!
+var arr=new Array(),  arr[Math.pow(2,31)-2] = 'hi', arr.length PASSED!
+var arr=new Array(),  arr[Math.pow(2,31)-1] = 'hi', arr.length PASSED!
+var arr=new Array(),  arr[Math.pow(2,31)] = 'hi', arr.length PASSED!
+var arr = new Array(0,1,2,3,4,5), arr.length = 2, String(arr) PASSED!
+var arr = new Array(0,1), arr.length = 3, String(arr) PASSED!

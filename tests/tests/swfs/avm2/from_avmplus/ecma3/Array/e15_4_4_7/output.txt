@@ -1,0 +1,6 @@
+MYEMPTYARR = new Array(); MYEMPTYARR.push(); PASSED!
+MYEMPTYARR = new Array(); MYEMPTYARR.push(2); PASSED!
+MYEMPTYARR = new Array(); MYEMPTYARR[0]; PASSED!
+MYARR = new Array(); MYARR.push(); PASSED!
+MYARR = new Array(); MYARR.push(2); PASSED!
+var MYBIGARR[i] = i; MYBIGARR.push(101); PASSED!
