@@ -83,8 +83,10 @@ pub struct SystemClasses<'gc> {
     pub sprite: ClassObject<'gc>,
     pub simplebutton: ClassObject<'gc>,
     pub regexp: ClassObject<'gc>,
+    // the generic Vector class, useless until you .apply() type arg onto it
     pub generic_vector: ClassObject<'gc>,
-    pub object_vector: ClassObject<'gc>, // Vector.<*>
+    // Vector.<*>, NOT Vector.<Object>. Used as base class for new Vector<T>.
+    pub object_vector: ClassObject<'gc>,
     pub soundtransform: ClassObject<'gc>,
     pub soundchannel: ClassObject<'gc>,
     pub bitmap: ClassObject<'gc>,
