@@ -88,6 +88,12 @@ pub fn instance_init<'gc>(
                     )?));
                 }
 
+                // [NA] temporarily limit this. It may not be correct but it's better than 100GB arrays.
+                // TODO: sparse array support
+                if expected_len > (1 << 28) as f64 {
+                    return Err("Ruffle does not support sparse arrays yet.".into());
+                }
+
                 array.set_length(expected_len as usize);
 
                 return Ok(Value::Undefined);

@@ -129,6 +129,11 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         if name.contains_public_namespace() {
             if let Some(name) = name.local_name() {
                 if let Ok(index) = name.parse::<usize>() {
+                    // [NA] temporarily limit this. It may not be correct but it's better than 100GB arrays.
+                    // TODO: sparse array support
+                    if index > 1 << 28 {
+                        return Err("Ruffle does not support sparse arrays yet.".into());
+                    }
                     write.array.set(index, value);
                     return Ok(());
                 }
@@ -149,6 +154,11 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         if name.contains_public_namespace() {
             if let Some(name) = name.local_name() {
                 if let Ok(index) = name.parse::<usize>() {
+                    // [NA] temporarily limit this. It may not be correct but it's better than 100GB arrays.
+                    // TODO: sparse array support
+                    if index > 1 << 28 {
+                        return Err("Ruffle does not support sparse arrays yet.".into());
+                    }
                     write.array.set(index, value);
                     return Ok(());
                 }
