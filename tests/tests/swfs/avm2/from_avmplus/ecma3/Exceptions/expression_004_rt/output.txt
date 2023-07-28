@@ -1,0 +1,1 @@
+Get the toString value of an object whose value is null (threw TypeError: Error #1009: null has no properties) PASSED!

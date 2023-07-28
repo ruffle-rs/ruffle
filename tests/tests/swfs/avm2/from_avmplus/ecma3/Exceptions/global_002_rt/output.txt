@@ -1,0 +1,1 @@
+result = this() (threw TypeError: Error #1006Attempted to create a new object on an object that is not function/class) PASSED!

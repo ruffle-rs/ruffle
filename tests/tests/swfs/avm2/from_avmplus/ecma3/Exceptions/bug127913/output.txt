@@ -1,0 +1,1 @@
+throw an exception in a script where there is infinite recursion PASSED!
