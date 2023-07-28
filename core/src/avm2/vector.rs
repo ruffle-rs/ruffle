@@ -239,20 +239,18 @@ impl<'gc> VectorStorage<'gc> {
 
         if let Some(v) = self.storage.pop() {
             Ok(v)
-        } else {
-            if let Some(value_type) = self.value_type() {
-                if Object::ptr_eq(value_type, activation.avm2().classes().uint) {
-                    Ok(Value::Integer(0))
-                } else if Object::ptr_eq(value_type, activation.avm2().classes().int) {
-                    Ok(Value::Integer(0))
-                } else if Object::ptr_eq(value_type, activation.avm2().classes().number) {
-                    Ok(Value::Number(0.0))
-                } else {
-                    Ok(Value::Undefined)
-                }
+        } else if let Some(value_type) = self.value_type() {
+            if Object::ptr_eq(value_type, activation.avm2().classes().uint)
+                || Object::ptr_eq(value_type, activation.avm2().classes().int)
+            {
+                Ok(Value::Integer(0))
+            } else if Object::ptr_eq(value_type, activation.avm2().classes().number) {
+                Ok(Value::Number(0.0))
             } else {
                 Ok(Value::Undefined)
             }
+        } else {
+            Ok(Value::Undefined)
         }
     }
 
@@ -287,20 +285,18 @@ impl<'gc> VectorStorage<'gc> {
 
         if !self.storage.is_empty() {
             Ok(self.storage.remove(0))
-        } else {
-            if let Some(value_type) = self.value_type() {
-                if Object::ptr_eq(value_type, activation.avm2().classes().uint) {
-                    Ok(Value::Integer(0))
-                } else if Object::ptr_eq(value_type, activation.avm2().classes().int) {
-                    Ok(Value::Integer(0))
-                } else if Object::ptr_eq(value_type, activation.avm2().classes().number) {
-                    Ok(Value::Number(0.0))
-                } else {
-                    Ok(Value::Undefined)
-                }
+        } else if let Some(value_type) = self.value_type() {
+            if Object::ptr_eq(value_type, activation.avm2().classes().uint)
+                || Object::ptr_eq(value_type, activation.avm2().classes().int)
+            {
+                Ok(Value::Integer(0))
+            } else if Object::ptr_eq(value_type, activation.avm2().classes().number) {
+                Ok(Value::Number(0.0))
             } else {
                 Ok(Value::Undefined)
             }
+        } else {
+            Ok(Value::Undefined)
         }
     }
 
