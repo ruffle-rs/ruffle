@@ -77,6 +77,10 @@ pub fn native_instance_init<'gc>(
                 child.construct_frame(&mut activation.context);
             }
         }
+
+        if let Some(clip) = dobj.as_movie_clip() {
+            clip.remove_flag_constructing_frame(activation.context.gc_context);
+        }
     }
 
     Ok(Value::Undefined)

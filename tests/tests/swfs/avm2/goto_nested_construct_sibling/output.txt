@@ -1,0 +1,18 @@
+Calling Container super()
+Calling FirstChild super(): Container.firstChild = undefined Container.secondChild = undefined Container.thirdChildDummy = undefined
+Called FirstChild super(): Container.firstChild = undefined Container.secondChild = undefined Container.thirdChildDummy = undefined
+Calling FourthChild super()
+Container frameConstructed: [Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+Running Container framescript
+FirstChild framescript frame 2: this.fourthChild = undefined
+Calling MyButton super()
+Called MyButton super()
+Called FourthChild super()
+Container frameConstructed: [Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+FirstChild: ran this.gotoAndStop(2): Container.firstChild = undefined Container.secondChild = undefined Container.thirdChildDummy = undefined this.stage.getChildAt(0).getChildAt(1) = null
+Constructed SecondChild
+Called Container super()
+Constructed ContainerSibling
+Container frameConstructed: [Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+Container frameConstructed: [Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+Container frameConstructed: [Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]

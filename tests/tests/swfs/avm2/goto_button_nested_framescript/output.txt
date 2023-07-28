@@ -1,0 +1,28 @@
+Calling MyChild super()
+Main added: [Event type="added" bubbles=true cancelable=false eventPhase=3] e.target = [object Shape] e.target.name = instance1
+Called MyChild super()
+Main added: [Event type="added" bubbles=true cancelable=false eventPhase=3] e.target = [object MyChild] e.target.name = mainFrame1Child
+Main added: [Event type="added" bubbles=true cancelable=false eventPhase=2] e.target = [object Main] e.target.name = root1
+Main addedToStage: [Event type="addedToStage" bubbles=false cancelable=false eventPhase=2] e.target = [object Main] e.target.name = root1
+Main frameConstructed: this.buttonHolder = undefined
+Main framescript 1
+MyChild frame 1: calling this.parent.gotoAndStop(2)
+Calling ButtonHolder super()
+Main added: [Event type="added" bubbles=true cancelable=false eventPhase=3] e.target = [object Shape] e.target.name = instance3
+Main added: [Event type="added" bubbles=true cancelable=false eventPhase=3] e.target = [object Shape] e.target.name = instance5
+Main added: [Event type="added" bubbles=true cancelable=false eventPhase=3] e.target = [object Shape] e.target.name = instance7
+Main added: [Event type="added" bubbles=true cancelable=false eventPhase=3] e.target = [object MovieClip] e.target.name = instance2
+Main frameConstructed: this.buttonHolder = undefined
+Main framescript 2: this.buttonHolder = undefined
+Main exitFrame: this.buttonHolder = undefined
+Calling MyButton super()
+Called MyButton super()
+Main added: [Event type="added" bubbles=true cancelable=false eventPhase=3] e.target = [object MyButton] e.target.name = myButton
+Called ButtonHolder super()
+Main added: [Event type="added" bubbles=true cancelable=false eventPhase=3] e.target = [object ButtonHolder] e.target.name = buttonHolder
+Main frameConstructed: this.buttonHolder = [object ButtonHolder]
+Main exitFrame: this.buttonHolder = [object ButtonHolder]
+MyChild frame 1: called this.parent.gotoAndStop(2)
+Main exitFrame: this.buttonHolder = [object ButtonHolder]
+Main frameConstructed: this.buttonHolder = [object ButtonHolder]
+Main exitFrame: this.buttonHolder = [object ButtonHolder]

@@ -2631,19 +2631,31 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             self.0.write(context.gc_context).unset_loop_queued();
 
             if needs_construction {
+                self.0
+                    .write(context.gc_context)
+                    .flags
+                    .insert(MovieClipFlags::RUNNING_CONSTRUCT_FRAME);
                 self.construct_as_avm2_object(context);
                 self.on_construction_complete(context);
-            // If we're in the load frame and we were constructed by ActionScript,
-            // then we want to wait for the DisplayObject constructor to run
-            // 'construct_frame' on children. This is observable by ActionScript -
-            // before calling super(), 'this.numChildren' will show a non-zero number
-            // when we have children placed on the load frame, but 'this.getChildAt(0)'
-            // will return 'null' since the children haven't had their AVM2 objects
-            // constructed by `construct_frame` yet.
+                // If we're in the load frame and we were constructed by ActionScript,
+                // then we want to wait for the DisplayObject constructor to run
+                // 'construct_frame' on children. This is observable by ActionScript -
+                // before calling super(), 'this.numChildren' will show a non-zero number
+                // when we have children placed on the load frame, but 'this.getChildAt(0)'
+                // will return 'null' since the children haven't had their AVM2 objects
+                // constructed by `construct_frame` yet.
             } else if !(is_load_frame && self.placed_by_script()) {
+                let running_construct_frame = self
+                    .0
+                    .read()
+                    .flags
+                    .contains(MovieClipFlags::RUNNING_CONSTRUCT_FRAME);
                 // The supercall constructor for display objects is responsible
                 // for triggering construct_frame on frame 1.
                 for child in self.iter_render_list() {
+                    if running_construct_frame && child.object2().as_object().is_none() {
+                        continue;
+                    }
                     child.construct_frame(context);
                 }
             }
@@ -4414,6 +4426,13 @@ impl<'gc, 'a> MovieClip<'gc> {
         }
         Ok(())
     }
+
+    pub fn remove_flag_constructing_frame(&self, mc: &Mutation<'gc>) {
+        self.0
+            .write(mc)
+            .flags
+            .remove(MovieClipFlags::RUNNING_CONSTRUCT_FRAME);
+    }
 }
 
 #[derive(Clone)]
@@ -4771,6 +4790,8 @@ bitflags! {
         /// Because AVM2 queues PlaceObject tags to run later, explicit gotos
         /// that happen while those tags run should cancel the loop.
         const LOOP_QUEUED = 1 << 4;
+
+        const RUNNING_CONSTRUCT_FRAME = 1 << 5;
     }
 }
 
