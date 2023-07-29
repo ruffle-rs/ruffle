@@ -5,8 +5,8 @@ use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
 use crate::avm2::e4x::{escape_attribute_value, escape_element_value};
 use crate::avm2::error::{
-    argument_error, make_null_or_undefined_error, make_reference_error, type_error,
-    ReferenceErrorCode,
+    argument_error, make_error_1127, make_null_or_undefined_error, make_reference_error,
+    type_error, ReferenceErrorCode,
 };
 use crate::avm2::method::{BytecodeMethod, Method, ParamConfig};
 use crate::avm2::object::{
@@ -1953,17 +1953,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let base = self
             .pop_stack()
             .as_object()
-            .ok_or("Cannot specialize null or undefined")?;
+            .ok_or_else(|| make_error_1127(self))?;
 
-        if args.len() > 1 {
-            return Err(format!(
-                "VerifyError: Cannot specialize classes with more than one parameter, {} given",
-                args.len()
-            )
-            .into());
-        }
+        let applied = base.apply(self, &args)?;
 
-        let applied = base.apply(self, args[0])?;
         self.push_stack(applied);
 
         Ok(FrameControl::Continue)
