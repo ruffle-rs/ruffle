@@ -66,16 +66,6 @@ socket.addEventListener(ProgressEvent.SOCKET_DATA, function(evt:ProgressEvent):v
     trace(socket.readMultiByte(6, "utf-8"));
 
     trace("");
-    trace("readObject() (AMF3)");
-    socket.objectEncoding = ObjectEncoding.AMF3;
-    trace(socket.readObject());
-
-    trace("");
-    trace("readObject() (AMF0)");
-    socket.objectEncoding = ObjectEncoding.AMF0;
-    trace(socket.readObject());
-
-    trace("");
     trace("readUnsignedShort()");
     trace(socket.readUnsignedShort());
 

@@ -47,14 +47,6 @@ socket.addEventListener(Event.CONNECT, function(evt:Event):void
     trace("writeMultiByte()");
     socket.writeMultiByte("Hello!", "utf-8");
 
-    trace("writeObject() (AMF3)");
-    socket.objectEncoding = ObjectEncoding.AMF3;
-    socket.writeObject(new Object());
-
-    trace("writeObject() (AMF0)");
-    socket.objectEncoding = ObjectEncoding.AMF0;
-    socket.writeObject(new Object());
-
     trace("writeShort()");
     socket.writeShort(65535);
     socket.writeShort(-30562);
