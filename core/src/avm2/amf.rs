@@ -287,7 +287,7 @@ pub fn deserialize_value<'gc>(
                     .map(|v| deserialize_value(activation, v))
                     .collect::<Result<Vec<_>, _>>()?,
                 *is_fixed,
-                None,
+                Some(activation.avm2().classes().object),
             );
             VectorObject::from_vector(storage, activation)?.into()
         }
