@@ -1,5 +1,5 @@
 [package]
-name = "ruffle_desktop_appimage"
+name = "ruffle_desktop"
 authors.workspace = true
 edition.workspace = true
 homepage.workspace = true
