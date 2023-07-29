@@ -1,0 +1,54 @@
+Object(null).valueOf() PASSED!
+typeof Object(null) PASSED!
+Object(null).constructor.prototype PASSED!
+Object(void 0).valueOf() PASSED!
+typeof Object(void 0) PASSED!
+Object(void 0).constructor.prototype PASSED!
+Object(undefined).valueOf PASSED!
+typeof Object(undefined) PASSED!
+Object(undefined).constructor.prototype PASSED!
+Object(true).valueOf() PASSED!
+typeof Object(true) PASSED!
+var MYOB = Object(true), MYOB.toString = Object.prototype.toString, MYOB.toString() PASSED!
+Object(false).valueOf() PASSED!
+typeof Object(false) PASSED!
+var MYOB = Object(false), MYOB.toString = Object.prototype.toString, MYOB.toString() PASSED!
+Object(0).valueOf() PASSED!
+typeof Object(0) PASSED!
+var MYOB = Object(0), MYOB.toString = Object.prototype.toString, MYOB.toString() PASSED!
+Object(-0).valueOf() PASSED!
+typeof Object(-0) PASSED!
+var MYOB = Object(-0), MYOB.toString PASSED!
+Object(1).valueOf() PASSED!
+typeof Object(1) PASSED!
+var MYOB = Object(1), MYOB.toString PASSED!
+Object(-1).valueOf() PASSED!
+typeof Object(-1) PASSED!
+var MYOB = Object(-1), MYOB.toString PASSED!
+Object(Number.MAX_VALUE).valueOf() PASSED!
+typeof Object(Number.MAX_VALUE) PASSED!
+var MYOB = Object(Number.MAX_VALUE), MYOB.toString PASSED!
+Object(Number.MIN_VALUE).valueOf() PASSED!
+typeof Object(Number.MIN_VALUE) PASSED!
+var MYOB = Object(Number.MIN_VALUE), MYOB.toString PASSED!
+Object(Number.POSITIVE_INFINITY).valueOf() PASSED!
+typeof Object(Number.POSITIVE_INFINITY) PASSED!
+var MYOB = Object(Number.POSITIVE_INFINITY), MYOB.toString PASSED!
+Object(Number.NEGATIVE_INFINITY).valueOf() PASSED!
+typeof Object(Number.NEGATIVE_INFINITY) PASSED!
+var MYOB = Object(Number.NEGATIVE_INFINITY), MYOB.toString PASSED!
+Object(Number.NaN).valueOf() PASSED!
+typeof Object(Number.NaN) PASSED!
+var MYOB = Object(Number.NaN), MYOB.toString PASSED!
+Object('a string').valueOf() PASSED!
+typeof Object('a string') PASSED!
+var MYOB = Object('a string'), MYOB.toString PASSED!
+Object('').valueOf() PASSED!
+typeof Object('') PASSED!
+var MYOB = Object(''), MYOB.toString PASSED!
+Object('\r\t\b\n\v\f').valueOf() PASSED!
+typeof Object('\r\t\b\n\v\f') PASSED!
+var MYOB = Object('\r\t\b\n\v\f'), MYOB.toString PASSED!
+Object( '\'\"\' ).valueOf() PASSED!
+typeof Object( '\'\"\' ) PASSED!
+var MYOB = Object('\'\"\' ), MYOB.toString PASSED!

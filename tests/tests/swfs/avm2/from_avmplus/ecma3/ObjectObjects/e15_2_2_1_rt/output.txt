@@ -1,0 +1,47 @@
+typeof new Object(null) PASSED!
+MYOB = new Object(null); MYOB.toString = Object.prototype.toString; MYOB.toString() PASSED!
+typeof new Object(void 0) PASSED!
+MYOB = new Object(new Object(void 0)); MYOB.toString = Object.prototype.toString; MYOB.toString() PASSED!
+typeof new Object(undefined) PASSED!
+MYOB = new Object(new Object(undefined)); MYOB.toString = Object.prototype.toString; MYOB.toString() PASSED!
+typeof new Object('string') PASSED!
+MYOB = (new Object('string'); MYOB.toString = Object.prototype.toString; MYOB.toString() PASSED!
+(new Object('string').valueOf() PASSED!
+typeof new Object('') PASSED!
+MYOB = (new Object(''); MYOB.toString = Object.prototype.toString; MYOB.toString() PASSED!
+(new Object('').valueOf() PASSED!
+typeof new Object(Number.NaN) PASSED!
+MYOB = (new Object(Number.NaN); MYOB.toStriobjectng = Object.prototype.toString; MYOB.toString() PASSED!
+(new Object(Number.NaN).valueOf() PASSED!
+typeof new Object(0) PASSED!
+MYOB = (new Object(0); MYOB.toString = Object.prototype.toString; MYOB.toString() PASSED!
+(new Object(0).valueOf() PASSED!
+typeof new Object(-0) PASSED!
+MYOB = (new Object(-0); MYOB.toString = Object.prototype.toString; MYOB.toString() PASSED!
+(new Object(-0).valueOf() PASSED!
+typeof new Object(1) PASSED!
+MYOB = (new Object(1); MYOB.toString = Object.prototype.toString; MYOB.toString() PASSED!
+(new Object(1).valueOf() PASSED!
+typeof new Object(-1) PASSED!
+MYOB = (new Object(-1); MYOB.toString = Object.prototype.toString; MYOB.toString() PASSED!
+(new Object(-1).valueOf() PASSED!
+typeof new Object(true) PASSED!
+MYOB = (new Object(true); MYOB.toString = Object.prototype.toString; MYOB.toString() PASSED!
+(new Object(true).valueOf() PASSED!
+typeof new Object(false) PASSED!
+MYOB = (new Object(false); MYOB.toString = Object.prototype.toString; MYOB.toString() PASSED!
+(new Object(false).valueOf() PASSED!
+typeof new Object(Boolean()) PASSED!
+MYOB = (new Object(Boolean()); MYOB.toString = Object.prototype.toString; MYOB.toString() PASSED!
+(new Object(Boolean()).valueOf() PASSED!
+myglobal = new Object( this ) PASSED!
+myobject = new Object('my new object'); new Object(myobject) PASSED!
+myarray = new Array(); new Object(myarray) PASSED!
+myboolean = new Boolean(); new Object(myboolean) PASSED!
+mynumber = new Number(); new Object(mynumber) PASSED!
+mystring = new String(); new Object(mystring) PASSED!
+myobject = new Object(); new Object(myobject) PASSED!
+myfunction = function(x){return x;} new Object(myfunction) PASSED!
+function myobj(){function f(){}return f() new Object(myobj) PASSED!
+mymath = Math; new Object(mymath) PASSED!
+myregexp = new RegExp(new String('')), new Object(myregexp) PASSED!
