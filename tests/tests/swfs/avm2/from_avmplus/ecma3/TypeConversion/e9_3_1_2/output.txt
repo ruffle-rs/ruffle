@@ -1,0 +1,12 @@
+Number(00) PASSED!
+Number(01) PASSED!
+Number(02) PASSED!
+Number(03) PASSED!
+Number(04) PASSED!
+Number(05) PASSED!
+Number(06) PASSED!
+Number(07) PASSED!
+Number(010) PASSED!
+Number(011) PASSED!
+Number(001) PASSED!
+Number(0001) PASSED!

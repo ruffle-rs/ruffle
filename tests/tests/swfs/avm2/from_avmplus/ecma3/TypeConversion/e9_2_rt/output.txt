@@ -1,0 +1,36 @@
+Boolean() PASSED!
+Boolean(var x) PASSED!
+Boolean(void 0) PASSED!
+Boolean(null) PASSED!
+Boolean(false) PASSED!
+Boolean(true) PASSED!
+Boolean(0) PASSED!
+Boolean(-0) PASSED!
+Boolean(NaN) PASSED!
+Boolean('') PASSED!
+Boolean(Infinity) PASSED!
+Boolean(-Infinity) PASSED!
+Boolean(Math.PI) PASSED!
+Boolean(1) PASSED!
+Boolean(-1) PASSED!
+Boolean([tab]) PASSED!
+Boolean('0') PASSED!
+Boolean('string') PASSED!
+Boolean(new String() ) PASSED!
+Boolean(new String('') ) PASSED!
+Boolean(new Boolean(true)) PASSED!
+Boolean(new Boolean(false)) PASSED!
+Boolean(new Boolean() ) PASSED!
+Boolean(new Array()) PASSED!
+Boolean(new Number()) PASSED!
+Boolean(new Number(-0)) PASSED!
+Boolean(new Number(0)) PASSED!
+Boolean(new Number(NaN)) PASSED!
+Boolean(new Number(-1)) PASSED!
+Boolean(new Number(Infinity)) PASSED!
+Boolean(new Number(-Infinity)) PASSED!
+Boolean(new Object()) PASSED!
+Boolean(new Function()) PASSED!
+Boolean(new Date()) PASSED!
+Boolean(new Date(0)) PASSED!
+Boolean(Math) PASSED!

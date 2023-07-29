@@ -1,0 +1,48 @@
+Object(true).valueOf() PASSED!
+typeof Object(true) PASSED!
+(Object(true)).__proto__ PASSED!
+Object(false).valueOf() PASSED!
+typeof Object(false) PASSED!
+(Object(true)).__proto__ PASSED!
+Object(0).valueOf() PASSED!
+typeof Object(0) PASSED!
+(Object(0)).__proto__ PASSED!
+Object(-0).valueOf() PASSED!
+typeof Object(-0) PASSED!
+(Object(-0)).__proto__ PASSED!
+Object(1).valueOf() PASSED!
+typeof Object(1) PASSED!
+(Object(1)).__proto__ PASSED!
+Object(-1).valueOf() PASSED!
+typeof Object(-1) PASSED!
+(Object(-1)).__proto__ PASSED!
+Object(Number.MAX_VALUE).valueOf() PASSED!
+typeof Object(Number.MAX_VALUE) PASSED!
+(Object(Number.MAX_VALUE)).__proto__ PASSED!
+Object(Number.MIN_VALUE).valueOf() PASSED!
+typeof Object(Number.MIN_VALUE) PASSED!
+(Object(Number.MIN_VALUE)).__proto__ PASSED!
+Object(Number.POSITIVE_INFINITY).valueOf() PASSED!
+typeof Object(Number.POSITIVE_INFINITY) PASSED!
+(Object(Number.POSITIVE_INFINITY)).__proto__ PASSED!
+Object(Number.NEGATIVE_INFINITY).valueOf() PASSED!
+typeof Object(Number.NEGATIVE_INFINITY) PASSED!
+(Object(Number.NEGATIVE_INFINITY)).__proto__ PASSED!
+Object(Number.NaN).valueOf() PASSED!
+typeof Object(Number.NaN) PASSED!
+(Object(Number.NaN)).__proto__ PASSED!
+Object('a string').valueOf() PASSED!
+typeof Object('a string') PASSED!
+(Object('a string')).__proto__ PASSED!
+Object('').valueOf() PASSED!
+typeof Object('') PASSED!
+(Object('')).__proto__ PASSED!
+Object('\r\t\b\n\v\f').valueOf() PASSED!
+typeof Object('\r\t\b\n\v\f') PASSED!
+(Object('\r\t\b\n\v\f')).__proto__ PASSED!
+Object( '\'\"\' ).valueOf() PASSED!
+typeof Object( '\'\"\' ) PASSED!
+Object( '\'\"\' ).__proto__ PASSED!
+Object( new MyObject(true) ).valueOf() PASSED!
+typeof Object( new MyObject(true) ) PASSED!
+(Object( new MyObject(true) )).toString() PASSED!

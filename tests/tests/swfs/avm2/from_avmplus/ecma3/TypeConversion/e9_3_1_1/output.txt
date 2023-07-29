@@ -1,0 +1,189 @@
+Number('') PASSED!
+Number(' ') PASSED!
+Number(\t) PASSED!
+Number(\n) PASSED!
+Number(\r) PASSED!
+Number(\f) PASSED!
+Number(String.fromCharCode(0x0009) PASSED!
+Number(String.fromCharCode(0x0020) PASSED!
+Number(String.fromCharCode(0x000C) PASSED!
+Number(String.fromCharCode(0x000B) PASSED!
+Number(String.fromCharCode(0x000D) PASSED!
+Number(String.fromCharCode(0x000A) PASSED!
+Number( '   ' +  999 ) PASSED!
+Number( '\n'  + 999 ) PASSED!
+Number( '\r'  + 999 ) PASSED!
+Number( '\t'  + 999 ) PASSED!
+Number( '\f'  + 999 ) PASSED!
+Number( 999 + '   ' ) PASSED!
+Number( 999 + '\n' ) PASSED!
+Number( 999 + '\r' ) PASSED!
+Number( 999 + '\t' ) PASSED!
+Number( 999 + '\f' ) PASSED!
+Number( '\n'  + 999 + '\n' ) PASSED!
+Number( '\r'  + 999 + '\r' ) PASSED!
+Number( '\t'  + 999 + '\t' ) PASSED!
+Number( '\f'  + 999 + '\f' ) PASSED!
+Number( '   ' +  '999' ) PASSED!
+Number( '\n'  + '999' ) PASSED!
+Number( '\r'  + '999' ) PASSED!
+Number( '\t'  + '999' ) PASSED!
+Number( '\f'  + '999' ) PASSED!
+Number( '999' + '   ' ) PASSED!
+Number( '999' + '\n' ) PASSED!
+Number( '999' + '\r' ) PASSED!
+Number( '999' + '\t' ) PASSED!
+Number( '999' + '\f' ) PASSED!
+Number( '\n'  + '999' + '\n' ) PASSED!
+Number( '\r'  + '999' + '\r' ) PASSED!
+Number( '\t'  + '999' + '\t' ) PASSED!
+Number( '\f'  + '999' + '\f' ) PASSED!
+Number( String.fromCharCode(0x0009) +  '99' ) PASSED!
+Number( String.fromCharCode(0x0020) +  '99' ) PASSED!
+Number( String.fromCharCode(0x000C) +  '99' ) PASSED!
+Number( String.fromCharCode(0x000B) +  '99' ) PASSED!
+Number( String.fromCharCode(0x000D) +  '99' ) PASSED!
+Number( String.fromCharCode(0x000A) +  '99' ) PASSED!
+Number( String.fromCharCode(0x0009) +  '99' + String.fromCharCode(0x0009) PASSED!
+Number( String.fromCharCode(0x0020) +  '99' + String.fromCharCode(0x0020) PASSED!
+Number( String.fromCharCode(0x000C) +  '99' + String.fromCharCode(0x000C) PASSED!
+Number( String.fromCharCode(0x000D) +  '99' + String.fromCharCode(0x000D) PASSED!
+Number( String.fromCharCode(0x000B) +  '99' + String.fromCharCode(0x000B) PASSED!
+Number( String.fromCharCode(0x000A) +  '99' + String.fromCharCode(0x000A) PASSED!
+Number( '99' + String.fromCharCode(0x0009) PASSED!
+Number( '99' + String.fromCharCode(0x0020) PASSED!
+Number( '99' + String.fromCharCode(0x000C) PASSED!
+Number( '99' + String.fromCharCode(0x000D) PASSED!
+Number( '99' + String.fromCharCode(0x000B) PASSED!
+Number( '99' + String.fromCharCode(0x000A) PASSED!
+Number( String.fromCharCode(0x0009) +  99 ) PASSED!
+Number( String.fromCharCode(0x0020) +  99 ) PASSED!
+Number( String.fromCharCode(0x000C) +  99 ) PASSED!
+Number( String.fromCharCode(0x000B) +  99 ) PASSED!
+Number( String.fromCharCode(0x000D) +  99 ) PASSED!
+Number( String.fromCharCode(0x000A) +  99 ) PASSED!
+Number( String.fromCharCode(0x0009) +  99 + String.fromCharCode(0x0009) PASSED!
+Number( String.fromCharCode(0x0020) +  99 + String.fromCharCode(0x0020) PASSED!
+Number( String.fromCharCode(0x000C) +  99 + String.fromCharCode(0x000C) PASSED!
+Number( String.fromCharCode(0x000D) +  99 + String.fromCharCode(0x000D) PASSED!
+Number( String.fromCharCode(0x000B) +  99 + String.fromCharCode(0x000B) PASSED!
+Number( String.fromCharCode(0x000A) +  99 + String.fromCharCode(0x000A) PASSED!
+Number( 99 + String.fromCharCode(0x0009) PASSED!
+Number( 99 + String.fromCharCode(0x0020) PASSED!
+Number( 99 + String.fromCharCode(0x000C) PASSED!
+Number( 99 + String.fromCharCode(0x000D) PASSED!
+Number( 99 + String.fromCharCode(0x000B) PASSED!
+Number( 99 + String.fromCharCode(0x000A) PASSED!
+Number('Infinity') PASSED!
+Number('-Infinity') PASSED!
+Number('+Infinity') PASSED!
+Number('0') PASSED!
+Number('-0') PASSED!
+Number('+0') PASSED!
+Number('1') PASSED!
+Number('-1') PASSED!
+Number('+1') PASSED!
+Number('2') PASSED!
+Number('-2') PASSED!
+Number('+2') PASSED!
+Number('3') PASSED!
+Number('-3') PASSED!
+Number('+3') PASSED!
+Number('4') PASSED!
+Number('-4') PASSED!
+Number('+4') PASSED!
+Number('5') PASSED!
+Number('-5') PASSED!
+Number('+5') PASSED!
+Number('6') PASSED!
+Number('-6') PASSED!
+Number('+6') PASSED!
+Number('7') PASSED!
+Number('-7') PASSED!
+Number('+7') PASSED!
+Number('8') PASSED!
+Number('-8') PASSED!
+Number('+8') PASSED!
+Number('9') PASSED!
+Number('-9') PASSED!
+Number('+9') PASSED!
+Number('3.14159') PASSED!
+Number('-3.14159') PASSED!
+Number('+3.14159') PASSED!
+Number('3.') PASSED!
+Number('-3.') PASSED!
+Number('+3.') PASSED!
+Number('3.e1') PASSED!
+Number('-3.e1') PASSED!
+Number('+3.e1') PASSED!
+Number('3.e+1') PASSED!
+Number('-3.e+1') PASSED!
+Number('+3.e+1') PASSED!
+Number('3.e-1') PASSED!
+Number('-3.e-1') PASSED!
+Number('+3.e-1') PASSED!
+Number('.00001') PASSED!
+Number('+.00001') PASSED!
+Number('-0.0001') PASSED!
+Number('.01e2') PASSED!
+Number('+.01e2') PASSED!
+Number('-.01e2') PASSED!
+Number('.01e+2') PASSED!
+Number('+.01e+2') PASSED!
+Number('-.01e+2') PASSED!
+Number('.01e-2') PASSED!
+Number('+.01e-2') PASSED!
+Number('-.01e-2') PASSED!
+Number('1234e5') PASSED!
+Number('+1234e5') PASSED!
+Number('-1234e5') PASSED!
+Number('1234e+5') PASSED!
+Number('+1234e+5') PASSED!
+Number('-1234e+5') PASSED!
+Number('1234e-5') PASSED!
+Number('+1234e-5') PASSED!
+Number('-1234e-5') PASSED!
+Number('0x0') PASSED!
+Number('0x1') PASSED!
+Number('0x2') PASSED!
+Number('0x3') PASSED!
+Number('0x4') PASSED!
+Number('0x5') PASSED!
+Number('0x6') PASSED!
+Number('0x7') PASSED!
+Number('0x8') PASSED!
+Number('0x9') PASSED!
+Number('0xa') PASSED!
+Number('0xb') PASSED!
+Number('0xc') PASSED!
+Number('0xd') PASSED!
+Number('0xe') PASSED!
+Number('0xf') PASSED!
+Number('0xA') PASSED!
+Number('0xB') PASSED!
+Number('0xC') PASSED!
+Number('0xD') PASSED!
+Number('0xE') PASSED!
+Number('0xF') PASSED!
+Number('0X0') PASSED!
+Number('0X1') PASSED!
+Number('0X2') PASSED!
+Number('0X3') PASSED!
+Number('0X4') PASSED!
+Number('0X5') PASSED!
+Number('0X6') PASSED!
+Number('0X7') PASSED!
+Number('0X8') PASSED!
+Number('0X9') PASSED!
+Number('0Xa') PASSED!
+Number('0Xb') PASSED!
+Number('0Xc') PASSED!
+Number('0Xd') PASSED!
+Number('0Xe') PASSED!
+Number('0Xf') PASSED!
+Number('0XA') PASSED!
+Number('0XB') PASSED!
+Number('0XC') PASSED!
+Number('0XD') PASSED!
+Number('0XE') PASSED!
+Number('0XF') PASSED!

@@ -1,0 +1,9 @@
+Number(new Number()) PASSED!
+Number(new Number(Number.NaN)) PASSED!
+Number(new Number(0)) PASSED!
+Number(new Number(null)) PASSED!
+Number(new Number(true)) PASSED!
+Number(new Number(false)) PASSED!
+Number(new Boolean(true)) PASSED!
+Number(new Boolean(false)) PASSED!
+Number(new Array(2,4,8,16,32)) PASSED!
