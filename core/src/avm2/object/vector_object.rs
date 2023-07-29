@@ -68,7 +68,7 @@ impl<'gc> VectorObject<'gc> {
         let value_type = vector.value_type().map(|o| o.into()).unwrap_or(Value::Null);
         let vector_class = activation.avm2().classes().generic_vector;
 
-        let applied_class = vector_class.apply(activation, value_type)?;
+        let applied_class = vector_class.apply(activation, &[value_type])?;
 
         let mut object: Object<'gc> = VectorObject(GcCell::new(
             activation.context.gc_context,
@@ -108,10 +108,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         if name.contains_public_namespace() {
             if let Some(name) = name.local_name() {
                 if let Ok(index) = name.parse::<usize>() {
-                    return Ok(read
-                        .vector
-                        .get(index, activation)
-                        .unwrap_or(Value::Undefined));
+                    return read.vector.get(index, activation);
                 }
             }
         }

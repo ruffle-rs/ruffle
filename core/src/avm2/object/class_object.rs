@@ -2,6 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Allocator, AllocatorFn, Class, ClassHashWrapper};
+use crate::avm2::error::{make_error_1127, type_error};
 use crate::avm2::function::Executable;
 use crate::avm2::method::Method;
 use crate::avm2::object::function_object::FunctionObject;
@@ -911,17 +912,35 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
     fn apply(
         &self,
         activation: &mut Activation<'_, 'gc>,
-        nullable_param: Value<'gc>,
+        nullable_params: &[Value<'gc>],
     ) -> Result<ClassObject<'gc>, Error<'gc>> {
         let self_class = self.inner_class_definition();
 
         if !self_class.read().is_generic() {
-            return Err(format!("Class {:?} is not generic", self_class.read().name()).into());
+            return Err(make_error_1127(activation));
+        }
+
+        if nullable_params.len() != 1 {
+            let class_name = self
+                .inner_class_definition()
+                .read()
+                .name()
+                .to_qualified_name(activation.context.gc_context);
+
+            return Err(Error::AvmError(type_error(
+                activation,
+                &format!(
+                    "Error #1128: Incorrect number of type parameters for {}. Expected 1, got {}.",
+                    class_name,
+                    nullable_params.len()
+                ),
+                1128,
+            )?));
         }
 
         //Because `null` is a valid parameter, we have to accept values as
         //parameters instead of objects. We coerce them to objects now.
-        let object_param = match nullable_param {
+        let object_param = match nullable_params[0] {
             Value::Null => None,
             v => Some(v),
         };
@@ -931,6 +950,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
                 cls.as_object()
                     .and_then(|c| c.as_class_object())
                     .ok_or_else(|| {
+                        // Note: FP throws VerifyError #1107 here
                         format!(
                             "Cannot apply class {:?} with non-class parameter",
                             self_class.read().name()

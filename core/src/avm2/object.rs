@@ -916,10 +916,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// parameters.
     fn apply(
         &self,
-        _activation: &mut Activation<'_, 'gc>,
-        _param: Value<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+        _params: &[Value<'gc>],
     ) -> Result<ClassObject<'gc>, Error<'gc>> {
-        Err("Not a parameterized type".into())
+        Err(error::make_error_1127(activation))
     }
 
     /// Determine the type of primitive coercion this object would prefer, in
