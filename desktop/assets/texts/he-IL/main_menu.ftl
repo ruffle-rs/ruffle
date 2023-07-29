@@ -25,3 +25,6 @@ help-menu-translate-ruffle = תרגם את ruffle...
 help-menu-about = אודות ruffle
 debug-menu = כלי ניפוי באגים
 debug-menu-open-stage = הצג פרטי שלב
+debug-menu-open-movie = הצג סרט
+debug-menu-open-movie-list = הצג סרטים ידועים
+debug-menu-search-display-objects = חפש אובייקטי תצוגה...
