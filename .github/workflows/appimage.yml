@@ -39,8 +39,7 @@ jobs:
         
       - name: AppImage Export
         # APPIMAGE_EXTRACT_AND_RUN=1
-        run: cargo appimage
-        working-directory: ./desktop
+        run: cargo appimage --package ruffle_desktop
       
       - name: Show directory
         run: ls
