@@ -1,0 +1,3 @@
+Number.prototype.toString=Object.prototype.toString;Number.prototype.toString() PASSED!
+typeof Number.prototype PASSED!
+Number.prototype.valueOf() PASSED!

@@ -1,0 +1,87 @@
+(new Number()).constructor PASSED!
+typeof (new Number()) PASSED!
+(new Number()).valueOf() PASSED!
+NUMB = new Number();NUMB.toString=Object.prototype.toString;NUMB.toString() PASSED!
+(new Number(0)).constructor PASSED!
+typeof (new Number(0)) PASSED!
+(new Number(0)).valueOf() PASSED!
+NUMB = new Number(0);NUMB.toString=Object.prototype.toString;NUMB.toString() PASSED!
+(new Number(1)).constructor PASSED!
+typeof (new Number(1)) PASSED!
+(new Number(1)).valueOf() PASSED!
+NUMB = new Number(1);NUMB.toString=Object.prototype.toString;NUMB.toString() PASSED!
+(new Number(-1)).constructor PASSED!
+typeof (new Number(-1)) PASSED!
+(new Number(-1)).valueOf() PASSED!
+NUMB = new Number(-1);NUMB.toString=Object.prototype.toString;NUMB.toString() PASSED!
+(new Number(Number.NaN)).constructor PASSED!
+typeof (new Number(Number.NaN)) PASSED!
+(new Number(Number.NaN)).valueOf() PASSED!
+NUMB = new Number(Number.NaN);NUMB.toString=Object.prototype.toString;NUMB.toString() PASSED!
+(new Number('string')).constructor PASSED!
+typeof (new Number('string')) PASSED!
+(new Number('string')).valueOf() PASSED!
+NUMB = new Number('string');NUMB.toString=Object.prototype.toString;NUMB.toString() PASSED!
+(new Number(new String())).constructor PASSED!
+typeof (new Number(new String())) PASSED!
+(new Number(new String())).valueOf() PASSED!
+NUMB = new Number(new String());NUMB.toString=Object.prototype.toString;NUMB.toString() PASSED!
+(new Number('')).constructor PASSED!
+typeof (new Number('')) PASSED!
+(new Number('')).valueOf() PASSED!
+NUMB = new Number('');NUMB.toString=Object.prototype.toString;NUMB.toString() PASSED!
+(new Number(Number.POSITIVE_INFINITY)).constructor PASSED!
+typeof (new Number(Number.POSITIVE_INFINITY)) PASSED!
+(new Number(Number.POSITIVE_INFINITY)).valueOf() PASSED!
+NUMB = new Number(Number.POSITIVE_INFINITY);NUMB.toString=Object.prototype.toString;NUMB.toString() PASSED!
+(new Number(Number.NEGATIVE_INFINITY)).constructor PASSED!
+typeof (new Number(Number.NEGATIVE_INFINITY)) PASSED!
+(new Number(Number.NEGATIVE_INFINITY)).valueOf() PASSED!
+NUMB = new Number(Number.NEGATIVE_INFINITY);NUMB.toString=Object.prototype.toString;NUMB.toString() PASSED!
+(new Number()).constructor PASSED!
+typeof (new Number()) PASSED!
+(new Number()).valueOf() PASSED!
+NUMB = new Number();NUMB.toString=Object.prototype.toString;NUMB.toString() PASSED!
+new Number() PASSED!
+new Number(void 0) PASSED!
+new Number(null) PASSED!
+new Number(new Number()) PASSED!
+new Number(0) PASSED!
+new Number(1) PASSED!
+new Number(-1) PASSED!
+new Number(NaN) PASSED!
+new Number('string') PASSED!
+new Number(new String()) PASSED!
+new Number('') PASSED!
+new Number(Infinity) PASSED!
+new Number(-Infinity) PASSED!
+new Number(3.141592653589793) PASSED!
+new Number(4294967297) PASSED!
+new Number(1e2000) PASSED!
+new Number(-1e2000) PASSED!
+new Number(1e-2000) PASSED!
+new Number(1/1e-2000) PASSED!
+new Number(true) PASSED!
+new Number(false) PASSED!
+new Number(new Boolean(false) PASSED!
+new Number(new String('Number.POSITIVE_INFINITY') PASSED!
+new Number(new Number(false) PASSED!
+new Number('3000000000.25') PASSED!
+new Number(-'3000000000.25') PASSED!
+new Number(new MyObject(100)) PASSED!
+new Number(s) PASSED!
+new Number(-s) PASSED!
+new Number(-"") PASSED!
+new Number(-" ") PASSED!
+new Number(-"999") PASSED!
+new Number(-" 999") PASSED!
+new Number(-"\t999") PASSED!
+new Number(-"013  ") PASSED!
+new Number(-"999\t") PASSED!
+new Number(-"-Infinity") PASSED!
+new Number(-"-infinity") PASSED!
+new Number(-"+Infinity") PASSED!
+new Number(-"+Infiniti") PASSED!
+new Number(- -"0x80000000") PASSED!
+new Number(- -"0x100000000") PASSED!
+new Number(- "-0x123456789abcde8") PASSED!

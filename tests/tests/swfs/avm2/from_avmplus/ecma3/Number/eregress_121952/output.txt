@@ -1,0 +1,12 @@
+Number.prototype.toFixed.length PASSED!
+Number.toFixed -- rounding up PASSED!
+Number.toFixed PASSED!
+Number.toFixed -- padding PASSED!
+Number.toFixed -- padding PASSED!
+Number.toFixed(undefined) PASSED!
+Number.toFixed(0) PASSED!
+Number.toFixed(null) PASSED!
+Number.toFixed(0) PASSED!
+Number.toFixed(21) PASSED!
+Number.toFixed(0) PASSED!
+Number.toFixed(2) PASSED!

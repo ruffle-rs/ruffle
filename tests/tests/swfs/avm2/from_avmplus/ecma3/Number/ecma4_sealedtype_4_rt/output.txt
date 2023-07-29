@@ -1,0 +1,2 @@
+n = 5, n.someVar = 3:  PASSED!
+n = 5, v = n.someVar:  PASSED!

@@ -1,0 +1,2 @@
+delete( Number.NaN ); Number.NaN PASSED!
+delete( Number.NaN ) PASSED!

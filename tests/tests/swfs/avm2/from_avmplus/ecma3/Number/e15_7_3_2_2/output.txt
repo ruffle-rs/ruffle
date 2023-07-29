@@ -1,0 +1,2 @@
+delete( Number.MAX_VALUE ); Number.MAX_VALUE PASSED!
+delete( Number.MAX_VALUE ) PASSED!

@@ -1,0 +1,2 @@
+Verifying the ReadOnly attribute of Number.POSITIVE_INFINITY PASSED!
+Number.POSITIVE_INFINITY=0; Number.POSITIVE_INFINITY PASSED!
