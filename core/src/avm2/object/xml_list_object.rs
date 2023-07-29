@@ -340,6 +340,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
             .call(self.into(), arguments, activation);
     }
 
+    // ECMA-357 9.2.1.2 [[Put]] (P, V)
     fn set_property_local(
         self,
         name: &Multiname<'gc>,
@@ -348,9 +349,12 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
     ) -> Result<(), Error<'gc>> {
         let mut write = self.0.write(activation.context.gc_context);
 
+        // 1. Let i = ToUint32(P)
+        // 2. If ToString(i) == P
         if !name.is_any_name() && !name.is_attribute() {
             if let Some(local_name) = name.local_name() {
                 if let Ok(index) = local_name.parse::<usize>() {
+                    // 2.a. If x.[[TargetObject]] is not null
                     if let Some(target) = write.target {
                         return Err(format!(
                             "Modifying an XMLList object is not yet implemented: target {:?}",
@@ -367,20 +371,32 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                             return Ok(());
                         }
                     }
+
+                    return Err(format!(
+                        "Modifying an XMLList object is not supported yet for index {:?} = {:?}",
+                        index, value
+                    )
+                    .into());
                 }
             }
         }
 
-        if write.children.len() == 1 {
+        // 3. Else if x.[[Length]] is less than or equal to 1
+        if write.children.len() <= 1 {
+            // 3.a. If x.[[Length]] == 0
+            if write.children.is_empty() {
+                return Err(
+                    "Modifying an XMLList object is not yet implemented: need to resolve".into(),
+                );
+            }
+
+            // 3.b. Call the [[Put]] method of x[0] with arguments P and V
             let xml = write.children[0].get_or_create_xml(activation);
             return xml.set_property_local(name, value, activation);
         }
 
-        Err(format!(
-            "Modifying an XMLList object is not supported for {:?} = {:?}",
-            name, value
-        )
-        .into())
+        // 4. Return
+        Ok(())
     }
 
     fn get_next_enumerant(
