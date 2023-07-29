@@ -1,6 +1,7 @@
 //! Navigator backend for web
 
 use crate::custom_event::RuffleEvent;
+use async_channel::{Receiver, TryRecvError};
 use async_io::Timer;
 use async_net::TcpStream;
 use futures::future::select;
@@ -23,7 +24,7 @@ use std::io;
 use std::io::ErrorKind;
 use std::rc::Rc;
 use std::str::FromStr;
-use std::sync::mpsc::{Receiver, Sender, TryRecvError};
+use std::sync::mpsc::Sender;
 use std::time::Duration;
 use tracing::warn;
 use url::{ParseError, Url};
@@ -442,7 +443,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                             Ok(val) => {
                                 pending_write.extend(val);
                             }
-                            Err(TryRecvError::Disconnected) => {
+                            Err(TryRecvError::Closed) => {
                                 //NOTE: Channel sender has been dropped.
                                 //      This means we have to close the connection.
                                 drop(write);
