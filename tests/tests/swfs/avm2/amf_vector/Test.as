@@ -12,10 +12,8 @@
 			roundtrip(fixed(Vector.<int>([-100])));
 			
 			roundtrip(Vector.<Number>([-0.0, 0.0, -1, Infinity, 5, NaN]));
-
-			// FIXME - enable these once Ruffle correctly handles Vector.<Object>
 			
-			/*roundtrip(Vector.<Object>([new Object(), 30, null, undefined, true, "Hello"]));
+			roundtrip(Vector.<Object>([new Object(), 30, null, undefined, true, "Hello"]));
 			roundtrip(Vector.<*>([new Object(), 30, null, undefined, true, "Hello"]));
 
 			
@@ -25,7 +23,7 @@
 			
 			roundtrip(vec);
 			
-			roundtrip(Vector.<String>(["First string", "Second string"])); */
+			roundtrip(Vector.<String>(["First string", "Second string"]));
 		}
 	
 		private function fixed(vec: Object): Object {

@@ -16,3 +16,15 @@ Deserialized: [-100] fixed: true class: __AS3__.vec::Vector.<int>
 Original: [0,0,-1,Infinity,5,NaN] fixed: false class: __AS3__.vec::Vector.<Number>
 Serialized: 15,13,0,128,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,191,240,0,0,0,0,0,0,127,240,0,0,0,0,0,0,64,20,0,0,0,0,0,0,255,248,0,0,0,0,0,0
 Deserialized: [0,0,-1,Infinity,5,NaN] fixed: false class: __AS3__.vec::Vector.<Number>
+Original: [[object Object],30,null,null,true,Hello] fixed: false class: __AS3__.vec::Vector.<Object>
+Serialized: 16,13,0,1,10,11,1,1,4,30,1,1,3,6,11,72,101,108,108,111
+Deserialized: [[object Object],30,null,null,true,Hello] fixed: false class: __AS3__.vec::Vector.<Object>
+Original: [[object Object],30,null,null,true,Hello] fixed: false class: __AS3__.vec::Vector.<*>
+Serialized: 16,13,0,1,10,11,1,1,4,30,1,1,3,6,11,72,101,108,108,111
+Deserialized: [[object Object],30,null,null,true,Hello] fixed: false class: __AS3__.vec::Vector.<Object>
+Original: [One,Two,Three,Four] fixed: false class: __AS3__.vec::Vector.<__AS3__.vec::Vector.<String>>
+Serialized: 16,5,0,1,16,5,0,1,6,7,79,110,101,6,7,84,119,111,16,5,0,1,6,11,84,104,114,101,101,6,9,70,111,117,114
+Deserialized: [One,Two,Three,Four] fixed: false class: __AS3__.vec::Vector.<Object>
+Original: [First string,Second string] fixed: false class: __AS3__.vec::Vector.<String>
+Serialized: 16,5,0,1,6,25,70,105,114,115,116,32,115,116,114,105,110,103,6,27,83,101,99,111,110,100,32,115,116,114,105,110,103
+Deserialized: [First string,Second string] fixed: false class: __AS3__.vec::Vector.<Object>
