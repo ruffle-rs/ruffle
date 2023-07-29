@@ -87,6 +87,14 @@ package flash.xml
          }
       }
 
+      public function get nodeValue(): String {
+         if (_xml.nodeKind() == "text") {
+            return _xml.toString();
+         }
+
+         return null;
+      }
+
       public function appendChild(node: XMLNode): void {
          stub_method("flash.xml.XMLNode", "appendChild");
       }

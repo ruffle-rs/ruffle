@@ -1,15 +1,19 @@
 doc.nodeType: 1
 doc.nodeName: null
+doc.nodeValue: null
 doc.childNodes: <foo>bar</foo>,<x>y</x>
 doc.toString(): <foo>bar</foo><x>y</x>
 doc.firstChild.nodeType: 1
 doc.firstChild.nodeName: foo
+doc.firstChild.nodeValue: null
 doc.firstChild.toString(): <foo>bar</foo>
 doc.firstChild.firstChild.nodeType: 3
 doc.firstChild.firstChild.nodeName: null
+doc.firstChild.firstChild.nodeValue: bar
 doc.firstChild.firstChild.toString(): bar
 doc.firstChild.nextSibling: <x>y</x>
 doc.firstChild.nextSibling.nodeName: x
+doc.firstChild.nextSibling.nodeValue: null
 ///
 doc2.nodeType: 1
 doc2.nodeName: null
