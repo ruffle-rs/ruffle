@@ -1,0 +1,7 @@
+charAt(Infinity) PASSED!
+a.charAt(4294967296) PASSED!
+a.charAt(4294967296+1)  PASSED!
+a.indexOf('2',4294967296) PASSED!
+a.charCodeAt(4294967296) PASSED!
+a.substring(4294967296,4294967296+2) PASSED!
+a.substring(NaN,Infinity) PASSED!

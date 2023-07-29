@@ -1,0 +1,1 @@
+'string'+0x4455 PASSED!

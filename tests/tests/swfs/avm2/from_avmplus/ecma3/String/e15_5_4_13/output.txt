@@ -1,0 +1,17 @@
+String.prototype.slice.length PASSED!
+delete String.prototype.slice.length PASSED!
+delete String.prototype.slice.length; String.prototype.slice.length PASSED!
+var s = new String('this is a string object'); typeof s.slice() PASSED!
+var s = new String(''); s.slice(1,0) PASSED!
+var s = new String('this is a string object'); s.slice(true, false) PASSED!
+var s = new String('this is a string object'); s.slice(NaN, Infinity) PASSED!
+var s = new String('this is a string object'); s.slice(Infinity, NaN) PASSED!
+var s = new String('this is a string object'); s.slice(Infinity, Infinity) PASSED!
+var s = new String('this is a string object'); s.slice(-0.01, 0) PASSED!
+var s = new String('this is a string object'); s.slice(s.length, s.length) PASSED!
+var s = new String('this is a string object'); s.slice(s.length+1, 0) PASSED!
+var s = new String('this is a string object'); s.slice(-Infinity, -Infinity) PASSED!
+var obj = new Object(); obj.slice = String.prototype.slice; obj.slice(0,8) PASSED!
+var obj = new Object(); obj.slice = String.prototype.slice; obj.slice(8,obj.toString().length) PASSED!
+var obj = function() {}; obj.slice = Object.prototype.slice; obj.slice(8, Infinity) PASSED!
+var obj = new MyObject( void 0 ); obj.slice(0, 100) PASSED!

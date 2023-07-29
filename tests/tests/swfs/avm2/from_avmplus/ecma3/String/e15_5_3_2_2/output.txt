@@ -1,0 +1,2 @@
+var MYSTRING = String.fromCharCode( args) PASSED!
+MYSTRING.length PASSED!

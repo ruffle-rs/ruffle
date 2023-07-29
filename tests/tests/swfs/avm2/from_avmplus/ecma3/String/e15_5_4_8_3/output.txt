@@ -1,0 +1,13 @@
+var s = new String(); s.split().length PASSED!
+var s = new String(); s.split()[0] PASSED!
+var s = new String(); s.split('').length PASSED!
+var s = new String(); s.split(' ').length PASSED!
+var s = new String(' '); s.split().length PASSED!
+var s = new String(' '); s.split()[0] PASSED!
+var s = new String(' '); s.split('').length PASSED!
+var s = new String(' '); s.split('')[0] PASSED!
+var s = new String(' '); s.split(' ').length PASSED!
+var s = new String(' '); s.split(' ')[0] PASSED!
+"".split("").length PASSED!
+"".split("x").length PASSED!
+"".split("x")[0] PASSED!
