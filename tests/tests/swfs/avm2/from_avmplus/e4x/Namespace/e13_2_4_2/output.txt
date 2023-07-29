@@ -1,0 +1,3 @@
+Namespace.prototype.toString PASSED!
+Namespace.prototype.toString PASSED!
+Namespace.prototype.toString PASSED!

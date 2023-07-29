@@ -1,0 +1,18 @@
+1 PASSED!
+2 PASSED!
+3 PASSED!
+4 PASSED!
+5 PASSED!
+6 PASSED!
+7 PASSED!
+8 PASSED!
+9 PASSED!
+10 PASSED!
+Namespace() PASSED!
+typeof Namespace() PASSED!
+Namespace('pfx').toString() PASSED!
+typeof Namespace('pfx') PASSED!
+Namespace(nsObj).toString() PASSED!
+Namespace('pfx','ns') == new Namespace('pfx', 'ns') PASSED!
+typeof Namespace('pfx','http://www.w3.org/TR/html4/') PASSED!
+Namespace(nsObj).toString() PASSED!
