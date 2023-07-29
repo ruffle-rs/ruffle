@@ -1,0 +1,26 @@
+Section A of test: no error intended! PASSED!
+Section B of test: no error intended! PASSED!
+Section D of test: no error intended! PASSED!
+Section E of test: no error intended! PASSED!
+Section F of test: no error intended! PASSED!
+Section G of test: no error intended! PASSED!
+Section H of test: error intended! PASSED!
+Section I of test: error intended! PASSED!
+Section J of test: no error intended! PASSED!
+Section R-1 of test: no error intended! PASSED!
+Section R-2 of test: no error intended! PASSED!
+Section R-3 of test: no error intended! PASSED!
+Section R-4 of test: no error intended! PASSED!
+Section R-5 of test: no error intended! PASSED!
+Section R-6 of test: no error intended! PASSED!
+Section R-7 of test: no error intended! PASSED!
+Section R-8 of test: no error intended! PASSED!
+Section R-9 of test: no error intended! PASSED!
+Section R-10 of test: no error intended! PASSED!
+Section R-11 of test: no error intended! PASSED!
+Section R-12 of test: no error intended! PASSED!
+Section R-13 of test: no error intended! PASSED!
+Section R-14 of test: no error intended! PASSED!
+Section R-15 of test: no error intended! PASSED!
+Section R-16 of test: no error intended! PASSED!
+Section R-17 of test: no error intended! PASSED!

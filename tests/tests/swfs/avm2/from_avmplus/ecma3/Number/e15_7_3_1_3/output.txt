@@ -1,0 +1,1 @@
+var string = ''; for ( prop in Number ) { string += ( prop == 'prototype' ) ? prop: '' } string; PASSED!

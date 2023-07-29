@@ -1,0 +1,46 @@
+Number() PASSED!
+Number(void 0) PASSED!
+Number(null) PASSED!
+Number() PASSED!
+Number(new Number()) PASSED!
+Number(0) PASSED!
+Number(1) PASSED!
+Number(-1) PASSED!
+Number(NaN) PASSED!
+Number('string') PASSED!
+Number(new String()) PASSED!
+Number('') PASSED!
+Number(Infinity) PASSED!
+Number(-Infinity) PASSED!
+Number(3.141592653589793) PASSED!
+Number(4294967297) PASSED!
+Number(1e2000) PASSED!
+Number(-1e2000) PASSED!
+Number(1e-2000) PASSED!
+Number(1/1e-2000) PASSED!
+Number(true) PASSED!
+Number(false) PASSED!
+Number(new Boolean(false) PASSED!
+Number(new String('Number.POSITIVE_INFINITY') PASSED!
+Number(new Number(false) PASSED!
+Number('3000000000.25') PASSED!
+Number(-'3000000000.25') PASSED!
+Number.MIN_VALUE > 0 PASSED!
+Number.MIN_VALUE/2 PASSED!
+Number(new MyObject(100)) PASSED!
+Number(s) PASSED!
+Number(-s) PASSED!
+Number(-"") PASSED!
+Number(-" ") PASSED!
+Number(-"999") PASSED!
+Number(-" 999") PASSED!
+Number(-"\t999") PASSED!
+Number(-"013  ") PASSED!
+Number(-"999\t") PASSED!
+Number(-"-Infinity") PASSED!
+Number(-"-infinity") PASSED!
+Number(-"+Infinity") PASSED!
+Number(-"+Infiniti") PASSED!
+Number(- -"0x80000000") PASSED!
+Number(- -"0x100000000") PASSED!
+Number(- "-0x123456789abcde8") PASSED!

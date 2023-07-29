@@ -1,0 +1,1 @@
+o = 3; o.toString = Number.prototype.toString; o.toLocaleString() PASSED!

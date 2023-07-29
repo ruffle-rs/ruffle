@@ -1,0 +1,2 @@
+var NUM_PROT = Number.prototype; delete( Number.prototype ); NUM_PROT == Number.prototype PASSED!
+delete( Number.prototype ) PASSED!
