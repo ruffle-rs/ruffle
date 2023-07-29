@@ -3,6 +3,7 @@
 use crate::loader::Error;
 use crate::socket::{ConnectionState, SocketAction, SocketHandle};
 use crate::string::WStr;
+use async_channel::Receiver;
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -10,7 +11,7 @@ use std::fmt::Display;
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
-use std::sync::mpsc::{Receiver, Sender};
+use std::sync::mpsc::Sender;
 use std::time::Duration;
 use swf::avm1::types::SendVarsMethod;
 use url::{ParseError, Url};

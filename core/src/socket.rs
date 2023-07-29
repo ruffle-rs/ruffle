@@ -3,6 +3,7 @@ use crate::{
     backend::navigator::NavigatorBackend,
     context::UpdateContext,
 };
+use async_channel::{unbounded, Sender as AsyncSender};
 use gc_arena::Collect;
 use generational_arena::{Arena, Index};
 use std::{
@@ -17,11 +18,11 @@ pub type SocketHandle = Index;
 #[collect(no_drop)]
 struct Socket<'gc> {
     target: SocketObject<'gc>,
-    sender: RefCell<Sender<Vec<u8>>>,
+    sender: RefCell<AsyncSender<Vec<u8>>>,
 }
 
 impl<'gc> Socket<'gc> {
-    fn new(target: SocketObject<'gc>, sender: Sender<Vec<u8>>) -> Self {
+    fn new(target: SocketObject<'gc>, sender: AsyncSender<Vec<u8>>) -> Self {
         Self {
             target,
             sender: RefCell::new(sender),
@@ -77,7 +78,7 @@ impl<'gc> Sockets<'gc> {
         host: String,
         port: u16,
     ) {
-        let (sender, receiver) = channel();
+        let (sender, receiver) = unbounded();
 
         let socket = Socket::new(target, sender);
         let handle = self.sockets.insert(socket);
@@ -105,7 +106,7 @@ impl<'gc> Sockets<'gc> {
 
     pub fn send(&mut self, handle: SocketHandle, data: Vec<u8>) {
         if let Some(Socket { sender, .. }) = self.sockets.get_mut(handle) {
-            let _ = sender.borrow().send(data);
+            let _ = sender.borrow().send_blocking(data);
         }
     }
 
