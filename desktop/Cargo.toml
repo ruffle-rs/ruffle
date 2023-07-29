@@ -12,6 +12,12 @@ version = "0.1.0"
 #license.workspace = true
 #repository.workspace = true
 #version.workspace = true
+# appimage export
+[package.metadata.appimage]
+assets = ["assets"]
+# include all shared libraries for linux systems
+auto_link = true
+
 
 [dependencies]
 clap = { version = "4.3.19", features = ["derive"] }
@@ -72,9 +78,3 @@ render_trace = ["ruffle_render_wgpu/render_trace"]
 
 # sandboxing
 sandbox = []
-
-# appimage export
-[package.metadata.appimage]
-assets = ["assets"]
-# include all shared libraries for linux systems
-auto_link = true
