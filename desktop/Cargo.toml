@@ -1,11 +1,17 @@
 [package]
 name = "ruffle_desktop"
-authors.workspace = true
-edition.workspace = true
-homepage.workspace = true
-license.workspace = true
-repository.workspace = true
-version.workspace = true
+authors = ["Ruffle LLC <ruffle@ruffle.rs>"]
+edition = "2021"
+homepage = "https://ruffle.rs"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/ruffle-rs/ruffle"
+version = "0.1.0"
+#authors.workspace = true
+#edition.workspace = true
+#homepage.workspace = true
+#license.workspace = true
+#repository.workspace = true
+#version.workspace = true
 
 [dependencies]
 clap = { version = "4.3.19", features = ["derive"] }
