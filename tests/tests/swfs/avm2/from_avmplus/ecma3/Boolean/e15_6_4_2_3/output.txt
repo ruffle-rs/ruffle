@@ -1,0 +1,2 @@
+tostr=Boolean.prototype.toString; Boolean.prototype.toString=tostr; x=true; x.toString() PASSED!
+tostr=Boolean.prototype.toString; Boolean.prototype.toString=tostr; x=false;x.toString() PASSED!
