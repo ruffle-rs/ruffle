@@ -1,0 +1,11 @@
+2 PASSED!
+3 PASSED!
+MYXML = new XML(xmlDoc), MYXML.setLocalName('newlocalname'),MYXML.localName() PASSED!
+MYXML = new XML(xmlDoc), MYXML.setLocalName('newlocalname'),MYXML.toString() PASSED!
+MYXML = new XML(xmlDoc), MYXML.setLocalName(new QName('newlocalname')),MYXML.toString() PASSED!
+MYXML = new XML(xmlDoc), MYXML.setLocalName(new QName('foo', 'newlocalname')),MYXML.toString() PASSED!
+setLocalName('@newlocalname') PASSED!
+setLocalName('*') PASSED!
+setLocalName('x123=5') PASSED!
+setLocalName('123') PASSED!
+setLocalName('!bam') PASSED!

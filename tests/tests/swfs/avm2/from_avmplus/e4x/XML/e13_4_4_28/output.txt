@@ -1,0 +1,12 @@
+2 PASSED!
+3 PASSED!
+4 PASSED!
+MYXML = new XML(xmlDoc), MYXML.processingInstructions().toString() PASSED!
+ignorePI = false, MYXML = new XML(xmlDoc), MYXML.processingInstructions().toString() PASSED!
+MYXML = new XML(xmlDoc), MYXML.processingInstructions('*') PASSED!
+MYXML = new XML(xmlDoc), MYXML.processingInstructions('xml-stylesheet') PASSED!
+MYXML = new XML(xmlDoc), MYXML.processingInstructions(new QName('xml-stylesheet')) PASSED!
+MYXML = new XML(xmlDoc), MYXML.processingInstructions(new QName('foo')) PASSED!
+MYXML = new XML(xmlDoc), MYXML.processingInstructions('@xml-stylesheet') PASSED!
+MYXML = new XML(xmlDoc), MYXML.processingInstructions('xml-foo') PASSED!
+MYXML = new XML(xmlDoc), MYXML.processingInstructions('child-xml') PASSED!

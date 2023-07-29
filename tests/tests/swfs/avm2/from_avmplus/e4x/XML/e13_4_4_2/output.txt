@@ -1,0 +1,14 @@
+2 PASSED!
+addNamespace with prefix: PASSED!
+addNamespace without prefix: PASSED!
+Asserting for ArgumentError PASSED!
+addNamespace(): Error. Needs 1 argument PASSED!
+Does namespace w/o prefix change XML object: PASSED!
+Does namespace w/ prefix change XML object: PASSED!
+Adding two different namespaces: PASSED!
+Adding two different namespaces: PASSED!
+Adding namespace with pre-existing prefix: PASSED!
+Adding namespace to something other than top node: PASSED!
+Adding namespace to XMLList element: PASSED!
+Original XML PASSED!
+Adding namespace that previously existed with a different prefix PASSED!

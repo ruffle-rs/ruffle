@@ -1,0 +1,19 @@
+2 PASSED!
+3 PASSED!
+4 PASSED!
+5 PASSED!
+6 PASSED!
+7 PASSED!
+8 PASSED!
+9 PASSED!
+10 PASSED!
+MYXML = new XML(xmlDoc), MYXML.employee[0].toXMLString() PASSED!
+MYXML = new XML(xmlDoc), MYXML.employee[1].toXMLString() PASSED!
+MYXML = new XML(xmlDoc), MYXML.employee[0].firstname.toXMLString() PASSED!
+MYXML = new XML(xmlDoc), MYXML.employee[1].firstname.toXMLString() PASSED!
+MYXML = new XML(xmlDoc2), MYXML.toXMLString() PASSED!
+MYXML = new XML(xmlDoc), MYXML.employee[0].toXMLString() PASSED!
+MYXML = new XML(xmlDoc), MYXML.employee[1].toXMLString() PASSED!
+MYXML = new XML(xmlDoc), MYXML.employee[0].firstname.toXMLString() PASSED!
+MYXML = new XML(xmlDoc), MYXML.employee[1].firstname.toXMLString() PASSED!
+MYXML = new XML(xmlDoc), MYXML.toXMLString() PASSED!
