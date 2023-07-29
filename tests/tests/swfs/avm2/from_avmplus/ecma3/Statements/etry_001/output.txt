@@ -1,0 +1,12 @@
+newJavaValue( 3.14159 ) PASSED!
+newJavaValue( 3.14159 ) hit finally block PASSED!
+newJavaValue( NaN ) PASSED!
+newJavaValue( NaN ) hit finally block PASSED!
+newJavaValue( 0 ) PASSED!
+newJavaValue( 0 ) hit finally block PASSED!
+newJavaValue( -1 ) PASSED!
+newJavaValue( -1 ) hit finally block PASSED!
+newJavaValue( 1 ) PASSED!
+newJavaValue( 1 ) hit finally block PASSED!
+newJavaValue( Infinity ) PASSED!
+newJavaValue( Infinity ) hit finally block PASSED!

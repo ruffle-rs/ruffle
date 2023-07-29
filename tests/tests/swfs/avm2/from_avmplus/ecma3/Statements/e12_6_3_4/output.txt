@@ -1,0 +1,9 @@
+for ( MyObject in o ) { result += o[MyObject] } PASSED!
+for ( value in o ) { result += o[value] PASSED!
+value = "value"; for ( value in o ) { result += o[value] PASSED!
+value = 0; for ( value in o ) { result += o[value] PASSED!
+ob = { 0:"hello" }; for ( ob[0] in o ) { result += o[ob[0]] PASSED!
+value = 0; for ( ob["0"] in o ) { result += o[o["0"]] PASSED!
+ob = { 0:"hello" }; for ( ob[value] in o ) { result += o[ob[value]] PASSED!
+value = 0; for ( ob["value"] in o ) { result += o[ob["value"]] PASSED!
+value = 0; for ( ob.value in o ) { result += o[ob.value] PASSED!

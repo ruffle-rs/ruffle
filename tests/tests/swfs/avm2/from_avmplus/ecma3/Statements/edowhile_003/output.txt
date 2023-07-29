@@ -1,0 +1,10 @@
+loop iterations PASSED!
+object.value PASSED!
+loop iterations PASSED!
+object.value PASSED!
+loop iterations PASSED!
+object.value PASSED!
+loop iterations PASSED!
+object.value PASSED!
+loop iterations PASSED!
+object.value PASSED!

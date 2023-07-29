@@ -1,0 +1,1 @@
+var x; with (7) x = valueOf(); typeof x; PASSED!

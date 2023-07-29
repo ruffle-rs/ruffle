@@ -1,0 +1,2 @@
+TryForIn( [object Object] ) PASSED!
+TryForIn( [object Object] ) PASSED!

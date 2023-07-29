@@ -1,0 +1,2 @@
+( [object Object].thrower() ) PASSED!
+( [object Object].thrower() ) PASSED!
