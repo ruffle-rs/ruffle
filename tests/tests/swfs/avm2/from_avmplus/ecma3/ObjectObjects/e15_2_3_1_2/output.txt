@@ -1,0 +1,1 @@
+delete( Object.prototype ) PASSED!

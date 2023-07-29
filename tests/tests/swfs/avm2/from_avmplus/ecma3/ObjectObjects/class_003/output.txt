@@ -1,0 +1,7 @@
+new Error() PASSED!
+new EvalError() PASSED!
+new RangeError() PASSED!
+new ReferenceError() PASSED!
+new SyntaxError() PASSED!
+new TypeError() PASSED!
+new URIError() PASSED!

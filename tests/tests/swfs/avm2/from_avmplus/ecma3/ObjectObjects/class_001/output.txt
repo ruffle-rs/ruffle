@@ -1,0 +1,10 @@
+the global object PASSED!
+new Object() PASSED!
+new Array() PASSED!
+new String() PASSED!
+new Boolean() PASSED!
+new Number() PASSED!
+Math PASSED!
+new Date() PASSED!
+new RegExp() PASSED!
+new Error() PASSED!

@@ -1,0 +1,5 @@
+(new Object()).toLocaleString() PASSED!
+myvar = this;  myvar.toLocaleString = Object.prototype.toLocaleString; myvar.toLocaleString() PASSED!
+myvar = MyObject; myvar.toLocaleString = Object.prototype.toLocaleString; myvar.toLocaleString() PASSED!
+myvar = new MyObject( true ); myvar.toLocaleString = Object.prototype.toLocaleString; myvar.toLocaleString() PASSED!
+myvar = new Number(0); myvar.toLocaleString = Object.prototype.toLocaleString; myvar.toLocaleString() PASSED!

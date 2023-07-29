@@ -1,0 +1,7 @@
+Error PASSED!
+EvalError PASSED!
+RangeError PASSED!
+ReferenceError PASSED!
+SyntaxError PASSED!
+TypeError PASSED!
+URIError PASSED!

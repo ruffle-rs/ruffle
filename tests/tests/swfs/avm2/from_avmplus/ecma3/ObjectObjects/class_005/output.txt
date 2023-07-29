@@ -1,0 +1,2 @@
+new Cow() PASSED!
+new Calf() PASSED!
