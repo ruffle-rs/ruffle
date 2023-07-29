@@ -1,0 +1,2 @@
+String.prototype PASSED!
+String.length PASSED!

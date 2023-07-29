@@ -1,0 +1,8 @@
+( 10203040506070809000 ).match(re = /0./).length PASSED!
+( 10203040506070809000 ).match(re = /0./).index PASSED!
+( 10203040506070809000 ).match(re = /0./).input PASSED!
+( 10203040506070809000 ).match(re = /0./)[0] PASSED!
+( 10203040506070809000 ).match(re = /0./ [lastIndex is 0]).length PASSED!
+( 10203040506070809000 ).match(re = /0./ [lastIndex is 0]).index PASSED!
+( 10203040506070809000 ).match(re = /0./ [lastIndex is 0]).input PASSED!
+( 10203040506070809000 ).match(re = /0./ [lastIndex is 0])[0] PASSED!

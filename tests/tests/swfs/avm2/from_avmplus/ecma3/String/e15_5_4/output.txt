@@ -1,0 +1,6 @@
+typeof String.prototype PASSED!
+String.prototype.valueOf() PASSED!
+String.prototype.getClass = Object.prototype.toString; String.prototype.getClass() PASSED!
+String.prototype +'' PASSED!
+String.prototype.length PASSED!
+String.length PASSED!

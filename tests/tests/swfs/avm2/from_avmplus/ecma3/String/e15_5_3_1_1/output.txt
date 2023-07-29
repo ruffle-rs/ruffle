@@ -1,0 +1,2 @@
+String.prototype.length PASSED!
+var str='';for ( p in String ) { if ( p == 'prototype' ) str += p; } str PASSED!

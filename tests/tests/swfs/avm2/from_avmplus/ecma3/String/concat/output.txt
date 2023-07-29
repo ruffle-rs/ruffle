@@ -1,0 +1,21 @@
+String.prototype.concat.length PASSED!
+aString.concat(' more') PASSED!
+aString.concat(bString) PASSED!
+aString                 PASSED!
+bString                 PASSED!
+aString.concat(345)     PASSED!
+aString.concat(true)    PASSED!
+aString.concat(null)    PASSED!
+aString.concat([])      PASSED!
+aString.concat([1,2,3]) PASSED!
+'abcde'.concat(' more') PASSED!
+'abcde'.concat(bString) PASSED!
+'abcde'                 PASSED!
+'abcde'.concat(345)     PASSED!
+'abcde'.concat(true)    PASSED!
+'abcde'.concat(null)    PASSED!
+'abcde'.concat([])      PASSED!
+'abcde'.concat([1,2,3]) PASSED!
+'abcde'.concat([1,2,3]) PASSED!
+'abcde'.concat()        PASSED!
+myobj.concat([1,2,3]) PASSED!

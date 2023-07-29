@@ -1,0 +1,72 @@
+String.prototype.lastIndexOf.length PASSED!
+delete String.prototype.lastIndexOf.length PASSED!
+delete String.prototype.lastIndexOf.length; String.prototype.lastIndexOf.length PASSED!
+var s = new String(''), s.lastIndexOf('', 0) PASSED!
+var s = new String(''), s.lastIndexOf('') PASSED!
+var s = new String('hello'), s.lastIndexOf('', 0) PASSED!
+var s = new String('hello'), s.lastIndexOf('') PASSED!
+var s = new String('hello'), s.lastIndexOf('ll') PASSED!
+var s = new String('hello'), s.lastIndexOf('ll', 0) PASSED!
+var s = new String('hello'), s.lastIndexOf('ll', 1) PASSED!
+var s = new String('hello'), s.lastIndexOf('ll', 2) PASSED!
+var s = new String('hello'), s.lastIndexOf('ll', 3) PASSED!
+var s = new String('hello'), s.lastIndexOf('ll', 4) PASSED!
+var s = new String('hello'), s.lastIndexOf('ll', 5) PASSED!
+var s = new String('hello'), s.lastIndexOf('ll', 6) PASSED!
+var s = new String('hello'), s.lastIndexOf('ll', 1.5) PASSED!
+var s = new String('hello'), s.lastIndexOf('ll', 2.5) PASSED!
+var s = new String('hello'), s.lastIndexOf('ll', -1) PASSED!
+var s = new String('hello'), s.lastIndexOf('ll', -1.5) PASSED!
+var s = new String('hello'), s.lastIndexOf('ll', -Infinity) PASSED!
+var s = new String('hello'), s.lastIndexOf('ll', Infinity) PASSED!
+var s = new String('hello'), s.lastIndexOf('ll', NaN) PASSED!
+var s = new String('hello'), s.lastIndexOf('ll', -0) PASSED!
+var o = new Object(); o.lastIndexOf = String.prototype.lastIndexOf; o.lastIndexOf('b', 0) PASSED!
+var o = new Object(); o.lastIndexOf = String.prototype.lastIndexOf; o.lastIndexOf('b', 1) PASSED!
+var o = new Object(); o.lastIndexOf = String.prototype.lastIndexOf; o.lastIndexOf('b', 2) PASSED!
+var o = new Object(); o.lastIndexOf = String.prototype.lastIndexOf; o.lastIndexOf('b', 3) PASSED!
+var o = new Object(); o.lastIndexOf = String.prototype.lastIndexOf; o.lastIndexOf('b', 4) PASSED!
+var o = new Object(); o.lastIndexOf = String.prototype.lastIndexOf; o.lastIndexOf('b', 5) PASSED!
+var o = new Object(); o.lastIndexOf = String.prototype.lastIndexOf; o.lastIndexOf('b', 6) PASSED!
+var o = new Object(); o.lastIndexOf = String.prototype.lastIndexOf; o.lastIndexOf('b', 7) PASSED!
+var o = new Object(); o.lastIndexOf = String.prototype.lastIndexOf; o.lastIndexOf('b', 8) PASSED!
+var o = new Object(); o.lastIndexOf = String.prototype.lastIndexOf; o.lastIndexOf('b', 9) PASSED!
+var o = new Object(); o.lastIndexOf = String.prototype.lastIndexOf; o.lastIndexOf('b', 10) PASSED!
+var o = new Object(); o.lastIndexOf = String.prototype.lastIndexOf; o.lastIndexOf('b', 11) PASSED!
+var o = new Object(); o.lastIndexOf = String.prototype.lastIndexOf; o.lastIndexOf('b', 12) PASSED!
+var o = new Object(); o.lastIndexOf = String.prototype.lastIndexOf; o.lastIndexOf('b', 13) PASSED!
+var o = new Object(); o.lastIndexOf = String.prototype.lastIndexOf; o.lastIndexOf('b', 14) PASSED!
+var b = new Boolean(); b.lastIndexOf = String.prototype.lastIndexOf; b.lastIndexOf('l', 0) PASSED!
+var b = new Boolean(); b.lastIndexOf = String.prototype.lastIndexOf; b.lastIndexOf('l', 1) PASSED!
+var b = new Boolean(); b.lastIndexOf = String.prototype.lastIndexOf; b.lastIndexOf('l', 2) PASSED!
+var b = new Boolean(); b.lastIndexOf = String.prototype.lastIndexOf; b.lastIndexOf('l', 3) PASSED!
+var b = new Boolean(); b.lastIndexOf = String.prototype.lastIndexOf; b.lastIndexOf('l', 4) PASSED!
+var b = new Boolean(); b.toString = Object.prototype.toString; b.lastIndexOf = String.prototype.lastIndexOf; b.lastIndexOf('o', 0) PASSED!
+var b = new Boolean(); b.toString = Object.prototype.toString; b.lastIndexOf = String.prototype.lastIndexOf; b.lastIndexOf('o', 1) PASSED!
+var b = new Boolean(); b.toString = Object.prototype.toString; b.lastIndexOf = String.prototype.lastIndexOf; b.lastIndexOf('o', 2) PASSED!
+var b = new Boolean(); b.toString = Object.prototype.toString; b.lastIndexOf = String.prototype.lastIndexOf; b.lastIndexOf('o', 3) PASSED!
+var b = new Boolean(); b.toString = Object.prototype.toString; b.lastIndexOf = String.prototype.lastIndexOf; b.lastIndexOf('o', 4) PASSED!
+var n = new Number(Infinity); n.lastIndexOf = String.prototype.lastIndexOf; n.lastIndexOf( 'i', 0 ) PASSED!
+var n = new Number(Infinity); n.lastIndexOf = String.prototype.lastIndexOf; n.lastIndexOf( 'i', 1 ) PASSED!
+var n = new Number(Infinity); n.lastIndexOf = String.prototype.lastIndexOf; n.lastIndexOf( 'i', 2 ) PASSED!
+var n = new Number(Infinity); n.lastIndexOf = String.prototype.lastIndexOf; n.lastIndexOf( 'i', 3 ) PASSED!
+var n = new Number(Infinity); n.lastIndexOf = String.prototype.lastIndexOf; n.lastIndexOf( 'i', 4 ) PASSED!
+var n = new Number(Infinity); n.lastIndexOf = String.prototype.lastIndexOf; n.lastIndexOf( 'i', 5 ) PASSED!
+var n = new Number(Infinity); n.lastIndexOf = String.prototype.lastIndexOf; n.lastIndexOf( 'i', 6 ) PASSED!
+var n = new Number(Infinity); n.lastIndexOf = String.prototype.lastIndexOf; n.lastIndexOf( 'i', 7 ) PASSED!
+var n = new Number(Infinity); n.lastIndexOf = String.prototype.lastIndexOf; n.lastIndexOf( 'i', 8 ) PASSED!
+var m = Math; m.lastIndexOf = String.prototype.lastIndexOf; m.lastIndexOf('t', 0) PASSED!
+var m = Math; m.lastIndexOf = String.prototype.lastIndexOf; m.lastIndexOf('t', 1) PASSED!
+var m = Math; m.lastIndexOf = String.prototype.lastIndexOf; m.lastIndexOf('t', 2) PASSED!
+var m = Math; m.lastIndexOf = String.prototype.lastIndexOf; m.lastIndexOf('t', 3) PASSED!
+var m = Math; m.lastIndexOf = String.prototype.lastIndexOf; m.lastIndexOf('t', 4) PASSED!
+var m = Math; m.lastIndexOf = String.prototype.lastIndexOf; m.lastIndexOf('t', 5) PASSED!
+var m = Math; m.lastIndexOf = String.prototype.lastIndexOf; m.lastIndexOf('t', 6) PASSED!
+var m = Math; m.lastIndexOf = String.prototype.lastIndexOf; m.lastIndexOf('t', 7) PASSED!
+var m = Math; m.lastIndexOf = String.prototype.lastIndexOf; m.lastIndexOf('t', 8) PASSED!
+var m = Math; m.lastIndexOf = String.prototype.lastIndexOf; m.lastIndexOf('t', 9) PASSED!
+var m = Math; m.lastIndexOf = String.prototype.lastIndexOf; m.lastIndexOf('t', 10) PASSED!
+var m = Math; m.lastIndexOf = String.prototype.lastIndexOf; m.lastIndexOf('t', 11) PASSED!
+var m = Math; m.lastIndexOf = String.prototype.lastIndexOf; m.lastIndexOf('t', 12) PASSED!
+var m = Math; m.lastIndexOf = String.prototype.lastIndexOf; m.lastIndexOf('t', 13) PASSED!
+var m = Math; m.lastIndexOf = String.prototype.lastIndexOf; m.lastIndexOf('t', 14) PASSED!

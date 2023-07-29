@@ -1,0 +1,10 @@
+( Boston, MA 02134 ).match(re = /([\d]{5})([-\ ]?[\d]{4})?$/g).length PASSED!
+( Boston, MA 02134 ).match(re = /([\d]{5})([-\ ]?[\d]{4})?$/g)[0] PASSED!
+( Boston, MA 02134 ).match(re = /([\d]{5})([-\ ]?[\d]{4})?$/g; re.lastIndex = 0 ).length PASSED!
+( Boston, MA 02134 ).match(re = /([\d]{5})([-\ ]?[\d]{4})?$/g; re.lastIndex = 0 )[0] PASSED!
+( Boston, MA 02134 ).match(re = /([\d]{5})([-\ ]?[\d]{4})?$/g; re.lastIndex = 16).length PASSED!
+( Boston, MA 02134 ).match(re = /([\d]{5})([-\ ]?[\d]{4})?$/g; re.lastIndex = 16)[0] PASSED!
+( Boston, MA 02134 ).match(re = /([\d]{5})([-\ ]?[\d]{4})?$/g; re.lastIndex = 11).length PASSED!
+( Boston, MA 02134 ).match(re = /([\d]{5})([-\ ]?[\d]{4})?$/g; re.lastIndex = 11)[0] PASSED!
+( Boston, MA 02134 ).match(re = /([\d]{5})([-\ ]?[\d]{4})?$/g; re.lastIndex = 12).length PASSED!
+( Boston, MA 02134 ).match(re = /([\d]{5})([-\ ]?[\d]{4})?$/g; re.lastIndex = 12)[0] PASSED!

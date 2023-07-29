@@ -1,0 +1,6 @@
+String.prototype.toString() PASSED!
+(new String()).toString() PASSED!
+(new String("")).toString() PASSED!
+(new String( String() )).toString() PASSED!
+(new String( "h e l l o" )).toString() PASSED!
+(new String( 0 )).toString() PASSED!

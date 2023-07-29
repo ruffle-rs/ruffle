@@ -1,0 +1,4 @@
+valof=String.prototype.valueOf,String.prototype.valueOf=valof,astring=new String(), astring.valueOf() PASSED!
+valof=String.prototype.valueOf,String.prototype.valueOf=valof,astring=new String(0), astring.valueOf() PASSED!
+valof=String.prototype.valueOf,String.prototype.valueOf=valof,astring=new String('hello'), astring.valueOf() PASSED!
+valof=String.prototype.valueOf,String.prototype.valueOf=valof,astring=new String(''), astring.valueOf() PASSED!
