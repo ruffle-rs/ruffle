@@ -33,15 +33,16 @@ jobs:
       
       - name: Install Cargo AppImage
         run: cargo install cargo-appimage
-            
-      - name: Go to desktop folder
-        run: cd desktop
         
       - name: Cargo build
         run: cargo build --package ruffle_desktop --release ${{matrix.DESKTOP_FEATURES && '--features' }} ${{matrix.DESKTOP_FEATURES}} ${{ matrix.target && '--target' }} ${{ matrix.target }}
+                  
+      - name: Go to desktop folder
+        run: cd desktop
         
       - name: AppImage Export
-        run: APPIMAGE_EXTRACT_AND_RUN=1 cargo appimage
+        # APPIMAGE_EXTRACT_AND_RUN=1
+        run: cargo appimage
       
       - name: Show directory
         run: ls
