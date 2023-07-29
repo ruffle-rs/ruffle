@@ -131,25 +131,19 @@ impl NavigatorBackend for TestNavigatorBackend {
                                 .expect("working channel send");
                         },
                         SocketEvent::WaitForDisconnect => {
-                            loop {
-                                match receiver.recv().await {
-                                    Err(_) => break,
-                                    Ok(_) => panic!("Expected client to disconnect, data was sent instead"),
-                                }
+                            match receiver.recv().await {
+                                Err(_) => break,
+                                Ok(_) => panic!("Expected client to disconnect, data was sent instead"),
                             }
                         },
                         SocketEvent::Receive { expected } => {
-                            loop {
-                                match receiver.recv().await {
-                                    Ok(val) => {
-                                        if expected != val {
-                                            panic!("Received data did not match expected data\nExpected: {:?}\nActual: {:?}", expected, val);
-                                        }
-
-                                        break;
+                            match receiver.recv().await {
+                                Ok(val) => {
+                                    if expected != val {
+                                        panic!("Received data did not match expected data\nExpected: {:?}\nActual: {:?}", expected, val);
                                     }
-                                    Err(_) => panic!("Expected client to send data, but connection was closed instead"),
                                 }
+                                Err(_) => panic!("Expected client to send data, but connection was closed instead"),
                             }
                         },
                         SocketEvent::Send { payload } => {
