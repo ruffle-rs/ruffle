@@ -1,0 +1,4 @@
+EscapeElementValue('&')   : PASSED!
+EscapeElementValue('&amp')   : PASSED!
+EscapeElementValue('&lt;')   : PASSED!
+EscapeElementValue('&gt;')   : PASSED!

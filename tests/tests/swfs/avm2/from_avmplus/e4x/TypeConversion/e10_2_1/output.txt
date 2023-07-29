@@ -1,0 +1,4 @@
+ToXMLString(text)                          : PASSED!
+ToXMLString(comment)                       : PASSED!
+ToXMLString(processing-instruction)        : PASSED!
+ToXMLString(XML)                           : PASSED!
