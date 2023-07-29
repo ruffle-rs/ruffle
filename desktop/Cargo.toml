@@ -69,6 +69,7 @@ sandbox = []
 
 # appimage export
 [package.metadata.appimage]
+name = "ruffle_desktop_appimage"
 assets = ["assets"]
 # include all shared libraries for linux systems
 auto_link = true
