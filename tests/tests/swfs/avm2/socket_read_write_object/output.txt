@@ -1,0 +1,8 @@
+Connected
+writeObject() AMF3
+writeObject() AMF0
+[ProgressEvent type="socketData" bubbles=false cancelable=false eventPhase=2 bytesLoaded=8 bytesTotal=0]
+readObject() AMF3
+[object Object]
+readObject() AMF0
+[object Object]

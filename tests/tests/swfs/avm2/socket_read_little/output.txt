@@ -1,8 +1,8 @@
 connected
 data received
-[ProgressEvent type="socketData" bubbles=false cancelable=false eventPhase=2 bytesLoaded=86 bytesTotal=0]
+[ProgressEvent type="socketData" bubbles=false cancelable=false eventPhase=2 bytesLoaded=78 bytesTotal=0]
 Bytes available:
-86
+78
 --------
 readBoolean()
 true
@@ -29,12 +29,6 @@ readInt()
 
 readMultiByte()
 Hello!
-
-readObject() (AMF3)
-[object Object]
-
-readObject() (AMF0)
-[object Object]
 
 readUnsignedShort()
 65535
