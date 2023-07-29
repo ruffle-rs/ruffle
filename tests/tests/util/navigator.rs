@@ -135,7 +135,7 @@ impl NavigatorBackend for TestNavigatorBackend {
                                 match receiver.try_recv() {
                                     Err(TryRecvError::Empty) => {
                                         //NOTE: We need to yield to executor.
-                                        Timer::after(Duration::from_millis(30)).await;
+                                        Timer::after(Duration::from_micros(1)).await;
                                     }
                                     Err(_) => break,
                                     Ok(_) => panic!("Expected client to disconnect, data was sent instead"),
@@ -154,7 +154,7 @@ impl NavigatorBackend for TestNavigatorBackend {
                                     }
                                     Err(TryRecvError::Empty) => {
                                         //NOTE: We need to yield to executor.
-                                        Timer::after(Duration::from_millis(30)).await;
+                                        Timer::after(Duration::from_micros(1)).await;
                                     }
                                     Err(_) => panic!("Expected client to send data, but connection was closed instead"),
                                 }
