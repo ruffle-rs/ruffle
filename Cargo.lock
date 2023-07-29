@@ -3833,6 +3833,7 @@ dependencies = [
 name = "ruffle_core"
 version = "0.1.0"
 dependencies = [
+ "async-channel",
  "bitflags 2.3.3",
  "bitstream-io",
  "build_playerglobal",
@@ -3891,6 +3892,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "arboard",
+ "async-channel",
  "async-io",
  "async-net",
  "bytemuck",
@@ -4098,6 +4100,7 @@ dependencies = [
 name = "ruffle_web"
 version = "0.1.0"
 dependencies = [
+ "async-channel",
  "base64 0.21.2",
  "chrono",
  "console_error_panic_hook",
@@ -4704,7 +4707,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "approx",
- "async-io",
+ "async-channel",
  "env_logger",
  "futures",
  "image",
