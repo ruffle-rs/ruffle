@@ -1,0 +1,7 @@
+indexOf empty vector PASSED!
+indexOf object not found PASSED!
+indexOf single match found PASSED!
+indexOf first match found PASSED!
+indexOf first match found setting start parameter PASSED!
+indexOf start parameter greater than vector length PASSED!
+indexOf start parameter negative PASSED!

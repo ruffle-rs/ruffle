@@ -1,0 +1,9 @@
+(new TestObject(0,1,2,3,4,5)).length PASSED!
+(new TestObject(0,1,2,3,4,5))[0] PASSED!
+(new TestObject(0,1,2,3,4,5))[1] PASSED!
+(new TestObject(0,1,2,3,4,5))[2] PASSED!
+(new TestObject(0,1,2,3,4,5))[3] PASSED!
+(new TestObject(0,1,2,3,4,5))[4] PASSED!
+(new TestObject(0,1,2,3,4,5))[5] PASSED!
+(new AnotherTestObject(1,2,3)).arguments PASSED!
+TestFunction(1,2,3) PASSED!

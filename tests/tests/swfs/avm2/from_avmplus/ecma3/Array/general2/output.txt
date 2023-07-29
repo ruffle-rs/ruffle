@@ -1,0 +1,2 @@
+Array.push,pop,shift,unshift,slice,splice PASSED!
+Array.sort PASSED!

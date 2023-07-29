@@ -1,0 +1,10 @@
+in value valid index PASSED!
+in value for empty vector PASSED!
+in value valid index does not exist PASSED!
+in value valid index in string form PASSED!
+in value is push function index  PASSED!
+in value is concat function index  PASSED!
+in value negative number index  PASSED!
+in value decimal index PASSED!
+in value decimal in string index PASSED!
+in value valid string PASSED!

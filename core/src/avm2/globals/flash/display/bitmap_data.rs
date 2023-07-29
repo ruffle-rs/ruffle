@@ -297,10 +297,9 @@ pub fn get_pixels<'gc>(
         bitmap_data.check_valid(activation)?;
         let rectangle = args.get_object(activation, 0, "rect")?;
         let (x, y, width, height) = get_rectangle_x_y_width_height(activation, rectangle)?;
-        let bytearray = ByteArrayObject::from_storage(
-            activation,
-            operations::get_pixels_as_byte_array(bitmap_data, x, y, width, height)?,
-        )?;
+        let storage =
+            operations::get_pixels_as_byte_array(activation, bitmap_data, x, y, width, height)?;
+        let bytearray = ByteArrayObject::from_storage(activation, storage)?;
         return Ok(bytearray.into());
     }
 
@@ -320,7 +319,7 @@ pub fn get_vector<'gc>(
         let pixels = operations::get_vector(bitmap_data, x, y, width, height);
 
         let value_type = activation.avm2().classes().uint;
-        let new_storage = VectorStorage::from_values(pixels, false, value_type);
+        let new_storage = VectorStorage::from_values(pixels, false, Some(value_type));
 
         return Ok(VectorObject::from_vector(new_storage, activation)?.into());
     }

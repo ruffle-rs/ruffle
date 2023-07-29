@@ -1,0 +1,7 @@
+Testing catch block with Reference Error PASSED!
+Testing catch block with Type Error PASSED!
+Testing catch block with Argument Error PASSED!
+Testing catch block with URIError PASSED!
+Testing catch block with Eval Error PASSED!
+Testing catch block with Range Error PASSED!
+Testing catch block with Error PASSED!

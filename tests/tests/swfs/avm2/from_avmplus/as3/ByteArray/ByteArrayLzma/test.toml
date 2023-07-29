@@ -1,0 +1,4 @@
+num_ticks = 1
+
+[required_features]
+lzma = true

@@ -64,6 +64,7 @@ impl ShaderFilter {
             target.color_texture(),
             draw_encoder,
             target.color_attachments(),
+            target.sample_count(),
             source,
         )
         .expect("Failed to run pixelbender shader");

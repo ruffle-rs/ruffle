@@ -1,0 +1,4 @@
+for-each-in       : PASSED!
+for-each-in (var) : PASSED!
+for-each-in       : PASSED!
+for-each-in (var) : PASSED!

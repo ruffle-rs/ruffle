@@ -19,5 +19,10 @@ package flash.system {
         public native function hasDefinition(name:String):Boolean;
 
         public native function getQualifiedDefinitionNames():Vector.<String>;
+
+        public static function get MIN_DOMAIN_MEMORY_LENGTH():uint {
+            return 1024;
+        }
+
     }
 }

@@ -7,6 +7,7 @@ use crate::shared_object::{shared_object_avm1, shared_object_avm2, shared_object
 use anyhow::Context;
 use anyhow::Result;
 use libtest_mimic::{Arguments, Trial};
+use std::panic::{catch_unwind, resume_unwind};
 use std::path::Path;
 use util::test::Test;
 
@@ -71,8 +72,22 @@ fn main() {
                     .context("Couldn't create test")
                     .unwrap();
                 let ignore = !test.should_run(!args.list);
-                let mut trial =
-                    Trial::test(test.name.to_string(), || test.run(|_| Ok(()), |_| Ok(())));
+                let mut trial = Trial::test(test.name.to_string(), move || {
+                    let unwind_result = catch_unwind(|| test.run(|_| Ok(()), |_| Ok(())));
+                    if test.options.known_failure {
+                        match unwind_result {
+                            Ok(Ok(())) => Err(
+                                format!("{} was known to be failing, but now passes successfully. Please update it and remove `known_failure = true`!", test.name).into()
+                            ),
+                            Ok(Err(_)) | Err(_) => Ok(()),
+                        }
+                    } else {
+                        match unwind_result {
+                            Ok(r) => r,
+                            Err(e) => resume_unwind(e),
+                        }
+                    }
+                });
                 if ignore {
                     trial = trial.with_ignored_flag(true);
                 }

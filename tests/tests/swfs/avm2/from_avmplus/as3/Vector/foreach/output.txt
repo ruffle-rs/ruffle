@@ -1,0 +1,6 @@
+forEach eacher is undefined PASSED!
+forEach eacher is not a function PASSED!
+forEach simple vector PASSED!
+forEach simple uint vector PASSED!
+forEach simple Number vector PASSED!
+forEach simple uint vector PASSED!

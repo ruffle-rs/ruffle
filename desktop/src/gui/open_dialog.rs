@@ -155,28 +155,28 @@ impl OpenDialog {
                 );
                 ui.end_row();
 
-                ui.label(text(&self.locale, "socket-mode"));
-                ComboBox::from_id_source("open-file-advanced-options-socket-mode")
-                    .selected_text(match self.options.socket_mode {
-                        SocketMode::Unrestricted => text(&self.locale, "socket-mode-unrestricted"),
-                        SocketMode::Ask => text(&self.locale, "socket-mode-ask"),
-                        SocketMode::Deny => text(&self.locale, "socket-mode-deny"),
+                ui.label(text(&self.locale, "tcp-connections"));
+                ComboBox::from_id_source("open-file-advanced-options-tcp-connections")
+                    .selected_text(match self.options.tcp_connections {
+                        SocketMode::Allow => text(&self.locale, "tcp-connections-allow"),
+                        SocketMode::Ask => text(&self.locale, "tcp-connections-ask"),
+                        SocketMode::Deny => text(&self.locale, "tcp-connections-deny"),
                     })
                     .show_ui(ui, |ui| {
                         ui.selectable_value(
-                            &mut self.options.socket_mode,
-                            SocketMode::Unrestricted,
-                            text(&self.locale, "socket-mode-unrestricted"),
+                            &mut self.options.tcp_connections,
+                            SocketMode::Allow,
+                            text(&self.locale, "tcp-connections-allow"),
                         );
                         ui.selectable_value(
-                            &mut self.options.socket_mode,
+                            &mut self.options.tcp_connections,
                             SocketMode::Ask,
-                            text(&self.locale, "socket-mode-ask"),
+                            text(&self.locale, "tcp-connections-ask"),
                         );
                         ui.selectable_value(
-                            &mut self.options.socket_mode,
+                            &mut self.options.tcp_connections,
                             SocketMode::Deny,
-                            text(&self.locale, "socket-mode-deny"),
+                            text(&self.locale, "tcp-connections-deny"),
                         );
                     });
                 ui.end_row();

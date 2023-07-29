@@ -1,4 +1,4 @@
-use crate::avm2::bytearray::{Endian, EofError, ObjectEncoding};
+use crate::avm2::bytearray::{ByteArrayError, Endian, ObjectEncoding};
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
@@ -106,11 +106,11 @@ impl<'gc> SocketObject<'gc> {
         self.0.write_buffer.borrow_mut()
     }
 
-    pub fn read_bytes(&self, amnt: usize) -> Result<Vec<u8>, EofError> {
+    pub fn read_bytes(&self, amnt: usize) -> Result<Vec<u8>, ByteArrayError> {
         let mut buf = self.read_buffer();
 
         if amnt > buf.len() {
-            return Err(EofError);
+            return Err(ByteArrayError::EndOfFile);
         }
 
         // This will not panic as we have checked if we have enough bytes.
@@ -123,7 +123,7 @@ impl<'gc> SocketObject<'gc> {
         self.0.write_buffer.borrow_mut().extend_from_slice(bytes)
     }
 
-    pub fn read_boolean(&self) -> Result<bool, EofError> {
+    pub fn read_boolean(&self) -> Result<bool, ByteArrayError> {
         Ok(self.read_bytes(1)? != [0])
     }
 
@@ -134,7 +134,7 @@ impl<'gc> SocketObject<'gc> {
     /// Same as `read_bytes`, but:
     /// - cuts the result at the first null byte to recreate a bug in FP
     /// - strips off an optional UTF8 BOM at the beginning
-    pub fn read_utf_bytes(&self, amnt: usize) -> Result<Vec<u8>, EofError> {
+    pub fn read_utf_bytes(&self, amnt: usize) -> Result<Vec<u8>, ByteArrayError> {
         let mut bytes = &*self.read_bytes(amnt)?;
         if let Some(without_bom) = bytes.strip_prefix(&[0xEF, 0xBB, 0xBF]) {
             bytes = without_bom;
@@ -145,7 +145,7 @@ impl<'gc> SocketObject<'gc> {
         Ok(bytes.to_vec())
     }
 
-    pub fn read_utf(&self) -> Result<Vec<u8>, EofError> {
+    pub fn read_utf(&self) -> Result<Vec<u8>, ByteArrayError> {
         let len = self.read_unsigned_short()?;
         let val = self.read_utf_bytes(len.into())?;
         Ok(val)
@@ -184,7 +184,7 @@ macro_rules! impl_read{
     =>
     {
         impl<'gc> SocketObject<'gc> {
-            $( pub fn $method_name (&self) -> Result<$data_type, EofError> {
+            $( pub fn $method_name (&self) -> Result<$data_type, ByteArrayError> {
                 Ok(match self.endian() {
                     Endian::Big => <$data_type>::from_be_bytes(self.read_bytes($size)?.try_into().unwrap()),
                     Endian::Little => <$data_type>::from_le_bytes(self.read_bytes($size)?.try_into().unwrap())

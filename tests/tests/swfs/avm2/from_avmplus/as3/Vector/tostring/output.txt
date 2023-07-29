@@ -1,0 +1,7 @@
+Vector.<int>.prototype.toString.length PASSED!
+new Vector.<int>().toString() PASSED!
+(new Vector.<int>(5)).toString() PASSED!
+(new Vector.<Boolean>(5)).toString() PASSED!
+(new Vector.<String>(2)).toString() PASSED!
+(new Vector.<int>(5,true)).toString() PASSED!
+small vector toString PASSED!

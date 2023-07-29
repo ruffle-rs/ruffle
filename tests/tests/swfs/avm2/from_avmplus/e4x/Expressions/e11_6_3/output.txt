@@ -1,0 +1,5 @@
+1 PASSED!
+2 PASSED!
+XML +=     : PASSED!
+XMLList += : PASSED!
+XMLList += : PASSED!

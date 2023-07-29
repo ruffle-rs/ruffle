@@ -1,0 +1,1 @@
+d = new Date(0); with (d) { x = getUTCMonth() +'/'+ getUTCDate() +'/'+ getUTCFullYear(); } x PASSED!

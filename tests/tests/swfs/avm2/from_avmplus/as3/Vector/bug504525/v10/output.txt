@@ -1,0 +1,1 @@
+Test Vector.concat with SWF 9 or 10 behavior PASSED!

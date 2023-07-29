@@ -1,0 +1,25 @@
+typeof(new Object()) PASSED!
+typeof(new Array()) PASSED!
+typeof(new Date()) PASSED!
+typeof(new Boolean()) PASSED!
+typeof(new String()) PASSED!
+typeof(new Number()) PASSED!
+typeof(Math) PASSED!
+typeof(function(){}) PASSED!
+typeof(this) PASSED!
+typeof(MyVar) PASSED!
+typeof([]) PASSED!
+typeof({}) PASSED!
+typeof('') PASSED!
+delete(MyArray[0]);MyArray[0] PASSED!
+delete(Number.prototype.foo); PASSED!
+delete(String.prototype.goo); PASSED!
+delete(Date.prototype.mydate); PASSED!
+delete(new String('hi')); PASSED!
+delete(new Date(0)); PASSED!
+delete(new Number(10)); PASSED!
+delete(new Object()); PASSED!
+delete(obj)  Trying to delete an object of reference type should return false PASSED!
+Grouping operator used in defining the hierarchy of the operators PASSED!
+Grouping operator used in passing parameters to a function PASSED!
+Grouping operator used in evaluating functions and returning the results of an expression PASSED!

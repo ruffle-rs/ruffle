@@ -11,9 +11,6 @@
     "settings_autostart": {
         "message": "التشغيل تلقائيًا دون شاشة البداية (ثم انقر لإلغاء الكتم)"
     },
-    "settings_warn_on_unsupported_content": {
-        "message": "التحذير على المحتوى الغير مدعوم"
-    },
     "settings_log_level": {
         "message": "مستوى السجل"
     },

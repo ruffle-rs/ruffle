@@ -1,0 +1,542 @@
+insert into 0-element vector at index 0: length after splice PASSED!
+insert into 0-element vector at index 0: length after insertAt PASSED!
+insert into 0-element vector at index 0: status PASSED!
+insert into 0-element vector at index 0: element 0 PASSED!
+remove from 0-element vector at index 0: length PASSED!
+remove from 0-element vector at index 0: result PASSED!
+insert into 0-element vector at index 1: length after splice PASSED!
+insert into 0-element vector at index 1: length after insertAt PASSED!
+insert into 0-element vector at index 1: status PASSED!
+insert into 0-element vector at index 1: element 0 PASSED!
+remove from 0-element vector at index 1: length PASSED!
+remove from 0-element vector at index 1: result PASSED!
+insert into 0-element vector at index -1: length after splice PASSED!
+insert into 0-element vector at index -1: length after insertAt PASSED!
+insert into 0-element vector at index -1: status PASSED!
+insert into 0-element vector at index -1: element 0 PASSED!
+remove from 0-element vector at index -1: length PASSED!
+remove from 0-element vector at index -1: result PASSED!
+insert into 0-element vector at index 2: length after splice PASSED!
+insert into 0-element vector at index 2: length after insertAt PASSED!
+insert into 0-element vector at index 2: status PASSED!
+insert into 0-element vector at index 2: element 0 PASSED!
+remove from 0-element vector at index 2: length PASSED!
+remove from 0-element vector at index 2: result PASSED!
+insert into 0-element vector at index -2: length after splice PASSED!
+insert into 0-element vector at index -2: length after insertAt PASSED!
+insert into 0-element vector at index -2: status PASSED!
+insert into 0-element vector at index -2: element 0 PASSED!
+remove from 0-element vector at index -2: length PASSED!
+remove from 0-element vector at index -2: result PASSED!
+insert into 1-element vector at index 0: length after splice PASSED!
+insert into 1-element vector at index 0: length after insertAt PASSED!
+insert into 1-element vector at index 0: status PASSED!
+insert into 1-element vector at index 0: element 0 PASSED!
+insert into 1-element vector at index 0: element 1 PASSED!
+remove from 1-element vector at index 0: length PASSED!
+remove from 1-element vector at index 0: result PASSED!
+insert into 1-element vector at index 1: length after splice PASSED!
+insert into 1-element vector at index 1: length after insertAt PASSED!
+insert into 1-element vector at index 1: status PASSED!
+insert into 1-element vector at index 1: element 0 PASSED!
+insert into 1-element vector at index 1: element 1 PASSED!
+remove from 1-element vector at index 1: length PASSED!
+remove from 1-element vector at index 1: result PASSED!
+insert into 1-element vector at index -1: length after splice PASSED!
+insert into 1-element vector at index -1: length after insertAt PASSED!
+insert into 1-element vector at index -1: status PASSED!
+insert into 1-element vector at index -1: element 0 PASSED!
+insert into 1-element vector at index -1: element 1 PASSED!
+remove from 1-element vector at index -1: length PASSED!
+remove from 1-element vector at index -1: result PASSED!
+insert into 1-element vector at index 2: length after splice PASSED!
+insert into 1-element vector at index 2: length after insertAt PASSED!
+insert into 1-element vector at index 2: status PASSED!
+insert into 1-element vector at index 2: element 0 PASSED!
+insert into 1-element vector at index 2: element 1 PASSED!
+remove from 1-element vector at index 2: length PASSED!
+remove from 1-element vector at index 2: result PASSED!
+insert into 1-element vector at index -2: length after splice PASSED!
+insert into 1-element vector at index -2: length after insertAt PASSED!
+insert into 1-element vector at index -2: status PASSED!
+insert into 1-element vector at index -2: element 0 PASSED!
+insert into 1-element vector at index -2: element 1 PASSED!
+remove from 1-element vector at index -2: length PASSED!
+remove from 1-element vector at index -2: result PASSED!
+insert into 1-element vector at index 3: length after splice PASSED!
+insert into 1-element vector at index 3: length after insertAt PASSED!
+insert into 1-element vector at index 3: status PASSED!
+insert into 1-element vector at index 3: element 0 PASSED!
+insert into 1-element vector at index 3: element 1 PASSED!
+remove from 1-element vector at index 3: length PASSED!
+remove from 1-element vector at index 3: result PASSED!
+insert into 1-element vector at index -3: length after splice PASSED!
+insert into 1-element vector at index -3: length after insertAt PASSED!
+insert into 1-element vector at index -3: status PASSED!
+insert into 1-element vector at index -3: element 0 PASSED!
+insert into 1-element vector at index -3: element 1 PASSED!
+remove from 1-element vector at index -3: length PASSED!
+remove from 1-element vector at index -3: result PASSED!
+insert into 2-element vector at index 0: length after splice PASSED!
+insert into 2-element vector at index 0: length after insertAt PASSED!
+insert into 2-element vector at index 0: status PASSED!
+insert into 2-element vector at index 0: element 0 PASSED!
+insert into 2-element vector at index 0: element 1 PASSED!
+insert into 2-element vector at index 0: element 2 PASSED!
+remove from 2-element vector at index 0: length PASSED!
+remove from 2-element vector at index 0: result PASSED!
+insert into 2-element vector at index 1: length after splice PASSED!
+insert into 2-element vector at index 1: length after insertAt PASSED!
+insert into 2-element vector at index 1: status PASSED!
+insert into 2-element vector at index 1: element 0 PASSED!
+insert into 2-element vector at index 1: element 1 PASSED!
+insert into 2-element vector at index 1: element 2 PASSED!
+remove from 2-element vector at index 1: length PASSED!
+remove from 2-element vector at index 1: result PASSED!
+insert into 2-element vector at index -1: length after splice PASSED!
+insert into 2-element vector at index -1: length after insertAt PASSED!
+insert into 2-element vector at index -1: status PASSED!
+insert into 2-element vector at index -1: element 0 PASSED!
+insert into 2-element vector at index -1: element 1 PASSED!
+insert into 2-element vector at index -1: element 2 PASSED!
+remove from 2-element vector at index -1: length PASSED!
+remove from 2-element vector at index -1: result PASSED!
+insert into 2-element vector at index 2: length after splice PASSED!
+insert into 2-element vector at index 2: length after insertAt PASSED!
+insert into 2-element vector at index 2: status PASSED!
+insert into 2-element vector at index 2: element 0 PASSED!
+insert into 2-element vector at index 2: element 1 PASSED!
+insert into 2-element vector at index 2: element 2 PASSED!
+remove from 2-element vector at index 2: length PASSED!
+remove from 2-element vector at index 2: result PASSED!
+remove from 2-element vector at index 2: element 0 PASSED!
+insert into 2-element vector at index -2: length after splice PASSED!
+insert into 2-element vector at index -2: length after insertAt PASSED!
+insert into 2-element vector at index -2: status PASSED!
+insert into 2-element vector at index -2: element 0 PASSED!
+insert into 2-element vector at index -2: element 1 PASSED!
+insert into 2-element vector at index -2: element 2 PASSED!
+remove from 2-element vector at index -2: length PASSED!
+remove from 2-element vector at index -2: result PASSED!
+insert into 2-element vector at index 3: length after splice PASSED!
+insert into 2-element vector at index 3: length after insertAt PASSED!
+insert into 2-element vector at index 3: status PASSED!
+insert into 2-element vector at index 3: element 0 PASSED!
+insert into 2-element vector at index 3: element 1 PASSED!
+insert into 2-element vector at index 3: element 2 PASSED!
+remove from 2-element vector at index 3: length PASSED!
+remove from 2-element vector at index 3: result PASSED!
+remove from 2-element vector at index 3: element 0 PASSED!
+insert into 2-element vector at index -3: length after splice PASSED!
+insert into 2-element vector at index -3: length after insertAt PASSED!
+insert into 2-element vector at index -3: status PASSED!
+insert into 2-element vector at index -3: element 0 PASSED!
+insert into 2-element vector at index -3: element 1 PASSED!
+insert into 2-element vector at index -3: element 2 PASSED!
+remove from 2-element vector at index -3: length PASSED!
+remove from 2-element vector at index -3: result PASSED!
+insert into 2-element vector at index 4: length after splice PASSED!
+insert into 2-element vector at index 4: length after insertAt PASSED!
+insert into 2-element vector at index 4: status PASSED!
+insert into 2-element vector at index 4: element 0 PASSED!
+insert into 2-element vector at index 4: element 1 PASSED!
+insert into 2-element vector at index 4: element 2 PASSED!
+remove from 2-element vector at index 4: length PASSED!
+remove from 2-element vector at index 4: result PASSED!
+remove from 2-element vector at index 4: element 0 PASSED!
+insert into 2-element vector at index -4: length after splice PASSED!
+insert into 2-element vector at index -4: length after insertAt PASSED!
+insert into 2-element vector at index -4: status PASSED!
+insert into 2-element vector at index -4: element 0 PASSED!
+insert into 2-element vector at index -4: element 1 PASSED!
+insert into 2-element vector at index -4: element 2 PASSED!
+remove from 2-element vector at index -4: length PASSED!
+remove from 2-element vector at index -4: result PASSED!
+insert into 3-element vector at index 0: length after splice PASSED!
+insert into 3-element vector at index 0: length after insertAt PASSED!
+insert into 3-element vector at index 0: status PASSED!
+insert into 3-element vector at index 0: element 0 PASSED!
+insert into 3-element vector at index 0: element 1 PASSED!
+insert into 3-element vector at index 0: element 2 PASSED!
+insert into 3-element vector at index 0: element 3 PASSED!
+remove from 3-element vector at index 0: length PASSED!
+remove from 3-element vector at index 0: result PASSED!
+remove from 3-element vector at index 0: element 0 PASSED!
+insert into 3-element vector at index 1: length after splice PASSED!
+insert into 3-element vector at index 1: length after insertAt PASSED!
+insert into 3-element vector at index 1: status PASSED!
+insert into 3-element vector at index 1: element 0 PASSED!
+insert into 3-element vector at index 1: element 1 PASSED!
+insert into 3-element vector at index 1: element 2 PASSED!
+insert into 3-element vector at index 1: element 3 PASSED!
+remove from 3-element vector at index 1: length PASSED!
+remove from 3-element vector at index 1: result PASSED!
+remove from 3-element vector at index 1: element 0 PASSED!
+insert into 3-element vector at index -1: length after splice PASSED!
+insert into 3-element vector at index -1: length after insertAt PASSED!
+insert into 3-element vector at index -1: status PASSED!
+insert into 3-element vector at index -1: element 0 PASSED!
+insert into 3-element vector at index -1: element 1 PASSED!
+insert into 3-element vector at index -1: element 2 PASSED!
+insert into 3-element vector at index -1: element 3 PASSED!
+remove from 3-element vector at index -1: length PASSED!
+remove from 3-element vector at index -1: result PASSED!
+remove from 3-element vector at index -1: element 0 PASSED!
+insert into 3-element vector at index 2: length after splice PASSED!
+insert into 3-element vector at index 2: length after insertAt PASSED!
+insert into 3-element vector at index 2: status PASSED!
+insert into 3-element vector at index 2: element 0 PASSED!
+insert into 3-element vector at index 2: element 1 PASSED!
+insert into 3-element vector at index 2: element 2 PASSED!
+insert into 3-element vector at index 2: element 3 PASSED!
+remove from 3-element vector at index 2: length PASSED!
+remove from 3-element vector at index 2: result PASSED!
+remove from 3-element vector at index 2: element 0 PASSED!
+insert into 3-element vector at index -2: length after splice PASSED!
+insert into 3-element vector at index -2: length after insertAt PASSED!
+insert into 3-element vector at index -2: status PASSED!
+insert into 3-element vector at index -2: element 0 PASSED!
+insert into 3-element vector at index -2: element 1 PASSED!
+insert into 3-element vector at index -2: element 2 PASSED!
+insert into 3-element vector at index -2: element 3 PASSED!
+remove from 3-element vector at index -2: length PASSED!
+remove from 3-element vector at index -2: result PASSED!
+remove from 3-element vector at index -2: element 0 PASSED!
+insert into 3-element vector at index 3: length after splice PASSED!
+insert into 3-element vector at index 3: length after insertAt PASSED!
+insert into 3-element vector at index 3: status PASSED!
+insert into 3-element vector at index 3: element 0 PASSED!
+insert into 3-element vector at index 3: element 1 PASSED!
+insert into 3-element vector at index 3: element 2 PASSED!
+insert into 3-element vector at index 3: element 3 PASSED!
+remove from 3-element vector at index 3: length PASSED!
+remove from 3-element vector at index 3: result PASSED!
+remove from 3-element vector at index 3: element 0 PASSED!
+remove from 3-element vector at index 3: element 1 PASSED!
+insert into 3-element vector at index -3: length after splice PASSED!
+insert into 3-element vector at index -3: length after insertAt PASSED!
+insert into 3-element vector at index -3: status PASSED!
+insert into 3-element vector at index -3: element 0 PASSED!
+insert into 3-element vector at index -3: element 1 PASSED!
+insert into 3-element vector at index -3: element 2 PASSED!
+insert into 3-element vector at index -3: element 3 PASSED!
+remove from 3-element vector at index -3: length PASSED!
+remove from 3-element vector at index -3: result PASSED!
+remove from 3-element vector at index -3: element 0 PASSED!
+insert into 3-element vector at index 4: length after splice PASSED!
+insert into 3-element vector at index 4: length after insertAt PASSED!
+insert into 3-element vector at index 4: status PASSED!
+insert into 3-element vector at index 4: element 0 PASSED!
+insert into 3-element vector at index 4: element 1 PASSED!
+insert into 3-element vector at index 4: element 2 PASSED!
+insert into 3-element vector at index 4: element 3 PASSED!
+remove from 3-element vector at index 4: length PASSED!
+remove from 3-element vector at index 4: result PASSED!
+remove from 3-element vector at index 4: element 0 PASSED!
+remove from 3-element vector at index 4: element 1 PASSED!
+insert into 3-element vector at index -4: length after splice PASSED!
+insert into 3-element vector at index -4: length after insertAt PASSED!
+insert into 3-element vector at index -4: status PASSED!
+insert into 3-element vector at index -4: element 0 PASSED!
+insert into 3-element vector at index -4: element 1 PASSED!
+insert into 3-element vector at index -4: element 2 PASSED!
+insert into 3-element vector at index -4: element 3 PASSED!
+remove from 3-element vector at index -4: length PASSED!
+remove from 3-element vector at index -4: result PASSED!
+remove from 3-element vector at index -4: element 0 PASSED!
+insert into 3-element vector at index 5: length after splice PASSED!
+insert into 3-element vector at index 5: length after insertAt PASSED!
+insert into 3-element vector at index 5: status PASSED!
+insert into 3-element vector at index 5: element 0 PASSED!
+insert into 3-element vector at index 5: element 1 PASSED!
+insert into 3-element vector at index 5: element 2 PASSED!
+insert into 3-element vector at index 5: element 3 PASSED!
+remove from 3-element vector at index 5: length PASSED!
+remove from 3-element vector at index 5: result PASSED!
+remove from 3-element vector at index 5: element 0 PASSED!
+remove from 3-element vector at index 5: element 1 PASSED!
+insert into 3-element vector at index -5: length after splice PASSED!
+insert into 3-element vector at index -5: length after insertAt PASSED!
+insert into 3-element vector at index -5: status PASSED!
+insert into 3-element vector at index -5: element 0 PASSED!
+insert into 3-element vector at index -5: element 1 PASSED!
+insert into 3-element vector at index -5: element 2 PASSED!
+insert into 3-element vector at index -5: element 3 PASSED!
+remove from 3-element vector at index -5: length PASSED!
+remove from 3-element vector at index -5: result PASSED!
+remove from 3-element vector at index -5: element 0 PASSED!
+insert into 0-element vector at index 0: length after splice PASSED!
+insert into 0-element vector at index 0: length after insertAt PASSED!
+insert into 0-element vector at index 0: status PASSED!
+insert into 0-element vector at index 0: element 0 PASSED!
+remove from 0-element vector at index 0: length PASSED!
+remove from 0-element vector at index 0: result PASSED!
+insert into 0-element vector at index 1: length after splice PASSED!
+insert into 0-element vector at index 1: length after insertAt PASSED!
+insert into 0-element vector at index 1: status PASSED!
+insert into 0-element vector at index 1: element 0 PASSED!
+remove from 0-element vector at index 1: length PASSED!
+remove from 0-element vector at index 1: result PASSED!
+insert into 0-element vector at index -1: length after splice PASSED!
+insert into 0-element vector at index -1: length after insertAt PASSED!
+insert into 0-element vector at index -1: status PASSED!
+insert into 0-element vector at index -1: element 0 PASSED!
+remove from 0-element vector at index -1: length PASSED!
+remove from 0-element vector at index -1: result PASSED!
+insert into 0-element vector at index 2: length after splice PASSED!
+insert into 0-element vector at index 2: length after insertAt PASSED!
+insert into 0-element vector at index 2: status PASSED!
+insert into 0-element vector at index 2: element 0 PASSED!
+remove from 0-element vector at index 2: length PASSED!
+remove from 0-element vector at index 2: result PASSED!
+insert into 0-element vector at index -2: length after splice PASSED!
+insert into 0-element vector at index -2: length after insertAt PASSED!
+insert into 0-element vector at index -2: status PASSED!
+insert into 0-element vector at index -2: element 0 PASSED!
+remove from 0-element vector at index -2: length PASSED!
+remove from 0-element vector at index -2: result PASSED!
+insert into 1-element vector at index 0: length after splice PASSED!
+insert into 1-element vector at index 0: length after insertAt PASSED!
+insert into 1-element vector at index 0: status PASSED!
+insert into 1-element vector at index 0: element 0 PASSED!
+insert into 1-element vector at index 0: element 1 PASSED!
+remove from 1-element vector at index 0: length PASSED!
+remove from 1-element vector at index 0: result PASSED!
+insert into 1-element vector at index 1: length after splice PASSED!
+insert into 1-element vector at index 1: length after insertAt PASSED!
+insert into 1-element vector at index 1: status PASSED!
+insert into 1-element vector at index 1: element 0 PASSED!
+insert into 1-element vector at index 1: element 1 PASSED!
+remove from 1-element vector at index 1: length PASSED!
+remove from 1-element vector at index 1: result PASSED!
+insert into 1-element vector at index -1: length after splice PASSED!
+insert into 1-element vector at index -1: length after insertAt PASSED!
+insert into 1-element vector at index -1: status PASSED!
+insert into 1-element vector at index -1: element 0 PASSED!
+insert into 1-element vector at index -1: element 1 PASSED!
+remove from 1-element vector at index -1: length PASSED!
+remove from 1-element vector at index -1: result PASSED!
+insert into 1-element vector at index 2: length after splice PASSED!
+insert into 1-element vector at index 2: length after insertAt PASSED!
+insert into 1-element vector at index 2: status PASSED!
+insert into 1-element vector at index 2: element 0 PASSED!
+insert into 1-element vector at index 2: element 1 PASSED!
+remove from 1-element vector at index 2: length PASSED!
+remove from 1-element vector at index 2: result PASSED!
+insert into 1-element vector at index -2: length after splice PASSED!
+insert into 1-element vector at index -2: length after insertAt PASSED!
+insert into 1-element vector at index -2: status PASSED!
+insert into 1-element vector at index -2: element 0 PASSED!
+insert into 1-element vector at index -2: element 1 PASSED!
+remove from 1-element vector at index -2: length PASSED!
+remove from 1-element vector at index -2: result PASSED!
+insert into 1-element vector at index 3: length after splice PASSED!
+insert into 1-element vector at index 3: length after insertAt PASSED!
+insert into 1-element vector at index 3: status PASSED!
+insert into 1-element vector at index 3: element 0 PASSED!
+insert into 1-element vector at index 3: element 1 PASSED!
+remove from 1-element vector at index 3: length PASSED!
+remove from 1-element vector at index 3: result PASSED!
+insert into 1-element vector at index -3: length after splice PASSED!
+insert into 1-element vector at index -3: length after insertAt PASSED!
+insert into 1-element vector at index -3: status PASSED!
+insert into 1-element vector at index -3: element 0 PASSED!
+insert into 1-element vector at index -3: element 1 PASSED!
+remove from 1-element vector at index -3: length PASSED!
+remove from 1-element vector at index -3: result PASSED!
+insert into 2-element vector at index 0: length after splice PASSED!
+insert into 2-element vector at index 0: length after insertAt PASSED!
+insert into 2-element vector at index 0: status PASSED!
+insert into 2-element vector at index 0: element 0 PASSED!
+insert into 2-element vector at index 0: element 1 PASSED!
+insert into 2-element vector at index 0: element 2 PASSED!
+remove from 2-element vector at index 0: length PASSED!
+remove from 2-element vector at index 0: result PASSED!
+insert into 2-element vector at index 1: length after splice PASSED!
+insert into 2-element vector at index 1: length after insertAt PASSED!
+insert into 2-element vector at index 1: status PASSED!
+insert into 2-element vector at index 1: element 0 PASSED!
+insert into 2-element vector at index 1: element 1 PASSED!
+insert into 2-element vector at index 1: element 2 PASSED!
+remove from 2-element vector at index 1: length PASSED!
+remove from 2-element vector at index 1: result PASSED!
+insert into 2-element vector at index -1: length after splice PASSED!
+insert into 2-element vector at index -1: length after insertAt PASSED!
+insert into 2-element vector at index -1: status PASSED!
+insert into 2-element vector at index -1: element 0 PASSED!
+insert into 2-element vector at index -1: element 1 PASSED!
+insert into 2-element vector at index -1: element 2 PASSED!
+remove from 2-element vector at index -1: length PASSED!
+remove from 2-element vector at index -1: result PASSED!
+insert into 2-element vector at index 2: length after splice PASSED!
+insert into 2-element vector at index 2: length after insertAt PASSED!
+insert into 2-element vector at index 2: status PASSED!
+insert into 2-element vector at index 2: element 0 PASSED!
+insert into 2-element vector at index 2: element 1 PASSED!
+insert into 2-element vector at index 2: element 2 PASSED!
+remove from 2-element vector at index 2: length PASSED!
+remove from 2-element vector at index 2: result PASSED!
+remove from 2-element vector at index 2: element 0 PASSED!
+insert into 2-element vector at index -2: length after splice PASSED!
+insert into 2-element vector at index -2: length after insertAt PASSED!
+insert into 2-element vector at index -2: status PASSED!
+insert into 2-element vector at index -2: element 0 PASSED!
+insert into 2-element vector at index -2: element 1 PASSED!
+insert into 2-element vector at index -2: element 2 PASSED!
+remove from 2-element vector at index -2: length PASSED!
+remove from 2-element vector at index -2: result PASSED!
+insert into 2-element vector at index 3: length after splice PASSED!
+insert into 2-element vector at index 3: length after insertAt PASSED!
+insert into 2-element vector at index 3: status PASSED!
+insert into 2-element vector at index 3: element 0 PASSED!
+insert into 2-element vector at index 3: element 1 PASSED!
+insert into 2-element vector at index 3: element 2 PASSED!
+remove from 2-element vector at index 3: length PASSED!
+remove from 2-element vector at index 3: result PASSED!
+remove from 2-element vector at index 3: element 0 PASSED!
+insert into 2-element vector at index -3: length after splice PASSED!
+insert into 2-element vector at index -3: length after insertAt PASSED!
+insert into 2-element vector at index -3: status PASSED!
+insert into 2-element vector at index -3: element 0 PASSED!
+insert into 2-element vector at index -3: element 1 PASSED!
+insert into 2-element vector at index -3: element 2 PASSED!
+remove from 2-element vector at index -3: length PASSED!
+remove from 2-element vector at index -3: result PASSED!
+insert into 2-element vector at index 4: length after splice PASSED!
+insert into 2-element vector at index 4: length after insertAt PASSED!
+insert into 2-element vector at index 4: status PASSED!
+insert into 2-element vector at index 4: element 0 PASSED!
+insert into 2-element vector at index 4: element 1 PASSED!
+insert into 2-element vector at index 4: element 2 PASSED!
+remove from 2-element vector at index 4: length PASSED!
+remove from 2-element vector at index 4: result PASSED!
+remove from 2-element vector at index 4: element 0 PASSED!
+insert into 2-element vector at index -4: length after splice PASSED!
+insert into 2-element vector at index -4: length after insertAt PASSED!
+insert into 2-element vector at index -4: status PASSED!
+insert into 2-element vector at index -4: element 0 PASSED!
+insert into 2-element vector at index -4: element 1 PASSED!
+insert into 2-element vector at index -4: element 2 PASSED!
+remove from 2-element vector at index -4: length PASSED!
+remove from 2-element vector at index -4: result PASSED!
+insert into 3-element vector at index 0: length after splice PASSED!
+insert into 3-element vector at index 0: length after insertAt PASSED!
+insert into 3-element vector at index 0: status PASSED!
+insert into 3-element vector at index 0: element 0 PASSED!
+insert into 3-element vector at index 0: element 1 PASSED!
+insert into 3-element vector at index 0: element 2 PASSED!
+insert into 3-element vector at index 0: element 3 PASSED!
+remove from 3-element vector at index 0: length PASSED!
+remove from 3-element vector at index 0: result PASSED!
+remove from 3-element vector at index 0: element 0 PASSED!
+insert into 3-element vector at index 1: length after splice PASSED!
+insert into 3-element vector at index 1: length after insertAt PASSED!
+insert into 3-element vector at index 1: status PASSED!
+insert into 3-element vector at index 1: element 0 PASSED!
+insert into 3-element vector at index 1: element 1 PASSED!
+insert into 3-element vector at index 1: element 2 PASSED!
+insert into 3-element vector at index 1: element 3 PASSED!
+remove from 3-element vector at index 1: length PASSED!
+remove from 3-element vector at index 1: result PASSED!
+remove from 3-element vector at index 1: element 0 PASSED!
+insert into 3-element vector at index -1: length after splice PASSED!
+insert into 3-element vector at index -1: length after insertAt PASSED!
+insert into 3-element vector at index -1: status PASSED!
+insert into 3-element vector at index -1: element 0 PASSED!
+insert into 3-element vector at index -1: element 1 PASSED!
+insert into 3-element vector at index -1: element 2 PASSED!
+insert into 3-element vector at index -1: element 3 PASSED!
+remove from 3-element vector at index -1: length PASSED!
+remove from 3-element vector at index -1: result PASSED!
+remove from 3-element vector at index -1: element 0 PASSED!
+insert into 3-element vector at index 2: length after splice PASSED!
+insert into 3-element vector at index 2: length after insertAt PASSED!
+insert into 3-element vector at index 2: status PASSED!
+insert into 3-element vector at index 2: element 0 PASSED!
+insert into 3-element vector at index 2: element 1 PASSED!
+insert into 3-element vector at index 2: element 2 PASSED!
+insert into 3-element vector at index 2: element 3 PASSED!
+remove from 3-element vector at index 2: length PASSED!
+remove from 3-element vector at index 2: result PASSED!
+remove from 3-element vector at index 2: element 0 PASSED!
+insert into 3-element vector at index -2: length after splice PASSED!
+insert into 3-element vector at index -2: length after insertAt PASSED!
+insert into 3-element vector at index -2: status PASSED!
+insert into 3-element vector at index -2: element 0 PASSED!
+insert into 3-element vector at index -2: element 1 PASSED!
+insert into 3-element vector at index -2: element 2 PASSED!
+insert into 3-element vector at index -2: element 3 PASSED!
+remove from 3-element vector at index -2: length PASSED!
+remove from 3-element vector at index -2: result PASSED!
+remove from 3-element vector at index -2: element 0 PASSED!
+insert into 3-element vector at index 3: length after splice PASSED!
+insert into 3-element vector at index 3: length after insertAt PASSED!
+insert into 3-element vector at index 3: status PASSED!
+insert into 3-element vector at index 3: element 0 PASSED!
+insert into 3-element vector at index 3: element 1 PASSED!
+insert into 3-element vector at index 3: element 2 PASSED!
+insert into 3-element vector at index 3: element 3 PASSED!
+remove from 3-element vector at index 3: length PASSED!
+remove from 3-element vector at index 3: result PASSED!
+remove from 3-element vector at index 3: element 0 PASSED!
+remove from 3-element vector at index 3: element 1 PASSED!
+insert into 3-element vector at index -3: length after splice PASSED!
+insert into 3-element vector at index -3: length after insertAt PASSED!
+insert into 3-element vector at index -3: status PASSED!
+insert into 3-element vector at index -3: element 0 PASSED!
+insert into 3-element vector at index -3: element 1 PASSED!
+insert into 3-element vector at index -3: element 2 PASSED!
+insert into 3-element vector at index -3: element 3 PASSED!
+remove from 3-element vector at index -3: length PASSED!
+remove from 3-element vector at index -3: result PASSED!
+remove from 3-element vector at index -3: element 0 PASSED!
+insert into 3-element vector at index 4: length after splice PASSED!
+insert into 3-element vector at index 4: length after insertAt PASSED!
+insert into 3-element vector at index 4: status PASSED!
+insert into 3-element vector at index 4: element 0 PASSED!
+insert into 3-element vector at index 4: element 1 PASSED!
+insert into 3-element vector at index 4: element 2 PASSED!
+insert into 3-element vector at index 4: element 3 PASSED!
+remove from 3-element vector at index 4: length PASSED!
+remove from 3-element vector at index 4: result PASSED!
+remove from 3-element vector at index 4: element 0 PASSED!
+remove from 3-element vector at index 4: element 1 PASSED!
+insert into 3-element vector at index -4: length after splice PASSED!
+insert into 3-element vector at index -4: length after insertAt PASSED!
+insert into 3-element vector at index -4: status PASSED!
+insert into 3-element vector at index -4: element 0 PASSED!
+insert into 3-element vector at index -4: element 1 PASSED!
+insert into 3-element vector at index -4: element 2 PASSED!
+insert into 3-element vector at index -4: element 3 PASSED!
+remove from 3-element vector at index -4: length PASSED!
+remove from 3-element vector at index -4: result PASSED!
+remove from 3-element vector at index -4: element 0 PASSED!
+insert into 3-element vector at index 5: length after splice PASSED!
+insert into 3-element vector at index 5: length after insertAt PASSED!
+insert into 3-element vector at index 5: status PASSED!
+insert into 3-element vector at index 5: element 0 PASSED!
+insert into 3-element vector at index 5: element 1 PASSED!
+insert into 3-element vector at index 5: element 2 PASSED!
+insert into 3-element vector at index 5: element 3 PASSED!
+remove from 3-element vector at index 5: length PASSED!
+remove from 3-element vector at index 5: result PASSED!
+remove from 3-element vector at index 5: element 0 PASSED!
+remove from 3-element vector at index 5: element 1 PASSED!
+insert into 3-element vector at index -5: length after splice PASSED!
+insert into 3-element vector at index -5: length after insertAt PASSED!
+insert into 3-element vector at index -5: status PASSED!
+insert into 3-element vector at index -5: element 0 PASSED!
+insert into 3-element vector at index -5: element 1 PASSED!
+insert into 3-element vector at index -5: element 2 PASSED!
+insert into 3-element vector at index -5: element 3 PASSED!
+remove from 3-element vector at index -5: length PASSED!
+remove from 3-element vector at index -5: result PASSED!
+remove from 3-element vector at index -5: element 0 PASSED!
+insert String coercible to int into Vector.<int> PASSED!
+verify inserted int value coerced from String PASSED!
+insert String into Vector.<*> PASSED!
+verify inserted * value coerced from String PASSED!
+insert String into Vector.<Object> PASSED!
+verify inserted Object value coerced from String PASSED!
+insert String into Vector.<MyClass> PASSED!
+insert MyOtherClass into Vector.<MyClass> PASSED!

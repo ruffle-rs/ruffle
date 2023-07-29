@@ -1,0 +1,6 @@
+some no checker PASSED!
+some checker not a function PASSED!
+some empty vector result PASSED!
+some vector with no match PASSED!
+some vector with match PASSED!
+some function with no return value PASSED!

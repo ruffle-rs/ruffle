@@ -1,0 +1,4 @@
+Test apply(bigarray) #1000 PASSED!
+Test apply(bigarray) #10000 PASSED!
+Test apply(bigarray) #100000 PASSED!
+Test apply(bigarray) #1000000 PASSED!

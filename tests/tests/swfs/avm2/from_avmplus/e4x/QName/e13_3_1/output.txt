@@ -1,0 +1,21 @@
+1 PASSED!
+2 PASSED!
+3 PASSED!
+4 PASSED!
+5 PASSED!
+6 PASSED!
+7 PASSED!
+8 PASSED!
+9 PASSED!
+10 PASSED!
+11 PASSED!
+12 PASSED!
+13 PASSED!
+QName('name').valueOf().toString() PASSED!
+QName('name').valueOf() == 'name' PASSED!
+typeof QName('name') PASSED!
+foo = QName('foo'), bar = Qname(foo), bar === foo PASSED!
+foo = QName('foo'), bar = Qname("", foo), bar === foo PASSED!
+ns = new Namespace('duh'), QName(ns, 'name') PASSED!
+ns = new Namespace('duh'), typeof QName(ns, 'name') PASSED!
+ns = new Namespace('duh'), typeof QName(ns, 'name') PASSED!

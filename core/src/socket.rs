@@ -7,7 +7,6 @@ use gc_arena::Collect;
 use generational_arena::{Arena, Index};
 use std::{
     cell::RefCell,
-    collections::VecDeque,
     sync::mpsc::{channel, Receiver, Sender},
     time::Duration,
 };
@@ -19,7 +18,6 @@ pub type SocketHandle = Index;
 struct Socket<'gc> {
     target: SocketObject<'gc>,
     sender: RefCell<Sender<Vec<u8>>>,
-    send_buffer: VecDeque<Vec<u8>>,
 }
 
 impl<'gc> Socket<'gc> {
@@ -27,7 +25,6 @@ impl<'gc> Socket<'gc> {
         Self {
             target,
             sender: RefCell::new(sender),
-            send_buffer: Default::default(),
         }
     }
 }
@@ -107,8 +104,8 @@ impl<'gc> Sockets<'gc> {
     }
 
     pub fn send(&mut self, handle: SocketHandle, data: Vec<u8>) {
-        if let Some(Socket { send_buffer, .. }) = self.sockets.get_mut(handle) {
-            send_buffer.push_back(data);
+        if let Some(Socket { sender, .. }) = self.sockets.get_mut(handle) {
+            let _ = sender.borrow().send(data);
         }
     }
 
@@ -208,18 +205,6 @@ impl<'gc> Sockets<'gc> {
                         EventObject::bare_default_event(&mut activation.context, "close");
                     Avm2::dispatch_event(&mut activation.context, close_evt, target.into());
                 }
-            }
-        }
-
-        for (_handle, socket) in context.sockets.sockets.iter_mut() {
-            let Socket {
-                sender,
-                send_buffer,
-                ..
-            } = socket;
-
-            if let Some(to_send) = send_buffer.pop_front() {
-                let _ = sender.borrow().send(to_send);
             }
         }
     }

@@ -127,6 +127,7 @@ package flash.display {
 
         public native function getRect(targetCoordinateSpace:DisplayObject):Rectangle;
 
+        public native function set blendShader(value:Shader):void;
     }
 
 }

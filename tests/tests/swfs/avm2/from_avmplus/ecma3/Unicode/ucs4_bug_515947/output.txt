@@ -1,0 +1,3 @@
+s.length PASSED!
+0xd840 PASSED!
+0xdc8a PASSED!

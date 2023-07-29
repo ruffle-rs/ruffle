@@ -1,0 +1,30 @@
+VAR1 = NaN; VAR2=1; VAR1 *= VAR2 PASSED!
+VAR1 = NaN; VAR2=1; VAR1 *= VAR2; VAR1 PASSED!
+VAR1 = 0; VAR2=1; VAR1 *= VAR2 PASSED!
+VAR1 = 0; VAR2=1; VAR1 *= VAR2;VAR1 PASSED!
+VAR1 = 0xFF; VAR2 = 0xA, VAR1 *= VAR2 PASSED!
+VAR1 = 0; VAR2= Infinity; VAR1 *= VAR2 PASSED!
+VAR1 = -0; VAR2= Infinity; VAR1 *= VAR2 PASSED!
+VAR1 = -0; VAR2= -Infinity; VAR1 *= VAR2 PASSED!
+VAR1 = 0; VAR2= -Infinity; VAR1 *= VAR2 PASSED!
+VAR1 = 0; VAR2= Infinity; VAR2 *= VAR1 PASSED!
+VAR1 = -0; VAR2= Infinity; VAR2 *= VAR1 PASSED!
+VAR1 = -0; VAR2= -Infinity; VAR2 *= VAR1 PASSED!
+VAR1 = 0; VAR2= -Infinity; VAR2 *= VAR1 PASSED!
+VAR1 = Infinity; VAR2= Infinity; VAR1 *= VAR2 PASSED!
+VAR1 = Infinity; VAR2= -Infinity; VAR1 *= VAR2 PASSED!
+VAR1 =-Infinity; VAR2= Infinity; VAR1 *= VAR2 PASSED!
+VAR1 =-Infinity; VAR2=-Infinity; VAR1 *= VAR2 PASSED!
+VAR1 = 10; VAR2 = '255', VAR1 *= VAR2 PASSED!
+VAR1 = '255'; VAR2 = 10, VAR1 *= VAR2 PASSED!
+VAR1 = 10; VAR2 = '0XFF', VAR1 *= VAR2 PASSED!
+VAR1 = '0xFF'; VAR2 = 0xA, VAR1 *= VAR2 PASSED!
+VAR1 = '10'; VAR2 = '255', VAR1 *= VAR2 PASSED!
+VAR1 = '10'; VAR2 = '0XFF', VAR1 *= VAR2 PASSED!
+VAR1 = '0xFF'; VAR2 = 0xA, VAR1 *= VAR2 PASSED!
+VAR1 = true; VAR2 = false; VAR1 *= VAR2 PASSED!
+VAR1 = true; VAR2 = true; VAR1 *= VAR2 PASSED!
+VAR1 = new Boolean(true); VAR2 = 10; VAR1 *= VAR2;VAR1 PASSED!
+VAR1 = new Number(11); VAR2 = 10; VAR1 *= VAR2; VAR1 PASSED!
+VAR1 = new Number(11); VAR2 = new Number(10); VAR1 *= VAR2 PASSED!
+VAR1 = new String('15'); VAR2 = new String('0xF'); VAR1 *= VAR2 PASSED!

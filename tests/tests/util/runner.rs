@@ -1,3 +1,4 @@
+use crate::util::fs_commands::{FsCommand, TestFsCommandProvider};
 use crate::util::navigator::TestNavigatorBackend;
 use crate::util::test::Test;
 use anyhow::{anyhow, Result};
@@ -17,6 +18,7 @@ use ruffle_input_format::{
     AutomatedEvent, InputInjector, MouseButton as InputMouseButton,
     TextControlCode as InputTextControlCode,
 };
+use ruffle_socket_format::SocketEvent;
 use std::cell::RefCell;
 use std::path::Path;
 use std::rc::Rc;
@@ -85,6 +87,7 @@ impl LogBackend for TestLogBackend {
 pub fn run_swf(
     test: &Test,
     mut injector: InputInjector,
+    socket_events: Option<Vec<SocketEvent>>,
     before_start: impl FnOnce(Arc<Mutex<Player>>) -> Result<()>,
     before_end: impl FnOnce(Arc<Mutex<Player>>) -> Result<()>,
 ) -> Result<String> {
@@ -99,9 +102,11 @@ pub fn run_swf(
     let frame_time_duration = Duration::from_millis(frame_time as u64);
 
     let log = TestLogBackend::new();
+    let (fs_command_provider, fs_commands) = TestFsCommandProvider::new();
     let navigator = TestNavigatorBackend::new(
         base_path,
         &executor,
+        socket_events,
         test.options.log_fetch.then(|| log.clone()),
     )?;
 
@@ -109,6 +114,7 @@ pub fn run_swf(
         .with_log(log.clone())
         .with_navigator(navigator)
         .with_max_execution_duration(Duration::from_secs(300))
+        .with_fs_commands(Box::new(fs_command_provider))
         .with_viewport_dimensions(
             movie.width().to_pixels() as u32,
             movie.height().to_pixels() as u32,
@@ -133,13 +139,13 @@ pub fn run_swf(
         ));
     }
 
-    let num_iterations = test
+    let mut remaining_iterations = test
         .options
         .num_frames
         .or(test.options.num_ticks)
         .expect("valid iteration count");
 
-    for _ in 0..num_iterations {
+    while remaining_iterations > 0 {
         // If requested, ensure that the 'expected' amount of
         // time actually elapses between frames. This is useful for
         // tests that call 'flash.utils.getTimer()' and use
@@ -170,7 +176,16 @@ pub fn run_swf(
             player.lock().unwrap().update_timers(frame_time);
             player.lock().unwrap().audio_mut().tick();
         }
+        remaining_iterations -= 1;
         executor.run();
+
+        for command in fs_commands.try_iter() {
+            match command {
+                FsCommand::Quit => {
+                    remaining_iterations = 0;
+                }
+            }
+        }
 
         injector.next(|evt, _btns_down| {
             player.lock().unwrap().handle_event(match evt {
@@ -224,13 +239,18 @@ pub fn run_swf(
 
     // Render the image to disk
     // FIXME: Determine how we want to compare against on on-disk image
-    #[cfg(feature = "imgtests")]
+    #[allow(unused_variables)]
     if let Some(image_comparison) = &test.options.image_comparison {
+        #[allow(unused_mut)]
+        let mut checked_image = false;
+
+        #[cfg(feature = "imgtests")]
         if crate::util::environment::wgpu_descriptors().is_some() {
             use anyhow::Context;
             use ruffle_render_wgpu::backend::WgpuRenderBackend;
             use ruffle_render_wgpu::target::TextureTarget;
 
+            checked_image = true;
             let mut player_lock = player.lock().unwrap();
             player_lock.render();
             let renderer = player_lock
@@ -251,10 +271,20 @@ pub fn run_swf(
                     expected_image,
                     base_path,
                     renderer.descriptors().adapter.get_info(),
+                    test.options.known_failure,
                 )?;
-            } else {
+            } else if !test.options.known_failure {
+                // If we're expecting this to be wrong, don't save a likely wrong image
                 actual_image.save(expected_image_path)?;
             }
+        }
+
+        if test.options.known_failure && !checked_image {
+            // It's possible that the trace output matched but the image might not.
+            // If we aren't checking the image, pretend the match failed (which makes it actually pass, since it's expecting failure).
+            return Err(anyhow!(
+                "Not checking images, pretending this failed since we don't know if it worked."
+            ));
         }
     }
 

@@ -1,0 +1,6 @@
+Function('function body') is not supported PASSED!
+myfunc = Function(); myfunc.myToString = Object.prototype.toString; myfunc.myToString() PASSED!
+myfunc = Function(); myfunc.toString = Object.prototype.toString; myfunc.toString() PASSED!
+myfunc.length PASSED!
+myfunc.prototype.toString() PASSED!
+myfunc.prototype.constructor PASSED!

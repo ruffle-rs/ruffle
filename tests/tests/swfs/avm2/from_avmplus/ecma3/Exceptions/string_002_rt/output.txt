@@ -1,0 +1,1 @@
+OBJECT = new Object; OBJECT.valueOf = String.prototype.valueOf;result = OBJECT.valueOf(); (threw TypeError: Error #1004: Method String.prototype.valueOf was invoked on an incompatible object.) PASSED!

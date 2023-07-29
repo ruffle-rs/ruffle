@@ -1,0 +1,1 @@
+BOOLEAN = true; result = new BOOLEAN() (threw TypeError: Error #1007Attempted to create a new object of a variable) PASSED!

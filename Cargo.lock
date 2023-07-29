@@ -2580,9 +2580,9 @@ dependencies = [
 
 [[package]]
 name = "libz-sys"
-version = "1.1.10"
+version = "1.1.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "24e6ab01971eb092ffe6a7d42f49f9ff42662f17604681e2843ad65077ba47dc"
+checksum = "d97137b25e321a73eef1418d1d5d2eda4d77e12813f8e6dead84bc52c5870a7b"
 dependencies = [
  "cc",
  "libc",
@@ -2843,6 +2843,17 @@ dependencies = [
  "log",
  "wasi",
  "windows-sys 0.48.0",
+]
+
+[[package]]
+name = "mocket"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "ruffle_socket_format",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
@@ -4048,6 +4059,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "ruffle_socket_format"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "ruffle_video"
 version = "0.1.0"
 dependencies = [
@@ -4685,6 +4704,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "approx",
+ "async-io",
  "env_logger",
  "futures",
  "image",
@@ -4695,6 +4715,7 @@ dependencies = [
  "ruffle_input_format",
  "ruffle_render",
  "ruffle_render_wgpu",
+ "ruffle_socket_format",
  "ruffle_video_software",
  "serde",
  "toml",

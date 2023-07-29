@@ -2,6 +2,7 @@
 
 pub mod backend;
 pub mod bitmap;
+pub mod blend;
 pub mod error;
 pub mod filters;
 pub mod matrix;

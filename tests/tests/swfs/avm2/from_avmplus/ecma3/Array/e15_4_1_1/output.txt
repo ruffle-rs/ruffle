@@ -1,0 +1,7 @@
+typeof Array(1,2) PASSED!
+(Array(1,2)).toString PASSED!
+var arr = Array(1,2,3); arr.toString = Object.prototype.toString; arr.toString() PASSED!
+(Array(1,2)).length PASSED!
+var arr = (Array(1,2)), arr[0] PASSED!
+var arr = (Array(1,2)), arr[1] PASSED!
+var arr = (Array(1,2)), String(arr) PASSED!

@@ -1,0 +1,3 @@
+true, false PASSED!
+VAR1=true, VAR2=false PASSED!
+VAR1=true, VAR2=false;VAR1 PASSED!

@@ -1,0 +1,8 @@
+Unicode characters 1C-1F in regexps, ary[0] did not match \S test (it should not.) PASSED!
+Unicode characters 1C-1F in regexps, ary[0] matched \s test (it should not.) PASSED!
+Unicode characters 1C-1F in regexps, ary[1] did not match \S test (it should not.) PASSED!
+Unicode characters 1C-1F in regexps, ary[1] matched \s test (it should not.) PASSED!
+Unicode characters 1C-1F in regexps, ary[2] did not match \S test (it should not.) PASSED!
+Unicode characters 1C-1F in regexps, ary[2] matched \s test (it should not.) PASSED!
+Unicode characters 1C-1F in regexps, ary[3] did not match \S test (it should not.) PASSED!
+Unicode characters 1C-1F in regexps, ary[3] matched \s test (it should not.) PASSED!

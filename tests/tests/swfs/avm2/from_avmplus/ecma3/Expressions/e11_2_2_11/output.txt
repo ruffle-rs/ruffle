@@ -1,0 +1,1 @@
+var FUNCTION = new Function('return this'); f = new FUNCTION(); typeof f PASSED!

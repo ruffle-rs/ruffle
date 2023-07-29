@@ -1,5 +1,6 @@
 mod search;
 
+use ruffle_render::blend::ExtendedBlendMode;
 pub use search::DisplayObjectSearchWindow;
 
 use crate::avm1::TObject as _;
@@ -13,7 +14,7 @@ use egui::collapsing_header::CollapsingState;
 use egui::{Button, Checkbox, CollapsingHeader, ComboBox, Grid, Id, TextEdit, Ui, Widget, Window};
 use ruffle_wstr::{WStr, WString};
 use std::borrow::Cow;
-use swf::{BlendMode, ColorTransform, Fixed8};
+use swf::{ColorTransform, Fixed8};
 
 const DEFAULT_DEBUG_COLORS: [[f32; 3]; 10] = [
     [0.00, 0.39, 0.00], // "darkgreen" / #006400
@@ -28,21 +29,22 @@ const DEFAULT_DEBUG_COLORS: [[f32; 3]; 10] = [
     [1.00, 0.87, 0.68], // "navajowhite" / #ffdead
 ];
 
-const ALL_BLEND_MODES: [BlendMode; 14] = [
-    BlendMode::Normal,
-    BlendMode::Layer,
-    BlendMode::Multiply,
-    BlendMode::Screen,
-    BlendMode::Lighten,
-    BlendMode::Darken,
-    BlendMode::Difference,
-    BlendMode::Add,
-    BlendMode::Subtract,
-    BlendMode::Invert,
-    BlendMode::Alpha,
-    BlendMode::Erase,
-    BlendMode::Overlay,
-    BlendMode::HardLight,
+const ALL_BLEND_MODES: [ExtendedBlendMode; 15] = [
+    ExtendedBlendMode::Normal,
+    ExtendedBlendMode::Layer,
+    ExtendedBlendMode::Multiply,
+    ExtendedBlendMode::Screen,
+    ExtendedBlendMode::Lighten,
+    ExtendedBlendMode::Darken,
+    ExtendedBlendMode::Difference,
+    ExtendedBlendMode::Add,
+    ExtendedBlendMode::Subtract,
+    ExtendedBlendMode::Invert,
+    ExtendedBlendMode::Alpha,
+    ExtendedBlendMode::Erase,
+    ExtendedBlendMode::Overlay,
+    ExtendedBlendMode::HardLight,
+    ExtendedBlendMode::Shader,
 ];
 
 #[derive(Debug, Eq, PartialEq, Hash, Default, Copy, Clone)]
@@ -680,22 +682,23 @@ fn display_object_type(object: DisplayObject) -> &'static str {
     }
 }
 
-fn blend_mode_name(mode: BlendMode) -> &'static str {
+fn blend_mode_name(mode: ExtendedBlendMode) -> &'static str {
     match mode {
-        BlendMode::Normal => "Normal",
-        BlendMode::Layer => "Layer",
-        BlendMode::Multiply => "Multiply",
-        BlendMode::Screen => "Screen",
-        BlendMode::Lighten => "Lighten",
-        BlendMode::Darken => "Darken",
-        BlendMode::Difference => "Difference",
-        BlendMode::Add => "Add",
-        BlendMode::Subtract => "Subtract",
-        BlendMode::Invert => "Invert",
-        BlendMode::Alpha => "Alpha",
-        BlendMode::Erase => "Erase",
-        BlendMode::Overlay => "Overlay",
-        BlendMode::HardLight => "HardLight",
+        ExtendedBlendMode::Normal => "Normal",
+        ExtendedBlendMode::Layer => "Layer",
+        ExtendedBlendMode::Multiply => "Multiply",
+        ExtendedBlendMode::Screen => "Screen",
+        ExtendedBlendMode::Lighten => "Lighten",
+        ExtendedBlendMode::Darken => "Darken",
+        ExtendedBlendMode::Difference => "Difference",
+        ExtendedBlendMode::Add => "Add",
+        ExtendedBlendMode::Subtract => "Subtract",
+        ExtendedBlendMode::Invert => "Invert",
+        ExtendedBlendMode::Alpha => "Alpha",
+        ExtendedBlendMode::Erase => "Erase",
+        ExtendedBlendMode::Overlay => "Overlay",
+        ExtendedBlendMode::HardLight => "HardLight",
+        ExtendedBlendMode::Shader => "Shader",
     }
 }
 

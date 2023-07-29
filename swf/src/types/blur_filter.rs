@@ -20,7 +20,7 @@ impl BlurFilter {
     }
 
     pub fn impotent(&self) -> bool {
-        self.blur_x == Fixed16::ZERO && self.blur_y == Fixed16::ZERO
+        self.num_passes() == 0 || (self.blur_x <= Fixed16::ONE && self.blur_y <= Fixed16::ONE)
     }
 }
 

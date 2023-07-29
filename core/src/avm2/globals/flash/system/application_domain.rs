@@ -123,7 +123,7 @@ pub fn get_qualified_definition_names<'gc>(
                 .map(|name| Value::String(name.to_qualified_name(activation.context.gc_context)))
                 .collect(),
             false,
-            activation.avm2().classes().string,
+            Some(activation.avm2().classes().string),
         );
 
         let name_vector = VectorObject::from_vector(storage, activation)?;
@@ -140,11 +140,12 @@ pub fn set_domain_memory<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(Value::Object(arg)) = args.get(0) {
-        if let Some(bytearray_obj) = arg.as_bytearray_object() {
-            if let Some(appdomain) = this.as_application_domain() {
-                appdomain.set_domain_memory(activation.context.gc_context, bytearray_obj);
-            }
+    if let Some(appdomain) = this.as_application_domain() {
+        let obj = args.try_get_object(activation, 0);
+        if let Some(obj) = obj {
+            appdomain.set_domain_memory(activation, Some(obj.as_bytearray_object().unwrap()))?;
+        } else {
+            appdomain.set_domain_memory(activation, None)?;
         }
     }
 
@@ -158,8 +159,12 @@ pub fn get_domain_memory<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(appdomain) = this.as_application_domain() {
-        let bytearray_object: Object<'gc> = appdomain.domain_memory().into();
-        return Ok(bytearray_object.into());
+        if appdomain.is_default_domain_memory() {
+            return Ok(Value::Null);
+        } else {
+            let bytearray_object: Object<'gc> = appdomain.domain_memory().into();
+            return Ok(bytearray_object.into());
+        }
     }
 
     Ok(Value::Undefined)

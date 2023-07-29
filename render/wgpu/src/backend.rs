@@ -975,6 +975,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     store: true,
                 },
             }),
+            1,
             // When running a standalone shader, we always process the entire image
             &FilterSource::for_entire_texture(&target.texture),
         )?;

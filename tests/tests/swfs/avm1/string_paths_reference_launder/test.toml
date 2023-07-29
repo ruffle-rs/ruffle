@@ -1,2 +1,2 @@
 num_frames = 1
-ignore = true # See the comment in `stack_push` in avm1/activiation.rs for details
+known_failure = true # See the comment in `stack_push` in avm1/activiation.rs for details

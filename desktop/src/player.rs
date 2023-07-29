@@ -39,7 +39,7 @@ pub struct PlayerOptions {
     pub force_scale: bool,
     pub proxy: Option<Url>,
     pub socket_allowed: HashSet<String>,
-    pub socket_mode: SocketMode,
+    pub tcp_connections: SocketMode,
     pub upgrade_to_https: bool,
     pub fullscreen: bool,
     pub load_behavior: LoadBehavior,
@@ -74,7 +74,7 @@ impl From<&Opt> for PlayerOptions {
             open_url_mode: value.open_url_mode,
             dummy_external_interface: value.dummy_external_interface,
             socket_allowed: HashSet::from_iter(value.socket_allow.iter().cloned()),
-            socket_mode: value.socket_mode,
+            tcp_connections: value.tcp_connections,
         }
     }
 }
@@ -116,7 +116,7 @@ impl ActivePlayer {
             opt.upgrade_to_https,
             opt.open_url_mode,
             opt.socket_allowed.clone(),
-            opt.socket_mode,
+            opt.tcp_connections,
         );
 
         if cfg!(feature = "software_video") {

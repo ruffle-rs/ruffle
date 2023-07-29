@@ -4,20 +4,18 @@ use crate::avm2::object::Object;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 
-// Borrow mouse_event's `stageX` getter
 pub fn get_stage_x<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
-    args: &[Value<'gc>],
+    _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    mouse_event::get_stage_x(activation, this, args)
+    mouse_event::local_to_stage_x(activation, this, "localX", "localY")
 }
 
-// Borrow mouse_event's `stageY` getter
 pub fn get_stage_y<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
-    args: &[Value<'gc>],
+    _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    mouse_event::get_stage_y(activation, this, args)
+    mouse_event::local_to_stage_y(activation, this, "localX", "localY")
 }

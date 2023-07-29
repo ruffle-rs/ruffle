@@ -1,0 +1,7 @@
+Testing try block and multiple catch blocks with       custom error classes PASSED!
+Testing catch block with type error PASSED!
+Testing catch block with Argument Error PASSED!
+Testing catch block with URIError PASSED!
+Testing catch block with Eval Error PASSED!
+Testing catch block with Range Error PASSED!
+Testing catch block with Error PASSED!

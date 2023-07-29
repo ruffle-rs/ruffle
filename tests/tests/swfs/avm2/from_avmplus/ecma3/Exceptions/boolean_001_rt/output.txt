@@ -1,0 +1,6 @@
+Assigning Boolean.prototype.toString to a String object  PASSED!
+Assigning Boolean.prototype.toString to an instance of new Boolean() PASSED!
+Assigning Boolean.prototype.toString to an instance of new Boolean(true) PASSED!
+Assigning Boolean.prototype.toString to an instance of new Boolean(false) PASSED!
+Assigning Boolean.prototype.toString to an instance of 'true' PASSED!
+Assigning Boolean.prototype.toString to an instance of 'false' PASSED!

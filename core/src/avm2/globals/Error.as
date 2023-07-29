@@ -1,5 +1,6 @@
 package {
 	[Ruffle(InstanceAllocator)]
+	[Ruffle(CallHandler)]
 	public dynamic class Error {
 		Error.prototype.name = "Error"
 

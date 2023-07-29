@@ -1,4 +1,3 @@
-message-unsupported-avm2 = Ruffle 에뮬레이터는 액션스크립트 3이 사용된 이 콘텐츠를 아직 완벽하게 지원하지 않을 수 있습니다. 콘텐츠의 일부 동작이 예상대로 작동하지 않을 수 있습니다.
 message-cant-embed = Ruffle이 이 페이지에 포함된 플래시를 실행할 수 없었습니다. 별도의 탭에서 파일을 열어봄으로서 이 문제를 해결할 수 있습니다.
 panic-title = 문제가 발생했습니다 :(
 more-info = 추가 정보

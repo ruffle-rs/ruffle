@@ -11,9 +11,6 @@
     "settings_autostart": {
         "message": "Putar secara otomatis tanpa layar pembuka (lalu klik untuk membunyikan)"
     },
-    "settings_warn_on_unsupported_content": {
-        "message": "Ingatkan konten yang tidak didukung"
-    },
     "settings_log_level": {
         "message": "Tingkat log"
     },

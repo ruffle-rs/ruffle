@@ -1,0 +1,24 @@
+void(new String('string object')) PASSED!
+void('string primitive') PASSED!
+void(Number.NaN) PASSED!
+void(Number.POSITIVE_INFINITY) PASSED!
+void(1) PASSED!
+void(0) PASSED!
+void(-1) PASSED!
+void(Number.NEGATIVE_INFINITY) PASSED!
+void(Math.PI) PASSED!
+void(true) PASSED!
+void(false) PASSED!
+void(null) PASSED!
+void new String('string object') PASSED!
+void 'string primitive' PASSED!
+void Number.NaN PASSED!
+void Number.POSITIVE_INFINITY PASSED!
+void 1 PASSED!
+void 0 PASSED!
+void -1 PASSED!
+void Number.NEGATIVE_INFINITY PASSED!
+void Math.PI PASSED!
+void true PASSED!
+void false PASSED!
+void null PASSED!
