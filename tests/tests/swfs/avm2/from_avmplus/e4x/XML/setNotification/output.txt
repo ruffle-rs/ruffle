@@ -1,0 +1,18 @@
+attributeAdded-command PASSED!
+attributeAdded-value PASSED!
+attributeAdded-detail PASSED!
+attributeChanged-command PASSED!
+attributeChanged-value PASSED!
+attributeChanged-detail PASSED!
+attributeRemoved-command PASSED!
+attributeRemoved-value PASSED!
+attributeRemoved-detail PASSED!
+nodeAdded-command PASSED!
+nodeChanged-command PASSED!
+nodeRemoved-command PASSED!
+nodeAdded-command PASSED!
+textSet-command PASSED!
+nameSet-command PASSED!
+namespaceSet-command PASSED!
+Asserting for TypeError PASSED!
+StringNotifier PASSED!

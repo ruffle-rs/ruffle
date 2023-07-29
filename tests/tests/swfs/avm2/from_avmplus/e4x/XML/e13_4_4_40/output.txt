@@ -1,0 +1,6 @@
+2 PASSED!
+3 PASSED!
+MYXML = new XML(xmlDoc),MYXML.valueOf() === MYXML PASSED!
+MYXML = new XML(),MYXML.valueOf() === MYXML PASSED!
+MYXML = new XML(''),MYXML.valueOf() === MYXML PASSED!
+MYXML = new XML('foo'),MYXML.valueOf() === MYXML PASSED!

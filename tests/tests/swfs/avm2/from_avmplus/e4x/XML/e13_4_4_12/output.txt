@@ -1,0 +1,14 @@
+2 PASSED!
+3 PASSED!
+4 PASSED!
+5 PASSED!
+MYXML = new XML(xmlDoc), MYXML.descendants('Team') PASSED!
+MYXML = new XML(xmlDoc), MYXML.descendants('Team').length() PASSED!
+MYXML = new XML(xmlDoc), MYXML.descendants('Team') instanceof XMLList PASSED!
+MYXML = new XML(xmlDoc), MYXML.descendants('foo') PASSED!
+MYXML = new XML(xmlDoc), MYXML.descendants('foo').length() PASSED!
+MYXML = new XML(xmlDoc), MYXML.descendants('foo') instanceof XMLList PASSED!
+MYXML = new XML(xmlDoc), MYXML.descendants('nomatch') PASSED!
+MYXML = new XML(xmlDoc), MYXML.descendants('nomatch').length() PASSED!
+MYXML = new XML(xmlDoc), MYXML.descendants('nomatch') instanceof XMLList PASSED!
+Descendant with hyphen PASSED!

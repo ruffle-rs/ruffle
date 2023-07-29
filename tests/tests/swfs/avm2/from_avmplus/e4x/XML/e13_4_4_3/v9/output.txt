@@ -1,0 +1,15 @@
+2 PASSED!
+3 PASSED!
+MYXML = new XML(xmlDoc), MYXML.appendChild('<TEAM>Red Sox</TEAM>'), MYXML.toXMLString() PASSED!
+MYXML = new XML(xmlDoc), MYXML.TEAM[0].appendChild ('<City>San Francisco</City>')), MYXML.toXMLString() PASSED!
+MYXML = new XML(null), MYXML.appendChild(new XML('<TEAM>Giants</TEAM>')), MYXML.nodeKind() PASSED!
+MYXML = new XML(null), MYXML.appendChild(new XML('<TEAM>Giants</TEAM>')), MYXML.toString() PASSED!
+MYXML = new XML(), MYXML.appendChild(new XML('<TEAM>Giants</TEAM>')), MYXML.nodeKind() PASSED!
+duplicate child node - MYXML.appendChild(new XML('<TEAM>Giants</TEAM>')), MYXML.toString() PASSED!
+true duplicate child node - MYXML.appendChild(MYXML.child(0)[0]), MYXML.toString() PASSED!
+MYXML = new XML('<?xml version="1.0"?><root></root>'); MYXML.appendChild("<b>a</b>"), MYXML.toString() PASSED!
+Append XMLList PASSED!
+Append a string to child node PASSED!
+Append a string to top node PASSED!
+Append a node to child node PASSED!
+a = <a><b><c/></b></a>, a.appendChild(a) PASSED!

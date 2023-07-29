@@ -1,0 +1,10 @@
+2 PASSED!
+3 PASSED!
+5 PASSED!
+6 PASSED!
+7 PASSED!
+8 PASSED!
+MYXML = new XML(xmlDoc), MYXML.propertyIsEnumerable(0) PASSED!
+MYXML = new XML(xmlDoc), MYXML.propertyIsEnumerable(1) PASSED!
+MYXML = new XML(xmlDoc), MYXML.propertyIsEnumerable(2) PASSED!
+MYXML = new XML(xmlDoc), MYXML.propertyIsEnumerable('employee') PASSED!

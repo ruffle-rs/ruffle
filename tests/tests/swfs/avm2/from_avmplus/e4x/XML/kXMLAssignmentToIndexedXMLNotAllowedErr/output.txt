@@ -1,0 +1,2 @@
+Asserting for TypeError PASSED!
+xml[0] = 5 PASSED!

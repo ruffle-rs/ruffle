@@ -1,0 +1,15 @@
+2 PASSED!
+3 PASSED!
+4 PASSED!
+5 PASSED!
+6 PASSED!
+7 PASSED!
+8 PASSED!
+MYXML = new XML(xmlDoc), MYXML.localName() PASSED!
+MYXML = new XML(xmlDoc), MYXML.localName() instanceof QName PASSED!
+MYXML = new XML(xmlDoc), MYXML.localName() instanceof String PASSED!
+MYXML = new XML(xmlDoc), typeof(MYXML.localName()) PASSED!
+MYXML = new XML(xmlDoc), MYXML.children()[0].localName() PASSED!
+MYXML = new XML(xmlDoc), MYXML.children()[0].localName() instanceof QName PASSED!
+MYXML = new XML(xmlDoc), MYXML.children()[0].localName() instanceof String PASSED!
+MYXML = new XML(xmlDoc), typeof(MYXML.children()[0].localName()) PASSED!
