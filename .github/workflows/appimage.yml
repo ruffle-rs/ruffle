@@ -1,0 +1,41 @@
+name: AppImage Export
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt install -y libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev libgtk-3-dev 
+      
+      - name: Cargo build
+        run: cargo build --package ruffle_desktop --release ${{matrix.DESKTOP_FEATURES && '--features' }} ${{matrix.DESKTOP_FEATURES}} ${{ matrix.target && '--target' }} ${{ matrix.target }}
+      
+      - name: Install appimagetool (based on Dockerfile)
+        run: wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-$(uname -m).AppImage -O /usr/local/bin/appimagetool
+        
+      - name: Mark appimagetool as executable
+        run: chmod +x /usr/local/bin/appimagetool
+        
+      - name: appimagetool "magic byte"
+        run: sed -i 's|AI\x02|\x00\x00\x00|' /usr/local/bin/appimagetool
+      
+      - name: AppImage Export
+        run: APPIMAGE_EXTRACT_AND_RUN=1 cargo appimage
+      
+      - name: Show directory
+        run: ls
