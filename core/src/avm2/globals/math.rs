@@ -1,9 +1,10 @@
 //! `Math` impl
 
 use crate::avm2::activation::Activation;
+use crate::avm2::error::type_error;
 use crate::avm2::object::Object;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
+use crate::avm2::{ClassObject, Error};
 use rand::Rng;
 
 macro_rules! wrap_std {
@@ -34,6 +35,29 @@ wrap_std!(log, f64::ln);
 wrap_std!(sin, f64::sin);
 wrap_std!(sqrt, f64::sqrt);
 wrap_std!(tan, f64::tan);
+
+pub fn call_handler<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    Err(Error::AvmError(type_error(
+        activation,
+        "Error #1075: Math is not a function.",
+        1075,
+    )?))
+}
+
+pub fn math_allocator<'gc>(
+    _class: ClassObject<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+) -> Result<Object<'gc>, Error<'gc>> {
+    Err(Error::AvmError(type_error(
+        activation,
+        "Error #1076: Math is not a constructor.",
+        1076,
+    )?))
+}
 
 pub fn round<'gc>(
     activation: &mut Activation<'_, 'gc>,
