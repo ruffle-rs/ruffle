@@ -81,3 +81,7 @@ inherits = "release"
 
 [profile.web-wasm-extensions]
 inherits = "release"
+
+[package.metadata.appimage]
+# To include ALL shared libraries, for compatibility on any Linux system
+auto_link = true
