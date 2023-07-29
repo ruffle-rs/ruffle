@@ -1,0 +1,30 @@
+var error = new Error() PASSED!
+var ee = new EvalError() PASSED!
+var te = new TypeError() PASSED!
+var re = new ReferenceError() PASSED!
+var ra = new RangeError() PASSED!
+var error = new Error('test') PASSED!
+var ee = new EvalError('eval error') PASSED!
+var te = new TypeError('type error') PASSED!
+var re = new ReferenceError('reference error') PASSED!
+var ra = new RangeError('range error') PASSED!
+typeof new Error() PASSED!
+typeof new EvalError() PASSED!
+typeof new TypeError() PASSED!
+typeof new ReferenceError() PASSED!
+typeof new RangeError() PASSED!
+typeof new Error('test') PASSED!
+typeof new EvalError('test') PASSED!
+typeof new TypeError('test') PASSED!
+typeof new ReferenceError('test') PASSED!
+typeof new RangeError('test') PASSED!
+(err = new Error(), err.getClass = Object.prototype.toString, err.getClass() ) PASSED!
+(err = new EvalError(), err.getClass = Object.prototype.toString, err.getClass() ) PASSED!
+(err = new TypeError(), err.getClass = Object.prototype.toString, err.getClass() ) PASSED!
+(err = new ReferenceError(), err.getClass = Object.prototype.toString, err.getClass() ) PASSED!
+(err = new RangeError(), err.getClass = Object.prototype.toString, err.getClass() ) PASSED!
+(err = new Error('test'), err.getClass = Object.prototype.toString, err.getClass() ) PASSED!
+(err = new EvalError('test'), err.getClass = Object.prototype.toString, err.getClass() ) PASSED!
+(err = new TypeError('test'), err.getClass = Object.prototype.toString, err.getClass() ) PASSED!
+(err = new ReferenceError('test'), err.getClass = Object.prototype.toString, err.getClass() ) PASSED!
+(err = new RangeError('test'), err.getClass = Object.prototype.toString, err.getClass() ) PASSED!
