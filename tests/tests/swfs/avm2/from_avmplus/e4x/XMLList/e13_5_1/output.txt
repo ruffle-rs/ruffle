@@ -1,0 +1,25 @@
+1 PASSED!
+2 PASSED!
+3 PASSED!
+4 PASSED!
+5 PASSED!
+6 PASSED!
+7 PASSED!
+8 PASSED!
+9 PASSED!
+10 PASSED!
+11 PASSED!
+XMLList(null).toString() PASSED!
+typeof XMLList(null) PASSED!
+XMLList(null) instanceof XMLList PASSED!
+XMLList(undefined).toString() PASSED!
+typeof XMLList(undefined) PASSED!
+XMLList(undefined) instanceof XMLList PASSED!
+XMLList().toString() PASSED!
+typeof XMLList() PASSED!
+XMLList() instanceof XMLList PASSED!
+XMLList(thisXML).toString() PASSED!
+typeof XMLList(thisXML) PASSED!
+XMLList(xl) === xl PASSED!
+XMLList(x1).length() PASSED!
+XMLList(x1).contains(x1) PASSED!

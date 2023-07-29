@@ -1,0 +1,5 @@
+XML.ignoreComments = false, MYXML = new XMLList(xmlDoc), MYXML.comments().toString() PASSED!
+XML.ignoreComments = false, MYXML = new XMLList(xmlDoc), MYXML.comments() instanceof XMLList PASSED!
+XML.ignoreComments = false, MYXML = new XMLList(xmlDoc), MYXML.comments() instanceof XML PASSED!
+XML.ignoreComments = false, MYXML = new XMLList(xmlDoc), MYXML.comments().length() PASSED!
+XML.ignoreComments = false, MYXML = new XMLList(xmlDoc), XML.ignoreComments = true, MYXML.comments().toString() PASSED!

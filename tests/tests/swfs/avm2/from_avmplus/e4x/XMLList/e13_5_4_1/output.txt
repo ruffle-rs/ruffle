@@ -1,0 +1,2 @@
+XMLList.prototype.constructor == XMLList PASSED!
+XMLList.prototype.constructor === XMLList PASSED!
