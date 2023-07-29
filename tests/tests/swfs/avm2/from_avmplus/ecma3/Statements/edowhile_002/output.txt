@@ -1,0 +1,12 @@
+do while ( 1 < 0 ) PASSED!
+breaking out of a do... while loop PASSED!
+breaking out of a labeled do...while loop PASSED!
+do while ( 1 < 1 ) PASSED!
+breaking out of a do... while loop PASSED!
+breaking out of a labeled do...while loop PASSED!
+do while ( 1 < -1 ) PASSED!
+breaking out of a do... while loop PASSED!
+breaking out of a labeled do...while loop PASSED!
+do while ( 5 < 5 ) PASSED!
+breaking out of a do... while loop PASSED!
+breaking out of a labeled do...while loop PASSED!

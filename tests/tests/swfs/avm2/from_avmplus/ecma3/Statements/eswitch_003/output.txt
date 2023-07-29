@@ -1,0 +1,9 @@
+switch with no breaks:  input is a PASSED!
+switch with no breaks:  input is b PASSED!
+switch with no breaks:  input is c PASSED!
+switch with no breaks:  input is d PASSED!
+switch with no breaks:  input is v PASSED!
+switch with no breaks:  input is w PASSED!
+switch with no breaks:  input is x PASSED!
+switch with no breaks:  input is y PASSED!
+switch with no breaks:  input is z PASSED!
