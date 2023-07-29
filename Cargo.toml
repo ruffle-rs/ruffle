@@ -43,9 +43,10 @@ version = "0.1.0"
 # gc-arena = { git = "https://github.com/kyren/gc-arena", rev = "efd89fc683c6bb456af3e226c33763cb822645e9" }
 tracing = "0.1.37"
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
-naga = { version = "0.12.3", features = ["validate", "wgsl-out"] }
-naga_oil = "0.8.1"
-wgpu = "0.16.3"
+naga = { version = "0.13.0", features = ["validate", "wgsl-out"] }
+naga_oil = "0.9.0"
+wgpu = { version = "0.17.0" }
+egui = { git = "https://github.com/emilk/egui", rev = "98087029e020a1b2d78a4eb840d0a8505340ecad" }
 
 # Don't optimize build scripts and macros.
 [profile.release.build-override]
