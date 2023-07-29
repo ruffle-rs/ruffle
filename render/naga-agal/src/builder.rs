@@ -1,9 +1,10 @@
 use std::io::Read;
+use std::num::NonZeroU32;
 
 use naga::{
-    AddressSpace, ArraySize, Block, BuiltIn, Constant, ConstantInner, DerivativeControl,
-    EntryPoint, FunctionArgument, FunctionResult, GlobalVariable, ImageClass, ImageDimension,
-    ResourceBinding, ScalarValue, ShaderStage, StructMember, SwizzleComponent, UnaryOperator,
+    AddressSpace, ArraySize, Block, BuiltIn, Constant, DerivativeControl, EntryPoint,
+    FunctionArgument, FunctionResult, GlobalVariable, ImageClass, ImageDimension, Literal,
+    Override, ResourceBinding, ShaderStage, StructMember, SwizzleComponent, UnaryOperator,
 };
 use naga::{BinaryOperator, MathFunction};
 use naga::{
@@ -103,6 +104,12 @@ pub(crate) struct NagaBuilder<'a> {
     // The Naga representation of `texture_cube<f32>`
     imagecube: Handle<Type>,
 
+    // The Naga representation of `f32`
+    f32_type: Handle<Type>,
+
+    // The Naga representation of `u32`
+    u32_type: Handle<Type>,
+
     // For a fragment shader, our 4 bound texture samplers
     texture_samplers: Option<TextureSamplers>,
 
@@ -192,14 +199,17 @@ impl VertexAttributeFormat {
                     }
                 }
 
+                let const_expr_f32_zero = builder
+                    .module
+                    .const_expressions
+                    .append(Expression::Literal(Literal::F32(0.0)), Span::UNDEFINED);
+
                 let constant_zero = builder.module.constants.append(
                     Constant {
                         name: None,
-                        specialization: None,
-                        inner: ConstantInner::Scalar {
-                            width: 4,
-                            value: ScalarValue::Float(0.0),
-                        },
+                        r#override: Override::None,
+                        ty: builder.f32_type,
+                        init: const_expr_f32_zero,
                     },
                     Span::UNDEFINED,
                 );
@@ -212,14 +222,18 @@ impl VertexAttributeFormat {
                             .append(Expression::Constant(constant_zero), Span::UNDEFINED),
                     );
                 }
+
+                let const_expr_f32_1 = builder
+                    .module
+                    .const_expressions
+                    .append(Expression::Literal(Literal::F32(1.0)), Span::UNDEFINED);
+
                 let constant_one = builder.module.constants.append(
                     Constant {
                         name: None,
-                        specialization: None,
-                        inner: ConstantInner::Scalar {
-                            width: 4,
-                            value: ScalarValue::Float(1.0),
-                        },
+                        r#override: Override::None,
+                        ty: builder.f32_type,
+                        init: const_expr_f32_1,
                     },
                     Span::UNDEFINED,
                 );
@@ -418,6 +432,28 @@ impl<'a> NagaBuilder<'a> {
             Span::UNDEFINED,
         );
 
+        let f32_type = module.types.insert(
+            Type {
+                name: None,
+                inner: TypeInner::Scalar {
+                    kind: ScalarKind::Float,
+                    width: 4,
+                },
+            },
+            Span::UNDEFINED,
+        );
+
+        let u32_type = module.types.insert(
+            Type {
+                name: None,
+                inner: TypeInner::Scalar {
+                    kind: ScalarKind::Uint,
+                    width: 4,
+                },
+            },
+            Span::UNDEFINED,
+        );
+
         // The return type always has at least one component - the vec4f that's the 'main'
         // output of our shader (the position for the vertex shader, and the color for the fragment shader)
         let return_type = match shader_config.shader_type {
@@ -485,21 +521,6 @@ impl<'a> NagaBuilder<'a> {
             Span::UNDEFINED,
         );
 
-        let num_const_registers = module.constants.append(
-            Constant {
-                name: None,
-                specialization: None,
-                inner: ConstantInner::Scalar {
-                    width: 4,
-                    value: ScalarValue::Uint(match shader_config.shader_type {
-                        ShaderType::Vertex => VERTEX_PROGRAM_CONTANTS,
-                        ShaderType::Fragment => FRAGMENT_PROGRAM_CONSTANTS,
-                    }),
-                },
-            },
-            Span::UNDEFINED,
-        );
-
         let binding_num = match shader_config.shader_type {
             ShaderType::Vertex => 0,
             ShaderType::Fragment => 1,
@@ -518,7 +539,13 @@ impl<'a> NagaBuilder<'a> {
                         name: None,
                         inner: TypeInner::Array {
                             base: vec4f,
-                            size: ArraySize::Constant(num_const_registers),
+                            size: ArraySize::Constant(
+                                NonZeroU32::new(match shader_config.shader_type {
+                                    ShaderType::Vertex => VERTEX_PROGRAM_CONTANTS as u32,
+                                    ShaderType::Fragment => FRAGMENT_PROGRAM_CONSTANTS as u32,
+                                })
+                                .unwrap(),
+                            ),
                             stride: std::mem::size_of::<f32>() as u32 * 4,
                         },
                     },
@@ -592,6 +619,8 @@ impl<'a> NagaBuilder<'a> {
             matrix4x3f,
             matrix4x4f,
             vec4f,
+            f32_type,
+            u32_type,
             constant_registers,
             texture_samplers,
             texture_bindings: [None; 8],
@@ -660,14 +689,16 @@ impl<'a> NagaBuilder<'a> {
     }
 
     fn emit_const_register_load(&mut self, index: usize) -> Result<Handle<Expression>> {
+        let const_value_expr = self.module.const_expressions.append(
+            Expression::Literal(Literal::U32(index as u32)),
+            Span::UNDEFINED,
+        );
         let index_const = self.module.constants.append(
             Constant {
                 name: None,
-                specialization: None,
-                inner: ConstantInner::Scalar {
-                    width: 4,
-                    value: ScalarValue::Uint(index as u64),
-                },
+                r#override: Override::None,
+                ty: self.u32_type,
+                init: const_value_expr,
             },
             Span::UNDEFINED,
         );
@@ -807,14 +838,17 @@ impl<'a> NagaBuilder<'a> {
                             convert: Some(4),
                         });
 
+                        let const_indirect_offset = self.module.const_expressions.append(
+                            Expression::Literal(Literal::U32(source.indirect_offset as u32)),
+                            Span::UNDEFINED,
+                        );
+
                         let offset_constant = self.module.constants.append(
                             Constant {
                                 name: None,
-                                specialization: None,
-                                inner: ConstantInner::Scalar {
-                                    width: 4,
-                                    value: ScalarValue::Uint(source.indirect_offset as u64),
-                                },
+                                r#override: Override::None,
+                                ty: self.u32_type,
+                                init: const_indirect_offset,
                             },
                             Span::UNDEFINED,
                         );
@@ -1567,15 +1601,18 @@ impl<'a> NagaBuilder<'a> {
                     index: 0,
                 });
 
+                let constant_f32_zero = self
+                    .module
+                    .const_expressions
+                    .append(Expression::Literal(Literal::F32(0.0)), Span::UNDEFINED);
+
                 // Check `source < 0.0`.
                 let constant_zero = self.module.constants.append(
                     Constant {
                         name: None,
-                        specialization: None,
-                        inner: ConstantInner::Scalar {
-                            width: 4,
-                            value: ScalarValue::Float(0.0),
-                        },
+                        r#override: Override::None,
+                        ty: self.f32_type,
+                        init: constant_f32_zero,
                     },
                     Span::UNDEFINED,
                 );

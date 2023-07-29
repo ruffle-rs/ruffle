@@ -10,9 +10,9 @@ version.workspace = true
 [dependencies]
 clap = { version = "4.4.2", features = ["derive"] }
 cpal = "0.15.2"
-egui = "0.22.0"
-egui-wgpu = { version = "0.22.0", features = ["winit"] }
-egui-winit = "0.22.0"
+egui = { workspace = true }
+egui-wgpu = { git = "https://github.com/emilk/egui", rev = "98087029e020a1b2d78a4eb840d0a8505340ecad", features = ["winit"] }
+egui-winit = { git = "https://github.com/emilk/egui", rev = "98087029e020a1b2d78a4eb840d0a8505340ecad" }
 fontdb = "0.14"
 ruffle_core = { path = "../core", features = ["audio", "clap", "mp3", "nellymoser", "default_compatibility_rules", "egui"] }
 ruffle_render = { path = "../render", features = ["clap"] }

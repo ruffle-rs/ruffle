@@ -1,13 +1,12 @@
-use std::{sync::OnceLock, vec};
+use std::{num::NonZeroU32, sync::OnceLock, vec};
 
 use anyhow::Result;
 use naga::{
     valid::{Capabilities, ValidationFlags, Validator},
-    AddressSpace, ArraySize, BinaryOperator, Binding, Block, BuiltIn, Constant, ConstantInner,
-    EntryPoint, Expression, Function, FunctionArgument, FunctionResult, GlobalVariable, Handle,
-    ImageClass, ImageDimension, ImageQuery, LocalVariable, MathFunction, Module,
-    RelationalFunction, ResourceBinding, ScalarKind, ScalarValue, ShaderStage, Span, Statement,
-    SwizzleComponent, Type, TypeInner, VectorSize,
+    AddressSpace, ArraySize, BinaryOperator, Binding, Block, BuiltIn, EntryPoint, Expression,
+    Function, FunctionArgument, FunctionResult, GlobalVariable, Handle, ImageClass, ImageDimension,
+    ImageQuery, Literal, LocalVariable, MathFunction, Module, RelationalFunction, ResourceBinding,
+    ScalarKind, ShaderStage, Span, Statement, SwizzleComponent, Type, TypeInner, VectorSize,
 };
 use naga_oil::compose::{Composer, NagaModuleDescriptor};
 use ruffle_render::pixel_bender::{
@@ -298,67 +297,28 @@ impl<'a> ShaderBuilder<'a> {
             })
             .collect::<Vec<_>>();
 
-        let const_zeroi32 = module.constants.append(
-            Constant {
-                name: None,
-                specialization: None,
-                inner: ConstantInner::Scalar {
-                    width: 4,
-                    value: ScalarValue::Sint(0),
-                },
-            },
-            Span::UNDEFINED,
-        );
         let zeroi32 = func
             .expressions
-            .append(Expression::Constant(const_zeroi32), Span::UNDEFINED);
+            .append(Expression::Literal(Literal::I32(0)), Span::UNDEFINED);
 
-        let const_zerof32 = module.constants.append(
-            Constant {
-                name: None,
-                specialization: None,
-                inner: ConstantInner::Scalar {
-                    width: 4,
-                    value: ScalarValue::Float(0.0),
-                },
-            },
-            Span::UNDEFINED,
-        );
         let zerof32 = func
             .expressions
-            .append(Expression::Constant(const_zerof32), Span::UNDEFINED);
-
-        let const_zerovec4f = module.constants.append(
-            Constant {
-                name: None,
-                specialization: None,
-                inner: ConstantInner::Composite {
-                    ty: vec4f,
-                    components: vec![const_zerof32, const_zerof32, const_zerof32, const_zerof32],
-                },
-            },
-            Span::UNDEFINED,
-        );
-
-        let zerovec4f = func
-            .expressions
-            .append(Expression::Constant(const_zerovec4f), Span::UNDEFINED);
-
-        let const_onef32 = module.constants.append(
-            crate::Constant {
-                name: None,
-                specialization: None,
-                inner: crate::ConstantInner::Scalar {
-                    width: 4,
-                    value: crate::ScalarValue::Float(1.0),
-                },
-            },
-            Span::UNDEFINED,
-        );
+            .append(Expression::Literal(Literal::F32(0.0)), Span::UNDEFINED);
 
         let onef32 = func
             .expressions
-            .append(Expression::Constant(const_onef32), Span::UNDEFINED);
+            .append(Expression::Literal(Literal::F32(1.0)), Span::UNDEFINED);
+
+        let mut blocks = vec![BlockStackEntry::Normal(Block::new())];
+
+        let zerovec4f = evaluate_expr(
+            &mut func,
+            &mut blocks,
+            Expression::Compose {
+                ty: vec4f,
+                components: vec![zerof32, zerof32, zerof32, zerof32],
+            },
+        );
 
         let temp_vec4f_local = func.local_variables.append(
             LocalVariable {
@@ -396,7 +356,7 @@ impl<'a> ShaderBuilder<'a> {
             textures: Vec::new(),
             float_registers: Vec::new(),
             int_registers: Vec::new(),
-            blocks: vec![BlockStackEntry::Normal(Block::new())],
+            blocks,
         };
 
         let zeroed_out_of_range_mode_global = builder.module.global_variables.append(
@@ -607,30 +567,6 @@ impl<'a> ShaderBuilder<'a> {
         // These globals must have at least one entry in the array to satisfy naga,
         // even if we don't have any parameters of that type.
 
-        let num_floats_constant = self.module.constants.append(
-            Constant {
-                name: None,
-                specialization: None,
-                inner: naga::ConstantInner::Scalar {
-                    width: 4,
-                    value: naga::ScalarValue::Uint(num_vec4fs.max(1) as u64),
-                },
-            },
-            Span::UNDEFINED,
-        );
-
-        let num_ints_constant = self.module.constants.append(
-            Constant {
-                name: None,
-                specialization: None,
-                inner: naga::ConstantInner::Scalar {
-                    width: 4,
-                    value: naga::ScalarValue::Uint(num_vec4is.max(1) as u64),
-                },
-            },
-            Span::UNDEFINED,
-        );
-
         let shader_float_parameters = self.module.global_variables.append(
             GlobalVariable {
                 name: Some("shader_float_parameters".to_string()),
@@ -644,7 +580,7 @@ impl<'a> ShaderBuilder<'a> {
                         name: None,
                         inner: TypeInner::Array {
                             base: self.vec4f,
-                            size: ArraySize::Constant(num_floats_constant),
+                            size: ArraySize::Constant(NonZeroU32::new(num_vec4fs.max(1)).unwrap()),
                             stride: std::mem::size_of::<f32>() as u32 * 4,
                         },
                     },
@@ -668,7 +604,7 @@ impl<'a> ShaderBuilder<'a> {
                         name: None,
                         inner: TypeInner::Array {
                             base: self.vec4i,
-                            size: ArraySize::Constant(num_ints_constant),
+                            size: ArraySize::Constant(NonZeroU32::new(num_vec4is.max(1)).unwrap()),
                             stride: std::mem::size_of::<i32>() as u32 * 4,
                         },
                     },
@@ -949,25 +885,9 @@ impl<'a> ShaderBuilder<'a> {
                     let evaluated = match opcode {
                         Opcode::Mov => src,
                         Opcode::Rcp => {
-                            let const_one = self.module.constants.append(
-                                Constant {
-                                    name: None,
-                                    specialization: None,
-                                    inner: naga::ConstantInner::Scalar {
-                                        width: 4,
-                                        value: naga::ScalarValue::Float(1.0),
-                                    },
-                                },
-                                Span::UNDEFINED,
-                            );
-                            let expr_one = self
-                                .func
-                                .expressions
-                                .append(Expression::Constant(const_one), Span::UNDEFINED);
-
                             let vec_one = self.evaluate_expr(Expression::Splat {
                                 size: naga::VectorSize::Quad,
-                                value: expr_one,
+                                value: self.onef32,
                             });
 
                             // Perform 'vec4(1.0, 1.0, 1.0. 1.0) / src'
@@ -1368,48 +1288,24 @@ impl<'a> ShaderBuilder<'a> {
                     self.emit_dest_store(sample_result, dst)?;
                 }
                 Operation::LoadFloat { dst, val } => {
-                    let const_val = self.module.constants.append(
-                        crate::Constant {
-                            name: None,
-                            specialization: None,
-                            inner: ConstantInner::Scalar {
-                                width: 4,
-                                value: ScalarValue::Float(*val as f64),
-                            },
-                        },
-                        Span::UNDEFINED,
-                    );
-                    let const_expr = self
+                    let val_expr = self
                         .func
                         .expressions
-                        .append(Expression::Constant(const_val), Span::UNDEFINED);
-
+                        .append(Expression::Literal(Literal::F32(*val)), Span::UNDEFINED);
                     let const_vec = self.evaluate_expr(Expression::Splat {
                         size: naga::VectorSize::Quad,
-                        value: const_expr,
+                        value: val_expr,
                     });
                     self.emit_dest_store(const_vec, dst)?;
                 }
                 Operation::LoadInt { dst, val } => {
-                    let const_val = self.module.constants.append(
-                        crate::Constant {
-                            name: None,
-                            specialization: None,
-                            inner: ConstantInner::Scalar {
-                                width: 4,
-                                value: ScalarValue::Sint(*val as i64),
-                            },
-                        },
-                        Span::UNDEFINED,
-                    );
-                    let const_expr = self
+                    let val_expr = self
                         .func
                         .expressions
-                        .append(Expression::Constant(const_val), Span::UNDEFINED);
-
+                        .append(Expression::Literal(Literal::I32(*val)), Span::UNDEFINED);
                     let const_vec = self.evaluate_expr(Expression::Splat {
                         size: naga::VectorSize::Quad,
-                        value: const_expr,
+                        value: val_expr,
                     });
                     self.emit_dest_store(const_vec, dst)?;
                 }
@@ -1616,11 +1512,7 @@ impl<'a> ShaderBuilder<'a> {
 
     /// Creates a `Statement::Emit` covering `expr`
     fn evaluate_expr(&mut self, expr: Expression) -> Handle<Expression> {
-        let prev_len = self.func.expressions.len();
-        let expr = self.func.expressions.append(expr, Span::UNDEFINED);
-        let range = self.func.expressions.range_from(prev_len);
-        self.push_statement(Statement::Emit(range));
-        expr
+        evaluate_expr(&mut self.func, &mut self.blocks, expr)
     }
 
     /// Normally, we pad all loads (including scalar loads) to a vec4, and operate component-wise
@@ -1770,22 +1662,7 @@ impl<'a> ShaderBuilder<'a> {
     /// Pushes a statement, taking into account our current 'if' block.
     /// Use this instead of `self.func.body.push`
     fn push_statement(&mut self, stmt: Statement) {
-        let block = match self.blocks.last_mut().unwrap() {
-            BlockStackEntry::Normal(block) => block,
-            BlockStackEntry::IfElse {
-                after_if,
-                after_else,
-                in_after_if,
-                condition: _,
-            } => {
-                if *in_after_if {
-                    after_if
-                } else {
-                    after_else
-                }
-            }
-        };
-        block.push(stmt, Span::UNDEFINED);
+        push_statement(&mut self.blocks, stmt)
     }
 
     // Loads a Matrix with a size determined by `channel`. Each column of the matrix
@@ -1913,4 +1790,35 @@ fn to_wgsl(module: &naga::Module) -> String {
 
     writer.write(module, &module_info).expect("Writing failed");
     out
+}
+
+fn evaluate_expr(
+    func: &mut Function,
+    blocks: &mut [BlockStackEntry],
+    expr: Expression,
+) -> Handle<Expression> {
+    let prev_len = func.expressions.len();
+    let expr = func.expressions.append(expr, Span::UNDEFINED);
+    let range = func.expressions.range_from(prev_len);
+    push_statement(blocks, Statement::Emit(range));
+    expr
+}
+
+fn push_statement(blocks: &mut [BlockStackEntry], stmt: Statement) {
+    let block = match blocks.last_mut().unwrap() {
+        BlockStackEntry::Normal(block) => block,
+        BlockStackEntry::IfElse {
+            after_if,
+            after_else,
+            in_after_if,
+            condition: _,
+        } => {
+            if *in_after_if {
+                after_if
+            } else {
+                after_else
+            }
+        }
+    };
+    block.push(stmt, Span::UNDEFINED);
 }
