@@ -1,0 +1,4 @@
+typeof Boolean.prototype == typeof( new Object ) PASSED!
+typeof( Boolean.prototype ) PASSED!
+Boolean.prototype.toString = Object.prototype.toString; Boolean.prototype.toString() PASSED!
+Boolean.prototype.valueOf() PASSED!

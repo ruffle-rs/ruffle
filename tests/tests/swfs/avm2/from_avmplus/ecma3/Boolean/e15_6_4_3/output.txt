@@ -1,0 +1,22 @@
+(new Boolean(1)).valueOf() PASSED!
+(new Boolean(0)).valueOf() PASSED!
+(new Boolean(-1)).valueOf() PASSED!
+(new Boolean('1')).valueOf() PASSED!
+(new Boolean('0')).valueOf() PASSED!
+(new Boolean(true)).valueOf() PASSED!
+(new Boolean(false)).valueOf() PASSED!
+(new Boolean('true')).valueOf() PASSED!
+(new Boolean('false')).valueOf() PASSED!
+(new Boolean('')).valueOf() PASSED!
+(new Boolean(null)).valueOf() PASSED!
+(new Boolean(void(0))).valueOf() PASSED!
+(new Boolean(-Infinity)).valueOf() PASSED!
+(new Boolean(NaN)).valueOf() PASSED!
+(new Boolean()).valueOf() PASSED!
+(new Boolean(x=1)).valueOf() PASSED!
+(new Boolean(x=0)).valueOf() PASSED!
+(new Boolean(x=false)).valueOf() PASSED!
+(new Boolean(x=true)).valueOf() PASSED!
+(new Boolean(x=null)).valueOf() PASSED!
+(new Boolean(x='')).valueOf() PASSED!
+(new Boolean(x=' ')).valueOf() PASSED!

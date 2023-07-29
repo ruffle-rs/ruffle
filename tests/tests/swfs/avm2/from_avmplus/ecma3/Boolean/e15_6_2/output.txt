@@ -1,0 +1,57 @@
+typeof (new Boolean(1)) PASSED!
+(new Boolean(1)).constructor PASSED!
+TESTBOOL.toString() PASSED!
+(new Boolean(1)).valueOf() PASSED!
+typeof new Boolean(1) PASSED!
+(new Boolean(0)).constructor PASSED!
+TESTBOOL.toString() PASSED!
+(new Boolean(0)).valueOf() PASSED!
+typeof new Boolean(0) PASSED!
+(new Boolean(-1)).constructor PASSED!
+TESTBOOL.toString() PASSED!
+(new Boolean(-1)).valueOf() PASSED!
+typeof new Boolean(-1) PASSED!
+(new Boolean('')).constructor PASSED!
+TESTBOOL.toString() PASSED!
+(new Boolean('')).valueOf() PASSED!
+typeof new Boolean('') PASSED!
+(new Boolean('1')).constructor PASSED!
+TESTBOOL.toString() PASSED!
+(new Boolean('1')).valueOf() PASSED!
+typeof new Boolean('1') PASSED!
+(new Boolean('0')).constructor PASSED!
+TESTBOOL.toString() PASSED!
+(new Boolean('0')).valueOf() PASSED!
+typeof new Boolean('0') PASSED!
+(new Boolean('-1')).constructor PASSED!
+TESTBOOL.toString() PASSED!
+(new Boolean('-1')).valueOf() PASSED!
+typeof new Boolean('-1') PASSED!
+(new Boolean(new Boolean(true))).constructor PASSED!
+TESTBOOL.toString() PASSED!
+(new Boolean(new Boolean(true))).valueOf() PASSED!
+typeof new Boolean(new Boolean(true)) PASSED!
+(new Boolean(Number.NaN)).constructor PASSED!
+TESTBOOL.toString() PASSED!
+(new Boolean(Number.NaN)).valueOf() PASSED!
+typeof new Boolean(Number.NaN) PASSED!
+(new Boolean(null)).constructor PASSED!
+TESTBOOL.toString() PASSED!
+(new Boolean(null)).valueOf() PASSED!
+typeof new Boolean(null) PASSED!
+(new Boolean(void 0)).constructor PASSED!
+TESTBOOL.toString() PASSED!
+(new Boolean(void 0)).valueOf() PASSED!
+typeof new Boolean(void 0) PASSED!
+(new Boolean(Number.POSITIVE_INFINITY)).constructor PASSED!
+TESTBOOL.toString() PASSED!
+(new Boolean(Number.POSITIVE_INFINITY)).valueOf() PASSED!
+typeof new Boolean(Number.POSITIVE_INFINITY) PASSED!
+(new Boolean(Number.NEGATIVE_INFINITY)).constructor PASSED!
+TESTBOOL.toString() PASSED!
+(new Boolean(Number.NEGATIVE_INFINITY)).valueOf() PASSED!
+typeof new Boolean(Number.NEGATIVE_INFINITY) PASSED!
+(new Boolean(Number.NEGATIVE_INFINITY)).constructor PASSED!
+15.6.2.2 TESTBOOL.toString() PASSED!
+15.6.2.2 (new Boolean()).valueOf() PASSED!
+15.6.2.2 typeof new Boolean() PASSED!

@@ -1,0 +1,2 @@
+var BOOL_PROTO = Boolean.prototype; Boolean.prototype; Boolean.prototype == BOOL_PROTO PASSED!
+Trying to verify that Boolean.prototype is read-only PASSED!
