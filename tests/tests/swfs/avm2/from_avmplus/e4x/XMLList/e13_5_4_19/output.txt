@@ -1,0 +1,4 @@
+MYXML = new XMLList(xmlDoc), MYXML.text().toString() PASSED!
+MYXML = new XMLList('<XML></XML>'), MYXML.text().toString() PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.text().toString() PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.text().toString() PASSED!

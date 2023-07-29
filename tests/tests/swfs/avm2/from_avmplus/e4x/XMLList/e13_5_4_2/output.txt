@@ -1,0 +1,27 @@
+2 PASSED!
+3 PASSED!
+4 PASSED!
+5 PASSED!
+6 PASSED!
+7 PASSED!
+8 PASSED!
+9 PASSED!
+10 PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.attribute('foo') instanceof XMLList PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.attribute('foo') instanceof XML PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.attribute('foo').length() PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.attribute('foo').toString() PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.attribute('foo')[0].nodeKind() PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.attribute('two') instanceof XMLList PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.attribute('two') instanceof XML PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.attribute('two').length() PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.attribute('two').toString() PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.attribute('two')[0].nodeKind() PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.attribute('DOESNOTEXIST') instanceof XMLList PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.attribute('DOESNOTEXIST') instanceof XML PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.attribute('DOESNOTEXIST').length() PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.attribute('DOESNOTEXIST').toString() PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.attribute('TEAM') instanceof XMLList PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.attribute('TEAM') instanceof XML PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.attribute('TEAM').toString() PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.attribute('TEAM').length() PASSED!

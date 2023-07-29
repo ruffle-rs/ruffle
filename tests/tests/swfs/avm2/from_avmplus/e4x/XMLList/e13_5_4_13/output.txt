@@ -1,0 +1,27 @@
+2 PASSED!
+3 PASSED!
+4 PASSED!
+5 PASSED!
+6 PASSED!
+7 PASSED!
+8 PASSED!
+9 PASSED!
+10 PASSED!
+11 PASSED!
+12 PASSED!
+13 PASSED!
+14 PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.hasSimpleContent() PASSED!
+MYXML = new XML(xmlDoc), MYXML.children().length() PASSED!
+MYXML = new XML(xmlDoc), MYXML.children()[0].nodeKind() PASSED!
+MYXML = new XML(xmlDoc), MYXML.children()[0].nodeKind() PASSED!
+MYXML = new XML(xmlDoc), MYXML.children()[0].hasSimpleContent() PASSED!
+MYXML = new XML(xmlDoc), MYXML.children().length() PASSED!
+MYXML = new XML(xmlDoc), MYXML.children()[0].nodeKind() PASSED!
+MYXML = new XML(xmlDoc), MYXML.children()[0].hasSimpleContent() PASSED!
+MYXML = new XML(xmlDoc), MYXML.children().length() PASSED!
+MYXML = new XML(xmlDoc), MYXML.children()[0].nodeKind() PASSED!
+MYXML = new XML(xmlDoc), MYXML.children()[0].hasSimpleContent() PASSED!
+MYXML = new XML(xmlDoc), MYXML.children().length() PASSED!
+MYXML = new XML(xmlDoc), MYXML.children()[0].nodeKind() PASSED!
+MYXML = new XML(xmlDoc), MYXML.children()[0].hasSimpleContent() PASSED!

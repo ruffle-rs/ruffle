@@ -1,0 +1,10 @@
+2 PASSED!
+3 PASSED!
+4 PASSED!
+MYXML = new XMLList(xmlDoc), XMLCOPY = MYXML.copy() PASSED!
+MYXML = new XMLList(null), XMLCOPY = MYXML.copy() PASSED!
+MYXML = new XMLList(undefined), XMLCOPY = MYXML.copy() PASSED!
+MYXML = new XMLList(), XMLCOPY = MYXML.copy() PASSED!
+MYXML = new XMLList(xmlDoc), XMLCOPY = MYXML.Team.copy() PASSED!
+MYXML == MYXML.copy() PASSED!
+MYXML == MYXML2 where MYXML2 is a copy that has been changed PASSED!

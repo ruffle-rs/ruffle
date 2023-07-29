@@ -1,0 +1,4 @@
+MYXML = new XMLList(xmlDoc),MYXML.valueOf() === MYXML PASSED!
+MYXML = new XMLList(),MYXML.valueOf() === MYXML PASSED!
+MYXML = new XMLList(''),MYXML.valueOf() === MYXML PASSED!
+MYXML = new XMLList('foo'),MYXML.valueOf() === MYXML PASSED!
