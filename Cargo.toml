@@ -82,7 +82,9 @@ inherits = "release"
 [profile.web-wasm-extensions]
 inherits = "release"
 
+[package]
+name = "ruffle_desktop_appimage"
+
 [package.metadata.appimage]
-name = "Ruffle"
 # To include ALL shared libraries, for compatibility on any Linux system
 auto_link = true
