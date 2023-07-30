@@ -34,9 +34,6 @@ jobs:
       - name: Install Cargo AppImage
         run: cargo install cargo-appimage
         
-      - name: Cargo build
-        run: cargo build --package ruffle_desktop --release ${{matrix.DESKTOP_FEATURES && '--features' }} ${{matrix.DESKTOP_FEATURES}} ${{ matrix.target && '--target' }} ${{ matrix.target }} --verbose
-        
       - name: AppImage Export
         # APPIMAGE_EXTRACT_AND_RUN=1
         run: cargo appimage --package ruffle_desktop --verbose
