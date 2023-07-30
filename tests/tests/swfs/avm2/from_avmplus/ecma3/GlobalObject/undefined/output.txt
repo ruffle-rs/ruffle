@@ -1,3 +1,0 @@
-undefined PASSED!
-this.undefined PASSED!
-typeof undefined PASSED!

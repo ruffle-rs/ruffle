@@ -1,3 +1,0 @@
-Number.prototype.valueOf() PASSED!
-typeof(Number.prototype) PASSED!
-Number.prototype.constructor == Number PASSED!

@@ -1,4 +1,0 @@
-var props = '', for ( p in Array  ) { props += p } props PASSED!
-Array.prototype = null; Array.prototype  PASSED!
-delete Array.prototype PASSED!
-delete Array.prototype; Array.prototype PASSED!

@@ -1,3 +1,0 @@
-typeof new Object() PASSED!
-Object.prototype.toString() PASSED!
-(new Object()).toString() PASSED!

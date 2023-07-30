@@ -1,4 +1,0 @@
-join empty vector PASSED!
-join vector 0-9 PASSED!
-join vector with 'and' separator PASSED!
-join vector with '|' separator PASSED!

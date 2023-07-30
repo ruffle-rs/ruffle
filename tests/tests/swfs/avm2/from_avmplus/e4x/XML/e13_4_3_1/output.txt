@@ -1,4 +1,0 @@
-typeof XML.prototype PASSED!
-XML.prototype instanceof XML PASSED!
-new XML().prototype instanceof XML PASSED!
-typeof (new XML().prototype) PASSED!

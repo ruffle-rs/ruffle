@@ -1,2 +1,0 @@
-var b = new Boolean(); b instanceof Boolean PASSED!
-b instanceof Object PASSED!

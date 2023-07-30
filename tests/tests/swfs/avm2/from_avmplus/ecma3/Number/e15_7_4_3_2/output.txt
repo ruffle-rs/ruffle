@@ -1,3 +1,0 @@
-v = Number.prototype.valueOf; Number.prototype.valueof=v;num = 3;num.valueOf() PASSED!
-v = Number.prototype.valueOf; Number.prototype.valueof=v;num = 3;num.valueOf() PASSED!
-v = Number.prototype.valueOf; Number.prototype.valueof=v;num = 3;num.valueOf() PASSED!

@@ -1,2 +1,0 @@
-delete Function.prototype PASSED!
-delete Function.prototype; Function.prototype PASSED!

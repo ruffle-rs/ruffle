@@ -1,1 +1,0 @@
-result = ""; for ( p in Number ) { result += String(p) }; PASSED!

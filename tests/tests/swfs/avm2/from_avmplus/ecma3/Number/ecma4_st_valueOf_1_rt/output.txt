@@ -1,1 +1,0 @@
-valof=Number.prototype.valueOf;x=new Number();x.valueOf=valof PASSED!

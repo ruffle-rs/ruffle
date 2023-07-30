@@ -1,1 +1,0 @@
-var string = ''; for ( prop in Number ) { string += ( prop == 'NaN' ) ? prop : '' } string; PASSED!

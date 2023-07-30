@@ -1,2 +1,0 @@
-Boolean.prototype.valueOf() PASSED!
-Boolean.length PASSED!

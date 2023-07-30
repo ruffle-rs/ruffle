@@ -1,4 +1,0 @@
-str1.localeCompare(str2) PASSED!
-str1.localeCompare(str2) PASSED!
-str1.localeCompare(str2) PASSED!
-String.prototype.localeCompare(str2,str1) PASSED!

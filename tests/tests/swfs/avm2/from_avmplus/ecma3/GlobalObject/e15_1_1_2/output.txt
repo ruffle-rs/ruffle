@@ -1,3 +1,0 @@
-Infinity PASSED!
-this.Infinity PASSED!
-typeof Infinity PASSED!

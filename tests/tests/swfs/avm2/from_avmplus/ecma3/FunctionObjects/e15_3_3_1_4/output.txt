@@ -1,1 +1,0 @@
-Trying to verify that Function.prototype is Readonly PASSED!

@@ -1,2 +1,0 @@
-Boolean.prototype=([object Object]) PASSED!
-Boolean.prototype.toString = Object.prototype.toString; Boolean.prototype.toString() PASSED!

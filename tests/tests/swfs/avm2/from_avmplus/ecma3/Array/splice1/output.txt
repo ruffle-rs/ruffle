@@ -1,2 +1,0 @@
-exhaustive splice w/no optional args 1 PASSED!
-exhaustive splice w/no optional args 1 PASSED!

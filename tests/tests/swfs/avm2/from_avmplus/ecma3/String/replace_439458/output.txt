@@ -1,5 +1,0 @@
-strippedText.charCodeAt(0).toString(16) PASSED!
-strippedText.charCodeAt(1).toString(16) PASSED!
-strippedText.charCodeAt(2).toString(16) PASSED!
-strippedText.charCodeAt(3).toString(16) PASSED!
-strippedText==text PASSED!

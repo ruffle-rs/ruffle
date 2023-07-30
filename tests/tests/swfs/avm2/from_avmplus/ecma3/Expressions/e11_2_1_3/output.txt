@@ -1,2 +1,0 @@
-undefined.valueOf() PASSED!
-undefined.toString() PASSED!

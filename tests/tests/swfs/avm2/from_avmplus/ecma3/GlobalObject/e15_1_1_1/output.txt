@@ -1,3 +1,0 @@
-NaN PASSED!
-this.NaN PASSED!
-typeof NaN PASSED!

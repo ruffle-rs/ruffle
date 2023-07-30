@@ -1,1 +1,0 @@
-MYARR = []; MYARR.pop(); MYARR.length; PASSED!

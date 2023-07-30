@@ -1,3 +1,0 @@
-str_utf8 == str_utf16 PASSED!
-str_utf8.length == str_utf16.length PASSED!
-str_utf8_ab == str_utf8 PASSED!

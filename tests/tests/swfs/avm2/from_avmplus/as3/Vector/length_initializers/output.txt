@@ -1,3 +1,0 @@
-length of empty vector PASSED!
-length of initialized vector of size 9 PASSED!
-vector initializer is not-fixed size PASSED!

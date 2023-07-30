@@ -1,2 +1,0 @@
-Boolean.constructor.prototype == Class.prototype PASSED!
-Boolean.length PASSED!

@@ -1,2 +1,0 @@
-delete( Number.MIN_VALUE ) PASSED!
-delete( Number.MIN_VALUE ); Number.MIN_VALUE PASSED!

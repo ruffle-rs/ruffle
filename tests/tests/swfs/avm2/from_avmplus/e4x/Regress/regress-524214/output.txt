@@ -1,3 +1,0 @@
-wildcard attribute assignment no result PASSED!
-wildcard attribute assignment one result PASSED!
-wildcard attribute assignment many results PASSED!

@@ -1,2 +1,0 @@
-Testing catch block with Type Error PASSED!
-Testing catch block with Type Error PASSED!

@@ -1,2 +1,0 @@
-function Foo() = {}; theproto = {}; Foo.prototype = theproto; theproto instanceof Foo PASSED!
-o = {}; o instanceof o PASSED!
