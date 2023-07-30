@@ -261,6 +261,11 @@ pub fn perlin_noise<'gc>(
 
     let turb = Turbulence::from_seed(random_seed);
 
+    let base_freq = (
+        if base.0 == 0.0 { 0.0 } else { 1.0 / base.0 },
+        if base.1 == 0.0 { 0.0 } else { 1.0 / base.1 },
+    );
+
     for y in 0..write.height() {
         for x in 0..write.width() {
             let px = x as f64;
@@ -273,7 +278,7 @@ pub fn perlin_noise<'gc>(
                 noise[0] = turb.turbulence(
                     0,
                     (px, py),
-                    (1.0 / base.0, 1.0 / base.1),
+                    base_freq,
                     num_octaves,
                     fractal_noise,
                     stitch,
@@ -289,7 +294,7 @@ pub fn perlin_noise<'gc>(
                     turb.turbulence(
                         1,
                         (px, py),
-                        (1.0 / base.0, 1.0 / base.1),
+                        base_freq,
                         num_octaves,
                         fractal_noise,
                         stitch,
@@ -318,7 +323,7 @@ pub fn perlin_noise<'gc>(
                         *noise_c = turb.turbulence(
                             channel,
                             (px, py),
-                            (1.0 / base.0, 1.0 / base.1),
+                            base_freq,
                             num_octaves,
                             fractal_noise,
                             stitch,
