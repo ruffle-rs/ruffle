@@ -1,0 +1,2 @@
+e instanceof ReferenceError PASSED!
+e.toString().search(/ReferenceError/) PASSED!

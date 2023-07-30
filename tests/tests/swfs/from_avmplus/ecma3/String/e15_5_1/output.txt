@@ -1,0 +1,49 @@
+String('string primitive') PASSED!
+String(void 0) PASSED!
+String(null) PASSED!
+String(true) PASSED!
+String(false) PASSED!
+String(Boolean(true)) PASSED!
+String(Boolean(false)) PASSED!
+String(Boolean()) PASSED!
+String(new Array()) PASSED!
+String(new Array(1,2,3)) PASSED!
+String( Number.NaN ) PASSED!
+String( 0 ) PASSED!
+String( -0 ) PASSED!
+String( Number.POSITIVE_INFINITY ) PASSED!
+String( Number.NEGATIVE_INFINITY ) PASSED!
+String( -1 ) PASSED!
+String( 1 ) PASSED!
+String( 10 ) PASSED!
+String( 100 ) PASSED!
+String( 1000 ) PASSED!
+String( 10000 ) PASSED!
+String( 10000000000 ) PASSED!
+String( 10000000000000000000 ) PASSED!
+String( 100000000000000000000 ) PASSED!
+String( 12345 ) PASSED!
+String( 1234567890 ) PASSED!
+String( -1 ) PASSED!
+String( -10 ) PASSED!
+String( -100 ) PASSED!
+String( -1000 ) PASSED!
+String( -1000000000 ) PASSED!
+String( -1000000000000000 ) PASSED!
+String( -100000000000000000000 ) PASSED!
+String( -1000000000000000000000 ) PASSED!
+String( -12345 ) PASSED!
+String( -1234567890 ) PASSED!
+String( 1.0000001 ) PASSED!
+String( 1000000000000000000000 ) PASSED!
+String( 10000000000000000000000 ) PASSED!
+String( 1.2345 ) PASSED!
+String( 1.234567890 ) PASSED!
+String( .12345 ) PASSED!
+String( .012345 ) PASSED!
+String( .0012345 ) PASSED!
+String( .00012345 ) PASSED!
+String( .000012345 ) PASSED!
+String( .0000012345 ) PASSED!
+String( .00000012345 ) PASSED!
+15.5.2 String() PASSED!

@@ -1,0 +1,10 @@
+for...in loop in a with loop.  (true)[toString] == toString PASSED!
+for...in loop in a with loop.  (true)[value] == value PASSED!
+for...in loop in a with loop.  (true)[toNumber] == toNumber PASSED!
+for...in loop in a with loop.  (true)[toBoolean] == toBoolean PASSED!
+for...in loop in a with loop.  (true)[valueOf] == valueOf PASSED!
+with loop in a for...in loop.  (true)[toString] == toString PASSED!
+with loop in a for...in loop.  (true)[value] == value PASSED!
+with loop in a for...in loop.  (true)[toNumber] == toNumber PASSED!
+with loop in a for...in loop.  (true)[toBoolean] == toBoolean PASSED!
+with loop in a for...in loop.  (true)[valueOf] == valueOf PASSED!

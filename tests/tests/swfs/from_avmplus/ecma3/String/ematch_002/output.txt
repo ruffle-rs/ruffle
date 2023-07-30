@@ -1,0 +1,32 @@
+( Boston, Mass. 02134 ).match(/([d]{5})([- ]?[d]{4})?$/).length PASSED!
+( Boston, Mass. 02134 ).match(/([d]{5})([- ]?[d]{4})?$/).index PASSED!
+( Boston, Mass. 02134 ).match(/([d]{5})([- ]?[d]{4})?$/).input PASSED!
+( Boston, Mass. 02134 ).match(/([d]{5})([- ]?[d]{4})?$/)[0] PASSED!
+( Boston, Mass. 02134 ).match(/([d]{5})([- ]?[d]{4})?$/)[1] PASSED!
+( Boston, Mass. 02134 ).match(/([d]{5})([- ]?[d]{4})?$/)[2] PASSED!
+( Boston, Mass. 02134 ).match(/([d]{5})([- ]?[d]{4})?$/g).length PASSED!
+( Boston, Mass. 02134 ).match(/([d]{5})([- ]?[d]{4})?$/g)[0] PASSED!
+( Boston, MA 02134 ).match(re = /([d]{5})([- ]?[d]{4})?$/; re.lastIndex =0).length PASSED!
+( Boston, MA 02134 ).match(re = /([d]{5})([- ]?[d]{4})?$/; re.lastIndex =0).index PASSED!
+( Boston, MA 02134 ).match(re = /([d]{5})([- ]?[d]{4})?$/; re.lastIndex =0).input PASSED!
+( Boston, MA 02134 ).match(re = /([d]{5})([- ]?[d]{4})?$/; re.lastIndex =0)[0] PASSED!
+( Boston, MA 02134 ).match(re = /([d]{5})([- ]?[d]{4})?$/; re.lastIndex =0)[1] PASSED!
+( Boston, MA 02134 ).match(re = /([d]{5})([- ]?[d]{4})?$/; re.lastIndex =0)[2] PASSED!
+( Boston, MA 02134 ).match(re = /([d]{5})([- ]?[d]{4})?$/; re.lastIndex = 16).length PASSED!
+( Boston, MA 02134 ).match(re = /([d]{5})([- ]?[d]{4})?$/; re.lastIndex = 16).index PASSED!
+( Boston, MA 02134 ).match(re = /([d]{5})([- ]?[d]{4})?$/; re.lastIndex = 16).input PASSED!
+( Boston, MA 02134 ).match(re = /([d]{5})([- ]?[d]{4})?$/; re.lastIndex = 16)[0] PASSED!
+( Boston, MA 02134 ).match(re = /([d]{5})([- ]?[d]{4})?$/; re.lastIndex = 16)[1] PASSED!
+( Boston, MA 02134 ).match(re = /([d]{5})([- ]?[d]{4})?$/; re.lastIndex = 16)[2] PASSED!
+( Boston, MA 02134 ).match(re = /([d]{5})([- ]?[d]{4})?$/; re.lastIndex = 11).length PASSED!
+( Boston, MA 02134 ).match(re = /([d]{5})([- ]?[d]{4})?$/; re.lastIndex = 11).index PASSED!
+( Boston, MA 02134 ).match(re = /([d]{5})([- ]?[d]{4})?$/; re.lastIndex = 11).input PASSED!
+( Boston, MA 02134 ).match(re = /([d]{5})([- ]?[d]{4})?$/; re.lastIndex = 11)[0] PASSED!
+( Boston, MA 02134 ).match(re = /([d]{5})([- ]?[d]{4})?$/; re.lastIndex = 11)[1] PASSED!
+( Boston, MA 02134 ).match(re = /([d]{5})([- ]?[d]{4})?$/; re.lastIndex = 11)[2] PASSED!
+( Boston, MA 02134 ).match(re = /([d]{5})([- ]?[d]{4})?$/; re.lastIndex = 111).length PASSED!
+( Boston, MA 02134 ).match(re = /([d]{5})([- ]?[d]{4})?$/; re.lastIndex = 111).index PASSED!
+( Boston, MA 02134 ).match(re = /([d]{5})([- ]?[d]{4})?$/; re.lastIndex = 111).input PASSED!
+( Boston, MA 02134 ).match(re = /([d]{5})([- ]?[d]{4})?$/; re.lastIndex = 111)[0] PASSED!
+( Boston, MA 02134 ).match(re = /([d]{5})([- ]?[d]{4})?$/; re.lastIndex = 111)[1] PASSED!
+( Boston, MA 02134 ).match(re = /([d]{5})([- ]?[d]{4})?$/; re.lastIndex = 111)[2] PASSED!

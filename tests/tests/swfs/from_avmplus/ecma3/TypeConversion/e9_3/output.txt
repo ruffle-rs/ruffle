@@ -1,0 +1,15 @@
+Number() PASSED!
+Number(var x) PASSED!
+Number(void 0) PASSED!
+Number(null) PASSED!
+Number(true) PASSED!
+Number(false) PASSED!
+Number(0) PASSED!
+Number(-0) PASSED!
+Number(1) PASSED!
+Number(-1) PASSED!
+Number(Number.MAX_VALUE) PASSED!
+Number(Number.MIN_VALUE) PASSED!
+Number(Number.NaN) PASSED!
+Number(Number.POSITIVE_INFINITY) PASSED!
+Number(Number.NEGATIVE_INFINITY) PASSED!

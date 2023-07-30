@@ -1,0 +1,4 @@
+Asserting for TypeError PASSED!
+new XML("<unterminated><terminated>text</terminated>") PASSED!
+Asserting for TypeError PASSED!
+new XML("<unterminated><terminated>text</terminated></unterm>") PASSED!

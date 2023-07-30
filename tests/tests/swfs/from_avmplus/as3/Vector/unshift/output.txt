@@ -1,0 +1,7 @@
+unshift empty vector with no items still empty PASSED!
+unshift object vector with fixed length PASSED!
+unshift empty vector with single item PASSED!
+unshift single element vector with single item PASSED!
+unshift small vector with single item PASSED!
+unshift single element vector with single item PASSED!
+Vector.<String>.unshift() PASSED!

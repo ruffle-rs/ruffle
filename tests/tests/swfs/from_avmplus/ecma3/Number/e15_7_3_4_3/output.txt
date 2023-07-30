@@ -1,0 +1,2 @@
+Trying to verify the ReadOnly attribute of Number.NaN PASSED!
+Number.NaN=0; Number.NaN PASSED!

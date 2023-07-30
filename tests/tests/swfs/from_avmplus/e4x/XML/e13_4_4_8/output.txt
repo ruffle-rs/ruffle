@@ -1,0 +1,6 @@
+2 PASSED!
+3 PASSED!
+4 PASSED!
+MYXML = new XML(xmlDoc), MYXML.employee[0].children().toString() PASSED!
+MYXML = new XML(xmlDoc), MYXML.employee[0].children().toString() PASSED!
+MYXML = new XML(xmlDoc), MYXML.employee[1].children().toString() PASSED!

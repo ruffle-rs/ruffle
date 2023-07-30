@@ -1,0 +1,24 @@
+String.prototype.substring.length PASSED!
+delete String.prototype.substring.length PASSED!
+delete String.prototype.substring.length; String.prototype.substring.length PASSED!
+var s = new String('this is a string object'); typeof s.substring() PASSED!
+var s = new String(''); s.substring(1,0) PASSED!
+var s = new String('this is a string object'); s.substring(true, false) PASSED!
+var s = new String('this is a string object'); s.substring(NaN, Infinity) PASSED!
+var s = new String('this is a string object'); s.substring(Infinity, NaN) PASSED!
+var s = new String('this is a string object'); s.substring(Infinity, Infinity) PASSED!
+var s = new String('this is a string object'); s.substring(-0.01, 0) PASSED!
+var s = new String('this is a string object'); s.substring(s.length, s.length) PASSED!
+var s = new String('this is a string object'); s.substring(s.length+1, 0) PASSED!
+var s = new String('this is a string object'); s.substring(-Infinity, -Infinity) PASSED!
+var s = new Array(1,2,3,4,5); s.substring = String.prototype.substring; s.substring(Infinity,-Infinity) PASSED!
+var s = new Array(1,2,3,4,5); s.substring = String.prototype.substring; s.substring(9,-Infinity) PASSED!
+var s = new Array(1,2,3,4,5); s.substring = String.prototype.substring; s.substring(true, false) PASSED!
+var s = new Array(1,2,3,4,5); s.substring = String.prototype.substring; s.substring('4', '5') PASSED!
+var obj = new Object(); obj.substring = String.prototype.substring; obj.substring(8,0) PASSED!
+var obj = new Object(); obj.substring = String.prototype.substring; obj.substring(8,obj.toString().length) PASSED!
+var obj = function() {}; obj.substring = String.prototype.substring; obj.toString = Object.prototype.toString; obj.substring(8, Infinity) PASSED!
+var obj = new Number(NaN); obj.substring = String.prototype.substring; obj.substring(Infinity, NaN) PASSED!
+var obj = Math; obj.substring = String.prototype.substring; obj.substring(Math.PI, -10) PASSED!
+var obj = new Boolean(); obj.substring = String.prototype.substring; obj.substring(new Array(), new Boolean(1)) PASSED!
+var obj = new MyObject( void 0 ); obj.substring(0, 100) PASSED!

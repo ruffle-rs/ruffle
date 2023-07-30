@@ -1,0 +1,53 @@
+;  A.sort(); A.length PASSED!
+true;  A.sort(); A.length PASSED!
+A[0].toString() PASSED!
+false,false,false,true,true,true;  A.sort(); A.length PASSED!
+A[0].toString() PASSED!
+A[1].toString() PASSED!
+A[2].toString() PASSED!
+A[3].toString() PASSED!
+A[4].toString() PASSED!
+A[5].toString() PASSED!
+,null,undefined,,,,,,;  A.sort(); A.length PASSED!
+A[0].toString() PASSED!
+A[1].toString() PASSED!
+A[2].toString() PASSED!
+A[3].toString() PASSED!
+typeof A[3] PASSED!
+A[4].toString() PASSED!
+typeof A[4] PASSED!
+A[5].toString() PASSED!
+typeof A[5] PASSED!
+A[6].toString() PASSED!
+typeof A[6] PASSED!
+A[7].toString() PASSED!
+typeof A[7] PASSED!
+A[8].toString() PASSED!
+typeof A[8] PASSED!
+a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z;  A.sort(); A.length PASSED!
+A[0].toString() PASSED!
+A[1].toString() PASSED!
+A[2].toString() PASSED!
+A[3].toString() PASSED!
+A[4].toString() PASSED!
+A[5].toString() PASSED!
+A[6].toString() PASSED!
+A[7].toString() PASSED!
+A[8].toString() PASSED!
+A[9].toString() PASSED!
+A[10].toString() PASSED!
+A[11].toString() PASSED!
+A[12].toString() PASSED!
+A[13].toString() PASSED!
+A[14].toString() PASSED!
+A[15].toString() PASSED!
+A[16].toString() PASSED!
+A[17].toString() PASSED!
+A[18].toString() PASSED!
+A[19].toString() PASSED!
+A[20].toString() PASSED!
+A[21].toString() PASSED!
+A[22].toString() PASSED!
+A[23].toString() PASSED!
+A[24].toString() PASSED!
+A[25].toString() PASSED!

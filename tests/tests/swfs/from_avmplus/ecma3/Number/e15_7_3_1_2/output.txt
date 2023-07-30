@@ -1,0 +1,4 @@
+Trying to verify the ReadOnly attribute of Number.prototype PASSED!
+var NUM_PROT = Number.prototype; Number.prototype = null; Number.prototype == NUM_PROT PASSED!
+Trying to verify the ReadOnly property of Number.prototype PASSED!
+Number.prototype=0; Number.prototype PASSED!

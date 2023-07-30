@@ -1,0 +1,5 @@
+new <int>[].toString() PASSED!
+(new Vector.<Boolean>(5)).toString() PASSED!
+(new Vector.<String>(2)).toString() PASSED!
+small vector toString PASSED!
+default Number values PASSED!

@@ -1,0 +1,1 @@
+result= new Math() (threw TypeError: Error #1076: Math is not a constructor) PASSED!

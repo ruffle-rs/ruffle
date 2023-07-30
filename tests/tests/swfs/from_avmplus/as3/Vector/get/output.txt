@@ -1,0 +1,7 @@
+set uint property PASSED!
+get uint property PASSED!
+get: m_length == index PASSED!
+set uint property: index == length PASSED!
+set uint property: index == length, verify length grows by one PASSED!
+index > m_length PASSED!
+index == m_length, m_fixed=true PASSED!

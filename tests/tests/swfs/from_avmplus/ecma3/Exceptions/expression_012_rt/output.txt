@@ -1,0 +1,1 @@
+STRING = new String("hi"); result = new STRING() (threw TypeError: Error #1007Attempted to create a new object of a variable) PASSED!

@@ -1,0 +1,4 @@
+Block:{t} PASSED!
+Block in which exception is thrown PASSED!
+Block in which exception is thrown PASSED!
+Block in which exception is thrown PASSED!

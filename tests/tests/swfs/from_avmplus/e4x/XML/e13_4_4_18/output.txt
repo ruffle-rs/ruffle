@@ -1,0 +1,15 @@
+2 PASSED!
+3 PASSED!
+4 PASSED!
+MYXML = new XML(xmlDoc), MYXML.insertChildAfter(null, child1), MYXML.toString() PASSED!
+MYXML = new XML(xmlDoc), MYXML.insertChildAfter(null, child1), MYXML.children()[0].parent() == MYXML PASSED!
+MYXML = new XML(xmlDoc), MYXML.insertChildAfter(null, child1), MYXML.children()[0] == child1 PASSED!
+MYXML = new XML(xmlDoc), MYXML.insertChildAfter(null, child1), MYXML.children()[0] === child1 PASSED!
+MYXML.insertChildAfter(child1, child2), MYXML.toString() PASSED!
+MYXML.insertChildAfter(MYXML.children()[0], child2), MYXML.toString() PASSED!
+MYXML.insertChildAfter(child2, child3), MYXML.toString() PASSED!
+MYXML.insertChildAfter(MYXML.children()[1], child3), MYXML.toString() PASSED!
+MYXML.insertChildAfter(null, XMLList), MYXML.toString() PASSED!
+MYXML.insertChildAfter(child1, XMLList), MYXML.toString() PASSED!
+MYXML.insertChildAfter(child1, "string"), MYXML.toString() PASSED!
+a = <a><b><c/></b></a>, a.b.c.insertChildAfter(null, a) PASSED!

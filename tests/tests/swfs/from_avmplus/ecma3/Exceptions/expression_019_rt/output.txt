@@ -1,0 +1,1 @@
+var STRING = new String("hi"); result = new STRING(); (threw TypeError: Error #1007Attempt to create a new object of an object which is not function/class) PASSED!

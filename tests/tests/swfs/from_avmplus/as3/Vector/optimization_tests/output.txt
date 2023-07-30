@@ -1,0 +1,14 @@
+Vector in-lining optimization: read from Vector.<int> PASSED!
+Vector in-lining optimization: write to Vector.<int> PASSED!
+Vector in-lining optimization: extend extensible Vector.<int> PASSED!
+Vector in-lining optimization: error cases on Vector.<int> PASSED!
+Vector in-lining optimization: read from Vector.<Number> PASSED!
+Vector in-lining optimization: write to Vector.<Number> PASSED!
+Vector in-lining optimization: extend extensible Vector.<Number> PASSED!
+Vector in-lining optimization: error cases on Vector.<Number> PASSED!
+Vector in-lining optimization: read from Vector.<uint> PASSED!
+Vector in-lining optimization: write to Vector.<uint> PASSED!
+Vector in-lining optimization: extend extensible Vector.<uint> PASSED!
+Vector in-lining optimization: error cases on Vector.<int> PASSED!
+Vector in-lining optimization: read from Vector.<Object> PASSED!
+Vector in-lining optimization: error cases on Vector.<Object> PASSED!

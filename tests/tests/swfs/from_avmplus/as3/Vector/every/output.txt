@@ -1,0 +1,14 @@
+every empty array PASSED!
+every small array returns true PASSED!
+every small array check function PASSED!
+every small array returns false on 0 PASSED!
+every: Number vector does not contain a zero PASSED!
+every: Number vector does contain a zero PASSED!
+every: uint vector does not contain a zero PASSED!
+every: uint vector does not contain a zero PASSED!
+every small array with a specified this object PASSED!
+thisObject test 1 PASSED!
+thisObject test 2 PASSED!
+thisObject test 3 PASSED!
+thisObject test 4 PASSED!
+thisObject test 5 PASSED!

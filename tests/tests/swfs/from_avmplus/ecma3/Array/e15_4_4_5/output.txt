@@ -1,0 +1,15 @@
+Array.prototype.join.length PASSED!
+(new Array()).join() PASSED!
+(new Array(2)).join() PASSED!
+(new Array(0,1)).join() PASSED!
+(new Array(0,1)).join(separator) PASSED!
+(new Array( Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY)).join() PASSED!
+(new Array( Boolean(1), Boolean(0))).join() PASSED!
+(new Array(void 0,null)).join() PASSED!
+MYARR.join(separator) PASSED!
+MYARR2.join(separator) PASSED!
+MYARRARR.join(separator) PASSED!
+MYUNDEFARR.join() PASSED!
+MYNULLARR.join() PASSED!
+MYNULLARR2.join() PASSED!
+MyAllArray.join(separator) PASSED!

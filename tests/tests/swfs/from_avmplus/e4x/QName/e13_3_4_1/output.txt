@@ -1,0 +1,1 @@
+QName.prototype.constructor PASSED!

@@ -1,0 +1,4 @@
+ToString(XMLList:one XML object)                                     : PASSED!
+ToString(XMLList:one XML object, [[Class]]='comment')                : PASSED!
+ToString(XMLList:one XML object, [[Class]]='processing-instruction') : PASSED!
+ToString(XMLList:multiple XML objects)                               : PASSED!

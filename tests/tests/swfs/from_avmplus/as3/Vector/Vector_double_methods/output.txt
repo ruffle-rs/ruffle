@@ -1,0 +1,11 @@
+Vector_double_AS3_push PASSED!
+Vector_double_AS3_push null PASSED!
+Vector_double_AS3_unshift PASSED!
+Vector_double_AS3_unshift null PASSED!
+Vector_double_AS3_shift PASSED!
+Vector_double_AS3_shift length PASSED!
+Vector_double_AS3_pop PASSED!
+Vector_double_length_set PASSED!
+Vector_double_fixed_get PASSED!
+Vector_double_private__map PASSED!
+Vector_double_private__reverse PASSED!

@@ -1,0 +1,1 @@
+MYARR = []; MYARR.shift(); MYARR.length PASSED!

@@ -1,0 +1,11 @@
+array = new Array(0); array.length = 16384; array.length PASSED!
+array = new Array(0); array.length = 1; array.length PASSED!
+array = new Array(4096); array.length = 0; array.length PASSED!
+array = new Array(8192); array.length = 4096; array.length PASSED!
+array = new Array(4096); array.length = 4096; array.length PASSED!
+array = new Array(16384); array.length = 4096; array.length PASSED!
+array = new Array(4096); array.length = 4096; array.length PASSED!
+array = new Array(4096); array.length = 8193; array.length PASSED!
+verify that new items are undefined PASSED!
+array = new Array(4101); array.length = 0; array.length PASSED!
+verify that array items have been deleted PASSED!

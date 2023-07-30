@@ -1,0 +1,4 @@
+var myfunc = Function.prototype; myfunc.toString = Object.prototype.toString; myfunc.toString() PASSED!
+Function.prototype.valueOf PASSED!
+Function.prototype() PASSED!
+Function.prototype(1,true,false,'string', new Date(),null) PASSED!

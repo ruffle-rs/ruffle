@@ -1,0 +1,10 @@
+settings = XML.defaultSettings(), settings.ignoreComments PASSED!
+settings = XML.defaultSettings(), settings.ignoreProcessingInstructions PASSED!
+settings = XML.defaultSettings(), settings.ignoreWhitespace PASSED!
+settings = XML.defaultSettings(), settings.prettyPrinting PASSED!
+settings = XML.defaultSettings(), settings.prettyIndent PASSED!
+XML.setSettings(tempSettings), XML.setSettings(XML.defaultSettings()), XML.ignoreComments PASSED!
+XML.setSettings(tempSettings), XML.setSettings(XML.defaultSettings()), XML.ignoreProcessingInstructions PASSED!
+XML.setSettings(tempSettings), XML.setSettings(XML.defaultSettings()), XML.ignoreWhitespace PASSED!
+XML.setSettings(tempSettings), XML.setSettings(XML.defaultSettings()), XML.prettyPrinting PASSED!
+XML.setSettings(tempSettings), XML.setSettings(XML.defaultSettings()), XML.prettyIndent PASSED!

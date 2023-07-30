@@ -1,0 +1,8 @@
+MYEMPTYARR = []; MYEMPTYARR.shift(); PASSED!
+MYARR = [2,1,8,6]; MYARR.shift(); PASSED!
+MYARR = [2,1,8,6]; MYARR.shift(); PASSED!
+MYARR = [2,1,8,6]; MYARR.shift(); PASSED!
+MYARR = [2,1,8,6]; MYARR.shift(); PASSED!
+MYARR = [2,1,8,6]; MYARR.shift();MYARR.length PASSED!
+MYBIGARR = [0,1,2,.....,100]; MYBIGARR.shift(); PASSED!
+MYBIGARR = [0,1,2,.....,100]; MYBIGARR.shift();MYBIGARR.length PASSED!

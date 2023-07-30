@@ -1,0 +1,5 @@
+new   Array() +'' PASSED!
+typeof new Array() PASSED!
+var arr = new Array(); arr.getClass = Object.prototype.toString; arr.getClass() PASSED!
+(new Array()).length PASSED!
+(new Array()).toString == Array.prototype.toString PASSED!

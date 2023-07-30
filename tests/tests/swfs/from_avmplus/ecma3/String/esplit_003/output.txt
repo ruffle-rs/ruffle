@@ -1,0 +1,86 @@
+( hello ).split(new RegExp).constructor == Array PASSED!
+( hello ).split(new RegExp).length PASSED!
+( hello ).split(new RegExp)[0] PASSED!
+( hello ).split(new RegExp)[1] PASSED!
+( hello ).split(new RegExp)[2] PASSED!
+( hello ).split(new RegExp)[3] PASSED!
+( hello ).split(new RegExp)[4] PASSED!
+( hello ).split(/l/).constructor == Array PASSED!
+( hello ).split(/l/).length PASSED!
+( hello ).split(/l/)[0] PASSED!
+( hello ).split(/l/)[1] PASSED!
+( hello ).split(/l/)[2] PASSED!
+( hello ).split(/l/, 0 ).constructor == Array PASSED!
+( hello ).split(/l/, 0 ).length PASSED!
+( hello ).split(/l/, 1 ).constructor == Array PASSED!
+( hello ).split(/l/, 1 ).length PASSED!
+( hello ).split(/l/, 1 )[0] PASSED!
+( hello ).split(/l/, 2 ).constructor == Array PASSED!
+( hello ).split(/l/, 2 ).length PASSED!
+( hello ).split(/l/, 2 )[0] PASSED!
+( hello ).split(/l/, 2 )[1] PASSED!
+( hello ).split(/l/, 3 ).constructor == Array PASSED!
+( hello ).split(/l/, 3 ).length PASSED!
+( hello ).split(/l/, 3 )[0] PASSED!
+( hello ).split(/l/, 3 )[1] PASSED!
+( hello ).split(/l/, 3 )[2] PASSED!
+( hello ).split(/l/, 4 ).constructor == Array PASSED!
+( hello ).split(/l/, 4 ).length PASSED!
+( hello ).split(/l/, 4 )[0] PASSED!
+( hello ).split(/l/, 4 )[1] PASSED!
+( hello ).split(/l/, 4 )[2] PASSED!
+( hello ).split(/l/, undefined ).constructor == Array PASSED!
+( hello ).split(/l/, undefined ).length PASSED!
+( hello ).split(/l/, undefined )[0] PASSED!
+( hello ).split(/l/, undefined )[1] PASSED!
+( hello ).split(/l/, undefined )[2] PASSED!
+( hello ).split(/l/, hi ).constructor == Array PASSED!
+( hello ).split(/l/, hi ).length PASSED!
+( hello ).split(/l/, undefined ).constructor == Array PASSED!
+( hello ).split(/l/, undefined ).length PASSED!
+( hello ).split(/l/, undefined )[0] PASSED!
+( hello ).split(/l/, undefined )[1] PASSED!
+( hello ).split(/l/, undefined )[2] PASSED!
+( hello ).split(new RegExp).constructor == Array PASSED!
+( hello ).split(new RegExp).length PASSED!
+( hello ).split(new RegExp)[0] PASSED!
+( hello ).split(new RegExp)[1] PASSED!
+( hello ).split(new RegExp)[2] PASSED!
+( hello ).split(new RegExp)[3] PASSED!
+( hello ).split(new RegExp)[4] PASSED!
+( hello ).split(new RegExp, 0 ).constructor == Array PASSED!
+( hello ).split(new RegExp, 0 ).length PASSED!
+( hello ).split(new RegExp, 1 ).constructor == Array PASSED!
+( hello ).split(new RegExp, 1 ).length PASSED!
+( hello ).split(new RegExp, 1 )[0] PASSED!
+( hello ).split(new RegExp, 2 ).constructor == Array PASSED!
+( hello ).split(new RegExp, 2 ).length PASSED!
+( hello ).split(new RegExp, 2 )[0] PASSED!
+( hello ).split(new RegExp, 2 )[1] PASSED!
+( hello ).split(new RegExp, 3 ).constructor == Array PASSED!
+( hello ).split(new RegExp, 3 ).length PASSED!
+( hello ).split(new RegExp, 3 )[0] PASSED!
+( hello ).split(new RegExp, 3 )[1] PASSED!
+( hello ).split(new RegExp, 3 )[2] PASSED!
+( hello ).split(new RegExp, 4 ).constructor == Array PASSED!
+( hello ).split(new RegExp, 4 ).length PASSED!
+( hello ).split(new RegExp, 4 )[0] PASSED!
+( hello ).split(new RegExp, 4 )[1] PASSED!
+( hello ).split(new RegExp, 4 )[2] PASSED!
+( hello ).split(new RegExp, 4 )[3] PASSED!
+( hello ).split(new RegExp, undefined ).constructor == Array PASSED!
+( hello ).split(new RegExp, undefined ).length PASSED!
+( hello ).split(new RegExp, undefined )[0] PASSED!
+( hello ).split(new RegExp, undefined )[1] PASSED!
+( hello ).split(new RegExp, undefined )[2] PASSED!
+( hello ).split(new RegExp, undefined )[3] PASSED!
+( hello ).split(new RegExp, undefined )[4] PASSED!
+( hello ).split(new RegExp, hi ).constructor == Array PASSED!
+( hello ).split(new RegExp, hi ).length PASSED!
+( hello ).split(new RegExp, undefined ).constructor == Array PASSED!
+( hello ).split(new RegExp, undefined ).length PASSED!
+( hello ).split(new RegExp, undefined )[0] PASSED!
+( hello ).split(new RegExp, undefined )[1] PASSED!
+( hello ).split(new RegExp, undefined )[2] PASSED!
+( hello ).split(new RegExp, undefined )[3] PASSED!
+( hello ).split(new RegExp, undefined )[4] PASSED!

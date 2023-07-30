@@ -1,0 +1,1 @@
+OBJECT = new MyObject( new Date(0)) ; OBJ.toString() PASSED!

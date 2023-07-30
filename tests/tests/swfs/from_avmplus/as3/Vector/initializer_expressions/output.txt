@@ -1,0 +1,40 @@
+Initialize a variable with a Vector PASSED!
+Initialize a typed variable with a Vector PASSED!
+[neg]Initialize a typed variable with a Vector PASSED!
+pass Vector initializer as parameter PASSED!
+call Vector initializer method PASSED!
+compare Vector initializers PASSED!
+compare Vector initializers - ne PASSED!
+compare Vector initializers - ne PASSED!
+add scalar to Vector PASSED!
+add Vector to scalar PASSED!
+subtract scalar from Vector PASSED!
+subtract Vector from scalar PASSED!
+multiply scalar by Vector PASSED!
+multiply Vector by scalar PASSED!
+divide scalar by Vector PASSED!
+divide Vector by scalar PASSED!
+typeof Vector initializer PASSED!
+select element from Vector initializer PASSED!
+select element from Vector initializer PASSED!
+assign to element from Vector initializer PASSED!
+stringify Vector initializer PASSED!
+delete Vector initializer property PASSED!
+initializer fixed property is false PASSED!
+length property returns expected value PASSED!
+xml elements can be used in a vector literal PASSED!
+pop element from Vector initializer PASSED!
+pop empty element from Vector initializer PASSED!
+push element into Vector initializer PASSED!
+push nothing into Vector initializer PASSED!
+push null into Vector initializer PASSED!
+shift element from Vector initializer PASSED!
+shift empty element from Vector initializer PASSED!
+unshift element into Vector initializer PASSED!
+unshift empty element into Vector initializer PASSED!
+splice elements in Vector initializer PASSED!
+splice elements into Vector using comma seperated list PASSED!
+splice elements into Vector using vector initializer PASSED!
+create vector with one element and trailing comma in initializer PASSED!
+create vector with null element and trailing comma in the initializer PASSED!
+create vector with undefined element and trailing comma in the initializer PASSED!

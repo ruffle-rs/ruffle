@@ -1,0 +1,3 @@
+[object Object]
+[object Object]
+Make sure we don't crash PASSED!

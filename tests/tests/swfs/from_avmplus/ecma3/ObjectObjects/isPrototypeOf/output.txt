@@ -1,0 +1,8 @@
+RegExp.prototype.isPrototypeOf(re)) PASSED!
+String.prototype.isPrototypeOf(str) PASSED!
+String.prototype.isPrototypeOf(re) PASSED!
+String.prototype.isPrototypeOf(new Number()) PASSED!
+Object.prototype.isPrototypeOf(str) PASSED!
+Object.prototype.isPrototypeOf(re) PASSED!
+String.prototype.isPrototypeOf(myobj) PASSED!
+Object.prototype.isPrototypeOf(myobj2) PASSED!

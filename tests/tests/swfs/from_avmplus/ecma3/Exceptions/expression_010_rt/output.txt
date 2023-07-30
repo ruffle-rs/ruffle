@@ -1,0 +1,1 @@
+NUMBER=0, result = new NUMBER() (threw TypeError: Error #1007: Attempted to create a new object of a variable) PASSED!

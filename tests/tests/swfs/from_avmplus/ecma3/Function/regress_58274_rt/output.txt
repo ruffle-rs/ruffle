@@ -1,0 +1,7 @@
+function string1 PASSED!
+function string 2 PASSED!
+function string 3 PASSED!
+function string 4 PASSED!
+function string 5 PASSED!
+function string 6 PASSED!
+function string 7 PASSED!

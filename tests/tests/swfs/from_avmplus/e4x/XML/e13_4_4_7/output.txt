@@ -1,0 +1,6 @@
+2 PASSED!
+3 PASSED!
+4 PASSED!
+MYXML = new XML(xmlDoc), MYXML.child(0)[0].childIndex() PASSED!
+MYXML = new XML(xmlDoc), MYXML.child(1)[0].childIndex() PASSED!
+MYXML = new XML(xmlDoc), MYXML.childIndex() PASSED!

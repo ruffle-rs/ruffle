@@ -1,0 +1,2 @@
+String.prototype.constructor == String PASSED!
+var STRING = new String.prototype.constructor('hi'); STRING.getClass = Object.prototype.toString; STRING.getClass() PASSED!

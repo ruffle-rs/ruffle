@@ -1,0 +1,4 @@
+Array.prototype.reverse.length PASSED!
+delete Array.prototype.reverse.length PASSED!
+delete Array.prototype.reverse.length; Array.prototype.reverse.length PASSED!
+var A = new Array();   A.reverse(); A.length PASSED!

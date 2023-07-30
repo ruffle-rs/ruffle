@@ -1,0 +1,1 @@
+toStr=Number.prototype.toString;x=new Number(4);x.toString=tostr PASSED!

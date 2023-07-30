@@ -1,0 +1,105 @@
+Unicode String.search from 0xA000 to 0xA000 PASSED!
+Unicode String.search for 3 chars from 0xA000 to 0xA000 PASSED!
+Unicode String.match PASSED!
+Unicode String.split PASSED!
+Unicode String.replace PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Unicode String.search from 0xA0FB to 0xA0FB PASSED!
+Unicode String.search for 3 chars from 0xA0FB to 0xA0FB PASSED!
+Unicode String.match PASSED!
+Unicode String.split PASSED!
+Unicode String.replace PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Unicode String.search from 0xA1F6 to 0xA1F6 PASSED!
+Unicode String.search for 3 chars from 0xA1F6 to 0xA1F6 PASSED!
+Unicode String.match PASSED!
+Unicode String.split PASSED!
+Unicode String.replace PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Unicode String.search from 0xA2F1 to 0xA2F1 PASSED!
+Unicode String.search for 3 chars from 0xA2F1 to 0xA2F1 PASSED!
+Unicode String.match PASSED!
+Unicode String.split PASSED!
+Unicode String.replace PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Unicode String.search from 0xA3EC to 0xA3EC PASSED!
+Unicode String.search for 3 chars from 0xA3EC to 0xA3EC PASSED!
+Unicode String.match PASSED!
+Unicode String.split PASSED!
+Unicode String.replace PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Negative String.search PASSED!
+0xA000 to 0xA0FA String.search(undefined) PASSED!
+0xA000 to 0xA0FA String.search() PASSED!
+Negative String.match PASSED!
+0xA000 to 0xA0FA String.match(undefined) PASSED!
+0xA000 to 0xA0FA String.match() PASSED!
+String.split('') PASSED!
+String.split(new RegExp()) PASSED!
+String.split(new RegExp('')) PASSED!
+String.split(undefined) result length PASSED!
+String.split(undefined)[0] PASSED!
+String.replace(0xA0000xA0FA) PASSED!
+Negative String.search PASSED!
+0xA0FB to 0xA1F5 String.search(undefined) PASSED!
+0xA0FB to 0xA1F5 String.search() PASSED!
+Negative String.match PASSED!
+0xA0FB to 0xA1F5 String.match(undefined) PASSED!
+0xA0FB to 0xA1F5 String.match() PASSED!
+String.split('') PASSED!
+String.split(new RegExp()) PASSED!
+String.split(new RegExp('')) PASSED!
+String.split(undefined) result length PASSED!
+String.split(undefined)[0] PASSED!
+String.replace(0xA0FB0xA1F5) PASSED!
+Negative String.search PASSED!
+0xA1F6 to 0xA2F0 String.search(undefined) PASSED!
+0xA1F6 to 0xA2F0 String.search() PASSED!
+Negative String.match PASSED!
+0xA1F6 to 0xA2F0 String.match(undefined) PASSED!
+0xA1F6 to 0xA2F0 String.match() PASSED!
+String.split('') PASSED!
+String.split(new RegExp()) PASSED!
+String.split(new RegExp('')) PASSED!
+String.split(undefined) result length PASSED!
+String.split(undefined)[0] PASSED!
+String.replace(0xA1F60xA2F0) PASSED!
+Negative String.search PASSED!
+0xA2F1 to 0xA3EB String.search(undefined) PASSED!
+0xA2F1 to 0xA3EB String.search() PASSED!
+Negative String.match PASSED!
+0xA2F1 to 0xA3EB String.match(undefined) PASSED!
+0xA2F1 to 0xA3EB String.match() PASSED!
+String.split('') PASSED!
+String.split(new RegExp()) PASSED!
+String.split(new RegExp('')) PASSED!
+String.split(undefined) result length PASSED!
+String.split(undefined)[0] PASSED!
+String.replace(0xA2F10xA3EB) PASSED!
+Negative String.search PASSED!
+0xA3EC to 0xA48F String.search(undefined) PASSED!
+0xA3EC to 0xA48F String.search() PASSED!
+Negative String.match PASSED!
+0xA3EC to 0xA48F String.match(undefined) PASSED!
+0xA3EC to 0xA48F String.match() PASSED!
+String.split('') PASSED!
+String.split(new RegExp()) PASSED!
+String.split(new RegExp('')) PASSED!
+String.split(undefined) result length PASSED!
+String.split(undefined)[0] PASSED!
+String.replace(0xA3EC0xA48F) PASSED!

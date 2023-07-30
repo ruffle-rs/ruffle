@@ -1,0 +1,24 @@
+String.prototype.substr.length PASSED!
+delete String.prototype.substr.length PASSED!
+delete String.prototype.substr.length; String.prototype.substr.length PASSED!
+var s = new String('this is a string object'); typeof s.substr() PASSED!
+var s = new String(''); s.substr(1,0) PASSED!
+var s = new String('this is a string object'); s.substr(true, false) PASSED!
+var s = new String('this is a string object'); s.substr(NaN, Infinity) PASSED!
+var s = new String('this is a string object'); s.substr(Infinity, NaN) PASSED!
+var s = new String('this is a string object'); s.substr(Infinity, Infinity) PASSED!
+var s = new String('this is a string object'); s.substr(-0.01, 0) PASSED!
+var s = new String('this is a string object'); s.substr(s.length, s.length) PASSED!
+var s = new String('this is a string object'); s.substr(s.length+1, 0) PASSED!
+var s = new String('this is a string object'); s.substr(-Infinity, -Infinity) PASSED!
+var s = new String('this is a string object'); s.substr(NaN) PASSED!
+var s = new String('this is a string object'); s.substr(-0.01) PASSED!
+var s = new String('this is a string object'); s.substr(s.length) PASSED!
+var s = new String('this is a string object'); s.substr(s.length+1) PASSED!
+var s = new String('this is a string object'); s.substr(Infinity) PASSED!
+var s = new String('this is a string object'); s.substr(-Infinity) PASSED!
+var obj = new Object(); obj.substr = String.prototype.substr; obj.substr(0,8) PASSED!
+var obj = new Object(); obj.substr = String.prototype.substr; obj.substr(8,obj.toString().length) PASSED!
+var obj = function() {}; obj.substr = String.prototype.substr; obj.substr(8, Infinity) PASSED!
+var obj = new Object(); obj.substr = String.prototype.substr; obj.substr(8) PASSED!
+var obj = function() {}; obj.substr = String.prototype.substr; obj.substr(8) PASSED!

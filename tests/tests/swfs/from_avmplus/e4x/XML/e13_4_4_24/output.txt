@@ -1,0 +1,21 @@
+2 PASSED!
+3 PASSED!
+4 PASSED!
+5 PASSED!
+6 PASSED!
+7 PASSED!
+8 PASSED!
+Undefined declaration, length: PASSED!
+Two declarations in toplevel scope: PASSED!
+Two declarations in toplevel scope: PASSED!
+No declaration: PASSED!
+One declaration w/o prefix, length: PASSED!
+One declaration w/ prefix, length: PASSED!
+One declaration at toplevel, one at child, length at toplevel: PASSED!
+One declaration at toplevel, two at child, length at child: PASSED!
+namespaceDeclarations[1].typeof: PASSED!
+namespaceDeclarations[1].prefix: PASSED!
+Reading one toplevel declaration: PASSED!
+Another declaration up parent chain: PASSED!
+namespaceDeclarations before setNamespace() PASSED!
+namespaceDeclarations after setNamespace() PASSED!

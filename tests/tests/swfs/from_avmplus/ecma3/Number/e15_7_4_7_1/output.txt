@@ -1,0 +1,11 @@
+Section A of test: no error intended! PASSED!
+Section B of test: no error intended! PASSED!
+Section C of test: no error intended! PASSED!
+Section D of test: no error intended! PASSED!
+Section E of test: no error intended! PASSED!
+Section F of test: error intended! PASSED!
+Section G of test: no error intended! PASSED!
+Section H of test: error intended! PASSED!
+Section I of test: error intended! PASSED!
+Section J of test: no error intended! PASSED!
+Section K of test: no error intended! PASSED!

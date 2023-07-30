@@ -1,0 +1,9 @@
+XML.prettyIndent = 4, XML.prettyIndent PASSED!
+XML.prettyIndent = 2, XML.prettyIndent PASSED!
+XML.prettyIndent = -1, XML.prettyIndent PASSED!
+MYOB = new XML(xmlDoc); XML.prettyIndent = 2; MYOB.toString() PASSED!
+MYOB = new XML(xmlDoc); XML.prettyIdent = 4; MYOB.toString() PASSED!
+MYOB = new XML(xmlDoc); XML.prettyIndent = 1; MYOB.toString() PASSED!
+MYOB = new XML(xmlDoc); XML.prettyIndent = -5; MYOB.toString() PASSED!
+MYOB = new XML(xmlDoc); XML.prettyPrinting = true; MYOB.toString() PASSED!
+MYOB = new XML(xmlDoc); XML.prettyPrinting = true; MYOB.toString() PASSED!

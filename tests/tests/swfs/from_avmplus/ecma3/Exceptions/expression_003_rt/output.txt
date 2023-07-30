@@ -1,0 +1,1 @@
+Get the toString value of an object whose value is undefined (threw TypeError: Error #1010: undefined has no properties) PASSED!

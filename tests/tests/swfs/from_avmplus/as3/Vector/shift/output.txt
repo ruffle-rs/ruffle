@@ -1,0 +1,12 @@
+shift on empty vector returns undefined PASSED!
+shift on empty vector original vector is empty PASSED!
+shift on single element vector returns element[0] PASSED!
+shift on single element vector removes first element PASSED!
+shift on vector returns element[0] PASSED!
+shift on vector removes first element PASSED!
+shift on initialized vector returns element[0] PASSED!
+shift on initialized vector removes first element PASSED!
+shift on fixed vector throws exception PASSED!
+shift on fixed vector does not shift PASSED!
+Shift string vector PASSED!
+Shift custom vector class PASSED!

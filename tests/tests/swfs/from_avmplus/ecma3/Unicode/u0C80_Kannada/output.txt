@@ -1,0 +1,21 @@
+Unicode String.search from 0x0C80 to 0x0C80 PASSED!
+Unicode String.search for 3 chars from 0x0C80 to 0x0C80 PASSED!
+Unicode String.match PASSED!
+Unicode String.split PASSED!
+Unicode String.replace PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Negative String.search PASSED!
+0x0C80 to 0x0CFF String.search(undefined) PASSED!
+0x0C80 to 0x0CFF String.search() PASSED!
+Negative String.match PASSED!
+0x0C80 to 0x0CFF String.match(undefined) PASSED!
+0x0C80 to 0x0CFF String.match() PASSED!
+String.split('') PASSED!
+String.split(new RegExp()) PASSED!
+String.split(new RegExp('')) PASSED!
+String.split(undefined) result length PASSED!
+String.split(undefined)[0] PASSED!
+String.replace(0x0C800x0CFF) PASSED!

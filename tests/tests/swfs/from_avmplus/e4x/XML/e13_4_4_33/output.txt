@@ -1,0 +1,5 @@
+2 PASSED!
+3 PASSED!
+MYXML = new XML(xmlDoc), MYXML.setChildren(xmlList) PASSED!
+MYXML = new XML(xmlDoc), MYXML.setChildren(new XML ("<firstname>Fred</firstname>")) PASSED!
+MYXML = new XML(xmlDoc), MYXML.setChildren('simple string') PASSED!

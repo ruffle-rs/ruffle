@@ -1,0 +1,13 @@
+DoWhile_1return statement in a while block PASSED!
+DoWhile_2:  while with a labeled continue statement - code inside the loop, before the continue should be executed (10) PASSED!
+DoWhile_2:  while with a labeled continue statement - code after labeled continue should not be executed PASSED!
+DoWhile_2:  while with a labeled continue statement - code after loop but inside label should be executed PASSED!
+DoWhile_3: while with a labeled break statement - verify break out of loop PASSED!
+DoWhile_3: while with a labeled break statement - verify break out of label PASSED!
+DoWhile_3: while with a labeled break statement - verify correct exit from label PASSED!
+DoWhile_4: labeled while with an unlabeled break - verify break out of while loop PASSED!
+DoWhile_4: labeled while with an unlabeled break - verify break out of label PASSED!
+DoWhile_4: labeled while with an unlabeled break - verify that statements after label are evaluated PASSED!
+DoWhile_5: while with a labeled continue statement - continue should not execute statements above the loop PASSED!
+DoWhile_5: while with a labeled continue statement - code after labeled continue should not be executed PASSED!
+DoWhile_5: while with a labeled continue statement - code after loop but inside label should be executed PASSED!

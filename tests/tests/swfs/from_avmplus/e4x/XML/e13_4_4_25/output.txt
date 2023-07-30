@@ -1,0 +1,14 @@
+2 PASSED!
+3 PASSED!
+4 PASSED!
+MYXML = new XML(xmlDoc), MYXML.nodeKind() PASSED!
+MYXML = new XML(null), MYXML.nodeKind() PASSED!
+MYXML = new XML(undefined), MYXML.nodeKind() PASSED!
+MYXML = new XML(), MYXML.nodeKind() PASSED!
+MYXML = new XML(), MYXML.children()[0].nodeKind() PASSED!
+MYXML = new XML(), MYXML.children()[0].attributes()[0].nodeKind() PASSED!
+MYXML = new XML(), MYXML.children()[0].name1.children()[0].nodeKind() PASSED!
+MYXML = new XML("<!-- this is a comment -->"), MYXML.nodeKind() PASSED!
+MYXML = new XML("<!-- this is a comment -->"), MYXML.children()[0].nodeKind() PASSED!
+MYXML = new XML("<XML><?foo this is a pi ?></XML>"), MYXML.nodeKind() PASSED!
+MYXML = new XML("<XML><?foo this is a pi ?></XML>"), MYXML.children()[0].nodeKind() PASSED!

@@ -1,0 +1,276 @@
+parseInt.length PASSED!
+parseInt.length = 0 PASSED!
+var PROPS='', for ( var p in parseInt ) { PROPS += p, }, PROPS PASSED!
+delete parseInt.length PASSED!
+delete parseInt.length; parseInt.length PASSED!
+parseInt.length = null PASSED!
+parseInt() PASSED!
+parseInt('') PASSED!
+parseInt('','') PASSED!
+parseInt("     0xabcdef      PASSED!
+parseInt("     0XABCDEF      PASSED!
+parseInt( 0xabcdef ) PASSED!
+parseInt( 0XABCDEF ) PASSED!
+parseInt(0x0) PASSED!
+parseInt(0x0f) PASSED!
+parseInt(0x0ff) PASSED!
+parseInt(0x0fff) PASSED!
+parseInt(0x0ffff) PASSED!
+parseInt(0x0fffff) PASSED!
+parseInt(0x0ffffff) PASSED!
+parseInt(0x0fffffff) PASSED!
+parseInt(0x0ffffffff) PASSED!
+parseInt(0x0fffffffff) PASSED!
+parseInt(0x0ffffffffff) PASSED!
+parseInt(0x0fffffffffff) PASSED!
+parseInt(0x0ffffffffffff) PASSED!
+parseInt(0x0fffffffffffff) PASSED!
+parseInt(0x0ffffffffffffff) PASSED!
+parseInt(0X0) PASSED!
+parseInt(0X0f) PASSED!
+parseInt(0X0ff) PASSED!
+parseInt(0X0fff) PASSED!
+parseInt(0X0ffff) PASSED!
+parseInt(0X0fffff) PASSED!
+parseInt(0X0ffffff) PASSED!
+parseInt(0X0fffffff) PASSED!
+parseInt(0X0ffffffff) PASSED!
+parseInt(0X0fffffffff) PASSED!
+parseInt(0X0ffffffffff) PASSED!
+parseInt(0X0fffffffffff) PASSED!
+parseInt(0X0ffffffffffff) PASSED!
+parseInt(0X0fffffffffffff) PASSED!
+parseInt(0X0ffffffffffffff) PASSED!
+parseInt(0x0,16) PASSED!
+parseInt(0x0f,16) PASSED!
+parseInt(0x0ff,16) PASSED!
+parseInt(0x0fff,16) PASSED!
+parseInt(0x0ffff,16) PASSED!
+parseInt(0x0fffff,16) PASSED!
+parseInt(0x0ffffff,16) PASSED!
+parseInt(0x0fffffff,16) PASSED!
+parseInt(0x0ffffffff,16) PASSED!
+parseInt(0x0fffffffff,16) PASSED!
+parseInt(0x0ffffffffff,16) PASSED!
+parseInt(0x0fffffffffff,16) PASSED!
+parseInt(0x0ffffffffffff,16) PASSED!
+parseInt(0x0fffffffffffff,16) PASSED!
+parseInt(0x0ffffffffffffff,16) PASSED!
+parseInt(0x0,16) PASSED!
+parseInt(0x0f,16) PASSED!
+parseInt(0x0ff,16) PASSED!
+parseInt(0x0fff,16) PASSED!
+parseInt(0x0ffff,16) PASSED!
+parseInt(0x0fffff,16) PASSED!
+parseInt(0x0ffffff,16) PASSED!
+parseInt(0x0fffffff,16) PASSED!
+parseInt(0x0ffffffff,16) PASSED!
+parseInt(0x0fffffffff,16) PASSED!
+parseInt(0x0ffffffffff,16) PASSED!
+parseInt(0x0fffffffffff,16) PASSED!
+parseInt(0x0ffffffffffff,16) PASSED!
+parseInt(0x0fffffffffffff,16) PASSED!
+parseInt(0x0ffffffffffffff,16) PASSED!
+parseInt(0x0,null) PASSED!
+parseInt(0x0f,null) PASSED!
+parseInt(0x0ff,null) PASSED!
+parseInt(0x0fff,null) PASSED!
+parseInt(0x0ffff,null) PASSED!
+parseInt(0x0fffff,null) PASSED!
+parseInt(0x0ffffff,null) PASSED!
+parseInt(0x0fffffff,null) PASSED!
+parseInt(0x0ffffffff,null) PASSED!
+parseInt(0x0fffffffff,null) PASSED!
+parseInt(0x0ffffffffff,null) PASSED!
+parseInt(0x0fffffffffff,null) PASSED!
+parseInt(0x0ffffffffffff,null) PASSED!
+parseInt(0x0fffffffffffff,null) PASSED!
+parseInt(0x0ffffffffffffff,null) PASSED!
+parseInt(0x0, void 0) PASSED!
+parseInt(0x0, void 0) PASSED!
+parseInt(0x0f, void 0) PASSED!
+parseInt(0x0f, void 0) PASSED!
+parseInt(0x0ff, void 0) PASSED!
+parseInt(0x0ff, void 0) PASSED!
+parseInt(0x0fff, void 0) PASSED!
+parseInt(0x0fff, void 0) PASSED!
+parseInt(0x0ffff, void 0) PASSED!
+parseInt(0x0ffff, void 0) PASSED!
+parseInt(0x0fffff, void 0) PASSED!
+parseInt(0x0fffff, void 0) PASSED!
+parseInt(0x0ffffff, void 0) PASSED!
+parseInt(0x0ffffff, void 0) PASSED!
+parseInt(0x0fffffff, void 0) PASSED!
+parseInt(0x0fffffff, void 0) PASSED!
+parseInt(0x0ffffffff, void 0) PASSED!
+parseInt(0x0ffffffff, void 0) PASSED!
+parseInt(0x0fffffffff, void 0) PASSED!
+parseInt(0x0fffffffff, void 0) PASSED!
+parseInt(0x0ffffffffff, void 0) PASSED!
+parseInt(0x0ffffffffff, void 0) PASSED!
+parseInt(0x0fffffffffff, void 0) PASSED!
+parseInt(0x0fffffffffff, void 0) PASSED!
+parseInt(0x0ffffffffffff, void 0) PASSED!
+parseInt(0x0ffffffffffff, void 0) PASSED!
+parseInt(0x0fffffffffffff, void 0) PASSED!
+parseInt(0x0fffffffffffff, void 0) PASSED!
+parseInt(0x0ffffffffffffff, void 0) PASSED!
+parseInt(0x0ffffffffffffff, void 0) PASSED!
+parseInt( 0x0 , void 0) PASSED!
+parseInt( 0x0 , void 0) PASSED!
+parseInt(  0x0f  , void 0) PASSED!
+parseInt(  0x0f  , void 0) PASSED!
+parseInt(   0x0ff   , void 0) PASSED!
+parseInt(   0x0ff   , void 0) PASSED!
+parseInt(    0x0fff    , void 0) PASSED!
+parseInt(    0x0fff    , void 0) PASSED!
+parseInt(     0x0ffff     , void 0) PASSED!
+parseInt(     0x0ffff     , void 0) PASSED!
+parseInt(      0x0fffff      , void 0) PASSED!
+parseInt(      0x0fffff      , void 0) PASSED!
+parseInt(       0x0ffffff       , void 0) PASSED!
+parseInt(       0x0ffffff       , void 0) PASSED!
+parseInt(        0x0fffffff        , void 0) PASSED!
+parseInt(        0x0fffffff        , void 0) PASSED!
+parseInt(         0x0ffffffff         , void 0) PASSED!
+parseInt(         0x0ffffffff         , void 0) PASSED!
+parseInt(          0x0fffffffff          , void 0) PASSED!
+parseInt(          0x0fffffffff          , void 0) PASSED!
+parseInt(           0x0ffffffffff           , void 0) PASSED!
+parseInt(           0x0ffffffffff           , void 0) PASSED!
+parseInt(            0x0fffffffffff            , void 0) PASSED!
+parseInt(            0x0fffffffffff            , void 0) PASSED!
+parseInt(             0x0ffffffffffff             , void 0) PASSED!
+parseInt(             0x0ffffffffffff             , void 0) PASSED!
+parseInt(              0x0fffffffffffff              , void 0) PASSED!
+parseInt(              0x0fffffffffffff              , void 0) PASSED!
+parseInt(               0x0ffffffffffffff               , void 0) PASSED!
+parseInt(               0x0ffffffffffffff               , void 0) PASSED!
+parseInt(-0x0) PASSED!
+parseInt(-0x0f) PASSED!
+parseInt(-0x0ff) PASSED!
+parseInt(-0x0fff) PASSED!
+parseInt(-0x0ffff) PASSED!
+parseInt(-0x0fffff) PASSED!
+parseInt(-0x0ffffff) PASSED!
+parseInt(-0x0fffffff) PASSED!
+parseInt(-0x0ffffffff) PASSED!
+parseInt(-0x0fffffffff) PASSED!
+parseInt(-0x0ffffffffff) PASSED!
+parseInt(-0x0fffffffffff) PASSED!
+parseInt(-0x0ffffffffffff) PASSED!
+parseInt(-0x0fffffffffffff) PASSED!
+parseInt(-0x0ffffffffffffff) PASSED!
+parseInt(0x0g,16) PASSED!
+parseInt(0x0fg,16) PASSED!
+parseInt(0x0ffg,16) PASSED!
+parseInt(0x0fffg,16) PASSED!
+parseInt(0x0ffffg,16) PASSED!
+parseInt(0x0fffffg,16) PASSED!
+parseInt(0x0ffffffg,16) PASSED!
+parseInt(0x0fffffffg,16) PASSED!
+parseInt(0x0ffffffffg,16) PASSED!
+parseInt(0x0fffffffffg,16) PASSED!
+parseInt(0x0ffffffffffg,16) PASSED!
+parseInt(0x0fffffffffffg,16) PASSED!
+parseInt(0x0ffffffffffffg,16) PASSED!
+parseInt(0x0fffffffffffffg,16) PASSED!
+parseInt(0x0ffffffffffffffg,16) PASSED!
+parseInt(0x0g,16) PASSED!
+parseInt(0x0fg,16) PASSED!
+parseInt(0x0ffg,16) PASSED!
+parseInt(0x0fffg,16) PASSED!
+parseInt(0x0ffffg,16) PASSED!
+parseInt(0x0fffffg,16) PASSED!
+parseInt(0x0ffffffg,16) PASSED!
+parseInt(0x0fffffffg,16) PASSED!
+parseInt(0x0ffffffffg,16) PASSED!
+parseInt(0x0fffffffffg,16) PASSED!
+parseInt(0x0ffffffffffg,16) PASSED!
+parseInt(0x0fffffffffffg,16) PASSED!
+parseInt(0x0ffffffffffffg,16) PASSED!
+parseInt(0x0fffffffffffffg,16) PASSED!
+parseInt(0x0ffffffffffffffg,16) PASSED!
+parseInt(-0x0) PASSED!
+parseInt(-0x0f) PASSED!
+parseInt(-0x0ff) PASSED!
+parseInt(-0x0fff) PASSED!
+parseInt(-0x0ffff) PASSED!
+parseInt(-0x0fffff) PASSED!
+parseInt(-0x0ffffff) PASSED!
+parseInt(-0x0fffffff) PASSED!
+parseInt(-0x0ffffffff) PASSED!
+parseInt(-0x0fffffffff) PASSED!
+parseInt(-0x0ffffffffff) PASSED!
+parseInt(-0x0fffffffffff) PASSED!
+parseInt(-0x0ffffffffffff) PASSED!
+parseInt(-0x0fffffffffffff) PASSED!
+parseInt(-0x0ffffffffffffff) PASSED!
+parseInt(-0X0) PASSED!
+parseInt(-0X0f) PASSED!
+parseInt(-0X0ff) PASSED!
+parseInt(-0X0fff) PASSED!
+parseInt(-0X0ffff) PASSED!
+parseInt(-0X0fffff) PASSED!
+parseInt(-0X0ffffff) PASSED!
+parseInt(-0X0fffffff) PASSED!
+parseInt(-0X0ffffffff) PASSED!
+parseInt(-0X0fffffffff) PASSED!
+parseInt(-0X0ffffffffff) PASSED!
+parseInt(-0X0fffffffffff) PASSED!
+parseInt(-0X0ffffffffffff) PASSED!
+parseInt(-0X0fffffffffffff) PASSED!
+parseInt(-0X0ffffffffffffff) PASSED!
+parseInt(-0x0,16) PASSED!
+parseInt(-0x0f,16) PASSED!
+parseInt(-0x0ff,16) PASSED!
+parseInt(-0x0fff,16) PASSED!
+parseInt(-0x0ffff,16) PASSED!
+parseInt(-0x0fffff,16) PASSED!
+parseInt(-0x0ffffff,16) PASSED!
+parseInt(-0x0fffffff,16) PASSED!
+parseInt(-0x0ffffffff,16) PASSED!
+parseInt(-0x0fffffffff,16) PASSED!
+parseInt(-0x0ffffffffff,16) PASSED!
+parseInt(-0x0fffffffffff,16) PASSED!
+parseInt(-0x0ffffffffffff,16) PASSED!
+parseInt(-0x0fffffffffffff,16) PASSED!
+parseInt(-0x0ffffffffffffff,16) PASSED!
+parseInt(-0x0,16) PASSED!
+parseInt(-0x0f,16) PASSED!
+parseInt(-0x0ff,16) PASSED!
+parseInt(-0x0fff,16) PASSED!
+parseInt(-0x0ffff,16) PASSED!
+parseInt(-0x0fffff,16) PASSED!
+parseInt(-0x0ffffff,16) PASSED!
+parseInt(-0x0fffffff,16) PASSED!
+parseInt(-0x0ffffffff,16) PASSED!
+parseInt(-0x0fffffffff,16) PASSED!
+parseInt(-0x0ffffffffff,16) PASSED!
+parseInt(-0x0fffffffffff,16) PASSED!
+parseInt(-0x0ffffffffffff,16) PASSED!
+parseInt(-0x0fffffffffffff,16) PASSED!
+parseInt(-0x0ffffffffffffff,16) PASSED!
+parseInt( '0x' ) PASSED!
+parseInt( '0X' ) PASSED!
+parseInt( '11111111112222222222' ) PASSED!
+parseInt( '111111111122222222223' ) PASSED!
+parseInt( '11111111112222222222',10 ) PASSED!
+parseInt( '111111111122222222223',10 ) PASSED!
+parseInt( '01234567890', -1 ) PASSED!
+parseInt( '01234567890', 0 ) PASSED!
+parseInt( '01234567890', 1 ) PASSED!
+parseInt( '01234567890', 2 ) PASSED!
+parseInt( '01234567890', 3 ) PASSED!
+parseInt( '01234567890', 4 ) PASSED!
+parseInt( '01234567890', 5 ) PASSED!
+parseInt( '01234567890', 6 ) PASSED!
+parseInt( '01234567890', 7 ) PASSED!
+parseInt( '01234567890', 8 ) PASSED!
+parseInt( '01234567890', 9 ) PASSED!
+parseInt( '01234567890', 10 ) PASSED!
+parseInt( '1234567890', '0xa') PASSED!
+parseInt( '012345', 11 ) PASSED!
+parseInt( '012345', 35 ) PASSED!
+parseInt( '012345', 36 ) PASSED!
+parseInt( '012345', 37 ) PASSED!

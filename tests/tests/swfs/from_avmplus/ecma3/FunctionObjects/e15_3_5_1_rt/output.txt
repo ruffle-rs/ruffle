@@ -1,0 +1,3 @@
+Function('function body') not supported PASSED!
+var f = new Function(); f() PASSED!
+var f = new Function(); f(1,2,3,4,5) PASSED!

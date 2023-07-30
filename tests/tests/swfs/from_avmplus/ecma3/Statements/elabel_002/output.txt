@@ -1,0 +1,4 @@
+yoohoo: for ( property in object ) { result += object[property]; } break yoohoo } PASSED!
+yoohoo: for ( property in object ) { result += object[property]; } break yoohoo } PASSED!
+yoohoo: for ( property in object ) { result += object[property]; break yoohoo }} PASSED!
+yoohoo: for ( property in object ) { result += object[property]; break yoohoo }} PASSED!

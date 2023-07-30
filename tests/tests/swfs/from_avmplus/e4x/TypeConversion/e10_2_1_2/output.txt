@@ -1,0 +1,12 @@
+EscapeElementValue('"')       : PASSED!
+EscapeElementValue('<')        : PASSED!
+EscapeElementValue('>')        : PASSED!
+EscapeElementValue('&')        : PASSED!
+EscapeElementValue('&#x9')        : PASSED!
+EscapeElementValue('&#xA')        : PASSED!
+EscapeElementValue('&#xD')        : PASSED!
+EscapeElementValue('	')        : PASSED!
+EscapeElementValue('
+')        : PASSED!
+EscapeElementValue('
+')        : PASSED!

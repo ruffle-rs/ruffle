@@ -1,0 +1,8 @@
+verify that while expression was evaluated (should be null) PASSED!
+while expression is null PASSED!
+verify that while expression was evaluated (should be undefined) PASSED!
+while expression is undefined PASSED!
+verify that while expression was evaluated (should be 0) PASSED!
+while expression is 0 PASSED!
+verify that while expression was evaluated (should be NaN) PASSED!
+while expression is NaN PASSED!

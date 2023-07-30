@@ -1,0 +1,1 @@
+new MyObject() + new MyObject() PASSED!

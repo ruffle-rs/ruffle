@@ -1,0 +1,8 @@
+2 PASSED!
+3 PASSED!
+4 PASSED!
+MYXML = new XML(xmlDoc), MYXML.replace(0,'Mr. John') PASSED!
+MYXML = new XML(xmlDoc), MYXML.replace('phone','542144') PASSED!
+MYXML = new XML(xmlDoc), MYXML.replace('firstname','Johnny') PASSED!
+MYXML = new XML(xmlDoc), MYXML.replace('*','<phone>1234567</phone>') PASSED!
+MYXML = new XML(xmlDoc), MYXML.replace('@phone','<phone>7654321</phone>') PASSED!

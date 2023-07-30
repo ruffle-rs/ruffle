@@ -1,0 +1,36 @@
+1 PASSED!
+2 PASSED!
+3 PASSED!
+4 PASSED!
+5 PASSED!
+6 PASSED!
+7 PASSED!
+8 PASSED!
+Namespace.uri = blank PASSED!
+Namespace.uri = http://www.w3.org/TR/html4/ PASSED!
+Namespace.uri = http://www.w3.org/TR/html4/ PASSED!
+Namespace.uri = '' PASSED!
+Trying to prove that Namespace.uri is read only PASSED!
+Setting Namespace.uri PASSED!
+Trying to prove that Namespace.uri is read only PASSED!
+Setting Namespace.uri PASSED!
+Namespace.prefix = blank PASSED!
+Namespace.prefix = blank PASSED!
+Namespace.prefix = pfx PASSED!
+Namespace.prefix = '' PASSED!
+Trying to prove that Namespace.prefix is read only PASSED!
+Setting Namespace.prefix PASSED!
+Trying to prove that Namespace.prefix is read only PASSED!
+Setting Namespace.prefix PASSED!
+Using xml:lang namespace PASSED!
+Getting name() of xml:lang namespace PASSED!
+Getting uri of xml:lang namespace PASSED!
+Using xml:space namespace PASSED!
+Getting name() of xml:space namespace PASSED!
+Getting uri of xml:space namespace PASSED!
+Prefix in for-in loop PASSED!
+URI in for-in loop PASSED!
+Prefix in for-each loop PASSED!
+URI in for-each loop PASSED!
+Prefix in for-each loop PASSED!
+URI in for-each loop PASSED!

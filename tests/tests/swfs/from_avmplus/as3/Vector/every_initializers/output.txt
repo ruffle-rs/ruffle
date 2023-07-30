@@ -1,0 +1,5 @@
+every empty Vector PASSED!
+every small Vector returns true PASSED!
+every small array check function PASSED!
+every small array returns false on 0 PASSED!
+every small array with a specified this object PASSED!

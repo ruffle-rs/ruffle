@@ -1,0 +1,3 @@
+var a;!a PASSED!
+var a;a == null PASSED!
+var a;a == undefined PASSED!

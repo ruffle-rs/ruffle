@@ -1,0 +1,11 @@
+var obj = true; obj.__proto__.charCodeAt = String.prototype.charCodeAt; var s = ''; for ( var i = 0; i < 4; i++ ) s+= String.fromCharCode( obj.charCodeAt(i) ); s PASSED!
+var obj = 1234; obj.__proto__.charCodeAt = String.prototype.charCodeAt; var s = ''; for ( var i = 0; i < 4; i++ ) s+= String.fromCharCode( obj.charCodeAt(i) ); s PASSED!
+var obj = 1234; obj.__proto__.charCodeAt = String.prototype.charCodeAt; var s = ''; for ( var i = 0; i < 4; i++ ) s+= String.fromCharCode( obj.charCodeAt(i) ); s PASSED!
+var myvar = new String(true); var s = ''; for ( var i = 0; i < 4; i++ ) s+= String.fromCharCode( myvar.charCodeAt(i) ); s PASSED!
+var myvar = new String(1234); var s = ''; for ( var i = 0; i < 4; i++ ) s+= String.fromCharCode( myvar.charCodeAt(i) ); s PASSED!
+var myvar = new String('hello'); var s = ''; for ( var i = 0; i < 4; i++ ) s+= String.fromCharCode( myvar.charCodeAt(i) ); s PASSED!
+var myvar = new String('hello'); var s = myvar.charCodeAt(-1) PASSED!
+var myvar = new String(1234); var s = myvar.charCodeAt(0) PASSED!
+var myvar = new String(1234); var s = String.fromCharCode(myvar.charCodeAt()) PASSED!
+var myvar = new String(1234); var s = myvar.charCodeAt(5) PASSED!
+var myobj = new Object();myobj.charCodeAt = String.prototype.charCodeAt;  myobj.charCodeAt(4) PASSED!

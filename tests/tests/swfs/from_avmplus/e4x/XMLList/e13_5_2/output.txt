@@ -1,0 +1,36 @@
+1 PASSED!
+2 PASSED!
+3 PASSED!
+4 PASSED!
+5 PASSED!
+6 PASSED!
+7 PASSED!
+8 PASSED!
+9 PASSED!
+10 PASSED!
+typeof new XMLList(null) PASSED!
+new XMLList(null) instanceof XMLList PASSED!
+(new XMLList(null).length()) PASSED!
+MYOB = new XMLList(null); MYOB.toString() PASSED!
+typeof new XMLList(undefined) PASSED!
+new XMLList(undefined) instanceof XMLList PASSED!
+(new XMLList(undefined).length()) PASSED!
+MYOB = new XMLList(undefined); MYOB.toString() PASSED!
+typeof new XMLList() PASSED!
+new XMLList() instanceof XMLList PASSED!
+(new XMLList().length()) PASSED!
+MYOB = new XMLList(); MYOB.toString() PASSED!
+typeof new XMLList(5) PASSED!
+new XMLList(5) instanceof XMLList PASSED!
+(new XMLList(5).length()) PASSED!
+MYOB = new XMLList(5); MYOB.toString() PASSED!
+MYOB = new XMLList(5); MYOB.toXMLString() PASSED!
+typeof new XMLList(thisXML) PASSED!
+new XMLList(thisXML) instanceof XMLList PASSED!
+(new XMLList(thisXML).length()) PASSED!
+MYOB = new XMLList(thisXML); MYOB.toString() PASSED!
+var MYXML:XMLList = new XMLList("<a>b</a><c>d</c>"); PASSED!
+var MYXML:XMLList = new XMLList(<a>b</a><c>d</c>); PASSED!
+var MYXML:XMLList = <><a>b</a><c>d</c></>; PASSED!
+var MYXML:XMLList = new XMLList() PASSED!
+var MYXML:XMLList = new XMLList(5) PASSED!

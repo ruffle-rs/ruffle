@@ -1,0 +1,10 @@
+2 PASSED!
+2 PASSED!
+3 PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.length() PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.length() PASSED!
+MYXML = new XMLList(), MYXML.length() PASSED!
+MYXML = new XMLList(null), MYXML.length() PASSED!
+MYXML = new XMLList(undefined), MYXML.length() PASSED!
+MYXML = new XMLList('foo'), MYXML.length() PASSED!
+MYXML = new XMLList('<XML><!-- comment --></XML>'), MYXML.length() PASSED!

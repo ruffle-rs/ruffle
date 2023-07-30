@@ -1,0 +1,1 @@
+valof=Number.prototype.valueOf;x=4;x.valueOf=valof PASSED!

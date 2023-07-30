@@ -1,0 +1,6 @@
+var A = new Array(); A.length PASSED!
+var A = new Array(); A[Math.pow(2,32)-2] = 'hi'; A.length PASSED!
+var A = new Array(); A.length = 123; A.length PASSED!
+var A = new Array(); A.length = 123; var PROPS = ''; for ( var p in A ) { PROPS += ( p == 'length' ? p : ''); } PROPS PASSED!
+var A = new Array(); A.length = 123; delete A.length PASSED!
+var A = new Array(); A.length = 123; delete A.length; A.length PASSED!

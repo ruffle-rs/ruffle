@@ -1,0 +1,23 @@
+2 PASSED!
+3 PASSED!
+4 PASSED!
+5 PASSED!
+MYXML = new XMLList(xDoc), MYXML.employee[0].parent() PASSED!
+MYXML = new XMLList(xDoc), MYXML.parent() PASSED!
+MYXML = new('<XML></XML>'), MYXML.parent() PASSED!
+MYXML = new('text node'), MYXML.parent() PASSED!
+MYXML = new('<foo>bar</foo>'), MYXML.parent() PASSED!
+a - orphan node, a.parent() PASSED!
+b - orphan node, b.parent() PASSED!
+x1.children()[0].parent() PASSED!
+x1.children()[1].parent() PASSED!
+x1.children()[0].parent() === x1[0] PASSED!
+x1.children()[1].parent() === x1[0] PASSED!
+x1 = new XMLList(xDoc), x1.employee[0].parent() == x1[0] PASSED!
+x1 = new XMLList(xDoc), x1.employee.name1[0].parent() == x1.employee[0] PASSED!
+x1 = new XMLList(xDoc), x1.employee[0].attribute('id').parent() === x1.employee[0] PASSED!
+x1 = new XMLList(xDoc), x1.employee[1].parent() == x1[0] PASSED!
+x1 = new XMLList(xDoc), x1.employee.name1[1].parent() == x1.employee[0] PASSED!
+x1 = new XMLList(xDoc), x1.employee[1].attribute('id').parent() === x1.employee[1] PASSED!
+x1 = new XMLList(xDoc), x1.children()[0].parent() == x1[0] PASSED!
+x1 = new XMLList(xDoc), x1.children()[1].parent() == x1[0] PASSED!

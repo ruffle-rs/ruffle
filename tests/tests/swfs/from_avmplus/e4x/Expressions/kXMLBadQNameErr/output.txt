@@ -1,0 +1,4 @@
+Asserting for TypeError PASSED!
+<:x>hi</x> PASSED!
+Asserting for TypeError PASSED!
+<x :ns='attr'>hi</x> PASSED!

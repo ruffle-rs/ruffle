@@ -1,0 +1,13 @@
+a["3.00"] =  three; a.length PASSED!
+a["00010"] =  eight; a.length PASSED!
+a["37xyz"] =  thirty-five; a.length PASSED!
+a["5000000000"] =  5; a.length PASSED!
+a["-2"] =  -3; a.length PASSED!
+a[10] PASSED!
+a[3] PASSED!
+a[4] = "four"; a[4] PASSED!
+a["4"] PASSED!
+a["4.00"] PASSED!
+a.length PASSED!
+a["5000000000"] = 5; a.length PASSED!
+a["-2"] = -3; a.length PASSED!

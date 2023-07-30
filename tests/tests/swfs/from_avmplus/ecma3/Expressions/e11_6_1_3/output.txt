@@ -1,0 +1,9 @@
+var DATE1 = new Date(); DATE1 + DATE1 PASSED!
+var DATE1 = new Date(); DATE1 + 0 PASSED!
+var DATE1 = new Date(); DATE1 + new Number(0) PASSED!
+var DATE1 = new Date(); DATE1 + true PASSED!
+var DATE1 = new Date(); DATE1 + new Boolean(true) PASSED!
+var DATE1 = new Date(); DATE1 + new Boolean(true) PASSED!
+MYOB1 = new MyObject(DATE1); MYOB1 + new Number(1) PASSED!
+MYOB1 = new MyObject(DATE1); MYOB1 + 1 PASSED!
+MYOB1 = new MyObject(DATE1); MYOB1 + true PASSED!

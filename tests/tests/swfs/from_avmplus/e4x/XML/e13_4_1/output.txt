@@ -1,0 +1,17 @@
+1 PASSED!
+2 PASSED!
+3 PASSED!
+4 PASSED!
+5 PASSED!
+6 PASSED!
+7 PASSED!
+8 PASSED!
+9 PASSED!
+XML(null).valueOf().toString() PASSED!
+typeof XML(null) PASSED!
+XML(undefined).valueOf().toString() PASSED!
+typeof XML(undefined) PASSED!
+XML().valueOf().toString() PASSED!
+typeof XML() PASSED!
+XML(thisXML).valueOf().toString() PASSED!
+typeof XML(thisXML) PASSED!

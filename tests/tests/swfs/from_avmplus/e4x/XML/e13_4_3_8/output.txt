@@ -1,0 +1,40 @@
+XML.settings().ignoreComments;  PASSED!
+XML.settings().ignoreProcessingInstructions;  PASSED!
+XML.settings().ignoreWhitespace;  PASSED!
+XML.settings().prettyPrinting;  PASSED!
+XML.settings().prettyIndent;  PASSED!
+XML.settings().ignoreComments;  PASSED!
+XML.settings().ignoreProcessingInstructions;  PASSED!
+XML.settings().ignoreWhitespace;  PASSED!
+XML.settings().prettyPrinting;  PASSED!
+XML.settings().prettyIndent;  PASSED!
+XML.settings(null); XML.settings().ignoreComments;  PASSED!
+XML.settings(null); XML.settings().ignoreProcessingInstructions;  PASSED!
+XML.settings(null); XML.settings().ignoreWhitespace;  PASSED!
+XML.settings(null); XML.settings().prettyPrinting;  PASSED!
+XML.settings(null); XML.settings().prettyIndent;  PASSED!
+XML.settings().ignoreComments;  PASSED!
+XML.settings().ignoreProcessingInstructions;  PASSED!
+XML.settings().ignoreWhitespace;  PASSED!
+XML.settings().prettyPrinting;  PASSED!
+XML.settings().prettyIndent;  PASSED!
+XML.settings().ignoreComments;  PASSED!
+XML.settings().ignoreProcessingInstructions;  PASSED!
+XML.settings().ignoreWhitespace;  PASSED!
+XML.settings().prettyPrinting;  PASSED!
+XML.settings().prettyIndent;  PASSED!
+XML.setSettings (""); XML.settings().ignoreComments;  PASSED!
+XML.setSettings (""); XML.settings().ignoreProcessingInstructions;  PASSED!
+XML.setSettings (""); XML.settings().ignoreWhitespace;  PASSED!
+XML.setSettings (""); XML.settings().prettyPrinting;  PASSED!
+XML.setSettings (""); XML.settings().prettyIndent;  PASSED!
+XML.setSettings (undefined); XML.settings().ignoreComments;  PASSED!
+XML.setSettings (undefined); XML.settings().ignoreProcessingInstructions;  PASSED!
+XML.setSettings (undefined); XML.settings().ignoreWhitespace;  PASSED!
+XML.setSettings (undefined); XML.settings().prettyPrinting;  PASSED!
+XML.setSettings (undefined); XML.settings().prettyIndent;  PASSED!
+XML.setSettings (); XML.settings().ignoreComments;  PASSED!
+XML.setSettings (); XML.settings().ignoreProcessingInstructions;  PASSED!
+XML.setSettings (); XML.settings().ignoreWhitespace;  PASSED!
+XML.setSettings (); XML.settings().prettyPrinting;  PASSED!
+XML.setSettings (); XML.settings().prettyIndent;  PASSED!
