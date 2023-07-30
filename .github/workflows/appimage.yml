@@ -37,6 +37,9 @@ jobs:
       - name: Making empty src directory, to bypass issue with Cargo AppImage
         run: mkdir src
         
+      - name: Show directory
+        run: ls
+        
       - name: AppImage Export
         # APPIMAGE_EXTRACT_AND_RUN=1
         run: cargo appimage --package ruffle_desktop --verbose
