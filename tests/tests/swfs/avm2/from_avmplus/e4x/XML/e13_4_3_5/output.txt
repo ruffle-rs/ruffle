@@ -1,4 +1,0 @@
-XML.prettyPrinting = false, XML.prettyPrinting PASSED!
-XML.prettyPrinting = true, XML.prettyPrinting PASSED!
-MYOB = new XML(xmlDoc); XML.prettyPrinting = false; MYOB.toString() PASSED!
-MYOB = new XML(xmlDoc); XML.prettyPrinting = true; MYOB.toString() PASSED!

@@ -1,1 +1,0 @@
-Class.constructor.prototype == Boolean.constructor.prototype PASSED!

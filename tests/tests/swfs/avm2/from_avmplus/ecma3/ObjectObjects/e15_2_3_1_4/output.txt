@@ -1,1 +1,0 @@
-delete( Object.prototype ); Object.prototype PASSED!

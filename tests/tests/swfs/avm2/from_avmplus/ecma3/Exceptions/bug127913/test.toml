@@ -1,3 +1,0 @@
-num_ticks = 1
-known_failure = true
-ignore = true # infinite recursion

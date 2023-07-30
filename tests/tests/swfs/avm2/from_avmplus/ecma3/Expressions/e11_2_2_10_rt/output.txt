@@ -1,1 +1,0 @@
-var m = new Math() PASSED!

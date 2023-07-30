@@ -1,5 +1,0 @@
-Vector.<int>.prototype.reverse.length PASSED!
-reverse empty vector PASSED!
-reverse vector length 1 PASSED!
-reverse vector of int PASSED!
-reverse vector of String PASSED!

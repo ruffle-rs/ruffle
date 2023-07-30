@@ -1,1 +1,0 @@
-''.lastIndexOf(null) PASSED!

@@ -1,2 +1,0 @@
-var x = null; typeof x PASSED!
-typeof null PASSED!

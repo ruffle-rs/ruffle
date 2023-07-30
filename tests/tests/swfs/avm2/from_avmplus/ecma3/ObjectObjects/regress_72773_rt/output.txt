@@ -1,1 +1,0 @@
-Trying to catch an expected error PASSED!

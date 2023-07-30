@@ -1,2 +1,0 @@
-XML.prototype.constructor == XML PASSED!
-XML.prototype.constructor === XML PASSED!

@@ -1,3 +1,0 @@
-Function('function body') not supported PASSED!
-MyFunc.prototype.toString() PASSED!
-typeof MyFunc.prototype PASSED!

@@ -1,3 +1,0 @@
-Section A of test: the string literal "1" as a duplicate label PASSED!
-Section B of test: the numeric literal 1 as a duplicate label PASSED!
-Section C of test: the numeric literal 1 as a duplicate label, via a function parameter PASSED!

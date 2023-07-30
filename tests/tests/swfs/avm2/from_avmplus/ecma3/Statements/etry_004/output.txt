@@ -1,3 +1,0 @@
-Math.PI PASSED!
-Thrower(5) PASSED!
-Thrower("some random exception") PASSED!

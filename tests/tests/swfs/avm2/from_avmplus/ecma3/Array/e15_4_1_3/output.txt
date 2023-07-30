@@ -1,4 +1,0 @@
-typeof Array() PASSED!
-MYARR = new Array();MYARR.getClass = Object.prototype.toString;MYARR.getClass() PASSED!
-(Array()).length PASSED!
-Array().toString() PASSED!

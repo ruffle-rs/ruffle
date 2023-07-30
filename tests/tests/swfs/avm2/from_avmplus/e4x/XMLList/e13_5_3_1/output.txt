@@ -1,4 +1,0 @@
-typeof XMLList.prototype PASSED!
-XMLList.prototype instanceof XMLList PASSED!
-new XMLList().prototype instanceof XMLList PASSED!
-typeof (new XMLList().prototype) PASSED!

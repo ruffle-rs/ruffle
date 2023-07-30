@@ -1,2 +1,0 @@
-Object.constructor.prototype PASSED!
-Object.length PASSED!

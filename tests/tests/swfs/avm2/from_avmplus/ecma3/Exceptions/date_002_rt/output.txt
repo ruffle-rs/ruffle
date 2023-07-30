@@ -1,1 +1,0 @@
-MYDATE = new MyDate(); MYDATE.setTime(0) PASSED!

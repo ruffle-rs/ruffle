@@ -1,1 +1,0 @@
-var s = new STRING() PASSED!

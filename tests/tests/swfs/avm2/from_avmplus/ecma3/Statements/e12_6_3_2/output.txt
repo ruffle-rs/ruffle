@@ -1,1 +1,0 @@
-Boolean.prototype.foo = 34; for ( j in Boolean ) Boolean[j] PASSED!

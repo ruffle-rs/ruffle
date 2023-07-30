@@ -1,2 +1,0 @@
-Correct lzma uncompression on hello PASSED!
-Correct lzma uncompression on small PASSED!

@@ -1,2 +1,0 @@
-throw t PASSED!
-throw t PASSED!

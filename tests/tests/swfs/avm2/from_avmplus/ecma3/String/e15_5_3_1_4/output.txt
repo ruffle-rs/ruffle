@@ -1,1 +1,0 @@
-delete( String.prototype );String.prototype PASSED!

@@ -1,1 +1,0 @@
-var valof=String.prototype.valueOf; astring=new Number(); astring.valueOf = valof; astring.valueOf() PASSED!

@@ -1,1 +1,0 @@
-object = new Object(); object.toString = Number.prototype.toString; object.toString() (threw TypeError: Error #) PASSED!

@@ -1,1 +1,0 @@
-Function.constructor.prototype == Function.prototype PASSED!

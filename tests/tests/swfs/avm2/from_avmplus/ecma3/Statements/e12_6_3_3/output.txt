@@ -1,1 +1,0 @@
-for ( o.a in [1,2,3] ) { result += String( [1,2,3][o.a] ); } result PASSED!

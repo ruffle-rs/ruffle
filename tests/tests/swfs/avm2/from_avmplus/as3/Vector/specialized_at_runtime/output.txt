@@ -1,3 +1,0 @@
-Vector constructed via runtime specialization PASSED!
-Vector constructed via runtime specialization PASSED!
-Invalid use of unspecialized type in constructor PASSED!

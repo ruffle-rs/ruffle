@@ -1,2 +1,0 @@
-ReferenceError for multiname.isRtname() failing PASSED!
-ReferenceError for !attr failing PASSED!

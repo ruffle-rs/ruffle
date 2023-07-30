@@ -1,2 +1,0 @@
-spraddled initializer PASSED!
-spraddled initializer using xml PASSED!

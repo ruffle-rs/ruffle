@@ -1,1 +1,0 @@
-var string = ''; for ( prop in Number ) { string += ( prop == 'POSITIVE_INFINITY' ) ? prop : '' } string; PASSED!

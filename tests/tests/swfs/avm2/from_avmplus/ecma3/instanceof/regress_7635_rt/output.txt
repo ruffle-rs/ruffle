@@ -1,3 +1,0 @@
-function Foo() {}; theproto = {}; Foo.prototype = theproto; theproto instanceof Foo PASSED!
-o = {}; o instanceof o PASSED!
-var f = new Function(); f instanceof f PASSED!

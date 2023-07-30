@@ -1,1 +1,0 @@
-Testing catch block with URI Error PASSED!

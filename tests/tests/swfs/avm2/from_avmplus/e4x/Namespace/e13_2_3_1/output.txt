@@ -1,2 +1,0 @@
-typeof Namespace.prototype PASSED!
-Namespace.prototype instanceof Namespace PASSED!

@@ -1,5 +1,0 @@
-a.propertyIsEnumerable(0) PASSED!
-a.propertyIsEnumerable(1) PASSED!
-a.propertyIsEnumerable(2) PASSED!
-a.propertyIsEnumerable(3) PASSED!
-a.propertyIsEnumerable(4) PASSED!
