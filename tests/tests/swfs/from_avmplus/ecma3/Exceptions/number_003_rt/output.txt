@@ -1,0 +1,4 @@
+Assigning Number.prototype.valueOf as the valueOf of a String object  (threw ReferenceError: Error #1037) PASSED!
+Assigning Number.prototype.valueOf as the valueOf of new Number()  (threw ReferenceError: Error #1037) PASSED!
+Assigning Number.prototype.valueOf as the valueOf of new Number(4)  (threw ReferenceError: Error #1037) PASSED!
+Assigning Number.prototype.valueOf as the valueOf of '4'  (threw ReferenceError: Error #1037) PASSED!

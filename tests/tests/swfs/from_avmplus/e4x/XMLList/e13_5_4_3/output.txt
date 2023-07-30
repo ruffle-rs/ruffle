@@ -1,0 +1,15 @@
+2 PASSED!
+3 PASSED!
+4 PASSED!
+5 PASSED!
+6 PASSED!
+7 PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.attributes() instanceof XMLList PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.attributes() instanceof XML PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.attributes().length() PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.attributes().toString() PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.attributes().toString() PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.attributes()[0].nodeKind() PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.attributes()[1].nodeKind() PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.attributes()[2].nodeKind() PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.attributes().toXMLString() PASSED!

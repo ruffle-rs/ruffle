@@ -1,0 +1,2 @@
+count = 0; result = ""; function f() { count++; return new Array("h","e","l","l","o"); }for ( p in f() ) { result += f()[p] }; count PASSED!
+Verify all letters of hello are found in result PASSED!

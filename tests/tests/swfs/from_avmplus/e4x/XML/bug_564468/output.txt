@@ -1,0 +1,9 @@
+Asserting for TypeError PASSED!
+lowercase xml PASSED!
+Asserting for TypeError PASSED!
+uppercase xml PASSED!
+Asserting for TypeError PASSED!
+mixed xml PASSED!
+lower CDATA PASSED!
+mixed CDATA PASSED!
+upper CDATA PASSED!

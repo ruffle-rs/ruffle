@@ -1,0 +1,14 @@
+Array.prototype.toLocaleString.length PASSED!
+(new Array()).toLocaleString() PASSED!
+(new Array(2)).toLocaleString() PASSED!
+(new Array(0,1)).toLocaleString() PASSED!
+(new Array( Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY)).toLocaleString() PASSED!
+(new Array(Boolean(1), Boolean(0))).toLocaleString() PASSED!
+(new Array(void 0,null)).toLocaleString() PASSED!
+MYARR.toLocaleString() PASSED!
+MYARR2.toLocaleString() PASSED!
+MYARRARR.toLocaleString() PASSED!
+MYUNDEFARR.toLocaleString() PASSED!
+MYNULLARR.toLocaleString() PASSED!
+MYNULLARR2.toLocaleString() PASSED!
+MyAllArray.toLocaleString() PASSED!

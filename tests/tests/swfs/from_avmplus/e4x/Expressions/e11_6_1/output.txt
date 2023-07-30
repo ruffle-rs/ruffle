@@ -1,0 +1,18 @@
+1 PASSED!
+2 PASSED!
+3 PASSED!
+4 PASSED!
+5 PASSED!
+6 PASSED!
+7 PASSED!
+8 PASSED!
+9 PASSED!
+x.@attr=XMLList                             : PASSED!
+xx.@attr='B'                                 : PASSED!
+xx.@attr__='B'                               : PASSED!
+Replace XML Obj - XML                       : PASSED!
+Replace XML Obj - XMLList                   : PASSED!
+Append new XML property                     : PASSED!
+Multiple XML objs with given name - XML     : PASSED!
+Multiple XML objs with given name - XMLList : PASSED!
+x.b = 'A'                                 : PASSED!

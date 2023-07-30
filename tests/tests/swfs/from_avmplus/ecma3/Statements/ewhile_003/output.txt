@@ -1,0 +1,10 @@
+verify that while expression was evaluated (should be true) PASSED!
+while expression is true PASSED!
+verify that while expression was evaluated (should be 1) PASSED!
+while expression is 1 PASSED!
+verify that while expression was evaluated (should be true) PASSED!
+while expression is new Boolean(true) PASSED!
+verify that while expression was evaluated (should be [object Object]) PASSED!
+while expression is new Object() PASSED!
+verify that while expression was evaluated (should be hi) PASSED!
+while expression is "hi" PASSED!

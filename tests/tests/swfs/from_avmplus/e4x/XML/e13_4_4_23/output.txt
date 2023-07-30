@@ -1,0 +1,16 @@
+2 PASSED!
+3 PASSED!
+4 PASSED!
+5 PASSED!
+6 PASSED!
+7 PASSED!
+8 PASSED!
+9 PASSED!
+10 PASSED!
+MYXML = new XML(xmlDoc), MYXML.getNamespace() PASSED!
+MYXML = new XML(xmlDoc), MYXML.getNamespace() PASSED!
+MYXML = new XML(xmlDoc), MYXML.getNamespace('stylesheet') PASSED!
+MYXML = new XML(xmlDoc), MYXML.getNamespace('xsl') PASSED!
+MYXML = new XML(xmlDoc), MYXML.getNamespace('foo') PASSED!
+MYXML = new XML(xmlDoc), MYXML.b.c.getNamespace('foo') PASSED!
+Calling namespace on list with two items PASSED!

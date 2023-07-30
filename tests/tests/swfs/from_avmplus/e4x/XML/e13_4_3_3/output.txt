@@ -1,0 +1,7 @@
+XML.ignoreProcessingInstructions PASSED!
+XML.ignoreProcessingInstructions = false, XML.ignoreProcessingInstructions PASSED!
+XML.ignoreProcessingInstructions = true, XML.ignoreProcessingInstructions PASSED!
+MYXML = new XML(xmlDoc), MYXML.toString() PASSED!
+MYXML = new XML(xmlDoc), MYXML.toString() with ignoreProcessingInstructions=false PASSED!
+xml2 = new XML(MYXML), xml2.toString() PASSED!
+xml3 = new XML(MYXML), xml3.toString() PASSED!

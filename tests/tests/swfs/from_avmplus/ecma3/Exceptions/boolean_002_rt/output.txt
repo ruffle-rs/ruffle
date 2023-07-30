@@ -1,0 +1,6 @@
+Assigning Boolean.prototype.valueOf to a String object  PASSED!
+Assigning Boolean.prototype.valueOf to an instance of new Boolean() PASSED!
+Assigning Boolean.prototype.valueOf to an instance of new Boolean(true) PASSED!
+Assigning Boolean.prototype.valueOf to an instance of new Boolean(false) PASSED!
+Assigning Boolean.prototype.valueOf to an instance of 'true' PASSED!
+Assigning Boolean.prototype.valueOf to an instance of 'false' PASSED!

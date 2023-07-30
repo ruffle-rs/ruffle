@@ -1,0 +1,12 @@
+2 PASSED!
+3 PASSED!
+4 PASSED!
+5 PASSED!
+5 PASSED!
+6 PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.hasOwnProperty('copy') PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.hasOwnProperty('hasSimpleContent') PASSED!
+XML.prototype.hasOwnProperty('copy') PASSED!
+XML.prototype.hasOwnProperty('hasSimpleContent') PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.hasOwnProperty('firstname') PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.hasOwnProperty('lastname') PASSED!

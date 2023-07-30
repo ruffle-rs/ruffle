@@ -1,0 +1,4 @@
+STATUS: f.apply crash test.
+BUGNUMBER: 21836
+The second argument of f.apply() should be an array
+Make sure we don't crash PASSED!

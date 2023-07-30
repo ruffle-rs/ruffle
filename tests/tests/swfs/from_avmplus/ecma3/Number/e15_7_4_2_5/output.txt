@@ -1,0 +1,13 @@
+(0).toString(16) PASSED!
+Math.PI.toString(16) PASSED!
+Number.MIN_VALUE.toString(16) PASSED!
+Number.MAX_VALUE.toString(16) PASSED!
+(65535).toString(16) PASSED!
+(1e100).toString(16) PASSED!
+(1e307).toString(2) PASSED!
+(-65535).toString(16) PASSED!
+(-1e100).toString(16) PASSED!
+(-1e307).toString(2) PASSED!
+Infinity.toString(5) PASSED!
+(1e117).toString(2) PASSED!
+(-1e117).toString(2) PASSED!

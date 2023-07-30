@@ -1,0 +1,3 @@
+var x; typeof x PASSED!
+var x; typeof x == 'undefined PASSED!
+var x; x == void 0 PASSED!

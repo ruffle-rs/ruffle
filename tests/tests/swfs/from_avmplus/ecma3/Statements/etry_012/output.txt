@@ -1,0 +1,9 @@
+x = "hi" evaluated inner finally block PASSED!
+x = "hi" evaluated outer catch block  PASSED!
+x = "hi" evaluated outer finally block PASSED!
+throw "boo" evaluated inner finally block PASSED!
+throw "boo" evaluated outer catch block  PASSED!
+throw "boo" evaluated outer finally block PASSED!
+throw 3 evaluated inner finally block PASSED!
+throw 3 evaluated outer catch block  PASSED!
+throw 3 evaluated outer finally block PASSED!

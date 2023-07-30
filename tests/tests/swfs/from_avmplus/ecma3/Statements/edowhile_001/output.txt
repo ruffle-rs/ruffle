@@ -1,0 +1,4 @@
+do while ( 1 < 0 ) PASSED!
+do while ( 1 < 1 ) PASSED!
+do while ( 1 < -1 ) PASSED!
+do while ( 5 < 5 ) PASSED!

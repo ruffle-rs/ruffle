@@ -1,0 +1,8 @@
+set [0] to empty vector PASSED!
+set [0] to empty vector, length increments PASSED!
+set [1] element on empty vector, throws exception PASSED!
+set [1] element on empty vector, array is still empty PASSED!
+set fixed vector past fixed length throws exception PASSED!
+set fixed vector past fixed length throws exception, original vector remains same PASSED!
+set existing element in vector to new value PASSED!
+existing vector set expand the vector by setting element to v1[length] PASSED!

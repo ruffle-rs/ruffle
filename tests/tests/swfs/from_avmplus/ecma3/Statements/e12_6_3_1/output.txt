@@ -1,0 +1,1 @@
+var x; Number.prototype.foo = 34; for ( j in 7 ) x = j; x PASSED!

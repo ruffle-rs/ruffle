@@ -1,0 +1,5 @@
+MYEMPTYARRAY = new Array(); MYEMPTYARRAY.pop(); PASSED!
+MYARR = [2,1,8,6]; MYARR.pop(); PASSED!
+MYARR = [2,1,8,6]; MYARR.pop(); PASSED!
+MYARR = [2,1,8,6]; MYARR.pop(); PASSED!
+MYARR = [2,1,8,6]; MYARR.pop(); PASSED!

@@ -1,0 +1,15 @@
+2 PASSED!
+3 PASSED!
+4 PASSED!
+5 PASSED!
+6 PASSED!
+7 PASSED!
+8 PASSED!
+9 PASSED!
+10 PASSED!
+11 PASSED!
+MYXML = new XML(xmlDoc), MYXML.hasComplexContent() PASSED!
+MYXML = new XML(xmlDoc), MYXML.hasComplexContent() PASSED!
+MYXML = new XML(xmlDoc), MYXML.hasComplexContent() PASSED!
+MYXML = new XML(xmlDoc), MYXML.hasComplexContent() PASSED!
+MYXML = new XML(xmlDoc), MYXML.hasComplexContent() PASSED!

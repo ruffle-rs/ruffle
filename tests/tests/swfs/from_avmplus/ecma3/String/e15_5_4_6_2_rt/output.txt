@@ -1,0 +1,232 @@
+function f() { return this; }; function g() { var h = f; return h(); }; g().toString() PASSED!
+String.prototype.indexOf.length PASSED!
+delete String.prototype.indexOf.length PASSED!
+delete String.prototype.indexOf.length; String.prototype.indexOf.length PASSED!
+var s = new String(), s.indexOf() PASSED!
+TEST_STRING.indexOf( ¡ ) PASSED!
+TEST_STRING.indexOf( ¢ ) PASSED!
+TEST_STRING.indexOf( £ ) PASSED!
+TEST_STRING.indexOf( ¤ ) PASSED!
+TEST_STRING.indexOf( ¥ ) PASSED!
+TEST_STRING.indexOf( ¦ ) PASSED!
+TEST_STRING.indexOf( § ) PASSED!
+TEST_STRING.indexOf( ¨ ) PASSED!
+TEST_STRING.indexOf( © ) PASSED!
+TEST_STRING.indexOf( ª ) PASSED!
+TEST_STRING.indexOf( « ) PASSED!
+TEST_STRING.indexOf( ¬ ) PASSED!
+TEST_STRING.indexOf( ­ ) PASSED!
+TEST_STRING.indexOf( ® ) PASSED!
+TEST_STRING.indexOf( ¯ ) PASSED!
+TEST_STRING.indexOf( ° ) PASSED!
+TEST_STRING.indexOf( ± ) PASSED!
+TEST_STRING.indexOf( ² ) PASSED!
+TEST_STRING.indexOf( ³ ) PASSED!
+TEST_STRING.indexOf( ´ ) PASSED!
+TEST_STRING.indexOf( µ ) PASSED!
+TEST_STRING.indexOf( ¶ ) PASSED!
+TEST_STRING.indexOf( · ) PASSED!
+TEST_STRING.indexOf( ¸ ) PASSED!
+TEST_STRING.indexOf( ¹ ) PASSED!
+TEST_STRING.indexOf( º ) PASSED!
+TEST_STRING.indexOf( » ) PASSED!
+TEST_STRING.indexOf( ¼ ) PASSED!
+TEST_STRING.indexOf( ½ ) PASSED!
+TEST_STRING.indexOf( ¾ ) PASSED!
+TEST_STRING.indexOf( ¿ ) PASSED!
+TEST_STRING.indexOf( À ) PASSED!
+TEST_STRING.indexOf( Á ) PASSED!
+TEST_STRING.indexOf( Â ) PASSED!
+TEST_STRING.indexOf( Ã ) PASSED!
+TEST_STRING.indexOf( Ä ) PASSED!
+TEST_STRING.indexOf( Å ) PASSED!
+TEST_STRING.indexOf( Æ ) PASSED!
+TEST_STRING.indexOf( Ç ) PASSED!
+TEST_STRING.indexOf( È ) PASSED!
+TEST_STRING.indexOf( É ) PASSED!
+TEST_STRING.indexOf( Ê ) PASSED!
+TEST_STRING.indexOf( Ë ) PASSED!
+TEST_STRING.indexOf( Ì ) PASSED!
+TEST_STRING.indexOf( Í ) PASSED!
+TEST_STRING.indexOf( Î ) PASSED!
+TEST_STRING.indexOf( Ï ) PASSED!
+TEST_STRING.indexOf( Ð ) PASSED!
+TEST_STRING.indexOf( Ñ ) PASSED!
+TEST_STRING.indexOf( Ò ) PASSED!
+TEST_STRING.indexOf( Ó ) PASSED!
+TEST_STRING.indexOf( Ô ) PASSED!
+TEST_STRING.indexOf( Õ ) PASSED!
+TEST_STRING.indexOf( Ö ) PASSED!
+TEST_STRING.indexOf( × ) PASSED!
+TEST_STRING.indexOf( Ø ) PASSED!
+TEST_STRING.indexOf( Ù ) PASSED!
+TEST_STRING.indexOf( Ú ) PASSED!
+TEST_STRING.indexOf( Û ) PASSED!
+TEST_STRING.indexOf( Ü ) PASSED!
+TEST_STRING.indexOf( Ý ) PASSED!
+TEST_STRING.indexOf( Þ ) PASSED!
+TEST_STRING.indexOf( ß ) PASSED!
+TEST_STRING.indexOf( à ) PASSED!
+TEST_STRING.indexOf( á ) PASSED!
+TEST_STRING.indexOf( â ) PASSED!
+TEST_STRING.indexOf( ã ) PASSED!
+TEST_STRING.indexOf( ä ) PASSED!
+TEST_STRING.indexOf( å ) PASSED!
+TEST_STRING.indexOf( æ ) PASSED!
+TEST_STRING.indexOf( ç ) PASSED!
+TEST_STRING.indexOf( è ) PASSED!
+TEST_STRING.indexOf( é ) PASSED!
+TEST_STRING.indexOf( ê ) PASSED!
+TEST_STRING.indexOf( ë ) PASSED!
+TEST_STRING.indexOf( ì ) PASSED!
+TEST_STRING.indexOf( í ) PASSED!
+TEST_STRING.indexOf( î ) PASSED!
+TEST_STRING.indexOf( ï ) PASSED!
+TEST_STRING.indexOf( ð ) PASSED!
+TEST_STRING.indexOf( ñ ) PASSED!
+TEST_STRING.indexOf( ò ) PASSED!
+TEST_STRING.indexOf( ó ) PASSED!
+TEST_STRING.indexOf( ô ) PASSED!
+TEST_STRING.indexOf( õ ) PASSED!
+TEST_STRING.indexOf( ö ) PASSED!
+TEST_STRING.indexOf( ÷ ) PASSED!
+TEST_STRING.indexOf( ø ) PASSED!
+TEST_STRING.indexOf( ù ) PASSED!
+TEST_STRING.indexOf( ú ) PASSED!
+TEST_STRING.indexOf( û ) PASSED!
+TEST_STRING.indexOf( ü ) PASSED!
+TEST_STRING.indexOf( ý ) PASSED!
+TEST_STRING.indexOf( þ ) PASSED!
+TEST_STRING.indexOf( ÿ ) PASSED!
+TEST_STRING.indexOf( ¡, void 0 ) PASSED!
+TEST_STRING.indexOf( ¢, void 0 ) PASSED!
+TEST_STRING.indexOf( £, void 0 ) PASSED!
+TEST_STRING.indexOf( ¤, void 0 ) PASSED!
+TEST_STRING.indexOf( ¥, void 0 ) PASSED!
+TEST_STRING.indexOf( ¦, void 0 ) PASSED!
+TEST_STRING.indexOf( §, void 0 ) PASSED!
+TEST_STRING.indexOf( ¨, void 0 ) PASSED!
+TEST_STRING.indexOf( ©, void 0 ) PASSED!
+TEST_STRING.indexOf( ª, void 0 ) PASSED!
+TEST_STRING.indexOf( «, void 0 ) PASSED!
+TEST_STRING.indexOf( ¬, void 0 ) PASSED!
+TEST_STRING.indexOf( ­, void 0 ) PASSED!
+TEST_STRING.indexOf( ®, void 0 ) PASSED!
+TEST_STRING.indexOf( ¯, void 0 ) PASSED!
+TEST_STRING.indexOf( °, void 0 ) PASSED!
+TEST_STRING.indexOf( ±, void 0 ) PASSED!
+TEST_STRING.indexOf( ², void 0 ) PASSED!
+TEST_STRING.indexOf( ³, void 0 ) PASSED!
+TEST_STRING.indexOf( ´, void 0 ) PASSED!
+TEST_STRING.indexOf( µ, void 0 ) PASSED!
+TEST_STRING.indexOf( ¶, void 0 ) PASSED!
+TEST_STRING.indexOf( ·, void 0 ) PASSED!
+TEST_STRING.indexOf( ¸, void 0 ) PASSED!
+TEST_STRING.indexOf( ¹, void 0 ) PASSED!
+TEST_STRING.indexOf( º, void 0 ) PASSED!
+TEST_STRING.indexOf( », void 0 ) PASSED!
+TEST_STRING.indexOf( ¼, void 0 ) PASSED!
+TEST_STRING.indexOf( ½, void 0 ) PASSED!
+TEST_STRING.indexOf( ¾, void 0 ) PASSED!
+TEST_STRING.indexOf( ¿, void 0 ) PASSED!
+TEST_STRING.indexOf( À, void 0 ) PASSED!
+TEST_STRING.indexOf( Á, void 0 ) PASSED!
+TEST_STRING.indexOf( Â, void 0 ) PASSED!
+TEST_STRING.indexOf( Ã, void 0 ) PASSED!
+TEST_STRING.indexOf( Ä, void 0 ) PASSED!
+TEST_STRING.indexOf( Å, void 0 ) PASSED!
+TEST_STRING.indexOf( Æ, void 0 ) PASSED!
+TEST_STRING.indexOf( Ç, void 0 ) PASSED!
+TEST_STRING.indexOf( È, void 0 ) PASSED!
+TEST_STRING.indexOf( É, void 0 ) PASSED!
+TEST_STRING.indexOf( Ê, void 0 ) PASSED!
+TEST_STRING.indexOf( Ë, void 0 ) PASSED!
+TEST_STRING.indexOf( Ì, void 0 ) PASSED!
+TEST_STRING.indexOf( Í, void 0 ) PASSED!
+TEST_STRING.indexOf( Î, void 0 ) PASSED!
+TEST_STRING.indexOf( Ï, void 0 ) PASSED!
+TEST_STRING.indexOf( Ð, void 0 ) PASSED!
+TEST_STRING.indexOf( Ñ, void 0 ) PASSED!
+TEST_STRING.indexOf( Ò, void 0 ) PASSED!
+TEST_STRING.indexOf( Ó, void 0 ) PASSED!
+TEST_STRING.indexOf( Ô, void 0 ) PASSED!
+TEST_STRING.indexOf( Õ, void 0 ) PASSED!
+TEST_STRING.indexOf( Ö, void 0 ) PASSED!
+TEST_STRING.indexOf( ×, void 0 ) PASSED!
+TEST_STRING.indexOf( Ø, void 0 ) PASSED!
+TEST_STRING.indexOf( Ù, void 0 ) PASSED!
+TEST_STRING.indexOf( Ú, void 0 ) PASSED!
+TEST_STRING.indexOf( Û, void 0 ) PASSED!
+TEST_STRING.indexOf( Ü, void 0 ) PASSED!
+TEST_STRING.indexOf( Ý, void 0 ) PASSED!
+TEST_STRING.indexOf( Þ, void 0 ) PASSED!
+TEST_STRING.indexOf( ß, void 0 ) PASSED!
+TEST_STRING.indexOf( à, void 0 ) PASSED!
+TEST_STRING.indexOf( á, void 0 ) PASSED!
+TEST_STRING.indexOf( â, void 0 ) PASSED!
+TEST_STRING.indexOf( ã, void 0 ) PASSED!
+TEST_STRING.indexOf( ä, void 0 ) PASSED!
+TEST_STRING.indexOf( å, void 0 ) PASSED!
+TEST_STRING.indexOf( æ, void 0 ) PASSED!
+TEST_STRING.indexOf( ç, void 0 ) PASSED!
+TEST_STRING.indexOf( è, void 0 ) PASSED!
+TEST_STRING.indexOf( é, void 0 ) PASSED!
+TEST_STRING.indexOf( ê, void 0 ) PASSED!
+TEST_STRING.indexOf( ë, void 0 ) PASSED!
+TEST_STRING.indexOf( ì, void 0 ) PASSED!
+TEST_STRING.indexOf( í, void 0 ) PASSED!
+TEST_STRING.indexOf( î, void 0 ) PASSED!
+TEST_STRING.indexOf( ï, void 0 ) PASSED!
+TEST_STRING.indexOf( ð, void 0 ) PASSED!
+TEST_STRING.indexOf( ñ, void 0 ) PASSED!
+TEST_STRING.indexOf( ò, void 0 ) PASSED!
+TEST_STRING.indexOf( ó, void 0 ) PASSED!
+TEST_STRING.indexOf( ô, void 0 ) PASSED!
+TEST_STRING.indexOf( õ, void 0 ) PASSED!
+TEST_STRING.indexOf( ö, void 0 ) PASSED!
+TEST_STRING.indexOf( ÷, void 0 ) PASSED!
+TEST_STRING.indexOf( ø, void 0 ) PASSED!
+TEST_STRING.indexOf( ù, void 0 ) PASSED!
+TEST_STRING.indexOf( ú, void 0 ) PASSED!
+TEST_STRING.indexOf( û, void 0 ) PASSED!
+TEST_STRING.indexOf( ü, void 0 ) PASSED!
+TEST_STRING.indexOf( ý, void 0 ) PASSED!
+TEST_STRING.indexOf( þ, void 0 ) PASSED!
+TEST_STRING.indexOf( ÿ, void 0 ) PASSED!
+var foo = new MyObject('hello');foo.indexOf('h') PASSED!
+var foo = new MyObject('hello');foo.indexOf('e') PASSED!
+var foo = new MyObject('hello');foo.indexOf('l') PASSED!
+var foo = new MyObject('hello');foo.indexOf('l') PASSED!
+var foo = new MyObject('hello');foo.indexOf('o') PASSED!
+var foo = new MyObject('hello');foo.indexOf('X') PASSED!
+var foo = new MyObject('hello');foo.indexOf(5)  PASSED!
+var boo = new MyObject(true);boo.indexOf('t') PASSED!
+var boo = new MyObject(true);boo.indexOf('r') PASSED!
+var boo = new MyObject(true);boo.indexOf('u') PASSED!
+var boo = new MyObject(true);boo.indexOf('e') PASSED!
+var boo = new MyObject(true);boo.indexOf('true') PASSED!
+var boo = new MyObject(true);boo.indexOf('rue') PASSED!
+var boo = new MyObject(true);boo.indexOf('ue') PASSED!
+var boo = new MyObject(true);boo.indexOf('oy') PASSED!
+var noo = new MyObject(Math.PI); noo.indexOf('3')  PASSED!
+var noo = new MyObject(Math.PI); noo.indexOf('.')  PASSED!
+var noo = new MyObject(Math.PI); noo.indexOf('1')  PASSED!
+var noo = new MyObject(Math.PI); noo.indexOf('4')  PASSED!
+var noo = new MyObject(Math.PI); noo.indexOf('1')  PASSED!
+var noo = new MyObject(Math.PI); noo.indexOf('5')  PASSED!
+var noo = new MyObject(Math.PI); noo.indexOf('9')  PASSED!
+var arr = new Array('new','zoo','revue'); arr.indexOf = String.prototype.indexOf; arr.indexOf('new') PASSED!
+var arr = new Array('new','zoo','revue'); arr.indexOf = String.prototype.indexOf; arr.indexOf(',zoo,') PASSED!
+var obj = new Object(); obj.indexOf = String.prototype.indexOf; obj.indexOf('[object Object]') PASSED!
+var obj = new Object(); obj.indexOf = String.prototype.indexOf; obj.indexOf('bject') PASSED!
+var f = new Object( String.prototype.indexOf ); f('[object global]') PASSED!
+Assigning Object.prototype.toString to f.toString PASSED!
+var f = function() {}; f.toString = Object.prototype.toString; f.indexOf = String.prototype.indexOf; f.indexOf('[object Function-') PASSED!
+var b = new Boolean(); b.indexOf = String.prototype.indexOf; b.indexOf('true') PASSED!
+var b = new Boolean(); b.indexOf = String.prototype.indexOf; b.indexOf('true') PASSED!
+var b = new Boolean(); b.indexOf = String.prototype.indexOf; b.indexOf('true') PASSED!
+var n = new Number(1e21); n.indexOf = String.prototype.indexOf; n.indexOf('e') PASSED!
+var n = new Number(-Infinity); n.indexOf = String.prototype.indexOf; n.indexOf('-') PASSED!
+var n = new Number(0xFF); n.indexOf = String.prototype.indexOf; n.indexOf('5') PASSED!
+var m = Math; m.indexOf = String.prototype.indexOf; m.indexOf( 'Math' ) PASSED!
+var d = new Date(0); d.indexOf = String.prototype.indexOf; d.getTimezoneOffset()>0 ? d.indexOf('31') : d.indexOf('1') PASSED!

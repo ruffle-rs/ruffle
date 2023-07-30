@@ -1,0 +1,65 @@
+1 PASSED!
+17 PASSED!
+18 PASSED!
+2 PASSED!
+3 PASSED!
+4 PASSED!
+5 PASSED!
+6 PASSED!
+7 PASSED!
+8 PASSED!
+9 PASSED!
+10 PASSED!
+11 PASSED!
+12 PASSED!
+13 PASSED!
+14 PASSED!
+15 PASSED!
+16 PASSED!
+16 PASSED!
+x=XMLList,                y=XML                   : PASSED!
+x=XMLList,                y=XMLList               : PASSED!
+x=XMLList,                y=XMLList               : PASSED!
+x=XMLList,                y=XMLList               : PASSED!
+x.[[Class]]='text,        y.[[Class]]='text'      : PASSED!
+x.[[Class]]='text,        y.[[Class]]='attribute' : PASSED!
+x.[[Class]]='text,        y.hasSimpleContent()    : PASSED!
+x.[[Class]]='attribute,   y.[[Class]]='text'      : PASSED!
+x.[[Class]]='attribute,   y.[[Class]]='attribute' : PASSED!
+x.[[Class]]='attribute,   y.hasSimpleContent()    : PASSED!
+x.hasSimpleContent(),     y.[[Class]]='text'      : PASSED!
+x.hasSimpleContent(),     y.[[Class]]='attribute' : PASSED!
+x.hasSimpleContent(),     y.hasSimpleContent()    : PASSED!
+QName('n0'),              QName('n0')              : PASSED!
+QName('n0'),              QName('nA')              : PASSED!
+QName('n0'),              QName('ns1','n1')        : PASSED!
+QName('n0'),              QName('ns1','nB')        : PASSED!
+QName('n0'),              QName('nsB','n1')        : PASSED!
+QName('n0'),              QName('naB','nB')        : PASSED!
+QName('ns1','n1'),        QName('n0')              : PASSED!
+QName('ns1','n1'),        QName('nA')              : PASSED!
+QName('ns1','n1'),        QName('ns1','n1')        : PASSED!
+QName('ns1','n1'),        QName('ns1','nB')        : PASSED!
+QName('ns1','n1'),        QName('nsB','n1')        : PASSED!
+QName('ns1','n1'),        QName('nsB','nB')        : PASSED!
+Namespace(),              Namespace()              : PASSED!
+Namespace(),              Namespace('uri1')        : PASSED!
+Namespace(),              Namespace('uriB')        : PASSED!
+Namespace(),              Namespace('pre2','uri2') : PASSED!
+Namespace(),              Namespace('pre2','uriC') : PASSED!
+Namespace(),              Namespace('preC','uri2') : PASSED!
+Namespace(),              Namespace('preC','uriC') : PASSED!
+Namespace('uri1'),        Namespace()              : PASSED!
+Namespace('uri1'),        Namespace('uri1')        : PASSED!
+Namespace('uri1'),        Namespace('uriB')        : PASSED!
+Namespace('uri1'),        Namespace('pre2','uri2') : PASSED!
+Namespace('uri1'),        Namespace('pre2','uriC') : PASSED!
+Namespace('uri1'),        Namespace('preC','uri2') : PASSED!
+Namespace('uri1'),        Namespace('preC','uriC') : PASSED!
+Namespace('pre2','uri2'), Namespace()              : PASSED!
+Namespace('pre2','uri2'), Namespace('uri1')        : PASSED!
+Namespace('pre2','uri2'), Namespace('uriB')        : PASSED!
+Namespace('pre2','uri2'), Namespace('pre2','uri2') : PASSED!
+Namespace('pre2','uri2'), Namespace('pre2','uriC') : PASSED!
+Namespace('pre2','uri2'), Namespace('preC','uri2') : PASSED!
+Namespace('pre2','uri2'), Namespace('preC','uriC') : PASSED!

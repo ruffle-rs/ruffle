@@ -1,0 +1,18 @@
+SECTION var x = 3; function f() { var a = x; var x = 23; return a; }; f() PASSED!
+SECTION var x created with global scope with property attribute {DontDelete} PASSED!
+SECTION var x created with global scope with property attribute {DontDelete} PASSED!
+SECTION var y created with function scope PASSED!
+SECTION undefined variables created with function scope PASSED!
+SECTION variables created with function scope and assigned with values PASSED!
+SECTION undefined variables PASSED!
+SECTION undefined variables PASSED!
+SECTION undefined variables PASSED!
+SECTION undefined variables PASSED!
+SECTION undefined variables PASSED!
+SECTION undefined variables PASSED!
+SECTION undefined variables PASSED!
+SECTION variable assigned with value when the variable statement is executed PASSED!
+SECTION ariable assigned with value when the variable statement is executed PASSED!
+SECTION variable assigned with value when the variable statement is executed PASSED!
+SECTION variable assigned with value when the variable statement is executed PASSED!
+SECTION variable assigned with value when the variable statement is executed PASSED!

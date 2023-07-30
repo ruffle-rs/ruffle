@@ -1,0 +1,31 @@
+x = new Boolean(true); x.charCodeAt=String.prototype.charCodeAt;x.charCodeAt(0) PASSED!
+x = new Boolean(true); x.charCodeAt=String.prototype.charCodeAt;x.charCodeAt(1) PASSED!
+x = new Boolean(true); x.charCodeAt=String.prototype.charCodeAt;x.charCodeAt(2) PASSED!
+x = new Boolean(true); x.charCodeAt=String.prototype.charCodeAt;x.charCodeAt(3) PASSED!
+x = new Boolean(true); x.charCodeAt=String.prototype.charCodeAt;x.charCodeAt(4) PASSED!
+x = new Boolean(true); x.charCodeAt=String.prototype.charCodeAt;x.charCodeAt(-1) PASSED!
+x = new Boolean(true); x.charCodeAt=String.prototype.charCodeAt;x.charCodeAt(true) PASSED!
+x = new Boolean(true); x.charCodeAt=String.prototype.charCodeAt;x.charCodeAt(false) PASSED!
+x = new String(); x.charCodeAt(0) PASSED!
+x = new String(); x.charCodeAt(1) PASSED!
+x = new String(); x.charCodeAt(-1) PASSED!
+x = new String(); x.charCodeAt(NaN) PASSED!
+x = new String(); x.charCodeAt(Number.POSITIVE_INFINITY) PASSED!
+x = new String(); x.charCodeAt(Number.NEGATIVE_INFINITY) PASSED!
+x = new Array(1,2,3); x.charCodeAt = String.prototype.charCodeAt; x.charCodeAt(0) PASSED!
+x = new Array(1,2,3); x.charCodeAt = String.prototype.charCodeAt; x.charCodeAt(1) PASSED!
+x = new Array(1,2,3); x.charCodeAt = String.prototype.charCodeAt; x.charCodeAt(2) PASSED!
+x = new Array(1,2,3); x.charCodeAt = String.prototype.charCodeAt; x.charCodeAt(3) PASSED!
+x = new Array(1,2,3); x.charCodeAt = String.prototype.charCodeAt; x.charCodeAt(4) PASSED!
+x = new Array(1,2,3); x.charCodeAt = String.prototype.charCodeAt; x.charCodeAt(5) PASSED!
+x = function() { this.charCodeAt = String.prototype.charCodeAt }; f = new x(); f.charCodeAt(0) PASSED!
+x = function() { this.charCodeAt = String.prototype.charCodeAt }; f = new x(); f.charCodeAt(1) PASSED!
+x = function() { this.charCodeAt = String.prototype.charCodeAt }; f = new x(); f.charCodeAt(2) PASSED!
+x = function() { this.charCodeAt = String.prototype.charCodeAt }; f = new x(); f.charCodeAt(3) PASSED!
+x = function() { this.charCodeAt = String.prototype.charCodeAt }; f = new x(); f.charCodeAt(4) PASSED!
+x = function() { this.charCodeAt = String.prototype.charCodeAt }; f = new x(); f.charCodeAt(5) PASSED!
+x = function() { this.charCodeAt = String.prototype.charCodeAt }; f = new x(); f.charCodeAt(6) PASSED!
+x = function() { this.charCodeAt = String.prototype.charCodeAt }; f = new x(); f.charCodeAt(7) PASSED!
+x = function() { this.charCodeAt = String.prototype.charCodeAt }; f = new x(); f.charCodeAt(8) PASSED!
+x = function() { this.charCodeAt = String.prototype.charCodeAt }; f = new x(); f.charCodeAt(9) PASSED!
+x = function() { this.charCodeAt = String.prototype.charCodeAt }; f = new x(); f.charCodeAt(10) PASSED!

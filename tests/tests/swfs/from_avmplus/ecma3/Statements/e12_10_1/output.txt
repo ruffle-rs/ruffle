@@ -1,0 +1,8 @@
+with( new Number() ) { this +'' } PASSED!
+var MYOB = new WithObject(true); with (MYOB) { parseInt() } PASSED!
+var MYOB = new WithObject(false); with (MYOB) { NaN } PASSED!
+var MYOB = new WithObject(NaN); with (MYOB) { Infinity } PASSED!
+var MYOB = new WithObject(false); with (MYOB) { }; Infinity PASSED!
+var MYOB = new WithObject(0); with (MYOB) { delete Infinity; Infinity } PASSED!
+var MYOB = new WithObject(false); while (true) { with (MYOB) { Infinity; break; } } PASSED!
+var MYOB = new WithObject(true); with (MYOB) { Infinity } PASSED!

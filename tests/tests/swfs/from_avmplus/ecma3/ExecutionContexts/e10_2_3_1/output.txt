@@ -1,0 +1,2 @@
+var o = new MyObject('hello'); o.THIS == x PASSED!
+var o = MyFunction(); o == this PASSED!

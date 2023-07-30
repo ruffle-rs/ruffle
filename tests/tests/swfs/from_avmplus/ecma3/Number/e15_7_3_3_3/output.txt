@@ -1,0 +1,2 @@
+Trying to verify the ReadOnly attribute of Number.MIN_VALUE PASSED!
+Number.MIN_VALUE=0; Number.MIN_VALUE PASSED!

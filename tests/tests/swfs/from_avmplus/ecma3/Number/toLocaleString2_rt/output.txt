@@ -1,0 +1,1 @@
+o = new Object(); o.toString = Number.prototype.toString; o.toLocaleString() PASSED!

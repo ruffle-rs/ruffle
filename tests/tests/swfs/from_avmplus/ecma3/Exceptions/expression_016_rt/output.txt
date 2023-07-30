@@ -1,0 +1,1 @@
+(void 0).valueOf() (threw TypeError: Error #1010Attempted to create an object of a variable that is not a function/class) PASSED!

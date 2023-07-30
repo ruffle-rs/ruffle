@@ -1,0 +1,15 @@
+2 PASSED!
+MYXML = new XML(xmlDoc), MYXML.setNamespace('http://xyx.org/xml'),MYXML.toString() PASSED!
+MYXML = new XML(xmlDoc), MYXML.setNamespace('http://xyx.org/xml'),MYXML.getNamespace() PASSED!
+MYXML = new XML(xmlDoc), MYXML.setNamespace('http://zxz.org/xml'),MYXML.toString() PASSED!
+Adding two namespaces by uri PASSED!
+Adding two namespaces with prefix 'zzz' PASSED!
+Adding two namespaces with prefix 'zzz' PASSED!
+Calling setNamespace() on an attribute PASSED!
+Calling setNamespace() on an attribute with conflicting namespace prefix PASSED!
+Calling setNamespace() on an attribute with conflicting namespace prefix PASSED!
+Calling setNamespace() on an attribute with conflicting namespace prefix PASSED!
+Calling setNamespace() on an attribute with conflicting namespace PASSED!
+Calling setNamespace() on an attribute with conflicting namespace prefix PASSED!
+Calling setNamespace() on an attribute with conflicting namespace PASSED!
+Calling setNamespace() on an attribute with no existing namespace PASSED!

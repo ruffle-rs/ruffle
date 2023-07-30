@@ -1,0 +1,2 @@
+function(){ MYVAR='PASSED';})() PASSED!
+function(){ MYVAR='PASSED';})() PASSED!

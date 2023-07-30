@@ -1,0 +1,7 @@
+Verifying the read only property of Object.prototype PASSED!
+var OBJ_PROT = Object.prototype; Object.prototype = null; Object.prototype == OBJ_PROT PASSED!
+Verifying the read only property of Object.prototype PASSED!
+Object.prototype=0; Object.prototype PASSED!
+var OBJ_PROT1 = Object.prototype; delete( Object.prototype ); OBJ_PROT1 == Object.prototype PASSED!
+delete( Object.prototype ) PASSED!
+var string = ''; for ( prop in Object ) { string += ( prop == 'prototype' ) ? prop: '' } string; PASSED!

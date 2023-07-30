@@ -1,0 +1,18 @@
+2 PASSED!
+3 PASSED!
+MYXML = new XML(xmlDoc), MYXML.prependChild(child1), MYXML.toString() PASSED!
+MYXML.prependChild(child1), MYXML.toString() PASSED!
+Making sure child added is a duplicate PASSED!
+Making sure child added is a true copy PASSED!
+MYXML.prependChild(child1), MYXML.toString() PASSED!
+MYXML.prependChild('simple text string'), MYXML.toString() PASSED!
+MYXML.prependChild('<!-- comment -->'), MYXML.toString() PASSED!
+MYXML.prependChild('<!-- comment -->'), MYXML.toString() PASSED!
+MYXML.prependChild('<?xml-stylesheet href="classic.xsl" type="text/xml"?>'), MYXML.toString() PASSED!
+MYXML.prependChild('<?xml-stylesheet href="classic.xsl" type="text/xml"?>'), MYXML.toString() PASSED!
+MYXML.prependChild("<@notanattribute>hi</@notanattribute>"), MYXML.toString() PASSED!
+Prepend XMLList PASSED!
+Prepend a string to child node PASSED!
+Prepend a string to top node PASSED!
+Prepend a node to child node PASSED!
+a = <a><b><c/></b></a>, a.b.prependChild(a) PASSED!

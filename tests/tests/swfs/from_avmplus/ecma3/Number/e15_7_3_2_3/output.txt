@@ -1,0 +1,2 @@
+Trying to verify the ReadOnly attribute of Number.MAX_VALUE PASSED!
+Number.MAX_VALUE=0; Number.MAX_VALUE PASSED!

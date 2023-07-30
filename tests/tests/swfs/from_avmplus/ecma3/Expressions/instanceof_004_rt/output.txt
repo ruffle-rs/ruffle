@@ -1,0 +1,1 @@
+(toString) instanceof function Function() {} PASSED!

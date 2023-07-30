@@ -1,0 +1,5 @@
+break out of a labeled for loop: 0 PASSED!
+break out of a labeled for loop: 1 PASSED!
+break out of a labeled for loop: -1 PASSED!
+break out of a labeled for loop: false PASSED!
+break out of a labeled for loop: true PASSED!

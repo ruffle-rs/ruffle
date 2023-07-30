@@ -1,0 +1,6 @@
+pat.constructor.prototype == Engineer.prototype PASSED!
+pat instanceof Engineer PASSED!
+pat instanceof WorkerBee ) PASSED!
+pat instanceof Employee ) PASSED!
+pat instanceof Object ) PASSED!
+pat instanceof SalesPerson ) PASSED!

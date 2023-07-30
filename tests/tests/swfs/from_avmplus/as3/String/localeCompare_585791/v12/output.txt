@@ -1,0 +1,8 @@
+Test "m".localeCompare(null) with SWF11+ behavior PASSED!
+Test "null".localeCompare(null) with SWF11+ behavior PASSED!
+Test "o".localeCompare(null) with SWF11+ behavior PASSED!
+Test "".localeCompare(null) with SWF11+ behavior PASSED!
+Test "t".localeCompare(undefined) with SWF11+ behavior PASSED!
+Test "undefined".localeCompare(undefined) with SWF11+ behavior PASSED!
+Test "v".localeCompare(undefined) with SWF11+ behavior PASSED!
+Test "".localeCompare(undefined) with SWF11+ behavior PASSED!

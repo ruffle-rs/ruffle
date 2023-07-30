@@ -1,0 +1,6 @@
+var MYVAR; if ( true ) MYVAR='PASSED'; else MYVAR= 'FAILED'; PASSED!
+var MYVAR; if ( false ) MYVAR='FAILED'; else MYVAR= 'PASSED'; PASSED!
+var MYVAR; if ( new Boolean(true) ) MYVAR='PASSED'; else MYVAR= 'FAILED'; PASSED!
+var MYVAR; if ( new Boolean(false) ) MYVAR='PASSED'; else MYVAR= 'FAILED'; PASSED!
+var MYVAR; if ( 1 ) MYVAR='PASSED'; else MYVAR= 'FAILED'; PASSED!
+var MYVAR; if ( 0 ) MYVAR='FAILED'; else MYVAR= 'PASSED'; PASSED!

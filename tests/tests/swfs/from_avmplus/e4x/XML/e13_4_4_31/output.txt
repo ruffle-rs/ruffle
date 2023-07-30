@@ -1,0 +1,18 @@
+1.6 PASSED!
+2 PASSED!
+2.5 PASSED!
+MYXML.removeNamespace(QName reference) PASSED!
+MYXML.removeNamespace(no Qname reference) PASSED!
+Two namespaces in one node PASSED!
+Two namespaces in one node PASSED!
+Two namespace in two different nodes PASSED!
+Remove namespace without prefix: <a>
+  <b s="1">
+    <c>55</c>
+    <d>bird</d>
+  </b>
+  <b s="2">
+    <c>5</c>
+    <d>dinosaur</d>
+  </b>
+</a> PASSED!

@@ -1,0 +1,6 @@
+Asserting for TypeError PASSED!
+x = new XML(var xml = new XML("<ns:x><a>1</a><a>2</a><a>3</a></ns:x>") PASSED!
+Asserting for TypeError PASSED!
+x = new XML(var xml = new XML("<ns:x xmlns:as="http://foo.bar"><a>1</a><a>2</a><a>3</a></ns:x>") PASSED!
+Asserting for TypeError PASSED!
+x = new XML(var xml = new XML("<ns:b xmlns:ns="http://foo.bar"><as:a>1</as:a></ns:b>") PASSED!

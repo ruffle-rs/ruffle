@@ -1,0 +1,4 @@
+const vSelfConst:Vector.<Test> PASSED!
+var vSelfVar:Vector.<Test> PASSED!
+var vSelfLiteral:Vector.<Test> PASSED!
+var vInitStatic:Vector.<Test> PASSED!

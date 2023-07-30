@@ -1,0 +1,11 @@
+2 PASSED!
+3 PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.employee[0].toString() PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.employee[1].toString() PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.employee[0].firstname.toString() PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.employee[1].firstname.toString() PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.employee[0].toString() PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.employee[1].toString() PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.employee[0].firstname.toString() PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.employee[1].firstname.toString() PASSED!
+MYXML = new XMLList(xmlDoc), MYXML.toString() PASSED!

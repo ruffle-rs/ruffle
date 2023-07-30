@@ -1,0 +1,3 @@
+num_ticks = 1
+known_failure = true # https://github.com/ruffle-rs/ruffle/issues/12321
+ignore = true # we don't have correct max bounds on Vectors, so this test tries to allocate 18GB...

@@ -1,0 +1,3 @@
+Thrown undefined should be uncaught. PASSED!
+undefined
+	at global$init()

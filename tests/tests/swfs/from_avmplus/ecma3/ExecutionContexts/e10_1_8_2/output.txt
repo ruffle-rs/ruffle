@@ -1,0 +1,8 @@
+GetCallee() PASSED!
+GetLength(1,2,3,4,5) PASSED!
+GetArguments(0, 1,2,3,4,5)[0] PASSED!
+GetArguments(0, 1,2,3,4,5)[1] PASSED!
+GetArguments(0, 1,2,3,4,5)[2] PASSED!
+GetArguments(0, 1,2,3,4,5)[3] PASSED!
+GetArguments(0, 1,2,3,4,5)[4] PASSED!
+GetArguments(0, 1,2,3,4,5)[5] PASSED!

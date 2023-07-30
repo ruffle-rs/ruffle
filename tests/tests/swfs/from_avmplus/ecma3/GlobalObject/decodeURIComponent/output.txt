@@ -1,0 +1,24 @@
+decodeURIComponent('Hello%7B%5BWorld%5D%7D') PASSED!
+decodeURIComponent('Macromedia%20-%20Flash') PASSED!
+decodeURIComponent('2%20*%204%20%2B%20%5B8%20%2B%205%20%5D%20-%203') PASSED!
+decodeURIComponent('Flash(Macromedia)') PASSED!
+decodeURIComponent('BugID%20%2317485') PASSED!
+decodeURIComponent('http%3A%2F%2Fwww.macromedia.com%2Fflasha%20player') PASSED!
+decodeURIComponent('http%3A%2F%2Fwww.macromedia.com%2FflashA%20player') PASSED!
+decodeURIComponent('http%3A%2F%2Fwww.macromedia.com%2Fflash_%20player') PASSED!
+decodeURIComponent('http%3A%2F%2Fwww.macromedia.com%2Fflash-%20player') PASSED!
+decodeURIComponent('http%3A%2F%2Fwww.macromedia.com%2Fflash.%20player') PASSED!
+decodeURIComponent('http%3A%2F%2Fwww.macromedia.com%2Fflash!%20player') PASSED!
+decodeURIComponent('http%3A%2F%2Fwww.macromedia.com%2Fflash~%20player') PASSED!
+decodeURIComponent('http%3A%2F%2Fwww.macromedia.com%2Fflash*%20player') PASSED!
+decodeURIComponent('http%3A%2F%2Fwww.macromedia.com%2F'flash%20player'') PASSED!
+decodeURIComponent('http%3A%2F%2Fwww.macromedia.com%2F(flash%20player)') PASSED!
+decodeURIComponent('http%3A%2F%2Fwww.macromedia.com%2Fflash%3B%20player') PASSED!
+decodeURIComponent('http%3A%2F%2Fwww.macromedia.com%2Fflash%20player%3F') PASSED!
+decodeURIComponent('http%3A%2F%2Fwww.macromedia.com%2Fflash%20player%40') PASSED!
+decodeURIComponent('http%3A%2F%2Fwww.macromedia.com%2Fflash%20player%26') PASSED!
+decodeURIComponent('http%3A%2F%2Fwww.macromedia.com%2Fflash%20player%3D') PASSED!
+decodeURIComponent('http%3A%2F%2Fwww.macromedia.com%2Fflash%20player%24') PASSED!
+Characters following % should be hexa decimal digits PASSED!
+If the last character of string is % throw URIError PASSED!
+If the character at position k  of string before hexadecimal digits is not % throw URIError PASSED!

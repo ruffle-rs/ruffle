@@ -1,0 +1,4 @@
+Vector fixed RangeError PASSED!
+Vector fixed RangeError: double(index_i) != index PASSED!
+Vector fixed RangeError: index_i < 0 PASSED!
+Vector fixed RangeError checkReadIndex_d PASSED!

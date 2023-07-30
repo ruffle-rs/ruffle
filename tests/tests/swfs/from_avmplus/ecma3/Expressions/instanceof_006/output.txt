@@ -1,0 +1,1 @@
+(false) instanceof [class Boolean] PASSED!

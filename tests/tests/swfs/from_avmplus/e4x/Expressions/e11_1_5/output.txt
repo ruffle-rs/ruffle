@@ -1,0 +1,16 @@
+1 PASSED!
+2 PASSED!
+3 PASSED!
+4 PASSED!
+<><a><b><c>1</c></b></a></> == new XMLList("<a><b><c>1</c></b></a>") PASSED!
+<>a</> == new XMLList('a') PASSED!
+<><a>b</a></> == new XMLList('<a>b</a>') PASSED!
+<>[list]</> == new XMLList([list]) PASSED!
+<></> == new XMLList() PASSED!
+<></> == new XMLList("") PASSED!
+<><{myVar}>hello</{myVar}></> == new XMLList('<value>hello</value>') PASSED!
+<><c>&#x7B; \"\" &#x7B;</c></> == new XMLList(<c>{ "" }</c>) PASSED!
+<><a>5 &gt; 4</a></> == new XMLList('<a>5 > 4</a>') PASSED!
+Multiline XML PASSED!
+Testing for extra directives PASSED!
+Testing for extra directives PASSED!

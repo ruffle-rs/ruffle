@@ -1,0 +1,42 @@
+Unicode String.search from 0x2800 to 0x2800 PASSED!
+Unicode String.search for 3 chars from 0x2800 to 0x2800 PASSED!
+Unicode String.match PASSED!
+Unicode String.split PASSED!
+Unicode String.replace PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Unicode String.search from 0x28FB to 0x28FB PASSED!
+Unicode String.search for 3 chars from 0x28FB to 0x28FB PASSED!
+Unicode String.match PASSED!
+Unicode String.split PASSED!
+Unicode String.replace PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Unicode Split on Mark PASSED!
+Negative String.search PASSED!
+0x2800 to 0x28FA String.search(undefined) PASSED!
+0x2800 to 0x28FA String.search() PASSED!
+Negative String.match PASSED!
+0x2800 to 0x28FA String.match(undefined) PASSED!
+0x2800 to 0x28FA String.match() PASSED!
+String.split('') PASSED!
+String.split(new RegExp()) PASSED!
+String.split(new RegExp('')) PASSED!
+String.split(undefined) result length PASSED!
+String.split(undefined)[0] PASSED!
+String.replace(0x28000x28FA) PASSED!
+Negative String.search PASSED!
+0x28FB to 0x28FF String.search(undefined) PASSED!
+0x28FB to 0x28FF String.search() PASSED!
+Negative String.match PASSED!
+0x28FB to 0x28FF String.match(undefined) PASSED!
+0x28FB to 0x28FF String.match() PASSED!
+String.split('') PASSED!
+String.split(new RegExp()) PASSED!
+String.split(new RegExp('')) PASSED!
+String.split(undefined) result length PASSED!
+String.split(undefined)[0] PASSED!
+String.replace(0x28FB0x28FF) PASSED!

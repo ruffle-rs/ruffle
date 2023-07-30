@@ -1,0 +1,75 @@
+typeof new String('string primitive') PASSED!
+var TESTSTRING = new String('string primitive'), TESTSTRING.myToString=Object.prototype.toString,TESTSTRING.myToString() PASSED!
+(new String('string primitive')).valueOf() PASSED!
+(new String('string primitive')).substring PASSED!
+typeof new String(void 0) PASSED!
+var TESTSTRING = new String(void 0), TESTSTRING.myToString=Object.prototype.toString,TESTSTRING.myToString() PASSED!
+(new String(void 0)).valueOf() PASSED!
+(new String(void 0)).toString PASSED!
+typeof new String(null) PASSED!
+var TESTSTRING = new String(null), TESTSTRING.myToString=Object.prototype.toString,TESTSTRING.myToString() PASSED!
+(new String(null)).valueOf() PASSED!
+(new String(null)).valueOf PASSED!
+typeof new String(true) PASSED!
+var TESTSTRING = new String(true), TESTSTRING.myToString=Object.prototype.toString,TESTSTRING.myToString() PASSED!
+(new String(true)).valueOf() PASSED!
+(new String(true)).charAt PASSED!
+typeof new String(false) PASSED!
+var TESTSTRING = new String(false), TESTSTRING.myToString=Object.prototype.toString,TESTSTRING.myToString() PASSED!
+(new String(false)).valueOf() PASSED!
+(new String(false)).charCodeAt PASSED!
+typeof new String(new Boolean(true)) PASSED!
+var TESTSTRING = new String(new Boolean(true)), TESTSTRING.toString=Object.prototype.toString,TESTSTRING.toString() PASSED!
+(new String(new Boolean(true))).valueOf() PASSED!
+(new String(new Boolean(true))).indexOf PASSED!
+typeof new String() PASSED!
+var TESTSTRING = new String(), TESTSTRING.myToString=Object.prototype.toString,TESTSTRING.myToString() PASSED!
+(new String()).valueOf() PASSED!
+(new String()).lastIndexOf PASSED!
+typeof new String('') PASSED!
+var TESTSTRING = new String(''), TESTSTRING.myToString=Object.prototype.toString,TESTSTRING.myToString() PASSED!
+(new String('')).valueOf() PASSED!
+(new String('')).split PASSED!
+new String(true) PASSED!
+new String(false) PASSED!
+new String(new Array()) PASSED!
+new String(new Array(1,2,3)) PASSED!
+new String( Number.NaN ) PASSED!
+new String( 0 ) PASSED!
+new String( -0 ) PASSED!
+new String( Number.POSITIVE_INFINITY ) PASSED!
+new String( Number.NEGATIVE_INFINITY ) PASSED!
+new String( -1 ) PASSED!
+new String( 1 ) PASSED!
+new String( 10 ) PASSED!
+new String( 100 ) PASSED!
+new String( 1000 ) PASSED!
+new String( 10000 ) PASSED!
+new String( 10000000000 ) PASSED!
+new String( 10000000000000000000 ) PASSED!
+new String( 100000000000000000000 ) PASSED!
+new String( 12345 ) PASSED!
+new String( 1234567890 ) PASSED!
+new String( -1 ) PASSED!
+new String( -10 ) PASSED!
+new String( -100 ) PASSED!
+new String( -1000 ) PASSED!
+new String( -1000000000 ) PASSED!
+new String( -1000000000000000 ) PASSED!
+new String( -100000000000000000000 ) PASSED!
+new String( -1000000000000000000000 ) PASSED!
+new String( -12345 ) PASSED!
+new String( -1234567890 ) PASSED!
+new String( 1.0000001 ) PASSED!
+new String( 1000000000000000000000 ) PASSED!
+new String( 10000000000000000000000 ) PASSED!
+new String( 1.2345 ) PASSED!
+new String( 1.234567890 ) PASSED!
+new String( .12345 ) PASSED!
+new String( .012345 ) PASSED!
+new String( .0012345 ) PASSED!
+new String( .00012345 ) PASSED!
+new String( .000012345 ) PASSED!
+new String( .0000012345 ) PASSED!
+new String( .00000012345 ) PASSED!
+15.5.2 new String() PASSED!

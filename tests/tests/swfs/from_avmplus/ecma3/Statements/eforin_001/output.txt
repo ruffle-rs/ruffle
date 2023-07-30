@@ -1,0 +1,16 @@
+object[0] PASSED!
+object[company] PASSED!
+object[year] PASSED!
+object[length] PASSED!
+object.length PASSED!
+object[0] PASSED!
+object[company] PASSED!
+object[year] PASSED!
+object[length] PASSED!
+object.length PASSED!
+check break out of for...in PASSED!
+properties.length PASSED!
+object[properties[0]] == values[0] PASSED!
+check break out of for...in PASSED!
+properties.length PASSED!
+object[properties[0]] == object[properties[0]] PASSED!

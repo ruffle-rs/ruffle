@@ -1,0 +1,2 @@
+xml has multiple text nodes, xml.normalize(), xml.toString() PASSED!
+xml has multiple text nodes, xml.normalize(), xml.toString() PASSED!

@@ -1,0 +1,8 @@
+String.prototype.toString() == String.prototype.valueOf() PASSED!
+String.prototype.toString() PASSED!
+String.prototype.toString.length PASSED!
+TESTSTRING = new String(),TESTSTRING.valueOf() == TESTSTRING.toString() PASSED!
+TESTSTRING = new String(true),TESTSTRING.valueOf() == TESTSTRING.toString() PASSED!
+TESTSTRING = new String(false),TESTSTRING.valueOf() == TESTSTRING.toString() PASSED!
+TESTSTRING = new String(Math.PI),TESTSTRING.valueOf() == TESTSTRING.toString() PASSED!
+TESTSTRING = new String(),TESTSTRING.valueOf() == TESTSTRING.toString() PASSED!

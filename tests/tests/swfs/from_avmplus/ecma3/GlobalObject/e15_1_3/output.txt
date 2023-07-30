@@ -1,0 +1,2 @@
+escape( false ) PASSED!
+encodeURI('') PASSED!

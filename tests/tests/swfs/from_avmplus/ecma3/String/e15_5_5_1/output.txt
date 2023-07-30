@@ -1,0 +1,10 @@
+var s= new String();s.length=10 PASSED!
+var s = new String(); s.length PASSED!
+var s = new String(); var props = ''; for ( var p in s ) {  props += p; };  props PASSED!
+var s = new String(); delete s.length PASSED!
+var s = new String(); delete s.length PASSED!
+var s = new String('hello'); delete s.length PASSED!
+var s = new String('hello'); delete s.length; s.length PASSED!
+delete s.length PASSED!
+var s= new String();s.length=10 PASSED!
+var s = new String('hello');s='abcdefghijklmnopqrstuvwxyz'; delete s.length; s.length PASSED!

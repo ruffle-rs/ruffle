@@ -1,0 +1,30 @@
+(true) instanceof true PASSED!
+(false) instanceof false PASSED!
+(false) instanceof true PASSED!
+(false) instanceof true PASSED!
+(true) instanceof true PASSED!
+(false) instanceof true PASSED!
+(false) instanceof false PASSED!
+(true) instanceof false PASSED!
+(false) instanceof false PASSED!
+(false) instanceof false PASSED!
+(true) instanceof false PASSED!
+(false) instanceof false PASSED!
+(false) instanceof true PASSED!
+(true) instanceof true PASSED!
+(false) instanceof true PASSED!
+(false) instanceof false PASSED!
+(true) instanceof false PASSED!
+(false) instanceof false PASSED!
+(4) instanceof 3 PASSED!
+(0) instanceof 3 PASSED!
+(4) instanceof 3 PASSED!
+(0) instanceof 0 PASSED!
+(4) instanceof 4 PASSED!
+(test) instanceof test PASSED!
+(test) instanceof test PASSED!
+(test) instanceof  PASSED!
+(test) instanceof  PASSED!
+() instanceof test PASSED!
+() instanceof  PASSED!
+(test) instanceof  PASSED!

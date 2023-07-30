@@ -1,0 +1,13 @@
+Array.prototype.toString.length PASSED!
+(new Array()).toString() PASSED!
+(new Array(2)).toString() PASSED!
+(new Array(0,1)).toString() PASSED!
+(new Array( Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY)).toString() PASSED!
+(new Array( Boolean(1), Boolean(0))).toString() PASSED!
+(new Array(void 0,null)).toString() PASSED!
+MYARR.toString() PASSED!
+MYARR2.toString() PASSED!
+MYARRARR.toString() PASSED!
+MYUNDEFARR.toString() PASSED!
+MYNULLARR.toString() PASSED!
+MYNULLARR2.toString() PASSED!

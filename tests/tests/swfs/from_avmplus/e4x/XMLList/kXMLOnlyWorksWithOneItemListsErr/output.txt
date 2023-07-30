@@ -1,0 +1,28 @@
+Asserting for TypeError PASSED!
+xmllist.addNamespace('uri') PASSED!
+Asserting for TypeError PASSED!
+xmllist.appendChild('<e>f</e>') PASSED!
+Asserting for TypeError PASSED!
+xmllist.inScopeNamespaces() PASSED!
+Asserting for TypeError PASSED!
+xmllist.insertChildAfter(null, "<s>t</s>") PASSED!
+Asserting for TypeError PASSED!
+xmllist.insertChildBefore(null, "<s>t</s>") PASSED!
+Asserting for TypeError PASSED!
+xmllist.name() PASSED!
+Asserting for TypeError PASSED!
+xmllist.getNamespace("blah") PASSED!
+Asserting for TypeError PASSED!
+xmllist.namespaceDeclarations() PASSED!
+Asserting for TypeError PASSED!
+xmllist.nodeKind() PASSED!
+Asserting for TypeError PASSED!
+xmllist.removeNamespace('pfx') PASSED!
+Asserting for TypeError PASSED!
+xmllist.setChildren("<c>4</c><c>5</c>") PASSED!
+Asserting for TypeError PASSED!
+xmllist.setLocalName("new local name") PASSED!
+Asserting for TypeError PASSED!
+xmllist.setName("myName") PASSED!
+Asserting for TypeError PASSED!
+xmllist.setNamespace("pfx") PASSED!

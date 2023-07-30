@@ -1,0 +1,7 @@
+XML.ignoreComments PASSED!
+XML.ignoreComments = false, XML.ignoreComments PASSED!
+XML.ignoreComments = true, XML.ignoreComments PASSED!
+MYXML = new XML(thisXML), MYXML.toString() PASSED!
+MYXML = new XML(thisXML), MYXML.toString() with ignoreComemnts=false PASSED!
+xml2 = new XML(MYXML), xml2.toString() PASSED!
+xml3 = new XML(MYXML), xml3.toString() PASSED!

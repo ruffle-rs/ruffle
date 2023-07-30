@@ -1,0 +1,1 @@
+string = new String("hi");string.toString = Boolean.prototype.toStringstring.toString() PASSED!

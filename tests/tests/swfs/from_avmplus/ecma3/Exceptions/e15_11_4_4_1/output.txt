@@ -1,0 +1,9 @@
+new Error('msg1') PASSED!
+new Error('msg1') PASSED!
+new Error(err1) PASSED!
+new Error(err1) PASSED!
+new Error() PASSED!
+new Error() PASSED!
+new Error('') PASSED!
+new Error('') PASSED!
+run-time error PASSED!

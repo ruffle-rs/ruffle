@@ -1,0 +1,190 @@
++('a string') PASSED!
++('') PASSED!
++(' ') PASSED!
++(\t) PASSED!
++(\n) PASSED!
++(\r) PASSED!
++(\f) PASSED!
++(String.fromCharCode(0x0009) PASSED!
++(String.fromCharCode(0x0020) PASSED!
++(String.fromCharCode(0x000C) PASSED!
++(String.fromCharCode(0x000B) PASSED!
++(String.fromCharCode(0x000D) PASSED!
++(String.fromCharCode(0x000A) PASSED!
++( '   ' +  999 ) PASSED!
++( '\n'  + 999 ) PASSED!
++( '\r'  + 999 ) PASSED!
++( '\t'  + 999 ) PASSED!
++( '\f'  + 999 ) PASSED!
++( 999 + '   ' ) PASSED!
++( 999 + '\n' ) PASSED!
++( 999 + '\r' ) PASSED!
++( 999 + '\t' ) PASSED!
++( 999 + '\f' ) PASSED!
++( '\n'  + 999 + '\n' ) PASSED!
++( '\r'  + 999 + '\r' ) PASSED!
++( '\t'  + 999 + '\t' ) PASSED!
++( '\f'  + 999 + '\f' ) PASSED!
++( '   ' +  '999' ) PASSED!
++( '\n'  + '999' ) PASSED!
++( '\r'  + '999' ) PASSED!
++( '\t'  + '999' ) PASSED!
++( '\f'  + '999' ) PASSED!
++( '999' + '   ' ) PASSED!
++( '999' + '\n' ) PASSED!
++( '999' + '\r' ) PASSED!
++( '999' + '\t' ) PASSED!
++( '999' + '\f' ) PASSED!
++( '\n'  + '999' + '\n' ) PASSED!
++( '\r'  + '999' + '\r' ) PASSED!
++( '\t'  + '999' + '\t' ) PASSED!
++( '\f'  + '999' + '\f' ) PASSED!
++( String.fromCharCode(0x0009) +  '99' ) PASSED!
++( String.fromCharCode(0x0020) +  '99' ) PASSED!
++( String.fromCharCode(0x000C) +  '99' ) PASSED!
++( String.fromCharCode(0x000B) +  '99' ) PASSED!
++( String.fromCharCode(0x000D) +  '99' ) PASSED!
++( String.fromCharCode(0x000A) +  '99' ) PASSED!
++( String.fromCharCode(0x0009) +  '99' + String.fromCharCode(0x0009) PASSED!
++( String.fromCharCode(0x0020) +  '99' + String.fromCharCode(0x0020) PASSED!
++( String.fromCharCode(0x000C) +  '99' + String.fromCharCode(0x000C) PASSED!
++( String.fromCharCode(0x000D) +  '99' + String.fromCharCode(0x000D) PASSED!
++( String.fromCharCode(0x000B) +  '99' + String.fromCharCode(0x000B) PASSED!
++( String.fromCharCode(0x000A) +  '99' + String.fromCharCode(0x000A) PASSED!
++( '99' + String.fromCharCode(0x0009) PASSED!
++( '99' + String.fromCharCode(0x0020) PASSED!
++( '99' + String.fromCharCode(0x000C) PASSED!
++( '99' + String.fromCharCode(0x000D) PASSED!
++( '99' + String.fromCharCode(0x000B) PASSED!
++( '99' + String.fromCharCode(0x000A) PASSED!
++( String.fromCharCode(0x0009) +  99 ) PASSED!
++( String.fromCharCode(0x0020) +  99 ) PASSED!
++( String.fromCharCode(0x000C) +  99 ) PASSED!
++( String.fromCharCode(0x000B) +  99 ) PASSED!
++( String.fromCharCode(0x000D) +  99 ) PASSED!
++( String.fromCharCode(0x000A) +  99 ) PASSED!
++( String.fromCharCode(0x0009) +  99 + String.fromCharCode(0x0009) PASSED!
++( String.fromCharCode(0x0020) +  99 + String.fromCharCode(0x0020) PASSED!
++( String.fromCharCode(0x000C) +  99 + String.fromCharCode(0x000C) PASSED!
++( String.fromCharCode(0x000D) +  99 + String.fromCharCode(0x000D) PASSED!
++( String.fromCharCode(0x000B) +  99 + String.fromCharCode(0x000B) PASSED!
++( String.fromCharCode(0x000A) +  99 + String.fromCharCode(0x000A) PASSED!
++( 99 + String.fromCharCode(0x0009) PASSED!
++( 99 + String.fromCharCode(0x0020) PASSED!
++( 99 + String.fromCharCode(0x000C) PASSED!
++( 99 + String.fromCharCode(0x000D) PASSED!
++( 99 + String.fromCharCode(0x000B) PASSED!
++( 99 + String.fromCharCode(0x000A) PASSED!
++('Infinity') PASSED!
++('-Infinity') PASSED!
++('+Infinity') PASSED!
++('0') PASSED!
++('-0') PASSED!
++('+0') PASSED!
++('1') PASSED!
++('-1') PASSED!
++('+1') PASSED!
++('2') PASSED!
++('-2') PASSED!
++('+2') PASSED!
++('3') PASSED!
++('-3') PASSED!
++('+3') PASSED!
++('4') PASSED!
++('-4') PASSED!
++('+4') PASSED!
++('5') PASSED!
++('-5') PASSED!
++('+5') PASSED!
++('6') PASSED!
++('-6') PASSED!
++('+6') PASSED!
++('7') PASSED!
++('-7') PASSED!
++('+7') PASSED!
++('8') PASSED!
++('-8') PASSED!
++('+8') PASSED!
++('9') PASSED!
++('-9') PASSED!
++('+9') PASSED!
++('3.14159') PASSED!
++('-3.14159') PASSED!
++('+3.14159') PASSED!
++('3.') PASSED!
++('-3.') PASSED!
++('+3.') PASSED!
++('3.e1') PASSED!
++('-3.e1') PASSED!
++('+3.e1') PASSED!
++('3.e+1') PASSED!
++('-3.e+1') PASSED!
++('+3.e+1') PASSED!
++('3.e-1') PASSED!
++('-3.e-1') PASSED!
++('+3.e-1') PASSED!
++('.00001') PASSED!
++('+.00001') PASSED!
++('-0.0001') PASSED!
++('.01e2') PASSED!
++('+.01e2') PASSED!
++('-.01e2') PASSED!
++('.01e+2') PASSED!
++('+.01e+2') PASSED!
++('-.01e+2') PASSED!
++('.01e-2') PASSED!
++('+.01e-2') PASSED!
++('-.01e-2') PASSED!
++('1234e5') PASSED!
++('+1234e5') PASSED!
++('-1234e5') PASSED!
++('1234e+5') PASSED!
++('+1234e+5') PASSED!
++('-1234e+5') PASSED!
++('1234e-5') PASSED!
++('+1234e-5') PASSED!
++('-1234e-5') PASSED!
++('0x0') PASSED!
++('0x1') PASSED!
++('0x2') PASSED!
++('0x3') PASSED!
++('0x4') PASSED!
++('0x5') PASSED!
++('0x6') PASSED!
++('0x7') PASSED!
++('0x8') PASSED!
++('0x9') PASSED!
++('0xa') PASSED!
++('0xb') PASSED!
++('0xc') PASSED!
++('0xd') PASSED!
++('0xe') PASSED!
++('0xf') PASSED!
++('0xA') PASSED!
++('0xB') PASSED!
++('0xC') PASSED!
++('0xD') PASSED!
++('0xE') PASSED!
++('0xF') PASSED!
++('0X0') PASSED!
++('0X1') PASSED!
++('0X2') PASSED!
++('0X3') PASSED!
++('0X4') PASSED!
++('0X5') PASSED!
++('0X6') PASSED!
++('0X7') PASSED!
++('0X8') PASSED!
++('0X9') PASSED!
++('0Xa') PASSED!
++('0Xb') PASSED!
++('0Xc') PASSED!
++('0Xd') PASSED!
++('0Xe') PASSED!
++('0Xf') PASSED!
++('0XA') PASSED!
++('0XB') PASSED!
++('0XC') PASSED!
++('0XD') PASSED!
++('0XE') PASSED!
++('0XF') PASSED!

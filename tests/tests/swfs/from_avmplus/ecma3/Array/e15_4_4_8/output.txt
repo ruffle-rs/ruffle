@@ -1,0 +1,4 @@
+MYARR = [2,1,8,6]; MYARR.reverse(); PASSED!
+MYARR = [2,1,8,6]; MYARR.reverse(); PASSED!
+MYARR = [2,1,8,6]; MYARR.reverse(); PASSED!
+MYARR = [2,1,8,6]; MYARR.reverse(); PASSED!

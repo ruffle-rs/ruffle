@@ -1,0 +1,13 @@
+Function('function body') is not supported PASSED!
+myfunc.toString() PASSED!
+myfunc = new Function(); myfunc.toString = Object.prototype.toString; myfunc.toString() PASSED!
+myfunc = new Function(); myfunc.myToString = Object.prototype.toString; myfunc.myToString() PASSED!
+myfunc.length PASSED!
+myfunc.prototype.toString() PASSED!
+myfunc.prototype.constructor PASSED!
+var OBJ = new MyObject(true), OBJ.valueOf() PASSED!
+OBJ.toString() PASSED!
+OBJ.toString = Object.prototype.toString; OBJ.toString() PASSED!
+MyObject.toString = Object.prototype.toString; MyObject.toString() PASSED!
+MyObject.length PASSED!
+MyObject.prototype.constructor PASSED!
