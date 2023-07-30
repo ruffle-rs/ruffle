@@ -251,7 +251,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
 
     fn property_is_enumerable(&self, name: AvmString<'gc>) -> bool {
         name.parse::<u32>()
-            .map(|index| self.0.read().array.length() as u32 >= index)
+            .map(|index| index < self.0.read().array.length() as u32)
             .unwrap_or(false)
             || self.base().property_is_enumerable(name)
     }
