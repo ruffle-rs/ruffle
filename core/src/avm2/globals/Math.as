@@ -1,4 +1,6 @@
 package {
+[Ruffle(InstanceAllocator)]
+[Ruffle(CallHandler)]
     public final class Math {
         public static const E: Number = 2.718281828459045;
         public static const LN10: Number = 2.302585092994046;

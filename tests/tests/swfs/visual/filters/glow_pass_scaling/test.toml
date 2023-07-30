@@ -1,0 +1,12 @@
+num_frames = 1
+
+[image_comparison]
+# This might look like a lot, and that's because it is.
+# In this case I think it's fine though, as we're only really
+# trying to differentiate between 0x000000, 0xFF0000, and 0xFFFFFF.
+# This amount of tolerance doesn't allow for confusion between these,
+# but allows for some platform-specific edge-smearing precision mismatches.
+tolerance = 100
+
+[player_options]
+with_renderer = { optional = false, sample_count = 1 }
