@@ -1,0 +1,34 @@
+Number.asin() returns a Number PASSED!
+Number.asin() length is 1 PASSED!
+Asserting for ArgumentError PASSED!
+Number.asin() with no args PASSED!
+Number.asin(undefined) PASSED!
+Number.asin(string) PASSED!
+Number.asin(NaN) PASSED!
+Number.asin(1.125) PASSED!
+Number.asin(1.125) check() PASSED!
+Number.asin(-1.125) PASSED!
+Number.asin(-1.125) check() PASSED!
+Number.asin(0) PASSED!
+Number.asin(0) check() PASSED!
+Ensure that Number.asin(+0) returns +0 PASSED!
+Ensure that Number.asin(+0) returns +0 check() PASSED!
+Number.asin(-0) PASSED!
+Number.asin(-0) check() PASSED!
+Ensure that Number.asin(-0) returns -0 PASSED!
+Ensure that Number.asin(-0) returns -0 check() PASSED!
+Number.asin(null) PASSED!
+Number.asin(true) PASSED!
+Number.asin(false) PASSED!
+Number.asin('1') PASSED!
+Number.asin('0') PASSED!
+Number.asin(myNum=1) PASSED!
+Number.asin(myNum=0) PASSED!
+Number.asin(myNum=-0) PASSED!
+Number.asin(myNum=-1) PASSED!
+Number.asin(1) NumberLiteral PASSED!
+Number.asin(0) NumberLiteral PASSED!
+Number.asin(-0) NumberLiteral PASSED!
+Number.asin(-1) NumberLiteral PASSED!
+Number.asin(Number.SQRT1_2) PASSED!
+Number.asin(-Number.SQRT1_2) PASSED!

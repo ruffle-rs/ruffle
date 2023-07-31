@@ -1,0 +1,49 @@
+Number.ceil() returns a int PASSED!
+Number.ceil() length is 1 PASSED!
+Asserting for ArgumentError PASSED!
+Number.ceil() with no args PASSED!
+Number.ceil(undefined) PASSED!
+Number.ceil(string) PASSED!
+Number.ceil(NaN) PASSED!
+Number.ceil(NaN) check() PASSED!
+Number.ceil(0) PASSED!
+Number.ceil(0) sign check PASSED!
+Number.ceil(0) check() PASSED!
+Number.ceil(0) check() sign check PASSED!
+Number.ceil(-0) PASSED!
+Number.ceil(-0) sign check PASSED!
+Number.ceil(-0) check() PASSED!
+Number.ceil(-0) check() sign check PASSED!
+Number.ceil(Number.POSITIVE_INFINITY) PASSED!
+Number.ceil(Number.POSITIVE_INFINITY) check() PASSED!
+Number.ceil(Number.NEGATIVE_INFINITY) PASSED!
+Number.ceil(Number.NEGATIVE_INFINITY) check() PASSED!
+Number.ceil(-0.1) PASSED!
+Number that Number.ceil(-0.1) returns -0 PASSED!
+Number.ceil(-0.5) PASSED!
+Number.ceil(-0.5) sign check PASSED!
+Number.ceil(-0.999) PASSED!
+Number.ceil(-0.999) sign check PASSED!
+Number.ceil(-0.5) check() PASSED!
+Number.ceil(-0.5) check() sign check PASSED!
+Number.ceil(-0.999) check() PASSED!
+Number.ceil(-0.999) check() sign check PASSED!
+Number.ceil(3.124) == -Number.floor(-3.124) PASSED!
+Number.ceil(null) PASSED!
+Number.ceil(true) PASSED!
+Number.ceil(false) PASSED!
+Number.ceil(Number.MAX_VALUE) PASSED!
+Number.ceil(Number.MAX_VALUE+1.79769313486231e+308) PASSED!
+Number.ceil(Number.MIN_VALUE) PASSED!
+Number.ceil('1') PASSED!
+Number.ceil('0') PASSED!
+Number.ceil(myNum=1) PASSED!
+Number.ceil(myNum=0) PASSED!
+Number.INFINITY/Number.ceil(myNum=0) PASSED!
+Number.ceil(myNum=-0) PASSED!
+Number.INFINITY/Number.ceil(myNum=-0) PASSED!
+Number.ceil(myNum=-1) PASSED!
+Number.ceil(1) NumberLiteral PASSED!
+Number.ceil(0) NumberLiteral PASSED!
+Number.ceil(-0) NumberLiteral PASSED!
+Number.ceil(-1) NumberLiteral PASSED!

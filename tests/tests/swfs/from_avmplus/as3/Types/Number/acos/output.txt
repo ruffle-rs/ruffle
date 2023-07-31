@@ -1,0 +1,29 @@
+Number.acos() returns a Number PASSED!
+Number.acos() length is 1 PASSED!
+Asserting for ArgumentError PASSED!
+Number.acos() with no args PASSED!
+Number.acos(undefined) PASSED!
+Number.acos(string) PASSED!
+Number.acos(NaN) PASSED!
+Number.acos(NaN) check() PASSED!
+Number.acos(1.125) PASSED!
+Number.acos(1.125) check() PASSED!
+Number.acos(-1.125) PASSED!
+Number.acos(-1.125) check PASSED!
+Number.acos(1) PASSED!
+Ensure that Number.acos(1) returns +0 PASSED!
+Number.acos(null) PASSED!
+Number.acos(true) PASSED!
+Number.acos(false) PASSED!
+Number.acos('1') PASSED!
+Number.acos('0') PASSED!
+Number.acos(myNum=0) PASSED!
+Number.acos(myNum=1) PASSED!
+Number.acos(myNum=-1) PASSED!
+Number.acos(myNum=-0) PASSED!
+Number.acos(0) NumberLiteral PASSED!
+Number.acos(1) NumberLiteral PASSED!
+Number.acos(-1) NumberLiteral PASSED!
+Number.acos(-0) NumberLiteral PASSED!
+Number.acos(Number.SQRT1_2) PASSED!
+Number.acos(-Number.SQRT1_2) PASSED!

@@ -1,0 +1,28 @@
+Number.tan() returns a Number PASSED!
+Number.tan() length is 1 PASSED!
+Asserting for ArgumentError PASSED!
+Number.tan() with no args PASSED!
+Number.tan(undefined) PASSED!
+Number.tan(string) PASSED!
+Number.tan(NaN) PASSED!
+Number.tan(NaN) check() PASSED!
+Number.tan(zero=0) PASSED!
+Number.tan(0) NumberLiteral PASSED!
+Number.tan(0) sign check PASSED!
+Number.tan(0) check() PASSED!
+Number.tan(0) check() sign check PASSED!
+Number.tan(null) PASSED!
+Number.tan(false) PASSED!
+Number.tan(neg_zero) PASSED!
+Number.tan(neg_zero) sign check PASSED!
+Number.tan(-0) NumberLiteral PASSED!
+Number.tan(-0) NumberLiteral sign check PASSED!
+Number.tan(-0) check() PASSED!
+Number.tan(-0) check() sign check PASSED!
+Number.tan(Number.POSITIVE_INFINITY) PASSED!
+Number.tan(Number.NEGATIVE_INFINITY) PASSED!
+Number.tan(Number.POSITIVE_INFINITY) check() PASSED!
+Number.tan(Number.NEGATIVE_INFINITY) check() PASSED!
+Number.tan(Number.PI/4) PASSED!
+Number.tan(3*Number.PI/4) PASSED!
+Number.tan(Number.PI) PASSED!

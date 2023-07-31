@@ -1,0 +1,34 @@
+Asserting for TypeError PASSED!
+Number.abs() PASSED!
+Asserting for TypeError PASSED!
+Number.acos() PASSED!
+Asserting for TypeError PASSED!
+Number.atan() PASSED!
+Asserting for TypeError PASSED!
+Number.atan2() PASSED!
+Asserting for TypeError PASSED!
+Number.ceil() PASSED!
+Asserting for TypeError PASSED!
+Number.cos() PASSED!
+Asserting for TypeError PASSED!
+Number.exp() PASSED!
+Asserting for TypeError PASSED!
+Number.floor() PASSED!
+Asserting for TypeError PASSED!
+Number.log() PASSED!
+Asserting for TypeError PASSED!
+Number.max() PASSED!
+Asserting for TypeError PASSED!
+Number.min() PASSED!
+Asserting for TypeError PASSED!
+Number.pow() PASSED!
+Asserting for TypeError PASSED!
+Number.random() PASSED!
+Asserting for TypeError PASSED!
+Number.round() PASSED!
+Asserting for TypeError PASSED!
+Number.sin() PASSED!
+Asserting for TypeError PASSED!
+Number.sqrt() PASSED!
+Asserting for TypeError PASSED!
+Number.tan() PASSED!
