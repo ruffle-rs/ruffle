@@ -1,0 +1,2 @@
+Asserting for ArgumentError PASSED!
+Runtime Error PASSED!

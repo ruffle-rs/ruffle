@@ -1,0 +1,3 @@
+[Object] Runtime Error PASSED!
+[null] Runtime Error PASSED!
+[undefined] Runtime Error PASSED!
