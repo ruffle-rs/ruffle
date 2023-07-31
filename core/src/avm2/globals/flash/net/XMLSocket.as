@@ -1,6 +1,5 @@
 package flash.net
 {
-    import __ruffle__.stub_method;
     import flash.net.Socket;
     import flash.events.ProgressEvent;
     import flash.events.DataEvent;
@@ -28,13 +27,13 @@ package flash.net
             }
         }
 
+        private native function get domain():String;
+
         override public function connect(host:String, port:int):void
         {
             if (host == null)
             {
-                // FIXME: We should take the movie "host" and connect to it here.
-                stub_method("flash.net.XMLSocket", "connect() with null host");
-                return;
+                host = this.domain();
             }
 
             super.connect(host, port);

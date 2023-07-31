@@ -10,6 +10,7 @@ pub mod object_encoding;
 pub mod shared_object;
 pub mod socket;
 pub mod url_loader;
+pub mod xml_socket;
 
 /// Implements `flash.net.navigateToURL`
 pub fn navigate_to_url<'gc>(
