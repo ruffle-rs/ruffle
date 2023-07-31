@@ -583,7 +583,18 @@ impl DisplayObjectWindow {
                     }
                 });
         } else {
-            open_display_object_button(ui, context, messages, object, &mut self.hovered_debug_rect);
+            // This item is not expandable, but we want to keep
+            // the space empty where the expand button would be,
+            // so it doesn't look like a sibling of the parent.
+            ui.indent(ui.id().with(object.as_ptr()), |ui| {
+                open_display_object_button(
+                    ui,
+                    context,
+                    messages,
+                    object,
+                    &mut self.hovered_debug_rect,
+                );
+            });
         }
     }
 }

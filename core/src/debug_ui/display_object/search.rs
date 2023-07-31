@@ -171,7 +171,11 @@ fn show_object_tree(
     hovered_debug_rect: &mut Option<DisplayObjectHandle>,
 ) {
     if tree.children.is_empty() {
-        show_item(ui, context, tree, messages, hovered_debug_rect);
+        // This item is not expandable, but we want to keep the space empty where the
+        // expand button would be, so it doesn't look like a sibling of the parent.
+        ui.indent(ui.id().with(tree.handle.as_ptr()), |ui| {
+            show_item(ui, context, tree, messages, hovered_debug_rect);
+        });
     } else {
         CollapsingState::load_with_default_open(ui.ctx(), ui.id().with(tree.handle.as_ptr()), true)
             .show_header(ui, |ui| {
