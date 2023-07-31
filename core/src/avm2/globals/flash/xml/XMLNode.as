@@ -165,7 +165,7 @@ package flash.xml
                     result += "</" + nodeName + ">";
                 }
             } else if (nodeName != null) {
-                result += "/>";
+                result += " />";
             }
 
             return result;
