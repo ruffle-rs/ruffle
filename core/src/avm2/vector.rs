@@ -19,7 +19,7 @@ use std::slice::SliceIndex;
 ///
 /// A vector may also be configured to have a fixed size; when this is enabled,
 /// attempts to modify the length fail.
-#[derive(Collect, Clone)]
+#[derive(Collect, Clone, Debug)]
 #[collect(no_drop)]
 pub struct VectorStorage<'gc> {
     /// The storage for vector values.
