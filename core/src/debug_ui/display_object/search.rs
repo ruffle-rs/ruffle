@@ -89,6 +89,10 @@ impl DisplayObjectSearchWindow {
         self.unique_results.clear();
 
         if let Some(pointer) = egui_ctx.pointer_latest_pos() {
+            let pointer = Vec2::new(
+                pointer.x * egui_ctx.pixels_per_point(),
+                pointer.y * egui_ctx.pixels_per_point(),
+            );
             let inverse_view_matrix = context.stage.inverse_view_matrix();
             let pos = inverse_view_matrix
                 * Point::from_pixels(pointer.x as f64, pointer.y as f64 - movie_offset);
