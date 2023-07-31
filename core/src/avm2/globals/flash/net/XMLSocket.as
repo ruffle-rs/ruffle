@@ -1,25 +1,28 @@
 package flash.net
 {
     import flash.net.Socket;
+    import flash.events.EventDispatcher;
     import flash.events.ProgressEvent;
+    import flash.events.IOErrorEvent;
+    import flash.events.SecurityErrorEvent;
+    import flash.events.Event;
     import flash.events.DataEvent;
     import flash.utils.ByteArray;
 
-    // NOTE: Extending from Socket is a implementation detail. It is not possible for SWFs to
-    // use Socket methods as Flash's playerglobal doesn't include those methods, unless
-    // SWF author intentionally tried, which wouldn't make much sense.
-    public class XMLSocket extends Socket
+    public class XMLSocket extends EventDispatcher
     {
-        // Events ioError, connect, close, securityError are inherited from Socket.
-        // connected, timeout are inherited from Socket.
-
         private var tempBuf:ByteArray = new ByteArray();
+        private var socket:Socket;
 
         public function XMLSocket(host:String = null, port:int = 0)
         {
-            super(null, 0);
+            this.socket = new Socket();
 
-            this.addEventListener(ProgressEvent.SOCKET_DATA, this.socketDataListener);
+            this.socket.addEventListener(Event.CLOSE, this.socketCloseListener);
+            this.socket.addEventListener(Event.CONNECT, this.socketConnectEvent);
+            this.socket.addEventListener(ProgressEvent.SOCKET_DATA, this.socketDataListener);
+            this.socket.addEventListener(IOErrorEvent.IO_ERROR, this.socketIoErrorListener);
+            this.socket.addEventListener(SecurityErrorEvent.SECURITY_ERROR, this.socketSecurityErrorListener);
 
             if (host != null)
             {
@@ -29,22 +32,22 @@ package flash.net
 
         private native function get domain():String;
 
-        override public function connect(host:String, port:int):void
+        private function socketCloseListener(evt:Event):void
         {
-            if (host == null)
-            {
-                host = this.domain();
-            }
-
-            super.connect(host, port);
+            this.dispatchEvent(evt);
         }
 
-        function socketDataListener(evt:ProgressEvent):void
+        private function socketConnectEvent(evt:Event):void
+        {
+            this.dispatchEvent(evt);
+        }
+
+        private function socketDataListener(evt:ProgressEvent):void
         {
             // FIXME: There is probably a better way to do this.
             for (var i:uint = 0; i < evt.bytesLoaded; i++)
             {
-                var byte:int = this.readByte();
+                var byte:int = this.socket.readByte();
 
                 if (byte == 0)
                 {
@@ -63,6 +66,46 @@ package flash.net
             }
         }
 
+        private function socketIoErrorListener(evt:IOErrorEvent):void
+        {
+            this.dispatchEvent(evt);
+        }
+
+        private function socketSecurityErrorListener(evt:SecurityErrorEvent):void
+        {
+            this.dispatchEvent(evt);
+        }
+
+        public function get connected():Boolean
+        {
+            return this.socket.connected;
+        }
+
+        public function get timeout():int
+        {
+            return this.socket.timeout;
+        }
+
+        public function set timeout(value:int)
+        {
+            this.socket.timeout = value;
+        }
+
+        public function close():void
+        {
+            socket.close();
+        }
+
+        public function connect(host:String, port:int):void
+        {
+            if (host == null)
+            {
+                host = this.domain();
+            }
+
+            socket.connect(host, port);
+        }
+
         public function send(object:*):void
         {
             var val:String;
@@ -76,9 +119,9 @@ package flash.net
                 val = object.toString();
             }
 
-            this.writeUTFBytes(val);
-            this.writeByte(0);
-            this.flush();
+            this.socket.writeUTFBytes(val);
+            this.socket.writeByte(0);
+            this.socket.flush();
         }
     }
 }
