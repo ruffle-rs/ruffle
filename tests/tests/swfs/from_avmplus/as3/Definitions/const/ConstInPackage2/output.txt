@@ -1,0 +1,1 @@
+const in package with fully qualified name PASSED!

@@ -1,0 +1,1 @@
+const and function arg with same name.  should return the sum of function arg PASSED!

@@ -1,0 +1,1 @@
+Initialize a global const after its initializer. PASSED!
