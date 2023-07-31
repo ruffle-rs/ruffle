@@ -1,0 +1,11 @@
+var string:String =null PASSED!
+var string:String =null PASSED!
+number:Number = undefined PASSED!
+number:Number = undefined PASSED!
+myInt:int = undefined PASSED!
+myInt:int = undefined PASSED!
+myUInt:uint = undefined PASSED!
+myUInt:uint = undefined PASSED!
+myboolean:Boolean = undefined PASSED!
+myboolean:Boolean = undefined PASSED!
+var object:Object = null PASSED!

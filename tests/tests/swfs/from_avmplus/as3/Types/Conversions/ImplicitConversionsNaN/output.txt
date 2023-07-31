@@ -1,0 +1,6 @@
+var string:String = NaN PASSED!
+number:Number = NaN PASSED!
+myInt:int = NaN PASSED!
+myUInt:uint = NaN PASSED!
+boolean:Boolean = NaN PASSED!
+var object:Object = NaN PASSED!
