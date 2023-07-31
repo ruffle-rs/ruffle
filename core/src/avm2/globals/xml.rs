@@ -28,6 +28,9 @@ pub fn init<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_xml_object().unwrap();
     let value = args[0];
+    let ignore_comments = args.get_bool(1);
+    let ignore_processing_instructions = args.get_bool(2);
+    let ignore_whitespace = args.get_bool(3);
 
     if let Some(obj) = value.as_object() {
         if let Some(xml_list) = obj.as_xml_list_object() {
@@ -41,7 +44,13 @@ pub fn init<'gc>(
         }
     }
 
-    let nodes = E4XNode::parse(value, activation)?;
+    let nodes = E4XNode::parse(
+        value,
+        activation,
+        ignore_comments,
+        ignore_processing_instructions,
+        ignore_whitespace,
+    )?;
 
     let node = match nodes.as_slice() {
         // XML defaults to an empty text node when nothing was parsed
