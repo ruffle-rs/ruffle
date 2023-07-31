@@ -1,6 +1,6 @@
-use crate::avm2::{Object, Activation};
-use crate::avm2::value::Value;
 use crate::avm2::error::Error;
+use crate::avm2::value::Value;
+use crate::avm2::{Activation, Object};
 use crate::string::AvmString;
 
 // NOTE: This is used to get the movie domain when null is passed to connect function.
