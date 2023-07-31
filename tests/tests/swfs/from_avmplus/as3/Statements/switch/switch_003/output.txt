@@ -1,0 +1,6 @@
+switch with out of order cases, fall through and gaps in cases: input is 0 PASSED!
+switch with out of order cases, fall through and gaps in cases: input is 1 PASSED!
+switch with out of order cases, fall through and gaps in cases: input is 2 PASSED!
+switch with out of order cases, fall through and gaps in cases: input is 6 PASSED!
+switch with out of order cases, fall through and gaps in cases: input is 7 PASSED!
+switch with out of order cases, fall through and gaps in cases: input is 8 PASSED!
