@@ -286,6 +286,9 @@ impl<'gc> E4XNode<'gc> {
     pub fn parse(
         mut value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
+        ignore_comments: bool,
+        ignore_processing_instructions: bool,
+        ignore_white: bool,
     ) -> Result<Vec<Self>, Error<'gc>> {
         let string = match &value {
             // The docs claim that this throws a TypeError, but it actually doesn't
@@ -304,11 +307,6 @@ impl<'gc> E4XNode<'gc> {
         let data_utf8 = string.to_utf8_lossy();
         let mut parser = Reader::from_str(&data_utf8);
         let mut open_tags: Vec<E4XNode<'gc>> = vec![];
-
-        // FIXME - look these up from static property and settings
-        let ignore_comments = true;
-        let ignore_processing_instructions = true;
-        let ignore_white = true;
 
         let mut top_level = vec![];
 

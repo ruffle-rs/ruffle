@@ -4,10 +4,10 @@ package {
     public final dynamic class XMLList {
 
         public function XMLList(value:* = undefined) {
-            this.init(value);
+            this.init(value, XML.ignoreComments, XML.ignoreProcessingInstructions, XML.ignoreWhitespace);
         }
 
-        private native function init(value:*): void;
+        private native function init(value:*, ignoreComments:Boolean, ignoreProcessingInstructions:Boolean, ignoreWhitespace:Boolean): void;
 
         AS3 native function hasComplexContent():Boolean;
         AS3 native function hasSimpleContent():Boolean;
