@@ -177,6 +177,9 @@ Sincere thanks to the diamond level sponsors of Ruffle:
   <a href="https://www.bubbleshooter.net/">
     <img src="https://ruffle.rs/assets/sponsors/bubble-shooter.png" alt="Bubble Shooter">
   </a>
+  <a href="https://www.neopets.com/">
+    <img src="https://ruffle.rs/assets/sponsors/neopets.png" alt="Neopets">
+  </a>
 </p>
 
 ## License
