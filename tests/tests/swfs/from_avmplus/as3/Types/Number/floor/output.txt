@@ -1,0 +1,46 @@
+Number.floor() returns a int PASSED!
+Number.floor() length is 1 PASSED!
+Asserting for ArgumentError PASSED!
+Number.floor() with no args PASSED!
+Number.floor(undefined) PASSED!
+Number.floor(string) PASSED!
+Number.floor(NaN) PASSED!
+Number.floor(NaN) PASSED!
+Number.floor(0) PASSED!
+Number.floor(0) sign check PASSED!
+Number.floor(0) check() PASSED!
+Number.floor(0) check() sign check PASSED!
+Number.floor(null) PASSED!
+Number.floor(false) PASSED!
+Number.floor('0') PASSED!
+Number.INFINITY/Number.floor('0') PASSED!
+Number.floor(-0) PASSED!
+Number.floor(-0) sign check PASSED!
+Number.floor(-0) check() PASSED!
+Number.floor(-0) check() sign check PASSED!
+Number.floor(Number.POSITIVE_INFINITY) PASSED!
+Number.floor(Number.POSITIVE_INFINITY) check() PASSED!
+Number.floor(Number.NEGATIVE_INFINITY) PASSED!
+Number.floor(Number.NEGATIVE_INFINITY) check() PASSED!
+Number.floor(Number.MIN_VALUE) PASSED!
+Number.floor(0.5) PASSED!
+Number.floor(0.5) sign check PASSED!
+Number.floor(0.999) PASSED!
+Number.floor(0.999) sign check PASSED!
+Number.floor(0.5) check() PASSED!
+Number.floor(0.5) check() sign check PASSED!
+Number.floor(3.124) == -Number.ceil(-3.124) PASSED!
+Number.floor(true) PASSED!
+Number.floor('1') PASSED!
+Number.floor(-Number.MIN_VALUE) PASSED!
+Number.floor(Number.MAX_VALUE) PASSED!
+Number.floor(myNum=1) PASSED!
+Number.floor(myNum=0) PASSED!
+Number.INFINITY/Number.floor(myNum=0) PASSED!
+Number.floor(myNum=-0) PASSED!
+Number.INFINITY/Number.floor(myNum=-0) PASSED!
+Number.floor(myNum=-1) PASSED!
+Number.floor(1) NumberLiteral PASSED!
+Number.floor(0) NumberLiteral PASSED!
+Number.floor(-0) NumberLiteral PASSED!
+Number.floor(-1) NumberLiteral PASSED!

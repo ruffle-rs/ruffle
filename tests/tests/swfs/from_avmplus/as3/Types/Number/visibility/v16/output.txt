@@ -1,0 +1,11 @@
+ReferenceError: Error #1065: Variable System is not defined.
+	at global$init()
+Number.E - ReadOnly PASSED!
+Number.LN10 - ReadOnly PASSED!
+Number.LN2 - ReadOnly PASSED!
+Number.LOG10E - ReadOnly PASSED!
+Number.LOG2E - ReadOnly PASSED!
+Number.PI - ReadOnly PASSED!
+Number.SQRT1_2 - ReadOnly PASSED!
+Number.SQRT2 - ReadOnly PASSED!
+New Number constants and methods are ok PASSED!

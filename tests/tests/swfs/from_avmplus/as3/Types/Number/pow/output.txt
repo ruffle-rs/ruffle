@@ -1,0 +1,96 @@
+Number.pow() returns a Number PASSED!
+Number.pow() length is 2 PASSED!
+Asserting for ArgumentError PASSED!
+Number.pow() with no args PASSED!
+Asserting for ArgumentError PASSED!
+Number.pow() with one args PASSED!
+Number.pow(1.0, undefined) PASSED!
+Number.pow(1.0, string) PASSED!
+Number.pow(1.0, NaN) PASSED!
+Number.pow(1.0, NaN) check() PASSED!
+Number.pow(undefined, 0) PASSED!
+Number.pow(string, 0) PASSED!
+Number.pow(NaN, 0) PASSED!
+Number.pow(1.2, 0) PASSED!
+Number.pow(NaN, 0) check() PASSED!
+Number.pow(1.2, 0) check() PASSED!
+Number.pow(undefined, -0) PASSED!
+Number.pow(string, -0) PASSED!
+Number.pow(NaN, -0) PASSED!
+Number.pow(1.2, -0) PASSED!
+Number.pow(NaN, -0) check() PASSED!
+Number.pow(1.2, -0) check() PASSED!
+Number.pow(undefined, 1) PASSED!
+Number.pow(string, 1) PASSED!
+Number.pow(NaN, 1) PASSED!
+Number.pow(NaN, 1) check() PASSED!
+Number.pow(1.2, Number.POSITIVE_INFINITY) PASSED!
+Number.pow(-1.2, Number.POSITIVE_INFINITY) PASSED!
+Number.pow(1.2, Number.POSITIVE_INFINITY) check() PASSED!
+Number.pow(-1.2, Number.POSITIVE_INFINITY) check() PASSED!
+Number.pow(1.2, Number.NEGATIVE_INFINITY) PASSED!
+Number.pow(1.2, Number.NEGATIVE_INFINITY) sign check PASSED!
+Number.pow(-1.2, Number.NEGATIVE_INFINITY) PASSED!
+Number.pow(-1.2, Number.NEGATIVE_INFINITY) sign check PASSED!
+Number.pow(1.2, Number.NEGATIVE_INFINITY) check() PASSED!
+Number.pow(1.2, Number.NEGATIVE_INFINITY) check() sign check PASSED!
+Number.pow(-1.2, Number.NEGATIVE_INFINITY) check() PASSED!
+Number.pow(-1.2, Number.NEGATIVE_INFINITY) check() sign check PASSED!
+Number.pow(1.0, Number.POSITIVE_INFINITY) PASSED!
+Number.pow(-1.0, Number.POSITIVE_INFINITY) PASSED!
+Number.pow(1.0, Number.POSITIVE_INFINITY) check() PASSED!
+Number.pow(-1.0, Number.POSITIVE_INFINITY) check() PASSED!
+Number.pow(1.0, Number.NEGATIVE_INFINITY) PASSED!
+Number.pow(-1.0, Number.NEGATIVE_INFINITY) PASSED!
+Number.pow(1.0, Number.NEGATIVE_INFINITY) check() PASSED!
+Number.pow(-1.0, Number.NEGATIVE_INFINITY) check() PASSED!
+Number.pow(0.2, Number.POSITIVE_INFINITY) PASSED!
+Number.pow(0.2, Number.POSITIVE_INFINITY) sign check PASSED!
+Number.pow(-0.2, Number.POSITIVE_INFINITY) PASSED!
+Number.pow(-0.2, Number.POSITIVE_INFINITY) sign check PASSED!
+Number.pow(0.2, Number.POSITIVE_INFINITY) check() PASSED!
+Number.pow(0.2, Number.POSITIVE_INFINITY) check() sign check PASSED!
+Number.pow(0.2, Number.NEGATIVE_INFINITY) PASSED!
+Number.pow(-0.2, Number.NEGATIVE_INFINITY) PASSED!
+Number.pow(0.2, Number.NEGATIVE_INFINITY) check() PASSED!
+Number.pow(-0.2, Number.NEGATIVE_INFINITY) check() PASSED!
+Number.pow(Number.POSITIVE_INFINITY, 0.1) PASSED!
+Number.pow(Number.POSITIVE_INFINITY, 0.1) check() PASSED!
+Number.pow(Number.POSITIVE_INFINITY, -0.1) PASSED!
+Number.pow(Number.POSITIVE_INFINITY, -0.1) sign check PASSED!
+Number.pow(Number.POSITIVE_INFINITY, -0.1) check() PASSED!
+Number.pow(Number.POSITIVE_INFINITY, -0.1) check() sign check PASSED!
+Number.pow(Number.NEGATIVE_INFINITY, 1) PASSED!
+Number.pow(Number.NEGATIVE_INFINITY, 1) check PASSED!
+Number.pow(Number.NEGATIVE_INFINITY, 2) PASSED!
+Number.pow(Number.NEGATIVE_INFINITY, 2) check() PASSED!
+Number.pow(Number.NEGATIVE_INFINITY, -1) PASSED!
+Number.pow(Number.NEGATIVE_INFINITY, -1) sign check PASSED!
+Number.pow(Number.NEGATIVE_INFINITY, -1) check() PASSED!
+Number.pow(Number.NEGATIVE_INFINITY, -1) check() sign check PASSED!
+Number.pow(Number.NEGATIVE_INFINITY, -2) PASSED!
+Number.pow(Number.NEGATIVE_INFINITY, -2) sign check FAILED! expected: Infinity got: -Infinity
+Number.pow(Number.NEGATIVE_INFINITY, -2) check() PASSED!
+Number.pow(Number.NEGATIVE_INFINITY, -2) check() sign check FAILED! expected: Infinity got: -Infinity
+Number.pow(0, 2) PASSED!
+Number.pow(0, 2) sign check PASSED!
+Number.pow(0, 2) check() PASSED!
+Number.pow(0, 2) check() sign check PASSED!
+Number.pow(0, -2) PASSED!
+Number.pow(0, -2) check() PASSED!
+Number.pow(-0, 1) PASSED!
+Number.pow(-0, 1) sign check PASSED!
+Number.pow(-0, 1) check() PASSED!
+Number.pow(-0, 1) chec() sign check PASSED!
+Number.pow(-0, 2) PASSED!
+Number.pow(-0, 2) sign check PASSED!
+Number.pow(-0, 2) check() PASSED!
+Number.pow(-0, 2) check() sign check PASSED!
+Number.pow(-0, -1) PASSED!
+Number.pow(-0, -1) check() PASSED!
+Number.pow(-0, -2) PASSED!
+Number.pow(-0, -2) check() PASSED!
+Number.pow(-1.125, 2.1) PASSED!
+Number.pow(-1.125, 2.1) check() PASSED!
+Number.pow(3.14159265, 0.000001) PASSED!
+Number.pow(3.14159265, 0.000001) NumberLiteral PASSED!

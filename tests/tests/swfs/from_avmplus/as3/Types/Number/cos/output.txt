@@ -1,0 +1,29 @@
+Number.cos() returns a Number PASSED!
+Number.cos() length is 1 PASSED!
+Asserting for ArgumentError PASSED!
+Number.cos() with no args PASSED!
+Number.cos(undefined) PASSED!
+Number.cos(string) PASSED!
+Number.cos(NaN) PASSED!
+Number.cos(NaN) check() PASSED!
+Number.cos(0) PASSED!
+Number.cos('0') PASSED!
+Number.cos(0) check() PASSED!
+Number.cos(-0) PASSED!
+Number.cos('-0') PASSED!
+Number.cos(-0) check() PASSED!
+Number.cos(Number.POSITIVE_INFINITY) PASSED!
+Number.cos(Number.POSITIVE_INFINITY) check() PASSED!
+Number.cos(Number.NEGATIVE_INFINITY) PASSED!
+Number.cos(Number.NEGATIVE_INFINITY) check() PASSED!
+Number.cos(null) PASSED!
+Number.cos(true) PASSED!
+Number.cos(false) PASSED!
+Number.cos(Number.PI) PASSED!
+Number.cos(-Number.PI) PASSED!
+Number.cos(myNum=3.1415927) PASSED!
+Number.cos(myNum=-3.1415927) PASSED!
+Number.cos(3.1415927) NumberLiteral PASSED!
+Number.cos(-3.1415927) NumberLiteral PASSED!
+Number.cos(Number.MIN_VALUE) PASSED!
+Number.cos(Number.MAX_VALUE) FAILED! expected: -0.9999876894265599 got: 0.9057811022070704

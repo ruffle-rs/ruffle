@@ -1,0 +1,72 @@
+Number.atan2() returns a Number PASSED!
+Number.atan2() length is 2 PASSED!
+Asserting for ArgumentError PASSED!
+Number.atan2() with no args PASSED!
+Asserting for ArgumentError PASSED!
+Number.atan2(0) with one args PASSED!
+Number.atan2(0, undefined) PASSED!
+Number.atan2(undefined, 0) PASSED!
+Number.atan2(0, string) PASSED!
+Number.atan2(string, 0) PASSED!
+Number.atan2(1, NaN) PASSED!
+Number.atan2(NaN, 1) PASSED!
+Number.atan2(1, NaN) check() PASSED!
+Number.atan2(NaN, 1) check() PASSED!
+Number.atan2(1, 0) PASSED!
+Number.atan2(1, 0) check PASSED!
+Number.atan2('1', '0') PASSED!
+Number.atan2(1, -0) PASSED!
+Number.atan2(1, -0) check PASSED!
+Number.atan2('1', '-0') PASSED!
+Number.atan2(0, 1) PASSED!
+Number.atan2(0, 1) check via Infinity PASSED!
+Number.atan2(0, 1) check() PASSED!
+Number.atan2(0, 1) check() check via Infinity PASSED!
+Number.atan2(0, 0) PASSED!
+Number.atan2(0, 0) check via Infinity PASSED!
+Number.atan2(0, 0) check() PASSED!
+Number.atan2(0, 0) check() check via Infinity PASSED!
+Number.atan2(0, -0) PASSED!
+Number.atan2(0, -0) check() PASSED!
+Number.atan2(0, -0.1) PASSED!
+Number.atan2(0, -0.1) check() PASSED!
+Number.atan2(-0, 0.1) PASSED!
+Number.atan2(-0, 0.1) check via Infinity PASSED!
+Number.atan2(-0, 0.1) check() PASSED!
+Number.atan2(-0, 0.1) check() check via Infinity PASSED!
+Number.atan2(-0, 0) PASSED!
+Number.atan2(-0, 0) check via Infinity PASSED!
+Number.atan2(-0, 0) check() PASSED!
+Number.atan2(-0, 0) check() check via Infinity PASSED!
+Number.atan2(-0, -0) PASSED!
+Number.atan2(-0, -0) cehck() PASSED!
+Number.atan2(-0, -0.1) PASSED!
+Number.atan2(-0, -0.1) check() PASSED!
+Number.atan2(-0.1, 0) PASSED!
+Number.atan2(-0.1, 0) check() PASSED!
+Number.atan2(-0.1, -0) PASSED!
+Number.atan2(-0.1, -0) check() PASSED!
+Number.atan2(0.1, Number.POSITIVE_INFINITY) PASSED!
+Number.atan2(0.1, Number.POSITIVE_INFINITY) check via Infinity PASSED!
+Number.atan2(0.1, Number.POSITIVE_INFINITY) check() PASSED!
+Number.atan2(0.1, Number.POSITIVE_INFINITY) check() check via Infinity PASSED!
+Number.atan2(0.1, Number.NEGATIVE_INFINITY) PASSED!
+Number.atan2(0.1, Number.NEGATIVE_INFINITY) check() PASSED!
+Number.atan2(-0.1, Number.POSITIVE_INFINITY) PASSED!
+Number.atan2(-0.1, Number.POSITIVE_INFINITY) check via Infinity PASSED!
+Number.atan2(-0.1, Number.POSITIVE_INFINITY) check() PASSED!
+Number.atan2(-0.1, Number.POSITIVE_INFINITY) check() check via Infinity PASSED!
+Number.atan2(-0.1, Number.NEGATIVE_INFINITY) PASSED!
+Number.atan2(-0.1, Number.NEGATIVE_INFINITY) check() PASSED!
+Number.atan2(Number.POSITIVE_INFINITY, 0) PASSED!
+Number.atan2(Number.POSITIVE_INFINITY, 0) check() PASSED!
+Number.atan2(Number.NEGATIVE_INFINITY, 0) PASSED!
+Number.atan2(Number.NEGATIVE_INFINITY, 0) check() PASSED!
+Number.atan2(Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY) PASSED!
+Number.atan2(Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY) check() PASSED!
+Number.atan2(Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY) PASSED!
+Number.atan2(Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY) check() PASSED!
+Number.atan2(Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY) PASSED!
+Number.atan2(Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY) check() PASSED!
+Number.atan2(Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY) PASSED!
+Number.atan2(Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY) check() PASSED!

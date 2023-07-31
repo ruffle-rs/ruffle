@@ -1,0 +1,13 @@
+Section A of test: no error intended! PASSED!
+Section B of test: no error intended! PASSED!
+Section C of test: no error intended! FAILED! expected: 7.71234e+1 got: 7e+1
+Section D of test: no error intended! PASSED!
+Section E of test: no error intended! PASSED!
+Section F of test: no error intended! PASSED!
+Section G of test: no error intended! PASSED!
+Section H of test: error intended! PASSED!
+Section I of test: error intended! PASSED!
+Section J of test: no error intended! PASSED!
+ReferenceError: Error #1065: Variable System is not defined.
+	at MethodInfo-2()
+	at global$init()
