@@ -45,7 +45,7 @@ tracing = "0.1.37"
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
 naga = { version = "0.12.3", features = ["validate", "wgsl-out"] }
 naga_oil = "0.8.1"
-wgpu = { version = "0.16.2" }
+wgpu = { version = "0.16.3" }
 
 # Don't optimize build scripts and macros.
 [profile.release.build-override]
