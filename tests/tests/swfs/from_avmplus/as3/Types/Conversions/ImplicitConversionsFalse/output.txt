@@ -1,0 +1,10 @@
+string:String = false PASSED!
+string:String = false PASSED!
+number:Number = false PASSED!
+number:Number = false PASSED!
+myInt:int = false PASSED!
+myInt:int = false PASSED!
+myUInt:uint = false PASSED!
+myUInt:uint = false PASSED!
+boolean:Boolean = false PASSED!
+var object:Object = false PASSED!

@@ -1,0 +1,10 @@
+var string:String =null PASSED!
+number:Number = null PASSED!
+number:Number = null PASSED!
+myInt:int = null PASSED!
+myInt:int = null PASSED!
+myUInt:uint = null PASSED!
+myUInt:uint = null PASSED!
+boolean:Boolean = null PASSED!
+boolean:Boolean = null PASSED!
+var object:Object = null PASSED!
