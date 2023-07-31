@@ -856,7 +856,11 @@ impl<'gc> MovieClip<'gc> {
                 reader.read_str()?.decode(reader.encoding()),
             );
 
-            let name = Avm2QName::from_qualified_name(class_name, &mut activation);
+            let name = Avm2QName::from_qualified_name(
+                class_name,
+                activation.avm2().root_api_version,
+                &mut activation,
+            );
             let library = activation
                 .context
                 .library

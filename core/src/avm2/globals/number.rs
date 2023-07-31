@@ -371,8 +371,11 @@ fn value_of<'gc>(
 pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
     let mc = activation.context.gc_context;
     let class = Class::new(
-        QName::new(activation.avm2().public_namespace, "Number"),
-        Some(Multiname::new(activation.avm2().public_namespace, "Object")),
+        QName::new(activation.avm2().public_namespace_base_version, "Number"),
+        Some(Multiname::new(
+            activation.avm2().public_namespace_base_version,
+            "Object",
+        )),
         Method::from_builtin(instance_init, "<Number instance initializer>", mc),
         Method::from_builtin(class_init, "<Number class initializer>", mc),
         mc,
@@ -408,14 +411,14 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
         ("LOG10E", std::f64::consts::LOG10_E),
     ];
     write.define_constant_number_class_traits(
-        activation.avm2().public_namespace,
+        activation.avm2().public_namespace_base_version,
         CLASS_CONSTANTS_NUMBER,
         activation,
     );
 
     const CLASS_CONSTANTS_INT: &[(&str, i32)] = &[("length", 1)];
     write.define_constant_int_class_traits(
-        activation.avm2().public_namespace,
+        activation.avm2().public_namespace_base_version,
         CLASS_CONSTANTS_INT,
         activation,
     );

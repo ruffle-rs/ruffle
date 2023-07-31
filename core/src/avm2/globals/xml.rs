@@ -1,5 +1,6 @@
 //! XML builtin and prototype
 
+use crate::avm2::api_version::ApiVersion;
 use crate::avm2::e4x::{name_to_multiname, E4XNode, E4XNodeKind};
 use crate::avm2::error::type_error;
 pub use crate::avm2::object::xml_allocator;
@@ -172,7 +173,11 @@ pub fn namespace_internal_impl<'gc>(
         // FIXME: Nodes currently either have zero or one namespace, which has the prefix "" (empty string)
         Ok(match node.namespace() {
             Some(ns) if prefix.is_empty() => {
-                let namespace = Namespace::package(ns, &mut activation.context.borrow_gc());
+                let namespace = Namespace::package(
+                    ns,
+                    ApiVersion::AllVersions,
+                    &mut activation.context.borrow_gc(),
+                );
                 NamespaceObject::from_namespace(activation, namespace)?.into()
             }
             _ => Value::Undefined,
@@ -422,7 +427,7 @@ pub fn append_child<'gc>(
         .expect("Should have an XMLList");
     let length = xml_list.length();
     let name = Multiname::new(
-        activation.avm2().public_namespace,
+        activation.avm2().public_namespace_base_version,
         AvmString::new_utf8(activation.context.gc_context, length.to_string()),
     );
     xml_list.set_property_local(&name, child, activation)?;

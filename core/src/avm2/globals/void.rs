@@ -23,7 +23,7 @@ fn void_init<'gc>(
 pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
     let mc = activation.context.gc_context;
     let class = Class::new(
-        QName::new(activation.avm2().public_namespace, "void"),
+        QName::new(activation.avm2().public_namespace_base_version, "void"),
         None,
         Method::from_builtin(void_init, "", mc),
         Method::from_builtin(void_init, "", mc),

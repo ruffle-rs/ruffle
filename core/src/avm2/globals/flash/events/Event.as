@@ -85,6 +85,7 @@ package flash.events {
 
 		public static const CHANNEL_STATE:String = "channelState";
 
+		[API("682")]
 		public static const WORKER_STATE:String = "workerState";
 
 		public function Event(type:String, bubbles:Boolean = false, cancelable:Boolean = false) {

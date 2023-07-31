@@ -1,4 +1,5 @@
 use crate::avm2::activation::Activation;
+use crate::avm2::api_version::ApiVersion;
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
 use crate::avm2::object::{ClassObject, Object, ScriptObject, TObject};
@@ -310,7 +311,11 @@ fn define_fn_on_global<'gc>(
 ) {
     let (_, global, domain) = script.init();
     let qname = QName::new(
-        Namespace::package(package, &mut activation.borrow_gc()),
+        Namespace::package(
+            package,
+            ApiVersion::AllVersions,
+            &mut activation.borrow_gc(),
+        ),
         name,
     );
     let func = domain
@@ -391,8 +396,7 @@ fn class<'gc>(
         activation.avm2().classes().class,
     );
     domain.export_definition(class_name, script, mc);
-    domain.export_class(class_def, mc);
-
+    domain.export_class(class_name, class_def, mc);
     Ok(class_object)
 }
 
@@ -478,24 +482,24 @@ pub fn load_player_globals<'gc>(
     let object_classdef = object::create_class(activation);
     let object_class = ClassObject::from_class_partial(activation, object_classdef, None)?;
     let object_proto = ScriptObject::custom_object(mc, Some(object_class), None);
-    domain.export_class(object_classdef, mc);
+    domain.export_class(object_classdef.read().name(), object_classdef, mc);
 
     let fn_classdef = function::create_class(activation);
     let fn_class = ClassObject::from_class_partial(activation, fn_classdef, Some(object_class))?;
     let fn_proto = ScriptObject::custom_object(mc, Some(fn_class), Some(object_proto));
-    domain.export_class(fn_classdef, mc);
+    domain.export_class(fn_classdef.read().name(), fn_classdef, mc);
 
     let class_classdef = class::create_class(activation);
     let class_class =
         ClassObject::from_class_partial(activation, class_classdef, Some(object_class))?;
     let class_proto = ScriptObject::custom_object(mc, Some(object_class), Some(object_proto));
-    domain.export_class(class_classdef, mc);
+    domain.export_class(class_classdef.read().name(), class_classdef, mc);
 
     let global_classdef = global_scope::create_class(activation);
     let global_class =
         ClassObject::from_class_partial(activation, global_classdef, Some(object_class))?;
     let global_proto = ScriptObject::custom_object(mc, Some(object_class), Some(object_proto));
-    domain.export_class(global_classdef, mc);
+    domain.export_class(global_classdef.read().name(), global_classdef, mc);
 
     // Now to weave the Gordian knot...
     object_class.link_prototype(activation, object_proto)?;
@@ -691,7 +695,8 @@ fn load_playerglobal<'gc>(
         ($activation:expr, $script:expr, [$(($package:expr, $class_name:expr, $field:ident)),* $(,)?]) => {
             let activation = $activation;
             $(
-                let ns = Namespace::package($package, &mut activation.borrow_gc());
+                // Lookup with the highest version, so we we see all defined classes here
+                let ns = Namespace::package($package, ApiVersion::VM_INTERNAL, &mut activation.borrow_gc());
                 let name = QName::new(ns, $class_name);
                 let class_object = activation.domain().get_defined_value(activation, name)?;
                 let class_object = class_object.as_object().unwrap().as_class_object().unwrap();

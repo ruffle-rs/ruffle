@@ -14,6 +14,7 @@ use ruffle_wstr::WStr;
 use super::class::Class;
 use super::error::error;
 use super::string::AvmString;
+use super::Avm2;
 
 /// Represents a set of scripts and movies that share traits across different
 /// script-global scopes.
@@ -69,8 +70,8 @@ impl<'gc> Domain<'gc> {
         ))
     }
 
-    pub fn is_playerglobals_domain(&self, activation: &mut Activation<'_, 'gc>) -> bool {
-        activation.avm2().playerglobals_domain.0.as_ptr() == self.0.as_ptr()
+    pub fn is_playerglobals_domain(&self, avm2: &Avm2<'gc>) -> bool {
+        avm2.playerglobals_domain.0.as_ptr() == self.0.as_ptr()
     }
 
     /// Create a new domain with a given parent.
@@ -252,12 +253,14 @@ impl<'gc> Domain<'gc> {
             ));
             name = "__AS3__.vec::Vector".into();
         }
-        let name = QName::from_qualified_name(name, activation);
+        // FIXME - is this the correct api version?
+        let api_version = activation.avm2().root_api_version;
+        let name = QName::from_qualified_name(name, api_version, activation);
 
         let res = self.get_defined_value(activation, name);
 
         if let Some(type_name) = type_name {
-            let type_qname = QName::from_qualified_name(type_name, activation);
+            let type_qname = QName::from_qualified_name(type_name, api_version, activation);
             let type_class = self.get_defined_value(activation, type_qname)?;
             if let Ok(res) = res {
                 let class = res.as_object().ok_or_else(|| {
@@ -292,11 +295,16 @@ impl<'gc> Domain<'gc> {
     /// Export a class into the current application domain.
     ///
     /// This does nothing if the definition already exists in this domain or a parent.
-    pub fn export_class(&self, class: GcCell<'gc, Class<'gc>>, mc: &Mutation<'gc>) {
-        if self.has_class(class.read().name()) {
+    pub fn export_class(
+        &self,
+        export_name: QName<'gc>,
+        class: GcCell<'gc, Class<'gc>>,
+        mc: &Mutation<'gc>,
+    ) {
+        if self.has_class(export_name) {
             return;
         }
-        self.0.write(mc).classes.insert(class.read().name(), class);
+        self.0.write(mc).classes.insert(export_name, class);
     }
 
     pub fn is_default_domain_memory(&self) -> bool {

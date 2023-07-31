@@ -1248,11 +1248,11 @@ pub fn string_to_multiname<'gc>(
 ) -> Multiname<'gc> {
     if let Some(name) = name.strip_prefix(b'@') {
         let name = AvmString::new(activation.context.gc_context, name);
-        Multiname::attribute(activation.avm2().public_namespace, name)
+        Multiname::attribute(activation.avm2().public_namespace_base_version, name)
     } else if &*name == b"*" {
         Multiname::any(activation.context.gc_context)
     } else {
-        Multiname::new(activation.avm2().public_namespace, name)
+        Multiname::new(activation.avm2().public_namespace_base_version, name)
     }
 }
 

@@ -152,7 +152,7 @@ pub fn to_string<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let object_proto = activation.avm2().classes().object.prototype();
-    let name = Multiname::new(activation.avm2().public_namespace, "toString");
+    let name = Multiname::new(activation.avm2().public_namespace_base_version, "toString");
 
     object_proto
         .get_property(&name, activation)?

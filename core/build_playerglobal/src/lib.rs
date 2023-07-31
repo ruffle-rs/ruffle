@@ -52,6 +52,10 @@ pub fn build_playerglobal(
             &asc_path.to_string_lossy(),
             "macromedia.asc.embedding.ScriptCompiler",
             "-optimize",
+            "-builtin",
+            "-apiversioning",
+            "-version",
+            "9",
             "-outdir",
             &out_dir.to_string_lossy(),
             "-out",
@@ -114,18 +118,54 @@ fn resolve_multiname_name<'a>(abc: &'a AbcFile, multiname: &Multiname) -> &'a st
     }
 }
 
+// Strips off the version mark inserted by 'asc.jar',
+// giving us a valid Rust module name. The actual versioning logic
+// is handling in Ruffle when we load playerglobals
+fn strip_version_mark(val: &str) -> &str {
+    const MIN_API_MARK: usize = 0xE000;
+    const MAX_API_MARK: usize = 0xF8FF;
+
+    if let Some(chr) = val.chars().last() {
+        if chr as usize >= MIN_API_MARK && chr as usize <= MAX_API_MARK {
+            // The version mark is 3 bytes in utf-8
+            return &val[..val.len() - 3];
+        }
+    }
+    val
+}
+
 // Like `resolve_multiname_name`, but for namespaces instead.
 fn resolve_multiname_ns<'a>(abc: &'a AbcFile, multiname: &Multiname) -> &'a str {
-    if let Multiname::QName { namespace, .. } = multiname {
-        let ns = &abc.constant_pool.namespaces[namespace.0 as usize - 1];
-        if let Namespace::Package(p) | Namespace::PackageInternal(p) = ns {
-            &abc.constant_pool.strings[p.0 as usize - 1]
-        } else {
-            panic!("Unexpected Namespace {ns:?}");
+    let ns = match multiname {
+        Multiname::QName { namespace, .. } => {
+            &abc.constant_pool.namespaces[namespace.0 as usize - 1]
         }
+        Multiname::Multiname { namespace_set, .. } => {
+            if namespace_set.0 == 0 {
+                panic!("Multiname namespace set must not be null");
+            }
+
+            let actual_index = namespace_set.0 as usize - 1;
+            let ns_set = abc
+                .constant_pool
+                .namespace_sets
+                .get(actual_index)
+                .unwrap_or_else(|| panic!("Unknown namespace set constant {}", actual_index));
+
+            if ns_set.len() == 1 {
+                &abc.constant_pool.namespaces[ns_set[0].0 as usize - 1]
+            } else {
+                panic!("Found multiple namespaces in namespace set {ns_set:?}")
+            }
+        }
+        _ => panic!("Unexpected Multiname {multiname:?}"),
+    };
+    let namespace = if let Namespace::Package(p) | Namespace::PackageInternal(p) = ns {
+        &abc.constant_pool.strings[p.0 as usize - 1]
     } else {
-        panic!("Unexpected Multiname {multiname:?}");
-    }
+        panic!("Unexpected Namespace {ns:?}");
+    };
+    strip_version_mark(namespace)
 }
 
 fn flash_to_rust_path(path: &str) -> String {

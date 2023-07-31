@@ -1,5 +1,6 @@
 //! Whole script representation
 
+use super::api_version::ApiVersion;
 use super::traits::TraitKind;
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
@@ -131,6 +132,15 @@ impl<'gc> TranslationUnit<'gc> {
         self.0.read().movie.clone()
     }
 
+    pub fn api_version(self, avm2: &Avm2<'gc>) -> ApiVersion {
+        if self.domain().is_playerglobals_domain(avm2) {
+            // FIXME: get this from the player version we're emulating
+            ApiVersion::SWF_31
+        } else {
+            avm2.root_api_version
+        }
+    }
+
     /// Load a method from the ABC file and return its method definition.
     pub fn load_method(
         self,
@@ -143,7 +153,7 @@ impl<'gc> TranslationUnit<'gc> {
             return Ok(*method);
         }
 
-        let is_global = read.domain.is_playerglobals_domain(activation);
+        let is_global = read.domain.is_playerglobals_domain(activation.avm2());
         drop(read);
 
         let bc_method =
@@ -297,7 +307,7 @@ impl<'gc> TranslationUnit<'gc> {
     pub fn pool_namespace(
         self,
         ns_index: Index<AbcNamespace>,
-        context: &mut GcContext<'_, 'gc>,
+        context: &mut UpdateContext<'_, 'gc>,
     ) -> Result<Namespace<'gc>, Error<'gc>> {
         let read = self.0.read();
         if let Some(Some(namespace)) = read.namespaces.get(ns_index.0 as usize) {
@@ -317,7 +327,7 @@ impl<'gc> TranslationUnit<'gc> {
     pub fn pool_maybe_uninitialized_multiname(
         self,
         multiname_index: Index<AbcMultiname>,
-        context: &mut GcContext<'_, 'gc>,
+        context: &mut UpdateContext<'_, 'gc>,
     ) -> Result<Gc<'gc, Multiname<'gc>>, Error<'gc>> {
         let mc = context.gc_context;
         let read = self.0.read();
@@ -341,7 +351,7 @@ impl<'gc> TranslationUnit<'gc> {
     pub fn pool_multiname_static(
         self,
         multiname_index: Index<AbcMultiname>,
-        context: &mut GcContext<'_, 'gc>,
+        context: &mut UpdateContext<'_, 'gc>,
     ) -> Result<Gc<'gc, Multiname<'gc>>, Error<'gc>> {
         let multiname = self.pool_maybe_uninitialized_multiname(multiname_index, context)?;
         if multiname.has_lazy_component() {
@@ -358,7 +368,7 @@ impl<'gc> TranslationUnit<'gc> {
     pub fn pool_multiname_static_any(
         self,
         multiname_index: Index<AbcMultiname>,
-        context: &mut GcContext<'_, 'gc>,
+        context: &mut UpdateContext<'_, 'gc>,
     ) -> Result<Gc<'gc, Multiname<'gc>>, Error<'gc>> {
         if multiname_index.0 == 0 {
             let mc = context.gc_context;
@@ -503,7 +513,7 @@ impl<'gc> Script<'gc> {
             if let TraitKind::Class { class, .. } = newtrait.kind() {
                 write
                     .domain
-                    .export_class(*class, activation.context.gc_context);
+                    .export_class(newtrait.name(), *class, activation.context.gc_context);
             }
 
             write.traits.push(newtrait);

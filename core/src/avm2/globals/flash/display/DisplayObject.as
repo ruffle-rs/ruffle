@@ -53,7 +53,9 @@ package flash.display {
         public native function get y():Number;
         public native function set y(value:Number):void;
 
+        [API("662")]
         public native function get z():Number;
+        [API("662")]
         public native function set z(value:Number):void;
 
         public native function get rotation():Number;

@@ -28,16 +28,19 @@ pub fn instance_init<'gc>(
             _ => None,
         };
 
+        let api_version = activation.avm2().root_api_version;
+
         let namespace = match uri_value {
             Some(Value::Object(Object::QNameObject(qname))) => qname
                 .uri()
-                .map(|uri| Namespace::package(uri, &mut activation.borrow_gc()))
+                .map(|uri| Namespace::package(uri, api_version, &mut activation.borrow_gc()))
                 .unwrap_or_else(|| Namespace::any(activation.context.gc_context)),
             Some(val) => Namespace::package(
                 val.coerce_to_string(activation)?,
+                api_version,
                 &mut activation.borrow_gc(),
             ),
-            None => activation.avm2().public_namespace,
+            None => activation.avm2().public_namespace_base_version,
         };
 
         this.init_namespace(activation.context.gc_context, namespace);
@@ -105,8 +108,11 @@ pub fn uri<'gc>(
 pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
     let mc = activation.context.gc_context;
     let class = Class::new(
-        QName::new(activation.avm2().public_namespace, "Namespace"),
-        Some(Multiname::new(activation.avm2().public_namespace, "Object")),
+        QName::new(activation.avm2().public_namespace_base_version, "Namespace"),
+        Some(Multiname::new(
+            activation.avm2().public_namespace_base_version,
+            "Object",
+        )),
         Method::from_builtin(instance_init, "<Namespace instance initializer>", mc),
         Method::from_builtin(class_init, "<Namespace class initializer>", mc),
         mc,
@@ -132,13 +138,13 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
     )] = &[("prefix", Some(prefix), None), ("uri", Some(uri), None)];
     write.define_builtin_instance_properties(
         mc,
-        activation.avm2().public_namespace,
+        activation.avm2().public_namespace_base_version,
         PUBLIC_INSTANCE_PROPERTIES,
     );
 
     const CONSTANTS_INT: &[(&str, i32)] = &[("length", 2)];
     write.define_constant_int_class_traits(
-        activation.avm2().public_namespace,
+        activation.avm2().public_namespace_base_version,
         CONSTANTS_INT,
         activation,
     );

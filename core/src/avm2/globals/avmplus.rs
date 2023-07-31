@@ -4,7 +4,7 @@ use crate::avm2::method::Method;
 use crate::avm2::object::{ArrayObject, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::property::Property;
-use crate::avm2::ClassObject;
+use crate::avm2::{ClassObject, Namespace};
 
 use crate::avm2::{Activation, Error, Object, Value};
 use crate::avm2_stub_method;
@@ -193,32 +193,21 @@ fn describe_internal_body<'gc>(
 
     // Implement the weird 'HIDE_NSURI_METHODS' behavior from avmplus:
     // https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/TypeDescriber.cpp#L237
-    let mut skip_ns = Vec::new();
+    let mut skip_ns: Vec<Namespace<'_>> = Vec::new();
     if let Some(super_vtable) = super_vtable {
         for (_, ns, prop) in super_vtable.resolved_traits().iter() {
             if !ns.as_uri().is_empty() {
-                if let Property::Method { disp_id } = prop {
-                    let method = super_vtable
-                        .get_full_method(*disp_id)
-                        .unwrap_or_else(|| panic!("Missing method for id {disp_id:?}"));
-                    let is_playerglobals = method
-                        .class
-                        .class_scope()
-                        .domain()
-                        .is_playerglobals_domain(activation);
-
-                    if !skip_ns.contains(&(ns, is_playerglobals)) {
-                        skip_ns.push((ns, is_playerglobals));
+                if let Property::Method { .. } = prop {
+                    if !skip_ns
+                        .iter()
+                        .any(|other_ns| other_ns.exact_version_match(ns))
+                    {
+                        skip_ns.push(ns);
                     }
                 }
             }
         }
     }
-
-    let class_is_playerglobals = class_obj
-        .class_scope()
-        .domain()
-        .is_playerglobals_domain(activation);
 
     // FIXME - avmplus iterates over their own hashtable, so the order in the final XML
     // is different
@@ -227,35 +216,10 @@ fn describe_internal_body<'gc>(
             continue;
         }
 
-        // Hack around our lack of namespace versioning.
-        // This is hack to work around the fact that we don't have namespace versioning
-        // Once we do, methods from playerglobals should end up distinct public and AS3
-        // namespaces, due to the special `kApiVersion_VM_ALLVERSIONS` used:
-        // https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/AbcParser.cpp#L1497
-        //
-        // The main way this is
-        // observable is by having a class like this:
-        //
-        // ``
-        // class SubClass extends SuperClass {
-        //   AS3 function subclassMethod {}
-        // }
-        // class SuperClass {}
-        // ```
-        //
-        // Here, `subclassMethod` will not get hidden - even though `Object`
-        // has AS3 methods, they are in the playerglobal AS3 namespace
-        // (with version kApiVersion_VM_ALLVERSIONS), which is distinct
-        // from the AS3 namespace used by SubClass. However, if we have any
-        // user-defined classes in the inheritance chain, then the namespace
-        // *should* match (if the swf version numbers match).
-        //
-        // For now, we approximate this by checking if the declaring class
-        // and our starting class are both in the playerglobals domain
-        // or both not in the playerglobals domain. If not, then we ignore
-        // `skip_ns`, since we should really have two different namespaces here.
         if flags.contains(DescribeTypeFlags::HIDE_NSURI_METHODS)
-            && skip_ns.contains(&(ns, class_is_playerglobals))
+            && skip_ns
+                .iter()
+                .any(|other_ns| ns.exact_version_match(*other_ns))
         {
             continue;
         }

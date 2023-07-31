@@ -1,4 +1,5 @@
 use crate::avm2::activation::Activation;
+use crate::avm2::api_version::ApiVersion;
 use crate::avm2::e4x::{E4XNode, E4XNodeKind};
 use crate::avm2::error::make_error_1089;
 use crate::avm2::object::script_object::ScriptObjectData;
@@ -173,8 +174,12 @@ impl<'gc> XmlListObject<'gc> {
             if !matches!(*last_node.kind(), E4XNodeKind::ProcessingInstruction(_)) {
                 if let Some(name) = last_node.local_name() {
                     let ns = match last_node.namespace() {
-                        Some(ns) => Namespace::package(ns, &mut activation.context.borrow_gc()),
-                        None => activation.avm2().public_namespace,
+                        Some(ns) => Namespace::package(
+                            ns,
+                            ApiVersion::AllVersions,
+                            &mut activation.context.borrow_gc(),
+                        ),
+                        None => activation.avm2().public_namespace_base_version,
                     };
 
                     write.target_property = Some(Multiname::new(ns, name));
@@ -812,7 +817,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                         // FIXME: We probably need to take the namespace too.
                         // 2.e.i. Let z = ToAttributeName(x[i].[[Name]])
                         let z = Multiname::attribute(
-                            activation.avm2().public_namespace,
+                            activation.avm2().public_namespace_base_version,
                             child.local_name().expect("Attribute should have a name"),
                         );
                         // 2.e.ii. Call the [[Put]] method of x[i].[[Parent]] with arguments z and V

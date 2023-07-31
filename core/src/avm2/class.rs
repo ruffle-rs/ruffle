@@ -303,20 +303,19 @@ impl<'gc> Class<'gc> {
             .ok_or_else(|| "LoadError: Instance index not valid".into());
         let abc_instance = abc_instance?;
 
-        let mut context = activation.borrow_gc();
-        let name = QName::from_abc_multiname(unit, abc_instance.name, &mut context)?;
+        let name = QName::from_abc_multiname(unit, abc_instance.name, &mut activation.context)?;
         let super_class = if abc_instance.super_name.0 == 0 {
             None
         } else {
             Some(
-                unit.pool_multiname_static(abc_instance.super_name, &mut context)?
+                unit.pool_multiname_static(abc_instance.super_name, &mut activation.context)?
                     .deref()
                     .clone(),
             )
         };
 
         let protected_namespace = if let Some(ns) = &abc_instance.protected_namespace {
-            Some(unit.pool_namespace(*ns, &mut context)?)
+            Some(unit.pool_namespace(*ns, &mut activation.context)?)
         } else {
             None
         };
@@ -324,7 +323,7 @@ impl<'gc> Class<'gc> {
         let mut interfaces = Vec::with_capacity(abc_instance.interfaces.len());
         for interface_name in &abc_instance.interfaces {
             interfaces.push(
-                unit.pool_multiname_static(*interface_name, &mut context)?
+                unit.pool_multiname_static(*interface_name, &mut activation.context)?
                     .deref()
                     .clone(),
             );
@@ -344,7 +343,7 @@ impl<'gc> Class<'gc> {
 
         // When loading a class from our playerglobal, grab the corresponding native
         // allocator function from the table (which may be `None`)
-        if unit.domain().is_playerglobals_domain(activation) {
+        if unit.domain().is_playerglobals_domain(activation.avm2()) {
             instance_allocator = activation.avm2().native_instance_allocator_table
                 [class_index as usize]
                 .map(|(_name, ptr)| Allocator(ptr));
@@ -461,8 +460,9 @@ impl<'gc> Class<'gc> {
 
         if let Some(superclass) = superclass {
             for instance_trait in self.instance_traits.iter() {
-                let is_protected =
-                    self.protected_namespace() == Some(instance_trait.name().namespace());
+                let is_protected = self.protected_namespace().map_or(false, |prot| {
+                    prot.exact_version_match(instance_trait.name().namespace())
+                });
 
                 let mut current_superclass = Some(superclass);
                 let mut did_override = false;
@@ -476,9 +476,11 @@ impl<'gc> Class<'gc> {
                         let my_name = instance_trait.name();
 
                         let names_match = super_name.local_name() == my_name.local_name()
-                            && (super_name.namespace() == my_name.namespace()
+                            && (super_name.namespace().matches_ns(my_name.namespace())
                                 || (is_protected
-                                    && read.protected_namespace() == Some(super_name.namespace())));
+                                    && read.protected_namespace().map_or(false, |prot| {
+                                        prot.exact_version_match(super_name.namespace())
+                                    })));
                         if names_match {
                             match (supertrait.kind(), instance_trait.kind()) {
                                 //Getter/setter pairs do NOT override one another
@@ -538,7 +540,7 @@ impl<'gc> Class<'gc> {
         Ok(GcCell::new(
             activation.context.gc_context,
             Self {
-                name: QName::new(activation.avm2().public_namespace, name),
+                name: QName::new(activation.avm2().public_namespace_base_version, name),
                 param: None,
                 super_class: None,
                 attributes: ClassAttributes::empty(),
@@ -601,7 +603,7 @@ impl<'gc> Class<'gc> {
         for &(name, value) in items {
             self.define_class_trait(Trait::from_const(
                 QName::new(namespace, name),
-                Multiname::new(activation.avm2().public_namespace, "Number"),
+                Multiname::new(activation.avm2().public_namespace_base_version, "Number"),
                 Some(value.into()),
             ));
         }
@@ -616,7 +618,7 @@ impl<'gc> Class<'gc> {
         for &(name, value) in items {
             self.define_class_trait(Trait::from_const(
                 QName::new(namespace, name),
-                Multiname::new(activation.avm2().public_namespace, "uint"),
+                Multiname::new(activation.avm2().public_namespace_base_version, "uint"),
                 Some(value.into()),
             ));
         }
@@ -631,7 +633,7 @@ impl<'gc> Class<'gc> {
         for &(name, value) in items {
             self.define_class_trait(Trait::from_const(
                 QName::new(namespace, name),
-                Multiname::new(activation.avm2().public_namespace, "int"),
+                Multiname::new(activation.avm2().public_namespace_base_version, "int"),
                 Some(value.into()),
             ));
         }
@@ -747,7 +749,7 @@ impl<'gc> Class<'gc> {
         for &(name, value) in items {
             self.define_instance_trait(Trait::from_slot(
                 QName::new(namespace, name),
-                Multiname::new(activation.avm2().public_namespace, "Number"),
+                Multiname::new(activation.avm2().public_namespace_base_version, "Number"),
                 value.map(|v| v.into()),
             ));
         }

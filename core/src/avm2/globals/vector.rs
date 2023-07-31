@@ -917,7 +917,10 @@ pub fn create_generic_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell
     let mc = activation.context.gc_context;
     let class = Class::new(
         QName::new(activation.avm2().vector_public_namespace, "Vector"),
-        Some(Multiname::new(activation.avm2().public_namespace, "Object")),
+        Some(Multiname::new(
+            activation.avm2().public_namespace_base_version,
+            "Object",
+        )),
         Method::from_builtin(generic_init, "<Vector instance initializer>", mc),
         Method::from_builtin(generic_init, "<Vector class initializer>", mc),
         mc,
@@ -950,7 +953,10 @@ pub fn create_builtin_class<'gc>(
 
     let class = Class::new(
         name,
-        Some(Multiname::new(activation.avm2().public_namespace, "Object")),
+        Some(Multiname::new(
+            activation.avm2().public_namespace_base_version,
+            "Object",
+        )),
         Method::from_builtin(instance_init, "<Vector.<T> instance initializer>", mc),
         Method::from_builtin(class_init, "<Vector.<T> class initializer>", mc),
         mc,
@@ -981,7 +987,7 @@ pub fn create_builtin_class<'gc>(
     ];
     write.define_builtin_instance_properties(
         mc,
-        activation.avm2().public_namespace,
+        activation.avm2().public_namespace_base_version,
         PUBLIC_INSTANCE_PROPERTIES,
     );
 
