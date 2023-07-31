@@ -761,7 +761,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Result<Namespace<'gc>, Error<'gc>> {
         method
             .translation_unit()
-            .pool_namespace(index, &mut self.borrow_gc())
+            .pool_namespace(index, &mut self.context)
     }
 
     /// Retrieve a multiname from the current constant pool.
@@ -772,7 +772,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Result<Gc<'gc, Multiname<'gc>>, Error<'gc>> {
         method
             .translation_unit()
-            .pool_maybe_uninitialized_multiname(index, &mut self.borrow_gc())
+            .pool_maybe_uninitialized_multiname(index, &mut self.context)
     }
 
     /// Retrieve a multiname from the current constant pool.
@@ -784,7 +784,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Result<Gc<'gc, Multiname<'gc>>, Error<'gc>> {
         let name = method
             .translation_unit()
-            .pool_maybe_uninitialized_multiname(index, &mut self.borrow_gc())?;
+            .pool_maybe_uninitialized_multiname(index, &mut self.context)?;
         if name.has_lazy_component() {
             let name = name.fill_with_runtime_params(self)?;
             Ok(Gc::new(self.context.gc_context, name))
@@ -804,7 +804,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Result<Gc<'gc, Multiname<'gc>>, Error<'gc>> {
         method
             .translation_unit()
-            .pool_multiname_static(index, &mut self.borrow_gc())
+            .pool_multiname_static(index, &mut self.context)
     }
 
     /// Retrieve a static, or non-runtime, multiname from the current constant
@@ -818,7 +818,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Result<Gc<'gc, Multiname<'gc>>, Error<'gc>> {
         method
             .translation_unit()
-            .pool_multiname_static_any(index, &mut self.borrow_gc())
+            .pool_multiname_static_any(index, &mut self.context)
     }
 
     /// Retrieve a method entry from the current ABC file's method table.
@@ -1652,7 +1652,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
 
         let name = name_value.coerce_to_string(self)?;
-        let multiname = Multiname::new(self.avm2().public_namespace, name);
+        let multiname = Multiname::new(self.avm2().find_public_namespace(), name);
         let has_prop = obj.has_property_via_in(self, &multiname)?;
 
         self.push_stack(has_prop);
@@ -1672,11 +1672,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 // for `finally` scopes, FP just creates a bare object.
                 self.avm2().classes().object.construct(self, &[])?
             } else {
-                let qname = QName::from_abc_multiname(
-                    method.translation_unit(),
-                    vname,
-                    &mut self.borrow_gc(),
-                )?;
+                let qname =
+                    QName::from_abc_multiname(method.translation_unit(), vname, &mut self.context)?;
                 ScriptObject::catch_scope(self.context.gc_context, &qname)
             };
             self.push_stack(so);

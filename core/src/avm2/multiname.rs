@@ -4,7 +4,7 @@ use crate::avm2::Error;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::avm2::{Object, Value};
-use crate::context::GcContext;
+use crate::context::UpdateContext;
 use crate::string::{AvmString, WStr, WString};
 use bitflags::bitflags;
 use gc_arena::Gc;
@@ -17,7 +17,7 @@ use swf::avm2::types::{
 
 #[derive(Clone, Copy, Debug, Collect)]
 #[collect(no_drop)]
-enum NamespaceSet<'gc> {
+pub enum NamespaceSet<'gc> {
     Multiple(Gc<'gc, Vec<Namespace<'gc>>>),
     Single(Namespace<'gc>),
 }
@@ -115,10 +115,10 @@ impl<'gc> Multiname<'gc> {
 
     /// Read a namespace set from the ABC constant pool, and return a list of
     /// copied namespaces.
-    fn abc_namespace_set(
+    pub fn abc_namespace_set(
         translation_unit: TranslationUnit<'gc>,
         namespace_set_index: Index<AbcNamespaceSet>,
-        context: &mut GcContext<'_, 'gc>,
+        context: &mut UpdateContext<'_, 'gc>,
     ) -> Result<NamespaceSet<'gc>, Error<'gc>> {
         if namespace_set_index.0 == 0 {
             return Err(Error::RustError(
@@ -153,7 +153,7 @@ impl<'gc> Multiname<'gc> {
     pub fn from_abc_index(
         translation_unit: TranslationUnit<'gc>,
         multiname_index: Index<AbcMultiname>,
-        context: &mut GcContext<'_, 'gc>,
+        context: &mut UpdateContext<'_, 'gc>,
     ) -> Result<Self, Error<'gc>> {
         let mc = context.gc_context;
         let abc = translation_unit.abc();
@@ -164,7 +164,7 @@ impl<'gc> Multiname<'gc> {
                 Self {
                     ns: NamespaceSet::single(translation_unit.pool_namespace(*namespace, context)?),
                     name: translation_unit
-                        .pool_string_option(name.0, context)?
+                        .pool_string_option(name.0, &mut context.borrow_gc())?
                         .map(|v| v.into()),
                     param: None,
                     flags: Default::default(),
@@ -173,7 +173,7 @@ impl<'gc> Multiname<'gc> {
             AbcMultiname::RTQName { name } | AbcMultiname::RTQNameA { name } => Self {
                 ns: NamespaceSet::multiple(vec![], mc),
                 name: translation_unit
-                    .pool_string_option(name.0, context)?
+                    .pool_string_option(name.0, &mut context.borrow_gc())?
                     .map(|v| v.into()),
                 param: None,
                 flags: MultinameFlags::HAS_LAZY_NS,
@@ -194,7 +194,7 @@ impl<'gc> Multiname<'gc> {
             } => Self {
                 ns: Self::abc_namespace_set(translation_unit, *namespace_set, context)?,
                 name: translation_unit
-                    .pool_string_option(name.0, context)?
+                    .pool_string_option(name.0, &mut context.borrow_gc())?
                     .map(|v| v.into()),
                 param: None,
                 flags: Default::default(),
@@ -389,7 +389,7 @@ impl<'gc> Multiname<'gc> {
         let ns_match = self
             .namespace_set()
             .iter()
-            .any(|ns| ns.is_any() || *ns == name.namespace());
+            .any(|ns| ns.is_any() || ns.matches_ns(name.namespace()));
         let name_match = self.name.map(|n| n == name.local_name()).unwrap_or(true);
 
         ns_match && name_match

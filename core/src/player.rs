@@ -6,6 +6,7 @@ use crate::avm1::SystemProperties;
 use crate::avm1::VariableDumper;
 use crate::avm1::{Activation, ActivationIdentifier};
 use crate::avm1::{ScriptObject, TObject, Value};
+use crate::avm2::api_version::ApiVersion;
 use crate::avm2::{
     object::LoaderInfoObject, object::TObject as _, Activation as Avm2Activation, Avm2, CallStack,
     Object as Avm2Object,
@@ -383,6 +384,11 @@ impl Player {
         self.instance_counter = 0;
 
         self.mutate_with_update_context(|context| {
+            if context.swf.is_action_script_3() {
+                context.avm2.root_api_version = ApiVersion::from_swf_version(context.swf.version())
+                    .unwrap_or_else(|| panic!("Unknown SWF version {}", context.swf.version()));
+            }
+
             context.stage.set_movie_size(
                 context.gc_context,
                 context.swf.width().to_pixels() as u32,

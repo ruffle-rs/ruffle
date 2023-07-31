@@ -296,7 +296,7 @@ impl<'gc> VTable<'gc> {
                     // but with this class's protected namespace
                     for (local_name, ns, prop) in superclass_vtable.0.read().resolved_traits.iter()
                     {
-                        if ns == super_protected_namespace {
+                        if ns.exact_version_match(super_protected_namespace) {
                             let new_name = QName::new(protected_namespace, local_name);
                             write.resolved_traits.insert(new_name, *prop);
                         }

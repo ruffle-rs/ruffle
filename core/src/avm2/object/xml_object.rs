@@ -1,6 +1,7 @@
 //! Object representation for XML objects
 
 use crate::avm2::activation::Activation;
+use crate::avm2::api_version::ApiVersion;
 use crate::avm2::e4x::{string_to_multiname, E4XNode, E4XNodeKind};
 use crate::avm2::error::make_error_1087;
 use crate::avm2::object::script_object::ScriptObjectData;
@@ -127,8 +128,12 @@ impl<'gc> XmlObject<'gc> {
 
     pub fn namespace(&self, activation: &mut Activation<'_, 'gc>) -> Namespace<'gc> {
         match self.0.read().node.namespace() {
-            Some(ns) => Namespace::package(ns, &mut activation.context.borrow_gc()),
-            None => activation.avm2().public_namespace,
+            Some(ns) => Namespace::package(
+                ns,
+                ApiVersion::AllVersions,
+                &mut activation.context.borrow_gc(),
+            ),
+            None => activation.avm2().public_namespace_base_version,
         }
     }
 

@@ -10,6 +10,7 @@ package flash.display {
         public native function get enabled():Boolean;
         public native function set enabled(value:Boolean):void;
         public native function get framesLoaded():int;
+        [API("674")]
         public native function get isPlaying():Boolean;
         public native function get scenes():Array;
         public native function get totalFrames():int;

@@ -2,8 +2,8 @@
 
 use crate::avm1::{Activation, ActivationIdentifier, TObject};
 use crate::avm2::{
-    Activation as Avm2Activation, Avm2, EventObject as Avm2EventObject, TObject as _,
-    Value as Avm2Value,
+    Activation as Avm2Activation, Avm2, EventObject as Avm2EventObject, Multiname as Avm2Multiname,
+    TObject as _, Value as Avm2Value,
 };
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::avm1_button::Avm1Button;
@@ -653,13 +653,16 @@ impl<'gc> ChildContainer<'gc> {
                 if child.has_explicit_name() {
                     if let Avm2Value::Object(parent_obj) = parent.object2() {
                         let mut activation = Avm2Activation::from_nothing(context.reborrow());
-                        let current_val =
-                            parent_obj.get_public_property(child.name(), &mut activation);
+                        let name = Avm2Multiname::new(
+                            activation.avm2().find_public_namespace(),
+                            child.name(),
+                        );
+                        let current_val = parent_obj.get_property(&name, &mut activation);
                         match current_val {
                             Ok(Avm2Value::Null) | Ok(Avm2Value::Undefined) => {}
                             Ok(_other) => {
-                                let res = parent_obj.set_public_property(
-                                    child.name(),
+                                let res = parent_obj.set_property(
+                                    &name,
                                     Avm2Value::Null,
                                     &mut activation,
                                 );

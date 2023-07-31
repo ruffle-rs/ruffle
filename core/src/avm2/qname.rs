@@ -1,11 +1,14 @@
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::{Activation, Error, Namespace};
-use crate::context::GcContext;
+use crate::context::UpdateContext;
 use crate::either::Either;
 use crate::string::{AvmString, WStr, WString};
 use gc_arena::{Collect, Mutation};
 use std::fmt::Debug;
 use swf::avm2::types::{Index, Multiname as AbcMultiname};
+
+use super::api_version::ApiVersion;
+use super::Multiname;
 
 /// A `QName`, likely "qualified name", consists of a namespace and name string.
 ///
@@ -26,7 +29,7 @@ pub struct QName<'gc> {
 impl<'gc> PartialEq for QName<'gc> {
     fn eq(&self, other: &Self) -> bool {
         // Implemented by hand to enforce order of comparisons for perf
-        self.name == other.name && self.ns == other.ns
+        self.name == other.name && self.ns.exact_version_match(other.ns)
     }
 }
 
@@ -47,7 +50,7 @@ impl<'gc> QName<'gc> {
     pub fn from_abc_multiname(
         translation_unit: TranslationUnit<'gc>,
         multiname_index: Index<AbcMultiname>,
-        context: &mut GcContext<'_, 'gc>,
+        context: &mut UpdateContext<'_, 'gc>,
     ) -> Result<Self, Error<'gc>> {
         if multiname_index.0 == 0 {
             return Err("Attempted to load a trait name of index zero".into());
@@ -64,8 +67,29 @@ impl<'gc> QName<'gc> {
         Ok(match abc_multiname? {
             AbcMultiname::QName { namespace, name } => Self {
                 ns: translation_unit.pool_namespace(*namespace, context)?,
-                name: translation_unit.pool_string(name.0, context)?.into(),
+                name: translation_unit
+                    .pool_string(name.0, &mut context.borrow_gc())?
+                    .into(),
             },
+            AbcMultiname::Multiname {
+                namespace_set,
+                name,
+            } => {
+                let ns_set =
+                    Multiname::abc_namespace_set(translation_unit, *namespace_set, context)?;
+                if ns_set.len() == 1 {
+                    Self {
+                        ns: ns_set.get(0).unwrap(),
+                        name: translation_unit
+                            .pool_string(name.0, &mut context.borrow_gc())?
+                            .into(),
+                    }
+                } else {
+                    return Err(
+                        "Attempted to pull QName from multiname with multiple namespaces".into(),
+                    );
+                }
+            }
             _ => return Err("Attempted to pull QName from non-QName multiname".into()),
         })
     }
@@ -78,24 +102,28 @@ impl<'gc> QName<'gc> {
     /// LOCAL_NAME (Use the public namespace)
     ///
     /// This does *not* handle `Vector.<SomeTypeParam>` - use `get_defined_value_handling_vector` for that
-    pub fn from_qualified_name(name: AvmString<'gc>, activation: &mut Activation<'_, 'gc>) -> Self {
+    pub fn from_qualified_name(
+        name: AvmString<'gc>,
+        api_version: ApiVersion,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Self {
         let parts = name
             .rsplit_once(WStr::from_units(b"::"))
             .or_else(|| name.rsplit_once(WStr::from_units(b".")));
 
+        let mut context = activation.borrow_gc();
         if let Some((package_name, local_name)) = parts {
-            let mut context = activation.borrow_gc();
             let package_name = context
                 .interner
                 .intern_wstr(context.gc_context, package_name);
 
             Self {
-                ns: Namespace::package(package_name, &mut context),
+                ns: Namespace::package(package_name, api_version, &mut context),
                 name: AvmString::new(context.gc_context, local_name),
             }
         } else {
             Self {
-                ns: activation.avm2().public_namespace,
+                ns: Namespace::package("", api_version, &mut context),
                 name,
             }
         }

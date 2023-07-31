@@ -271,7 +271,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         self.get_property(
-            &Multiname::new(activation.avm2().public_namespace, name),
+            &Multiname::new(activation.avm2().find_public_namespace(), name),
             activation,
         )
     }
@@ -301,7 +301,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        let name = Multiname::new(activation.avm2().public_namespace, name);
+        let name = Multiname::new(activation.avm2().public_namespace_base_version, name);
         self.set_property_local(&name, value, activation)
     }
 
@@ -368,7 +368,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         self.set_property(
-            &Multiname::new(activation.avm2().public_namespace, name),
+            &Multiname::new(activation.avm2().public_namespace_base_version, name),
             value,
             activation,
         )
@@ -552,7 +552,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         self.call_property(
-            &Multiname::new(activation.avm2().public_namespace, name),
+            &Multiname::new(activation.avm2().find_public_namespace(), name),
             arguments,
             activation,
         )
@@ -643,7 +643,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: impl Into<AvmString<'gc>>,
         activation: &mut Activation<'_, 'gc>,
     ) -> bool {
-        self.has_property(&Multiname::new(activation.avm2().public_namespace, name))
+        self.has_property(&Multiname::new(
+            activation.avm2().find_public_namespace(),
+            name,
+        ))
     }
 
     /// Indicates whether or not a property or trait exists on an object and is
@@ -658,7 +661,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: impl Into<AvmString<'gc>>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<bool, Error<'gc>> {
-        Ok(self.has_own_property(&Multiname::new(activation.avm2().public_namespace, name)))
+        Ok(self.has_own_property(&Multiname::new(
+            activation.avm2().find_public_namespace(),
+            name,
+        )))
     }
 
     /// Returns true if an object has one or more traits of a given name.
@@ -729,7 +735,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc>,
         name: impl Into<AvmString<'gc>>,
     ) -> Result<bool, Error<'gc>> {
-        let name = Multiname::new(activation.avm2().public_namespace, name);
+        let name = Multiname::new(activation.avm2().public_namespace_base_version, name);
         self.delete_property(activation, &name)
     }
 

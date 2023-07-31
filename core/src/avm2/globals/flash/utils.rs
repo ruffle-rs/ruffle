@@ -1,7 +1,6 @@
 //! `flash.utils` namespace
 
 use crate::avm2::object::TObject;
-
 use crate::avm2::{Activation, Error, Object, Value};
 use crate::string::AvmString;
 use crate::string::WString;

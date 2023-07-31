@@ -1,6 +1,7 @@
 //! `QName` impl
 
 use crate::avm2::activation::Activation;
+use crate::avm2::api_version::ApiVersion;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -46,16 +47,19 @@ pub fn init<'gc>(
         let ns_arg = args.get(0).cloned().unwrap();
         let local_arg = args.get(1).cloned().unwrap_or(Value::Undefined);
 
+        let api_version = activation.avm2().root_api_version;
+
         let namespace = match ns_arg {
             Value::Object(o) if o.as_namespace().is_some() => o.as_namespace().as_deref().copied(),
-            Value::Object(o) if o.as_qname_object().is_some() => o
-                .as_qname_object()
-                .unwrap()
-                .uri()
-                .map(|uri| Namespace::package(uri, &mut activation.borrow_gc())),
+            Value::Object(o) if o.as_qname_object().is_some() => {
+                o.as_qname_object().unwrap().uri().map(|uri| {
+                    Namespace::package(uri, ApiVersion::AllVersions, &mut activation.borrow_gc())
+                })
+            }
             Value::Undefined | Value::Null => None,
             v => Some(Namespace::package(
                 v.coerce_to_string(activation)?,
+                api_version,
                 &mut activation.borrow_gc(),
             )),
         };
@@ -81,7 +85,7 @@ pub fn init<'gc>(
         };
         if &*local != b"*" {
             this.set_local_name(activation.context.gc_context, local);
-            Some(activation.avm2().public_namespace)
+            Some(activation.avm2().find_public_namespace())
         } else {
             None
         }

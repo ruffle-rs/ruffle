@@ -1,5 +1,6 @@
 //! `flash.net.SharedObject` builtin/prototype
 
+use crate::avm2::api_version::ApiVersion;
 use crate::avm2::error::error;
 use crate::avm2::object::TObject;
 use crate::avm2::Error::AvmError;
@@ -147,7 +148,11 @@ pub fn get_local<'gc>(
 
     // Set the internal name
     let ruffle_name = Multiname::new(
-        Namespace::package("__ruffle__", &mut activation.borrow_gc()),
+        Namespace::package(
+            "__ruffle__",
+            ApiVersion::AllVersions,
+            &mut activation.borrow_gc(),
+        ),
         "_ruffleName",
     );
     this.set_property(
@@ -194,7 +199,11 @@ pub fn flush<'gc>(
         .coerce_to_object(activation)?;
 
     let ruffle_name = Multiname::new(
-        Namespace::package("__ruffle__", &mut activation.borrow_gc()),
+        Namespace::package(
+            "__ruffle__",
+            ApiVersion::AllVersions,
+            &mut activation.borrow_gc(),
+        ),
         "_ruffleName",
     );
     let name = this
@@ -231,7 +240,11 @@ pub fn get_size<'gc>(
         .coerce_to_object(activation)?;
 
     let ruffle_name = Multiname::new(
-        Namespace::package("__ruffle__", &mut activation.borrow_gc()),
+        Namespace::package(
+            "__ruffle__",
+            ApiVersion::AllVersions,
+            &mut activation.borrow_gc(),
+        ),
         "_ruffleName",
     );
     let name = this
@@ -274,7 +287,11 @@ pub fn clear<'gc>(
 
     // Delete data from storage backend.
     let ruffle_name = Multiname::new(
-        Namespace::package("__ruffle__", &mut activation.borrow_gc()),
+        Namespace::package(
+            "__ruffle__",
+            ApiVersion::AllVersions,
+            &mut activation.borrow_gc(),
+        ),
         "_ruffleName",
     );
     let name = this

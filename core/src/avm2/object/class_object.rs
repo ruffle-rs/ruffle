@@ -377,7 +377,7 @@ impl<'gc> ClassObject<'gc> {
             for interface_trait in iface_read.instance_traits() {
                 if !interface_trait.name().namespace().is_public() {
                     let public_name = QName::new(
-                        activation.context.avm2.public_namespace,
+                        activation.context.avm2.public_namespace_vm_internal,
                         interface_trait.name().local_name(),
                     );
                     self.instance_vtable().copy_property_for_interface(

@@ -1326,8 +1326,11 @@ pub fn parse<'gc>(
 pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
     let mc = activation.context.gc_context;
     let class = Class::new(
-        QName::new(activation.avm2().public_namespace, "Date"),
-        Some(Multiname::new(activation.avm2().public_namespace, "Object")),
+        QName::new(activation.avm2().public_namespace_base_version, "Date"),
+        Some(Multiname::new(
+            activation.avm2().public_namespace_base_version,
+            "Object",
+        )),
         Method::from_builtin(instance_init, "<Date instance initializer>", mc),
         Method::from_builtin(class_init, "<Date class initializer>", mc),
         mc,
@@ -1371,7 +1374,7 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
     ];
     write.define_builtin_instance_properties(
         mc,
-        activation.avm2().public_namespace,
+        activation.avm2().public_namespace_base_version,
         PUBLIC_INSTANCE_PROPERTIES,
     );
     write.define_builtin_instance_methods(
@@ -1384,14 +1387,14 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
 
     write.define_builtin_class_methods(
         mc,
-        activation.avm2().public_namespace,
+        activation.avm2().public_namespace_base_version,
         PUBLIC_CLASS_METHODS,
     );
 
     const CLASS_CONSTANTS_INT: &[(&str, i32)] = &[("length", 7)];
 
     write.define_constant_int_class_traits(
-        activation.avm2().public_namespace,
+        activation.avm2().public_namespace_base_version,
         CLASS_CONSTANTS_INT,
         activation,
     );

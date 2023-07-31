@@ -254,7 +254,7 @@ pub fn init<'gc>(
 pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
     let gc_context = activation.context.gc_context;
     let object_class = Class::new(
-        QName::new(activation.avm2().public_namespace, "Object"),
+        QName::new(activation.avm2().public_namespace_base_version, "Object"),
         None,
         Method::from_builtin(instance_init, "<Object instance initializer>", gc_context),
         Method::from_builtin(class_init, "<Object class initializer>", gc_context),
@@ -268,8 +268,8 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
     ));
 
     write.define_class_trait(Trait::from_const(
-        QName::new(activation.avm2().public_namespace, "length"),
-        Multiname::new(activation.avm2().public_namespace, "int"),
+        QName::new(activation.avm2().public_namespace_base_version, "length"),
+        Multiname::new(activation.avm2().public_namespace_base_version, "int"),
         Some(1.into()),
     ));
 
@@ -284,7 +284,7 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
                 Multiname::any(activation.context.gc_context),
                 Value::Undefined,
             )],
-            Multiname::new(activation.avm2().public_namespace, "Boolean"),
+            Multiname::new(activation.avm2().public_namespace_base_version, "Boolean"),
         ),
         (
             "isPrototypeOf",
@@ -294,7 +294,7 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
                 Multiname::any(activation.context.gc_context),
                 Value::Undefined,
             )],
-            Multiname::new(activation.avm2().public_namespace, "Boolean"),
+            Multiname::new(activation.avm2().public_namespace_base_version, "Boolean"),
         ),
         (
             "propertyIsEnumerable",
@@ -304,7 +304,7 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
                 Multiname::any(activation.context.gc_context),
                 Value::Undefined,
             )],
-            Multiname::new(activation.avm2().public_namespace, "Boolean"),
+            Multiname::new(activation.avm2().public_namespace_base_version, "Boolean"),
         ),
     ];
     write.define_builtin_instance_methods_with_sig(

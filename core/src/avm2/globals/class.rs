@@ -47,8 +47,11 @@ fn prototype<'gc>(
 pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
     let gc_context = activation.context.gc_context;
     let class_class = Class::new(
-        QName::new(activation.avm2().public_namespace, "Class"),
-        Some(Multiname::new(activation.avm2().public_namespace, "Object")),
+        QName::new(activation.avm2().public_namespace_base_version, "Class"),
+        Some(Multiname::new(
+            activation.avm2().public_namespace_base_version,
+            "Object",
+        )),
         Method::from_builtin(instance_init, "<Class instance initializer>", gc_context),
         Method::from_builtin(class_init, "<Class class initializer>", gc_context),
         gc_context,
@@ -60,7 +63,7 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
     // We need to define it, since it shows up in 'describeType'
     const CLASS_CONSTANTS: &[(&str, i32)] = &[("length", 1)];
     write.define_constant_int_class_traits(
-        activation.avm2().public_namespace,
+        activation.avm2().public_namespace_base_version,
         CLASS_CONSTANTS,
         activation,
     );
@@ -72,7 +75,7 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
     )] = &[("prototype", Some(prototype), None)];
     write.define_builtin_instance_properties(
         gc_context,
-        activation.avm2().public_namespace,
+        activation.avm2().public_namespace_base_version,
         PUBLIC_INSTANCE_PROPERTIES,
     );
 

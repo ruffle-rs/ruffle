@@ -63,7 +63,7 @@ impl<'gc> ParamConfig<'gc> {
             AvmString::from("<Unnamed Parameter>")
         };
         let param_type_name = txunit
-            .pool_multiname_static_any(config.kind, &mut activation.borrow_gc())?
+            .pool_multiname_static_any(config.kind, &mut activation.context)?
             .deref()
             .clone();
 
@@ -153,7 +153,7 @@ impl<'gc> BytecodeMethod<'gc> {
             }
 
             let return_type = txunit
-                .pool_multiname_static_any(method.return_type, &mut activation.borrow_gc())?
+                .pool_multiname_static_any(method.return_type, &mut activation.context)?
                 .deref()
                 .clone();
 

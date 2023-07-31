@@ -21,7 +21,7 @@ pub fn namespace_allocator<'gc>(
         activation.context.gc_context,
         NamespaceObjectData {
             base,
-            namespace: activation.context.avm2.public_namespace,
+            namespace: activation.context.avm2.public_namespace_base_version,
         },
     ))
     .into())
