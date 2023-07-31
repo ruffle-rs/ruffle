@@ -1,0 +1,1 @@
+var result=''; for ( aVar in this ) { if (aVar == 'aVar') {return a failure}; result PASSED!
