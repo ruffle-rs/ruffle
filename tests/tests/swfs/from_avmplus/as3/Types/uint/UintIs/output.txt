@@ -1,0 +1,12 @@
+var c=0;c is uint PASSED!
+0 is uint PASSED!
+var d=1;d is uint PASSED!
+1 is uint PASSED!
+var e=uint.MAX_VALUE;e is uint PASSED!
+uint.MAX_VALUE is uint PASSED!
+4294967295 is uint PASSED!
+var f=-1;f is uint PASSED!
+-1 is uint PASSED!
+var g=int.MAX_VALUE;g is uint PASSED!
+int.MAX_VALUE is uint PASSED!
+2147483647 is uint PASSED!

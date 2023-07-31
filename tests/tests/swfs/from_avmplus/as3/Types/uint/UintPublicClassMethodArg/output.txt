@@ -1,0 +1,24 @@
+Calling function with 1 uint argument PASSED!
+Calling function with 2 uint arguments PASSED!
+Calling function with 3 uint arguments PASSED!
+diffArg(uint, int, Number) PASSED!
+diffArg(int, uint, Number) PASSED!
+diffArg(Number, int, uint) PASSED!
+useProp(4) PASSED!
+obj.pubProp = 10 PASSED!
+UintPublicClass.pubStatProp = 11 PASSED!
+Precision runtime error one arg PASSED!
+Precision runtime error two args PASSED!
+Precision runtime error three args PASSED!
+Precision runtime error diffArg PASSED!
+Precision runtime error diffArg2 PASSED!
+Precision runtime error diffArg3 PASSED!
+var n:Number = -20; obj.oneArg(n); PASSED!
+var n:Number = -20; obj.twoArg(n); PASSED!
+var n:Number = -20; obj.twoArg(n,n); PASSED!
+var n:Number = -20; obj.threeArg(n,n,n); PASSED!
+var n:Number = -20; obj.diffArg(n,n,n) PASSED!
+var n:Number = -20; obj.diffArg2(n,n,n) PASSED!
+var n:Number = -20; obj.diffArg3(n,n,n) PASSED!
+obj.pubProp = -1 PASSED!
+UintPublicClass.pubStatProp = -1 PASSED!
