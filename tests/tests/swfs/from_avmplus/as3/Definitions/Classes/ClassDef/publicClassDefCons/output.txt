@@ -1,0 +1,4 @@
+calling public final Instance method PASSED!
+Calling private Instance method PASSED!
+Calling public Instance method PASSED!
+Calling internal Instance method PASSED!

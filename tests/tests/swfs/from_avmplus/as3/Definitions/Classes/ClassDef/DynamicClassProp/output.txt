@@ -1,0 +1,12 @@
+*** Access property of type Number *** PASSED!
+Obj.prop1 PASSED!
+*** Access property of type String *** PASSED!
+Obj.prop2 PASSED!
+*** Access property of type Boolean *** PASSED!
+Obj.prop3 PASSED!
+*** Access property of type Array *** PASSED!
+Obj.prop4 PASSED!
+*** Access property of type Date *** PASSED!
+Obj.prop5 PASSED!
+*** Access property of type Object *** PASSED!
+Obj.prop6 PASSED!

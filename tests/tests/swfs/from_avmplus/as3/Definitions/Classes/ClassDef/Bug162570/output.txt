@@ -1,0 +1,5 @@
+More.foo(1) PASSED!
+m.bar(true) PASSED!
+bar.bar(true) PASSED!
+b.bar(true) PASSED!
+c.b(true) PASSED!

@@ -1,0 +1,3 @@
+Result from for loop PASSED!
+Result from if else stt PASSED!
+Result from do loop PASSED!

@@ -1,0 +1,40 @@
+*** Access default method of a class *** PASSED!
+Obj.setArray(arr), Obj.getArray() PASSED!
+*** Access default virtual method of a class *** PASSED!
+Obj.setVirtArray(arr), Obj.getVirtArray() PASSED!
+*** Access static method of a class *** PASSED!
+Obj.setStatFunction(f), Obj.getStatFunction() PASSED!
+*** Access final method of a class *** PASSED!
+Obj.setFinNumber(10), Obj.getFinNumber() PASSED!
+*** Access internal method of a class *** PASSED!
+Obj.setInternalArray(arr), Obj.getInternalArray() PASSED!
+*** Access internal virtual method of a class *** PASSED!
+Obj.setInternalVirtualArray(arr), Obj.getInternalVirtualArray() PASSED!
+*** Access internal static method of a class *** PASSED!
+Obj.setInternalStatFunction(f), Obj.getInternalStatFunction() PASSED!
+*** Access internal final method of a class *** PASSED!
+Obj.setInternalFinNumber(10), Obj.getInternalFinNumber() PASSED!
+*** Access private method of a class *** PASSED!
+Obj.setPrivDate(date), Obj.getPrivDate() PASSED!
+*** Access private virtual method of a class *** PASSED!
+Obj.setPrivVirtualDate(date), Obj.getPrivVirtualDate() PASSED!
+*** Access private static method of a class *** PASSED!
+Obj.setPrivStatString(s), Obj.getPrivStatString PASSED!
+*** Access private final method of a class *** PASSED!
+Obj.setPrivFinalString(s), Obj.getPrivFinalString PASSED!
+*** Access public method of a class *** PASSED!
+Obj.setPubBoolean(b), Obj.getPubBoolean() PASSED!
+*** Access public virtual method of a class *** PASSED!
+Obj.setPubVirtualBoolean(b), Obj.getPubVirtualBoolean() PASSED!
+*** Access public static method of a class *** PASSED!
+FinalPublicDynamicClass.setPubStatObject(ob), FinalPublicDynamicClass.getPubStatObject() PASSED!
+*** Access public final method of a class *** PASSED!
+Obj.setPubFinArray(arr), Obj.getPubFinArray() PASSED!
+*** Access public property of a class *** PASSED!
+Obj.pubBoolean = true, Obj.pubBoolean PASSED!
+*** Access public satic property of a class *** PASSED!
+FinalPublicDynamicClass.pubStatObject = ob, FinalPublicDynamicClass.pubStatObject PASSED!
+*** Access public final property of a class *** PASSED!
+Obj.pubFinArray = arr, Obj.pubFinArray PASSED!
+*** Access public final static property of a class *** PASSED!
+FinalPublicDynamicClass.pubFinalStaticNumber = 10, FinalPublicDynamicClass.pubFinalStaticNumber PASSED!

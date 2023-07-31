@@ -1,0 +1,18 @@
+Try overriding default property through a dynamic class' prototype object PASSED!
+Try overriding internal property through a dynamic class' prototype object PASSED!
+Try overriding protected property through a dynamic class' prototype object PASSED!
+Try overriding public property through a dynamic class' prototype object PASSED!
+Try overriding private property through a dynamic class' prototype object PASSED!
+Try overriding public static property through a dynamic class' prototype object PASSED!
+Try overriding namespace property through a dynamic class' prototype object PASSED!
+Try overriding Dynamic method through a dynamic class' prototype object PASSED!
+Try overriding internal method through a dynamic class' prototype object PASSED!
+Try overriding public method through a dynamic class' prototype object PASSED!
+Try overriding private method through a dynamic class' prototype object PASSED!
+Try overriding namespace method through a dynamic class' prototype object PASSED!
+Try overriding public final method through a dynamic class' prototype object PASSED!
+Try overriding public static method through a dynamic class' prototype object PASSED!
+Try adding new property through a dynamic class' prototype object PASSED!
+Try adding new method through a dynamic class' prototype object PASSED!
+Verify prototype constructor is equivalent to class object PASSED!
+Try to write to FinalClass' prototype object PASSED!

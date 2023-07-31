@@ -1,0 +1,2 @@
+static initialization of class directly PASSED!
+static initialization of class via method PASSED!
