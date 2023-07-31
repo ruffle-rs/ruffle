@@ -1,0 +1,4 @@
+int.MIN_VALUE PASSED!
+delete( int.MIN_VALUE ) PASSED!
+delete( int.MIN_VALUE ); int.MIN_VALUE PASSED!
+var string = ''; for ( prop in int ) { string += ( prop == 'MIN_VALUE' ) ? prop : '' } string; PASSED!

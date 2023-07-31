@@ -1,0 +1,4 @@
+int.MAX_VALUE PASSED!
+delete( int.MAX_VALUE ); int.MAX_VALUE PASSED!
+delete( int.MAX_VALUE ) PASSED!
+var string = ''; for ( prop in int) { string += ( prop == 'MAX_VALUE' ) ? prop : '' } string; PASSED!

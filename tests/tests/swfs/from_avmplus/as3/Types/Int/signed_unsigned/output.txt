@@ -1,0 +1,6 @@
+isIntGreaterUint(-30, 6) PASSED!
+isUintGreaterInt(6, -30) PASSED!
+isIntGreaterUint(0xFFFFFFE2, 0x00000006) PASSED!
+isUintGreaterInt(0x00000006, 0xFFFFFFE2) PASSED!
+isIntGreaterUint(-1, 0xFFFFFFF0) PASSED!
+isUintGreaterInt(0xFFFFFFF0, -1) PASSED!

@@ -1,0 +1,12 @@
+int() PASSED!
+int(void 0) PASSED!
+int(null) PASSED!
+int() PASSED!
+int(new int()) PASSED!
+int(0) PASSED!
+int(1) PASSED!
+int(-1) PASSED!
+int('string') PASSED!
+int(new String()) PASSED!
+int('') PASSED!
+int(new MyObject(100)) PASSED!

@@ -1,0 +1,2 @@
+typeof i:int = 3 PASSED!
+typeof i:int = -1 PASSED!
