@@ -1,0 +1,22 @@
+Dictionary constructor no args PASSED!
+Dictionary constructor weakKeys=false PASSED!
+Dictionary constructor weakKeys=true PASSED!
+empty dictionary toString PASSED!
+dictionary key lookup fails PASSED!
+weak dictionary key lookup fails PASSED!
+dictionary key is literal PASSED!
+dictionary key is object PASSED!
+weak dictionary key is literal PASSED!
+weak dictionary key is object PASSED!
+literal in dictionary key PASSED!
+object in dictionary key PASSED!
+literal in weak dictionary key PASSED!
+object in weak dictionary key PASSED!
+for in dictionary PASSED!
+for in weak dictionary PASSED!
+for each in dictionary PASSED!
+for each in weak dictionary PASSED!
+delete literal key from dictionary PASSED!
+delete object key from dictionary PASSED!
+delete literal key from weak dictionary PASSED!
+delete object key from weak dictionary PASSED!
