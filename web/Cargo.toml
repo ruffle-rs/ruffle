@@ -46,7 +46,7 @@ wasm-bindgen-futures = "0.4.37"
 serde-wasm-bindgen = "0.5.0"
 chrono = { version = "0.4", default-features = false, features = ["wasmbind", "clock"] }
 getrandom = { version = "0.2", features = ["js"] }
-serde = { version = "1.0.175", features = ["derive"] }
+serde = { version = "1.0.180", features = ["derive"] }
 thiserror = "1.0"
 base64 = "0.21.2"
 async-channel = "1.9.0"
@@ -63,6 +63,6 @@ features = [
     "AudioDestinationNode", "AudioNode", "AudioParam", "Blob", "BlobPropertyBag",
     "ChannelMergerNode", "ChannelSplitterNode", "ClipboardEvent", "DataTransfer", "Element", "Event",
     "EventTarget", "GainNode", "Headers", "HtmlCanvasElement", "HtmlDocument", "HtmlElement", "HtmlFormElement",
-    "HtmlInputElement", "HtmlTextAreaElement", "KeyboardEvent", "Location", "PointerEvent", 
+    "HtmlInputElement", "HtmlTextAreaElement", "KeyboardEvent", "Location", "PointerEvent",
     "Request", "RequestInit", "Response", "Storage", "WheelEvent", "Window",
 ]
