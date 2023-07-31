@@ -7,7 +7,6 @@ use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
-use crate::string::AvmString;
 use core::fmt;
 use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use std::cell::{Ref, RefMut};
@@ -248,12 +247,6 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         } else {
             Ok(Value::Undefined)
         }
-    }
-
-    fn property_is_enumerable(&self, name: AvmString<'gc>) -> bool {
-        name.parse::<u32>()
-            .map(|index| self.0.read().vector.length() as u32 >= index)
-            .unwrap_or(false)
     }
 
     fn to_string(&self, _activation: &mut Activation<'_, 'gc>) -> Result<Value<'gc>, Error<'gc>> {
