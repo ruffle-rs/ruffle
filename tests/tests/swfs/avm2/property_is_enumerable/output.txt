@@ -100,3 +100,15 @@ true
 false
 //ES3Class.prototype.propertyIsEnumerable('test_static_function')
 false
+//arr.propertyIsEnumerable('0')
+true
+//arr.propertyIsEnumerable('1')
+true
+//arr.propertyIsEnumerable('2')
+false
+//vec.propertyIsEnumerable('0')
+false
+//vec.propertyIsEnumerable('1')
+false
+//vec.propertyIsEnumerable('2')
+false
