@@ -221,8 +221,18 @@ pub fn child<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let xml = this.as_xml_object().unwrap();
     let multiname = name_to_multiname(activation, &args[0], false)?;
-    // FIXME: Support numerical indexes.
     let children = if let E4XNodeKind::Element { children, .. } = &*xml.node().kind() {
+        if let Some(local_name) = multiname.local_name() {
+            if let Ok(index) = local_name.parse::<usize>() {
+                let children = if let Some(node) = children.get(index) {
+                    vec![E4XOrXml::E4X(*node)]
+                } else {
+                    Vec::new()
+                };
+                return Ok(XmlListObject::new(activation, children, None).into());
+            }
+        }
+
         children
             .iter()
             .filter(|node| node.matches_name(&multiname))
