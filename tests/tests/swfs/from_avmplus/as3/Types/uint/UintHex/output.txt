@@ -1,0 +1,1 @@
+o.a = 0x1fffffff, o.b = -1, (o.a == o.b) PASSED!

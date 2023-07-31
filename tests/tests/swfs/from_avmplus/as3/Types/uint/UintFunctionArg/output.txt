@@ -1,0 +1,17 @@
+Calling function with 1 uint argument PASSED!
+Calling function with 1 uint argument PASSED!
+Uint1Arg(-1) PASSED!
+Uint1Arg(-1) PASSED!
+UintMultiArgs(-1,-1,-1) PASSED!
+UintMultiArgs(-1,-1,-1) PASSED!
+diffArgs(-1,-1,-1) PASSED!
+diffArgs(-1,-1,-1) PASSED!
+returnNegUint() PASSED!
+returnNegUint() PASSED!
+var n:Number = -20; Uint1Arg(n) PASSED!
+var n:Number = -20; UintMultiArgs(n,n,n) PASSED!
+var n:Number = -20; diffArgs(n,n,n) PASSED!
+var i:int = -20; Uint1Arg(i) PASSED!
+var i:int = -20; UintMultiArgs(i,i,i) PASSED!
+var i:int = -20; diffArgs(i,i,i) PASSED!
+add negitive number to uint in function PASSED!
