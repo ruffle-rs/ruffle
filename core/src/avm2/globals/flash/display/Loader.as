@@ -8,6 +8,7 @@ package flash.display {
 		import flash.system.LoaderContext;
 		import flash.utils.ByteArray;
 		import flash.net.URLRequest;
+		import flash.events.UncaughtErrorEvents;
    		import __ruffle__.stub_method;
 
 		internal var _contentLoaderInfo: LoaderInfo;
@@ -55,6 +56,10 @@ package flash.display {
 
 		override public function setChildIndex(child:DisplayObject, index:int):void {
 			throw new IllegalOperationError("Error #2069: The Loader class does not implement this method.", 2069);
+		}
+
+		public function get uncaughtErrorEvents():UncaughtErrorEvents {
+			return this.contentLoaderInfo.uncaughtErrorEvents;
 		}
 	}
 }
