@@ -1,0 +1,1 @@
+Initialize local const inside a class function after its initializer PASSED!

@@ -1,0 +1,1 @@
+const and function arg share same name, access const with this.  should return the sum of the two const PASSED!

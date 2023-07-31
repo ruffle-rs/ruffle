@@ -1,0 +1,1 @@
+Initialize global function local const with global const PASSED!

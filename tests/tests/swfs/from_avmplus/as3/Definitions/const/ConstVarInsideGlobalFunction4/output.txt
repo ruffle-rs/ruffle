@@ -1,0 +1,1 @@
+Initialize global multi-arg function local const with global const PASSED!

@@ -1,0 +1,1 @@
+Testing the 'const' keywords access from an object of a class: const myConst = 10; PASSED!

@@ -1,0 +1,1 @@
+Calling a class function which declares a local const variable PASSED!
