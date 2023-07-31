@@ -1,9 +1,7 @@
 package flash.xml
 {
 
-import __ruffle__.stub_method;
 import flash.xml.XMLNode;
-import flash.xml.XMLNodeType;
 import flash.xml.XMLNodeType;
 
    public class XMLDocument extends XMLNode {
@@ -26,18 +24,22 @@ import flash.xml.XMLNodeType;
          // ` foo` is another text node
          // To achieve this, just wrap it all together in a parent.
 
-         // TODO: When XML.settings works, provide ignoreWhite to it and disable ignoreComments/ignoreProcessingInstructions
+         var oldSettings = XML.AS3::settings();
+         var newSettings = XML.AS3::defaultSettings();
+         newSettings.ignoreWhitespace = this.ignoreWhite;
+         XML.AS3::setSettings(newSettings);
 
-         if (!this.ignoreWhite) {
-            stub_method("flash.xml.XMLDocument", "parseXML", "with ignoreWhite = false");
-         }
-         clear();
-         var root = new XML("<xml>" + input + "</xml>");
-         for each (var child in root.children()) {
-            var node = _convertXmlNode(child);
-            if (node != null) {
-               appendChild(node);
+         try {
+            clear();
+            var root = new XML("<xml>" + input + "</xml>");
+            for each (var child in root.children()) {
+               var node = _convertXmlNode(child);
+               if (node != null) {
+                  appendChild(node);
+               }
             }
+         } finally {
+            XML.AS3::setSettings(oldSettings);
          }
       }
 

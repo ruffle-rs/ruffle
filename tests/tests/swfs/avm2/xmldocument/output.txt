@@ -1,0 +1,255 @@
+// document.childNodes.length
+6
+
+// document.childNodes[0]
+<a><ab>abv</ab>x<ab>abv</ab></a>
+
+// document.childNodes[0].attributes
+[object Object]
+
+// document.childNodes[0].childNodes
+<ab>abv</ab>,x,<ab>abv</ab>
+
+// document.childNodes[0].firstChild
+<ab>abv</ab>
+
+// document.childNodes[0].lastChild
+<ab>abv</ab>
+
+// document.childNodes[0].localName
+a
+
+// document.childNodes[0].namespaceURI
+null
+
+// document.childNodes[0].nextSibling
+y
+
+// document.childNodes[0].nodeName
+a
+
+// document.childNodes[0].nodeType
+1
+
+// document.childNodes[0].nodeValue
+null
+
+// document.childNodes[0].parentNode
+<a><ab>abv</ab>x<ab>abv</ab></a>y<b>b</b>zz<d />
+
+// document.childNodes[0].prefix
+
+
+// document.childNodes[0].previousSibling
+null
+
+// document.childNodes[1]
+y
+
+// document.childNodes[1].attributes
+[object Object]
+
+// document.childNodes[1].childNodes
+
+
+// document.childNodes[1].firstChild
+null
+
+// document.childNodes[1].lastChild
+null
+
+// document.childNodes[1].localName
+null
+
+// document.childNodes[1].namespaceURI
+null
+
+// document.childNodes[1].nextSibling
+<b>b</b>
+
+// document.childNodes[1].nodeName
+null
+
+// document.childNodes[1].nodeType
+3
+
+// document.childNodes[1].nodeValue
+y
+
+// document.childNodes[1].parentNode
+<a><ab>abv</ab>x<ab>abv</ab></a>y<b>b</b>zz<d />
+
+// document.childNodes[1].prefix
+null
+
+// document.childNodes[1].previousSibling
+<a><ab>abv</ab>x<ab>abv</ab></a>
+
+// document.childNodes[2]
+<b>b</b>
+
+// document.childNodes[2].attributes
+[object Object]
+
+// document.childNodes[2].childNodes
+b
+
+// document.childNodes[2].firstChild
+b
+
+// document.childNodes[2].lastChild
+b
+
+// document.childNodes[2].localName
+b
+
+// document.childNodes[2].namespaceURI
+null
+
+// document.childNodes[2].nextSibling
+z
+
+// document.childNodes[2].nodeName
+b
+
+// document.childNodes[2].nodeType
+1
+
+// document.childNodes[2].nodeValue
+null
+
+// document.childNodes[2].parentNode
+<a><ab>abv</ab>x<ab>abv</ab></a>y<b>b</b>zz<d />
+
+// document.childNodes[2].prefix
+
+
+// document.childNodes[2].previousSibling
+y
+
+// document.childNodes[3]
+z
+
+// document.childNodes[3].attributes
+[object Object]
+
+// document.childNodes[3].childNodes
+
+
+// document.childNodes[3].firstChild
+null
+
+// document.childNodes[3].lastChild
+null
+
+// document.childNodes[3].localName
+null
+
+// document.childNodes[3].namespaceURI
+null
+
+// document.childNodes[3].nextSibling
+z
+
+// document.childNodes[3].nodeName
+null
+
+// document.childNodes[3].nodeType
+3
+
+// document.childNodes[3].nodeValue
+z
+
+// document.childNodes[3].parentNode
+<a><ab>abv</ab>x<ab>abv</ab></a>y<b>b</b>zz<d />
+
+// document.childNodes[3].prefix
+null
+
+// document.childNodes[3].previousSibling
+<b>b</b>
+
+// document.childNodes[4]
+z
+
+// document.childNodes[4].attributes
+[object Object]
+
+// document.childNodes[4].childNodes
+
+
+// document.childNodes[4].firstChild
+null
+
+// document.childNodes[4].lastChild
+null
+
+// document.childNodes[4].localName
+null
+
+// document.childNodes[4].namespaceURI
+null
+
+// document.childNodes[4].nextSibling
+<d />
+
+// document.childNodes[4].nodeName
+null
+
+// document.childNodes[4].nodeType
+3
+
+// document.childNodes[4].nodeValue
+z
+
+// document.childNodes[4].parentNode
+<a><ab>abv</ab>x<ab>abv</ab></a>y<b>b</b>zz<d />
+
+// document.childNodes[4].prefix
+null
+
+// document.childNodes[4].previousSibling
+z
+
+// document.childNodes[5]
+<d />
+
+// document.childNodes[5].attributes
+[object Object]
+
+// document.childNodes[5].childNodes
+
+
+// document.childNodes[5].firstChild
+null
+
+// document.childNodes[5].lastChild
+null
+
+// document.childNodes[5].localName
+d
+
+// document.childNodes[5].namespaceURI
+null
+
+// document.childNodes[5].nextSibling
+null
+
+// document.childNodes[5].nodeName
+d
+
+// document.childNodes[5].nodeType
+1
+
+// document.childNodes[5].nodeValue
+null
+
+// document.childNodes[5].parentNode
+<a><ab>abv</ab>x<ab>abv</ab></a>y<b>b</b>zz<d />
+
+// document.childNodes[5].prefix
+
+
+// document.childNodes[5].previousSibling
+z
+
