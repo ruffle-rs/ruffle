@@ -1,0 +1,6 @@
+switch with negative value cases: input is 4294967294 PASSED!
+switch with negative value cases: input is 4294967295 PASSED!
+switch with negative value cases: input is 0 PASSED!
+switch with negative value cases: input is 1 PASSED!
+switch with negative value cases: input is 2 PASSED!
+switch with negative value cases: input is 4294967295 PASSED!
