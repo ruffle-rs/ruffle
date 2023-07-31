@@ -1,0 +1,4 @@
+attempt to assign a function to a boolean property PASSED!
+get function to a boolean property PASSED!
+attempt to assign a number to a boolean property PASSED!
+get number assigned to a boolean property PASSED!

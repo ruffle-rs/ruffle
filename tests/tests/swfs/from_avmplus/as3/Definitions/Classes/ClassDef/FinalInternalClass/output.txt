@@ -1,0 +1,36 @@
+*** No param constructor test *** PASSED!
+new FinalInternalClass(), FinalInternalClass.constructorCount PASSED!
+*** No param constructor test *** PASSED!
+new FinalInternalClass, FinalInternalClass.constructorCount PASSED!
+*** Access default method of a class *** PASSED!
+Obj.setArray(arr), Obj.getArray() PASSED!
+*** Access default virtual method of a class *** PASSED!
+Obj.setVirtualArray(arr2), Obj.getVirtualArray() PASSED!
+*** Access static method of a class *** PASSED!
+Obj.setStatFunction(f), Obj.getStatFunction() PASSED!
+*** Access final method of a class *** PASSED!
+Obj.setFinNumber(10), Obj.getFinNumber() PASSED!
+*** Access internal method of a class *** PASSED!
+Obj.setInternalArray(arr), Obj.getInternalArray() PASSED!
+*** Access internal virtual method of a class *** PASSED!
+Obj.setInternalVirtualArray(arr2), Obj.getInternalVirtualArray() PASSED!
+*** Access internal static method of a class *** PASSED!
+Obj.setInternalStatFunction(f), Obj.getInternalStatFunction() PASSED!
+*** Access internal final method of a class *** PASSED!
+Obj.setInternalFinNumber(10), Obj.getInternalFinNumber() PASSED!
+*** Access private method of a class *** PASSED!
+Obj.setPrivDate(date), Obj.getPrivDate() PASSED!
+*** Access private virtual method of a class *** PASSED!
+Obj.setPrivVirtualDate(date2), Obj.getPrivVirtaulDate() PASSED!
+*** Access private static method of a class *** PASSED!
+Obj.setPrivStatString(s), Obj.getPrivStatString PASSED!
+*** Access private final method of a class *** PASSED!
+Obj.setPrivFinalString(s), Obj.getPrivFinalString PASSED!
+*** Access public method of a class *** PASSED!
+Obj.setPubBoolean(b), Obj.getPubBoolean() PASSED!
+*** Access public virtual method of a class *** PASSED!
+Obj.setPubVirtualBoolean(false), Obj.getPubVirtualBoolean() PASSED!
+*** Access public static method of a class *** PASSED!
+Obj..setPubStatObject(ob), Obj.getPubStatObject() PASSED!
+*** Access public final method of a class *** PASSED!
+Obj.setPubFinArray(arr), Obj.getPubFinArray() PASSED!

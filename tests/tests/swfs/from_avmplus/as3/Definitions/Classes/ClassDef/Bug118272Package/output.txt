@@ -1,0 +1,6 @@
+Trying to initialize public  class identifier PASSED!
+Trying to initialize default class identifier PASSED!
+Trying to initialize internal class identifier PASSED!
+Trying to initialize dynamic class identifier PASSED!
+Trying to initialize final class identifier PASSED!
+Trying to initialize class identifier,the class is outside the package PASSED!

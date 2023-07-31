@@ -1,0 +1,16 @@
+*** Access default method of a static class *** PASSED!
+Obj.setArray(arr), Obj.getArray() PASSED!
+*** Access private method of a static class *** PASSED!
+Obj.setPrivDate(date), Obj.getPrivDate() PASSED!
+*** Access public method of a static class *** PASSED!
+Obj.setPubBoolean(b), Obj.getPubBoolean() PASSED!
+*** Access static method of a static class *** PASSED!
+Obj.setStatFunction(f), Obj.getStatFunction() PASSED!
+*** Access private static method of a static class *** PASSED!
+Obj.setPrivStatString(s), Obj.getPrivStatString PASSED!
+*** Access public static method of a static class *** PASSED!
+Obj.setPubStatObject(ob), Obj.getPubStatObject() PASSED!
+*** Access final method of a static class *** PASSED!
+Obj.setFinNumber(10), Obj.getFinNumber() PASSED!
+*** Access public final method of a static class *** PASSED!
+Obj.setPubFinArray(arr), Obj.getPubFinArray() PASSED!
