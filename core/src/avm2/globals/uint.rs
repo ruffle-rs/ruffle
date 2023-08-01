@@ -2,6 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
+use crate::avm2::error::range_error;
 use crate::avm2::globals::number::{print_with_precision, print_with_radix};
 use crate::avm2::method::{Method, NativeMethodImpl, ParamConfig};
 use crate::avm2::object::{primitive_allocator, FunctionObject, Object, TObject};
@@ -198,7 +199,7 @@ fn to_precision<'gc>(
                 .coerce_to_u32(activation)? as usize;
 
             if wanted_digits < 1 || wanted_digits > 21 {
-                return Err("toPrecision can only print with 1 through 21 digits.".into());
+                return Err(Error::AvmError(range_error(activation, "Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.", 1002)?));
             }
 
             return Ok(print_with_precision(activation, number as f64, wanted_digits)?.into());
