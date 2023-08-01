@@ -111,10 +111,10 @@ pub fn connect<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(_) = XmlSocket::cast(this.into()) {
+    if XmlSocket::cast(this.into()).is_some() {
         let host = args
             .get(0)
-            .map(|v| *v)
+            .copied()
             .unwrap_or_else(|| {
                 let movie = activation.base_clip().movie();
 
