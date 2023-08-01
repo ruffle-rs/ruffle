@@ -905,7 +905,7 @@ pub fn draw_triangles<'gc>(
                 &vertices,
                 indices.as_ref(),
                 uvt_data.as_ref(),
-                culling
+                culling,
             )?;
         }
     }
@@ -913,6 +913,7 @@ pub fn draw_triangles<'gc>(
     Ok(Value::Undefined)
 }
 
+//TODO handle uvt_data
 fn draw_triangles_internal<'gc>(
     activation: &mut Activation<'_, 'gc>,
     drawing: &mut Drawing,
@@ -925,8 +926,16 @@ fn draw_triangles_internal<'gc>(
         .as_vector_storage()
         .expect("vertices is not a Vector");
 
+    let uvt_data = uvt_data.map(|uvt_data| {
+        uvt_data
+            .as_vector_storage()
+            .expect("uvt_data is not a Vector")
+    });
+
     if let Some(indices) = indices {
-        let indices = indices.as_vector_storage().expect("indices is not a Vector");
+        let indices = indices
+            .as_vector_storage()
+            .expect("indices is not a Vector");
 
         fn read_point<'gc>(
             vertices: &VectorStorage<'gc>,
@@ -934,11 +943,15 @@ fn draw_triangles_internal<'gc>(
             activation: &mut Activation<'_, 'gc>,
         ) -> Result<Point<Twips>, Error<'gc>> {
             let x = {
-                let x = vertices.get(2 * index, activation)?.coerce_to_number(activation)?;
+                let x = vertices
+                    .get(2 * index, activation)?
+                    .coerce_to_number(activation)?;
                 Twips::from_pixels(x)
             };
             let y = {
-                let y = vertices.get(2 * index + 1, activation)?.coerce_to_number(activation)?;
+                let y = vertices
+                    .get(2 * index + 1, activation)?
+                    .coerce_to_number(activation)?;
                 Twips::from_pixels(y)
             };
 
@@ -947,7 +960,7 @@ fn draw_triangles_internal<'gc>(
 
         fn next_triangle<'gc>(
             vertices: &VectorStorage<'gc>,
-            indices: &mut impl Iterator<Item=Value<'gc>>,
+            indices: &mut impl Iterator<Item = Value<'gc>>,
             activation: &mut Activation<'_, 'gc>,
         ) -> Result<Option<Triangle>, Error<'gc>> {
             match (indices.next(), indices.next(), indices.next()) {
@@ -956,90 +969,90 @@ fn draw_triangles_internal<'gc>(
                     let i1 = i1.coerce_to_u32(activation)? as usize;
                     let i2 = i2.coerce_to_u32(activation)? as usize;
 
-                    let p0 = read_point(&vertices, i0, activation)?;
-                    let p1 = read_point(&vertices, i1, activation)?;
-                    let p2 = read_point(&vertices, i2, activation)?;
+                    let p0 = read_point(vertices, i0, activation)?;
+                    let p1 = read_point(vertices, i1, activation)?;
+                    let p2 = read_point(vertices, i2, activation)?;
 
                     Ok(Some((p0, p1, p2)))
                 }
-                _ => Ok(None)
+                _ => Ok(None),
             }
         }
 
-        let ref mut indices = indices.iter();
+        let indices = &mut indices.iter();
 
-        while let Some((a, b, c)) = next_triangle(&vertices, indices, activation)? {
-            match culling {
-                TriangleCulling::None => {
-                    drawing.draw_command(DrawCommand::MoveTo(a));
-
-                    drawing.draw_command(DrawCommand::LineTo(b));
-                    drawing.draw_command(DrawCommand::LineTo(c));
-                    drawing.draw_command(DrawCommand::LineTo(a));
-                }
-                TriangleCulling::Positive => {
-                    panic!("Positive culling not implemented")
-                }
-                TriangleCulling::Negative => {
-                    panic!("Negative culling not implemented")
-                }
-            }
+        while let Some(triangle) = next_triangle(&vertices, indices, activation)? {
+            draw_triangle_internal(triangle, drawing, culling);
         }
     } else {
         let mut vertices = vertices.iter();
 
         fn read_point<'gc>(
-            vertices: &mut impl Iterator<Item=Value<'gc>>,
+            vertices: &mut impl Iterator<Item = Value<'gc>>,
             activation: &mut Activation<'_, 'gc>,
-        ) -> Option<Point<Twips>> {
+        ) -> Result<Option<Point<Twips>>, Error<'gc>> {
             let x = {
-                let x = vertices.next()?.coerce_to_number(activation).ok()?;
+                let x = vertices.next();
+                let x = match x {
+                    Some(x) => x.coerce_to_number(activation)?,
+                    None => return Ok(None),
+                };
                 Twips::from_pixels(x)
             };
             let y = {
-                let y = vertices.next()?.coerce_to_number(activation).ok()?;
+                let y = vertices.next();
+                let y = match y {
+                    Some(y) => y.coerce_to_number(activation)?,
+                    None => return Ok(None),
+                };
                 Twips::from_pixels(y)
             };
 
-            Some(Point::new(x, y))
+            Ok(Some(Point::new(x, y)))
         }
 
         fn next_triangle<'gc>(
-            vertices: &mut impl Iterator<Item=Value<'gc>>,
+            vertices: &mut impl Iterator<Item = Value<'gc>>,
             activation: &mut Activation<'_, 'gc>,
         ) -> Result<Option<Triangle>, Error<'gc>> {
             match (
-                read_point(vertices, activation),
-                read_point(vertices, activation),
-                read_point(vertices, activation)
+                read_point(vertices, activation)?,
+                read_point(vertices, activation)?,
+                read_point(vertices, activation)?,
             ) {
-                (Some(p0), Some(p1), Some(p2)) => {
-                    Ok(Some((p0, p1, p2)))
-                }
-                _ => Ok(None)
+                (Some(p0), Some(p1), Some(p2)) => Ok(Some((p0, p1, p2))),
+                _ => Ok(None),
             }
         }
 
-        while let Some((a, b, c)) = next_triangle(&mut vertices, activation)? {
-            match culling {
-                TriangleCulling::None => {
-                    drawing.draw_command(DrawCommand::MoveTo(a));
-
-                    drawing.draw_command(DrawCommand::LineTo(b));
-                    drawing.draw_command(DrawCommand::LineTo(c));
-                    drawing.draw_command(DrawCommand::LineTo(a));
-                }
-                TriangleCulling::Positive => {
-                    panic!("Positive culling not implemented")
-                }
-                TriangleCulling::Negative => {
-                    panic!("Negative culling not implemented")
-                }
-            }
+        while let Some(triangle) = next_triangle(&mut vertices, activation)? {
+            draw_triangle_internal(triangle, drawing, culling);
         }
     }
 
     Ok(())
+}
+
+fn draw_triangle_internal<'gc>(
+    (a, b, c): Triangle,
+    drawing: &mut Drawing,
+    culling: TriangleCulling,
+) {
+    match culling {
+        TriangleCulling::None => {
+            drawing.draw_command(DrawCommand::MoveTo(a));
+
+            drawing.draw_command(DrawCommand::LineTo(b));
+            drawing.draw_command(DrawCommand::LineTo(c));
+            drawing.draw_command(DrawCommand::LineTo(a));
+        }
+        TriangleCulling::Positive => {
+            panic!("Positive culling not implemented")
+        }
+        TriangleCulling::Negative => {
+            panic!("Negative culling not implemented")
+        }
+    }
 }
 
 /// Implements `Graphics.drawGraphicsData`
@@ -1048,7 +1061,10 @@ pub fn draw_graphics_data<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(vector) = args.get_object(activation, 0, "graphicsData")?.as_vector_storage() {
+    if let Some(vector) = args
+        .get_object(activation, 0, "graphicsData")?
+        .as_vector_storage()
+    {
         //assert_eq!(vector.value_type(), Some(activation.avm2().classes().igraphicsdata));
 
         let this = this.as_display_object().expect("Bad this");
@@ -1220,7 +1236,12 @@ fn handle_igraphics_data<'gc>(
     } else if class == activation.avm2().classes().graphicsendfill {
         drawing.set_fill_style(None);
     } else if class == activation.avm2().classes().graphicsgradientfill {
-        avm2_stub_method!(activation, "flash.display.Graphics", "drawGraphicsData", "GraphicsGradientFill");
+        avm2_stub_method!(
+            activation,
+            "flash.display.Graphics",
+            "drawGraphicsData",
+            "GraphicsGradientFill"
+        );
     } else if class == activation.avm2().classes().graphicspath {
         let commands = obj
             .get_public_property("commands", activation)?
@@ -1230,17 +1251,19 @@ fn handle_igraphics_data<'gc>(
             .get_public_property("data", activation)?
             .coerce_to_object(activation)?;
 
-        let _winding = obj.get_public_property("winding", activation)?.coerce_to_string(activation)?;
+        let _winding = obj
+            .get_public_property("winding", activation)?
+            .coerce_to_string(activation)?;
 
         process_commands(
             activation,
             drawing,
-            &commands.as_vector_storage().expect("commands is not a Vector"),
+            &commands
+                .as_vector_storage()
+                .expect("commands is not a Vector"),
             &data.as_vector_storage().expect("data is not a Vector"),
         );
-    } /*else if class == activation.avm2().classes().graphicsshaderfill {
-        avm2_stub_method!(activation, "flash.display.Graphics", "drawGraphicsData", "GraphicsShaderFill");
-    } */else if class == activation.avm2().classes().graphicssolidfill {
+    } else if class == activation.avm2().classes().graphicssolidfill {
         let style = handle_solid_fill(activation, obj)?;
         drawing.set_fill_style(Some(style));
     } else if class == activation.avm2().classes().graphicsstroke {
@@ -1252,7 +1275,9 @@ fn handle_igraphics_data<'gc>(
             drawing.set_line_style(None);
         } else {
             let caps = {
-                let caps = obj.get_public_property("caps", activation)?.coerce_to_string(activation);
+                let caps = obj
+                    .get_public_property("caps", activation)?
+                    .coerce_to_string(activation);
                 caps_to_cap_style(caps.ok())
             };
             let fill = {
@@ -1263,10 +1288,19 @@ fn handle_igraphics_data<'gc>(
                 handle_igraphics_fill(activation, drawing, &fill)?
             };
 
-            let joints = obj.get_public_property("joints", activation)?.coerce_to_string(activation).ok();
-            let miter_limit = obj.get_public_property("miterLimit", activation)?.coerce_to_number(activation)?;
-            let pixel_hinting = obj.get_public_property("pixelHinting", activation)?.coerce_to_boolean();
-            let scale_mode = obj.get_public_property("scaleMode", activation)?.coerce_to_string(activation)?;
+            let joints = obj
+                .get_public_property("joints", activation)?
+                .coerce_to_string(activation)
+                .ok();
+            let miter_limit = obj
+                .get_public_property("miterLimit", activation)?
+                .coerce_to_number(activation)?;
+            let pixel_hinting = obj
+                .get_public_property("pixelHinting", activation)?
+                .coerce_to_boolean();
+            let scale_mode = obj
+                .get_public_property("scaleMode", activation)?
+                .coerce_to_string(activation)?;
 
             let width = Twips::from_pixels(thickness.clamp(0.0, 255.0));
             let join_style = joints_to_join_style(joints, miter_limit);
@@ -1304,9 +1338,7 @@ enum TriangleCulling {
     Negative,
 }
 
-fn culling_to_triangle_culling<'gc>(
-    culling: AvmString
-) -> Result<TriangleCulling, Error<'gc>> {
+fn culling_to_triangle_culling<'gc>(culling: AvmString) -> Result<TriangleCulling, Error<'gc>> {
     if &culling == b"none" {
         Ok(TriangleCulling::None)
     } else if &culling == b"positive" {
@@ -1341,24 +1373,27 @@ fn handle_graphics_triangle_path<'gc>(
         .get_public_property("indices", activation)?
         .coerce_to_object(activation)?;
 
-    let uvt_data = obj
+    let _uvt_data = obj
         .get_public_property("uvtData", activation)?
         .coerce_to_object(activation)?;
 
     if let Some(vertices) = vertices.as_vector_storage() {
         if let Some(indices) = indices.as_vector_storage() {
-
             fn read_point<'gc>(
                 vertices: &VectorStorage<'gc>,
                 index: usize,
                 activation: &mut Activation<'_, 'gc>,
             ) -> Result<Point<Twips>, Error<'gc>> {
                 let x = {
-                    let x = vertices.get(2 * index, activation)?.coerce_to_number(activation)?;
+                    let x = vertices
+                        .get(2 * index, activation)?
+                        .coerce_to_number(activation)?;
                     Twips::from_pixels(x)
                 };
                 let y = {
-                    let y = vertices.get(2 * index + 1, activation)?.coerce_to_number(activation)?;
+                    let y = vertices
+                        .get(2 * index + 1, activation)?
+                        .coerce_to_number(activation)?;
                     Twips::from_pixels(y)
                 };
 
@@ -1367,7 +1402,7 @@ fn handle_graphics_triangle_path<'gc>(
 
             fn next_triangle<'gc>(
                 vertices: &VectorStorage<'gc>,
-                indices: &mut impl Iterator<Item=Value<'gc>>,
+                indices: &mut impl Iterator<Item = Value<'gc>>,
                 activation: &mut Activation<'_, 'gc>,
             ) -> Result<Option<Triangle>, Error<'gc>> {
                 match (indices.next(), indices.next(), indices.next()) {
@@ -1376,17 +1411,17 @@ fn handle_graphics_triangle_path<'gc>(
                         let i1 = i1.coerce_to_u32(activation)? as usize;
                         let i2 = i2.coerce_to_u32(activation)? as usize;
 
-                        let p0 = read_point(&vertices, i0, activation)?;
-                        let p1 = read_point(&vertices, i1, activation)?;
-                        let p2 = read_point(&vertices, i2, activation)?;
+                        let p0 = read_point(vertices, i0, activation)?;
+                        let p1 = read_point(vertices, i1, activation)?;
+                        let p2 = read_point(vertices, i2, activation)?;
 
                         Ok(Some((p0, p1, p2)))
                     }
-                    _ => Ok(None)
+                    _ => Ok(None),
                 }
             }
 
-            let ref mut indices = indices.iter();
+            let indices = &mut indices.iter();
 
             while let Some((a, b, c)) = next_triangle(&vertices, indices, activation)? {
                 match culling {
@@ -1427,9 +1462,7 @@ fn handle_igraphics_fill<'gc>(
         Ok(None)
     } else if class == activation.avm2().classes().graphicsgradientfill {
         Ok(None)
-    } /*else if class == activation.avm2().classes().graphicsshaderfill {
-
-    }*/ else if class == activation.avm2().classes().graphicssolidfill {
+    } else if class == activation.avm2().classes().graphicssolidfill {
         let style = handle_solid_fill(activation, obj)?;
         Ok(Some(style))
     } else {
@@ -1472,7 +1505,7 @@ fn handle_bitmap_fill<'gc>(
 
     let matrix = match matrix {
         Ok(matrix) => Matrix::from(object_to_matrix(matrix, activation)?),
-        Err(_) => Matrix::IDENTITY
+        Err(_) => Matrix::IDENTITY,
     };
 
     let is_repeating = obj
