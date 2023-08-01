@@ -4,7 +4,7 @@ use crate::avm1::property_decl::define_properties_on;
 use crate::avm1::{property_decl::Declaration, ScriptObject};
 use crate::avm1::{Activation, Error, Executable, ExecutionReason, TObject, Value};
 use crate::avm_warn;
-use crate::context::GcContext;
+use crate::context::{GcContext, UpdateContext};
 use crate::socket::SocketHandle;
 use std::cell::Cell;
 use gc_arena::{Collect, Gc};
@@ -108,7 +108,21 @@ pub fn connect<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(xml_socket) = XmlSocket::cast(this.into()) {
-        // TODO: Implement this. Get host and port parameter.
+        // FIXME: When host is null, use the current movie domain.
+        let host = args.get(0).unwrap_or(&Value::Undefined).coerce_to_string(activation)?;
+        let port = args.get(1).unwrap_or(&Value::Undefined).coerce_to_u16(activation)?;
+
+        let UpdateContext {
+            sockets,
+            navigator,
+            ..
+        } = &mut activation.context;
+
+        sockets.connect_avm1(*navigator, xml_socket, host.to_utf8_lossy().into_owned(), port);
+
+        // NOTE: At this point we do not know if the connection will succeed
+        //       because connecting is an asynchronous process, so we just return true.
+        return Ok(true.into());
     }
 
     Ok(Value::Undefined)
