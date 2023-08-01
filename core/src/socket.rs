@@ -108,6 +108,35 @@ impl<'gc> Sockets<'gc> {
         }
     }
 
+    pub fn connect_avm1(
+        &mut self,
+        backend: &mut dyn NavigatorBackend,
+        target: XmlSocket<'gc>,
+        host: String,
+        port: u16,
+    ) {
+        let (sender, receiver) = unbounded();
+
+        let socket = Socket::new(SocketKind::Avm1(target), sender);
+        let handle = self.sockets.insert(socket);
+
+        // NOTE: This call will send SocketAction::Connect to sender with connection status.
+        backend.connect_socket(
+            host,
+            port,
+            Duration::from_millis(target.timeout().into()),
+            handle,
+            receiver,
+            self.sender.clone(),
+        );
+
+        if let Some(existing_handle) = target.set_handle(handle) {
+            // NOTE: AS2 docs don't specify what happens when connect is called with open connection,
+            //       but we will close the existing connection anyway.
+            self.close(existing_handle)
+        }
+    }
+
     pub fn is_connected(&self, handle: SocketHandle) -> bool {
         matches!(self.sockets.get(handle), Some(Socket { .. }))
     }
