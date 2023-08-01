@@ -97,8 +97,8 @@ pub fn begin_gradient_fill<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.as_display_object() {
-        let gradient_type = args.get_string(activation, 0);
-        let gradient_type = parse_gradient_type(activation, gradient_type?)?;
+        let gradient_type = args.get_string(activation, 0)?;
+        let gradient_type = parse_gradient_type(activation, gradient_type)?;
         let colors = args.get_object(activation, 1, "colors")?;
         let alphas = args.get_object(activation, 2, "alphas")?;
         let ratios = args.get_object(activation, 3, "ratios")?;
@@ -896,8 +896,10 @@ pub fn draw_triangles<'gc>(
 
             let uvt_data = args.get_object(activation, 2, "uvtData").ok();
 
-            let culling = args.get_string(activation, 3)?;
-            let culling = culling_to_triangle_culling(culling)?;
+            let culling = {
+                let culling = args.get_string(activation, 3)?;
+                culling_to_triangle_culling(culling)?
+            };
 
             draw_triangles_internal(
                 activation,
@@ -913,24 +915,17 @@ pub fn draw_triangles<'gc>(
     Ok(Value::Undefined)
 }
 
-//TODO handle uvt_data
 fn draw_triangles_internal<'gc>(
     activation: &mut Activation<'_, 'gc>,
     drawing: &mut Drawing,
     vertices: &Object<'gc>,
     indices: Option<&Object<'gc>>,
-    uvt_data: Option<&Object<'gc>>,
+    _uvt_data: Option<&Object<'gc>>,
     culling: TriangleCulling,
 ) -> Result<(), Error<'gc>> {
     let vertices = vertices
         .as_vector_storage()
         .expect("vertices is not a Vector");
-
-    let uvt_data = uvt_data.map(|uvt_data| {
-        uvt_data
-            .as_vector_storage()
-            .expect("uvt_data is not a Vector")
-    });
 
     if let Some(indices) = indices {
         let indices = indices
@@ -1033,7 +1028,7 @@ fn draw_triangles_internal<'gc>(
     Ok(())
 }
 
-fn draw_triangle_internal<'gc>(
+fn draw_triangle_internal(
     (a, b, c): Triangle,
     drawing: &mut Drawing,
     culling: TriangleCulling,
@@ -1236,12 +1231,8 @@ fn handle_igraphics_data<'gc>(
     } else if class == activation.avm2().classes().graphicsendfill {
         drawing.set_fill_style(None);
     } else if class == activation.avm2().classes().graphicsgradientfill {
-        avm2_stub_method!(
-            activation,
-            "flash.display.Graphics",
-            "drawGraphicsData",
-            "GraphicsGradientFill"
-        );
+        let style = handle_gradient_fill(activation, obj)?;
+        drawing.set_fill_style(Some(style));
     } else if class == activation.avm2().classes().graphicspath {
         let commands = obj
             .get_public_property("commands", activation)?
@@ -1251,6 +1242,7 @@ fn handle_igraphics_data<'gc>(
             .get_public_property("data", activation)?
             .coerce_to_object(activation)?;
 
+        //TODO implement winding
         let _winding = obj
             .get_public_property("winding", activation)?
             .coerce_to_string(activation)?;
@@ -1325,7 +1317,7 @@ fn handle_igraphics_data<'gc>(
     } else if class == activation.avm2().classes().graphicstrianglepath {
         handle_graphics_triangle_path(activation, drawing, obj)?;
     } else {
-        println!("Unknown graphics data class {:?}", class);
+        panic!("Unknown graphics data class {:?}", class);
     }
 
     Ok(())
@@ -1461,12 +1453,13 @@ fn handle_igraphics_fill<'gc>(
     } else if class == activation.avm2().classes().graphicsendfill {
         Ok(None)
     } else if class == activation.avm2().classes().graphicsgradientfill {
-        Ok(None)
+        let style = handle_gradient_fill(activation, obj)?;
+        Ok(Some(style))
     } else if class == activation.avm2().classes().graphicssolidfill {
         let style = handle_solid_fill(activation, obj)?;
         Ok(Some(style))
     } else {
-        println!("Unknown graphics fill class {:?}", class);
+        tracing::warn!("Unknown graphics fill class {:?}", class);
         Ok(None)
     }
 }
@@ -1486,6 +1479,97 @@ fn handle_solid_fill<'gc>(
         .unwrap_or(0);
 
     Ok(FillStyle::Color(color_from_args(color, alpha)))
+}
+
+fn handle_gradient_fill<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    obj: &Object<'gc>,
+) -> Result<FillStyle, Error<'gc>> {
+    let alphas = obj
+        .get_public_property("alphas", activation)?
+        .coerce_to_object(activation)?;
+
+    let colors = obj
+        .get_public_property("colors", activation)?
+        .coerce_to_object(activation)?;
+
+    let ratios = obj
+        .get_public_property("ratios", activation)?
+        .coerce_to_object(activation)?;
+
+    let gradient_type = {
+        let gradient_type = obj
+            .get_public_property("type", activation)?
+            .coerce_to_string(activation)?;
+        parse_gradient_type(activation, gradient_type)?
+    };
+
+    let records = build_gradient_records(
+        activation,
+        &colors.as_array_storage().expect("Guaranteed by AS"),
+        &alphas.as_array_storage().expect("Guaranteed by AS"),
+        &ratios.as_array_storage().expect("Guaranteed by AS"),
+    )?;
+
+    let matrix = {
+        let matrix = obj
+            .get_public_property("matrix", activation).ok()
+            .and_then(|mat| { mat.coerce_to_object(activation).ok() });
+
+        match matrix {
+            Some(matrix) => Matrix::from(object_to_matrix(matrix, activation)?),
+            None => Matrix::IDENTITY,
+        }
+    };
+
+    let spread = {
+        let spread_method = obj
+            .get_public_property("spreadMethod", activation)?
+            .coerce_to_string(activation)?;
+
+        parse_spread_method(spread_method)
+    };
+
+    let interpolation = {
+        let interpolation_method = obj
+            .get_public_property("interpolationMethod", activation)?
+            .coerce_to_string(activation)?;
+
+        parse_interpolation_method(interpolation_method)
+    };
+
+    let focal_point = obj
+        .get_public_property("focalPointRatio", activation)?
+        .coerce_to_number(activation)?;
+    
+    let fill = match gradient_type {
+        GradientType::Linear => 
+            FillStyle::LinearGradient(Gradient {
+                matrix,
+                spread,
+                interpolation,
+                records,
+            }),
+        GradientType::Radial if focal_point == 0.0 => 
+            FillStyle::RadialGradient(Gradient {
+                matrix,
+                spread,
+                interpolation,
+                records,
+            }),
+        _ => FillStyle::FocalGradient {
+            gradient: Gradient {
+                matrix,
+                spread,
+                interpolation,
+                records,
+            },
+            focal_point: Fixed8::from_f64(focal_point),
+        }
+    };
+
+    Ok(fill)
+
 }
 
 fn handle_bitmap_fill<'gc>(
