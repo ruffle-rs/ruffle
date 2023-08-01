@@ -43,7 +43,7 @@ pub fn connect<'gc>(
         sockets, navigator, ..
     } = &mut activation.context;
 
-    sockets.connect(*navigator, socket, host.to_utf8_lossy().into_owned(), port);
+    sockets.connect_avm2(*navigator, socket, host.to_utf8_lossy().into_owned(), port);
 
     Ok(Value::Undefined)
 }
