@@ -3216,7 +3216,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
     ) -> Avm2MousePick<'gc> {
         // Don't do anything if run in an AVM1 context.
         if !self.movie().is_action_script_3() {
-            return Avm2MousePick::NotAvm2;
+            return Avm2MousePick::Miss;
         }
 
         if self.visible() {
@@ -3327,7 +3327,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                     Avm2MousePick::PropagateToParent => {
                         found_propagate = Some(res);
                     }
-                    Avm2MousePick::Miss | Avm2MousePick::NotAvm2 => {}
+                    Avm2MousePick::Miss => {}
                 }
             }
 
