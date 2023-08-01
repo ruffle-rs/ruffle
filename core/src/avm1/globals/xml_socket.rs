@@ -107,7 +107,7 @@ pub fn connect<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(xml_socket) = XmlSocket::cast(this.into()) {
+    if let Some(_) = XmlSocket::cast(this.into()) {
         // FIXME: When host is null, use the current movie domain.
         let host = args.get(0).unwrap_or(&Value::Undefined).coerce_to_string(activation)?;
         let port = args.get(1).unwrap_or(&Value::Undefined).coerce_to_u16(activation)?;
