@@ -1,0 +1,225 @@
+null test  PASSED!
+bool true  PASSED!
+bool false  PASSED!
+int positive PASSED!
+int negative PASSED!
+uint value PASSED!
+Num Positive PASSED!
+Num Negative PASSED!
+String Mixed case characters PASSED!
+Date FIXED PASSED!
+Array Index:Mixed Value:Mixed value check EXP vs ACT: 0 PASSED!
+Array Index:Mixed Value:Mixed value check EXP vs ACT: 1 PASSED!
+Array Index:Mixed Value:Mixed User Defined null  PASSED!
+Array Index:Mixed Value:Mixed User Defined boolean True  PASSED!
+Array Index:Mixed Value:Mixed User Defined boolean False  PASSED!
+Array Index:Mixed Value:Mixed User Defined int PASSED!
+Array Index:Mixed Value:Mixed User Defined uint PASSED!
+Array Index:Mixed Value:Mixed User Defined  Number min PASSED!
+Array Index:Mixed Value:Mixed User Defined  Number Positive PASSED!
+Array Index:Mixed Value:Mixed User Defined  Number Positive PASSED!
+Array Index:Mixed Value:Mixed User Defined String  PASSED!
+Array Index:Mixed Value:Mixed User Defined Date  PASSED!
+Array Index:Mixed Value:Mixed User Defined Array Index:Int Value:String value check EXP vs ACT: 0 PASSED!
+Array Index:Mixed Value:Mixed User Defined Array Index:Int Value:String value check EXP vs ACT: 1 PASSED!
+Array Index:Mixed Value:Mixed User Defined Array Index:Int Value:String value check EXP vs ACT: 2 PASSED!
+Array Index:Mixed Value:Mixed User Defined Array Index:Int Value:String value check EXP vs ACT: 3 PASSED!
+Array Index:Mixed Value:Mixed User Defined Array Index:Int Value:String value check ACT vs EXP: 0 PASSED!
+Array Index:Mixed Value:Mixed User Defined Array Index:Int Value:String value check ACT vs EXP: 1 PASSED!
+Array Index:Mixed Value:Mixed User Defined Array Index:Int Value:String value check ACT vs EXP: 2 PASSED!
+Array Index:Mixed Value:Mixed User Defined Array Index:Int Value:String value check ACT vs EXP: 3 PASSED!
+Array Index:Mixed Value:Mixed User Defined Array Index:Mixed Value:Mixed value check EXP vs ACT: 2 PASSED!
+Array Index:Mixed Value:Mixed User Defined Array Index:Mixed Value:Mixed value check EXP vs ACT: 3 PASSED!
+Array Index:Mixed Value:Mixed User Defined Array Index:Mixed Value:Mixed value check EXP vs ACT: TEST1 PASSED!
+Array Index:Mixed Value:Mixed User Defined Array Index:Mixed Value:Mixed value check EXP vs ACT: TEST2 PASSED!
+Array Index:Mixed Value:Mixed User Defined Array Index:Mixed Value:Mixed value check ACT vs EXP: 2 PASSED!
+Array Index:Mixed Value:Mixed User Defined Array Index:Mixed Value:Mixed value check ACT vs EXP: 3 PASSED!
+Array Index:Mixed Value:Mixed User Defined Array Index:Mixed Value:Mixed value check ACT vs EXP: TEST1 PASSED!
+Array Index:Mixed Value:Mixed User Defined Array Index:Mixed Value:Mixed value check ACT vs EXP: TEST2 PASSED!
+Array Index:Mixed Value:Mixed User Defined Object  PASSED!
+Array Index:Mixed Value:Mixed User Defined Object  PASSED!
+Array Index:Mixed Value:Mixed User Defined Object  PASSED!
+Array Index:Mixed Value:Mixed User Defined Object  PASSED!
+Array Index:Mixed Value:Mixed User Defined Vector  Vector Len  PASSED!
+Array Index:Mixed Value:Mixed User Defined Vector  PASSED!
+Array Index:Mixed Value:Mixed User Defined Vector  PASSED!
+Array Index:Mixed Value:Mixed User Defined Vector  PASSED!
+Array Index:Mixed Value:Mixed User Defined Vector  PASSED!
+Array Index:Mixed Value:Mixed User Defined Vector  PASSED!
+Array Index:Mixed Value:Mixed User Defined Vector  PASSED!
+Array Index:Mixed Value:Mixed User Defined Vector  PASSED!
+Array Index:Mixed Value:Mixed User Defined Dictionary String  PASSED!
+Array Index:Mixed Value:Mixed User Defined Dictionary String  PASSED!
+Array Index:Mixed Value:Mixed User Defined ByteArray (String) PASSED!
+Array Index:Mixed Value:Mixed value check EXP vs ACT: 2.222 PASSED!
+Array Index:Mixed Value:Mixed value check EXP vs ACT: 3.14 PASSED!
+Array Index:Mixed Value:Mixed value check EXP vs ACT: HEXAGON PASSED!
+Array Index:Mixed Value:Mixed value check EXP vs ACT: TRIANGLE PASSED!
+Array Index:Mixed Value:Mixed value check ACT vs EXP: 0 PASSED!
+Array Index:Mixed Value:Mixed value check ACT vs EXP: 1 PASSED!
+Array Index:Mixed Value:Mixed User Defined null  PASSED!
+Array Index:Mixed Value:Mixed User Defined boolean True  PASSED!
+Array Index:Mixed Value:Mixed User Defined boolean False  PASSED!
+Array Index:Mixed Value:Mixed User Defined int PASSED!
+Array Index:Mixed Value:Mixed User Defined uint PASSED!
+Array Index:Mixed Value:Mixed User Defined  Number min PASSED!
+Array Index:Mixed Value:Mixed User Defined  Number Positive PASSED!
+Array Index:Mixed Value:Mixed User Defined  Number Positive PASSED!
+Array Index:Mixed Value:Mixed User Defined String  PASSED!
+Array Index:Mixed Value:Mixed User Defined Date  PASSED!
+Array Index:Mixed Value:Mixed User Defined Array Index:Int Value:String value check EXP vs ACT: 0 PASSED!
+Array Index:Mixed Value:Mixed User Defined Array Index:Int Value:String value check EXP vs ACT: 1 PASSED!
+Array Index:Mixed Value:Mixed User Defined Array Index:Int Value:String value check EXP vs ACT: 2 PASSED!
+Array Index:Mixed Value:Mixed User Defined Array Index:Int Value:String value check EXP vs ACT: 3 PASSED!
+Array Index:Mixed Value:Mixed User Defined Array Index:Int Value:String value check ACT vs EXP: 0 PASSED!
+Array Index:Mixed Value:Mixed User Defined Array Index:Int Value:String value check ACT vs EXP: 1 PASSED!
+Array Index:Mixed Value:Mixed User Defined Array Index:Int Value:String value check ACT vs EXP: 2 PASSED!
+Array Index:Mixed Value:Mixed User Defined Array Index:Int Value:String value check ACT vs EXP: 3 PASSED!
+Array Index:Mixed Value:Mixed User Defined Array Index:Mixed Value:Mixed value check EXP vs ACT: 2 PASSED!
+Array Index:Mixed Value:Mixed User Defined Array Index:Mixed Value:Mixed value check EXP vs ACT: 3 PASSED!
+Array Index:Mixed Value:Mixed User Defined Array Index:Mixed Value:Mixed value check EXP vs ACT: TEST1 PASSED!
+Array Index:Mixed Value:Mixed User Defined Array Index:Mixed Value:Mixed value check EXP vs ACT: TEST2 PASSED!
+Array Index:Mixed Value:Mixed User Defined Array Index:Mixed Value:Mixed value check ACT vs EXP: 2 PASSED!
+Array Index:Mixed Value:Mixed User Defined Array Index:Mixed Value:Mixed value check ACT vs EXP: 3 PASSED!
+Array Index:Mixed Value:Mixed User Defined Array Index:Mixed Value:Mixed value check ACT vs EXP: TEST1 PASSED!
+Array Index:Mixed Value:Mixed User Defined Array Index:Mixed Value:Mixed value check ACT vs EXP: TEST2 PASSED!
+Array Index:Mixed Value:Mixed User Defined Object  PASSED!
+Array Index:Mixed Value:Mixed User Defined Object  PASSED!
+Array Index:Mixed Value:Mixed User Defined Object  PASSED!
+Array Index:Mixed Value:Mixed User Defined Object  PASSED!
+Array Index:Mixed Value:Mixed User Defined Vector  Vector Len  PASSED!
+Array Index:Mixed Value:Mixed User Defined Vector  PASSED!
+Array Index:Mixed Value:Mixed User Defined Vector  PASSED!
+Array Index:Mixed Value:Mixed User Defined Vector  PASSED!
+Array Index:Mixed Value:Mixed User Defined Vector  PASSED!
+Array Index:Mixed Value:Mixed User Defined Vector  PASSED!
+Array Index:Mixed Value:Mixed User Defined Vector  PASSED!
+Array Index:Mixed Value:Mixed User Defined Vector  PASSED!
+Array Index:Mixed Value:Mixed User Defined Dictionary String  PASSED!
+Array Index:Mixed Value:Mixed User Defined Dictionary String  PASSED!
+Array Index:Mixed Value:Mixed User Defined ByteArray (String) PASSED!
+Array Index:Mixed Value:Mixed value check ACT vs EXP: 2.222 PASSED!
+Array Index:Mixed Value:Mixed value check ACT vs EXP: 3.14 PASSED!
+Array Index:Mixed Value:Mixed value check ACT vs EXP: HEXAGON PASSED!
+Array Index:Mixed Value:Mixed value check ACT vs EXP: TRIANGLE PASSED!
+XML with Comments and CDATA PASSED!
+Typed Vector type: Int Vector Len  PASSED!
+Typed Vector type: Int PASSED!
+Typed Vector type: Int PASSED!
+Typed Vector type: Int PASSED!
+Typed Vector type: Int PASSED!
+Typed Vector type: Int PASSED!
+Typed Vector type: Int PASSED!
+Typed Vector type: Int PASSED!
+Typed Vector type: Uint Vector Len  PASSED!
+Typed Vector type: Uint PASSED!
+Typed Vector type: Uint PASSED!
+Typed Vector type: Uint PASSED!
+Typed Vector type: Uint PASSED!
+Typed Vector type: Uint PASSED!
+Typed Vector type: Double Vector Len  PASSED!
+Typed Vector type: Double PASSED!
+Typed Vector type: Double PASSED!
+Typed Vector type: Double PASSED!
+Typed Vector type: Double PASSED!
+Typed Vector type: Double PASSED!
+Typed Vector type: Double PASSED!
+Typed Vector type: Double PASSED!
+Typed Vector type: Double PASSED!
+Typed Vector type: Double PASSED!
+Typed Vector type: Object Vector Len  PASSED!
+Typed Vector type: Object PASSED!
+Typed Vector type: Object PASSED!
+Typed Vector type: Object PASSED!
+Typed Vector type: Object PASSED!
+Typed Vector type: Object PASSED!
+Typed Vector type: Object PASSED!
+Dictionary Value: String String  PASSED!
+Dictionary Value: String String  PASSED!
+Dictionary Value: String String  PASSED!
+Dictionary Value: String String  PASSED!
+ Byte Array : String  PASSED!
+User Defined Final Class - Const  PASSED!
+User Defined Final Class - Public String  PASSED!
+User Defined Final Class - Private String PASSED!
+User Defined Final Class - Protected String PASSED!
+User Defined Dynamic Class - Const  PASSED!
+User Defined Dynamic Class - Public String  PASSED!
+User Defined Dynamic Class - Private String  PASSED!
+User Defined Dynamic Class - Protected String  PASSED!
+User Defined Dynamic Class With Dynamic Member - Dynamic Member PASSED!
+User Defined Dynamic Class with Dynamic Members having Dynamic Members PASSED!
+Object with Circular Reference A to B PASSED!
+Object with Circular Reference B to A PASSED!
+Object with Dynamic Properties: Prop 1 PASSED!
+Object with Dynamic Properties : Prop 2 PASSED!
+Object with Dynamic Properties : Prop 3 PASSED!
+Object with Dynamic Properties : Prop 3 (1) PASSED!
+Undefined PASSED!
+Custom Encoding: Prop notforserialzing PASSED!
+Custom Encoding: Prop testvalue PASSED!
+IExternalizable PASSED!
+Array: Redundant Values value check EXP vs ACT: 0 PASSED!
+Array: Redundant Values value check EXP vs ACT: 1 PASSED!
+Array: Redundant Values value check EXP vs ACT: 2 PASSED!
+Array: Redundant Values value check EXP vs ACT: 3 PASSED!
+Array: Redundant Values value check ACT vs EXP: 0 PASSED!
+Array: Redundant Values value check ACT vs EXP: 1 PASSED!
+Array: Redundant Values value check ACT vs EXP: 2 PASSED!
+Array: Redundant Values value check ACT vs EXP: 3 PASSED!
+Vector: Redundant Values Vector Len  PASSED!
+Vector: Redundant Values PASSED!
+Vector: Redundant Values PASSED!
+Vector: Redundant Values PASSED!
+Vector: Redundant Values PASSED!
+Dictionary: Redundant Values String  PASSED!
+Dictionary: Redundant Values String  PASSED!
+Dictionary: Redundant Values String  PASSED!
+Dictionary: Redundant Values String  PASSED!
+Objects: Redundant Values PASSED!
+Objects: Redundant Values PASSED!
+Objects: Redundant Values PASSED!
+Objects: Redundant Values PASSED!
+Objects: Redundant Values PASSED!
+Objects: Redundant Values PASSED!
+User Defined Class User Defined null  PASSED!
+User Defined Class User Defined boolean True  PASSED!
+User Defined Class User Defined boolean False  PASSED!
+User Defined Class User Defined int PASSED!
+User Defined Class User Defined uint PASSED!
+User Defined Class User Defined  Number min PASSED!
+User Defined Class User Defined  Number Positive PASSED!
+User Defined Class User Defined  Number Positive PASSED!
+User Defined Class User Defined String  PASSED!
+User Defined Class User Defined Date  PASSED!
+User Defined Class User Defined Array Index:Int Value:String value check EXP vs ACT: 0 PASSED!
+User Defined Class User Defined Array Index:Int Value:String value check EXP vs ACT: 1 PASSED!
+User Defined Class User Defined Array Index:Int Value:String value check EXP vs ACT: 2 PASSED!
+User Defined Class User Defined Array Index:Int Value:String value check EXP vs ACT: 3 PASSED!
+User Defined Class User Defined Array Index:Int Value:String value check ACT vs EXP: 0 PASSED!
+User Defined Class User Defined Array Index:Int Value:String value check ACT vs EXP: 1 PASSED!
+User Defined Class User Defined Array Index:Int Value:String value check ACT vs EXP: 2 PASSED!
+User Defined Class User Defined Array Index:Int Value:String value check ACT vs EXP: 3 PASSED!
+User Defined Class User Defined Array Index:Mixed Value:Mixed value check EXP vs ACT: 2 PASSED!
+User Defined Class User Defined Array Index:Mixed Value:Mixed value check EXP vs ACT: 3 PASSED!
+User Defined Class User Defined Array Index:Mixed Value:Mixed value check EXP vs ACT: TEST1 PASSED!
+User Defined Class User Defined Array Index:Mixed Value:Mixed value check EXP vs ACT: TEST2 PASSED!
+User Defined Class User Defined Array Index:Mixed Value:Mixed value check ACT vs EXP: 2 PASSED!
+User Defined Class User Defined Array Index:Mixed Value:Mixed value check ACT vs EXP: 3 PASSED!
+User Defined Class User Defined Array Index:Mixed Value:Mixed value check ACT vs EXP: TEST1 PASSED!
+User Defined Class User Defined Array Index:Mixed Value:Mixed value check ACT vs EXP: TEST2 PASSED!
+User Defined Class User Defined Object  PASSED!
+User Defined Class User Defined Object  PASSED!
+User Defined Class User Defined Object  PASSED!
+User Defined Class User Defined Object  PASSED!
+User Defined Class User Defined Vector  Vector Len  PASSED!
+User Defined Class User Defined Vector  PASSED!
+User Defined Class User Defined Vector  PASSED!
+User Defined Class User Defined Vector  PASSED!
+User Defined Class User Defined Vector  PASSED!
+User Defined Class User Defined Vector  PASSED!
+User Defined Class User Defined Vector  PASSED!
+User Defined Class User Defined Vector  PASSED!
+User Defined Class User Defined Dictionary String  PASSED!
+User Defined Class User Defined Dictionary String  PASSED!
+User Defined Class User Defined ByteArray (String) PASSED!
