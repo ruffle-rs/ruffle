@@ -600,7 +600,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
         _point: Point<Twips>,
         _require_button_mode: bool,
     ) -> Avm2MousePick<'gc> {
-        Avm2MousePick::NotAvm2
+        Avm2MousePick::Miss
     }
 
     fn mouse_cursor(self, context: &mut UpdateContext<'_, 'gc>) -> MouseCursor {

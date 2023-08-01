@@ -217,7 +217,7 @@ impl<'gc> TInteractiveObject<'gc> for LoaderDisplay<'gc> {
     ) -> Avm2MousePick<'gc> {
         // Don't do anything if run in an AVM1 context.
         if !self.as_displayobject().movie().is_action_script_3() {
-            return Avm2MousePick::NotAvm2;
+            return Avm2MousePick::Miss;
         }
 
         // We have at most one child
