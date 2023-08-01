@@ -131,7 +131,7 @@ impl<'a> Iterator for DecodeAvmUtf8<'a> {
         let ones = first.leading_ones();
         self.index += 1;
 
-        if ones <= 1 {
+        if ones <= 1 || ones == 8 {
             return Some(first as u32);
         }
 

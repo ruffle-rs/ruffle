@@ -207,3 +207,9 @@ fn str_patterns() {
     test_pattern(wide, bstr!(b"aa"), &[(2, 4), (6, 8)], None);
     test_pattern(wide, wstr!('↓''a'), &[(1, 3), (5, 7)], None);
 }
+
+#[test]
+fn from_ff_byte() {
+    let s = WString::from_utf8_bytes(vec![0xff, 0xff]);
+    assert_eq!(s, wstr!(0xff 0xff));
+}
