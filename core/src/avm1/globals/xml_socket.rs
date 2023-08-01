@@ -6,35 +6,35 @@ use crate::avm1::{Activation, Error, Executable, ExecutionReason, TObject, Value
 use crate::avm_warn;
 use crate::context::GcContext;
 use crate::socket::SocketHandle;
-use gc_arena::{Collect, GcCell, Mutation};
+use std::cell::Cell;
+use gc_arena::{Collect, Gc};
 
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
 struct XmlSocketData {
-    handle: Option<SocketHandle>,
+    handle: Cell<Option<SocketHandle>>,
     /// Connection timeout in milliseconds.
-    timeout: u32,
+    timeout: Cell<u32>,
 }
 
 #[derive(Clone, Debug, Collect)]
 #[collect(no_drop)]
-pub struct XmlSocket<'gc>(GcCell<'gc, XmlSocketData>);
+pub struct XmlSocket<'gc>(Gc<'gc, XmlSocketData>);
 
 impl<'gc> XmlSocket<'gc> {
     pub fn handle(&self) -> Option<SocketHandle> {
-        self.0.read().handle
+        self.0.handle.get()
     }
 
     pub fn set_handle(
         &self,
-        gc_context: &Mutation<'gc>,
         handle: SocketHandle,
     ) -> Option<SocketHandle> {
-        std::mem::replace(&mut self.0.write(gc_context).handle, Some(handle))
+        self.0.handle.replace(Some(handle))
     }
 
     pub fn timeout(&self) -> u32 {
-        self.0.read().timeout
+        self.0.timeout.get()
     }
 
     pub fn cast(value: Value<'gc>) -> Option<Self> {
@@ -82,7 +82,7 @@ fn set_timeout<'gc>(
             .coerce_to_u32(activation)?;
 
         // FIXME: Check if flash player clamps this to 250 like AS3 sockets.
-        xml_socket.0.write(activation.gc()).timeout = timeout;
+        xml_socket.0.timeout.set(timeout);
     }
 
     Ok(Value::Undefined)
@@ -182,12 +182,12 @@ pub fn constructor<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let xml_socket = XmlSocket(GcCell::new(
+    let xml_socket = XmlSocket(Gc::new(
         activation.gc(),
         XmlSocketData {
-            handle: None,
+            handle: Cell::new(None),
             /// Default timeout is 20_000 milliseconds (20 seconds)
-            timeout: 20000,
+            timeout: Cell::new(20000),
         },
     ));
 
