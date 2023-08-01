@@ -118,7 +118,7 @@ pub fn connect<'gc>(
             ..
         } = &mut activation.context;
 
-        sockets.connect_avm1(*navigator, xml_socket, host.to_utf8_lossy().into_owned(), port);
+        sockets.connect_avm1(*navigator, this, host.to_utf8_lossy().into_owned(), port);
 
         // NOTE: At this point we do not know if the connection will succeed
         //       because connecting is an asynchronous process, so we just return true.
