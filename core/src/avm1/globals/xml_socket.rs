@@ -49,6 +49,12 @@ impl<'gc> XmlSocket<'gc> {
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "timeout" => property(get_timeout, set_timeout);
     "close" => method(close);
+    "connect" => method(connect);
+    "send" => method(send);
+    "onConnect" => method(on_connect; DONT_ENUM | DONT_DELETE);
+    "onClose" => method(on_close; DONT_ENUM | DONT_DELETE);
+    "onData" => method(on_data; DONT_ENUM | DONT_DELETE);
+    "onXML" => method(on_xml; DONT_ENUM | DONT_DELETE);
 };
 
 fn get_timeout<'gc>(
@@ -89,6 +95,66 @@ pub fn close<'gc>(
         }
     }
 
+    Ok(Value::Undefined)
+}
+
+pub fn connect<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>]
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(xml_socket) = XmlSocket::cast(this.into()) {
+        // TODO: Implement this. Get host and port parameter.
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn send<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>]
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(xml_socket) = XmlSocket::cast(this.into()) {
+        // TODO: Implement this.
+    }
+
+    Ok(Value::Undefined)
+}
+
+fn on_connect<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    // No-op by default
+    Ok(Value::Undefined)
+}
+
+fn on_close<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    // No-op by default
+    Ok(Value::Undefined)
+}
+
+fn on_data<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    // TODO: Check if data is valid xml and call onXML.
+    Ok(Value::Undefined)
+}
+
+fn on_xml<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    // No-op by default
     Ok(Value::Undefined)
 }
 
