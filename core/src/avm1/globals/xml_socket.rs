@@ -31,9 +31,51 @@ impl<'gc> XmlSocket<'gc> {
     ) -> Option<SocketHandle> {
         std::mem::replace(&mut self.0.write(gc_context).handle, Some(handle))
     }
+
+    pub fn timeout(&self) -> u32 {
+        self.0.read().timeout
+    }
+
+    pub fn cast(value: Value<'gc>) -> Option<Self> {
+        if let Value::Object(object) = value {
+            if let NativeObject::XmlSocket(xml_socket) = object.native() {
+                return Some(xml_socket);
+            }
+        }
+        None
+    }
 }
 
-const PROTO_DECLS: &[Declaration] = declare_properties! {};
+const PROTO_DECLS: &[Declaration] = declare_properties! {
+    "timeout" => property(get_timeout, set_timeout);
+};
+
+fn get_timeout<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(xml_socket) = XmlSocket::cast(this.into()) {
+        Ok(xml_socket.timeout().into())
+    } else {
+        Ok(Value::Undefined)
+    }
+}
+
+fn set_timeout<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(xml_socket) = XmlSocket::cast(this.into()) {
+        let timeout = args.get(0).unwrap_or(&Value::Undefined).coerce_to_u32(activation)?;
+
+        // FIXME: Check if flash player clamps this to 250 like AS3 sockets.
+        xml_socket.0.write(activation.gc()).timeout = timeout;
+    }
+    
+    Ok(Value::Undefined)
+}
 
 pub fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
