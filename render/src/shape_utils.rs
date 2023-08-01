@@ -57,15 +57,15 @@ pub fn calculate_shape_bounds(shape_records: &[swf::ShapeRecord]) -> swf::Rectan
                 anchor_delta,
             } => {
                 cursor += *control_delta;
-                bounds.x_min = bounds.x_min.min(cursor.x);
-                bounds.x_max = bounds.x_max.max(cursor.x);
-                bounds.y_min = bounds.y_min.min(cursor.y);
-                bounds.y_max = bounds.y_max.max(cursor.y);
+                let control = cursor;
                 cursor += *anchor_delta;
-                bounds.x_min = bounds.x_min.min(cursor.x);
-                bounds.x_max = bounds.x_max.max(cursor.x);
-                bounds.y_min = bounds.y_min.min(cursor.y);
-                bounds.y_max = bounds.y_max.max(cursor.y);
+                let anchor = cursor;
+                bounds = bounds.union(&quadratic_curve_bounds(
+                    cursor,
+                    Twips::ZERO,
+                    control,
+                    anchor,
+                ));
             }
         }
     }
@@ -1171,6 +1171,55 @@ impl<'a> LineScales<'a> {
         // This usually occurs in "hairline" strokes (exported with width of 1 twip).
         scaled_width.max(1.0)
     }
+}
+
+pub fn quadratic_curve_bounds(
+    start: swf::Point<Twips>,
+    stroke_width: Twips,
+    control: swf::Point<Twips>,
+    anchor: swf::Point<Twips>,
+) -> Rectangle<Twips> {
+    // extremes
+    let from_x = start.x.to_pixels();
+    let from_y = start.y.to_pixels();
+    let anchor_x = anchor.x.to_pixels();
+    let anchor_y = anchor.y.to_pixels();
+    let control_x = control.x.to_pixels();
+    let control_y = control.y.to_pixels();
+
+    let mut min_x = from_x.min(anchor_x);
+    let mut min_y = from_y.min(anchor_y);
+    let mut max_x = from_x.max(anchor_x);
+    let mut max_y = from_y.max(anchor_y);
+
+    if control_x < min_x || control_x > max_x {
+        let t_x = ((from_x - control_x) / (from_x - (control_x * 2.0) + anchor_x)).clamp(0.0, 1.0);
+        let s_x = 1.0 - t_x;
+        let q_x = s_x * s_x * from_x + (s_x * 2.0) * t_x * control_x + t_x * t_x * anchor_x;
+
+        min_x = min_x.min(q_x);
+        max_x = max_x.max(q_x);
+    }
+
+    if control_y < min_y || control_y > max_y {
+        let t_y = ((from_y - control_y) / (from_y - (control_y * 2.0) + anchor_y)).clamp(0.0, 1.0);
+        let s_y = 1.0 - t_y;
+        let q_y = s_y * s_y * from_y + (s_y * 2.0) * t_y * control_y + t_y * t_y * anchor_y;
+
+        min_y = min_y.min(q_y);
+        max_y = max_y.max(q_y);
+    }
+
+    let radius = stroke_width / 2;
+    Rectangle::default()
+        .encompass(swf::Point::new(
+            Twips::from_pixels(min_x) - radius,
+            Twips::from_pixels(min_y) - radius,
+        ))
+        .encompass(swf::Point::new(
+            Twips::from_pixels(max_x) + radius,
+            Twips::from_pixels(max_y) + radius,
+        ))
 }
 
 #[cfg(test)]
