@@ -224,7 +224,13 @@ fn to_string<'gc>(
                 .coerce_to_u32(activation)? as usize;
 
             if radix < 2 || radix > 36 {
-                return Err("toString can only print in bases 2 thru 36.".into());
+                return Err(Error::AvmError(range_error(
+                    activation,
+                    &format!(
+                        "Error #1003: The radix argument must be between 2 and 36; got {radix}."
+                    ),
+                    1003,
+                )?));
             }
 
             return Ok(print_with_radix(activation, number as f64, radix)?.into());
