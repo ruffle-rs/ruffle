@@ -5,7 +5,9 @@ use crate::avm1::{property_decl::Declaration, ScriptObject};
 use crate::avm1::{Activation, Error, Executable, ExecutionReason, TObject, Value};
 use crate::avm_warn;
 use crate::context::{GcContext, UpdateContext};
+use crate::display_object::TDisplayObject;
 use crate::socket::SocketHandle;
+use crate::string::AvmString;
 use gc_arena::{Collect, Gc};
 use std::cell::{Cell, RefCell, RefMut};
 
@@ -110,10 +112,25 @@ pub fn connect<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(_) = XmlSocket::cast(this.into()) {
-        // FIXME: When host is null, use the current movie domain.
         let host = args
             .get(0)
-            .unwrap_or(&Value::Undefined)
+            .map(|v| *v)
+            .unwrap_or_else(|| {
+                let movie = activation.base_clip().movie();
+
+                if let Ok(url) = url::Url::parse(movie.url()) {
+                    if url.scheme() == "file" {
+                        "localhost".into()
+                    } else if let Some(domain) = url.domain() {
+                        AvmString::new_utf8(activation.context.gc_context, domain).into()
+                    } else {
+                        // no domain?
+                        "localhost".into()
+                    }
+                } else {
+                    Value::Undefined
+                }
+            })
             .coerce_to_string(activation)?;
         let port = args
             .get(1)
