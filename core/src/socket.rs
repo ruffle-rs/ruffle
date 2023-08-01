@@ -9,6 +9,7 @@ use crate::{
     },
     backend::navigator::NavigatorBackend,
     context::UpdateContext,
+    string::AvmString,
 };
 use async_channel::{unbounded, Sender as AsyncSender};
 use gc_arena::Collect;
@@ -296,12 +297,36 @@ impl<'gc> Sockets<'gc> {
                                 target.into(),
                             );
                         }
-                        // TODO: Implement this.
-                        SocketKind::Avm1(_) => {
+                        SocketKind::Avm1(target) => {
                             let mut activation = Activation::from_stub(
                                 context.reborrow(),
                                 ActivationIdentifier::root("[XMLSocket]"),
                             );
+
+                            // NOTE: This is enforced in connect_avm1() function.
+                            let xml_socket =
+                                XmlSocket::cast(target.into()).expect("target should be XmlSocket");
+
+                            let mut buffer = xml_socket.read_buffer();
+                            buffer.extend(data);
+
+                            // Check for a message.
+                            if let Some((index, _)) =
+                                buffer.iter().enumerate().find(|(_, &b)| b == 0)
+                            {
+                                let message = buffer.drain(..index).collect::<Vec<_>>();
+                                // Remove null byte.
+                                let _ = buffer.drain(..1);
+
+                                let message = AvmString::new_utf8_bytes(activation.gc(), &message);
+
+                                let _ = target.call_method(
+                                    "onData".into(),
+                                    &[message.into()],
+                                    &mut activation,
+                                    ExecutionReason::Special,
+                                );
+                            }
                         }
                     }
                 }

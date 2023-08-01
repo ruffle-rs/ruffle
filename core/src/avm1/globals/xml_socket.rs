@@ -7,7 +7,7 @@ use crate::avm_warn;
 use crate::context::{GcContext, UpdateContext};
 use crate::socket::SocketHandle;
 use gc_arena::{Collect, Gc};
-use std::cell::Cell;
+use std::cell::{Cell, RefCell, RefMut};
 
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
@@ -15,6 +15,7 @@ struct XmlSocketData {
     handle: Cell<Option<SocketHandle>>,
     /// Connection timeout in milliseconds.
     timeout: Cell<u32>,
+    read_buffer: RefCell<Vec<u8>>,
 }
 
 #[derive(Clone, Debug, Collect)]
@@ -32,6 +33,10 @@ impl<'gc> XmlSocket<'gc> {
 
     pub fn timeout(&self) -> u32 {
         self.0.timeout.get()
+    }
+
+    pub fn read_buffer(&self) -> RefMut<'_, Vec<u8>> {
+        self.0.read_buffer.borrow_mut()
     }
 
     pub fn cast(value: Value<'gc>) -> Option<Self> {
@@ -212,6 +217,7 @@ pub fn constructor<'gc>(
             handle: Cell::new(None),
             /// Default timeout is 20_000 milliseconds (20 seconds)
             timeout: Cell::new(20000),
+            read_buffer: RefCell::new(Vec::new()),
         },
     ));
 
