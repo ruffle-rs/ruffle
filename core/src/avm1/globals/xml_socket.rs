@@ -6,8 +6,8 @@ use crate::avm1::{Activation, Error, Executable, ExecutionReason, TObject, Value
 use crate::avm_warn;
 use crate::context::{GcContext, UpdateContext};
 use crate::socket::SocketHandle;
-use std::cell::Cell;
 use gc_arena::{Collect, Gc};
+use std::cell::Cell;
 
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
@@ -26,10 +26,7 @@ impl<'gc> XmlSocket<'gc> {
         self.0.handle.get()
     }
 
-    pub fn set_handle(
-        &self,
-        handle: SocketHandle,
-    ) -> Option<SocketHandle> {
+    pub fn set_handle(&self, handle: SocketHandle) -> Option<SocketHandle> {
         self.0.handle.replace(Some(handle))
     }
 
@@ -109,13 +106,17 @@ pub fn connect<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(_) = XmlSocket::cast(this.into()) {
         // FIXME: When host is null, use the current movie domain.
-        let host = args.get(0).unwrap_or(&Value::Undefined).coerce_to_string(activation)?;
-        let port = args.get(1).unwrap_or(&Value::Undefined).coerce_to_u16(activation)?;
+        let host = args
+            .get(0)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_string(activation)?;
+        let port = args
+            .get(1)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_u16(activation)?;
 
         let UpdateContext {
-            sockets,
-            navigator,
-            ..
+            sockets, navigator, ..
         } = &mut activation.context;
 
         sockets.connect_avm1(*navigator, this, host.to_utf8_lossy().into_owned(), port);
@@ -135,9 +136,14 @@ pub fn send<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(xml_socket) = XmlSocket::cast(this.into()) {
         if let Some(handle) = xml_socket.handle() {
-            let data = args.get(0).unwrap_or(&Value::Undefined).coerce_to_string(activation)?.to_string().into_bytes();
+            let data = args
+                .get(0)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_string(activation)?
+                .to_string()
+                .into_bytes();
 
-        activation.context.sockets.send(handle, data);
+            activation.context.sockets.send(handle, data);
         }
     }
 

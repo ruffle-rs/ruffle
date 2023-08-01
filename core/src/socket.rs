@@ -1,6 +1,12 @@
 use crate::{
-    avm1::{globals::xml_socket::XmlSocket, Activation, ActivationIdentifier, ExecutionReason, TObject, Object},
-    avm2::{object::SocketObject, Activation as Avm2Activation, Avm2, EventObject, TObject as Avm2TObject},
+    avm1::{
+        globals::xml_socket::XmlSocket, Activation, ActivationIdentifier, ExecutionReason, Object,
+        TObject,
+    },
+    avm2::{
+        object::SocketObject, Activation as Avm2Activation, Avm2, EventObject,
+        TObject as Avm2TObject,
+    },
     backend::navigator::NavigatorBackend,
     context::UpdateContext,
 };
@@ -116,7 +122,7 @@ impl<'gc> Sockets<'gc> {
         port: u16,
     ) {
         let (sender, receiver) = unbounded();
-        
+
         let xml_socket = match XmlSocket::cast(target.into()) {
             Some(xml_socket) => xml_socket,
             None => return,
@@ -187,7 +193,10 @@ impl<'gc> Sockets<'gc> {
                             );
                         }
                         SocketKind::Avm1(target) => {
-                            let mut activation = Activation::from_stub(context.reborrow(), ActivationIdentifier::root("[XMLSocket]"));
+                            let mut activation = Activation::from_stub(
+                                context.reborrow(),
+                                ActivationIdentifier::root("[XMLSocket]"),
+                            );
 
                             let _ = target.call_method(
                                 "onConnect".into(),
@@ -236,7 +245,10 @@ impl<'gc> Sockets<'gc> {
                         }
                         // TODO: Not sure if avm1 xmlsocket has a way to notify a error. (Probably should just fire connect event with success as false).
                         SocketKind::Avm1(target) => {
-                            let mut activation = Activation::from_stub(context.reborrow(), ActivationIdentifier::root("[XMLSocket]"));
+                            let mut activation = Activation::from_stub(
+                                context.reborrow(),
+                                ActivationIdentifier::root("[XMLSocket]"),
+                            );
 
                             let _ = target.call_method(
                                 "onConnect".into(),
@@ -286,7 +298,10 @@ impl<'gc> Sockets<'gc> {
                         }
                         // TODO: Implement this.
                         SocketKind::Avm1(_) => {
-                            let mut activation = Activation::from_stub(context.reborrow(), ActivationIdentifier::root("[XMLSocket]"));
+                            let mut activation = Activation::from_stub(
+                                context.reborrow(),
+                                ActivationIdentifier::root("[XMLSocket]"),
+                            );
                         }
                     }
                 }
@@ -306,7 +321,10 @@ impl<'gc> Sockets<'gc> {
                             Avm2::dispatch_event(&mut activation.context, close_evt, target.into());
                         }
                         SocketKind::Avm1(target) => {
-                            let mut activation = Activation::from_stub(context.reborrow(), ActivationIdentifier::root("[XMLSocket]"));
+                            let mut activation = Activation::from_stub(
+                                context.reborrow(),
+                                ActivationIdentifier::root("[XMLSocket]"),
+                            );
 
                             let _ = target.call_method(
                                 "onClose".into(),
