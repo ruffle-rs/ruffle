@@ -2,7 +2,7 @@ use crate::avm1::function::FunctionObject;
 use crate::avm1::object::{NativeObject, Object};
 use crate::avm1::property_decl::define_properties_on;
 use crate::avm1::{property_decl::Declaration, ScriptObject};
-use crate::avm1::{Activation, Error, Executable, TObject, Value, ExecutionReason};
+use crate::avm1::{Activation, Error, Executable, ExecutionReason, TObject, Value};
 use crate::avm_warn;
 use crate::context::GcContext;
 use crate::socket::SocketHandle;
@@ -76,19 +76,22 @@ fn set_timeout<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(xml_socket) = XmlSocket::cast(this.into()) {
-        let timeout = args.get(0).unwrap_or(&Value::Undefined).coerce_to_u32(activation)?;
+        let timeout = args
+            .get(0)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_u32(activation)?;
 
         // FIXME: Check if flash player clamps this to 250 like AS3 sockets.
         xml_socket.0.write(activation.gc()).timeout = timeout;
     }
-    
+
     Ok(Value::Undefined)
 }
 
 pub fn close<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
-    _args: &[Value<'gc>]
+    _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(xml_socket) = XmlSocket::cast(this.into()) {
         if let Some(handle) = xml_socket.handle() {
@@ -102,7 +105,7 @@ pub fn close<'gc>(
 pub fn connect<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
-    args: &[Value<'gc>]
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(xml_socket) = XmlSocket::cast(this.into()) {
         // TODO: Implement this. Get host and port parameter.
@@ -114,7 +117,7 @@ pub fn connect<'gc>(
 pub fn send<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
-    args: &[Value<'gc>]
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(xml_socket) = XmlSocket::cast(this.into()) {
         // TODO: Implement this.
@@ -161,7 +164,7 @@ fn on_data<'gc>(
             "default XMLSocket.onData() received invalid XML; message ignored"
         );
     }
-    
+
     Ok(Value::Undefined)
 }
 
