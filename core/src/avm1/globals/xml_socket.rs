@@ -2,7 +2,8 @@ use crate::avm1::function::FunctionObject;
 use crate::avm1::object::{NativeObject, Object};
 use crate::avm1::property_decl::define_properties_on;
 use crate::avm1::{property_decl::Declaration, ScriptObject};
-use crate::avm1::{Activation, Error, Executable, TObject, Value};
+use crate::avm1::{Activation, Error, Executable, TObject, Value, ExecutionReason};
+use crate::avm_warn;
 use crate::context::GcContext;
 use crate::socket::SocketHandle;
 use gc_arena::{Collect, GcCell, Mutation};
@@ -145,7 +146,22 @@ fn on_data<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    // TODO: Check if data is valid xml and call onXML.
+    let xml_constructor = activation.context.avm1.prototypes().xml_constructor;
+
+    if let Ok(xml) = xml_constructor.construct(activation, args) {
+        let _ = this.call_method(
+            "onXML".into(),
+            &[xml],
+            activation,
+            ExecutionReason::FunctionCall,
+        )?;
+    } else {
+        avm_warn!(
+            activation,
+            "default XMLSocket.onData() received invalid XML; message ignored"
+        );
+    }
+    
     Ok(Value::Undefined)
 }
 
