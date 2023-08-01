@@ -48,6 +48,7 @@ impl<'gc> XmlSocket<'gc> {
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "timeout" => property(get_timeout, set_timeout);
+    "close" => method(close);
 };
 
 fn get_timeout<'gc>(
@@ -74,6 +75,20 @@ fn set_timeout<'gc>(
         xml_socket.0.write(activation.gc()).timeout = timeout;
     }
     
+    Ok(Value::Undefined)
+}
+
+pub fn close<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>]
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(xml_socket) = XmlSocket::cast(this.into()) {
+        if let Some(handle) = xml_socket.handle() {
+            activation.context.sockets.close(handle)
+        }
+    }
+
     Ok(Value::Undefined)
 }
 
