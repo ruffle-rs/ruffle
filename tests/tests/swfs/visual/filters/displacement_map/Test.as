@@ -46,6 +46,19 @@ public class Test extends MovieClip {
 		test.y = 500;
 		test.x = 250;
 		addChild(test);
+
+		// Setting componentX or componentY to 0 is undocumented, but works (as no-op in that direction):
+
+		test = new TestImage();
+		test.filters = [new DisplacementMapFilter(bmd, new Point(0, 0), 0, BitmapDataChannel.RED, -30, 30, DisplacementMapFilterMode.CLAMP)];
+		test.y = 750;
+		addChild(test);
+
+		test = new TestImage();
+		test.filters = [new DisplacementMapFilter(bmd, new Point(0, 0), BitmapDataChannel.RED, 0, -30, 30, DisplacementMapFilterMode.WRAP)];
+		test.y = 750;
+		test.x = 250;
+		addChild(test);
 	}
 
 	private function createBitmapData():BitmapData {
