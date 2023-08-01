@@ -1,6 +1,6 @@
 use crate::{
-    avm1::globals::xml_socket::XmlSocket,
-    avm2::{object::SocketObject, Activation, Avm2, EventObject, TObject},
+    avm1::{globals::xml_socket::XmlSocket, Activation, ActivationIdentifier, ExecutionReason, TObject, Object},
+    avm2::{object::SocketObject, Activation as Avm2Activation, Avm2, EventObject, TObject as Avm2TObject},
     backend::navigator::NavigatorBackend,
     context::UpdateContext,
 };
@@ -15,11 +15,11 @@ use std::{
 
 pub type SocketHandle = Index;
 
-#[derive(Collect)]
+#[derive(Copy, Clone, Collect)]
 #[collect(no_drop)]
 enum SocketKind<'gc> {
     Avm2(SocketObject<'gc>),
-    Avm1(XmlSocket<'gc>),
+    Avm1(Object<'gc>),
 }
 
 #[derive(Collect)]
@@ -111,11 +111,16 @@ impl<'gc> Sockets<'gc> {
     pub fn connect_avm1(
         &mut self,
         backend: &mut dyn NavigatorBackend,
-        target: XmlSocket<'gc>,
+        target: Object<'gc>,
         host: String,
         port: u16,
     ) {
         let (sender, receiver) = unbounded();
+        
+        let xml_socket = match XmlSocket::cast(target.into()) {
+            Some(xml_socket) => xml_socket,
+            None => return,
+        };
 
         let socket = Socket::new(SocketKind::Avm1(target), sender);
         let handle = self.sockets.insert(socket);
@@ -124,13 +129,13 @@ impl<'gc> Sockets<'gc> {
         backend.connect_socket(
             host,
             port,
-            Duration::from_millis(target.timeout().into()),
+            Duration::from_millis(xml_socket.timeout().into()),
             handle,
             receiver,
             self.sender.clone(),
         );
 
-        if let Some(existing_handle) = target.set_handle(handle) {
+        if let Some(existing_handle) = xml_socket.set_handle(handle) {
             // NOTE: AS2 docs don't specify what happens when connect is called with open connection,
             //       but we will close the existing connection anyway.
             self.close(existing_handle)
@@ -154,18 +159,16 @@ impl<'gc> Sockets<'gc> {
     }
 
     pub fn update_sockets(context: &mut UpdateContext<'_, 'gc>) {
-        let mut activation = Activation::from_nothing(context.reborrow());
-
         let mut actions = vec![];
 
-        while let Ok(action) = activation.context.sockets.receiver.try_recv() {
+        while let Ok(action) = context.sockets.receiver.try_recv() {
             actions.push(action)
         }
 
         for action in actions {
             match action {
                 SocketAction::Connect(handle, ConnectionState::Connected) => {
-                    let target = match activation.context.sockets.sockets.get(handle) {
+                    let target = match context.sockets.sockets.get(handle) {
                         Some(socket) => socket.target,
                         // Socket must have been closed before we could send event.
                         None => continue,
@@ -173,6 +176,8 @@ impl<'gc> Sockets<'gc> {
 
                     match target {
                         SocketKind::Avm2(target) => {
+                            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+
                             let connect_evt =
                                 EventObject::bare_default_event(&mut activation.context, "connect");
                             Avm2::dispatch_event(
@@ -181,15 +186,23 @@ impl<'gc> Sockets<'gc> {
                                 target.into(),
                             );
                         }
-                        // TODO: Implement this.
-                        SocketKind::Avm1(_) => {}
+                        SocketKind::Avm1(target) => {
+                            let mut activation = Activation::from_stub(context.reborrow(), ActivationIdentifier::root("[XMLSocket]"));
+
+                            let _ = target.call_method(
+                                "onConnect".into(),
+                                &[true.into()],
+                                &mut activation,
+                                ExecutionReason::Special,
+                            );
+                        }
                     }
                 }
                 SocketAction::Connect(
                     handle,
                     ConnectionState::Failed | ConnectionState::TimedOut,
                 ) => {
-                    let target = match activation.context.sockets.sockets.get(handle) {
+                    let target = match context.sockets.sockets.get(handle) {
                         Some(socket) => socket.target,
                         // Socket must have been closed before we could send event.
                         None => continue,
@@ -197,6 +210,8 @@ impl<'gc> Sockets<'gc> {
 
                     match target {
                         SocketKind::Avm2(target) => {
+                            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+
                             let io_error_evt = activation
                                 .avm2()
                                 .classes()
@@ -220,11 +235,20 @@ impl<'gc> Sockets<'gc> {
                             );
                         }
                         // TODO: Not sure if avm1 xmlsocket has a way to notify a error. (Probably should just fire connect event with success as false).
-                        SocketKind::Avm1(_) => {}
+                        SocketKind::Avm1(target) => {
+                            let mut activation = Activation::from_stub(context.reborrow(), ActivationIdentifier::root("[XMLSocket]"));
+
+                            let _ = target.call_method(
+                                "onConnect".into(),
+                                &[false.into()],
+                                &mut activation,
+                                ExecutionReason::Special,
+                            );
+                        }
                     }
                 }
                 SocketAction::Data(handle, data) => {
-                    let target = match activation.context.sockets.sockets.get(handle) {
+                    let target = match context.sockets.sockets.get(handle) {
                         Some(socket) => socket.target,
                         // Socket must have been closed before we could send event.
                         None => continue,
@@ -232,6 +256,8 @@ impl<'gc> Sockets<'gc> {
 
                     match target {
                         SocketKind::Avm2(target) => {
+                            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+
                             let bytes_loaded = data.len();
                             target.read_buffer().extend(data);
 
@@ -259,11 +285,13 @@ impl<'gc> Sockets<'gc> {
                             );
                         }
                         // TODO: Implement this.
-                        SocketKind::Avm1(_) => {}
+                        SocketKind::Avm1(_) => {
+                            let mut activation = Activation::from_stub(context.reborrow(), ActivationIdentifier::root("[XMLSocket]"));
+                        }
                     }
                 }
                 SocketAction::Close(handle) => {
-                    let target = match activation.context.sockets.sockets.get(handle) {
+                    let target = match context.sockets.sockets.get(handle) {
                         Some(socket) => socket.target,
                         // Socket must have been closed before we could send event.
                         None => continue,
@@ -271,12 +299,22 @@ impl<'gc> Sockets<'gc> {
 
                     match target {
                         SocketKind::Avm2(target) => {
+                            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+
                             let close_evt =
                                 EventObject::bare_default_event(&mut activation.context, "close");
                             Avm2::dispatch_event(&mut activation.context, close_evt, target.into());
                         }
-                        // TODO: Implement this.
-                        SocketKind::Avm1(_) => {}
+                        SocketKind::Avm1(target) => {
+                            let mut activation = Activation::from_stub(context.reborrow(), ActivationIdentifier::root("[XMLSocket]"));
+
+                            let _ = target.call_method(
+                                "onClose".into(),
+                                &[],
+                                &mut activation,
+                                ExecutionReason::Special,
+                            );
+                        }
                     }
                 }
             }
