@@ -719,11 +719,12 @@ impl<'gc> NetStream<'gc> {
                     _ => tracing::error!("Invalid FLV metadata tag!"),
                 }
             }
+            let avm_object = write.avm_object;
             drop(write);
             // This is necessary because the script callback functions can call back into
             // these methods, (e.g. NetStream::play), so we need to avoid holding a borrow
             // while the script data is being handled.
-            let _ = self.handle_script_data(self.0.read().avm_object, context, var.name, var.data); // Any errors while trying to lookup or call AVM2 properties are silently swallowed.
+            let _ = self.handle_script_data(avm_object, context, var.name, var.data); // Any errors while trying to lookup or call AVM2 properties are silently swallowed.
             write = self.0.write(context.gc_context);
         }
 
