@@ -1,0 +1,7 @@
+connected
+true
+data:
+Hello!
+data:
+<root><item /></root>
+closed
