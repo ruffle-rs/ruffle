@@ -379,27 +379,29 @@ impl<'gc> NetStream<'gc> {
     /// must reference the underlying backing buffer.
     fn flv_audio_tag(
         self,
-        context: &mut UpdateContext<'_, 'gc>,
         write: &mut NetStreamData<'gc>,
         slice: &Slice,
         audio_data: FlvAudioData<'_>,
     ) -> Result<(), NetstreamError> {
-        let attached_to = write.attached_to;
         let data = match audio_data.data {
             FlvAudioDataType::Raw(data)
             | FlvAudioDataType::AacSequenceHeader(data)
             | FlvAudioDataType::AacRaw(data) => slice.to_subslice(data),
         };
         let substream = match &mut write.audio_stream {
-            Some((substream, sound_stream_info)) => {
+            Some((substream, _sound_stream_info)) => {
                 if substream
                     .last_chunk()
                     .map(|lc| lc.end() > data.start())
                     .unwrap_or(false)
                 {
                     // Reject repeats of existing tags.
+                    // We need to do this because of lookahead - we will
+                    // encounter the same audio tag multiple times as we buffer
+                    // a few ahead for the audio backend.
                     // This assumes that tags are processed in-order - which
-                    // should always be the case.
+                    // should always be the case. Seeks should cancel the audio
+                    // stream before processing new tags.
                     return Ok(());
                 }
 
@@ -407,7 +409,7 @@ impl<'gc> NetStream<'gc> {
             }
             audio_stream => {
                 // None
-                let mut substream = Substream::new(slice.buffer().clone());
+                let substream = Substream::new(slice.buffer().clone());
                 let swf_format = SoundFormat {
                     compression: match audio_data.format {
                         FlvSoundFormat::LinearPCMPlatformEndian => {
@@ -508,14 +510,14 @@ impl<'gc> NetStream<'gc> {
                     write.sound_instance = Some(
                         context
                             .audio
-                            .start_substream(substream.clone(), &sound_stream_head)?,
+                            .start_substream(substream.clone(), sound_stream_head)?,
                     );
                 } else if let Some(mc) = attached_to {
                     write.sound_instance = Some(context.audio_manager.start_substream(
                         context.audio,
                         substream.clone(),
                         mc,
-                        &sound_stream_head,
+                        sound_stream_head,
                     )?);
                 } else {
                     return Err(NetstreamError::NotAttached);
@@ -871,7 +873,10 @@ impl<'gc> NetStream<'gc> {
                             max_lookahead_audio_tags -= 1;
                         }
 
-                        self.flv_audio_tag(context, &mut write, &slice, audio_data);
+                        if let Err(e) = self.flv_audio_tag(&mut write, &slice, audio_data) {
+                            //TODO: Fire an error event at AS.
+                            tracing::error!("Error committing sound stream: {}", e);
+                        }
                     }
                     FlvTagData::Video(video_data) if !is_lookahead_tag => self.flv_video_tag(
                         context,
@@ -902,7 +907,10 @@ impl<'gc> NetStream<'gc> {
         }
 
         write.stream_time = end_time;
-        self.commit_sound_stream(context, &mut write);
+        if let Err(e) = self.commit_sound_stream(context, &mut write) {
+            //TODO: Fire an error event at AS.
+            tracing::error!("Error committing sound stream: {}", e);
+        }
         drop(write);
 
         if end_of_video {
