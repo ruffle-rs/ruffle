@@ -207,3 +207,10 @@ fn str_patterns() {
     test_pattern(wide, bstr!(b"aa"), &[(2, 4), (6, 8)], None);
     test_pattern(wide, wstr!('↓''a'), &[(1, 3), (5, 7)], None);
 }
+
+#[test]
+fn split_ascii_prefix() {
+    assert_eq!(utils::split_ascii_prefix(""), (&b""[..], ""));
+    assert_eq!(utils::split_ascii_prefix("abc"), (&b"abc"[..], ""));
+    assert_eq!(utils::split_ascii_prefix("abcd€fg"), (&b"abcd"[..], "€fg"));
+}

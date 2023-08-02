@@ -53,7 +53,7 @@ pub fn swf_is_whitespace(c: u16) -> bool {
 /// and returns it as an UTF8 string, together with the remaining tail.
 pub fn split_ascii_prefix_bytes(slice: &[u8]) -> (&str, &[u8]) {
     let first_non_ascii = slice.iter().position(|c| *c >= 0x80);
-    let (head, tail) = slice.split_at(first_non_ascii.unwrap_or(0));
+    let (head, tail) = slice.split_at(first_non_ascii.unwrap_or(slice.len()));
     // SAFETY: `head` only contains ASCII.
     let head = unsafe { core::str::from_utf8_unchecked(head) };
     (head, tail)
