@@ -2,6 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
+use crate::avm2::error::eval_error;
 use crate::avm2::globals::array::resolve_array_hole;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{function_allocator, FunctionObject, Object, TObject};
@@ -15,8 +16,16 @@ use gc_arena::GcCell;
 pub fn instance_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    if !args.is_empty() {
+        return Err(Error::AvmError(eval_error(
+            activation,
+            "Error #1066: The form function('function body') is not supported.",
+            1066,
+        )?));
+    }
+
     activation.super_init(this, &[])?;
 
     Ok(Value::Undefined)

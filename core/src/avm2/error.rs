@@ -210,6 +210,17 @@ pub fn range_error<'gc>(
 
 #[inline(never)]
 #[cold]
+pub fn eval_error<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    message: &str,
+    code: u32,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let class = activation.avm2().classes().evalerror;
+    error_constructor(activation, class, message, code)
+}
+
+#[inline(never)]
+#[cold]
 pub fn argument_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,
