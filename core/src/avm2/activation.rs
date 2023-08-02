@@ -3012,6 +3012,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 1506,
             )?));
         };
+
+        if address >= dm.len() {
+            return Err(Error::AvmError(range_error(
+                self,
+                "Error #1506: The range specified is invalid.",
+                1506,
+            )?));
+        }
+
         dm.write_at_nongrowing(&val.to_le_bytes(), address)
             .map_err(|e| e.to_avm(self))?;
 
@@ -3035,6 +3044,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 1506,
             )?));
         };
+        if address + 2 > dm.len() {
+            return Err(Error::AvmError(range_error(
+                self,
+                "Error #1506: The range specified is invalid.",
+                1506,
+            )?));
+        }
         dm.write_at_nongrowing(&val.to_le_bytes(), address)
             .map_err(|e| e.to_avm(self))?;
 
@@ -3058,6 +3074,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 1506,
             )?));
         };
+        if address + 4 > dm.len() {
+            return Err(Error::AvmError(range_error(
+                self,
+                "Error #1506: The range specified is invalid.",
+                1506,
+            )?));
+        }
         dm.write_at_nongrowing(&val.to_le_bytes(), address)
             .map_err(|e| e.to_avm(self))?;
 
@@ -3081,6 +3104,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 1506,
             )?));
         };
+        if address + 4 > dm.len() {
+            return Err(Error::AvmError(range_error(
+                self,
+                "Error #1506: The range specified is invalid.",
+                1506,
+            )?));
+        }
         dm.write_at_nongrowing(&val.to_le_bytes(), address)
             .map_err(|e| e.to_avm(self))?;
 
@@ -3104,6 +3134,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 1506,
             )?));
         };
+        if address + 8 > dm.len() {
+            return Err(Error::AvmError(range_error(
+                self,
+                "Error #1506: The range specified is invalid.",
+                1506,
+            )?));
+        }
         dm.write_at_nongrowing(&val.to_le_bytes(), address)
             .map_err(|e| e.to_avm(self))?;
 
