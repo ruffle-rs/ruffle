@@ -3,7 +3,6 @@ use crate::avm1::object::{NativeObject, Object};
 use crate::avm1::property_decl::define_properties_on;
 use crate::avm1::{property_decl::Declaration, ScriptObject};
 use crate::avm1::{Activation, Error, Executable, ExecutionReason, TObject, Value};
-use crate::avm_warn;
 use crate::context::{GcContext, UpdateContext};
 use crate::display_object::TDisplayObject;
 use crate::socket::SocketHandle;
@@ -205,10 +204,7 @@ fn on_data<'gc>(
             ExecutionReason::FunctionCall,
         )?;
     } else {
-        avm_warn!(
-            activation,
-            "default XMLSocket.onData() received invalid XML; message ignored"
-        );
+        tracing::warn!("default XMLSocket.onData() received invalid XML; message ignored");
     }
 
     Ok(Value::Undefined)
