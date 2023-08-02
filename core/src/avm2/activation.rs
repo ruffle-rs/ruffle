@@ -1775,12 +1775,33 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let multiname = self.pool_multiname_and_initialize(method, index)?;
         let object = self.pop_stack().coerce_to_object_or_typeerror(self, None)?;
-        let descendants = object.call_public_property(
-            "descendants",
-            &[QNameObject::from_name(self, (*multiname).clone())?.into()],
-            self,
-        )?;
-        self.push_stack(descendants);
+        if object.as_xml_object().is_some() || object.as_xml_list_object().is_some() {
+            let descendants = object.call_public_property(
+                "descendants",
+                &[QNameObject::from_name(self, (*multiname).clone())?.into()],
+                self,
+            )?;
+            self.push_stack(descendants);
+        } else {
+            // Even if it's an object with the "descendants" property, we won't support it.
+            let class_name = object
+                .instance_of()
+                .map(|cls| {
+                    cls.inner_class_definition()
+                        .read()
+                        .name()
+                        .to_qualified_name_err_message(self.context.gc_context)
+                })
+                .unwrap_or_else(|| AvmString::from("<UNKNOWN>"));
+            return Err(Error::AvmError(type_error(
+                self,
+                &format!(
+                    "Error #1016: Descendants operator (..) not supported on type {}",
+                    class_name
+                ),
+                1016,
+            )?));
+        }
 
         Ok(FrameControl::Continue)
     }
