@@ -192,7 +192,7 @@ pub trait AudioBackend: Downcast {
 
     /// Determine if a sound is still playing.
     fn is_sound_playing(&self, instance: SoundInstanceHandle) -> bool {
-        self.get_sound_duration(instance).is_some()
+        self.get_sound_position(instance).is_some()
     }
 }
 
