@@ -21,7 +21,7 @@ pub fn get_domain<'gc>(
             "localhost".into()
         }
     } else {
-        tracing::error!("LocalConnection::domain: Unable to parse movie URL");
+        tracing::error!("XMLSocket::connect: Unable to parse movie URL");
         return Ok(Value::Null);
     };
 
