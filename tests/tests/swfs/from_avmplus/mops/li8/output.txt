@@ -1,0 +1,46 @@
+li8(ApplicationDomain.MIN_DOMAIN_MEMORY_LENGTH) prior to initMemory() PASSED!
+li8(-1) PASSED!
+li8(mem.length) PASSED!
+li8(mem.length-1) PASSED!
+li8 load byte written by si8(0x7F) PASSED!
+li8 load byte written by si8(0x80) PASSED!
+li8 load 1st byte written by si16(0x80DE) PASSED!
+li8 load 2nd byte written by si16(0x80De) PASSED!
+li8 load 1st byte written by si32(0x80DE32F1) PASSED!
+li8 load 2nd byte written by si32(0x80DE32F1) PASSED!
+li8 load 3rd byte written by si32(0x80DE32F1) PASSED!
+li8 load 4th byte written by si32(0x80DE32F1) PASSED!
+li8 load 1st byte written by sf32(12.375) PASSED!
+li8 load 2nd byte written by sf32(12.375) PASSED!
+li8 load 3rd byte written by sf32(12.375) PASSED!
+li8 load 4th byte written by sf32(12.375) PASSED!
+li8 load 1st byte written by sf64(10241024102410241024) PASSED!
+li8 load 2nd byte written by sf64(10241024102410241024) PASSED!
+li8 load 3rd byte written by sf64(10241024102410241024) PASSED!
+li8 load 4th byte written by sf64(10241024102410241024) PASSED!
+li8 load 5th byte written by sf64(10241024102410241024) PASSED!
+li8 load 6th byte written by sf64(10241024102410241024) PASSED!
+li8 load 7th byte written by sf64(10241024102410241024) PASSED!
+li8 load 8th byte written by sf64(10241024102410241024) PASSED!
+li8 load byte written by writeByte(0) PASSED!
+li8 load byte written by writeByte(127) PASSED!
+li8 load byte written by writeByte(128) PASSED!
+li8 load byte written by writeByte(255) PASSED!
+li8 load byte written by writeBoolean(true) PASSED!
+li8 load byte written by writeBoolean(false) PASSED!
+li8 load 1st byte written by writeInt(2147473647) PASSED!
+li8 load 2nd byte written by writeInt(2147473647) PASSED!
+li8 load 3rd byte written by writeInt(2147473647) PASSED!
+li8 load 4th byte written by writeInt(2147473647) PASSED!
+li8 load 1st byte written by writeFloat(12.375) PASSED!
+li8 load 2nd byte written by writeFloat(12.375) PASSED!
+li8 load 3rd byte written by writeFloat(12.375) PASSED!
+li8 load 4th byte written by writeFloat(12.375) PASSED!
+li8 load 1st byte written by writeDouble(1.0241024102410242048E19) PASSED!
+li8 load 2nd byte written by writeDouble(1.0241024102410242048E19) PASSED!
+li8 load 3rd byte written by writeDouble(1.0241024102410242048E19) PASSED!
+li8 load 4th byte written by writeDouble(1.0241024102410242048E19) PASSED!
+li8 load 5th byte written by writeDouble(1.0241024102410242048E19) PASSED!
+li8 load 6th byte written by writeDouble(1.0241024102410242048E19) PASSED!
+li8 load 7th byte written by writeDouble(1.0241024102410242048E19) PASSED!
+li8 load 8th byte written by writeDouble(1.0241024102410242048E19) PASSED!

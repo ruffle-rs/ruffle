@@ -1,0 +1,26 @@
+li16(ApplicationDomain.MIN_DOMAIN_MEMORY_LENGTH) prior to initMemory() PASSED!
+li16(-1) PASSED!
+li16(mem.length) PASSED!
+li16(mem.length-1) PASSED!
+li16(mem.length-2) PASSED!
+li16(1) loads do not need to be aligned PASSED!
+li16 load short written by si8() PASSED!
+li16 load short written by si16(0x80DE) PASSED!
+li16 load 1st short written by si32(0x80DE32F1) PASSED!
+li16 load 2nd short written by si32(0x80DE32F1) PASSED!
+li16 load 1st short written by sf32(12.375) PASSED!
+li16 load 2nd short written by sf32(12.375) PASSED!
+li16 load 1st short written by sf64(10241024102410241024) PASSED!
+li16 load 2nd short written by sf64(10241024102410241024) PASSED!
+li16 load 3rd short written by sf64(10241024102410241024) PASSED!
+li16 load 4th short written by sf64(10241024102410241024) PASSED!
+li16 load short written by writeByte() PASSED!
+li16 load short written by writeBoolean() PASSED!
+li16 load 1st short written by writeInt(2147473647) PASSED!
+li16 load 2nd short written by writeInt(2147473647) PASSED!
+li16 load 1st short written by writeFloat(12.375) PASSED!
+li16 load 2nd short written by writeFloat(12.375) PASSED!
+li16 load 1st short written by writeDouble(1.0241024102410242048E19) PASSED!
+li16 load 2nd short written by writeDouble(1.0241024102410242048E19) PASSED!
+li16 load 3rd short written by writeDouble(1.0241024102410242048E19) PASSED!
+li16 load 4th short written by writeDouble(1.0241024102410242048E19) PASSED!
