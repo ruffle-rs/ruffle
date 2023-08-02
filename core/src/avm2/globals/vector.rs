@@ -383,7 +383,7 @@ pub fn every<'gc>(
         .get(0)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .as_callable(activation, None, None)?;
+        .as_callable(activation, None, None, false)?;
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
     let mut iter = ArrayIter::new(activation, this)?;
 
@@ -412,7 +412,7 @@ pub fn some<'gc>(
         .get(0)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .as_callable(activation, None, None)?;
+        .as_callable(activation, None, None, false)?;
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
     let mut iter = ArrayIter::new(activation, this)?;
 
@@ -441,7 +441,7 @@ pub fn filter<'gc>(
         .get(0)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .as_callable(activation, None, None)?;
+        .as_callable(activation, None, None, false)?;
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
 
     let value_type = this
@@ -477,7 +477,7 @@ pub fn for_each<'gc>(
         .get(0)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .as_callable(activation, None, None)?;
+        .as_callable(activation, None, None, false)?;
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
     let mut iter = ArrayIter::new(activation, this)?;
 
@@ -570,7 +570,7 @@ pub fn map<'gc>(
         .get(0)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .as_callable(activation, None, None)?;
+        .as_callable(activation, None, None, false)?;
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
 
     let value_type = this
@@ -779,7 +779,10 @@ pub fn sort<'gc>(
     if let Some(vs) = this.as_vector_storage_mut(activation.context.gc_context) {
         let fn_or_options = args.get(0).cloned().unwrap_or(Value::Undefined);
 
-        let (compare_fnc, options) = if fn_or_options.as_callable(activation, None, None).is_ok() {
+        let (compare_fnc, options) = if fn_or_options
+            .as_callable(activation, None, None, false)
+            .is_ok()
+        {
             (
                 Some(fn_or_options.as_object().unwrap()),
                 SortOptions::empty(),

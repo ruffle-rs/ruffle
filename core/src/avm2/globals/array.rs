@@ -422,7 +422,7 @@ pub fn for_each<'gc>(
         .get(0)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .as_callable(activation, None, None)?;
+        .as_callable(activation, None, None, false)?;
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
     let mut iter = ArrayIter::new(activation, this)?;
 
@@ -445,7 +445,7 @@ pub fn map<'gc>(
         .get(0)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .as_callable(activation, None, None)?;
+        .as_callable(activation, None, None, false)?;
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
     let mut new_array = ArrayStorage::new(0);
     let mut iter = ArrayIter::new(activation, this)?;
@@ -470,7 +470,7 @@ pub fn filter<'gc>(
         .get(0)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .as_callable(activation, None, None)?;
+        .as_callable(activation, None, None, false)?;
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
     let mut new_array = ArrayStorage::new(0);
     let mut iter = ArrayIter::new(activation, this)?;
@@ -499,7 +499,7 @@ pub fn every<'gc>(
         .get(0)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .as_callable(activation, None, None)?;
+        .as_callable(activation, None, None, false)?;
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
     let mut iter = ArrayIter::new(activation, this)?;
 
@@ -528,7 +528,7 @@ pub fn some<'gc>(
         .get(0)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .as_callable(activation, None, None)?;
+        .as_callable(activation, None, None, false)?;
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
     let mut iter = ArrayIter::new(activation, this)?;
 
@@ -1011,7 +1011,7 @@ pub fn sort<'gc>(
                 args.get(0)
                     .cloned()
                     .unwrap_or(Value::Undefined)
-                    .as_callable(activation, None, None)?,
+                    .as_callable(activation, None, None, false)?,
             ),
             SortOptions::from_bits_truncate(
                 args.get(1)
@@ -1022,7 +1022,7 @@ pub fn sort<'gc>(
         )
     } else {
         let arg = args.get(0).cloned().unwrap_or(Value::Undefined);
-        if let Ok(callable) = arg.as_callable(activation, None, None) {
+        if let Ok(callable) = arg.as_callable(activation, None, None, false) {
             (Some(callable), SortOptions::empty())
         } else {
             (

@@ -39,7 +39,9 @@ pub fn add_event_listener<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let dispatch_list = dispatch_list(activation, this)?;
     let event_type = args.get_string(activation, 0)?;
-    let listener = args.get_value(1).as_callable(activation, None, None)?;
+    let listener = args
+        .get_value(1)
+        .as_callable(activation, None, None, false)?;
     let use_capture = args.get_bool(2);
     let priority = args.get_i32(activation, 3)?;
 
@@ -62,7 +64,9 @@ pub fn remove_event_listener<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let dispatch_list = dispatch_list(activation, this)?;
     let event_type = args.get_string(activation, 0)?;
-    let listener = args.get_value(1).as_callable(activation, None, None)?;
+    let listener = args
+        .get_value(1)
+        .as_callable(activation, None, None, false)?;
     let use_capture = args.get_bool(2);
 
     dispatch_list
@@ -152,6 +156,6 @@ pub fn to_string<'gc>(
 
     object_proto
         .get_property(&name, activation)?
-        .as_callable(activation, Some(&name), Some(object_proto.into()))?
+        .as_callable(activation, Some(&name), Some(object_proto.into()), false)?
         .call(this.into(), args, activation)
 }

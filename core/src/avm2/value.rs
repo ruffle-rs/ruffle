@@ -924,6 +924,7 @@ impl<'gc> Value<'gc> {
         activation: &mut Activation<'_, 'gc>,
         name: Option<&Multiname<'gc>>,
         receiver: Option<Value<'gc>>,
+        as_constructor: bool,
     ) -> Result<Object<'gc>, Error<'gc>> {
         match self.as_object() {
             Some(o) if o.as_class_object().is_some() || o.as_executable().is_some() => Ok(o),
@@ -934,16 +935,38 @@ impl<'gc> Value<'gc> {
                 } else {
                     "value".into()
                 };
-                let msg = if let Some(Value::Object(receiver)) = receiver {
-                    format!(
-                        "Error #1006: {} is not a function of class {}.",
-                        name,
-                        receiver.instance_of_class_name(activation.context.gc_context)
+                let error = if as_constructor {
+                    if activation.context.swf.version() < 11 {
+                        type_error(
+                            activation,
+                            &format!("Error #1115: {} is not a constructor.", name),
+                            1115,
+                        )
+                    } else {
+                        type_error(
+                            activation,
+                            "Error #1007: Instantiation attempted on a non-constructor.",
+                            1007,
+                        )
+                    }
+                } else if let Some(Value::Object(receiver)) = receiver {
+                    type_error(
+                        activation,
+                        &format!(
+                            "Error #1006: {} is not a function of class {}.",
+                            name,
+                            receiver.instance_of_class_name(activation.context.gc_context)
+                        ),
+                        1006,
                     )
                 } else {
-                    format!("Error #1006: {} is not a function.", name)
+                    type_error(
+                        activation,
+                        &format!("Error #1006: {} is not a function.", name),
+                        1006,
+                    )
                 };
-                Err(Error::AvmError(type_error(activation, &msg, 1006)?))
+                Err(Error::AvmError(error?))
             }
         }
     }

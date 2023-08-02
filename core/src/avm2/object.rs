@@ -443,7 +443,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         let result = self
             .base()
             .get_property_local(multiname, activation)?
-            .as_callable(activation, Some(multiname), Some(self_val))?;
+            .as_callable(activation, Some(multiname), Some(self_val), false)?;
 
         result.call(self_val, arguments, activation)
     }
@@ -466,6 +466,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     activation,
                     Some(multiname),
                     Some(Value::from(self.into())),
+                    false,
                 )?;
 
                 obj.call(Value::from(self.into()), arguments, activation)
@@ -512,6 +513,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     activation,
                     Some(multiname),
                     Some(Value::from(self.into())),
+                    false,
                 )?;
 
                 obj.call(Value::from(self.into()), arguments, activation)
@@ -884,6 +886,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             activation,
             Some(multiname),
             Some(Value::from(self.into())),
+            true,
         )?;
 
         ctor.construct(activation, args)

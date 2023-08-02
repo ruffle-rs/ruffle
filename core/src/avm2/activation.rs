@@ -1252,7 +1252,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_call(&mut self, arg_count: u32) -> Result<FrameControl<'gc>, Error<'gc>> {
         let args = self.pop_stack_args(arg_count);
         let receiver = self.pop_stack();
-        let function = self.pop_stack().as_callable(self, None, Some(receiver))?;
+        let function = self
+            .pop_stack()
+            .as_callable(self, None, Some(receiver), false)?;
         let value = function.call(receiver, &args, self)?;
 
         self.push_stack(value);
@@ -1277,7 +1279,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         #[allow(unreachable_code)]
         {
             let args = self.pop_stack_args(arg_count);
-            let receiver = self.pop_stack().as_callable(self, None, None)?;
+            let receiver = self.pop_stack().as_callable(self, None, None, false)?;
 
             let value = receiver.call_method(index.0, &args, self)?;
 
@@ -1321,6 +1323,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             self,
             Some(&multiname),
             Some(receiver.into()),
+            false,
         )?;
         let value = function.call(Value::Null, &args, self)?;
 
@@ -1858,7 +1861,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_construct(&mut self, arg_count: u32) -> Result<FrameControl<'gc>, Error<'gc>> {
         let args = self.pop_stack_args(arg_count);
-        let ctor = self.pop_stack().as_callable(self, None, None)?;
+        let ctor = self.pop_stack().as_callable(self, None, None, true)?;
 
         let object = ctor.construct(self, &args)?;
 
