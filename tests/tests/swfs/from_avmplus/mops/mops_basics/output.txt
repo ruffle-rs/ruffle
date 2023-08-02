@@ -42,3 +42,15 @@ Range write test short min PASSED!
 Range write test int min PASSED!
 Range write test float min PASSED!
 Range write test double min PASSED!
+Range write test wide PASSED!
+Sign extend test PASSED!
+Read/write byte min PASSED!
+Read/write short min PASSED!
+Read/write int min PASSED!
+Read/write float min PASSED!
+Read/write double min PASSED!
+Read/write byte scratch PASSED!
+Read/write short scratch PASSED!
+Read/write int scratch PASSED!
+Read/write float scratch PASSED!
+Read/write double scratch PASSED!
