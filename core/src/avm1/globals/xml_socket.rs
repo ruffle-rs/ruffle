@@ -157,12 +157,15 @@ pub fn send<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(xml_socket) = XmlSocket::cast(this.into()) {
         if let Some(handle) = xml_socket.handle() {
-            let data = args
+            let mut data = args
                 .get(0)
                 .unwrap_or(&Value::Undefined)
                 .coerce_to_string(activation)?
                 .to_string()
                 .into_bytes();
+            
+            // The string needs to end with a null byte.
+            data.push(0);
 
             activation.context.sockets.send(handle, data);
         }
