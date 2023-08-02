@@ -1,0 +1,28 @@
+si16(ApplicationDomain.MIN_DOMAIN_MEMORY_LENGTH) prior to initMemory() PASSED!
+si16() only stores the least significant 16 bits PASSED!
+si16(0x0101, -1) PASSED!
+si16(0x0101, mem.length) PASSED!
+si16(0x0101, mem.length-1) PASSED!
+si16(0x0101, mem.length-2) PASSED!
+si16(0x0101FE, mem.length-2), should only store 16 bits so no overrun PASSED!
+si16(0x0101FE, mem.length-2), should only store 16 bits so no overrun confirm PASSED!
+li8 load 1st byte written by si16(0x807F) PASSED!
+li8 load 2nd byte written by si16(0x807F) PASSED!
+li16 load bytes written by si16() PASSED!
+li32 load bytes written by si16() PASSED!
+lf32 load bytes written by si16() PASSED!
+lf64 load bytes written by si16() PASSED!
+readByte() load bytes written by si16(0x007F) PASSED!
+readByte() load bytes written by si16(0x007F) PASSED!
+readByte() load bytes written by si16(0x80FF) PASSED!
+readByte() load bytes written by si16(0x80FF) PASSED!
+readUnsignedByte() load bytes written by si16(0x007F) PASSED!
+readUnsignedByte() load bytes written by si16(0x007F) PASSED!
+readUnsignedByte() load bytes written by si16(0x80FF) PASSED!
+readUnsignedByte() load bytes written by si16(0x80FF) PASSED!
+readBoolean() load bytes written by si16(0x0100) PASSED!
+readBoolean() load bytes written by si16(0x0100) PASSED!
+readInt() load bytes written by si16() PASSED!
+readUnsignedInt() load bytes written by si16() PASSED!
+readFloat() load bytes written by si16() PASSED!
+readDouble() load bytes written by si16() PASSED!

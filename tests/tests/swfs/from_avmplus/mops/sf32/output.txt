@@ -1,0 +1,26 @@
+sf32(ApplicationDomain.MIN_DOMAIN_MEMORY_LENGTH) prior to initMemory() PASSED!
+sf32(0x41460200, -1) PASSED!
+sf32(0x41460200, mem.length) PASSED!
+sf32(0x41460200, mem.length-1) PASSED!
+sf32(0x41460200, mem.length-2) PASSED!
+sf32(0x41460200, mem.length-3) PASSED!
+sf32(0x41460200, mem.length-4) PASSED!
+li8 load 1st byte written by sf32(12.37548828125) PASSED!
+li8 load 2nd byte written by sf32(12.37548828125) PASSED!
+li8 load 3rd byte written by sf32(12.37548828125) PASSED!
+li8 load 4th byte written by sf32(12.37548828125) PASSED!
+li16 load bytes written by sf32() PASSED!
+li16 load bytes written by sf32() PASSED!
+li32 load bytes written by sf32() PASSED!
+lf32 load bytes written by sf32() PASSED!
+readByte() load bytes written by sf32() PASSED!
+readByte() load bytes written by sf32() PASSED!
+readByte() load bytes written by sf32() PASSED!
+readByte() load bytes written by sf32() PASSED!
+readUnsignedByte() load bytes written by sf32() PASSED!
+readUnsignedByte() load bytes written by sf32() PASSED!
+readUnsignedByte() load bytes written by sf32() PASSED!
+readUnsignedByte() load bytes written by sf32() PASSED!
+readInt() load bytes written by sf32() PASSED!
+readUnsignedInt() load bytes written by sf32() PASSED!
+readFloat() load bytes written by sf32() PASSED!

@@ -1,0 +1,183 @@
+/* -*- Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; tab-width: 4 -*- */
+/* vi: set ts=4 sw=4 expandtab: (add to ~/.vimrc: set modeline modelines=5) */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+/**
+ * intrinsics.abs
+ *
+ * This file declares functions that wrap single ABC opcodes, for
+ * opcodes that don't have any operands in the ABC stream or any
+ * explicit control flow.  Its easier to write test cases that call
+ * these functions than to handwrite abcasm.
+ *
+ * COMPILE:
+ *     >$ ../../../utils/abcasm/abcasm.sh intrinsics.abs
+ *     >$ mv intrinsics.abc intrinsics.abc_
+ */
+
+// script initializer
+function main() { returnvoid }
+
+// loads
+function LI8(*)    { getlocal1 li8 returnvalue }
+function LIX8(*)   { getlocal1 li8 sxi8 returnvalue }
+function LI16(*)   { getlocal1 li16 returnvalue }
+function LIX16(*)  { getlocal1 li16 sxi16 returnvalue }
+function LI32(*)   { getlocal1 li32 returnvalue }
+function LF32(*)   { getlocal1 lf32 returnvalue }
+function LF64(*)   { getlocal1 lf64 returnvalue }
+
+// stores
+function SI8(*,*)  { getlocal1 getlocal2 si8  returnvoid }
+function SI16(*,*) { getlocal1 getlocal2 si16 returnvoid }
+function SI32(*,*) { getlocal1 getlocal2 si32 returnvoid }
+function SF32(*,*) { getlocal1 getlocal2 sf32 returnvoid }
+function SF64(*,*) { getlocal1 getlocal2 sf64 returnvoid }
+
+// sign extension (pure integer ops)
+function SXI1(*)  { getlocal1 sxi1  returnvalue }
+function SXI8(*)  { getlocal1 sxi8  returnvalue }
+function SXI16(*) { getlocal1 sxi16 returnvalue }
+
+// other
+function NEXTNAME(*,int) { getlocal1 getlocal2 nextname returnvalue }
+function NEXTVALUE(*,int) { getlocal1 getlocal2 nextvalue returnvalue }
+function HASNEXT(*,int):int { getlocal1 getlocal2 hasnext returnvalue }
+function CHECKFILTER(*) { getlocal1 checkfilter returnvalue }
+
+// conversion
+function ESC_XELEM(*) { getlocal1 esc_xelem returnvalue }
+function ESC_XATTR(*) { getlocal1 esc_xattr returnvalue }
+function CONVERT_S(*) { getlocal1 convert_s returnvalue }
+function CONVERT_I(*) { getlocal1 convert_i returnvalue }
+function CONVERT_U(*) { getlocal1 convert_u returnvalue }
+function CONVERT_D(*) { getlocal1 convert_d returnvalue }
+function CONVERT_B(*) { getlocal1 convert_b returnvalue }
+function CONVERT_O(*) { getlocal1 convert_o returnvalue }
+function COERCE_B(*)  { getlocal1 coerce_b  returnvalue }
+function COERCE_A(*)  { getlocal1 coerce_a  returnvalue }
+function COERCE_I(*)  { getlocal1 coerce_i  returnvalue }
+function COERCE_D(*)  { getlocal1 coerce_d  returnvalue }
+function COERCE_S(*)  { getlocal1 coerce_s  returnvalue }
+function COERCE_U(*)  { getlocal1 coerce_u  returnvalue }
+function COERCE_O(*)  { getlocal1 coerce_o  returnvalue }
+
+function ASTYPELATE(*,*) { getlocal1 getlocal2 astypelate returnvalue }
+function ISTYPELATE(*,*) { getlocal1 getlocal2 istypelate returnvalue }
+function INSTANCEOF(*,*) { getlocal1 getlocal2 instanceof returnvalue }
+function IN(*,*)         { getlocal1 getlocal2 in returnvalue }
+
+// unary operators
+function NEGATE(*)      { getlocal1 negate      returnvalue }
+function INCREMENT(*)   { getlocal1 increment   returnvalue }
+function DECREMENT(*)   { getlocal1 decrement   returnvalue }
+function TYPEOF(*)      { getlocal1 typeof      returnvalue }
+function NOT(*)         { getlocal1 not         returnvalue }
+function BITNOT(*)      { getlocal1 bitnot      returnvalue }  // needs abcasm fix - bitnot stack off by 1
+function INCREMENT_I(*) { getlocal1 increment_i returnvalue }
+function DECREMENT_I(*) { getlocal1 decrement_i returnvalue }
+function NEGATE_I(*)    { getlocal1 negate_i    returnvalue }
+
+// binary operators
+function ADD(*,*)           { getlocal1 getlocal2 add           returnvalue }
+function SUBTRACT(*,*)      { getlocal1 getlocal2 subtract      returnvalue }
+function MULTIPLY(*,*)      { getlocal1 getlocal2 multiply      returnvalue }
+function DIVIDE(*,*)        { getlocal1 getlocal2 divide        returnvalue }
+function MODULO(*,*)        { getlocal1 getlocal2 modulo        returnvalue }
+function LSHIFT(*,*)        { getlocal1 getlocal2 lshift        returnvalue }
+function RSHIFT(*,*)        { getlocal1 getlocal2 rshift        returnvalue }
+function URSHIFT(*,*)       { getlocal1 getlocal2 urshift       returnvalue }
+function BITAND(*,*)        { getlocal1 getlocal2 bitand        returnvalue }
+function BITOR(*,*)         { getlocal1 getlocal2 bitor         returnvalue }
+function BITXOR(*,*)        { getlocal1 getlocal2 bitxor        returnvalue }
+function EQUALS(*,*)        { getlocal1 getlocal2 equals        returnvalue }
+function STRICTEQUALS(*,*)  { getlocal1 getlocal2 strictequals  returnvalue }
+function LESSTHAN(*,*)      { getlocal1 getlocal2 lessthan      returnvalue }
+function LESSEQUALS(*,*)    { getlocal1 getlocal2 lessequals    returnvalue }
+function GREATERTHAN(*,*)   { getlocal1 getlocal2 greaterthan   returnvalue }
+function GREATEREQUALS(*,*) { getlocal1 getlocal2 greaterequals returnvalue }
+function ADD_I(*,*)         { getlocal1 getlocal2 add_i         returnvalue }
+function SUBTRACT_I(*,*)    { getlocal1 getlocal2 subtract_i    returnvalue }
+function MULTIPLY_I(*,*)    { getlocal1 getlocal2 multiply_i    returnvalue }
+
+.script_info {
+    init : .function_id(main)
+    traits : {
+        .trait { kind: method method: .function_id(LI8)   name: LI8 }
+        .trait { kind: method method: .function_id(LIX8)  name: LIX8 }
+        .trait { kind: method method: .function_id(LI16)  name: LI16 }
+        .trait { kind: method method: .function_id(LIX16) name: LIX16}
+        .trait { kind: method method: .function_id(LI32)  name: LI32 }
+        .trait { kind: method method: .function_id(LF32)  name: LF32 }
+        .trait { kind: method method: .function_id(LF64)  name: LF64 }
+
+        .trait { kind: method method: .function_id(SI8)   name: SI8 }
+        .trait { kind: method method: .function_id(SI16)  name: SI16 }
+        .trait { kind: method method: .function_id(SI32)  name: SI32 }
+        .trait { kind: method method: .function_id(SF32)  name: SF32 }
+        .trait { kind: method method: .function_id(SF64)  name: SF64 }
+
+        .trait { kind: method method: .function_id(SXI1)  name: SXI1 }
+        .trait { kind: method method: .function_id(SXI8)  name: SXI8 }
+        .trait { kind: method method: .function_id(SXI16) name: SXI16 }
+
+        .trait { kind: method method: .function_id(NEXTNAME)    name: NEXTNAME }
+        .trait { kind: method method: .function_id(NEXTVALUE)   name: NEXTVALUE }
+        .trait { kind: method method: .function_id(HASNEXT)     name: HASNEXT }
+        .trait { kind: method method: .function_id(CHECKFILTER) name: CHECKFILTER }
+
+        .trait { kind: method method: .function_id(ESC_XELEM) name: ESC_XELEM }
+        .trait { kind: method method: .function_id(ESC_XATTR) name: ESC_XATTR }
+        .trait { kind: method method: .function_id(CONVERT_S) name: CONVERT_S }
+        .trait { kind: method method: .function_id(CONVERT_I) name: CONVERT_I }
+        .trait { kind: method method: .function_id(CONVERT_U) name: CONVERT_U }
+        .trait { kind: method method: .function_id(CONVERT_D) name: CONVERT_D }
+        .trait { kind: method method: .function_id(CONVERT_B) name: CONVERT_B }
+        .trait { kind: method method: .function_id(CONVERT_O) name: CONVERT_O }
+        .trait { kind: method method: .function_id(COERCE_B)  name: COERCE_B }
+        .trait { kind: method method: .function_id(COERCE_A)  name: COERCE_A }
+        .trait { kind: method method: .function_id(COERCE_I)  name: COERCE_I }
+        .trait { kind: method method: .function_id(COERCE_D)  name: COERCE_D }
+        .trait { kind: method method: .function_id(COERCE_S)  name: COERCE_S }
+        .trait { kind: method method: .function_id(COERCE_U)  name: COERCE_U }
+        .trait { kind: method method: .function_id(COERCE_O)  name: COERCE_O }
+
+        .trait { kind: method method: .function_id(ASTYPELATE) name: ASTYPELATE }
+        .trait { kind: method method: .function_id(ISTYPELATE) name: ISTYPELATE }
+        .trait { kind: method method: .function_id(INSTANCEOF) name: INSTANCEOF }
+        .trait { kind: method method: .function_id(IN) name: IN }
+
+        .trait { kind: method method: .function_id(NEGATE)      name: NEGATE }
+        .trait { kind: method method: .function_id(INCREMENT)   name: INCREMENT }
+        .trait { kind: method method: .function_id(DECREMENT)   name: DECREMENT }
+        .trait { kind: method method: .function_id(TYPEOF)      name: TYPEOF }
+        .trait { kind: method method: .function_id(NOT)         name: NOT }
+        .trait { kind: method method: .function_id(BITNOT)      name: BITNOT }
+        .trait { kind: method method: .function_id(INCREMENT_I) name: INCREMENT_I }
+        .trait { kind: method method: .function_id(DECREMENT_I) name: DECREMENT_I }
+        .trait { kind: method method: .function_id(NEGATE_I)    name: NEGATE_I }
+
+        .trait { kind: method method: .function_id(ADD)           name: ADD }
+        .trait { kind: method method: .function_id(SUBTRACT)      name: SUBTRACT }
+        .trait { kind: method method: .function_id(MULTIPLY)      name: MULTIPLY }
+        .trait { kind: method method: .function_id(DIVIDE)        name: DIVIDE }
+        .trait { kind: method method: .function_id(MODULO)        name: MODULO }
+        .trait { kind: method method: .function_id(LSHIFT)        name: LSHIFT }
+        .trait { kind: method method: .function_id(RSHIFT)        name: RSHIFT }
+        .trait { kind: method method: .function_id(URSHIFT)       name: URSHIFT }
+        .trait { kind: method method: .function_id(BITAND)        name: BITAND }
+        .trait { kind: method method: .function_id(BITOR)         name: BITOR }
+        .trait { kind: method method: .function_id(BITXOR)        name: BITXOR }
+        .trait { kind: method method: .function_id(EQUALS)        name: EQUALS }
+        .trait { kind: method method: .function_id(STRICTEQUALS)  name: STRICTEQUALS }
+        .trait { kind: method method: .function_id(LESSTHAN)      name: LESSTHAN }
+        .trait { kind: method method: .function_id(LESSEQUALS)    name: LESSEQUALS }
+        .trait { kind: method method: .function_id(GREATERTHAN)   name: GREATERTHAN }
+        .trait { kind: method method: .function_id(GREATEREQUALS) name: GREATEREQUALS }
+        .trait { kind: method method: .function_id(ADD_I)         name: ADD_I }
+        .trait { kind: method method: .function_id(SUBTRACT_I)    name: SUBTRACT_I }
+        .trait { kind: method method: .function_id(MULTIPLY_I)    name: MULTIPLY_I }
+    }
+}

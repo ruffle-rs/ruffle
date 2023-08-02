@@ -1,0 +1,21 @@
+lf64(ApplicationDomain.MIN_DOMAIN_MEMORY_LENGTH) prior to initMemory() PASSED!
+lf64(-1) PASSED!
+lf64(mem.length) PASSED!
+lf64(mem.length-1) PASSED!
+lf64(mem.length-2) PASSED!
+lf64(mem.length-3) PASSED!
+lf64(mem.length-4) PASSED!
+lf64(mem.length-5) PASSED!
+lf64(mem.length-6) PASSED!
+lf64(mem.length-7) PASSED!
+lf64(mem.length-8) PASSED!
+lf64(1) loads do not need to be aligned PASSED!
+lf64 load double written by si8() PASSED!
+lf64 load double written by si16() PASSED!
+lf64 load double written by si32() PASSED!
+lf64 load double written by sf32() PASSED!
+lflf load double written by sf64(102401241024) PASSED!
+lf64 load double written by writeByte() PASSED!
+lf64 load double written by writeInt() PASSED!
+lf64 load double written by writeFloat(12.37548828125) PASSED!
+lf64 load double written by writeDouble(102401241024) PASSED!
