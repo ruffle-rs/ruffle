@@ -33,10 +33,7 @@ import flash.xml.XMLNodeType;
             clear();
             var root = new XML("<xml>" + input + "</xml>");
             for each (var child in root.children()) {
-               var node = _convertXmlNode(child);
-               if (node != null) {
-                  appendChild(node);
-               }
+               appendChild(_convertXmlNode(child));
             }
          } finally {
             XML.AS3::setSettings(oldSettings);
@@ -45,16 +42,10 @@ import flash.xml.XMLNodeType;
 
       private function _convertXmlNode(original: XML): XMLNode {
          var nodeType = _convertXmlNodeType(original.nodeKind());
-         if (nodeType == 0) {
-            return null;
-         }
          var nodeValue = nodeType == XMLNodeType.ELEMENT_NODE ? original.name() : original.toString();
          var result = new XMLNode(nodeType, nodeValue);
          for each (var originalChild in original.children()) {
-            var child = _convertXmlNode(originalChild);
-            if (child != null) {
-               result.appendChild(child);
-            }
+            result.appendChild(_convertXmlNode(originalChild));
          }
          var attributeList = original.attributes();
          var attributes = {};
@@ -72,13 +63,10 @@ import flash.xml.XMLNodeType;
          if (kind == "comment") {
             return XMLNodeType.COMMENT_NODE;
          }
-         if (kind == "processing-instruction") {
-            return XMLNodeType.PROCESSING_INSTRUCTION_NODE;
-         }
          if (kind == "element") {
             return XMLNodeType.ELEMENT_NODE;
          }
-         return 0;
+         throw new Error("Invalid XML Node kind '" + kind + "' found whilst constructing (legacy) XMLDocument");
       }
 
       public function createElement(name:String): XMLNode {
