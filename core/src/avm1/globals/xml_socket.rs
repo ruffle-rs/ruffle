@@ -163,7 +163,7 @@ pub fn send<'gc>(
                 .coerce_to_string(activation)?
                 .to_string()
                 .into_bytes();
-            
+
             // The string needs to end with a null byte.
             data.push(0);
 
