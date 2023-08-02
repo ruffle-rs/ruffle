@@ -2808,15 +2808,20 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_is_type_late(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let type_object = self
+        let Some(type_object) = self
             .pop_stack()
             .as_object()
             .and_then(|o| o.as_class_object())
-            .ok_or("Cannot check if value is of a type that is null, undefined, or not a class")?
-            .inner_class_definition();
+        else {
+            return Err(Error::AvmError(type_error(
+                self,
+                "Error #1041: The right-hand side of operator must be a class.",
+                1041,
+            )?));
+        };
         let value = self.pop_stack();
 
-        let is_instance_of = value.is_of_type(self, type_object);
+        let is_instance_of = value.is_of_type(self, type_object.inner_class_definition());
         self.push_stack(is_instance_of);
 
         Ok(FrameControl::Continue)
