@@ -160,8 +160,15 @@ impl<'gc> Sockets<'gc> {
     }
 
     pub fn close(&mut self, handle: SocketHandle) {
-        if let Some(Socket { sender, .. }) = self.sockets.remove(handle) {
+        if let Some(Socket { sender, target }) = self.sockets.remove(handle) {
             drop(sender); // NOTE: By dropping the sender, the reading task will close automatically.
+
+            // Clear the read buffer if the connection was closed.
+            if let SocketKind::Avm1(target) = target {
+                let target = XmlSocket::cast(target.into()).expect("target should be XmlSocket");
+
+                target.read_buffer().clear();
+            }
         }
     }
 
@@ -350,6 +357,12 @@ impl<'gc> Sockets<'gc> {
                                 context.reborrow(),
                                 ActivationIdentifier::root("[XMLSocket]"),
                             );
+
+                            // Clear the read buffer if the connection was closed.
+                            let socket =
+                                XmlSocket::cast(target.into()).expect("target should be XmlSocket");
+
+                            socket.read_buffer().clear();
 
                             let _ = target.call_method(
                                 "onClose".into(),
