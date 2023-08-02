@@ -1,0 +1,6 @@
+Check for socket errors
+connected status:
+true
+Hello!
+<root><item /></root>
+closed
