@@ -163,6 +163,20 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         Some(*self)
     }
 
+    fn xml_descendants(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        multiname: &Multiname<'gc>,
+    ) -> Option<XmlListObject<'gc>> {
+        let mut descendants = Vec::new();
+        self.0.read().node.descendants(multiname, &mut descendants);
+        Some(XmlListObject::new(
+            activation,
+            descendants,
+            Some((*self).into()),
+        ))
+    }
+
     fn get_property_local(
         self,
         name: &Multiname<'gc>,

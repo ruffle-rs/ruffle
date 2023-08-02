@@ -279,13 +279,12 @@ pub fn descendants<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let xml_list = this.as_xml_list_object().unwrap();
     let multiname = name_to_multiname(activation, &args[0], false)?;
-    let mut descendants = Vec::new();
-    for child in xml_list.children().iter() {
-        child.node().descendants(&multiname, &mut descendants);
+    if let Some(descendants) = this.xml_descendants(activation, &multiname) {
+        Ok(descendants.into())
+    } else {
+        Ok(Value::Undefined)
     }
-    Ok(XmlListObject::new(activation, descendants, Some(xml_list.into())).into())
 }
 
 pub fn text<'gc>(

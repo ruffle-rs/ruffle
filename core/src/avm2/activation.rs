@@ -34,8 +34,6 @@ use swf::avm2::types::{
     Multiname as AbcMultiname, Namespace as AbcNamespace, Op,
 };
 
-use super::object::QNameObject;
-
 /// Represents a particular register set.
 ///
 /// This type exists primarily because SmallVec isn't garbage-collectable.
@@ -1775,12 +1773,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let multiname = self.pool_multiname_and_initialize(method, index)?;
         let object = self.pop_stack().coerce_to_object_or_typeerror(self, None)?;
-        if object.as_xml_object().is_some() || object.as_xml_list_object().is_some() {
-            let descendants = object.call_public_property(
-                "descendants",
-                &[QNameObject::from_name(self, (*multiname).clone())?.into()],
-                self,
-            )?;
+        if let Some(descendants) = object.xml_descendants(self, &multiname) {
             self.push_stack(descendants);
         } else {
             // Even if it's an object with the "descendants" property, we won't support it.

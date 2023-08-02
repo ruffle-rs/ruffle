@@ -1345,6 +1345,14 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         None
     }
 
+    fn xml_descendants(
+        &self,
+        _activation: &mut Activation<'_, 'gc>,
+        _multiname: &Multiname<'gc>,
+    ) -> Option<XmlListObject<'gc>> {
+        None
+    }
+
     fn as_context_3d(&self) -> Option<Context3DObject<'gc>> {
         None
     }
