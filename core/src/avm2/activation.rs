@@ -6,7 +6,7 @@ use crate::avm2::domain::Domain;
 use crate::avm2::e4x::{escape_attribute_value, escape_element_value};
 use crate::avm2::error::{
     argument_error, make_error_1127, make_null_or_undefined_error, make_reference_error,
-    type_error, ReferenceErrorCode,
+    range_error, type_error, ReferenceErrorCode,
 };
 use crate::avm2::method::{BytecodeMethod, Method, ParamConfig};
 use crate::avm2::object::{
@@ -3005,8 +3005,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .as_bytearray_mut(self.context.gc_context)
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
 
-        let address =
-            usize::try_from(address).map_err(|_| "RangeError: The specified range is invalid")?;
+        let Ok(address) = usize::try_from(address) else {
+            return Err(Error::AvmError(range_error(
+                self,
+                "Error #1506: The range specified is invalid.",
+                1506,
+            )?));
+        };
         dm.write_at_nongrowing(&val.to_le_bytes(), address)
             .map_err(|e| e.to_avm(self))?;
 
@@ -3023,8 +3028,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .as_bytearray_mut(self.context.gc_context)
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
 
-        let address =
-            usize::try_from(address).map_err(|_| "RangeError: The specified range is invalid")?;
+        let Ok(address) = usize::try_from(address) else {
+            return Err(Error::AvmError(range_error(
+                self,
+                "Error #1506: The range specified is invalid.",
+                1506,
+            )?));
+        };
         dm.write_at_nongrowing(&val.to_le_bytes(), address)
             .map_err(|e| e.to_avm(self))?;
 
@@ -3041,8 +3051,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .as_bytearray_mut(self.context.gc_context)
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
 
-        let address =
-            usize::try_from(address).map_err(|_| "RangeError: The specified range is invalid")?;
+        let Ok(address) = usize::try_from(address) else {
+            return Err(Error::AvmError(range_error(
+                self,
+                "Error #1506: The range specified is invalid.",
+                1506,
+            )?));
+        };
         dm.write_at_nongrowing(&val.to_le_bytes(), address)
             .map_err(|e| e.to_avm(self))?;
 
@@ -3059,8 +3074,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .as_bytearray_mut(self.context.gc_context)
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
 
-        let address =
-            usize::try_from(address).map_err(|_| "RangeError: The specified range is invalid")?;
+        let Ok(address) = usize::try_from(address) else {
+            return Err(Error::AvmError(range_error(
+                self,
+                "Error #1506: The range specified is invalid.",
+                1506,
+            )?));
+        };
         dm.write_at_nongrowing(&val.to_le_bytes(), address)
             .map_err(|e| e.to_avm(self))?;
 
@@ -3077,8 +3097,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .as_bytearray_mut(self.context.gc_context)
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
 
-        let address =
-            usize::try_from(address).map_err(|_| "RangeError: The specified range is invalid")?;
+        let Ok(address) = usize::try_from(address) else {
+            return Err(Error::AvmError(range_error(
+                self,
+                "Error #1506: The range specified is invalid.",
+                1506,
+            )?));
+        };
         dm.write_at_nongrowing(&val.to_le_bytes(), address)
             .map_err(|e| e.to_avm(self))?;
 
@@ -3098,7 +3123,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         if let Some(val) = val {
             self.push_stack(val);
         } else {
-            return Err("RangeError: The specified range is invalid".into());
+            return Err(Error::AvmError(range_error(
+                self,
+                "Error #1506: The range specified is invalid.",
+                1506,
+            )?));
         }
 
         Ok(FrameControl::Continue)
