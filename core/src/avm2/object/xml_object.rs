@@ -259,7 +259,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         }
 
         return method
-            .as_callable(activation, Some(multiname), Some(self.into()))?
+            .as_callable(activation, Some(multiname), Some(self.into()), false)?
             .call(self.into(), arguments, activation);
     }
 
