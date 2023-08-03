@@ -454,3 +454,26 @@ pub fn comments<'gc>(
 
     Ok(XmlListObject::new(activation, comments, Some(xml.into())).into())
 }
+
+pub fn processing_instructions<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let xml = this.as_xml_object().unwrap();
+    let multiname = name_to_multiname(activation, &args[0], false)?;
+    let nodes = if let E4XNodeKind::Element { children, .. } = &*xml.node().kind() {
+        children
+            .iter()
+            .filter(|node| {
+                matches!(&*node.kind(), E4XNodeKind::ProcessingInstruction(_))
+                    && node.matches_name(&multiname)
+            })
+            .map(|node| E4XOrXml::E4X(*node))
+            .collect()
+    } else {
+        Vec::new()
+    };
+
+    Ok(XmlListObject::new(activation, nodes, Some(xml.into())).into())
+}

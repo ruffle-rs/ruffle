@@ -77,6 +77,7 @@ package {
         AS3 native function toString():String;
         AS3 native function length():int;
         AS3 native function comments():XMLList;
+        AS3 native function processingInstructions(name:String = "*"):XMLList;
 
         AS3 function valueOf():XML {
             return this;
@@ -211,6 +212,11 @@ package {
         prototype.comments = function():XMLList {
             var self:XML = this;
             return self.AS3::comments();
+        }
+
+        prototype.processingInstructions = function(name:String = "*"):XMLList {
+            var self:XML = this;
+            return self.AS3::processingInstructions(name);
         }
 
         public static const length:int = 1;
