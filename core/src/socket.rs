@@ -163,11 +163,18 @@ impl<'gc> Sockets<'gc> {
         if let Some(Socket { sender, target }) = self.sockets.remove(handle) {
             drop(sender); // NOTE: By dropping the sender, the reading task will close automatically.
 
-            // Clear the read buffer if the connection was closed.
-            if let SocketKind::Avm1(target) = target {
-                let target = XmlSocket::cast(target.into()).expect("target should be XmlSocket");
+            // Clear the buffers if the connection was closed.
+            match target {
+                SocketKind::Avm1(target) => {
+                    let target =
+                        XmlSocket::cast(target.into()).expect("target should be XmlSocket");
 
-                target.read_buffer().clear();
+                    target.read_buffer().clear();
+                }
+                SocketKind::Avm2(target) => {
+                    target.read_buffer().clear();
+                    target.write_buffer().clear();
+                }
             }
         }
     }
@@ -338,7 +345,7 @@ impl<'gc> Sockets<'gc> {
                     }
                 }
                 SocketAction::Close(handle) => {
-                    let target = match context.sockets.sockets.get(handle) {
+                    let target = match context.sockets.sockets.remove(handle) {
                         Some(socket) => socket.target,
                         // Socket must have been closed before we could send event.
                         None => continue,
@@ -347,6 +354,10 @@ impl<'gc> Sockets<'gc> {
                     match target {
                         SocketKind::Avm2(target) => {
                             let mut activation = Avm2Activation::from_nothing(context.reborrow());
+
+                            // Clear the buffers if the connection was closed.
+                            target.read_buffer().clear();
+                            target.write_buffer().clear();
 
                             let close_evt =
                                 EventObject::bare_default_event(&mut activation.context, "close");
