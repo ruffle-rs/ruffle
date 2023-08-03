@@ -4,6 +4,7 @@ use fluent_templates::loader::langid;
 pub use fluent_templates::LanguageIdentifier;
 use std::borrow::Cow;
 use std::collections::HashSet;
+use url::Url;
 
 pub type FullscreenError = Cow<'static, str>;
 pub static US_ENGLISH: LanguageIdentifier = langid!("en-US");
@@ -36,6 +37,8 @@ pub trait UiBackend: Downcast {
     fn open_virtual_keyboard(&self);
 
     fn language(&self) -> &LanguageIdentifier;
+
+    fn display_unsupported_video(&self, url: Url);
 }
 impl_downcast!(UiBackend);
 
@@ -169,6 +172,8 @@ impl UiBackend for NullUiBackend {
     fn display_root_movie_download_failed_message(&self) {}
 
     fn message(&self, _message: &str) {}
+
+    fn display_unsupported_video(&self, _url: Url) {}
 
     fn open_virtual_keyboard(&self) {}
 

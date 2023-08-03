@@ -1,12 +1,14 @@
 use anyhow::{Context, Error};
 use arboard::Clipboard;
 use rfd::{MessageButtons, MessageDialog, MessageLevel};
+use ruffle_core::backend::navigator::OpenURLMode;
 use ruffle_core::backend::ui::{
     FullscreenError, LanguageIdentifier, MouseCursor, UiBackend, US_ENGLISH,
 };
 use std::rc::Rc;
 use sys_locale::get_locale;
 use tracing::error;
+use url::Url;
 use winit::window::{Fullscreen, Window};
 
 pub struct DesktopUiBackend {
@@ -15,10 +17,11 @@ pub struct DesktopUiBackend {
     clipboard: Clipboard,
     language: LanguageIdentifier,
     preferred_cursor: MouseCursor,
+    open_url_mode: OpenURLMode,
 }
 
 impl DesktopUiBackend {
-    pub fn new(window: Rc<Window>) -> Result<Self, Error> {
+    pub fn new(window: Rc<Window>, open_url_mode: OpenURLMode) -> Result<Self, Error> {
         let preferred_language = get_locale();
         let language = preferred_language
             .and_then(|l| l.parse().ok())
@@ -29,6 +32,7 @@ impl DesktopUiBackend {
             clipboard: Clipboard::new().context("Couldn't get platform clipboard")?,
             language,
             preferred_cursor: MouseCursor::Arrow,
+            open_url_mode,
         })
     }
 
@@ -96,6 +100,45 @@ impl UiBackend for DesktopUiBackend {
             .set_description(message)
             .set_buttons(MessageButtons::Ok);
         dialog.show();
+    }
+
+    fn display_unsupported_video(&self, url: Url) {
+        if url.scheme() == "javascript" {
+            tracing::warn!(
+                "SWF tried to run a script on desktop, but javascript calls are not allowed"
+            );
+            return;
+        }
+
+        if self.open_url_mode == OpenURLMode::Confirm {
+            let message = format!("The SWF file wants to open the website {}", url);
+            // TODO: Add a checkbox with a GUI toolkit
+            let confirm = MessageDialog::new()
+                .set_title("Open website?")
+                .set_level(MessageLevel::Info)
+                .set_description(&message)
+                .set_buttons(MessageButtons::OkCancel)
+                .show();
+            if !confirm {
+                tracing::info!("SWF tried to open a website, but the user declined the request");
+                return;
+            }
+        } else if self.open_url_mode == OpenURLMode::Deny {
+            tracing::warn!("SWF tried to open a website, but opening a website is not allowed");
+            return;
+        }
+
+        // If the user confirmed or if in Allow mode, open the website
+
+        // TODO: This opens local files in the browser while flash opens them
+        // in the default program for the respective filetype.
+        // This especially includes mailto links. Ruffle opens the browser which opens
+        // the preferred program while flash opens the preferred program directly.
+
+        match webbrowser::open(url.as_str()) {
+            Ok(_output) => {}
+            Err(e) => tracing::error!("Could not open URL {}: {}", url, e),
+        };
     }
 
     // Unused on desktop

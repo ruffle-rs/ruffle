@@ -122,6 +122,9 @@ extern "C" {
 
     #[wasm_bindgen(method, js_name = "isVirtualKeyboardFocused")]
     fn is_virtual_keyboard_focused(this: &JavascriptPlayer) -> bool;
+
+    #[wasm_bindgen(method, js_name = "displayUnsupportedVideo")]
+    fn display_unsupported_video(this: &JavascriptPlayer, url: &str);
 }
 
 #[derive(Clone)]

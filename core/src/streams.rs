@@ -189,6 +189,9 @@ pub struct NetStreamData<'gc> {
 
     /// The AVM2 client object, which corresponds to `NetStream.client`.
     avm2_client: Option<Avm2Object<'gc>>,
+
+    /// The URL of the requested FLV if one exists.
+    url: Option<String>,
 }
 
 impl<'gc> NetStream<'gc> {
@@ -204,6 +207,7 @@ impl<'gc> NetStream<'gc> {
                 last_decoded_bitmap: None,
                 avm_object,
                 avm2_client: None,
+                url: None,
             },
         ))
     }
@@ -255,6 +259,7 @@ impl<'gc> NetStream<'gc> {
     pub fn play(self, context: &mut UpdateContext<'_, 'gc>, name: Option<AvmString<'gc>>) {
         if let Some(name) = name {
             let request = Request::get(name.to_string());
+            self.0.write(context.gc_context).url = Some(request.url().to_string());
             let future = context
                 .load_manager
                 .load_netstream(context.player.clone(), self, request);
@@ -326,6 +331,23 @@ impl<'gc> NetStream<'gc> {
                     //TODO: Fire an error event to AS & stop playing too
                     tracing::error!("Unrecognized file signature: {:?}", magic);
                     write.preload_offset = 3;
+                    if let Some(url) = &write.url {
+                        if url.is_empty() {
+                            return;
+                        }
+                        let parsed_url = match context.navigator.resolve_url(url) {
+                            Ok(parsed_url) => parsed_url,
+                            Err(e) => {
+                                tracing::error!(
+                                    "Could not parse URL because of {}, the corrupt URL was: {}",
+                                    e,
+                                    url
+                                );
+                                return;
+                            }
+                        };
+                        context.ui.display_unsupported_video(parsed_url);
+                    }
                     return;
                 }
                 None => return, //Data not yet loaded
