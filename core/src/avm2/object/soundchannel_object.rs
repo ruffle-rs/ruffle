@@ -63,8 +63,6 @@ pub struct SoundChannelObjectData<'gc> {
     position: f64,
 }
 
-#[derive(Collect)]
-#[collect(require_static)]
 pub enum SoundChannelData {
     NotLoaded {
         sound_transform: Option<SoundTransform>,

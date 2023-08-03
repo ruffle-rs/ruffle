@@ -636,6 +636,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 #[collect(no_drop)]
 pub struct LayoutBox<'gc> {
     /// The rectangle corresponding to the outer boundaries of the content box.
+    #[collect(require_static)]
     bounds: BoxBounds<Twips>,
 
     /// What content is contained by the content box.
@@ -660,6 +661,7 @@ pub enum LayoutContent<'gc> {
         end: usize,
 
         /// The formatting options for the text box.
+        #[collect(require_static)]
         text_format: TextFormat,
 
         /// The font that was resolved at the time of layout for this text.
@@ -667,6 +669,7 @@ pub enum LayoutContent<'gc> {
 
         /// All parameters used to evaluate the font at the time of layout for
         /// this text.
+        #[collect(require_static)]
         params: EvalParameters,
 
         /// The color to render the font with.
@@ -680,6 +683,7 @@ pub enum LayoutContent<'gc> {
     /// to be U+2022.
     Bullet {
         /// The formatting options for the text box.
+        #[collect(require_static)]
         text_format: TextFormat,
 
         /// The font that was resolved at the time of layout for this text.
@@ -687,6 +691,7 @@ pub enum LayoutContent<'gc> {
 
         /// All parameters used to evaluate the font at the time of layout for
         /// this text.
+        #[collect(require_static)]
         params: EvalParameters,
 
         /// The color to render the font with.
@@ -699,7 +704,7 @@ pub enum LayoutContent<'gc> {
     /// The drawing will be rendered with its origin at the position of the
     /// layout box's bounds. The size of those bounds do not affect the
     /// rendering of the drawing.
-    Drawing(Drawing),
+    Drawing(#[collect(require_static)] Drawing),
 }
 
 impl<'gc> LayoutBox<'gc> {

@@ -49,6 +49,7 @@ pub struct TextFormatObjectData<'gc> {
     /// Base script object
     base: ScriptObjectData<'gc>,
 
+    #[collect(require_static)]
     text_format: TextFormat,
 }
 
