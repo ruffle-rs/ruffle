@@ -435,27 +435,58 @@ impl<'gc> E4XNode<'gc> {
                         activation,
                     )?;
                 }
-                Event::Comment(bt) | Event::PI(bt) => {
-                    if (matches!(event, Event::Comment(_)) && ignore_comments)
-                        || (matches!(event, Event::PI(_)) && ignore_processing_instructions)
-                    {
+
+                Event::Comment(bt) => {
+                    if ignore_comments {
                         continue;
                     }
                     let text = custom_unescape(bt, parser.decoder())
                         .map_err(|_| malformed_element(activation))?;
                     let text =
                         AvmString::new_utf8_bytes(activation.context.gc_context, text.as_bytes());
-                    let kind = match event {
-                        Event::Comment(_) => E4XNodeKind::Comment(text),
-                        Event::PI(_) => E4XNodeKind::ProcessingInstruction(text),
-                        _ => unreachable!(),
-                    };
                     let node = E4XNode(GcCell::new(
                         activation.context.gc_context,
                         E4XNodeData {
                             parent: None,
                             local_name: None,
-                            kind,
+                            kind: E4XNodeKind::Comment(text),
+                        },
+                    ));
+
+                    push_childless_node(node, &mut open_tags, &mut top_level, activation)?;
+                }
+                Event::PI(bt) => {
+                    if ignore_processing_instructions {
+                        continue;
+                    }
+                    let text = custom_unescape(bt, parser.decoder())
+                        .map_err(|_| malformed_element(activation))?;
+                    let (name, value) = if let Some((name, value)) = text.split_once(' ') {
+                        (
+                            AvmString::new_utf8_bytes(
+                                activation.context.gc_context,
+                                name.as_bytes(),
+                            ),
+                            AvmString::new_utf8_bytes(
+                                activation.context.gc_context,
+                                value.as_bytes(),
+                            ),
+                        )
+                    } else {
+                        (
+                            AvmString::new_utf8_bytes(
+                                activation.context.gc_context,
+                                text.as_bytes(),
+                            ),
+                            AvmString::default(),
+                        )
+                    };
+                    let node = E4XNode(GcCell::new(
+                        activation.context.gc_context,
+                        E4XNodeData {
+                            parent: None,
+                            local_name: Some(name),
+                            kind: E4XNodeKind::ProcessingInstruction(value),
                         },
                     ));
 
@@ -650,7 +681,7 @@ pub fn simple_content_to_string<'gc>(
     for child in children {
         if matches!(
             &*child.node().kind(),
-            E4XNodeKind::Comment(_) | E4XNodeKind::ProcessingInstruction(_)
+            E4XNodeKind::Comment(_) | E4XNodeKind::ProcessingInstruction { .. }
         ) {
             continue;
         }
