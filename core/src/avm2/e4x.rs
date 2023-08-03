@@ -469,7 +469,7 @@ impl<'gc> E4XNode<'gc> {
                             ),
                             AvmString::new_utf8_bytes(
                                 activation.context.gc_context,
-                                value.as_bytes(),
+                                value.trim_start().as_bytes(),
                             ),
                         )
                     } else {
