@@ -349,6 +349,13 @@ impl<'gc> Multiname<'gc> {
         }
     }
 
+    pub fn explict_namespace(&self) -> Option<AvmString<'gc>> {
+        match self.ns {
+            NamespaceSet::Single(ns) if ns.is_namespace() && !ns.is_public() => Some(ns.as_uri()),
+            _ => None,
+        }
+    }
+
     /// Indicates if this multiname matches any type.
     pub fn is_any_name(&self) -> bool {
         self.name.is_none()

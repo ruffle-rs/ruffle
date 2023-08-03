@@ -1,3 +1,7 @@
 xml.*::foo.toString() abc
 xml.*::hello.toString() world
-ReferenceError: Error #1069: Property http://example.org/::test not found on XML and there is no default value.
+xml.foo.toString() abc
+xml.example::foo.toString() 
+xml.hello.toString() 
+xml.example::hello.toString() world
+xml.example::test abc

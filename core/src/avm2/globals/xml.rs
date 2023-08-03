@@ -334,29 +334,37 @@ pub fn append_child<'gc>(
         }
     } else {
         // Appending a non-XML/XMLList object
-        let last_child_name = if let E4XNodeKind::Element { children, .. } = &*xml.node().kind() {
-            let num_children = children.len();
+        let (last_child_namespace, last_child_name) =
+            if let E4XNodeKind::Element { children, .. } = &*xml.node().kind() {
+                let num_children = children.len();
 
-            match num_children {
-                0 => None,
-                _ => children[num_children - 1].local_name(),
-            }
-        } else {
-            // FIXME - figure out exactly when appending is allowed in FP,
-            // and throw the proper AVM error.
-            return Err(Error::RustError(
-                format!(
-                    "Cannot append child {child:?} to node {:?}",
-                    xml.node().kind()
-                )
-                .into(),
-            ));
-        };
+                match num_children {
+                    0 => (None, None),
+                    _ => (
+                        children[num_children - 1].namespace(),
+                        children[num_children - 1].local_name(),
+                    ),
+                }
+            } else {
+                // FIXME - figure out exactly when appending is allowed in FP,
+                // and throw the proper AVM error.
+                return Err(Error::RustError(
+                    format!(
+                        "Cannot append child {child:?} to node {:?}",
+                        xml.node().kind()
+                    )
+                    .into(),
+                ));
+            };
 
         let text = child.coerce_to_string(activation)?;
         if let Some(last_child_name) = last_child_name {
-            let element_node =
-                E4XNode::element(activation.context.gc_context, last_child_name, *xml.node()); // Creating an element requires passing a parent node, unlike creating a text node
+            let element_node = E4XNode::element(
+                activation.context.gc_context,
+                last_child_namespace,
+                last_child_name,
+                *xml.node(),
+            ); // Creating an element requires passing a parent node, unlike creating a text node
 
             let text_node = E4XNode::text(activation.context.gc_context, text, None);
 
