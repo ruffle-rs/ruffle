@@ -31,6 +31,19 @@ pub fn instance_init<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn class_call<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(activation
+        .avm2()
+        .classes()
+        .function
+        .construct(activation, args)?
+        .into())
+}
+
 /// Implements `Function`'s class initializer.
 pub fn class_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -208,6 +221,11 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
     );
 
     write.set_instance_allocator(function_allocator);
+    write.set_call_handler(Method::from_builtin(
+        class_call,
+        "<Function call handler>",
+        gc_context,
+    ));
 
     function_class
 }
