@@ -194,36 +194,34 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
                     }
                 }
             }
-
-            let matched_children = if let E4XNodeKind::Element {
-                children,
-                attributes,
-            } = &*read.node.kind()
-            {
-                let search_children = if name.is_attribute() {
-                    attributes
-                } else {
-                    children
-                };
-
-                search_children
-                    .iter()
-                    .filter_map(|child| {
-                        if child.matches_name(name) {
-                            Some(E4XOrXml::E4X(*child))
-                        } else {
-                            None
-                        }
-                    })
-                    .collect::<Vec<_>>()
-            } else {
-                Vec::new()
-            };
-
-            return Ok(XmlListObject::new(activation, matched_children, Some(self.into())).into());
         }
 
-        read.base.get_property_local(name, activation)
+        let matched_children = if let E4XNodeKind::Element {
+            children,
+            attributes,
+        } = &*read.node.kind()
+        {
+            let search_children = if name.is_attribute() {
+                attributes
+            } else {
+                children
+            };
+
+            search_children
+                .iter()
+                .filter_map(|child| {
+                    if child.matches_name(name) {
+                        Some(E4XOrXml::E4X(*child))
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<_>>()
+        } else {
+            Vec::new()
+        };
+
+        return Ok(XmlListObject::new(activation, matched_children, Some(self.into())).into());
     }
 
     fn call_property_local(
@@ -310,14 +308,6 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        if name.has_explicit_namespace() {
-            return Err(format!(
-                "Can not set property {:?} with an explicit namespace yet",
-                name
-            )
-            .into());
-        }
-
         let mc = activation.context.gc_context;
 
         if name.is_attribute() {
@@ -374,8 +364,12 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
             .collect();
         match matches.as_slice() {
             [] => {
-                let element_with_text =
-                    E4XNode::element(mc, name.local_name().unwrap(), write.node);
+                let element_with_text = E4XNode::element(
+                    mc,
+                    name.explict_namespace(),
+                    name.local_name().unwrap(),
+                    write.node,
+                );
                 element_with_text.append_child(mc, E4XNode::text(mc, text, Some(self_node)))?;
                 children.push(element_with_text);
                 Ok(())

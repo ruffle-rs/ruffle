@@ -6,7 +6,8 @@ use std::{
 use gc_arena::{Collect, GcCell, MutationContext};
 use quick_xml::{
     events::{BytesStart, Event},
-    Reader,
+    name::ResolveResult,
+    NsReader,
 };
 
 use crate::{avm2::TObject, xml::custom_unescape};
@@ -26,6 +27,7 @@ pub struct E4XNode<'gc>(GcCell<'gc, E4XNodeData<'gc>>);
 #[collect(no_drop)]
 pub struct E4XNodeData<'gc> {
     parent: Option<E4XNode<'gc>>,
+    namespace: Option<AvmString<'gc>>,
     local_name: Option<AvmString<'gc>>,
     kind: E4XNodeKind<'gc>,
 }
@@ -72,6 +74,7 @@ impl<'gc> E4XNode<'gc> {
             mc,
             E4XNodeData {
                 parent: None,
+                namespace: None,
                 local_name: None,
                 kind: E4XNodeKind::Element {
                     attributes: vec![],
@@ -86,17 +89,24 @@ impl<'gc> E4XNode<'gc> {
             mc,
             E4XNodeData {
                 parent,
+                namespace: None,
                 local_name: None,
                 kind: E4XNodeKind::Text(text),
             },
         ))
     }
 
-    pub fn element(mc: MutationContext<'gc, '_>, name: AvmString<'gc>, parent: Self) -> Self {
+    pub fn element(
+        mc: MutationContext<'gc, '_>,
+        namespace: Option<AvmString<'gc>>,
+        name: AvmString<'gc>,
+        parent: Self,
+    ) -> Self {
         E4XNode(GcCell::new(
             mc,
             E4XNodeData {
                 parent: Some(parent),
+                namespace,
                 local_name: Some(name),
                 kind: E4XNodeKind::Element {
                     attributes: vec![],
@@ -116,6 +126,7 @@ impl<'gc> E4XNode<'gc> {
             mc,
             E4XNodeData {
                 parent: Some(parent),
+                namespace: None,
                 local_name: Some(name),
                 kind: E4XNodeKind::Attribute(value),
             },
@@ -195,6 +206,7 @@ impl<'gc> E4XNode<'gc> {
             mc,
             E4XNodeData {
                 parent: None,
+                namespace: this.namespace,
                 local_name: this.local_name,
                 kind,
             },
@@ -305,7 +317,7 @@ impl<'gc> E4XNode<'gc> {
         };
 
         let data_utf8 = string.to_utf8_lossy();
-        let mut parser = Reader::from_str(&data_utf8);
+        let mut parser = NsReader::from_str(&data_utf8);
         let mut open_tags: Vec<E4XNode<'gc>> = vec![];
 
         let mut top_level = vec![];
@@ -373,6 +385,7 @@ impl<'gc> E4XNode<'gc> {
                     activation.context.gc_context,
                     E4XNodeData {
                         parent: None,
+                        namespace: None,
                         local_name: None,
                         kind: if is_text {
                             E4XNodeKind::Text(text)
@@ -393,8 +406,9 @@ impl<'gc> E4XNode<'gc> {
 
             match &event {
                 Event::Start(bs) => {
-                    let child = E4XNode::from_start_event(activation, bs, parser.decoder())
-                        .map_err(|_| malformed_element(activation))?;
+                    let child =
+                        E4XNode::from_start_event(activation, &parser, bs, parser.decoder())
+                            .map_err(|_| malformed_element(activation))?;
 
                     if let Some(current_tag) = open_tags.last_mut() {
                         current_tag.append_child(activation.context.gc_context, child)?;
@@ -402,7 +416,7 @@ impl<'gc> E4XNode<'gc> {
                     open_tags.push(child);
                 }
                 Event::Empty(bs) => {
-                    let node = E4XNode::from_start_event(activation, bs, parser.decoder())
+                    let node = E4XNode::from_start_event(activation, &parser, bs, parser.decoder())
                         .map_err(|_| malformed_element(activation))?;
                     push_childless_node(node, &mut open_tags, &mut top_level, activation)?;
                 }
@@ -448,6 +462,7 @@ impl<'gc> E4XNode<'gc> {
                         activation.context.gc_context,
                         E4XNodeData {
                             parent: None,
+                            namespace: None,
                             local_name: None,
                             kind: E4XNodeKind::Comment(text),
                         },
@@ -485,6 +500,7 @@ impl<'gc> E4XNode<'gc> {
                         activation.context.gc_context,
                         E4XNodeData {
                             parent: None,
+                            namespace: None,
                             local_name: Some(name),
                             kind: E4XNodeKind::ProcessingInstruction(value),
                         },
@@ -506,36 +522,58 @@ impl<'gc> E4XNode<'gc> {
     /// valid encoded UTF-8 data. (Other encoding support is planned later.)
     pub fn from_start_event(
         activation: &mut Activation<'_, 'gc>,
+        parser: &NsReader<&[u8]>,
         bs: &BytesStart<'_>,
         decoder: quick_xml::Decoder,
     ) -> Result<Self, quick_xml::Error> {
-        // FIXME - handle namespace
-        let name =
-            AvmString::new_utf8_bytes(activation.context.gc_context, bs.local_name().into_inner());
-
         let mut attribute_nodes = Vec::new();
 
         let attributes: Result<Vec<_>, _> = bs.attributes().collect();
         for attribute in attributes? {
-            let key = AvmString::new_utf8_bytes(
-                activation.context.gc_context,
-                attribute.key.into_inner(),
-            );
+            let (ns, local_name) = parser.resolve_attribute(attribute.key);
+            let namespace = match ns {
+                ResolveResult::Bound(ns) => Some(AvmString::new_utf8_bytes(
+                    activation.context.gc_context,
+                    ns.into_inner(),
+                )),
+                ResolveResult::Unknown(ns) if ns == b"xmlns" => continue,
+                // TODO: Throw error on unknown prefix
+                _ => None,
+            };
+            let name =
+                AvmString::new_utf8_bytes(activation.context.gc_context, local_name.into_inner());
+
             let value_str = custom_unescape(&attribute.value, decoder)?;
             let value =
                 AvmString::new_utf8_bytes(activation.context.gc_context, value_str.as_bytes());
 
             let attribute_data = E4XNodeData {
                 parent: None,
-                local_name: Some(key),
+                namespace,
+                local_name: Some(name),
                 kind: E4XNodeKind::Attribute(value),
             };
             let attribute = E4XNode(GcCell::new(activation.context.gc_context, attribute_data));
             attribute_nodes.push(attribute);
         }
 
+        let (ns, local_name) = parser.resolve_element(bs.name());
+
+        let namespace = match ns {
+            ResolveResult::Bound(ns) => Some(AvmString::new_utf8_bytes(
+                activation.context.gc_context,
+                ns.into_inner(),
+            )),
+            // TODO: Throw error on unknown prefix
+            _ => None,
+        };
+
+        let name =
+            AvmString::new_utf8_bytes(activation.context.gc_context, local_name.into_inner());
+
         let data = E4XNodeData {
             parent: None,
+            namespace,
             local_name: Some(name),
             kind: E4XNodeKind::Element {
                 attributes: attribute_nodes,
@@ -553,6 +591,10 @@ impl<'gc> E4XNode<'gc> {
         }
 
         Ok(result)
+    }
+
+    pub fn namespace(&self) -> Option<AvmString<'gc>> {
+        self.0.read().namespace
     }
 
     pub fn local_name(&self) -> Option<AvmString<'gc>> {
@@ -573,16 +615,25 @@ impl<'gc> E4XNode<'gc> {
             return false;
         }
 
-        // FIXME - we need to handle namespaces here
-        if name.is_any_name() {
+        if !name.is_any_name() && self.local_name() != name.local_name() {
+            return false;
+        }
+
+        if name.is_any_namespace() {
             return true;
         }
 
-        if let Some(local_name) = self.local_name() {
-            Some(local_name) == name.local_name()
-        } else {
-            false
+        if name.has_explicit_namespace() {
+            return self.namespace() == name.explict_namespace();
         }
+
+        // By default `xml.*` matches in all namespaces, unless an explicit
+        // namespace is given (`xml.ns::*`).
+        // However normal properties like "xml.prop" match only in the
+        // default namespace.
+        // TODO: Implement this by better handling default namespaces.
+        // See also "The QName Constructor Called as a Function".
+        name.is_any_name() || self.namespace().is_none()
     }
 
     pub fn descendants(&self, name: &Multiname<'gc>, out: &mut Vec<E4XOrXml<'gc>>) {
