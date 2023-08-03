@@ -992,7 +992,10 @@ impl<'gc> EditText<'gc> {
             let variable_path = WString::from_utf8(&var_path);
             drop(var_path);
 
-            let parent = self.avm1_parent().unwrap();
+            let mut parent = self.avm1_parent().unwrap();
+            while parent.as_avm1_button().is_some() {
+                parent = parent.avm1_parent().unwrap();
+            }
 
             activation.run_with_child_frame_for_display_object(
                 "[Text Field Binding]",
