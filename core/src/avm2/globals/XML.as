@@ -77,6 +77,10 @@ package {
         AS3 native function toString():String;
         AS3 native function length():int;
 
+        AS3 function valueOf():XML {
+            return this;
+        }
+
         public static var ignoreComments:Boolean = true;
         public static var ignoreProcessingInstructions:Boolean = true;
         public static var ignoreWhitespace:Boolean = true;
