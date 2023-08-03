@@ -76,6 +76,7 @@ package {
         AS3 native function text():XMLList;
         AS3 native function toString():String;
         AS3 native function length():int;
+        AS3 native function comments():XMLList;
 
         AS3 function valueOf():XML {
             return this;
@@ -206,6 +207,11 @@ package {
         prototype.toJSON = function(k:String):* {
             return "XML";
         };
+
+        prototype.comments = function():XMLList {
+            var self:XML = this;
+            return self.AS3::comments();
+        }
 
         public static const length:int = 1;
     }

@@ -435,3 +435,22 @@ pub fn has_simple_content<'gc>(
     let result = xml_obj.node().has_simple_content();
     Ok(result.into())
 }
+
+pub fn comments<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let xml = this.as_xml_object().unwrap();
+    let comments = if let E4XNodeKind::Element { children, .. } = &*xml.node().kind() {
+        children
+            .iter()
+            .filter(|node| matches!(&*node.kind(), E4XNodeKind::Comment(_)))
+            .map(|node| E4XOrXml::E4X(*node))
+            .collect()
+    } else {
+        Vec::new()
+    };
+
+    Ok(XmlListObject::new(activation, comments, Some(xml.into())).into())
+}
