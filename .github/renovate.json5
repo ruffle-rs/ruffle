@@ -7,11 +7,14 @@
             "matchLanguages": ["rust"],
             "matchUpdateTypes": "patch",
             "groupName": "Rust dependency patches",
+            "rangeStrategy": "bump",
             "extends": ["schedule:weekly"],
         },
         {
             "matchLanguages": ["rust"],
             "groupName": "Rust dependencies",
+            "matchUpdateTypes": ["major", "minor"],
+            "rangeStrategy": "bump",
             "extends": ["schedule:weekly"],
         },
         {
@@ -26,6 +29,7 @@
         {
             "matchLanguages": ["js"],
             "groupName": "Node.js dependencies",
+            "rangeStrategy": "bump",
             "extends": ["schedule:monthly"],
         },
         {
@@ -34,7 +38,4 @@
             "extends": ["schedule:monthly"],
         },
     ],
-    "lockFileMaintenance": {
-        "enabled": true
-    }
 }
