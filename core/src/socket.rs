@@ -325,7 +325,7 @@ impl<'gc> Sockets<'gc> {
                             buffer.extend(data);
 
                             // Check for a message.
-                            if let Some((index, _)) =
+                            while let Some((index, _)) =
                                 buffer.iter().enumerate().find(|(_, &b)| b == 0)
                             {
                                 let message = buffer.drain(..index).collect::<Vec<_>>();
