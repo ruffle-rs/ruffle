@@ -81,6 +81,10 @@ package {
             return this;
         }
 
+        AS3 function toJSON(k:String) : * {
+            return this.toJSON(k);
+        }
+
         public static var ignoreComments:Boolean = true;
         public static var ignoreProcessingInstructions:Boolean = true;
         public static var ignoreWhitespace:Boolean = true;
@@ -198,6 +202,10 @@ package {
             var self:XML = this;
             return self.AS3::length();
         }
+
+        prototype.toJSON = function(k:String):* {
+            return "XML";
+        };
 
         public static const length:int = 1;
     }
