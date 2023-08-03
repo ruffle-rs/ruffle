@@ -22,6 +22,7 @@ package {
         AS3 native function toXMLString():String;
         AS3 native function toString():String;
         AS3 native function comments():XMLList;
+        AS3 native function processingInstructions(name:String = "*"):XMLList;
 
         // The following native methods are not declared in the documentation,
         // but still exist
@@ -112,6 +113,11 @@ package {
         prototype.toJSON = function(k:String):* {
             return "XMLList";
         };
+
+        prototype.processingInstructions = function(name:String = "*"):XMLList {
+            var self:XML = this;
+            return self.AS3::processingInstructions(name);
+        }
 
         public static const length:int = 1;
     }
