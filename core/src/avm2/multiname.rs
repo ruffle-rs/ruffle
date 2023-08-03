@@ -50,8 +50,7 @@ impl<'gc> NamespaceSet<'gc> {
 }
 
 bitflags! {
-    #[derive(Clone, Copy, Debug, Default, Collect)]
-    #[collect(require_static)]
+    #[derive(Clone, Copy, Debug, Default)]
     pub struct MultinameFlags: u8 {
         /// Whether the namespace needs to be read at runtime before use.
         /// This should only be set when lazy-initialized in Activation.
@@ -85,6 +84,7 @@ pub struct Multiname<'gc> {
     /// this multiname is satisfied by any type parameter or no type parameter
     param: Option<Gc<'gc, Multiname<'gc>>>,
 
+    #[collect(require_static)]
     flags: MultinameFlags,
 }
 

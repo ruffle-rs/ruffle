@@ -13,8 +13,7 @@ use std::collections::BTreeMap;
 use std::hash::{Hash, Hasher};
 
 /// Which phase of event dispatch is currently occurring.
-#[derive(Copy, Clone, Collect, Debug, PartialEq, Eq)]
-#[collect(require_static)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum EventPhase {
     /// The event has yet to be fired on the target and is descending the
     /// ancestors of the event target.
@@ -29,8 +28,7 @@ pub enum EventPhase {
 }
 
 /// How this event is allowed to propagate.
-#[derive(Copy, Clone, Collect, Debug, PartialEq, Eq)]
-#[collect(require_static)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum PropagationMode {
     /// Propagate events normally.
     Allow,
@@ -59,12 +57,14 @@ pub struct Event<'gc> {
     cancelled: bool,
 
     /// Whether or not event propagation has stopped.
+    #[collect(require_static)]
     propagation: PropagationMode,
 
     /// The object currently having it's event handlers invoked.
     current_target: Option<Object<'gc>>,
 
     /// The current event phase.
+    #[collect(require_static)]
     event_phase: EventPhase,
 
     /// The object this event was dispatched on.

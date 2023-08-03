@@ -59,6 +59,7 @@ pub struct ClassObjectData<'gc> {
     superclass_object: Option<ClassObject<'gc>>,
 
     /// The instance allocator for this class.
+    #[collect(require_static)]
     instance_allocator: Allocator,
 
     /// The instance constructor function

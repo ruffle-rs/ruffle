@@ -70,6 +70,7 @@ pub struct StageData<'gc> {
     background_color: Option<Color>,
 
     /// Determines how player content is resized to fit the stage.
+    #[collect(require_static)]
     letterbox: Letterbox,
 
     /// The dimensions of the SWF file.
@@ -85,15 +86,18 @@ pub struct StageData<'gc> {
     stage_size: (u32, u32),
 
     /// The scale mode of the stage.
+    #[collect(require_static)]
     scale_mode: StageScaleMode,
 
     /// Whether to prevent movies from changing the stage scale mode.
     forced_scale_mode: bool,
 
     /// The display state of the stage.
+    #[collect(require_static)]
     display_state: StageDisplayState,
 
     /// The alignment of the stage.
+    #[collect(require_static)]
     align: StageAlign,
 
     /// Whether to prevent movies from the changing the stage alignment
@@ -116,6 +120,7 @@ pub struct StageData<'gc> {
     /// The window mode of the viewport.
     ///
     /// Only used on web to control how the Flash content layers with other content on the page.
+    #[collect(require_static)]
     window_mode: WindowMode,
 
     /// Whether or not objects display a glowing border when they have focus.
@@ -918,8 +923,7 @@ pub struct ParseEnumError;
 /// The scale mode of a stage.
 /// This controls the behavior when the player viewport size differs from the SWF size.
 #[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
-#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Collect)]
-#[collect(require_static)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StageScaleMode {
     /// The movie will be stretched to fit the container.
     ExactFit,
@@ -986,8 +990,7 @@ impl FromWStr for StageScaleMode {
 
 /// The scale mode of a stage.
 /// This controls the behavior when the player viewport size differs from the SWF size.
-#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Collect)]
-#[collect(require_static)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StageDisplayState {
     /// Sets AIR application or content in Flash Player to expand the stage over the user's entire screen.
     /// Keyboard input is disabled, with the exception of a limited set of non-printing keys.
@@ -1051,8 +1054,7 @@ bitflags! {
     ///
     /// This is a bitflags instead of an enum to mimic Flash Player behavior.
     /// You can theoretically have both TOP and BOTTOM bits set, for example.
-    #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Collect)]
-    #[collect(require_static)]
+    #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
     pub struct StageAlign: u8 {
         /// Align to the top of the viewport.
         const TOP    = 1 << 0;
@@ -1114,8 +1116,7 @@ impl FromWStr for StageAlign {
 /// the page. This setting is only used on web.
 ///
 /// [Apply OBJECT and EMBED tag attributes in Adobe Flash Professional](https://helpx.adobe.com/flash/kb/flash-object-embed-tag-attributes.html)
-#[derive(Default, Clone, Collect, Copy, Debug, Eq, PartialEq)]
-#[collect(require_static)]
+#[derive(Default, Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WindowMode {
     /// The Flash content is rendered in its own window and layering is done with the browser's
     /// default behavior.

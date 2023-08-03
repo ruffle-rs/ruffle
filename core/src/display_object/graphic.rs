@@ -34,6 +34,7 @@ pub struct GraphicData<'gc> {
     base: DisplayObjectBase<'gc>,
     static_data: gc_arena::Gc<'gc, GraphicStatic>,
     avm2_object: Option<Avm2Object<'gc>>,
+    #[collect(require_static)]
     drawing: Option<Drawing>,
 }
 

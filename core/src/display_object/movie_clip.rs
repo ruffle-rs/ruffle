@@ -150,12 +150,15 @@ pub struct MovieClipData<'gc> {
     audio_stream: Option<SoundInstanceHandle>,
     container: ChildContainer<'gc>,
     object: Option<AvmObject<'gc>>,
+    #[collect(require_static)]
     clip_event_handlers: Vec<ClipEventHandler>,
     #[collect(require_static)]
     clip_event_flags: ClipEventFlag,
     frame_scripts: Vec<Option<Avm2Object<'gc>>>,
+    #[collect(require_static)]
     flags: MovieClipFlags,
     avm2_class: Option<Avm2ClassObject<'gc>>,
+    #[collect(require_static)]
     drawing: Drawing,
     has_focus: bool,
     avm2_enabled: bool,
@@ -179,6 +182,7 @@ pub struct MovieClipData<'gc> {
     tag_frame_boundaries: HashMap<FrameNumber, (u64, u64)>,
 
     /// List of tags queued up for the current frame.
+    #[collect(require_static)]
     queued_tags: HashMap<Depth, QueuedTagList>,
 }
 
@@ -4560,8 +4564,7 @@ impl<'a> GotoPlaceObject<'a> {
 ///
 /// Any other configuration in the SWF tag stream is normalized to one of
 /// these patterns.
-#[derive(Default, Debug, Eq, PartialEq, Clone, Copy, Collect)]
-#[collect(require_static)]
+#[derive(Default, Debug, Eq, PartialEq, Clone, Copy)]
 pub enum QueuedTagList {
     #[default]
     None,
@@ -4628,8 +4631,7 @@ impl QueuedTagList {
 /// A single tag we encountered this frame that we intend to process on a queue.
 ///
 /// No more than one queued action is allowed to be processed on-queue.
-#[derive(Debug, Eq, PartialEq, Clone, Copy, Collect)]
-#[collect(require_static)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub struct QueuedTag {
     pub tag_type: QueuedTagAction,
     pub tag_start: u64,
@@ -4638,8 +4640,7 @@ pub struct QueuedTag {
 /// The type of queued tag.
 ///
 /// The u8 parameter is the tag version.
-#[derive(Debug, Eq, PartialEq, Clone, Copy, Collect)]
-#[collect(require_static)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum QueuedTagAction {
     Place(u8),
     Remove(u8),
@@ -4647,8 +4648,7 @@ pub enum QueuedTagAction {
 
 bitflags! {
     /// Boolean state flags used by `MovieClip`.
-    #[derive(Clone, Copy, Collect)]
-    #[collect(require_static)]
+    #[derive(Clone, Copy)]
     struct MovieClipFlags: u8 {
         /// Whether this `MovieClip` has run its initial frame.
         const INITIALIZED             = 1 << 0;
@@ -4677,8 +4677,7 @@ bitflags! {
 
 /// Actions that are attached to a `MovieClip` event in
 /// an `onClipEvent`/`on` handler.
-#[derive(Debug, Clone, Collect)]
-#[collect(require_static)]
+#[derive(Debug, Clone)]
 pub struct ClipEventHandler {
     /// The events that triggers this handler.
     events: ClipEventFlag,

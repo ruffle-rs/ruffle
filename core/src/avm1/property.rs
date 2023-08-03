@@ -8,8 +8,7 @@ use gc_arena::Collect;
 bitflags! {
     /// Attributes of properties in the AVM runtime.
     /// The values are significant and should match the order used by `object::as_set_prop_flags`.
-    #[derive(Clone, Collect, Copy, Debug)]
-    #[collect(require_static)]
+    #[derive(Clone, Copy, Debug)]
     pub struct Attribute: u16 {
         const DONT_ENUM     = 1 << 0;
         const DONT_DELETE   = 1 << 1;
@@ -49,6 +48,7 @@ pub struct Property<'gc> {
     data: Value<'gc>,
     getter: Option<Object<'gc>>,
     setter: Option<Object<'gc>>,
+    #[collect(require_static)]
     attributes: Attribute,
 }
 

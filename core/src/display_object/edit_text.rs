@@ -85,6 +85,7 @@ pub struct EditTextData<'gc> {
     ///
     /// It is lowered further into layout boxes, which are used for actual
     /// rendering.
+    #[collect(require_static)]
     text_spans: FormatSpans,
 
     /// The color of the background fill. Only applied when has_border and has_background.
@@ -96,6 +97,7 @@ pub struct EditTextData<'gc> {
     border_color: Color,
 
     /// The current border drawing.
+    #[collect(require_static)]
     drawing: Drawing,
 
     /// Whether or not the width of the field should change in response to text
@@ -107,6 +109,7 @@ pub struct EditTextData<'gc> {
     layout: Vec<LayoutBox<'gc>>,
 
     /// The intrinsic bounds of the laid-out text.
+    #[collect(require_static)]
     intrinsic_bounds: BoxBounds<Twips>,
 
     /// The current intrinsic bounds of the text field.
@@ -129,15 +132,18 @@ pub struct EditTextData<'gc> {
     /// In AVM2, every text field has its own mandatory selection.
     /// In Ruffle, every text field has its own optional selection. This hybrid approach means manually maintaining
     /// the invariants that selection is always None for an unfocused AVM1 field, and never None for an AVM2 field.
+    #[collect(require_static)]
     selection: Option<TextSelection>,
 
     /// Which rendering engine this text field will use.
+    #[collect(require_static)]
     render_settings: TextRenderSettings,
 
     /// How many pixels right the text is offset by. 0-based index.
     hscroll: f64,
 
     /// Information about the layout's current lines. Used by scroll properties.
+    #[collect(require_static)]
     line_data: Vec<LineData>,
 
     /// How many lines down the text is offset by. 1-based index.
@@ -148,6 +154,7 @@ pub struct EditTextData<'gc> {
     max_chars: i32,
 
     /// Flags indicating the text field's settings.
+    #[collect(require_static)]
     flags: EditTextFlag,
 }
 
@@ -1998,8 +2005,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
 }
 
 bitflags::bitflags! {
-    #[derive(Clone, Copy, Collect)]
-    #[collect(require_static)]
+    #[derive(Clone, Copy)]
     struct EditTextFlag: u16 {
         const FIRING_VARIABLE_BINDING = 1 << 0;
         const HAS_BACKGROUND = 1 << 1;
@@ -2031,16 +2037,14 @@ struct EditTextStatic {
     initial_text: Option<WString>,
 }
 
-#[derive(Copy, Clone, Debug, Collect)]
-#[collect(require_static)]
+#[derive(Copy, Clone, Debug)]
 pub struct TextSelection {
     from: usize,
     to: usize,
 }
 
 /// Information about the start and end y-coordinates of a given line of text
-#[derive(Copy, Clone, Debug, Collect)]
-#[collect(require_static)]
+#[derive(Copy, Clone, Debug)]
 pub struct LineData {
     index: usize,
     /// How many twips down the highest point of the line is

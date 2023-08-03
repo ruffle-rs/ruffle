@@ -1,5 +1,4 @@
 use crate::context::RenderContext;
-use gc_arena::Collect;
 use ruffle_render::backend::{RenderBackend, ShapeHandle};
 use ruffle_render::bitmap::{BitmapHandle, BitmapInfo, BitmapSize, BitmapSource};
 use ruffle_render::commands::CommandHandler;
@@ -9,8 +8,7 @@ use ruffle_render::shape_utils::{
 use std::cell::{Cell, RefCell};
 use swf::{FillStyle, LineStyle, Point, Rectangle, Twips};
 
-#[derive(Clone, Debug, Collect)]
-#[collect(require_static)]
+#[derive(Clone, Debug)]
 pub struct Drawing {
     render_handle: RefCell<Option<ShapeHandle>>,
     shape_bounds: Rectangle<Twips>,

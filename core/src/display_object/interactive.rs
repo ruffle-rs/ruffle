@@ -64,8 +64,7 @@ fn lowest_common_ancestor<'gc>(
 
 bitflags! {
     /// Boolean state flags used by `InteractiveObject`.
-    #[derive(Clone, Copy, Collect)]
-    #[collect(require_static)]
+    #[derive(Clone, Copy)]
     struct InteractiveObjectFlags: u8 {
         /// Whether this `InteractiveObject` accepts mouse and other user
         /// events.
@@ -80,6 +79,7 @@ bitflags! {
 #[collect(no_drop)]
 pub struct InteractiveObjectBase<'gc> {
     pub base: DisplayObjectBase<'gc>,
+    #[collect(require_static)]
     flags: InteractiveObjectFlags,
     context_menu: Avm2Value<'gc>,
 
