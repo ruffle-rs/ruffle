@@ -326,3 +326,28 @@ pub fn comments<'gc>(
     }
     Ok(XmlListObject::new(activation, nodes, Some(xml_list.into())).into())
 }
+
+pub fn processing_instructions<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let xml_list = this.as_xml_list_object().unwrap();
+    let multiname = name_to_multiname(activation, &args[0], false)?;
+    let mut nodes = Vec::new();
+    for child in xml_list.children().iter() {
+        if let E4XNodeKind::Element { ref children, .. } = &*child.node().kind() {
+            nodes.extend(
+                children
+                    .iter()
+                    .filter(|node| {
+                        matches!(&*node.kind(), E4XNodeKind::ProcessingInstruction(_))
+                            && node.matches_name(&multiname)
+                    })
+                    .map(|node| E4XOrXml::E4X(*node)),
+            );
+        }
+    }
+
+    Ok(XmlListObject::new(activation, nodes, Some(xml_list.into())).into())
+}
