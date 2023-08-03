@@ -732,7 +732,7 @@ pub fn escape_element_value(s: AvmString) -> WString {
     r
 }
 
-fn to_xml_string_inner<'gc>(xml: E4XOrXml<'gc>, buf: &mut WString) -> Result<(), Error<'gc>> {
+fn to_xml_string_inner(xml: E4XOrXml, buf: &mut WString) {
     // FIXME: Implement pretty printing and namespace support.
 
     let node = xml.node();
@@ -740,7 +740,7 @@ fn to_xml_string_inner<'gc>(xml: E4XOrXml<'gc>, buf: &mut WString) -> Result<(),
     let (children, attributes) = match &*node_kind {
         E4XNodeKind::Text(text) => {
             buf.push_str(&escape_element_value(*text));
-            return Ok(());
+            return;
         }
         E4XNodeKind::ProcessingInstruction(value) => {
             buf.push_utf8("<?");
@@ -748,23 +748,23 @@ fn to_xml_string_inner<'gc>(xml: E4XOrXml<'gc>, buf: &mut WString) -> Result<(),
             buf.push_char(' ');
             buf.push_str(value);
             buf.push_utf8("?>");
-            return Ok(());
+            return;
         }
         E4XNodeKind::Comment(data) => {
             buf.push_utf8("<!--");
             buf.push_str(data);
             buf.push_utf8("-->");
-            return Ok(());
+            return;
         }
         E4XNodeKind::Attribute(data) => {
             buf.push_str(&escape_attribute_value(*data));
-            return Ok(());
+            return;
         }
         E4XNodeKind::CData(data) => {
             buf.push_utf8("<![CDATA[");
             buf.push_str(data);
             buf.push_utf8("]]>");
-            return Ok(());
+            return;
         }
         E4XNodeKind::Element {
             children,
@@ -788,20 +788,18 @@ fn to_xml_string_inner<'gc>(xml: E4XOrXml<'gc>, buf: &mut WString) -> Result<(),
 
     if children.is_empty() {
         buf.push_utf8("/>");
-        return Ok(());
+        return;
     }
 
     buf.push_char('>');
 
     for child in children {
-        to_xml_string_inner(E4XOrXml::E4X(*child), buf)?;
+        to_xml_string_inner(E4XOrXml::E4X(*child), buf);
     }
 
     buf.push_utf8("</");
     buf.push_str(&node.local_name().unwrap());
     buf.push_char('>');
-
-    Ok(())
 }
 
 // Implementation of `ToXMLString` from ECMA-357 (10.2.1)
@@ -810,7 +808,7 @@ pub fn to_xml_string<'gc>(
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<AvmString<'gc>, Error<'gc>> {
     let mut buf = WString::new();
-    to_xml_string_inner(xml, &mut buf)?;
+    to_xml_string_inner(xml, &mut buf);
     Ok(AvmString::new(activation.context.gc_context, buf))
 }
 
