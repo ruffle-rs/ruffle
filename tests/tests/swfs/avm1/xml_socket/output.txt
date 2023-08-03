@@ -3,4 +3,6 @@ connected status:
 true
 Hello!
 <root><item /></root>
+Hello!
+<root><item /></root>
 closed
