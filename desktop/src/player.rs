@@ -144,7 +144,10 @@ impl ActivePlayer {
             .with_navigator(navigator)
             .with_renderer(renderer)
             .with_storage(DiskStorageBackend::new().expect("Couldn't create storage backend"))
-            .with_ui(DesktopUiBackend::new(window.clone()).expect("Couldn't create ui backend"))
+            .with_ui(
+                DesktopUiBackend::new(window.clone(), opt.open_url_mode)
+                    .expect("Couldn't create ui backend"),
+            )
             .with_autoplay(true)
             .with_letterbox(opt.letterbox)
             .with_max_execution_duration(max_execution_duration)

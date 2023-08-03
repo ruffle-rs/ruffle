@@ -295,6 +295,10 @@ ruffleShadowTemplate.innerHTML = `
             height: inherit;
             user-select: text;
         }
+        #video-holder {
+            height: inherit;
+            position: absolute;
+        }
         #modal-area {
             position: sticky;
             background: white;
@@ -387,6 +391,7 @@ ruffleShadowTemplate.innerHTML = `
             <table id="local-saves"></table>
         </div>
     </div>
+	<div id="video-holder"></div>
 
     <div id="context-menu-overlay" class="hidden">
         <ul id="context-menu"></ul>

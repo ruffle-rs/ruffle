@@ -133,6 +133,7 @@ export class RufflePlayer extends HTMLElement {
     private readonly splashScreen: HTMLElement;
     private readonly virtualKeyboard: HTMLInputElement;
     private readonly saveManager: HTMLDivElement;
+    private readonly videoHolder: HTMLDivElement;
 
     private readonly contextMenuOverlay: HTMLElement;
     // Firefox has a read-only "contextMenu" property,
@@ -242,6 +243,9 @@ export class RufflePlayer extends HTMLElement {
         );
         this.saveManager = <HTMLDivElement>(
             this.shadow.getElementById("save-manager")!
+        );
+        this.videoHolder = <HTMLDivElement>(
+            this.shadow.getElementById("video-holder")!
         );
         this.saveManager.addEventListener("click", () =>
             this.saveManager.classList.add("hidden"),
@@ -2002,6 +2006,20 @@ export class RufflePlayer extends HTMLElement {
         )).onclick = () => {
             div.parentNode!.removeChild(div);
         };
+    }
+
+    /**
+     * Show a video that uses an unsupported codec in a pop up.
+     *
+     * @param url The url of the video to be shown over the canvas.
+     */
+    protected displayUnsupportedVideo(url: string): void {
+        const videoHolder = this.videoHolder;
+        const video = document.createElement("video");
+        video.src = url;
+        video.autoplay = true;
+        videoHolder.textContent = "";
+        videoHolder.appendChild(video);
     }
 
     protected debugPlayerInfo(): string {
