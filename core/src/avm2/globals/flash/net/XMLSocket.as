@@ -34,6 +34,7 @@ package flash.net
 
         private function socketCloseListener(evt:Event):void
         {
+            this.tempBuf.clear();
             this.dispatchEvent(evt);
         }
 
@@ -93,7 +94,8 @@ package flash.net
 
         public function close():void
         {
-            socket.close();
+            this.tempBuf.clear();
+            this.socket.close();
         }
 
         public function connect(host:String, port:int):void
