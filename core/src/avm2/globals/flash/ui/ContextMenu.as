@@ -1,7 +1,6 @@
 package flash.ui
 {
     import flash.display.NativeMenu;
-    import __ruffle__.stub_setter;
 
     public final class ContextMenu extends NativeMenu
     {
@@ -11,7 +10,15 @@ package flash.ui
             this.customItems = new Array();
         }
 
-        public var customItems: Array;
+        private var _customItems:Array;
+        
+        public function get customItems():Array {
+            return this._customItems;
+        }
+        
+        public function set customItems(value:Array):void {
+            this._customItems = value;
+        }
 
         public native function hideBuiltInItems(): void;
 
@@ -23,7 +30,6 @@ package flash.ui
 
         public function set builtInItems(value:ContextMenuBuiltInItems):void {
             this._builtInItems = value;
-            stub_setter("flash.ui.ContextMenu", "builtInItems");
         }
 
         public static function get isSupported() : Boolean

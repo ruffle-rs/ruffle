@@ -150,6 +150,7 @@ pub struct SystemClasses<'gc> {
     pub netstatusevent: ClassObject<'gc>,
     pub shaderfilter: ClassObject<'gc>,
     pub statusevent: ClassObject<'gc>,
+    pub contextmenuevent: ClassObject<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -272,6 +273,7 @@ impl<'gc> SystemClasses<'gc> {
             netstatusevent: object,
             shaderfilter: object,
             statusevent: object,
+            contextmenuevent: object,
         }
     }
 }
@@ -803,6 +805,7 @@ fn load_playerglobal<'gc>(
             ("flash.events", "UncaughtErrorEvents", uncaughterrorevents),
             ("flash.events", "NetStatusEvent", netstatusevent),
             ("flash.events", "StatusEvent", statusevent),
+            ("flash.events", "ContextMenuEvent", contextmenuevent),
             ("flash.geom", "Matrix", matrix),
             ("flash.geom", "Point", point),
             ("flash.geom", "Rectangle", rectangle),
