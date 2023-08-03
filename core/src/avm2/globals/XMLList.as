@@ -26,6 +26,10 @@ package {
         // but still exist
         AS3 native function name(): Object;
 
+        AS3 function valueOf():XMLList {
+            return this;
+        }
+
         prototype.hasComplexContent = function():Boolean {
             var self:XMLList = this;
             return self.AS3::hasComplexContent();
