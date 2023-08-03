@@ -79,14 +79,14 @@ pub fn make_context_menu_state<'gc>(
             // AS to get invoked here and cause BorrowMutError
             if let Some(array) = custom_items.as_array_storage() {
                 for (i, item) in array.iter().enumerate() {
-                    // this is a CustomMenuItem
+                    // TODO: Non-CustomMenuItem Object-s shouldn't count
+
                     if let Some(Value::Object(item)) = item {
                         let caption = if let Ok(Value::String(s)) =
                             item.get_public_property("caption", activation)
                         {
                             s
                         } else {
-                            // It's a CustomMenuItem, so this shouldn't happen
                             continue;
                         };
                         let enabled = check_bool!(item, "enabled", true);
