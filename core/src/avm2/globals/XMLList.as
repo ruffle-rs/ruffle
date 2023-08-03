@@ -26,6 +26,10 @@ package {
         // but still exist
         AS3 native function name(): Object;
 
+        AS3 function toJSON(k:String) : * {
+            return this.toJSON(k);
+        }
+
         AS3 function valueOf():XMLList {
             return this;
         }
@@ -98,6 +102,10 @@ package {
             var self:XMLList = this;
             return self.AS3::text();
         }
+
+        prototype.toJSON = function(k:String):* {
+            return "XMLList";
+        };
 
         public static const length:int = 1;
     }
