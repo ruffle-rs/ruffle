@@ -291,21 +291,21 @@ ruffleShadowTemplate.innerHTML = `
             height: 1px;
         }
 
-        #save-manager {
+        .modal {
             height: inherit;
             user-select: text;
         }
-        #video-holder {
-            height: inherit;
-            position: absolute;
-        }
-        #modal-area {
+
+        .modal-area {
             position: sticky;
             background: white;
             width: fit-content;
             padding: 16px;
             border: 3px solid black;
             margin: auto;
+        }
+
+        #modal-area {
             height: 500px;
             max-height: calc(100% - 38px);
             min-height: 80px;
@@ -329,7 +329,7 @@ ruffleShadowTemplate.innerHTML = `
             color: white;
         }
 
-        #close-modal {
+        .close-modal {
             position: absolute;
             top: 5px;
             right: 10px;
@@ -365,6 +365,10 @@ ruffleShadowTemplate.innerHTML = `
         #local-saves tr:nth-child(even) {
             background-color: #f2f2f2;
         }
+
+        #video-holder {
+            padding-top: 20px;
+        }
     </style>
     <style id="dynamic_styles"></style>
 
@@ -382,16 +386,22 @@ ruffleShadowTemplate.innerHTML = `
         <div class="loadbar"><div class="loadbar-inner"></div></div>
     </div>
 
-    <div id="save-manager" class="hidden">
-        <div id="modal-area">
-            <span id="close-modal">&times;</span>
+    <div id="save-manager" class="modal hidden">
+        <div id="modal-area" class="modal-area">
+            <span class="close-modal">&times;</span>
             <div class="general-save-options">
                 <span class="save-option" id="backup-saves"></span>
             </div>
             <table id="local-saves"></table>
         </div>
     </div>
-	<div id="video-holder"></div>
+
+    <div id="video-modal" class="modal hidden">
+        <div class="modal-area">
+            <span class="close-modal">&times;</span>
+            <div id="video-holder"></div>
+        </div>
+    </div>
 
     <div id="context-menu-overlay" class="hidden">
         <ul id="context-menu"></ul>
