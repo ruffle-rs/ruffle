@@ -822,7 +822,7 @@ pub fn set_object_encoding<'gc>(
         match new_encoding {
             0 => bytearray.set_object_encoding(ObjectEncoding::Amf0),
             3 => bytearray.set_object_encoding(ObjectEncoding::Amf3),
-            _ => return Err("Parameter type must be one of the accepted values.".into()),
+            _ => return Err(make_error_2008(activation, "objectEncoding")),
         }
     }
 
