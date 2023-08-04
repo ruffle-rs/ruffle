@@ -5,8 +5,8 @@ use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
 use crate::avm2::e4x::{escape_attribute_value, escape_element_value};
 use crate::avm2::error::{
-    argument_error, make_error_1127, make_null_or_undefined_error, make_reference_error,
-    range_error, type_error, ReferenceErrorCode,
+    argument_error, make_error_1127, make_error_1506, make_null_or_undefined_error,
+    make_reference_error, type_error, ReferenceErrorCode,
 };
 use crate::avm2::method::{BytecodeMethod, Method, ParamConfig};
 use crate::avm2::object::{
@@ -3006,19 +3006,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
 
         let Ok(address) = usize::try_from(address) else {
-            return Err(Error::AvmError(range_error(
-                self,
-                "Error #1506: The range specified is invalid.",
-                1506,
-            )?));
+            return Err(make_error_1506(self));
         };
 
         if address >= dm.len() {
-            return Err(Error::AvmError(range_error(
-                self,
-                "Error #1506: The range specified is invalid.",
-                1506,
-            )?));
+            return Err(make_error_1506(self));
         }
 
         dm.write_at_nongrowing(&val.to_le_bytes(), address)
@@ -3038,18 +3030,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
 
         let Ok(address) = usize::try_from(address) else {
-            return Err(Error::AvmError(range_error(
-                self,
-                "Error #1506: The range specified is invalid.",
-                1506,
-            )?));
+            return Err(make_error_1506(self));
         };
         if address + 2 > dm.len() {
-            return Err(Error::AvmError(range_error(
-                self,
-                "Error #1506: The range specified is invalid.",
-                1506,
-            )?));
+            return Err(make_error_1506(self));
         }
         dm.write_at_nongrowing(&val.to_le_bytes(), address)
             .map_err(|e| e.to_avm(self))?;
@@ -3068,18 +3052,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
 
         let Ok(address) = usize::try_from(address) else {
-            return Err(Error::AvmError(range_error(
-                self,
-                "Error #1506: The range specified is invalid.",
-                1506,
-            )?));
+            return Err(make_error_1506(self));
         };
         if address + 4 > dm.len() {
-            return Err(Error::AvmError(range_error(
-                self,
-                "Error #1506: The range specified is invalid.",
-                1506,
-            )?));
+            return Err(make_error_1506(self));
         }
         dm.write_at_nongrowing(&val.to_le_bytes(), address)
             .map_err(|e| e.to_avm(self))?;
@@ -3098,18 +3074,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
 
         let Ok(address) = usize::try_from(address) else {
-            return Err(Error::AvmError(range_error(
-                self,
-                "Error #1506: The range specified is invalid.",
-                1506,
-            )?));
+            return Err(make_error_1506(self));
         };
         if address + 4 > dm.len() {
-            return Err(Error::AvmError(range_error(
-                self,
-                "Error #1506: The range specified is invalid.",
-                1506,
-            )?));
+            return Err(make_error_1506(self));
         }
         dm.write_at_nongrowing(&val.to_le_bytes(), address)
             .map_err(|e| e.to_avm(self))?;
@@ -3128,18 +3096,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
 
         let Ok(address) = usize::try_from(address) else {
-            return Err(Error::AvmError(range_error(
-                self,
-                "Error #1506: The range specified is invalid.",
-                1506,
-            )?));
+            return Err(make_error_1506(self));
         };
         if address + 8 > dm.len() {
-            return Err(Error::AvmError(range_error(
-                self,
-                "Error #1506: The range specified is invalid.",
-                1506,
-            )?));
+            return Err(make_error_1506(self));
         }
         dm.write_at_nongrowing(&val.to_le_bytes(), address)
             .map_err(|e| e.to_avm(self))?;
@@ -3160,11 +3120,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         if let Some(val) = val {
             self.push_stack(val);
         } else {
-            return Err(Error::AvmError(range_error(
-                self,
-                "Error #1506: The range specified is invalid.",
-                1506,
-            )?));
+            return Err(make_error_1506(self));
         }
 
         Ok(FrameControl::Continue)
@@ -3180,11 +3136,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
 
         if dm.len() < address + 2 {
-            return Err(Error::AvmError(range_error(
-                self,
-                "Error #1506: The range specified is invalid.",
-                1506,
-            )?));
+            return Err(make_error_1506(self));
         }
 
         let val = dm.read_at(2, address).map_err(|e| e.to_avm(self))?;
@@ -3203,11 +3155,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
 
         if dm.len() < address + 4 {
-            return Err(Error::AvmError(range_error(
-                self,
-                "Error #1506: The range specified is invalid.",
-                1506,
-            )?));
+            return Err(make_error_1506(self));
         }
 
         let val = dm.read_at(4, address).map_err(|e| e.to_avm(self))?;
@@ -3225,11 +3173,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
 
         if dm.len() < address + 4 {
-            return Err(Error::AvmError(range_error(
-                self,
-                "Error #1506: The range specified is invalid.",
-                1506,
-            )?));
+            return Err(make_error_1506(self));
         }
 
         let val = dm.read_at(4, address).map_err(|e| e.to_avm(self))?;
@@ -3248,11 +3192,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
 
         if dm.len() < address + 8 {
-            return Err(Error::AvmError(range_error(
-                self,
-                "Error #1506: The range specified is invalid.",
-                1506,
-            )?));
+            return Err(make_error_1506(self));
         }
 
         let val = dm.read_at(8, address).map_err(|e| e.to_avm(self))?;
