@@ -1,6 +1,7 @@
 //! `flash.text.TextField` builtin/prototype
 
 use crate::avm2::activation::Activation;
+use crate::avm2::error::make_error_2008;
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
 use crate::avm2::object::{ClassObject, Object, TObject, TextFormatObject};
 use crate::avm2::parameters::ParametersExt;
@@ -102,8 +103,10 @@ pub fn set_auto_size<'gc>(
                 AutoSizeMode::Center
             } else if &value == b"right" {
                 AutoSizeMode::Right
-            } else {
+            } else if &value == b"none" {
                 AutoSizeMode::None
+            } else {
+                return Err(make_error_2008(activation, "autoSize"));
             },
             &mut activation.context,
         );
@@ -617,7 +620,7 @@ pub fn set_type<'gc>(
         } else if &is_editable == b"dynamic" {
             this.set_editable(false, &mut activation.context);
         } else {
-            return Err(format!("Invalid TextField.type: {is_editable}").into());
+            return Err(make_error_2008(activation, "type"));
         }
     }
 
