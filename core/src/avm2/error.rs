@@ -140,6 +140,20 @@ pub fn make_reference_error<'gc>(
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1127<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = type_error(
+        activation,
+        "Error #1127: Type application attempted on a non-parameterized type.",
+        1127,
+    );
+    match err {
+        Ok(err) => Error::AvmError(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_2008<'gc>(activation: &mut Activation<'_, 'gc>, param_name: &str) -> Error<'gc> {
     let err = argument_error(
         activation,
@@ -157,11 +171,11 @@ pub fn make_error_2008<'gc>(activation: &mut Activation<'_, 'gc>, param_name: &s
 
 #[inline(never)]
 #[cold]
-pub fn make_error_1127<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    let err = type_error(
+pub fn make_error_2025<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = argument_error(
         activation,
-        "Error #1127: Type application attempted on a non-parameterized type.",
-        1127,
+        "Error #2025: The supplied DisplayObject must be a child of the caller.",
+        2025,
     );
     match err {
         Ok(err) => Error::AvmError(err),
