@@ -59,6 +59,11 @@ function cargoBuild({ profile, features, rustFlags }) {
         stdio: "inherit",
     });
 }
+function cargoClean() {
+    execFileSync("cargo", ["clean"], {
+        stdio: "inherit",
+    });
+}
 function buildWasm(profile, filename, optimise, extensions) {
     const rustFlags = ["--cfg=web_sys_unstable_apis", "-Aunknown_lints"];
     const wasmBindgenFlags = [];
@@ -84,6 +89,10 @@ function buildWasm(profile, filename, optimise, extensions) {
         dir: "dist",
         flags: wasmBindgenFlags,
     });
+    if (process.env["ENABLE_CARGO_CLEAN"]) {
+        console.log(`Running cargo clean...`);
+        cargoClean();
+    }
     if (optimise) {
         console.log(`Running wasm-opt on ${flavor}...`);
         runWasmOpt({
