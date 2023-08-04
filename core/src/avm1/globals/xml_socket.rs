@@ -36,6 +36,11 @@ impl<'gc> XmlSocket<'gc> {
         self.0.timeout.get()
     }
 
+    pub fn set_timeout(&self, new_timeout: u32) {
+        // FIXME: Check if flash player clamps this to 250 milliseconds like AS3 sockets.
+        self.0.timeout.set(new_timeout);
+    }
+
     pub fn read_buffer(&self) -> RefMut<'_, Vec<u8>> {
         self.0.read_buffer.borrow_mut()
     }
@@ -84,8 +89,7 @@ fn set_timeout<'gc>(
             .unwrap_or(&Value::Undefined)
             .coerce_to_u32(activation)?;
 
-        // FIXME: Check if flash player clamps this to 250 like AS3 sockets.
-        xml_socket.0.timeout.set(timeout);
+        xml_socket.set_timeout(timeout);
     }
 
     Ok(Value::Undefined)

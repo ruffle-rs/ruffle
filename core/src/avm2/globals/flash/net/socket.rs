@@ -14,7 +14,7 @@ use flash_lso::types::{AMFVersion, Element};
 macro_rules! assert_socket_open {
     ($activation:expr, $socket:expr) => {
         let handle = $socket
-            .get_handle()
+            .handle()
             .ok_or_else(|| invalid_socket_error($activation))?;
 
         if !$activation.context.sockets.is_connected(handle) {
@@ -81,7 +81,7 @@ pub fn close<'gc>(
     if let Some(socket) = this.as_socket() {
         // We throw an IOError when socket is not open.
         let handle = socket
-            .get_handle()
+            .handle()
             .ok_or(invalid_socket_error(activation))?;
 
         if !activation.context.sockets.is_connected(handle) {
@@ -154,7 +154,7 @@ pub fn get_connected<'gc>(
 
     let UpdateContext { sockets, .. } = &mut activation.context;
 
-    let handle = match socket.get_handle() {
+    let handle = match socket.handle() {
         Some(handle) => handle,
         None => return Ok(Value::Bool(false)),
     };
@@ -198,7 +198,7 @@ pub fn flush<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(socket) = this.as_socket() {
         let handle = socket
-            .get_handle()
+            .handle()
             .ok_or(invalid_socket_error(activation))?;
         if !activation.context.sockets.is_connected(handle) {
             return Err(invalid_socket_error(activation));
