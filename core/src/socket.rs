@@ -274,7 +274,7 @@ impl<'gc> Sockets<'gc> {
                         }
                     }
                 }
-                SocketAction::Data(handle, data) => {
+                SocketAction::Data(handle, mut data) => {
                     let target = match context.sockets.sockets.get(handle) {
                         Some(socket) => socket.target,
                         // Socket must have been closed before we could send event.
@@ -321,34 +321,50 @@ impl<'gc> Sockets<'gc> {
                             let xml_socket =
                                 XmlSocket::cast(target.into()).expect("target should be XmlSocket");
 
-                            // Get XmlSocket read buffer.
-                            let mut buffer = xml_socket.read_buffer();
-                            buffer.extend(data);
-
-                            let mut messages = vec![];
-
-                            // Check for messages.
-                            while let Some((index, _)) =
-                                buffer.iter().enumerate().find(|(_, &b)| b == 0)
+                            // Check if the current received packet includes a null byte.
+                            if let Some((index, _)) = data.iter().enumerate().find(|(_, &b)| b == 0)
                             {
-                                let message = buffer.drain(..index).collect::<Vec<_>>();
-                                // Remove null byte.
-                                let _ = buffer.drain(..1);
+                                // Received payload contains a null byte, so take data from sockets read buffer and append message data ontop.
+                                let mut buffer = xml_socket
+                                    .read_buffer()
+                                    .drain(..)
+                                    .chain(data.drain(..index))
+                                    .collect::<Vec<_>>();
 
-                                // Store the message in cache.
-                                messages.push(AvmString::new_utf8_bytes(activation.gc(), &message));
-                            }
+                                // Now we loop to check for more null bytes.
+                                loop {
+                                    // Remove null byte.
+                                    data.drain(..1);
 
-                            // Drop the reference to the buffer, to make sure the SWF can call with close.
-                            drop(buffer);
+                                    // Create message from the buffer.
+                                    let message =
+                                        AvmString::new_utf8_bytes(activation.gc(), &buffer);
 
-                            for message in messages {
-                                let _ = target.call_method(
-                                    "onData".into(),
-                                    &[message.into()],
-                                    &mut activation,
-                                    ExecutionReason::Special,
-                                );
+                                    // Call the event handler.
+                                    let _ = target.call_method(
+                                        "onData".into(),
+                                        &[message.into()],
+                                        &mut activation,
+                                        ExecutionReason::Special,
+                                    );
+
+                                    // Check if we have another null byte in the same payload.
+                                    if let Some((index, _)) = data.iter().enumerate().find(|(_, &b)| b == 0) {
+                                        // Because data in XmlSocket::read_buffer() has already been consumed
+                                        // we do not need to access it again.
+                                        buffer = data.drain(..index).collect::<Vec<_>>();
+                                    } else {
+                                        // No more messages in the payload, so exit the loop.
+                                        break;
+                                    }
+                                }
+
+                                // Check if we have leftover bytes.
+                                if !data.is_empty() {
+                                    // We had leftover bytes, so append them to XmlSocket internal read buffer,
+                                    // to be used when the next packet arrives.
+                                    xml_socket.read_buffer().extend(data);
+                                }
                             }
                         }
                     }
