@@ -321,10 +321,13 @@ impl<'gc> Sockets<'gc> {
                             let xml_socket =
                                 XmlSocket::cast(target.into()).expect("target should be XmlSocket");
 
+                            // Get XmlSocket read buffer.
                             let mut buffer = xml_socket.read_buffer();
                             buffer.extend(data);
 
-                            // Check for a message.
+                            let mut messages = vec![];
+
+                            // Check for messages.
                             while let Some((index, _)) =
                                 buffer.iter().enumerate().find(|(_, &b)| b == 0)
                             {
@@ -332,8 +335,14 @@ impl<'gc> Sockets<'gc> {
                                 // Remove null byte.
                                 let _ = buffer.drain(..1);
 
-                                let message = AvmString::new_utf8_bytes(activation.gc(), &message);
+                                // Store the message in cache.
+                                messages.push(AvmString::new_utf8_bytes(activation.gc(), &message));
+                            }
 
+                            // Drop the reference to the buffer, to make sure the SWF can call with close.
+                            drop(buffer);
+
+                            for message in messages {
                                 let _ = target.call_method(
                                     "onData".into(),
                                     &[message.into()],
