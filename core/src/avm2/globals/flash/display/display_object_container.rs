@@ -1,8 +1,7 @@
 //! `flash.display.DisplayObjectContainer` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::error::argument_error;
-use crate::avm2::error::range_error;
+use crate::avm2::error::{argument_error, make_error_2025, range_error};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
@@ -84,11 +83,7 @@ fn validate_remove_operation<'gc>(
         }
     }
 
-    Err(Error::AvmError(argument_error(
-        activation,
-        "Error #2025: The supplied DisplayObject must be a child of the caller.",
-        2025,
-    )?))
+    Err(make_error_2025(activation))
 }
 
 /// Remove an element from it's parent display list.
@@ -293,7 +288,7 @@ pub fn get_child_index<'gc>(
         }
     }
 
-    Err("ArgumentError: Child is not a child of this object".into())
+    Err(make_error_2025(activation))
 }
 
 /// Implements `DisplayObjectContainer.removeChildAt`
@@ -406,7 +401,7 @@ pub fn set_child_index<'gc>(
 
         let child_parent = child.parent();
         if child_parent.is_none() || !DisplayObject::ptr_eq(child_parent.unwrap(), parent) {
-            return Err("ArgumentError: Given child is not a child of this display object".into());
+            return Err(make_error_2025(activation));
         }
 
         validate_add_operation(activation, parent, child, target_index)?;
@@ -470,11 +465,11 @@ pub fn swap_children<'gc>(
     if let Some(parent) = this.as_display_object() {
         if let Some(mut ctr) = parent.as_container() {
             let child0 = args
-                .get_object(activation, 0, "child1")?
+                .get_object(activation, 0, "child")?
                 .as_display_object()
                 .ok_or("ArgumentError: Child is not a display object")?;
             let child1 = args
-                .get_object(activation, 1, "child2")?
+                .get_object(activation, 1, "child")?
                 .as_display_object()
                 .ok_or("ArgumentError: Child is not a display object")?;
 
