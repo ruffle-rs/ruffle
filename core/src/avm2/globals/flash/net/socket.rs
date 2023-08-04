@@ -80,9 +80,7 @@ pub fn close<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(socket) = this.as_socket() {
         // We throw an IOError when socket is not open.
-        let handle = socket
-            .handle()
-            .ok_or(invalid_socket_error(activation))?;
+        let handle = socket.handle().ok_or(invalid_socket_error(activation))?;
 
         if !activation.context.sockets.is_connected(handle) {
             return Err(invalid_socket_error(activation));
@@ -197,9 +195,7 @@ pub fn flush<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(socket) = this.as_socket() {
-        let handle = socket
-            .handle()
-            .ok_or(invalid_socket_error(activation))?;
+        let handle = socket.handle().ok_or(invalid_socket_error(activation))?;
         if !activation.context.sockets.is_connected(handle) {
             return Err(invalid_socket_error(activation));
         }
