@@ -38,14 +38,31 @@ fn validate_add_operation<'gc>(
         .as_container()
         .ok_or("ArgumentError: Parent is not a DisplayObjectContainer")?;
 
+    if let DisplayObject::Stage(_) = proposed_child {
+        return Err(Error::AvmError(argument_error(
+            activation,
+            "Error #3783: A Stage object cannot be added as the child of another object.",
+            3783,
+        )?));
+    }
+
+    if DisplayObject::ptr_eq(proposed_child, new_parent) {
+        return Err(Error::AvmError(argument_error(
+            activation,
+            "Error #2024: An object cannot be added as a child of itself.",
+            2024,
+        )?));
+    }
+
     let mut checking_parent = Some(new_parent);
 
     while let Some(tp) = checking_parent {
         if DisplayObject::ptr_eq(tp, proposed_child) {
-            return Err(
-                "ArgumentError: Proposed child is an ancestor of the proposed parent, you cannot add the child to the parent"
-                    .into(),
-            );
+            return Err(Error::AvmError(argument_error(
+                activation,
+                "Error #2150: An object cannot be added as a child to one of it's children (or children's children, etc.).",
+                2150,
+            )?));
         }
 
         checking_parent = tp.parent();
@@ -476,11 +493,11 @@ pub fn swap_children<'gc>(
             let index0 = ctr
                 .iter_render_list()
                 .position(|a| DisplayObject::ptr_eq(a, child0))
-                .ok_or("ArgumentError: Child is not a child of this display object")?;
+                .ok_or(make_error_2025(activation))?;
             let index1 = ctr
                 .iter_render_list()
                 .position(|a| DisplayObject::ptr_eq(a, child1))
-                .ok_or("ArgumentError: Child is not a child of this display object")?;
+                .ok_or(make_error_2025(activation))?;
 
             child0.set_placed_by_script(activation.context.gc_context, true);
             child1.set_placed_by_script(activation.context.gc_context, true);
