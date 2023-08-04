@@ -133,7 +133,7 @@ export class RufflePlayer extends HTMLElement {
     private readonly splashScreen: HTMLElement;
     private readonly virtualKeyboard: HTMLInputElement;
     private readonly saveManager: HTMLDivElement;
-    private readonly videoHolder: HTMLDivElement;
+    private readonly videoModal: HTMLDivElement;
 
     private readonly contextMenuOverlay: HTMLElement;
     // Firefox has a read-only "contextMenu" property,
@@ -244,24 +244,11 @@ export class RufflePlayer extends HTMLElement {
         this.saveManager = <HTMLDivElement>(
             this.shadow.getElementById("save-manager")!
         );
-        this.videoHolder = <HTMLDivElement>(
-            this.shadow.getElementById("video-holder")!
+        this.videoModal = <HTMLDivElement>(
+            this.shadow.getElementById("video-modal")!
         );
-        this.saveManager.addEventListener("click", () =>
-            this.saveManager.classList.add("hidden"),
-        );
-        const modalArea = this.saveManager.querySelector("#modal-area");
-        if (modalArea) {
-            modalArea.addEventListener("click", (event) =>
-                event.stopPropagation(),
-            );
-        }
-        const closeSaveManager = this.saveManager.querySelector("#close-modal");
-        if (closeSaveManager) {
-            closeSaveManager.addEventListener("click", () =>
-                this.saveManager.classList.add("hidden"),
-            );
-        }
+        this.addModalJavaScript(this.saveManager);
+        this.addModalJavaScript(this.videoModal);
         const backupSaves = <HTMLElement>(
             this.saveManager.querySelector("#backup-saves")
         );
@@ -320,6 +307,36 @@ export class RufflePlayer extends HTMLElement {
 
         this.lastActivePlayingState = false;
         this.setupPauseOnTabHidden();
+    }
+
+    /**
+     * Add functions to open and close a modal.
+     *
+     * @param modalElement The element containing the modal.
+     */
+    private addModalJavaScript(modalElement: HTMLDivElement): void {
+        const videoHolder = modalElement.querySelector("#video-holder");
+        this.container.addEventListener("click", () => {
+            modalElement.classList.add("hidden");
+            if (videoHolder) {
+                videoHolder.textContent = "";
+            }
+        });
+        const modalArea = modalElement.querySelector(".modal-area");
+        if (modalArea) {
+            modalArea.addEventListener("click", (event) =>
+                event.stopPropagation(),
+            );
+        }
+        const closeModal = modalElement.querySelector(".close-modal");
+        if (closeModal) {
+            closeModal.addEventListener("click", () => {
+                modalElement.classList.add("hidden");
+                if (videoHolder) {
+                    videoHolder.textContent = "";
+                }
+            });
+        }
     }
 
     /**
@@ -2014,12 +2031,19 @@ export class RufflePlayer extends HTMLElement {
      * @param url The url of the video to be shown over the canvas.
      */
     protected displayUnsupportedVideo(url: string): void {
-        const videoHolder = this.videoHolder;
-        const video = document.createElement("video");
-        video.src = url;
-        video.autoplay = true;
-        videoHolder.textContent = "";
-        videoHolder.appendChild(video);
+        const videoHolder = this.videoModal.querySelector("#video-holder");
+        if (videoHolder) {
+            const video = document.createElement("video");
+            video.addEventListener("contextmenu", (event) =>
+                event.stopPropagation(),
+            );
+            video.src = url;
+            video.autoplay = true;
+            video.controls = true;
+            videoHolder.textContent = "";
+            videoHolder.appendChild(video);
+            this.videoModal.classList.remove("hidden");
+        }
     }
 
     protected debugPlayerInfo(): string {
