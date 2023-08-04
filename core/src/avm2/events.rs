@@ -458,11 +458,11 @@ pub fn dispatch_event<'gc>(
     let event = if dispatched {
         event
             .call_public_property("clone", &[], activation)?
-            .coerce_to_object(activation)
-            .map_err(|_| {
+            .as_object()
+            .ok_or_else(|| {
                 let error = type_error(
                     activation,
-                    &format!("Error #2007: Parameter event must be non-null."),
+                    "Error #2007: Parameter event must be non-null.",
                     2007,
                 );
 
