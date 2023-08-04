@@ -687,24 +687,6 @@ export class RufflePlayer extends HTMLElement {
         );
         return options;
     }
-    /**
-     * Gets the configuration set by the Ruffle extension
-     *
-     * @returns The configuration set by the Ruffle extension
-     */
-    getExtensionConfig(): Record<string, unknown> {
-        return window.RufflePlayer &&
-            window.RufflePlayer.conflict &&
-            (window.RufflePlayer.conflict["newestName"] === "extension" ||
-                (window.RufflePlayer as Record<string, unknown>)[
-                    "newestName"
-                ] === "extension")
-            ? (window.RufflePlayer?.conflict["config"] as Record<
-                  string,
-                  unknown
-              >)
-            : {};
-    }
 
     /**
      * Loads a specified movie into this player.
@@ -737,10 +719,8 @@ export class RufflePlayer extends HTMLElement {
         }
 
         try {
-            const extensionConfig = this.getExtensionConfig();
             this.loadedConfig = {
                 ...DEFAULT_CONFIG,
-                ...extensionConfig,
                 ...(window.RufflePlayer?.config ?? {}),
                 ...this.config,
                 ...options,
