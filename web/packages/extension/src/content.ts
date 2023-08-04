@@ -108,6 +108,8 @@ function isXMLDocument(): boolean {
 
 (async () => {
     const options = await utils.getOptions();
+    const explicitOptions = await utils.getExplicitOptions();
+
     const pageOptout = checkPageOptout();
     const shouldLoad =
         !isXMLDocument() &&
@@ -171,7 +173,7 @@ function isXMLDocument(): boolean {
     await sendMessageToPage({
         type: "load",
         config: {
-            ...options,
+            ...explicitOptions,
             autoplay: options.autostart ? "on" : "auto",
             unmuteOverlay: options.autostart ? "hidden" : "visible",
             splashScreen: !options.autostart,
