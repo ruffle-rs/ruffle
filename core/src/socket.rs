@@ -349,7 +349,9 @@ impl<'gc> Sockets<'gc> {
                                     );
 
                                     // Check if we have another null byte in the same payload.
-                                    if let Some((index, _)) = data.iter().enumerate().find(|(_, &b)| b == 0) {
+                                    if let Some((index, _)) =
+                                        data.iter().enumerate().find(|(_, &b)| b == 0)
+                                    {
                                         // Because data in XmlSocket::read_buffer() has already been consumed
                                         // we do not need to access it again.
                                         buffer = data.drain(..index).collect::<Vec<_>>();
