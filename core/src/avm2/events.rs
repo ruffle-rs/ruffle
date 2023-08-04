@@ -72,6 +72,9 @@ pub struct Event<'gc> {
 
     /// The name of the event being triggered.
     event_type: AvmString<'gc>,
+
+    /// Whether is event has been dispatched before.
+    dispatched: bool,
 }
 
 impl<'gc> Event<'gc> {
@@ -89,6 +92,7 @@ impl<'gc> Event<'gc> {
             event_phase: EventPhase::AtTarget,
             target: None,
             event_type: event_type.into(),
+            dispatched: false,
         }
     }
 
@@ -448,10 +452,21 @@ pub fn dispatch_event<'gc>(
         parent = parent_of(par);
     }
 
+    let dispatched = event.as_event().unwrap().dispatched;
+
+    let event = if dispatched {
+        event
+            .call_public_property("clone", &[], activation)?
+            .coerce_to_object(activation)?
+    } else {
+        event
+    };
+
     let mut evtmut = event.as_event_mut(activation.context.gc_context).unwrap();
 
     evtmut.set_phase(EventPhase::Capturing);
     evtmut.set_target(target);
+    evtmut.dispatched = true;
 
     drop(evtmut);
 

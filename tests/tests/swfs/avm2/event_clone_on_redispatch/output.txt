@@ -1,0 +1,3 @@
+first handler called
+CustomEvent cloned!
+second handler called
