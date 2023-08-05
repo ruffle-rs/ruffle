@@ -1028,11 +1028,7 @@ fn draw_triangles_internal<'gc>(
     Ok(())
 }
 
-fn draw_triangle_internal(
-    (a, b, c): Triangle,
-    drawing: &mut Drawing,
-    culling: TriangleCulling,
-) {
+fn draw_triangle_internal((a, b, c): Triangle, drawing: &mut Drawing, culling: TriangleCulling) {
     match culling {
         TriangleCulling::None => {
             drawing.draw_command(DrawCommand::MoveTo(a));
@@ -1513,8 +1509,9 @@ fn handle_gradient_fill<'gc>(
 
     let matrix = {
         let matrix = obj
-            .get_public_property("matrix", activation).ok()
-            .and_then(|mat| { mat.coerce_to_object(activation).ok() });
+            .get_public_property("matrix", activation)
+            .ok()
+            .and_then(|mat| mat.coerce_to_object(activation).ok());
 
         match matrix {
             Some(matrix) => Matrix::from(object_to_matrix(matrix, activation)?),
@@ -1541,22 +1538,20 @@ fn handle_gradient_fill<'gc>(
     let focal_point = obj
         .get_public_property("focalPointRatio", activation)?
         .coerce_to_number(activation)?;
-    
+
     let fill = match gradient_type {
-        GradientType::Linear => 
-            FillStyle::LinearGradient(Gradient {
-                matrix,
-                spread,
-                interpolation,
-                records,
-            }),
-        GradientType::Radial if focal_point == 0.0 => 
-            FillStyle::RadialGradient(Gradient {
-                matrix,
-                spread,
-                interpolation,
-                records,
-            }),
+        GradientType::Linear => FillStyle::LinearGradient(Gradient {
+            matrix,
+            spread,
+            interpolation,
+            records,
+        }),
+        GradientType::Radial if focal_point == 0.0 => FillStyle::RadialGradient(Gradient {
+            matrix,
+            spread,
+            interpolation,
+            records,
+        }),
         _ => FillStyle::FocalGradient {
             gradient: Gradient {
                 matrix,
@@ -1565,11 +1560,10 @@ fn handle_gradient_fill<'gc>(
                 records,
             },
             focal_point: Fixed8::from_f64(focal_point),
-        }
+        },
     };
 
     Ok(fill)
-
 }
 
 fn handle_bitmap_fill<'gc>(
