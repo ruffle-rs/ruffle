@@ -1334,7 +1334,7 @@ fn culling_to_triangle_culling<'gc>(culling: AvmString) -> Result<TriangleCullin
     } else if &culling == b"negative" {
         Ok(TriangleCulling::Negative)
     } else {
-        Err(format!("Unknown culling {:?}", culling).into())
+        Err(make_error_2008(activation, "culling")
     }
 }
 
