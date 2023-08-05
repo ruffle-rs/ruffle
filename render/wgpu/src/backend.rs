@@ -111,6 +111,21 @@ impl WgpuRenderBackend<SwapChainTarget> {
         let target = SwapChainTarget::new(surface, &descriptors.adapter, size, &descriptors.device);
         Self::new(Arc::new(descriptors), target)
     }
+
+    #[cfg(not(target_family = "wasm"))]
+    pub fn recreate_surface<
+        W: raw_window_handle::HasRawWindowHandle + raw_window_handle::HasRawDisplayHandle,
+    >(
+        &mut self,
+        window: &W,
+        size: (u32, u32),
+    ) -> Result<(), Error> {
+        let descriptors = &self.descriptors;
+        let surface = unsafe { descriptors.wgpu_instance.create_surface(window) }?;
+        self.target =
+            SwapChainTarget::new(surface, &descriptors.adapter, size, &descriptors.device);
+        Ok(())
+    }
 }
 
 #[cfg(not(target_family = "wasm"))]

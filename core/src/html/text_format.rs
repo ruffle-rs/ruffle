@@ -313,8 +313,7 @@ impl TextFormat {
 ///
 /// This struct also contains a resolved version of the `TextFormat` structure
 /// listed above.
-#[derive(Clone, Debug, Collect)]
-#[collect(require_static)]
+#[derive(Clone, Debug)]
 pub struct TextSpan {
     /// How many characters are subsumed by this text span.
     ///
@@ -516,8 +515,7 @@ impl TextSpan {
 }
 
 /// Struct which contains text formatted by `TextSpan`s.
-#[derive(Clone, Debug, Collect)]
-#[collect(require_static)]
+#[derive(Clone, Debug)]
 pub struct FormatSpans {
     text: WString,
     displayed_text: WString,

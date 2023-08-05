@@ -8,8 +8,8 @@ continue = 続行
 report-bug = バグを報告
 update-ruffle = Ruffleを更新
 ruffle-demo = Webデモ
-ruffle-desktop = デスクトップアプリ
-ruffle-wiki = Ruffle Wikiを見る
+ruffle-desktop = デスクトップアプリケーション
+ruffle-wiki = Ruffle Wikiを表示
 view-error-details = エラーの詳細を表示
 open-in-new-tab = 新しいタブで開く
 click-to-unmute = クリックでミュートを解除
@@ -58,6 +58,7 @@ error-javascript-conflict =
     Ruffleの初期化時に重大な問題が発生しました。
     このページではRuffleと競合するJavaScriptコードが使用されているかもしれません。
     サーバーの管理者は、空白のページでファイルを読み込みし直してみてください。
+error-javascript-conflict-outdated = 新しいバージョンのRuffleをアップロードすることで、この問題を回避できる可能性があります。(現在のビルドは古い物です:{ $buildDate })
 error-csp-conflict =
     Ruffleの初期化時に重大な問題が発生しました。
     このWebサーバーのコンテンツセキュリティポリシーが実行に必要となる「.wasm」コンポーネントの実行を許可していません。

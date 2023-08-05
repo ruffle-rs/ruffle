@@ -273,6 +273,7 @@ pub struct AudioManager<'gc> {
     sounds: Vec<SoundInstance<'gc>>,
 
     /// The global sound transform applied to all sounds.
+    #[collect(require_static)]
     global_sound_transform: display_object::SoundTransform,
 
     /// The number of seconds that a timeline audio stream should buffer before playing.
@@ -654,6 +655,7 @@ pub struct SoundInstance<'gc> {
     /// Only AVM2 sounds have a local sound transform. In AVM1, sound instances
     /// instead get the sound transform of the display object they're
     /// associated with.
+    #[collect(require_static)]
     transform: display_object::SoundTransform,
 
     /// The AVM1 `Sound` object associated with this sound, if any.
@@ -668,8 +670,7 @@ pub struct SoundInstance<'gc> {
 /// A sound transform for a playing sound, for use by audio backends.
 /// This differs from `display_object::SoundTransform` by being
 /// already converted to `f32` and having `volume` baked in.
-#[derive(Debug, PartialEq, Clone, Collect)]
-#[collect(require_static)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct SoundTransform {
     pub left_to_left: f32,
     pub left_to_right: f32,

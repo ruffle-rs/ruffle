@@ -1,4 +1,3 @@
-use gc_arena::Collect;
 use serde::{Deserialize, Serialize};
 
 /// Controls whether the content is letterboxed or pillarboxed when the
@@ -7,8 +6,7 @@ use serde::{Deserialize, Serialize};
 /// When letterboxed, black bars will be rendered around the exterior
 /// margins of the content.
 #[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Collect, Serialize, Deserialize)]
-#[collect(require_static)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename = "letterbox")]
 pub enum Letterbox {
     /// The content will never be letterboxed.

@@ -59,6 +59,7 @@ pub struct Avm2ButtonData<'gc> {
     hit_area: Option<DisplayObject<'gc>>,
 
     /// The current tracking mode of this button.
+    #[collect(require_static)]
     tracking: ButtonTracking,
 
     /// The class of this button.

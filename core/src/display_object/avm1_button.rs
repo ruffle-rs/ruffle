@@ -40,6 +40,8 @@ pub struct Avm1ButtonData<'gc> {
     state: ButtonState,
     hit_area: BTreeMap<Depth, DisplayObject<'gc>>,
     container: ChildContainer<'gc>,
+    #[allow(dead_code)]
+    #[collect(require_static)]
     tracking: ButtonTracking,
     object: Option<Object<'gc>>,
     initialized: bool,
@@ -681,8 +683,7 @@ struct ButtonAction {
     key_code: Option<ButtonKeyCode>,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Collect)]
-#[collect(require_static)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum ButtonTracking {
     Push,
     Menu,

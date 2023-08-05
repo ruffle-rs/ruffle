@@ -17,6 +17,7 @@ use serde::Serialize;
 #[derive(Collect, Default)]
 #[collect(no_drop)]
 pub struct ContextMenuState<'gc> {
+    #[collect(require_static)]
     info: Vec<ContextMenuItem>,
     callbacks: Vec<ContextMenuCallback<'gc>>,
 }
@@ -122,8 +123,7 @@ impl<'gc> ContextMenuState<'gc> {
     }
 }
 
-#[derive(Collect, Clone, Serialize)]
-#[collect(require_static)]
+#[derive(Clone, Serialize)]
 pub struct ContextMenuItem {
     pub enabled: bool,
     #[serde(rename = "separatorBefore")]

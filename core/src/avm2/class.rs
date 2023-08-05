@@ -58,8 +58,7 @@ bitflags! {
 pub type AllocatorFn =
     for<'gc> fn(ClassObject<'gc>, &mut Activation<'_, 'gc>) -> Result<Object<'gc>, Error<'gc>>;
 
-#[derive(Clone, Collect)]
-#[collect(require_static)]
+#[derive(Clone, Copy)]
 pub struct Allocator(pub AllocatorFn);
 
 impl fmt::Debug for Allocator {
@@ -99,6 +98,7 @@ pub struct Class<'gc> {
     /// If `None`, then instances of this object will be allocated the same way
     /// as the superclass specifies; or if there is no superclass, it will be
     /// allocated as a `ScriptObject`.
+    #[collect(require_static)]
     instance_allocator: Option<Allocator>,
 
     /// The instance initializer for this class.

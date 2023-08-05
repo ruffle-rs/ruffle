@@ -7,4 +7,4 @@ save-reload-prompt =
 save-download = ダウンロード
 save-replace = 置き換え
 save-delete = 削除
-save-backup-all = 全てのセーブファイルをダウンロード
+save-backup-all = すべてのセーブファイルをダウンロード
