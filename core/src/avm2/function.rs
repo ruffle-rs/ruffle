@@ -1,12 +1,12 @@
 //! AVM2 executables.
 
 use crate::avm2::activation::Activation;
-use crate::avm2::method::{BytecodeMethod, Method, NativeMethod};
+use crate::avm2::method::{BytecodeMethod, Method, NativeMethod, ParamConfig};
 use crate::avm2::object::{ClassObject, Object};
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::traits::TraitKind;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
+use crate::avm2::{Error, Multiname};
 use crate::string::WString;
 use gc_arena::{Collect, Gc};
 use std::fmt;
@@ -229,6 +229,27 @@ impl<'gc> Executable<'gc> {
         match self {
             Executable::Native(NativeExecutable { method, .. }) => method.signature.len(),
             Executable::Action(BytecodeExecutable { method, .. }) => method.signature.len(),
+        }
+    }
+
+    pub fn signature(&self) -> &[ParamConfig<'gc>] {
+        match self {
+            Executable::Native(NativeExecutable { method, .. }) => &method.signature,
+            Executable::Action(BytecodeExecutable { method, .. }) => method.signature(),
+        }
+    }
+
+    pub fn is_variadic(&self) -> bool {
+        match self {
+            Executable::Native(NativeExecutable { method, .. }) => method.is_variadic,
+            Executable::Action(BytecodeExecutable { method, .. }) => method.is_variadic(),
+        }
+    }
+
+    pub fn return_type(&self) -> &Multiname<'gc> {
+        match self {
+            Executable::Native(NativeExecutable { method, .. }) => &method.return_type,
+            Executable::Action(BytecodeExecutable { method, .. }) => &method.return_type,
         }
     }
 }
