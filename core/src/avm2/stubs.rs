@@ -1,6 +1,6 @@
 #[macro_export]
-macro_rules! avm2_stub_method {
-    ($activation: ident, $class: literal, $method: literal) => {
+macro_rules! avm2_stub_method_context {
+    ($context: expr, $class: literal, $method: literal) => {
         #[cfg_attr(
             feature = "known_stubs",
             linkme::distributed_slice($crate::stub::KNOWN_STUBS)
@@ -10,9 +10,9 @@ macro_rules! avm2_stub_method {
             method: std::borrow::Cow::Borrowed($method),
             specifics: None,
         };
-        $activation.context.stub_tracker.encounter(&STUB);
+        $context.stub_tracker.encounter(&STUB);
     };
-    ($activation: ident, $class: literal, $method: literal, $specifics: literal) => {
+    ($context: expr, $class: literal, $method: literal, $specifics: literal) => {
         #[cfg_attr(
             feature = "known_stubs",
             linkme::distributed_slice($crate::stub::KNOWN_STUBS)
@@ -22,7 +22,17 @@ macro_rules! avm2_stub_method {
             method: std::borrow::Cow::Borrowed($method),
             specifics: Some(std::borrow::Cow::Borrowed($specifics)),
         };
-        $activation.context.stub_tracker.encounter(&STUB);
+        $context.stub_tracker.encounter(&STUB);
+    };
+}
+
+#[macro_export]
+macro_rules! avm2_stub_method {
+    ($activation: ident, $class: literal, $method: literal) => {
+        $crate::avm2_stub_method_context!($activation.context, $class, $method);
+    };
+    ($activation: ident, $class: literal, $method: literal, $specifics: literal) => {
+        $crate::avm2_stub_method_context!($activation.context, $class, $method, $specifics);
     };
 }
 
