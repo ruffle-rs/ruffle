@@ -1326,7 +1326,10 @@ enum TriangleCulling {
     Negative,
 }
 
-fn culling_to_triangle_culling<'gc>(culling: AvmString) -> Result<TriangleCulling, Error<'gc>> {
+fn culling_to_triangle_culling<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    culling: AvmString,
+) -> Result<TriangleCulling, Error<'gc>> {
     if &culling == b"none" {
         Ok(TriangleCulling::None)
     } else if &culling == b"positive" {
