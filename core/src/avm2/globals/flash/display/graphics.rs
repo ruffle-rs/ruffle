@@ -898,7 +898,7 @@ pub fn draw_triangles<'gc>(
 
             let culling = {
                 let culling = args.get_string(activation, 3)?;
-                culling_to_triangle_culling(culling)?
+                culling_to_triangle_culling(activation, culling)?
             };
 
             draw_triangles_internal(
@@ -1353,7 +1353,7 @@ fn handle_graphics_triangle_path<'gc>(
             .get_public_property("culling", activation)?
             .coerce_to_string(activation)?;
 
-        culling_to_triangle_culling(culling)?
+        culling_to_triangle_culling(activation, culling)?
     };
 
     let vertices = obj
