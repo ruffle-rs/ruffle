@@ -10,7 +10,7 @@ use swf::avm2::types::{Index, Namespace as AbcNamespace};
 
 use super::api_version::ApiVersion;
 
-#[derive(Clone, Copy, Collect, Debug)]
+#[derive(Clone, Copy, Collect, Debug, PartialEq)]
 #[collect(no_drop)]
 pub struct Namespace<'gc>(Gc<'gc, NamespaceData<'gc>>);
 

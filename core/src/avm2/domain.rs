@@ -12,6 +12,7 @@ use crate::avm2::Multiname;
 use crate::avm2::QName;
 use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
 use ruffle_wstr::WStr;
+use std::cell::Ref;
 
 use super::class::Class;
 use super::error::error;
@@ -342,6 +343,14 @@ impl<'gc> Domain<'gc> {
             return;
         }
         self.0.write(mc).classes.insert(export_name, class);
+    }
+
+    pub fn defs(&self) -> Ref<PropertyMap<'gc, Script<'gc>>> {
+        Ref::map(self.0.read(), |this| &this.defs)
+    }
+
+    pub fn classes(&self) -> Ref<PropertyMap<'gc, GcCell<'gc, Class<'gc>>>> {
+        Ref::map(self.0.read(), |this| &this.classes)
     }
 
     pub fn is_default_domain_memory(&self) -> bool {

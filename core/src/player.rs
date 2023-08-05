@@ -5,7 +5,10 @@ use crate::avm1::Object;
 use crate::avm1::SystemProperties;
 use crate::avm1::VariableDumper;
 use crate::avm1::{Activation, ActivationIdentifier};
+use crate::avm1::{ScriptObject, TObject, Value};
 use crate::avm1::{TObject, Value};
+use crate::avm2::api_version::ApiVersion;
+use crate::avm2::specification::capture_specification;
 use crate::avm2::{
     object::TObject as _, Activation as Avm2Activation, Avm2, CallStack, Object as Avm2Object,
 };
@@ -2548,6 +2551,7 @@ impl PlayerBuilder {
             stage.set_allow_fullscreen(context, self.allow_fullscreen);
             stage.post_instantiation(context, None, Instantiator::Movie, false);
             stage.build_matrices(context);
+            capture_specification(context);
         });
         player_lock.gc_arena.borrow().mutate(|context, root| {
             let call_stack = root.data.read().avm2.call_stack();
