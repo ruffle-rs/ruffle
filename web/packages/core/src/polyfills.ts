@@ -214,10 +214,7 @@ export function pluginPolyfill(): void {
  * Polyfills legacy Flash content on the page.
  */
 export function polyfill(): void {
-    const usingExtension =
-        navigator.plugins.namedItem("Ruffle Extension")?.filename ===
-        "ruffle.js";
-    if (isExtension || (!isFlashEnabledBrowser() && !usingExtension)) {
+    if (!isFlashEnabledBrowser()) {
         polyfillFlashInstances();
         polyfillFrames();
         initMutationObserver();
