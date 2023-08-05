@@ -894,7 +894,7 @@ pub fn draw_triangles<'gc>(
 
             let indices = args.try_get_object(activation, 1);
 
-            let uvt_data = args.get_object(activation, 2, "uvtData").ok();
+            let uvt_data = args.try_get_object(activation, 2);
 
             let culling = {
                 let culling = args.get_string(activation, 3)?;
