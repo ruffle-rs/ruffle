@@ -644,12 +644,63 @@ fn apply_filter<'gc>(
 fn generate_filter_rect<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let NativeObject::BitmapData(bitmap_data) = this.native() {
         if !bitmap_data.disposed() {
-            avm1_stub!(activation, "BitmapData", "generateFilterRect");
-            return Ok(Value::Undefined);
+            let source_rect = args
+                .get(0)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_object(activation);
+
+            let filter_object = args
+                .get(1)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_object(activation);
+            let filter = bitmap_filter::avm1_to_filter(filter_object, &mut activation.context);
+
+            //if let Some(filter) = filter
+            let (src_min_x, src_min_y, src_width, src_height) =
+                if let (Some(x), Some(y), Some(width), Some(height)) = (
+                    source_rect.get_local_stored("x", activation, false),
+                    source_rect.get_local_stored("y", activation, false),
+                    source_rect.get_local_stored("width", activation, false),
+                    source_rect.get_local_stored("height", activation, false),
+                ) {
+                    (
+                        x.coerce_to_f64(activation)? as i32,
+                        y.coerce_to_f64(activation)? as i32,
+                        width.coerce_to_f64(activation)? as i32,
+                        height.coerce_to_f64(activation)? as i32,
+                    )
+                } else {
+                    // Invalid `sourceRect`.
+                    return Ok((-4).into());
+                };
+
+            if let NativeObject::BitmapData(src_bitmap_data) = this.native() {
+                if !src_bitmap_data.disposed() {
+                    if let Some(filter) = filter {
+                        let result = operations::generate_filter_rect(
+                            bitmap_data,
+                            (src_min_x, src_min_y, src_width, src_height),
+                            filter,
+                        );
+
+                        let proto = activation.context.avm1.prototypes().rectangle_constructor;
+                        let rect = proto.construct(
+                            activation,
+                            &[
+                                result.0.into(),
+                                result.1.into(),
+                                result.2.into(),
+                                result.3.into(),
+                            ],
+                        )?;
+                        return Ok(rect);
+                    }
+                }
+            }
         }
     }
 

@@ -1907,3 +1907,50 @@ pub fn pixel_dissolve<'gc>(
 
     raw_perm_index as i32
 }
+
+// note that this should also work with negative blur sizes,
+// but the accepted BlurFilter can't represent that...
+pub fn generate_filter_rect(
+    source_bitmap: BitmapDataWrapper,
+    src_rect: (i32, i32, i32, i32),
+    filter: Filter,
+) -> (i32, i32, i32, i32) {
+    let (src_min_x, src_min_y, src_width, src_height) = src_rect;
+
+    // credits to Dinnerbone and MrCheeze for the exact algorithm
+    fn get_blur_growth(size: f64, quality: u8) -> i32 {
+        // this is how much the blur grows the filter source rectangle by, per blur size, on each side
+        // it's important that this if f32 for accurate emulation of the imprecision
+        const GROWTH_FOR_QUALITY: [f32; 16] = [
+            0.0, 1.0, 2.1, 2.7, 3.1, 3.5, 3.8, 4.0, 4.2, 4.4, 4.6, 5.0, 6.0, 6.0, 7.0, 7.0,
+        ];
+
+        // this conversion to f64 is also important
+        let growth = GROWTH_FOR_QUALITY[quality.clamp(0, 15) as usize] as f64;
+
+        // the weird double rounding is also important
+        (((size.max(1.0) * growth).max(0.0)).round() / 2.0).round() as i32
+    }
+
+    match filter {
+        // Flash always reports that a ShaderFilter affects the entire BitampData, ignoring SourceRect.
+        Filter::ShaderFilter(_) => (
+            0,
+            0,
+            source_bitmap.width() as i32,
+            source_bitmap.height() as i32,
+        ),
+        Filter::BlurFilter(blur) => {
+            let gx = get_blur_growth(blur.blur_x.to_f64(), blur.num_passes());
+            let gy = get_blur_growth(blur.blur_y.to_f64(), blur.num_passes());
+
+            (
+                (src_min_x - gx),
+                (src_min_y - gy),
+                (src_width + gx * 2),
+                (src_height + gy * 2),
+            )
+        }
+        _ => src_rect,
+    }
+}
