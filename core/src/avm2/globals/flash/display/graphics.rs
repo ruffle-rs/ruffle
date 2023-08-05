@@ -892,7 +892,7 @@ pub fn draw_triangles<'gc>(
         if let Some(mut drawing) = this.as_drawing(activation.context.gc_context) {
             let vertices = args.get_object(activation, 0, "vertices")?;
 
-            let indices = args.get_object(activation, 1, "indices").ok();
+            let indices = args.try_get_object(activation, 1);
 
             let uvt_data = args.get_object(activation, 2, "uvtData").ok();
 
