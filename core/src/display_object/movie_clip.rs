@@ -1078,7 +1078,7 @@ impl<'gc> MovieClip<'gc> {
             }
         } else if context.is_action_script_3() {
             // Pretend we actually did a goto, but don't do anything.
-            run_inner_goto_frame(context, &[]);
+            run_inner_goto_frame(context, &[], self);
         }
     }
 
@@ -2002,7 +2002,7 @@ impl<'gc> MovieClip<'gc> {
         //
         // Our queued place tags will now run at this time, too.
         if !is_implicit {
-            run_inner_goto_frame(context, &removed_frame_scripts);
+            run_inner_goto_frame(context, &removed_frame_scripts, self);
         }
 
         self.assert_expected_tag_end(context, hit_target_frame);

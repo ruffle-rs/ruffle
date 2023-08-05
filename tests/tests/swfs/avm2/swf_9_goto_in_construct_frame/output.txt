@@ -1,0 +1,20 @@
+Constructing Test
+Calling MyOtherChild super()
+Called MyOtherChild super()
+MyContainer frameConstructed
+Before MyContainer.gotoAndStop(2)
+After MyContainer.gotoAndStop(2)
+MyOtherChild onFrameConstructed
+Stopping Test at frame 2
+Calling MyChild super
+Called MyChild super
+MyContainer framescript 1
+MyChild framescript 0
+MyChild framescript 0
+MyContainer enterFrame
+MyOtherChild onEnterFrame
+MyContainer frameConstructed
+Before MyContainer.gotoAndStop(2)
+After MyContainer.gotoAndStop(2)
+MyOtherChild onFrameConstructed
+MyContainer enterFrame
