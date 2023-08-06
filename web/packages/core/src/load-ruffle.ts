@@ -112,8 +112,8 @@ async function fetchRuffle(
 }
 
 type Ruffle =
-    | typeof import("../dist/ruffle_web")["Ruffle"]
-    | typeof import("../dist/ruffle_web-wasm_extensions")["Ruffle"];
+    | (typeof import("../dist/ruffle_web"))["Ruffle"]
+    | (typeof import("../dist/ruffle_web-wasm_extensions"))["Ruffle"];
 
 let lastLoaded: Promise<Ruffle> | null = null;
 
