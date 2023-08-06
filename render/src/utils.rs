@@ -174,7 +174,7 @@ fn decode_jpeg(jpeg_data: &[u8], alpha_data: Option<&[u8]>) -> Result<Bitmap, Er
                 let c = 255 - u16::from(cmyk[0]);
                 let m = 255 - u16::from(cmyk[1]);
                 let y = 255 - u16::from(cmyk[2]);
-                let k = 256 - u16::from(cmyk[3]);
+                let k = 255 - u16::from(cmyk[3]);
 
                 let r = c * k / 255;
                 let g = m * k / 255;
