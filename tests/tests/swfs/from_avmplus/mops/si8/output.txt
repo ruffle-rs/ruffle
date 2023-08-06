@@ -1,0 +1,28 @@
+si8(ApplicationDomain.MIN_DOMAIN_MEMORY_LENGTH) prior to initMemory() PASSED!
+si8() only stores the least significant 8 bits PASSED!
+si8() only stores the least significant 8 bits PASSED!
+si8(0x01, -1) PASSED!
+si8(0x01, mem.length) PASSED!
+si8(0x01, mem.length-1) PASSED!
+si8(0x01FE, mem.length-1), should only store 8 bits so no overrun PASSED!
+si8(0x01FE, mem.length-1), should only store 8 bits so no overrun confirm PASSED!
+li8 load byte written by si8(0x7F) PASSED!
+li8 load byte written by si8(0x80) PASSED!
+li16 load bytes written by si8() PASSED!
+li32 load bytes written by si8() PASSED!
+lf32 load bytes written by si8() PASSED!
+lf64 load bytes written by si8() PASSED!
+readByte() load bytes written by si8(0x00) PASSED!
+readByte() load bytes written by si8(0x7F) PASSED!
+readByte() load bytes written by si8(0x80) PASSED!
+readByte() load bytes written by si8(0xFF) PASSED!
+readUnsignedByte() load bytes written by si8(0x00) PASSED!
+readUnsignedByte() load bytes written by si8(0x7F) PASSED!
+readUnsignedByte() load bytes written by si8(0x80) PASSED!
+readUnsignedByte() load bytes written by si8(0xFF) PASSED!
+readBoolean() load bytes written by si8(0x00) PASSED!
+readBoolean() load bytes written by si8(0x01) PASSED!
+readInt() load bytes written by si8() PASSED!
+readUnsignedInt() load bytes written by si8() PASSED!
+readFloat() load bytes written by si8() PASSED!
+readDouble() load bytes written by si8() PASSED!

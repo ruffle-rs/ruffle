@@ -1,0 +1,17 @@
+lix16(ApplicationDomain.MIN_DOMAIN_MEMORY_LENGTH) prior to initMemory() PASSED!
+lix16(-1) PASSED!
+lix16(mem.length) PASSED!
+lix16(mem.length-1) PASSED!
+lix16(mem.length-2) PASSED!
+lix16 load byte written by si8() PASSED!
+lix16 load byte written by si8() PASSED!
+lix16 load byte written by si8() PASSED!
+lix16 load bytes written by si16(0x8000) PASSED!
+lix16 load bytes written by si16(0xFFFF) PASSED!
+lix16 load bytes written by si16(0x7FFF) PASSED!
+lix16 load 1st short written by si32(0x7FFF8000) PASSED!
+lix16 load 2nd short written by si32(0x7FFF8000) PASSED!
+lix16 load bytes written by writeByte() PASSED!
+lix16 load bytes written by writeByte() PASSED!
+lix16 load 1st short written by writeInt(2147450880) PASSED!
+lix16 load 2nd short written by writeInt(2147450880) PASSED!

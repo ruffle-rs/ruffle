@@ -1,0 +1,51 @@
+sf64(ApplicationDomain.MIN_DOMAIN_MEMORY_LENGTH) prior to initMemory() PASSED!
+sf64(0x4146020041460200, -1) PASSED!
+sf64(0x4146020041460200, mem.length) PASSED!
+sf64(0x4146020041460200, mem.length-1) PASSED!
+sf64(0x4146020041460200, mem.length-2) PASSED!
+sf64(0x4146020041460200, mem.length-3) PASSED!
+sf64(0x4146020041460200, mem.length-4) PASSED!
+sf64(0x4146020041460200, mem.length-5) PASSED!
+sf64(0x4146020041460200, mem.length-6) PASSED!
+sf64(0x4146020041460200, mem.length-7) PASSED!
+sf64(0x4146020041460200, mem.length-8) PASSED!
+li8 load 1st byte written by sf64() PASSED!
+li8 load 2nd byte written by sf64() PASSED!
+li8 load 3rd byte written by sf64() PASSED!
+li8 load 4th byte written by sf64() PASSED!
+li8 load 5th byte written by sf64() PASSED!
+li8 load 6th byte written by sf64() PASSED!
+li8 load 7th byte written by sf64() PASSED!
+li8 load 8th byte written by sf64() PASSED!
+li16 load bytes written by sf64() PASSED!
+li16 load bytes written by sf64() PASSED!
+li16 load bytes written by sf64() PASSED!
+li16 load bytes written by sf64() PASSED!
+li32 load bytes written by sf64() PASSED!
+li32 load bytes written by sf64() PASSED!
+lf32 load bytes written by sf64() PASSED!
+lf32 load bytes written by sf64() PASSED!
+lf64 load bytes written by sf64() PASSED!
+readByte() load 1st byte written by sf64() PASSED!
+readByte() load 2nd byte written by sf64() PASSED!
+readByte() load 3rd byte written by sf64() PASSED!
+readByte() load 4th byte written by sf64() PASSED!
+readByte() load 5th byte written by sf64() PASSED!
+readByte() load 6th byte written by sf64() PASSED!
+readByte() load 7th byte written by sf64() PASSED!
+readByte() load 8th byte written by sf64() PASSED!
+readUnsignedByte() load 1st byte written by sf64() PASSED!
+readUnsignedByte() load 2nd byte written by sf64() PASSED!
+readUnsignedByte() load 3rd byte written by sf64() PASSED!
+readUnsignedByte() load 4th byte written by sf64() PASSED!
+readUnsignedByte() load 5th byte written by sf64() PASSED!
+readUnsignedByte() load 6th byte written by sf64() PASSED!
+readUnsignedByte() load 7th byte written by sf64() PASSED!
+readUnsignedByte() load 8th byte written by sf64() PASSED!
+readInt() load bytes written by sf64() PASSED!
+readInt() load bytes written by sf64() PASSED!
+readUnsignedInt() load bytes written by sf64() PASSED!
+readUnsignedInt() load bytes written by sf64() PASSED!
+readFloat() load bytes written by sf64() PASSED!
+readFloat() load bytes written by sf64() PASSED!
+readDouble() load bytes written by sf64() PASSED!

@@ -1,0 +1,33 @@
+si32(ApplicationDomain.MIN_DOMAIN_MEMORY_LENGTH) prior to initMemory() PASSED!
+si32() only stores the least significant 32 bits PASSED!
+si32(0x01010101, -1) PASSED!
+si32(0x01010101, mem.length) PASSED!
+si32(0x01010101, mem.length-1) PASSED!
+si32(0x01010101, mem.length-2) PASSED!
+si32(0x01010101, mem.length-3) PASSED!
+si32(0x01010101, mem.length-4) PASSED!
+si32(0x7F5A325601, mem.length-4), should only store 32 bits so no overrun PASSED!
+si32(0x7F5A325601, mem.length-4), should only store 32 bits so no overrun confirm PASSED!
+li8 load 1st byte written by si32(0x807FDEF5) PASSED!
+li8 load 2nd byte written by si32(0x807FDEF5) PASSED!
+li8 load 3rd byte written by si32(0x807FDEF5) PASSED!
+li8 load 4th byte written by si32(0x807FDEF5) PASSED!
+li16 load bytes written by si32() PASSED!
+li16 load bytes written by si32() PASSED!
+li32 load bytes written by si32() PASSED!
+lf32 load bytes written by si32() PASSED!
+lf64 load bytes written by si32() PASSED!
+readByte() load bytes written by si32(0x80FF007F) PASSED!
+readByte() load bytes written by si32(0x80FF007F) PASSED!
+readByte() load bytes written by si32(0x80FF007F) PASSED!
+readByte() load bytes written by si32(0x80FF007F) PASSED!
+readUnsignedByte() load bytes written by si32(0x80FF007F) PASSED!
+readUnsignedByte() load bytes written by si32(0x80FF007F) PASSED!
+readUnsignedByte() load bytes written by si32(0x80FF007F) PASSED!
+readUnsignedByte() load bytes written by si32(0x80FF007F) PASSED!
+readBoolean() load bytes written by si32(0x01000100) PASSED!
+readBoolean() load bytes written by si32(0x01000100) PASSED!
+readInt() load bytes written by si32() PASSED!
+readUnsignedInt() load bytes written by si32() PASSED!
+readFloat() load bytes written by si32() PASSED!
+readDouble() load bytes written by si32() PASSED!

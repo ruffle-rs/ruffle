@@ -1,8 +1,7 @@
 //! `flash.display.DisplayObjectContainer` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::error::argument_error;
-use crate::avm2::error::range_error;
+use crate::avm2::error::{argument_error, make_error_2025, range_error};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
@@ -39,14 +38,31 @@ fn validate_add_operation<'gc>(
         .as_container()
         .ok_or("ArgumentError: Parent is not a DisplayObjectContainer")?;
 
+    if let DisplayObject::Stage(_) = proposed_child {
+        return Err(Error::AvmError(argument_error(
+            activation,
+            "Error #3783: A Stage object cannot be added as the child of another object.",
+            3783,
+        )?));
+    }
+
+    if DisplayObject::ptr_eq(proposed_child, new_parent) {
+        return Err(Error::AvmError(argument_error(
+            activation,
+            "Error #2024: An object cannot be added as a child of itself.",
+            2024,
+        )?));
+    }
+
     let mut checking_parent = Some(new_parent);
 
     while let Some(tp) = checking_parent {
         if DisplayObject::ptr_eq(tp, proposed_child) {
-            return Err(
-                "ArgumentError: Proposed child is an ancestor of the proposed parent, you cannot add the child to the parent"
-                    .into(),
-            );
+            return Err(Error::AvmError(argument_error(
+                activation,
+                "Error #2150: An object cannot be added as a child to one of it's children (or children's children, etc.).",
+                2150,
+            )?));
         }
 
         checking_parent = tp.parent();
@@ -84,11 +100,7 @@ fn validate_remove_operation<'gc>(
         }
     }
 
-    Err(Error::AvmError(argument_error(
-        activation,
-        "Error #2025: The supplied DisplayObject must be a child of the caller.",
-        2025,
-    )?))
+    Err(make_error_2025(activation))
 }
 
 /// Remove an element from it's parent display list.
@@ -293,7 +305,7 @@ pub fn get_child_index<'gc>(
         }
     }
 
-    Err("ArgumentError: Child is not a child of this object".into())
+    Err(make_error_2025(activation))
 }
 
 /// Implements `DisplayObjectContainer.removeChildAt`
@@ -406,7 +418,7 @@ pub fn set_child_index<'gc>(
 
         let child_parent = child.parent();
         if child_parent.is_none() || !DisplayObject::ptr_eq(child_parent.unwrap(), parent) {
-            return Err("ArgumentError: Given child is not a child of this display object".into());
+            return Err(make_error_2025(activation));
         }
 
         validate_add_operation(activation, parent, child, target_index)?;
@@ -470,22 +482,22 @@ pub fn swap_children<'gc>(
     if let Some(parent) = this.as_display_object() {
         if let Some(mut ctr) = parent.as_container() {
             let child0 = args
-                .get_object(activation, 0, "child1")?
+                .get_object(activation, 0, "child")?
                 .as_display_object()
                 .ok_or("ArgumentError: Child is not a display object")?;
             let child1 = args
-                .get_object(activation, 1, "child2")?
+                .get_object(activation, 1, "child")?
                 .as_display_object()
                 .ok_or("ArgumentError: Child is not a display object")?;
 
             let index0 = ctr
                 .iter_render_list()
                 .position(|a| DisplayObject::ptr_eq(a, child0))
-                .ok_or("ArgumentError: Child is not a child of this display object")?;
+                .ok_or(make_error_2025(activation))?;
             let index1 = ctr
                 .iter_render_list()
                 .position(|a| DisplayObject::ptr_eq(a, child1))
-                .ok_or("ArgumentError: Child is not a child of this display object")?;
+                .ok_or(make_error_2025(activation))?;
 
             child0.set_placed_by_script(activation.context.gc_context, true);
             child1.set_placed_by_script(activation.context.gc_context, true);

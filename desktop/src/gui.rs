@@ -410,7 +410,9 @@ impl RuffleGui {
                     let clicked = if item.checked {
                         Checkbox::new(&mut true, &item.caption).ui(ui).clicked()
                     } else {
-                        Button::new(&item.caption).ui(ui).clicked()
+                        let button = Button::new(&item.caption).wrap(false);
+
+                        ui.add_enabled(item.enabled, button).clicked()
                     };
                     if clicked {
                         let _ = self

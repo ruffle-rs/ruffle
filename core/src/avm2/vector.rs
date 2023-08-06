@@ -61,7 +61,7 @@ impl<'gc> VectorStorage<'gc> {
         self_vec
     }
 
-    fn check_fixed(&self, activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
+    pub fn check_fixed(&self, activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
         if self.is_fixed {
             return Err(Error::AvmError(range_error(
                 activation,
@@ -175,8 +175,11 @@ impl<'gc> VectorStorage<'gc> {
         } else {
             Err(Error::AvmError(range_error(
                 activation,
-                &format!("{pos} is outside the range of the vector"),
-                0,
+                &format!(
+                    "Error #1125: The index {pos} is out of range {}.",
+                    self.length()
+                ),
+                1125,
             )?))
         }
     }
@@ -206,8 +209,11 @@ impl<'gc> VectorStorage<'gc> {
         } else {
             Err(Error::AvmError(range_error(
                 activation,
-                &format!("{pos} is outside the range of the vector"),
-                0,
+                &format!(
+                    "Error #1125: The index {pos} is out of range {}.",
+                    self.length()
+                ),
+                1125,
             )?))
         }
     }
@@ -351,7 +357,14 @@ impl<'gc> VectorStorage<'gc> {
         };
 
         if position >= self.storage.len() {
-            Err(format!("RangeError: Index {position} extends beyond the end of the vector").into())
+            Err(Error::AvmError(range_error(
+                activation,
+                &format!(
+                    "Error #1125: The index {position} is out of range {}.",
+                    self.length()
+                ),
+                1125,
+            )?))
         } else {
             Ok(self.storage.remove(position))
         }

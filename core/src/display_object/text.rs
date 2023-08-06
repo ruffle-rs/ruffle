@@ -31,6 +31,7 @@ impl fmt::Debug for Text<'_> {
 pub struct TextData<'gc> {
     base: DisplayObjectBase<'gc>,
     static_data: gc_arena::Gc<'gc, TextStatic>,
+    #[collect(require_static)]
     render_settings: TextRenderSettings,
     avm2_object: Option<Avm2Object<'gc>>,
 }

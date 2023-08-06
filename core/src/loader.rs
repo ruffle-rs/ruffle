@@ -460,8 +460,7 @@ impl<'gc> Default for LoadManager<'gc> {
 }
 
 /// The completion status of a `Loader` loading a movie.
-#[derive(Clone, Collect, Copy, Debug, Eq, PartialEq)]
-#[collect(require_static)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum LoaderStatus {
     /// The movie hasn't been loaded yet.
     Pending,
@@ -521,6 +520,7 @@ pub enum Loader<'gc> {
         /// the movie has been replaced (and thus Load events can be trusted)
         /// or an error has occurred (in which case we don't care about the
         /// loader anymore).
+        #[collect(require_static)]
         loader_status: LoaderStatus,
 
         /// The SWF being loaded.

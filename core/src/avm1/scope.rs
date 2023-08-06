@@ -10,8 +10,7 @@ use crate::string::AvmString;
 use gc_arena::{Collect, Gc, MutationContext};
 
 /// Indicates what kind of scope a scope is.
-#[derive(Clone, Collect, Copy, Debug, Eq, PartialEq)]
-#[collect(require_static)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ScopeClass {
     /// Scope represents global scope.
     Global,
@@ -34,6 +33,7 @@ pub enum ScopeClass {
 #[collect(no_drop)]
 pub struct Scope<'gc> {
     parent: Option<Gc<'gc, Scope<'gc>>>,
+    #[collect(require_static)]
     class: ScopeClass,
     values: Object<'gc>,
 }

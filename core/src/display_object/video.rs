@@ -52,6 +52,7 @@ pub struct VideoData<'gc> {
     source: GcCell<'gc, VideoSource<'gc>>,
 
     /// The decoder stream that this video source is associated to.
+    #[collect(require_static)]
     stream: VideoStream,
 
     /// AVM representation of this video player.
@@ -79,8 +80,7 @@ pub struct VideoData<'gc> {
 }
 
 /// An optionally-instantiated video stream.
-#[derive(Clone, Debug, Collect)]
-#[collect(require_static)]
+#[derive(Clone, Debug)]
 pub enum VideoStream {
     /// An uninstantiated video stream.
     ///

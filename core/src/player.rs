@@ -632,11 +632,9 @@ impl Player {
                 } else {
                     None
                 };
-                crate::avm1::make_context_menu_state(menu_object, &mut activation)
-            } else if let Some(Avm2Value::Object(_obj)) = root_dobj.map(|root| root.object2()) {
-                // TODO: send "menuSelect" event
-                tracing::warn!("AVM2 Context menu callbacks are not implemented");
 
+                crate::avm1::make_context_menu_state(menu_object, &mut activation)
+            } else if let Some(Avm2Value::Object(hit_obj)) = root_dobj.map(|root| root.object2()) {
                 let mut activation = Avm2Activation::from_nothing(context.reborrow());
 
                 let menu_object = root_dobj
@@ -644,6 +642,27 @@ impl Player {
                     .as_interactive()
                     .map(|iobj| iobj.context_menu())
                     .and_then(|v| v.as_object());
+
+                if let Some(menu_object) = menu_object {
+                    // TODO: contextMenuOwner and mouseTarget might not be the same
+                    let menu_evt = activation
+                        .avm2()
+                        .classes()
+                        .contextmenuevent
+                        .construct(
+                            &mut activation,
+                            &[
+                                "menuSelect".into(),
+                                false.into(),
+                                false.into(),
+                                hit_obj.into(),
+                                hit_obj.into(),
+                            ],
+                        )
+                        .expect("Context menu event should be constructed!");
+
+                    Avm2::dispatch_event(&mut activation.context, menu_evt, menu_object);
+                }
 
                 crate::avm2::make_context_menu_state(menu_object, &mut activation)
             } else {
@@ -679,8 +698,40 @@ impl Player {
                     ContextMenuCallback::Forward => Self::forward_root_movie(context),
                     ContextMenuCallback::Back => Self::back_root_movie(context),
                     ContextMenuCallback::Rewind => Self::rewind_root_movie(context),
-                    ContextMenuCallback::Avm2 { .. } => {
-                        // TODO: Send menuItemSelect event
+                    ContextMenuCallback::Avm2 { item } => {
+                        // TODO: This should use the pointed display object (see comment on line 614)
+                        let root_dobj = context.stage.root_clip();
+
+                        if let Some(root_dobj) = root_dobj {
+                            let menu_item = *item;
+                            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+
+                            let menu_obj = root_dobj
+                                .as_interactive()
+                                .map(|iobj| iobj.context_menu())
+                                .and_then(|v| v.as_object());
+
+                            if menu_obj.is_some() {
+                                // TODO: contextMenuOwner and mouseTarget might not be the same (see above comment)
+                                let menu_evt = activation
+                                    .avm2()
+                                    .classes()
+                                    .contextmenuevent
+                                    .construct(
+                                        &mut activation,
+                                        &[
+                                            "menuItemSelect".into(),
+                                            false.into(),
+                                            false.into(),
+                                            root_dobj.object2(),
+                                            root_dobj.object2(),
+                                        ],
+                                    )
+                                    .expect("Context menu event should be constructed!");
+
+                                Avm2::dispatch_event(context, menu_evt, menu_item);
+                            }
+                        }
                     }
                     ContextMenuCallback::QualityLow => {
                         context.stage.set_quality(context, StageQuality::Low)

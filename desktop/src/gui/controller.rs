@@ -36,6 +36,8 @@ pub struct GuiController {
     // Note that `window.get_inner_size` can change at any point on x11, even between two lines of code.
     // Use this instead.
     size: PhysicalSize<u32>,
+    /// If this is set, we should not render the main menu.
+    no_gui: bool,
 }
 
 impl GuiController {
@@ -96,7 +98,7 @@ impl GuiController {
         let movie_view_renderer = Arc::new(MovieViewRenderer::new(
             &descriptors.device,
             surface_format,
-            window.fullscreen().is_none(),
+            window.fullscreen().is_none() && !opt.no_gui,
             size.height,
             window.scale_factor(),
         ));
@@ -118,6 +120,7 @@ impl GuiController {
             surface_format,
             movie_view_renderer,
             size,
+            no_gui: opt.no_gui,
         })
     }
 
@@ -143,7 +146,7 @@ impl GuiController {
                 );
                 self.movie_view_renderer.update_resolution(
                     &self.descriptors,
-                    self.window.fullscreen().is_none(),
+                    self.window.fullscreen().is_none() && !self.no_gui,
                     size.height,
                     self.window.scale_factor(),
                 );
@@ -189,7 +192,7 @@ impl GuiController {
             .expect("Surface became unavailable");
 
         let raw_input = self.egui_winit.take_egui_input(&self.window);
-        let show_menu = self.window.fullscreen().is_none();
+        let show_menu = self.window.fullscreen().is_none() && !self.no_gui;
         let mut full_output = self.egui_ctx.run(raw_input, |context| {
             self.gui.update(
                 context,

@@ -39,6 +39,9 @@ pub fn init<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_xml_list_object().unwrap();
     let value = args[0];
+    let ignore_comments = args.get_bool(1);
+    let ignore_processing_instructions = args.get_bool(2);
+    let ignore_whitespace = args.get_bool(3);
 
     if let Some(obj) = value.as_object() {
         if let Some(xml) = obj.as_xml_object() {
@@ -51,7 +54,13 @@ pub fn init<'gc>(
         }
     }
 
-    match E4XNode::parse(value, activation) {
+    match E4XNode::parse(
+        value,
+        activation,
+        ignore_comments,
+        ignore_processing_instructions,
+        ignore_whitespace,
+    ) {
         Ok(nodes) => {
             this.set_children(
                 activation.context.gc_context,

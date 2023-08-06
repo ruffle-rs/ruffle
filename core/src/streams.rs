@@ -129,8 +129,7 @@ impl<'gc> PartialEq for NetStream<'gc> {
 impl<'gc> Eq for NetStream<'gc> {}
 
 /// The current type of the data in the stream buffer.
-#[derive(Clone, Debug, Collect)]
-#[collect(require_static)]
+#[derive(Clone, Debug)]
 pub enum NetStreamType {
     /// The stream is an FLV.
     Flv {
@@ -172,6 +171,7 @@ pub struct NetStreamData<'gc> {
     preload_offset: usize,
 
     /// The current stream type, if known.
+    #[collect(require_static)]
     stream_type: Option<NetStreamType>,
 
     /// The current seek offset in the stream.

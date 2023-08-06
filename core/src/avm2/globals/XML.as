@@ -9,13 +9,38 @@ package {
             return this;
         }
         
-        AS3 static function setSettings(settings:Object): void {
-            stub_method("XML", "setSettings");
+        AS3 static function setSettings(settings:Object = null): void {
+            if (settings == null) {
+                settings = XML.AS3::defaultSettings();
+            }
+            if ("ignoreComments" in settings) {
+                XML.ignoreComments = settings.ignoreComments;
+            }
+            if ("ignoreProcessingInstructions" in settings) {
+                XML.ignoreProcessingInstructions = settings.ignoreProcessingInstructions;
+            }
+            if ("ignoreWhitespace" in settings) {
+                XML.ignoreWhitespace = settings.ignoreWhitespace;
+            }
+            if ("prettyIndent" in settings) {
+                XML.prettyIndent = settings.prettyIndent;
+            }
+            if ("prettyPrinting" in settings) {
+                XML.prettyPrinting = settings.prettyPrinting;
+            }
         }
 
         AS3 static function settings():Object {
-            stub_method("XML", "settings");
+            return {
+                ignoreComments: XML.ignoreComments,
+                ignoreProcessingInstructions: XML.ignoreProcessingInstructions,
+                ignoreWhitespace: XML.ignoreWhitespace,
+                prettyIndent: XML.prettyIndent,
+                prettyPrinting: XML.prettyPrinting
+            };
+        }
 
+        AS3 static function defaultSettings():Object {
             return {
                 ignoreComments: true,
                 ignoreProcessingInstructions: true,
@@ -26,10 +51,10 @@ package {
         }
 
         public function XML(value:* = undefined) {
-            this.init(value);
+            this.init(value, XML.ignoreComments, XML.ignoreProcessingInstructions, XML.ignoreWhitespace);
         }
 
-        private native function init(value:*):void;
+        private native function init(value:*, ignoreComments:Boolean, ignoreProcessingInstructions:Boolean, ignoreWhitespace:Boolean):void;
 
         AS3 native function hasComplexContent():Boolean;
         AS3 native function hasSimpleContent():Boolean;
@@ -51,6 +76,12 @@ package {
         AS3 native function text():XMLList;
         AS3 native function toString():String;
         AS3 native function length():int;
+
+        public static var ignoreComments:Boolean = true;
+        public static var ignoreProcessingInstructions:Boolean = true;
+        public static var ignoreWhitespace:Boolean = true;
+        public static var prettyPrinting:Boolean = true;
+        public static var prettyIndent:int = 2;
 
         prototype.hasComplexContent = function():Boolean {
             var self:XML = this;

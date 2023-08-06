@@ -1,21 +1,72 @@
 package flash.xml
 {
-   // TODO: Re-implement XMLDocument shim in Rust.
+
+import flash.xml.XMLNode;
+import flash.xml.XMLNodeType;
+
    public class XMLDocument extends XMLNode {
 
       public var ignoreWhite: Boolean = false;
 
       public function XMLDocument(input: String = null) {
-         super(0, null);
-         _isDocument = true;
-         parseXML(input);
+         super(XMLNodeType.ELEMENT_NODE, null);
+         if (input != null) {
+            parseXML(input);
+         }
       }
 
       public function parseXML(input: String): void {
-         // Unlike the new AS3 XML class, XMLDocument allows parsing
-         // multiple elements like <a>1</a><b>2</b>. So introduce a wrapper.
-         _setXML("<xml>" + input + "</xml>", this.ignoreWhite);
-         _children = null;
+         // This is something of a hack, but that's somewhat the nature of XMLDocument
+         // It accepts things like `<node>...</node> <!-- comment --> foo` which is FOUR children:
+         // `<node>...</node>` gets parsed as an element
+         // ` ` gets parsed as a text node
+         // `<!-- comment -->` gets parsed as a comment
+         // ` foo` is another text node
+         // To achieve this, just wrap it all together in a parent.
+
+         var oldSettings = XML.AS3::settings();
+         var newSettings = XML.AS3::defaultSettings();
+         newSettings.ignoreWhitespace = this.ignoreWhite;
+         XML.AS3::setSettings(newSettings);
+
+         try {
+            clear();
+            var root = new XML("<xml>" + input + "</xml>");
+            for each (var child in root.children()) {
+               appendChild(_convertXmlNode(child));
+            }
+         } finally {
+            XML.AS3::setSettings(oldSettings);
+         }
+      }
+
+      private function _convertXmlNode(original: XML): XMLNode {
+         var nodeType = _convertXmlNodeType(original.nodeKind());
+         var nodeValue = nodeType == XMLNodeType.ELEMENT_NODE ? original.name() : original.toString();
+         var result = new XMLNode(nodeType, nodeValue);
+         for each (var originalChild in original.children()) {
+            result.appendChild(_convertXmlNode(originalChild));
+         }
+         var attributeList = original.attributes();
+         var attributes = {};
+         for each (var attribute in attributeList) {
+            attributes[attribute.name()] = attribute.toString();
+         }
+         result.attributes = attributes;
+         return result;
+      }
+
+      private function _convertXmlNodeType(kind: String): uint {
+         if (kind == "text") {
+            return XMLNodeType.TEXT_NODE;
+         }
+         if (kind == "comment") {
+            return XMLNodeType.COMMENT_NODE;
+         }
+         if (kind == "element") {
+            return XMLNodeType.ELEMENT_NODE;
+         }
+         throw new Error("Invalid XML Node kind '" + kind + "' found whilst constructing (legacy) XMLDocument");
       }
 
       public function createElement(name:String): XMLNode {

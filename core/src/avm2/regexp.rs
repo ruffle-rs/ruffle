@@ -16,6 +16,7 @@ use gc_arena::Collect;
 #[collect(no_drop)]
 pub struct RegExp<'gc> {
     source: AvmString<'gc>,
+    #[collect(require_static)]
     flags: RegExpFlags,
     last_index: usize,
 
@@ -37,8 +38,7 @@ impl<'gc> Clone for RegExp<'gc> {
 }
 
 bitflags! {
-    #[derive(Clone, Copy, Collect, Debug)]
-    #[collect(require_static)]
+    #[derive(Clone, Copy, Debug)]
     pub struct RegExpFlags: u8 {
         const GLOBAL       = 1 << 0;
         const IGNORE_CASE  = 1 << 1;

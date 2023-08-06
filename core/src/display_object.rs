@@ -212,6 +212,7 @@ pub struct DisplayObjectBase<'gc> {
     next_avm1_clip: Option<DisplayObject<'gc>>,
 
     /// The sound transform of sounds playing via this display object.
+    #[collect(require_static)]
     sound_transform: SoundTransform,
 
     /// The display object that we are being masked by.
@@ -236,6 +237,7 @@ pub struct DisplayObjectBase<'gc> {
     opaque_background: Option<Color>,
 
     /// Bit flags for various display object properties.
+    #[collect(require_static)]
     flags: DisplayObjectFlags,
 
     /// The 'internal' scroll rect used for rendering and methods like 'localToGlobal'.
@@ -2290,8 +2292,7 @@ impl<'gc> DisplayObject<'gc> {
 
 bitflags! {
     /// Bit flags used by `DisplayObject`.
-    #[derive(Clone, Collect, Copy)]
-    #[collect(require_static)]
+    #[derive(Clone, Copy)]
     struct DisplayObjectFlags: u16 {
         /// Whether this object has been removed from the display list.
         /// Necessary in AVM1 to throw away queued actions from removed movie clips.
@@ -2367,8 +2368,7 @@ bitflags! {
 /// Every value is a percentage (0-100), but out of range values are allowed.
 /// In AVM1, this is returned by `Sound.getTransform`.
 /// In AVM2, this is returned by `Sprite.soundTransform`.
-#[derive(Debug, PartialEq, Eq, Clone, Collect)]
-#[collect(require_static)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct SoundTransform {
     pub volume: i32,
     pub left_to_left: i32,

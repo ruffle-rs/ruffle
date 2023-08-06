@@ -14,7 +14,7 @@ use flash_lso::types::{AMFVersion, Element};
 macro_rules! assert_socket_open {
     ($activation:expr, $socket:expr) => {
         let handle = $socket
-            .get_handle()
+            .handle()
             .ok_or_else(|| invalid_socket_error($activation))?;
 
         if !$activation.context.sockets.is_connected(handle) {
@@ -43,7 +43,7 @@ pub fn connect<'gc>(
         sockets, navigator, ..
     } = &mut activation.context;
 
-    sockets.connect(*navigator, socket, host.to_utf8_lossy().into_owned(), port);
+    sockets.connect_avm2(*navigator, socket, host.to_utf8_lossy().into_owned(), port);
 
     Ok(Value::Undefined)
 }
@@ -80,9 +80,7 @@ pub fn close<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(socket) = this.as_socket() {
         // We throw an IOError when socket is not open.
-        let handle = socket
-            .get_handle()
-            .ok_or(invalid_socket_error(activation))?;
+        let handle = socket.handle().ok_or(invalid_socket_error(activation))?;
 
         if !activation.context.sockets.is_connected(handle) {
             return Err(invalid_socket_error(activation));
@@ -154,7 +152,7 @@ pub fn get_connected<'gc>(
 
     let UpdateContext { sockets, .. } = &mut activation.context;
 
-    let handle = match socket.get_handle() {
+    let handle = match socket.handle() {
         Some(handle) => handle,
         None => return Ok(Value::Bool(false)),
     };
@@ -197,9 +195,7 @@ pub fn flush<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(socket) = this.as_socket() {
-        let handle = socket
-            .get_handle()
-            .ok_or(invalid_socket_error(activation))?;
+        let handle = socket.handle().ok_or(invalid_socket_error(activation))?;
         if !activation.context.sockets.is_connected(handle) {
             return Err(invalid_socket_error(activation));
         }

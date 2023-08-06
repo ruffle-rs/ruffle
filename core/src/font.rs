@@ -16,8 +16,7 @@ pub fn round_down_to_pixel(t: Twips) -> Twips {
 }
 
 /// Parameters necessary to evaluate a font.
-#[derive(Copy, Clone, Debug, Collect)]
-#[collect(require_static)]
+#[derive(Copy, Clone, Debug)]
 pub struct EvalParameters {
     /// The height of each glyph, equivalent to a font size.
     height: Twips,
@@ -97,6 +96,7 @@ struct FontData {
     leading: i16,
 
     /// The identity of the font.
+    #[collect(require_static)]
     descriptor: FontDescriptor,
 }
 
@@ -508,8 +508,7 @@ impl FontDescriptor {
 /// This is controlled by the "Anti-alias" setting in the Flash IDE.
 /// Using "Anti-alias for readibility" switches to the "Advanced" text
 /// rendering engine.
-#[derive(Debug, PartialEq, Clone, Collect)]
-#[collect(require_static)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TextRenderSettings {
     /// This text should render with the standard rendering engine.
     /// Set via "Anti-alias for animation" in the Flash IDE.

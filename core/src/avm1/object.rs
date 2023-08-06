@@ -14,6 +14,7 @@ use crate::avm1::globals::gradient_filter::GradientFilter;
 use crate::avm1::globals::shared_object::SharedObject;
 use crate::avm1::globals::transform::TransformObject;
 use crate::avm1::globals::xml::Xml;
+use crate::avm1::globals::xml_socket::XmlSocket;
 use crate::avm1::object::array_object::ArrayObject;
 use crate::avm1::object::super_object::SuperObject;
 use crate::avm1::object::value_object::ValueObject;
@@ -59,6 +60,7 @@ pub enum NativeObject<'gc> {
     Xml(Xml<'gc>),
     XmlNode(XmlNode<'gc>),
     SharedObject(GcCell<'gc, SharedObject>),
+    XmlSocket(XmlSocket<'gc>),
 }
 
 /// Represents an object that can be directly interacted with by the AVM

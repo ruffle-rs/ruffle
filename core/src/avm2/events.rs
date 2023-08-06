@@ -1,6 +1,7 @@
 //! Core event structure
 
 use crate::avm2::activation::Activation;
+use crate::avm2::error::type_error;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -13,8 +14,7 @@ use std::collections::BTreeMap;
 use std::hash::{Hash, Hasher};
 
 /// Which phase of event dispatch is currently occurring.
-#[derive(Copy, Clone, Collect, Debug, PartialEq, Eq)]
-#[collect(require_static)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum EventPhase {
     /// The event has yet to be fired on the target and is descending the
     /// ancestors of the event target.
@@ -29,8 +29,7 @@ pub enum EventPhase {
 }
 
 /// How this event is allowed to propagate.
-#[derive(Copy, Clone, Collect, Debug, PartialEq, Eq)]
-#[collect(require_static)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum PropagationMode {
     /// Propagate events normally.
     Allow,
@@ -59,12 +58,14 @@ pub struct Event<'gc> {
     cancelled: bool,
 
     /// Whether or not event propagation has stopped.
+    #[collect(require_static)]
     propagation: PropagationMode,
 
     /// The object currently having it's event handlers invoked.
     current_target: Option<Object<'gc>>,
 
     /// The current event phase.
+    #[collect(require_static)]
     event_phase: EventPhase,
 
     /// The object this event was dispatched on.
@@ -72,6 +73,9 @@ pub struct Event<'gc> {
 
     /// The name of the event being triggered.
     event_type: AvmString<'gc>,
+
+    /// Whether is event has been dispatched before.
+    dispatched: bool,
 }
 
 impl<'gc> Event<'gc> {
@@ -89,6 +93,7 @@ impl<'gc> Event<'gc> {
             event_phase: EventPhase::AtTarget,
             target: None,
             event_type: event_type.into(),
+            dispatched: false,
         }
     }
 
@@ -448,10 +453,33 @@ pub fn dispatch_event<'gc>(
         parent = parent_of(par);
     }
 
+    let dispatched = event.as_event().unwrap().dispatched;
+
+    let event = if dispatched {
+        event
+            .call_public_property("clone", &[], activation)?
+            .as_object()
+            .ok_or_else(|| {
+                let error = type_error(
+                    activation,
+                    "Error #2007: Parameter event must be non-null.",
+                    2007,
+                );
+
+                match error {
+                    Err(e) => e,
+                    Ok(e) => Error::AvmError(e),
+                }
+            })?
+    } else {
+        event
+    };
+
     let mut evtmut = event.as_event_mut(activation.context.gc_context).unwrap();
 
     evtmut.set_phase(EventPhase::Capturing);
     evtmut.set_target(target);
+    evtmut.dispatched = true;
 
     drop(evtmut);
 

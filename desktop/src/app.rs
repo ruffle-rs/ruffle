@@ -145,7 +145,7 @@ impl App {
                         // Event consumed by GUI.
                         return;
                     }
-                    let height_offset = if self.window.fullscreen().is_some() {
+                    let height_offset = if self.window.fullscreen().is_some() && !self.opt.no_gui {
                         0.0
                     } else {
                         MENU_HEIGHT as f64 * self.window.scale_factor()
