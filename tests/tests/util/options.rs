@@ -214,10 +214,11 @@ impl PlayerOptions {
 }
 
 #[derive(Deserialize, Copy, Clone, Debug, Eq, PartialEq, Default)]
-#[serde(deny_unknown_fields, untagged)]
+#[serde(rename_all = "snake_case")]
 pub enum ImageTrigger {
     #[default]
     LastFrame,
+    FsCommand,
 }
 
 #[derive(Deserialize, Default, Clone, Debug)]
