@@ -2,7 +2,7 @@
 
 num_frames = 10
 
-[image_comparison]
+[image_comparisons.output]
 tolerance = 0
 
 [player_options]

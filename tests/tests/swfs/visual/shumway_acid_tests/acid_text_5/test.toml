@@ -3,7 +3,7 @@
 num_frames = 1
 known_failure = true # https://github.com/ruffle-rs/ruffle/issues/12122
 
-[image_comparison]
+[image_comparisons.output]
 tolerance = 0
 
 [player_options]

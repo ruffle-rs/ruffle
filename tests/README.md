@@ -40,10 +40,10 @@ with_renderer = { optional = false, sample_count = 4, exclude_warp = false } # I
 with_audio = false # If this test requires an audio backend to run.
 with_video = false # If this test requires a video decoder backend to run.
 
-# Whether or not to compare the image rendered with an expected image
+# A list of image comparisons to perform during the test. This block is repeatable infinitely, as long as each name is unique.
 # The comparison part of a test is optional and only runs when `imgtests` feature is enabled
 # This requires a render to be setup for this test
-[image_comparison]
+[image_comparisons.COMPARISON_NAME] # COMPARISON_NAME is a name of this particular image
 tolerance = 0 # The tolerance per pixel channel to be considered "the same". Increase as needed with tests that aren't pixel perfect across platforms.
 max_outliers = 0 # Maximum number of outliers allowed over the given tolerance levels. Increase as needed with tests that aren't pixel perfect across platforms.
 

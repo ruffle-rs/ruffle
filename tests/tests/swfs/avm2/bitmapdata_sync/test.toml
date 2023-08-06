@@ -1,6 +1,6 @@
 num_frames = 6
 
-[image_comparison]
+[image_comparisons.output]
 tolerance = 0
 
 [player_options]

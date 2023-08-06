@@ -3,7 +3,7 @@
 num_frames = 1
 ignore = true # https://github.com/ruffle-rs/ruffle/issues/12127
 
-[image_comparison]
+[image_comparisons.output]
 tolerance = 0
 
 [player_options]
