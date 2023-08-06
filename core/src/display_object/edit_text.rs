@@ -743,7 +743,7 @@ impl<'gc> EditText<'gc> {
         if autosize != AutoSizeMode::None {
             if !is_word_wrap {
                 // The edit text's bounds needs to have the padding baked in.
-                let width = intrinsic_bounds.extent_x() + padding;
+                let width = intrinsic_bounds.width() + padding;
                 let new_x = match autosize {
                     AutoSizeMode::Left => edit_text.bounds.x_min,
                     AutoSizeMode::Center => {
