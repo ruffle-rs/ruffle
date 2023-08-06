@@ -1,6 +1,6 @@
 use crate::util::fs_commands::{FsCommand, TestFsCommandProvider};
 use crate::util::navigator::TestNavigatorBackend;
-use crate::util::options::ImageTrigger;
+use crate::util::options::{ImageComparison, ImageTrigger};
 use crate::util::test::Test;
 use anyhow::{anyhow, Context, Result};
 use ruffle_core::backend::audio::{
@@ -20,6 +20,7 @@ use ruffle_input_format::{
     TextControlCode as InputTextControlCode,
 };
 use ruffle_render_wgpu::backend::WgpuRenderBackend;
+use ruffle_render_wgpu::descriptors::Descriptors;
 use ruffle_render_wgpu::target::TextureTarget;
 use ruffle_socket_format::SocketEvent;
 use std::cell::RefCell;
@@ -133,8 +134,11 @@ pub fn run_swf(
         .with_autoplay(true) //.tick() requires playback
         .build();
 
-    let can_check_images =
-        cfg!(feature = "imgtests") && crate::util::environment::wgpu_descriptors().is_some();
+    let wgpu_descriptors = if cfg!(feature = "imgtests") {
+        crate::util::environment::wgpu_descriptors()
+    } else {
+        None
+    };
 
     let mut images = test.options.image_comparisons.clone();
 
@@ -191,6 +195,23 @@ pub fn run_swf(
             match command {
                 FsCommand::Quit => {
                     remaining_iterations = 0;
+                }
+                FsCommand::CaptureImage(name) => {
+                    if let Some(image_comparison) = images.remove(&name) {
+                        if image_comparison.trigger != ImageTrigger::FsCommand {
+                            return Err(anyhow!("Encountered fscommand to capture and compare image '{name}', but the trigger was expected to be {:?}", image_comparison.trigger));
+                        }
+                        capture_and_compare_image(
+                            base_path,
+                            &player,
+                            wgpu_descriptors,
+                            &name,
+                            image_comparison,
+                            test.options.known_failure,
+                        )?;
+                    } else {
+                        return Err(anyhow!("Encountered fscommand to capture and compare image '{name}', but no [image_comparison] was set up for this."));
+                    }
                 }
             }
         }
@@ -254,41 +275,14 @@ pub fn run_swf(
             .remove(&name)
             .expect("Name was just retrieved from map, should not be missing!");
 
-        if can_check_images {
-            let mut player_lock = player.lock().unwrap();
-            player_lock.render();
-            let renderer = player_lock
-                .renderer_mut()
-                .downcast_mut::<WgpuRenderBackend<TextureTarget>>()
-                .unwrap();
-
-            let actual_image = renderer.capture_frame().expect("Failed to capture image");
-
-            let expected_image_path = base_path.join(format!("{name}.expected.png"));
-            if expected_image_path.is_file() {
-                let expected_image = image::open(&expected_image_path)
-                    .context("Failed to open expected image")?
-                    .into_rgba8();
-
-                image_comparison.test(
-                    &name,
-                    actual_image,
-                    expected_image,
-                    base_path,
-                    renderer.descriptors().adapter.get_info(),
-                    test.options.known_failure,
-                )?;
-            } else if !test.options.known_failure {
-                // If we're expecting this to be wrong, don't save a likely wrong image
-                actual_image.save(expected_image_path)?;
-            }
-        } else if test.options.known_failure {
-            // It's possible that the trace output matched but the image might not.
-            // If we aren't checking the image, pretend the match failed (which makes it actually pass, since it's expecting failure).
-            return Err(anyhow!(
-                "Not checking images, pretending this failed since we don't know if it worked."
-            ));
-        }
+        capture_and_compare_image(
+            base_path,
+            &player,
+            wgpu_descriptors,
+            &name,
+            image_comparison,
+            test.options.known_failure,
+        )?;
     }
 
     if !images.is_empty() {
@@ -308,4 +302,51 @@ pub fn run_swf(
     // bytes should explicitly test for them in ActionScript.
     let normalized_trace = trace.replace('\0', "");
     Ok(normalized_trace)
+}
+
+fn capture_and_compare_image(
+    base_path: &Path,
+    player: &Arc<Mutex<Player>>,
+    wgpu_descriptors: Option<&Arc<Descriptors>>,
+    name: &String,
+    image_comparison: ImageComparison,
+    known_failure: bool,
+) -> Result<()> {
+    if let Some(wgpu_descriptors) = wgpu_descriptors {
+        let mut player_lock = player.lock().unwrap();
+        player_lock.render();
+        let renderer = player_lock
+            .renderer_mut()
+            .downcast_mut::<WgpuRenderBackend<TextureTarget>>()
+            .unwrap();
+
+        let actual_image = renderer.capture_frame().expect("Failed to capture image");
+
+        let expected_image_path = base_path.join(format!("{name}.expected.png"));
+        if expected_image_path.is_file() {
+            let expected_image = image::open(&expected_image_path)
+                .context("Failed to open expected image")?
+                .into_rgba8();
+
+            image_comparison.test(
+                name,
+                actual_image,
+                expected_image,
+                base_path,
+                wgpu_descriptors.adapter.get_info(),
+                known_failure,
+            )?;
+        } else if !known_failure {
+            // If we're expecting this to be wrong, don't save a likely wrong image
+            actual_image.save(expected_image_path)?;
+        }
+    } else if known_failure {
+        // It's possible that the trace output matched but the image might not.
+        // If we aren't checking the image, pretend the match failed (which makes it actually pass, since it's expecting failure).
+        return Err(anyhow!(
+            "Not checking images, pretending this failed since we don't know if it worked."
+        ));
+    }
+
+    Ok(())
 }

@@ -26,15 +26,17 @@ impl FsCommandProvider for TestFsCommandProvider {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub enum FsCommand {
     Quit,
+    CaptureImage(String),
 }
 
 impl FsCommand {
-    pub fn from_command(command: &str, _args: &str) -> Option<Self> {
+    pub fn from_command(command: &str, args: &str) -> Option<Self> {
         match command {
             "quit" => Some(Self::Quit),
+            "captureImage" => Some(Self::CaptureImage(args.to_string())),
             _ => None,
         }
     }

@@ -46,6 +46,7 @@ with_video = false # If this test requires a video decoder backend to run.
 [image_comparisons.COMPARISON_NAME] # COMPARISON_NAME is a name of this particular image
 tolerance = 0 # The tolerance per pixel channel to be considered "the same". Increase as needed with tests that aren't pixel perfect across platforms.
 max_outliers = 0 # Maximum number of outliers allowed over the given tolerance levels. Increase as needed with tests that aren't pixel perfect across platforms.
+trigger = "last_frame" # When to trigger this capture. Options are last_frame (default) or fs_command. Only one capture may be last_frame.
 
 # Which build features are required for this test to run.
 [required_features]
