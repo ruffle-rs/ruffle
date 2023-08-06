@@ -11,13 +11,23 @@ declare global {
          * [[PublicAPI]] via [[PublicAPI.negotiate]], or an actual
          * [[PublicAPI]] instance itself.
          */
-        RufflePlayer?:
-            | {
-                  config?: DataLoadOptions | URLLoadOptions | object;
-                  conflict?: Record<string, unknown> | null;
-              }
-            | PublicAPI;
+        RufflePlayer?: PublicAPILike | PublicAPI;
     }
+}
+
+/**
+ * Represents a potential installation of a Ruffle public API.
+ *
+ * Unlike [[PublicAPI]], this may come from any source, past or future.
+ * It needs to be forwards compatible and convertable into a modern day [[PublicAPI]].
+ */
+interface PublicAPILike {
+    config?: DataLoadOptions | URLLoadOptions | object;
+    sources?: Record<string, typeof SourceAPI>;
+    invoked?: boolean;
+    newestName?: string | null;
+
+    superseded?(): void;
 }
 
 /**
@@ -31,16 +41,14 @@ declare global {
  * This API *is* versioned, in case we need to upgrade it. However, it must be
  * backwards- and forwards-compatible with all known sources.
  */
-export class PublicAPI {
+export class PublicAPI implements PublicAPILike {
     /**
      * The configuration object used when Ruffle is instantiated.
      */
     config: DataLoadOptions | URLLoadOptions | object;
-    conflict: Record<string, unknown> | null;
-
-    private sources: Record<string, typeof SourceAPI>;
-    private invoked: boolean;
-    private newestName: string | null;
+    sources: Record<string, typeof SourceAPI>;
+    invoked: boolean;
+    newestName: string | null;
 
     /**
      * Construct the Ruffle public API.
@@ -57,34 +65,13 @@ export class PublicAPI {
      * This is used to upgrade from a prior version of the public API, or from
      * a user-defined configuration object placed in the public API slot.
      */
-    protected constructor(prev: PublicAPI | null | Record<string, unknown>) {
-        this.sources = {};
-        this.config = {};
-        this.invoked = false;
-        this.newestName = null;
-        this.conflict = null;
+    protected constructor(prev: PublicAPILike | null) {
+        this.sources = prev?.sources || {};
+        this.config = prev?.config || {};
+        this.invoked = prev?.invoked || false;
+        this.newestName = prev?.newestName || null;
 
-        if (prev !== undefined && prev !== null) {
-            if (prev instanceof PublicAPI) {
-                // We're upgrading from a previous API to a new one.
-                this.sources = prev.sources;
-                this.config = prev.config;
-                this.invoked = prev.invoked;
-                this.conflict = prev.conflict;
-                this.newestName = prev.newestName;
-
-                prev.superseded();
-            } else if (
-                prev.constructor === Object &&
-                prev["config"] instanceof Object
-            ) {
-                // We're the first, install user configuration.
-                this.config = prev["config"];
-            } else {
-                // We're the first, but conflicting with someone else.
-                this.conflict = prev;
-            }
-        }
+        prev?.superseded?.();
 
         if (document.readyState === "loading") {
             // Cloudflare Rocket Loader interferes with the DOMContentLoaded event,
@@ -244,7 +231,7 @@ export class PublicAPI {
      * Unfortunately, we can't disable polyfills after-the-fact, so this
      * only lets you disable the init event...
      */
-    protected superseded(): void {
+    superseded(): void {
         this.invoked = true;
     }
 
@@ -269,7 +256,7 @@ export class PublicAPI {
      * @returns The Ruffle Public API.
      */
     static negotiate(
-        prevRuffle: PublicAPI | null | Record<string, unknown>,
+        prevRuffle: PublicAPILike,
         sourceName: string | undefined,
     ): PublicAPI {
         let publicAPI: PublicAPI;

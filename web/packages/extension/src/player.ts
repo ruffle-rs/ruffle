@@ -24,7 +24,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     player.id = "player";
     document.getElementById("main")!.append(player);
 
-    const options = await utils.getOptions();
+    const options = await utils.getExplicitOptions();
 
     player.load({
         ...options,
