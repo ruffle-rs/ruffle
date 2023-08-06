@@ -10,3 +10,6 @@ target/
 
 # Flash recovery files
 RECOVER_*.fla
+
+# Jetbrains tools (CLion, IntelliJ, etc)
+/.idea
