@@ -407,8 +407,7 @@ impl<'gc> E4XNode<'gc> {
             match &event {
                 Event::Start(bs) => {
                     let child =
-                        E4XNode::from_start_event(activation, &parser, bs, parser.decoder())
-                            .map_err(|_| malformed_element(activation))?;
+                        E4XNode::from_start_event(activation, &parser, bs, parser.decoder())?;
 
                     if let Some(current_tag) = open_tags.last_mut() {
                         current_tag.append_child(activation.context.gc_context, child)?;
@@ -416,8 +415,8 @@ impl<'gc> E4XNode<'gc> {
                     open_tags.push(child);
                 }
                 Event::Empty(bs) => {
-                    let node = E4XNode::from_start_event(activation, &parser, bs, parser.decoder())
-                        .map_err(|_| malformed_element(activation))?;
+                    let node =
+                        E4XNode::from_start_event(activation, &parser, bs, parser.decoder())?;
                     push_childless_node(node, &mut open_tags, &mut top_level, activation)?;
                 }
                 Event::End(_) => {
@@ -525,25 +524,41 @@ impl<'gc> E4XNode<'gc> {
         parser: &NsReader<&[u8]>,
         bs: &BytesStart<'_>,
         decoder: quick_xml::Decoder,
-    ) -> Result<Self, quick_xml::Error> {
+    ) -> Result<Self, Error<'gc>> {
         let mut attribute_nodes = Vec::new();
 
         let attributes: Result<Vec<_>, _> = bs.attributes().collect();
-        for attribute in attributes? {
+        for attribute in attributes.map_err(|_| malformed_element(activation))? {
             let (ns, local_name) = parser.resolve_attribute(attribute.key);
+            let name =
+                AvmString::new_utf8_bytes(activation.context.gc_context, local_name.into_inner());
             let namespace = match ns {
                 ResolveResult::Bound(ns) => Some(AvmString::new_utf8_bytes(
                     activation.context.gc_context,
                     ns.into_inner(),
                 )),
                 ResolveResult::Unknown(ns) if ns == b"xmlns" => continue,
-                // TODO: Throw error on unknown prefix
-                _ => None,
+                // https://www.w3.org/TR/xml-names/#xmlReserved
+                // The prefix xml is by definition bound to the namespace name http://www.w3.org/XML/1998/namespace.
+                ResolveResult::Unknown(ns) if ns == b"xml" => {
+                    Some("http://www.w3.org/XML/1998/namespace".into())
+                }
+                ResolveResult::Unknown(ns) => {
+                    return Err(Error::AvmError(type_error(
+                        activation,
+                        &format!(
+                            "Error #1083: The prefix \"{}\" for element \"{}\" is not bound.",
+                            String::from_utf8_lossy(&ns),
+                            name
+                        ),
+                        1083,
+                    )?))
+                }
+                ResolveResult::Unbound => None,
             };
-            let name =
-                AvmString::new_utf8_bytes(activation.context.gc_context, local_name.into_inner());
 
-            let value_str = custom_unescape(&attribute.value, decoder)?;
+            let value_str = custom_unescape(&attribute.value, decoder)
+                .map_err(|_| malformed_element(activation))?;
             let value =
                 AvmString::new_utf8_bytes(activation.context.gc_context, value_str.as_bytes());
 
@@ -558,18 +573,29 @@ impl<'gc> E4XNode<'gc> {
         }
 
         let (ns, local_name) = parser.resolve_element(bs.name());
-
+        let name =
+            AvmString::new_utf8_bytes(activation.context.gc_context, local_name.into_inner());
         let namespace = match ns {
             ResolveResult::Bound(ns) => Some(AvmString::new_utf8_bytes(
                 activation.context.gc_context,
                 ns.into_inner(),
             )),
-            // TODO: Throw error on unknown prefix
-            _ => None,
+            ResolveResult::Unknown(ns) if ns == b"xml" => {
+                Some("http://www.w3.org/XML/1998/namespace".into())
+            }
+            ResolveResult::Unknown(ns) => {
+                return Err(Error::AvmError(type_error(
+                    activation,
+                    &format!(
+                        "Error #1083: The prefix \"{}\" for element \"{}\" is not bound.",
+                        String::from_utf8_lossy(&ns),
+                        name
+                    ),
+                    1083,
+                )?))
+            }
+            ResolveResult::Unbound => None,
         };
-
-        let name =
-            AvmString::new_utf8_bytes(activation.context.gc_context, local_name.into_inner());
 
         let data = E4XNodeData {
             parent: None,
