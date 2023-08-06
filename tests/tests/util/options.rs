@@ -1,4 +1,5 @@
 use crate::util::environment::wgpu_descriptors;
+use crate::util::image_trigger::ImageTrigger;
 use crate::util::runner::TestAudioBackend;
 use anyhow::{anyhow, Result};
 use approx::assert_relative_eq;
@@ -8,7 +9,7 @@ use ruffle_core::{PlayerBuilder, ViewportDimensions};
 use ruffle_render::quality::StageQuality;
 use ruffle_render_wgpu::wgpu;
 use serde::Deserialize;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -58,14 +59,15 @@ impl TestOptions {
 
     fn validate(&self) -> Result<()> {
         if !self.image_comparisons.is_empty() {
-            let mut has_final = false;
+            let mut seen_triggers = HashSet::new();
             for comparison in self.image_comparisons.values() {
-                if comparison.trigger == ImageTrigger::LastFrame {
-                    if has_final {
-                        return Err(anyhow!("Multiple captures are set to trigger on the last frame. This likely isn't intended!"));
-                    } else {
-                        has_final = true;
-                    }
+                if comparison.trigger != ImageTrigger::FsCommand
+                    && !seen_triggers.insert(comparison.trigger)
+                {
+                    return Err(anyhow!(
+                        "Multiple captures are set to trigger {:?}. This likely isn't intended!",
+                        comparison.trigger
+                    ));
                 }
             }
         }
@@ -211,14 +213,6 @@ impl PlayerOptions {
         }
         true
     }
-}
-
-#[derive(Deserialize, Copy, Clone, Debug, Eq, PartialEq, Default)]
-#[serde(rename_all = "snake_case")]
-pub enum ImageTrigger {
-    #[default]
-    LastFrame,
-    FsCommand,
 }
 
 #[derive(Deserialize, Default, Clone, Debug)]
