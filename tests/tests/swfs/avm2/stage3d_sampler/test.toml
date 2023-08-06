@@ -1,6 +1,6 @@
 num_frames = 1
 
-[image_comparison]
+[image_comparisons.output]
 tolerance = 1
 max_outliers = 782
 

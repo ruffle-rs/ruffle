@@ -1,6 +1,6 @@
 num_frames = 100
 
-[image_comparison]
+[image_comparisons.output]
 tolerance = 0
 
 [approximations]

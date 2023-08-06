@@ -1,7 +1,8 @@
 use crate::util::fs_commands::{FsCommand, TestFsCommandProvider};
 use crate::util::navigator::TestNavigatorBackend;
+use crate::util::options::ImageTrigger;
 use crate::util::test::Test;
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use ruffle_core::backend::audio::{
     swf, AudioBackend, AudioMixer, DecodeError, RegisterError, SoundHandle, SoundInstanceHandle,
     SoundTransform,
@@ -18,6 +19,8 @@ use ruffle_input_format::{
     AutomatedEvent, InputInjector, MouseButton as InputMouseButton,
     TextControlCode as InputTextControlCode,
 };
+use ruffle_render_wgpu::backend::WgpuRenderBackend;
+use ruffle_render_wgpu::target::TextureTarget;
 use ruffle_socket_format::SocketEvent;
 use std::cell::RefCell;
 use std::path::Path;
@@ -130,6 +133,11 @@ pub fn run_swf(
         .with_autoplay(true) //.tick() requires playback
         .build();
 
+    let can_check_images =
+        cfg!(feature = "imgtests") && crate::util::environment::wgpu_descriptors().is_some();
+
+    let mut images = test.options.image_comparisons.clone();
+
     before_start(player.clone())?;
 
     if test.options.num_frames.is_none() && test.options.num_ticks.is_none() {
@@ -237,20 +245,16 @@ pub fn run_swf(
         player.lock().unwrap().render();
     }
 
-    // Render the image to disk
-    // FIXME: Determine how we want to compare against on on-disk image
-    #[allow(unused_variables)]
-    if let Some(image_comparison) = &test.options.image_comparison {
-        #[allow(unused_mut)]
-        let mut checked_image = false;
+    if let Some(name) = images
+        .iter()
+        .find(|(_k, v)| v.trigger == ImageTrigger::LastFrame)
+        .map(|(k, _v)| k.to_owned())
+    {
+        let image_comparison = images
+            .remove(&name)
+            .expect("Name was just retrieved from map, should not be missing!");
 
-        #[cfg(feature = "imgtests")]
-        if crate::util::environment::wgpu_descriptors().is_some() {
-            use anyhow::Context;
-            use ruffle_render_wgpu::backend::WgpuRenderBackend;
-            use ruffle_render_wgpu::target::TextureTarget;
-
-            checked_image = true;
+        if can_check_images {
             let mut player_lock = player.lock().unwrap();
             player_lock.render();
             let renderer = player_lock
@@ -260,13 +264,14 @@ pub fn run_swf(
 
             let actual_image = renderer.capture_frame().expect("Failed to capture image");
 
-            let expected_image_path = base_path.join("expected.png");
+            let expected_image_path = base_path.join(format!("{name}.expected.png"));
             if expected_image_path.is_file() {
                 let expected_image = image::open(&expected_image_path)
                     .context("Failed to open expected image")?
                     .into_rgba8();
 
                 image_comparison.test(
+                    &name,
                     actual_image,
                     expected_image,
                     base_path,
@@ -277,15 +282,20 @@ pub fn run_swf(
                 // If we're expecting this to be wrong, don't save a likely wrong image
                 actual_image.save(expected_image_path)?;
             }
-        }
-
-        if test.options.known_failure && !checked_image {
+        } else if test.options.known_failure {
             // It's possible that the trace output matched but the image might not.
             // If we aren't checking the image, pretend the match failed (which makes it actually pass, since it's expecting failure).
             return Err(anyhow!(
                 "Not checking images, pretending this failed since we don't know if it worked."
             ));
         }
+    }
+
+    if !images.is_empty() {
+        return Err(anyhow!(
+            "Image comparisons didn't trigger: {:?}",
+            images.keys()
+        ));
     }
 
     before_end(player)?;

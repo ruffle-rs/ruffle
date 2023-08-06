@@ -1,6 +1,6 @@
 num_ticks = 1
 
-[image_comparison]
+[image_comparisons.output]
 tolerance = 1
 
 [player_options]
