@@ -1491,8 +1491,8 @@ pub fn merge<'gc>(
 
             let red_mult = args.get_i32(activation, 3)?;
             let green_mult = args.get_i32(activation, 4)?;
-            let blue_mult = args.get_i32(activation, 4)?;
-            let alpha_mult = args.get_i32(activation, 4)?;
+            let blue_mult = args.get_i32(activation, 5)?;
+            let alpha_mult = args.get_i32(activation, 6)?;
 
             if let Some(src_bitmap) = src_bitmap.as_bitmap_data() {
                 if !src_bitmap.disposed() {
