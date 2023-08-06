@@ -1459,3 +1459,55 @@ pub fn pixel_dissolve<'gc>(
 
     Ok(Value::Undefined)
 }
+
+// Implements `BitmapData.merge`.
+pub fn merge<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(bitmap_data) = this.as_bitmap_data() {
+        if !bitmap_data.disposed() {
+            let src_bitmap = args.get_object(activation, 0, "sourceBitmapData")?;
+
+            let (src_min_x, src_min_y, src_width, src_height) = {
+                let source_rect = args.get_object(activation, 1, "sourceRect")?;
+                get_rectangle_x_y_width_height(activation, source_rect)?
+            };
+
+            let dest_point = {
+                let dest_point = args.get_object(activation, 2, "destPoint")?;
+
+                let x = dest_point
+                    .get_public_property("x", activation)?
+                    .coerce_to_i32(activation)?;
+
+                let y = dest_point
+                    .get_public_property("y", activation)?
+                    .coerce_to_i32(activation)?;
+
+                (x, y)
+            };
+
+            let red_mult = args.get_i32(activation, 3)?;
+            let green_mult = args.get_i32(activation, 4)?;
+            let blue_mult = args.get_i32(activation, 5)?;
+            let alpha_mult = args.get_i32(activation, 6)?;
+
+            if let Some(src_bitmap) = src_bitmap.as_bitmap_data() {
+                if !src_bitmap.disposed() {
+                    operations::merge(
+                        activation.context.gc_context,
+                        bitmap_data,
+                        src_bitmap,
+                        (src_min_x, src_min_y, src_width, src_height),
+                        dest_point,
+                        (red_mult, green_mult, blue_mult, alpha_mult),
+                    );
+                }
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
