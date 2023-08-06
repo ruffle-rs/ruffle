@@ -1,6 +1,7 @@
 use crate::util::fs_commands::{FsCommand, TestFsCommandProvider};
+use crate::util::image_trigger::ImageTrigger;
 use crate::util::navigator::TestNavigatorBackend;
-use crate::util::options::{ImageComparison, ImageTrigger};
+use crate::util::options::ImageComparison;
 use crate::util::test::Test;
 use anyhow::{anyhow, Context, Result};
 use ruffle_core::backend::audio::{
@@ -156,6 +157,7 @@ pub fn run_swf(
         .num_frames
         .or(test.options.num_ticks)
         .expect("valid iteration count");
+    let mut current_iteration = 0;
 
     while remaining_iterations > 0 {
         // If requested, ensure that the 'expected' amount of
@@ -189,6 +191,7 @@ pub fn run_swf(
             player.lock().unwrap().audio_mut().tick();
         }
         remaining_iterations -= 1;
+        current_iteration += 1;
         executor.run();
 
         for command in fs_commands.try_iter() {
@@ -264,6 +267,24 @@ pub fn run_swf(
         });
         // Rendering has side-effects (such as processing 'DisplayObject.scrollRect' updates)
         player.lock().unwrap().render();
+
+        if let Some(name) = images
+            .iter()
+            .find(|(_k, v)| v.trigger == ImageTrigger::SpecificIteration(current_iteration))
+            .map(|(k, _v)| k.to_owned())
+        {
+            let image_comparison = images
+                .remove(&name)
+                .expect("Name was just retrieved from map, should not be missing!");
+            capture_and_compare_image(
+                base_path,
+                &player,
+                wgpu_descriptors,
+                &name,
+                image_comparison,
+                test.options.known_failure,
+            )?;
+        }
     }
 
     if let Some(name) = images
