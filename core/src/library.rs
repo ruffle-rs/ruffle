@@ -347,6 +347,10 @@ impl<'gc> MovieLibrary<'gc> {
     pub fn avm2_domain(&self) -> Avm2Domain<'gc> {
         self.avm2_domain.unwrap()
     }
+
+    pub fn try_avm2_domain(&self) -> Option<Avm2Domain<'gc>> {
+        self.avm2_domain
+    }
 }
 
 pub struct MovieLibrarySource<'a, 'gc> {
