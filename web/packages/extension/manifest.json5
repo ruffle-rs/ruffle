@@ -29,7 +29,7 @@
     ],
 
     // 'wasm-eval' added by Webpack for Chrome extension.
-    "content_security_policy": "default-src 'self'; script-src 'self'; style-src 'unsafe-inline'; connect-src *; img-src data:;",
+    "content_security_policy": "default-src 'self'; script-src 'self'; style-src 'unsafe-inline'; connect-src *; media-src *; img-src data:;",
 
     "icons": {
         "16": "images/icon16.png",
