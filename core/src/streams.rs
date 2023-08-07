@@ -259,7 +259,9 @@ impl<'gc> NetStream<'gc> {
     pub fn play(self, context: &mut UpdateContext<'_, 'gc>, name: Option<AvmString<'gc>>) {
         if let Some(name) = name {
             let request = Request::get(name.to_string());
-            self.0.write(context.gc_context).url = Some(request.url().to_string());
+            let mut write = self.0.write(context.gc_context);
+            write.url = Some(request.url().to_string());
+            write.preload_offset = 0;
             let future = context
                 .load_manager
                 .load_netstream(context.player.clone(), self, request);
