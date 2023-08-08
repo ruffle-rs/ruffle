@@ -13,8 +13,8 @@ tracing = { workspace = true }
 ruffle_render = { path = "..", features = ["tessellator", "wgpu"] }
 bytemuck = { version = "1.13.1", features = ["derive"] }
 raw-window-handle = "0.5"
-clap = { version = "4.3.19", features = ["derive"], optional = true }
-enum-map = "2.6.0"
+clap = { version = "4.3.21", features = ["derive"], optional = true }
+enum-map = "2.6.1"
 fnv = "1.0.7"
 swf = { path = "../../swf" }
 image = { version = "0.24.6", default-features = false }
