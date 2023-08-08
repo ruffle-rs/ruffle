@@ -2420,40 +2420,53 @@ impl<'gc> MovieClip<'gc> {
     // after one frame if the target is a MovieClip? Test the behaviour and adapt the code
     // if necessary.
     pub fn avm1_unload_movie(&self, context: &mut UpdateContext<'_, 'gc>) {
-        let unloader = Loader::MovieUnloader {
-            self_handle: None,
-            target_clip: DisplayObject::MovieClip(*self),
-        };
-        let handle = context.load_manager.add_loader(unloader);
+        // TODO: In Flash player, the MovieClip properties change to the unloaded state
+        // one frame after the unloadMovie command has been read, even if the MovieClip
+        // is not a root MovieClip (see the movieclip_library_state_values test).
+        // However, if avm1_unload and transform_to_unloaded_state are called with a one
+        // frame delay when the MovieClip is not a root MovieClip, regressions appear.
+        // Ruffle is probably replacing a MovieClip differently to Flash, therefore
+        // introducing these regressions when trying to emulate that delay.
 
-        let player = context
-            .player
-            .clone()
-            .upgrade()
-            .expect("Could not upgrade weak reference to player");
-        let future = Box::pin(async move {
-            player
-                .lock()
-                .unwrap()
-                .update(|uc| -> Result<(), loader::Error> {
-                    let clip = match uc.load_manager.get_loader(handle) {
-                        Some(Loader::MovieUnloader { target_clip, .. }) => *target_clip,
-                        None => return Err(loader::Error::Cancelled),
-                        _ => unreachable!(),
-                    };
-                    if let Some(mc) = clip.as_movie_clip() {
-                        mc.avm1_unload(uc);
-                        mc.transform_to_unloaded_state(uc);
-                    }
+        if self.is_root() {
+            let unloader = Loader::MovieUnloader {
+                self_handle: None,
+                target_clip: DisplayObject::MovieClip(*self),
+            };
+            let handle = context.load_manager.add_loader(unloader);
 
-                    uc.load_manager.remove_loader(handle);
+            let player = context
+                .player
+                .clone()
+                .upgrade()
+                .expect("Could not upgrade weak reference to player");
+            let future = Box::pin(async move {
+                player
+                    .lock()
+                    .unwrap()
+                    .update(|uc| -> Result<(), loader::Error> {
+                        let clip = match uc.load_manager.get_loader(handle) {
+                            Some(Loader::MovieUnloader { target_clip, .. }) => *target_clip,
+                            None => return Err(loader::Error::Cancelled),
+                            _ => unreachable!(),
+                        };
+                        if let Some(mc) = clip.as_movie_clip() {
+                            mc.avm1_unload(uc);
+                            mc.transform_to_unloaded_state(uc);
+                        }
 
-                    Ok(())
-                })?;
-            Ok(())
-        });
+                        uc.load_manager.remove_loader(handle);
 
-        context.navigator.spawn_future(future);
+                        Ok(())
+                    })?;
+                Ok(())
+            });
+
+            context.navigator.spawn_future(future);
+        } else {
+            self.avm1_unload(context);
+            self.transform_to_unloaded_state(context);
+        }
     }
 
     /// This makes the MovieClip enter the unloaded state in which some attributes have
