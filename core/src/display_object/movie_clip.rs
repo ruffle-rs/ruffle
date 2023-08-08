@@ -386,20 +386,20 @@ impl<'gc> MovieClip<'gc> {
 
     /// Replace the current MovieClipData with a completely new SwfMovie.
     ///
+    /// If no movie is provided, then the movie clip will be replaced with an
+    /// empty movie of the same SWF version.
+    ///
     /// Playback will start at position zero, any existing streamed audio will
     /// be terminated, and so on. Children and AVM data will NOT be kept across
     /// the load boundary.
-    ///
-    /// If no movie is provided, then the movie clip will be replaced with an
-    /// empty movie of the same SWF version.
     pub fn replace_with_movie(
         self,
         context: &mut UpdateContext<'_, 'gc>,
         movie: Option<Arc<SwfMovie>>,
+        is_root: bool,
         loader_info: Option<LoaderInfoObject<'gc>>,
     ) {
         let mut mc = self.0.write(context.gc_context);
-        let is_swf = movie.is_some();
         let movie = movie.unwrap_or_else(|| Arc::new(SwfMovie::empty(mc.movie().version())));
         let total_frames = movie.num_frames();
         assert_eq!(
@@ -420,7 +420,7 @@ impl<'gc> MovieClip<'gc> {
         );
         mc.tag_stream_pos = 0;
         mc.flags = MovieClipFlags::PLAYING;
-        mc.base.base.set_is_root(is_swf);
+        mc.base.base.set_is_root(is_root);
         mc.current_frame = 0;
         mc.audio_stream = None;
         mc.container = ChildContainer::new();
@@ -2476,7 +2476,7 @@ impl<'gc> MovieClip<'gc> {
             None
         };
 
-        self.replace_with_movie(context, movie, None);
+        self.replace_with_movie(context, movie, self.is_root(), None);
     }
 }
 
