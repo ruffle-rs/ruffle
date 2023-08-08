@@ -1254,6 +1254,9 @@ fn handle_igraphics_data<'gc>(
     } else if class == activation.avm2().classes().graphicssolidfill {
         let style = handle_solid_fill(activation, obj)?;
         drawing.set_fill_style(Some(style));
+    } else if class == activation.avm2().classes().graphicsshaderfill {
+        tracing::warn!("Graphics shader fill unimplemented {:?}", class);
+        drawing.set_fill_style(None);
     } else if class == activation.avm2().classes().graphicsstroke {
         let thickness = obj
             .get_public_property("thickness", activation)?
@@ -1432,7 +1435,7 @@ fn handle_graphics_triangle_path<'gc>(
                 }
             }
         } else {
-            println!("Indices is not a vector");
+            panic!("Indices is not a vector");
         };
     }
 
@@ -1457,7 +1460,10 @@ fn handle_igraphics_fill<'gc>(
     } else if class == activation.avm2().classes().graphicssolidfill {
         let style = handle_solid_fill(activation, obj)?;
         Ok(Some(style))
-    } else {
+    } else if class == activation.avm2().classes().graphicsshaderfill {
+        tracing::warn!("Graphics shader fill unimplemented {:?}", class);
+        Ok(None)
+    }  else {
         tracing::warn!("Unknown graphics fill class {:?}", class);
         Ok(None)
     }
@@ -1581,13 +1587,15 @@ fn handle_bitmap_fill<'gc>(
         .expect("Bitmap argument is ensured to be a BitmapData from actionscript");
 
     let matrix = obj
-        .get_public_property("matrix", activation)?
-        .coerce_to_object(activation);
+        .get_public_property("matrix", activation)
+        .and_then(|prop| {
+            let matrix = prop.coerce_to_object(activation)?;
 
-    let matrix = match matrix {
-        Ok(matrix) => Matrix::from(object_to_matrix(matrix, activation)?),
-        Err(_) => Matrix::IDENTITY,
-    };
+            let matrix = Matrix::from(object_to_matrix(matrix, activation)?);
+
+            Ok(matrix)
+        })
+        .unwrap_or(Matrix::IDENTITY);
 
     let is_repeating = obj
         .get_public_property("repeat", activation)?
