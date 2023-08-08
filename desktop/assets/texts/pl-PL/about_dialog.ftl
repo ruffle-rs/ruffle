@@ -1,0 +1,9 @@
+about-ruffle = O Ruffle
+about-ruffle-version = Wersja
+about-ruffle-channel = Kanał
+about-ruffle-build-time = Czas Kompilacji
+about-ruffle-build-features = Funkcje Kompilacji
+about-ruffle-visit-website = Strona WWW
+about-ruffle-visit-github = GitHub
+about-ruffle-visit-discord = Discord
+about-ruffle-visit-sponsor = Zostań Sponsorem

@@ -1,0 +1,20 @@
+{
+    "settings_log_level_error": {
+        "message": "Błędy"
+    },
+    "settings_log_level_warn": {
+        "message": "Ostrzeżenia"
+    },
+    "settings_log_level_info": {
+        "message": "Info"
+    },
+    "settings_preferred_renderer": {
+        "message": "Preferowany renderer"
+    },
+    "settings_advanced_options": {
+        "message": "Opcje Zaawansowane"
+    },
+    "settings_reset": {
+        "message": "Resetuj ustawienia"
+    }
+}

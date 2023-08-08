@@ -8,23 +8,13 @@
 # Some items may be also be duplicated here, like "About Ruffle" in the menu and "About Ruffle" elsewhere as the header of the about menu.
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
-file-menu = Ficheiro
-file-menu-open-quick = Abrir...
-file-menu-open-advanced = Abrir Avançado...
-file-menu-close = Fechar
-file-menu-reload = Recarregar
-file-menu-exit = Sair
-controls-menu = Controlos
-controls-menu-suspend = Suspender
-controls-menu-resume = Continuar
-help-menu = Ajuda
-help-menu-join-discord = Entrar no Discord
-help-menu-report-a-bug = Reportar uma Falha...
-help-menu-sponsor-development = Patrocine o Desenvolvimento...
-help-menu-translate-ruffle = Traduza o Ruffle...
-help-menu-about = Sobre o Ruffle
-debug-menu = Ferramentas de Depuração
-debug-menu-open-stage = Ver Info do Palco
-debug-menu-open-movie = Ver Filme
-debug-menu-open-movie-list = Mostrar Filmes Conhecidos
-debug-menu-search-display-objects = Procurar por Display Objects...
+file-menu-open-quick = Otwórz...
+file-menu-close = Zamknij
+file-menu-reload = Odśwież
+help-menu = Pomoc
+help-menu-join-discord = Dołącz do Discorda
+help-menu-report-a-bug = Zgłoś Błąd...
+help-menu-sponsor-development = Zasponsoruj Rozwój...
+help-menu-translate-ruffle = Tłumacz Ruffle...
+help-menu-about = O Ruffle
+debug-menu = Narzędzia Debugowania
