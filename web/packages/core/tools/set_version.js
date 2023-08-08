@@ -3,8 +3,7 @@ const childProcess = require("child_process");
 const fs = require("fs");
 
 let buildDate = new Date().toISOString();
-let versionNumber =
-    process.env.npm_package_version + "+" + buildDate.substr(0, 10);
+let versionNumber = process.env.npm_package_version;
 let versionChannel = process.env.CFG_RELEASE_CHANNEL || "nightly";
 const firefoxExtensionId =
     process.env.FIREFOX_EXTENSION_ID || "ruffle@ruffle.rs";

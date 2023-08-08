@@ -15,7 +15,8 @@ export const SourceAPI = {
     /**
      * The version of this particular API, as a string in a semver compatible format.
      */
-    version: buildInfo.versionNumber,
+    version:
+        buildInfo.versionNumber + "+" + buildInfo.buildDate.substring(0, 10),
 
     /**
      * Start up the polyfills.
