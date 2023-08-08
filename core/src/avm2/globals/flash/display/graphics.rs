@@ -1463,7 +1463,7 @@ fn handle_igraphics_fill<'gc>(
     } else if class == activation.avm2().classes().graphicsshaderfill {
         tracing::warn!("Graphics shader fill unimplemented {:?}", class);
         Ok(None)
-    }  else {
+    } else {
         tracing::warn!("Unknown graphics fill class {:?}", class);
         Ok(None)
     }
