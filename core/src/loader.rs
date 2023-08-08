@@ -860,7 +860,7 @@ impl<'gc> Loader<'gc> {
                     if !uc.is_action_script_3() {
                         mc.avm1_unload(uc);
                     }
-                    mc.replace_with_movie(uc, None, None);
+                    mc.replace_with_movie(uc, None, false, None);
                 }
 
                 // NOTE: We do NOT call `movie_loader_start` as `loadBytes` does
@@ -1576,7 +1576,12 @@ impl<'gc> Loader<'gc> {
                         // Store our downloaded `SwfMovie` into our target `MovieClip`,
                         // and initialize it.
 
-                        mc.replace_with_movie(&mut activation.context, Some(movie), loader_info);
+                        mc.replace_with_movie(
+                            &mut activation.context,
+                            Some(movie),
+                            true,
+                            loader_info,
+                        );
                     }
 
                     // NOTE: Certain tests specifically expect small files to preload immediately
@@ -1847,7 +1852,7 @@ impl<'gc> Loader<'gc> {
             // This is a load of an image into AVM1 - add it as a child of the target clip.
             if dobj.as_movie_clip().is_none() {
                 let mc = target_clip.as_movie_clip().unwrap();
-                mc.replace_with_movie(uc, Some(movie.unwrap()), None);
+                mc.replace_with_movie(uc, Some(movie.unwrap()), true, None);
                 mc.replace_at_depth(uc, dobj, 1);
 
                 // This sets the MovieClip image state correctly.
@@ -2020,7 +2025,7 @@ impl<'gc> Loader<'gc> {
                     let mut initial_loading_movie = SwfMovie::empty(current_version);
                     initial_loading_movie.set_url(current_url.to_string());
 
-                    mc.replace_with_movie(uc, Some(Arc::new(initial_loading_movie)), None);
+                    mc.replace_with_movie(uc, Some(Arc::new(initial_loading_movie)), true, None);
 
                     // Maybe this (keeping the current URL) should be the default behaviour
                     // of replace_with_movie?
@@ -2057,7 +2062,7 @@ impl<'gc> Loader<'gc> {
 
         let error_movie = SwfMovie::error_movie(swf_url);
         // This also sets total_frames correctly
-        mc.replace_with_movie(uc, Some(Arc::new(error_movie)), None);
+        mc.replace_with_movie(uc, Some(Arc::new(error_movie)), true, None);
         mc.set_cur_preload_frame(uc.gc_context, 0);
     }
 
