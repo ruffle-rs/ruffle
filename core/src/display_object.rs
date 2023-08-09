@@ -1600,7 +1600,10 @@ pub trait TDisplayObject<'gc>:
             if let Some(old_masker) = self.base().masker() {
                 old_masker.set_maskee(gc_context, None, false);
             }
-            self.invalidate_cached_bitmap(gc_context);
+            if let Some(parent) = self.parent() {
+                // Masks are natively handled by cacheAsBitmap - don't invalidate self, only parents
+                parent.invalidate_cached_bitmap(gc_context);
+            }
         }
         self.base_mut(gc_context).set_masker(node);
     }
