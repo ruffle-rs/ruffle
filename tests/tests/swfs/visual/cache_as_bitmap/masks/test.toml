@@ -1,5 +1,4 @@
 num_frames = 3
-known_failure = true
 
 [image_comparisons.frame1]
 tolerance = 1
