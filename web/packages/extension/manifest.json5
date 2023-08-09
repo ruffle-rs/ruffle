@@ -21,6 +21,8 @@
                 "https://sso.godaddy.com/*",
                 "https://authentication.td.com/*",
                 "https://*.twitch.tv/*",
+                "https://www.tuxedocomputers.com/*",
+                "https://*.taobao.com/*",
             ],
             "js": ["dist/content.js"],
             "all_frames": true,
