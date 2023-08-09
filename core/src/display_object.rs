@@ -771,7 +771,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
     let cache_info = if context.use_bitmap_cache && this.is_bitmap_cached() {
         let mut cache_info: Option<DrawCacheInfo> = None;
         let base_transform = context.transform_stack.transform();
-        let bounds: Rectangle<Twips> = this.bounds_with_transform(&base_transform.matrix);
+        let bounds: Rectangle<Twips> = this.render_bounds_with_transform(&base_transform.matrix);
         let name = this.name();
         let mut filters: Vec<Filter> = this.filters();
         let swf_version = this.swf_version();
@@ -873,7 +873,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
                 use_bitmap_cache: true,
                 stage: context.stage,
             };
-            render_base_inner(this, &mut offscreen_context);
+            this.render_self(&mut offscreen_context);
             offscreen_context.cache_draws.push(BitmapCacheEntry {
                 handle: cache_info.handle.clone(),
                 commands: offscreen_context.commands,
@@ -883,12 +883,54 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
         }
 
         // When rendering it back, ensure we're only keeping the translation - scale/rotation is within the image already
+
+        let scroll_rect = this.scroll_rect();
+        let (scroll_x, scroll_y, scroll_mask_matrix) = if let Some(rect) = &scroll_rect {
+            (
+                -rect.x_min,
+                -rect.y_min,
+                Some(Matrix::create_box(
+                    rect.width().to_pixels() as f32,
+                    rect.height().to_pixels() as f32,
+                    0.0,
+                    cache_info.base_transform.matrix.tx,
+                    cache_info.base_transform.matrix.ty,
+                )),
+            )
+        } else {
+            (Twips::ZERO, Twips::ZERO, None)
+        };
+
+        // TODO: This should probably be a `render_bitmap_with_alpha_mask` or something.
+        // This logic is temporarily just copy pasted regular masks, but it's wrong;
+        // CAB masks just use the mask alpha channel to replace the CAB texture
+        let mask = this.masker();
+        let mut mask_transform = ruffle_render::transform::Transform::default();
+        if let Some(m) = mask {
+            mask_transform.matrix = this.global_to_local_matrix().unwrap_or_default();
+            mask_transform.matrix *= m.local_to_global_matrix();
+            mask_transform.matrix.tx += scroll_x;
+            mask_transform.matrix.ty += scroll_y;
+            context.commands.push_mask();
+            context.transform_stack.push(&mask_transform);
+            m.render_self(context);
+            context.transform_stack.pop();
+            context.commands.activate_mask();
+        }
+
+        if let Some(scroll_mask_matrix) = scroll_mask_matrix {
+            context.commands.push_mask();
+            // The color doesn't matter, as this is a mask.
+            context.commands.draw_rect(Color::WHITE, scroll_mask_matrix);
+            context.commands.activate_mask();
+        }
+
         context.commands.render_bitmap(
             cache_info.handle,
             Transform {
                 matrix: Matrix {
-                    tx: cache_info.base_transform.matrix.tx + offset_x,
-                    ty: cache_info.base_transform.matrix.ty + offset_y,
+                    tx: cache_info.base_transform.matrix.tx + offset_x + scroll_x,
+                    ty: cache_info.base_transform.matrix.ty + offset_y + scroll_y,
                     ..Default::default()
                 },
                 color_transform: cache_info.base_transform.color_transform,
@@ -896,6 +938,22 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
             true,
             PixelSnapping::Always, // cacheAsBitmap forces pixel snapping
         );
+
+        if let Some(scroll_mask_matrix) = scroll_mask_matrix {
+            // Draw the rectangle again after deactivating the mask,
+            // to reset the stencil buffer.
+            context.commands.deactivate_mask();
+            context.commands.draw_rect(Color::WHITE, scroll_mask_matrix);
+            context.commands.pop_mask();
+        }
+
+        if let Some(m) = mask {
+            context.commands.deactivate_mask();
+            context.transform_stack.push(&mask_transform);
+            m.render_self(context);
+            context.transform_stack.pop();
+            context.commands.pop_mask();
+        }
     } else {
         if let Some(background) = this.opaque_background() {
             // This is intended for use with cacheAsBitmap, but can be set for non-cached objects too
@@ -1100,6 +1158,25 @@ pub trait TDisplayObject<'gc>:
                 bounds = bounds.union(&child.bounds_with_transform(&matrix));
             }
         }
+
+        bounds
+    }
+
+    /// Gets the **render bounds** of this object and all its children.
+    /// This differs from the bounds that are exposed to Flash, in two main ways:
+    /// - It may be larger if filters are applied which will increase the size of what's shown
+    /// - It does not respect scroll rects
+    fn render_bounds_with_transform(&self, matrix: &Matrix) -> Rectangle<Twips> {
+        let mut bounds = *matrix * self.self_bounds();
+
+        if let Some(ctr) = self.as_container() {
+            for child in ctr.iter_render_list() {
+                let matrix = *matrix * *child.base().matrix();
+                bounds = bounds.union(&child.bounds_with_transform(&matrix));
+            }
+        }
+
+        // TODO: make it expand with filter sizes here
 
         bounds
     }
@@ -1559,7 +1636,11 @@ pub trait TDisplayObject<'gc>:
         rectangle: Rectangle<Twips>,
     ) {
         self.base_mut(gc_context).next_scroll_rect = rectangle;
-        self.invalidate_cached_bitmap(gc_context);
+
+        // Scroll rect is natively handled by cacheAsBitmap - don't invalidate self, only parents
+        if let Some(parent) = self.parent() {
+            parent.invalidate_cached_bitmap(gc_context);
+        }
     }
 
     /// Whether this object has been removed. Only applies to AVM1.
