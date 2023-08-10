@@ -36,6 +36,7 @@ mod text;
 mod video;
 
 use crate::avm1::Activation;
+use crate::display_object::bitmap::BitmapWeak;
 pub use crate::display_object::container::{
     dispatch_added_event_only, dispatch_added_to_stage_event_only, DisplayObjectContainer,
     TDisplayObjectContainer,
@@ -2369,6 +2370,7 @@ impl<'gc> DisplayObject<'gc> {
         match self {
             DisplayObject::MovieClip(mc) => DisplayObjectWeak::MovieClip(mc.downgrade()),
             DisplayObject::LoaderDisplay(l) => DisplayObjectWeak::LoaderDisplay(l.downgrade()),
+            DisplayObject::Bitmap(b) => DisplayObjectWeak::Bitmap(b.downgrade()),
             _ => panic!("Downgrade not yet implemented for {:?}", self),
         }
     }
@@ -2604,6 +2606,7 @@ impl Default for SoundTransform {
 pub enum DisplayObjectWeak<'gc> {
     MovieClip(MovieClipWeak<'gc>),
     LoaderDisplay(LoaderDisplayWeak<'gc>),
+    Bitmap(BitmapWeak<'gc>),
 }
 
 impl<'gc> DisplayObjectWeak<'gc> {
@@ -2611,6 +2614,7 @@ impl<'gc> DisplayObjectWeak<'gc> {
         match self {
             DisplayObjectWeak::MovieClip(mc) => mc.as_ptr(),
             DisplayObjectWeak::LoaderDisplay(ld) => ld.as_ptr(),
+            DisplayObjectWeak::Bitmap(b) => b.as_ptr(),
         }
     }
 
@@ -2618,6 +2622,7 @@ impl<'gc> DisplayObjectWeak<'gc> {
         match self {
             DisplayObjectWeak::MovieClip(movie) => movie.upgrade(mc).map(|m| m.into()),
             DisplayObjectWeak::LoaderDisplay(ld) => ld.upgrade(mc).map(|ld| ld.into()),
+            DisplayObjectWeak::Bitmap(b) => b.upgrade(mc).map(|ld| ld.into()),
         }
     }
 }
