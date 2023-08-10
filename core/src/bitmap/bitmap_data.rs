@@ -1,7 +1,7 @@
 use crate::avm2::{Object as Avm2Object, Value as Avm2Value};
-use crate::display_object::{DisplayObject, TDisplayObject};
+use crate::display_object::{DisplayObject, DisplayObjectWeak, TDisplayObject};
 use bitflags::bitflags;
-use gc_arena::Collect;
+use gc_arena::{Collect, MutationContext};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, PixelRegion, SyncHandle};
 use ruffle_wstr::WStr;
@@ -220,6 +220,9 @@ pub struct BitmapData<'gc> {
     /// this does not need to hold an AVM1 object.
     avm2_object: Option<Avm2Object<'gc>>,
 
+    /// A list of display objects that are backed by this BitmapData
+    display_objects: Vec<DisplayObjectWeak<'gc>>,
+
     dirty_state: DirtyState,
 }
 
@@ -239,6 +242,7 @@ enum DirtyState {
 mod wrapper {
     use crate::avm2::{Object as Avm2Object, Value as Avm2Value};
     use crate::context::RenderContext;
+    use crate::display_object::DisplayObjectWeak;
     use gc_arena::{Collect, GcCell, MutationContext};
     use ruffle_render::backend::RenderBackend;
     use ruffle_render::bitmap::{BitmapHandle, PixelRegion, PixelSnapping};
@@ -299,6 +303,7 @@ mod wrapper {
                     disposed: true,
                     bitmap_handle: None,
                     avm2_object: None,
+                    display_objects: vec![],
                     dirty_state: DirtyState::Clean,
                 },
             ))
@@ -307,7 +312,7 @@ mod wrapper {
         // Provides access to the underlying `BitmapData`. If a GPU -> CPU sync
         // is in progress, waits for it to complete
         pub fn sync(&self) -> GcCell<'gc, BitmapData<'gc>> {
-            // SAFETY: The only field that can store gc pointers is `avm2_object`,
+            // SAFETY: The only fields that can store gc pointers are `avm2_object` and `dirty_callbacks`,
             // which we don't update here. Ideally, we would refactor this so that
             // `BitmapData` doesn't contain any gc pointers, allowing us to use a normal
             // `RefCell` instead of a `GcCell`.
@@ -425,6 +430,27 @@ mod wrapper {
             self.0.write(mc).avm2_object = Some(object)
         }
 
+        pub fn remove_display_object(
+            &self,
+            mc: MutationContext<'gc, '_>,
+            callback: DisplayObjectWeak<'gc>,
+        ) {
+            // [NA] Removing is a rare operation, whereas insert is often, and iteration is extremely frequent.
+            // The list will typically be 0-1 entries long too, so I think retain is fine for quick iteration.
+            self.0
+                .write(mc)
+                .display_objects
+                .retain(|c| c.as_ptr() != callback.as_ptr())
+        }
+
+        pub fn add_display_object(
+            &self,
+            mc: MutationContext<'gc, '_>,
+            callback: DisplayObjectWeak<'gc>,
+        ) {
+            self.0.write(mc).display_objects.push(callback);
+        }
+
         pub fn render(
             &self,
             smoothing: bool,
@@ -512,6 +538,7 @@ impl<'gc> BitmapData<'gc> {
             disposed: false,
             bitmap_handle: None,
             avm2_object: None,
+            display_objects: vec![],
             dirty_state: DirtyState::Clean,
         }
     }
@@ -531,6 +558,7 @@ impl<'gc> BitmapData<'gc> {
             avm2_object: None,
             disposed: false,
             dirty_state: DirtyState::Clean,
+            display_objects: vec![],
         }
     }
 
@@ -570,19 +598,34 @@ impl<'gc> BitmapData<'gc> {
         self.transparency
     }
 
-    pub fn set_gpu_dirty(&mut self, sync_handle: Box<dyn SyncHandle>, region: PixelRegion) {
+    pub fn set_gpu_dirty(
+        &mut self,
+        gc_context: MutationContext<'gc, '_>,
+        sync_handle: Box<dyn SyncHandle>,
+        region: PixelRegion,
+    ) {
         self.dirty_state = DirtyState::GpuModified(sync_handle, region);
+        self.inform_display_objects(gc_context);
     }
 
-    pub fn set_cpu_dirty(&mut self, region: PixelRegion) {
+    pub fn set_cpu_dirty(&mut self, gc_context: MutationContext<'gc, '_>, region: PixelRegion) {
         debug_assert!(region.x_max <= self.width);
         debug_assert!(region.y_max <= self.height);
-        match &mut self.dirty_state {
-            DirtyState::CpuModified(old_region) => old_region.union(region),
-            DirtyState::Clean => self.dirty_state = DirtyState::CpuModified(region),
+        let inform_changes = match &mut self.dirty_state {
+            DirtyState::CpuModified(old_region) => {
+                old_region.union(region);
+                false
+            }
+            DirtyState::Clean => {
+                self.dirty_state = DirtyState::CpuModified(region);
+                true
+            }
             DirtyState::GpuModified(_, _) => {
                 panic!("Attempted to modify CPU dirty state while GPU sync is in progress!")
             }
+        };
+        if inform_changes {
+            self.inform_display_objects(gc_context);
         }
     }
 
@@ -655,9 +698,17 @@ impl<'gc> BitmapData<'gc> {
                 ) {
                     tracing::error!("Failed to update dirty bitmap {:?}: {:?}", handle, e);
                 }
-                self.dirty_state = DirtyState::Clean;
+                self.dirty_state = DirtyState::Clean
             }
             DirtyState::Clean | DirtyState::GpuModified(_, _) => {}
+        }
+    }
+
+    fn inform_display_objects(&self, gc_context: MutationContext<'gc, '_>) {
+        for object in &self.display_objects {
+            if let Some(object) = object.upgrade(gc_context) {
+                object.invalidate_cached_bitmap(gc_context);
+            }
         }
     }
 
@@ -723,7 +774,6 @@ fn copy_pixels_to_bitmapdata(
             write.set_pixel32_raw(x, y, nc);
         }
     }
-    write.set_cpu_dirty(area);
 }
 
 #[derive(Copy, Clone, Debug)]

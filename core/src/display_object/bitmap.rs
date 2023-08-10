@@ -8,15 +8,31 @@ use crate::avm2::{
 };
 use crate::bitmap::bitmap_data::{BitmapData, BitmapDataWrapper};
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
+use crate::display_object::{
+    DisplayObjectBase, DisplayObjectPtr, DisplayObjectWeak, TDisplayObject,
+};
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use core::fmt;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use ruffle_render::bitmap::{BitmapFormat, PixelSnapping};
 use std::cell::{Ref, RefMut};
 use std::sync::Arc;
+
+#[derive(Clone, Debug, Collect, Copy)]
+#[collect(no_drop)]
+pub struct BitmapWeak<'gc>(GcWeakCell<'gc, BitmapGraphicData<'gc>>);
+
+impl<'gc> BitmapWeak<'gc> {
+    pub fn upgrade(self, mc: MutationContext<'gc, '_>) -> Option<Bitmap<'gc>> {
+        self.0.upgrade(mc).map(Bitmap)
+    }
+
+    pub fn as_ptr(self) -> *const DisplayObjectPtr {
+        self.0.as_ptr() as *const DisplayObjectPtr
+    }
+}
 
 /// The AVM2 class for the Bitmap associated with this object.
 ///
@@ -116,7 +132,7 @@ impl<'gc> Bitmap<'gc> {
         let width = bitmap_data.width();
         let height = bitmap_data.height();
 
-        Bitmap(GcCell::new(
+        let bitmap = Bitmap(GcCell::new(
             context.gc_context,
             BitmapGraphicData {
                 base: Default::default(),
@@ -130,7 +146,14 @@ impl<'gc> Bitmap<'gc> {
                 avm2_bitmap_class: BitmapClass::NoSubclass,
                 movie: context.swf.clone(),
             },
-        ))
+        ));
+
+        bitmap_data.add_display_object(
+            context.gc_context,
+            DisplayObjectWeak::Bitmap(bitmap.downgrade()),
+        );
+
+        bitmap
     }
 
     /// Create a `Bitmap` with static bitmap data only.
@@ -204,13 +227,21 @@ impl<'gc> Bitmap<'gc> {
         context: &mut UpdateContext<'_, 'gc>,
         bitmap_data: BitmapDataWrapper<'gc>,
     ) {
+        let weak_self = DisplayObjectWeak::Bitmap(self.downgrade());
         let mut write = self.0.write(context.gc_context);
+
+        write
+            .bitmap_data
+            .remove_display_object(context.gc_context, weak_self);
+
         // Refresh our cached values, even if we're writing the same BitmapData
         // that we currently have stored. This will update them to '0' if the
         // BitmapData has been disposed since it was originally set.
         write.width = bitmap_data.width();
         write.height = bitmap_data.height();
         write.bitmap_data = bitmap_data;
+
+        bitmap_data.add_display_object(context.gc_context, weak_self);
     }
 
     pub fn avm2_bitmapdata_class(self) -> Option<Avm2ClassObject<'gc>> {
@@ -253,6 +284,10 @@ impl<'gc> Bitmap<'gc> {
 
     pub fn set_smoothing(self, mc: MutationContext<'gc, '_>, smoothing: bool) {
         self.0.write(mc).smoothing = smoothing;
+    }
+
+    pub fn downgrade(self) -> BitmapWeak<'gc> {
+        BitmapWeak(GcCell::downgrade(self.0))
     }
 }
 
