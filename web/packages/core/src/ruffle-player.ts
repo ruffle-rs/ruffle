@@ -571,7 +571,9 @@ export class RufflePlayer extends HTMLElement {
 
         console.log(
             "%c" +
-                "New Ruffle instance created (WebAssembly extensions: " +
+                "New Ruffle instance created (Version: " +
+                buildInfo.versionName +
+                " | WebAssembly extensions: " +
                 (ruffleConstructor.is_wasm_simd_used() ? "ON" : "OFF") +
                 " | Used renderer: " +
                 (actuallyUsedRendererName ?? "") +
