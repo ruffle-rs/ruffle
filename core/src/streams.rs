@@ -47,9 +47,6 @@ enum NetstreamError {
 
     #[error("Unknown codec")]
     UnknownCodec,
-
-    #[error("AVM1 NetStream not attached to MovieClip")]
-    NotAttached,
 }
 
 impl From<DecodeError> for NetstreamError {
@@ -506,13 +503,7 @@ impl<'gc> NetStream<'gc> {
             if let Some((substream, sound_stream_head)) = &mut write.audio_stream {
                 let attached_to = write.attached_to;
 
-                if context.is_action_script_3() {
-                    write.sound_instance = Some(
-                        context
-                            .audio
-                            .start_substream(substream.clone(), sound_stream_head)?,
-                    );
-                } else if let Some(mc) = attached_to {
+                if let Some(mc) = attached_to {
                     write.sound_instance = Some(context.audio_manager.start_substream(
                         context.audio,
                         substream.clone(),
@@ -520,8 +511,12 @@ impl<'gc> NetStream<'gc> {
                         sound_stream_head,
                     )?);
                 } else {
-                    return Err(NetstreamError::NotAttached);
-                };
+                    write.sound_instance = Some(
+                        context
+                            .audio
+                            .start_substream(substream.clone(), sound_stream_head)?,
+                    );
+                }
             }
         }
 
