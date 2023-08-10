@@ -620,6 +620,9 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
     }
 
     fn bounds_with_transform(&self, matrix: &Matrix) -> Rectangle<Twips> {
+        // [NA]: The diff between this and the base impl is a lack of scroll_rect.
+        // Intentional, or bug?
+
         // Get self bounds
         let mut bounds = *matrix * self.self_bounds();
 
@@ -630,6 +633,20 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
             let child_bounds = child.bounds_with_transform(&matrix);
             bounds = bounds.union(&child_bounds);
         }
+
+        bounds
+    }
+
+    fn render_bounds_with_transform(&self, matrix: &Matrix) -> Rectangle<Twips> {
+        let mut bounds = *matrix * self.self_bounds();
+
+        let state = self.0.read().state;
+        if let Some(child) = self.get_state_child(state.into()) {
+            let matrix = *matrix * *child.base().matrix();
+            bounds = bounds.union(&child.render_bounds_with_transform(&matrix));
+        }
+
+        // TODO: make it expand with filter sizes here
 
         bounds
     }
