@@ -959,7 +959,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
             // This is intended for use with cacheAsBitmap, but can be set for non-cached objects too
             // It wants the entire bounding box to be cleared before any draws happen
             let bounds: Rectangle<Twips> =
-                this.bounds_with_transform(&context.transform_stack.transform().matrix);
+                this.render_bounds_with_transform(&context.transform_stack.transform().matrix);
             context.commands.draw_rect(
                 background,
                 Matrix::create_box(
@@ -1172,7 +1172,7 @@ pub trait TDisplayObject<'gc>:
         if let Some(ctr) = self.as_container() {
             for child in ctr.iter_render_list() {
                 let matrix = *matrix * *child.base().matrix();
-                bounds = bounds.union(&child.bounds_with_transform(&matrix));
+                bounds = bounds.union(&child.render_bounds_with_transform(&matrix));
             }
         }
 
