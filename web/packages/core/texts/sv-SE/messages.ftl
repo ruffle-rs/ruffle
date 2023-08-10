@@ -28,7 +28,7 @@ error-wasm-not-found =
 error-wasm-mime-type =
     Ruffle har stött på ett stort fel under initialiseringen.
     Denna webbserver serverar inte ".wasm"-filer med korrekt MIME-typ.
-    Om du är serveradministratören, vänligen konsultera Rufflewikin för hjälp.
+    Om du är serveradministratören konsultera vänligen Rufflewikin för hjälp.
 error-swf-fetch =
     Ruffle misslyckades ladda SWF-filen.
     Det mest sannolika skälet är att filen inte längre existerar, så det finns inget för Ruffle att ladda.
@@ -36,19 +36,19 @@ error-swf-fetch =
 error-swf-cors =
     Ruffle misslyckades ladda SWF-filen.
     Åtkomst att hämta har sannolikt blockerats av CORS-policy.
-    Om du är serveradministratören, vänligen konsultera Rufflewikin för hjälp.
+    Om du är serveradministratören konsultera vänligen Rufflewikin för hjälp.
 error-wasm-cors =
     Ruffle misslyckades ladda ".wasm"-filkomponenten.
     Åtkomst att hämta har sannolikt blockerats av CORS-policy.
-    Om du är serveradministratören, vänligen konsultera Rufflewikin för hjälp.
+    Om du är serveradministratören konsultera vänligen Rufflewikin för hjälp.
 error-wasm-invalid =
     Ruffle har stött på ett stort fel under initialiseringen
     Det verkar som att den här sidan har saknade eller ogiltiga filer för att köra Ruffle.
-    Om du är serveradministratören, vänligen konsultera Rufflewikin för hjälp.
+    Om du är serveradministratören konsultera vänligen Rufflewikin för hjälp.
 error-wasm-download =
     Ruffle har stött på ett stort fel under initialiseringen.
     Detta kan ofta lösas av sig själv, så du kan prova att ladda om sidan.
-    Annars, kontakta webbplatsens administratör.
+    Kontakta annars webbplatsens administratör.
 error-wasm-disabled-on-edge =
     Ruffle misslyckades ladda ".wasm"-filkomponenten.
     För att åtgärda detta, försök att öppna webbläsarens inställningar, klicka på "Sekretess, sökning och tjänster", bläddra ner och stäng av "Förbättra säkerheten på webben".
@@ -62,10 +62,10 @@ error-javascript-conflict-outdated = Du kan också försöka ladda upp en nyare 
 error-csp-conflict =
     Ruffle har stött på ett stort fel under initialiseringen.
     Denna webbservers Content Security Policy tillåter inte ".wasm"-komponenten att köra.
-    Om du är serveradministratören, vänligen konsultera Rufflewikin för hjälp.
+    Om du är serveradministratören konsultera vänligen Rufflewikin för hjälp.
 error-unknown =
     Ruffle har stött på ett stort fel medan den försökte visa Flashinnehållet.
     { $outdated ->
-        [true] Om du är serveradministratören, försök att ladda upp en nyare version av Ruffle (nuvarande version är utdaterad: { $buildDate }).
+        [true] Om du är serveradministratören försök att ladda upp en nyare version av Ruffle (nuvarande version är utdaterad: { $buildDate }).
        *[false] Detta är inte tänkt att hända så vi skulle verkligen uppskatta om du kunde rapportera in en bugg!
     }

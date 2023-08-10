@@ -54,7 +54,7 @@
         "message": "Ett fel uppstod när den aktuella fliken slogs upp."
     },
     "status_message_init": {
-        "message": "Kontrollerar Ruffle-status i aktuella fliken…"
+        "message": "Kontrollerar Rufflestatus på aktuella fliken…"
     },
     "status_result_running": {
         "message": "Ruffle är laddad och redo att köra Flashinnehåll på den aktuella fliken."
@@ -84,7 +84,7 @@
         "message": "Inställningar"
     },
     "description": {
-        "message": "Återställer Flash på webben, där det hör hemma."
+        "message": "Återställer Flash på webben där det hör hemma."
     },
     "save_settings": {
         "message": "Spara Inställningar"
