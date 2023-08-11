@@ -3,7 +3,7 @@ use crate::util::image_trigger::ImageTrigger;
 use crate::util::navigator::TestNavigatorBackend;
 use crate::util::options::ImageComparison;
 use crate::util::test::Test;
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Result};
 use ruffle_core::backend::audio::{
     swf, AudioBackend, AudioMixer, DecodeError, RegisterError, SoundHandle, SoundInstanceHandle,
     SoundTransform,
@@ -20,9 +20,7 @@ use ruffle_input_format::{
     AutomatedEvent, InputInjector, MouseButton as InputMouseButton,
     TextControlCode as InputTextControlCode,
 };
-use ruffle_render_wgpu::backend::WgpuRenderBackend;
 use ruffle_render_wgpu::descriptors::Descriptors;
-use ruffle_render_wgpu::target::TextureTarget;
 use ruffle_socket_format::SocketEvent;
 use std::cell::RefCell;
 use std::path::Path;
@@ -135,13 +133,13 @@ pub fn run_swf(
         .with_autoplay(true) //.tick() requires playback
         .build();
 
-    let wgpu_descriptors = if cfg!(feature = "imgtests") {
+    let mut images = test.options.image_comparisons.clone();
+
+    let wgpu_descriptors = if cfg!(feature = "imgtests") && !images.is_empty() {
         crate::util::environment::wgpu_descriptors()
     } else {
         None
     };
-
-    let mut images = test.options.image_comparisons.clone();
 
     before_start(player.clone())?;
 
@@ -325,6 +323,27 @@ pub fn run_swf(
     Ok(normalized_trace)
 }
 
+#[cfg(not(feature = "imgtests"))]
+fn capture_and_compare_image(
+    _base_path: &Path,
+    _player: &Arc<Mutex<Player>>,
+    _wgpu_descriptors: Option<&Arc<Descriptors>>,
+    _name: &String,
+    _image_comparison: ImageComparison,
+    known_failure: bool,
+) -> Result<()> {
+    if known_failure {
+        // It's possible that the trace output matched but the image might not.
+        // If we aren't checking the image, pretend the match failed (which makes it actually pass, since it's expecting failure).
+        return Err(anyhow!(
+            "Not checking images, pretending this failed since we don't know if it worked."
+        ));
+    } else {
+        Ok(())
+    }
+}
+
+#[cfg(feature = "imgtests")]
 fn capture_and_compare_image(
     base_path: &Path,
     player: &Arc<Mutex<Player>>,
@@ -333,6 +352,10 @@ fn capture_and_compare_image(
     image_comparison: ImageComparison,
     known_failure: bool,
 ) -> Result<()> {
+    use anyhow::Context;
+    use ruffle_render_wgpu::backend::WgpuRenderBackend;
+    use ruffle_render_wgpu::target::TextureTarget;
+
     if let Some(wgpu_descriptors) = wgpu_descriptors {
         let mut player_lock = player.lock().unwrap();
         player_lock.render();
