@@ -42,7 +42,7 @@ error-wasm-cors =
     Åtkomst att hämta har sannolikt blockerats av CORS-policy.
     Om du är serveradministratören konsultera vänligen Rufflewikin för hjälp.
 error-wasm-invalid =
-    Ruffle har stött på ett stort fel under initialiseringen
+    Ruffle har stött på ett stort fel under initialiseringen.
     Det verkar som att den här sidan har saknade eller ogiltiga filer för att köra Ruffle.
     Om du är serveradministratören konsultera vänligen Rufflewikin för hjälp.
 error-wasm-download =
@@ -51,7 +51,7 @@ error-wasm-download =
     Kontakta annars webbplatsens administratör.
 error-wasm-disabled-on-edge =
     Ruffle misslyckades ladda ".wasm"-filkomponenten.
-    För att åtgärda detta, försök att öppna webbläsarens inställningar, klicka på "Sekretess, sökning och tjänster", bläddra ner och stäng av "Förbättra säkerheten på webben".
+    För att åtgärda detta försök att öppna webbläsarens inställningar, klicka på "Sekretess, sökning och tjänster", bläddra ner och stäng av "Förbättra säkerheten på webben".
     Detta tillåter din webbläsare ladda ".wasm"-filerna.
     Om problemet kvarstår kan du behöva använda en annan webbläsare.
 error-javascript-conflict =
