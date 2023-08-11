@@ -33,7 +33,7 @@ use std::cell::Cell;
 use std::mem;
 use std::path::Path;
 use std::sync::Arc;
-use swf::{Color, Rectangle};
+use swf::Color;
 use tracing::instrument;
 use wgpu::SubmissionIndex;
 
@@ -923,12 +923,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         );
 
         Some(self.make_queue_sync_handle(target, index, destination, copy_area))
-    }
-
-    fn calculate_dest_rect(&self, filter: &Filter, source_rect: Rectangle<i32>) -> Rectangle<i32> {
-        self.descriptors
-            .filters
-            .calculate_dest_rect(filter, source_rect)
     }
 
     fn compile_pixelbender_shader(

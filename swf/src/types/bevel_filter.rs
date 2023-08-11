@@ -1,4 +1,4 @@
-use crate::{BlurFilter, BlurFilterFlags, Color, Fixed16, Fixed8};
+use crate::{BlurFilter, BlurFilterFlags, Color, Fixed16, Fixed8, Rectangle};
 use bitflags::bitflags;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -46,6 +46,29 @@ impl BevelFilter {
             blur_y: self.blur_y,
             flags: BlurFilterFlags::from_passes(self.num_passes()),
         }
+    }
+
+    pub fn calculate_dest_rect(&self, source_rect: Rectangle<i32>) -> Rectangle<i32> {
+        let mut result = self.inner_blur_filter().calculate_dest_rect(source_rect);
+        let distance = self.distance.to_f32();
+        let angle = self.angle.to_f32();
+        let x = (angle.cos() * distance).ceil() as i32;
+        let y = (angle.sin() * distance).ceil() as i32;
+        if x < 0 {
+            result.x_min += x;
+            result.x_max -= x;
+        } else {
+            result.x_max += x;
+            result.x_min -= x;
+        }
+        if y < 0 {
+            result.y_min += y;
+            result.y_max -= y;
+        } else {
+            result.y_max += y;
+            result.y_min -= y;
+        }
+        result
     }
 }
 

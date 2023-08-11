@@ -21,7 +21,6 @@ use crate::filters::shader::ShaderFilter;
 use crate::surface::target::CommandTarget;
 use bytemuck::{Pod, Zeroable};
 use ruffle_render::filters::Filter;
-use swf::Rectangle;
 use wgpu::util::DeviceExt;
 use wgpu::vertex_attr_array;
 
@@ -221,31 +220,6 @@ impl Filters {
             glow: GlowFilter::new(device),
             bevel: BevelFilter::new(device),
             displacement_map: DisplacementMapFilter::new(device),
-        }
-    }
-
-    pub fn calculate_dest_rect(
-        &self,
-        filter: &Filter,
-        source_rect: Rectangle<i32>,
-    ) -> Rectangle<i32> {
-        match filter {
-            Filter::BlurFilter(filter) => self.blur.calculate_dest_rect(filter, source_rect),
-            Filter::GlowFilter(filter) => {
-                self.glow
-                    .calculate_dest_rect(filter, source_rect, &self.blur)
-            }
-            Filter::DropShadowFilter(filter) => {
-                DropShadowFilter::calculate_dest_rect(filter, source_rect, &self.blur, &self.glow)
-            }
-            Filter::BevelFilter(filter) => {
-                self.bevel
-                    .calculate_dest_rect(filter, source_rect, &self.blur)
-            }
-            Filter::DisplacementMapFilter(filter) => self
-                .displacement_map
-                .calculate_dest_rect(filter, source_rect),
-            _ => source_rect,
         }
     }
 

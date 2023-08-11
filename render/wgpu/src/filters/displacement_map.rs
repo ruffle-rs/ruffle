@@ -10,7 +10,6 @@ use ruffle_render::filters::{
     DisplacementMapFilter as DisplacementMapFilterArgs, DisplacementMapFilterMode,
 };
 use std::sync::OnceLock;
-use swf::Rectangle;
 use wgpu::util::DeviceExt;
 
 #[repr(C)]
@@ -138,28 +137,6 @@ impl DisplacementMapFilter {
                     multiview: None,
                 })
         })
-    }
-
-    pub fn calculate_dest_rect(
-        &self,
-        _filter: &DisplacementMapFilterArgs,
-        source_rect: Rectangle<i32>,
-    ) -> Rectangle<i32> {
-        source_rect
-        // [NA] TODO: This *appears* to be correct, but I'm not entirely sure why Flash does this.
-        // This is commented out for now because Flash actually might need us to resize the texture *after* we make it,
-        // which is unsupported in our current architecture as of time of writing.
-
-        // if filter.mode == DisplacementMapFilterMode::Color {
-        //     Rectangle {
-        //         x_min: source_rect.x_min - ((filter.scale_x / 2.0).floor() as i32),
-        //         x_max: source_rect.x_max + (filter.scale_x.floor() as i32),
-        //         y_min: source_rect.y_min - ((filter.scale_y / 2.0).floor() as i32),
-        //         y_max: source_rect.y_max + (filter.scale_y.floor() as i32),
-        //     }
-        // } else {
-        //     source_rect
-        // }
     }
 
     pub fn apply(
