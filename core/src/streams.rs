@@ -28,6 +28,7 @@ use std::cmp::max;
 use std::io::Seek;
 use std::sync::{Arc, Mutex};
 use swf::{VideoCodec, VideoDeblocking};
+use url::Url;
 
 /// Manager for all media streams.
 ///
@@ -258,7 +259,13 @@ impl<'gc> NetStream<'gc> {
     /// available in the buffer.
     pub fn play(self, context: &mut UpdateContext<'_, 'gc>, name: Option<AvmString<'gc>>) {
         if let Some(name) = name {
-            let request = Request::get(name.to_string());
+            let request = if let Ok(stream_url) =
+                Url::parse(context.swf.url()).and_then(|url| url.join(name.to_string().as_str()))
+            {
+                Request::get(stream_url.to_string())
+            } else {
+                Request::get(name.to_string())
+            };
             let mut write = self.0.write(context.gc_context);
             write.url = Some(request.url().to_string());
             write.preload_offset = 0;
