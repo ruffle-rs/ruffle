@@ -7,7 +7,7 @@ use crate::surface::target::CommandTarget;
 use crate::utils::SampleCountMap;
 use bytemuck::{Pod, Zeroable};
 use std::sync::OnceLock;
-use swf::{BevelFilter as BevelFilterArgs, Rectangle};
+use swf::BevelFilter as BevelFilterArgs;
 use wgpu::util::DeviceExt;
 
 #[repr(C)]
@@ -122,34 +122,6 @@ impl BevelFilter {
                     multiview: None,
                 })
         })
-    }
-
-    pub fn calculate_dest_rect(
-        &self,
-        filter: &BevelFilterArgs,
-        source_rect: Rectangle<i32>,
-        blur_filter: &BlurFilter,
-    ) -> Rectangle<i32> {
-        let mut result = blur_filter.calculate_dest_rect(&filter.inner_blur_filter(), source_rect);
-        let distance = filter.distance.to_f32();
-        let angle = filter.angle.to_f32();
-        let x = (angle.cos() * distance).ceil() as i32;
-        let y = (angle.sin() * distance).ceil() as i32;
-        if x < 0 {
-            result.x_min += x;
-            result.x_max -= x;
-        } else {
-            result.x_max += x;
-            result.x_min -= x;
-        }
-        if y < 0 {
-            result.y_min += y;
-            result.y_max -= y;
-        } else {
-            result.y_max += y;
-            result.y_min -= y;
-        }
-        result
     }
 
     #[allow(clippy::too_many_arguments)]

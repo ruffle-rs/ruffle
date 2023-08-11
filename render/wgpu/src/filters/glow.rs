@@ -7,7 +7,7 @@ use crate::surface::target::CommandTarget;
 use crate::utils::SampleCountMap;
 use bytemuck::{Pod, Zeroable};
 use std::sync::OnceLock;
-use swf::{GlowFilter as GlowFilterArgs, Rectangle};
+use swf::GlowFilter as GlowFilterArgs;
 use wgpu::util::DeviceExt;
 
 #[repr(C)]
@@ -121,16 +121,6 @@ impl GlowFilter {
                     multiview: None,
                 })
         })
-    }
-
-    pub fn calculate_dest_rect(
-        &self,
-        filter: &GlowFilterArgs,
-        source_rect: Rectangle<i32>,
-        blur_filter: &BlurFilter,
-    ) -> Rectangle<i32> {
-        // TODO: Inner might not need this. Docs suggest it doesn't care about source rect, but rather source *size*?
-        blur_filter.calculate_dest_rect(&filter.inner_blur_filter(), source_rect)
     }
 
     #[allow(clippy::too_many_arguments)]

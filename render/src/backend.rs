@@ -61,11 +61,6 @@ pub trait RenderBackend: Downcast {
         None
     }
 
-    /// Calculates the destination rect needed to hold a filter upon a source of the given area.
-    fn calculate_dest_rect(&self, _filter: &Filter, source_rect: Rectangle<i32>) -> Rectangle<i32> {
-        source_rect
-    }
-
     fn is_filter_supported(&self, _filter: &Filter) -> bool {
         false
     }
