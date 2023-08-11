@@ -170,6 +170,7 @@ pub struct SystemClasses<'gc> {
     pub font: ClassObject<'gc>,
     pub textline: ClassObject<'gc>,
     pub sampledataevent: ClassObject<'gc>,
+    pub avm1movie: ClassObject<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -298,6 +299,7 @@ impl<'gc> SystemClasses<'gc> {
             font: object,
             textline: object,
             sampledataevent: object,
+            avm1movie: object,
         }
     }
 }
@@ -729,6 +731,7 @@ fn load_playerglobal<'gc>(
             ("", "VerifyError", verifyerror),
             ("", "XML", xml),
             ("", "XMLList", xml_list),
+            ("flash.display", "AVM1Movie", avm1movie),
             ("flash.display", "Bitmap", bitmap),
             ("flash.display", "BitmapData", bitmapdata),
             ("flash.display", "Scene", scene),

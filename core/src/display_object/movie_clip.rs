@@ -164,6 +164,9 @@ pub struct MovieClipData<'gc> {
     has_focus: bool,
     avm2_enabled: bool,
 
+    /// The cached AVM2 class AVM1Movie corresponding to this MovieClip.
+    avm2_avm1movie: Option<Avm2Object<'gc>>,
+
     /// Show a hand cursor when the clip is in button mode.
     avm2_use_hand_cursor: bool,
 
@@ -213,6 +216,7 @@ impl<'gc> MovieClip<'gc> {
                 drawing: Drawing::new(),
                 has_focus: false,
                 avm2_enabled: true,
+                avm2_avm1movie: None,
                 avm2_use_hand_cursor: true,
                 button_mode: false,
                 last_queued_script_frame: None,
@@ -256,6 +260,7 @@ impl<'gc> MovieClip<'gc> {
                 drawing: Drawing::new(),
                 has_focus: false,
                 avm2_enabled: true,
+                avm2_avm1movie: None,
                 avm2_use_hand_cursor: true,
                 button_mode: false,
                 last_queued_script_frame: None,
@@ -300,6 +305,7 @@ impl<'gc> MovieClip<'gc> {
                 drawing: Drawing::new(),
                 has_focus: false,
                 avm2_enabled: true,
+                avm2_avm1movie: None,
                 avm2_use_hand_cursor: true,
                 button_mode: false,
                 last_queued_script_frame: None,
@@ -366,6 +372,7 @@ impl<'gc> MovieClip<'gc> {
                 drawing: Drawing::new(),
                 has_focus: false,
                 avm2_enabled: true,
+                avm2_avm1movie: None,
                 avm2_use_hand_cursor: true,
                 button_mode: false,
                 last_queued_script_frame: None,
@@ -2907,11 +2914,46 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             .unwrap_or(Avm2Value::Null)
     }
 
+    /// Returns object2()- however, if the MC was AVM1, creates and returns an AVM1Movie.
+    fn object2_possibly_avm1(&self, context: &mut UpdateContext<'_, 'gc>) -> Avm2Value<'gc> {
+        if self.movie().is_action_script_3() {
+            self.object2()
+        } else {
+            if self.avm2_avm1movie().is_none() {
+                let class_object = context.avm2.classes().avm1movie;
+
+                let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                let object = Avm2StageObject::for_display_object(
+                    &mut activation,
+                    (*self).into(),
+                    class_object,
+                )
+                .expect("for_display_object cannot return Err");
+
+                class_object
+                    .call_native_init(object.into(), &[], &mut activation)
+                    .expect("Native init should succeed");
+
+                self.set_avm2_avm1movie(context.gc_context, object.into());
+            }
+
+            self.avm2_avm1movie().unwrap().into()
+        }
+    }
+
     fn set_object2(&self, context: &mut UpdateContext<'_, 'gc>, to: Avm2Object<'gc>) {
         self.0.write(context.gc_context).object = Some(to.into());
         if self.parent().is_none() {
             context.avm2.add_orphan_obj((*self).into());
         }
+    }
+
+    fn avm2_avm1movie(&self) -> Option<Avm2Object<'gc>> {
+        self.0.read().avm2_avm1movie
+    }
+
+    fn set_avm2_avm1movie(&self, gc_context: &Mutation<'gc>, object: Avm2Object<'gc>) {
+        self.0.write(gc_context).avm2_avm1movie = Some(object);
     }
 
     fn set_parent(&self, context: &mut UpdateContext<'_, 'gc>, parent: Option<DisplayObject<'gc>>) {
