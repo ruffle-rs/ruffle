@@ -637,16 +637,27 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         bounds
     }
 
-    fn render_bounds_with_transform(&self, matrix: &Matrix) -> Rectangle<Twips> {
+    fn render_bounds_with_transform(
+        &self,
+        matrix: &Matrix,
+        include_own_filters: bool,
+        view_matrix: &Matrix,
+    ) -> Rectangle<Twips> {
         let mut bounds = *matrix * self.self_bounds();
 
         let state = self.0.read().state;
         if let Some(child) = self.get_state_child(state.into()) {
             let matrix = *matrix * *child.base().matrix();
-            bounds = bounds.union(&child.render_bounds_with_transform(&matrix));
+            bounds = bounds.union(&child.render_bounds_with_transform(&matrix, true, view_matrix));
         }
 
-        // TODO: make it expand with filter sizes here
+        if include_own_filters {
+            let filters = self.filters();
+            for mut filter in filters {
+                filter.scale(view_matrix.a, view_matrix.d);
+                bounds = filter.calculate_dest_rect(bounds);
+            }
+        }
 
         bounds
     }

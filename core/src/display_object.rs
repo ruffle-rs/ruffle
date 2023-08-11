@@ -772,7 +772,11 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
     let cache_info = if context.use_bitmap_cache && this.is_bitmap_cached() {
         let mut cache_info: Option<DrawCacheInfo> = None;
         let base_transform = context.transform_stack.transform();
-        let bounds: Rectangle<Twips> = this.render_bounds_with_transform(&base_transform.matrix);
+        let bounds: Rectangle<Twips> = this.render_bounds_with_transform(
+            &base_transform.matrix,
+            false, // we want to do the filter growth for this object ourselves, to know the offsets
+            &context.stage.view_matrix(),
+        );
         let name = this.name();
         let mut filters: Vec<Filter> = this.filters();
         let swf_version = this.swf_version();
@@ -965,8 +969,11 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
         if let Some(background) = this.opaque_background() {
             // This is intended for use with cacheAsBitmap, but can be set for non-cached objects too
             // It wants the entire bounding box to be cleared before any draws happen
-            let bounds: Rectangle<Twips> =
-                this.render_bounds_with_transform(&context.transform_stack.transform().matrix);
+            let bounds: Rectangle<Twips> = this.render_bounds_with_transform(
+                &context.transform_stack.transform().matrix,
+                true,
+                &context.stage.view_matrix(),
+            );
             context.commands.draw_rect(
                 background,
                 Matrix::create_box(
@@ -1173,17 +1180,29 @@ pub trait TDisplayObject<'gc>:
     /// This differs from the bounds that are exposed to Flash, in two main ways:
     /// - It may be larger if filters are applied which will increase the size of what's shown
     /// - It does not respect scroll rects
-    fn render_bounds_with_transform(&self, matrix: &Matrix) -> Rectangle<Twips> {
+    fn render_bounds_with_transform(
+        &self,
+        matrix: &Matrix,
+        include_own_filters: bool,
+        view_matrix: &Matrix,
+    ) -> Rectangle<Twips> {
         let mut bounds = *matrix * self.self_bounds();
 
         if let Some(ctr) = self.as_container() {
             for child in ctr.iter_render_list() {
                 let matrix = *matrix * *child.base().matrix();
-                bounds = bounds.union(&child.render_bounds_with_transform(&matrix));
+                bounds =
+                    bounds.union(&child.render_bounds_with_transform(&matrix, true, view_matrix));
             }
         }
 
-        // TODO: make it expand with filter sizes here
+        if include_own_filters {
+            let filters = self.filters();
+            for mut filter in filters {
+                filter.scale(view_matrix.a, view_matrix.d);
+                bounds = filter.calculate_dest_rect(bounds);
+            }
+        }
 
         bounds
     }
