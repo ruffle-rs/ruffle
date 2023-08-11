@@ -1,4 +1,4 @@
-use crate::{BlurFilter, BlurFilterFlags, Color, Fixed16, Fixed8, Rectangle};
+use crate::{BlurFilter, BlurFilterFlags, Color, Fixed16, Fixed8, Rectangle, Twips};
 use bitflags::bitflags;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -48,20 +48,20 @@ impl BevelFilter {
         }
     }
 
-    pub fn calculate_dest_rect(&self, source_rect: Rectangle<i32>) -> Rectangle<i32> {
+    pub fn calculate_dest_rect(&self, source_rect: Rectangle<Twips>) -> Rectangle<Twips> {
         let mut result = self.inner_blur_filter().calculate_dest_rect(source_rect);
-        let distance = self.distance.to_f32();
-        let angle = self.angle.to_f32();
-        let x = (angle.cos() * distance).ceil() as i32;
-        let y = (angle.sin() * distance).ceil() as i32;
-        if x < 0 {
+        let distance = self.distance.to_f64();
+        let angle = self.angle.to_f64();
+        let x = Twips::from_pixels(angle.cos() * distance);
+        let y = Twips::from_pixels(angle.sin() * distance);
+        if x < Twips::ZERO {
             result.x_min += x;
             result.x_max -= x;
         } else {
             result.x_max += x;
             result.x_min -= x;
         }
-        if y < 0 {
+        if y < Twips::ZERO {
             result.y_min += y;
             result.y_max -= y;
         } else {

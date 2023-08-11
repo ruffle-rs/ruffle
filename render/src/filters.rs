@@ -4,7 +4,7 @@ use crate::{
 };
 use downcast_rs::{impl_downcast, Downcast};
 use std::fmt::Debug;
-use swf::{Color, Rectangle};
+use swf::{Color, Rectangle, Twips};
 
 #[derive(Debug, Clone)]
 pub enum Filter {
@@ -60,7 +60,7 @@ impl Filter {
         }
     }
 
-    pub fn calculate_dest_rect(&self, source_rect: Rectangle<i32>) -> Rectangle<i32> {
+    pub fn calculate_dest_rect(&self, source_rect: Rectangle<Twips>) -> Rectangle<Twips> {
         match self {
             Filter::BlurFilter(filter) => filter.calculate_dest_rect(source_rect),
             Filter::GlowFilter(filter) => filter.calculate_dest_rect(source_rect),
@@ -152,7 +152,7 @@ impl DisplacementMapFilter {
         self.viewscale_y *= y;
     }
 
-    pub fn calculate_dest_rect(&self, source_rect: Rectangle<i32>) -> Rectangle<i32> {
+    pub fn calculate_dest_rect(&self, source_rect: Rectangle<Twips>) -> Rectangle<Twips> {
         source_rect
         // [NA] TODO: This *appears* to be correct, but I'm not entirely sure why Flash does this.
         // This is commented out for now because Flash actually might need us to resize the texture *after* we make it,
