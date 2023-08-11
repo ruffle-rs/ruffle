@@ -785,10 +785,10 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
                 let width = width as u16;
                 let height = height as u16;
                 let mut filter_rect = Rectangle {
-                    x_min: 0,
-                    x_max: width as i32,
-                    y_min: 0,
-                    y_max: height as i32,
+                    x_min: Twips::ZERO,
+                    x_max: Twips::from_pixels_i32(width as i32),
+                    y_min: Twips::ZERO,
+                    y_max: Twips::from_pixels_i32(height as i32),
                 };
                 let stage_matrix = context.stage.view_matrix();
                 for filter in &mut filters {
@@ -796,6 +796,12 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
                     filter.scale(stage_matrix.a, stage_matrix.d);
                     filter_rect = filter.calculate_dest_rect(filter_rect);
                 }
+                let filter_rect = Rectangle {
+                    x_min: filter_rect.x_min.to_pixels().floor() as i32,
+                    x_max: filter_rect.x_max.to_pixels().ceil() as i32,
+                    y_min: filter_rect.y_min.to_pixels().floor() as i32,
+                    y_max: filter_rect.y_max.to_pixels().ceil() as i32,
+                };
                 let draw_offset = Point::new(filter_rect.x_min, filter_rect.y_min);
                 if cache.is_dirty(&base_transform.matrix, width, height) {
                     cache.update(
