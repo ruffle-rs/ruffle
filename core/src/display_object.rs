@@ -2172,7 +2172,17 @@ pub trait TDisplayObject<'gc>:
         Avm2Value::Undefined // TODO: See above. Also, unconstructed objects should return null.
     }
 
+    fn object2_possibly_avm1(&self, _context: &mut UpdateContext<'_, 'gc>) -> Avm2Value<'gc> {
+        self.object2()
+    }
+
     fn set_object2(&self, _context: &mut UpdateContext<'_, 'gc>, _to: Avm2Object<'gc>) {}
+
+    fn avm2_avm1movie(&self) -> Option<Avm2Object<'gc>> {
+        None
+    }
+
+    fn set_avm2_avm1movie(&self, _mc: &Mutation<'gc>, _object: Avm2Object<'gc>) {}
 
     /// Tests if a given stage position point intersects with the world bounds of this object.
     fn hit_test_bounds(&self, point: Point<Twips>) -> bool {
