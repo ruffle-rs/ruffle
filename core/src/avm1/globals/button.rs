@@ -43,6 +43,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "getDepth" => method(globals::get_depth; DONT_DELETE | READ_ONLY | VERSION_6);
     "blendMode" => property(button_getter!(blend_mode), button_setter!(set_blend_mode); DONT_DELETE | VERSION_8);
     "filters" => property(button_getter!(filters), button_setter!(set_filters); DONT_DELETE | DONT_ENUM | VERSION_8);
+    "cacheAsBitmap" => property(button_getter!(cache_as_bitmap), button_setter!(set_cache_as_bitmap); DONT_DELETE | DONT_ENUM | VERSION_8);
 };
 
 pub fn create_proto<'gc>(
@@ -117,5 +118,26 @@ fn set_filters<'gc>(
         }
     }
     this.set_filters(activation.context.gc_context, filters);
+    Ok(())
+}
+
+fn cache_as_bitmap<'gc>(
+    this: Avm1Button<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    // Note that the *getter* returns actual, and *setter* is preference
+    Ok(this.is_bitmap_cached().into())
+}
+
+fn set_cache_as_bitmap<'gc>(
+    this: Avm1Button<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    // Note that the *getter* returns actual, and *setter* is preference
+    this.set_bitmap_cached_preference(
+        activation.context.gc_context,
+        value.as_bool(activation.swf_version()),
+    );
     Ok(())
 }
