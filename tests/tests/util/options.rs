@@ -360,6 +360,19 @@ impl ImageComparison {
 
         Ok(())
     }
+
+    #[cfg(not(feature = "imgtests"))]
+    pub fn test(
+        &self,
+        _name: &str,
+        _actual_image: image::RgbaImage,
+        _expected_image: image::RgbaImage,
+        _test_path: &Path,
+        _adapter_info: wgpu::AdapterInfo,
+        _known_failure: bool,
+    ) -> Result<()> {
+        Ok(())
+    }
 }
 
 #[derive(Deserialize)]
