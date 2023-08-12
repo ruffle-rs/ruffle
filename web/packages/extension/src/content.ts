@@ -147,7 +147,13 @@ function isXMLDocument(): boolean {
     // NOTE: The script code injected here is the compiled form of
     // plugin-polyfill.ts. It is injected by tools/inject_plugin_polyfill.js
     // which just search-and-replaces for this particular string.
-    injectScriptRaw("%PLUGIN_POLYFILL_SOURCE%");
+    if (chrome) {
+        await injectScriptURL(
+            utils.runtime.getURL(`dist/pluginPolyfill.js?id=${ID}`),
+        );
+    } else {
+        injectScriptRaw("%PLUGIN_POLYFILL_SOURCE%");
+    }
 
     await injectScriptURL(utils.runtime.getURL(`dist/ruffle.js?id=${ID}`));
 
