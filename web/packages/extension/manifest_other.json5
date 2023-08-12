@@ -51,5 +51,8 @@
         "webRequest",
         "webRequestBlocking",
     ],
-    "web_accessible_resources": ["*"],
+    "web_accessible_resources": [{
+        "resources": ["*"],
+        "matches": ["<all_urls>"],
+    }],
 }
