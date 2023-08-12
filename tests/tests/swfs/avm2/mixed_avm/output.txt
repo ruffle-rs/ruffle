@@ -1,0 +1,6 @@
+Starting load...
+hello from avm1!
+[object AVM1Movie]
+[object ApplicationDomain]
+Load complete!
+onmousedown at 10, 10!
