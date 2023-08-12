@@ -10,8 +10,7 @@
         "default_popup": "popup.html"
     },
     "background": {
-        "scripts": ["dist/background.js"],
-        "persistent": true,
+        "service_worker": "dist/background.js"
     },
     "content_scripts": [
         {
