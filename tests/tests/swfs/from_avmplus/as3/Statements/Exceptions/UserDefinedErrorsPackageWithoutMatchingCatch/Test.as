@@ -9,7 +9,7 @@ import flash.display.MovieClip;
 public class Test extends MovieClip {}
 }
 
-import UserDefinedErrorsPackageWithoutMatchingCatch.*;
+import testpackage.*;
 
 // var SECTION = "Definitions";           // provide a document reference (ie, ECMA section)
 // var VERSION = "AS3";                   // Version of JavaScript or ECMA
