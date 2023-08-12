@@ -45,8 +45,8 @@
         "page": "options.html",
         "open_in_tab": true,
     },
+    "host_permissions": ["<all_urls>"],
     "permissions": [
-        "<all_urls>",
         "storage",
         "webRequest",
         "webRequestBlocking",
