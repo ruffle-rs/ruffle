@@ -8,7 +8,9 @@ const ruffle = api.newest()!;
 
 window.addEventListener("DOMContentLoaded", async () => {
     const url = new URL(window.location.href);
-    const swfUrl = url.searchParams.get("url");
+    // Hash always starts with #, gotta slice that off
+    const swfUrl =
+        url.hash.length > 1 ? url.hash.slice(1) : url.searchParams.get("url");
     if (!swfUrl) {
         return;
     }

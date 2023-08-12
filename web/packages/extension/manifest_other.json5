@@ -47,7 +47,7 @@
     "permissions": [
         "storage",
         "webRequest",
-        "webRequestBlocking",
+        "declarativeNetRequest",
     ],
     "web_accessible_resources": [{
         "resources": ["*"],

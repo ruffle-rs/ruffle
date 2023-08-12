@@ -1,6 +1,8 @@
 import * as utils from "./utils";
 import { isSwf as isSwfCore } from "ruffle-core";
 
+const RULE_SWF_URL = 1;
+
 function isSwf(
     details:
         | chrome.webRequest.WebResponseHeadersDetails
@@ -39,36 +41,65 @@ function onHeadersReceived(
     return undefined;
 }
 
-function enable() {
-    (chrome || browser).webRequest.onHeadersReceived.addListener(
-        onHeadersReceived,
-        {
-            urls: ["<all_urls>"],
-            types: ["main_frame", "sub_frame"],
-        },
-        ["blocking", "responseHeaders"],
-    );
+async function enable() {
+    if (chrome?.declarativeNetRequest) {
+        const playerPage = chrome.runtime.getURL("/player.html");
+        const rules = [
+            {
+                id: RULE_SWF_URL,
+                action: {
+                    type: chrome.declarativeNetRequest.RuleActionType.REDIRECT,
+                    redirect: { regexSubstitution: playerPage + "#\\0" },
+                },
+                condition: {
+                    regexFilter: "^.*\\.swf(\\?.*|#.*|)$",
+                    resourceTypes: [
+                        chrome.declarativeNetRequest.ResourceType.MAIN_FRAME,
+                    ],
+                },
+            },
+        ];
+        await chrome.declarativeNetRequest.updateDynamicRules({
+            removeRuleIds: [RULE_SWF_URL],
+            addRules: rules,
+        });
+    } else {
+        (chrome || browser).webRequest.onHeadersReceived.addListener(
+            onHeadersReceived,
+            {
+                urls: ["<all_urls>"],
+                types: ["main_frame", "sub_frame"],
+            },
+            ["blocking", "responseHeaders"],
+        );
+    }
 }
 
-function disable() {
-    (chrome || browser).webRequest.onHeadersReceived.removeListener(
-        onHeadersReceived,
-    );
+async function disable() {
+    if (chrome?.declarativeNetRequest) {
+        await chrome.declarativeNetRequest.updateDynamicRules({
+            removeRuleIds: [RULE_SWF_URL],
+        });
+    } else {
+        (chrome || browser).webRequest.onHeadersReceived.removeListener(
+            onHeadersReceived,
+        );
+    }
 }
 
 (async () => {
     const { ruffleEnable } = await utils.getOptions();
 
     if (ruffleEnable) {
-        enable();
+        await enable();
     }
 
-    utils.storage.onChanged.addListener((changes, namespace) => {
+    utils.storage.onChanged.addListener(async (changes, namespace) => {
         if (namespace === "sync" && "ruffleEnable" in changes) {
             if (changes["ruffleEnable"]!.newValue) {
-                enable();
+                await enable();
             } else {
-                disable();
+                await disable();
             }
         }
     });
