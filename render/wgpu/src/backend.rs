@@ -599,7 +599,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 run_copy_pipeline(
                     &self.descriptors,
                     target.color_texture().format(),
-                    texture.texture.format(),
                     target.color_texture().size(),
                     &texture.texture.create_view(&Default::default()),
                     target.color_view(),

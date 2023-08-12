@@ -205,7 +205,6 @@ pub fn supported_sample_count(
 pub fn run_copy_pipeline(
     descriptors: &Descriptors,
     format: wgpu::TextureFormat,
-    actual_surface_format: wgpu::TextureFormat,
     size: wgpu::Extent3d,
     frame_view: &wgpu::TextureView,
     input: &wgpu::TextureView,
