@@ -632,13 +632,10 @@ impl<'gc> E4XNode<'gc> {
         }
     }
 
-    pub fn xml_to_string(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<AvmString<'gc>, Error<'gc>> {
+    pub fn xml_to_string(&self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
         match &self.0.read().kind {
-            E4XNodeKind::Text(text) | E4XNodeKind::CData(text) => Ok(*text),
-            E4XNodeKind::Attribute(text) => Ok(*text),
+            E4XNodeKind::Text(text) | E4XNodeKind::CData(text) => *text,
+            E4XNodeKind::Attribute(text) => *text,
             E4XNodeKind::Element { children, .. } => {
                 if self.has_simple_content() {
                     return simple_content_to_string(
@@ -647,10 +644,10 @@ impl<'gc> E4XNode<'gc> {
                     );
                 }
 
-                return Ok(to_xml_string(E4XOrXml::E4X(*self), activation));
+                return to_xml_string(E4XOrXml::E4X(*self), activation);
             }
             E4XNodeKind::Comment(_) | E4XNodeKind::ProcessingInstruction(_) => {
-                return Ok(to_xml_string(E4XOrXml::E4X(*self), activation));
+                return to_xml_string(E4XOrXml::E4X(*self), activation);
             }
         }
     }
@@ -675,7 +672,7 @@ impl<'gc> E4XNode<'gc> {
 pub fn simple_content_to_string<'gc>(
     children: impl Iterator<Item = E4XOrXml<'gc>>,
     activation: &mut Activation<'_, 'gc>,
-) -> Result<AvmString<'gc>, Error<'gc>> {
+) -> AvmString<'gc> {
     let mut out = AvmString::default();
     for child in children {
         if matches!(
@@ -684,10 +681,10 @@ pub fn simple_content_to_string<'gc>(
         ) {
             continue;
         }
-        let child_str = child.node().xml_to_string(activation)?;
+        let child_str = child.node().xml_to_string(activation);
         out = AvmString::concat(activation.context.gc_context, out, child_str);
     }
-    Ok(out)
+    out
 }
 
 // Implementation of `EscapeAttributeValue` from ECMA-357 (10.2.1.2)
