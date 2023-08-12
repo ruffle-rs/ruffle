@@ -620,8 +620,17 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
     }
 
     fn bounds_with_transform(&self, matrix: &Matrix) -> Rectangle<Twips> {
-        // [NA]: The diff between this and the base impl is a lack of scroll_rect.
-        // Intentional, or bug?
+        // A scroll rect completely overrides an object's bounds,
+        // and can even grow the bounding box to be larger than the actual content
+        if let Some(scroll_rect) = self.scroll_rect() {
+            return *matrix
+                * Rectangle {
+                    x_min: Twips::ZERO,
+                    y_min: Twips::ZERO,
+                    x_max: scroll_rect.width(),
+                    y_max: scroll_rect.height(),
+                };
+        }
 
         // Get self bounds
         let mut bounds = *matrix * self.self_bounds();

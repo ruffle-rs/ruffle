@@ -1153,7 +1153,7 @@ pub trait TDisplayObject<'gc>:
     /// the overall AABB.
     fn bounds_with_transform(&self, matrix: &Matrix) -> Rectangle<Twips> {
         // A scroll rect completely overrides an object's bounds,
-        // and can even the bounding box to be larger than the actual content
+        // and can even grow the bounding box to be larger than the actual content
         if let Some(scroll_rect) = self.scroll_rect() {
             return *matrix
                 * Rectangle {
