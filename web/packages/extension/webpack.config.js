@@ -60,10 +60,6 @@ function transformManifest(content, env) {
             versionChannel === "nightly"
                 ? `${packageVersion} nightly ${buildDate}`
                 : packageVersion;
-
-        // Chrome runs the extension in a single shared process by default,
-        // which prevents extension pages from loading in Incognito tabs
-        manifest.incognito = "split";
     }
 
     return JSON.stringify(manifest);
