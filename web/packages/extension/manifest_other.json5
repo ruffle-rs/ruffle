@@ -54,4 +54,8 @@
         "resources": ["*"],
         "matches": ["<all_urls>"],
     }],
+
+    // Chrome runs the extension in a single shared process by default,
+    // which prevents extension pages from loading in Incognito tabs
+    "incognito": "split",
 }
