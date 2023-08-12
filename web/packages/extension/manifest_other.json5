@@ -29,9 +29,8 @@
         }
     ],
 
-    // 'wasm-eval' added by Webpack for Chrome extension.
     "content_security_policy": {
-        extension_pages: "default-src 'self'; script-src 'self'; style-src 'unsafe-inline'; connect-src *; media-src *; img-src data:;"
+        extension_pages: "default-src 'self'; script-src 'wasm-unsafe-eval' 'self'; style-src 'unsafe-inline'; connect-src *; media-src *; img-src data:;"
     },
 
     "icons": {
