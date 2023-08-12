@@ -142,7 +142,7 @@ pub fn to_xml_string<'gc>(
         if i != 0 {
             out.push_char('\n');
         }
-        out.push_str(child.node().xml_to_xml_string(activation)?.as_wstr())
+        out.push_str(child.node().xml_to_xml_string(activation).as_wstr())
     }
     Ok(AvmString::new(activation.context.gc_context, out).into())
 }
