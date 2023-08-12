@@ -6,9 +6,8 @@
     "description": "__MSG_description__",
     "homepage_url": "https://ruffle.rs/",
 
-    "browser_action": {
-        "default_popup": "popup.html",
-        "browser_style": true,
+    "action": {
+        "default_popup": "popup.html"
     },
     "background": {
         "scripts": ["dist/background.js"],
