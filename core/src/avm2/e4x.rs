@@ -649,7 +649,9 @@ impl<'gc> E4XNode<'gc> {
 
                 return Ok(to_xml_string(E4XOrXml::E4X(*self), activation));
             }
-            other => Err(format!("XML.toString(): Not yet implemented for {other:?}").into()),
+            E4XNodeKind::Comment(_) | E4XNodeKind::ProcessingInstruction(_) => {
+                return Ok(to_xml_string(E4XOrXml::E4X(*self), activation));
+            }
         }
     }
 
