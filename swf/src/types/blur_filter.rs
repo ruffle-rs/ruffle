@@ -33,8 +33,8 @@ impl BlurFilter {
 
     pub fn calculate_dest_rect(&self, source_rect: Rectangle<Twips>) -> Rectangle<Twips> {
         let scale = PASS_SCALES[self.num_passes().clamp(1, 15) as usize - 1];
-        let x = Twips::from_pixels(scale * self.blur_x.to_f64());
-        let y = Twips::from_pixels(scale * self.blur_y.to_f64());
+        let x = Twips::from_pixels((scale * self.blur_x.to_f64()).max(0.0));
+        let y = Twips::from_pixels((scale * self.blur_y.to_f64()).max(0.0));
         Rectangle {
             x_min: source_rect.x_min - x,
             x_max: source_rect.x_max + x,
