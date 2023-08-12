@@ -81,7 +81,7 @@ function transformManifest(content, env) {
 /**
  * @type {import("webpack-cli").CallableOption}
  */
-export default function (env, _argv) {
+export default function (/** @type {Record<string, any>} */ env, _argv) {
     const mode =
         /** @type {import("webpack").Configuration["mode"]} */ (
             process.env["NODE_ENV"]
@@ -130,7 +130,9 @@ export default function (env, _argv) {
             new CopyPlugin({
                 patterns: [
                     {
-                        from: "manifest.json5",
+                        from: env["firefox"]
+                            ? "manifest_firefox.json5"
+                            : "manifest_other.json5",
                         to: "../manifest.json",
                         transform: (content) =>
                             transformManifest(
