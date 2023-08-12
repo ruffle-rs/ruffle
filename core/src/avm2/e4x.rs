@@ -647,7 +647,7 @@ impl<'gc> E4XNode<'gc> {
                     );
                 }
 
-                return to_xml_string(E4XOrXml::E4X(*self), activation);
+                return Ok(to_xml_string(E4XOrXml::E4X(*self), activation));
             }
             other => Err(format!("XML.toString(): Not yet implemented for {other:?}").into()),
         }
@@ -657,7 +657,7 @@ impl<'gc> E4XNode<'gc> {
         &self,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<AvmString<'gc>, Error<'gc>> {
-        return to_xml_string(E4XOrXml::E4X(*self), activation);
+        return Ok(to_xml_string(E4XOrXml::E4X(*self), activation));
     }
 
     pub fn kind(&self) -> Ref<'_, E4XNodeKind<'gc>> {
@@ -806,10 +806,10 @@ fn to_xml_string_inner(xml: E4XOrXml, buf: &mut WString) {
 pub fn to_xml_string<'gc>(
     xml: E4XOrXml<'gc>,
     activation: &mut Activation<'_, 'gc>,
-) -> Result<AvmString<'gc>, Error<'gc>> {
+) -> AvmString<'gc> {
     let mut buf = WString::new();
     to_xml_string_inner(xml, &mut buf);
-    Ok(AvmString::new(activation.context.gc_context, buf))
+    AvmString::new(activation.context.gc_context, buf)
 }
 
 pub fn name_to_multiname<'gc>(
