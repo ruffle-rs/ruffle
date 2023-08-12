@@ -112,10 +112,7 @@ pub fn serialize_value<'gc>(
             } else if let Some(xml) = o.as_xml_object() {
                 // `is_string` is `true` for the AS3 XML class
                 Some(AmfValue::XML(
-                    xml.node()
-                        .xml_to_xml_string(activation)
-                        .expect("Failed to stringify XML")
-                        .to_string(),
+                    xml.node().xml_to_xml_string(activation).to_string(),
                     true,
                 ))
             } else if let Some(bytearray) = o.as_bytearray() {

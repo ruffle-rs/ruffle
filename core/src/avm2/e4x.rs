@@ -653,11 +653,8 @@ impl<'gc> E4XNode<'gc> {
         }
     }
 
-    pub fn xml_to_xml_string(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<AvmString<'gc>, Error<'gc>> {
-        return Ok(to_xml_string(E4XOrXml::E4X(*self), activation));
+    pub fn xml_to_xml_string(&self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
+        return to_xml_string(E4XOrXml::E4X(*self), activation);
     }
 
     pub fn kind(&self) -> Ref<'_, E4XNodeKind<'gc>> {
