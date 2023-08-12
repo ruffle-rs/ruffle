@@ -1,0 +1,3 @@
+# NOTE: In FP, the "hello from avm1!" log appears after "Load complete",
+# but this is likely due to Ruffle's incorrect chunked loading behaviors.
+num_ticks = 3
