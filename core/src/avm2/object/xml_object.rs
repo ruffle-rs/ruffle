@@ -122,8 +122,8 @@ impl<'gc> XmlObject<'gc> {
                         E4XNodeKind::Text(_) | E4XNodeKind::CData(_) | E4XNodeKind::Attribute(_)
                     ) && self.node().has_simple_content())
                 {
-                    return Ok(self.node().xml_to_string(activation)?
-                        == xml_obj.node().xml_to_string(activation)?);
+                    return Ok(self.node().xml_to_string(activation)
+                        == xml_obj.node().xml_to_string(activation));
                 }
 
                 return self.equals(other, activation);
@@ -132,9 +132,7 @@ impl<'gc> XmlObject<'gc> {
 
         // 4. If (Type(x) is XML) and x.hasSimpleContent() == true)
         if self.node().has_simple_content() {
-            return Ok(
-                self.node().xml_to_string(activation)? == other.coerce_to_string(activation)?
-            );
+            return Ok(self.node().xml_to_string(activation) == other.coerce_to_string(activation)?);
         }
 
         // It seems like everything else will just ultimately fall-through to the last step.
@@ -254,7 +252,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
             if let Some(list) = prop.as_object().and_then(|obj| obj.as_xml_list_object()) {
                 if list.length() == 0 && this.node().has_simple_content() {
                     let receiver = PrimitiveObject::from_primitive(
-                        this.node().xml_to_string(activation)?.into(),
+                        this.node().xml_to_string(activation).into(),
                         activation,
                     )?;
                     return receiver.call_property(multiname, arguments, activation);

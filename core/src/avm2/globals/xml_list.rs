@@ -124,7 +124,7 @@ pub fn to_string<'gc>(
     let list = this.as_xml_list_object().unwrap();
     let children = list.children();
     if has_simple_content_inner(&children) {
-        Ok(simple_content_to_string(children.iter().cloned(), activation)?.into())
+        Ok(simple_content_to_string(children.iter().cloned(), activation).into())
     } else {
         to_xml_string(activation, this, args)
     }
