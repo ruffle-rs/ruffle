@@ -8,7 +8,6 @@ use crate::executor::WinitAsyncExecutor;
 use crate::gui::MovieView;
 use crate::{CALLSTACK, RENDER_INFO, SWF_INFO};
 use anyhow::anyhow;
-use ruffle_core::backend::audio::AudioBackend;
 use ruffle_core::backend::navigator::{OpenURLMode, SocketMode};
 use ruffle_core::config::Letterbox;
 use ruffle_core::{LoadBehavior, Player, PlayerBuilder, PlayerEvent, StageAlign, StageScaleMode};
@@ -98,8 +97,7 @@ impl ActivePlayer {
         let mut builder = PlayerBuilder::new();
 
         match CpalAudioBackend::new() {
-            Ok(mut audio) => {
-                audio.set_volume(opt.volume);
+            Ok(audio) => {
                 builder = builder.with_audio(audio);
             }
             Err(e) => {
