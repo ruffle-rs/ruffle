@@ -146,7 +146,7 @@ function isXMLDocument(): boolean {
     // NOTE: The script code injected here is the compiled form of
     // plugin-polyfill.ts. It is injected by tools/inject_plugin_polyfill.js
     // which just search-and-replaces for this particular string.
-    if (!chrome) {
+    if (!chrome?.scripting) {
         // Chrome does this differently, by injecting it straight into the main world.
         // This isn't as fast, oh well.
         injectScriptRaw("%PLUGIN_POLYFILL_SOURCE%");
