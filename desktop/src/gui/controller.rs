@@ -182,7 +182,13 @@ impl GuiController {
             self.size.height,
         );
         player.create(&opt, &movie_url, movie_view);
-        self.gui.on_player_created(opt, movie_url);
+        self.gui.on_player_created(
+            opt,
+            movie_url,
+            player
+                .get()
+                .expect("Player must exist after being created."),
+        );
     }
 
     pub fn render(&mut self, mut player: Option<MutexGuard<Player>>) {
