@@ -894,77 +894,21 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
         }
 
         // When rendering it back, ensure we're only keeping the translation - scale/rotation is within the image already
-
-        let scroll_rect = this.scroll_rect();
-        let (scroll_x, scroll_y, scroll_mask_matrix) = if let Some(rect) = &scroll_rect {
-            (
-                -rect.x_min,
-                -rect.y_min,
-                Some(Matrix::create_box(
-                    rect.width().to_pixels() as f32,
-                    rect.height().to_pixels() as f32,
-                    0.0,
-                    cache_info.base_transform.matrix.tx,
-                    cache_info.base_transform.matrix.ty,
-                )),
-            )
-        } else {
-            (Twips::ZERO, Twips::ZERO, None)
-        };
-
-        // TODO: This should probably be a `render_bitmap_with_alpha_mask` or something.
-        // This logic is temporarily just copy pasted regular masks, but it's wrong;
-        // CAB masks just use the mask alpha channel to replace the CAB texture
-        let mask = this.masker();
-        let mut mask_transform = ruffle_render::transform::Transform::default();
-        if let Some(m) = mask {
-            mask_transform.matrix = this.global_to_local_matrix().unwrap_or_default();
-            mask_transform.matrix *= m.local_to_global_matrix();
-            mask_transform.matrix.tx += scroll_x;
-            mask_transform.matrix.ty += scroll_y;
-            context.commands.push_mask();
-            context.transform_stack.push(&mask_transform);
-            m.render_self(context);
-            context.transform_stack.pop();
-            context.commands.activate_mask();
-        }
-
-        if let Some(scroll_mask_matrix) = scroll_mask_matrix {
-            context.commands.push_mask();
-            // The color doesn't matter, as this is a mask.
-            context.commands.draw_rect(Color::WHITE, scroll_mask_matrix);
-            context.commands.activate_mask();
-        }
-
-        context.commands.render_bitmap(
-            cache_info.handle,
-            Transform {
-                matrix: Matrix {
-                    tx: cache_info.base_transform.matrix.tx + offset_x + scroll_x,
-                    ty: cache_info.base_transform.matrix.ty + offset_y + scroll_y,
-                    ..Default::default()
+        apply_standard_mask_and_scroll(this, context, |context| {
+            context.commands.render_bitmap(
+                cache_info.handle,
+                Transform {
+                    matrix: Matrix {
+                        tx: context.transform_stack.transform().matrix.tx + offset_x,
+                        ty: context.transform_stack.transform().matrix.ty + offset_y,
+                        ..Default::default()
+                    },
+                    color_transform: cache_info.base_transform.color_transform,
                 },
-                color_transform: cache_info.base_transform.color_transform,
-            },
-            true,
-            PixelSnapping::Always, // cacheAsBitmap forces pixel snapping
-        );
-
-        if let Some(scroll_mask_matrix) = scroll_mask_matrix {
-            // Draw the rectangle again after deactivating the mask,
-            // to reset the stencil buffer.
-            context.commands.deactivate_mask();
-            context.commands.draw_rect(Color::WHITE, scroll_mask_matrix);
-            context.commands.pop_mask();
-        }
-
-        if let Some(m) = mask {
-            context.commands.deactivate_mask();
-            context.transform_stack.push(&mask_transform);
-            m.render_self(context);
-            context.transform_stack.pop();
-            context.commands.pop_mask();
-        }
+                true,
+                PixelSnapping::Always, // cacheAsBitmap forces pixel snapping
+            )
+        });
     } else {
         if let Some(background) = this.opaque_background() {
             // This is intended for use with cacheAsBitmap, but can be set for non-cached objects too
@@ -985,7 +929,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
                 ),
             );
         }
-        render_base_inner(this, context);
+        apply_standard_mask_and_scroll(this, context, |context| this.render_self(context));
     }
 
     if let Some(original_commands) = original_commands {
@@ -1005,7 +949,17 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
     context.transform_stack.pop();
 }
 
-pub fn render_base_inner<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_, 'gc>) {
+/// This applies the **standard** method of `mask` and `scrollRect`.
+///
+/// It uses the stencil buffer so that any pixel drawn in the mask will allow the inner contents to show.
+/// This is what is used for most cases, except for cacheAsBitmap-on-cacheAsBitmap.
+pub fn apply_standard_mask_and_scroll<'gc, F>(
+    this: DisplayObject<'gc>,
+    context: &mut RenderContext<'_, 'gc>,
+    draw: F,
+) where
+    F: FnOnce(&mut RenderContext<'_, 'gc>),
+{
     let scroll_rect_matrix = if let Some(rect) = this.scroll_rect() {
         let cur_transform = context.transform_stack.transform();
         // The matrix we use for actually drawing a rectangle for cropping purposes
@@ -1059,7 +1013,7 @@ pub fn render_base_inner<'gc>(this: DisplayObject<'gc>, context: &mut RenderCont
         context.commands.activate_mask();
     }
 
-    this.render_self(context);
+    draw(context);
 
     if let Some(rect_mat) = scroll_rect_matrix {
         // Draw the rectangle again after deactivating the mask,
