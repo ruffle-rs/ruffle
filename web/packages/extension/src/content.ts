@@ -142,15 +142,13 @@ function isXMLDocument(): boolean {
     }
 
     // We must run the plugin polyfill before any flash detection scripts.
-    // Unfortunately, this might still be too late for some websites when using Chrome (issue #969).
+    // Unfortunately, this might still be too late for some websites (issue #969).
     // NOTE: The script code injected here is the compiled form of
     // plugin-polyfill.ts. It is injected by tools/inject_plugin_polyfill.js
     // which just search-and-replaces for this particular string.
-    if (chrome) {
-        await injectScriptURL(
-            utils.runtime.getURL(`dist/pluginPolyfill.js?id=${ID}`),
-        );
-    } else {
+    if (!chrome) {
+        // Chrome does this differently, by injecting it straight into the main world.
+        // This isn't as fast, oh well.
         injectScriptRaw("%PLUGIN_POLYFILL_SOURCE%");
     }
 
