@@ -63,6 +63,24 @@ async function enable() {
             removeRuleIds: [RULE_SWF_URL],
             addRules: rules,
         });
+
+        await chrome.scripting.registerContentScripts([
+            {
+                id: "plugin-polyfill",
+                js: ["dist/pluginPolyfill.js"],
+                persistAcrossSessions: false,
+                matches: ["<all_urls>"],
+                excludeMatches: [
+                    "https://sso.godaddy.com/*",
+                    "https://authentication.td.com/*",
+                    "https://*.twitch.tv/*",
+                    "https://www.tuxedocomputers.com/*",
+                    "https://*.taobao.com/*",
+                ],
+                runAt: "document_start",
+                world: "MAIN",
+            },
+        ]);
     } else {
         (chrome || browser).webRequest.onHeadersReceived.addListener(
             onHeadersReceived,
@@ -79,6 +97,9 @@ async function disable() {
     if (chrome?.declarativeNetRequest) {
         await chrome.declarativeNetRequest.updateDynamicRules({
             removeRuleIds: [RULE_SWF_URL],
+        });
+        await chrome.scripting.unregisterContentScripts({
+            ids: ["plugin-polyfill"],
         });
     } else {
         (chrome || browser).webRequest.onHeadersReceived.removeListener(
