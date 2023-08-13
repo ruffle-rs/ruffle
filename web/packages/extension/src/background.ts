@@ -63,7 +63,18 @@ async function enable() {
             removeRuleIds: [RULE_SWF_URL],
             addRules: rules,
         });
+    } else {
+        (chrome || browser).webRequest.onHeadersReceived.addListener(
+            onHeadersReceived,
+            {
+                urls: ["<all_urls>"],
+                types: ["main_frame", "sub_frame"],
+            },
+            ["blocking", "responseHeaders"],
+        );
+    }
 
+    if (chrome?.scripting) {
         await chrome.scripting.registerContentScripts([
             {
                 id: "plugin-polyfill",
@@ -81,15 +92,6 @@ async function enable() {
                 world: "MAIN",
             },
         ]);
-    } else {
-        (chrome || browser).webRequest.onHeadersReceived.addListener(
-            onHeadersReceived,
-            {
-                urls: ["<all_urls>"],
-                types: ["main_frame", "sub_frame"],
-            },
-            ["blocking", "responseHeaders"],
-        );
     }
 }
 
@@ -98,13 +100,16 @@ async function disable() {
         await chrome.declarativeNetRequest.updateDynamicRules({
             removeRuleIds: [RULE_SWF_URL],
         });
-        await chrome.scripting.unregisterContentScripts({
-            ids: ["plugin-polyfill"],
-        });
     } else {
         (chrome || browser).webRequest.onHeadersReceived.removeListener(
             onHeadersReceived,
         );
+    }
+
+    if (chrome?.scripting) {
+        await chrome.scripting.unregisterContentScripts({
+            ids: ["plugin-polyfill"],
+        });
     }
 }
 
