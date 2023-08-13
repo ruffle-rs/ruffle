@@ -114,7 +114,6 @@ function isXMLDocument(): boolean {
     const shouldLoad =
         !isXMLDocument() &&
         options.ruffleEnable &&
-        !window.RufflePlayer &&
         (options.ignoreOptout || !pageOptout);
 
     utils.runtime.onMessage.addListener((message, _sender, sendResponse) => {
