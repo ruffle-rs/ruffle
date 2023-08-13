@@ -35,7 +35,7 @@ function onHeadersReceived(
     if (isSwf(details)) {
         const baseUrl = utils.runtime.getURL("player.html");
         return {
-            redirectUrl: `${baseUrl}?url=${encodeURIComponent(details.url)}`,
+            redirectUrl: `${baseUrl}#${details.url}`,
         };
     }
     return undefined;
