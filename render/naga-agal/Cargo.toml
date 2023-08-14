@@ -8,7 +8,7 @@ repository.workspace = true
 version.workspace = true
 
 [dependencies]
-bitflags = "2.3.3"
+bitflags = "2.4.0"
 naga = { workspace = true }
 num-derive = "0.4.0"
 num-traits = "0.2.16"

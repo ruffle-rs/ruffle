@@ -17,7 +17,7 @@ clap = { version = "4.3.21", features = ["derive"], optional = true }
 enum-map = "2.6.1"
 fnv = "1.0.7"
 swf = { path = "../../swf" }
-image = { version = "0.24.6", default-features = false }
+image = { version = "0.24.7", default-features = false }
 naga_oil = { workspace = true }
 ouroboros = "0.17.2"
 typed-arena = "2.0.2"
