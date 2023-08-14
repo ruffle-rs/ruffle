@@ -24,7 +24,7 @@ error-javascript-config =
 error-wasm-not-found =
     Ruffle misslyckades ladda ".wasm"-filkomponenten.
     Om du är serveradministratören, se till att filen har laddats upp korrekt.
-    Om problemet kvarstår kan du behöva använda inställningen "publicPath": vänligen konsultera Rufflewikin för hjälp.
+    Om problemet kvarstår kan du behöva använda inställningen "publicPath": konsultera vänligen Rufflewikin för hjälp.
 error-wasm-mime-type =
     Ruffle har stött på ett stort fel under initialiseringen.
     Denna webbserver serverar inte ".wasm"-filer med korrekt MIME-typ.
