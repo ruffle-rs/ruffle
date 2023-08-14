@@ -275,35 +275,31 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                     }
                 }
             }
-
-            let matched_children = write
-                .children
-                .iter_mut()
-                .flat_map(|child| {
-                    let child_prop = child
-                        .get_or_create_xml(activation)
-                        .get_property_local(name, activation)
-                        .unwrap();
-                    if let Some(prop_xml) =
-                        child_prop.as_object().and_then(|obj| obj.as_xml_object())
-                    {
-                        vec![E4XOrXml::Xml(prop_xml)]
-                    } else if let Some(prop_xml_list) = child_prop
-                        .as_object()
-                        .and_then(|obj| obj.as_xml_list_object())
-                    {
-                        // Flatten children
-                        prop_xml_list.children().clone()
-                    } else {
-                        vec![]
-                    }
-                })
-                .collect();
-
-            return Ok(XmlListObject::new(activation, matched_children, Some(self.into())).into());
         }
 
-        write.base.get_property_local(name, activation)
+        let matched_children = write
+            .children
+            .iter_mut()
+            .flat_map(|child| {
+                let child_prop = child
+                    .get_or_create_xml(activation)
+                    .get_property_local(name, activation)
+                    .unwrap();
+                if let Some(prop_xml) = child_prop.as_object().and_then(|obj| obj.as_xml_object()) {
+                    vec![E4XOrXml::Xml(prop_xml)]
+                } else if let Some(prop_xml_list) = child_prop
+                    .as_object()
+                    .and_then(|obj| obj.as_xml_list_object())
+                {
+                    // Flatten children
+                    prop_xml_list.children().clone()
+                } else {
+                    vec![]
+                }
+            })
+            .collect();
+
+        Ok(XmlListObject::new(activation, matched_children, Some(self.into())).into())
     }
 
     fn call_property_local(

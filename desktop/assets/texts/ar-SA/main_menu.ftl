@@ -9,8 +9,8 @@
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
 file-menu = الملف
-file-menu-open-quick = فتح
-file-menu-open-advanced = اسعتراض متقدم
+file-menu-open-quick = فتح...
+file-menu-open-advanced = استعراض متقدم...
 file-menu-close = إغلاق
 file-menu-reload = إعادة التحميل
 file-menu-exit = خروج
@@ -27,3 +27,4 @@ debug-menu = أدوات التصحيح
 debug-menu-open-stage = عرض معلومات المرحلة
 debug-menu-open-movie = عرض الفيلم
 debug-menu-open-movie-list = عرض الأفلام المعروفة
+debug-menu-search-display-objects = البحث عن عناصر العرض...
