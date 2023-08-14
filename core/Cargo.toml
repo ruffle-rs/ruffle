@@ -22,7 +22,7 @@ ruffle_video = { path = "../video" }
 ruffle_macros = { path = "macros" }
 ruffle_wstr = { path = "../wstr" }
 swf = { path = "../swf" }
-bitflags = "2.3.3"
+bitflags = "2.4.0"
 smallvec = { version = "1.11.0", features = ["union"] }
 num-traits = "0.2"
 num-derive = "0.4"

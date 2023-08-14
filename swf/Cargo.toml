@@ -9,7 +9,7 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
-bitflags = "2.3.3"
+bitflags = "2.4.0"
 bitstream-io = "1.7.0"
 byteorder = "1.4"
 encoding_rs = "0.8.32"
