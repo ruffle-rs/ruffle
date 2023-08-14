@@ -1,7 +1,7 @@
 //! Object representation for XML objects
 
 use crate::avm2::activation::Activation;
-use crate::avm2::e4x::{name_to_multiname, E4XNode, E4XNodeKind};
+use crate::avm2::e4x::{string_to_multiname, E4XNode, E4XNodeKind};
 use crate::avm2::error::make_error_1087;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject, XmlListObject};
@@ -212,6 +212,19 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
             }
         }
 
+        // Special case to handle code like: xml["@attr"]
+        let multiname = if !name.has_explicit_namespace()
+            && !name.is_attribute()
+            && !name.is_any_name()
+            && !name.is_any_namespace()
+        {
+            name.local_name()
+                .map(|name| string_to_multiname(activation, name))
+        } else {
+            None
+        };
+        let name = multiname.as_ref().unwrap_or(name);
+
         let matched_children = if let E4XNodeKind::Element {
             children,
             attributes,
@@ -320,8 +333,8 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         name: impl Into<AvmString<'gc>>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<bool, Error<'gc>> {
-        let name = name_to_multiname(activation, &Value::String(name.into()), false)?;
-        Ok(self.has_own_property(&name))
+        let multiname = string_to_multiname(activation, name.into());
+        Ok(self.has_own_property(&multiname))
     }
 
     // ECMA-357 9.1.1.2 [[Put]] (P, V)

@@ -1195,6 +1195,22 @@ pub fn to_xml_string<'gc>(
     AvmString::new(activation.context.gc_context, buf)
 }
 
+// 10.6.1. ToXMLName Applied to the String Type
+pub fn string_to_multiname<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    name: AvmString<'gc>,
+) -> Multiname<'gc> {
+    if let Some(name) = name.strip_prefix(b'@') {
+        let name = AvmString::new(activation.context.gc_context, name);
+        Multiname::attribute(activation.avm2().public_namespace, name)
+    } else if &*name == b"*" {
+        Multiname::any(activation.context.gc_context)
+    } else {
+        Multiname::new(activation.avm2().public_namespace, name)
+    }
+}
+
+// 10.6 ToXMLName
 pub fn name_to_multiname<'gc>(
     activation: &mut Activation<'_, 'gc>,
     name: &Value<'gc>,
@@ -1211,15 +1227,7 @@ pub fn name_to_multiname<'gc>(
     }
 
     let name = name.coerce_to_string(activation)?;
-
-    let mut multiname = if let Some(name) = name.strip_prefix(b'@') {
-        let name = AvmString::new(activation.context.gc_context, name);
-        Multiname::attribute(activation.avm2().public_namespace, name)
-    } else if &*name == b"*" {
-        Multiname::any(activation.context.gc_context)
-    } else {
-        Multiname::new(activation.avm2().public_namespace, name)
-    };
+    let mut multiname = string_to_multiname(activation, name);
     if force_attribute {
         multiname.set_is_attribute(true);
     };
