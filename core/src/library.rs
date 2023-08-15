@@ -8,7 +8,7 @@ use crate::font::{Font, FontDescriptor};
 use crate::prelude::*;
 use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
-use gc_arena::{Collect, MutationContext};
+use gc_arena::{Collect, Mutation};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::utils::remove_invalid_jpeg_data;
@@ -190,7 +190,7 @@ impl<'gc> MovieLibrary<'gc> {
     pub fn instantiate_by_id(
         &self,
         id: CharacterId,
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
     ) -> Result<DisplayObject<'gc>, &'static str> {
         if let Some(character) = self.characters.get(&id) {
             self.instantiate_display_object(character, gc_context)
@@ -205,7 +205,7 @@ impl<'gc> MovieLibrary<'gc> {
     pub fn instantiate_by_export_name(
         &self,
         export_name: AvmString<'gc>,
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
     ) -> Result<DisplayObject<'gc>, &'static str> {
         if let Some(character) = self.character_by_export_name(export_name) {
             self.instantiate_display_object(character, gc_context)
@@ -223,7 +223,7 @@ impl<'gc> MovieLibrary<'gc> {
     fn instantiate_display_object(
         &self,
         character: &Character<'gc>,
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
     ) -> Result<DisplayObject<'gc>, &'static str> {
         match character {
             Character::Bitmap(bitmap) => Ok(bitmap.instantiate(gc_context)),
@@ -351,7 +351,7 @@ impl<'gc> MovieLibrary<'gc> {
 
 pub struct MovieLibrarySource<'a, 'gc> {
     pub library: &'a MovieLibrary<'gc>,
-    pub gc_context: MutationContext<'gc, 'a>,
+    pub gc_context: &'a Mutation<'gc>,
 }
 
 impl<'a, 'gc> ruffle_render::bitmap::BitmapSource for MovieLibrarySource<'a, 'gc> {

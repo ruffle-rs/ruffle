@@ -12,7 +12,7 @@ use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::string::AvmString;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, Mutation};
 use std::cell::Ref;
 use std::collections::HashMap;
 use std::ops::DerefMut;
@@ -61,7 +61,7 @@ pub struct ClassBoundMethod<'gc> {
 }
 
 impl<'gc> VTable<'gc> {
-    pub fn empty(mc: MutationContext<'gc, '_>) -> Self {
+    pub fn empty(mc: &Mutation<'gc>) -> Self {
         VTable(GcCell::new(
             mc,
             VTableData {
@@ -79,7 +79,7 @@ impl<'gc> VTable<'gc> {
     }
 
     /// A special case for newcatch. A single variable (q)name that maps to slot 1.
-    pub fn newcatch(mc: MutationContext<'gc, '_>, vname: &QName<'gc>) -> Self {
+    pub fn newcatch(mc: &Mutation<'gc>, vname: &QName<'gc>) -> Self {
         let mut rt = PropertyMap::new();
 
         rt.insert(*vname, Property::Slot { slot_id: 1 });
@@ -106,7 +106,7 @@ impl<'gc> VTable<'gc> {
         vt
     }
 
-    pub fn duplicate(self, mc: MutationContext<'gc, '_>) -> Self {
+    pub fn duplicate(self, mc: &Mutation<'gc>) -> Self {
         VTable(GcCell::new(mc, self.0.read().clone()))
     }
 
@@ -125,7 +125,7 @@ impl<'gc> VTable<'gc> {
     pub fn slot_class_name(
         &self,
         slot_id: u32,
-        mc: MutationContext<'gc, '_>,
+        mc: &Mutation<'gc>,
     ) -> Result<Multiname<'gc>, Error<'gc>> {
         self.0
             .read()
@@ -548,7 +548,7 @@ impl<'gc> VTable<'gc> {
     /// on the `global` object.
     pub fn install_const_trait_late(
         self,
-        mc: MutationContext<'gc, '_>,
+        mc: &Mutation<'gc>,
         name: QName<'gc>,
         value: Value<'gc>,
         class: ClassObject<'gc>,
@@ -571,7 +571,7 @@ impl<'gc> VTable<'gc> {
     /// This should only ever be called by `link_interfaces`.
     pub fn copy_property_for_interface(
         self,
-        mc: MutationContext<'gc, '_>,
+        mc: &Mutation<'gc>,
         public_name: QName<'gc>,
         interface_name: QName<'gc>,
     ) {

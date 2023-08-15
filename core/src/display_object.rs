@@ -11,7 +11,7 @@ use crate::tag_utils::SwfMovie;
 use crate::types::{Degrees, Percent};
 use crate::vminterface::Instantiator;
 use bitflags::bitflags;
-use gc_arena::{Collect, MutationContext};
+use gc_arena::{Collect, Mutation};
 use ruffle_macros::enum_trait_object;
 use ruffle_render::pixel_bender::PixelBenderShaderHandle;
 use ruffle_render::transform::{Transform, TransformStack};
@@ -1104,11 +1104,11 @@ pub trait TDisplayObject<'gc>:
     'gc + Clone + Copy + Collect + Debug + Into<DisplayObject<'gc>>
 {
     fn base<'a>(&'a self) -> Ref<'a, DisplayObjectBase<'gc>>;
-    fn base_mut<'a>(&'a self, mc: MutationContext<'gc, '_>) -> RefMut<'a, DisplayObjectBase<'gc>>;
+    fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>>;
 
     /// The `SCALE_ROTATION_CACHED` flag should only be set in SWFv5+.
     /// So scaling/rotation values always have to get recalculated from the matrix in SWFv4.
-    fn set_scale_rotation_cached(&self, gc_context: MutationContext<'gc, '_>) {
+    fn set_scale_rotation_cached(&self, gc_context: &Mutation<'gc>) {
         if self.swf_version() >= 5 {
             self.base_mut(gc_context).set_scale_rotation_cached(true);
         }
@@ -1119,7 +1119,7 @@ pub trait TDisplayObject<'gc>:
         self.base().depth()
     }
 
-    fn set_depth(&self, gc_context: MutationContext<'gc, '_>, depth: Depth) {
+    fn set_depth(&self, gc_context: &Mutation<'gc>, depth: Depth) {
         self.base_mut(gc_context).set_depth(depth)
     }
 
@@ -1210,14 +1210,14 @@ pub trait TDisplayObject<'gc>:
     fn place_frame(&self) -> u16 {
         self.base().place_frame()
     }
-    fn set_place_frame(&self, gc_context: MutationContext<'gc, '_>, frame: u16) {
+    fn set_place_frame(&self, gc_context: &Mutation<'gc>, frame: u16) {
         self.base_mut(gc_context).set_place_frame(frame)
     }
 
     /// Sets the matrix of this object.
     /// This does NOT invalidate the cache, as it's often used with other operations.
     /// It is the callers responsibility to do so.
-    fn set_matrix(&self, gc_context: MutationContext<'gc, '_>, matrix: Matrix) {
+    fn set_matrix(&self, gc_context: &Mutation<'gc>, matrix: Matrix) {
         self.base_mut(gc_context).set_matrix(matrix);
     }
 
@@ -1226,7 +1226,7 @@ pub trait TDisplayObject<'gc>:
     /// It is the callers responsibility to do so.
     fn set_color_transform(
         &self,
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         color_transform: ColorTransform,
     ) {
         self.base_mut(gc_context)
@@ -1298,7 +1298,7 @@ pub trait TDisplayObject<'gc>:
     /// Sets the `x` position in pixels of this display object in local space.
     /// Set by the `_x`/`x` ActionScript properties.
     /// This invalidates any ancestors cacheAsBitmap automatically.
-    fn set_x(&self, gc_context: MutationContext<'gc, '_>, x: Twips) {
+    fn set_x(&self, gc_context: &Mutation<'gc>, x: Twips) {
         if self.base_mut(gc_context).set_x(x) {
             if let Some(parent) = self.parent() {
                 // Self-transform changes are automatically handled,
@@ -1317,7 +1317,7 @@ pub trait TDisplayObject<'gc>:
     /// Sets the `y` position in pixels of this display object in local space.
     /// Set by the `_y`/`y` ActionScript properties.
     /// This invalidates any ancestors cacheAsBitmap automatically.
-    fn set_y(&self, gc_context: MutationContext<'gc, '_>, y: Twips) {
+    fn set_y(&self, gc_context: &Mutation<'gc>, y: Twips) {
         if self.base_mut(gc_context).set_y(y) {
             if let Some(parent) = self.parent() {
                 // Self-transform changes are automatically handled,
@@ -1329,7 +1329,7 @@ pub trait TDisplayObject<'gc>:
 
     /// The rotation in degrees this display object in local space.
     /// Returned by the `_rotation`/`rotation` ActionScript properties.
-    fn rotation(&self, gc_context: MutationContext<'gc, '_>) -> Degrees {
+    fn rotation(&self, gc_context: &Mutation<'gc>) -> Degrees {
         let degrees = self.base_mut(gc_context).rotation();
         self.set_scale_rotation_cached(gc_context);
         degrees
@@ -1338,7 +1338,7 @@ pub trait TDisplayObject<'gc>:
     /// Sets the rotation in degrees this display object in local space.
     /// Set by the `_rotation`/`rotation` ActionScript properties.
     /// This invalidates any ancestors cacheAsBitmap automatically.
-    fn set_rotation(&self, gc_context: MutationContext<'gc, '_>, radians: Degrees) {
+    fn set_rotation(&self, gc_context: &Mutation<'gc>, radians: Degrees) {
         if self.base_mut(gc_context).set_rotation(radians) {
             self.set_scale_rotation_cached(gc_context);
             if let Some(parent) = self.parent() {
@@ -1351,7 +1351,7 @@ pub trait TDisplayObject<'gc>:
 
     /// The X axis scale for this display object in local space.
     /// Returned by the `_xscale`/`scaleX` ActionScript properties.
-    fn scale_x(&self, gc_context: MutationContext<'gc, '_>) -> Percent {
+    fn scale_x(&self, gc_context: &Mutation<'gc>) -> Percent {
         let percent = self.base_mut(gc_context).scale_x();
         self.set_scale_rotation_cached(gc_context);
         percent
@@ -1360,7 +1360,7 @@ pub trait TDisplayObject<'gc>:
     /// Sets the X axis scale for this display object in local space.
     /// Set by the `_xscale`/`scaleX` ActionScript properties.
     /// This invalidates any ancestors cacheAsBitmap automatically.
-    fn set_scale_x(&self, gc_context: MutationContext<'gc, '_>, value: Percent) {
+    fn set_scale_x(&self, gc_context: &Mutation<'gc>, value: Percent) {
         if self.base_mut(gc_context).set_scale_x(value) {
             self.set_scale_rotation_cached(gc_context);
             if let Some(parent) = self.parent() {
@@ -1373,7 +1373,7 @@ pub trait TDisplayObject<'gc>:
 
     /// The Y axis scale for this display object in local space.
     /// Returned by the `_yscale`/`scaleY` ActionScript properties.
-    fn scale_y(&self, gc_context: MutationContext<'gc, '_>) -> Percent {
+    fn scale_y(&self, gc_context: &Mutation<'gc>) -> Percent {
         let percent = self.base_mut(gc_context).scale_y();
         self.set_scale_rotation_cached(gc_context);
         percent
@@ -1382,7 +1382,7 @@ pub trait TDisplayObject<'gc>:
     /// Sets the Y axis scale for this display object in local space.
     /// Returned by the `_yscale`/`scaleY` ActionScript properties.
     /// This invalidates any ancestors cacheAsBitmap automatically.
-    fn set_scale_y(&self, gc_context: MutationContext<'gc, '_>, value: Percent) {
+    fn set_scale_y(&self, gc_context: &Mutation<'gc>, value: Percent) {
         if self.base_mut(gc_context).set_scale_y(value) {
             self.set_scale_rotation_cached(gc_context);
             if let Some(parent) = self.parent() {
@@ -1403,7 +1403,7 @@ pub trait TDisplayObject<'gc>:
     /// The width is based on the AABB of the object.
     /// Set by the ActionScript `_width`/`width` properties.
     /// This does odd things on rotated clips to match the behavior of Flash.
-    fn set_width(&self, gc_context: MutationContext<'gc, '_>, value: f64) {
+    fn set_width(&self, gc_context: &Mutation<'gc>, value: f64) {
         let object_bounds = self.bounds();
         let object_width = object_bounds.width().to_pixels();
         let object_height = object_bounds.height().to_pixels();
@@ -1450,7 +1450,7 @@ pub trait TDisplayObject<'gc>:
     /// Sets the pixel height of this display object in local space.
     /// Set by the ActionScript `_height`/`height` properties.
     /// This does odd things on rotated clips to match the behavior of Flash.
-    fn set_height(&self, gc_context: MutationContext<'gc, '_>, value: f64) {
+    fn set_height(&self, gc_context: &Mutation<'gc>, value: f64) {
         let object_bounds = self.bounds();
         let object_width = object_bounds.width().to_pixels();
         let object_height = object_bounds.height().to_pixels();
@@ -1499,7 +1499,7 @@ pub trait TDisplayObject<'gc>:
     /// 1 is fully opaque.
     /// Set by the `_alpha`/`alpha` ActionScript properties.
     /// This invalidates any cacheAsBitmap automatically.
-    fn set_alpha(&self, gc_context: MutationContext<'gc, '_>, value: f64) {
+    fn set_alpha(&self, gc_context: &Mutation<'gc>, value: f64) {
         if self.base_mut(gc_context).set_alpha(value) {
             if let Some(parent) = self.parent() {
                 // Self-transform changes are automatically handled
@@ -1511,7 +1511,7 @@ pub trait TDisplayObject<'gc>:
     fn name(&self) -> AvmString<'gc> {
         self.base().name().unwrap_or_default()
     }
-    fn set_name(&self, gc_context: MutationContext<'gc, '_>, name: AvmString<'gc>) {
+    fn set_name(&self, gc_context: &Mutation<'gc>, name: AvmString<'gc>) {
         self.base_mut(gc_context).set_name(name)
     }
 
@@ -1519,7 +1519,7 @@ pub trait TDisplayObject<'gc>:
         self.base().filters()
     }
 
-    fn set_filters(&self, gc_context: MutationContext<'gc, '_>, filters: Vec<Filter>) {
+    fn set_filters(&self, gc_context: &Mutation<'gc>, filters: Vec<Filter>) {
         self.base_mut(gc_context).set_filters(filters);
         self.invalidate_cached_bitmap(gc_context);
     }
@@ -1568,7 +1568,7 @@ pub trait TDisplayObject<'gc>:
     fn clip_depth(&self) -> Depth {
         self.base().clip_depth()
     }
-    fn set_clip_depth(&self, gc_context: MutationContext<'gc, '_>, depth: Depth) {
+    fn set_clip_depth(&self, gc_context: &Mutation<'gc>, depth: Depth) {
         self.base_mut(gc_context).set_clip_depth(depth);
     }
 
@@ -1608,7 +1608,7 @@ pub trait TDisplayObject<'gc>:
     }
     fn set_next_avm1_clip(
         &self,
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         node: Option<DisplayObject<'gc>>,
     ) {
         self.base_mut(gc_context).set_next_avm1_clip(node);
@@ -1618,7 +1618,7 @@ pub trait TDisplayObject<'gc>:
     }
     fn set_masker(
         &self,
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         node: Option<DisplayObject<'gc>>,
         remove_old_link: bool,
     ) {
@@ -1638,7 +1638,7 @@ pub trait TDisplayObject<'gc>:
     }
     fn set_maskee(
         &self,
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         node: Option<DisplayObject<'gc>>,
         remove_old_link: bool,
     ) {
@@ -1661,7 +1661,7 @@ pub trait TDisplayObject<'gc>:
 
     fn set_next_scroll_rect(
         &self,
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         rectangle: Rectangle<Twips>,
     ) {
         self.base_mut(gc_context).next_scroll_rect = rectangle;
@@ -1678,7 +1678,7 @@ pub trait TDisplayObject<'gc>:
     }
 
     // Sets whether this object has been removed. Only applies to AVM1
-    fn set_avm1_removed(&self, gc_context: MutationContext<'gc, '_>, value: bool) {
+    fn set_avm1_removed(&self, gc_context: &Mutation<'gc>, value: bool) {
         self.base_mut(gc_context).set_avm1_removed(value)
     }
 
@@ -1697,7 +1697,7 @@ pub trait TDisplayObject<'gc>:
     /// Sets whether this display object will be visible.
     /// Invisible objects are not rendered, but otherwise continue to exist normally.
     /// Returned by the `_visible`/`visible` ActionScript properties.
-    fn set_visible(&self, gc_context: MutationContext<'gc, '_>, value: bool) {
+    fn set_visible(&self, gc_context: &Mutation<'gc>, value: bool) {
         if self.base_mut(gc_context).set_visible(value) {
             if let Some(parent) = self.parent() {
                 // We don't need to invalidate ourselves, we're just toggling if the bitmap is rendered.
@@ -1714,7 +1714,7 @@ pub trait TDisplayObject<'gc>:
 
     /// Sets the blend mode used when rendering this display object.
     /// Values other than the default `BlendMode::Normal` implicitly cause cache-as-bitmap behavior.
-    fn set_blend_mode(&self, gc_context: MutationContext<'gc, '_>, value: ExtendedBlendMode) {
+    fn set_blend_mode(&self, gc_context: &Mutation<'gc>, value: ExtendedBlendMode) {
         if self.base_mut(gc_context).set_blend_mode(value) {
             if let Some(parent) = self.parent() {
                 // We don't need to invalidate ourselves, we're just toggling how the bitmap is rendered.
@@ -1732,7 +1732,7 @@ pub trait TDisplayObject<'gc>:
 
     fn set_blend_shader(
         &self,
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         value: Option<PixelBenderShaderHandle>,
     ) {
         self.base_mut(gc_context).set_blend_shader(value);
@@ -1748,7 +1748,7 @@ pub trait TDisplayObject<'gc>:
     /// The bounding box of the display object will be filled with the given color. This also
     /// triggers cache-as-bitmap behavior. Only solid backgrounds are supported; the alpha channel
     /// is ignored.
-    fn set_opaque_background(&self, gc_context: MutationContext<'gc, '_>, value: Option<Color>) {
+    fn set_opaque_background(&self, gc_context: &Mutation<'gc>, value: Option<Color>) {
         if self.base_mut(gc_context).set_opaque_background(value) {
             self.invalidate_cached_bitmap(gc_context);
         }
@@ -1760,7 +1760,7 @@ pub trait TDisplayObject<'gc>:
     }
 
     /// Sets whether this display object represents the root of loaded content.
-    fn set_is_root(&self, gc_context: MutationContext<'gc, '_>, value: bool) {
+    fn set_is_root(&self, gc_context: &Mutation<'gc>, value: bool) {
         self.base_mut(gc_context).set_is_root(value);
     }
 
@@ -1783,7 +1783,7 @@ pub trait TDisplayObject<'gc>:
 
     /// Sets whether this display object is used as the _root of itself and its children.
     /// Returned by the `_lockroot` ActionScript property.
-    fn set_lock_root(&self, gc_context: MutationContext<'gc, '_>, value: bool) {
+    fn set_lock_root(&self, gc_context: &Mutation<'gc>, value: bool) {
         self.base_mut(gc_context).set_lock_root(value);
     }
 
@@ -1795,7 +1795,7 @@ pub trait TDisplayObject<'gc>:
 
     /// Sets whether this display object has been transformed by ActionScript.
     /// When this flag is set, changes from SWF `PlaceObject` tags are ignored.
-    fn set_transformed_by_script(&self, gc_context: MutationContext<'gc, '_>, value: bool) {
+    fn set_transformed_by_script(&self, gc_context: &Mutation<'gc>, value: bool) {
         self.base_mut(gc_context).set_transformed_by_script(value)
     }
 
@@ -1813,7 +1813,7 @@ pub trait TDisplayObject<'gc>:
 
     /// Explicitly sets the preference of this display object to be cached into a bitmap rendering.
     /// Note that the object will still be bitmap cached if a filter is active.
-    fn set_bitmap_cached_preference(&self, gc_context: MutationContext<'gc, '_>, value: bool) {
+    fn set_bitmap_cached_preference(&self, gc_context: &Mutation<'gc>, value: bool) {
         self.base_mut(gc_context)
             .set_bitmap_cached_preference(value)
     }
@@ -1824,14 +1824,14 @@ pub trait TDisplayObject<'gc>:
     }
 
     /// Sets whether this display object has a scroll rectangle applied.
-    fn set_has_scroll_rect(&self, gc_context: MutationContext<'gc, '_>, value: bool) {
+    fn set_has_scroll_rect(&self, gc_context: &Mutation<'gc>, value: bool) {
         self.base_mut(gc_context).set_has_scroll_rect(value)
     }
 
     /// Called whenever the focus tracker has deemed this display object worthy, or no longer worthy,
     /// of being the currently focused object.
     /// This should only be called by the focus manager. To change a focus, go through that.
-    fn on_focus_changed(&self, _gc_context: MutationContext<'gc, '_>, _focused: bool) {}
+    fn on_focus_changed(&self, _gc_context: &Mutation<'gc>, _focused: bool) {}
 
     /// Whether or not this clip may be focusable for keyboard input.
     fn is_focusable(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
@@ -1848,7 +1848,7 @@ pub trait TDisplayObject<'gc>:
     /// Sets whether this display object has been created by ActionScript 3.
     /// When this flag is set, changes from SWF `RemoveObject` tags are
     /// ignored.
-    fn set_placed_by_script(&self, gc_context: MutationContext<'gc, '_>, value: bool) {
+    fn set_placed_by_script(&self, gc_context: &Mutation<'gc>, value: bool) {
         self.base_mut(gc_context).set_placed_by_script(value)
     }
 
@@ -1862,7 +1862,7 @@ pub trait TDisplayObject<'gc>:
     /// Sets whether this display object has been instantiated by the timeline.
     /// When this flag is set, attempts to change the object's name from AVM2
     /// throw an exception.
-    fn set_instantiated_by_timeline(&self, gc_context: MutationContext<'gc, '_>, value: bool) {
+    fn set_instantiated_by_timeline(&self, gc_context: &Mutation<'gc>, value: bool) {
         self.base_mut(gc_context)
             .set_instantiated_by_timeline(value);
     }
@@ -1881,7 +1881,7 @@ pub trait TDisplayObject<'gc>:
     ///
     /// When this flag is set, the object will attempt to set a dynamic property
     /// on the parent with the same name as itself.
-    fn set_has_explicit_name(&self, gc_context: MutationContext<'gc, '_>, value: bool) {
+    fn set_has_explicit_name(&self, gc_context: &Mutation<'gc>, value: bool) {
         self.base_mut(gc_context).set_has_explicit_name(value);
     }
     fn state(&self) -> Option<ButtonState> {
@@ -2115,7 +2115,7 @@ pub trait TDisplayObject<'gc>:
     fn as_video(self) -> Option<Video<'gc>> {
         None
     }
-    fn as_drawing(&self, _gc_context: MutationContext<'gc, '_>) -> Option<RefMut<'_, Drawing>> {
+    fn as_drawing(&self, _gc_context: &Mutation<'gc>) -> Option<RefMut<'_, Drawing>> {
         None
     }
     fn as_bitmap(self) -> Option<Bitmap<'gc>> {
@@ -2249,7 +2249,7 @@ pub trait TDisplayObject<'gc>:
         None
     }
 
-    fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc>;
+    fn instantiate(&self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc>;
     fn as_ptr(&self) -> *const DisplayObjectPtr;
 
     /// Whether this object can be used as a mask.
@@ -2370,7 +2370,7 @@ pub trait TDisplayObject<'gc>:
 
     /// Inform this object and its ancestors that it has visually changed and must be redrawn.
     /// If this object or any ancestor is marked as cacheAsBitmap, it will invalidate that cache.
-    fn invalidate_cached_bitmap(&self, mc: MutationContext<'gc, '_>) {
+    fn invalidate_cached_bitmap(&self, mc: &Mutation<'gc>) {
         if self.base_mut(mc).invalidate_cached_bitmap() {
             // Don't inform ancestors if we've already done so this frame
             if let Some(parent) = self.parent() {
@@ -2643,7 +2643,7 @@ impl<'gc> DisplayObjectWeak<'gc> {
         }
     }
 
-    pub fn upgrade(&self, mc: MutationContext<'gc, '_>) -> Option<DisplayObject<'gc>> {
+    pub fn upgrade(&self, mc: &Mutation<'gc>) -> Option<DisplayObject<'gc>> {
         match self {
             DisplayObjectWeak::MovieClip(movie) => movie.upgrade(mc).map(|m| m.into()),
             DisplayObjectWeak::LoaderDisplay(ld) => ld.upgrade(mc).map(|ld| ld.into()),

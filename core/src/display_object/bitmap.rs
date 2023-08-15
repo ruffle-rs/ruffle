@@ -15,7 +15,7 @@ use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use core::fmt;
-use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
 use ruffle_render::bitmap::{BitmapFormat, PixelSnapping};
 use std::cell::{Ref, RefMut};
 use std::sync::Arc;
@@ -25,7 +25,7 @@ use std::sync::Arc;
 pub struct BitmapWeak<'gc>(GcWeakCell<'gc, BitmapGraphicData<'gc>>);
 
 impl<'gc> BitmapWeak<'gc> {
-    pub fn upgrade(self, mc: MutationContext<'gc, '_>) -> Option<Bitmap<'gc>> {
+    pub fn upgrade(self, mc: &Mutation<'gc>) -> Option<Bitmap<'gc>> {
         self.0.upgrade(mc).map(Bitmap)
     }
 
@@ -201,7 +201,7 @@ impl<'gc> Bitmap<'gc> {
         self.0.read().pixel_snapping
     }
 
-    pub fn set_pixel_snapping(self, mc: MutationContext<'gc, '_>, value: PixelSnapping) {
+    pub fn set_pixel_snapping(self, mc: &Mutation<'gc>, value: PixelSnapping) {
         self.0.write(mc).pixel_snapping = value;
     }
 
@@ -282,7 +282,7 @@ impl<'gc> Bitmap<'gc> {
         self.0.read().smoothing
     }
 
-    pub fn set_smoothing(self, mc: MutationContext<'gc, '_>, smoothing: bool) {
+    pub fn set_smoothing(self, mc: &Mutation<'gc>, smoothing: bool) {
         self.0.write(mc).smoothing = smoothing;
     }
 
@@ -296,11 +296,11 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         Ref::map(self.0.read(), |r| &r.base)
     }
 
-    fn base_mut<'a>(&'a self, mc: MutationContext<'gc, '_>) -> RefMut<'a, DisplayObjectBase<'gc>> {
+    fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>> {
         RefMut::map(self.0.write(mc), |w| &mut w.base)
     }
 
-    fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc> {
+    fn instantiate(&self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
         Self(GcCell::new(gc_context, self.0.read().clone())).into()
     }
 

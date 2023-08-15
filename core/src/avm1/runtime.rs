@@ -12,7 +12,7 @@ use crate::prelude::*;
 use crate::string::AvmString;
 use crate::tag_utils::SwfSlice;
 use crate::{avm1, avm_debug};
-use gc_arena::{Collect, Gc, MutationContext};
+use gc_arena::{Collect, Gc, Mutation};
 use std::borrow::Cow;
 use swf::avm1::read::Reader;
 use tracing::instrument;
@@ -503,7 +503,7 @@ impl<'gc> Avm1<'gc> {
     /// execution for AVM1 movies.
     pub fn add_to_exec_list(
         &mut self,
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         clip: DisplayObject<'gc>,
     ) {
         // Adding while iterating is safe, as this does not modify any active nodes.

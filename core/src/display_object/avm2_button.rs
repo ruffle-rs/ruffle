@@ -17,7 +17,7 @@ use crate::prelude::*;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::vminterface::Instantiator;
 use core::fmt;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, Mutation};
 use ruffle_render::filters::Filter;
 use std::cell::{Ref, RefMut};
 use std::sync::Arc;
@@ -150,7 +150,7 @@ impl<'gc> Avm2Button<'gc> {
         Self::from_swf_tag(&button_record, &movie.into(), context, false)
     }
 
-    pub fn set_sounds(self, gc_context: MutationContext<'gc, '_>, sounds: swf::ButtonSounds) {
+    pub fn set_sounds(self, gc_context: &Mutation<'gc>, sounds: swf::ButtonSounds) {
         let button = self.0.write(gc_context);
         let mut static_data = button.static_data.write(gc_context);
         static_data.up_to_over_sound = sounds.up_to_over_sound;
@@ -163,7 +163,7 @@ impl<'gc> Avm2Button<'gc> {
     /// Set the color transform for all children of each state.
     pub fn set_colors(
         self,
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         color_transforms: &[swf::ColorTransform],
     ) {
         let button = self.0.write(gc_context);
@@ -397,7 +397,7 @@ impl<'gc> Avm2Button<'gc> {
         self.0.write(context.gc_context).tracking = tracking;
     }
 
-    pub fn set_avm2_class(self, mc: MutationContext<'gc, '_>, class: Avm2ClassObject<'gc>) {
+    pub fn set_avm2_class(self, mc: &Mutation<'gc>, class: Avm2ClassObject<'gc>) {
         self.0.write(mc).class = class;
     }
 }
@@ -407,11 +407,11 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         Ref::map(self.0.read(), |r| &r.base.base)
     }
 
-    fn base_mut<'a>(&'a self, mc: MutationContext<'gc, '_>) -> RefMut<'a, DisplayObjectBase<'gc>> {
+    fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>> {
         RefMut::map(self.0.write(mc), |w| &mut w.base.base)
     }
 
-    fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc> {
+    fn instantiate(&self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
         Self(GcCell::new(gc_context, self.0.read().clone())).into()
     }
 
@@ -736,7 +736,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         true
     }
 
-    fn on_focus_changed(&self, gc_context: MutationContext<'gc, '_>, focused: bool) {
+    fn on_focus_changed(&self, gc_context: &Mutation<'gc>, focused: bool) {
         self.0.write(gc_context).has_focus = focused;
     }
 }
@@ -748,7 +748,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
 
     fn raw_interactive_mut(
         &self,
-        mc: MutationContext<'gc, '_>,
+        mc: &Mutation<'gc>,
     ) -> RefMut<InteractiveObjectBase<'gc>> {
         RefMut::map(self.0.write(mc), |w| &mut w.base)
     }

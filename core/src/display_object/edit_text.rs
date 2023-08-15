@@ -28,7 +28,7 @@ use crate::tag_utils::SwfMovie;
 use crate::vminterface::{AvmObject, Instantiator};
 use chrono::Utc;
 use core::fmt;
-use gc_arena::{Collect, Gc, GcCell, MutationContext};
+use gc_arena::{Collect, Gc, GcCell, Mutation};
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::shape_utils::DrawCommand;
 use ruffle_render::transform::Transform;
@@ -499,7 +499,7 @@ impl<'gc> EditText<'gc> {
         self.0.read().flags.contains(EditTextFlag::HAS_BACKGROUND)
     }
 
-    pub fn set_has_background(self, gc_context: MutationContext<'gc, '_>, has_background: bool) {
+    pub fn set_has_background(self, gc_context: &Mutation<'gc>, has_background: bool) {
         self.0
             .write(gc_context)
             .flags
@@ -513,7 +513,7 @@ impl<'gc> EditText<'gc> {
 
     pub fn set_background_color(
         self,
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         background_color: Color,
     ) {
         self.0.write(gc_context).background_color = background_color;
@@ -524,7 +524,7 @@ impl<'gc> EditText<'gc> {
         self.0.read().flags.contains(EditTextFlag::BORDER)
     }
 
-    pub fn set_has_border(self, gc_context: MutationContext<'gc, '_>, has_border: bool) {
+    pub fn set_has_border(self, gc_context: &Mutation<'gc>, has_border: bool) {
         self.0
             .write(gc_context)
             .flags
@@ -536,7 +536,7 @@ impl<'gc> EditText<'gc> {
         self.0.read().border_color
     }
 
-    pub fn set_border_color(self, gc_context: MutationContext<'gc, '_>, border_color: Color) {
+    pub fn set_border_color(self, gc_context: &Mutation<'gc>, border_color: Color) {
         self.0.write(gc_context).border_color = border_color;
         self.redraw_border(gc_context);
     }
@@ -658,7 +658,7 @@ impl<'gc> EditText<'gc> {
     /// written into.
 
     /// Redraw the border of this `EditText`.
-    fn redraw_border(self, gc_context: MutationContext<'gc, '_>) {
+    fn redraw_border(self, gc_context: &Mutation<'gc>) {
         let mut write = self.0.write(gc_context);
 
         write.drawing.clear();
@@ -1109,7 +1109,7 @@ impl<'gc> EditText<'gc> {
     pub fn set_selection(
         self,
         selection: Option<TextSelection>,
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
     ) {
         let mut text = self.0.write(gc_context);
         if let Some(mut selection) = selection {
@@ -1126,7 +1126,7 @@ impl<'gc> EditText<'gc> {
 
     pub fn set_render_settings(
         self,
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         settings: TextRenderSettings,
     ) {
         self.0.write(gc_context).render_settings = settings
@@ -1609,11 +1609,11 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         Ref::map(self.0.read(), |r| &r.base.base)
     }
 
-    fn base_mut<'a>(&'a self, mc: MutationContext<'gc, '_>) -> RefMut<'a, DisplayObjectBase<'gc>> {
+    fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>> {
         RefMut::map(self.0.write(mc), |w| &mut w.base.base)
     }
 
-    fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc> {
+    fn instantiate(&self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
         Self(GcCell::new(gc_context, self.0.read().clone())).into()
     }
 
@@ -1717,7 +1717,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         edit_text.base.base.x() + offset
     }
 
-    fn set_x(&self, gc_context: MutationContext<'gc, '_>, x: Twips) {
+    fn set_x(&self, gc_context: &Mutation<'gc>, x: Twips) {
         let mut edit_text = self.0.write(gc_context);
         let offset = edit_text.bounds.x_min;
         edit_text.base.base.set_x(x - offset);
@@ -1731,7 +1731,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         edit_text.base.base.y() + offset
     }
 
-    fn set_y(&self, gc_context: MutationContext<'gc, '_>, y: Twips) {
+    fn set_y(&self, gc_context: &Mutation<'gc>, y: Twips) {
         let mut edit_text = self.0.write(gc_context);
         let offset = edit_text.bounds.y_min;
         edit_text.base.base.set_y(y - offset);
@@ -1746,7 +1746,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             .to_pixels()
     }
 
-    fn set_width(&self, gc_context: MutationContext<'gc, '_>, value: f64) {
+    fn set_width(&self, gc_context: &Mutation<'gc>, value: f64) {
         let mut write = self.0.write(gc_context);
 
         write.bounds.set_width(Twips::from_pixels(value));
@@ -1763,7 +1763,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             .to_pixels()
     }
 
-    fn set_height(&self, gc_context: MutationContext<'gc, '_>, value: f64) {
+    fn set_height(&self, gc_context: &Mutation<'gc>, value: f64) {
         let mut write = self.0.write(gc_context);
 
         write.bounds.set_height(Twips::from_pixels(value));
@@ -1773,7 +1773,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.redraw_border(gc_context);
     }
 
-    fn set_matrix(&self, gc_context: MutationContext<'gc, '_>, matrix: Matrix) {
+    fn set_matrix(&self, gc_context: &Mutation<'gc>, matrix: Matrix) {
         self.0.write(gc_context).base.base.set_matrix(matrix);
         self.redraw_border(gc_context);
     }
@@ -1908,7 +1908,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.set_avm1_removed(context.gc_context, true);
     }
 
-    fn on_focus_changed(&self, gc_context: MutationContext<'gc, '_>, focused: bool) {
+    fn on_focus_changed(&self, gc_context: &Mutation<'gc>, focused: bool) {
         let is_action_script_3 = self.movie().is_action_script_3();
         let mut text = self.0.write(gc_context);
         text.flags.set(EditTextFlag::HAS_FOCUS, focused);
@@ -1930,7 +1930,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
 
     fn raw_interactive_mut(
         &self,
-        mc: MutationContext<'gc, '_>,
+        mc: &Mutation<'gc>,
     ) -> RefMut<InteractiveObjectBase<'gc>> {
         RefMut::map(self.0.write(mc), |w| &mut w.base)
     }

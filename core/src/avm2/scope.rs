@@ -7,7 +7,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::{Multiname, Namespace};
 use core::fmt;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, Mutation};
 
 use super::property_map::PropertyMap;
 
@@ -113,7 +113,7 @@ impl<'gc> ScopeChain<'gc> {
     }
 
     /// Creates a new ScopeChain by chaining new scopes on top of this ScopeChain
-    pub fn chain(&self, mc: MutationContext<'gc, '_>, new_scopes: &[Scope<'gc>]) -> Self {
+    pub fn chain(&self, mc: &Mutation<'gc>, new_scopes: &[Scope<'gc>]) -> Self {
         if new_scopes.is_empty() {
             // If we are not actually adding any new scopes, we don't need to do anything.
             return *self;

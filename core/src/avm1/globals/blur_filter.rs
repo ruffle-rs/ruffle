@@ -5,7 +5,7 @@ use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, ScriptObject, TObject, Value};
 use crate::context::GcContext;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, Mutation};
 use std::ops::Deref;
 use swf::{BlurFilterFlags, Fixed16};
 
@@ -64,11 +64,11 @@ impl<'gc> BlurFilter<'gc> {
         Ok(blur_filter)
     }
 
-    pub fn from_filter(gc_context: MutationContext<'gc, '_>, filter: swf::BlurFilter) -> Self {
+    pub fn from_filter(gc_context: &Mutation<'gc>, filter: swf::BlurFilter) -> Self {
         Self(GcCell::new(gc_context, filter.into()))
     }
 
-    pub(crate) fn duplicate(&self, gc_context: MutationContext<'gc, '_>) -> Self {
+    pub(crate) fn duplicate(&self, gc_context: &Mutation<'gc>) -> Self {
         Self(GcCell::new(gc_context, self.0.read().clone()))
     }
 

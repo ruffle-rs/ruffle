@@ -5,7 +5,7 @@ use crate::avm2::value::{Hint, Value};
 use crate::avm2::Error;
 use chrono::{DateTime, Utc};
 use core::fmt;
-use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates Date objects.
@@ -47,7 +47,7 @@ impl<'gc> DateObject<'gc> {
 
     pub fn set_date_time(
         self,
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         date_time: Option<DateTime<Utc>>,
     ) {
         self.0.write(gc_context).date_time = date_time;
@@ -69,7 +69,7 @@ impl<'gc> TObject<'gc> for DateObject<'gc> {
         Ref::map(self.0.read(), |read| &read.base)
     }
 
-    fn base_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<ScriptObjectData<'gc>> {
+    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
         RefMut::map(self.0.write(mc), |write| &mut write.base)
     }
 
@@ -77,7 +77,7 @@ impl<'gc> TObject<'gc> for DateObject<'gc> {
         self.0.as_ptr() as *const ObjectPtr
     }
 
-    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error<'gc>> {
+    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
         if let Some(date) = self.date_time() {
             Ok((date.timestamp_millis() as f64).into())
         } else {

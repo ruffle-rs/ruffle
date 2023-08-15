@@ -16,7 +16,7 @@ use crate::context::GcContext;
 use crate::display_object::DisplayObject;
 use crate::swf::BlendMode;
 use crate::{avm1_stub, avm_error};
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::{GcCell, Mutation};
 use ruffle_render::transform::Transform;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -55,7 +55,7 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
 };
 
 fn new_bitmap_data<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    gc_context: &Mutation<'gc>,
     proto: Option<Value<'gc>>,
     bitmap_data: BitmapData<'gc>,
 ) -> ScriptObject<'gc> {

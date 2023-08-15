@@ -7,7 +7,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::bitmap::bitmap_data::BitmapDataWrapper;
 use core::fmt;
-use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates BitmapData objects.
@@ -100,7 +100,7 @@ impl<'gc> TObject<'gc> for BitmapDataObject<'gc> {
         Ref::map(self.0.read(), |read| &read.base)
     }
 
-    fn base_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<ScriptObjectData<'gc>> {
+    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
         RefMut::map(self.0.write(mc), |write| &mut write.base)
     }
 
@@ -108,7 +108,7 @@ impl<'gc> TObject<'gc> for BitmapDataObject<'gc> {
         self.0.as_ptr() as *const ObjectPtr
     }
 
-    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error<'gc>> {
+    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Value::Object(Object::from(*self)))
     }
 
@@ -118,7 +118,7 @@ impl<'gc> TObject<'gc> for BitmapDataObject<'gc> {
 
     /// Initialize the bitmap data in this object, if it's capable of
     /// supporting said data
-    fn init_bitmap_data(&self, mc: MutationContext<'gc, '_>, new_bitmap: BitmapDataWrapper<'gc>) {
+    fn init_bitmap_data(&self, mc: &Mutation<'gc>, new_bitmap: BitmapDataWrapper<'gc>) {
         self.0.write(mc).bitmap_data = Some(new_bitmap)
     }
 }

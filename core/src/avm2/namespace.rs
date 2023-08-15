@@ -1,7 +1,7 @@
 use crate::avm2::Error;
 use crate::string::{AvmAtom, AvmString};
 use crate::{avm2::script::TranslationUnit, context::GcContext};
-use gc_arena::{Collect, Gc, MutationContext};
+use gc_arena::{Collect, Gc, Mutation};
 use std::fmt::Debug;
 use swf::avm2::types::{Index, Namespace as AbcNamespace};
 
@@ -88,7 +88,7 @@ impl<'gc> Namespace<'gc> {
         Ok(Self(Gc::new(context.gc_context, ns)))
     }
 
-    pub fn any(mc: MutationContext<'gc, '_>) -> Self {
+    pub fn any(mc: &Mutation<'gc>) -> Self {
         Self(Gc::new(mc, NamespaceData::Any))
     }
 

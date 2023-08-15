@@ -10,7 +10,7 @@ use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use core::fmt;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, Mutation};
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::commands::CommandHandler;
 use std::cell::{Ref, RefMut};
@@ -104,7 +104,7 @@ impl<'gc> Graphic<'gc> {
         ))
     }
 
-    pub fn drawing(&self, gc_context: MutationContext<'gc, '_>) -> RefMut<'_, Drawing> {
+    pub fn drawing(&self, gc_context: &Mutation<'gc>) -> RefMut<'_, Drawing> {
         RefMut::map(self.0.write(gc_context), |w| {
             w.drawing.get_or_insert_with(Drawing::new)
         })
@@ -116,11 +116,11 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         Ref::map(self.0.read(), |r| &r.base)
     }
 
-    fn base_mut<'a>(&'a self, mc: MutationContext<'gc, '_>) -> RefMut<'a, DisplayObjectBase<'gc>> {
+    fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>> {
         RefMut::map(self.0.write(mc), |w| &mut w.base)
     }
 
-    fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc> {
+    fn instantiate(&self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
         Self(GcCell::new(gc_context, self.0.read().clone())).into()
     }
 
@@ -259,7 +259,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         self.0.write(context.gc_context).avm2_object = Some(to);
     }
 
-    fn as_drawing(&self, gc_context: MutationContext<'gc, '_>) -> Option<RefMut<'_, Drawing>> {
+    fn as_drawing(&self, gc_context: &Mutation<'gc>) -> Option<RefMut<'_, Drawing>> {
         Some(self.drawing(gc_context))
     }
 }

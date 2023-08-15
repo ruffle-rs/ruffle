@@ -9,7 +9,7 @@ use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::string::AvmString;
-use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
 
 /// A class instance allocator that allocates primitive objects.
 pub fn primitive_allocator<'gc>(
@@ -107,7 +107,7 @@ impl<'gc> TObject<'gc> for PrimitiveObject<'gc> {
         Ref::map(self.0.read(), |read| &read.base)
     }
 
-    fn base_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<ScriptObjectData<'gc>> {
+    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
         RefMut::map(self.0.write(mc), |write| &mut write.base)
     }
 
@@ -140,11 +140,11 @@ impl<'gc> TObject<'gc> for PrimitiveObject<'gc> {
         }
     }
 
-    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error<'gc>> {
+    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
         Ok(self.0.read().primitive)
     }
 
-    fn as_primitive_mut(&self, mc: MutationContext<'gc, '_>) -> Option<RefMut<Value<'gc>>> {
+    fn as_primitive_mut(&self, mc: &Mutation<'gc>) -> Option<RefMut<Value<'gc>>> {
         Some(RefMut::map(self.0.write(mc), |pod| &mut pod.primitive))
     }
 

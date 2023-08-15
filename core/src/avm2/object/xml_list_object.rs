@@ -4,7 +4,7 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::{Error, Multiname};
-use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
 use std::cell::{Ref, RefMut};
 use std::fmt::{self, Debug};
 use std::ops::Deref;
@@ -85,11 +85,11 @@ impl<'gc> XmlListObject<'gc> {
         Ref::map(self.0.read(), |d| &d.children)
     }
 
-    pub fn children_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<'_, Vec<E4XOrXml<'gc>>> {
+    pub fn children_mut(&self, mc: &Mutation<'gc>) -> RefMut<'_, Vec<E4XOrXml<'gc>>> {
         RefMut::map(self.0.write(mc), |d| &mut d.children)
     }
 
-    pub fn set_children(&self, mc: MutationContext<'gc, '_>, children: Vec<E4XOrXml<'gc>>) {
+    pub fn set_children(&self, mc: &Mutation<'gc>, children: Vec<E4XOrXml<'gc>>) {
         self.0.write(mc).children = children;
     }
 
@@ -225,7 +225,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
         Ref::map(self.0.read(), |read| &read.base)
     }
 
-    fn base_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<ScriptObjectData<'gc>> {
+    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
         RefMut::map(self.0.write(mc), |write| &mut write.base)
     }
 
@@ -233,7 +233,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
         self.0.as_ptr() as *const ObjectPtr
     }
 
-    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error<'gc>> {
+    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Value::Object(Object::from(*self)))
     }
 

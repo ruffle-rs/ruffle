@@ -12,7 +12,7 @@ use crate::display_object::{
 };
 use crate::string::{AvmString, WStr};
 use crate::types::Percent;
-use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
 use std::fmt;
 use swf::Twips;
 
@@ -44,7 +44,7 @@ impl<'gc> StageObject<'gc> {
 
     /// Create a stage object for a given display node.
     pub fn for_display_object(
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         display_object: DisplayObject<'gc>,
         proto: Object<'gc>,
     ) -> Self {
@@ -62,7 +62,7 @@ impl<'gc> StageObject<'gc> {
     /// Whenever a property with the given name is changed, we should change the text in the text field.
     pub fn register_text_field_binding(
         self,
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         text_field: EditText<'gc>,
         variable_name: AvmString<'gc>,
     ) {
@@ -80,7 +80,7 @@ impl<'gc> StageObject<'gc> {
     /// Caller is responsible for placing the text field on the unbound list, if necessary.
     pub fn clear_text_field_binding(
         self,
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         text_field: EditText<'gc>,
     ) {
         self.0

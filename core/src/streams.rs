@@ -20,7 +20,7 @@ use flv_rs::{
     ScriptData as FlvScriptData, Tag as FlvTag, TagData as FlvTagData, Value as FlvValue,
     VideoData as FlvVideoData, VideoPacket as FlvVideoPacket,
 };
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, Mutation};
 use ruffle_render::bitmap::BitmapInfo;
 use ruffle_video::frame::EncodedFrame;
 use ruffle_video::VideoStreamHandle;
@@ -196,7 +196,7 @@ pub struct NetStreamData<'gc> {
 }
 
 impl<'gc> NetStream<'gc> {
-    pub fn new(gc_context: MutationContext<'gc, '_>, avm_object: Option<AvmObject<'gc>>) -> Self {
+    pub fn new(gc_context: &Mutation<'gc>, avm_object: Option<AvmObject<'gc>>) -> Self {
         Self(GcCell::new(
             gc_context,
             NetStreamData {
@@ -213,7 +213,7 @@ impl<'gc> NetStream<'gc> {
         ))
     }
 
-    pub fn set_client(self, gc_context: MutationContext<'gc, '_>, new_client: Avm2Object<'gc>) {
+    pub fn set_client(self, gc_context: &Mutation<'gc>, new_client: Avm2Object<'gc>) {
         self.0.write(gc_context).avm2_client = Some(new_client);
     }
 
@@ -221,7 +221,7 @@ impl<'gc> NetStream<'gc> {
         self.0.read().avm2_client
     }
 
-    pub fn set_avm_object(self, gc_context: MutationContext<'gc, '_>, avm_object: AvmObject<'gc>) {
+    pub fn set_avm_object(self, gc_context: &Mutation<'gc>, avm_object: AvmObject<'gc>) {
         self.0.write(gc_context).avm_object = Some(avm_object);
     }
 

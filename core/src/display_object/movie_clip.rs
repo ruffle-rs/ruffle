@@ -38,7 +38,7 @@ use crate::string::{AvmString, SwfStrExt as _, WStr, WString};
 use crate::tag_utils::{self, ControlFlow, DecodeResult, Error, SwfMovie, SwfSlice, SwfStream};
 use crate::vminterface::{AvmObject, Instantiator};
 use core::fmt;
-use gc_arena::{Collect, Gc, GcCell, GcWeakCell, MutationContext};
+use gc_arena::{Collect, Gc, GcCell, GcWeakCell, Mutation};
 use smallvec::SmallVec;
 use std::cell::{Ref, RefMut};
 use std::cmp::max;
@@ -130,7 +130,7 @@ impl fmt::Debug for MovieClip<'_> {
 pub struct MovieClipWeak<'gc>(GcWeakCell<'gc, MovieClipData<'gc>>);
 
 impl<'gc> MovieClipWeak<'gc> {
-    pub fn upgrade(self, mc: MutationContext<'gc, '_>) -> Option<MovieClip<'gc>> {
+    pub fn upgrade(self, mc: &Mutation<'gc>) -> Option<MovieClip<'gc>> {
         self.0.upgrade(mc).map(MovieClip)
     }
 
@@ -187,7 +187,7 @@ pub struct MovieClipData<'gc> {
 }
 
 impl<'gc> MovieClip<'gc> {
-    pub fn new(movie: Arc<SwfMovie>, gc_context: MutationContext<'gc, '_>) -> Self {
+    pub fn new(movie: Arc<SwfMovie>, gc_context: &Mutation<'gc>) -> Self {
         MovieClip(GcCell::new(
             gc_context,
             MovieClipData {
@@ -225,7 +225,7 @@ impl<'gc> MovieClip<'gc> {
         movie: Arc<SwfMovie>,
         this: Avm2Object<'gc>,
         class: Avm2ClassObject<'gc>,
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
     ) -> Self {
         MovieClip(GcCell::new(
             gc_context,
@@ -262,7 +262,7 @@ impl<'gc> MovieClip<'gc> {
 
     /// Constructs a non-root movie
     pub fn new_with_data(
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         id: CharacterId,
         swf: SwfSlice,
         num_frames: u16,
@@ -986,13 +986,13 @@ impl<'gc> MovieClip<'gc> {
 
     pub fn set_drop_target(
         self,
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         drop_target: Option<DisplayObject<'gc>>,
     ) {
         self.0.write(gc_context).drop_target = drop_target;
     }
 
-    pub fn set_programmatically_played(self, mc: MutationContext<'gc, '_>) {
+    pub fn set_programmatically_played(self, mc: &Mutation<'gc>) {
         self.0.write(mc).set_programmatically_played()
     }
 
@@ -1241,7 +1241,7 @@ impl<'gc> MovieClip<'gc> {
     /// in the _framesloaded / framesLoaded property being the given number - 1).
     pub fn set_cur_preload_frame(
         self,
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         cur_preload_frame: u16,
     ) {
         self.0
@@ -1255,7 +1255,7 @@ impl<'gc> MovieClip<'gc> {
     /// This sets the current frame of this MovieClip to a given number.
     pub fn set_current_frame(
         self,
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         current_frame: FrameNumber,
     ) {
         self.0.write(gc_context).current_frame = current_frame;
@@ -1322,7 +1322,7 @@ impl<'gc> MovieClip<'gc> {
 
     pub fn set_avm2_class(
         self,
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         constr: Option<Avm2ClassObject<'gc>>,
     ) {
         let mut write = self.0.write(gc_context);
@@ -1409,7 +1409,7 @@ impl<'gc> MovieClip<'gc> {
     /// tag on a MovieClip instance.
     pub fn set_clip_event_handlers(
         self,
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         event_handlers: Vec<ClipEventHandler>,
     ) {
         let mut mc = self.0.write(gc_context);
@@ -2347,7 +2347,7 @@ impl<'gc> MovieClip<'gc> {
         self.0.write(context.gc_context).button_mode = button_mode;
     }
 
-    pub fn drawing(&self, gc_context: MutationContext<'gc, '_>) -> RefMut<'_, Drawing> {
+    pub fn drawing(&self, gc_context: &Mutation<'gc>) -> RefMut<'_, Drawing> {
         // We're about to change graphics, so invalidate on the next frame
         self.invalidate_cached_bitmap(gc_context);
         RefMut::map(self.0.write(gc_context), |s| &mut s.drawing)
@@ -2492,11 +2492,11 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         Ref::map(self.0.read(), |r| &r.base.base)
     }
 
-    fn base_mut<'a>(&'a self, mc: MutationContext<'gc, '_>) -> RefMut<'a, DisplayObjectBase<'gc>> {
+    fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>> {
         RefMut::map(self.0.write(mc), |w| &mut w.base.base)
     }
 
-    fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc> {
+    fn instantiate(&self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
         Self(GcCell::new(gc_context, self.0.read().clone())).into()
     }
 
@@ -2797,7 +2797,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         Some(self.into())
     }
 
-    fn as_drawing(&self, gc_context: MutationContext<'gc, '_>) -> Option<RefMut<'_, Drawing>> {
+    fn as_drawing(&self, gc_context: &Mutation<'gc>) -> Option<RefMut<'_, Drawing>> {
         Some(self.drawing(gc_context))
     }
 
@@ -2912,7 +2912,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
     }
 
-    fn on_focus_changed(&self, gc_context: MutationContext<'gc, '_>, focused: bool) {
+    fn on_focus_changed(&self, gc_context: &Mutation<'gc>, focused: bool) {
         self.0.write(gc_context).has_focus = focused;
     }
 }
@@ -2924,7 +2924,7 @@ impl<'gc> TDisplayObjectContainer<'gc> for MovieClip<'gc> {
 
     fn raw_container_mut(
         &self,
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
     ) -> RefMut<'_, ChildContainer<'gc>> {
         RefMut::map(self.0.write(gc_context), |this| &mut this.container)
     }
@@ -2937,7 +2937,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
 
     fn raw_interactive_mut(
         &self,
-        mc: MutationContext<'gc, '_>,
+        mc: &Mutation<'gc>,
     ) -> RefMut<InteractiveObjectBase<'gc>> {
         RefMut::map(self.0.write(mc), |w| &mut w.base)
     }
@@ -4406,7 +4406,7 @@ struct MovieClipStatic<'gc> {
 }
 
 impl<'gc> MovieClipStatic<'gc> {
-    fn empty(movie: Arc<SwfMovie>, gc_context: MutationContext<'gc, '_>) -> Self {
+    fn empty(movie: Arc<SwfMovie>, gc_context: &Mutation<'gc>) -> Self {
         let s = Self::with_data(0, SwfSlice::empty(movie), 1, None, gc_context);
 
         s.preload_progress.write(gc_context).cur_preload_frame = s.total_frames + 1;
@@ -4419,7 +4419,7 @@ impl<'gc> MovieClipStatic<'gc> {
         swf: SwfSlice,
         total_frames: FrameNumber,
         loader_info: Option<Avm2Object<'gc>>,
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
     ) -> Self {
         Self {
             id,
