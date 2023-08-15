@@ -238,6 +238,8 @@ pub struct NetStreamData<'gc> {
 
 impl<'gc> NetStream<'gc> {
     pub fn new(gc_context: &Mutation<'gc>, avm_object: Option<AvmObject<'gc>>) -> Self {
+        // IMPORTANT: When adding new fields consider if they need to be
+        // initialized in `init_buffer` as well.
         Self(GcCell::new(
             gc_context,
             NetStreamData {
@@ -269,6 +271,44 @@ impl<'gc> NetStream<'gc> {
         self.0.write(gc_context).avm_object = Some(avm_object);
     }
 
+    /// Initialize the `NetStream` buffer to accept new source data.
+    ///
+    /// This must be done once per source change and should ideally be done
+    /// immediately before the first `load_buffer` call for a particular source
+    /// file.
+    ///
+    /// Externally visible AVM state must not be initialized here - i.e. the
+    /// AS3 `client` doesn't go away because you played a new video file.
+    pub fn init_buffer(self, context: &mut UpdateContext<'_, 'gc>) {
+        let mut write = self.0.write(context.gc_context);
+
+        if let Some(instance) = write.sound_instance {
+            // We stop the sound twice because sounds may have either been
+            // played through the audio manager or through the backend directly
+            // depending on the attachment state at the time of first audio
+            // playback.
+            context.audio.stop_sound(instance);
+            context.audio_manager.stop_sound(context.audio, instance);
+        }
+
+        write.buffer = Buffer::new();
+        write.offset = 0;
+        write.preload_offset = 0;
+        write.stream_type = None;
+        write.stream_time = 0.0;
+        write.audio_stream = None;
+        write.sound_instance = None;
+    }
+
+    /// Append data to the `NetStream`'s current internal buffer.
+    ///
+    /// If you are loading data from a new source, you must first initialize
+    /// the buffer, otherwise existing buffer contents will remain and be
+    /// incorrectly parsed.
+    ///
+    /// Buffer loading can be done in chunks but must be done in such a way
+    /// that all data is appended in the correct order and that data from
+    /// separate streams is not mixed together.
     pub fn load_buffer(self, context: &mut UpdateContext<'_, 'gc>, data: &mut Vec<u8>) {
         self.0.write(context.gc_context).buffer.append(data);
 
