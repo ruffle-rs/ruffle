@@ -45,11 +45,7 @@ impl<'gc> DateObject<'gc> {
         self.0.read().date_time
     }
 
-    pub fn set_date_time(
-        self,
-        gc_context: &Mutation<'gc>,
-        date_time: Option<DateTime<Utc>>,
-    ) {
+    pub fn set_date_time(self, gc_context: &Mutation<'gc>, date_time: Option<DateTime<Utc>>) {
         self.0.write(gc_context).date_time = date_time;
     }
 }

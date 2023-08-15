@@ -71,12 +71,7 @@ impl<'gc> DictionaryObject<'gc> {
     }
 
     /// Set a value in the dictionary's object space.
-    pub fn set_property_by_object(
-        self,
-        name: Object<'gc>,
-        value: Value<'gc>,
-        mc: &Mutation<'gc>,
-    ) {
+    pub fn set_property_by_object(self, name: Object<'gc>, value: Value<'gc>, mc: &Mutation<'gc>) {
         self.0.write(mc).object_space.insert(name, value);
     }
 

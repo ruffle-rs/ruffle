@@ -78,11 +78,7 @@ impl<'gc> StageObject<'gc> {
     /// Removes a text field binding for the given text field.
     /// Does not place the text field on the unbound list.
     /// Caller is responsible for placing the text field on the unbound list, if necessary.
-    pub fn clear_text_field_binding(
-        self,
-        gc_context: &Mutation<'gc>,
-        text_field: EditText<'gc>,
-    ) {
+    pub fn clear_text_field_binding(self, gc_context: &Mutation<'gc>, text_field: EditText<'gc>) {
         self.0
             .write(gc_context)
             .text_field_bindings

@@ -51,11 +51,7 @@ pub struct XmlNodeData<'gc> {
 
 impl<'gc> XmlNode<'gc> {
     /// Construct a new XML node.
-    pub fn new(
-        mc: &Mutation<'gc>,
-        node_type: u8,
-        node_value: Option<AvmString<'gc>>,
-    ) -> Self {
+    pub fn new(mc: &Mutation<'gc>, node_type: u8, node_value: Option<AvmString<'gc>>) -> Self {
         Self(GcCell::new(
             mc,
             XmlNodeData {
@@ -215,12 +211,7 @@ impl<'gc> XmlNode<'gc> {
     /// The `position` parameter is the position of the new child in
     /// this node's children list. This is used to find and link the child's
     /// siblings to each other.
-    pub fn insert_child(
-        &mut self,
-        mc: &Mutation<'gc>,
-        position: usize,
-        mut child: XmlNode<'gc>,
-    ) {
+    pub fn insert_child(&mut self, mc: &Mutation<'gc>, position: usize, mut child: XmlNode<'gc>) {
         let is_cyclic = self
             .ancestors()
             .any(|ancestor| GcCell::ptr_eq(ancestor.0, child.0));
@@ -353,11 +344,7 @@ impl<'gc> XmlNode<'gc> {
     /// This internal function *will* overwrite already extant objects, so only
     /// call this if you need to instantiate the script object for the first
     /// time. Attempting to call it a second time will panic.
-    pub fn introduce_script_object(
-        &mut self,
-        gc_context: &Mutation<'gc>,
-        new_object: Object<'gc>,
-    ) {
+    pub fn introduce_script_object(&mut self, gc_context: &Mutation<'gc>, new_object: Object<'gc>) {
         assert!(self.get_script_object().is_none(), "An attempt was made to change the already-established link between script object and XML node. This has been denied and is likely a bug.");
         self.0.write(gc_context).script_object = Some(new_object);
     }

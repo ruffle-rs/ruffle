@@ -337,11 +337,7 @@ impl<'gc> Method<'gc> {
     }
 
     /// Define a builtin with no parameter constraints.
-    pub fn from_builtin(
-        method: NativeMethodImpl,
-        name: &'static str,
-        mc: &Mutation<'gc>,
-    ) -> Self {
+    pub fn from_builtin(method: NativeMethodImpl, name: &'static str, mc: &Mutation<'gc>) -> Self {
         Self::Native(Gc::new(
             mc,
             NativeMethod {

@@ -1239,11 +1239,7 @@ impl<'gc> MovieClip<'gc> {
 
     /// This sets the current preload frame of this MovieClipto a given number (resulting
     /// in the _framesloaded / framesLoaded property being the given number - 1).
-    pub fn set_cur_preload_frame(
-        self,
-        gc_context: &Mutation<'gc>,
-        cur_preload_frame: u16,
-    ) {
+    pub fn set_cur_preload_frame(self, gc_context: &Mutation<'gc>, cur_preload_frame: u16) {
         self.0
             .read()
             .static_data
@@ -1253,11 +1249,7 @@ impl<'gc> MovieClip<'gc> {
     }
 
     /// This sets the current frame of this MovieClip to a given number.
-    pub fn set_current_frame(
-        self,
-        gc_context: &Mutation<'gc>,
-        current_frame: FrameNumber,
-    ) {
+    pub fn set_current_frame(self, gc_context: &Mutation<'gc>, current_frame: FrameNumber) {
         self.0.write(gc_context).current_frame = current_frame;
     }
 
@@ -1320,11 +1312,7 @@ impl<'gc> MovieClip<'gc> {
             / self.total_bytes() as f64) as u32
     }
 
-    pub fn set_avm2_class(
-        self,
-        gc_context: &Mutation<'gc>,
-        constr: Option<Avm2ClassObject<'gc>>,
-    ) {
+    pub fn set_avm2_class(self, gc_context: &Mutation<'gc>, constr: Option<Avm2ClassObject<'gc>>) {
         let mut write = self.0.write(gc_context);
         write.avm2_class = constr;
     }
@@ -2922,10 +2910,7 @@ impl<'gc> TDisplayObjectContainer<'gc> for MovieClip<'gc> {
         Ref::map(self.0.read(), |this| &this.container)
     }
 
-    fn raw_container_mut(
-        &self,
-        gc_context: &Mutation<'gc>,
-    ) -> RefMut<'_, ChildContainer<'gc>> {
+    fn raw_container_mut(&self, gc_context: &Mutation<'gc>) -> RefMut<'_, ChildContainer<'gc>> {
         RefMut::map(self.0.write(gc_context), |this| &mut this.container)
     }
 }
@@ -2935,10 +2920,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
         Ref::map(self.0.read(), |r| &r.base)
     }
 
-    fn raw_interactive_mut(
-        &self,
-        mc: &Mutation<'gc>,
-    ) -> RefMut<InteractiveObjectBase<'gc>> {
+    fn raw_interactive_mut(&self, mc: &Mutation<'gc>) -> RefMut<InteractiveObjectBase<'gc>> {
         RefMut::map(self.0.write(mc), |w| &mut w.base)
     }
 

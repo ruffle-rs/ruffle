@@ -62,11 +62,7 @@ impl<'gc> Text<'gc> {
         ))
     }
 
-    pub fn set_render_settings(
-        self,
-        gc_context: &Mutation<'gc>,
-        settings: TextRenderSettings,
-    ) {
+    pub fn set_render_settings(self, gc_context: &Mutation<'gc>, settings: TextRenderSettings) {
         self.0.write(gc_context).render_settings = settings;
         self.invalidate_cached_bitmap(gc_context);
     }

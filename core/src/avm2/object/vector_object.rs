@@ -258,10 +258,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         Some(Ref::map(self.0.read(), |vod| &vod.vector))
     }
 
-    fn as_vector_storage_mut(
-        &self,
-        mc: &Mutation<'gc>,
-    ) -> Option<RefMut<VectorStorage<'gc>>> {
+    fn as_vector_storage_mut(&self, mc: &Mutation<'gc>) -> Option<RefMut<VectorStorage<'gc>>> {
         Some(RefMut::map(self.0.write(mc), |vod| &mut vod.vector))
     }
 }

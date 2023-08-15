@@ -176,12 +176,7 @@ impl<'gc, T: Hash + 'gc> WeakSet<'gc, T> {
     /// Inserts a new key in the set.
     /// The key must not already exist, and `hash` must be its hash.
     /// TODO: add proper entry API?
-    fn insert_fresh(
-        &mut self,
-        mc: &Mutation<'gc>,
-        hash: u64,
-        key: Gc<'gc, T>,
-    ) -> Gc<'gc, T> {
+    fn insert_fresh(&mut self, mc: &Mutation<'gc>, hash: u64, key: Gc<'gc, T>) -> Gc<'gc, T> {
         let entry = (Gc::downgrade(key), ());
 
         let raw = self.table.as_mut().raw_table_mut();

@@ -430,11 +430,7 @@ mod wrapper {
             self.0.write(mc).avm2_object = Some(object)
         }
 
-        pub fn remove_display_object(
-            &self,
-            mc: &Mutation<'gc>,
-            callback: DisplayObjectWeak<'gc>,
-        ) {
+        pub fn remove_display_object(&self, mc: &Mutation<'gc>, callback: DisplayObjectWeak<'gc>) {
             // [NA] Removing is a rare operation, whereas insert is often, and iteration is extremely frequent.
             // The list will typically be 0-1 entries long too, so I think retain is fine for quick iteration.
             self.0
@@ -443,11 +439,7 @@ mod wrapper {
                 .retain(|c| c.as_ptr() != callback.as_ptr())
         }
 
-        pub fn add_display_object(
-            &self,
-            mc: &Mutation<'gc>,
-            callback: DisplayObjectWeak<'gc>,
-        ) {
+        pub fn add_display_object(&self, mc: &Mutation<'gc>, callback: DisplayObjectWeak<'gc>) {
             self.0.write(mc).display_objects.push(callback);
         }
 

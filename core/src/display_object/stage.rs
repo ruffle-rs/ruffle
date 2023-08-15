@@ -151,11 +151,7 @@ pub struct StageData<'gc> {
 }
 
 impl<'gc> Stage<'gc> {
-    pub fn empty(
-        gc_context: &Mutation<'gc>,
-        fullscreen: bool,
-        movie: Arc<SwfMovie>,
-    ) -> Stage<'gc> {
+    pub fn empty(gc_context: &Mutation<'gc>, fullscreen: bool, movie: Arc<SwfMovie>) -> Stage<'gc> {
         let stage = Self(GcCell::new(
             gc_context,
             StageData {
@@ -237,11 +233,7 @@ impl<'gc> Stage<'gc> {
         self.0.write(gc_context).movie = movie;
     }
 
-    pub fn set_loader_info(
-        self,
-        gc_context: &Mutation<'gc>,
-        loader_info: Avm2Object<'gc>,
-    ) {
+    pub fn set_loader_info(self, gc_context: &Mutation<'gc>, loader_info: Avm2Object<'gc>) {
         self.0.write(gc_context).loader_info = loader_info;
     }
 
@@ -873,10 +865,7 @@ impl<'gc> TDisplayObjectContainer<'gc> for Stage<'gc> {
         Ref::map(self.0.read(), |this| &this.child)
     }
 
-    fn raw_container_mut(
-        &self,
-        gc_context: &Mutation<'gc>,
-    ) -> RefMut<'_, ChildContainer<'gc>> {
+    fn raw_container_mut(&self, gc_context: &Mutation<'gc>) -> RefMut<'_, ChildContainer<'gc>> {
         RefMut::map(self.0.write(gc_context), |this| &mut this.child)
     }
 }
@@ -886,10 +875,7 @@ impl<'gc> TInteractiveObject<'gc> for Stage<'gc> {
         Ref::map(self.0.read(), |r| &r.base)
     }
 
-    fn raw_interactive_mut(
-        &self,
-        mc: &Mutation<'gc>,
-    ) -> RefMut<InteractiveObjectBase<'gc>> {
+    fn raw_interactive_mut(&self, mc: &Mutation<'gc>) -> RefMut<InteractiveObjectBase<'gc>> {
         RefMut::map(self.0.write(mc), |w| &mut w.base)
     }
 

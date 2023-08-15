@@ -233,12 +233,7 @@ impl<'gc> Scope<'gc> {
     ///
     /// This inserts a value as a stored property on the local scope. If the property already
     /// exists, it will be forcefully overwritten. Used internally to initialize objects.
-    pub fn force_define_local(
-        &self,
-        name: AvmString<'gc>,
-        value: Value<'gc>,
-        mc: &Mutation<'gc>,
-    ) {
+    pub fn force_define_local(&self, name: AvmString<'gc>, value: Value<'gc>, mc: &Mutation<'gc>) {
         self.locals()
             .define_value(mc, name, value, Attribute::empty());
     }
