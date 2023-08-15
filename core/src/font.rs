@@ -1,7 +1,7 @@
 use crate::html::TextSpan;
 use crate::prelude::*;
 use crate::string::WStr;
-use gc_arena::{Collect, Gc, MutationContext};
+use gc_arena::{Collect, Gc, Mutation};
 use ruffle_render::backend::null::NullBitmapSource;
 use ruffle_render::backend::{RenderBackend, ShapeHandle};
 use ruffle_render::transform::Transform;
@@ -102,7 +102,7 @@ struct FontData {
 
 impl<'gc> Font<'gc> {
     pub fn from_swf_tag(
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         renderer: &mut dyn RenderBackend,
         tag: swf::Font,
         encoding: &'static swf::Encoding,
@@ -689,13 +689,13 @@ mod tests {
     use crate::font::{EvalParameters, Font};
     use crate::player::Player;
     use crate::string::WStr;
-    use gc_arena::{rootless_arena, MutationContext};
+    use gc_arena::{rootless_arena, Mutation};
     use ruffle_render::backend::{null::NullRenderer, ViewportDimensions};
     use swf::Twips;
 
     fn with_device_font<F>(callback: F)
     where
-        F: for<'gc> FnOnce(MutationContext<'gc, '_>, Font<'gc>),
+        F: for<'gc> FnOnce(&Mutation<'gc>, Font<'gc>),
     {
         rootless_arena(|mc| {
             let mut renderer = NullRenderer::new(ViewportDimensions {

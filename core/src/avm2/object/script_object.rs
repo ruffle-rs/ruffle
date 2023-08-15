@@ -9,7 +9,7 @@ use crate::avm2::Multiname;
 use crate::avm2::{Error, QName};
 use crate::string::AvmString;
 use fnv::FnvHashMap;
-use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
 use std::cell::{Ref, RefMut};
 use std::collections::hash_map::Entry;
 use std::fmt::Debug;
@@ -69,7 +69,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.read()
     }
 
-    fn base_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<ScriptObjectData<'gc>> {
+    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
         self.0.write(mc)
     }
 
@@ -77,7 +77,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.as_ptr() as *const ObjectPtr
     }
 
-    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error<'gc>> {
+    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Value::Object(Object::from(*self)))
     }
 }
@@ -97,7 +97,7 @@ impl<'gc> ScriptObject<'gc> {
     /// (calling `custom_object(mc, object_class, object_class.prototype()`)
     /// is technically also equivalent and faster, but not recommended outside lower-level Core code)
     pub fn custom_object(
-        mc: MutationContext<'gc, '_>,
+        mc: &Mutation<'gc>,
         class: Option<ClassObject<'gc>>,
         proto: Option<Object<'gc>>,
     ) -> Object<'gc> {
@@ -106,7 +106,7 @@ impl<'gc> ScriptObject<'gc> {
 
     /// A special case for `newcatch` implementation. Basically a variable (q)name
     /// which maps to slot 1.
-    pub fn catch_scope(mc: MutationContext<'gc, '_>, qname: &QName<'gc>) -> Object<'gc> {
+    pub fn catch_scope(mc: &Mutation<'gc>, qname: &QName<'gc>) -> Object<'gc> {
         // TODO: use a proper ClassObject here; purposefully crafted bytecode
         // can observe (the lack of) it.
         let mut base = ScriptObjectData::custom_new(None, None);
@@ -268,7 +268,7 @@ impl<'gc> ScriptObjectData<'gc> {
         &mut self,
         id: u32,
         value: Value<'gc>,
-        _mc: MutationContext<'gc, '_>,
+        _mc: &Mutation<'gc>,
     ) -> Result<(), Error<'gc>> {
         if let Some(slot) = self.slots.get_mut(id as usize) {
             *slot = value;
@@ -283,7 +283,7 @@ impl<'gc> ScriptObjectData<'gc> {
         &mut self,
         id: u32,
         value: Value<'gc>,
-        _mc: MutationContext<'gc, '_>,
+        _mc: &Mutation<'gc>,
     ) -> Result<(), Error<'gc>> {
         if let Some(slot) = self.slots.get_mut(id as usize) {
             *slot = value;

@@ -23,7 +23,7 @@ use crate::display_object::DisplayObject;
 use crate::html::TextFormat;
 use crate::streams::NetStream;
 use crate::string::AvmString;
-use gc_arena::{Collect, Gc, GcCell, MutationContext};
+use gc_arena::{Collect, Gc, GcCell, Mutation};
 use ruffle_macros::enum_trait_object;
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
@@ -180,7 +180,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Get the base of this object.
     /// Any trait method implementations that were not overrided will forward the call to this instead.
     fn base(&self) -> Ref<ScriptObjectData<'gc>>;
-    fn base_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<ScriptObjectData<'gc>>;
+    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>>;
 
     /// Retrieve a local property of the object. The Multiname should always be public.
     ///
@@ -554,7 +554,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         self,
         id: u32,
         value: Value<'gc>,
-        mc: MutationContext<'gc, '_>,
+        mc: &Mutation<'gc>,
     ) -> Result<(), Error<'gc>> {
         let mut base = self.base_mut(mc);
 
@@ -566,7 +566,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         self,
         id: u32,
         value: Value<'gc>,
-        mc: MutationContext<'gc, '_>,
+        mc: &Mutation<'gc>,
     ) -> Result<(), Error<'gc>> {
         let mut base = self.base_mut(mc);
 
@@ -734,7 +734,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// This method primarily exists so that the global scope that player
     /// globals loads into can be created before its superclasses are. It
     /// should be used sparingly, if at all.
-    fn set_proto(self, mc: MutationContext<'gc, '_>, proto: Object<'gc>) {
+    fn set_proto(self, mc: &Mutation<'gc>, proto: Object<'gc>) {
         let mut base = self.base_mut(mc);
 
         base.set_proto(proto)
@@ -805,7 +805,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Mark a dynamic property on this object as enumerable.
     fn set_local_property_is_enumerable(
         &self,
-        mc: MutationContext<'gc, '_>,
+        mc: &Mutation<'gc>,
         name: AvmString<'gc>,
         is_enumerable: bool,
     ) {
@@ -817,7 +817,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Install a bound method on an object.
     fn install_bound_method(
         &mut self,
-        mc: MutationContext<'gc, '_>,
+        mc: &Mutation<'gc>,
         disp_id: u32,
         function: FunctionObject<'gc>,
     ) {
@@ -830,7 +830,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// This should only ever be called on the `global` object, during initialization.
     fn install_const_late(
         &mut self,
-        mc: MutationContext<'gc, '_>,
+        mc: &Mutation<'gc>,
         name: QName<'gc>,
         value: Value<'gc>,
         class: ClassObject<'gc>,
@@ -843,7 +843,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             .install_const_slot_late(new_slot_id, value);
     }
 
-    fn install_instance_slots(&mut self, mc: MutationContext<'gc, '_>) {
+    fn install_instance_slots(&mut self, mc: &Mutation<'gc>) {
         self.base_mut(mc).install_instance_slots();
     }
 
@@ -982,7 +982,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ///
     /// `valueOf` is a method used to request an object be coerced to a
     /// primitive value. Typically, this would be a number of some kind.
-    fn value_of(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error<'gc>>;
+    fn value_of(&self, mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>>;
 
     /// Determine if this object is an instance of a given type.
     ///
@@ -1113,13 +1113,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Get this object's class's name, formatted for debug output.
-    fn instance_of_class_name(&self, mc: MutationContext<'gc, '_>) -> AvmString<'gc> {
+    fn instance_of_class_name(&self, mc: &Mutation<'gc>) -> AvmString<'gc> {
         self.instance_of_class_definition()
             .map(|r| r.read().name().to_qualified_name(mc))
             .unwrap_or_else(|| "<Unknown type>".into())
     }
 
-    fn set_instance_of(&self, mc: MutationContext<'gc, '_>, instance_of: ClassObject<'gc>) {
+    fn set_instance_of(&self, mc: &Mutation<'gc>, instance_of: ClassObject<'gc>) {
         let instance_vtable = instance_of.instance_vtable();
 
         let mut base = self.base_mut(mc);
@@ -1127,14 +1127,14 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     // Sets a different vtable for object, without changing instance_of.
-    fn set_vtable(&self, mc: MutationContext<'gc, '_>, vtable: VTable<'gc>) {
+    fn set_vtable(&self, mc: &Mutation<'gc>, vtable: VTable<'gc>) {
         let mut base = self.base_mut(mc);
         base.set_vtable(vtable);
     }
 
     // Duplicates the vtable for modification without subclassing
     // Note: this detaches the vtable from the original class.
-    fn fork_vtable(&self, mc: MutationContext<'gc, '_>) {
+    fn fork_vtable(&self, mc: &Mutation<'gc>) {
         let mut base = self.base_mut(mc);
         let vtable = base.vtable().unwrap().duplicate(mc);
         base.set_vtable(vtable);
@@ -1186,7 +1186,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         None
     }
 
-    fn as_bytearray_mut(&self, _mc: MutationContext<'gc, '_>) -> Option<RefMut<ByteArrayStorage>> {
+    fn as_bytearray_mut(&self, _mc: &Mutation<'gc>) -> Option<RefMut<ByteArrayStorage>> {
         None
     }
 
@@ -1197,7 +1197,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Unwrap this object as mutable array storage.
     fn as_array_storage_mut(
         &self,
-        _mc: MutationContext<'gc, '_>,
+        _mc: &Mutation<'gc>,
     ) -> Option<RefMut<ArrayStorage<'gc>>> {
         None
     }
@@ -1210,7 +1210,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Unwrap this object as mutable vector storage.
     fn as_vector_storage_mut(
         &self,
-        _mc: MutationContext<'gc, '_>,
+        _mc: &Mutation<'gc>,
     ) -> Option<RefMut<VectorStorage<'gc>>> {
         None
     }
@@ -1227,7 +1227,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn init_display_object(&self, _context: &mut UpdateContext<'_, 'gc>, _obj: DisplayObject<'gc>) {
     }
 
-    fn init_application_domain(&self, _mc: MutationContext<'gc, '_>, _domain: Domain<'gc>) {
+    fn init_application_domain(&self, _mc: &Mutation<'gc>, _domain: Domain<'gc>) {
         panic!("Tried to init an application domain on a non-ApplicationDomain object!")
     }
 
@@ -1242,7 +1242,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Unwrap this object as a mutable event.
-    fn as_event_mut(&self, _mc: MutationContext<'gc, '_>) -> Option<RefMut<Event<'gc>>> {
+    fn as_event_mut(&self, _mc: &Mutation<'gc>) -> Option<RefMut<Event<'gc>>> {
         None
     }
 
@@ -1252,7 +1252,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Unwrap this object as a mutable list of event handlers.
-    fn as_dispatch_mut(&self, _mc: MutationContext<'gc, '_>) -> Option<RefMut<DispatchList<'gc>>> {
+    fn as_dispatch_mut(&self, _mc: &Mutation<'gc>) -> Option<RefMut<DispatchList<'gc>>> {
         None
     }
 
@@ -1266,7 +1266,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Unwrap this object as a mutable primitive value.
-    fn as_primitive_mut(&self, _mc: MutationContext<'gc, '_>) -> Option<RefMut<Value<'gc>>> {
+    fn as_primitive_mut(&self, _mc: &Mutation<'gc>) -> Option<RefMut<Value<'gc>>> {
         None
     }
 
@@ -1281,7 +1281,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Unwrap this object as a mutable regexp.
-    fn as_regexp_mut(&self, _mc: MutationContext<'gc, '_>) -> Option<RefMut<RegExp<'gc>>> {
+    fn as_regexp_mut(&self, _mc: &Mutation<'gc>) -> Option<RefMut<RegExp<'gc>>> {
         None
     }
 
@@ -1309,7 +1309,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// This should only be called to initialize the association between an AVM
     /// object and it's associated bitmap data. This association should not be
     /// reinitialized later.
-    fn init_bitmap_data(&self, _mc: MutationContext<'gc, '_>, _new_bitmap: BitmapDataWrapper<'gc>) {
+    fn init_bitmap_data(&self, _mc: &Mutation<'gc>, _new_bitmap: BitmapDataWrapper<'gc>) {
     }
 
     /// Get this objects `DateObject`, if it has one.
@@ -1328,7 +1328,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Unwrap this object as a mutable text format.
-    fn as_text_format_mut(&self, _mc: MutationContext<'gc, '_>) -> Option<RefMut<TextFormat>> {
+    fn as_text_format_mut(&self, _mc: &Mutation<'gc>) -> Option<RefMut<TextFormat>> {
         None
     }
 
@@ -1489,7 +1489,7 @@ pub enum WeakObject<'gc> {
 }
 
 impl<'gc> WeakObject<'gc> {
-    pub fn upgrade(self, mc: MutationContext<'gc, '_>) -> Option<Object<'gc>> {
+    pub fn upgrade(self, mc: &Mutation<'gc>) -> Option<Object<'gc>> {
         Some(match self {
             Self::ScriptObject(o) => ScriptObject(o.0.upgrade(mc)?).into(),
             Self::FunctionObject(o) => FunctionObject(o.0.upgrade(mc)?).into(),

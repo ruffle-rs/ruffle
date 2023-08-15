@@ -7,7 +7,7 @@ use crate::avm1::property_map::{Entry, PropertyMap};
 use crate::avm1::{Object, ObjectPtr, TObject, Value};
 use crate::string::AvmString;
 use core::fmt;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, Mutation};
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
@@ -68,7 +68,7 @@ impl fmt::Debug for ScriptObject<'_> {
 }
 
 impl<'gc> ScriptObject<'gc> {
-    pub fn new(gc_context: MutationContext<'gc, '_>, proto: Option<Object<'gc>>) -> Self {
+    pub fn new(gc_context: &Mutation<'gc>, proto: Option<Object<'gc>>) -> Self {
         let object = Self(GcCell::new(
             gc_context,
             ScriptObjectData {
@@ -278,7 +278,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
 
     fn add_property(
         &self,
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         name: AvmString<'gc>,
         getter: Object<'gc>,
         setter: Option<Object<'gc>>,
@@ -362,7 +362,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
 
     fn define_value(
         &self,
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         name: impl Into<AvmString<'gc>>,
         value: Value<'gc>,
         attributes: Attribute,
@@ -376,7 +376,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
 
     fn set_attributes(
         &self,
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         name: Option<AvmString<'gc>>,
         set_attributes: Attribute,
         clear_attributes: Attribute,
@@ -480,7 +480,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.read().interfaces.clone()
     }
 
-    fn set_interfaces(&self, gc_context: MutationContext<'gc, '_>, iface_list: Vec<Object<'gc>>) {
+    fn set_interfaces(&self, gc_context: &Mutation<'gc>, iface_list: Vec<Object<'gc>>) {
         self.0.write(gc_context).interfaces = iface_list;
     }
 
@@ -488,7 +488,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.read().native.clone()
     }
 
-    fn set_native(&self, gc_context: MutationContext<'gc, '_>, native: NativeObject<'gc>) {
+    fn set_native(&self, gc_context: &Mutation<'gc>, native: NativeObject<'gc>) {
         // Native object should be introduced at most once.
         debug_assert!(matches!(self.0.read().native, NativeObject::None));
 

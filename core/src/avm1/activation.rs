@@ -15,7 +15,7 @@ use crate::string::{AvmString, SwfStrExt as _, WStr, WString};
 use crate::tag_utils::SwfSlice;
 use crate::vminterface::Instantiator;
 use crate::{avm_error, avm_warn};
-use gc_arena::{Gc, GcCell, MutationContext};
+use gc_arena::{Gc, GcCell, Mutation};
 use indexmap::IndexMap;
 use instant::Instant;
 use rand::Rng;
@@ -3047,7 +3047,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .unwrap_or(false)
     }
 
-    pub fn allocate_local_registers(&mut self, num: u8, mc: MutationContext<'gc, '_>) {
+    pub fn allocate_local_registers(&mut self, num: u8, mc: &Mutation<'gc>) {
         self.local_registers = match num {
             0 => None,
             num => Some(GcCell::new(mc, RegisterSet::new(num))),

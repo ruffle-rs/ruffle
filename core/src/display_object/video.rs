@@ -12,7 +12,7 @@ use crate::streams::NetStream;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::vminterface::{AvmObject, Instantiator};
 use core::fmt;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, Mutation};
 use ruffle_render::bitmap::{BitmapInfo, PixelSnapping};
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::quality::StageQuality;
@@ -127,7 +127,7 @@ impl<'gc> Video<'gc> {
     pub fn from_swf_tag(
         movie: Arc<SwfMovie>,
         streamdef: DefineVideoStream,
-        mc: MutationContext<'gc, '_>,
+        mc: &Mutation<'gc>,
     ) -> Self {
         let size = (streamdef.width.into(), streamdef.height.into());
         let source = GcCell::new(
@@ -154,7 +154,7 @@ impl<'gc> Video<'gc> {
     }
 
     pub fn new(
-        mc: MutationContext<'gc, '_>,
+        mc: &Mutation<'gc>,
         movie: Arc<SwfMovie>,
         width: i32,
         height: i32,
@@ -177,7 +177,7 @@ impl<'gc> Video<'gc> {
         ))
     }
 
-    pub fn set_size(self, mc: MutationContext<'gc, '_>, width: i32, height: i32) {
+    pub fn set_size(self, mc: &Mutation<'gc>, width: i32, height: i32) {
         self.0.write(mc).size = (width, height);
     }
 
@@ -353,11 +353,11 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         Ref::map(self.0.read(), |r| &r.base)
     }
 
-    fn base_mut<'a>(&'a self, mc: MutationContext<'gc, '_>) -> RefMut<'a, DisplayObjectBase<'gc>> {
+    fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>> {
         RefMut::map(self.0.write(mc), |w| &mut w.base)
     }
 
-    fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc> {
+    fn instantiate(&self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
         Self(GcCell::new(gc_context, self.0.read().clone())).into()
     }
 

@@ -3,7 +3,7 @@ use crate::avm2::{Activation, Error, Namespace};
 use crate::context::GcContext;
 use crate::either::Either;
 use crate::string::{AvmString, WStr, WString};
-use gc_arena::{Collect, MutationContext};
+use gc_arena::{Collect, Mutation};
 use std::fmt::Debug;
 use swf::avm2::types::{Index, Multiname as AbcMultiname};
 
@@ -102,19 +102,19 @@ impl<'gc> QName<'gc> {
     }
 
     /// Converts this `QName` to a fully qualified name.
-    pub fn to_qualified_name(self, mc: MutationContext<'gc, '_>) -> AvmString<'gc> {
+    pub fn to_qualified_name(self, mc: &Mutation<'gc>) -> AvmString<'gc> {
         match self.to_qualified_name_no_mc() {
             Either::Left(avm_string) => avm_string,
             Either::Right(wstring) => AvmString::new(mc, wstring),
         }
     }
 
-    /// Like `to_qualified_name`, but avoids the need for a `MutationContext`
+    /// Like `to_qualified_name`, but avoids the need for a `Mutation`
     /// by returning `Either::Right(wstring)` when it would otherwise
     /// be necessary to allocate a new `AvmString`.
     ///
     /// This method is intended for contexts like `Debug` impls where
-    /// a `MutationContext` is not available. Normally, you should
+    /// a `Mutation` is not available. Normally, you should
     /// use `to_qualified_name`
     pub fn to_qualified_name_no_mc(self) -> Either<AvmString<'gc>, WString> {
         let uri = self.namespace().as_uri();
@@ -134,7 +134,7 @@ impl<'gc> QName<'gc> {
     // Like `to_qualified_name`, but uses a `.` instead of `::` separate
     // the namespace and local name. This matches the output produced by
     // Flash Player in error messages
-    pub fn to_qualified_name_err_message(self, mc: MutationContext<'gc, '_>) -> AvmString<'gc> {
+    pub fn to_qualified_name_err_message(self, mc: &Mutation<'gc>) -> AvmString<'gc> {
         let mut buf = WString::new();
         let uri = self.namespace().as_uri();
         if !uri.is_empty() {
@@ -154,7 +154,7 @@ impl<'gc> QName<'gc> {
     }
 
     /// Get the string value of this QName, including the namespace URI.
-    pub fn as_uri(&self, mc: MutationContext<'gc, '_>) -> AvmString<'gc> {
+    pub fn as_uri(&self, mc: &Mutation<'gc>) -> AvmString<'gc> {
         let ns_uri = self.ns.as_uri_opt();
         let ns = match &ns_uri {
             Some(s) if s.is_empty() => return self.name,

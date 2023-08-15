@@ -8,7 +8,7 @@ use crate::context::GcContext;
 use crate::string::{AvmString, WStr, WString};
 use bitflags::bitflags;
 use gc_arena::Gc;
-use gc_arena::{Collect, MutationContext};
+use gc_arena::{Collect, Mutation};
 use std::fmt::Debug;
 use std::ops::Deref;
 use swf::avm2::types::{
@@ -23,7 +23,7 @@ enum NamespaceSet<'gc> {
 }
 
 impl<'gc> NamespaceSet<'gc> {
-    pub fn multiple(set: Vec<Namespace<'gc>>, mc: MutationContext<'gc, '_>) -> Self {
+    pub fn multiple(set: Vec<Namespace<'gc>>, mc: &Mutation<'gc>) -> Self {
         Self::Multiple(Gc::new(mc, set))
     }
     pub fn single(ns: Namespace<'gc>) -> Self {
@@ -296,7 +296,7 @@ impl<'gc> Multiname<'gc> {
     }
 
     /// Indicates the any type (any name in any namespace).
-    pub fn any(mc: MutationContext<'gc, '_>) -> Self {
+    pub fn any(mc: &Mutation<'gc>) -> Self {
         Self {
             ns: NamespaceSet::single(Namespace::any(mc)),
             name: None,
@@ -385,7 +385,7 @@ impl<'gc> Multiname<'gc> {
         self.param
     }
 
-    pub fn to_qualified_name(&self, mc: MutationContext<'gc, '_>) -> AvmString<'gc> {
+    pub fn to_qualified_name(&self, mc: &Mutation<'gc>) -> AvmString<'gc> {
         let mut uri = WString::new();
         let ns = match self.ns.get(0).filter(|_| self.ns.len() == 1) {
             Some(ns) if ns.is_any() => "*".into(),
@@ -415,7 +415,7 @@ impl<'gc> Multiname<'gc> {
 
     /// Like `to_qualified_name`, but returns `*` if `self.is_any()` is true.
     /// This is used by `describeType`
-    pub fn to_qualified_name_or_star(&self, mc: MutationContext<'gc, '_>) -> AvmString<'gc> {
+    pub fn to_qualified_name_or_star(&self, mc: &Mutation<'gc>) -> AvmString<'gc> {
         if self.is_any_name() {
             AvmString::new_utf8(mc, "*")
         } else {
@@ -425,7 +425,7 @@ impl<'gc> Multiname<'gc> {
 
     // note: I didn't look very deeply into how different exactly this should be
     // this is currently generally based on to_qualified_name, without params and leading ::
-    pub fn as_uri(&self, mc: MutationContext<'gc, '_>) -> AvmString<'gc> {
+    pub fn as_uri(&self, mc: &Mutation<'gc>) -> AvmString<'gc> {
         let mut uri = WString::new();
         let ns = match self.ns.get(0).filter(|_| self.ns.len() == 1) {
             Some(ns) if ns.is_any() => "*".into(),

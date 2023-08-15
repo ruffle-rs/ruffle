@@ -26,7 +26,7 @@ use crate::html::TextFormat;
 use crate::streams::NetStream;
 use crate::string::AvmString;
 use crate::xml::XmlNode;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, Mutation};
 use ruffle_macros::enum_trait_object;
 use std::fmt::Debug;
 
@@ -363,7 +363,7 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
     /// as `__proto__`.
     fn define_value(
         &self,
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         name: impl Into<AvmString<'gc>>,
         value: Value<'gc>,
         attributes: Attribute,
@@ -381,7 +381,7 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
     /// and `clear_attributes` parameters.
     fn set_attributes(
         &self,
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         name: Option<AvmString<'gc>>,
         set_attributes: Attribute,
         clear_attributes: Attribute,
@@ -402,7 +402,7 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
     /// as `__proto__`.
     fn add_property(
         &self,
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         name: AvmString<'gc>,
         get: Object<'gc>,
         set: Option<Object<'gc>>,
@@ -511,7 +511,7 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
     }
 
     /// Set the interface list for this object. (Only useful for prototypes.)
-    fn set_interfaces(&self, gc_context: MutationContext<'gc, '_>, iface_list: Vec<Object<'gc>>) {
+    fn set_interfaces(&self, gc_context: &Mutation<'gc>, iface_list: Vec<Object<'gc>>) {
         self.raw_script_object()
             .set_interfaces(gc_context, iface_list)
     }
@@ -567,7 +567,7 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
         NativeObject::None
     }
 
-    fn set_native(&self, _gc_context: MutationContext<'gc, '_>, _native: NativeObject<'gc>) {}
+    fn set_native(&self, _gc_context: &Mutation<'gc>, _native: NativeObject<'gc>) {}
 
     /// Get the underlying array object, if it exists.
     fn as_array_object(&self) -> Option<ArrayObject<'gc>> {

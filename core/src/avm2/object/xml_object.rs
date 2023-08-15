@@ -8,7 +8,7 @@ use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::{Error, Multiname};
 use core::fmt;
-use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
 use std::cell::{Ref, RefMut};
 
 use super::xml_list_object::E4XOrXml;
@@ -66,7 +66,7 @@ impl<'gc> XmlObject<'gc> {
             },
         ))
     }
-    pub fn set_node(&self, mc: MutationContext<'gc, '_>, node: E4XNode<'gc>) {
+    pub fn set_node(&self, mc: &Mutation<'gc>, node: E4XNode<'gc>) {
         self.0.write(mc).node = node;
     }
 
@@ -145,7 +145,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         Ref::map(self.0.read(), |read| &read.base)
     }
 
-    fn base_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<ScriptObjectData<'gc>> {
+    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
         RefMut::map(self.0.write(mc), |write| &mut write.base)
     }
 
@@ -153,7 +153,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         self.0.as_ptr() as *const ObjectPtr
     }
 
-    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error<'gc>> {
+    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Value::Object(Object::from(*self)))
     }
 

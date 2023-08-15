@@ -9,7 +9,7 @@ use crate::bitmap::bitmap_data::{
 use crate::bitmap::turbulence::Turbulence;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::TDisplayObject;
-use gc_arena::MutationContext;
+use gc_arena::Mutation;
 use ruffle_render::bitmap::{PixelRegion, PixelSnapping};
 use ruffle_render::commands::{CommandHandler, CommandList, RenderBlendMode};
 use ruffle_render::filters::Filter;
@@ -27,7 +27,7 @@ use swf::{BlendMode, ColorTransform, Fixed8, Rectangle, Twips};
 /// same code between VMs.
 
 pub fn fill_rect<'gc>(
-    mc: MutationContext<'gc, '_>,
+    mc: &Mutation<'gc>,
     target: BitmapDataWrapper<'gc>,
     x: i32,
     y: i32,
@@ -61,7 +61,7 @@ pub fn fill_rect<'gc>(
 }
 
 pub fn set_pixel32<'gc>(
-    mc: MutationContext<'gc, '_>,
+    mc: &Mutation<'gc>,
     target: BitmapDataWrapper<'gc>,
     x: u32,
     y: u32,
@@ -90,7 +90,7 @@ pub fn get_pixel32(target: BitmapDataWrapper, x: u32, y: u32) -> u32 {
 }
 
 pub fn set_pixel<'gc>(
-    mc: MutationContext<'gc, '_>,
+    mc: &Mutation<'gc>,
     target: BitmapDataWrapper<'gc>,
     x: u32,
     y: u32,
@@ -131,7 +131,7 @@ pub fn clone(original: BitmapDataWrapper) -> BitmapData {
 }
 
 pub fn flood_fill<'gc>(
-    mc: MutationContext<'gc, '_>,
+    mc: &Mutation<'gc>,
     target: BitmapDataWrapper<'gc>,
     x: u32,
     y: u32,
@@ -178,7 +178,7 @@ pub fn flood_fill<'gc>(
 }
 
 pub fn noise<'gc>(
-    mc: MutationContext<'gc, '_>,
+    mc: &Mutation<'gc>,
     target: BitmapDataWrapper<'gc>,
     seed: i32,
     low: u8,
@@ -245,7 +245,7 @@ pub fn noise<'gc>(
 
 #[allow(clippy::too_many_arguments)]
 pub fn perlin_noise<'gc>(
-    mc: MutationContext<'gc, '_>,
+    mc: &Mutation<'gc>,
     target: BitmapDataWrapper<'gc>,
     base: (f64, f64),
     num_octaves: usize,
@@ -361,7 +361,7 @@ pub fn perlin_noise<'gc>(
 }
 
 pub fn copy_channel<'gc>(
-    mc: MutationContext<'gc, '_>,
+    mc: &Mutation<'gc>,
     target: BitmapDataWrapper<'gc>,
     dest_point: (i32, i32),
     src_rect: (i32, i32, i32, i32),
@@ -450,7 +450,7 @@ pub fn copy_channel<'gc>(
 }
 
 pub fn color_transform<'gc>(
-    mc: MutationContext<'gc, '_>,
+    mc: &Mutation<'gc>,
     target: BitmapDataWrapper<'gc>,
     x_min: u32,
     y_min: u32,
@@ -503,7 +503,7 @@ pub fn color_transform<'gc>(
 
 #[allow(clippy::too_many_arguments)]
 pub fn threshold<'gc>(
-    mc: MutationContext<'gc, '_>,
+    mc: &Mutation<'gc>,
     target: BitmapDataWrapper<'gc>,
     source_bitmap: BitmapDataWrapper<'gc>,
     src_rect: (i32, i32, i32, i32),
@@ -601,7 +601,7 @@ pub fn threshold<'gc>(
     modified_count
 }
 
-pub fn scroll<'gc>(mc: MutationContext<'gc, '_>, target: BitmapDataWrapper<'gc>, x: i32, y: i32) {
+pub fn scroll<'gc>(mc: &Mutation<'gc>, target: BitmapDataWrapper<'gc>, x: i32, y: i32) {
     let width = target.width() as i32;
     let height = target.height() as i32;
 
@@ -650,7 +650,7 @@ pub fn scroll<'gc>(mc: MutationContext<'gc, '_>, target: BitmapDataWrapper<'gc>,
 }
 
 pub fn palette_map<'gc>(
-    mc: MutationContext<'gc, '_>,
+    mc: &Mutation<'gc>,
     target: BitmapDataWrapper<'gc>,
     source_bitmap: BitmapDataWrapper<'gc>,
     src_rect: (i32, i32, i32, i32),
@@ -904,7 +904,7 @@ pub fn color_bounds_rect(
 }
 
 pub fn merge<'gc>(
-    mc: MutationContext<'gc, '_>,
+    mc: &Mutation<'gc>,
     target: BitmapDataWrapper<'gc>,
     source_bitmap: BitmapDataWrapper<'gc>,
     src_rect: (i32, i32, i32, i32),
@@ -1223,7 +1223,7 @@ pub fn apply_filter<'gc>(
 
 #[allow(clippy::too_many_arguments)]
 fn copy_on_cpu<'gc>(
-    context: MutationContext<'gc, '_>,
+    context: &Mutation<'gc>,
     source: BitmapDataWrapper<'gc>,
     dest: BitmapDataWrapper<'gc>,
     source_region: PixelRegion,
@@ -1649,7 +1649,7 @@ pub fn get_pixels_as_byte_array<'gc>(
 }
 
 pub fn set_pixels_from_byte_array<'gc>(
-    mc: MutationContext<'gc, '_>,
+    mc: &Mutation<'gc>,
     target: BitmapDataWrapper<'gc>,
     x: i32,
     y: i32,
@@ -1691,7 +1691,7 @@ pub fn set_pixels_from_byte_array<'gc>(
 
 #[allow(clippy::too_many_arguments)]
 pub fn pixel_dissolve<'gc>(
-    mc: MutationContext<'gc, '_>,
+    mc: &Mutation<'gc>,
     target: BitmapDataWrapper<'gc>,
     source_bitmap: BitmapDataWrapper<'gc>,
     src_rect: (i32, i32, i32, i32),

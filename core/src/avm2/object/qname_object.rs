@@ -9,7 +9,7 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use core::fmt;
-use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates QName objects.
@@ -81,13 +81,13 @@ impl<'gc> QNameObject<'gc> {
         Ref::map(read, |r| &r.name)
     }
 
-    pub fn set_namespace(&self, mc: MutationContext<'gc, '_>, namespace: Namespace<'gc>) {
+    pub fn set_namespace(&self, mc: &Mutation<'gc>, namespace: Namespace<'gc>) {
         let mut write = self.0.write(mc);
 
         write.name.set_single_namespace(namespace);
     }
 
-    pub fn set_local_name(&self, mc: MutationContext<'gc, '_>, local: AvmString<'gc>) {
+    pub fn set_local_name(&self, mc: &Mutation<'gc>, local: AvmString<'gc>) {
         let mut write = self.0.write(mc);
 
         write.name.set_local_name(local);
@@ -117,7 +117,7 @@ impl<'gc> QNameObject<'gc> {
         }
     }
 
-    pub fn init_name(self, mc: MutationContext<'gc, '_>, name: Multiname<'gc>) {
+    pub fn init_name(self, mc: &Mutation<'gc>, name: Multiname<'gc>) {
         self.0.write(mc).name = name;
     }
 }
@@ -127,7 +127,7 @@ impl<'gc> TObject<'gc> for QNameObject<'gc> {
         Ref::map(self.0.read(), |read| &read.base)
     }
 
-    fn base_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<ScriptObjectData<'gc>> {
+    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
         RefMut::map(self.0.write(mc), |write| &mut write.base)
     }
 
@@ -135,7 +135,7 @@ impl<'gc> TObject<'gc> for QNameObject<'gc> {
         self.0.as_ptr() as *const ObjectPtr
     }
 
-    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error<'gc>> {
+    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Value::Object(Object::from(*self)))
     }
 

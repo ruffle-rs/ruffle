@@ -7,7 +7,7 @@ use crate::avm2::value::{abc_default_value, Value};
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::string::AvmString;
-use gc_arena::{Collect, Gc, GcCell, MutationContext};
+use gc_arena::{Collect, Gc, GcCell, Mutation};
 use std::fmt;
 use std::ops::Deref;
 use std::rc::Rc;
@@ -321,7 +321,7 @@ impl<'gc> Method<'gc> {
         name: &'static str,
         signature: Vec<ParamConfig<'gc>>,
         is_variadic: bool,
-        mc: MutationContext<'gc, '_>,
+        mc: &Mutation<'gc>,
     ) -> Self {
         Self::Native(Gc::new(
             mc,
@@ -340,7 +340,7 @@ impl<'gc> Method<'gc> {
     pub fn from_builtin(
         method: NativeMethodImpl,
         name: &'static str,
-        mc: MutationContext<'gc, '_>,
+        mc: &Mutation<'gc>,
     ) -> Self {
         Self::Native(Gc::new(
             mc,

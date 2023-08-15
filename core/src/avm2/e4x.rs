@@ -3,7 +3,7 @@ use std::{
     fmt::{self, Debug},
 };
 
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, Mutation};
 use quick_xml::{
     events::{BytesStart, Event},
     name::ResolveResult,
@@ -69,7 +69,7 @@ pub enum E4XNodeKind<'gc> {
 }
 
 impl<'gc> E4XNode<'gc> {
-    pub fn dummy(mc: MutationContext<'gc, '_>) -> Self {
+    pub fn dummy(mc: &Mutation<'gc>) -> Self {
         E4XNode(GcCell::new(
             mc,
             E4XNodeData {
@@ -84,7 +84,7 @@ impl<'gc> E4XNode<'gc> {
         ))
     }
 
-    pub fn text(mc: MutationContext<'gc, '_>, text: AvmString<'gc>, parent: Option<Self>) -> Self {
+    pub fn text(mc: &Mutation<'gc>, text: AvmString<'gc>, parent: Option<Self>) -> Self {
         E4XNode(GcCell::new(
             mc,
             E4XNodeData {
@@ -97,7 +97,7 @@ impl<'gc> E4XNode<'gc> {
     }
 
     pub fn element(
-        mc: MutationContext<'gc, '_>,
+        mc: &Mutation<'gc>,
         namespace: Option<AvmString<'gc>>,
         name: AvmString<'gc>,
         parent: Self,
@@ -117,7 +117,7 @@ impl<'gc> E4XNode<'gc> {
     }
 
     pub fn attribute(
-        mc: MutationContext<'gc, '_>,
+        mc: &Mutation<'gc>,
         name: AvmString<'gc>,
         value: AvmString<'gc>,
         parent: E4XNode<'gc>,
@@ -182,7 +182,7 @@ impl<'gc> E4XNode<'gc> {
         }
     }
 
-    pub fn deep_copy(&self, mc: MutationContext<'gc, '_>) -> Self {
+    pub fn deep_copy(&self, mc: &Mutation<'gc>) -> Self {
         let this = self.0.read();
 
         let kind = match &this.kind {
@@ -231,7 +231,7 @@ impl<'gc> E4XNode<'gc> {
         node
     }
 
-    pub fn remove_all_children(&self, gc_context: MutationContext<'gc, '_>) {
+    pub fn remove_all_children(&self, gc_context: &Mutation<'gc>) {
         let mut this = self.0.write(gc_context);
         if let E4XNodeKind::Element { children, .. } = &mut this.kind {
             for child in children.iter_mut() {
@@ -242,14 +242,14 @@ impl<'gc> E4XNode<'gc> {
         }
     }
 
-    pub fn remove_child(&self, gc_context: MutationContext<'gc, '_>, child: &Self) {
+    pub fn remove_child(&self, gc_context: &Mutation<'gc>, child: &Self) {
         let mut this = self.0.write(gc_context);
         if let E4XNodeKind::Element { children, .. } = &mut this.kind {
             children.retain(|c| !GcCell::ptr_eq(c.0, child.0));
         }
     }
 
-    pub fn remove_attribute(&self, gc_context: MutationContext<'gc, '_>, attribute: &Self) {
+    pub fn remove_attribute(&self, gc_context: &Mutation<'gc>, attribute: &Self) {
         let mut this = self.0.write(gc_context);
         if let E4XNodeKind::Element { attributes, .. } = &mut this.kind {
             attributes.retain(|a| !GcCell::ptr_eq(a.0, attribute.0));
@@ -258,7 +258,7 @@ impl<'gc> E4XNode<'gc> {
 
     pub fn append_child(
         &self,
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         child: Self,
     ) -> Result<(), Error<'gc>> {
         let mut this = self.0.write(gc_context);
@@ -627,7 +627,7 @@ impl<'gc> E4XNode<'gc> {
         self.0.read().local_name
     }
 
-    pub fn set_parent(&self, parent: Option<E4XNode<'gc>>, mc: MutationContext<'gc, '_>) {
+    pub fn set_parent(&self, parent: Option<E4XNode<'gc>>, mc: &Mutation<'gc>) {
         self.0.write(mc).parent = parent;
     }
 
@@ -737,7 +737,7 @@ impl<'gc> E4XNode<'gc> {
         Ref::map(self.0.read(), |r| &r.kind)
     }
 
-    pub fn kind_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<'_, E4XNodeKind<'gc>> {
+    pub fn kind_mut(&self, mc: &Mutation<'gc>) -> RefMut<'_, E4XNodeKind<'gc>> {
         RefMut::map(self.0.write(mc), |r| &mut r.kind)
     }
 

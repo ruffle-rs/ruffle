@@ -2,7 +2,7 @@ use crate::avm1::property::Attribute;
 use crate::avm1::{Activation, Error, Object, ObjectPtr, ScriptObject, TObject, Value};
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::string::AvmString;
-use gc_arena::{Collect, MutationContext};
+use gc_arena::{Collect, Mutation};
 use std::fmt;
 
 #[derive(Clone, Copy, Collect)]
@@ -26,12 +26,12 @@ impl<'gc> ArrayObject<'gc> {
         )
     }
 
-    pub fn empty_with_proto(gc_context: MutationContext<'gc, '_>, proto: Object<'gc>) -> Self {
+    pub fn empty_with_proto(gc_context: &Mutation<'gc>, proto: Object<'gc>) -> Self {
         Self::new_internal(gc_context, proto, [])
     }
 
     pub fn new(
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         array_proto: Object<'gc>,
         elements: impl IntoIterator<Item = Value<'gc>>,
     ) -> Self {
@@ -39,7 +39,7 @@ impl<'gc> ArrayObject<'gc> {
     }
 
     fn new_internal(
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         proto: Object<'gc>,
         elements: impl IntoIterator<Item = Value<'gc>>,
     ) -> Self {
