@@ -399,11 +399,7 @@ impl<'gc> Script<'gc> {
     ///
     /// The `globals` object should be constructed using the `global`
     /// prototype.
-    pub fn empty_script(
-        mc: &Mutation<'gc>,
-        globals: Object<'gc>,
-        domain: Domain<'gc>,
-    ) -> Self {
+    pub fn empty_script(mc: &Mutation<'gc>, globals: Object<'gc>, domain: Domain<'gc>) -> Self {
         Self(GcCell::new(
             mc,
             ScriptData {

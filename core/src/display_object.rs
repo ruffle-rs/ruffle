@@ -1224,11 +1224,7 @@ pub trait TDisplayObject<'gc>:
     /// Sets the color transform of this object.
     /// This does NOT invalidate the cache, as it's often used with other operations.
     /// It is the callers responsibility to do so.
-    fn set_color_transform(
-        &self,
-        gc_context: &Mutation<'gc>,
-        color_transform: ColorTransform,
-    ) {
+    fn set_color_transform(&self, gc_context: &Mutation<'gc>, color_transform: ColorTransform) {
         self.base_mut(gc_context)
             .set_color_transform(color_transform)
     }
@@ -1606,11 +1602,7 @@ pub trait TDisplayObject<'gc>:
     fn next_avm1_clip(&self) -> Option<DisplayObject<'gc>> {
         self.base().next_avm1_clip()
     }
-    fn set_next_avm1_clip(
-        &self,
-        gc_context: &Mutation<'gc>,
-        node: Option<DisplayObject<'gc>>,
-    ) {
+    fn set_next_avm1_clip(&self, gc_context: &Mutation<'gc>, node: Option<DisplayObject<'gc>>) {
         self.base_mut(gc_context).set_next_avm1_clip(node);
     }
     fn masker(&self) -> Option<DisplayObject<'gc>> {
@@ -1659,11 +1651,7 @@ pub trait TDisplayObject<'gc>:
         self.base().next_scroll_rect.clone()
     }
 
-    fn set_next_scroll_rect(
-        &self,
-        gc_context: &Mutation<'gc>,
-        rectangle: Rectangle<Twips>,
-    ) {
+    fn set_next_scroll_rect(&self, gc_context: &Mutation<'gc>, rectangle: Rectangle<Twips>) {
         self.base_mut(gc_context).next_scroll_rect = rectangle;
 
         // Scroll rect is natively handled by cacheAsBitmap - don't invalidate self, only parents
@@ -1730,11 +1718,7 @@ pub trait TDisplayObject<'gc>:
         self.base().blend_shader()
     }
 
-    fn set_blend_shader(
-        &self,
-        gc_context: &Mutation<'gc>,
-        value: Option<PixelBenderShaderHandle>,
-    ) {
+    fn set_blend_shader(&self, gc_context: &Mutation<'gc>, value: Option<PixelBenderShaderHandle>) {
         self.base_mut(gc_context).set_blend_shader(value);
         self.set_blend_mode(gc_context, ExtendedBlendMode::Shader);
     }

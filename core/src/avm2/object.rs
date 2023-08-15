@@ -550,24 +550,14 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Set a slot by its index.
-    fn set_slot(
-        self,
-        id: u32,
-        value: Value<'gc>,
-        mc: &Mutation<'gc>,
-    ) -> Result<(), Error<'gc>> {
+    fn set_slot(self, id: u32, value: Value<'gc>, mc: &Mutation<'gc>) -> Result<(), Error<'gc>> {
         let mut base = self.base_mut(mc);
 
         base.set_slot(id, value, mc)
     }
 
     /// Initialize a slot by its index.
-    fn init_slot(
-        self,
-        id: u32,
-        value: Value<'gc>,
-        mc: &Mutation<'gc>,
-    ) -> Result<(), Error<'gc>> {
+    fn init_slot(self, id: u32, value: Value<'gc>, mc: &Mutation<'gc>) -> Result<(), Error<'gc>> {
         let mut base = self.base_mut(mc);
 
         base.init_slot(id, value, mc)
@@ -1195,10 +1185,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Unwrap this object as mutable array storage.
-    fn as_array_storage_mut(
-        &self,
-        _mc: &Mutation<'gc>,
-    ) -> Option<RefMut<ArrayStorage<'gc>>> {
+    fn as_array_storage_mut(&self, _mc: &Mutation<'gc>) -> Option<RefMut<ArrayStorage<'gc>>> {
         None
     }
 
@@ -1208,10 +1195,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Unwrap this object as mutable vector storage.
-    fn as_vector_storage_mut(
-        &self,
-        _mc: &Mutation<'gc>,
-    ) -> Option<RefMut<VectorStorage<'gc>>> {
+    fn as_vector_storage_mut(&self, _mc: &Mutation<'gc>) -> Option<RefMut<VectorStorage<'gc>>> {
         None
     }
 
@@ -1309,8 +1293,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// This should only be called to initialize the association between an AVM
     /// object and it's associated bitmap data. This association should not be
     /// reinitialized later.
-    fn init_bitmap_data(&self, _mc: &Mutation<'gc>, _new_bitmap: BitmapDataWrapper<'gc>) {
-    }
+    fn init_bitmap_data(&self, _mc: &Mutation<'gc>, _new_bitmap: BitmapDataWrapper<'gc>) {}
 
     /// Get this objects `DateObject`, if it has one.
     fn as_date_object(&self) -> Option<DateObject<'gc>> {

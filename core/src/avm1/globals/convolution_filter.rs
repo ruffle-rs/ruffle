@@ -137,10 +137,7 @@ impl<'gc> ConvolutionFilter<'gc> {
         Ok(convolution_filter)
     }
 
-    pub fn from_filter(
-        gc_context: &Mutation<'gc>,
-        filter: swf::ConvolutionFilter,
-    ) -> Self {
+    pub fn from_filter(gc_context: &Mutation<'gc>, filter: swf::ConvolutionFilter) -> Self {
         Self(GcCell::new(gc_context, filter.into()))
     }
 

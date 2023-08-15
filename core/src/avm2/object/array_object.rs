@@ -272,10 +272,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         Some(Ref::map(self.0.read(), |aod| &aod.array))
     }
 
-    fn as_array_storage_mut(
-        &self,
-        mc: &Mutation<'gc>,
-    ) -> Option<RefMut<ArrayStorage<'gc>>> {
+    fn as_array_storage_mut(&self, mc: &Mutation<'gc>) -> Option<RefMut<ArrayStorage<'gc>>> {
         Some(RefMut::map(self.0.write(mc), |aod| &mut aod.array))
     }
 }

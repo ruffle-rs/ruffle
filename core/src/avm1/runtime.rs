@@ -501,11 +501,7 @@ impl<'gc> Avm1<'gc> {
     ///
     /// This should be called whenever a movie clip is created, and controls the order of
     /// execution for AVM1 movies.
-    pub fn add_to_exec_list(
-        &mut self,
-        gc_context: &Mutation<'gc>,
-        clip: DisplayObject<'gc>,
-    ) {
+    pub fn add_to_exec_list(&mut self, gc_context: &Mutation<'gc>, clip: DisplayObject<'gc>) {
         // Adding while iterating is safe, as this does not modify any active nodes.
         if clip.next_avm1_clip().is_none() {
             clip.set_next_avm1_clip(gc_context, self.clip_exec_list);

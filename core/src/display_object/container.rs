@@ -130,10 +130,7 @@ pub trait TDisplayObjectContainer<'gc>:
     fn raw_container(&self) -> Ref<'_, ChildContainer<'gc>>;
 
     /// Get mutable access to the raw container.
-    fn raw_container_mut(
-        &self,
-        gc_context: &Mutation<'gc>,
-    ) -> RefMut<'_, ChildContainer<'gc>>;
+    fn raw_container_mut(&self, gc_context: &Mutation<'gc>) -> RefMut<'_, ChildContainer<'gc>>;
 
     /// Get a child display object by it's position in the render list.
     ///

@@ -115,10 +115,7 @@ impl<'gc> DropShadowFilter<'gc> {
         Ok(drop_shadow_filter)
     }
 
-    pub fn from_filter(
-        gc_context: &Mutation<'gc>,
-        filter: swf::DropShadowFilter,
-    ) -> Self {
+    pub fn from_filter(gc_context: &Mutation<'gc>, filter: swf::DropShadowFilter) -> Self {
         Self(GcCell::new(gc_context, filter.into()))
     }
 

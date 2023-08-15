@@ -119,10 +119,7 @@ pub trait TInteractiveObject<'gc>:
 {
     fn raw_interactive(&self) -> Ref<InteractiveObjectBase<'gc>>;
 
-    fn raw_interactive_mut(
-        &self,
-        mc: &Mutation<'gc>,
-    ) -> RefMut<InteractiveObjectBase<'gc>>;
+    fn raw_interactive_mut(&self, mc: &Mutation<'gc>) -> RefMut<InteractiveObjectBase<'gc>>;
 
     fn as_displayobject(self) -> DisplayObject<'gc>;
 

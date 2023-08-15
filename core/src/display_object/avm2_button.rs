@@ -161,11 +161,7 @@ impl<'gc> Avm2Button<'gc> {
 
     /// Handles the ancient DefineButtonCxform SWF tag.
     /// Set the color transform for all children of each state.
-    pub fn set_colors(
-        self,
-        gc_context: &Mutation<'gc>,
-        color_transforms: &[swf::ColorTransform],
-    ) {
+    pub fn set_colors(self, gc_context: &Mutation<'gc>, color_transforms: &[swf::ColorTransform]) {
         let button = self.0.write(gc_context);
         let mut static_data = button.static_data.write(gc_context);
 
@@ -746,10 +742,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
         Ref::map(self.0.read(), |r| &r.base)
     }
 
-    fn raw_interactive_mut(
-        &self,
-        mc: &Mutation<'gc>,
-    ) -> RefMut<InteractiveObjectBase<'gc>> {
+    fn raw_interactive_mut(&self, mc: &Mutation<'gc>) -> RefMut<InteractiveObjectBase<'gc>> {
         RefMut::map(self.0.write(mc), |w| &mut w.base)
     }
 

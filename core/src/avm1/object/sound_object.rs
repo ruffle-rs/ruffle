@@ -57,10 +57,7 @@ impl fmt::Debug for SoundObject<'_> {
 }
 
 impl<'gc> SoundObject<'gc> {
-    pub fn empty_sound(
-        gc_context: &Mutation<'gc>,
-        proto: Object<'gc>,
-    ) -> SoundObject<'gc> {
+    pub fn empty_sound(gc_context: &Mutation<'gc>, proto: Object<'gc>) -> SoundObject<'gc> {
         SoundObject(GcCell::new(
             gc_context,
             SoundObjectData {
@@ -107,11 +104,7 @@ impl<'gc> SoundObject<'gc> {
         self.0.read().owner
     }
 
-    pub fn set_owner(
-        self,
-        gc_context: &Mutation<'gc>,
-        owner: Option<DisplayObject<'gc>>,
-    ) {
+    pub fn set_owner(self, gc_context: &Mutation<'gc>, owner: Option<DisplayObject<'gc>>) {
         self.0.write(gc_context).owner = owner;
     }
 

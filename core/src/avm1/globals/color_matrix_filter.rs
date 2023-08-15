@@ -59,10 +59,7 @@ impl<'gc> ColorMatrixFilter<'gc> {
         Ok(color_matrix_filter)
     }
 
-    pub fn from_filter(
-        gc_context: &Mutation<'gc>,
-        filter: swf::ColorMatrixFilter,
-    ) -> Self {
+    pub fn from_filter(gc_context: &Mutation<'gc>, filter: swf::ColorMatrixFilter) -> Self {
         Self(GcCell::new(gc_context, filter.into()))
     }
 

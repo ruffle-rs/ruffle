@@ -511,11 +511,7 @@ impl<'gc> EditText<'gc> {
         self.0.read().background_color
     }
 
-    pub fn set_background_color(
-        self,
-        gc_context: &Mutation<'gc>,
-        background_color: Color,
-    ) {
+    pub fn set_background_color(self, gc_context: &Mutation<'gc>, background_color: Color) {
         self.0.write(gc_context).background_color = background_color;
         self.redraw_border(gc_context);
     }
@@ -1106,11 +1102,7 @@ impl<'gc> EditText<'gc> {
         self.0.read().selection
     }
 
-    pub fn set_selection(
-        self,
-        selection: Option<TextSelection>,
-        gc_context: &Mutation<'gc>,
-    ) {
+    pub fn set_selection(self, selection: Option<TextSelection>, gc_context: &Mutation<'gc>) {
         let mut text = self.0.write(gc_context);
         if let Some(mut selection) = selection {
             selection.clamp(text.text_spans.text().len());
@@ -1124,11 +1116,7 @@ impl<'gc> EditText<'gc> {
         self.0.read().render_settings.clone()
     }
 
-    pub fn set_render_settings(
-        self,
-        gc_context: &Mutation<'gc>,
-        settings: TextRenderSettings,
-    ) {
+    pub fn set_render_settings(self, gc_context: &Mutation<'gc>, settings: TextRenderSettings) {
         self.0.write(gc_context).render_settings = settings
     }
 
@@ -1928,10 +1916,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
         Ref::map(self.0.read(), |r| &r.base)
     }
 
-    fn raw_interactive_mut(
-        &self,
-        mc: &Mutation<'gc>,
-    ) -> RefMut<InteractiveObjectBase<'gc>> {
+    fn raw_interactive_mut(&self, mc: &Mutation<'gc>) -> RefMut<InteractiveObjectBase<'gc>> {
         RefMut::map(self.0.write(mc), |w| &mut w.base)
     }
 

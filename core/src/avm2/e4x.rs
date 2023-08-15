@@ -256,11 +256,7 @@ impl<'gc> E4XNode<'gc> {
         }
     }
 
-    pub fn append_child(
-        &self,
-        gc_context: &Mutation<'gc>,
-        child: Self,
-    ) -> Result<(), Error<'gc>> {
+    pub fn append_child(&self, gc_context: &Mutation<'gc>, child: Self) -> Result<(), Error<'gc>> {
         let mut this = self.0.write(gc_context);
         let mut child_data = match child.0.try_write(gc_context) {
             Ok(data) => data,

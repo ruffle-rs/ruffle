@@ -30,10 +30,7 @@ impl<'gc> AvmString<'gc> {
         }
     }
 
-    pub fn new_utf8<'s, S: Into<Cow<'s, str>>>(
-        gc_context: &Mutation<'gc>,
-        string: S,
-    ) -> Self {
+    pub fn new_utf8<'s, S: Into<Cow<'s, str>>>(gc_context: &Mutation<'gc>, string: S) -> Self {
         let buf = match string.into() {
             Cow::Owned(utf8) => WString::from_utf8_owned(utf8),
             Cow::Borrowed(utf8) => WString::from_utf8(utf8),
