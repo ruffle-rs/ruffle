@@ -46,7 +46,6 @@
     "host_permissions": ["<all_urls>"],
     "permissions": [
         "storage",
-        "webRequest",
         "declarativeNetRequest",
         "scripting",
     ],
