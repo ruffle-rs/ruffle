@@ -7,7 +7,7 @@ use crate::avm1::property::Attribute;
 use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::display_object::TDisplayObject;
 use crate::string::AvmString;
-use gc_arena::{Collect, Gc, MutationContext};
+use gc_arena::{Collect, Gc, Mutation};
 
 /// Indicates what kind of scope a scope is.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -49,7 +49,7 @@ impl<'gc> Scope<'gc> {
     }
 
     /// Construct a child scope of another scope.
-    pub fn new_local_scope(parent: Gc<'gc, Self>, mc: MutationContext<'gc, '_>) -> Self {
+    pub fn new_local_scope(parent: Gc<'gc, Self>, mc: &Mutation<'gc>) -> Self {
         Scope {
             parent: Some(parent),
             class: ScopeClass::Local,
@@ -62,7 +62,7 @@ impl<'gc> Scope<'gc> {
     pub fn new_target_scope(
         parent: Gc<'gc, Self>,
         clip: Object<'gc>,
-        mc: MutationContext<'gc, '_>,
+        mc: &Mutation<'gc>,
     ) -> Gc<'gc, Self> {
         let mut scope = (*parent).clone();
 
@@ -233,12 +233,7 @@ impl<'gc> Scope<'gc> {
     ///
     /// This inserts a value as a stored property on the local scope. If the property already
     /// exists, it will be forcefully overwritten. Used internally to initialize objects.
-    pub fn force_define_local(
-        &self,
-        name: AvmString<'gc>,
-        value: Value<'gc>,
-        mc: MutationContext<'gc, '_>,
-    ) {
+    pub fn force_define_local(&self, name: AvmString<'gc>, value: Value<'gc>, mc: &Mutation<'gc>) {
         self.locals()
             .define_value(mc, name, value, Attribute::empty());
     }

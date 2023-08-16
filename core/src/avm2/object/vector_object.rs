@@ -8,7 +8,7 @@ use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use core::fmt;
-use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates Vector objects.
@@ -90,7 +90,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         Ref::map(self.0.read(), |read| &read.base)
     }
 
-    fn base_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<ScriptObjectData<'gc>> {
+    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
         RefMut::map(self.0.write(mc), |write| &mut write.base)
     }
 
@@ -250,7 +250,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         Ok(Value::Object(Object::from(*self)))
     }
 
-    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error<'gc>> {
+    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Value::Object(Object::from(*self)))
     }
 
@@ -258,10 +258,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         Some(Ref::map(self.0.read(), |vod| &vod.vector))
     }
 
-    fn as_vector_storage_mut(
-        &self,
-        mc: MutationContext<'gc, '_>,
-    ) -> Option<RefMut<VectorStorage<'gc>>> {
+    fn as_vector_storage_mut(&self, mc: &Mutation<'gc>) -> Option<RefMut<VectorStorage<'gc>>> {
         Some(RefMut::map(self.0.write(mc), |vod| &mut vod.vector))
     }
 }

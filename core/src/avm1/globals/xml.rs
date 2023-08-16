@@ -10,7 +10,7 @@ use crate::backend::navigator::Request;
 use crate::context::GcContext;
 use crate::string::{AvmString, WStr, WString};
 use crate::xml::{custom_unescape, XmlNode, ELEMENT_NODE, TEXT_NODE};
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, Mutation};
 use quick_xml::events::attributes::AttrError;
 use quick_xml::{events::Event, Reader};
 
@@ -81,7 +81,7 @@ pub struct XmlData<'gc> {
 
 impl<'gc> Xml<'gc> {
     /// Associate an object with a new XML document.
-    fn empty(gc_context: MutationContext<'gc, '_>, object: Object<'gc>) -> Self {
+    fn empty(gc_context: &Mutation<'gc>, object: Object<'gc>) -> Self {
         let mut root = XmlNode::new(gc_context, ELEMENT_NODE, None);
         root.introduce_script_object(gc_context, object);
 

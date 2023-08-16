@@ -12,7 +12,7 @@ use crate::avm2::Namespace;
 use crate::avm2::QName;
 use bitflags::bitflags;
 use fnv::FnvHashMap;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, Mutation};
 use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::ops::Deref;
@@ -193,7 +193,7 @@ impl<'gc> Class<'gc> {
         super_class: Option<Multiname<'gc>>,
         instance_init: Method<'gc>,
         class_init: Method<'gc>,
-        mc: MutationContext<'gc, '_>,
+        mc: &Mutation<'gc>,
     ) -> GcCell<'gc, Self> {
         let native_instance_init = instance_init.clone();
 
@@ -237,7 +237,7 @@ impl<'gc> Class<'gc> {
     pub fn with_type_param(
         this: GcCell<'gc, Class<'gc>>,
         param: Option<GcCell<'gc, Class<'gc>>>,
-        mc: MutationContext<'gc, '_>,
+        mc: &Mutation<'gc>,
     ) -> GcCell<'gc, Class<'gc>> {
         let read = this.read();
         let key = param.map(ClassKey);
@@ -636,7 +636,7 @@ impl<'gc> Class<'gc> {
     #[inline(never)]
     pub fn define_builtin_class_properties(
         &mut self,
-        mc: MutationContext<'gc, '_>,
+        mc: &Mutation<'gc>,
         namespace: Namespace<'gc>,
         items: &[(
             &'static str,
@@ -662,7 +662,7 @@ impl<'gc> Class<'gc> {
     #[inline(never)]
     pub fn define_builtin_instance_methods(
         &mut self,
-        mc: MutationContext<'gc, '_>,
+        mc: &Mutation<'gc>,
         namespace: Namespace<'gc>,
         items: &[(&'static str, NativeMethodImpl)],
     ) {
@@ -676,7 +676,7 @@ impl<'gc> Class<'gc> {
     #[inline(never)]
     pub fn define_builtin_class_methods(
         &mut self,
-        mc: MutationContext<'gc, '_>,
+        mc: &Mutation<'gc>,
         namespace: Namespace<'gc>,
         items: &[(&'static str, NativeMethodImpl)],
     ) {
@@ -690,7 +690,7 @@ impl<'gc> Class<'gc> {
     #[inline(never)]
     pub fn define_builtin_instance_properties(
         &mut self,
-        mc: MutationContext<'gc, '_>,
+        mc: &Mutation<'gc>,
         namespace: Namespace<'gc>,
         items: &[(
             &'static str,

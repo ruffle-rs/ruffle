@@ -10,7 +10,7 @@ use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::ecma_conversions::{f64_to_wrapping_i32, f64_to_wrapping_u32};
 use crate::string::{AvmAtom, AvmString, WStr};
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, Mutation};
 use std::cell::Ref;
 use std::mem::size_of;
 use swf::avm2::types::{DefaultValue as AbcDefaultValue, Index};
@@ -557,7 +557,7 @@ impl<'gc> Value<'gc> {
     /// object methods called. This should only be used if you specifically
     /// need the behavior of only handling actual numbers; otherwise you should
     /// use the appropriate `coerce_to_` method.
-    pub fn as_number(&self, mc: MutationContext<'gc, '_>) -> Result<f64, Error<'gc>> {
+    pub fn as_number(&self, mc: &Mutation<'gc>) -> Result<f64, Error<'gc>> {
         match self {
             // Methods that look for numbers in Flash Player don't seem to care
             // about user-defined `valueOf` implementations. This code upholds
@@ -575,7 +575,7 @@ impl<'gc> Value<'gc> {
     }
 
     /// Like `as_number`, but for `i32`
-    pub fn as_integer(&self, mc: MutationContext<'gc, '_>) -> Result<i32, Error<'gc>> {
+    pub fn as_integer(&self, mc: &Mutation<'gc>) -> Result<i32, Error<'gc>> {
         match self {
             Value::Object(num) => match num.value_of(mc)? {
                 Value::Number(num) => Ok(num as i32),
@@ -589,7 +589,7 @@ impl<'gc> Value<'gc> {
     }
 
     /// Like `as_number`, but for `u32`
-    pub fn as_u32(&self, mc: MutationContext<'gc, '_>) -> Result<u32, Error<'gc>> {
+    pub fn as_u32(&self, mc: &Mutation<'gc>) -> Result<u32, Error<'gc>> {
         match self {
             Value::Object(num) => match num.value_of(mc)? {
                 Value::Number(num) => Ok(num as u32),

@@ -7,7 +7,7 @@ use crate::debug_ui::{ItemToSave, Message};
 use egui::{Align, Checkbox, Grid, Id, Layout, TextEdit, Ui, Window};
 use egui_extras::{Column, TableBody, TableBuilder, TableRow};
 use fnv::FnvHashMap;
-use gc_arena::MutationContext;
+use gc_arena::Mutation;
 use std::borrow::Cow;
 
 #[derive(Debug, Eq, PartialEq, Hash, Default, Copy, Clone)]
@@ -420,7 +420,7 @@ pub fn show_avm2_value<'gc>(
     ValueWidget::new(context, value).show(ui, messages)
 }
 
-fn object_name<'gc>(mc: MutationContext<'gc, '_>, object: Object<'gc>) -> String {
+fn object_name<'gc>(mc: &Mutation<'gc>, object: Object<'gc>) -> String {
     if let Some(class) = object.as_class_object() {
         class
             .inner_class_definition()

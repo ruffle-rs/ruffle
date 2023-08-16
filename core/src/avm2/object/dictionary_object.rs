@@ -8,7 +8,7 @@ use crate::avm2::Error;
 use crate::string::AvmString;
 use core::fmt;
 use fnv::FnvHashMap;
-use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates Dictionary objects.
@@ -71,17 +71,12 @@ impl<'gc> DictionaryObject<'gc> {
     }
 
     /// Set a value in the dictionary's object space.
-    pub fn set_property_by_object(
-        self,
-        name: Object<'gc>,
-        value: Value<'gc>,
-        mc: MutationContext<'gc, '_>,
-    ) {
+    pub fn set_property_by_object(self, name: Object<'gc>, value: Value<'gc>, mc: &Mutation<'gc>) {
         self.0.write(mc).object_space.insert(name, value);
     }
 
     /// Delete a value from the dictionary's object space.
-    pub fn delete_property_by_object(self, name: Object<'gc>, mc: MutationContext<'gc, '_>) {
+    pub fn delete_property_by_object(self, name: Object<'gc>, mc: &Mutation<'gc>) {
         self.0.write(mc).object_space.remove(&name);
     }
 
@@ -95,7 +90,7 @@ impl<'gc> TObject<'gc> for DictionaryObject<'gc> {
         Ref::map(self.0.read(), |read| &read.base)
     }
 
-    fn base_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<ScriptObjectData<'gc>> {
+    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
         RefMut::map(self.0.write(mc), |write| &mut write.base)
     }
 
@@ -103,7 +98,7 @@ impl<'gc> TObject<'gc> for DictionaryObject<'gc> {
         self.0.as_ptr() as *const ObjectPtr
     }
 
-    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error<'gc>> {
+    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Object::from(*self).into())
     }
 
@@ -165,7 +160,7 @@ impl<'gc> TObject<'gc> for DictionaryObject<'gc> {
     // stringified properties are always enumerable.
     fn set_local_property_is_enumerable(
         &self,
-        _mc: MutationContext<'gc, '_>,
+        _mc: &Mutation<'gc>,
         _name: AvmString<'gc>,
         _is_enumerable: bool,
     ) {

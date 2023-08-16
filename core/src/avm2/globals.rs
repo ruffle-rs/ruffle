@@ -11,7 +11,7 @@ use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::string::AvmString;
 use crate::tag_utils::{self, ControlFlow, SwfMovie, SwfSlice, SwfStream};
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, Mutation};
 use std::sync::Arc;
 use swf::TagCode;
 
@@ -306,7 +306,7 @@ fn function<'gc>(
 /// This allows the caller to pre-populate the class's prototype with dynamic
 /// properties, if necessary.
 fn dynamic_class<'gc>(
-    mc: MutationContext<'gc, '_>,
+    mc: &Mutation<'gc>,
     class_object: ClassObject<'gc>,
     script: Script<'gc>,
     // The `ClassObject` of the `Class` class

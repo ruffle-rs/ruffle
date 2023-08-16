@@ -1,7 +1,7 @@
 use crate::avm2::{Object as Avm2Object, Value as Avm2Value};
 use crate::display_object::{DisplayObject, DisplayObjectWeak, TDisplayObject};
 use bitflags::bitflags;
-use gc_arena::{Collect, MutationContext};
+use gc_arena::{Collect, Mutation};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, PixelRegion, SyncHandle};
 use ruffle_wstr::WStr;
@@ -243,7 +243,7 @@ mod wrapper {
     use crate::avm2::{Object as Avm2Object, Value as Avm2Value};
     use crate::context::RenderContext;
     use crate::display_object::DisplayObjectWeak;
-    use gc_arena::{Collect, GcCell, MutationContext};
+    use gc_arena::{Collect, GcCell, Mutation};
     use ruffle_render::backend::RenderBackend;
     use ruffle_render::bitmap::{BitmapHandle, PixelRegion, PixelSnapping};
     use ruffle_render::commands::CommandHandler;
@@ -292,7 +292,7 @@ mod wrapper {
         // This is used for AS3 `Bitmap` instances without a corresponding AS3 `BitmapData` instance.
         // Marking it as disposed skips rendering, and the unset `avm2_object` will cause this to
         // be inaccessible to AS3 code.
-        pub fn dummy(mc: MutationContext<'gc, '_>) -> Self {
+        pub fn dummy(mc: &Mutation<'gc>) -> Self {
             BitmapDataWrapper(GcCell::new(
                 mc,
                 BitmapData {
@@ -339,7 +339,7 @@ mod wrapper {
         /// this does not cancel the GPU -> CPU sync.
         pub fn bitmap_handle(
             &self,
-            gc_context: MutationContext<'gc, '_>,
+            gc_context: &Mutation<'gc>,
             renderer: &mut dyn RenderBackend,
         ) -> BitmapHandle {
             let mut bitmap_data = self.0.write(gc_context);
@@ -354,7 +354,7 @@ mod wrapper {
         #[allow(clippy::type_complexity)]
         pub fn overwrite_cpu_pixels_from_gpu(
             &self,
-            mc: MutationContext<'gc, '_>,
+            mc: &Mutation<'gc>,
         ) -> (GcCell<'gc, BitmapData<'gc>>, Option<PixelRegion>) {
             let mut write = self.0.write(mc);
             let dirty_rect = match write.dirty_state {
@@ -422,19 +422,15 @@ mod wrapper {
             Ok(())
         }
 
-        pub fn dispose(&self, mc: MutationContext<'gc, '_>) {
+        pub fn dispose(&self, mc: &Mutation<'gc>) {
             self.0.write(mc).dispose();
         }
 
-        pub fn init_object2(&self, mc: MutationContext<'gc, '_>, object: Avm2Object<'gc>) {
+        pub fn init_object2(&self, mc: &Mutation<'gc>, object: Avm2Object<'gc>) {
             self.0.write(mc).avm2_object = Some(object)
         }
 
-        pub fn remove_display_object(
-            &self,
-            mc: MutationContext<'gc, '_>,
-            callback: DisplayObjectWeak<'gc>,
-        ) {
+        pub fn remove_display_object(&self, mc: &Mutation<'gc>, callback: DisplayObjectWeak<'gc>) {
             // [NA] Removing is a rare operation, whereas insert is often, and iteration is extremely frequent.
             // The list will typically be 0-1 entries long too, so I think retain is fine for quick iteration.
             self.0
@@ -443,11 +439,7 @@ mod wrapper {
                 .retain(|c| c.as_ptr() != callback.as_ptr())
         }
 
-        pub fn add_display_object(
-            &self,
-            mc: MutationContext<'gc, '_>,
-            callback: DisplayObjectWeak<'gc>,
-        ) {
+        pub fn add_display_object(&self, mc: &Mutation<'gc>, callback: DisplayObjectWeak<'gc>) {
             self.0.write(mc).display_objects.push(callback);
         }
 
@@ -600,7 +592,7 @@ impl<'gc> BitmapData<'gc> {
 
     pub fn set_gpu_dirty(
         &mut self,
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         sync_handle: Box<dyn SyncHandle>,
         region: PixelRegion,
     ) {
@@ -608,7 +600,7 @@ impl<'gc> BitmapData<'gc> {
         self.inform_display_objects(gc_context);
     }
 
-    pub fn set_cpu_dirty(&mut self, gc_context: MutationContext<'gc, '_>, region: PixelRegion) {
+    pub fn set_cpu_dirty(&mut self, gc_context: &Mutation<'gc>, region: PixelRegion) {
         debug_assert!(region.x_max <= self.width);
         debug_assert!(region.y_max <= self.height);
         let inform_changes = match &mut self.dirty_state {
@@ -704,7 +696,7 @@ impl<'gc> BitmapData<'gc> {
         }
     }
 
-    fn inform_display_objects(&self, gc_context: MutationContext<'gc, '_>) {
+    fn inform_display_objects(&self, gc_context: &Mutation<'gc>) {
         for object in &self.display_objects {
             if let Some(object) = object.upgrade(gc_context) {
                 object.invalidate_cached_bitmap(gc_context);

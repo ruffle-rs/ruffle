@@ -8,7 +8,7 @@ use crate::avm1::{Activation, Error, Object, ScriptObject, TObject, Value};
 use crate::bitmap::bitmap_data::BitmapDataWrapper;
 use crate::context::{GcContext, UpdateContext};
 use crate::string::{AvmString, FromWStr, WStr};
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, Mutation};
 use ruffle_render::filters::DisplacementMapFilterMode;
 use std::convert::Infallible;
 use std::fmt::Debug;
@@ -130,13 +130,13 @@ impl<'gc> DisplacementMapFilter<'gc> {
     }
 
     pub fn from_filter(
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         filter: ruffle_render::filters::DisplacementMapFilter,
     ) -> Self {
         Self(GcCell::new(gc_context, filter.into()))
     }
 
-    pub(crate) fn duplicate(&self, gc_context: MutationContext<'gc, '_>) -> Self {
+    pub(crate) fn duplicate(&self, gc_context: &Mutation<'gc>) -> Self {
         Self(GcCell::new(gc_context, self.0.read().clone()))
     }
 

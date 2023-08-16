@@ -13,7 +13,7 @@ use crate::display_object::interactive::InteractiveObjectBase;
 use crate::tag_utils::SwfMovie;
 use core::fmt;
 use gc_arena::GcWeakCell;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, Mutation};
 use std::cell::{Ref, RefMut};
 use std::sync::Arc;
 
@@ -67,11 +67,11 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
         Ref::map(self.0.read(), |r| &r.base.base)
     }
 
-    fn base_mut<'a>(&'a self, mc: MutationContext<'gc, '_>) -> RefMut<'a, DisplayObjectBase<'gc>> {
+    fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>> {
         RefMut::map(self.0.write(mc), |w| &mut w.base.base)
     }
 
-    fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc> {
+    fn instantiate(&self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
         Self(GcCell::new(gc_context, self.0.read().clone())).into()
     }
 
@@ -153,10 +153,7 @@ impl<'gc> TInteractiveObject<'gc> for LoaderDisplay<'gc> {
         Ref::map(self.0.read(), |r| &r.base)
     }
 
-    fn raw_interactive_mut(
-        &self,
-        mc: MutationContext<'gc, '_>,
-    ) -> RefMut<InteractiveObjectBase<'gc>> {
+    fn raw_interactive_mut(&self, mc: &Mutation<'gc>) -> RefMut<InteractiveObjectBase<'gc>> {
         RefMut::map(self.0.write(mc), |w| &mut w.base)
     }
 
@@ -219,10 +216,7 @@ impl<'gc> TDisplayObjectContainer<'gc> for LoaderDisplay<'gc> {
         Ref::map(self.0.read(), |this| &this.container)
     }
 
-    fn raw_container_mut(
-        &self,
-        gc_context: MutationContext<'gc, '_>,
-    ) -> RefMut<'_, ChildContainer<'gc>> {
+    fn raw_container_mut(&self, gc_context: &Mutation<'gc>) -> RefMut<'_, ChildContainer<'gc>> {
         RefMut::map(self.0.write(gc_context), |this| &mut this.container)
     }
 }
@@ -232,7 +226,7 @@ impl<'gc> TDisplayObjectContainer<'gc> for LoaderDisplay<'gc> {
 pub struct LoaderDisplayWeak<'gc>(GcWeakCell<'gc, LoaderDisplayData<'gc>>);
 
 impl<'gc> LoaderDisplayWeak<'gc> {
-    pub fn upgrade(self, mc: MutationContext<'gc, '_>) -> Option<LoaderDisplay<'gc>> {
+    pub fn upgrade(self, mc: &Mutation<'gc>) -> Option<LoaderDisplay<'gc>> {
         self.0.upgrade(mc).map(LoaderDisplay)
     }
 

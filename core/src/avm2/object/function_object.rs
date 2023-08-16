@@ -9,7 +9,7 @@ use crate::avm2::scope::ScopeChain;
 use crate::avm2::value::Value;
 use crate::avm2::{Error, Multiname};
 use core::fmt;
-use gc_arena::{Collect, Gc, GcCell, GcWeakCell, MutationContext};
+use gc_arena::{Collect, Gc, GcCell, GcWeakCell, Mutation};
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates Function objects.
@@ -134,7 +134,7 @@ impl<'gc> FunctionObject<'gc> {
         self.0.read().prototype
     }
 
-    pub fn set_prototype(&self, proto: Option<Object<'gc>>, mc: MutationContext<'gc, '_>) {
+    pub fn set_prototype(&self, proto: Option<Object<'gc>>, mc: &Mutation<'gc>) {
         self.0.write(mc).prototype = proto;
     }
 
@@ -148,7 +148,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         Ref::map(self.0.read(), |read| &read.base)
     }
 
-    fn base_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<ScriptObjectData<'gc>> {
+    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
         RefMut::map(self.0.write(mc), |write| &mut write.base)
     }
 
@@ -167,7 +167,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         self.to_string(activation)
     }
 
-    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error<'gc>> {
+    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Value::Object(Object::from(*self)))
     }
 

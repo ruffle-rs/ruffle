@@ -11,7 +11,7 @@ use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::tag_utils::SwfMovie;
 use core::fmt;
-use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
 use std::cell::{Ref, RefMut};
 use std::sync::Arc;
 
@@ -278,7 +278,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         }
     }
 
-    pub fn set_loader_stream(&self, stream: LoaderStream<'gc>, mc: MutationContext<'gc, '_>) {
+    pub fn set_loader_stream(&self, stream: LoaderStream<'gc>, mc: &Mutation<'gc>) {
         self.0.write(mc).loaded_stream = Some(stream);
     }
 }
@@ -288,7 +288,7 @@ impl<'gc> TObject<'gc> for LoaderInfoObject<'gc> {
         Ref::map(self.0.read(), |read| &read.base)
     }
 
-    fn base_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<ScriptObjectData<'gc>> {
+    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
         RefMut::map(self.0.write(mc), |write| &mut write.base)
     }
 
@@ -296,7 +296,7 @@ impl<'gc> TObject<'gc> for LoaderInfoObject<'gc> {
         self.0.as_ptr() as *const ObjectPtr
     }
 
-    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error<'gc>> {
+    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Value::Object((*self).into()))
     }
 

@@ -12,7 +12,7 @@ use crate::display_object::movie_clip::MovieClip;
 use crate::display_object::stage::Stage;
 use crate::display_object::{Depth, DisplayObject, TDisplayObject, TInteractiveObject};
 use crate::string::WStr;
-use gc_arena::{Collect, MutationContext};
+use gc_arena::{Collect, Mutation};
 use ruffle_macros::enum_trait_object;
 use ruffle_render::commands::CommandHandler;
 use std::cell::{Ref, RefMut};
@@ -130,10 +130,7 @@ pub trait TDisplayObjectContainer<'gc>:
     fn raw_container(&self) -> Ref<'_, ChildContainer<'gc>>;
 
     /// Get mutable access to the raw container.
-    fn raw_container_mut(
-        &self,
-        gc_context: MutationContext<'gc, '_>,
-    ) -> RefMut<'_, ChildContainer<'gc>>;
+    fn raw_container_mut(&self, gc_context: &Mutation<'gc>) -> RefMut<'_, ChildContainer<'gc>>;
 
     /// Get a child display object by it's position in the render list.
     ///

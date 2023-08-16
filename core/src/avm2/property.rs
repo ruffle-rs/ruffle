@@ -6,7 +6,7 @@ use crate::avm2::Multiname;
 use crate::avm2::TranslationUnit;
 use crate::avm2::Value;
 use gc_arena::GcCell;
-use gc_arena::MutationContext;
+use gc_arena::Mutation;
 use gc_arena::{Collect, Gc};
 
 use super::class::Class;
@@ -46,7 +46,7 @@ pub enum PropertyClass<'gc> {
 
 impl<'gc> PropertyClass<'gc> {
     pub fn name(
-        mc: MutationContext<'gc, '_>,
+        mc: &Mutation<'gc>,
         name: Multiname<'gc>,
         unit: Option<TranslationUnit<'gc>>,
     ) -> Self {
@@ -100,7 +100,7 @@ impl<'gc> PropertyClass<'gc> {
         }
     }
 
-    pub fn get_name(&self, mc: MutationContext<'gc, '_>) -> Multiname<'gc> {
+    pub fn get_name(&self, mc: &Mutation<'gc>) -> Multiname<'gc> {
         match self {
             PropertyClass::Class(class) => class.read().name().into(),
             PropertyClass::Name(gc) => gc.0.clone(),

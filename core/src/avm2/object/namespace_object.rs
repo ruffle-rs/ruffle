@@ -7,7 +7,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Namespace;
 use core::fmt;
-use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates namespace objects.
@@ -75,7 +75,7 @@ impl<'gc> NamespaceObject<'gc> {
         Ok(this)
     }
 
-    pub fn init_namespace(&self, mc: MutationContext<'gc, '_>, namespace: Namespace<'gc>) {
+    pub fn init_namespace(&self, mc: &Mutation<'gc>, namespace: Namespace<'gc>) {
         self.0.write(mc).namespace = namespace;
     }
 
@@ -89,7 +89,7 @@ impl<'gc> TObject<'gc> for NamespaceObject<'gc> {
         Ref::map(self.0.read(), |read| &read.base)
     }
 
-    fn base_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<ScriptObjectData<'gc>> {
+    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
         RefMut::map(self.0.write(mc), |write| &mut write.base)
     }
 
@@ -101,7 +101,7 @@ impl<'gc> TObject<'gc> for NamespaceObject<'gc> {
         Ok(self.0.read().namespace.as_uri().into())
     }
 
-    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error<'gc>> {
+    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
         Ok(self.0.read().namespace.as_uri().into())
     }
 
