@@ -10,7 +10,7 @@ use crate::avm2::value::Value;
 use crate::avm2::{Error, Multiname};
 use core::fmt;
 use gc_arena::{Collect, Gc, GcCell, GcWeakCell, MutationContext};
-use std::cell::{Ref, RefMut};
+use std::cell::{Cell, Ref, RefMut};
 
 /// A class instance allocator that allocates Function objects.
 /// This is only used when ActionScript manually calls 'new Function()',
@@ -32,6 +32,8 @@ pub fn function_allocator<'gc>(
             name: "<Empty Function>",
             signature: vec![],
             return_type: Multiname::any(activation.context.gc_context),
+            has_resolved_signature: Cell::new(false),
+            resolved_signature: GcCell::allocate(activation.context.gc_context, vec![]),
             is_variadic: true,
         },
     );
