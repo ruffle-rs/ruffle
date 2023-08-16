@@ -390,11 +390,28 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
         `#video-holder {
             padding-top: 20px;
         }`,
+
+        `.slider-container {
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+        }`,
+
+        `#volume-slider {
+            margin-left: 10px;
+            margin-right: 10px;
+        }`,
+
+        `#volume-slider-text {
+            text-align: right;
+            width: 28px;
+        }`,
     ];
     insertRules(styleElement.sheet, rules);
 }
 
 /**
+ * Create and return a new HTML Element with the given arguments.
  *
  * @param tag The HTML tag name of the new element.
  * @param id The id of the new element.
@@ -427,6 +444,52 @@ function createElement(
             element.setAttribute(key, attr);
         }
     }
+    return element;
+}
+
+/**
+ * Create and return a new HTMLInputElement with the given arguments.
+ *
+ * @param htmlType The type of input element.
+ * @param id The id of the input element.
+ * @param min The min of the input element.
+ * @param max The max of the input element.
+ * @param step The step of the input element.
+ *
+ * @returns The newly created HTMLInputElement
+ */
+function createInputElement(
+    htmlType: string,
+    id: string,
+    min?: string,
+    max?: string,
+    step?: string,
+): HTMLInputElement {
+    const element = createElement("input", id) as HTMLInputElement;
+    element.type = htmlType;
+    if (min) {
+        element.min = min;
+    }
+    if (max) {
+        element.max = max;
+    }
+    if (step) {
+        element.step = step;
+    }
+    return element;
+}
+
+/**
+ * Create and return a new HTMLLabelElement with the given arguments.
+ *
+ * @param id The id of the label element.
+ * @param htmlFor The for of the label element.
+ *
+ * @returns The newly created HTMLLabelElement
+ */
+function createLabelElement(id: string, htmlFor: string): HTMLLabelElement {
+    const element = createElement("label", id) as HTMLLabelElement;
+    element.htmlFor = htmlFor;
     return element;
 }
 
@@ -682,6 +745,36 @@ const generalSaveOptions = createElement(
 const backupSaves = createElement("span", "backup-saves", "save-option");
 const localSaves = createElement("table", "local-saves");
 
+// Volume control elements
+const volumeControlsModal = createElement(
+    "div",
+    "volume-controls-modal",
+    "modal hidden",
+);
+const volumeModalArea = createElement("div", undefined, "modal-area");
+const volumeModalClose = createElement("span", undefined, "close-modal");
+volumeModalClose.textContent = "\u00D7";
+const volumeControls = createElement("div", "volume-controls");
+const volumeControlsHeading = createElement("h2", "volume-controls-heading");
+const muteCheckboxLabel = createLabelElement(
+    "mute-checkbox-label",
+    "mute-checkbox",
+);
+const muteCheckbox = createInputElement("checkbox", "mute-checkbox");
+const sliderContainer = createElement("div", undefined, "slider-container");
+const volumeSliderLabel = createLabelElement(
+    "volume-slider-label",
+    "volume-slider",
+);
+const volumeSlider = createInputElement(
+    "range",
+    "volume-slider",
+    "0",
+    "100",
+    "1",
+);
+const volumeSliderText = createElement("span", "volume-slider-text");
+
 // Video modal elements
 const videoModal = createElement("div", "video-modal", "modal hidden");
 const videoModalArea = createElement("div", undefined, "modal-area");
@@ -740,6 +833,18 @@ appendElement(saveModalArea, saveModalClose);
 appendElement(saveModalArea, generalSaveOptions);
 appendElement(generalSaveOptions, backupSaves);
 appendElement(saveModalArea, localSaves);
+// Volume control append
+appendElement(ruffleShadowTemplate.content, volumeControlsModal);
+appendElement(volumeControlsModal, volumeModalArea);
+appendElement(volumeModalArea, volumeModalClose);
+appendElement(volumeModalArea, volumeControls);
+appendElement(volumeControls, volumeControlsHeading);
+appendElement(volumeControls, muteCheckboxLabel);
+appendElement(volumeControls, muteCheckbox);
+appendElement(volumeControls, sliderContainer);
+appendElement(sliderContainer, volumeSliderLabel);
+appendElement(sliderContainer, volumeSlider);
+appendElement(sliderContainer, volumeSliderText);
 // Video modal append
 appendElement(ruffleShadowTemplate.content, videoModal);
 appendElement(videoModal, videoModalArea);
