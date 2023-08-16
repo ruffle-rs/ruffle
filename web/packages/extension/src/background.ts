@@ -52,7 +52,7 @@ async function enable() {
                     redirect: { regexSubstitution: playerPage + "#\\0" },
                 },
                 condition: {
-                    regexFilter: "^.*\\.swf(\\?.*|#.*|)$",
+                    regexFilter: "^.*\\.s(?:wf|pl)(\\?.*|#.*|)$",
                     resourceTypes: [
                         chrome.declarativeNetRequest.ResourceType.MAIN_FRAME,
                     ],
