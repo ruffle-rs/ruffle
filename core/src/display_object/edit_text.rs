@@ -1112,6 +1112,10 @@ impl<'gc> EditText<'gc> {
         }
     }
 
+    pub fn spans(&self) -> Ref<FormatSpans> {
+        Ref::map(self.0.read(), |r| &r.text_spans)
+    }
+
     pub fn render_settings(self) -> TextRenderSettings {
         self.0.read().render_settings.clone()
     }
