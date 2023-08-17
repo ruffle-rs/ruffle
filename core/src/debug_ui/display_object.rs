@@ -9,7 +9,9 @@ use crate::context::UpdateContext;
 use crate::debug_ui::handle::{AVM1ObjectHandle, AVM2ObjectHandle, DisplayObjectHandle};
 use crate::debug_ui::movie::open_movie_button;
 use crate::debug_ui::Message;
-use crate::display_object::{DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer};
+use crate::display_object::{
+    DisplayObject, EditText, MovieClip, TDisplayObject, TDisplayObjectContainer,
+};
 use egui::collapsing_header::CollapsingState;
 use egui::{Button, Checkbox, CollapsingHeader, ComboBox, Grid, Id, TextEdit, Ui, Widget, Window};
 use ruffle_wstr::{WStr, WString};
@@ -144,11 +146,60 @@ impl DisplayObjectWindow {
                     Panel::TypeSpecific => {
                         if let DisplayObject::MovieClip(object) = object {
                             self.show_movieclip(ui, context, object)
+                        } else if let DisplayObject::EditText(object) = object {
+                            self.show_edit_text(ui, object)
                         }
                     }
                 }
             });
         keep_open
+    }
+
+    pub fn show_edit_text(&mut self, ui: &mut Ui, object: EditText) {
+        Grid::new(ui.id().with("edittext"))
+            .num_columns(2)
+            .show(ui, |ui| {
+                ui.label("Selection");
+                if let Some(selection) = object.selection() {
+                    if selection.is_caret() {
+                        ui.label(selection.start().to_string());
+                    } else {
+                        ui.label(format!("{} - {}", selection.start(), selection.end()));
+                    }
+                } else {
+                    ui.weak("None");
+                }
+                ui.end_row();
+            });
+
+        CollapsingHeader::new("Span List")
+            .id_source(ui.id().with("spans"))
+            .show(ui, |ui| {
+                Grid::new(ui.id().with("spans"))
+                    .num_columns(4)
+                    .striped(true)
+                    .show(ui, |ui| {
+                        ui.label("Start");
+                        ui.label("End");
+                        ui.label("Length");
+                        ui.label("URL");
+                        ui.label("Font");
+                        ui.label("Text");
+                        ui.end_row();
+
+                        for (start, end, text, format) in object.spans().iter_spans() {
+                            ui.label(start.to_string());
+                            ui.label(end.to_string());
+
+                            ui.label(format.span_length.to_string());
+                            ui.label(format.url.to_string());
+                            ui.label(format.font.to_string());
+
+                            ui.label(text.to_string());
+                            ui.end_row();
+                        }
+                    });
+            });
     }
 
     pub fn show_movieclip<'gc>(
@@ -663,7 +714,10 @@ fn summary_color_transform_entry(name: &str, mult: Fixed8, add: i16) -> Option<S
 }
 
 fn has_type_specific_tab(object: DisplayObject) -> bool {
-    matches!(object, DisplayObject::MovieClip(_))
+    matches!(
+        object,
+        DisplayObject::MovieClip(_) | DisplayObject::EditText(_)
+    )
 }
 
 fn summary_name(object: DisplayObject) -> Cow<'static, str> {
