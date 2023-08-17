@@ -1639,6 +1639,19 @@ impl<'gc> EditText<'gc> {
                 .navigate_to_url(&url.to_utf8_lossy(), &target.to_utf8_lossy(), None);
         }
     }
+
+    fn is_link_at(self, point: Point<Twips>) -> bool {
+        if let Some(position) = self.screen_position_to_index(point) {
+            if let Some((span_index, _)) =
+                self.0.read().text_spans.resolve_position_as_span(position)
+            {
+                if let Some(span) = self.0.read().text_spans.span(span_index) {
+                    return !span.url.is_empty();
+                }
+            }
+        }
+        false
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
@@ -1994,22 +2007,36 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
             let tracker = context.focus_tracker;
             tracker.set(Some(self.into()), context);
         }
+
+        // We can't hold self as any link may end up modifying this object, so pull the info out
+        let mut link_to_open = None;
+
         if let Some(position) = self.screen_position_to_index(*context.mouse_position) {
             self.0.write(context.gc_context).selection =
                 Some(TextSelection::for_position(position));
 
-            let format = self.0.read().text_spans.get_text_format(position, position);
-            if let Some(url) = format.url {
-                if !url.is_empty() {
-                    // TODO: This fires on mouse DOWN but it should be mouse UP...
-                    // but only if it went down in the same span.
-                    // Needs more advanced focus handling than we have at time of writing this comment.
-                    self.open_url(context, &url, &format.target.unwrap_or_default());
-                }
+            if let Some((span_index, _)) =
+                self.0.read().text_spans.resolve_position_as_span(position)
+            {
+                link_to_open = self
+                    .0
+                    .read()
+                    .text_spans
+                    .span(span_index)
+                    .map(|s| (s.url.clone(), s.target.clone()));
             }
         } else {
             self.0.write(context.gc_context).selection =
                 Some(TextSelection::for_position(self.text_length()));
+        }
+
+        if let Some((url, target)) = link_to_open {
+            if !url.is_empty() {
+                // TODO: This fires on mouse DOWN but it should be mouse UP...
+                // but only if it went down in the same span.
+                // Needs more advanced focus handling than we have at time of writing this comment.
+                self.open_url(context, &url, &target);
+            }
         }
 
         ClipEventResult::Handled
@@ -2024,7 +2051,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
         // The text is hovered if the mouse is over any child nodes.
         if self.visible()
             && self.mouse_enabled()
-            && self.is_selectable()
+            && (self.is_selectable() || self.is_link_at(point))
             && self.hit_test_shape(context, point, HitTestOptions::MOUSE_PICK)
         {
             Some((*self).into())
@@ -2045,7 +2072,9 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
             // will cause us to show the proper cursor on mouse over).
             // However, in `Interactive::event_dispatch_to_avm2`, we will prevent mouse events
             // from being fired at all if the text is selectable and 'was_static()'.
-            if self.mouse_enabled() && (self.is_selectable() || !self.was_static()) {
+            if self.mouse_enabled()
+                && (self.is_selectable() || self.is_link_at(point) || !self.was_static())
+            {
                 Avm2MousePick::Hit((*self).into())
             } else {
                 Avm2MousePick::PropagateToParent
@@ -2055,8 +2084,10 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
         }
     }
 
-    fn mouse_cursor(self, _context: &mut UpdateContext<'_, 'gc>) -> MouseCursor {
-        if self.is_selectable() {
+    fn mouse_cursor(self, context: &mut UpdateContext<'_, 'gc>) -> MouseCursor {
+        if self.is_link_at(*context.mouse_position) {
+            MouseCursor::Hand
+        } else if self.is_selectable() {
             MouseCursor::IBeam
         } else {
             MouseCursor::Arrow
