@@ -1606,14 +1606,18 @@ impl<'gc> EditText<'gc> {
         context: &mut UpdateContext<'_, 'gc>,
         address: &WStr,
     ) -> Result<(), crate::avm1::Error<'gc>> {
+        let Some(parent) = self.avm1_parent() else {
+            return Ok(()); // Can't open links for something that isn't visible?
+        };
+
         let mut activation = Avm1Activation::from_nothing(
             context.reborrow(),
             ActivationIdentifier::root("[EditText URL]"),
-            self.avm1_root(),
+            parent,
         );
         // [NA]: Should all `from_nothings` be scoped to root? It definitely should here.
-        activation.set_scope_to_display_object(self.avm1_root());
-        let this = self.avm1_root().object().coerce_to_object(&mut activation);
+        activation.set_scope_to_display_object(parent);
+        let this = parent.object().coerce_to_object(&mut activation);
 
         if let Some((name, args)) = address.split_once(b',') {
             let name = AvmString::new(activation.context.gc_context, name);
