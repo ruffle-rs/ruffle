@@ -1195,8 +1195,14 @@ impl<'gc> EditText<'gc> {
                         }
                     },
                 );
-                if result.is_some() {
-                    return result;
+                if let Some(index_in_layout) = result {
+                    return Some(
+                        if let LayoutContent::Text { start, .. } = layout_box.content() {
+                            index_in_layout + start
+                        } else {
+                            index_in_layout // [NA] Not sure if it's possible to get here?
+                        },
+                    );
                 }
             }
         }
