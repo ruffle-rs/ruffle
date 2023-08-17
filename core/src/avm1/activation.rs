@@ -4,7 +4,7 @@ use crate::avm1::function::{Avm1Function, ExecutionReason, FunctionObject};
 use crate::avm1::object::{Object, TObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::runtime::skip_actions;
-use crate::avm1::scope::Scope;
+use crate::avm1::scope::{Scope, ScopeClass};
 use crate::avm1::{fscommand, globals, scope, ArrayObject, ScriptObject, Value};
 use crate::backend::navigator::{NavigationMethod, Request};
 use crate::context::UpdateContext;
@@ -2968,6 +2968,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Completely replace the current scope with a new one.
     pub fn set_scope(&mut self, scope: Gc<'gc, Scope<'gc>>) {
         self.scope = scope;
+    }
+
+    pub fn set_scope_to_display_object(&mut self, object: DisplayObject<'gc>) {
+        self.scope = Gc::new(
+            self.context.gc_context,
+            Scope::new(
+                self.scope,
+                ScopeClass::Target,
+                object.object().coerce_to_object(self),
+            ),
+        );
     }
 
     /// Whether this activation operates in a local scope.

@@ -382,6 +382,12 @@ impl WStr {
         (&self[..index], &self[index..])
     }
 
+    /// Analogue of [`str::split_once`].
+    #[inline]
+    pub fn split_once<'a, P: Pattern<'a>>(&'a self, pattern: P) -> Option<(&'a WStr, &'a WStr)> {
+        super::ops::str_split_once(self, pattern)
+    }
+
     /// Analogue of [`str::rsplit_once`].
     #[inline]
     pub fn rsplit_once<'a, P: Pattern<'a>>(&'a self, pattern: P) -> Option<(&'a WStr, &'a WStr)> {
