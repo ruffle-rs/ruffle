@@ -1,0 +1,68 @@
+/// onLink called!
+// event.text
+alert1
+
+// event.bubbles
+true
+
+// event.cancelable
+false
+
+// event.currentTarget
+[object TextField]
+
+// event.target
+[object TextField]
+
+
+/// onLink called!
+// event.text
+Second Test
+
+// event.bubbles
+true
+
+// event.cancelable
+false
+
+// event.currentTarget
+[object TextField]
+
+// event.target
+[object TextField]
+
+
+/// onLink called!
+// event.text
+
+
+// event.bubbles
+true
+
+// event.cancelable
+false
+
+// event.currentTarget
+[object TextField]
+
+// event.target
+[object TextField]
+
+
+/// onLink called!
+// event.text
+a,b,c,d
+
+// event.bubbles
+true
+
+// event.cancelable
+false
+
+// event.currentTarget
+[object TextField]
+
+// event.target
+[object TextField]
+
+

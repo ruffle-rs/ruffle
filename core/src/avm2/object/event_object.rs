@@ -145,6 +145,35 @@ impl<'gc> EventObject<'gc> {
             .unwrap() // we don't expect to break here
     }
 
+    pub fn text_event<S>(
+        activation: &mut Activation<'_, 'gc>,
+        event_type: S,
+        text: AvmString<'gc>,
+        bubbles: bool,
+        cancelable: bool,
+    ) -> Object<'gc>
+    where
+        S: Into<AvmString<'gc>>,
+    {
+        let event_type: AvmString<'gc> = event_type.into();
+
+        let text_event_cls = activation.avm2().classes().textevent;
+        text_event_cls
+            .construct(
+                activation,
+                &[
+                    event_type.into(),
+                    // bubbles
+                    bubbles.into(),
+                    // cancelable
+                    cancelable.into(),
+                    // text
+                    text.into(),
+                ],
+            )
+            .unwrap() // we don't expect to break here
+    }
+
     pub fn net_status_event<S>(
         activation: &mut Activation<'_, 'gc>,
         event_type: S,
