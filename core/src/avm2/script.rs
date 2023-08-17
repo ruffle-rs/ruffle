@@ -14,7 +14,7 @@ use crate::avm2::Namespace;
 use crate::avm2::{Avm2, Error};
 use crate::context::{GcContext, UpdateContext};
 use crate::string::{AvmAtom, AvmString};
-use gc_arena::{Collect, Gc, GcCell, MutationContext};
+use gc_arena::{Collect, Gc, GcCell, Mutation};
 use std::cell::Ref;
 use std::mem::drop;
 use std::rc::Rc;
@@ -81,7 +81,7 @@ impl<'gc> TranslationUnit<'gc> {
         abc: AbcFile,
         domain: Domain<'gc>,
         name: Option<AvmString<'gc>>,
-        mc: MutationContext<'gc, '_>,
+        mc: &Mutation<'gc>,
     ) -> Self {
         let classes = vec![None; abc.classes.len()];
         let methods = vec![None; abc.methods.len()];
@@ -399,11 +399,7 @@ impl<'gc> Script<'gc> {
     ///
     /// The `globals` object should be constructed using the `global`
     /// prototype.
-    pub fn empty_script(
-        mc: MutationContext<'gc, '_>,
-        globals: Object<'gc>,
-        domain: Domain<'gc>,
-    ) -> Self {
+    pub fn empty_script(mc: &Mutation<'gc>, globals: Object<'gc>, domain: Domain<'gc>) -> Self {
         Self(GcCell::new(
             mc,
             ScriptData {

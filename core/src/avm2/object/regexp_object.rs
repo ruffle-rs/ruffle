@@ -8,7 +8,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::string::{AvmString, WString};
 use core::fmt;
-use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates RegExp objects.
@@ -79,7 +79,7 @@ impl<'gc> TObject<'gc> for RegExpObject<'gc> {
         Ref::map(self.0.read(), |read| &read.base)
     }
 
-    fn base_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<ScriptObjectData<'gc>> {
+    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
         RefMut::map(self.0.write(mc), |write| &mut write.base)
     }
 
@@ -91,7 +91,7 @@ impl<'gc> TObject<'gc> for RegExpObject<'gc> {
         Ok(Value::Object(Object::from(*self)))
     }
 
-    fn value_of(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error<'gc>> {
+    fn value_of(&self, mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
         let read = self.0.read();
         let mut s = WString::new();
         s.push_byte(b'/');
@@ -128,7 +128,7 @@ impl<'gc> TObject<'gc> for RegExpObject<'gc> {
         Some(Ref::map(self.0.read(), |d| &d.regexp))
     }
 
-    fn as_regexp_mut(&self, mc: MutationContext<'gc, '_>) -> Option<RefMut<RegExp<'gc>>> {
+    fn as_regexp_mut(&self, mc: &Mutation<'gc>) -> Option<RefMut<RegExp<'gc>>> {
         Some(RefMut::map(self.0.write(mc), |d| &mut d.regexp))
     }
 }

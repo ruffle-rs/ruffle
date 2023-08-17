@@ -5,7 +5,7 @@ use std::hash::{BuildHasher, Hash, Hasher};
 use std::marker::PhantomData;
 use std::ops::DerefMut;
 
-use gc_arena::{Collect, Gc, GcWeak, MutationContext};
+use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use hashbrown::HashSet;
 
 use crate::string::{AvmString, AvmStringRepr, WStr};
@@ -58,13 +58,13 @@ impl<'gc> AvmStringInterner<'gc> {
         Self::default()
     }
 
-    fn alloc(mc: MutationContext<'gc, '_>, s: Cow<'_, WStr>) -> Gc<'gc, AvmStringRepr> {
+    fn alloc(mc: &Mutation<'gc>, s: Cow<'_, WStr>) -> Gc<'gc, AvmStringRepr> {
         let repr = AvmStringRepr::from_raw(s.into_owned(), true);
         Gc::new(mc, repr)
     }
 
     #[must_use]
-    pub fn intern_wstr<'a, S>(&mut self, mc: MutationContext<'gc, '_>, s: S) -> AvmAtom<'gc>
+    pub fn intern_wstr<'a, S>(&mut self, mc: &Mutation<'gc>, s: S) -> AvmAtom<'gc>
     where
         S: Into<Cow<'a, WStr>>,
     {
@@ -78,12 +78,12 @@ impl<'gc> AvmStringInterner<'gc> {
     }
 
     #[must_use]
-    pub fn get(&self, mc: MutationContext<'gc, '_>, s: &WStr) -> Option<AvmAtom<'gc>> {
+    pub fn get(&self, mc: &Mutation<'gc>, s: &WStr) -> Option<AvmAtom<'gc>> {
         self.interned.get(mc, s).map(AvmAtom)
     }
 
     #[must_use]
-    pub fn intern(&mut self, mc: MutationContext<'gc, '_>, s: AvmString<'gc>) -> AvmAtom<'gc> {
+    pub fn intern(&mut self, mc: &Mutation<'gc>, s: AvmString<'gc>) -> AvmAtom<'gc> {
         if let Some(atom) = s.as_interned() {
             return atom;
         }
@@ -122,7 +122,7 @@ impl<'gc, T: Hash + 'gc> WeakSet<'gc, T> {
     }
 
     /// Finds the given key in the map.
-    fn get<Q>(&self, mc: MutationContext<'gc, '_>, key: &Q) -> Option<Gc<'gc, T>>
+    fn get<Q>(&self, mc: &Mutation<'gc>, key: &Q) -> Option<Gc<'gc, T>>
     where
         T: Borrow<Q>,
         Q: Hash + Eq + ?Sized,
@@ -145,7 +145,7 @@ impl<'gc, T: Hash + 'gc> WeakSet<'gc, T> {
     /// Finds the given key in the map, and return its and its hash.
     /// This also cleans up stale buckets found along the way.
     /// TODO: add proper entry API?
-    fn entry<Q>(&mut self, mc: MutationContext<'gc, '_>, key: &Q) -> (Option<Gc<'gc, T>>, u64)
+    fn entry<Q>(&mut self, mc: &Mutation<'gc>, key: &Q) -> (Option<Gc<'gc, T>>, u64)
     where
         T: Borrow<Q>,
         Q: Hash + Eq + ?Sized,
@@ -176,12 +176,7 @@ impl<'gc, T: Hash + 'gc> WeakSet<'gc, T> {
     /// Inserts a new key in the set.
     /// The key must not already exist, and `hash` must be its hash.
     /// TODO: add proper entry API?
-    fn insert_fresh(
-        &mut self,
-        mc: MutationContext<'gc, '_>,
-        hash: u64,
-        key: Gc<'gc, T>,
-    ) -> Gc<'gc, T> {
+    fn insert_fresh(&mut self, mc: &Mutation<'gc>, hash: u64, key: Gc<'gc, T>) -> Gc<'gc, T> {
         let entry = (Gc::downgrade(key), ());
 
         let raw = self.table.as_mut().raw_table_mut();
@@ -198,7 +193,7 @@ impl<'gc, T: Hash + 'gc> WeakSet<'gc, T> {
 
     /// Prune stale entries and/or resize the table to ensure at least one extra entry can be added.
     #[cold]
-    fn prune_and_grow(&mut self, mc: MutationContext<'gc, '_>) {
+    fn prune_and_grow(&mut self, mc: &Mutation<'gc>) {
         let table = self.table.as_mut();
 
         // We *really* don't want to reallocate, so try to prune dead references first.
@@ -245,7 +240,7 @@ struct CollectCell<'gc, T> {
 
 impl<'gc, T> CollectCell<'gc, T> {
     #[inline(always)]
-    fn as_ref<'a>(&'a self, _mc: MutationContext<'gc, '_>) -> &'a T {
+    fn as_ref<'a>(&'a self, _mc: &Mutation<'gc>) -> &'a T {
         unsafe { &*self.inner.as_ptr() }
     }
 

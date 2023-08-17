@@ -4,7 +4,7 @@ use crate::avm1::{Object, ScriptObject, TObject};
 use crate::backend::audio::{SoundHandle, SoundInstanceHandle};
 use crate::display_object::DisplayObject;
 use crate::impl_custom_object;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, Mutation};
 use std::fmt;
 
 /// A SoundObject that is tied to a sound from the AudioBackend.
@@ -57,10 +57,7 @@ impl fmt::Debug for SoundObject<'_> {
 }
 
 impl<'gc> SoundObject<'gc> {
-    pub fn empty_sound(
-        gc_context: MutationContext<'gc, '_>,
-        proto: Object<'gc>,
-    ) -> SoundObject<'gc> {
+    pub fn empty_sound(gc_context: &Mutation<'gc>, proto: Object<'gc>) -> SoundObject<'gc> {
         SoundObject(GcCell::new(
             gc_context,
             SoundObjectData {
@@ -79,7 +76,7 @@ impl<'gc> SoundObject<'gc> {
         self.0.read().duration
     }
 
-    pub fn set_duration(self, gc_context: MutationContext<'gc, '_>, duration: Option<u32>) {
+    pub fn set_duration(self, gc_context: &Mutation<'gc>, duration: Option<u32>) {
         self.0.write(gc_context).duration = duration;
     }
 
@@ -87,7 +84,7 @@ impl<'gc> SoundObject<'gc> {
         self.0.read().sound
     }
 
-    pub fn set_sound(self, gc_context: MutationContext<'gc, '_>, sound: Option<SoundHandle>) {
+    pub fn set_sound(self, gc_context: &Mutation<'gc>, sound: Option<SoundHandle>) {
         self.0.write(gc_context).sound = sound;
     }
 
@@ -97,7 +94,7 @@ impl<'gc> SoundObject<'gc> {
 
     pub fn set_sound_instance(
         self,
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         sound_instance: Option<SoundInstanceHandle>,
     ) {
         self.0.write(gc_context).sound_instance = sound_instance;
@@ -107,11 +104,7 @@ impl<'gc> SoundObject<'gc> {
         self.0.read().owner
     }
 
-    pub fn set_owner(
-        self,
-        gc_context: MutationContext<'gc, '_>,
-        owner: Option<DisplayObject<'gc>>,
-    ) {
+    pub fn set_owner(self, gc_context: &Mutation<'gc>, owner: Option<DisplayObject<'gc>>) {
         self.0.write(gc_context).owner = owner;
     }
 
@@ -119,7 +112,7 @@ impl<'gc> SoundObject<'gc> {
         self.0.read().position
     }
 
-    pub fn set_position(self, gc_context: MutationContext<'gc, '_>, position: u32) {
+    pub fn set_position(self, gc_context: &Mutation<'gc>, position: u32) {
         self.0.write(gc_context).position = position;
     }
 
@@ -127,7 +120,7 @@ impl<'gc> SoundObject<'gc> {
         self.0.read().is_streaming
     }
 
-    pub fn set_is_streaming(self, gc_context: MutationContext<'gc, '_>, is_streaming: bool) {
+    pub fn set_is_streaming(self, gc_context: &Mutation<'gc>, is_streaming: bool) {
         self.0.write(gc_context).is_streaming = is_streaming;
     }
 }

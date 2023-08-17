@@ -4,7 +4,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::object::TObject;
 use crate::avm1::{Object, ScriptObject, Value};
 use crate::impl_custom_object;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, Mutation};
 use std::fmt;
 
 /// An Object that serves as a box for a primitive value.
@@ -79,7 +79,7 @@ impl<'gc> ValueObject<'gc> {
     }
 
     /// Construct an empty box to be filled by a constructor.
-    pub fn empty_box(gc_context: MutationContext<'gc, '_>, proto: Object<'gc>) -> Object<'gc> {
+    pub fn empty_box(gc_context: &Mutation<'gc>, proto: Object<'gc>) -> Object<'gc> {
         ValueObject(GcCell::new(
             gc_context,
             ValueObjectData {
@@ -96,7 +96,7 @@ impl<'gc> ValueObject<'gc> {
     }
 
     /// Change the value in the box.
-    pub fn replace_value(&mut self, gc_context: MutationContext<'gc, '_>, value: Value<'gc>) {
+    pub fn replace_value(&mut self, gc_context: &Mutation<'gc>, value: Value<'gc>) {
         self.0.write(gc_context).value = value;
     }
 }

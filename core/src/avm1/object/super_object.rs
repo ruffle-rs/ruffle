@@ -10,7 +10,7 @@ use crate::avm1::property::Attribute;
 use crate::avm1::{Object, ObjectPtr, ScriptObject, TObject, Value};
 use crate::display_object::DisplayObject;
 use crate::string::AvmString;
-use gc_arena::{Collect, Gc, MutationContext};
+use gc_arena::{Collect, Gc, Mutation};
 
 /// Implementation of the `super` object in AS2.
 ///
@@ -169,7 +169,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
 
     fn define_value(
         &self,
-        _gc_context: MutationContext<'gc, '_>,
+        _gc_context: &Mutation<'gc>,
         _name: impl Into<AvmString<'gc>>,
         _value: Value<'gc>,
         _attributes: Attribute,
@@ -179,7 +179,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
 
     fn set_attributes(
         &self,
-        _gc_context: MutationContext<'gc, '_>,
+        _gc_context: &Mutation<'gc>,
         _name: Option<AvmString<'gc>>,
         _set_attributes: Attribute,
         _clear_attributes: Attribute,
@@ -189,7 +189,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
 
     fn add_property(
         &self,
-        _gc_context: MutationContext<'gc, '_>,
+        _gc_context: &Mutation<'gc>,
         _name: AvmString<'gc>,
         _get: Object<'gc>,
         _set: Option<Object<'gc>>,
@@ -270,7 +270,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         vec![]
     }
 
-    fn set_interfaces(&self, _gc_context: MutationContext<'gc, '_>, _iface_list: Vec<Object<'gc>>) {
+    fn set_interfaces(&self, _gc_context: &Mutation<'gc>, _iface_list: Vec<Object<'gc>>) {
         //`super` probably cannot have interfaces set on it
     }
 

@@ -8,7 +8,7 @@ use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use core::fmt;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, Mutation};
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::transform::Transform;
 use std::cell::{Ref, RefMut};
@@ -62,11 +62,7 @@ impl<'gc> Text<'gc> {
         ))
     }
 
-    pub fn set_render_settings(
-        self,
-        gc_context: MutationContext<'gc, '_>,
-        settings: TextRenderSettings,
-    ) {
+    pub fn set_render_settings(self, gc_context: &Mutation<'gc>, settings: TextRenderSettings) {
         self.0.write(gc_context).render_settings = settings;
         self.invalidate_cached_bitmap(gc_context);
     }
@@ -77,11 +73,11 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         Ref::map(self.0.read(), |r| &r.base)
     }
 
-    fn base_mut<'a>(&'a self, mc: MutationContext<'gc, '_>) -> RefMut<'a, DisplayObjectBase<'gc>> {
+    fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>> {
         RefMut::map(self.0.write(mc), |w| &mut w.base)
     }
 
-    fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc> {
+    fn instantiate(&self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
         Self(GcCell::new(gc_context, self.0.read().clone())).into()
     }
 

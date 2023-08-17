@@ -8,7 +8,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::QName;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, Mutation};
 use ruffle_wstr::WStr;
 
 use super::class::Class;
@@ -56,10 +56,7 @@ impl<'gc> Domain<'gc> {
     /// Note: the global domain will be created without valid domain memory.
     /// You must initialize domain memory later on after the ByteArray class is
     /// instantiated but before user code runs.
-    pub fn uninitialized_domain(
-        mc: MutationContext<'gc, '_>,
-        parent: Option<Domain<'gc>>,
-    ) -> Domain<'gc> {
+    pub fn uninitialized_domain(mc: &Mutation<'gc>, parent: Option<Domain<'gc>>) -> Domain<'gc> {
         Self(GcCell::new(
             mc,
             DomainData {
@@ -175,7 +172,7 @@ impl<'gc> Domain<'gc> {
     pub fn get_class(
         self,
         multiname: &Multiname<'gc>,
-        mc: MutationContext<'gc, '_>,
+        mc: &Mutation<'gc>,
     ) -> Result<Option<GcCell<'gc, Class<'gc>>>, Error<'gc>> {
         let class = self.get_class_inner(multiname)?;
 
@@ -284,12 +281,7 @@ impl<'gc> Domain<'gc> {
     /// Export a definition from a script into the current application domain.
     ///
     /// This does nothing if the definition already exists in this domain or a parent.
-    pub fn export_definition(
-        &mut self,
-        name: QName<'gc>,
-        script: Script<'gc>,
-        mc: MutationContext<'gc, '_>,
-    ) {
+    pub fn export_definition(&mut self, name: QName<'gc>, script: Script<'gc>, mc: &Mutation<'gc>) {
         if self.has_definition(name) {
             return;
         }
@@ -300,7 +292,7 @@ impl<'gc> Domain<'gc> {
     /// Export a class into the current application domain.
     ///
     /// This does nothing if the definition already exists in this domain or a parent.
-    pub fn export_class(&self, class: GcCell<'gc, Class<'gc>>, mc: MutationContext<'gc, '_>) {
+    pub fn export_class(&self, class: GcCell<'gc, Class<'gc>>, mc: &Mutation<'gc>) {
         if self.has_class(class.read().name()) {
             return;
         }
