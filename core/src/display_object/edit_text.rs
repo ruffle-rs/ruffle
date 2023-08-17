@@ -1600,6 +1600,45 @@ impl<'gc> EditText<'gc> {
             x: union_bounds.offset_x() + Twips::from_pixels(EditText::INTERNAL_PADDING),
         })
     }
+
+    fn execute_avm1_asfunction(
+        self,
+        context: &mut UpdateContext<'_, 'gc>,
+        address: &WStr,
+    ) -> Result<(), crate::avm1::Error<'gc>> {
+        let mut activation = Avm1Activation::from_nothing(
+            context.reborrow(),
+            ActivationIdentifier::root("[EditText URL]"),
+            self.avm1_root(),
+        );
+        // [NA]: Should all `from_nothings` be scoped to root? It definitely should here.
+        activation.set_scope_to_display_object(self.avm1_root());
+        let this = self.avm1_root().object().coerce_to_object(&mut activation);
+
+        if let Some((name, args)) = address.split_once(b',') {
+            let name = AvmString::new(activation.context.gc_context, name);
+            let args = AvmString::new(activation.context.gc_context, args);
+            let function = activation.get_variable(name)?;
+            function.call_with_default_this(this, name, &mut activation, &[args.into()])?;
+        } else {
+            let name = AvmString::new(activation.context.gc_context, address);
+            let function = activation.get_variable(name)?;
+            function.call_with_default_this(this, name, &mut activation, &[])?;
+        }
+        Ok(())
+    }
+
+    fn open_url(self, context: &mut UpdateContext<'_, 'gc>, url: &WStr, target: &WStr) {
+        if let Some(address) = url.strip_prefix(WStr::from_units(b"asfunction:")) {
+            if let Err(e) = self.execute_avm1_asfunction(context, address) {
+                error!("Couldn't execute URL \"{url:?}\": {e:?}");
+            }
+        } else {
+            context
+                .navigator
+                .navigate_to_url(&url.to_utf8_lossy(), &target.to_utf8_lossy(), None);
+        }
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
@@ -1955,11 +1994,19 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
             let tracker = context.focus_tracker;
             tracker.set(Some(self.into()), context);
         }
-        if let Some(position) = self
-            .screen_position_to_index(*context.mouse_position)
-            .map(TextSelection::for_position)
-        {
-            self.0.write(context.gc_context).selection = Some(position);
+        if let Some(position) = self.screen_position_to_index(*context.mouse_position) {
+            self.0.write(context.gc_context).selection =
+                Some(TextSelection::for_position(position));
+
+            let format = self.0.read().text_spans.get_text_format(position, position);
+            if let Some(url) = format.url {
+                if !url.is_empty() {
+                    // TODO: This fires on mouse DOWN but it should be mouse UP...
+                    // but only if it went down in the same span.
+                    // Needs more advanced focus handling than we have at time of writing this comment.
+                    self.open_url(context, &url, &format.target.unwrap_or_default());
+                }
+            }
         } else {
             self.0.write(context.gc_context).selection =
                 Some(TextSelection::for_position(self.text_length()));
