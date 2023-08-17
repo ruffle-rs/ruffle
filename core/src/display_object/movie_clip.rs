@@ -1127,6 +1127,7 @@ impl<'gc> MovieClip<'gc> {
                         .unwrap_or(true)
             },
         )
+        .or(self.current_scene())
     }
 
     /// Return the next scene.
@@ -1152,6 +1153,7 @@ impl<'gc> MovieClip<'gc> {
                         .unwrap_or(true)
             },
         )
+        .or(self.current_scene())
     }
 
     /// Return all scenes in the movie.
