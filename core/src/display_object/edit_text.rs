@@ -1637,6 +1637,14 @@ impl<'gc> EditText<'gc> {
             if let Err(e) = self.execute_avm1_asfunction(context, address) {
                 error!("Couldn't execute URL \"{url:?}\": {e:?}");
             }
+        } else if let Some(address) = url.strip_prefix(WStr::from_units(b"event:")) {
+            if let Avm2Value::Object(object) = self.object2() {
+                let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                let text = AvmString::new(activation.context.gc_context, address);
+                let event = Avm2EventObject::text_event(&mut activation, "link", text, true, false);
+
+                Avm2::dispatch_event(&mut activation.context, event, object);
+            }
         } else {
             context
                 .navigator
