@@ -158,6 +158,22 @@ pub struct EditTextData<'gc> {
     flags: EditTextFlag,
 }
 
+impl<'gc> EditTextData<'gc> {
+    fn vertical_scroll_offset(&self) -> Twips {
+        if self.scroll > 1 {
+            let line_data = &self.line_data;
+
+            if let Some(line_data) = line_data.get(self.scroll - 1) {
+                line_data.offset
+            } else {
+                Twips::ZERO
+            }
+        } else {
+            Twips::ZERO
+        }
+    }
+}
+
 // TODO: would be nicer to compute (and return) this during layout, instead of afterwards
 /// Compute line (index, offset, extent) from the layout data.
 fn get_line_data(layout: &[LayoutBox]) -> Vec<LineData> {
@@ -1162,8 +1178,8 @@ impl<'gc> EditText<'gc> {
         let Some(mut position) = self.global_to_local(position) else {
             return None;
         };
-        position.x += Twips::from_pixels(Self::INTERNAL_PADDING);
-        position.y += Twips::from_pixels(Self::INTERNAL_PADDING);
+        position.x += Twips::from_pixels(Self::INTERNAL_PADDING) + Twips::from_pixels(text.hscroll);
+        position.y += Twips::from_pixels(Self::INTERNAL_PADDING) + text.vertical_scroll_offset();
 
         for layout_box in text.layout.iter() {
             let origin = layout_box.bounds().origin();
@@ -1868,17 +1884,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         );
         context.commands.activate_mask();
 
-        let scroll_offset = if edit_text.scroll > 1 {
-            let line_data = &edit_text.line_data;
-
-            if let Some(line_data) = line_data.get(edit_text.scroll - 1) {
-                line_data.offset
-            } else {
-                Twips::ZERO
-            }
-        } else {
-            Twips::ZERO
-        };
+        let scroll_offset = edit_text.vertical_scroll_offset();
         // TODO: Where does this come from? How is this different than INTERNAL_PADDING? Does this apply to y as well?
         // If this is actually right, offset the border in `redraw_border` instead of doing an extra push.
         context.transform_stack.push(&Transform {
