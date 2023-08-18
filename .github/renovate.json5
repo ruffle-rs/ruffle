@@ -10,6 +10,13 @@
             "extends": ["schedule:weekly"],
         },
         {
+            "matchLanguages": ["rust"],
+            "matchPackageNames": ["wgpu", "naga", "naga_oil", "egui-wgpu"],
+            "groupName": "Rust dependencies related to wgpu",
+            "rangeStrategy": "bump",
+            "extends": ["schedule:weekly"],
+        },
+        {
             "matchPackageNames": ["wasm-bindgen", "js-sys", "web-sys", "wasm-bindgen-futures"],
             "groupName": "wasm-bindgen",
         },
