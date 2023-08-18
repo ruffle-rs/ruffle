@@ -77,6 +77,9 @@
     "action_reload": {
         "message": "Reload tab to apply changes"
     },
+    "open_player_page": {
+        "message": "Open SWF Player"
+    },
     "open_settings_page": {
         "message": "Open Settings Page"
     },

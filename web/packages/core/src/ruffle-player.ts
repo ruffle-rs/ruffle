@@ -150,7 +150,7 @@ export class RufflePlayer extends HTMLElement {
     private contextMenuSupported = false;
 
     // The effective config loaded upon `.load()`.
-    private loadedConfig?: URLLoadOptions | DataLoadOptions;
+    public loadedConfig?: URLLoadOptions | DataLoadOptions;
 
     private swfUrl?: URL;
     private instance: Ruffle | null;
