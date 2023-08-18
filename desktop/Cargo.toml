@@ -14,10 +14,10 @@ workspace = true
 clap = { version = "4.4.13", features = ["derive"] }
 cpal = "0.15.2"
 egui = { workspace = true }
-egui_extras = { version = "0.24.2", features = ["image"] }
-egui-wgpu = { version = "0.24.1", features = ["winit"] }
+egui_extras = { version = "0.25", features = ["image"] }
+egui-wgpu = { version = "0.25", features = ["winit"] }
+egui-winit = "0.25"
 image = { version = "0.24", features = ["png"] }
-egui-winit = "0.24.1"
 fontdb = "0.16"
 ruffle_core = { path = "../core", features = ["audio", "clap", "mp3", "nellymoser", "default_compatibility_rules", "egui", "default_font"] }
 ruffle_render = { path = "../render", features = ["clap"] }
@@ -26,7 +26,7 @@ ruffle_video_software = { path = "../video/software", optional = true }
 tracing = { workspace = true}
 tracing-subscriber = { workspace = true }
 generational-arena = "0.2.9"
-winit = "0.28.7"
+winit = "0.29.9"
 webbrowser = "0.8.12"
 url = "2.5.0"
 arboard = { version = "3.3.0", features = ["wayland-data-control"] }

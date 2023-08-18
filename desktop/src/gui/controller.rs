@@ -91,7 +91,13 @@ impl GuiController {
             egui_ctx.set_visuals(egui::Visuals::light());
         }
 
-        let mut egui_winit = egui_winit::State::new(ViewportId::ROOT, window.as_ref(), None, None);
+        let mut egui_winit = egui_winit::State::new(
+            egui_ctx.clone(),
+            ViewportId::ROOT,
+            window.as_ref(),
+            None,
+            None,
+        );
         egui_winit.set_max_texture_side(descriptors.limits.max_texture_dimension_2d as usize);
 
         let movie_view_renderer = Arc::new(MovieViewRenderer::new(
@@ -164,7 +170,7 @@ impl GuiController {
             self.egui_ctx.set_visuals(visuals);
         }
 
-        let response = self.egui_winit.on_window_event(&self.egui_ctx, event);
+        let response = self.egui_winit.on_window_event(&self.window, event);
         if response.repaint {
             self.window.request_redraw();
         }
@@ -229,11 +235,8 @@ impl GuiController {
                     .cursor();
             }
         }
-        self.egui_winit.handle_platform_output(
-            &self.window,
-            &self.egui_ctx,
-            full_output.platform_output,
-        );
+        self.egui_winit
+            .handle_platform_output(&self.window, full_output.platform_output);
 
         let clipped_primitives = self
             .egui_ctx
