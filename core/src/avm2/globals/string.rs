@@ -201,7 +201,7 @@ fn index_of<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = Value::from(this).coerce_to_string(activation)?;
     let pattern = match args.get(0) {
-        None => return Ok(Value::Undefined),
+        None => return Ok(Value::Integer(-1)),
         Some(s) => s.clone().coerce_to_string(activation)?,
     };
 
