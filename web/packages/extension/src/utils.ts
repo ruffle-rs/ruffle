@@ -63,6 +63,7 @@ export let runtime: {
 };
 
 export let openOptionsPage: () => Promise<void>;
+export let openPlayerPage: () => Promise<void>;
 
 function promisify<T>(
     func: (callback: (result: T) => void) => void,
@@ -129,12 +130,20 @@ if (typeof chrome !== "undefined") {
         promisify((cb: () => void) =>
             chrome.tabs.create({ url: "/options.html" }, cb),
         );
+    openPlayerPage = () =>
+        promisify((_cb: () => void) =>
+            chrome.tabs.create({ url: "/player.html" }),
+        );
 } else if (typeof browser !== "undefined") {
     i18n = browser.i18n;
     storage = browser.storage;
     tabs = browser.tabs;
     runtime = browser.runtime;
     openOptionsPage = () => browser.runtime.openOptionsPage();
+    openPlayerPage = () =>
+        promisify((_cb: () => void) =>
+            browser.tabs.create({ url: "/player.html" }),
+        );
 } else {
     throw new Error("Extension API not found.");
 }

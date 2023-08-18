@@ -540,7 +540,7 @@ export interface DataLoadOptions extends BaseLoadOptions {
     /**
      * The data to load a movie from.
      */
-    data: Iterable<number>;
+    data: ArrayLike<number> | ArrayBufferLike;
 
     /**
      * The filename of the SWF movie to provide to ActionScript.

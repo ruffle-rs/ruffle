@@ -170,6 +170,15 @@ window.addEventListener("DOMContentLoaded", () => {
         window.close();
     });
 
+    const playerButton = document.getElementById(
+        "player-button",
+    ) as HTMLButtonElement;
+    playerButton.textContent = utils.i18n.getMessage("open_player_page");
+    playerButton.addEventListener("click", async () => {
+        await utils.openPlayerPage();
+        window.close();
+    });
+
     reloadButton = document.getElementById(
         "reload-button",
     ) as HTMLButtonElement;
