@@ -1,8 +1,8 @@
 //! Management of async loaders
 
-use crate::avm1::Avm1;
 use crate::avm1::ExecutionReason;
 use crate::avm1::{Activation, ActivationIdentifier};
+use crate::avm1::{Attribute, Avm1};
 use crate::avm1::{Object, SoundObject, TObject, Value};
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::object::{
@@ -1786,6 +1786,24 @@ impl<'gc> Loader<'gc> {
                 // frame behind objects placed by the timeline (even if they were
                 // both placed in the same frame to begin with).
                 dobj.base_mut(uc.gc_context).set_skip_next_enter_frame(true);
+
+                let flashvars = movie.clone().unwrap().parameters().to_owned();
+                if !flashvars.is_empty() {
+                    let mut activation = Activation::from_nothing(
+                        uc.reborrow(),
+                        ActivationIdentifier::root("[Loader]"),
+                        dobj,
+                    );
+                    let object = dobj.object().coerce_to_object(&mut activation);
+                    for (key, value) in flashvars.iter() {
+                        object.define_value(
+                            activation.context.gc_context,
+                            AvmString::new_utf8(activation.context.gc_context, key),
+                            AvmString::new_utf8(activation.context.gc_context, value).into(),
+                            Attribute::empty(),
+                        );
+                    }
+                }
             }
         }
 

@@ -1,0 +1,4 @@
+Loading movie via loadMovie()
+Child movie loaded!
+var1: test, var2: http://example.com/, othervar: 10
+_root.var1: undefined, _root.var2: undefined, _root.othervar: undefined
