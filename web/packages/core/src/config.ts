@@ -43,4 +43,5 @@ export const DEFAULT_CONFIG: Required<BaseLoadOptions> = {
     preferredRenderer: null,
     openUrlMode: OpenURLMode.Allow,
     allowNetworking: NetworkingAccessMode.All,
+    openInNewTab: null,
 };

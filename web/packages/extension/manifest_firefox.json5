@@ -46,10 +46,8 @@
         "open_in_tab": true,
     },
     "permissions": [
-        "<all_urls>",
-        "storage",
-        "webRequest",
-        "webRequestBlocking",
+        "<all_urls>", // // To allow script injecting + the internal player to bypass CORS
+        "storage"
     ],
     "web_accessible_resources": ["*"],
 }

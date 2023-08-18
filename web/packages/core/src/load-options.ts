@@ -518,6 +518,16 @@ export interface BaseLoadOptions {
      * @default NetworkingAccessMode.All
      */
     allowNetworking?: NetworkingAccessMode;
+
+    /**
+     * A function to call for opening content in a new tab.
+     *
+     * This is only used if the content cannot be loaded due to CORS,
+     * and the Extension version of Ruffle will override this to provide a local player.
+     *
+     * @default null
+     */
+    openInNewTab?: ((swf: URL) => void) | null;
 }
 
 /**
