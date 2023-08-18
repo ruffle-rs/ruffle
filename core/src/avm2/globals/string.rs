@@ -189,10 +189,6 @@ fn from_char_code<'gc>(
     let mut out = WString::with_capacity(args.len(), false);
     for arg in args {
         let i = arg.coerce_to_u32(activation)? as u16;
-        if i == 0 {
-            // Ignore nulls.
-            continue;
-        }
         out.push(i);
     }
     Ok(AvmString::new(activation.context.gc_context, out).into())
