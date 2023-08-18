@@ -12,7 +12,6 @@ use crate::avm2::QName;
 use crate::avm2::{ArrayObject, ArrayStorage};
 use crate::string::{AvmString, WString};
 use gc_arena::GcCell;
-use std::iter;
 
 // All of these methods will be defined as both
 // AS3 instance methods and methods on the `String` class prototype.
@@ -460,14 +459,6 @@ fn split<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let delimiter = args.get(0).unwrap_or(&Value::Undefined);
-    if matches!(delimiter, Value::Undefined) {
-        let this = Value::from(this);
-        return Ok(
-            ArrayObject::from_storage(activation, iter::once(this).collect())
-                .unwrap()
-                .into(),
-        );
-    }
 
     let this = Value::from(this).coerce_to_string(activation)?;
     let limit = match args.get(1).unwrap_or(&Value::Undefined) {
