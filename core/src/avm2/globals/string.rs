@@ -622,7 +622,13 @@ fn to_string<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Value::from(this))
+    if let Some(this) = this.as_primitive() {
+        if let Value::String(v) = *this {
+            return Ok(v.into());
+        }
+    }
+
+    Ok("".into())
 }
 
 /// Implements `String.valueOf`
