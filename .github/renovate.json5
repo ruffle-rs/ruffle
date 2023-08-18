@@ -5,15 +5,7 @@
     "packageRules": [
         {
             "matchLanguages": ["rust"],
-            "matchUpdateTypes": "patch",
-            "groupName": "Rust dependency patches",
-            "rangeStrategy": "bump",
-            "extends": ["schedule:weekly"],
-        },
-        {
-            "matchLanguages": ["rust"],
             "groupName": "Rust dependencies",
-            "matchUpdateTypes": ["major", "minor"],
             "rangeStrategy": "bump",
             "extends": ["schedule:weekly"],
         },
