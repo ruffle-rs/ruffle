@@ -879,33 +879,34 @@ impl<'gc> MovieClip<'gc> {
                         .library
                         .library_for_movie_mut(movie.clone());
 
-                    if id == 0 {
-                        //TODO: This assumes only the root movie has `SymbolClass` tags.
-                        self.set_avm2_class(activation.context.gc_context, Some(class_object));
-                    } else {
-                        match library.character_by_id(id) {
-                            Some(Character::MovieClip(mc)) => {
-                                mc.set_avm2_class(activation.context.gc_context, Some(class_object))
-                            }
-                            Some(Character::Avm2Button(btn)) => {
-                                btn.set_avm2_class(activation.context.gc_context, class_object)
-                            }
-                            Some(Character::BinaryData(_)) => {}
-                            Some(Character::Font(_)) => {}
-                            Some(Character::Sound(_)) => {}
-                            Some(Character::Bitmap(bitmap)) => {
-                                bitmap.set_avm2_bitmapdata_class(
-                                    &mut activation.context,
-                                    class_object,
+                    match library.character_by_id(id) {
+                        Some(Character::MovieClip(mc)) => {
+                            mc.set_avm2_class(activation.context.gc_context, Some(class_object))
+                        }
+                        Some(Character::Avm2Button(btn)) => {
+                            btn.set_avm2_class(activation.context.gc_context, class_object)
+                        }
+                        Some(Character::BinaryData(_)) => {}
+                        Some(Character::Font(_)) => {}
+                        Some(Character::Sound(_)) => {}
+                        Some(Character::Bitmap(bitmap)) => {
+                            bitmap.set_avm2_bitmapdata_class(&mut activation.context, class_object);
+                        }
+                        None => {
+                            // Most SWFs use id 0 here, but some obfuscated SWFs can use other invalid IDs.
+                            if self.0.read().avm2_class.is_none() {
+                                self.set_avm2_class(
+                                    activation.context.gc_context,
+                                    Some(class_object),
                                 );
                             }
-                            _ => {
-                                tracing::warn!(
-                                    "Symbol class {} cannot be assigned to invalid character id {}",
-                                    class_name,
-                                    id
-                                );
-                            }
+                        }
+                        _ => {
+                            tracing::warn!(
+                                "Symbol class {} cannot be assigned to invalid character id {}",
+                                class_name,
+                                id
+                            );
                         }
                     }
                 }
