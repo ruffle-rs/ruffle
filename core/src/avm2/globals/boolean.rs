@@ -96,7 +96,7 @@ fn to_string<'gc>(
         };
     }
 
-    Err("Boolean.prototype.toString has been called on an incompatible object".into())
+    Ok("false".into())
 }
 
 /// Implements `Boolean.valueOf`
@@ -109,7 +109,7 @@ fn value_of<'gc>(
         return Ok(*this);
     }
 
-    Ok(Value::Undefined)
+    Ok(false.into())
 }
 
 /// Construct `Boolean`'s class.
