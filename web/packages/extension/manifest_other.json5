@@ -44,10 +44,9 @@
         "page": "options.html",
         "open_in_tab": true,
     },
-    "host_permissions": ["<all_urls>"],
+    "host_permissions": ["<all_urls>"], // To allow script injecting + the internal player to bypass CORS
     "permissions": [
         "storage",
-        "declarativeNetRequest",
         "scripting",
     ],
     "web_accessible_resources": [{
