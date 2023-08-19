@@ -8,7 +8,7 @@
         "./packages/*"
     ],
     "engines": {
-        "npm": ">=7"
+        "npm": ">=9.8.1"
     },
     "devDependencies": {
         "@typescript-eslint/eslint-plugin": "^6.2.1",
@@ -23,7 +23,7 @@
         "copy-webpack-plugin": "^11.0.0",
         "cross-env": "^7.0.3",
         "eslint": "^8.46.0",
-        "eslint-config-prettier": "^8.10.0",
+        "eslint-config-prettier": "^9.0.0",
         "eslint-plugin-prettier": "^5.0.0",
         "mocha": "^10.2.0",
         "prettier": "^3.0.1",
@@ -37,7 +37,7 @@
         "webpack-cli": "^5.1.4"
     },
     "optionalDependencies": {
-        "chromedriver": "^115.0.0"
+        "chromedriver": "^116.0.0"
     },
     "scripts": {
         "build": "npm run build --workspace=ruffle-core && npm run build --workspace=ruffle-demo --workspace=ruffle-extension --workspace=ruffle-selfhosted",
