@@ -1981,9 +1981,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 return self.set_target(&target);
             }
             Value::Undefined => {
-                // Reset.
-                let base_clip = self.base_clip();
-                self.set_target_clip(Some(base_clip));
+                self.set_target_clip(None);
             }
             Value::Object(o) => {
                 if let Some(clip) = o.as_display_object() {
@@ -2012,7 +2010,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             }
         };
 
-        let clip_obj = self.target_clip_or_root().object().coerce_to_object(self);
+        let clip_obj = self
+            .target_clip_or_base_clip()
+            .object()
+            .coerce_to_object(self);
 
         self.set_scope(Scope::new_target_scope(
             self.scope(),
@@ -2923,6 +2924,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     pub fn target_clip_or_root(&self) -> DisplayObject<'gc> {
         self.target_clip()
             .unwrap_or_else(|| self.base_clip().avm1_root())
+    }
+
+    /// The current target clip of the executing code.
+    /// Actions that affect the base clip after an invalid `tellTarget` will use this.
+    pub fn target_clip_or_base_clip(&self) -> DisplayObject<'gc> {
+        self.target_clip().unwrap_or_else(|| self.base_clip())
     }
 
     /// Obtain the value of `_root`.
