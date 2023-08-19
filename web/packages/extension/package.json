@@ -23,7 +23,7 @@
         "@types/jsonwebtoken": "^9.0.2",
         "@types/mz": "^2.7.4",
         "@types/request": "^2.48.8",
-        "archiver": "^5.3.1",
+        "archiver": "^6.0.0",
         "json5": "^2.2.3",
         "sign-addon": "^6.1.0",
         "temp-dir": "^3.0.0",
