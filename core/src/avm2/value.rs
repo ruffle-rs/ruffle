@@ -679,7 +679,7 @@ impl<'gc> Value<'gc> {
                 Err(Error::AvmError(type_error(
                     activation,
                     &format!(
-                        "Cannot convert {} to primitive.",
+                        "Error #1050: Cannot convert {} to primitive.",
                         o.instance_of_class_name(activation.context.gc_context)
                     ),
                     1050,
@@ -708,7 +708,7 @@ impl<'gc> Value<'gc> {
                 Err(Error::AvmError(type_error(
                     activation,
                     &format!(
-                        "Cannot convert {} to primitive.",
+                        "Error #1050: Cannot convert {} to primitive.",
                         o.instance_of_class_name(activation.context.gc_context)
                     ),
                     1050,

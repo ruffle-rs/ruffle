@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::error::range_error;
+use crate::avm2::error::{make_error_1002, make_error_1003, make_error_1004};
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{primitive_allocator, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
@@ -90,6 +90,18 @@ fn class_init<'gc>(
         activation,
     )?;
     number_proto.set_string_property_local(
+        "toLocaleString",
+        FunctionObject::from_method(
+            activation,
+            Method::from_builtin(to_string, "toLocaleString", gc_context),
+            scope,
+            None,
+            Some(this_class),
+        )
+        .into(),
+        activation,
+    )?;
+    number_proto.set_string_property_local(
         "toString",
         FunctionObject::from_method(
             activation,
@@ -116,21 +128,9 @@ fn class_init<'gc>(
     number_proto.set_local_property_is_enumerable(gc_context, "toExponential".into(), false);
     number_proto.set_local_property_is_enumerable(gc_context, "toFixed".into(), false);
     number_proto.set_local_property_is_enumerable(gc_context, "toPrecision".into(), false);
+    number_proto.set_local_property_is_enumerable(gc_context, "toLocaleString".into(), false);
     number_proto.set_local_property_is_enumerable(gc_context, "toString".into(), false);
     number_proto.set_local_property_is_enumerable(gc_context, "valueOf".into(), false);
-
-    Ok(Value::Undefined)
-}
-
-/// Implements `Number.toLocaleString`
-fn to_locale_string<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.as_primitive() {
-        return Ok(this.coerce_to_string(activation)?.into());
-    }
 
     Ok(Value::Undefined)
 }
@@ -141,30 +141,28 @@ fn to_exponential<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.as_primitive() {
-        if let Value::Number(number) = *this {
-            let digits = args
-                .get(0)
-                .cloned()
-                .unwrap_or(Value::Integer(0))
-                .coerce_to_u32(activation)? as usize;
+    let number = Value::from(this).coerce_to_number(activation)?;
 
-            if digits > 20 {
-                return Err("toExponential can only print with 0 through 20 digits.".into());
-            }
+    let digits = args
+        .get(0)
+        .cloned()
+        .unwrap_or(Value::Integer(0))
+        .coerce_to_i32(activation)?;
 
-            return Ok(AvmString::new_utf8(
-                activation.context.gc_context,
-                format!("{number:.digits$e}")
-                    .replace('e', "e+")
-                    .replace("e+-", "e-")
-                    .replace("e+0", ""),
-            )
-            .into());
-        }
+    if digits < 0 || digits > 20 {
+        return Err(make_error_1002(activation));
     }
 
-    Err("Number.prototype.toExponential has been called on an incompatible object".into())
+    let digits = digits as usize;
+
+    Ok(AvmString::new_utf8(
+        activation.context.gc_context,
+        format!("{number:.digits$e}")
+            .replace('e', "e+")
+            .replace("e+-", "e-")
+            .replace("e+0", ""),
+    )
+    .into())
 }
 
 /// Implements `Number.toFixed`
@@ -173,33 +171,27 @@ fn to_fixed<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.as_primitive() {
-        if let Value::Number(number) = *this {
-            let digits = args
-                .get(0)
-                .cloned()
-                .unwrap_or(Value::Integer(0))
-                .coerce_to_u32(activation)? as usize;
+    let number = Value::from(this).coerce_to_number(activation)?;
 
-            if digits > 20 {
-                return Err("toFixed can only print with 0 through 20 digits.".into());
-            }
+    let digits = args
+        .get(0)
+        .cloned()
+        .unwrap_or(Value::Integer(0))
+        .coerce_to_i32(activation)?;
 
-            return Ok(AvmString::new_utf8(
-                activation.context.gc_context,
-                format!("{number:.digits$}"),
-            )
-            .into());
-        }
+    if digits < 0 || digits > 20 {
+        return Err(make_error_1002(activation));
     }
 
-    Err("Number.prototype.toFixed has been called on an incompatible object".into())
+    let digits = digits as usize;
+
+    Ok(AvmString::new_utf8(activation.context.gc_context, format!("{number:.digits$}")).into())
 }
 
 pub fn print_with_precision<'gc>(
     activation: &mut Activation<'_, 'gc>,
     number: f64,
-    wanted_digits: usize,
+    wanted_digits: u32,
 ) -> Result<AvmString<'gc>, Error<'gc>> {
     let mut available_digits = number.abs().log10().floor();
     if available_digits.is_nan() || available_digits.is_infinite() {
@@ -233,23 +225,21 @@ fn to_precision<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.as_primitive() {
-        if let Value::Number(number) = *this {
-            let wanted_digits = args
-                .get(0)
-                .cloned()
-                .unwrap_or(Value::Integer(0))
-                .coerce_to_u32(activation)? as usize;
+    let number = Value::from(this).coerce_to_number(activation)?;
 
-            if wanted_digits < 1 || wanted_digits > 21 {
-                return Err(Error::AvmError(range_error(activation, "Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.", 1002)?));
-            }
+    let wanted_digits = args.get(0).cloned().unwrap_or(Value::Integer(0));
 
-            return Ok(print_with_precision(activation, number, wanted_digits)?.into());
-        }
+    if matches!(wanted_digits, Value::Undefined) {
+        return this.call_public_property("toString", &[], activation);
     }
 
-    Err("Number.prototype.toPrecision has been called on an incompatible object".into())
+    let wanted_digits = wanted_digits.coerce_to_i32(activation)?;
+
+    if wanted_digits < 1 || wanted_digits > 21 {
+        return Err(make_error_1002(activation));
+    }
+
+    Ok(print_with_precision(activation, number, wanted_digits as u32)?.into())
 }
 
 pub fn print_with_radix<'gc>(
@@ -312,42 +302,54 @@ fn to_string<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.as_primitive() {
-        if let Value::Number(number) = *this {
-            let radix = args
-                .get(0)
-                .cloned()
-                .unwrap_or(Value::Integer(10))
-                .coerce_to_u32(activation)? as usize;
-
-            if radix < 2 || radix > 36 {
-                return Err(Error::AvmError(range_error(
-                    activation,
-                    &format!(
-                        "Error #1003: The radix argument must be between 2 and 36; got {radix}."
-                    ),
-                    1003,
-                )?));
-            }
-
-            return Ok(print_with_radix(activation, number, radix)?.into());
-        }
+    let number_proto = activation.avm2().classes().number.prototype();
+    if Object::ptr_eq(number_proto, this) {
+        return Ok("0".into());
     }
 
-    Err("Number.prototype.toString has been called on an incompatible object".into())
+    let number = if let Some(this) = this.as_primitive() {
+        match *this {
+            Value::Integer(o) => o as f64,
+            Value::Number(o) => o,
+            _ => return Err(make_error_1004(activation, "Number.prototype.toString")),
+        }
+    } else {
+        return Err(make_error_1004(activation, "Number.prototype.toString"));
+    };
+
+    let radix = args
+        .get(0)
+        .cloned()
+        .unwrap_or(Value::Integer(10))
+        .coerce_to_i32(activation)?;
+
+    if radix < 2 || radix > 36 {
+        return Err(make_error_1003(activation, radix));
+    }
+
+    Ok(print_with_radix(activation, number, radix as usize)?.into())
 }
 
 /// Implements `Number.valueOf`
 fn value_of<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.as_primitive() {
-        return Ok(*this);
+    let number_proto = activation.avm2().classes().number.prototype();
+    if Object::ptr_eq(number_proto, this) {
+        return Ok(0.into());
     }
 
-    Ok(Value::Undefined)
+    if let Some(this) = this.as_primitive() {
+        match *this {
+            Value::Integer(_) => Ok(*this),
+            Value::Number(_) => Ok(*this),
+            _ => Err(make_error_1004(activation, "Number.prototype.valueOf")),
+        }
+    } else {
+        Err(make_error_1004(activation, "Number.prototype.valueOf"))
+    }
 }
 
 /// Construct `Number`'s class.
@@ -388,14 +390,6 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
         activation.avm2().public_namespace,
         CLASS_CONSTANTS_INT,
         activation,
-    );
-
-    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] =
-        &[("toLocaleString", to_locale_string)];
-    write.define_builtin_instance_methods(
-        mc,
-        activation.avm2().public_namespace,
-        PUBLIC_INSTANCE_METHODS,
     );
 
     const AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
