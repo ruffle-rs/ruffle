@@ -150,7 +150,7 @@ export class RufflePlayer extends HTMLElement {
     private contextMenuSupported = false;
 
     // The effective config loaded upon `.load()`.
-    public loadedConfig?: URLLoadOptions | DataLoadOptions;
+    private loadedConfig?: URLLoadOptions | DataLoadOptions;
 
     private swfUrl?: URL;
     private instance: Ruffle | null;
@@ -712,6 +712,19 @@ export class RufflePlayer extends HTMLElement {
     }
 
     /**
+     * Reloads the player, as if you called {@link RufflePlayer.load} with the same config as the last time it was called.
+     *
+     * If this player has never been loaded, this method will return an error.
+     */
+    async reload(): Promise<void> {
+        if (this.loadedConfig) {
+            await this.load(this.loadedConfig);
+        } else {
+            throw new Error("Cannot reload if load wasn't first called");
+        }
+    }
+
+    /**
      * Loads a specified movie into this player.
      *
      * This will replace any existing movie that may be playing.
@@ -986,7 +999,7 @@ export class RufflePlayer extends HTMLElement {
                         replace
                             ? localStorage.setItem(solKey, b64SolData)
                             : localStorage.removeItem(solKey);
-                        this.load(this.loadedConfig);
+                        this.reload();
                         this.populateSaves();
                         this.saveManager.classList.add("hidden");
                     }
