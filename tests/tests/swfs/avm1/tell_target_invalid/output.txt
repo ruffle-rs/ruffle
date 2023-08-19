@@ -1,3 +1,6 @@
 Target not found: Target="dummy" Base="_level0.mc"
-/tellTarget('dummy') { gotoAndStop(n); }
+/tellTarget('dummy') { gotoAndPlay(n); }
+pass
+/tellTarget(undefined) { gotoAndPlay(5); }
+/tellTarget(undefined) { gotoAndPlay(n); }
 pass
