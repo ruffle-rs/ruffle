@@ -378,6 +378,14 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
         ("NaN", f64::NAN),
         ("NEGATIVE_INFINITY", f64::NEG_INFINITY),
         ("POSITIVE_INFINITY", f64::INFINITY),
+        ("E", std::f64::consts::E),
+        ("PI", std::f64::consts::PI),
+        ("SQRT2", std::f64::consts::SQRT_2),
+        ("SQRT1_2", std::f64::consts::FRAC_1_SQRT_2),
+        ("LN2", std::f64::consts::LN_2),
+        ("LN10", std::f64::consts::LN_10),
+        ("LOG2E", std::f64::consts::LOG2_E),
+        ("LOG10E", std::f64::consts::LOG10_E),
     ];
     write.define_constant_number_class_traits(
         activation.avm2().public_namespace,

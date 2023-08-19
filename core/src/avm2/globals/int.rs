@@ -187,7 +187,7 @@ fn to_fixed<'gc>(
 
     Ok(AvmString::new_utf8(
         activation.context.gc_context,
-        format!("{0:.1$}", number as f64, digits as usize),
+        format!("{0:.1$}", number, digits as usize),
     )
     .into())
 }
@@ -210,7 +210,7 @@ fn to_precision<'gc>(
         return Err(make_error_1002(activation));
     }
 
-    Ok(print_with_precision(activation, number as f64, wanted_digits as u32)?.into())
+    Ok(print_with_precision(activation, number, wanted_digits as u32)?.into())
 }
 
 /// Implements `int.toString`
