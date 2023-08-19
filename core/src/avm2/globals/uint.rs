@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::error::range_error;
+use crate::avm2::error::{make_error_1002, make_error_1003, make_error_1004};
 use crate::avm2::globals::number::{print_with_precision, print_with_radix};
 use crate::avm2::method::{Method, NativeMethodImpl, ParamConfig};
 use crate::avm2::object::{primitive_allocator, FunctionObject, Object, TObject};
@@ -91,6 +91,18 @@ fn class_init<'gc>(
         activation,
     )?;
     uint_proto.set_string_property_local(
+        "toLocaleString",
+        FunctionObject::from_method(
+            activation,
+            Method::from_builtin(to_string, "toLocaleString", gc_context),
+            scope,
+            None,
+            Some(this_class),
+        )
+        .into(),
+        activation,
+    )?;
+    uint_proto.set_string_property_local(
         "toString",
         FunctionObject::from_method(
             activation,
@@ -114,9 +126,11 @@ fn class_init<'gc>(
         .into(),
         activation,
     )?;
+
     uint_proto.set_local_property_is_enumerable(gc_context, "toExponential".into(), false);
     uint_proto.set_local_property_is_enumerable(gc_context, "toFixed".into(), false);
     uint_proto.set_local_property_is_enumerable(gc_context, "toPrecision".into(), false);
+    uint_proto.set_local_property_is_enumerable(gc_context, "toLocaleString".into(), false);
     uint_proto.set_local_property_is_enumerable(gc_context, "toString".into(), false);
     uint_proto.set_local_property_is_enumerable(gc_context, "valueOf".into(), false);
 
@@ -129,30 +143,28 @@ fn to_exponential<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.as_primitive() {
-        if let Value::Integer(number) = *this {
-            let digits = args
-                .get(0)
-                .cloned()
-                .unwrap_or(Value::Integer(0))
-                .coerce_to_u32(activation)? as usize;
+    let number = Value::from(this).coerce_to_number(activation)?;
 
-            if digits > 20 {
-                return Err("toExponential can only print with 0 through 20 digits.".into());
-            }
+    let digits = args
+        .get(0)
+        .cloned()
+        .unwrap_or(Value::Integer(0))
+        .coerce_to_i32(activation)?;
 
-            return Ok(AvmString::new_utf8(
-                activation.context.gc_context,
-                format!("{number:.digits$e}")
-                    .replace('e', "e+")
-                    .replace("e+-", "e-")
-                    .replace("e+0", ""),
-            )
-            .into());
-        }
+    if digits < 0 || digits > 20 {
+        return Err(make_error_1002(activation));
     }
 
-    Err("uint.prototype.toExponential has been called on an incompatible object".into())
+    let digits = digits as usize;
+
+    Ok(AvmString::new_utf8(
+        activation.context.gc_context,
+        format!("{number:.digits$e}")
+            .replace('e', "e+")
+            .replace("e+-", "e-")
+            .replace("e+0", ""),
+    )
+    .into())
 }
 
 /// Implements `uint.toFixed`
@@ -161,27 +173,23 @@ fn to_fixed<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.as_primitive() {
-        if let Value::Integer(number) = *this {
-            let digits = args
-                .get(0)
-                .cloned()
-                .unwrap_or(Value::Integer(0))
-                .coerce_to_u32(activation)? as usize;
+    let number = Value::from(this).coerce_to_number(activation)?;
 
-            if digits > 20 {
-                return Err("toFixed can only print with 0 through 20 digits.".into());
-            }
+    let digits = args
+        .get(0)
+        .cloned()
+        .unwrap_or(Value::Integer(0))
+        .coerce_to_i32(activation)?;
 
-            return Ok(AvmString::new_utf8(
-                activation.context.gc_context,
-                format!("{0:.1$}", number as f64, digits),
-            )
-            .into());
-        }
+    if digits < 0 || digits > 20 {
+        return Err(make_error_1002(activation));
     }
 
-    Err("uint.prototype.toFixed has been called on an incompatible object".into())
+    Ok(AvmString::new_utf8(
+        activation.context.gc_context,
+        format!("{0:.1$}", number as f64, digits as usize),
+    )
+    .into())
 }
 
 /// Implements `uint.toPrecision`
@@ -190,23 +198,19 @@ fn to_precision<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.as_primitive() {
-        if let Value::Integer(number) = *this {
-            let wanted_digits = args
-                .get(0)
-                .cloned()
-                .unwrap_or(Value::Integer(0))
-                .coerce_to_u32(activation)? as usize;
+    let number = Value::from(this).coerce_to_number(activation)?;
 
-            if wanted_digits < 1 || wanted_digits > 21 {
-                return Err(Error::AvmError(range_error(activation, "Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.", 1002)?));
-            }
+    let wanted_digits = args
+        .get(0)
+        .cloned()
+        .unwrap_or(Value::Integer(0))
+        .coerce_to_i32(activation)?;
 
-            return Ok(print_with_precision(activation, number as f64, wanted_digits)?.into());
-        }
+    if wanted_digits < 1 || wanted_digits > 21 {
+        return Err(make_error_1002(activation));
     }
 
-    Err("uint.prototype.toPrecision has been called on an incompatible object".into())
+    Ok(print_with_precision(activation, number as f64, wanted_digits as u32)?.into())
 }
 
 /// Implements `uint.toString`
@@ -215,42 +219,53 @@ fn to_string<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.as_primitive() {
-        if let Value::Integer(number) = *this {
-            let radix = args
-                .get(0)
-                .cloned()
-                .unwrap_or(Value::Integer(10))
-                .coerce_to_u32(activation)? as usize;
-
-            if radix < 2 || radix > 36 {
-                return Err(Error::AvmError(range_error(
-                    activation,
-                    &format!(
-                        "Error #1003: The radix argument must be between 2 and 36; got {radix}."
-                    ),
-                    1003,
-                )?));
-            }
-
-            return Ok(print_with_radix(activation, number as f64, radix)?.into());
-        }
+    let uint_proto = activation.avm2().classes().uint.prototype();
+    if Object::ptr_eq(uint_proto, this) {
+        return Ok("0".into());
     }
 
-    Err("uint.prototype.toString has been called on an incompatible object".into())
+    let number = if let Some(this) = this.as_primitive() {
+        match *this {
+            Value::Integer(o) => o as f64,
+            Value::Number(o) => o,
+            _ => return Err(make_error_1004(activation, "uint.prototype.toString")),
+        }
+    } else {
+        return Err(make_error_1004(activation, "uint.prototype.toString"));
+    };
+
+    let radix = args
+        .get(0)
+        .cloned()
+        .unwrap_or(Value::Integer(10))
+        .coerce_to_i32(activation)?;
+
+    if radix < 2 || radix > 36 {
+        return Err(make_error_1003(activation, radix));
+    }
+
+    Ok(print_with_radix(activation, number, radix as usize)?.into())
 }
 
 /// Implements `uint.valueOf`
 fn value_of<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.as_primitive() {
-        return Ok(*this);
+    let uint_proto = activation.avm2().classes().uint.prototype();
+    if Object::ptr_eq(uint_proto, this) {
+        return Ok(0.into());
     }
 
-    Ok(Value::Undefined)
+    if let Some(this) = this.as_primitive() {
+        match *this {
+            Value::Integer(_) => Ok(*this),
+            _ => Err(make_error_1004(activation, "uint.prototype.valueOf")),
+        }
+    } else {
+        Err(make_error_1004(activation, "uint.prototype.valueOf"))
+    }
 }
 
 /// Construct `uint`'s class.

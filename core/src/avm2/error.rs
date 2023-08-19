@@ -140,6 +140,54 @@ pub fn make_reference_error<'gc>(
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1002<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = range_error(
+        activation,
+        "Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.",
+        1002,
+    );
+    match err {
+        Ok(err) => Error::AvmError(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1003<'gc>(activation: &mut Activation<'_, 'gc>, radix: i32) -> Error<'gc> {
+    let err = range_error(
+        activation,
+        &format!(
+            "Error #1003: The radix argument must be between 2 and 36; got {}.",
+            radix
+        ),
+        1003,
+    );
+    match err {
+        Ok(err) => Error::AvmError(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1004<'gc>(activation: &mut Activation<'_, 'gc>, method_name: &str) -> Error<'gc> {
+    let err = type_error(
+        activation,
+        &format!(
+            "Error #1004: Method {} was invoked on an incompatible object.",
+            method_name
+        ),
+        1004,
+    );
+    match err {
+        Ok(err) => Error::AvmError(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1127<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     let err = type_error(
         activation,
