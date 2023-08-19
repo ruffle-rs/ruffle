@@ -1,6 +1,11 @@
 {
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
     "extends": ["config:recommended"],
+    // un-ignoring "tests" after ":ignoreModulesAndTests" via
+    // "config:recommended" - we have utilities in there
+    "ignorePaths": [
+        "**/node_modules/**"
+    ],
     // Package rules are matched such that later rules override earlier ones.
     "packageRules": [
         {
