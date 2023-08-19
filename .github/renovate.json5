@@ -9,13 +9,13 @@
     // Package rules are matched such that later rules override earlier ones.
     "packageRules": [
         {
-            "matchLanguages": ["rust"],
+            "matchCategories": ["rust"],
             "groupName": "Rust dependencies",
             "rangeStrategy": "bump",
             "extends": ["schedule:weekly"],
         },
         {
-            "matchLanguages": ["rust"],
+            "matchCategories": ["rust"],
             "matchPackageNames": ["wgpu", "naga", "naga_oil", "egui-wgpu"],
             "groupName": "Rust dependencies related to wgpu",
             "rangeStrategy": "bump",
@@ -31,7 +31,7 @@
             "enabled": false,
         },
         {
-            "matchLanguages": ["js"],
+            "matchCategories": ["js"],
             "groupName": "Node.js dependencies",
             "rangeStrategy": "bump",
             "extends": ["schedule:monthly"],
