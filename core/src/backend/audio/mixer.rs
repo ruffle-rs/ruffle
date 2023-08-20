@@ -446,7 +446,8 @@ impl AudioMixer {
         };
         use std::ops::DerefMut;
 
-        let volume = volume.to_sample();
+        // Adapt the volume for logarithmic hearing.
+        let volume = ((10_f32.powf(81_f32.log10() * volume) - 1.0) / 80.0).to_sample();
 
         // For each sample, mix the samples from all active sound instances.
         for buf_frame in output_buffer

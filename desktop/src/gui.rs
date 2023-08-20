@@ -190,7 +190,7 @@ impl RuffleGui {
             self.locale.clone(),
         );
 
-        player.set_volume(self.volume_controls.get_real_volume());
+        player.set_volume(self.volume_controls.get_volume());
     }
 
     /// Renders the main menu bar at the top of the window.
@@ -440,7 +440,7 @@ impl RuffleGui {
 
                 if changed_checkbox || changed_slider {
                     if let Some(player) = player {
-                        player.set_volume(self.volume_controls.get_real_volume());
+                        player.set_volume(self.volume_controls.get_volume());
                     }
                 }
             });
@@ -555,15 +555,11 @@ impl VolumeControls {
         Self { is_muted, volume }
     }
 
-    /// Calculates the real volume (between 0 and 1) out of the entered volume
-    /// (between 0 and 100) and the mute checkbox.
-    ///
-    /// This is also necessary because human hearing is logarithmic:
-    /// What sounds like half as loud (and should be 50% on the scale) is actually
-    /// about 1/10th of the real volume.
-    pub fn get_real_volume(&self) -> f32 {
+    /// Returns the volume between 0 and 1 (calculated out of the
+    /// checkbox and the slider).
+    fn get_volume(&self) -> f32 {
         if !self.is_muted {
-            (10_f32.powf(81_f32.log10() * self.volume / 100.0) - 1.0) / 80.0
+            self.volume / 100.0
         } else {
             0.0
         }

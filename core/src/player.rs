@@ -596,11 +596,15 @@ impl Player {
     }
 
     /// Returns the master volume of the player. 1.0 is 100% volume.
+    ///
+    /// The volume is linear and not adapted for logarithmic hearing.
     pub fn volume(&self) -> f32 {
         self.audio.volume()
     }
 
     /// Sets the master volume of the player. 1.0 is 100% volume.
+    ///
+    /// The volume should be linear and not adapted for logarithmic hearing.
     pub fn set_volume(&mut self, volume: f32) {
         self.audio.set_volume(volume)
     }
