@@ -22,6 +22,10 @@ button {
     color: black;
 }
 
+button#options-button {
+    border-bottom: 1px solid var(--ruffle-blue);
+}
+
 #version-text {
     text-align: center;
     font-size: 12px;

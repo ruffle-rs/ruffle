@@ -252,12 +252,12 @@ window.addEventListener("pageshow", async () => {
 
 window.addEventListener("DOMContentLoaded", async () => {
     const webFormSubmit = document.getElementById(
-        "webFormSubmit",
+        "web-form-submit",
     ) as HTMLButtonElement;
     if (webFormSubmit) {
         webFormSubmit.addEventListener("click", function () {
             const webURL = document.getElementById(
-                "webURL",
+                "web-url",
             ) as HTMLInputElement;
             if ((webURL?.value || "") !== "") {
                 loadSwf(webURL.value);

@@ -5,9 +5,11 @@
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>Ruffle Player</title>
-        <link rel="icon" type="image/png" href="images/icon32.png" />
-        <link rel="stylesheet" href="css/player.css" />
-		<link rel="stylesheet" href="css/index.css">
+        <link rel="stylesheet" href="css/lato.css">
+        <link rel="stylesheet" href="css/player.css">
+        <link rel="icon" href="images/icon32.png" sizes="32x32">
+        <link rel="icon" href="images/icon64.png" sizes="64x64">
+        <link rel="icon" href="images/icon180.png" sizes="180x180">
     </head>
     <body>
         <div id="nav">
@@ -20,17 +22,17 @@
                 </a>
             </div>
             <div id="file-picker">
+                <div id="web-url-container">
+                    <label for="web-url">Web URL: </label>
+                    <input id="web-url" name="web-url" type="text" placeholder="URL of a .swf file on the web">
+                    <button type="submit" id="web-form-submit">Load</button>
+                </div>
                 <div id="local-file-container">
                     <span id="local-file-static-label">Local SWF:</span>
                     <input type="file" accept=".swf,.spl" id="local-file" 
                         aria-describedby="local-file-static-label" />
                     <label for="local-file" id="local-file-label">Select File</label>
                     <span id="local-file-name">No file selected.</span>
-                </div>
-                <div id="sample-swfs-container">
-                    <label for="webURL">Web URL: </label>
-                    <input id="webURL" name="webURL" type="text" placeholder="URL of a .swf file on the web">
-                    <button type="submit" id="webFormSubmit">Load</button>
                 </div>
                 &emsp;
                 <svg width="20px" id="open-modal" viewBox="0 0 416.979 416.979"><path fill="white" d="M356.004 61.156c-81.37-81.47-213.377-81.551-294.848-.182-81.47 81.371-81.552 213.379-.181 294.85 81.369 81.47 213.378 81.551 294.849.181 81.469-81.369 81.551-213.379.18-294.849zM237.6 340.786a5.821 5.821 0 0 1-5.822 5.822h-46.576a5.821 5.821 0 0 1-5.822-5.822V167.885a5.821 5.821 0 0 1 5.822-5.822h46.576a5.82 5.82 0 0 1 5.822 5.822v172.901zm-29.11-202.885c-18.618 0-33.766-15.146-33.766-33.765 0-18.617 15.147-33.766 33.766-33.766s33.766 15.148 33.766 33.766c0 18.619-15.149 33.765-33.766 33.765z"/></g></svg>
