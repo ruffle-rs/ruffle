@@ -208,6 +208,19 @@ where
 #[allow(dead_code)]
 impl<T> BoxBounds<T>
 where
+    T: Copy + std::cmp::PartialOrd,
+{
+    pub fn contains(&self, local_position: Position<T>) -> bool {
+        local_position.x >= self.offset_x
+            && local_position.x <= self.extent_x
+            && local_position.y >= self.offset_y
+            && local_position.y <= self.extent_y
+    }
+}
+
+#[allow(dead_code)]
+impl<T> BoxBounds<T>
+where
     T: Copy,
 {
     pub fn offset_x(&self) -> T {

@@ -21,7 +21,9 @@ use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject}
 use crate::drawing::Drawing;
 use crate::events::{ClipEvent, ClipEventResult, TextControlCode};
 use crate::font::{round_down_to_pixel, Glyph, TextRenderSettings};
-use crate::html::{BoxBounds, FormatSpans, LayoutBox, LayoutContent, LayoutMetrics, TextFormat};
+use crate::html::{
+    BoxBounds, FormatSpans, LayoutBox, LayoutContent, LayoutMetrics, Position, TextFormat,
+};
 use crate::prelude::*;
 use crate::string::{utils as string_utils, AvmString, SwfStrExt as _, WStr, WString};
 use crate::tag_utils::SwfMovie;
@@ -1181,7 +1183,11 @@ impl<'gc> EditText<'gc> {
         position.x += Twips::from_pixels(Self::INTERNAL_PADDING) + Twips::from_pixels(text.hscroll);
         position.y += Twips::from_pixels(Self::INTERNAL_PADDING) + text.vertical_scroll_offset();
 
-        for layout_box in text.layout.iter() {
+        for layout_box in text.layout.iter().filter(|layout| {
+            layout
+                .bounds()
+                .contains(Position::from((position.x, position.y)))
+        }) {
             let origin = layout_box.bounds().origin();
             let mut matrix = Matrix::translate(origin.x(), origin.y());
             matrix = matrix.inverse().expect("Invertible layout matrix");
@@ -1669,16 +1675,19 @@ impl<'gc> EditText<'gc> {
     }
 
     fn is_link_at(self, point: Point<Twips>) -> bool {
-        if let Some(position) = self.screen_position_to_index(point) {
-            if let Some((span_index, _)) =
-                self.0.read().text_spans.resolve_position_as_span(position)
-            {
-                if let Some(span) = self.0.read().text_spans.span(span_index) {
-                    return !span.url.is_empty();
-                }
-            }
-        }
-        false
+        let text = self.0.read();
+        let Some(mut position) = self.global_to_local(point) else {
+            return false;
+        };
+        position.x += Twips::from_pixels(Self::INTERNAL_PADDING) + Twips::from_pixels(text.hscroll);
+        position.y += Twips::from_pixels(Self::INTERNAL_PADDING) + text.vertical_scroll_offset();
+
+        text.layout.iter().any(|layout| {
+            layout.is_link()
+                && layout
+                    .bounds()
+                    .contains(Position::from((position.x, position.y)))
+        })
     }
 }
 

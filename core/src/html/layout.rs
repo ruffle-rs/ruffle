@@ -886,6 +886,20 @@ impl<'gc> LayoutBox<'gc> {
         &self.content
     }
 
+    pub fn is_link(&self) -> bool {
+        match &self.content {
+            LayoutContent::Text {
+                text_format: TextFormat { url: Some(url), .. },
+                ..
+            } => url.len() > 0,
+            LayoutContent::Bullet {
+                text_format: TextFormat { url: Some(url), .. },
+                ..
+            } => url.len() > 0,
+            _ => false,
+        }
+    }
+
     /// Returns a reference to the text this box contains, as well as font
     /// rendering parameters, if the layout box has any.
     pub fn as_renderable_text<'a>(
