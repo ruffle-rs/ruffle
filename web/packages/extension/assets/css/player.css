@@ -10,6 +10,7 @@ body {
     padding: 0;
     margin: 0;
     font-family: Lato, sans-serif;
+    font-size: 100%;
     display: flex;
     flex-flow: column;
     background: black;
@@ -69,14 +70,17 @@ body {
     height: 32px;
 }
 
+#file-picker {
+    margin-left: 10px;
+}
+
 #file-picker select,
-#file-picker input,
-#author {
+#file-picker input {
     margin-left: 5px;
 }
 
 #local-file-container,
-#sample-swfs-container {
+#web-url-container {
     display: inline-block;
     vertical-align: middle;
 }
@@ -87,7 +91,8 @@ body {
     position: absolute;
 }
 
-#local-file-label {
+#local-file-label,
+#web-form-submit {
     color: var(--ruffle-blue);
     padding: 3px 10px;
     margin: 5px 2px;
@@ -96,25 +101,16 @@ body {
     background-color: white;
 }
 
+#web-form-submit {
+    border-style: solid;
+    border-color: white;
+    margin-right: 10px;
+}
+
 #local-file-name {
     min-width: 150px;
     display: inline-block;
     font-size: smaller;
-}
-
-#sample-swfs {
-    background-color: white;
-    color: var(--ruffle-blue);
-    border: 1px solid white;
-    border-radius: 5px;
-}
-
-#author-container {
-    font-size: small;
-}
-
-#author {
-    color: var(--ruffle-orange);
 }
 
 .hidden {
@@ -170,27 +166,29 @@ body {
     padding: 0 10px;
 }
 
+#web-url {
+    width: min(40vw, 500px);
+}
+
 @media only screen and (width <= 800px) {
     #local-file-container,
-    #sample-swfs-container {
+    #web-url-container {
         display: block;
     }
 
-    #local-file-container {
+    #web-url-container {
         margin-bottom: 10px;
     }
 }
 
 @media only screen and (width <= 600px) {
-    #local-file-static-label,
-    #sample-swfs-label {
+    #local-file-static-label {
         display: block;
         margin-bottom: 5px;
     }
 
-    #author-container {
-        font-size: 12px;
-        text-align: center;
+    #local-file-container {
+        margin-bottom: 10px;
     }
 
     #nav {
