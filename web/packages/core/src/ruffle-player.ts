@@ -268,7 +268,7 @@ export class RufflePlayer extends HTMLElement {
         this.addModalJavaScript(this.volumeControls);
         this.addModalJavaScript(this.videoModal);
 
-        this.volumeSettings = new VolumeControls(false, 1.0);
+        this.volumeSettings = new VolumeControls(false, 100);
         this.addVolumeControlsJavaScript(this.volumeControls);
 
         const backupSaves = <HTMLElement>(
@@ -413,12 +413,12 @@ export class RufflePlayer extends HTMLElement {
                 ? "grey"
                 : "black";
             this.volumeSettings.isMuted = muteCheckbox.checked;
-            this.instance?.set_volume(this.volumeSettings.get_real_volume());
+            this.instance?.set_volume(this.volumeSettings.get_volume());
         });
         volumeSlider.addEventListener("input", () => {
             volumeSliderText.textContent = volumeSlider.value;
             this.volumeSettings.volume = volumeSlider.valueAsNumber;
-            this.instance?.set_volume(this.volumeSettings.get_real_volume());
+            this.instance?.set_volume(this.volumeSettings.get_volume());
         });
     }
 
@@ -649,7 +649,8 @@ export class RufflePlayer extends HTMLElement {
             this,
             this.loadedConfig,
         );
-        this.instance!.set_volume(this.volumeSettings.get_real_volume());
+        this.instance!.set_volume(this.volumeSettings.get_volume());
+
         this.rendererDebugInfo = this.instance!.renderer_debug_info();
 
         const actuallyUsedRendererName = this.instance!.renderer_name();
@@ -910,6 +911,8 @@ export class RufflePlayer extends HTMLElement {
     /**
      * Returns the master volume of the player.
      *
+     * The volume is linear and not adapted for logarithmic hearing.
+     *
      * @returns The volume. 1.0 is 100% volume.
      */
     get volume(): number {
@@ -921,6 +924,8 @@ export class RufflePlayer extends HTMLElement {
 
     /**
      * Sets the master volume of the player.
+     *
+     * The volume should be linear and not adapted for logarithmic hearing.
      *
      * @param value The volume. 1.0 is 100% volume.
      */
@@ -2371,26 +2376,16 @@ class VolumeControls {
 
     constructor(isMuted: boolean, volume: number) {
         this.isMuted = isMuted;
-        this.volume = volume * 100;
+        this.volume = volume;
     }
 
     /**
-     * Calculates the real volume (between 0 and 1) out of the entered volume
-     * (between 0 and 100) and the mute checkbox.
+     * Returns the volume between 0 and 1 (calculated out of the
+     * checkbox and the slider).
      *
-     * This is also necessary because human hearing is logarithmic:
-     * What sounds like half as loud (and should be 50% on the scale) is actually
-     * about 1/10th of the real volume.
-     *
-     * @returns The real volume.
+     * @returns The volume between 0 and 1.
      */
-    public get_real_volume(): number {
-        if (!this.isMuted) {
-            return (
-                (Math.pow(10, (Math.log10(81) * this.volume) / 100) - 1) / 80
-            );
-        } else {
-            return 0;
-        }
+    public get_volume(): number {
+        return !this.isMuted ? this.volume / 100 : 0;
     }
 }
