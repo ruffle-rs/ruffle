@@ -22,6 +22,8 @@ const closeModal = document.getElementById("close-modal")!;
 const openModal = document.getElementById("open-modal")!;
 const reloadSwf = document.getElementById("reload-swf")!;
 const metadataModal = document.getElementById("metadata-modal")!;
+const webFormSubmit = document.getElementById("web-form-submit")!;
+const webURL = document.getElementById("web-url")! as HTMLInputElement;
 
 // Default config used by the player.
 const defaultConfig = {
@@ -241,28 +243,31 @@ async function loadSwf(swfUrl: string) {
     });
 }
 
-window.addEventListener("pageshow", async () => {
+async function loadSwfFromHash() {
     const url = new URL(window.location.href);
     // Hash always starts with #, gotta slice that off
     const swfUrl = url.hash.length > 1 ? url.hash.slice(1) : null;
     if (swfUrl) {
+        webURL.value = swfUrl;
         await loadSwf(swfUrl);
     }
+}
+
+window.addEventListener("pageshow", async () => {
+    await loadSwfFromHash();
+});
+
+window.addEventListener("hashchange", async () => {
+    await loadSwfFromHash();
 });
 
 window.addEventListener("DOMContentLoaded", async () => {
-    const webFormSubmit = document.getElementById(
-        "web-form-submit",
-    ) as HTMLButtonElement;
-    if (webFormSubmit) {
-        webFormSubmit.addEventListener("click", function () {
-            const webURL = document.getElementById(
-                "web-url",
-            ) as HTMLInputElement;
-            if ((webURL?.value || "") !== "") {
-                loadSwf(webURL.value);
-                window.location.href = "#" + webURL.value;
-            }
-        });
-    }
+    webFormSubmit.addEventListener("click", function () {
+        if (webURL.value !== "") {
+            window.location.hash = webURL.value;
+        }
+    });
+    webURL.addEventListener("keydown", (event) =>
+        event.key === "Enter" ? webFormSubmit.click() : undefined,
+    );
 });
