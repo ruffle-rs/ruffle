@@ -60,6 +60,47 @@ impl EvalParameters {
     }
 }
 
+#[derive(Debug, Clone)]
+pub enum GlyphSource {
+    Memory {
+        /// The list of glyphs defined in the font.
+        /// Used directly by `DefineText` tags.
+        glyphs: Vec<Glyph>,
+
+        /// A map from a Unicode code point to glyph in the `glyphs` array.
+        /// Used by `DefineEditText` tags.
+        code_point_to_glyph: fnv::FnvHashMap<u16, usize>,
+    },
+    Empty,
+}
+
+impl GlyphSource {
+    pub fn get_by_index(&self, index: usize) -> Option<&Glyph> {
+        match self {
+            GlyphSource::Memory { glyphs, .. } => glyphs.get(index),
+            GlyphSource::Empty => None,
+        }
+    }
+
+    pub fn get_by_code_point(&self, code_point: char) -> Option<&Glyph> {
+        match self {
+            GlyphSource::Memory {
+                glyphs,
+                code_point_to_glyph,
+            } => {
+                // TODO: Properly handle UTF-16/out-of-bounds code points.
+                let code_point = code_point as u16;
+                if let Some(index) = code_point_to_glyph.get(&code_point) {
+                    glyphs.get(*index)
+                } else {
+                    None
+                }
+            }
+            GlyphSource::Empty => None,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct Font<'gc>(Gc<'gc, FontData>);
@@ -67,13 +108,7 @@ pub struct Font<'gc>(Gc<'gc, FontData>);
 #[derive(Debug, Clone, Collect)]
 #[collect(require_static)]
 struct FontData {
-    /// The list of glyphs defined in the font.
-    /// Used directly by `DefineText` tags.
-    glyphs: Vec<Glyph>,
-
-    /// A map from a Unicode code point to glyph in the `glyphs` array.
-    /// Used by `DefineEditText` tags.
-    code_point_to_glyph: fnv::FnvHashMap<u16, usize>,
+    glyphs: GlyphSource,
 
     /// The scaling applied to the font height to render at the proper size.
     /// This depends on the DefineFont tag version.
@@ -116,7 +151,7 @@ impl<'gc> Font<'gc> {
             (0, 0, 0)
         };
 
-        let glyphs = tag
+        let glyphs: Vec<Glyph> = tag
             .glyphs
             .into_iter()
             .enumerate()
@@ -152,8 +187,14 @@ impl<'gc> Font<'gc> {
         Font(Gc::new(
             gc_context,
             FontData {
-                glyphs,
-                code_point_to_glyph,
+                glyphs: if glyphs.is_empty() {
+                    GlyphSource::Empty
+                } else {
+                    GlyphSource::Memory {
+                        glyphs,
+                        code_point_to_glyph,
+                    }
+                },
 
                 // DefineFont3 stores coordinates at 20x the scale of DefineFont1/2.
                 // (SWF19 p.164)
@@ -170,25 +211,19 @@ impl<'gc> Font<'gc> {
     /// Returns whether this font contains glyph shapes.
     /// If not, this font should be rendered as a device font.
     pub fn has_glyphs(&self) -> bool {
-        !self.0.glyphs.is_empty()
+        !matches!(self.0.glyphs, GlyphSource::Empty)
     }
 
     /// Returns a glyph entry by index.
     /// Used by `Text` display objects.
     pub fn get_glyph(&self, i: usize) -> Option<&Glyph> {
-        self.0.glyphs.get(i)
+        self.0.glyphs.get_by_index(i)
     }
 
     /// Returns a glyph entry by character.
     /// Used by `EditText` display objects.
     pub fn get_glyph_for_char(&self, c: char) -> Option<&Glyph> {
-        // TODO: Properly handle UTF-16/out-of-bounds code points.
-        let code_point = c as u16;
-        if let Some(index) = self.0.code_point_to_glyph.get(&code_point) {
-            self.get_glyph(*index)
-        } else {
-            None
-        }
+        self.0.glyphs.get_by_code_point(c)
     }
 
     /// Determine if this font contains all the glyphs within a given string.
