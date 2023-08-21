@@ -2,14 +2,12 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::error::{make_error_1002, make_error_1003, make_error_1004};
-use crate::avm2::globals::number::{print_with_precision, print_with_radix};
+use crate::avm2::error::{make_error_1003, make_error_1004};
+use crate::avm2::globals::number::print_with_radix;
 use crate::avm2::method::{Method, NativeMethodImpl, ParamConfig};
 use crate::avm2::object::{primitive_allocator, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
-use crate::avm2::Multiname;
-use crate::avm2::QName;
-use crate::avm2::{AvmString, Error};
+use crate::avm2::{AvmString, Error, Multiname, QName};
 use gc_arena::GcCell;
 
 /// Implements `int`'s instance initializer.
@@ -214,7 +212,7 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
                 param_type_name: Multiname::any(activation.context.gc_context),
                 default_value: Some(Value::Integer(0)),
             }],
-            false,
+            true,
             mc,
         ),
         Method::from_builtin(class_init, "<int class initializer>", mc),

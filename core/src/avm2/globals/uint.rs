@@ -2,14 +2,12 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::error::{make_error_1002, make_error_1003, make_error_1004};
-use crate::avm2::globals::number::{print_with_precision, print_with_radix};
+use crate::avm2::error::{make_error_1003, make_error_1004};
+use crate::avm2::globals::number::print_with_radix;
 use crate::avm2::method::{Method, NativeMethodImpl, ParamConfig};
 use crate::avm2::object::{primitive_allocator, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
-use crate::avm2::Multiname;
-use crate::avm2::QName;
-use crate::avm2::{AvmString, Error};
+use crate::avm2::{AvmString, Error, Multiname, QName};
 use gc_arena::GcCell;
 
 /// Implements `uint`'s instance initializer.
@@ -207,7 +205,17 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
     let class = Class::new(
         QName::new(activation.avm2().public_namespace, "uint"),
         Some(Multiname::new(activation.avm2().public_namespace, "Object")),
-        Method::from_builtin(instance_init, "<uint instance initializer>", mc),
+        Method::from_builtin_and_params(
+            instance_init,
+            "<uint instance initializer>",
+            vec![ParamConfig {
+                param_name: AvmString::new_utf8(activation.context.gc_context, "value"),
+                param_type_name: Multiname::any(activation.context.gc_context),
+                default_value: Some(Value::Integer(0)),
+            }],
+            true,
+            mc,
+        ),
         Method::from_builtin(class_init, "<uint class initializer>", mc),
         mc,
     );
@@ -215,14 +223,9 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
     let mut write = class.write(mc);
     write.set_attributes(ClassAttributes::FINAL | ClassAttributes::SEALED);
     write.set_instance_allocator(primitive_allocator);
-    write.set_native_instance_init(Method::from_builtin_and_params(
+    write.set_native_instance_init(Method::from_builtin(
         native_instance_init,
         "<uint native instance initializer>",
-        vec![ParamConfig::of_type(
-            "num",
-            Multiname::new(activation.avm2().public_namespace, "Object"),
-        )],
-        false,
         mc,
     ));
 
