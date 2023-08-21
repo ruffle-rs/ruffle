@@ -138,80 +138,13 @@ fn class_init<'gc>(
 }
 
 /// Implements `int.toExponential`
-fn to_exponential<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let number = Value::from(this).coerce_to_number(activation)?;
-
-    let digits = args
-        .get(0)
-        .cloned()
-        .unwrap_or(Value::Integer(0))
-        .coerce_to_i32(activation)?;
-
-    if digits < 0 || digits > 20 {
-        return Err(make_error_1002(activation));
-    }
-
-    let digits = digits as usize;
-
-    Ok(AvmString::new_utf8(
-        activation.context.gc_context,
-        format!("{number:.digits$e}")
-            .replace('e', "e+")
-            .replace("e+-", "e-")
-            .replace("e+0", ""),
-    )
-    .into())
-}
+use crate::avm2::globals::number::to_exponential;
 
 /// Implements `int.toFixed`
-fn to_fixed<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let number = Value::from(this).coerce_to_number(activation)?;
-
-    let digits = args
-        .get(0)
-        .cloned()
-        .unwrap_or(Value::Integer(0))
-        .coerce_to_i32(activation)?;
-
-    if digits < 0 || digits > 20 {
-        return Err(make_error_1002(activation));
-    }
-
-    Ok(AvmString::new_utf8(
-        activation.context.gc_context,
-        format!("{0:.1$}", number, digits as usize),
-    )
-    .into())
-}
+use crate::avm2::globals::number::to_fixed;
 
 /// Implements `int.toPrecision`
-fn to_precision<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let number = Value::from(this).coerce_to_number(activation)?;
-
-    let wanted_digits = args
-        .get(0)
-        .cloned()
-        .unwrap_or(Value::Integer(0))
-        .coerce_to_i32(activation)?;
-
-    if wanted_digits < 1 || wanted_digits > 21 {
-        return Err(make_error_1002(activation));
-    }
-
-    Ok(print_with_precision(activation, number, wanted_digits as u32)?.into())
-}
+use crate::avm2::globals::number::to_precision;
 
 /// Implements `int.toString`
 fn to_string<'gc>(

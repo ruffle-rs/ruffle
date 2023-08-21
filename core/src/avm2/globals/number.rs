@@ -136,7 +136,7 @@ fn class_init<'gc>(
 }
 
 /// Implements `Number.toExponential`
-fn to_exponential<'gc>(
+pub fn to_exponential<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -166,7 +166,7 @@ fn to_exponential<'gc>(
 }
 
 /// Implements `Number.toFixed`
-fn to_fixed<'gc>(
+pub fn to_fixed<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -183,9 +183,11 @@ fn to_fixed<'gc>(
         return Err(make_error_1002(activation));
     }
 
-    let digits = digits as usize;
-
-    Ok(AvmString::new_utf8(activation.context.gc_context, format!("{number:.digits$}")).into())
+    Ok(AvmString::new_utf8(
+        activation.context.gc_context,
+        format!("{0:.1$}", number, digits as usize),
+    )
+    .into())
 }
 
 pub fn print_with_precision<'gc>(
@@ -220,7 +222,7 @@ pub fn print_with_precision<'gc>(
 }
 
 /// Implements `Number.toPrecision`
-fn to_precision<'gc>(
+pub fn to_precision<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
