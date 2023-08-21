@@ -239,8 +239,8 @@ impl Drawing {
         id
     }
 
-    pub fn render(&self, context: &mut RenderContext) {
-        if self.dirty.get() {
+    pub fn register_or_replace(&self, renderer: &mut dyn RenderBackend) -> ShapeHandle {
+        if self.dirty.get() || self.render_handle.borrow().is_none() {
             self.dirty.set(false);
             let mut paths = Vec::with_capacity(self.paths.len());
 
@@ -307,15 +307,22 @@ impl Drawing {
                 edge_bounds: self.edge_bounds.clone(),
                 id: 0,
             };
+            let handle = renderer.register_shape(shape, self);
+            self.render_handle.replace(Some(handle.clone()));
+            handle
+        } else {
             self.render_handle
-                .replace(Some(context.renderer.register_shape(shape, self)));
+                .borrow()
+                .to_owned()
+                .expect("Render handle cannot be empty here, we guarded on is_none")
         }
+    }
 
-        if let Some(handle) = self.render_handle.borrow().to_owned() {
-            context
-                .commands
-                .render_shape(handle, context.transform_stack.transform());
-        }
+    pub fn render(&self, context: &mut RenderContext) {
+        let handle = self.register_or_replace(context.renderer);
+        context
+            .commands
+            .render_shape(handle, context.transform_stack.transform());
     }
 
     pub fn self_bounds(&self) -> &Rectangle<Twips> {
