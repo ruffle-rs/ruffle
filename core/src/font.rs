@@ -5,7 +5,7 @@ use gc_arena::{Collect, Gc, Mutation};
 use ruffle_render::backend::null::NullBitmapSource;
 use ruffle_render::backend::{RenderBackend, ShapeHandle};
 use ruffle_render::transform::Transform;
-use std::cell::{Ref, RefCell};
+use std::cell::RefCell;
 use std::cmp::max;
 
 pub use swf::TextGridFit;
@@ -126,9 +126,8 @@ impl<'gc> Font<'gc> {
 
                 let glyph = Glyph {
                     shape_handle: None.into(),
-                    shape: None.into(),
                     advance: Twips::new(swf_glyph.advance.into()),
-                    swf_glyph,
+                    shape: GlyphShape::Swf(RefCell::new(SwfGlyphOrShape::Glyph(swf_glyph))),
                 };
 
                 // Eager-load ASCII characters.
@@ -420,38 +419,71 @@ impl<'gc> Font<'gc> {
 }
 
 #[derive(Debug, Clone)]
+enum SwfGlyphOrShape {
+    Glyph(swf::Glyph),
+    Shape(swf::Shape),
+}
+
+impl SwfGlyphOrShape {
+    pub fn shape(&mut self) -> &mut swf::Shape {
+        if let SwfGlyphOrShape::Glyph(glyph) = self {
+            *self = SwfGlyphOrShape::Shape(ruffle_render::shape_utils::swf_glyph_to_shape(glyph));
+        }
+
+        match self {
+            SwfGlyphOrShape::Shape(shape) => shape,
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+enum GlyphShape {
+    Swf(RefCell<SwfGlyphOrShape>),
+}
+
+impl GlyphShape {
+    pub fn hit_test(&self, point: Point<Twips>, local_matrix: &Matrix) -> bool {
+        match self {
+            GlyphShape::Swf(glyph) => {
+                let mut glyph = glyph.borrow_mut();
+                let shape = glyph.shape();
+                shape.shape_bounds.contains(point)
+                    && ruffle_render::shape_utils::shape_hit_test(shape, point, local_matrix)
+            }
+        }
+    }
+
+    pub fn register(&self, renderer: &mut dyn RenderBackend) -> ShapeHandle {
+        match self {
+            GlyphShape::Swf(glyph) => {
+                let mut glyph = glyph.borrow_mut();
+                renderer.register_shape((&*glyph.shape()).into(), &NullBitmapSource)
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct Glyph {
     // Handle to registered shape.
     // If None, it'll be loaded lazily on first render of this glyph.
     shape_handle: RefCell<Option<ShapeHandle>>,
 
-    // Same shape as one in swf_glyph, but wrapped in an swf::Shape;
-    // For use in hit tests. Created lazily on first use.
-    // (todo: refactor hit tests to not require this?
-    // this literally copies the shape_record, which is wasteful...)
-    shape: RefCell<Option<swf::Shape>>,
-
-    // The underlying glyph record, containing its shape.
-    swf_glyph: swf::Glyph,
-
+    shape: GlyphShape,
     advance: Twips,
 }
 
 impl Glyph {
-    pub fn as_shape(&self) -> Ref<'_, swf::Shape> {
-        self.shape
-            .borrow_mut()
-            .get_or_insert_with(|| ruffle_render::shape_utils::swf_glyph_to_shape(&self.swf_glyph));
-        Ref::map(self.shape.borrow(), |s| s.as_ref().unwrap())
-    }
-
     pub fn shape_handle(&self, renderer: &mut dyn RenderBackend) -> ShapeHandle {
         self.shape_handle
             .borrow_mut()
-            .get_or_insert_with(|| {
-                renderer.register_shape((&*self.as_shape()).into(), &NullBitmapSource)
-            })
+            .get_or_insert_with(|| self.shape.register(renderer))
             .clone()
+    }
+
+    pub fn hit_test(&self, point: Point<Twips>, local_matrix: &Matrix) -> bool {
+        self.shape.hit_test(point, local_matrix)
     }
 
     pub fn advance(&self) -> Twips {
