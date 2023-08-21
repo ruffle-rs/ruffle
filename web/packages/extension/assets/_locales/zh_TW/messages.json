@@ -77,6 +77,9 @@
     "action_reload": {
         "message": "重新整理並套用此設定"
     },
+    "open_player_page": {
+        "message": "開啟 Flash 播放器"
+    },
     "open_settings_page": {
         "message": "打開設定頁面"
     },
