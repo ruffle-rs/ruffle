@@ -127,6 +127,7 @@ impl<'gc> Font<'gc> {
                 let glyph = Glyph {
                     shape_handle: None.into(),
                     shape: None.into(),
+                    advance: Twips::new(swf_glyph.advance.into()),
                     swf_glyph,
                 };
 
@@ -275,7 +276,7 @@ impl<'gc> Font<'gc> {
         while let Some((pos, c)) = char_indices.next() {
             let c = c.unwrap_or(char::REPLACEMENT_CHARACTER);
             if let Some(glyph) = self.get_glyph_for_char(c) {
-                let mut advance = Twips::new(glyph.swf_glyph.advance.into());
+                let mut advance = glyph.advance();
                 if has_kerning_info && params.kerning {
                     let next_char = char_indices.peek().cloned().unwrap_or((0, Ok('\0'))).1;
                     let next_char = next_char.unwrap_or(char::REPLACEMENT_CHARACTER);
@@ -432,6 +433,8 @@ pub struct Glyph {
 
     // The underlying glyph record, containing its shape.
     swf_glyph: swf::Glyph,
+
+    advance: Twips,
 }
 
 impl Glyph {
@@ -449,6 +452,10 @@ impl Glyph {
                 renderer.register_shape((&*self.as_shape()).into(), &NullBitmapSource)
             })
             .clone()
+    }
+
+    pub fn advance(&self) -> Twips {
+        self.advance
     }
 }
 
