@@ -14,10 +14,12 @@ use crate::avm2::Namespace;
 use crate::avm2::{Avm2, Error};
 use crate::context::{GcContext, UpdateContext};
 use crate::string::{AvmAtom, AvmString};
+use crate::tag_utils::SwfMovie;
 use gc_arena::{Collect, Gc, GcCell, Mutation};
 use std::cell::Ref;
 use std::mem::drop;
 use std::rc::Rc;
+use std::sync::Arc;
 use swf::avm2::types::{
     AbcFile, Index, Method as AbcMethod, Multiname as AbcMultiname, Namespace as AbcNamespace,
     Script as AbcScript,
@@ -72,6 +74,9 @@ struct TranslationUnitData<'gc> {
     /// Note that some of these may have a runtime (lazy) component.
     /// Make sure to check for that before using them.
     multinames: Vec<Option<Gc<'gc, Multiname<'gc>>>>,
+
+    /// The movie that this TranslationUnit was loaded from.
+    movie: Arc<SwfMovie>,
 }
 
 impl<'gc> TranslationUnit<'gc> {
@@ -81,6 +86,7 @@ impl<'gc> TranslationUnit<'gc> {
         abc: AbcFile,
         domain: Domain<'gc>,
         name: Option<AvmString<'gc>>,
+        movie: Arc<SwfMovie>,
         mc: &Mutation<'gc>,
     ) -> Self {
         let classes = vec![None; abc.classes.len()];
@@ -102,6 +108,7 @@ impl<'gc> TranslationUnit<'gc> {
                 strings,
                 namespaces,
                 multinames,
+                movie,
             },
         ))
     }
@@ -118,6 +125,10 @@ impl<'gc> TranslationUnit<'gc> {
     /// Retrieve the underlying `AbcFile` for this translation unit.
     pub fn abc(self) -> Rc<AbcFile> {
         self.0.read().abc.clone()
+    }
+
+    pub fn movie(self) -> Arc<SwfMovie> {
+        self.0.read().movie.clone()
     }
 
     /// Load a method from the ABC file and return its method definition.

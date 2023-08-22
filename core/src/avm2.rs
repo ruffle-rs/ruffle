@@ -10,9 +10,11 @@ use crate::avm2::script::{Script, TranslationUnit};
 use crate::context::{GcContext, UpdateContext};
 use crate::display_object::{DisplayObject, DisplayObjectWeak, TDisplayObject};
 use crate::string::AvmString;
+use crate::tag_utils::SwfMovie;
 
 use fnv::FnvHashMap;
 use gc_arena::{Collect, GcCell, Mutation};
+use std::sync::Arc;
 use swf::avm2::read::Reader;
 use swf::DoAbc2Flag;
 
@@ -479,6 +481,7 @@ impl<'gc> Avm2<'gc> {
         name: Option<AvmString<'gc>>,
         flags: DoAbc2Flag,
         domain: Domain<'gc>,
+        movie: Arc<SwfMovie>,
     ) -> Result<(), Error<'gc>> {
         let mut reader = Reader::new(data);
         let abc = match reader.read() {
@@ -494,7 +497,7 @@ impl<'gc> Avm2<'gc> {
         };
 
         let num_scripts = abc.scripts.len();
-        let tunit = TranslationUnit::from_abc(abc, domain, name, context.gc_context);
+        let tunit = TranslationUnit::from_abc(abc, domain, name, movie, context.gc_context);
         for i in 0..num_scripts {
             tunit.load_script(i as u32, context)?;
         }

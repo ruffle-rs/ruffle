@@ -7,12 +7,14 @@ use crate::avm2::value::{abc_default_value, Value};
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::string::AvmString;
+use crate::tag_utils::SwfMovie;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
 use std::fmt;
 use std::ops::Deref;
 use std::rc::Rc;
+use std::sync::Arc;
 use swf::avm2::types::{
     AbcFile, Index, Method as AbcMethod, MethodBody as AbcMethodBody,
     MethodFlags as AbcMethodFlags, MethodParam as AbcMethodParam,
@@ -196,6 +198,11 @@ impl<'gc> BytecodeMethod<'gc> {
     /// Get a reference to the ABC method entry this refers to.
     pub fn method(&self) -> &AbcMethod {
         self.abc.methods.get(self.abc_method as usize).unwrap()
+    }
+
+    /// Get a reference to the SwfMovie this method came from.
+    pub fn owner_movie(&self) -> Arc<SwfMovie> {
+        self.txunit.movie()
     }
 
     /// Get a reference to the ABC method body entry this refers to.

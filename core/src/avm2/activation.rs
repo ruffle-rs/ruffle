@@ -24,10 +24,12 @@ use crate::avm2::{value, Avm2, Error};
 use crate::context::{GcContext, UpdateContext};
 use crate::string::{AvmAtom, AvmString};
 use crate::swf::extensions::ReadSwfExt;
+use crate::tag_utils::SwfMovie;
 use gc_arena::{Gc, GcCell};
 use smallvec::SmallVec;
 use std::borrow::Cow;
 use std::cmp::{min, Ordering};
+use std::sync::Arc;
 use swf::avm2::read::Reader;
 use swf::avm2::types::{
     Class as AbcClass, Exception, Index, Method as AbcMethod, MethodFlags as AbcMethodFlags,
@@ -100,6 +102,11 @@ pub struct Activation<'a, 'gc: 'a> {
     /// current domain instead.
     caller_domain: Option<Domain<'gc>>,
 
+    /// The movie that called this builtin method.
+    /// This is intended to be used only for builtin methods- if this activation's method
+    /// is a bytecode method, the movie will instead be the movie that the bytecode method came from.
+    caller_movie: Option<Arc<SwfMovie>>,
+
     /// The class that yielded the currently executing method.
     ///
     /// This is used to maintain continuity when multiple methods supercall
@@ -161,6 +168,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             local_registers,
             outer: ScopeChain::new(context.avm2.stage_domain),
             caller_domain: None,
+            caller_movie: None,
             subclass_object: None,
             activation_class: None,
             stack_depth: context.avm2.stack.len(),
@@ -188,6 +196,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             local_registers,
             outer: ScopeChain::new(context.avm2.stage_domain),
             caller_domain: Some(domain),
+            caller_movie: None,
             subclass_object: None,
             activation_class: None,
             stack_depth: context.avm2.stack.len(),
@@ -228,6 +237,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             local_registers,
             outer: ScopeChain::new(domain),
             caller_domain: Some(domain),
+            caller_movie: None,
             subclass_object: None,
             activation_class: None,
             stack_depth: context.avm2.stack.len(),
@@ -421,6 +431,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             local_registers,
             outer,
             caller_domain: Some(outer.domain()),
+            caller_movie: Some(method.owner_movie()),
             subclass_object,
             activation_class,
             stack_depth: context.avm2.stack.len(),
@@ -496,6 +507,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         subclass_object: Option<ClassObject<'gc>>,
         outer: ScopeChain<'gc>,
         caller_domain: Option<Domain<'gc>>,
+        caller_movie: Option<Arc<SwfMovie>>,
     ) -> Result<Self, Error<'gc>> {
         let local_registers = RegisterSet::new(0);
 
@@ -504,6 +516,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             local_registers,
             outer,
             caller_domain,
+            caller_movie,
             subclass_object,
             activation_class: None,
             stack_depth: context.avm2.stack.len(),
@@ -572,6 +585,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// if this activation was constructed with `from_nothing`
     pub fn caller_domain(&self) -> Option<Domain<'gc>> {
         self.caller_domain
+    }
+
+    /// Returns the movie of the original AS3 caller. This will be `None`
+    /// if this activation was constructed with `from_nothing`
+    pub fn caller_movie(&self) -> Option<Arc<SwfMovie>> {
+        self.caller_movie.clone()
     }
 
     /// Returns the global scope of this activation.
