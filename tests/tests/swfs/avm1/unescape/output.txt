@@ -6,6 +6,10 @@ unescape("%40%2a%5f%2b%2d%2e%2f")
 @*_+-./
 unescape("%20")
  
+unescape("Hello+World")
+Hello World
+unescape("One%20+mo%2+re")
+One  moe
 unescape("%C4%80%E3%81%82")
 Āあ
 unescape("Āあ")

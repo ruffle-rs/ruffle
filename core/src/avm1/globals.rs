@@ -448,6 +448,9 @@ pub fn unescape<'gc>(
                 remain = 0;
                 hex_chars.clear();
             }
+            b'+' => {
+                out_bytes.push(b' ');
+            }
             _ => {
                 out_bytes.push(c);
             }
