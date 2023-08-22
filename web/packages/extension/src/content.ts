@@ -19,6 +19,7 @@
  */
 
 import * as utils from "./utils";
+import { isMessage } from "./messages";
 
 const pendingMessages: ({
     resolve(value: unknown): void;
@@ -162,13 +163,21 @@ function isXMLDocument(): boolean {
 
         const { to, index, data } = event.data;
         if (to === `ruffle_content${ID}`) {
-            const request = pendingMessages[index];
+            const request = index !== null ? pendingMessages[index] : null;
             if (request) {
                 pendingMessages[index] = null;
                 request.resolve(data);
-            } else {
-                // TODO: Handle page-initiated messages.
-                console.warn("No pending request.");
+            } else if (isMessage(data)) {
+                switch (data.type) {
+                    case "open_url_in_player":
+                        chrome.runtime.sendMessage({
+                            type: "open_url_in_player",
+                            url: data.url,
+                        });
+                        break;
+                    default:
+                    // Ignore unknown messages.
+                }
             }
         }
     });

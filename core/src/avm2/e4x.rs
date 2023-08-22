@@ -801,13 +801,21 @@ pub fn escape_element_value(s: AvmString) -> WString {
     r
 }
 
-fn to_xml_string_inner(xml: E4XOrXml, buf: &mut WString) {
-    // FIXME: Implement pretty printing and namespace support.
+fn to_xml_string_inner(xml: E4XOrXml, buf: &mut WString, pretty: Option<(u32, u32)>) {
+    // FIXME: Namespace support.
 
     let node = xml.node();
     let node_kind = node.kind();
+
+    if let Some((indent_level, _)) = pretty {
+        for _ in 0..indent_level {
+            buf.push_char(' ');
+        }
+    }
+
     let (children, attributes) = match &*node_kind {
         E4XNodeKind::Text(text) => {
+            // FIXME: Spec says to trim XMLWhitespace characters here
             buf.push_str(&escape_element_value(*text));
             return;
         }
@@ -862,8 +870,32 @@ fn to_xml_string_inner(xml: E4XOrXml, buf: &mut WString) {
 
     buf.push_char('>');
 
+    let indent_children = children.len() > 1
+        || children.len() == 1 && !matches!(*children[0].kind(), E4XNodeKind::Text(_));
+    let child_pretty = if let Some((indent_level, pretty_indent)) = pretty {
+        if indent_children {
+            Some((indent_level + pretty_indent, pretty_indent))
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
     for child in children {
-        to_xml_string_inner(E4XOrXml::E4X(*child), buf);
+        if pretty.is_some() && indent_children {
+            buf.push_char('\n');
+        }
+        to_xml_string_inner(E4XOrXml::E4X(*child), buf, child_pretty);
+    }
+
+    if let Some((indent_level, _)) = pretty {
+        if indent_children {
+            buf.push_char('\n');
+            for _ in 0..indent_level {
+                buf.push_char(' ');
+            }
+        }
     }
 
     buf.push_utf8("</");
@@ -876,8 +908,35 @@ pub fn to_xml_string<'gc>(
     xml: E4XOrXml<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> AvmString<'gc> {
+    let pretty_printing = activation
+        .avm2()
+        .classes()
+        .xml
+        .get_public_property("prettyPrinting", activation)
+        .expect("prettyPrinting should be set")
+        .coerce_to_boolean();
+    let pretty = if pretty_printing {
+        let pretty_indent = activation
+            .avm2()
+            .classes()
+            .xml
+            .get_public_property("prettyIndent", activation)
+            .expect("prettyIndent should be set")
+            .coerce_to_i32(activation)
+            .expect("shouldnt error");
+
+        // NOTE: Negative values are invalid and are ignored.
+        if pretty_indent < 0 {
+            None
+        } else {
+            Some((0, pretty_indent as u32))
+        }
+    } else {
+        None
+    };
+
     let mut buf = WString::new();
-    to_xml_string_inner(xml, &mut buf);
+    to_xml_string_inner(xml, &mut buf, pretty);
     AvmString::new(activation.context.gc_context, buf)
 }
 

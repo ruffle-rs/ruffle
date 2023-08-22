@@ -1,16 +1,5 @@
 import { PublicAPI } from "ruffle-core";
-import type { BaseLoadOptions } from "ruffle-core";
-
-interface LoadMessage {
-    type: "load";
-    config: BaseLoadOptions;
-}
-
-interface PingMessage {
-    type: "ping";
-}
-
-type Message = LoadMessage | PingMessage;
+import { Message } from "./messages";
 
 function handleMessage(message: Message) {
     switch (message.type) {
@@ -19,6 +8,7 @@ function handleMessage(message: Message) {
             api.config = {
                 ...message.config,
                 ...api.config,
+                openInNewTab,
             };
             window.RufflePlayer = PublicAPI.negotiate(api, "extension");
             return {};
@@ -44,6 +34,18 @@ if (
     } catch (_) {
         // ID remains null.
     }
+}
+
+function openInNewTab(swf: URL): void {
+    const message = {
+        to: `ruffle_content${ID}`,
+        index: null,
+        data: {
+            type: "open_url_in_player",
+            url: swf.toString(),
+        },
+    };
+    window.postMessage(message, "*");
 }
 
 if (ID) {

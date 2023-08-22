@@ -1,8 +1,13 @@
 <test />
 I&apos;m a <b>text node</b>!
+<продукция>Название_Name</продукция>
 <test><test2 /></test>
 I&apos;m a <b>text node</b>!
+<продукция>Название_Name</продукция>
 <test><test2>&quot;Test&quot; Node 2</test2></test>
 I&apos;m a <b>text node</b>!
+<продукция>Название_Name</продукция>
 <newNodeName><test><test2>&quot;Test&quot; Node 2</test2></test>
-I&apos;m a <b>text node</b>!</newNodeName>
+I&apos;m a <b>text node</b>!
+<продукция>Название_Name</продукция></newNodeName>
+<продукция>Название_Name</продукция>

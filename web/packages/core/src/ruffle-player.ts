@@ -1982,11 +1982,12 @@ export class RufflePlayer extends HTMLElement {
     }
 
     protected displayRootMovieDownloadFailedMessage(): void {
-        if (isExtension && window.location.origin !== this.swfUrl!.origin) {
+        const openInNewTab = this.loadedConfig?.openInNewTab;
+        if (openInNewTab && window.location.origin !== this.swfUrl!.origin) {
             const url = new URL(this.swfUrl!);
             if (this.loadedConfig?.parameters) {
                 const parameters = sanitizeParameters(
-                    this.loadedConfig.parameters,
+                    this.loadedConfig?.parameters,
                 );
                 Object.entries(parameters).forEach(([key, value]) => {
                     url.searchParams.set(key, value);
@@ -1995,14 +1996,16 @@ export class RufflePlayer extends HTMLElement {
             this.hideSplashScreen();
             const div = document.createElement("div");
             div.id = "message_overlay";
+
+            const link = document.createElement("a");
+            link.innerText = text("open-in-new-tab");
+            link.onclick = () => openInNewTab(url);
+
             div.innerHTML = `<div class="message">
                 ${textAsParagraphs("message-cant-embed")}
-                <div>
-                    <a target="_blank" href="${url}">${text(
-                        "open-in-new-tab",
-                    )}</a>
-                </div>
+                <div></div>
             </div>`;
+            div.lastChild!.appendChild(link);
             this.container.prepend(div);
         } else {
             const error = new Error("Failed to fetch: " + this.swfUrl);
