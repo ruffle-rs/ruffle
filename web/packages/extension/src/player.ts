@@ -96,7 +96,7 @@ function load(options: string | DataLoadOptions | URLLoadOptions) {
     player.id = "player";
     main.append(player);
     player.load(options);
-    player.addEventListener("loadedmetadata", function () {
+    player.addEventListener("loadedmetadata", () => {
         if (player.metadata) {
             for (const [key, value] of Object.entries(player.metadata)) {
                 const metadataElement = document.getElementById(key);
@@ -253,16 +253,12 @@ async function loadSwfFromHash() {
     }
 }
 
-window.addEventListener("pageshow", async () => {
-    await loadSwfFromHash();
-});
+window.addEventListener("pageshow", loadSwfFromHash);
 
-window.addEventListener("hashchange", async () => {
-    await loadSwfFromHash();
-});
+window.addEventListener("hashchange", loadSwfFromHash);
 
-window.addEventListener("DOMContentLoaded", async () => {
-    webFormSubmit.addEventListener("click", function () {
+window.addEventListener("DOMContentLoaded", () => {
+    webFormSubmit.addEventListener("click", () => {
         if (webURL.value !== "") {
             window.location.hash = webURL.value;
         }
