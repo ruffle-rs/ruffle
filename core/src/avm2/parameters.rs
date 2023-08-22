@@ -76,6 +76,12 @@ pub trait ParametersExt<'gc> {
         activation: &mut Activation<'_, 'gc>,
         index: usize,
     ) -> Result<AvmString<'gc>, Error<'gc>>;
+    fn get_string_non_null(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        index: usize,
+        name: &'static str,
+    ) -> Result<AvmString<'gc>, Error<'gc>>;
 
     /// Gets the value at the given index and coerces it to an AvmString.
     ///
@@ -157,6 +163,18 @@ impl<'gc> ParametersExt<'gc> for &[Value<'gc>] {
         index: usize,
     ) -> Result<AvmString<'gc>, Error<'gc>> {
         self[index].coerce_to_string(activation)
+    }
+
+    fn get_string_non_null(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        index: usize,
+        name: &'static str,
+    ) -> Result<AvmString<'gc>, Error<'gc>> {
+        match self[index] {
+            Value::Null | Value::Undefined => Err(null_parameter_error(activation, name)),
+            other => other.coerce_to_string(activation),
+        }
     }
 
     fn try_get_string(
