@@ -77,6 +77,9 @@
     "action_reload": {
         "message": "Ladda om fliken för att applicera ändringar"
     },
+    "open_player_page": {
+        "message": "Öppna SWF-spelare"
+    },
     "open_settings_page": {
         "message": "Öppna Inställningarna"
     },

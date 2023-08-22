@@ -8,8 +8,8 @@ repository.workspace = true
 version.workspace = true
 
 [dependencies]
-anyhow = "1.0.72"
-clap = { version = "4.3.21", features = ["derive"] }
+anyhow = "1.0.75"
+clap = { version = "4.3.23", features = ["derive"] }
 tracing = { workspace = true}
 tracing-subscriber = { workspace = true }
 ruffle_socket_format = { path = "../socket-format" }

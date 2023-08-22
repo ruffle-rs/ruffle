@@ -205,7 +205,7 @@ impl<'gc> DispatchList<'gc> {
         &mut self,
         event: impl Into<AvmString<'gc>>,
     ) -> &mut BTreeMap<i32, Vec<EventHandler<'gc>>> {
-        self.0.entry(event.into()).or_insert_with(BTreeMap::new)
+        self.0.entry(event.into()).or_default()
     }
 
     /// Get a single priority level of event handlers for a given event type,
@@ -217,9 +217,9 @@ impl<'gc> DispatchList<'gc> {
     ) -> &mut Vec<EventHandler<'gc>> {
         self.0
             .entry(event.into())
-            .or_insert_with(BTreeMap::new)
+            .or_default()
             .entry(priority)
-            .or_insert_with(Vec::new)
+            .or_default()
     }
 
     /// Add an event handler to this dispatch list.

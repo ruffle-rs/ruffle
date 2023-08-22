@@ -15,7 +15,7 @@ ruffle_render = { path = "../render" }
 ruffle_input_format = { path = "input-format" }
 ruffle_socket_format = { path = "socket-format" }
 ruffle_video_software = { path = "../video/software", optional = true }
-image = { version = "0.24.6", default-features = false, features = ["png"] }
+image = { version = "0.24.7", default-features = false, features = ["png"] }
 regex = "1.9.3"
 url = "2.4.0"
 
@@ -32,11 +32,11 @@ pretty_assertions = "1.4.0"
 env_logger = "0.10.0"
 tracing = { workspace = true}
 tracing-subscriber = { workspace = true }
-serde = "1.0.183"
+serde = "1.0.184"
 toml = "0.7.6"
 libtest-mimic = "0.6.1"
 walkdir = "2.3.3"
-anyhow = "1.0.72"
+anyhow = "1.0.75"
 async-channel = "1.9.0"
 
 [[test]]

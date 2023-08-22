@@ -456,7 +456,7 @@ impl<'gc> XmlNode<'gc> {
                     result.push_byte(b' ');
                     result.push_str(&key);
                     result.push_str(WStr::from_units(b"=\""));
-                    result.push_str(WStr::from_units(value.as_bytes()));
+                    result.push_utf8(&value);
                     result.push_byte(b'"');
                 }
 
@@ -480,7 +480,7 @@ impl<'gc> XmlNode<'gc> {
             let value = self.0.read().node_value.unwrap();
             let value = value.to_utf8_lossy();
             let value = escape(&value);
-            result.push_str(WStr::from_units(value.as_bytes()));
+            result.push_utf8(&value);
         }
 
         Ok(())

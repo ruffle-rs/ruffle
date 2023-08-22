@@ -1,0 +1,12 @@
+alert1 called with input: undefined
+// this == _global
+true
+
+container.callback with input:  Second Test
+// this == container
+true
+
+text1.callback with input: a,b,c,d
+// this == container.text1
+true
+

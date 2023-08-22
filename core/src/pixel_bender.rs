@@ -147,9 +147,9 @@ impl PixelBenderTypeExt for PixelBenderType {
             PixelBenderType::TFloat2(f1, f2) => vec![cv(f1), cv(f2)],
             PixelBenderType::TFloat3(f1, f2, f3) => vec![cv(f1), cv(f2), cv(f3)],
             PixelBenderType::TFloat4(f1, f2, f3, f4) => vec![cv(f1), cv(f2), cv(f3), cv(f4)],
-            PixelBenderType::TFloat2x2(floats) => floats.iter().map(|f| cv(f)).collect(),
-            PixelBenderType::TFloat3x3(floats) => floats.iter().map(|f| cv(f)).collect(),
-            PixelBenderType::TFloat4x4(floats) => floats.iter().map(|f| cv(f)).collect(),
+            PixelBenderType::TFloat2x2(floats) => floats.iter().map(cv).collect(),
+            PixelBenderType::TFloat3x3(floats) => floats.iter().map(cv).collect(),
+            PixelBenderType::TFloat4x4(floats) => floats.iter().map(cv).collect(),
             PixelBenderType::TInt2(i1, i2) => vec![(*i1).into(), (*i2).into()],
             PixelBenderType::TInt3(i1, i2, i3) => vec![(*i1).into(), (*i2).into(), (*i3).into()],
             PixelBenderType::TInt4(i1, i2, i3, i4) => {

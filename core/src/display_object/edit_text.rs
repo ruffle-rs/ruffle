@@ -21,7 +21,9 @@ use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject}
 use crate::drawing::Drawing;
 use crate::events::{ClipEvent, ClipEventResult, TextControlCode};
 use crate::font::{round_down_to_pixel, Glyph, TextRenderSettings};
-use crate::html::{BoxBounds, FormatSpans, LayoutBox, LayoutContent, LayoutMetrics, TextFormat};
+use crate::html::{
+    BoxBounds, FormatSpans, LayoutBox, LayoutContent, LayoutMetrics, Position, TextFormat,
+};
 use crate::prelude::*;
 use crate::string::{utils as string_utils, AvmString, SwfStrExt as _, WStr, WString};
 use crate::tag_utils::SwfMovie;
@@ -156,6 +158,22 @@ pub struct EditTextData<'gc> {
     /// Flags indicating the text field's settings.
     #[collect(require_static)]
     flags: EditTextFlag,
+}
+
+impl<'gc> EditTextData<'gc> {
+    fn vertical_scroll_offset(&self) -> Twips {
+        if self.scroll > 1 {
+            let line_data = &self.line_data;
+
+            if let Some(line_data) = line_data.get(self.scroll - 1) {
+                line_data.offset
+            } else {
+                Twips::ZERO
+            }
+        } else {
+            Twips::ZERO
+        }
+    }
 }
 
 // TODO: would be nicer to compute (and return) this during layout, instead of afterwards
@@ -1112,6 +1130,10 @@ impl<'gc> EditText<'gc> {
         }
     }
 
+    pub fn spans(&self) -> Ref<FormatSpans> {
+        Ref::map(self.0.read(), |r| &r.text_spans)
+    }
+
     pub fn render_settings(self) -> TextRenderSettings {
         self.0.read().render_settings.clone()
     }
@@ -1158,10 +1180,14 @@ impl<'gc> EditText<'gc> {
         let Some(mut position) = self.global_to_local(position) else {
             return None;
         };
-        position.x += Twips::from_pixels(Self::INTERNAL_PADDING);
-        position.y += Twips::from_pixels(Self::INTERNAL_PADDING);
+        position.x += Twips::from_pixels(Self::INTERNAL_PADDING) + Twips::from_pixels(text.hscroll);
+        position.y += Twips::from_pixels(Self::INTERNAL_PADDING) + text.vertical_scroll_offset();
 
-        for layout_box in text.layout.iter() {
+        for layout_box in text.layout.iter().filter(|layout| {
+            layout
+                .bounds()
+                .contains(Position::from((position.x, position.y)))
+        }) {
             let origin = layout_box.bounds().origin();
             let mut matrix = Matrix::translate(origin.x(), origin.y());
             matrix = matrix.inverse().expect("Invertible layout matrix");
@@ -1191,8 +1217,14 @@ impl<'gc> EditText<'gc> {
                         }
                     },
                 );
-                if result.is_some() {
-                    return result;
+                if let Some(index_in_layout) = result {
+                    return Some(
+                        if let LayoutContent::Text { start, .. } = layout_box.content() {
+                            index_in_layout + start
+                        } else {
+                            index_in_layout // [NA] Not sure if it's possible to get here?
+                        },
+                    );
                 }
             }
         }
@@ -1590,6 +1622,73 @@ impl<'gc> EditText<'gc> {
             x: union_bounds.offset_x() + Twips::from_pixels(EditText::INTERNAL_PADDING),
         })
     }
+
+    fn execute_avm1_asfunction(
+        self,
+        context: &mut UpdateContext<'_, 'gc>,
+        address: &WStr,
+    ) -> Result<(), crate::avm1::Error<'gc>> {
+        let Some(parent) = self.avm1_parent() else {
+            return Ok(()); // Can't open links for something that isn't visible?
+        };
+
+        let mut activation = Avm1Activation::from_nothing(
+            context.reborrow(),
+            ActivationIdentifier::root("[EditText URL]"),
+            parent,
+        );
+        // [NA]: Should all `from_nothings` be scoped to root? It definitely should here.
+        activation.set_scope_to_display_object(parent);
+        let this = parent.object().coerce_to_object(&mut activation);
+
+        if let Some((name, args)) = address.split_once(b',') {
+            let name = AvmString::new(activation.context.gc_context, name);
+            let args = AvmString::new(activation.context.gc_context, args);
+            let function = activation.get_variable(name)?;
+            function.call_with_default_this(this, name, &mut activation, &[args.into()])?;
+        } else {
+            let name = AvmString::new(activation.context.gc_context, address);
+            let function = activation.get_variable(name)?;
+            function.call_with_default_this(this, name, &mut activation, &[])?;
+        }
+        Ok(())
+    }
+
+    fn open_url(self, context: &mut UpdateContext<'_, 'gc>, url: &WStr, target: &WStr) {
+        if let Some(address) = url.strip_prefix(WStr::from_units(b"asfunction:")) {
+            if let Err(e) = self.execute_avm1_asfunction(context, address) {
+                error!("Couldn't execute URL \"{url:?}\": {e:?}");
+            }
+        } else if let Some(address) = url.strip_prefix(WStr::from_units(b"event:")) {
+            if let Avm2Value::Object(object) = self.object2() {
+                let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                let text = AvmString::new(activation.context.gc_context, address);
+                let event = Avm2EventObject::text_event(&mut activation, "link", text, true, false);
+
+                Avm2::dispatch_event(&mut activation.context, event, object);
+            }
+        } else {
+            context
+                .navigator
+                .navigate_to_url(&url.to_utf8_lossy(), &target.to_utf8_lossy(), None);
+        }
+    }
+
+    fn is_link_at(self, point: Point<Twips>) -> bool {
+        let text = self.0.read();
+        let Some(mut position) = self.global_to_local(point) else {
+            return false;
+        };
+        position.x += Twips::from_pixels(Self::INTERNAL_PADDING) + Twips::from_pixels(text.hscroll);
+        position.y += Twips::from_pixels(Self::INTERNAL_PADDING) + text.vertical_scroll_offset();
+
+        text.layout.iter().any(|layout| {
+            layout.is_link()
+                && layout
+                    .bounds()
+                    .contains(Position::from((position.x, position.y)))
+        })
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
@@ -1794,17 +1893,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         );
         context.commands.activate_mask();
 
-        let scroll_offset = if edit_text.scroll > 1 {
-            let line_data = &edit_text.line_data;
-
-            if let Some(line_data) = line_data.get(edit_text.scroll - 1) {
-                line_data.offset
-            } else {
-                Twips::ZERO
-            }
-        } else {
-            Twips::ZERO
-        };
+        let scroll_offset = edit_text.vertical_scroll_offset();
         // TODO: Where does this come from? How is this different than INTERNAL_PADDING? Does this apply to y as well?
         // If this is actually right, offset the border in `redraw_border` instead of doing an extra push.
         context.transform_stack.push(&Transform {
@@ -1945,14 +2034,36 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
             let tracker = context.focus_tracker;
             tracker.set(Some(self.into()), context);
         }
-        if let Some(position) = self
-            .screen_position_to_index(*context.mouse_position)
-            .map(TextSelection::for_position)
-        {
-            self.0.write(context.gc_context).selection = Some(position);
+
+        // We can't hold self as any link may end up modifying this object, so pull the info out
+        let mut link_to_open = None;
+
+        if let Some(position) = self.screen_position_to_index(*context.mouse_position) {
+            self.0.write(context.gc_context).selection =
+                Some(TextSelection::for_position(position));
+
+            if let Some((span_index, _)) =
+                self.0.read().text_spans.resolve_position_as_span(position)
+            {
+                link_to_open = self
+                    .0
+                    .read()
+                    .text_spans
+                    .span(span_index)
+                    .map(|s| (s.url.clone(), s.target.clone()));
+            }
         } else {
             self.0.write(context.gc_context).selection =
                 Some(TextSelection::for_position(self.text_length()));
+        }
+
+        if let Some((url, target)) = link_to_open {
+            if !url.is_empty() {
+                // TODO: This fires on mouse DOWN but it should be mouse UP...
+                // but only if it went down in the same span.
+                // Needs more advanced focus handling than we have at time of writing this comment.
+                self.open_url(context, &url, &target);
+            }
         }
 
         ClipEventResult::Handled
@@ -1967,7 +2078,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
         // The text is hovered if the mouse is over any child nodes.
         if self.visible()
             && self.mouse_enabled()
-            && self.is_selectable()
+            && (self.is_selectable() || self.is_link_at(point))
             && self.hit_test_shape(context, point, HitTestOptions::MOUSE_PICK)
         {
             Some((*self).into())
@@ -1988,7 +2099,9 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
             // will cause us to show the proper cursor on mouse over).
             // However, in `Interactive::event_dispatch_to_avm2`, we will prevent mouse events
             // from being fired at all if the text is selectable and 'was_static()'.
-            if self.mouse_enabled() && (self.is_selectable() || !self.was_static()) {
+            if self.mouse_enabled()
+                && (self.is_selectable() || self.is_link_at(point) || !self.was_static())
+            {
                 Avm2MousePick::Hit((*self).into())
             } else {
                 Avm2MousePick::PropagateToParent
@@ -1998,8 +2111,10 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
         }
     }
 
-    fn mouse_cursor(self, _context: &mut UpdateContext<'_, 'gc>) -> MouseCursor {
-        if self.is_selectable() {
+    fn mouse_cursor(self, context: &mut UpdateContext<'_, 'gc>) -> MouseCursor {
+        if self.is_link_at(*context.mouse_position) {
+            MouseCursor::Hand
+        } else if self.is_selectable() {
             MouseCursor::IBeam
         } else {
             MouseCursor::Arrow
