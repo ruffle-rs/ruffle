@@ -70,6 +70,10 @@ pub enum GlyphSource {
         /// A map from a Unicode code point to glyph in the `glyphs` array.
         /// Used by `DefineEditText` tags.
         code_point_to_glyph: fnv::FnvHashMap<u16, usize>,
+
+        /// Kerning infomration.
+        /// Maps from a pair of unicode code points to horizontal offset value.
+        kerning_pairs: fnv::FnvHashMap<(u16, u16), Twips>,
     },
     Empty,
 }
@@ -87,6 +91,7 @@ impl GlyphSource {
             GlyphSource::Memory {
                 glyphs,
                 code_point_to_glyph,
+                ..
             } => {
                 // TODO: Properly handle UTF-16/out-of-bounds code points.
                 let code_point = code_point as u16;
@@ -97,6 +102,28 @@ impl GlyphSource {
                 }
             }
             GlyphSource::Empty => None,
+        }
+    }
+
+    pub fn has_kerning_info(&self) -> bool {
+        match self {
+            GlyphSource::Memory { kerning_pairs, .. } => !kerning_pairs.is_empty(),
+            GlyphSource::Empty => false,
+        }
+    }
+
+    pub fn get_kerning_offset(&self, left: char, right: char) -> Twips {
+        match self {
+            GlyphSource::Memory { kerning_pairs, .. } => {
+                // TODO: Properly handle UTF-16/out-of-bounds code points.
+                let left_code_point = left as u16;
+                let right_code_point = right as u16;
+                kerning_pairs
+                    .get(&(left_code_point, right_code_point))
+                    .cloned()
+                    .unwrap_or_default()
+            }
+            GlyphSource::Empty => Twips::ZERO,
         }
     }
 }
@@ -113,10 +140,6 @@ struct FontData {
     /// The scaling applied to the font height to render at the proper size.
     /// This depends on the DefineFont tag version.
     scale: f32,
-
-    /// Kerning infomration.
-    /// Maps from a pair of unicode code points to horizontal offset value.
-    kerning_pairs: fnv::FnvHashMap<(u16, u16), Twips>,
 
     /// The distance from the top of each glyph to the baseline of the font, in
     /// EM-square coordinates.
@@ -193,13 +216,13 @@ impl<'gc> Font<'gc> {
                     GlyphSource::Memory {
                         glyphs,
                         code_point_to_glyph,
+                        kerning_pairs,
                     }
                 },
 
                 // DefineFont3 stores coordinates at 20x the scale of DefineFont1/2.
                 // (SWF19 p.164)
                 scale: if tag.version >= 3 { 20480.0 } else { 1024.0 },
-                kerning_pairs,
                 ascent,
                 descent,
                 leading,
@@ -238,18 +261,16 @@ impl<'gc> Font<'gc> {
         true
     }
 
+    /// Returns whether this font contains kerning information.
+    pub fn has_kerning_info(&self) -> bool {
+        self.0.glyphs.has_kerning_info()
+    }
+
     /// Given a pair of characters, applies the offset that should be applied
     /// to the advance value between these two characters.
     /// Returns 0 twips if no kerning offset exists between these two characters.
     pub fn get_kerning_offset(&self, left: char, right: char) -> Twips {
-        // TODO: Properly handle UTF-16/out-of-bounds code points.
-        let left_code_point = left as u16;
-        let right_code_point = right as u16;
-        self.0
-            .kerning_pairs
-            .get(&(left_code_point, right_code_point))
-            .cloned()
-            .unwrap_or_default()
+        self.0.glyphs.get_kerning_offset(left, right)
     }
 
     /// Return the leading for this font at a given height.
@@ -271,11 +292,6 @@ impl<'gc> Font<'gc> {
         let scale = height.get() as f32 / self.scale();
 
         Twips::new((self.0.descent as f32 * scale) as i32)
-    }
-
-    /// Returns whether this font contains kerning information.
-    pub fn has_kerning_info(&self) -> bool {
-        !self.0.kerning_pairs.is_empty()
     }
 
     pub fn scale(&self) -> f32 {
