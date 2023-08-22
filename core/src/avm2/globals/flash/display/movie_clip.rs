@@ -392,8 +392,13 @@ pub fn goto_frame<'gc>(
                 }
 
                 let frame = mc.frame_label_to_number(&frame_or_label, &activation.context);
-                // TODO: This should use the SWF version of the current DoAbc(2) tag. Until then, let's be lenient
-                if mc.movie().version() >= 11 && activation.context.swf.version() >= 11 {
+
+                if activation
+                    .caller_movie()
+                    .expect("Caller SWF should exist")
+                    .version()
+                    >= 11
+                {
                     frame.ok_or(
                         // TODO: Also include the scene in the error message, as done above
                         Error::AvmError(argument_error(
