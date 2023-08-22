@@ -684,10 +684,12 @@ fn load_playerglobal<'gc>(
     activation.avm2().native_instance_init_table = native::NATIVE_INSTANCE_INIT_TABLE;
     activation.avm2().native_call_handler_table = native::NATIVE_CALL_HANDLER_TABLE;
 
-    let movie = SwfMovie::from_data(PLAYERGLOBAL, "file:///".into(), None)
-        .expect("playerglobal.swf should be valid");
+    let movie = Arc::new(
+        SwfMovie::from_data(PLAYERGLOBAL, "file:///".into(), None)
+            .expect("playerglobal.swf should be valid"),
+    );
 
-    let slice = SwfSlice::from(Arc::new(movie));
+    let slice = SwfSlice::from(movie.clone());
 
     let mut reader = slice.read_from(0);
 
@@ -702,6 +704,7 @@ fn load_playerglobal<'gc>(
                 None,
                 do_abc.flags,
                 domain,
+                movie.clone(),
             )
             .expect("playerglobal.swf should be valid");
         } else if tag_code != TagCode::End {
