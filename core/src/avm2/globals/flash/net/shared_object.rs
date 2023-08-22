@@ -4,8 +4,6 @@ use crate::avm2::object::TObject;
 use crate::avm2::Multiname;
 use crate::avm2::{Activation, Error, Namespace, Object, Value};
 use crate::avm2_stub_method;
-use crate::display_object::DisplayObject;
-use crate::display_object::TDisplayObject;
 use crate::string::AvmString;
 use flash_lso::types::{AMFVersion, Lso};
 use std::borrow::Cow;
@@ -47,15 +45,7 @@ pub fn get_local<'gc>(
         return Ok(Value::Null);
     }
 
-    let movie = if let Some(DisplayObject::MovieClip(movie)) = activation.context.stage.root_clip()
-    {
-        movie
-    } else {
-        tracing::error!("SharedObject::get_local: Movie was None");
-        return Ok(Value::Null);
-    };
-
-    let mut movie_url = if let Ok(url) = url::Url::parse(movie.movie().url()) {
+    let mut movie_url = if let Ok(url) = url::Url::parse(activation.context.swf.url()) {
         url
     } else {
         tracing::error!("SharedObject::get_local: Unable to parse movie URL");
