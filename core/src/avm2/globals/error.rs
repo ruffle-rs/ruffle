@@ -25,7 +25,10 @@ pub fn get_stack_trace<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(error) = this.as_error_object() {
-        return Ok(AvmString::new(activation.context.gc_context, error.display_full()?).into());
+        let call_stack = error.call_stack();
+        if !call_stack.is_empty() {
+            return Ok(AvmString::new(activation.context.gc_context, error.display_full()?).into());
+        }
     }
-    Ok(Value::Undefined)
+    Ok(Value::Null)
 }

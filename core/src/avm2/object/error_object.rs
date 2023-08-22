@@ -105,7 +105,7 @@ impl<'gc> ErrorObject<'gc> {
         Ok(output)
     }
 
-    fn call_stack(&self) -> Ref<CallStack<'gc>> {
+    pub fn call_stack(&self) -> Ref<CallStack<'gc>> {
         Ref::map(self.0.read(), |r| &r.call_stack)
     }
 
