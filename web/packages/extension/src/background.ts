@@ -1,8 +1,15 @@
 import * as utils from "./utils";
 import { isMessage } from "./messages";
 
+async function contentScriptRegistered() {
+    const matchingScripts = await chrome.scripting.getRegisteredContentScripts({
+        ids: ["plugin-polyfill"],
+    });
+    return matchingScripts.length > 0;
+}
+
 async function enable() {
-    if (chrome?.scripting) {
+    if (chrome?.scripting && !(await contentScriptRegistered())) {
         await chrome.scripting.registerContentScripts([
             {
                 id: "plugin-polyfill",
@@ -21,18 +28,14 @@ async function enable() {
             },
         ]);
     }
-
-    chrome.runtime.onMessage.addListener(onMessage);
 }
 
 async function disable() {
-    if (chrome?.scripting) {
+    if (chrome?.scripting && (await contentScriptRegistered())) {
         await chrome.scripting.unregisterContentScripts({
             ids: ["plugin-polyfill"],
         });
     }
-
-    chrome.runtime.onMessage.removeListener(onMessage);
 }
 
 function onMessage(
@@ -51,18 +54,23 @@ function onMessage(
 
 (async () => {
     const { ruffleEnable } = await utils.getOptions();
-
     if (ruffleEnable) {
         await enable();
     }
-
-    utils.storage.onChanged.addListener(async (changes, namespace) => {
-        if (namespace === "sync" && "ruffleEnable" in changes) {
-            if (changes["ruffleEnable"]!.newValue) {
-                await enable();
-            } else {
-                await disable();
-            }
-        }
-    });
 })();
+
+// Listeners must be registered synchronously at the top level,
+// otherwise they won't be called in time when the service worker wakes up
+if (chrome?.runtime && !chrome.runtime.onMessage.hasListener(onMessage)) {
+    chrome.runtime.onMessage.addListener(onMessage);
+}
+
+utils.storage.onChanged.addListener(async (changes, namespace) => {
+    if (namespace === "sync" && "ruffleEnable" in changes) {
+        if (changes["ruffleEnable"]!.newValue) {
+            await enable();
+        } else {
+            await disable();
+        }
+    }
+});
