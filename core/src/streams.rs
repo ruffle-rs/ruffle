@@ -517,7 +517,7 @@ impl<'gc> NetStream<'gc> {
     ///
     /// Intended to be called at the start of tag processing, before any new
     /// audio data has been streamed.
-    fn collect_sound_stream(
+    fn cleanup_sound_stream(
         self,
         context: &mut UpdateContext<'_, 'gc>,
         write: &mut NetStreamData<'gc>,
@@ -801,7 +801,7 @@ impl<'gc> NetStream<'gc> {
         #![allow(clippy::explicit_auto_deref)] //Erroneous lint
         let mut write = self.0.write(context.gc_context);
 
-        self.collect_sound_stream(context, &mut write);
+        self.cleanup_sound_stream(context, &mut write);
         let slice = write.buffer.to_full_slice();
         let buffer = slice.data();
 
