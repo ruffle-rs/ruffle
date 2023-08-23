@@ -77,6 +77,9 @@
     "action_reload": {
         "message": "Обновите страницу для применения изменений"
     },
+    "open_player_page": {
+        "message": "Открыть SWF-плеер"
+    },
     "open_settings_page": {
         "message": "Открыть настройки"
     },
