@@ -1994,18 +1994,21 @@ export class RufflePlayer extends HTMLElement {
                 });
             }
             this.hideSplashScreen();
+
             const div = document.createElement("div");
             div.id = "message_overlay";
+            const innerDiv = document.createElement("div");
+            innerDiv.className = "message";
+            innerDiv.innerHTML = textAsParagraphs("message-cant-embed");
 
+            const buttonDiv = document.createElement("div");
             const link = document.createElement("a");
             link.innerText = text("open-in-new-tab");
             link.onclick = () => openInNewTab(url);
+            buttonDiv.appendChild(link);
 
-            div.innerHTML = `<div class="message">
-                ${textAsParagraphs("message-cant-embed")}
-                <div></div>
-            </div>`;
-            div.lastChild!.appendChild(link);
+            innerDiv.appendChild(buttonDiv);
+            div.appendChild(innerDiv);
             this.container.prepend(div);
         } else {
             const error = new Error("Failed to fetch: " + this.swfUrl);
