@@ -239,7 +239,7 @@ pub struct NetStreamData<'gc> {
 impl<'gc> NetStream<'gc> {
     pub fn new(gc_context: &Mutation<'gc>, avm_object: Option<AvmObject<'gc>>) -> Self {
         // IMPORTANT: When adding new fields consider if they need to be
-        // initialized in `init_buffer` as well.
+        // initialized in `reset_buffer` as well.
         Self(GcCell::new(
             gc_context,
             NetStreamData {
@@ -271,15 +271,15 @@ impl<'gc> NetStream<'gc> {
         self.0.write(gc_context).avm_object = Some(avm_object);
     }
 
-    /// Initialize the `NetStream` buffer to accept new source data.
+    /// Reset the `NetStream` buffer to accept new source data.
     ///
     /// This must be done once per source change and should ideally be done
     /// immediately before the first `load_buffer` call for a particular source
     /// file.
     ///
-    /// Externally visible AVM state must not be initialized here - i.e. the
+    /// Externally visible AVM state must not be reinitialized here - i.e. the
     /// AS3 `client` doesn't go away because you played a new video file.
-    pub fn init_buffer(self, context: &mut UpdateContext<'_, 'gc>) {
+    pub fn reset_buffer(self, context: &mut UpdateContext<'_, 'gc>) {
         let mut write = self.0.write(context.gc_context);
 
         if let Some(instance) = write.sound_instance {
