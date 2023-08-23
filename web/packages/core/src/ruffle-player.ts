@@ -2014,7 +2014,11 @@ export class RufflePlayer extends HTMLElement {
             const error = new Error("Failed to fetch: " + this.swfUrl);
             if (!this.swfUrl!.protocol.includes("http")) {
                 error.ruffleIndexError = PanicError.FileProtocol;
-            } else if (window.location.origin === this.swfUrl!.origin) {
+            } else if (
+                window.location.origin === this.swfUrl!.origin ||
+                // The extension's internal player page is not restricted by CORS
+                window.location.protocol.includes("extension")
+            ) {
                 error.ruffleIndexError = PanicError.SwfFetchError;
             } else {
                 // This is a selfhosted build of Ruffle that tried to make a cross-origin request
