@@ -87,7 +87,7 @@
         "message": "设置"
     },
     "description": {
-        "message": "将 Flash 重新带回网络。"
+        "message": "将 Flash 移动到 web 中的默认位置。"
     },
     "save_settings": {
         "message": "保存设置"
