@@ -824,7 +824,7 @@ fn draw_commands_to_path2d(commands: &[DrawCommand], is_closed: bool) -> Path2d 
             DrawCommand::LineTo(line_to) => {
                 path.line_to(line_to.x.get().into(), line_to.y.get().into())
             }
-            DrawCommand::CurveTo { control, anchor } => path.quadratic_curve_to(
+            DrawCommand::QuadraticCurveTo { control, anchor } => path.quadratic_curve_to(
                 control.x.get().into(),
                 control.y.get().into(),
                 anchor.x.get().into(),

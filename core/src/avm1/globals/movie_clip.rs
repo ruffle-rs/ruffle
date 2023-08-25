@@ -738,7 +738,7 @@ fn curve_to<'gc>(
         let anchor_y = anchor_y.coerce_to_f64(activation)?;
         movie_clip
             .drawing(activation.context.gc_context)
-            .draw_command(DrawCommand::CurveTo {
+            .draw_command(DrawCommand::QuadraticCurveTo {
                 control: Point::from_pixels(control_x, control_y),
                 anchor: Point::from_pixels(anchor_x, anchor_y),
             });

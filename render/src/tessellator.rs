@@ -347,7 +347,7 @@ fn ruffle_path_to_lyon_path(commands: &[DrawCommand], is_closed: bool) -> Path {
                 }
                 builder.line_to(point(*line_to));
             }
-            DrawCommand::CurveTo { control, anchor } => {
+            DrawCommand::QuadraticCurveTo { control, anchor } => {
                 if let Some(cursor) = cursor.take() {
                     builder.begin(point(cursor));
                 }
