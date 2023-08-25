@@ -13,7 +13,7 @@
 		public function Test() {
 			trapezoid();
 			dashes();
-			// cubicCircle(); // currently broken in ruffle at time of writing
+			cubicCircle();
 			curveCircle();
 			drawPath();
 		}

@@ -3,6 +3,9 @@ use enum_map::Enum;
 use smallvec::SmallVec;
 use swf::{CharacterId, FillStyle, LineStyle, Rectangle, Shape, ShapeRecord, Twips};
 
+/// Controls the accuracy of the approximated quadratic curve, when splitting up a cubic curve
+const CUBIC_CURVE_TOLERANCE: f64 = 0.01;
+
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum FillRule {
     EvenOdd,
@@ -697,14 +700,17 @@ pub fn draw_command_fill_hit_test(commands: &[DrawCommand], test_point: swf::Poi
                     ctrl2: lyon_geom::Point::new(control_b.x.to_pixels(), control_b.y.to_pixels()),
                     to: lyon_geom::Point::new(anchor.x.to_pixels(), anchor.y.to_pixels()),
                 }
-                .for_each_quadratic_bezier(0.01, &mut |quadratic_curve| {
-                    winding += winding_number_curve(
-                        test_point,
-                        swf::Point::from_pixels(quadratic_curve.from.x, quadratic_curve.from.y),
-                        swf::Point::from_pixels(quadratic_curve.ctrl.x, quadratic_curve.ctrl.y),
-                        swf::Point::from_pixels(quadratic_curve.to.x, quadratic_curve.to.y),
-                    );
-                });
+                .for_each_quadratic_bezier(
+                    CUBIC_CURVE_TOLERANCE,
+                    &mut |quadratic_curve| {
+                        winding += winding_number_curve(
+                            test_point,
+                            swf::Point::from_pixels(quadratic_curve.from.x, quadratic_curve.from.y),
+                            swf::Point::from_pixels(quadratic_curve.ctrl.x, quadratic_curve.ctrl.y),
+                            swf::Point::from_pixels(quadratic_curve.to.x, quadratic_curve.to.y),
+                        );
+                    },
+                );
                 cursor = *anchor;
             }
         }
@@ -758,17 +764,28 @@ pub fn draw_command_stroke_hit_test(
                     ctrl2: lyon_geom::Point::new(control_b.x.to_pixels(), control_b.y.to_pixels()),
                     to: lyon_geom::Point::new(anchor.x.to_pixels(), anchor.y.to_pixels()),
                 }
-                .for_each_quadratic_bezier(0.01, &mut |quadratic_curve| {
-                    if hit_test_stroke_curve(
-                        test_point,
-                        swf::Point::from_pixels(quadratic_curve.from.x, quadratic_curve.from.y),
-                        swf::Point::from_pixels(quadratic_curve.ctrl.x, quadratic_curve.ctrl.y),
-                        swf::Point::from_pixels(quadratic_curve.to.x, quadratic_curve.to.y),
-                        stroke_widths,
-                    ) {
-                        hit = true;
-                    }
-                });
+                .for_each_quadratic_bezier(
+                    CUBIC_CURVE_TOLERANCE,
+                    &mut |quadratic_curve| {
+                        if !hit
+                            && hit_test_stroke_curve(
+                                test_point,
+                                swf::Point::from_pixels(
+                                    quadratic_curve.from.x,
+                                    quadratic_curve.from.y,
+                                ),
+                                swf::Point::from_pixels(
+                                    quadratic_curve.ctrl.x,
+                                    quadratic_curve.ctrl.y,
+                                ),
+                                swf::Point::from_pixels(quadratic_curve.to.x, quadratic_curve.to.y),
+                                stroke_widths,
+                            )
+                        {
+                            hit = true;
+                        }
+                    },
+                );
                 cursor = *anchor;
 
                 if hit {
