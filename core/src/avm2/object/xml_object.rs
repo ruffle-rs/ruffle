@@ -312,15 +312,6 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
 
         if name.is_attribute() {
             self.delete_property_local(activation, name)?;
-            if let Some(obj) = value.as_object() {
-                if obj.as_xml_object().is_some() || obj.as_xml_list_object().is_some() {
-                    return Err(format!(
-                        "Cannot set an XML/XMLList object {:?} as an attribute",
-                        obj
-                    )
-                    .into());
-                }
-            }
             let Some(local_name) = name.local_name() else {
                 return Err(format!("Cannot set attribute {:?} without a local name", name).into());
             };
