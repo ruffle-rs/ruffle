@@ -455,7 +455,7 @@ fn stretch_bounds(
                 .encompass(Point::new(point.x - radius, point.y - radius))
                 .encompass(Point::new(point.x + radius, point.y + radius))
         }
-        DrawCommand::CurveTo { control, anchor } => {
+        DrawCommand::QuadraticCurveTo { control, anchor } => {
             bounds.union(&quadratic_curve_bounds(from, stroke_width, control, anchor))
         }
     }

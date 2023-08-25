@@ -241,7 +241,7 @@ pub fn curve_to<'gc>(
         let anchor_y = args.get_f64(activation, 3)?;
 
         if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
-            draw.draw_command(DrawCommand::CurveTo {
+            draw.draw_command(DrawCommand::QuadraticCurveTo {
                 control: Point::from_pixels(control_x, control_y),
                 anchor: Point::from_pixels(anchor_x, anchor_y),
             });
@@ -538,7 +538,7 @@ fn draw_round_rect_internal(
     let right_b_point_y = br_ellipse_center_y + ellipse_height / 2.0 * ucp[4].1;
     let right_b_point = Point::from_pixels(right_b_point_x, right_b_point_y);
 
-    draw.draw_command(DrawCommand::CurveTo {
+    draw.draw_command(DrawCommand::QuadraticCurveTo {
         control: br_b_curve,
         anchor: right_b_point,
     });
@@ -563,7 +563,7 @@ fn draw_round_rect_internal(
     let bl_point_y = br_ellipse_center_y + ellipse_height / 2.0 * ucp[2].1;
     let bl_point = Point::from_pixels(bl_point_x, bl_point_y);
 
-    draw.draw_command(DrawCommand::CurveTo {
+    draw.draw_command(DrawCommand::QuadraticCurveTo {
         control: b_bl_curve,
         anchor: bl_point,
     });
@@ -576,7 +576,7 @@ fn draw_round_rect_internal(
     let bottom_l_point_y = br_ellipse_center_y + ellipse_height / 2.0 * ucp[0].1;
     let bottom_l_point = Point::from_pixels(bottom_l_point_x, bottom_l_point_y);
 
-    draw.draw_command(DrawCommand::CurveTo {
+    draw.draw_command(DrawCommand::QuadraticCurveTo {
         control: bl_l_curve,
         anchor: bottom_l_point,
     });
@@ -597,7 +597,7 @@ fn draw_round_rect_internal(
     let tl_point_y = tl_ellipse_center_y + ellipse_height / -2.0 * ucp[2].1;
     let tl_point = Point::from_pixels(tl_point_x, tl_point_y);
 
-    draw.draw_command(DrawCommand::CurveTo {
+    draw.draw_command(DrawCommand::QuadraticCurveTo {
         control: l_tl_curve,
         anchor: tl_point,
     });
@@ -610,7 +610,7 @@ fn draw_round_rect_internal(
     let left_t_point_y = tl_ellipse_center_y + ellipse_height / -2.0 * ucp[4].1;
     let left_t_point = Point::from_pixels(left_t_point_x, left_t_point_y);
 
-    draw.draw_command(DrawCommand::CurveTo {
+    draw.draw_command(DrawCommand::QuadraticCurveTo {
         control: tl_t_curve,
         anchor: left_t_point,
     });
@@ -631,7 +631,7 @@ fn draw_round_rect_internal(
     let tr_point_y = tl_ellipse_center_y + ellipse_height / -2.0 * ucp[2].1;
     let tr_point = Point::from_pixels(tr_point_x, tr_point_y);
 
-    draw.draw_command(DrawCommand::CurveTo {
+    draw.draw_command(DrawCommand::QuadraticCurveTo {
         control: t_tr_curve,
         anchor: tr_point,
     });
@@ -644,7 +644,7 @@ fn draw_round_rect_internal(
     let top_r_point_y = tl_ellipse_center_y + ellipse_height / -2.0 * ucp[0].1;
     let top_r_point = Point::from_pixels(top_r_point_x, top_r_point_y);
 
-    draw.draw_command(DrawCommand::CurveTo {
+    draw.draw_command(DrawCommand::QuadraticCurveTo {
         control: tr_r_curve,
         anchor: top_r_point,
     });
@@ -660,7 +660,7 @@ fn draw_round_rect_internal(
     let r_br_curve_y = br_ellipse_center_y + ellipse_height / 2.0 * ucp[1].1;
     let r_br_curve = Point::from_pixels(r_br_curve_x, r_br_curve_y);
 
-    draw.draw_command(DrawCommand::CurveTo {
+    draw.draw_command(DrawCommand::QuadraticCurveTo {
         control: r_br_curve,
         anchor: br_point,
     });
@@ -1179,7 +1179,7 @@ fn process_commands<'gc>(
             // LINE_TO
             2 => Some(DrawCommand::LineTo(read_point())),
             // CURVE_TO
-            3 => Some(DrawCommand::CurveTo {
+            3 => Some(DrawCommand::QuadraticCurveTo {
                 control: read_point(),
                 anchor: read_point(),
             }),

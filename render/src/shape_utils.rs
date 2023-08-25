@@ -119,7 +119,7 @@ impl<'a> From<&'a swf::Shape> for DistilledShape<'a> {
 pub enum DrawCommand {
     MoveTo(swf::Point<Twips>),
     LineTo(swf::Point<Twips>),
-    CurveTo {
+    QuadraticCurveTo {
         control: swf::Point<Twips>,
         anchor: swf::Point<Twips>,
     },
@@ -130,7 +130,7 @@ impl DrawCommand {
         match self {
             DrawCommand::MoveTo(point)
             | DrawCommand::LineTo(point)
-            | DrawCommand::CurveTo { anchor: point, .. } => *point,
+            | DrawCommand::QuadraticCurveTo { anchor: point, .. } => *point,
         }
     }
 }
@@ -224,7 +224,7 @@ impl PathSegment {
                     },
                 ) => {
                     let end = i.next().expect("Bezier without endpoint");
-                    Some(DrawCommand::CurveTo {
+                    Some(DrawCommand::QuadraticCurveTo {
                         control: (*point).into(),
                         anchor: (*end).into(),
                     })
@@ -676,7 +676,7 @@ pub fn draw_command_fill_hit_test(commands: &[DrawCommand], test_point: swf::Poi
                 winding += winding_number_line(test_point, cursor, *line_to);
                 cursor = *line_to;
             }
-            DrawCommand::CurveTo { control, anchor } => {
+            DrawCommand::QuadraticCurveTo { control, anchor } => {
                 winding += winding_number_curve(test_point, cursor, *control, *anchor);
                 cursor = *anchor;
             }
@@ -713,7 +713,7 @@ pub fn draw_command_stroke_hit_test(
                 }
                 cursor = *line_to;
             }
-            DrawCommand::CurveTo { control, anchor } => {
+            DrawCommand::QuadraticCurveTo { control, anchor } => {
                 if hit_test_stroke_curve(test_point, cursor, *control, *anchor, stroke_widths) {
                     return true;
                 }
