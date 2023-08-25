@@ -809,10 +809,26 @@ pub fn line_gradient_style<'gc>(
 /// Implements `Graphics.cubicCurveTo`
 pub fn cubic_curve_to<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    this: Object<'gc>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.display.Graphics", "cubicCurveTo");
+    if let Some(this) = this.as_display_object() {
+        let control_a_x = args.get_f64(activation, 0)?;
+        let control_a_y = args.get_f64(activation, 1)?;
+        let control_b_x = args.get_f64(activation, 2)?;
+        let control_b_y = args.get_f64(activation, 3)?;
+        let anchor_x = args.get_f64(activation, 4)?;
+        let anchor_y = args.get_f64(activation, 5)?;
+
+        if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
+            draw.draw_command(DrawCommand::CubicCurveTo {
+                control_a: Point::from_pixels(control_a_x, control_a_y),
+                control_b: Point::from_pixels(control_b_x, control_b_y),
+                anchor: Point::from_pixels(anchor_x, anchor_y),
+            });
+        }
+    }
+
     Ok(Value::Undefined)
 }
 
@@ -1194,17 +1210,11 @@ fn process_commands<'gc>(
                 Some(DrawCommand::LineTo(read_point()))
             }
             // CUBIC_CURVE_TO
-            6 => {
-                let _first = read_point();
-                let _second = read_point();
-                avm2_stub_method!(
-                    activation,
-                    "flash.display.Graphics",
-                    "drawPath",
-                    "CUBIC_CURVE_TO"
-                );
-                None
-            }
+            6 => Some(DrawCommand::CubicCurveTo {
+                control_a: read_point(),
+                control_b: read_point(),
+                anchor: read_point(),
+            }),
             _ => panic!("Unexpected command value {command}"),
         };
 
