@@ -14,7 +14,7 @@ async function enable() {
             {
                 id: "plugin-polyfill",
                 js: ["dist/pluginPolyfill.js"],
-                persistAcrossSessions: false,
+                persistAcrossSessions: true,
                 matches: ["<all_urls>"],
                 excludeMatches: [
                     "https://sso.godaddy.com/*",
