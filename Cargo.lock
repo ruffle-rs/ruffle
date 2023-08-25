@@ -2969,7 +2969,7 @@ dependencies = [
 [[package]]
 name = "nihav_codec_support"
 version = "0.1.0"
-source = "git+https://github.com/ruffle-rs/nihav-vp6?rev=9416fcc9fc8aab8f4681aa9093b42922214abbd3#9416fcc9fc8aab8f4681aa9093b42922214abbd3"
+source = "git+https://github.com/ruffle-rs/nihav-vp6?rev=83c7e1094d603d9fc1212d39d99abb17f3a3226b#83c7e1094d603d9fc1212d39d99abb17f3a3226b"
 dependencies = [
  "nihav_core",
 ]
@@ -2977,12 +2977,12 @@ dependencies = [
 [[package]]
 name = "nihav_core"
 version = "0.1.0"
-source = "git+https://github.com/ruffle-rs/nihav-vp6?rev=9416fcc9fc8aab8f4681aa9093b42922214abbd3#9416fcc9fc8aab8f4681aa9093b42922214abbd3"
+source = "git+https://github.com/ruffle-rs/nihav-vp6?rev=83c7e1094d603d9fc1212d39d99abb17f3a3226b#83c7e1094d603d9fc1212d39d99abb17f3a3226b"
 
 [[package]]
 name = "nihav_duck"
 version = "0.1.0"
-source = "git+https://github.com/ruffle-rs/nihav-vp6?rev=9416fcc9fc8aab8f4681aa9093b42922214abbd3#9416fcc9fc8aab8f4681aa9093b42922214abbd3"
+source = "git+https://github.com/ruffle-rs/nihav-vp6?rev=83c7e1094d603d9fc1212d39d99abb17f3a3226b#83c7e1094d603d9fc1212d39d99abb17f3a3226b"
 dependencies = [
  "nihav_codec_support",
  "nihav_core",
