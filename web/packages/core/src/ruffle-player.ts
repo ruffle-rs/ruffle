@@ -119,6 +119,13 @@ class Point {
     }
 }
 
+class PanicLinkInfo {
+    constructor(
+        public url: string = "#",
+        public label: string = text("view-error-details"),
+    ) {}
+}
+
 /**
  * The ruffle player element that should be inserted onto the page.
  *
@@ -1682,39 +1689,27 @@ export class RufflePlayer extends HTMLElement {
     }
 
     /**
-     * @param targetUrl The target URL of info about this error.
-     * @param targetText Text saying where the target URL will send you.
-     * @param actionTag The action tag of the error footer.
+     * @param footerInfo An array of PanicLinkInfo objects.
      *
      * @returns The <ul> element to be used as the error footer
      */
     private createErrorFooter(
-        targetUrl?: string,
-        targetText?: string,
-        actionTag?: HTMLAnchorElement,
+        footerInfo: Array<PanicLinkInfo>,
     ): HTMLUListElement {
         const errorFooter = document.createElement("ul");
-        if (targetUrl && targetText) {
-            const footerInfo = document.createElement("li");
+        for (const linkInfo of footerInfo) {
+            const footerItem = document.createElement("li");
             const footerLink = document.createElement("a");
-            footerLink.target = "_top";
-            footerLink.href = targetUrl;
-            footerLink.textContent = targetText;
-            footerInfo.appendChild(footerLink);
-            errorFooter.appendChild(footerInfo);
+            footerLink.href = linkInfo.url;
+            footerLink.textContent = linkInfo.label;
+            if (linkInfo.url === "#") {
+                footerLink.id = "panic-view-details";
+            } else {
+                footerLink.target = "_top";
+            }
+            footerItem.appendChild(footerLink);
+            errorFooter.appendChild(footerItem);
         }
-        if (actionTag) {
-            const footerInfo = document.createElement("li");
-            footerInfo.appendChild(actionTag);
-            errorFooter.appendChild(footerInfo);
-        }
-        const details = document.createElement("li");
-        const panicViewDetails = document.createElement("a");
-        panicViewDetails.href = "#";
-        panicViewDetails.id = "panic-view-details";
-        panicViewDetails.textContent = text("view-error-details");
-        details.appendChild(panicViewDetails);
-        errorFooter.appendChild(details);
         return errorFooter;
     }
 
@@ -1794,8 +1789,7 @@ export class RufflePlayer extends HTMLElement {
 
         // Create a link to GitHub with all of the error data, if the build is not outdated.
         // Otherwise, create a link to the downloads section on the Ruffle website.
-        const actionTag = document.createElement("a");
-        actionTag.target = "_top";
+        let actionLink: PanicLinkInfo;
         if (!isBuildOutdated) {
             let url;
             if (document.location.protocol.includes("extension")) {
@@ -1825,11 +1819,12 @@ export class RufflePlayer extends HTMLElement {
                 issueBody = encodeURIComponent(errorArray.join(""));
             }
             issueLink += issueBody;
-            actionTag.href = issueLink;
-            actionTag.textContent = text("report-bug");
+            actionLink = new PanicLinkInfo(issueLink, text("report-bug"));
         } else {
-            actionTag.href = RUFFLE_ORIGIN + "#downloads";
-            actionTag.textContent = text("update-ruffle");
+            actionLink = new PanicLinkInfo(
+                RUFFLE_ORIGIN + "#downloads",
+                text("update-ruffle"),
+            );
         }
 
         // Clears out any existing content (ie play button or canvas) and replaces it with the error screen
@@ -1838,89 +1833,103 @@ export class RufflePlayer extends HTMLElement {
             case PanicError.FileProtocol:
                 // General error: Running on the `file:` protocol
                 errorBody = textAsParagraphs("error-file-protocol");
-                {
-                    errorFooter = document.createElement("ul");
-                    const bullet1 = document.createElement("li");
-                    const link1 = document.createElement("a");
-                    link1.target = "_top";
-                    link1.href = `${RUFFLE_ORIGIN}/demo`;
-                    link1.textContent = text("ruffle-demo");
-                    bullet1.appendChild(link1);
-                    errorFooter.appendChild(bullet1);
-                    const bullet2 = document.createElement("li");
-                    const link2 = document.createElement("a");
-                    link2.target = "_top";
-                    link2.href = `${RUFFLE_ORIGIN}#downloads`;
-                    link2.textContent = text("ruffle-desktop");
-                    bullet2.appendChild(link2);
-                    errorFooter.appendChild(bullet2);
-                }
+                errorFooter = this.createErrorFooter([
+                    new PanicLinkInfo(
+                        RUFFLE_ORIGIN + "/demo",
+                        text("ruffle-demo"),
+                    ),
+                    new PanicLinkInfo(
+                        RUFFLE_ORIGIN + "#downloads",
+                        text("ruffle-desktop"),
+                    ),
+                ]);
                 break;
             case PanicError.JavascriptConfiguration:
                 // General error: Incorrect JavaScript configuration
                 errorBody = textAsParagraphs("error-javascript-config");
-                errorFooter = this.createErrorFooter(
-                    "https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#javascript-api",
-                    text("ruffle-wiki"),
-                );
+                errorFooter = this.createErrorFooter([
+                    new PanicLinkInfo(
+                        "https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#javascript-api",
+                        text("ruffle-wiki"),
+                    ),
+                    new PanicLinkInfo(),
+                ]);
                 break;
             case PanicError.WasmNotFound:
                 // Self hosted: Cannot load `.wasm` file - file not found
                 errorBody = textAsParagraphs("error-wasm-not-found");
-                errorFooter = this.createErrorFooter(
-                    "https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configuration-options",
-                    text("ruffle-wiki"),
-                );
+                errorFooter = this.createErrorFooter([
+                    new PanicLinkInfo(
+                        "https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configuration-options",
+                        text("ruffle-wiki"),
+                    ),
+                    new PanicLinkInfo(),
+                ]);
                 break;
             case PanicError.WasmMimeType:
                 // Self hosted: Cannot load `.wasm` file - incorrect MIME type
                 errorBody = textAsParagraphs("error-wasm-mime-type");
-                errorFooter = this.createErrorFooter(
-                    "https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-webassembly-mime-type",
-                    text("ruffle-wiki"),
-                );
+                errorFooter = this.createErrorFooter([
+                    new PanicLinkInfo(
+                        "https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-webassembly-mime-type",
+                        text("ruffle-wiki"),
+                    ),
+                    new PanicLinkInfo(),
+                ]);
                 break;
             case PanicError.SwfFetchError:
                 errorBody = textAsParagraphs("error-swf-fetch");
-                errorFooter = this.createErrorFooter();
+                errorFooter = this.createErrorFooter([new PanicLinkInfo()]);
                 break;
             case PanicError.SwfCors:
                 // Self hosted: Cannot load SWF file - CORS issues
                 errorBody = textAsParagraphs("error-swf-cors");
-                errorFooter = this.createErrorFooter(
-                    "https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-cors-header",
-                    text("ruffle-wiki"),
-                );
+                errorFooter = this.createErrorFooter([
+                    new PanicLinkInfo(
+                        "https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-cors-header",
+                        text("ruffle-wiki"),
+                    ),
+                    new PanicLinkInfo(),
+                ]);
                 break;
             case PanicError.WasmCors:
                 // Self hosted: Cannot load `.wasm` file - CORS issues
                 errorBody = textAsParagraphs("error-wasm-cors");
-                errorFooter = this.createErrorFooter(
-                    "https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-cors-header",
-                    text("ruffle-wiki"),
-                );
+                errorFooter = this.createErrorFooter([
+                    new PanicLinkInfo(
+                        "https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-cors-header",
+                        text("ruffle-wiki"),
+                    ),
+                    new PanicLinkInfo(),
+                ]);
                 break;
             case PanicError.InvalidWasm:
                 // Self hosted: Cannot load `.wasm` file - incorrect configuration or missing files
                 errorBody = textAsParagraphs("error-wasm-invalid");
-                errorFooter = this.createErrorFooter(
-                    "https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#addressing-a-compileerror",
-                    text("ruffle-wiki"),
-                );
+                errorFooter = this.createErrorFooter([
+                    new PanicLinkInfo(
+                        "https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#addressing-a-compileerror",
+                        text("ruffle-wiki"),
+                    ),
+                    new PanicLinkInfo(),
+                ]);
                 break;
             case PanicError.WasmDownload:
                 // Usually a transient network error or botched deployment
                 errorBody = textAsParagraphs("error-wasm-download");
-                errorFooter = this.createErrorFooter();
+                errorFooter = this.createErrorFooter([new PanicLinkInfo()]);
                 break;
             case PanicError.WasmDisabledMicrosoftEdge:
                 // Self hosted: User has disabled WebAssembly in Microsoft Edge through the
                 // "Enhance your Security on the web" setting.
                 errorBody = textAsParagraphs("error-wasm-disabled-on-edge");
-                errorFooter = this.createErrorFooter(
-                    "https://github.com/ruffle-rs/ruffle/wiki/Frequently-Asked-Questions-For-Users#edge-webassembly-error",
-                    text("more-info"),
-                );
+                errorFooter = this.createErrorFooter([
+                    new PanicLinkInfo(
+                        "https://github.com/ruffle-rs/ruffle/wiki/Frequently-Asked-Questions-For-Users#edge-webassembly-error",
+                        text("more-info"),
+                    ),
+                    new PanicLinkInfo(),
+                ]);
                 break;
             case PanicError.JavascriptConflict:
                 // Self hosted: Cannot load `.wasm` file - a native object / function is overriden
@@ -1932,19 +1941,21 @@ export class RufflePlayer extends HTMLElement {
                         }),
                     );
                 }
-                errorFooter = this.createErrorFooter(
-                    undefined,
-                    undefined,
-                    actionTag,
-                );
+                errorFooter = this.createErrorFooter([
+                    actionLink,
+                    new PanicLinkInfo(),
+                ]);
                 break;
             case PanicError.CSPConflict:
                 // General error: Cannot load `.wasm` file - a native object / function is overriden
                 errorBody = textAsParagraphs("error-csp-conflict");
-                errorFooter = this.createErrorFooter(
-                    "https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-wasm-csp",
-                    text("ruffle-wiki"),
-                );
+                errorFooter = this.createErrorFooter([
+                    new PanicLinkInfo(
+                        "https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-wasm-csp",
+                        text("ruffle-wiki"),
+                    ),
+                    new PanicLinkInfo(),
+                ]);
                 break;
             default:
                 // Unknown error
@@ -1952,11 +1963,10 @@ export class RufflePlayer extends HTMLElement {
                     buildDate: buildInfo.buildDate,
                     outdated: String(isBuildOutdated),
                 });
-                errorFooter = this.createErrorFooter(
-                    undefined,
-                    undefined,
-                    actionTag,
-                );
+                errorFooter = this.createErrorFooter([
+                    actionLink,
+                    new PanicLinkInfo(),
+                ]);
                 break;
         }
         const panicDiv = document.createElement("div");
