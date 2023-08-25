@@ -1,0 +1,9 @@
+<root>
+  <item>A</item>
+</root>
+<root>
+  <item name="Hello">A</item>
+</root>
+<root>
+  <item name="Hello" name2="&lt;root>&#xA;  &lt;item>A&lt;/item>&#xA;  &lt;item>B&lt;/item>&#xA;&lt;/root>">A</item>
+</root>
