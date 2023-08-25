@@ -1,4 +1,20 @@
 /**
+ * Insert all rules from array in the style sheet.
+ *
+ * @param sheet The style sheet to which to apply the rules.
+ * @param rules An array of rules to be applied.
+ */
+function insertRules(sheet: CSSStyleSheet, rules: Array<string>) {
+    for (const rule of rules) {
+        try {
+            sheet.insertRule(rule);
+        } catch (err) {
+            // Ignore unsupported rules
+        }
+    }
+}
+
+/**
  * The default styles to apply to the shadow template.
  * This function must be run after the shadow template is added to the page.
  *
@@ -9,50 +25,40 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
         return;
     }
 
-    styleElement.sheet.insertRule(`
-        :host {
+    const rules = [
+        `:host {
             all: initial;
 
             --ruffle-blue: #37528c;
             --ruffle-orange: #ffad33;
 
+            display: inline-block;
+            position: relative;
             /* Default width/height; this will get overridden by user styles/attributes. */
             width: 550px;
             height: 400px;
-            display: inline-block;
-            position: relative;
             font-family: Arial, sans-serif;
             letter-spacing: 0.4px;
             touch-action: none;
             user-select: none;
             -webkit-user-select: none;
             -webkit-tap-highlight-color: transparent;
-        }
-    `);
+        }`,
 
-    /* Ruffle's width/height CSS interferes with Safari's fullscreen CSS. */
-    /* Ensure that Safari's fullscreen mode actually fills the screen. */
-    try {
-        styleElement.sheet.insertRule(`
-            :host(:-webkit-full-screen) {
-                display: block;
-                width: 100% !important;
-                height: 100% !important;
-            }
-        `);
-    } catch (err) {
-        // Ignore errors when run on browsers without this pseudo-class
-    }
+        /* Ruffle's width/height CSS interferes with Safari's fullscreen CSS. */
+        /* Ensure that Safari's fullscreen mode actually fills the screen. */
+        `:host(:-webkit-full-screen) {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
+        }`,
 
-    styleElement.sheet.insertRule(`
-        .hidden {
+        `.hidden {
             display: none !important;
-        }
-    `);
+        }`,
 
-    /* All of these use the dimensions specified by the embed. */
-    styleElement.sheet.insertRule(`
-        #container,
+        /* All of these use the dimensions specified by the embed. */
+        `#container,
         #play-button,
         #unmute-overlay,
         #unmute-overlay .background,
@@ -64,39 +70,29 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
             bottom: 0;
             left: 0;
             right: 0;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        #container {
+        `#container {
             overflow: hidden;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        #container canvas {
+        `#container canvas {
             width: 100%;
             height: 100%;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        #play-button,
+        `#play-button,
         #unmute-overlay {
             cursor: pointer;
             display: none;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        #unmute-overlay .background {
+        `#unmute-overlay .background {
             background: black;
             opacity: 0.7;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        #play-button .icon,
+        `#play-button .icon,
         #unmute-overlay .icon {
             position: absolute;
             top: 50%;
@@ -107,19 +103,15 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
             max-height: 384px;
             transform: translate(-50%, -50%);
             opacity: 0.8;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        #play-button:hover .icon,
+        `#play-button:hover .icon,
         #unmute-overlay:hover .icon {
             opacity: 1;
-        }
-    `);
+        }`,
 
-    /* Includes inverted colors from play button! */
-    styleElement.sheet.insertRule(`
-        #panic {
+        /* Includes inverted colors from play button! */
+        `#panic {
             font-size: 20px;
             text-align: center;
             background: linear-gradient(180deg, #fd3a40 0%, #fda138 100%);
@@ -127,49 +119,37 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
             display: flex;
             flex-flow: column;
             justify-content: space-around;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        #panic a {
+        `#panic a {
             color: var(--ruffle-blue);
             font-weight: bold;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        #panic-title {
+        `#panic-title {
             font-size: xxx-large;
             font-weight: bold;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        #panic-body.details {
+        `#panic-body.details {
             flex: 0.9;
             margin: 0 10px;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        #panic-body textarea {
+        `#panic-body textarea {
             width: 100%;
             height: 100%;
             resize: none;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        #panic ul {
+        `#panic ul {
             padding: 0;
             display: flex;
             list-style-type: none;
             justify-content: space-evenly;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        #message-overlay {
+        `#message-overlay {
             position: absolute;
             background: var(--ruffle-blue);
             color: var(--ruffle-orange);
@@ -179,36 +159,28 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
             align-items: center;
             justify-content: center;
             overflow: auto;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        #message-overlay .message {
+        `#message-overlay .message {
             text-align: center;
             max-height: 100%;
             max-width: 100%;
             padding: 5%;
             font-size: 20px;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        #message-overlay p {
+        `#message-overlay p {
             margin: 0.5em 0;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        #message-overlay .message div {
+        `#message-overlay .message div {
             display: flex;
             justify-content: center;
             flex-wrap: wrap;
             column-gap: 1em;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        #message-overlay a, #message-overlay button {
+        `#message-overlay a, #message-overlay button {
             cursor: pointer;
             background: var(--ruffle-blue);
             color: var(--ruffle-orange);
@@ -219,17 +191,13 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
             padding: 10px;
             text-decoration: none;
             margin: 2% 0;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        #message-overlay a:hover, #message-overlay button:hover {
+        `#message-overlay a:hover, #message-overlay button:hover {
             background: #ffffff4c;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        #continue-btn {
+        `#continue-btn {
              cursor: pointer;
              background: var(--ruffle-blue);
              color: var(--ruffle-orange);
@@ -238,26 +206,20 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
              font-size: 20px;
              border-radius: 20px;
              padding: 10px;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        #continue-btn:hover {
+        `#continue-btn:hover {
             background: #ffffff4c;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        #context-menu-overlay {
+        `#context-menu-overlay {
             width: 100%;
             height: 100%;
             z-index: 1;
             position: absolute;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        #context-menu {
+        `#context-menu {
             color: black;
             background: #fafafa;
             border: 1px solid gray;
@@ -268,153 +230,117 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
             list-style: none;
             padding: 0;
             margin: 0;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        #context-menu .menu-item {
+        `#context-menu .menu-item {
             padding: 5px 10px;
             cursor: pointer;
             color: black;
-        }
-`);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        #context-menu .menu-item.disabled {
+        `#context-menu .menu-item.disabled {
             cursor: default;
             color: gray;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        #context-menu .menu-item:not(.disabled):hover {
+        `#context-menu .menu-item:not(.disabled):hover {
             background: lightgray;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        #context-menu .menu-separator hr {
+        `#context-menu .menu-separator hr {
             border: none;
             border-bottom: 1px solid lightgray;
             margin: 2px;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        #splash-screen {
+        `#splash-screen {
             display: flex;
             flex-direction: column;
             background: var(--splash-screen-background, var(--preloader-background, var(--ruffle-blue)));
             align-items: center;
             justify-content: center;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        .loadbar {
+        `.loadbar {
             width: 100%;
             max-width: 316px;
             max-height: 10px;
             height: 20%;
             background: #253559;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        .loadbar-inner {
+        `.loadbar-inner {
             width: 0px;
             max-width: 100%;
             height: 100%;
             background: var(--ruffle-orange);
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        .logo {
+        `.logo {
             display: var(--logo-display, block);
             max-width: 380px;
             max-height: 150px;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        .loading-animation {
+        `.loading-animation {
             max-width: 28px;
             max-height: 28px;
             margin-bottom: 2%;
             width: 10%;
             aspect-ratio: 1;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        .spinner {
+        `.spinner {
             stroke-dasharray: 180;
             stroke-dashoffset: 135;
             stroke: var(--ruffle-orange);
             transform-origin: 50% 50%;
             animation: rotate 1.5s linear infinite;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        @keyframes rotate {
+        `@keyframes rotate {
             to {
                 transform: rotate(360deg);
             }
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        #virtual-keyboard {
+        `#virtual-keyboard {
             position: absolute;
             opacity: 0;
             top: -100px;
             width: 1px;
             height: 1px;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        .modal {
+        `.modal {
             height: inherit;
             user-select: text;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        .modal-area {
+        `.modal-area {
             position: sticky;
             background: white;
             width: fit-content;
             padding: 16px;
             border: 3px solid black;
             margin: auto;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        #modal-area {
+        `#modal-area {
             height: 500px;
             max-height: calc(100% - 38px);
             min-height: 80px;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        #restore-save {
+        `#restore-save {
             display: none;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        .replace-save {
+        `.replace-save {
             display: none;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        .save-option {
+        `.save-option {
             display: inline-block;
             padding: 3px 10px;
             margin: 5px 2px;
@@ -422,63 +348,50 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
             border-radius: 50px;
             background-color: var(--ruffle-blue);
             color: white;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        .close-modal {
+        `.close-modal {
             position: absolute;
             top: 5px;
             right: 10px;
             cursor: pointer;
             font-size: x-large;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        .general-save-options {
+        `.general-save-options {
             text-align: center;
             padding-bottom: 8px;
             border-bottom: 2px solid #888;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        #local-saves {
+        `#local-saves {
             border-collapse: collapse;
             overflow-y: auto;
             display: block;
             padding-right: 16px;
             height: calc(100% - 45px);
             min-height: 30px;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        #local-saves td {
+        `#local-saves td {
             border-bottom: 1px solid #bbb;
             height: 30px;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        #local-saves tr td:nth-child(1) {
+        `#local-saves tr td:nth-child(1) {
             padding-right: 1em;
             word-break: break-all;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        #local-saves tr:nth-child(even) {
+        `#local-saves tr:nth-child(even) {
             background-color: #f2f2f2;
-        }
-    `);
+        }`,
 
-    styleElement.sheet.insertRule(`
-        #video-holder {
+        `#video-holder {
             padding-top: 20px;
-        }
-    `);
+        }`,
+    ];
+    insertRules(styleElement.sheet, rules);
 }
 
 /**
