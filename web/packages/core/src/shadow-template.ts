@@ -1,19 +1,22 @@
 /**
- * The shadow template which is used to fill the actual Ruffle player element
- * on the page.
+ * The default styles to apply to the shadow template.
+ * This function must be run after the shadow template is added to the page.
  *
  * @param styleElement The static style element to which to add the rules
  */
 export function applyStaticStyles(styleElement: HTMLStyleElement) {
-    if (styleElement.sheet) {
-        /* Includes default width/height; this will get overridden by user styles/attributes. */
-        styleElement.sheet.insertRule(`
+    if (!styleElement.sheet) {
+        return;
+    }
+
+    styleElement.sheet.insertRule(`
         :host {
             all: initial;
 
             --ruffle-blue: #37528c;
             --ruffle-orange: #ffad33;
 
+            /* Default width/height; this will get overridden by user styles/attributes. */
             width: 550px;
             height: 400px;
             display: inline-block;
@@ -25,30 +28,30 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
             -webkit-user-select: none;
             -webkit-tap-highlight-color: transparent;
         }
-`);
+    `);
 
-        /* Ruffle's width/height CSS interferes with Safari's fullscreen CSS. */
-        /* Ensure that Safari's fullscreen mode actually fills the screen. */
-        try {
-            styleElement.sheet.insertRule(`
-        :host(:-webkit-full-screen) {
-            display: block;
-            width: 100% !important;
-            height: 100% !important;
-        }
-`);
-        } catch (err) {
-            // Ignore errors, this doesn't work when run on any other browsers
-        }
-
+    /* Ruffle's width/height CSS interferes with Safari's fullscreen CSS. */
+    /* Ensure that Safari's fullscreen mode actually fills the screen. */
+    try {
         styleElement.sheet.insertRule(`
+            :host(:-webkit-full-screen) {
+                display: block;
+                width: 100% !important;
+                height: 100% !important;
+            }
+        `);
+    } catch (err) {
+        // Ignore errors when run on browsers without this pseudo-class
+    }
+
+    styleElement.sheet.insertRule(`
         .hidden {
             display: none !important;
         }
-`);
+    `);
 
-        /* All of these use the dimensions specified by the embed. */
-        styleElement.sheet.insertRule(`
+    /* All of these use the dimensions specified by the embed. */
+    styleElement.sheet.insertRule(`
         #container,
         #play-button,
         #unmute-overlay,
@@ -62,37 +65,37 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
             left: 0;
             right: 0;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         #container {
             overflow: hidden;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         #container canvas {
             width: 100%;
             height: 100%;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         #play-button,
         #unmute-overlay {
             cursor: pointer;
             display: none;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         #unmute-overlay .background {
             background: black;
             opacity: 0.7;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         #play-button .icon,
         #unmute-overlay .icon {
             position: absolute;
@@ -105,17 +108,17 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
             transform: translate(-50%, -50%);
             opacity: 0.8;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         #play-button:hover .icon,
         #unmute-overlay:hover .icon {
             opacity: 1;
         }
-`);
+    `);
 
-        /* Includes inverted colors from play button! */
-        styleElement.sheet.insertRule(`
+    /* Includes inverted colors from play button! */
+    styleElement.sheet.insertRule(`
         #panic {
             font-size: 20px;
             text-align: center;
@@ -125,47 +128,47 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
             flex-flow: column;
             justify-content: space-around;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         #panic a {
             color: var(--ruffle-blue);
             font-weight: bold;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         #panic-title {
             font-size: xxx-large;
             font-weight: bold;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         #panic-body.details {
             flex: 0.9;
             margin: 0 10px;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         #panic-body textarea {
             width: 100%;
             height: 100%;
             resize: none;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         #panic ul {
             padding: 0;
             display: flex;
             list-style-type: none;
             justify-content: space-evenly;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         #message-overlay {
             position: absolute;
             background: var(--ruffle-blue);
@@ -177,9 +180,9 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
             justify-content: center;
             overflow: auto;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         #message-overlay .message {
             text-align: center;
             max-height: 100%;
@@ -187,24 +190,24 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
             padding: 5%;
             font-size: 20px;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         #message-overlay p {
             margin: 0.5em 0;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         #message-overlay .message div {
             display: flex;
             justify-content: center;
             flex-wrap: wrap;
             column-gap: 1em;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         #message-overlay a, #message-overlay button {
             cursor: pointer;
             background: var(--ruffle-blue);
@@ -217,15 +220,15 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
             text-decoration: none;
             margin: 2% 0;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         #message-overlay a:hover, #message-overlay button:hover {
             background: #ffffff4c;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         #continue-btn {
              cursor: pointer;
              background: var(--ruffle-blue);
@@ -236,24 +239,24 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
              border-radius: 20px;
              padding: 10px;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         #continue-btn:hover {
             background: #ffffff4c;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         #context-menu-overlay {
             width: 100%;
             height: 100%;
             z-index: 1;
             position: absolute;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         #context-menu {
             color: black;
             background: #fafafa;
@@ -266,9 +269,9 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
             padding: 0;
             margin: 0;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         #context-menu .menu-item {
             padding: 5px 10px;
             cursor: pointer;
@@ -276,28 +279,28 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
         }
 `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         #context-menu .menu-item.disabled {
             cursor: default;
             color: gray;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         #context-menu .menu-item:not(.disabled):hover {
             background: lightgray;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         #context-menu .menu-separator hr {
             border: none;
             border-bottom: 1px solid lightgray;
             margin: 2px;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         #splash-screen {
             display: flex;
             flex-direction: column;
@@ -305,9 +308,9 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
             align-items: center;
             justify-content: center;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         .loadbar {
             width: 100%;
             max-width: 316px;
@@ -315,26 +318,26 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
             height: 20%;
             background: #253559;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         .loadbar-inner {
             width: 0px;
             max-width: 100%;
             height: 100%;
             background: var(--ruffle-orange);
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         .logo {
             display: var(--logo-display, block);
             max-width: 380px;
             max-height: 150px;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         .loading-animation {
             max-width: 28px;
             max-height: 28px;
@@ -342,9 +345,9 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
             width: 10%;
             aspect-ratio: 1;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         .spinner {
             stroke-dasharray: 180;
             stroke-dashoffset: 135;
@@ -352,17 +355,17 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
             transform-origin: 50% 50%;
             animation: rotate 1.5s linear infinite;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         @keyframes rotate {
             to {
                 transform: rotate(360deg);
             }
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         #virtual-keyboard {
             position: absolute;
             opacity: 0;
@@ -370,16 +373,16 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
             width: 1px;
             height: 1px;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         .modal {
             height: inherit;
             user-select: text;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         .modal-area {
             position: sticky;
             background: white;
@@ -388,29 +391,29 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
             border: 3px solid black;
             margin: auto;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         #modal-area {
             height: 500px;
             max-height: calc(100% - 38px);
             min-height: 80px;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         #restore-save {
             display: none;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         .replace-save {
             display: none;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         .save-option {
             display: inline-block;
             padding: 3px 10px;
@@ -420,9 +423,9 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
             background-color: var(--ruffle-blue);
             color: white;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         .close-modal {
             position: absolute;
             top: 5px;
@@ -430,17 +433,17 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
             cursor: pointer;
             font-size: x-large;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         .general-save-options {
             text-align: center;
             padding-bottom: 8px;
             border-bottom: 2px solid #888;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         #local-saves {
             border-collapse: collapse;
             overflow-y: auto;
@@ -449,39 +452,38 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
             height: calc(100% - 45px);
             min-height: 30px;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         #local-saves td {
             border-bottom: 1px solid #bbb;
             height: 30px;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         #local-saves tr td:nth-child(1) {
             padding-right: 1em;
             word-break: break-all;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         #local-saves tr:nth-child(even) {
             background-color: #f2f2f2;
         }
-`);
+    `);
 
-        styleElement.sheet.insertRule(`
+    styleElement.sheet.insertRule(`
         #video-holder {
             padding-top: 20px;
         }
-`);
-    }
+    `);
 }
 
 /**
  *
- * @param tag The HTML Tag name of the new element.
+ * @param tag The HTML tag name of the new element.
  * @param id The id of the new element.
  * @param className The class name of the new element.
  * @param attributes A hash of attributes for the new element.
@@ -517,16 +519,18 @@ function createElement(
 
 /**
  *
- * @param parentElement The element to which to append a child element.
- * @param childElement The element to be appended to the parent element.
+ * @param parentElement The node to which to append a child element.
+ * @param childElement The node to be appended to the parent element.
  */
-function appendElement(
-    parentElement: Element | DocumentFragment,
-    childElement: Element,
-) {
+function appendElement(parentElement: Node, childElement: Node) {
     parentElement.appendChild(childElement);
 }
 
+/**
+ * The shadow template which is used to fill the actual Ruffle player element
+ * on the page.
+ *
+ */
 export const ruffleShadowTemplate = document.createElement("template");
 const svgns = "http://www.w3.org/2000/svg";
 const staticStyles = createElement("style", "static-styles");
