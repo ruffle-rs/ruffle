@@ -353,6 +353,16 @@ fn ruffle_path_to_lyon_path(commands: &[DrawCommand], is_closed: bool) -> Path {
                 }
                 builder.quadratic_bezier_to(point(*control), point(*anchor));
             }
+            DrawCommand::CubicCurveTo {
+                control_a,
+                control_b,
+                anchor,
+            } => {
+                if let Some(cursor) = cursor.take() {
+                    builder.begin(point(cursor));
+                }
+                builder.cubic_bezier_to(point(*control_a), point(*control_b), point(*anchor));
+            }
         }
     }
 

@@ -830,6 +830,18 @@ fn draw_commands_to_path2d(commands: &[DrawCommand], is_closed: bool) -> Path2d 
                 anchor.x.get().into(),
                 anchor.y.get().into(),
             ),
+            DrawCommand::CubicCurveTo {
+                control_a,
+                control_b,
+                anchor,
+            } => path.bezier_curve_to(
+                control_a.x.get().into(),
+                control_a.y.get().into(),
+                control_b.x.get().into(),
+                control_b.y.get().into(),
+                anchor.x.get().into(),
+                anchor.y.get().into(),
+            ),
         };
     }
 
