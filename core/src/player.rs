@@ -47,7 +47,7 @@ use crate::stub::StubCollection;
 use crate::tag_utils::SwfMovie;
 use crate::timer::Timers;
 use crate::vminterface::Instantiator;
-use gc_arena::{ArenaParameters, Collect, DynamicRootSet, GcCell, Rootable};
+use gc_arena::{Collect, DynamicRootSet, GcCell, Rootable};
 use instant::Instant;
 use rand::{rngs::SmallRng, SeedableRng};
 use ruffle_render::backend::{null::NullRenderer, RenderBackend, ViewportDimensions};
@@ -2513,19 +2513,16 @@ impl PlayerBuilder {
                 debug_ui: Default::default(),
 
                 // GC data
-                gc_arena: Rc::new(RefCell::new(GcArena::new(
-                    ArenaParameters::default(),
-                    |gc_context| {
-                        Self::create_gc_root(
-                            gc_context,
-                            player_version,
-                            self.fullscreen,
-                            fake_movie.clone(),
-                            self.external_interface_providers,
-                            self.fs_command_provider,
-                        )
-                    },
-                ))),
+                gc_arena: Rc::new(RefCell::new(GcArena::new(|gc_context| {
+                    Self::create_gc_root(
+                        gc_context,
+                        player_version,
+                        self.fullscreen,
+                        fake_movie.clone(),
+                        self.external_interface_providers,
+                        self.fs_command_provider,
+                    )
+                }))),
             })
         });
 
