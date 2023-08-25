@@ -1828,8 +1828,8 @@ dependencies = [
 
 [[package]]
 name = "gc-arena"
-version = "0.3.1"
-source = "git+https://github.com/kyren/gc-arena?rev=ad3e24f89c78d8bb94db18383987290f88e4edcb#ad3e24f89c78d8bb94db18383987290f88e4edcb"
+version = "0.3.3"
+source = "git+https://github.com/kyren/gc-arena?rev=efd89fc683c6bb456af3e226c33763cb822645e9#efd89fc683c6bb456af3e226c33763cb822645e9"
 dependencies = [
  "gc-arena-derive",
  "sptr",
@@ -1837,8 +1837,8 @@ dependencies = [
 
 [[package]]
 name = "gc-arena-derive"
-version = "0.3.1"
-source = "git+https://github.com/kyren/gc-arena?rev=ad3e24f89c78d8bb94db18383987290f88e4edcb#ad3e24f89c78d8bb94db18383987290f88e4edcb"
+version = "0.3.3"
+source = "git+https://github.com/kyren/gc-arena?rev=efd89fc683c6bb456af3e226c33763cb822645e9#efd89fc683c6bb456af3e226c33763cb822645e9"
 dependencies = [
  "proc-macro2",
  "quote",
