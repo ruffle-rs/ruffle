@@ -3972,6 +3972,7 @@ dependencies = [
  "jpeg-decoder",
  "lru",
  "lyon",
+ "lyon_geom",
  "num-derive 0.4.0",
  "num-traits",
  "png",

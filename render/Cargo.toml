@@ -17,6 +17,7 @@ flate2 = "1.0.27"
 smallvec = { version = "1.11.0", features = ["union"] }
 downcast-rs = "1.2.0"
 lyon = { version = "1.0.1", optional = true }
+lyon_geom = "1.0.1"
 thiserror = "1.0"
 wasm-bindgen = { version = "=0.2.87", optional = true }
 enum-map = "2.6.1"

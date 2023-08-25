@@ -3,7 +3,7 @@ use ruffle_render::backend::{RenderBackend, ShapeHandle};
 use ruffle_render::bitmap::{BitmapHandle, BitmapInfo, BitmapSize, BitmapSource};
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::shape_utils::{
-    quadratic_curve_bounds, DistilledShape, DrawCommand, DrawPath, FillRule,
+    cubic_curve_bounds, quadratic_curve_bounds, DistilledShape, DrawCommand, DrawPath, FillRule,
 };
 use std::cell::{Cell, RefCell};
 use swf::{FillStyle, LineStyle, Point, Rectangle, Twips};
@@ -458,5 +458,16 @@ fn stretch_bounds(
         DrawCommand::QuadraticCurveTo { control, anchor } => {
             bounds.union(&quadratic_curve_bounds(from, stroke_width, control, anchor))
         }
+        DrawCommand::CubicCurveTo {
+            control_a,
+            control_b,
+            anchor,
+        } => bounds.union(&cubic_curve_bounds(
+            from,
+            stroke_width,
+            control_a,
+            control_b,
+            anchor,
+        )),
     }
 }
