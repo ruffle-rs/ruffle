@@ -13,7 +13,10 @@ use quick_xml::{
 use crate::{avm2::TObject, xml::custom_unescape};
 
 use super::{
-    error::type_error, object::E4XOrXml, string::AvmString, Activation, Error, Multiname, Value,
+    error::{make_error_1118, type_error},
+    object::E4XOrXml,
+    string::AvmString,
+    Activation, Error, Multiname, Value,
 };
 use crate::string::{WStr, WString};
 
@@ -292,6 +295,147 @@ impl<'gc> E4XNode<'gc> {
                 ));
             }
         }
+        Ok(())
+    }
+
+    // ECMA-357 9.1.1.4 [[DeleteByIndex]] (P)
+    pub fn delete_by_index(&self, index: usize, activation: &mut Activation<'_, 'gc>) {
+        let E4XNodeKind::Element { children, .. } = &mut *self.kind_mut(activation.gc()) else {
+            return;
+        };
+
+        // 2.a. If i is less than x.[[Length]]
+        if index < children.len() {
+            // 2.a.i. If x has a property with name P
+            // 2.a.i.2. Remove the property with the name P from x
+            let element = children.remove(index);
+            // 2.a.i.1. Let x[P].[[Parent]] = null
+            element.set_parent(None, activation.gc());
+        }
+    }
+
+    // ECMA-357 9.1.1.11 [[Insert]] (P, V)
+    pub fn insert(
+        &self,
+        index: usize,
+        value: Value<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<(), Error<'gc>> {
+        // 1. If x.[[Class]] ∈ {"text", "comment", "processing-instruction", "attribute"}, return
+        if !matches!(*self.kind(), E4XNodeKind::Element { .. }) {
+            return Ok(());
+        }
+
+        // 4. If Type(V) is XML and (V is x or an ancestor of x) throw an Error exception
+        if let Some(xml) = value.as_object().and_then(|x| x.as_xml_object()) {
+            if self.ancestors().any(|x| E4XNode::ptr_eq(x, *xml.node())) {
+                return Err(make_error_1118(activation));
+            }
+        }
+
+        // 10. If Type(V) is XMLList
+        if let Some(list) = value.as_object().and_then(|x| x.as_xml_list_object()) {
+            let E4XNodeKind::Element { children, .. } = &mut *self.kind_mut(activation.gc()) else {
+                unreachable!("E4XNode should be of element kind");
+            };
+
+            // 10.a. For j = 0 to V.[[Length-1]]
+            for (child_index, child) in list.children().iter().enumerate() {
+                let child = child.node();
+                // 10.a.i. V[j].[[Parent]] = x
+                child.set_parent(Some(*self), activation.gc());
+                // 10.a.ii. x[i + j] = V[j]
+                children.insert(index + child_index, *child);
+            }
+        // 11. Else
+        } else {
+            // 11.a. Call the [[Replace]] method of x with arguments i and V
+            if let E4XNodeKind::Element { children, .. } = &mut *self.kind_mut(activation.gc()) {
+                // NOTE: Make room for the replace operation.
+                children.insert(index, E4XNode::dummy(activation.gc()))
+            }
+            self.replace(index, value, activation)?;
+        }
+
+        // 12. Return
+        Ok(())
+    }
+
+    // ECMA-357 9.1.1.12 [[Replace]] (P, V)
+    pub fn replace(
+        &self,
+        index: usize,
+        value: Value<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<(), Error<'gc>> {
+        // 1. If x.[[Class]] ∈ {"text", "comment", "processing-instruction", "attribute"}, return
+        if !matches!(*self.kind(), E4XNodeKind::Element { .. }) {
+            return Ok(());
+        }
+
+        // 5. If Type(V) is XML and V.[[Class]] ∈ {"element", "comment", "processing-instruction", "text"}
+        if let Some(xml) = value.as_object().and_then(|x| x.as_xml_object()) {
+            if matches!(*xml.node().kind(), E4XNodeKind::Attribute(_)) {
+                return Ok(());
+            }
+
+            // 5.a. If V.[[Class]] is “element” and (V is x or an ancestor of x) throw an Error exception
+            if matches!(*xml.node().kind(), E4XNodeKind::Element { .. }) {
+                if self.ancestors().any(|x| E4XNode::ptr_eq(x, *xml.node())) {
+                    return Err(make_error_1118(activation));
+                }
+            }
+
+            // 5.b. Let V.[[Parent]] = x
+            xml.node().set_parent(Some(*self), activation.gc());
+
+            let E4XNodeKind::Element { children, .. } = &mut *self.kind_mut(activation.gc()) else {
+                unreachable!("E4XNode should be of element kind");
+            };
+
+            // 5.c. If x has a property with name P
+            if let Some(node) = children.get(index) {
+                // 5.c.i. Let x[P].[[Parent]] = null
+                node.set_parent(None, activation.gc());
+            }
+
+            // 5.d. Let x[P] = V
+            if index >= children.len() {
+                children.push(*xml.node());
+            } else {
+                children[index] = *xml.node();
+            }
+        // 6. Else if Type(V) is XMLList
+        } else if let Some(_) = value.as_object().and_then(|x| x.as_xml_list_object()) {
+            // 6.a. Call the [[DeleteByIndex]] method of x with argument P
+            self.delete_by_index(index, activation);
+            // 6.b. Call the [[Insert]] method of x with arguments P and V
+            self.insert(index, value, activation)?;
+        // 7. Else
+        } else {
+            // 7.a. Let s = ToString(V)
+            let s: AvmString<'_> = value.coerce_to_string(activation)?;
+            // 7.b. Create a new XML object t with t.[[Class]] = "text", t.[[Parent]] = x and t.[[Value]] = s
+            let text_node = E4XNode::text(activation.gc(), s, Some(*self));
+
+            let E4XNodeKind::Element { children, .. } = &mut *self.kind_mut(activation.gc()) else {
+                unreachable!("E4XNode should be of element kind");
+            };
+
+            // 7.c. If x has a property with name P
+            if let Some(node) = children.get(index) {
+                // 7.c.i. Let x[P].[[Parent]] = null
+                node.set_parent(None, activation.gc());
+            }
+
+            // 7.d. Let the value of property P of x be t
+            if index >= children.len() {
+                children.push(text_node);
+            } else {
+                children[index] = text_node;
+            }
+        }
+
         Ok(())
     }
 
