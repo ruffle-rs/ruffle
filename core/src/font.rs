@@ -60,7 +60,7 @@ impl EvalParameters {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum GlyphSource {
     Memory {
         /// The list of glyphs defined in the font.
@@ -132,7 +132,7 @@ impl GlyphSource {
 #[collect(no_drop)]
 pub struct Font<'gc>(Gc<'gc, FontData>);
 
-#[derive(Debug, Clone, Collect)]
+#[derive(Debug, Collect)]
 #[collect(require_static)]
 struct FontData {
     glyphs: GlyphSource,
