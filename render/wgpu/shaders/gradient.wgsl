@@ -16,6 +16,7 @@ struct VertexOutput {
 #endif
 
 struct Gradient {
+    num_colors: f32,
     focal_point: f32,
     interpolation: i32,
     shape: i32,
@@ -68,11 +69,11 @@ fn find_t(uv: vec2<f32>) -> f32 {
 @fragment
 fn main_fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     #if use_push_constants == true
-        var colorTransforms = pc.colorTransforms;
+        let colorTransforms = pc.colorTransforms;
     #endif
 
     // Calculate normalized `t` position in gradient, [0.0, 1.0] being the bounds of the ratios.
-    var t: f32 = find_t(in.uv);
+    var t = find_t(in.uv);
 
     if (gradient.repeat == 1) {
         // Pad
@@ -92,11 +93,23 @@ fn main_fragment(in: VertexOutput) -> @location(0) vec4<f32> {
         t = fract(t);
     }
 
-    var color = textureSample(texture, texture_sampler, vec2<f32>(t, 0.0));
+    let sample = textureSample(texture, texture_sampler, vec2<f32>(t, 0.0));
+    t = sample.r * (gradient.num_colors - 1.0);
+
+    let i = i32(floor(t));
+    t = fract(t);
+
+    var color0 = textureLoad(texture, vec2<i32>(i, 1), 0);
+    color0 = saturate(color0 * colorTransforms.mult_color + colorTransforms.add_color);
+
+    var color1 = textureLoad(texture, vec2<i32>(i + 1, 1), 0);
+    color1 = saturate(color1 * colorTransforms.mult_color + colorTransforms.add_color);
+
+    // Lerp between the two colors.
+    var color = mix(color0, color1, t);
+
     if( gradient.interpolation != 0 ) {
         color = common::linear_to_srgb(color);
     }
-    let out = saturate(color * colorTransforms.mult_color + colorTransforms.add_color);
-    let alpha = saturate(out.a);
-    return vec4<f32>(out.rgb * alpha, alpha);
+    return vec4<f32>(color.rgb * color.a, color.a);
 }
