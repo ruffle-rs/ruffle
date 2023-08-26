@@ -97,8 +97,8 @@ pub fn begin_gradient_fill<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.as_display_object() {
-        let gradient_type = args.get_string(activation, 0);
-        let gradient_type = parse_gradient_type(activation, gradient_type?)?;
+        let gradient_type = args.get_string(activation, 0)?;
+        let gradient_type = parse_gradient_type(activation, gradient_type)?;
         let colors = args.get_object(activation, 1, "colors")?;
         let alphas = args.get_object(activation, 2, "alphas")?;
         let ratios = args.get_object(activation, 3, "ratios")?;
@@ -865,8 +865,278 @@ pub fn draw_path<'gc>(
     let commands = commands
         .as_vector_storage()
         .expect("commands is not a Vector");
-    let data = &*data.as_vector_storage().expect("data is not a Vector");
+    let data = data.as_vector_storage().expect("data is not a Vector");
 
+    process_commands(activation, &mut drawing, &commands, &data);
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `Graphics.drawRoundRectComplex`
+pub fn draw_round_rect_complex<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_method!(activation, "flash.display.Graphics", "drawRoundRectComplex");
+    Ok(Value::Undefined)
+}
+
+/// Implements `Graphics.drawTriangles`
+pub fn draw_triangles<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this.as_display_object() {
+        if let Some(mut drawing) = this.as_drawing(activation.context.gc_context) {
+            let vertices = args.get_object(activation, 0, "vertices")?;
+
+            let indices = args.try_get_object(activation, 1);
+
+            let uvt_data = args.try_get_object(activation, 2);
+
+            let culling = {
+                let culling = args.get_string(activation, 3)?;
+                culling_to_triangle_culling(activation, culling)?
+            };
+
+            draw_triangles_internal(
+                activation,
+                &mut drawing,
+                &vertices,
+                indices.as_ref(),
+                uvt_data.as_ref(),
+                culling,
+            )?;
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+fn draw_triangles_internal<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    drawing: &mut Drawing,
+    vertices: &Object<'gc>,
+    indices: Option<&Object<'gc>>,
+    _uvt_data: Option<&Object<'gc>>,
+    culling: TriangleCulling,
+) -> Result<(), Error<'gc>> {
+    let vertices = vertices
+        .as_vector_storage()
+        .expect("vertices is not a Vector");
+
+    if let Some(indices) = indices {
+        let indices = indices
+            .as_vector_storage()
+            .expect("indices is not a Vector");
+
+        fn read_point<'gc>(
+            vertices: &VectorStorage<'gc>,
+            index: usize,
+            activation: &mut Activation<'_, 'gc>,
+        ) -> Result<Point<Twips>, Error<'gc>> {
+            let x = {
+                let x = vertices
+                    .get(2 * index, activation)?
+                    .coerce_to_number(activation)?;
+                Twips::from_pixels(x)
+            };
+            let y = {
+                let y = vertices
+                    .get(2 * index + 1, activation)?
+                    .coerce_to_number(activation)?;
+                Twips::from_pixels(y)
+            };
+
+            Ok(Point::new(x, y))
+        }
+
+        fn next_triangle<'gc>(
+            vertices: &VectorStorage<'gc>,
+            indices: &mut impl Iterator<Item = Value<'gc>>,
+            activation: &mut Activation<'_, 'gc>,
+        ) -> Result<Option<Triangle>, Error<'gc>> {
+            match (indices.next(), indices.next(), indices.next()) {
+                (Some(i0), Some(i1), Some(i2)) => {
+                    let i0 = i0.coerce_to_u32(activation)? as usize;
+                    let i1 = i1.coerce_to_u32(activation)? as usize;
+                    let i2 = i2.coerce_to_u32(activation)? as usize;
+
+                    let p0 = read_point(vertices, i0, activation)?;
+                    let p1 = read_point(vertices, i1, activation)?;
+                    let p2 = read_point(vertices, i2, activation)?;
+
+                    Ok(Some((p0, p1, p2)))
+                }
+                _ => Ok(None),
+            }
+        }
+
+        let indices = &mut indices.iter();
+
+        while let Some(triangle) = next_triangle(&vertices, indices, activation)? {
+            draw_triangle_internal(triangle, drawing, culling);
+        }
+    } else {
+        let mut vertices = vertices.iter();
+
+        fn read_point<'gc>(
+            vertices: &mut impl Iterator<Item = Value<'gc>>,
+            activation: &mut Activation<'_, 'gc>,
+        ) -> Result<Option<Point<Twips>>, Error<'gc>> {
+            let x = {
+                let x = vertices.next();
+                let x = match x {
+                    Some(x) => x.coerce_to_number(activation)?,
+                    None => return Ok(None),
+                };
+                Twips::from_pixels(x)
+            };
+            let y = {
+                let y = vertices.next();
+                let y = match y {
+                    Some(y) => y.coerce_to_number(activation)?,
+                    None => return Ok(None),
+                };
+                Twips::from_pixels(y)
+            };
+
+            Ok(Some(Point::new(x, y)))
+        }
+
+        fn next_triangle<'gc>(
+            vertices: &mut impl Iterator<Item = Value<'gc>>,
+            activation: &mut Activation<'_, 'gc>,
+        ) -> Result<Option<Triangle>, Error<'gc>> {
+            match (
+                read_point(vertices, activation)?,
+                read_point(vertices, activation)?,
+                read_point(vertices, activation)?,
+            ) {
+                (Some(p0), Some(p1), Some(p2)) => Ok(Some((p0, p1, p2))),
+                _ => Ok(None),
+            }
+        }
+
+        while let Some(triangle) = next_triangle(&mut vertices, activation)? {
+            draw_triangle_internal(triangle, drawing, culling);
+        }
+    }
+
+    Ok(())
+}
+
+fn draw_triangle_internal((a, b, c): Triangle, drawing: &mut Drawing, culling: TriangleCulling) {
+    match culling {
+        TriangleCulling::None => {
+            drawing.draw_command(DrawCommand::MoveTo(a));
+
+            drawing.draw_command(DrawCommand::LineTo(b));
+            drawing.draw_command(DrawCommand::LineTo(c));
+            drawing.draw_command(DrawCommand::LineTo(a));
+        }
+        TriangleCulling::Positive => {
+            panic!("Positive culling not implemented")
+        }
+        TriangleCulling::Negative => {
+            panic!("Negative culling not implemented")
+        }
+    }
+}
+
+/// Implements `Graphics.drawGraphicsData`
+pub fn draw_graphics_data<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(vector) = args
+        .get_object(activation, 0, "graphicsData")?
+        .as_vector_storage()
+    {
+        //assert_eq!(vector.value_type(), Some(activation.avm2().classes().igraphicsdata));
+
+        let this = this.as_display_object().expect("Bad this");
+
+        if let Some(mut drawing) = this.as_drawing(activation.context.gc_context) {
+            for elem in vector.iter() {
+                let obj = elem.coerce_to_object(activation)?;
+
+                handle_igraphics_data(activation, &mut drawing, &obj)?;
+            }
+        };
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `Graphics.lineBitmapStyle`
+pub fn line_bitmap_style<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this.as_display_object() {
+        let bitmap = args
+            .get_object(activation, 0, "bitmap")?
+            .as_bitmap_data()
+            .expect("Bitmap argument is ensured to be a BitmapData from actionscript");
+        let matrix = if let Some(matrix) = args.try_get_object(activation, 1) {
+            Matrix::from(object_to_matrix(matrix, activation)?)
+        } else {
+            // Users can explicitly pass in `null` to mean identity matrix
+            Matrix::IDENTITY
+        };
+        let is_repeating = args.get_bool(2);
+        let is_smoothed = args.get_bool(3);
+
+        let handle =
+            bitmap.bitmap_handle(activation.context.gc_context, activation.context.renderer);
+
+        let bitmap = ruffle_render::bitmap::BitmapInfo {
+            handle,
+            width: bitmap.width() as u16,
+            height: bitmap.height() as u16,
+        };
+        let scale_matrix = Matrix::scale(
+            Fixed16::from_f64(bitmap.width as f64),
+            Fixed16::from_f64(bitmap.height as f64),
+        );
+
+        if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
+            let id = draw.add_bitmap(bitmap);
+            draw.set_line_fill_style(FillStyle::Bitmap {
+                id,
+                matrix: matrix * scale_matrix,
+                is_smoothed,
+                is_repeating,
+            });
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `Graphics.readGraphicsData`
+pub fn read_graphics_data<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_method!(activation, "flash.display.Graphics", "readGraphicsData");
+    let value_type = activation.avm2().classes().igraphicsdata;
+    let new_storage = VectorStorage::new(0, false, Some(value_type), activation);
+    Ok(VectorObject::from_vector(new_storage, activation)?.into())
+}
+
+fn process_commands<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    drawing: &mut Drawing,
+    commands: &VectorStorage<'gc>,
+    data: &VectorStorage<'gc>,
+) {
     let mut data_index = 0;
 
     for i in 0..commands.length() {
@@ -942,95 +1212,421 @@ pub fn draw_path<'gc>(
             drawing.draw_command(draw_command);
         }
     }
-
-    Ok(Value::Undefined)
 }
 
-/// Implements `Graphics.drawRoundRectComplex`
-pub fn draw_round_rect_complex<'gc>(
+fn handle_igraphics_data<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.display.Graphics", "drawRoundRectComplex");
-    Ok(Value::Undefined)
-}
+    drawing: &mut Drawing,
+    obj: &Object<'gc>,
+) -> Result<(), Error<'gc>> {
+    let class = obj.instance_of().expect("No class");
 
-/// Implements `Graphics.drawTriangles`
-pub fn draw_triangles<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.display.Graphics", "drawTriangles");
-    Ok(Value::Undefined)
-}
+    if class == activation.avm2().classes().graphicsbitmapfill {
+        let style = handle_bitmap_fill(activation, drawing, obj)?;
+        drawing.set_fill_style(Some(style));
+    } else if class == activation.avm2().classes().graphicsendfill {
+        drawing.set_fill_style(None);
+    } else if class == activation.avm2().classes().graphicsgradientfill {
+        let style = handle_gradient_fill(activation, obj)?;
+        drawing.set_fill_style(Some(style));
+    } else if class == activation.avm2().classes().graphicspath {
+        let commands = obj
+            .get_public_property("commands", activation)?
+            .coerce_to_object(activation)?;
 
-/// Implements `Graphics.drawGraphicsData`
-pub fn draw_graphics_data<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.display.Graphics", "drawGraphicsData");
-    Ok(Value::Undefined)
-}
+        let data = obj
+            .get_public_property("data", activation)?
+            .coerce_to_object(activation)?;
 
-/// Implements `Graphics.lineBitmapStyle`
-pub fn line_bitmap_style<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.as_display_object() {
-        let bitmap = args
-            .get_object(activation, 0, "bitmap")?
-            .as_bitmap_data()
-            .expect("Bitmap argument is ensured to be a BitmapData from actionscript");
-        let matrix = if let Some(matrix) = args.try_get_object(activation, 1) {
-            Matrix::from(object_to_matrix(matrix, activation)?)
-        } else {
-            // Users can explicitly pass in `null` to mean identity matrix
-            Matrix::IDENTITY
-        };
-        let is_repeating = args.get_bool(2);
-        let is_smoothed = args.get_bool(3);
+        //TODO implement winding
+        let _winding = obj
+            .get_public_property("winding", activation)?
+            .coerce_to_string(activation)?;
 
-        let handle =
-            bitmap.bitmap_handle(activation.context.gc_context, activation.context.renderer);
-
-        let bitmap = ruffle_render::bitmap::BitmapInfo {
-            handle,
-            width: bitmap.width() as u16,
-            height: bitmap.height() as u16,
-        };
-        let scale_matrix = Matrix::scale(
-            Fixed16::from_f64(bitmap.width as f64),
-            Fixed16::from_f64(bitmap.height as f64),
+        process_commands(
+            activation,
+            drawing,
+            &commands
+                .as_vector_storage()
+                .expect("commands is not a Vector"),
+            &data.as_vector_storage().expect("data is not a Vector"),
         );
+    } else if class == activation.avm2().classes().graphicssolidfill {
+        let style = handle_solid_fill(activation, obj)?;
+        drawing.set_fill_style(Some(style));
+    } else if class == activation.avm2().classes().graphicsshaderfill {
+        tracing::warn!("Graphics shader fill unimplemented {:?}", class);
+        drawing.set_fill_style(None);
+    } else if class == activation.avm2().classes().graphicsstroke {
+        let thickness = obj
+            .get_public_property("thickness", activation)?
+            .coerce_to_number(activation)?;
 
-        if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
-            let id = draw.add_bitmap(bitmap);
-            draw.set_line_fill_style(FillStyle::Bitmap {
-                id,
-                matrix: matrix * scale_matrix,
-                is_smoothed,
-                is_repeating,
-            });
+        if thickness.is_nan() {
+            drawing.set_line_style(None);
+        } else {
+            let caps = {
+                let caps = obj
+                    .get_public_property("caps", activation)?
+                    .coerce_to_string(activation);
+                caps_to_cap_style(caps.ok())
+            };
+            let fill = {
+                let fill = obj
+                    .get_public_property("fill", activation)?
+                    .coerce_to_object(activation)?;
+
+                handle_igraphics_fill(activation, drawing, &fill)?
+            };
+
+            let joints = obj
+                .get_public_property("joints", activation)?
+                .coerce_to_string(activation)
+                .ok();
+            let miter_limit = obj
+                .get_public_property("miterLimit", activation)?
+                .coerce_to_number(activation)?;
+            let pixel_hinting = obj
+                .get_public_property("pixelHinting", activation)?
+                .coerce_to_boolean();
+            let scale_mode = obj
+                .get_public_property("scaleMode", activation)?
+                .coerce_to_string(activation)?;
+
+            let width = Twips::from_pixels(thickness.clamp(0.0, 255.0));
+            let join_style = joints_to_join_style(joints, miter_limit);
+            let (allow_scale_x, allow_scale_y) = scale_mode_to_allow_scale_bits(&scale_mode)?;
+
+            let mut line_style = LineStyle::new()
+                .with_width(width)
+                .with_start_cap(caps)
+                .with_end_cap(caps)
+                .with_join_style(join_style)
+                .with_allow_scale_x(allow_scale_x)
+                .with_allow_scale_y(allow_scale_y)
+                .with_is_pixel_hinted(pixel_hinting)
+                .with_allow_close(false);
+
+            if let Some(fill) = fill {
+                line_style = line_style.with_fill_style(fill);
+            }
+
+            drawing.set_line_style(Some(line_style));
         }
+    } else if class == activation.avm2().classes().graphicstrianglepath {
+        handle_graphics_triangle_path(activation, drawing, obj)?;
+    } else {
+        panic!("Unknown graphics data class {:?}", class);
     }
 
-    Ok(Value::Undefined)
+    Ok(())
 }
 
-/// Implements `Graphics.readGraphicsData`
-pub fn read_graphics_data<'gc>(
+#[derive(Debug, Clone, Copy)]
+enum TriangleCulling {
+    None,
+    Positive,
+    Negative,
+}
+
+fn culling_to_triangle_culling<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.display.Graphics", "readGraphicsData");
-    let value_type = activation.avm2().classes().igraphicsdata;
-    let new_storage = VectorStorage::new(0, false, Some(value_type), activation);
-    Ok(VectorObject::from_vector(new_storage, activation)?.into())
+    culling: AvmString,
+) -> Result<TriangleCulling, Error<'gc>> {
+    if &culling == b"none" {
+        Ok(TriangleCulling::None)
+    } else if &culling == b"positive" {
+        Ok(TriangleCulling::Positive)
+    } else if &culling == b"negative" {
+        Ok(TriangleCulling::Negative)
+    } else {
+        Err(make_error_2008(activation, "culling"))
+    }
+}
+
+type Triangle = (Point<Twips>, Point<Twips>, Point<Twips>);
+
+fn handle_graphics_triangle_path<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    drawing: &mut Drawing,
+    obj: &Object<'gc>,
+) -> Result<(), Error<'gc>> {
+    let culling = {
+        let culling = obj
+            .get_public_property("culling", activation)?
+            .coerce_to_string(activation)?;
+
+        culling_to_triangle_culling(activation, culling)?
+    };
+
+    let vertices = obj
+        .get_public_property("vertices", activation)?
+        .coerce_to_object(activation)?;
+
+    let indices = obj
+        .get_public_property("indices", activation)?
+        .coerce_to_object(activation)?;
+
+    let _uvt_data = obj
+        .get_public_property("uvtData", activation)?
+        .coerce_to_object(activation)?;
+
+    if let Some(vertices) = vertices.as_vector_storage() {
+        if let Some(indices) = indices.as_vector_storage() {
+            fn read_point<'gc>(
+                vertices: &VectorStorage<'gc>,
+                index: usize,
+                activation: &mut Activation<'_, 'gc>,
+            ) -> Result<Point<Twips>, Error<'gc>> {
+                let x = {
+                    let x = vertices
+                        .get(2 * index, activation)?
+                        .coerce_to_number(activation)?;
+                    Twips::from_pixels(x)
+                };
+                let y = {
+                    let y = vertices
+                        .get(2 * index + 1, activation)?
+                        .coerce_to_number(activation)?;
+                    Twips::from_pixels(y)
+                };
+
+                Ok(Point::new(x, y))
+            }
+
+            fn next_triangle<'gc>(
+                vertices: &VectorStorage<'gc>,
+                indices: &mut impl Iterator<Item = Value<'gc>>,
+                activation: &mut Activation<'_, 'gc>,
+            ) -> Result<Option<Triangle>, Error<'gc>> {
+                match (indices.next(), indices.next(), indices.next()) {
+                    (Some(i0), Some(i1), Some(i2)) => {
+                        let i0 = i0.coerce_to_u32(activation)? as usize;
+                        let i1 = i1.coerce_to_u32(activation)? as usize;
+                        let i2 = i2.coerce_to_u32(activation)? as usize;
+
+                        let p0 = read_point(vertices, i0, activation)?;
+                        let p1 = read_point(vertices, i1, activation)?;
+                        let p2 = read_point(vertices, i2, activation)?;
+
+                        Ok(Some((p0, p1, p2)))
+                    }
+                    _ => Ok(None),
+                }
+            }
+
+            let indices = &mut indices.iter();
+
+            while let Some((a, b, c)) = next_triangle(&vertices, indices, activation)? {
+                match culling {
+                    TriangleCulling::None => {
+                        drawing.draw_command(DrawCommand::MoveTo(a));
+
+                        drawing.draw_command(DrawCommand::LineTo(b));
+                        drawing.draw_command(DrawCommand::LineTo(c));
+                        drawing.draw_command(DrawCommand::LineTo(a));
+                    }
+                    TriangleCulling::Positive => {
+                        panic!("Positive culling not implemented")
+                    }
+                    TriangleCulling::Negative => {
+                        panic!("Negative culling not implemented")
+                    }
+                }
+            }
+        } else {
+            panic!("Indices is not a vector");
+        };
+    }
+
+    Ok(())
+}
+
+fn handle_igraphics_fill<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    drawing: &mut Drawing,
+    obj: &Object<'gc>,
+) -> Result<Option<FillStyle>, Error<'gc>> {
+    let class = obj.instance_of().expect("No class");
+
+    if class == activation.avm2().classes().graphicsbitmapfill {
+        let style = handle_bitmap_fill(activation, drawing, obj)?;
+        Ok(Some(style))
+    } else if class == activation.avm2().classes().graphicsendfill {
+        Ok(None)
+    } else if class == activation.avm2().classes().graphicsgradientfill {
+        let style = handle_gradient_fill(activation, obj)?;
+        Ok(Some(style))
+    } else if class == activation.avm2().classes().graphicssolidfill {
+        let style = handle_solid_fill(activation, obj)?;
+        Ok(Some(style))
+    } else if class == activation.avm2().classes().graphicsshaderfill {
+        tracing::warn!("Graphics shader fill unimplemented {:?}", class);
+        Ok(None)
+    } else {
+        tracing::warn!("Unknown graphics fill class {:?}", class);
+        Ok(None)
+    }
+}
+
+fn handle_solid_fill<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    obj: &Object<'gc>,
+) -> Result<FillStyle, Error<'gc>> {
+    let alpha = obj
+        .get_public_property("alpha", activation)?
+        .coerce_to_number(activation)
+        .unwrap_or(1.0);
+
+    let color = obj
+        .get_public_property("color", activation)?
+        .coerce_to_u32(activation)
+        .unwrap_or(0);
+
+    Ok(FillStyle::Color(color_from_args(color, alpha)))
+}
+
+fn handle_gradient_fill<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    obj: &Object<'gc>,
+) -> Result<FillStyle, Error<'gc>> {
+    let alphas = obj
+        .get_public_property("alphas", activation)?
+        .coerce_to_object(activation)?;
+
+    let colors = obj
+        .get_public_property("colors", activation)?
+        .coerce_to_object(activation)?;
+
+    let ratios = obj
+        .get_public_property("ratios", activation)?
+        .coerce_to_object(activation)?;
+
+    let gradient_type = {
+        let gradient_type = obj
+            .get_public_property("type", activation)?
+            .coerce_to_string(activation)?;
+        parse_gradient_type(activation, gradient_type)?
+    };
+
+    let records = build_gradient_records(
+        activation,
+        &colors.as_array_storage().expect("Guaranteed by AS"),
+        &alphas.as_array_storage().expect("Guaranteed by AS"),
+        &ratios.as_array_storage().expect("Guaranteed by AS"),
+    )?;
+
+    let matrix = {
+        let matrix = obj
+            .get_public_property("matrix", activation)
+            .ok()
+            .and_then(|mat| mat.coerce_to_object(activation).ok());
+
+        match matrix {
+            Some(matrix) => Matrix::from(object_to_matrix(matrix, activation)?),
+            None => Matrix::IDENTITY,
+        }
+    };
+
+    let spread = {
+        let spread_method = obj
+            .get_public_property("spreadMethod", activation)?
+            .coerce_to_string(activation)?;
+
+        parse_spread_method(spread_method)
+    };
+
+    let interpolation = {
+        let interpolation_method = obj
+            .get_public_property("interpolationMethod", activation)?
+            .coerce_to_string(activation)?;
+
+        parse_interpolation_method(interpolation_method)
+    };
+
+    let focal_point = obj
+        .get_public_property("focalPointRatio", activation)?
+        .coerce_to_number(activation)?;
+
+    let fill = match gradient_type {
+        GradientType::Linear => FillStyle::LinearGradient(Gradient {
+            matrix,
+            spread,
+            interpolation,
+            records,
+        }),
+        GradientType::Radial if focal_point == 0.0 => FillStyle::RadialGradient(Gradient {
+            matrix,
+            spread,
+            interpolation,
+            records,
+        }),
+        _ => FillStyle::FocalGradient {
+            gradient: Gradient {
+                matrix,
+                spread,
+                interpolation,
+                records,
+            },
+            focal_point: Fixed8::from_f64(focal_point),
+        },
+    };
+
+    Ok(fill)
+}
+
+fn handle_bitmap_fill<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    drawing: &mut Drawing,
+    obj: &Object<'gc>,
+) -> Result<FillStyle, Error<'gc>> {
+    let bitmap_data = obj
+        .get_public_property("bitmapData", activation)?
+        .coerce_to_object(activation)?
+        .as_bitmap_data()
+        .expect("Bitmap argument is ensured to be a BitmapData from actionscript");
+
+    let matrix = obj
+        .get_public_property("matrix", activation)
+        .and_then(|prop| {
+            let matrix = prop.coerce_to_object(activation)?;
+
+            let matrix = Matrix::from(object_to_matrix(matrix, activation)?);
+
+            Ok(matrix)
+        })
+        .unwrap_or(Matrix::IDENTITY);
+
+    let is_repeating = obj
+        .get_public_property("repeat", activation)?
+        .coerce_to_boolean();
+
+    let is_smoothed = obj
+        .get_public_property("smooth", activation)?
+        .coerce_to_boolean();
+
+    let handle =
+        bitmap_data.bitmap_handle(activation.context.gc_context, activation.context.renderer);
+
+    let bitmap = ruffle_render::bitmap::BitmapInfo {
+        handle,
+        width: bitmap_data.width() as u16,
+        height: bitmap_data.height() as u16,
+    };
+
+    let scale_matrix = Matrix::scale(
+        Fixed16::from_f64(bitmap.width as f64),
+        Fixed16::from_f64(bitmap.height as f64),
+    );
+
+    let id = drawing.add_bitmap(bitmap);
+
+    let style = FillStyle::Bitmap {
+        id,
+        matrix: matrix * scale_matrix,
+        is_smoothed,
+        is_repeating,
+    };
+
+    Ok(style)
 }
