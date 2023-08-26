@@ -380,10 +380,10 @@ impl<'gc> E4XNode<'gc> {
             }
 
             // 5.a. If V.[[Class]] is “element” and (V is x or an ancestor of x) throw an Error exception
-            if matches!(*xml.node().kind(), E4XNodeKind::Element { .. }) {
-                if self.ancestors().any(|x| E4XNode::ptr_eq(x, *xml.node())) {
-                    return Err(make_error_1118(activation));
-                }
+            if matches!(*xml.node().kind(), E4XNodeKind::Element { .. })
+                && self.ancestors().any(|x| E4XNode::ptr_eq(x, *xml.node()))
+            {
+                return Err(make_error_1118(activation));
             }
 
             // 5.b. Let V.[[Parent]] = x
@@ -406,7 +406,11 @@ impl<'gc> E4XNode<'gc> {
                 children[index] = *xml.node();
             }
         // 6. Else if Type(V) is XMLList
-        } else if let Some(_) = value.as_object().and_then(|x| x.as_xml_list_object()) {
+        } else if value
+            .as_object()
+            .and_then(|x| x.as_xml_list_object())
+            .is_some()
+        {
             // 6.a. Call the [[DeleteByIndex]] method of x with argument P
             self.delete_by_index(index, activation);
             // 6.b. Call the [[Insert]] method of x with arguments P and V
