@@ -15,20 +15,20 @@ jobs:
     name: Paths filter
     runs-on: ubuntu-22.04
     outputs:
-      src: ${{ steps.filter.outputs.src }}
+      should_run: ${{ steps.filter.outputs.src }}
     steps:
       - uses: actions/checkout@v3
 
-      - uses: dorny/paths-filter@v2
+      - uses: AurorNZ/paths-filter@v3
         id: filter
         with:
           filters: |
             src:
-              - '!**.md'
+              - '!**/*.md'
 
   build:
     needs: changes
-    if: needs.changes.outputs.src == 'true'
+    if: needs.changes.outputs.should_run == 'true'
     name: Test Node.js ${{ matrix.node_version }} / Rust ${{ matrix.rust_version }} / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.rust_version == 'nightly' }}
@@ -99,7 +99,7 @@ jobs:
 
   check-required:
     needs: changes
-    if: needs.changes.outputs.src == 'false'
+    if: needs.changes.outputs.should_run == 'false'
     name: Test Node.js ${{ matrix.node_version }} / Rust ${{ matrix.rust_version }} / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
