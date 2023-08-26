@@ -583,3 +583,72 @@ pub fn insert_child_before<'gc>(
     // 4. Return
     return Ok(Value::Undefined);
 }
+
+// ECMA-357 13.4.4.32 XML.prototype.replace (propertyName, value)
+pub fn replace<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let xml = this.as_xml_object().unwrap();
+    let self_node = xml.node();
+    let multiname = name_to_multiname(activation, &args[0], false)?;
+    let value = args.get_value(1);
+
+    // 1. If x.[[Class]] ∈ {"text", "comment", "processing-instruction", "attribute"}, return x
+    if !matches!(*self_node.kind(), E4XNodeKind::Element { .. }) {
+        return Ok(xml.into());
+    }
+
+    // 2. If Type(value) ∉ {XML, XMLList}, let c = ToString(value)
+    // 3. Else let c be the result of calling the [[DeepCopy]] method of value
+    let value = if let Some(xml) = value.as_object().and_then(|x| x.as_xml_object()) {
+        let node = xml.node();
+        XmlObject::new(node.deep_copy(activation.context.gc_context), activation).into()
+    } else if let Some(list) = value.as_object().and_then(|x| x.as_xml_list_object()) {
+        list.deep_copy(activation).into()
+    } else {
+        value
+    };
+
+    // 4. If ToString(ToUint32(P)) == P
+    if let Some(local_name) = multiname.local_name() {
+        if let Ok(index) = local_name.parse::<usize>() {
+            // 4.a. Call the [[Replace]] method of x with arguments P and c and return x
+            self_node.replace(index, value, activation)?;
+            return Ok(xml.into());
+        }
+    }
+
+    // 5. Let n be a QName object created as if by calling the function QName(P)
+
+    // NOTE: Since this part of the E4X spec is annoying to implement in Rust without borrow errors, we do it a bit differently.
+    //       1. First we will get the first elements index that matches our multiname.
+    //       2. Then we will delete all other matches.
+    //       2. And then we insert a dummy E4XNode at the previously stored index, and use the replace method to correct it.
+
+    let index =
+        if let E4XNodeKind::Element { children, .. } = &mut *self_node.kind_mut(activation.gc()) {
+            let index = children
+                .iter()
+                .position(|x| multiname.is_any_name() || x.matches_name(&multiname));
+            // FIXME: Removed E4XNode parents should be removed.
+            children.retain(|x| !(multiname.is_any_name() || x.matches_name(&multiname)));
+
+            if let Some(index) = index {
+                children.insert(index, E4XNode::dummy(activation.gc()));
+                index
+            // 8. If i == undefined, return x
+            } else {
+                return Ok(xml.into());
+            }
+        } else {
+            unreachable!("E4XNode kind should be of element kind");
+        };
+
+    // 9. Call the [[Replace]] method of x with arguments ToString(i) and c
+    self_node.replace(index, value, activation)?;
+
+    // 10. Return x
+    Ok(xml.into())
+}
