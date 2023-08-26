@@ -875,7 +875,7 @@ export class RufflePlayer extends HTMLElement {
      * @param isFull Whether to set to fullscreen or return to normal.
      */
     setFullscreen(isFull: boolean): void {
-        if (this.fullscreenEnabled) {
+        if (this.fullscreenEnabled && isFull !== this.isFullscreen) {
             if (isFull) {
                 this.enterFullscreen();
             } else {
