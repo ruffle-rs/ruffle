@@ -17,6 +17,8 @@ use super::{
 };
 use crate::string::{WStr, WString};
 
+mod iterators;
+
 /// The underlying XML node data, based on E4XNode in avmplus
 /// This wrapped by XMLObject when necessary (see `E4XOrXml`)
 #[derive(Copy, Clone, Collect, Debug)]
@@ -131,6 +133,11 @@ impl<'gc> E4XNode<'gc> {
                 kind: E4XNodeKind::Attribute(value),
             },
         ))
+    }
+
+    /// Returns an iterator that yields ancestor nodes (including itself).
+    pub fn ancestors(self) -> impl Iterator<Item = E4XNode<'gc>> {
+        iterators::AnscIter::for_node(self)
     }
 
     pub fn equals(&self, other: &Self) -> bool {
