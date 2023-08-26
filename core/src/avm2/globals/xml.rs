@@ -485,3 +485,101 @@ pub fn processing_instructions<'gc>(
 
     Ok(XmlListObject::new(activation, nodes, Some(xml.into())).into())
 }
+
+// ECMA-357 13.4.4.18 XML.prototype.insertChildAfter (child1, child2)
+pub fn insert_child_after<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let xml = this.as_xml_object().unwrap();
+    let child1 = args.try_get_object(activation, 0);
+    let child2 = args.get_object(activation, 1, "child2")?;
+
+    // 1. If x.[[Class]] ∈ {"text", "comment", "processing-instruction", "attribute"}, return
+    if !matches!(*xml.node().kind(), E4XNodeKind::Element { .. }) {
+        return Ok(Value::Undefined);
+    }
+
+    // 3. Else if Type(child1) is XML
+    if let Some(child1) = child1.and_then(|x| x.as_xml_object()) {
+        // NOTE: We fetch the index separately to avoid borrowing errors.
+        let index = if let E4XNodeKind::Element { children, .. } = &*xml.node().kind() {
+            // 3.a. For i = 0 to x.[[Length]]-1
+            // 3.a.i. If x[i] is the same object as child1
+            children
+                .iter()
+                .position(|x| E4XNode::ptr_eq(*x, *child1.node()))
+        } else {
+            None
+        };
+
+        if let Some(index) = index {
+            // 3.a.i.1. Call the [[Insert]] method of x with arguments ToString(i + 1) and child2
+            xml.node().insert(index + 1, child2.into(), activation)?;
+            // 3.a.i.2. Return x
+            return Ok(xml.into());
+        }
+    // 2. If (child1 == null)
+    } else {
+        // 2.a. Call the [[Insert]] method of x with arguments "0" and child2
+        xml.node().insert(0, child2.into(), activation)?;
+        // 2.b. Return x
+        return Ok(xml.into());
+    }
+
+    // 4. Return
+    return Ok(Value::Undefined);
+}
+
+// ECMA-357 13.4.4.19 XML.prototype.insertChildBefore (child1, child2)
+pub fn insert_child_before<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let xml = this.as_xml_object().unwrap();
+    let child1 = args.try_get_object(activation, 0);
+    let child2 = args.get_object(activation, 1, "child2")?;
+
+    // 1. If x.[[Class]] ∈ {"text", "comment", "processing-instruction", "attribute"}, return
+    if !matches!(*xml.node().kind(), E4XNodeKind::Element { .. }) {
+        return Ok(Value::Undefined);
+    }
+
+    // 3. Else if Type(child1) is XML
+    if let Some(child1) = child1.and_then(|x| x.as_xml_object()) {
+        // NOTE: We fetch the index separately to avoid borrowing errors.
+        let index = if let E4XNodeKind::Element { children, .. } = &*xml.node().kind() {
+            // 3.a. For i = 0 to x.[[Length]]-1
+            // 3.a.i. If x[i] is the same object as child1
+            children
+                .iter()
+                .position(|x| E4XNode::ptr_eq(*x, *child1.node()))
+        } else {
+            None
+        };
+
+        if let Some(index) = index {
+            // 3.a.i.1. Call the [[Insert]] method of x with arguments ToString(i) and child2
+            xml.node().insert(index, child2.into(), activation)?;
+            // 3.a.i.2. Return x
+            return Ok(xml.into());
+        }
+    // 2. If (child1 == null)
+    } else {
+        let length = if let E4XNodeKind::Element { children, .. } = &*xml.node().kind() {
+            children.len()
+        } else {
+            0
+        };
+
+        // 2.a. Call the [[Insert]] method of x with arguments ToString(x.[[Length]]) and child2
+        xml.node().insert(length, child2.into(), activation)?;
+        // 2.b. Return x
+        return Ok(xml.into());
+    }
+
+    // 4. Return
+    return Ok(Value::Undefined);
+}

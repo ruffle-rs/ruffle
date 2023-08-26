@@ -78,6 +78,8 @@ package {
         AS3 native function length():int;
         AS3 native function comments():XMLList;
         AS3 native function processingInstructions(name:String = "*"):XMLList;
+        AS3 native function insertChildAfter(child1:Object, child2:Object):*;
+        AS3 native function insertChildBefore(child1:Object, child2:Object):*;
 
         AS3 function valueOf():XML {
             return this;
@@ -217,6 +219,16 @@ package {
         prototype.processingInstructions = function(name:String = "*"):XMLList {
             var self:XML = this;
             return self.AS3::processingInstructions(name);
+        }
+
+        prototype.insertChildAfter = function(child1:Object, child2:Object):* {
+            var self:XML = this;
+            return self.AS3::insertChildAfter(child1, child2);
+        }
+
+        prototype.insertChildBefore = function(child1:Object, child2:Object):* {
+            var self:XML = this;
+            return self.AS3::insertChildBefore(child1, child2);
         }
 
         public static const length:int = 1;
