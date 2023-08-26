@@ -63,7 +63,7 @@
         "message": "Ruffle är laddad och kör Flashinnehållet som du begärde."
     },
     "status_result_optout": {
-        "message": "Ruffle är inte inläst för den nuvarande sidan har markerat sig själv som inkompatibel."
+        "message": "Ruffle är inte inläst för att den nuvarande sidan har markerat sig själv som inkompatibel."
     },
     "status_result_disabled": {
         "message": "Ruffle är inte laddad eftersom den är inaktiverad."
@@ -81,7 +81,7 @@
         "message": "Öppna SWF-spelare"
     },
     "open_settings_page": {
-        "message": "Öppna Inställningarna"
+        "message": "Öppna Inställningar"
     },
     "settings_page": {
         "message": "Inställningar"
