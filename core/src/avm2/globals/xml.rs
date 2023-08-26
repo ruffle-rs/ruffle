@@ -632,8 +632,16 @@ pub fn replace<'gc>(
             let index = children
                 .iter()
                 .position(|x| multiname.is_any_name() || x.matches_name(&multiname));
-            // FIXME: Removed E4XNode parents should be removed.
-            children.retain(|x| !(multiname.is_any_name() || x.matches_name(&multiname)));
+            children.retain(|x| {
+                let val = multiname.is_any_name() || x.matches_name(&multiname);
+
+                if val {
+                    // Remove parent.
+                    x.set_parent(None, activation.gc());
+                }
+
+                !val
+            });
 
             if let Some(index) = index {
                 children.insert(index, E4XNode::dummy(activation.gc()));
