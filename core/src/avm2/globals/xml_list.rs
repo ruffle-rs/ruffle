@@ -201,12 +201,7 @@ pub fn copy<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let list = this.as_xml_list_object().unwrap();
-    let children = list
-        .children()
-        .iter()
-        .map(|child| E4XOrXml::E4X(child.node().deep_copy(activation.context.gc_context)))
-        .collect();
-    Ok(XmlListObject::new(activation, children, list.target()).into())
+    Ok(list.deep_copy(activation).into())
 }
 
 pub fn attribute<'gc>(
