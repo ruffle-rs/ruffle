@@ -80,6 +80,8 @@ package {
         AS3 native function processingInstructions(name:String = "*"):XMLList;
         AS3 native function insertChildAfter(child1:Object, child2:Object):*;
         AS3 native function insertChildBefore(child1:Object, child2:Object):*;
+        // NOTE: Docs lie, value can be anything not just XML.
+        AS3 native function replace(propertyName:Object, value:*):XML;
 
         AS3 function valueOf():XML {
             return this;
@@ -229,6 +231,11 @@ package {
         prototype.insertChildBefore = function(child1:Object, child2:Object):* {
             var self:XML = this;
             return self.AS3::insertChildBefore(child1, child2);
+        }
+
+        prototype.replace = function(propertyName:Object, value:*):XML {
+            var self:XML = this;
+            return self.AS3::replace(propertyName, value);
         }
 
         public static const length:int = 1;
