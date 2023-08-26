@@ -97,6 +97,15 @@ impl<'gc> XmlListObject<'gc> {
         self.0.read().target
     }
 
+    pub fn deep_copy(&self, activation: &mut Activation<'_, 'gc>) -> XmlListObject<'gc> {
+        let children = self
+            .children()
+            .iter()
+            .map(|child| E4XOrXml::E4X(child.node().deep_copy(activation.context.gc_context)))
+            .collect();
+        XmlListObject::new(activation, children, self.target())
+    }
+
     pub fn equals(
         &self,
         other: &Value<'gc>,
