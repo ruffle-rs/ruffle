@@ -529,7 +529,7 @@ pub fn insert_child_after<'gc>(
     }
 
     // 4. Return
-    return Ok(Value::Undefined);
+    Ok(Value::Undefined)
 }
 
 // ECMA-357 13.4.4.19 XML.prototype.insertChildBefore (child1, child2)
@@ -581,7 +581,7 @@ pub fn insert_child_before<'gc>(
     }
 
     // 4. Return
-    return Ok(Value::Undefined);
+    Ok(Value::Undefined)
 }
 
 // ECMA-357 13.4.4.32 XML.prototype.replace (propertyName, value)
