@@ -505,11 +505,11 @@ impl GlyphShape {
         }
     }
 
-    pub fn register(&self, renderer: &mut dyn RenderBackend) -> ShapeHandle {
+    pub fn register(&self, renderer: &mut dyn RenderBackend) -> Option<ShapeHandle> {
         match self {
             GlyphShape::Swf(glyph) => {
                 let mut glyph = glyph.borrow_mut();
-                renderer.register_shape((&*glyph.shape()).into(), &NullBitmapSource)
+                Some(renderer.register_shape((&*glyph.shape()).into(), &NullBitmapSource))
             }
         }
     }
@@ -519,14 +519,15 @@ impl GlyphShape {
 pub struct Glyph {
     // Handle to registered shape.
     // If None, it'll be loaded lazily on first render of this glyph.
-    shape_handle: RefCell<Option<ShapeHandle>>,
+    // It's a double option; the outer one is "have we registered", the inner one is option because it may not exist
+    shape_handle: RefCell<Option<Option<ShapeHandle>>>,
 
     shape: GlyphShape,
     advance: Twips,
 }
 
 impl Glyph {
-    pub fn shape_handle(&self, renderer: &mut dyn RenderBackend) -> ShapeHandle {
+    pub fn shape_handle(&self, renderer: &mut dyn RenderBackend) -> Option<ShapeHandle> {
         self.shape_handle
             .borrow_mut()
             .get_or_insert_with(|| self.shape.register(renderer))

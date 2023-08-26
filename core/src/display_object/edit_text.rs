@@ -918,37 +918,38 @@ impl<'gc> EditText<'gc> {
                 self.text_transform(color, baseline_adjustment),
                 params,
                 |pos, transform, glyph: &Glyph, advance, x| {
-                    // If it's highlighted, override the color.
-                    match visible_selection {
-                        Some(visible_selection) if visible_selection.contains(start + pos) => {
-                            // Draw black selection rect
-                            let selection_box = context.transform_stack.transform().matrix
-                                * Matrix::create_box(
-                                    advance.to_pixels() as f32,
-                                    params.height().to_pixels() as f32,
-                                    0.0,
-                                    x + Twips::from_pixels(-1.0),
-                                    Twips::from_pixels(2.0),
-                                );
-                            context.commands.draw_rect(Color::BLACK, selection_box);
+                    if let Some(glyph_shape_handle) = glyph.shape_handle(context.renderer) {
+                        // If it's highlighted, override the color.
+                        match visible_selection {
+                            Some(visible_selection) if visible_selection.contains(start + pos) => {
+                                // Draw black selection rect
+                                let selection_box = context.transform_stack.transform().matrix
+                                    * Matrix::create_box(
+                                        advance.to_pixels() as f32,
+                                        params.height().to_pixels() as f32,
+                                        0.0,
+                                        x + Twips::from_pixels(-1.0),
+                                        Twips::from_pixels(2.0),
+                                    );
+                                context.commands.draw_rect(Color::BLACK, selection_box);
 
-                            // Set text color to white
-                            context.transform_stack.push(&Transform {
-                                matrix: transform.matrix,
-                                color_transform: ColorTransform::IDENTITY,
-                            });
+                                // Set text color to white
+                                context.transform_stack.push(&Transform {
+                                    matrix: transform.matrix,
+                                    color_transform: ColorTransform::IDENTITY,
+                                });
+                            }
+                            _ => {
+                                context.transform_stack.push(transform);
+                            }
                         }
-                        _ => {
-                            context.transform_stack.push(transform);
-                        }
+
+                        // Render glyph.
+                        context
+                            .commands
+                            .render_shape(glyph_shape_handle, context.transform_stack.transform());
+                        context.transform_stack.pop();
                     }
-
-                    // Render glyph.
-                    let glyph_shape_handle = glyph.shape_handle(context.renderer);
-                    context
-                        .commands
-                        .render_shape(glyph_shape_handle, context.transform_stack.transform());
-                    context.transform_stack.pop();
 
                     if let Some((caret_pos, length)) = caret {
                         if caret_pos == pos {
