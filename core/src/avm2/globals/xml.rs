@@ -633,14 +633,13 @@ pub fn replace<'gc>(
                 .iter()
                 .position(|x| multiname.is_any_name() || x.matches_name(&multiname));
             children.retain(|x| {
-                let val = multiname.is_any_name() || x.matches_name(&multiname);
-
-                if val {
+                if multiname.is_any_name() || x.matches_name(&multiname) {
                     // Remove parent.
                     x.set_parent(None, activation.gc());
+                    false
+                } else {
+                    true
                 }
-
-                !val
             });
 
             if let Some(index) = index {
