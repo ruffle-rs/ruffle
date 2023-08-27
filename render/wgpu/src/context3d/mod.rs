@@ -925,6 +925,9 @@ impl Context3D for WgpuContext3D {
                 first_register,
                 matrix_raw_data_column_major,
             } => {
+                if matrix_raw_data_column_major.is_empty() {
+                    return;
+                }
                 let buffer = match program_type {
                     ProgramType::Vertex => &self.current_pipeline.vertex_shader_uniforms,
                     ProgramType::Fragment => &self.current_pipeline.fragment_shader_uniforms,
