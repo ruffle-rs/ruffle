@@ -18,10 +18,7 @@ package flash.display {
 		}
 
 		public function get content():DisplayObject {
-			if (this.numChildren == 0) {
-				return null;
-			}
-			return this.getChildAt(0)
+			return this._contentLoaderInfo.content;
 		}
 
 		public native function load(request: URLRequest, context: LoaderContext = null):void;
