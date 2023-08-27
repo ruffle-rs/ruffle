@@ -20,6 +20,7 @@
 			import flash.events.Event;
 			import flash.events.ProgressEvent;
 			
+			var self = this;
 			var loader = new Loader();
 			this.stage.addChild(loader);
 			trace("loader.content = " + loader.content);
@@ -63,6 +64,13 @@
 			
 			loader.contentLoaderInfo.addEventListener(Event.COMPLETE, function(e) {
 				dump(e);
+				trace("Stage children before addChild attempt: " + self.stage.numChildren);
+				trace("loader.numChildren before addChild attempt: " + loader.numChildren);
+				trace("loader.content before addChild attempt: " + loader.content);
+				self.stage.addChild(loader.content);
+				trace("Stage children after addChild attempt: " + self.stage.numChildren);
+				trace("loader.numChildren after addChild attempt: " + loader.numChildren);
+				trace("loader.content after addChild attempt: " + loader.content);
 			});
 			
 			loader.loadBytes(ByteArray(new loadableSwf));
