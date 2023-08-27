@@ -777,6 +777,10 @@ impl<'gc> E4XNode<'gc> {
         self.0.read().namespace
     }
 
+    pub fn set_local_name(&self, name: AvmString<'gc>, mc: &Mutation<'gc>) {
+        self.0.write(mc).local_name = Some(name);
+    }
+
     pub fn local_name(&self) -> Option<AvmString<'gc>> {
         self.0.read().local_name
     }

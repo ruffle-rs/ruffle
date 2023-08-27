@@ -1,0 +1,11 @@
+<outer attrib="value">
+  <inner>innerText</inner>
+</outer>
+<newOuterName attrib="value">
+  <inner>innerText</inner>
+</newOuterName>
+<newOuterName newattribname="value">
+  <inner>innerText</inner>
+</newOuterName>
+justText
+justText

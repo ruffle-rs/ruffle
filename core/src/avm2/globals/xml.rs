@@ -81,6 +81,28 @@ pub fn name<'gc>(
     }
 }
 
+pub fn set_name<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let xml = this.as_xml_object().unwrap();
+    let node = xml.node();
+
+    let new_name = args.get_string(activation, 0)?;
+
+    let is_attribute_or_element = matches!(
+        &*node.kind(),
+        E4XNodeKind::Attribute(_) | E4XNodeKind::Element { .. }
+    );
+
+    if is_attribute_or_element {
+        node.set_local_name(new_name, activation.context.gc_context);
+    }
+
+    Ok(Value::Undefined)
+}
+
 pub fn namespace<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,

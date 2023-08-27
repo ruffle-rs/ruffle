@@ -59,6 +59,7 @@ package {
         AS3 native function hasComplexContent():Boolean;
         AS3 native function hasSimpleContent():Boolean;
         AS3 native function name():Object;
+        AS3 native function setName(name:String):void;
         AS3 native function namespace(prefix:String = null):*;
         AS3 native function localName():Object;
         AS3 native function toXMLString():String;
