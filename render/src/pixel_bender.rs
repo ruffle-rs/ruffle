@@ -244,6 +244,9 @@ pub enum Operation {
     },
     Else,
     EndIf,
+    Loop {
+        unknown: Box<[u8]>,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -563,6 +566,13 @@ fn read_op<R: Read>(
                 }),
                 _ => unreachable!(),
             }
+        }
+        Opcode::Loop => {
+            let mut unknown = vec![0u8; 23];
+            data.read_exact(&mut unknown)?;
+            shader.operations.push(Operation::Loop {
+                unknown: unknown.into(),
+            });
         }
         _ => {
             let dst = data.read_u16::<LittleEndian>()?;

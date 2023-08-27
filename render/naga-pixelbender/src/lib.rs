@@ -1484,7 +1484,10 @@ impl<'a> ShaderBuilder<'a> {
                         }
                     }
                 }
-                _ => unimplemented!("Operation {op:?} not yet implemented"),
+                Operation::Loop { unknown } => {
+                    tracing::warn!("Unimplemented Loop opcode with data: {unknown:?}")
+                }
+                Operation::Nop => {}
             }
         }
         Ok(())
