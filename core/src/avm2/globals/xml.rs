@@ -624,7 +624,7 @@ pub fn replace<'gc>(
 
     // NOTE: Since this part of the E4X spec is annoying to implement in Rust without borrow errors, we do it a bit differently.
     //       1. First we will get the first elements index that matches our multiname.
-    //       2. Then we will delete all other matches.
+    //       2. Then we will delete all matches.
     //       2. And then we insert a dummy E4XNode at the previously stored index, and use the replace method to correct it.
 
     let index =
