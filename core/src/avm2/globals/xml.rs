@@ -89,11 +89,25 @@ pub fn set_name<'gc>(
     let xml = this.as_xml_object().unwrap();
     let node = xml.node();
 
-    let new_name = args.get_string(activation, 0)?;
+    let new_name = args.get_value(0);
+
+    let new_name = if let Some(qname) = new_name.as_object().and_then(|q| q.as_qname_object()) {
+        let has_no_ns = qname.name().is_any_namespace()
+            || (qname.name().namespace_set().len() == 1
+                && qname.name().namespace_set()[0].is_public());
+        if !has_no_ns {
+            avm2_stub_method!(activation, "XML", "setName", "with QName namespaces");
+        }
+        qname.local_name()
+    } else {
+        new_name.coerce_to_string(activation)?
+    };
 
     let is_attribute_or_element = matches!(
         &*node.kind(),
-        E4XNodeKind::Attribute(_) | E4XNodeKind::Element { .. }
+        E4XNodeKind::Attribute(_)
+            | E4XNodeKind::ProcessingInstruction(_)
+            | E4XNodeKind::Element { .. }
     );
 
     if is_attribute_or_element {
