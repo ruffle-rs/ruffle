@@ -2901,6 +2901,7 @@ dependencies = [
  "naga",
  "naga_oil",
  "ruffle_render",
+ "tracing",
 ]
 
 [[package]]
