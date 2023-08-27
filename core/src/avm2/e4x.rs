@@ -368,7 +368,7 @@ impl<'gc> E4XNode<'gc> {
         ) -> Result<(), Error<'gc>> {
             let is_whitespace_char = |c: &u8| matches!(*c, b'\t' | b'\n' | b'\r' | b' ');
             let is_whitespace_text = text.iter().all(is_whitespace_char);
-            if !(text.is_empty() || ignore_white && is_whitespace_text) {
+            if !(is_text && ignore_white && is_whitespace_text) {
                 let text = AvmString::new_utf8_bytes(
                     activation.context.gc_context,
                     if is_text && ignore_white {
