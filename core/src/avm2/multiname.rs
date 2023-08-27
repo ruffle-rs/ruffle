@@ -253,8 +253,13 @@ impl<'gc> Multiname<'gc> {
                 if self.has_lazy_ns() {
                     let _ = activation.pop_stack(); // ignore the ns component
                 }
-                let name = qname_object.name();
-                return Ok(name.clone());
+                let mut name = qname_object.name().clone();
+
+                if self.is_attribute() {
+                    name.set_is_attribute(true);
+                }
+
+                return Ok(name);
             }
 
             Some(name_value.coerce_to_string(activation)?)
