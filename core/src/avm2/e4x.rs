@@ -20,7 +20,10 @@ use super::{
 };
 use crate::string::{WStr, WString};
 
+mod is_xml_name;
 mod iterators;
+
+pub use is_xml_name::is_xml_name;
 
 /// The underlying XML node data, based on E4XNode in avmplus
 /// This wrapped by XMLObject when necessary (see `E4XOrXml`)
