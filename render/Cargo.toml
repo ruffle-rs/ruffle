@@ -17,12 +17,12 @@ flate2 = "1.0.27"
 smallvec = { version = "1.11.0", features = ["union"] }
 downcast-rs = "1.2.0"
 lyon = { version = "1.0.1", optional = true }
-lyon_geom = "1.0.1"
+lyon_geom = "1.0.4"
 thiserror = "1.0"
 wasm-bindgen = { version = "=0.2.87", optional = true }
 enum-map = "2.6.1"
-serde = { version = "1.0.184", features = ["derive"] }
-clap = { version = "4.3.23", features = ["derive"], optional = true }
+serde = { version = "1.0.188", features = ["derive"] }
+clap = { version = "4.4.0", features = ["derive"], optional = true }
 h263-rs-yuv = { git = "https://github.com/ruffle-rs/h263-rs", rev = "16700664e2b3334f0a930f99af86011aebee14cc"}
 lru = "0.11.0"
 num-traits = "0.2"

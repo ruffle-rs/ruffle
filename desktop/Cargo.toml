@@ -8,7 +8,7 @@ repository.workspace = true
 version.workspace = true
 
 [dependencies]
-clap = { version = "4.3.23", features = ["derive"] }
+clap = { version = "4.4.0", features = ["derive"] }
 cpal = "0.15.2"
 egui = "0.22.0"
 egui-wgpu = { version = "0.22.0", features = ["winit"] }
@@ -32,7 +32,7 @@ anyhow = "1.0"
 bytemuck = "1.13.1"
 os_info = { version = "3", default-features = false }
 unic-langid = "0.9.1"
-sys-locale = "0.3.0"
+sys-locale = "0.3.1"
 wgpu = { workspace = true }
 futures = "0.3.28"
 chrono = { version = "0.4", default-features = false, features = [] }
