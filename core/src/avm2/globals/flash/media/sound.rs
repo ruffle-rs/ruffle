@@ -2,12 +2,13 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::object::{Object, QueuedPlay, SoundChannelObject, TObject};
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::backend::navigator::Request;
 use crate::character::Character;
 use crate::display_object::SoundTransform;
-use crate::{avm2_stub_constructor, avm2_stub_getter, avm2_stub_method};
+use crate::{avm2_stub_getter, avm2_stub_method};
 use swf::{SoundEvent, SoundInfo};
 
 pub use crate::avm2::object::sound_allocator;
@@ -18,8 +19,8 @@ pub fn init<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if !args.is_empty() {
-        avm2_stub_constructor!(activation, "flash.media.Sound", "with arguments");
+    if args.try_get_object(activation, 0).is_some() {
+        let _ = load(activation, this, args);
     }
 
     if let Some(sound_object) = this.as_sound_object() {
@@ -244,7 +245,7 @@ pub fn load<'gc>(
         .coerce_to_string(activation)?;
 
     // TODO: context parameter currently unused.
-    let _sound_context = args.get(1);
+    let _sound_context = args.try_get_object(activation, 1);
     if _sound_context.is_some() {
         avm2_stub_method!(activation, "flash.media.Sound", "load", "with context");
     }
