@@ -1,0 +1,3 @@
+Loaded sound
+Playing sound
+Finished playback
