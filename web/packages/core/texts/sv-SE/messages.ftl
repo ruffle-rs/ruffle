@@ -18,12 +18,12 @@ error-file-protocol =
     Detta fungerar inte eftersom webbläsare blockerar många funktioner från att fungera av säkerhetsskäl.
     Istället bjuder vi in dig att sätta upp en lokal server eller antingen använda webbdemon eller skrivbordsprogrammet.
 error-javascript-config =
-    Ruffle har stött på ett stort fel på grund av en felaktig JavaScriptkonfiguration.
+    Ruffle har stött på ett stort fel på grund av en felaktig JavaScript-konfiguration.
     Om du är serveradministratören bjuder vi in dig att kontrollera feldetaljerna för att ta reda på vilken parameter som är felaktig.
     Du kan också konsultera Rufflewikin för hjälp.
 error-wasm-not-found =
     Ruffle misslyckades ladda ".wasm"-filkomponenten.
-    Om du är serveradministratören, se till att filen har laddats upp korrekt.
+    Om du är serveradministratören se till att filen har laddats upp korrekt.
     Om problemet kvarstår kan du behöva använda inställningen "publicPath": konsultera vänligen Rufflewikin för hjälp.
 error-wasm-mime-type =
     Ruffle har stött på ett stort fel under initialiseringen.
@@ -47,7 +47,7 @@ error-wasm-invalid =
     Om du är serveradministratören konsultera vänligen Rufflewikin för hjälp.
 error-wasm-download =
     Ruffle har stött på ett stort fel under initialiseringen.
-    Detta kan ofta lösas av sig själv, så du kan prova att ladda om sidan.
+    Detta kan ofta lösas av sig själv så du kan prova att ladda om sidan.
     Kontakta annars webbplatsens administratör.
 error-wasm-disabled-on-edge =
     Ruffle misslyckades ladda ".wasm"-filkomponenten.
@@ -56,7 +56,7 @@ error-wasm-disabled-on-edge =
     Om problemet kvarstår kan du behöva använda en annan webbläsare.
 error-javascript-conflict =
     Ruffle har stött på ett stort fel under initialiseringen.
-    Det verkar som att den här sidan använder JavaScriptkod som stör Ruffle.
+    Det verkar som att den här sidan använder JavaScript-kod som stör Ruffle.
     Om du är serveradministratören bjuder vi in dig att försöka ladda filen på en blank sida.
 error-javascript-conflict-outdated = Du kan också försöka ladda upp en nyare version av Ruffle, vilket kan kringgå problemet (nuvarande version är utdaterad: { $buildDate }).
 error-csp-conflict =

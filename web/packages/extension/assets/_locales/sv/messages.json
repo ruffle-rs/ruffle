@@ -54,7 +54,7 @@
         "message": "Ett fel uppstod när den aktuella fliken slogs upp."
     },
     "status_message_init": {
-        "message": "Kontrollerar Rufflestatus på aktuella fliken…"
+        "message": "Kontrollerar Rufflestatus på aktuell flik…"
     },
     "status_result_running": {
         "message": "Ruffle är laddad och redo att köra Flashinnehåll på den aktuella fliken."
@@ -63,7 +63,7 @@
         "message": "Ruffle är laddad och kör Flashinnehållet som du begärde."
     },
     "status_result_optout": {
-        "message": "Ruffle är inte inläst för att den nuvarande sidan har markerat sig själv som inkompatibel."
+        "message": "Ruffle är inte laddad för att den nuvarande sidan har markerat sig själv som inkompatibel."
     },
     "status_result_disabled": {
         "message": "Ruffle är inte laddad eftersom den är inaktiverad."
@@ -72,7 +72,7 @@
         "message": "Ett fel uppstod när den aktuella flikens instans av Ruffle letades upp."
     },
     "status_result_protected": {
-        "message": "Ruffle kan inte läsas in på skyddade webbläsarsidor."
+        "message": "Ruffle kan inte laddas på skyddade webbläsarsidor."
     },
     "action_reload": {
         "message": "Ladda om fliken för att applicera ändringar"
