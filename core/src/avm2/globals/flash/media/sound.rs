@@ -245,8 +245,8 @@ pub fn load<'gc>(
         .coerce_to_string(activation)?;
 
     // TODO: context parameter currently unused.
-    let _sound_context = args.get(1);
-    if _sound_context.is_some() {
+    let sound_context = args.try_get_object(activation, 1);
+    if sound_context.is_some() {
         avm2_stub_method!(activation, "flash.media.Sound", "load", "with context");
     }
 
