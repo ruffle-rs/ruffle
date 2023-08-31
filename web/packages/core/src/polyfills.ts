@@ -1,5 +1,6 @@
 import { RuffleObject } from "./ruffle-object";
 import { RuffleEmbed } from "./ruffle-embed";
+import type { RufflePlayer } from "./ruffle-player";
 import { installPlugin, FLASH_PLUGIN } from "./plugin-polyfill";
 import { publicPath } from "./public-path";
 import type { DataLoadOptions, URLLoadOptions } from "./load-options";
@@ -189,11 +190,25 @@ async function injectRuffle(
  */
 function initMutationObserver(): void {
     const observer = new MutationObserver(function (mutationsList) {
-        // If any nodes were added, re-run the polyfill to detect any new instances.
-        const nodesAdded = mutationsList.some(
-            (mutation) => mutation.addedNodes.length > 0,
-        );
-        if (nodesAdded) {
+        let objectOrEmbedAdded = false;
+        for (const mutation of mutationsList) {
+            for (const addedNode of mutation.addedNodes) {
+                const nodeName = addedNode.nodeName;
+                if (
+                    ["RUFFLE-PLAYER", "RUFFLE-EMBED", "RUFFLE-OBJECT"].includes(
+                        nodeName,
+                    )
+                ) {
+                    const rufflePlayer = addedNode as RufflePlayer;
+                    rufflePlayer.updateResizeObserver();
+                } else {
+                    objectOrEmbedAdded ||= ["EMBED", "OBJECT"].includes(
+                        nodeName,
+                    );
+                }
+            }
+        }
+        if (objectOrEmbedAdded) {
             polyfillFlashInstances();
             polyfillFrames();
         }

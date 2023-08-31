@@ -176,6 +176,7 @@ export class RufflePlayer extends HTMLElement {
     private pointerMoveMaxDistance = 0;
 
     private volumeSettings: VolumeControls;
+    private resizeObserver: ResizeObserver;
 
     /**
      * Triggered when a movie metadata has been loaded (such as movie width and height).
@@ -232,6 +233,15 @@ export class RufflePlayer extends HTMLElement {
      */
     constructor() {
         super();
+        this.resizeObserver = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                if (entry.target === this.parentElement) {
+                    setTimeout(() => this.updateStyles(), 0);
+                    break;
+                }
+            }
+        });
+        this.updateResizeObserver();
 
         this.shadow = this.attachShadow({ mode: "open" });
         this.shadow.appendChild(ruffleShadowTemplate.content.cloneNode(true));
@@ -553,6 +563,20 @@ export class RufflePlayer extends HTMLElement {
     }
 
     /**
+     * Check if the style's height is defined using non-absolute units.
+     *
+     * @param style The HTMLStyleDeclaration whose height to check (or undefined).
+     * @returns true if the height is relative to other elements, otherwise false.
+     */
+    private hasRelativeHeight(style: CSSStyleDeclaration | undefined): boolean {
+        if (!style) {
+            return true;
+        }
+        const absoluteHeightUnits = ["cm", "mm", "Q", "in", "pc", "pt", "px"];
+        return !absoluteHeightUnits.some((unit) => style.height.endsWith(unit));
+    }
+
+    /**
      * Updates the internal shadow DOM to reflect any set attributes from
      * this element.
      */
@@ -560,9 +584,9 @@ export class RufflePlayer extends HTMLElement {
         if (this.dynamicStyles.sheet) {
             if (this.dynamicStyles.sheet.rules) {
                 for (
-                    let i = 0;
-                    i < this.dynamicStyles.sheet.rules.length;
-                    i++
+                    let i = this.dynamicStyles.sheet.rules.length - 1;
+                    i >= 0;
+                    i--
                 ) {
                     this.dynamicStyles.sheet.deleteRule(i);
                 }
@@ -586,9 +610,31 @@ export class RufflePlayer extends HTMLElement {
                     heightAttr.value,
                 );
                 if (height !== null) {
-                    this.dynamicStyles.sheet.insertRule(
+                    const heightIndex = this.dynamicStyles.sheet.insertRule(
                         `:host { height: ${height}; }`,
                     );
+                    // Using setTimeout with a timeout of 0 means insertRule takes effect first
+                    setTimeout(() => {
+                        if (
+                            this.clientHeight === 0 &&
+                            this.dynamicStyles.sheet
+                        ) {
+                            const heightRule = this.dynamicStyles.sheet
+                                .cssRules[heightIndex] as CSSStyleRule;
+                            const parentElement = this.parentElement;
+                            if (
+                                this.hasRelativeHeight(heightRule?.style) &&
+                                this.hasRelativeHeight(parentElement?.style)
+                            ) {
+                                this.dynamicStyles.sheet.deleteRule(
+                                    heightIndex,
+                                );
+                                this.dynamicStyles.sheet.insertRule(
+                                    `:host { height: 200px; }`,
+                                );
+                            }
+                        }
+                    }, 0);
                 }
             }
         }
@@ -1031,6 +1077,17 @@ export class RufflePlayer extends HTMLElement {
             } else {
                 this.exitFullscreen();
             }
+        }
+    }
+
+    /**
+     * Update resizeObserver to watch the RufflePlayer's parent element.
+     *
+     */
+    updateResizeObserver(): void {
+        if (this.parentElement) {
+            this.resizeObserver.disconnect();
+            this.resizeObserver.observe(this.parentElement);
         }
     }
 

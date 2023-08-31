@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>PERCENT-BASED-HEIGHT</title>
+</head>
+<body>
+  <div style="height: 0px;">
+    <div>
+      <embed id="content_1" width="100%" height="100%" src="/test_assets/example.swf"></embed>
+    </div>
+  </div>
+  <div style="height: 0px;">
+    <embed id="content_2" width="100%" height="100%" src="/test_assets/example.swf"></embed>
+  </div>
+  <div style="height: 50px;">
+    <embed id="content_3" width="100%" height="100%" src="/test_assets/example.swf"></embed>
+  </div>
+  <embed id="content_4" width="100%" height="100%" src="/test_assets/example.swf"></embed>
+  <embed id="content_5" width="100%" height="50px" src="/test_assets/example.swf"></embed>
+  <embed id="content_6" width="100%" height="0px" src="/test_assets/example.swf"></embed>
+  <div id="result"></div>
+  <script>
+  function writeResult(res, index) {
+    const resultDiv = document.createElement("div");
+    resultDiv.textContent = res;
+    resultDiv.id = "result_" + index;
+    const result = document.getElementById("result");
+    for (let i = index + 1; i <= 6; i++) {
+      const nextResult = document.getElementById("result_" + i);
+      if (nextResult) {
+        result.insertBefore(resultDiv, nextResult);
+        return;
+      }
+    }
+    result.appendChild(resultDiv);
+  }
+  function checkClientHeight(content) {
+    const index = parseInt(content.id.replace(/^\D+/g, ''));
+    setTimeout(() => writeResult(content.clientHeight, index), 1000);
+  }
+  document.addEventListener("DOMContentLoaded", () => {
+    const observer = new MutationObserver(function (mutationsList) {
+      for (const mutation of mutationsList) {
+        if (mutation && mutation.addedNodes && mutation.addedNodes.length > 0) {
+          const node = mutation.addedNodes[0];
+          if (node && node.nodeName === "RUFFLE-EMBED") {
+            node.addEventListener("loadeddata", () => checkClientHeight(node));
+          }
+        }
+      }
+    });
+    observer.observe(document, { childList: true, subtree: true });
+  });
+  </script>
+</body>
+</html>
