@@ -352,11 +352,11 @@ impl<'gc> ScriptObjectData<'gc> {
         self.proto = Some(proto)
     }
 
-    pub fn get_next_enumerant(&mut self, last_index: u32) -> Option<u32> {
+    pub fn get_next_enumerant(&self, last_index: u32) -> Option<u32> {
         self.values.next(last_index as usize).map(|val| val as u32)
     }
 
-    pub fn get_enumerant_name(&mut self, index: u32) -> Option<Value<'gc>> {
+    pub fn get_enumerant_name(&self, index: u32) -> Option<Value<'gc>> {
         self.values.key_at(index as usize).map(|key| match key {
             StringOrObject::String(name) => Value::String(*name),
             StringOrObject::Object(obj) => Value::Object(*obj),

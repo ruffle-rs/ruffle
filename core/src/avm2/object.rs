@@ -755,9 +755,9 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn get_next_enumerant(
         self,
         last_index: u32,
-        activation: &mut Activation<'_, 'gc>,
+        _activation: &mut Activation<'_, 'gc>,
     ) -> Result<Option<u32>, Error<'gc>> {
-        let mut base = self.base_mut(activation.context.gc_context);
+        let base = self.base();
 
         Ok(base.get_next_enumerant(last_index))
     }
@@ -771,9 +771,9 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn get_enumerant_name(
         self,
         index: u32,
-        activation: &mut Activation<'_, 'gc>,
+        _activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let mut base = self.base_mut(activation.context.gc_context);
+        let base = self.base();
 
         Ok(base.get_enumerant_name(index).unwrap_or(Value::Undefined))
     }

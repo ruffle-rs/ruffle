@@ -1,7 +1,7 @@
 use fnv::FnvBuildHasher;
 use gc_arena::Collect;
 use hashbrown::{self, raw::RawTable};
-use std::hash::Hash;
+use std::{cell::Cell, hash::Hash};
 
 use super::{string::AvmString, Object};
 
@@ -25,9 +25,9 @@ pub enum StringOrObject<'gc> {
 pub struct DynamicMap<K: Eq + PartialEq + Hash, V> {
     values: hashbrown::HashMap<K, DynamicProperty<V>, FnvBuildHasher>,
     // The last index that was given back to flash
-    public_index: usize,
+    public_index: Cell<usize>,
     // The actual index that represents where an item is in the HashMap
-    real_index: usize,
+    real_index: Cell<usize>,
 }
 
 impl<K: Eq + PartialEq + Hash, V> Default for DynamicMap<K, V> {
@@ -40,8 +40,8 @@ impl<K: Eq + PartialEq + Hash, V> DynamicMap<K, V> {
     pub fn new() -> Self {
         Self {
             values: hashbrown::HashMap::default(),
-            public_index: 0,
-            real_index: 0,
+            public_index: Cell::new(0),
+            real_index: Cell::new(0),
         }
     }
 
@@ -57,7 +57,7 @@ impl<K: Eq + PartialEq + Hash, V> DynamicMap<K, V> {
     }
 
     /// Gets the real index from the current public index, returns false if real index is out of bounds
-    fn public_to_real_index(&mut self, index: usize) -> Option<usize> {
+    fn public_to_real_index(&self, index: usize) -> Option<usize> {
         let mut count = 0;
         let raw = self.raw();
         if raw.is_empty() {
@@ -82,32 +82,32 @@ impl<K: Eq + PartialEq + Hash, V> DynamicMap<K, V> {
         None
     }
 
-    fn raw(&mut self) -> &mut RawTable<(K, DynamicProperty<V>)> {
-        self.values.raw_table_mut()
+    fn raw(&self) -> &RawTable<(K, DynamicProperty<V>)> {
+        self.values.raw_table()
     }
 
     pub fn remove(&mut self, key: &K) -> Option<DynamicProperty<V>> {
         self.values.remove(key)
     }
 
-    pub fn next(&mut self, index: usize) -> Option<usize> {
+    pub fn next(&self, index: usize) -> Option<usize> {
         // If the public index is zero than this is the first time this is being enumerated,
         // if index != self.public_index, then we are enumerating twice OR we mutated while enumerating.
         //
         // Regardless of the reason, we just need to sync the supplied index to the real index.
-        if self.public_index == 0 || index != self.public_index {
+        if self.public_index.get() == 0 || index != self.public_index.get() {
             if let Some(real) = self.public_to_real_index(index) {
-                self.real_index = real;
-                self.public_index = index + 1;
-                return Some(self.public_index);
+                self.real_index.set(real);
+                self.public_index.set(index + 1);
+                return Some(self.public_index.get());
             } else {
-                self.public_index = 0;
-                self.real_index = 0;
+                self.public_index.set(0);
+                self.real_index.set(0);
                 return None;
             }
         }
 
-        let real = self.real_index + 1;
+        let real = self.real_index.get() + 1;
         let raw = self.raw();
         let total_buckets = raw.buckets();
         if !raw.is_empty() && real < total_buckets {
@@ -119,9 +119,9 @@ impl<K: Eq + PartialEq + Hash, V> DynamicMap<K, V> {
                         // that it is full.
                         let bucket = raw.bucket(i).as_ref();
                         if bucket.1.enumerable {
-                            self.real_index = i;
-                            self.public_index += 1;
-                            return Some(self.public_index);
+                            self.real_index.set(i);
+                            self.public_index.set(self.public_index.get() + 1);
+                            return Some(self.public_index.get());
                         }
                     }
                 }
@@ -130,17 +130,17 @@ impl<K: Eq + PartialEq + Hash, V> DynamicMap<K, V> {
         None
     }
 
-    pub fn pair_at(&mut self, index: usize) -> Option<&(K, DynamicProperty<V>)> {
+    pub fn pair_at(&self, index: usize) -> Option<&(K, DynamicProperty<V>)> {
         // NOTE: AVM2 object enumeration is one of the weakest parts of an
         // otherwise well-designed VM. Notably, because of the way they
         // implemented `hasnext` and `hasnext2`, all enumerants start from ONE.
         // Hence why we have to `checked_sub` here in case some miscompiled
         // code doesn't check for the zero index, which is actually a failure
         // sentinel.
-        let real_index = if self.public_index == 0 || self.public_index != index {
+        let real_index = if self.public_index.get() == 0 || self.public_index.get() != index {
             self.public_to_real_index(index)?
         } else {
-            self.real_index
+            self.real_index.get()
         };
         if !self.values.is_empty() && real_index < self.raw().buckets() {
             unsafe {
@@ -151,11 +151,11 @@ impl<K: Eq + PartialEq + Hash, V> DynamicMap<K, V> {
         None
     }
 
-    pub fn key_at(&mut self, index: usize) -> Option<&K> {
+    pub fn key_at(&self, index: usize) -> Option<&K> {
         self.pair_at(index).map(|p| &p.0)
     }
 
-    pub fn value_at(&mut self, index: usize) -> Option<&V> {
+    pub fn value_at(&self, index: usize) -> Option<&V> {
         self.pair_at(index).map(|p| &p.1.value)
     }
 }
