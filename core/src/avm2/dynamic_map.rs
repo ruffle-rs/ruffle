@@ -131,12 +131,6 @@ impl<K: Eq + PartialEq + Hash, V> DynamicMap<K, V> {
     }
 
     pub fn pair_at(&self, index: usize) -> Option<&(K, DynamicProperty<V>)> {
-        // NOTE: AVM2 object enumeration is one of the weakest parts of an
-        // otherwise well-designed VM. Notably, because of the way they
-        // implemented `hasnext` and `hasnext2`, all enumerants start from ONE.
-        // Hence why we have to `checked_sub` here in case some miscompiled
-        // code doesn't check for the zero index, which is actually a failure
-        // sentinel.
         let real_index = if self.public_index.get() == 0 || self.public_index.get() != index {
             self.public_to_real_index(index)?
         } else {
