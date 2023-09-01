@@ -1,4 +1,10 @@
 {
+    "settings_ruffle_enable": {
+        "message": "Odtwarzaj zawartość Flash w Ruffle"
+    },
+    "settings_log_level": {
+        "message": "Poziom rejestrowania"
+    },
     "settings_log_level_error": {
         "message": "Błędy"
     },
@@ -11,10 +17,28 @@
     "settings_preferred_renderer": {
         "message": "Preferowany renderer"
     },
+    "settings_preferred_renderer_auto": {
+        "message": "Automatyczny"
+    },
     "settings_advanced_options": {
         "message": "Opcje Zaawansowane"
     },
     "settings_reset": {
         "message": "Resetuj ustawienia"
+    },
+    "status_no_tabs": {
+        "message": "Brak aktywnej karty."
+    },
+    "open_settings_page": {
+        "message": "Otwórz stronę ustawień"
+    },
+    "settings_page": {
+        "message": "Strona ustawień"
+    },
+    "save_settings": {
+        "message": "Zapisz ustawienia"
+    },
+    "settings_saved": {
+        "message": "Zapisano ustawienia"
     }
 }

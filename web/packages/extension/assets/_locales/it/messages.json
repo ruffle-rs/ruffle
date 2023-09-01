@@ -77,6 +77,9 @@
     "action_reload": {
         "message": "Aggiorna la tab per applicare i cambiamenti"
     },
+    "open_player_page": {
+        "message": "Apri Riproduttore SWF"
+    },
     "open_settings_page": {
         "message": "Apri la Pagina Impostazioni"
     },
