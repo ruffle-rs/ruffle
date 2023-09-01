@@ -25,3 +25,6 @@ help-menu-translate-ruffle = Traduci Ruffle...
 help-menu-about = Informazioni Su Ruffle
 debug-menu = Strumenti Di Debug
 debug-menu-open-stage = Visualizza Informazioni Stage
+debug-menu-open-movie = Mostra Video
+debug-menu-open-movie-list = Mostra Video Conosciuti
+debug-menu-search-display-objects = Cerca Oggetti Mostrati...
