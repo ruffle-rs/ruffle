@@ -391,7 +391,6 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
 
             // 12.b. If (primitiveAssign == true)
             if primitive_assign {
-                // FIXME:
                 // 12.b.i. If (n.uri == null)
                 // 12.b.i.1. Let name be a new QName created as if by calling the constructor new
                 //           QName(GetDefaultNamespace(), n)
@@ -401,13 +400,13 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
                 // 12.b.iii. Create a new XML object y with y.[[Name]] = name, y.[[Class]] = "element" and y.[[Parent]] = x
                 let node = E4XNode::element(
                     activation.gc(),
-                    None,
+                    name.explict_namespace(),
                     name.local_name().unwrap(),
                     *self_node,
                 );
-                // FIXME: 12.b.iv. Let ns be the result of calling [[GetNamespace]] on name with no arguments
                 // 12.b.v. Call the [[Replace]] method of x with arguments ToString(i) and y
                 self_node.replace(index, XmlObject::new(node, activation).into(), activation)?;
+                // FIXME: 12.b.iv. Let ns be the result of calling [[GetNamespace]] on name with no arguments
                 // 12.b.vi. Call [[AddInScopeNamespace]] on y with argument ns
             }
 
