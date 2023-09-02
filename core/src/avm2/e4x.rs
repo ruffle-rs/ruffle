@@ -244,6 +244,57 @@ impl<'gc> E4XNode<'gc> {
         node
     }
 
+    /// Returns the amount of children in this node if this node is of Element kind, otherwise returns [None].
+    pub fn length(&self) -> Option<usize> {
+        let E4XNodeKind::Element { children, .. } = &*self.kind() else {
+            return None;
+        };
+
+        Some(children.len())
+    }
+
+    /// Removes all matching children matching provided name, returns the first child removed along with its index (if any).
+    pub fn remove_matching_children(
+        &self,
+        gc_context: &Mutation<'gc>,
+        name: &Multiname<'gc>,
+    ) -> Option<(usize, E4XNode<'gc>)> {
+        let E4XNodeKind::Element { children, .. } = &mut *self.kind_mut(gc_context) else {
+            return None;
+        };
+
+        let index = children
+            .iter()
+            .position(|x| name.is_any_name() || x.matches_name(&name));
+
+        let val = if let Some(index) = index {
+            Some((index, children[index]))
+        } else {
+            None
+        };
+
+        children.retain(|x| {
+            if name.is_any_name() || x.matches_name(&name) {
+                // Remove parent.
+                x.set_parent(None, gc_context);
+                false
+            } else {
+                true
+            }
+        });
+
+        val
+    }
+
+    pub fn insert_at(&self, gc_context: &Mutation<'gc>, index: usize, node: E4XNode<'gc>) {
+        let E4XNodeKind::Element { children, .. } = &mut *self.kind_mut(gc_context) else {
+            return;
+        };
+
+        node.set_parent(Some(*self), gc_context);
+        children.insert(index, node);
+    }
+
     pub fn remove_all_children(&self, gc_context: &Mutation<'gc>) {
         let mut this = self.0.write(gc_context);
         if let E4XNodeKind::Element { children, .. } = &mut this.kind {
