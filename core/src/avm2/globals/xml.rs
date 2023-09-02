@@ -239,8 +239,7 @@ pub fn copy<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let xml = this.as_xml_object().unwrap();
-    let node = xml.node();
-    Ok(XmlObject::new(node.deep_copy(activation.context.gc_context), activation).into())
+    Ok(xml.deep_copy(activation).into())
 }
 
 pub fn parent<'gc>(

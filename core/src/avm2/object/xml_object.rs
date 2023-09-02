@@ -82,6 +82,11 @@ impl<'gc> XmlObject<'gc> {
         Ref::map(self.0.read(), |data| &data.node)
     }
 
+    pub fn deep_copy(&self, activation: &mut Activation<'_, 'gc>) -> XmlObject<'gc> {
+        let node = self.node();
+        XmlObject::new(node.deep_copy(activation.gc()), activation)
+    }
+
     pub fn equals(
         &self,
         other: &Value<'gc>,
