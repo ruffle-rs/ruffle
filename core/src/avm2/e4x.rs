@@ -265,7 +265,7 @@ impl<'gc> E4XNode<'gc> {
 
         let index = children
             .iter()
-            .position(|x| name.is_any_name() || x.matches_name(&name));
+            .position(|x| name.is_any_name() || x.matches_name(name));
 
         let val = if let Some(index) = index {
             Some((index, children[index]))
@@ -274,7 +274,7 @@ impl<'gc> E4XNode<'gc> {
         };
 
         children.retain(|x| {
-            if name.is_any_name() || x.matches_name(&name) {
+            if name.is_any_name() || x.matches_name(name) {
                 // Remove parent.
                 x.set_parent(None, gc_context);
                 false
