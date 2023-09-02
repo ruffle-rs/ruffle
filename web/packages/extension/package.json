@@ -15,9 +15,9 @@
         "ruffle-core": "^0.1.0"
     },
     "devDependencies": {
-        "@tsconfig/strictest": "^2.0.1",
+        "@tsconfig/strictest": "^2.0.2",
         "@types/archiver": "^5.3.2",
-        "@types/chrome": "^0.0.243",
+        "@types/chrome": "^0.0.244",
         "@types/common-tags": "^1.8.1",
         "@types/firefox-webext-browser": "^111.0.1",
         "@types/jsonwebtoken": "^9.0.2",
@@ -28,7 +28,7 @@
         "sign-addon": "^6.1.0",
         "temp-dir": "^3.0.0",
         "ts-loader": "^9.4.4",
-        "typescript": "^5.1.6",
+        "typescript": "^5.2.2",
         "webpack-cli": "^5.1.4"
     }
 }

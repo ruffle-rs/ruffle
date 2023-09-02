@@ -23,15 +23,15 @@
     "devDependencies": {
         "@fluent/bundle": "^0.18.0",
         "@fluent/langneg": "^0.7.0",
-        "@tsconfig/strictest": "^2.0.1",
+        "@tsconfig/strictest": "^2.0.2",
         "@types/mocha": "^10.0.1",
-        "eslint": "^8.46.0",
-        "eslint-plugin-jsdoc": "^46.4.6",
+        "eslint": "^8.48.0",
+        "eslint-plugin-jsdoc": "^46.5.1",
         "mocha": "^10.2.0",
         "replace-in-file": "^7.0.1",
         "ts-node": "^10.9.1",
-        "typedoc": "^0.24.8",
-        "typescript": "^5.1.6"
+        "typedoc": "^0.25.0",
+        "typescript": "^5.2.2"
     },
     "sideEffects": false
 }
