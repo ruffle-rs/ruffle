@@ -29,7 +29,11 @@ pub fn request_permission<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     tracing::debug!("geolocation.rs: request_permission");
-    activation.context.geolocation.request_geolocation_permission();
+    if activation.context.geolocation.geolocation_permission_status()
+        == PermissionStatus::Unknown
+    {
+        activation.context.geolocation.request_geolocation_permission();
+    }
     Ok(Value::Undefined)
 }
 
