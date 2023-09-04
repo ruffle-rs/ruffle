@@ -953,7 +953,7 @@ export class RufflePlayer extends HTMLElement {
             },
             (err) => {
                 // Don't update geoposition if the player is currently paused
-                console.log("SHOUDNT BE")
+                if(!this.instance?.is_playing()) return;
                 // User denied geolocation prompt, so we stop tracking it
                 if(err.code == 1) {
                     this.instance?.set_geolocation_status("denied");
