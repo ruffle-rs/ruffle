@@ -4,6 +4,7 @@
 mod audio;
 mod log_adapter;
 mod navigator;
+mod geolocation;
 mod storage;
 mod ui;
 
@@ -13,7 +14,7 @@ use ruffle_core::backend::navigator::OpenURLMode;
 use ruffle_core::compatibility_rules::CompatibilityRules;
 use ruffle_core::config::{Letterbox, NetworkingAccessMode};
 use ruffle_core::context::UpdateContext;
-use ruffle_core::events::{KeyCode, MouseButton, MouseWheelDelta, TextControlCode};
+use ruffle_core::events::{KeyCode, MouseButton, MouseWheelDelta, TextControlCode, PermissionStatus};
 use ruffle_core::external::{
     ExternalInterfaceMethod, ExternalInterfaceProvider, FsCommandProvider, Value as ExternalValue,
     Value,
@@ -43,6 +44,7 @@ use web_sys::{
     AddEventListenerOptions, ClipboardEvent, Element, Event, EventTarget, HtmlCanvasElement,
     HtmlElement, KeyboardEvent, PointerEvent, WheelEvent, Window,
 };
+use crate::geolocation::GeolocationPositionJS;
 
 static RUFFLE_GLOBAL_PANIC: Once = Once::new();
 
@@ -125,6 +127,15 @@ extern "C" {
 
     #[wasm_bindgen(method, js_name = "displayUnsupportedVideo")]
     fn display_unsupported_video(this: &JavascriptPlayer, url: &str);
+
+    #[wasm_bindgen(method, js_name = "requestGeolocationPermission")]
+    fn request_geolocation_permission(this: &JavascriptPlayer);
+
+    #[wasm_bindgen(method, js_name = "getGeolocationStatus")]
+    fn get_geolocation_status(this: &JavascriptPlayer);
+
+    #[wasm_bindgen(method, js_name = "setGeolocationUpdateInterval")]
+    fn set_geolocation_update_interval(this: &JavascriptPlayer);
 }
 
 #[derive(Clone)]
@@ -439,6 +450,40 @@ impl Ruffle {
         let _ = self.with_core_mut(|core| core.set_fullscreen(is_fullscreen));
     }
 
+    pub fn set_geolocation_status(&mut self, status: String) {
+        let _ = self.with_core_mut(|core| {
+            core.set_geolocation_status(status.clone());
+            let event = PlayerEvent::GeolocationPermissionChange {
+                status: match status.as_str() {
+                    "granted" => PermissionStatus::Granted,
+                    _ => PermissionStatus::Denied,
+                },
+            };
+            core.handle_event(event);
+        });
+    }
+
+    pub fn update_geoposition(&mut self, data: JsValue, true_timestamp: f64) {
+        let _ = self.with_core_mut(|core| {
+            let geo_js = serde_wasm_bindgen::from_value::<GeolocationPositionJS>(data);
+            match geo_js {
+                Ok(mut data) => {
+                    data.timestamp = true_timestamp;
+                    core.handle_event(data.into())
+                }
+                Err(e) => {
+                    tracing::warn!("Unable to parse a geolocation object from js to rust: {e}")
+                }
+            };
+        });
+    }
+
+    pub fn geolocation_update_interval(&self) -> f64 {
+        self.with_core(|core| {
+            core.geolocation_update_interval()
+        }).unwrap_or(crate::geolocation::DEFAULT_UPDATE_INTERVAL)
+    }
+
     pub fn clear_custom_menu_items(&mut self) {
         let _ = self.with_core_mut(Player::clear_custom_menu_items);
     }
@@ -604,6 +649,7 @@ impl Ruffle {
             .with_frame_rate(config.frame_rate)
             // FIXME - should this be configurable?
             .with_sandbox_type(SandboxType::Remote)
+            .with_geolocation(geolocation::WebGeolocationBackend::new(js_player.clone()))
             .build();
 
         let mut callstack = None;

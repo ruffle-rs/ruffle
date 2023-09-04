@@ -166,6 +166,10 @@ export class RufflePlayer extends HTMLElement {
     private pointerDownPosition: Point | null = null;
     private pointerMoveMaxDistance = 0;
 
+    private geolocationWatchId:  ReturnType<typeof navigator.geolocation.watchPosition> | null = null;
+    private lastGeolocationPosition: GeolocationPosition | null = null;
+    private firstGeolocationTimestamp: number | null = null;
+
     /**
      * Triggered when a movie metadata has been loaded (such as movie width and height).
      *
@@ -882,6 +886,98 @@ export class RufflePlayer extends HTMLElement {
                 this.exitFullscreen();
             }
         }
+    }
+
+    /**
+     * Requests the browser to show user a prompt to allow using geolocation.
+     *
+     * It doesn't return anything, the result is handled with internal events.
+     */
+    protected requestGeolocationPermission() {
+        console.log("web/ruffle-player.ts: requestGeolocationPermission")
+        navigator.permissions.query({ name: "geolocation" }).then((status) => {
+            if(status.state == "denied") {
+                this.instance?.set_geolocation_status("denied");
+            } else if(status.state == "prompt") {
+                this.startGeoTracking();
+            }
+        });
+    }
+
+    /**
+     * Requests the browser a current state of geolocation permission.
+     *
+     * It doesn't return anything, the result is handled with internal events.
+     */
+    protected getGeolocationStatus() {
+        console.log("web/ruffle-player.ts: getGeolocationStatus")
+        navigator.permissions.query({ name: "geolocation" }).then((status) => {
+            // status.state = "granted" || "prompt" || "denied"
+            this.instance?.set_geolocation_status(status.state);
+        })
+    }
+
+     /**
+     * Runs when the interval of updating geolocation has been changed.
+     *
+     * We need to start tracking again with an updated interval
+     * only if we've already started tracking (one can set the interval
+     * before that)
+     */
+     protected setGeolocationUpdateInterval() {
+        if(this.geolocationWatchId != null)
+            this.startGeoTracking();
+    }
+
+    private startGeoTracking() {
+        console.log("web/ruffle-player.ts: startGeoTracking")
+        if(this.geolocationWatchId != null) {
+            navigator.geolocation.clearWatch(this.geolocationWatchId);
+        }
+        const interval = this.instance?.geolocation_update_interval();
+        this.geolocationWatchId = navigator.geolocation.watchPosition(
+            (pos) => {
+                // Don't update geoposition if the player is currently paused
+                if(!this.instance?.is_playing()) return;
+                console.log(pos);
+                let trueTimestamp = 0; // Flash's geo timestamp is relative
+                // If geolocation gets requested for the first time
+                if(this.firstGeolocationTimestamp == null) {
+                    this.firstGeolocationTimestamp = pos.timestamp;
+                    this.instance?.set_geolocation_status("granted");
+                } else {
+                    trueTimestamp = pos.timestamp - this.firstGeolocationTimestamp;
+                }
+                this.instance?.update_geoposition(pos, trueTimestamp);
+                this.lastGeolocationPosition = pos;
+            },
+            (err) => {
+                // Don't update geoposition if the player is currently paused
+                console.log("SHOUDNT BE")
+                // User denied geolocation prompt, so we stop tracking it
+                if(err.code == 1) {
+                    this.instance?.set_geolocation_status("denied");
+                    if (this.geolocationWatchId != null)
+                        navigator.geolocation.clearWatch(this.geolocationWatchId);
+                }
+                // It's ok. It means that geolocation hasn't been changed
+                // since the last request. So we send the last known one.
+                else if(err.code == 3 &&
+                    this.lastGeolocationPosition != null &&
+                    this.firstGeolocationTimestamp != null
+                ) {
+                    this.instance?.update_geoposition(
+                        this.lastGeolocationPosition,
+                        // Timestamp is being simulated
+                        Date.now() - this.firstGeolocationTimestamp
+                    );
+                }
+            },
+            {
+                timeout: interval ? interval : 10000,
+                maximumAge: interval ? interval : 10000
+            }
+        )
     }
 
     /**
