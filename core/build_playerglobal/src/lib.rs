@@ -118,7 +118,7 @@ fn resolve_multiname_name<'a>(abc: &'a AbcFile, multiname: &Multiname) -> &'a st
 fn resolve_multiname_ns<'a>(abc: &'a AbcFile, multiname: &Multiname) -> &'a str {
     if let Multiname::QName { namespace, .. } = multiname {
         let ns = &abc.constant_pool.namespaces[namespace.0 as usize - 1];
-        if let Namespace::Package(p) = ns {
+        if let Namespace::Package(p) | Namespace::PackageInternal(p) = ns {
             &abc.constant_pool.strings[p.0 as usize - 1]
         } else {
             panic!("Unexpected Namespace {ns:?}");

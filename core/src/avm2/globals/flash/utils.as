@@ -1,10 +1,13 @@
 package flash.utils {
+
 	public native function getDefinitionByName(name:String):Object;
 	public native function getQualifiedClassName(value:*):String;
 	public native function getQualifiedSuperclassName(value:*):String;
 	public native function getTimer():int;
 
-	public native function describeType(value:*): XML;
+	public function describeType(value:*): XML {
+		return avmplus.describeType(value, avmplus.FLASH10_FLAGS);
+	}
 
 	public native function setInterval(closure:Function, delay:Number, ... arguments):uint;
 	public native function clearInterval(id:uint):void;
