@@ -303,6 +303,8 @@ include "flash/security/CertificateStatus.as"
 include "flash/security/X509Certificate.as"
 include "flash/security/X500DistinguishedName.as"
 
+include "flash/sensors/Geolocation.as"
+
 include "flash/system.as"
 include "flash/system/ApplicationDomain.as"
 include "flash/system/Capabilities.as"

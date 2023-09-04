@@ -9,6 +9,7 @@ pub mod external;
 pub mod geom;
 pub mod media;
 pub mod net;
+pub mod sensors;
 pub mod system;
 pub mod text;
 pub mod ui;
