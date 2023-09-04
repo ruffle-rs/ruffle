@@ -12,9 +12,9 @@ convert_case = "0.6.0"
 proc-macro2 = "1.0.66"
 quote = "1.0.33"
 swf = { path = "../../swf" }
-clap = {version = "4.4.0", features = ["derive"]}
+clap = {version = "4.4.2", features = ["derive"]}
 serde = {version = "1.0.188", features = ["derive"]}
 serde-xml-rs = "0.6.0"
 colored = "2.0.4"
-regex = "1.9.4"
+regex = "1.9.5"
 walkdir = "2.3.3"
