@@ -29,6 +29,7 @@ const PUBLIC_AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
     ("lastIndexOf", last_index_of),
     ("pop", pop),
     ("push", push),
+    ("insertAt", insert_at),
     ("removeAt", remove_at),
     ("reverse", reverse),
     ("shift", shift),
@@ -798,6 +799,23 @@ pub fn splice<'gc>(
     }
 
     Ok(Value::Undefined)
+}
+
+/// Insert an element into a specific position of an array.
+pub fn insert_at<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    splice(
+        activation,
+        this,
+        &[
+            args.get(0).cloned().unwrap_or(0.into()),
+            0.into(),
+            args.get(1).cloned().unwrap_or(Value::Undefined),
+        ],
+    )
 }
 
 bitflags! {
