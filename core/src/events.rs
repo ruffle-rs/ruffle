@@ -36,6 +36,20 @@ pub enum PlayerEvent {
     TextControl {
         code: TextControlCode,
     },
+    GeolocationPermissionChange {
+        status: PermissionStatus,
+    },
+    GeolocationUpdate {
+        latitude: f64,
+        longitude: f64,
+        altitude: f64,
+        // Usually horizontalAccuracy and verticalAccuracy are the same
+        horizontal_accuracy: f64,
+        vertical_accuracy: f64,
+        speed: f64,
+        heading: f64,
+        timestamp: f64,
+    },
 }
 
 /// The distance scrolled by the mouse wheel.
