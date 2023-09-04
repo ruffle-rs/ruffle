@@ -8,7 +8,7 @@ repository.workspace = true
 version.workspace = true
 
 [dependencies]
-clap = { version = "4.4.0", features = ["derive"] }
+clap = { version = "4.4.2", features = ["derive"] }
 cpal = "0.15.2"
 egui = "0.22.0"
 egui-wgpu = { version = "0.22.0", features = ["winit"] }
@@ -23,8 +23,8 @@ tracing-subscriber = { workspace = true }
 generational-arena = "0.2.9"
 winit = "0.28.6"
 webbrowser = "0.8.11"
-url = "2.4.0"
-arboard = "3.2.0"
+url = "2.4.1"
+arboard = "3.2.1"
 dirs = "5.0"
 isahc = "1.7.2"
 rfd = "0.11.4"
