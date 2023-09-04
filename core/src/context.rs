@@ -10,6 +10,7 @@ use crate::backend::{
     navigator::NavigatorBackend,
     storage::StorageBackend,
     ui::{InputManager, UiBackend},
+    geolocation::{GeolocationBackend, GeolocationInstances},
 };
 use crate::context_menu::ContextMenuState;
 use crate::display_object::{EditText, InteractiveObject, MovieClip, SoundTransform, Stage};
@@ -116,6 +117,8 @@ pub struct UpdateContext<'a, 'gc> {
     /// The UI backend, used to detect user interactions.
     pub ui: &'a mut dyn UiBackend,
 
+    pub geolocation: &'a mut dyn GeolocationBackend,
+
     /// The storage backend, used for storing persistent state
     pub storage: &'a mut dyn StorageBackend,
 
@@ -201,6 +204,8 @@ pub struct UpdateContext<'a, 'gc> {
 
     /// A tracker for the current keyboard focused element
     pub focus_tracker: FocusTracker<'gc>,
+
+    pub geolocation_instances: GeolocationInstances<'gc>,
 
     /// How many times getTimer() was called so far. Used to detect busy-loops.
     pub times_get_time_called: u32,
@@ -362,6 +367,7 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
             log: self.log,
             ui: self.ui,
             video: self.video,
+            geolocation: self.geolocation,
             storage: self.storage,
             rng: self.rng,
             stage: self.stage,
@@ -386,6 +392,7 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
             update_start: self.update_start,
             max_execution_duration: self.max_execution_duration,
             focus_tracker: self.focus_tracker,
+            geolocation_instances: self.geolocation_instances,
             times_get_time_called: self.times_get_time_called,
             time_offset: self.time_offset,
             frame_rate: self.frame_rate,

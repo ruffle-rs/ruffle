@@ -14,6 +14,7 @@ use crate::backend::{
     audio::{AudioBackend, AudioManager},
     log::LogBackend,
     navigator::{NavigatorBackend, Request},
+    geolocation::{GeolocationBackend, GeolocationInstances},
     storage::StorageBackend,
     ui::{InputManager, MouseCursor, UiBackend},
 };
@@ -155,6 +156,9 @@ struct GcRootData<'gc> {
     /// A tracker for the current keyboard focused element
     focus_tracker: FocusTracker<'gc>,
 
+    // Instances of Geolocation class from AS to dispathes corresponding events.
+    geolocation_instances: GeolocationInstances<'gc>,
+
     /// Manager of active sound instances.
     audio_manager: AudioManager<'gc>,
 
@@ -221,6 +225,7 @@ type GcArena = gc_arena::Arena<Rootable![GcRoot<'_>]>;
 type Audio = Box<dyn AudioBackend>;
 type Navigator = Box<dyn NavigatorBackend>;
 type Renderer = Box<dyn RenderBackend>;
+type Geolocation = Box<dyn GeolocationBackend>;
 type Storage = Box<dyn StorageBackend>;
 type Log = Box<dyn LogBackend>;
 type Ui = Box<dyn UiBackend>;
@@ -247,6 +252,8 @@ pub struct Player {
     renderer: Renderer,
     audio: Audio,
     navigator: Navigator,
+    storage: Storage,
+    geolocation: Geolocation,
     storage: Storage,
     log: Log,
     ui: Ui,
@@ -1867,6 +1874,7 @@ impl Player {
             let mouse_hovered_object = root_data.mouse_hovered_object;
             let mouse_pressed_object = root_data.mouse_pressed_object;
             let focus_tracker = root_data.focus_tracker;
+            let geolocation_instances = root_data.geolocation_instances;
 
             #[allow(unused_variables)]
             let (
@@ -1898,6 +1906,7 @@ impl Player {
                 renderer: self.renderer.deref_mut(),
                 audio: self.audio.deref_mut(),
                 navigator: self.navigator.deref_mut(),
+                geolocation: self.geolocation.deref_mut(),
                 ui: self.ui.deref_mut(),
                 action_queue,
                 gc_context,
@@ -1928,6 +1937,7 @@ impl Player {
                 update_start: Instant::now(),
                 max_execution_duration: self.max_execution_duration,
                 focus_tracker,
+                geolocation_instances: geolocation_instances,
                 times_get_time_called: 0,
                 time_offset: &mut self.time_offset,
                 audio_manager,
@@ -2137,6 +2147,7 @@ pub struct PlayerBuilder {
     log: Option<Log>,
     navigator: Option<Navigator>,
     renderer: Option<Renderer>,
+    geolocation: Option<Geolocation>,
     storage: Option<Storage>,
     ui: Option<Ui>,
     video: Option<Video>,
@@ -2178,6 +2189,7 @@ impl PlayerBuilder {
             log: None,
             navigator: None,
             renderer: None,
+            geolocation: None,
             storage: None,
             ui: None,
             video: None,
@@ -2242,6 +2254,13 @@ impl PlayerBuilder {
     #[inline]
     pub fn with_renderer(mut self, renderer: impl 'static + RenderBackend) -> Self {
         self.renderer = Some(Box::new(renderer));
+        self
+    }
+
+    /// Sets the storage backend of the player.
+    #[inline]
+    pub fn with_geolocation(mut self, geolocation: impl 'static + GeolocationBackend) -> Self {
+        self.geolocation = Some(Box::new(geolocation));
         self
     }
 
@@ -2409,6 +2428,7 @@ impl PlayerBuilder {
                         fs_command_provider,
                     ),
                     focus_tracker: FocusTracker::new(gc_context),
+                    geolocation_instances: GeolocationInstances::new(gc_context),
                     library: Library::empty(),
                     load_manager: LoadManager::new(),
                     mouse_hovered_object: None,
@@ -2446,6 +2466,9 @@ impl PlayerBuilder {
                 scale_factor: self.viewport_scale_factor,
             }))
         });
+        let geolocation = self
+            .geolocation
+            .unwrap_or_else(|| Box::new(geolocation::NullGeolocationBackend::new()));
         let storage = self
             .storage
             .unwrap_or_else(|| Box::new(storage::MemoryStorageBackend::new()));
@@ -2469,6 +2492,7 @@ impl PlayerBuilder {
                 log,
                 navigator,
                 renderer,
+                geolocation,
                 storage,
                 ui,
                 video,
