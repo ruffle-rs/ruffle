@@ -3,8 +3,9 @@ use crate::avm2::{Activation, Error};
 use crate::string::AvmString;
 
 use gc_arena::Collect;
-use std::fmt::Write;
 use swf::avm2::types::{Index as AbcIndex, Metadata as AbcMetadata};
+
+use super::{ArrayObject, ArrayStorage, Object, TObject, Value};
 
 // Represents a single key-value pair for a trait metadata.
 #[derive(Clone, Collect, Debug, Eq, PartialEq)]
@@ -71,28 +72,36 @@ impl<'gc> Metadata<'gc> {
         Ok(Some(trait_metadata_list.into_boxed_slice()))
     }
 
-    // Converts the Metadata to an XML string of the form used in flash.utils:describeType().
-    pub fn as_xml_string(&self) -> String {
-        let mut xml_string = String::new();
-        if self.items.is_empty() {
-            // This was in the form of [metadata]
-            write!(xml_string, "<metadata name=\"{}\"/>", self.name).unwrap();
-        } else {
-            // This was in the form of [metadata(key="value", otherkey="othervalue")]
-            write!(xml_string, "<metadata name=\"{}\">", self.name).unwrap();
+    // Converts the Metadata to an Object of the form used in avmplus:describeTypeJSON().
+    pub fn as_json_object(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Object<'gc>, Error<'gc>> {
+        let object = activation
+            .avm2()
+            .classes()
+            .object
+            .construct(activation, &[])?;
+        object.set_public_property("name", self.name.into(), activation)?;
 
-            for item in self.items.iter() {
-                write!(
-                    xml_string,
-                    "<arg key=\"{}\" value=\"{}\"/>",
-                    item.key, item.value,
-                )
-                .unwrap();
-            }
+        let values = self
+            .items
+            .iter()
+            .map(|item| {
+                let value_object = activation
+                    .avm2()
+                    .classes()
+                    .object
+                    .construct(activation, &[])?;
+                value_object.set_public_property("key", item.key.into(), activation)?;
+                value_object.set_public_property("value", item.value.into(), activation)?;
+                Ok(Some(value_object.into()))
+            })
+            .collect::<Result<Vec<Option<Value<'gc>>>, Error<'gc>>>()?;
 
-            write!(xml_string, "</metadata>").unwrap();
-        };
-
-        xml_string
+        let values_array =
+            ArrayObject::from_storage(activation, ArrayStorage::from_storage(values))?;
+        object.set_public_property("value", values_array.into(), activation)?;
+        Ok(object)
     }
 }
