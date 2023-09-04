@@ -792,6 +792,16 @@ impl Player {
         });
     }
 
+    pub fn set_geolocation_status(&mut self, status: String) {
+        self.mutate_with_update_context(|context| {
+            context.geolocation.set_geolocation_permission_status(status)
+        });
+    }
+
+    pub fn geolocation_update_interval(&self) -> f64 {
+        self.geolocation.geolocation_update_interval()
+    }
+
     fn toggle_play_root_movie(context: &mut UpdateContext<'_, '_>) {
         if let Some(mc) = context
             .stage
