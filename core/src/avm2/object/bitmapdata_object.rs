@@ -70,7 +70,7 @@ impl<'gc> BitmapDataObject<'gc> {
         bitmap_data: BitmapDataWrapper<'gc>,
         class: ClassObject<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        let mut instance: Object<'gc> = Self(GcCell::new(
+        let instance: Object<'gc> = Self(GcCell::new(
             activation.context.gc_context,
             BitmapDataObjectData {
                 base: ScriptObjectData::new(class),

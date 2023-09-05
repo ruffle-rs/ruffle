@@ -1876,7 +1876,7 @@ pub trait TDisplayObject<'gc>:
             //TODO: Don't report missing property errors.
             //TODO: Don't attempt to set properties if object was placed without a name.
             if self.has_explicit_name() {
-                if let Some(Avm2Value::Object(mut p)) = self.parent().map(|p| p.object2()) {
+                if let Some(Avm2Value::Object(p)) = self.parent().map(|p| p.object2()) {
                     if let Avm2Value::Object(c) = self.object2() {
                         let domain = context
                             .library
@@ -2516,7 +2516,7 @@ impl SoundTransform {
         self,
         activation: &mut Avm2Activation<'_, 'gc>,
     ) -> Result<Avm2Object<'gc>, Avm2Error<'gc>> {
-        let mut as3_st = activation
+        let as3_st = activation
             .avm2()
             .classes()
             .soundtransform

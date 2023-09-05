@@ -59,7 +59,7 @@ impl<'gc> TextFormatObject<'gc> {
     ) -> Result<Object<'gc>, Error<'gc>> {
         let class = activation.avm2().classes().textformat;
 
-        let mut this: Object<'gc> = Self(Gc::new(
+        let this: Object<'gc> = Self(Gc::new(
             activation.gc(),
             TextFormatObjectData {
                 base: RefLock::new(ScriptObjectData::new(class)),

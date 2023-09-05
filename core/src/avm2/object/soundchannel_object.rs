@@ -79,7 +79,7 @@ impl<'gc> SoundChannelObject<'gc> {
         let class = activation.avm2().classes().soundchannel;
         let base = ScriptObjectData::new(class);
 
-        let mut sound_object = SoundChannelObject(GcCell::new(
+        let sound_object = SoundChannelObject(GcCell::new(
             activation.context.gc_context,
             SoundChannelObjectData {
                 base,

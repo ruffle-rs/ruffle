@@ -31,7 +31,7 @@ impl<'gc> VertexBuffer3DObject<'gc> {
     ) -> Result<Object<'gc>, Error<'gc>> {
         let class = activation.avm2().classes().vertexbuffer3d;
 
-        let mut this: Object<'gc> = VertexBuffer3DObject(Gc::new(
+        let this: Object<'gc> = VertexBuffer3DObject(Gc::new(
             activation.gc(),
             VertexBuffer3DObjectData {
                 base: RefLock::new(ScriptObjectData::new(class)),

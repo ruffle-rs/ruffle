@@ -489,7 +489,7 @@ pub fn get_parameters<'gc>(
             LoaderStream::Swf(root, _) => root,
         };
 
-        let mut params_obj = activation
+        let params_obj = activation
             .avm2()
             .classes()
             .object

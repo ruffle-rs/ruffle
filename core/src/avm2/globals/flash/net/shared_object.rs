@@ -141,7 +141,7 @@ pub fn get_local<'gc>(
 
     // Data property only should exist when created with getLocal/Remote
     let sharedobject_cls = this; // `this` of a static method is the class
-    let mut this = sharedobject_cls.construct(activation, &[])?;
+    let this = sharedobject_cls.construct(activation, &[])?;
 
     // Set the internal name
     let ruffle_name = Multiname::new(
@@ -249,7 +249,7 @@ pub fn close<'gc>(
 
 pub fn clear<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    mut this: Object<'gc>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // Create a fresh data object.

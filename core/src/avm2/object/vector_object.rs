@@ -70,7 +70,7 @@ impl<'gc> VectorObject<'gc> {
 
         let applied_class = vector_class.apply(activation, &[value_type])?;
 
-        let mut object: Object<'gc> = VectorObject(GcCell::new(
+        let object: Object<'gc> = VectorObject(GcCell::new(
             activation.context.gc_context,
             VectorObjectData {
                 base: ScriptObjectData::new(applied_class),

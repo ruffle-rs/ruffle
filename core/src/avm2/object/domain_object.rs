@@ -62,7 +62,7 @@ impl<'gc> DomainObject<'gc> {
     ) -> Result<Object<'gc>, Error<'gc>> {
         let class = activation.avm2().classes().application_domain;
         let base = ScriptObjectData::new(class);
-        let mut this: Object<'gc> = DomainObject(GcCell::new(
+        let this: Object<'gc> = DomainObject(GcCell::new(
             activation.context.gc_context,
             DomainObjectData { base, domain },
         ))

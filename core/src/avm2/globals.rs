@@ -290,7 +290,7 @@ fn function<'gc>(
     nf: NativeMethodImpl,
     script: Script<'gc>,
 ) -> Result<(), Error<'gc>> {
-    let (_, mut global, mut domain) = script.init();
+    let (_, global, mut domain) = script.init();
     let mc = activation.context.gc_context;
     let scope = activation.create_scopechain();
     let qname = QName::new(
@@ -316,7 +316,7 @@ fn dynamic_class<'gc>(
     // The `ClassObject` of the `Class` class
     class_class: ClassObject<'gc>,
 ) {
-    let (_, mut global, mut domain) = script.init();
+    let (_, global, mut domain) = script.init();
     let class = class_object.inner_class_definition();
     let name = class.read().name();
 
@@ -333,7 +333,7 @@ fn class<'gc>(
     script: Script<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<ClassObject<'gc>, Error<'gc>> {
-    let (_, mut global, mut domain) = script.init();
+    let (_, global, mut domain) = script.init();
 
     let class_read = class_def.read();
     let super_class = if let Some(sc_name) = class_read.super_class_name() {
@@ -384,7 +384,7 @@ fn vector_class<'gc>(
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<ClassObject<'gc>, Error<'gc>> {
     let mc = activation.context.gc_context;
-    let (_, mut global, mut domain) = script.init();
+    let (_, global, mut domain) = script.init();
 
     let cls = param_class.map(|c| c.inner_class_definition());
     let vector_cls = class(

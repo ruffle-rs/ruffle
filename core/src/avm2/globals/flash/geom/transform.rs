@@ -24,7 +24,7 @@ fn get_display_object<'gc>(
 
 pub fn init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    mut this: Object<'gc>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     this.set_property(

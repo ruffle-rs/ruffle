@@ -29,7 +29,7 @@ impl<'gc> TextureObject<'gc> {
         handle: Rc<dyn Texture>,
         class: ClassObject<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        let mut this: Object<'gc> = TextureObject(Gc::new(
+        let this: Object<'gc> = TextureObject(Gc::new(
             activation.gc(),
             TextureObjectData {
                 base: RefLock::new(ScriptObjectData::new(class)),

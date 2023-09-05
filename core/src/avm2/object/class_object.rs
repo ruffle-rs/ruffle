@@ -879,7 +879,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
     ) -> Result<Object<'gc>, Error<'gc>> {
         let instance_allocator = self.0.read().instance_allocator.0;
 
-        let mut instance = instance_allocator(self, activation)?;
+        let instance = instance_allocator(self, activation)?;
 
         instance.install_instance_slots(activation.context.gc_context);
 

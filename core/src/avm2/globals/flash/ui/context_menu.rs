@@ -9,7 +9,7 @@ pub fn hide_built_in_items<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Value::Object(mut items) = this.get_public_property("builtInItems", activation)? {
+    if let Value::Object(items) = this.get_public_property("builtInItems", activation)? {
         // items is a ContextMenuBuiltInItems
         items.set_public_property("forwardAndBack", Value::Bool(false), activation)?;
         items.set_public_property("loop", Value::Bool(false), activation)?;

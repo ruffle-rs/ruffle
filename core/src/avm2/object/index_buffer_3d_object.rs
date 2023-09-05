@@ -29,7 +29,7 @@ impl<'gc> IndexBuffer3DObject<'gc> {
     ) -> Result<Object<'gc>, Error<'gc>> {
         let class = activation.avm2().classes().indexbuffer3d;
 
-        let mut this: Object<'gc> = IndexBuffer3DObject(Gc::new(
+        let this: Object<'gc> = IndexBuffer3DObject(Gc::new(
             activation.gc(),
             IndexBuffer3DObjectData {
                 base: RefLock::new(ScriptObjectData::new(class)),

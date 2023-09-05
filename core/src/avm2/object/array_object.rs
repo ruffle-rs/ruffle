@@ -72,7 +72,7 @@ impl<'gc> ArrayObject<'gc> {
         let class = activation.avm2().classes().array;
         let base = ScriptObjectData::new(class);
 
-        let mut instance: Object<'gc> = ArrayObject(GcCell::new(
+        let instance: Object<'gc> = ArrayObject(GcCell::new(
             activation.context.gc_context,
             ArrayObjectData { base, array },
         ))

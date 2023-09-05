@@ -1484,7 +1484,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // default path for static names
         if !multiname.has_lazy_component() {
             let object = self.pop_stack();
-            let mut object = object.coerce_to_object_or_typeerror(self, Some(&multiname))?;
+            let object = object.coerce_to_object_or_typeerror(self, Some(&multiname))?;
             object.set_property(&multiname, value, self)?;
             return Ok(FrameControl::Continue);
         }
@@ -1516,7 +1516,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // main path for dynamic names
         let multiname = multiname.fill_with_runtime_params(self)?;
         let object = self.pop_stack();
-        let mut object = object.coerce_to_object_or_typeerror(self, Some(&multiname))?;
+        let object = object.coerce_to_object_or_typeerror(self, Some(&multiname))?;
         object.set_property(&multiname, value, self)?;
 
         Ok(FrameControl::Continue)
@@ -1529,7 +1529,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value = self.pop_stack();
         let multiname = self.pool_multiname_and_initialize(method, index)?;
-        let mut object = self
+        let object = self
             .pop_stack()
             .coerce_to_object_or_typeerror(self, Some(&multiname))?;
 
@@ -1917,7 +1917,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_new_object(&mut self, num_args: u32) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let mut object = self.context.avm2.classes().object.construct(self, &[])?;
+        let object = self.context.avm2.classes().object.construct(self, &[])?;
 
         for _ in 0..num_args {
             let value = self.pop_stack();

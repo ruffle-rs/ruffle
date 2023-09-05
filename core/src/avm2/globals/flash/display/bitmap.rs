@@ -62,7 +62,7 @@ pub fn bitmap_allocator<'gc>(
                 )
                 .into();
 
-                let mut obj = initialize_for_allocator(activation, child, orig_class)?;
+                let obj = initialize_for_allocator(activation, child, orig_class)?;
                 obj.set_public_property("bitmapData", bitmap_data_obj.into(), activation)?;
                 return Ok(obj);
             }

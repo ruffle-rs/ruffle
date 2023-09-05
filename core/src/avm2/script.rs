@@ -539,7 +539,7 @@ impl<'gc> Script<'gc> {
         if !write.initialized {
             write.initialized = true;
 
-            let mut globals = write.globals;
+            let globals = write.globals;
             let mut null_activation = Activation::from_nothing(context.reborrow());
             let domain = write.domain;
 

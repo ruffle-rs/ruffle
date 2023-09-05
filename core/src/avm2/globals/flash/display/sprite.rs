@@ -64,7 +64,7 @@ pub fn get_drop_target<'gc>(
 /// Implements `graphics`.
 pub fn get_graphics<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    mut this: Object<'gc>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.as_display_object() {
