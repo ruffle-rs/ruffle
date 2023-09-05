@@ -40,7 +40,9 @@ package flash.sensors
         private native function init():void;
 
         // Shows a geolocation permission dialog on mobile devices
-        public native function requestPermission():void;
+        // We actually don't need to implement this function because
+        // we ask permission right when a class is created
+        public function requestPermission():void {};
 
         // A status of geolocation permission on mobile devices
         public native static function get permissionStatus():String;

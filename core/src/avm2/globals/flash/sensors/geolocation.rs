@@ -23,20 +23,6 @@ pub fn init<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn request_permission<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    tracing::debug!("geolocation.rs: request_permission");
-    if activation.context.geolocation.geolocation_permission_status()
-        == PermissionStatus::Unknown
-    {
-        activation.context.geolocation.request_geolocation_permission();
-    }
-    Ok(Value::Undefined)
-}
-
 pub fn get_permission_status<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
