@@ -74,16 +74,13 @@ pub fn get_muted<'gc>(
     // On mobile devices `muted` field reflects a GPS sensor being on or off.
     // We can't check this on our current targets, so we return a status of
     // a permission.
-    Ok(Value::Bool(
-        match activation
+    Ok(Value::Bool(!matches!(
+        activation
             .context
             .geolocation
-            .geolocation_permission_status()
-        {
-            PermissionStatus::Granted => false,
-            _ => true,
-        },
-    ))
+            .geolocation_permission_status(),
+        PermissionStatus::Granted
+    )))
 }
 
 pub fn set_requested_update_interval<'gc>(

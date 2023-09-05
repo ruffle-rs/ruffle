@@ -41,11 +41,12 @@ impl<'gc> GeolocationInstances<'gc> {
     }
 }
 
+#[derive(Default)]
 pub struct NullGeolocationBackend {}
 
 impl NullGeolocationBackend {
     pub fn new() -> Self {
-        return Self {};
+        Self::default()
     }
 }
 

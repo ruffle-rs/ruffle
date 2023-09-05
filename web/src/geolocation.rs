@@ -17,7 +17,7 @@ pub struct WebGeolocationBackend {
 impl WebGeolocationBackend {
     pub fn new(js_player: JavascriptPlayer) -> Self {
         let mut backend = Self {
-            js_player: js_player,
+            js_player,
             is_geolocation_supported: false,
             geo_status: PermissionStatus::Unknown,
             geo_update_interval: DEFAULT_UPDATE_INTERVAL,
@@ -25,7 +25,7 @@ impl WebGeolocationBackend {
         // Check if Geolocation object exists. If it does then geolocation
         // is supposedly supported.
         if let Some(w) = window() {
-            if let Ok(_) = w.navigator().geolocation() {
+            if w.navigator().geolocation().is_ok() {
                 backend.is_geolocation_supported = true;
             }
         }
@@ -50,7 +50,7 @@ impl GeolocationBackend for WebGeolocationBackend {
         self.geo_status = match status.as_str() {
             "granted" => PermissionStatus::Granted,
             "denied" => PermissionStatus::Denied,
-            "prompt" | _ => PermissionStatus::Unknown,
+            _ => PermissionStatus::Unknown,
         }
     }
 
@@ -82,29 +82,29 @@ pub struct GeolocationPositionJSCoordinates {
     pub heading: Option<f64>, // might be null
 }
 
-impl Into<PlayerEvent> for GeolocationPositionJS {
-    fn into(self) -> PlayerEvent {
+impl From<GeolocationPositionJS> for PlayerEvent {
+    fn from(pos: GeolocationPositionJS) -> Self {
         PlayerEvent::GeolocationUpdate {
-            latitude: self.coords.latitude,
-            longitude: self.coords.longitude,
-            altitude: match self.coords.altitude {
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+            altitude: match pos.coords.altitude {
                 Some(x) => x,
                 None => f64::NAN,
             },
-            horizontal_accuracy: self.coords.accuracy,
-            vertical_accuracy: match self.coords.altitude_accuracy {
+            horizontal_accuracy: pos.coords.accuracy,
+            vertical_accuracy: match pos.coords.altitude_accuracy {
                 Some(x) => x,
                 None => f64::NAN,
             },
-            speed: match self.coords.speed {
+            speed: match pos.coords.speed {
                 Some(x) => x,
                 None => f64::NAN,
             },
-            heading: match self.coords.heading {
+            heading: match pos.coords.heading {
                 Some(x) => x,
                 None => f64::NAN,
             },
-            timestamp: self.timestamp,
+            timestamp: pos.timestamp,
         }
     }
 }

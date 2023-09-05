@@ -2043,7 +2043,7 @@ impl Player {
                 update_start: Instant::now(),
                 max_execution_duration: self.max_execution_duration,
                 focus_tracker,
-                geolocation_instances: geolocation_instances,
+                geolocation_instances,
                 times_get_time_called: 0,
                 time_offset: &mut self.time_offset,
                 audio_manager,
