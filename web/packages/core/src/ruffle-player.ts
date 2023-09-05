@@ -166,6 +166,7 @@ export class RufflePlayer extends HTMLElement {
     private pointerDownPosition: Point | null = null;
     private pointerMoveMaxDistance = 0;
 
+    private geolocationUpdateInterval: number = 10000;
     private geolocationWatchId:  ReturnType<typeof navigator.geolocation.watchPosition> | null = null;
     private lastGeolocationPosition: GeolocationPosition | null = null;
     private firstGeolocationTimestamp: number | null = null;
@@ -924,7 +925,8 @@ export class RufflePlayer extends HTMLElement {
      * only if we've already started tracking (one can set the interval
      * before that)
      */
-     protected setGeolocationUpdateInterval() {
+    protected setGeolocationUpdateInterval(interval: number) {
+        this.geolocationUpdateInterval = interval;
         if(this.geolocationWatchId != null)
             this.startGeoTracking();
     }
@@ -934,7 +936,6 @@ export class RufflePlayer extends HTMLElement {
         if(this.geolocationWatchId != null) {
             navigator.geolocation.clearWatch(this.geolocationWatchId);
         }
-        const interval = this.instance?.geolocation_update_interval();
         this.geolocationWatchId = navigator.geolocation.watchPosition(
             (pos) => {
                 // Don't update geoposition if the player is currently paused
@@ -974,8 +975,8 @@ export class RufflePlayer extends HTMLElement {
                 }
             },
             {
-                timeout: interval ? interval : 10000,
-                maximumAge: interval ? interval : 10000
+                timeout: this.geolocationUpdateInterval,
+                maximumAge: this.geolocationUpdateInterval
             }
         )
     }

@@ -56,7 +56,7 @@ impl GeolocationBackend for WebGeolocationBackend {
 
     fn set_geolocation_update_interval(&mut self, interval: f64) {
         self.geo_update_interval = interval;
-        self.js_player.set_geolocation_update_interval();
+        self.js_player.set_geolocation_update_interval(interval);
     }
 
     fn geolocation_update_interval(&self) -> f64 {

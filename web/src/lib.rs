@@ -135,7 +135,7 @@ extern "C" {
     fn get_geolocation_status(this: &JavascriptPlayer);
 
     #[wasm_bindgen(method, js_name = "setGeolocationUpdateInterval")]
-    fn set_geolocation_update_interval(this: &JavascriptPlayer);
+    fn set_geolocation_update_interval(this: &JavascriptPlayer, interval: f64);
 }
 
 #[derive(Clone)]
