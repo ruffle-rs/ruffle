@@ -1,7 +1,7 @@
-use ruffle_core::{backend::geolocation::GeolocationBackend, PlayerEvent};
-use ruffle_core::events::PermissionStatus;
-use serde::{Serialize, Deserialize};
 use super::JavascriptPlayer;
+use ruffle_core::events::PermissionStatus;
+use ruffle_core::{backend::geolocation::GeolocationBackend, PlayerEvent};
+use serde::{Deserialize, Serialize};
 use web_sys::window;
 
 // Default value on Android devices

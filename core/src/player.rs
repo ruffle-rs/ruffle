@@ -12,9 +12,9 @@ use crate::avm2::{
 };
 use crate::backend::{
     audio::{AudioBackend, AudioManager},
+    geolocation::{GeolocationBackend, GeolocationInstances},
     log::LogBackend,
     navigator::{NavigatorBackend, Request},
-    geolocation::{GeolocationBackend, GeolocationInstances},
     storage::StorageBackend,
     ui::{InputManager, MouseCursor, UiBackend},
 };
@@ -795,7 +795,9 @@ impl Player {
 
     pub fn set_geolocation_status(&mut self, status: String) {
         self.mutate_with_update_context(|context| {
-            context.geolocation.set_geolocation_permission_status(status)
+            context
+                .geolocation
+                .set_geolocation_permission_status(status)
         });
     }
 

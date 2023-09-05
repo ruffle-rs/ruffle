@@ -6,11 +6,11 @@ use crate::avm1::{Object as Avm1Object, Value as Avm1Value};
 use crate::avm2::{Avm2, Object as Avm2Object, SoundChannelObject};
 use crate::backend::{
     audio::{AudioBackend, AudioManager, SoundHandle, SoundInstanceHandle},
+    geolocation::{GeolocationBackend, GeolocationInstances},
     log::LogBackend,
     navigator::NavigatorBackend,
     storage::StorageBackend,
     ui::{InputManager, UiBackend},
-    geolocation::{GeolocationBackend, GeolocationInstances},
 };
 use crate::context_menu::ContextMenuState;
 use crate::display_object::{EditText, InteractiveObject, MovieClip, SoundTransform, Stage};

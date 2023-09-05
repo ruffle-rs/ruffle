@@ -2,19 +2,22 @@
 
 //! Ruffle web frontend.
 mod audio;
+mod geolocation;
 mod log_adapter;
 mod navigator;
-mod geolocation;
 mod storage;
 mod ui;
 
+use crate::geolocation::GeolocationPositionJS;
 use generational_arena::{Arena, Index};
 use js_sys::{Array, Error as JsError, Function, Object, Promise, Uint8Array};
 use ruffle_core::backend::navigator::OpenURLMode;
 use ruffle_core::compatibility_rules::CompatibilityRules;
 use ruffle_core::config::{Letterbox, NetworkingAccessMode};
 use ruffle_core::context::UpdateContext;
-use ruffle_core::events::{KeyCode, MouseButton, MouseWheelDelta, TextControlCode, PermissionStatus};
+use ruffle_core::events::{
+    KeyCode, MouseButton, MouseWheelDelta, PermissionStatus, TextControlCode,
+};
 use ruffle_core::external::{
     ExternalInterfaceMethod, ExternalInterfaceProvider, FsCommandProvider, Value as ExternalValue,
     Value,
@@ -44,7 +47,6 @@ use web_sys::{
     AddEventListenerOptions, ClipboardEvent, Element, Event, EventTarget, HtmlCanvasElement,
     HtmlElement, KeyboardEvent, PointerEvent, WheelEvent, Window,
 };
-use crate::geolocation::GeolocationPositionJS;
 
 static RUFFLE_GLOBAL_PANIC: Once = Once::new();
 
@@ -479,9 +481,8 @@ impl Ruffle {
     }
 
     pub fn geolocation_update_interval(&self) -> f64 {
-        self.with_core(|core| {
-            core.geolocation_update_interval()
-        }).unwrap_or(crate::geolocation::DEFAULT_UPDATE_INTERVAL)
+        self.with_core(|core| core.geolocation_update_interval())
+            .unwrap_or(crate::geolocation::DEFAULT_UPDATE_INTERVAL)
     }
 
     pub fn clear_custom_menu_items(&mut self) {
