@@ -1076,7 +1076,7 @@ impl<'gc> Loader<'gc> {
                 fn set_data<'a, 'gc: 'a>(
                     body: Vec<u8>,
                     activation: &mut Avm2Activation<'a, 'gc>,
-                    mut target: Avm2Object<'gc>,
+                    target: Avm2Object<'gc>,
                     data_format: DataFormat,
                 ) {
                     let data_object = match data_format {

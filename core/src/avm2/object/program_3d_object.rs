@@ -30,7 +30,7 @@ impl<'gc> Program3DObject<'gc> {
         let class = activation.avm2().classes().program3d;
         let base = ScriptObjectData::new(class);
 
-        let mut this: Object<'gc> = Program3DObject(Gc::new(
+        let this: Object<'gc> = Program3DObject(Gc::new(
             activation.gc(),
             Program3DObjectData {
                 base: RefLock::new(base),

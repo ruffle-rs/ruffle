@@ -63,7 +63,7 @@ impl<'gc> NamespaceObject<'gc> {
         let class = activation.avm2().classes().namespace;
         let base = ScriptObjectData::new(class);
 
-        let mut this: Object<'gc> = NamespaceObject(GcCell::new(
+        let this: Object<'gc> = NamespaceObject(GcCell::new(
             activation.context.gc_context,
             NamespaceObjectData { base, namespace },
         ))

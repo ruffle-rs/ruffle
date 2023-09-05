@@ -11,7 +11,7 @@ use crate::avm2::{Avm2, Error};
 /// Get an object's dispatch list, lazily initializing it if necessary.
 fn dispatch_list<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    mut this: Object<'gc>,
+    this: Object<'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     match this.get_property(
         &Multiname::new(activation.avm2().flash_events_internal, "_dispatchList"),

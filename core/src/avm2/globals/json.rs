@@ -34,7 +34,7 @@ fn deserialize_json_inner<'gc>(
         }
         JsonValue::Object(js_obj) => {
             let obj_class = activation.avm2().classes().object;
-            let mut obj = obj_class.construct(activation, &[])?;
+            let obj = obj_class.construct(activation, &[])?;
             for entry in js_obj.iter() {
                 let key = AvmString::new_utf8(activation.context.gc_context, entry.0);
                 let val = deserialize_json_inner(activation, entry.1.clone(), reviver)?;

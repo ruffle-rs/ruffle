@@ -651,7 +651,7 @@ impl<'gc> ChildContainer<'gc> {
                     "Parent must be removed *after* calling `remove_child_from_render_list`",
                 );
                 if child.has_explicit_name() {
-                    if let Avm2Value::Object(mut parent_obj) = parent.object2() {
+                    if let Avm2Value::Object(parent_obj) = parent.object2() {
                         let mut activation = Avm2Activation::from_nothing(context.reborrow());
                         let current_val =
                             parent_obj.get_public_property(child.name(), &mut activation);

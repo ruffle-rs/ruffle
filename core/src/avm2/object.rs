@@ -299,7 +299,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// the exception that it does not special-case object lookups on
     /// dictionary structured objects.
     fn set_property(
-        &mut self,
+        &self,
         multiname: &Multiname<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
@@ -348,7 +348,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Same as set_property, but constructs a public Multiname for you.
     fn set_public_property(
-        &mut self,
+        &self,
         name: impl Into<AvmString<'gc>>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
@@ -384,7 +384,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ///
     /// This corresponds directly with the AVM2 operation `initproperty`.
     fn init_property(
-        &mut self,
+        &self,
         multiname: &Multiname<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
@@ -808,7 +808,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Install a bound method on an object.
     fn install_bound_method(
-        &mut self,
+        &self,
         mc: &Mutation<'gc>,
         disp_id: u32,
         function: FunctionObject<'gc>,
@@ -821,7 +821,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Install a const trait on the global object.
     /// This should only ever be called on the `global` object, during initialization.
     fn install_const_late(
-        &mut self,
+        &self,
         mc: &Mutation<'gc>,
         name: QName<'gc>,
         value: Value<'gc>,
@@ -835,7 +835,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             .install_const_slot_late(new_slot_id, value);
     }
 
-    fn install_instance_slots(&mut self, mc: &Mutation<'gc>) {
+    fn install_instance_slots(&self, mc: &Mutation<'gc>) {
         self.base_mut(mc).install_instance_slots();
     }
 

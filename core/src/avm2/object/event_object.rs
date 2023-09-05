@@ -182,7 +182,7 @@ impl<'gc> EventObject<'gc> {
     where
         S: Into<AvmString<'gc>>,
     {
-        let mut info_object = activation
+        let info_object = activation
             .avm2()
             .classes()
             .object

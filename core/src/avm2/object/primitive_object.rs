@@ -86,7 +86,7 @@ impl<'gc> PrimitiveObject<'gc> {
         };
 
         let base = ScriptObjectData::new(class);
-        let mut this: Object<'gc> = PrimitiveObject(GcCell::new(
+        let this: Object<'gc> = PrimitiveObject(GcCell::new(
             activation.context.gc_context,
             PrimitiveObjectData { base, primitive },
         ))

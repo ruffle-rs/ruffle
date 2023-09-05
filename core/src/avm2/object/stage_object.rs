@@ -46,7 +46,7 @@ impl<'gc> StageObject<'gc> {
         display_object: DisplayObject<'gc>,
         class: ClassObject<'gc>,
     ) -> Result<Self, Error<'gc>> {
-        let mut instance = Self(GcCell::new(
+        let instance = Self(GcCell::new(
             activation.context.gc_context,
             StageObjectData {
                 base: ScriptObjectData::new(class),
@@ -96,7 +96,7 @@ impl<'gc> StageObject<'gc> {
         display_object: DisplayObject<'gc>,
     ) -> Result<Self, Error<'gc>> {
         let class = activation.avm2().classes().graphics;
-        let mut this = Self(GcCell::new(
+        let this = Self(GcCell::new(
             activation.context.gc_context,
             StageObjectData {
                 base: ScriptObjectData::new(class),

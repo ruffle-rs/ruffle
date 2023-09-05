@@ -19,7 +19,7 @@ pub fn make_shader_parameter<'gc>(
             metadata,
             ..
         } => {
-            let mut obj = activation
+            let obj = activation
                 .avm2()
                 .classes()
                 .shaderparameter
@@ -46,7 +46,7 @@ pub fn make_shader_parameter<'gc>(
             Ok(obj.into())
         }
         PixelBenderParam::Texture { name, channels, .. } => {
-            let mut obj = activation
+            let obj = activation
                 .avm2()
                 .classes()
                 .shaderinput

@@ -61,7 +61,7 @@ impl<'gc> RegExpObject<'gc> {
         let class = activation.avm2().classes().regexp;
         let base = ScriptObjectData::new(class);
 
-        let mut this: Object<'gc> = RegExpObject(GcCell::new(
+        let this: Object<'gc> = RegExpObject(GcCell::new(
             activation.context.gc_context,
             RegExpObjectData { base, regexp },
         ))

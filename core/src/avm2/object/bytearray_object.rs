@@ -80,7 +80,7 @@ impl<'gc> ByteArrayObject<'gc> {
         let class = activation.avm2().classes().bytearray;
         let base = ScriptObjectData::new(class);
 
-        let mut instance: Object<'gc> = ByteArrayObject(GcCell::new(
+        let instance: Object<'gc> = ByteArrayObject(GcCell::new(
             activation.context.gc_context,
             ByteArrayObjectData {
                 base,

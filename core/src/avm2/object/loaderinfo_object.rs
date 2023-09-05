@@ -111,7 +111,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         let base = ScriptObjectData::new(class);
         let loaded_stream = Some(LoaderStream::Swf(movie, root));
 
-        let mut this: Object<'gc> = LoaderInfoObject(GcCell::new(
+        let this: Object<'gc> = LoaderInfoObject(GcCell::new(
             activation.context.gc_context,
             LoaderInfoObjectData {
                 base,
@@ -155,7 +155,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         let class = activation.avm2().classes().loaderinfo;
         let base = ScriptObjectData::new(class);
 
-        let mut this: Object<'gc> = LoaderInfoObject(GcCell::new(
+        let this: Object<'gc> = LoaderInfoObject(GcCell::new(
             activation.context.gc_context,
             LoaderInfoObjectData {
                 base,

@@ -65,7 +65,7 @@ impl<'gc> QNameObject<'gc> {
         let class = activation.avm2().classes().qname;
         let base = ScriptObjectData::new(class);
 
-        let mut this: Object<'gc> = QNameObject(GcCell::new(
+        let this: Object<'gc> = QNameObject(GcCell::new(
             activation.context.gc_context,
             QNameObjectData { base, name },
         ))
