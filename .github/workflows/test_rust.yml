@@ -65,6 +65,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           shared-key: "desktop"
+          save-if: ${{ github.ref == 'refs/heads/master' }}
 
       - name: Check formatting
         run: cargo fmt --all -- --check
