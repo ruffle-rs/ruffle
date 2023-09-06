@@ -42,7 +42,7 @@
         "message": "Nollställ inställningar"
     },
     "settings_reset_confirm": {
-        "message": "Är du säker att du vill återställa Ruffleinställningarna till sina ursprungliga värden?"
+        "message": "Är du säker på att du vill återställa Ruffleinställningarna till sina ursprungliga värden?"
     },
     "status_init": {
         "message": "Avläser aktuell flik…"
