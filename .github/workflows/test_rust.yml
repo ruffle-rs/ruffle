@@ -71,6 +71,8 @@ jobs:
         run: cargo fmt --all -- --check
 
       - name: Check clippy
+        # not critical on other platforms, and slows down Windows
+        if: runner.os == 'Linux'
         # Don't fail the build for clippy on nightly, since we get a lot of false-positives
         run: cargo clippy --all --all-features --tests ${{ (matrix.rust_version != 'nightly' && '-- -D warnings') || '' }}
 
