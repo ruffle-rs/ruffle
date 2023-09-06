@@ -386,6 +386,21 @@ pub fn append_child<'gc>(
     Ok(this.into())
 }
 
+// ECMA-357 13.4.4.29 XML.prototype.prependChild ( value )
+pub fn prepend_child<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let xml = this.as_xml_object().unwrap();
+    let child = args.get_value(0);
+    // 1. Call the [[Insert]] method of this object with arguments "0" and value
+    xml.node().insert(0, child, activation)?;
+
+    // 2. Return x
+    Ok(xml.into())
+}
+
 pub fn descendants<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
