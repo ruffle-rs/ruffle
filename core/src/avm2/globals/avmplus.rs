@@ -1,7 +1,7 @@
 pub use crate::avm2::globals::flash::utils::get_qualified_class_name;
 use crate::avm2::metadata::Metadata;
 use crate::avm2::method::Method;
-use crate::avm2::object::TObject;
+use crate::avm2::object::{ArrayObject, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::property::Property;
 use crate::avm2::ClassObject;
@@ -91,45 +91,15 @@ fn describe_internal_body<'gc>(
         .object
         .construct(activation, &[])?;
 
-    let bases = activation
-        .avm2()
-        .classes()
-        .array
-        .construct(activation, &[])?
-        .as_array_object()
-        .unwrap();
+    let bases = ArrayObject::empty(activation)?.as_array_object().unwrap();
 
-    let interfaces = activation
-        .avm2()
-        .classes()
-        .array
-        .construct(activation, &[])?
-        .as_array_object()
-        .unwrap();
+    let interfaces = ArrayObject::empty(activation)?.as_array_object().unwrap();
 
-    let variables = activation
-        .avm2()
-        .classes()
-        .array
-        .construct(activation, &[])?
-        .as_array_object()
-        .unwrap();
+    let variables = ArrayObject::empty(activation)?.as_array_object().unwrap();
 
-    let accessors = activation
-        .avm2()
-        .classes()
-        .array
-        .construct(activation, &[])?
-        .as_array_object()
-        .unwrap();
+    let accessors = ArrayObject::empty(activation)?.as_array_object().unwrap();
 
-    let methods = activation
-        .avm2()
-        .classes()
-        .array
-        .construct(activation, &[])?
-        .as_array_object()
-        .unwrap();
+    let methods = ArrayObject::empty(activation)?.as_array_object().unwrap();
 
     traits.set_public_property("bases", bases.into(), activation)?;
     traits.set_public_property("interfaces", interfaces.into(), activation)?;
@@ -298,11 +268,7 @@ fn describe_internal_body<'gc>(
                 variable.set_public_property("access", access.into(), activation)?;
 
                 if let Some(metadata) = trait_metadata {
-                    let metadata_object = activation
-                        .avm2()
-                        .classes()
-                        .array
-                        .construct(activation, &[])?;
+                    let metadata_object = ArrayObject::empty(activation)?;
                     write_metadata(metadata_object, &metadata, activation)?;
                     variable.set_public_property("metadata", metadata_object.into(), activation)?;
                 }
@@ -357,11 +323,7 @@ fn describe_internal_body<'gc>(
                 let params = write_params(&method.method, activation)?;
                 method_obj.set_public_property("parameters", params.into(), activation)?;
                 if let Some(metadata) = trait_metadata {
-                    let metadata_object = activation
-                        .avm2()
-                        .classes()
-                        .array
-                        .construct(activation, &[])?;
+                    let metadata_object = ArrayObject::empty(activation)?;
                     write_metadata(metadata_object, &metadata, activation)?;
                     method_obj.set_public_property(
                         "metadata",
@@ -425,11 +387,7 @@ fn describe_internal_body<'gc>(
                     accessor_obj.set_public_property("uri", uri.into(), activation)?;
                 }
 
-                let metadata_object = activation
-                    .avm2()
-                    .classes()
-                    .array
-                    .construct(activation, &[])?;
+                let metadata_object = ArrayObject::empty(activation)?;
 
                 if let Some(get_disp_id) = get {
                     if let Some(metadata) = vtable.get_metadata_for_disp(get_disp_id) {
@@ -476,11 +434,7 @@ fn write_params<'gc>(
     method: &Method<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let params = activation
-        .avm2()
-        .classes()
-        .array
-        .construct(activation, &[])?;
+    let params = ArrayObject::empty(activation)?;
     let mut params_array = params
         .as_array_storage_mut(activation.context.gc_context)
         .unwrap();
