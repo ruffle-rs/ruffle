@@ -204,14 +204,13 @@ static LETTER_TABLE: &[(u32, u32)] = &[
     (0x212A, 0x212B),
     (0x212E, 0x212E), // single
     (0x2180, 0x2182),
+    (0x3007, 0x3007), // Ideographic, single
+    (0x3021, 0x3029), // Ideographic
     (0x3041, 0x3094),
     (0x30A1, 0x30FA),
     (0x3105, 0x312C),
+    (0x4E00, 0x9FA5), // Ideographic
     (0xAC00, 0xD7A3),
-    // Ideographic
-    (0x4E00, 0x9FA5),
-    (0x3007, 0x3007), // single
-    (0x3021, 0x3029),
 ];
 
 // https://www.w3.org/TR/2004/REC-xml-20040204/#NT-Digit
@@ -351,6 +350,10 @@ fn is_letter(c: char) -> bool {
     let c: u32 = c.into();
 
     for (start, end) in LETTER_TABLE {
+        if c < *start {
+            return false;
+        }
+
         if c >= *start && c <= *end {
             return true;
         }
@@ -363,6 +366,10 @@ fn is_digit(c: char) -> bool {
     let c: u32 = c.into();
 
     for (start, end) in DIGIT_TABLE {
+        if c < *start {
+            return false;
+        }
+
         if c >= *start && c <= *end {
             return true;
         }
@@ -375,6 +382,10 @@ fn is_combining(c: char) -> bool {
     let c: u32 = c.into();
 
     for (start, end) in COMBINING_TABLE {
+        if c < *start {
+            return false;
+        }
+
         if c >= *start && c <= *end {
             return true;
         }
@@ -387,6 +398,10 @@ fn is_extender(c: char) -> bool {
     let c: u32 = c.into();
 
     for (start, end) in EXTENDER_TABLE {
+        if c < *start {
+            return false;
+        }
+
         if c >= *start && c <= *end {
             return true;
         }
@@ -432,4 +447,22 @@ pub fn is_xml_name<'gc>(
             false
         }
     }))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{COMBINING_TABLE, DIGIT_TABLE, EXTENDER_TABLE, LETTER_TABLE};
+
+    fn is_sorted(data: &[(u32, u32)]) -> bool {
+        data.windows(2)
+            .all(|w| w[0].0 <= w[1].0 && w[0].1 <= w[1].1)
+    }
+
+    #[test]
+    fn verify_is_xml_name_table_order() {
+        assert!(is_sorted(LETTER_TABLE));
+        assert!(is_sorted(DIGIT_TABLE));
+        assert!(is_sorted(COMBINING_TABLE));
+        assert!(is_sorted(EXTENDER_TABLE));
+    }
 }
