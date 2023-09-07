@@ -81,6 +81,53 @@ pub fn name<'gc>(
     }
 }
 
+pub fn set_name<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let xml = this.as_xml_object().unwrap();
+    let node = xml.node();
+
+    let is_attribute_or_element = matches!(
+        &*node.kind(),
+        E4XNodeKind::Attribute(_)
+            | E4XNodeKind::ProcessingInstruction(_)
+            | E4XNodeKind::Element { .. }
+    );
+
+    if !is_attribute_or_element {
+        return Ok(Value::Undefined);
+    }
+
+    let new_name = args.get_value(0);
+
+    let new_name = if let Some(qname) = new_name.as_object().and_then(|q| q.as_qname_object()) {
+        let has_no_ns = qname.name().is_any_namespace()
+            || (qname.name().namespace_set().len() == 1
+                && qname.name().namespace_set()[0].is_public());
+        if !has_no_ns {
+            avm2_stub_method!(activation, "XML", "setName", "with QName namespaces");
+        }
+        qname.local_name()
+    } else {
+        new_name.coerce_to_string(activation)?
+    };
+
+    let is_name_valid = crate::avm2::e4x::is_xml_name(activation, new_name.into())?;
+    if !is_name_valid {
+        return Err(Error::AvmError(type_error(
+            activation,
+            &format!("Error #1117: Invalid XML name: {}.", new_name),
+            1117,
+        )?));
+    }
+
+    node.set_local_name(new_name, activation.context.gc_context);
+
+    Ok(Value::Undefined)
+}
+
 pub fn namespace<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
