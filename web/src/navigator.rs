@@ -1,6 +1,8 @@
 //! Navigator backend for web
 use crate::WebSocketProxy;
 use async_channel::Receiver;
+use futures_util::{SinkExt, StreamExt};
+use gloo_net::websocket::{futures::WebSocket, Message};
 use js_sys::{Array, ArrayBuffer, Uint8Array};
 use ruffle_core::backend::navigator::{
     async_return, create_fetch_error, create_specific_fetch_error, ErrorResponse, NavigationMethod,
@@ -17,12 +19,11 @@ use tracing_subscriber::layer::Layered;
 use tracing_subscriber::Registry;
 use tracing_wasm::WASMLayer;
 use url::{ParseError, Url};
-use wasm_bindgen::prelude::Closure;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::{spawn_local, JsFuture};
 use web_sys::{
-    window, Blob, BlobPropertyBag, CloseEvent, ErrorEvent, HtmlFormElement, HtmlInputElement,
-    MessageEvent, Request as WebRequest, RequestInit, Response as WebResponse, WebSocket,
+    window, Blob, BlobPropertyBag, HtmlFormElement, HtmlInputElement, Request as WebRequest,
+    RequestInit, Response as WebResponse,
 };
 
 pub struct WebNavigatorBackend {
@@ -368,6 +369,7 @@ impl NavigatorBackend for WebNavigatorBackend {
     fn connect_socket(
         &mut self,
         host: String,
+
         port: u16,
         // NOTE: WebSocket does not allow specifying a timeout, so this goes unused.
         _timeout: Duration,
@@ -389,7 +391,7 @@ impl NavigatorBackend for WebNavigatorBackend {
 
         tracing::info!("Connecting to {}", proxy.proxy_url);
 
-        let ws = match WebSocket::new(&proxy.proxy_url) {
+        let ws = match WebSocket::open(&proxy.proxy_url) {
             Ok(x) => x,
             Err(e) => {
                 tracing::error!("Failed to create WebSocket, reason {:?}", e);
@@ -400,68 +402,41 @@ impl NavigatorBackend for WebNavigatorBackend {
             }
         };
 
-        ws.set_binary_type(web_sys::BinaryType::Arraybuffer);
+        let (mut sink, mut stream) = ws.split();
+        sender
+            .send(SocketAction::Connect(handle, ConnectionState::Connected))
+            .expect("working channel send");
 
-        let sender_onopen = sender.clone();
-        let onopen_callback = Closure::<dyn FnMut()>::new(move || {
-            sender_onopen
-                .send(SocketAction::Connect(handle, ConnectionState::Connected))
-                .expect("Working channel send");
-        });
-
-        let sender_onmessage = sender.clone();
-        let onmessage_callback = Closure::<dyn FnMut(_)>::new(move |e: MessageEvent| {
-            if let Ok(buf) = e.data().dyn_into::<js_sys::ArrayBuffer>() {
-                // Handle array buffer.
-                let array = js_sys::Uint8Array::new(&buf);
-                sender_onmessage
-                    .send(SocketAction::Data(handle, array.to_vec()))
-                    .expect("Working channel send");
-            } else if let Ok(_) = e.data().dyn_into::<web_sys::Blob>() {
-                todo!("Unsupported blob payload");
-            } else {
-                todo!("Unsupported WebSocket payload");
+        // Spawn future to handle incoming messages.
+        let stream_sender = sender.clone();
+        self.spawn_future(Box::pin(async move {
+            while let Some(msg) = stream.next().await {
+                match msg {
+                    Ok(Message::Bytes(buf)) => stream_sender
+                        .send(SocketAction::Data(handle, buf))
+                        .expect("working channel send"),
+                    Ok(_) => tracing::warn!("Server sent unexpected text message"),
+                    Err(_) => {
+                        stream_sender
+                            .send(SocketAction::Close(handle))
+                            .expect("working channel send");
+                        return Ok(());
+                    }
+                }
             }
-        });
 
-        let sender_onclose = sender.clone();
-        let onclose_callback = Closure::<dyn FnMut(_)>::new(move |_e: CloseEvent| {
-            sender_onclose
-                .send(SocketAction::Close(handle))
-                .expect("working channel send");
-        });
-
-        let sender_onerror = sender.clone();
-        let onerror_callback = Closure::<dyn FnMut(_)>::new(move |_e: ErrorEvent| {
-            sender_onerror
-                .send(SocketAction::Close(handle))
-                .expect("working channel send");
-        });
-
-        ws.set_onopen(Some(onopen_callback.as_ref().unchecked_ref()));
-        ws.set_onmessage(Some(onmessage_callback.as_ref().unchecked_ref()));
-        ws.set_onclose(Some(onclose_callback.as_ref().unchecked_ref()));
-        ws.set_onerror(Some(onerror_callback.as_ref().unchecked_ref()));
-
-        onopen_callback.forget();
-        onmessage_callback.forget();
-        onclose_callback.forget();
-        onerror_callback.forget();
+            Ok(())
+        }));
 
         // Spawn future to handle outgoing messages.
         self.spawn_future(Box::pin(async move {
             while let Ok(msg) = receiver.recv().await {
-                if let Err(e) = ws.send_with_u8_array(&msg) {
-                    tracing::error!("Failed to send message to WebSocket {:?}", e);
+                if let Err(e) = sink.send(Message::Bytes(msg)).await {
+                    tracing::warn!("Failed to send message to WebSocket {}", e);
                     sender
                         .send(SocketAction::Close(handle))
                         .expect("working channel send");
                 }
-            }
-
-            // Close WebSocket as the sender was dropped.
-            if let Err(e) = ws.close() {
-                tracing::error!("Failed to close WebSocket connection {:?}", e);
             }
 
             Ok(())
