@@ -1,4 +1,5 @@
 //! Navigator backend for web
+use crate::WebSocketProxy;
 use async_channel::Receiver;
 use js_sys::{Array, ArrayBuffer, Uint8Array};
 use ruffle_core::backend::navigator::{
@@ -31,6 +32,7 @@ pub struct WebNavigatorBackend {
     upgrade_to_https: bool,
     base_url: Option<Url>,
     open_url_mode: OpenURLMode,
+    websocket_proxies: Vec<WebSocketProxy>,
 }
 
 impl WebNavigatorBackend {
@@ -41,6 +43,7 @@ impl WebNavigatorBackend {
         base_url: Option<String>,
         log_subscriber: Arc<Layered<WASMLayer, Registry>>,
         open_url_mode: OpenURLMode,
+        websocket_proxies: Vec<WebSocketProxy>,
     ) -> Self {
         let window = web_sys::window().expect("window()");
 
@@ -82,6 +85,7 @@ impl WebNavigatorBackend {
             base_url,
             log_subscriber,
             open_url_mode,
+            websocket_proxies,
         }
     }
 }
@@ -371,10 +375,30 @@ impl NavigatorBackend for WebNavigatorBackend {
         receiver: Receiver<Vec<u8>>,
         sender: Sender<SocketAction>,
     ) {
-        // FIXME: Figure out how we would choose between wss (Secure) and ws (Non-Secure). Or add API to intercept connection process to change socket url, or cancel this all together?
-        // TODO: Handle errors more gracefully, just send SocketAction::Connect(ConnectionState::Failed) or something like that.
-        let ws =
-            WebSocket::new(&format!("ws://{}:{}", host, port)).expect("Failed to create WebSocket");
+        let Some(proxy) = self
+            .websocket_proxies
+            .iter()
+            .find(|x| x.host == host && x.port == port)
+        else {
+            tracing::warn!("Missing WebSocket proxy for host {}, port {}", host, port);
+            sender
+                .send(SocketAction::Connect(handle, ConnectionState::Failed))
+                .expect("working channel send");
+            return;
+        };
+
+        tracing::info!("Connecting to {}", proxy.proxy_url);
+
+        let ws = match WebSocket::new(&proxy.proxy_url) {
+            Ok(x) => x,
+            Err(e) => {
+                tracing::error!("Failed to create WebSocket, reason {:?}", e);
+                sender
+                    .send(SocketAction::Connect(handle, ConnectionState::Failed))
+                    .expect("working channel send");
+                return;
+            }
+        };
 
         ws.set_binary_type(web_sys::BinaryType::Arraybuffer);
 

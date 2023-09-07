@@ -248,6 +248,13 @@ export const enum NetworkingAccessMode {
     None = "none",
 }
 
+export interface WebSocketProxy {
+    host: string;
+    port: number;
+
+    proxyUrl: string;
+}
+
 /**
  * Any options used for loading a movie.
  */
@@ -528,6 +535,8 @@ export interface BaseLoadOptions {
      * @default null
      */
     openInNewTab?: ((swf: URL) => void) | null;
+
+    wsProxy?: Array<WebSocketProxy>;
 }
 
 /**
