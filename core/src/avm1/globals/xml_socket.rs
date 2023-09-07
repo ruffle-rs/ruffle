@@ -235,7 +235,7 @@ pub fn constructor<'gc>(
         activation.gc(),
         XmlSocketData {
             handle: Cell::new(None),
-            /// Default timeout is 20_000 milliseconds (20 seconds)
+            // Default timeout is 20_000 milliseconds (20 seconds)
             timeout: Cell::new(20000),
             read_buffer: RefCell::new(Vec::new()),
         },
