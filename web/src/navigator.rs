@@ -16,11 +16,12 @@ use tracing_subscriber::layer::Layered;
 use tracing_subscriber::Registry;
 use tracing_wasm::WASMLayer;
 use url::{ParseError, Url};
+use wasm_bindgen::prelude::Closure;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::{spawn_local, JsFuture};
 use web_sys::{
-    window, Blob, BlobPropertyBag, HtmlFormElement, HtmlInputElement, Request as WebRequest,
-    RequestInit, Response as WebResponse,
+    window, Blob, BlobPropertyBag, CloseEvent, ErrorEvent, HtmlFormElement, HtmlInputElement,
+    MessageEvent, Request as WebRequest, RequestInit, Response as WebResponse, WebSocket,
 };
 
 pub struct WebNavigatorBackend {
@@ -362,16 +363,79 @@ impl NavigatorBackend for WebNavigatorBackend {
 
     fn connect_socket(
         &mut self,
-        _host: String,
-        _port: u16,
+        host: String,
+        port: u16,
+        // NOTE: WebSocket does not allow specifying a timeout, so this goes unused.
         _timeout: Duration,
         handle: SocketHandle,
-        _receiver: Receiver<Vec<u8>>,
+        receiver: Receiver<Vec<u8>>,
         sender: Sender<SocketAction>,
     ) {
-        // FIXME: Add way to call out to JS code.
-        sender
-            .send(SocketAction::Connect(handle, ConnectionState::Failed))
-            .expect("working channel send");
+        // FIXME: Figure out how we would choose between wss (Secure) and ws (Non-Secure). Or add API to intercept connection process to change socket url, or cancel this all together?
+        // TODO: Handle errors more gracefully, just send SocketAction::Connect(ConnectionState::Failed) or something like that.
+        let ws =
+            WebSocket::new(&format!("ws://{}:{}", host, port)).expect("Failed to create WebSocket");
+
+        ws.set_binary_type(web_sys::BinaryType::Arraybuffer);
+
+        let sender_onopen = sender.clone();
+        let onopen_callback = Closure::<dyn FnMut()>::new(move || {
+            sender_onopen
+                .send(SocketAction::Connect(handle, ConnectionState::Connected))
+                .expect("Working channel send");
+        });
+
+        let sender_onmessage = sender.clone();
+        let onmessage_callback = Closure::<dyn FnMut(_)>::new(move |e: MessageEvent| {
+            if let Ok(buf) = e.data().dyn_into::<js_sys::ArrayBuffer>() {
+                // Handle array buffer.
+                let array = js_sys::Uint8Array::new(&buf);
+                sender_onmessage
+                    .send(SocketAction::Data(handle, array.to_vec()))
+                    .expect("Working channel send");
+            } else if let Ok(_) = e.data().dyn_into::<web_sys::Blob>() {
+                todo!("Unsupported blob payload");
+            } else {
+                todo!("Unsupported WebSocket payload");
+            }
+        });
+
+        let sender_onclose = sender.clone();
+        let onclose_callback = Closure::<dyn FnMut(_)>::new(move |_e: CloseEvent| {
+            sender_onclose
+                .send(SocketAction::Close(handle))
+                .expect("working channel send");
+        });
+
+        let sender_onerror = sender.clone();
+        let onerror_callback = Closure::<dyn FnMut(_)>::new(move |_e: ErrorEvent| {
+            sender_onerror
+                .send(SocketAction::Close(handle))
+                .expect("working channel send");
+        });
+
+        ws.set_onopen(Some(onopen_callback.as_ref().unchecked_ref()));
+        ws.set_onmessage(Some(onmessage_callback.as_ref().unchecked_ref()));
+        ws.set_onclose(Some(onclose_callback.as_ref().unchecked_ref()));
+        ws.set_onerror(Some(onerror_callback.as_ref().unchecked_ref()));
+
+        onopen_callback.forget();
+        onmessage_callback.forget();
+        onclose_callback.forget();
+        onerror_callback.forget();
+
+        // Spawn future to handle outgoing messages.
+        self.spawn_future(Box::pin(async move {
+            while let Ok(msg) = receiver.recv().await {
+                if let Err(e) = ws.send_with_u8_array(&msg) {
+                    tracing::error!("Failed to send message to WebSocket {:?}", e);
+                    sender
+                        .send(SocketAction::Close(handle))
+                        .expect("working channel send");
+                }
+            }
+
+            Ok(())
+        }));
     }
 }
