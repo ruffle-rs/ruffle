@@ -50,6 +50,8 @@ serde = { version = "1.0.188", features = ["derive"] }
 thiserror = "1.0"
 base64 = "0.21.4"
 async-channel = "1.9.0"
+futures-util = { version = "0.3.28", features = ["sink"] }
+gloo-net =  { version = "0.4.0", default-features = false, features = ["websocket"] }
 
 [dependencies.ruffle_core]
 path = "../core"
@@ -64,5 +66,5 @@ features = [
     "ChannelMergerNode", "ChannelSplitterNode", "ClipboardEvent", "DataTransfer", "Element", "Event",
     "EventTarget", "GainNode", "Headers", "HtmlCanvasElement", "HtmlDocument", "HtmlElement", "HtmlFormElement",
     "HtmlInputElement", "HtmlTextAreaElement", "KeyboardEvent", "Location", "PointerEvent",
-    "Request", "RequestInit", "Response", "Storage", "WheelEvent", "Window", "ProgressEvent", "WebSocket", "MessageEvent", "BinaryType", "ErrorEvent", "CloseEvent",
+    "Request", "RequestInit", "Response", "Storage", "WheelEvent", "Window",
 ]
