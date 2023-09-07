@@ -8,7 +8,7 @@ use crate::executor::WinitAsyncExecutor;
 use crate::gui::MovieView;
 use crate::{CALLSTACK, RENDER_INFO, SWF_INFO};
 use anyhow::anyhow;
-use ruffle_core::backend::navigator::{OpenURLMode, SocketMode};
+use ruffle_core::backend::navigator::{OpenLinks, SocketMode};
 use ruffle_core::config::Letterbox;
 use ruffle_core::{LoadBehavior, Player, PlayerBuilder, PlayerEvent, StageAlign, StageScaleMode};
 use ruffle_render::backend::RenderBackend;
@@ -46,7 +46,7 @@ pub struct PlayerOptions {
     pub spoof_url: Option<Url>,
     pub player_version: u8,
     pub frame_rate: Option<f64>,
-    pub open_url_mode: OpenURLMode,
+    pub open_links: OpenLinks,
     pub dummy_external_interface: bool,
 }
 
@@ -70,7 +70,7 @@ impl From<&Opt> for PlayerOptions {
             spoof_url: value.spoof_url.clone(),
             player_version: value.player_version.unwrap_or(32),
             frame_rate: value.frame_rate,
-            open_url_mode: value.open_url_mode,
+            open_links: value.open_links,
             dummy_external_interface: value.dummy_external_interface,
             socket_allowed: HashSet::from_iter(value.socket_allow.iter().cloned()),
             tcp_connections: value.tcp_connections,
@@ -112,7 +112,7 @@ impl ActivePlayer {
             event_loop.clone(),
             opt.proxy.clone(),
             opt.upgrade_to_https,
-            opt.open_url_mode,
+            opt.open_links,
             opt.socket_allowed.clone(),
             opt.tcp_connections,
         );
@@ -143,7 +143,7 @@ impl ActivePlayer {
             .with_renderer(renderer)
             .with_storage(DiskStorageBackend::new().expect("Couldn't create storage backend"))
             .with_ui(
-                DesktopUiBackend::new(window.clone(), opt.open_url_mode)
+                DesktopUiBackend::new(window.clone(), opt.open_links)
                     .expect("Couldn't create ui backend"),
             )
             .with_autoplay(true)
