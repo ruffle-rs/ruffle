@@ -244,6 +244,15 @@ where
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct WebSocketProxy {
+    host: String,
+    port: u16,
+
+    proxy_url: String,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct Config {
     allow_script_access: bool,
 
@@ -289,6 +298,8 @@ struct Config {
     open_url_mode: OpenURLMode,
 
     allow_networking: NetworkingAccessMode,
+
+    ws_proxy: Vec<WebSocketProxy>,
 }
 
 /// Metadata about the playing SWF file to be passed back to JavaScript.
@@ -542,6 +553,7 @@ impl Ruffle {
             config.base_url,
             log_subscriber.clone(),
             config.open_url_mode,
+            config.ws_proxy,
         ));
 
         match window.local_storage() {
