@@ -14,7 +14,7 @@ use isahc::{
 use rfd::{AsyncMessageDialog, MessageButtons, MessageDialog, MessageLevel};
 use ruffle_core::backend::navigator::{
     async_return, create_fetch_error, create_specific_fetch_error, ErrorResponse, NavigationMethod,
-    NavigatorBackend, OpenURLMode, OwnedFuture, Request, SocketMode, SuccessResponse,
+    NavigatorBackend, OpenLinks, OwnedFuture, Request, SocketMode, SuccessResponse,
 };
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
@@ -51,7 +51,7 @@ pub struct ExternalNavigatorBackend {
 
     upgrade_to_https: bool,
 
-    open_url_mode: OpenURLMode,
+    open_links: OpenLinks,
 }
 
 impl ExternalNavigatorBackend {
@@ -63,7 +63,7 @@ impl ExternalNavigatorBackend {
         event_loop: EventLoopProxy<RuffleEvent>,
         proxy: Option<Url>,
         upgrade_to_https: bool,
-        open_url_mode: OpenURLMode,
+        open_links: OpenLinks,
         socket_allowed: HashSet<String>,
         socket_mode: SocketMode,
     ) -> Self {
@@ -86,7 +86,7 @@ impl ExternalNavigatorBackend {
             client,
             base_url,
             upgrade_to_https,
-            open_url_mode,
+            open_links,
             socket_allowed,
             socket_mode,
         }
@@ -139,20 +139,20 @@ impl NavigatorBackend for ExternalNavigatorBackend {
             return;
         }
 
-        if self.open_url_mode == OpenURLMode::Confirm {
+        if self.open_links == OpenLinks::Ask {
             let message = format!("The SWF file wants to open the website {}", modified_url);
             // TODO: Add a checkbox with a GUI toolkit
-            let confirm = MessageDialog::new()
+            let ask = MessageDialog::new()
                 .set_title("Open website?")
                 .set_level(MessageLevel::Info)
                 .set_description(&message)
                 .set_buttons(MessageButtons::OkCancel)
                 .show();
-            if !confirm {
+            if !ask {
                 tracing::info!("SWF tried to open a website, but the user declined the request");
                 return;
             }
-        } else if self.open_url_mode == OpenURLMode::Deny {
+        } else if self.open_links == OpenLinks::Deny {
             tracing::warn!("SWF tried to open a website, but opening a website is not allowed");
             return;
         }
