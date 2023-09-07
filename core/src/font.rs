@@ -155,8 +155,8 @@ impl<'gc> Font<'gc> {
                 glyphs,
                 code_point_to_glyph,
 
-                /// DefineFont3 stores coordinates at 20x the scale of DefineFont1/2.
-                /// (SWF19 p.164)
+                // DefineFont3 stores coordinates at 20x the scale of DefineFont1/2.
+                // (SWF19 p.164)
                 scale: if tag.version >= 3 { 20480.0 } else { 1024.0 },
                 kerning_pairs,
                 ascent,
