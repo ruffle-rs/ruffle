@@ -9,7 +9,7 @@ mod ui;
 
 use generational_arena::{Arena, Index};
 use js_sys::{Array, Error as JsError, Function, Object, Promise, Uint8Array};
-use ruffle_core::backend::navigator::OpenURLMode;
+use ruffle_core::backend::navigator::OpenLinks;
 use ruffle_core::compatibility_rules::CompatibilityRules;
 use ruffle_core::config::{Letterbox, NetworkingAccessMode};
 use ruffle_core::context::UpdateContext;
@@ -286,7 +286,7 @@ struct Config {
 
     preferred_renderer: Option<String>,
 
-    open_url_mode: OpenURLMode,
+    open_links: OpenLinks,
 
     allow_networking: NetworkingAccessMode,
 }
@@ -541,7 +541,7 @@ impl Ruffle {
             config.upgrade_to_https,
             config.base_url,
             log_subscriber.clone(),
-            config.open_url_mode,
+            config.open_links,
         ));
 
         match window.local_storage() {
