@@ -182,28 +182,28 @@ impl OpenDialog {
                 ui.end_row();
 
                 // TODO: This should probably be a global setting somewhere, not per load
-                ui.label(text(&self.locale, "open-url-mode"));
-                ComboBox::from_id_source("open-file-advanced-options-open-url-mode")
-                    .selected_text(match self.options.open_url_mode {
-                        OpenURLMode::Allow => text(&self.locale, "open-url-mode-allow"),
-                        OpenURLMode::Confirm => text(&self.locale, "open-url-mode-confirm"),
-                        OpenURLMode::Deny => text(&self.locale, "open-url-mode-deny"),
+                ui.label(text(&self.locale, "open-links"));
+                ComboBox::from_id_source("open-file-advanced-options-open-links")
+                    .selected_text(match self.options.open_links {
+                        OpenLinks::Allow => text(&self.locale, "open-links-allow"),
+                        OpenLinks::Ask => text(&self.locale, "open-links-ask"),
+                        OpenLinks::Deny => text(&self.locale, "open-links-deny"),
                     })
                     .show_ui(ui, |ui| {
                         ui.selectable_value(
-                            &mut self.options.open_url_mode,
-                            OpenURLMode::Allow,
-                            text(&self.locale, "open-url-mode-allow"),
+                            &mut self.options.open_links,
+                            OpenLinks::Allow,
+                            text(&self.locale, "open-links-allow"),
                         );
                         ui.selectable_value(
-                            &mut self.options.open_url_mode,
-                            OpenURLMode::Confirm,
-                            text(&self.locale, "open-url-mode-confirm"),
+                            &mut self.options.open_links,
+                            OpenLinks::Ask,
+                            text(&self.locale, "open-links-ask"),
                         );
                         ui.selectable_value(
-                            &mut self.options.open_url_mode,
-                            OpenURLMode::Deny,
-                            text(&self.locale, "open-url-mode-deny"),
+                            &mut self.options.open_links,
+                            OpenLinks::Deny,
+                            text(&self.locale, "open-links-deny"),
                         );
                     });
                 ui.end_row();
