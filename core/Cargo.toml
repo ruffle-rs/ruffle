@@ -56,6 +56,8 @@ egui_extras = { git = "https://github.com/emilk/egui", rev = "98087029e020a1b2d7
 png = { version = "0.17.10", optional = true }
 flv-rs = { path = "../flv" }
 async-channel = "1.9.0"
+jpegxr = { git = "https://github.com/ruffle-rs/jpegxr", branch = "ruffle" }
+image = "0.24.7"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
 version = "0.3.28"

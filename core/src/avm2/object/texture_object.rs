@@ -8,7 +8,7 @@ use crate::avm2::Error;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::RefLock;
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
-use ruffle_render::backend::Texture;
+use ruffle_render::backend::{Context3DTextureFormat, Texture};
 use std::cell::{Ref, RefMut};
 use std::rc::Rc;
 
@@ -27,6 +27,7 @@ impl<'gc> TextureObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         context3d: Context3DObject<'gc>,
         handle: Rc<dyn Texture>,
+        original_format: Context3DTextureFormat,
         class: ClassObject<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let this: Object<'gc> = TextureObject(Gc::new(
@@ -34,6 +35,7 @@ impl<'gc> TextureObject<'gc> {
             TextureObjectData {
                 base: RefLock::new(ScriptObjectData::new(class)),
                 context3d,
+                original_format,
                 handle,
             },
         ))
@@ -43,6 +45,10 @@ impl<'gc> TextureObject<'gc> {
         class.call_native_init(this.into(), &[], activation)?;
 
         Ok(this)
+    }
+
+    pub fn original_format(&self) -> Context3DTextureFormat {
+        self.0.original_format
     }
 
     pub fn handle(&self) -> Rc<dyn Texture> {
@@ -61,6 +67,9 @@ pub struct TextureObjectData<'gc> {
     base: RefLock<ScriptObjectData<'gc>>,
 
     context3d: Context3DObject<'gc>,
+
+    #[collect(require_static)]
+    original_format: Context3DTextureFormat,
 
     #[collect(require_static)]
     handle: Rc<dyn Texture>,

@@ -1,5 +1,6 @@
 #![deny(clippy::unwrap_used)]
 
+pub mod atf;
 pub mod backend;
 pub mod bitmap;
 pub mod blend;
