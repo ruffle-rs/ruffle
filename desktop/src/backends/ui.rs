@@ -1,7 +1,7 @@
 use anyhow::{Context, Error};
 use arboard::Clipboard;
 use rfd::{MessageButtons, MessageDialog, MessageLevel};
-use ruffle_core::backend::navigator::OpenURLMode;
+use ruffle_core::backend::navigator::OpenLinks;
 use ruffle_core::backend::ui::{
     FullscreenError, LanguageIdentifier, MouseCursor, UiBackend, US_ENGLISH,
 };
@@ -17,11 +17,11 @@ pub struct DesktopUiBackend {
     clipboard: Clipboard,
     language: LanguageIdentifier,
     preferred_cursor: MouseCursor,
-    open_url_mode: OpenURLMode,
+    open_links: OpenLinks,
 }
 
 impl DesktopUiBackend {
-    pub fn new(window: Rc<Window>, open_url_mode: OpenURLMode) -> Result<Self, Error> {
+    pub fn new(window: Rc<Window>, open_links: OpenLinks) -> Result<Self, Error> {
         let preferred_language = get_locale();
         let language = preferred_language
             .and_then(|l| l.parse().ok())
@@ -32,7 +32,7 @@ impl DesktopUiBackend {
             clipboard: Clipboard::new().context("Couldn't get platform clipboard")?,
             language,
             preferred_cursor: MouseCursor::Arrow,
-            open_url_mode,
+            open_links,
         })
     }
 
@@ -110,20 +110,20 @@ impl UiBackend for DesktopUiBackend {
             return;
         }
 
-        if self.open_url_mode == OpenURLMode::Confirm {
+        if self.open_links == OpenLinks::Ask {
             let message = format!("The SWF file wants to open the website {}", url);
             // TODO: Add a checkbox with a GUI toolkit
-            let confirm = MessageDialog::new()
+            let ask = MessageDialog::new()
                 .set_title("Open website?")
                 .set_level(MessageLevel::Info)
                 .set_description(&message)
                 .set_buttons(MessageButtons::OkCancel)
                 .show();
-            if !confirm {
+            if !ask {
                 tracing::info!("SWF tried to open a website, but the user declined the request");
                 return;
             }
-        } else if self.open_url_mode == OpenURLMode::Deny {
+        } else if self.open_links == OpenLinks::Deny {
             tracing::warn!("SWF tried to open a website, but opening a website is not allowed");
             return;
         }
