@@ -89,6 +89,17 @@ pub fn set_name<'gc>(
     let xml = this.as_xml_object().unwrap();
     let node = xml.node();
 
+    let is_attribute_or_element = matches!(
+        &*node.kind(),
+        E4XNodeKind::Attribute(_)
+            | E4XNodeKind::ProcessingInstruction(_)
+            | E4XNodeKind::Element { .. }
+    );
+
+    if !is_attribute_or_element {
+        return Ok(Value::Undefined);
+    }
+
     let new_name = args.get_value(0);
 
     let new_name = if let Some(qname) = new_name.as_object().and_then(|q| q.as_qname_object()) {
@@ -103,16 +114,7 @@ pub fn set_name<'gc>(
         new_name.coerce_to_string(activation)?
     };
 
-    let is_attribute_or_element = matches!(
-        &*node.kind(),
-        E4XNodeKind::Attribute(_)
-            | E4XNodeKind::ProcessingInstruction(_)
-            | E4XNodeKind::Element { .. }
-    );
-
-    if is_attribute_or_element {
-        node.set_local_name(new_name, activation.context.gc_context);
-    }
+    node.set_local_name(new_name, activation.context.gc_context);
 
     Ok(Value::Undefined)
 }
