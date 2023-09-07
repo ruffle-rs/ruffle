@@ -42,14 +42,14 @@ pub enum SocketMode {
 /// The handling mode of links opening a new website.
 #[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-pub enum OpenURLMode {
+pub enum OpenLinks {
     /// Allow all links to open a new website.
     #[serde(rename = "allow")]
     Allow,
 
-    /// A confirmation dialog opens with every link trying to open a new website.
-    #[serde(rename = "confirm")]
-    Confirm,
+    /// Ask the user every time a link is trying to open a new website.
+    #[serde(rename = "ask")]
+    Ask,
 
     /// Deny all links to open a new website.
     #[serde(rename = "deny")]
