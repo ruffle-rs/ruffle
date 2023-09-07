@@ -435,6 +435,11 @@ impl NavigatorBackend for WebNavigatorBackend {
                 }
             }
 
+            // Close WebSocket as the sender was dropped.
+            if let Err(e) = ws.close() {
+                tracing::error!("Failed to close WebSocket connection {:?}", e);
+            }
+
             Ok(())
         }));
     }
