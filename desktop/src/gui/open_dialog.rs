@@ -5,7 +5,7 @@ use crate::util::pick_file;
 use egui::{
     Align2, Button, Checkbox, ComboBox, DragValue, Grid, Slider, TextEdit, Ui, Widget, Window,
 };
-use ruffle_core::backend::navigator::{OpenLinks, SocketMode};
+use ruffle_core::backend::navigator::{OpenURLMode, SocketMode};
 use ruffle_core::config::Letterbox;
 use ruffle_core::{LoadBehavior, StageAlign, StageScaleMode};
 use ruffle_render::quality::StageQuality;
@@ -182,28 +182,28 @@ impl OpenDialog {
                 ui.end_row();
 
                 // TODO: This should probably be a global setting somewhere, not per load
-                ui.label(text(&self.locale, "open-links"));
-                ComboBox::from_id_source("open-file-advanced-options-open-links")
-                    .selected_text(match self.options.open_links {
-                        OpenLinks::Allow => text(&self.locale, "open-links-allow"),
-                        OpenLinks::Ask => text(&self.locale, "open-links-ask"),
-                        OpenLinks::Deny => text(&self.locale, "open-links-deny"),
+                ui.label(text(&self.locale, "open-url-mode"));
+                ComboBox::from_id_source("open-file-advanced-options-open-url-mode")
+                    .selected_text(match self.options.open_url_mode {
+                        OpenURLMode::Allow => text(&self.locale, "open-url-mode-allow"),
+                        OpenURLMode::Ask => text(&self.locale, "open-url-mode-ask"),
+                        OpenURLMode::Deny => text(&self.locale, "open-url-mode-deny"),
                     })
                     .show_ui(ui, |ui| {
                         ui.selectable_value(
-                            &mut self.options.open_links,
-                            OpenLinks::Allow,
-                            text(&self.locale, "open-links-allow"),
+                            &mut self.options.open_url_mode,
+                            OpenURLMode::Allow,
+                            text(&self.locale, "open-url-mode-allow"),
                         );
                         ui.selectable_value(
-                            &mut self.options.open_links,
-                            OpenLinks::Ask,
-                            text(&self.locale, "open-links-ask"),
+                            &mut self.options.open_url_mode,
+                            OpenURLMode::Confirm,
+                            text(&self.locale, "open-url-mode-ask"),
                         );
                         ui.selectable_value(
-                            &mut self.options.open_links,
-                            OpenLinks::Deny,
-                            text(&self.locale, "open-links-deny"),
+                            &mut self.options.open_url_mode,
+                            OpenURLMode::Deny,
+                            text(&self.locale, "open-url-mode-deny"),
                         );
                     });
                 ui.end_row();
