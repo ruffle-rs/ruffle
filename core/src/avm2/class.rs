@@ -20,6 +20,7 @@ use swf::avm2::types::{
     Class as AbcClass, Instance as AbcInstance, Method as AbcMethod, MethodBody as AbcMethodBody,
 };
 
+use super::method::ParamConfig;
 use super::string::AvmString;
 
 bitflags! {
@@ -355,6 +356,7 @@ impl<'gc> Class<'gc> {
                     table_native_init,
                     name,
                     instance_init.signature().to_vec(),
+                    instance_init.return_type(),
                     instance_init.is_variadic(),
                     activation.context.gc_context,
                 );
@@ -370,6 +372,7 @@ impl<'gc> Class<'gc> {
                     // A 'callable' class doesn't have a signature - let the
                     // method do any needed coercions
                     vec![],
+                    Multiname::any(activation.context.gc_context),
                     true,
                     activation.context.gc_context,
                 );
@@ -673,6 +676,27 @@ impl<'gc> Class<'gc> {
             ));
         }
     }
+
+    #[inline(never)]
+    pub fn define_builtin_instance_methods_with_sig(
+        &mut self,
+        mc: &Mutation<'gc>,
+        namespace: Namespace<'gc>,
+        items: Vec<(
+            &'static str,
+            NativeMethodImpl,
+            Vec<ParamConfig<'gc>>,
+            Multiname<'gc>,
+        )>,
+    ) {
+        for (name, value, params, return_type) in items {
+            self.define_instance_trait(Trait::from_method(
+                QName::new(namespace, name),
+                Method::from_builtin_and_params(value, name, params, return_type, false, mc),
+            ));
+        }
+    }
+
     #[inline(never)]
     pub fn define_builtin_class_methods(
         &mut self,

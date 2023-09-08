@@ -166,6 +166,7 @@ impl<'gc> TranslationUnit<'gc> {
                         native,
                         name,
                         bc_method.signature,
+                        bc_method.return_type,
                         variadic,
                         activation.context.gc_context,
                     );

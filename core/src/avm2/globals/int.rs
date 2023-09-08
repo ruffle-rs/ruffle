@@ -212,6 +212,7 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
                 param_type_name: Multiname::any(activation.context.gc_context),
                 default_value: Some(Value::Integer(0)),
             }],
+            Multiname::any(activation.context.gc_context),
             true,
             mc,
         ),
