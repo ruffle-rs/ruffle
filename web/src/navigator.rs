@@ -1,5 +1,5 @@
 //! Navigator backend for web
-use crate::WebSocketProxy;
+use crate::SocketProxy;
 use async_channel::Receiver;
 use futures_util::{SinkExt, StreamExt};
 use gloo_net::websocket::{futures::WebSocket, Message};
@@ -33,7 +33,7 @@ pub struct WebNavigatorBackend {
     upgrade_to_https: bool,
     base_url: Option<Url>,
     open_url_mode: OpenURLMode,
-    websocket_proxies: Vec<WebSocketProxy>,
+    socket_proxies: Vec<SocketProxy>,
 }
 
 impl WebNavigatorBackend {
@@ -44,7 +44,7 @@ impl WebNavigatorBackend {
         base_url: Option<String>,
         log_subscriber: Arc<Layered<WASMLayer, Registry>>,
         open_url_mode: OpenURLMode,
-        websocket_proxies: Vec<WebSocketProxy>,
+        socket_proxies: Vec<SocketProxy>,
     ) -> Self {
         let window = web_sys::window().expect("window()");
 
@@ -86,7 +86,7 @@ impl WebNavigatorBackend {
             base_url,
             log_subscriber,
             open_url_mode,
-            websocket_proxies,
+            socket_proxies,
         }
     }
 }
@@ -369,7 +369,6 @@ impl NavigatorBackend for WebNavigatorBackend {
     fn connect_socket(
         &mut self,
         host: String,
-
         port: u16,
         // NOTE: WebSocket does not allow specifying a timeout, so this goes unused.
         _timeout: Duration,
@@ -378,7 +377,7 @@ impl NavigatorBackend for WebNavigatorBackend {
         sender: Sender<SocketAction>,
     ) {
         let Some(proxy) = self
-            .websocket_proxies
+            .socket_proxies
             .iter()
             .find(|x| x.host == host && x.port == port)
         else {
