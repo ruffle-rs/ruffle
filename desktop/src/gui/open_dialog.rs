@@ -186,7 +186,7 @@ impl OpenDialog {
                 ComboBox::from_id_source("open-file-advanced-options-open-url-mode")
                     .selected_text(match self.options.open_url_mode {
                         OpenURLMode::Allow => text(&self.locale, "open-url-mode-allow"),
-                        OpenURLMode::Ask => text(&self.locale, "open-url-mode-ask"),
+                        OpenURLMode::Confirm => text(&self.locale, "open-url-mode-confirm"),
                         OpenURLMode::Deny => text(&self.locale, "open-url-mode-deny"),
                     })
                     .show_ui(ui, |ui| {
@@ -198,7 +198,7 @@ impl OpenDialog {
                         ui.selectable_value(
                             &mut self.options.open_url_mode,
                             OpenURLMode::Confirm,
-                            text(&self.locale, "open-url-mode-ask"),
+                            text(&self.locale, "open-url-mode-confirm"),
                         );
                         ui.selectable_value(
                             &mut self.options.open_url_mode,
