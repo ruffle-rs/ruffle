@@ -113,13 +113,13 @@ impl UiBackend for DesktopUiBackend {
         if self.open_links == OpenLinks::Ask {
             let message = format!("The SWF file wants to open the website {}", url);
             // TODO: Add a checkbox with a GUI toolkit
-            let ask = MessageDialog::new()
+            let confirm = MessageDialog::new()
                 .set_title("Open website?")
                 .set_level(MessageLevel::Info)
                 .set_description(&message)
                 .set_buttons(MessageButtons::OkCancel)
                 .show();
-            if !ask {
+            if !confirm {
                 tracing::info!("SWF tried to open a website, but the user declined the request");
                 return;
             }
