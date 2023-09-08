@@ -3,7 +3,7 @@ use async_channel::Receiver;
 use js_sys::{Array, ArrayBuffer, Uint8Array};
 use ruffle_core::backend::navigator::{
     async_return, create_fetch_error, create_specific_fetch_error, ErrorResponse, NavigationMethod,
-    NavigatorBackend, OpenLinks, OwnedFuture, Request, SuccessResponse,
+    NavigatorBackend, OpenURLMode, OwnedFuture, Request, SuccessResponse,
 };
 use ruffle_core::config::NetworkingAccessMode;
 use ruffle_core::indexmap::IndexMap;
@@ -29,7 +29,7 @@ pub struct WebNavigatorBackend {
     allow_networking: NetworkingAccessMode,
     upgrade_to_https: bool,
     base_url: Option<Url>,
-    open_links: OpenLinks,
+    open_url_mode: OpenURLMode,
 }
 
 impl WebNavigatorBackend {
@@ -39,7 +39,7 @@ impl WebNavigatorBackend {
         upgrade_to_https: bool,
         base_url: Option<String>,
         log_subscriber: Arc<Layered<WASMLayer, Registry>>,
-        open_links: OpenLinks,
+        open_url_mode: OpenURLMode,
     ) -> Self {
         let window = web_sys::window().expect("window()");
 
@@ -80,7 +80,7 @@ impl WebNavigatorBackend {
             upgrade_to_https,
             base_url,
             log_subscriber,
-            open_links,
+            open_url_mode,
         }
     }
 }
@@ -145,7 +145,7 @@ impl NavigatorBackend for WebNavigatorBackend {
         let window = window().expect("window()");
 
         if url.scheme() != "javascript" {
-            if self.open_links == OpenLinks::Ask {
+            if self.open_url_mode == OpenURLMode::Confirm {
                 let message = format!("The SWF file wants to open the website {}", &url);
                 // TODO: Add a checkbox with a GUI toolkit
                 let confirm = window
@@ -157,7 +157,7 @@ impl NavigatorBackend for WebNavigatorBackend {
                     );
                     return;
                 }
-            } else if self.open_links == OpenLinks::Deny {
+            } else if self.open_url_mode == OpenURLMode::Deny {
                 tracing::warn!("SWF tried to open a website, but opening a website is not allowed");
                 return;
             }
