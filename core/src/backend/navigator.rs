@@ -42,7 +42,7 @@ pub enum SocketMode {
 /// The handling mode of links opening a new website.
 #[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-pub enum OpenLinks {
+pub enum OpenURLMode {
     /// Allow all links to open a new website.
     #[serde(rename = "allow")]
     Allow,
