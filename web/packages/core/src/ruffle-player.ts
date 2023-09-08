@@ -1464,7 +1464,10 @@ export class RufflePlayer extends HTMLElement {
     }
 
     private showContextMenu(event: MouseEvent | PointerEvent): void {
-        if (this.panicked || !this.saveManager.classList.contains("hidden")) {
+        const modalOpen = Array.from(
+            this.shadow.querySelectorAll(".modal"),
+        ).some((modal) => !modal.classList.contains("hidden"));
+        if (this.panicked || modalOpen) {
             return;
         }
 
