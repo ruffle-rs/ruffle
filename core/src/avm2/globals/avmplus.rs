@@ -7,6 +7,7 @@ use crate::avm2::property::Property;
 use crate::avm2::ClassObject;
 
 use crate::avm2::{Activation, Error, Object, Value};
+use crate::avm2_stub_method;
 
 // Implements `avmplus.describeTypeJSON`
 pub fn describe_type_json<'gc>(
@@ -54,12 +55,17 @@ pub fn describe_type_json<'gc>(
     object.set_public_property("isStatic", is_static.into(), activation)?;
 
     let traits = describe_internal_body(activation, class_obj, is_static, flags)?;
-    object.set_public_property("traits", traits.into(), activation)?;
+    if flags.contains(DescribeTypeFlags::INCLUDE_TRAITS) {
+        object.set_public_property("traits", traits.into(), activation)?;
+    } else {
+        object.set_public_property("traits", Value::Null, activation)?;
+    }
 
     Ok(object.into())
 }
 
 bitflags::bitflags! {
+    #[derive(Copy, Clone)]
     pub struct DescribeTypeFlags: u32 {
         const HIDE_NSURI_METHODS      = 1 << 0;
         const INCLUDE_BASES           = 1 << 1;
@@ -92,20 +98,40 @@ fn describe_internal_body<'gc>(
         .construct(activation, &[])?;
 
     let bases = ArrayObject::empty(activation)?.as_array_object().unwrap();
-
     let interfaces = ArrayObject::empty(activation)?.as_array_object().unwrap();
-
     let variables = ArrayObject::empty(activation)?.as_array_object().unwrap();
-
     let accessors = ArrayObject::empty(activation)?.as_array_object().unwrap();
-
     let methods = ArrayObject::empty(activation)?.as_array_object().unwrap();
 
-    traits.set_public_property("bases", bases.into(), activation)?;
-    traits.set_public_property("interfaces", interfaces.into(), activation)?;
-    traits.set_public_property("variables", variables.into(), activation)?;
-    traits.set_public_property("accessors", accessors.into(), activation)?;
-    traits.set_public_property("methods", methods.into(), activation)?;
+    if flags.contains(DescribeTypeFlags::INCLUDE_BASES) {
+        traits.set_public_property("bases", bases.into(), activation)?;
+    } else {
+        traits.set_public_property("bases", Value::Null, activation)?;
+    }
+
+    if flags.contains(DescribeTypeFlags::INCLUDE_INTERFACES) {
+        traits.set_public_property("interfaces", interfaces.into(), activation)?;
+    } else {
+        traits.set_public_property("interfaces", Value::Null, activation)?;
+    }
+
+    if flags.contains(DescribeTypeFlags::INCLUDE_VARIABLES) {
+        traits.set_public_property("variables", variables.into(), activation)?;
+    } else {
+        traits.set_public_property("variables", Value::Null, activation)?;
+    }
+
+    if flags.contains(DescribeTypeFlags::INCLUDE_ACCESSORS) {
+        traits.set_public_property("accessors", accessors.into(), activation)?;
+    } else {
+        traits.set_public_property("accessors", Value::Null, activation)?;
+    }
+
+    if flags.contains(DescribeTypeFlags::INCLUDE_METHODS) {
+        traits.set_public_property("methods", methods.into(), activation)?;
+    } else {
+        traits.set_public_property("methods", Value::Null, activation)?;
+    }
 
     let mut bases_array = bases
         .as_array_storage_mut(activation.context.gc_context)
@@ -140,8 +166,6 @@ fn describe_internal_body<'gc>(
             bases_array.push(super_name.into());
             current_super_obj = super_obj.superclass_object();
         }
-    } else {
-        traits.set_public_property("bases", Value::Null, activation)?;
     }
 
     // When we're describing a Class object, we use the class vtable (which hides instance properties)
@@ -165,8 +189,6 @@ fn describe_internal_body<'gc>(
                 .to_qualified_name(activation.context.gc_context);
             interfaces_array.push(interface_name.into());
         }
-    } else {
-        traits.set_public_property("interfaces", Value::Null, activation)?;
     }
 
     // Implement the weird 'HIDE_NSURI_METHODS' behavior from avmplus:
@@ -246,6 +268,9 @@ fn describe_internal_body<'gc>(
 
         match prop {
             Property::ConstSlot { slot_id } | Property::Slot { slot_id } => {
+                if !flags.contains(DescribeTypeFlags::INCLUDE_VARIABLES) {
+                    continue;
+                }
                 let prop_class_name = vtable
                     .slot_class_name(*slot_id, activation.context.gc_context)?
                     .to_qualified_name_or_star(activation.context.gc_context);
@@ -266,15 +291,28 @@ fn describe_internal_body<'gc>(
                 variable.set_public_property("name", prop_name.into(), activation)?;
                 variable.set_public_property("type", prop_class_name.into(), activation)?;
                 variable.set_public_property("access", access.into(), activation)?;
+                variable.set_public_property(
+                    "uri",
+                    uri.map_or(Value::Null, |u| u.into()),
+                    activation,
+                )?;
 
-                if let Some(metadata) = trait_metadata {
+                variable.set_public_property("metadata", Value::Null, activation)?;
+
+                if flags.contains(DescribeTypeFlags::INCLUDE_METADATA) {
                     let metadata_object = ArrayObject::empty(activation)?;
-                    write_metadata(metadata_object, &metadata, activation)?;
+                    if let Some(metadata) = trait_metadata {
+                        write_metadata(metadata_object, &metadata, activation)?;
+                    }
                     variable.set_public_property("metadata", metadata_object.into(), activation)?;
                 }
+
                 variables_array.push(variable.into());
             }
             Property::Method { disp_id } => {
+                if !flags.contains(DescribeTypeFlags::INCLUDE_METHODS) {
+                    continue;
+                }
                 let method = vtable
                     .get_full_method(*disp_id)
                     .unwrap_or_else(|| panic!("Missing method for id {disp_id:?}"));
@@ -316,15 +354,22 @@ fn describe_internal_body<'gc>(
                     activation,
                 )?;
 
-                if let Some(uri) = uri {
-                    method_obj.set_public_property("uri", uri.into(), activation)?;
-                }
+                method_obj.set_public_property(
+                    "uri",
+                    uri.map_or(Value::Null, |u| u.into()),
+                    activation,
+                )?;
 
                 let params = write_params(&method.method, activation)?;
                 method_obj.set_public_property("parameters", params.into(), activation)?;
-                if let Some(metadata) = trait_metadata {
+
+                method_obj.set_public_property("metadata", Value::Null, activation)?;
+
+                if flags.contains(DescribeTypeFlags::INCLUDE_METADATA) {
                     let metadata_object = ArrayObject::empty(activation)?;
-                    write_metadata(metadata_object, &metadata, activation)?;
+                    if let Some(metadata) = trait_metadata {
+                        write_metadata(metadata_object, &metadata, activation)?;
+                    }
                     method_obj.set_public_property(
                         "metadata",
                         metadata_object.into(),
@@ -334,6 +379,9 @@ fn describe_internal_body<'gc>(
                 methods_array.push(method_obj.into());
             }
             Property::Virtual { get, set } => {
+                if !flags.contains(DescribeTypeFlags::INCLUDE_ACCESSORS) {
+                    continue;
+                }
                 let access = match (get, set) {
                     (Some(_), Some(_)) => "readwrite",
                     (Some(_), None) => "readonly",
@@ -383,9 +431,11 @@ fn describe_internal_body<'gc>(
                 accessor_obj.set_public_property("access", access.into(), activation)?;
                 accessor_obj.set_public_property("type", accessor_type.into(), activation)?;
                 accessor_obj.set_public_property("declaredBy", declared_by.into(), activation)?;
-                if let Some(uri) = uri {
-                    accessor_obj.set_public_property("uri", uri.into(), activation)?;
-                }
+                accessor_obj.set_public_property(
+                    "uri",
+                    uri.map_or(Value::Null, |u| u.into()),
+                    activation,
+                )?;
 
                 let metadata_object = ArrayObject::empty(activation)?;
 
@@ -401,12 +451,16 @@ fn describe_internal_body<'gc>(
                     }
                 }
 
-                if metadata_object.as_array_storage().unwrap().length() > 0 {
+                if flags.contains(DescribeTypeFlags::INCLUDE_METADATA)
+                    && metadata_object.as_array_storage().unwrap().length() > 0
+                {
                     accessor_obj.set_public_property(
                         "metadata",
                         metadata_object.into(),
                         activation,
                     )?;
+                } else {
+                    accessor_obj.set_public_property("metadata", Value::Null, activation)?;
                 }
 
                 accessors_array.push(accessor_obj.into());
@@ -427,6 +481,14 @@ fn describe_internal_body<'gc>(
         traits.set_public_property("constructor", Value::Null, activation)?;
     }
 
+    if flags.contains(DescribeTypeFlags::INCLUDE_METADATA) {
+        avm2_stub_method!(activation, "avmplus.describeTypeJSON", "top-level metadata");
+        let metadata_object = ArrayObject::empty(activation)?;
+        traits.set_public_property("metadata", metadata_object.into(), activation)?;
+    } else {
+        traits.set_public_property("metadata", Value::Null, activation)?;
+    }
+
     Ok(traits)
 }
 
@@ -438,8 +500,7 @@ fn write_params<'gc>(
     let mut params_array = params
         .as_array_storage_mut(activation.context.gc_context)
         .unwrap();
-    for (i, param) in method.signature().iter().enumerate() {
-        let index = i + 1;
+    for param in method.signature() {
         let param_type_name = param
             .param_type_name
             .to_qualified_name_or_star(activation.context.gc_context);
@@ -449,7 +510,6 @@ fn write_params<'gc>(
             .classes()
             .object
             .construct(activation, &[])?;
-        param_obj.set_public_property("index", index.into(), activation)?;
         param_obj.set_public_property("type", param_type_name.into(), activation)?;
         param_obj.set_public_property("optional", optional.into(), activation)?;
         params_array.push(param_obj.into());
