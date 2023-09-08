@@ -248,7 +248,7 @@ export const enum NetworkingAccessMode {
     None = "none",
 }
 
-export interface WebSocketProxy {
+export interface SocketProxy {
     host: string;
     port: number;
 
@@ -536,7 +536,7 @@ export interface BaseLoadOptions {
      */
     openInNewTab?: ((swf: URL) => void) | null;
 
-    wsProxy?: Array<WebSocketProxy>;
+    socketProxy?: Array<SocketProxy>;
 }
 
 /**
