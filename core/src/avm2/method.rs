@@ -345,6 +345,7 @@ impl<'gc> Method<'gc> {
         method: NativeMethodImpl,
         name: &'static str,
         signature: Vec<ParamConfig<'gc>>,
+        return_type: Multiname<'gc>,
         is_variadic: bool,
         mc: &Mutation<'gc>,
     ) -> Self {
@@ -354,8 +355,7 @@ impl<'gc> Method<'gc> {
                 method,
                 name,
                 signature,
-                // FIXME - take in the real return type. This is needed for 'describeType'
-                return_type: Multiname::any(mc),
+                return_type,
                 is_variadic,
             },
         ))

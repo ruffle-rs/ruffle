@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
-use crate::avm2::method::{Method, NativeMethodImpl};
+use crate::avm2::method::{Method, NativeMethodImpl, ParamConfig};
 use crate::avm2::object::{FunctionObject, Object, TObject};
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
@@ -274,15 +274,43 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
     ));
 
     // Fixed traits (in AS3 namespace)
-    const AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
-        ("hasOwnProperty", has_own_property),
-        ("isPrototypeOf", is_prototype_of),
-        ("propertyIsEnumerable", property_is_enumerable),
+    let as3_instance_methods: Vec<(&str, NativeMethodImpl, _, _)> = vec![
+        // These signatures are weird, but they match the describeTypeJSON output
+        (
+            "hasOwnProperty",
+            has_own_property,
+            vec![ParamConfig::optional(
+                "name",
+                Multiname::any(activation.context.gc_context),
+                Value::Undefined,
+            )],
+            Multiname::new(activation.avm2().public_namespace, "Boolean"),
+        ),
+        (
+            "isPrototypeOf",
+            is_prototype_of,
+            vec![ParamConfig::optional(
+                "theClass",
+                Multiname::any(activation.context.gc_context),
+                Value::Undefined,
+            )],
+            Multiname::new(activation.avm2().public_namespace, "Boolean"),
+        ),
+        (
+            "propertyIsEnumerable",
+            property_is_enumerable,
+            vec![ParamConfig::optional(
+                "name",
+                Multiname::any(activation.context.gc_context),
+                Value::Undefined,
+            )],
+            Multiname::new(activation.avm2().public_namespace, "Boolean"),
+        ),
     ];
-    write.define_builtin_instance_methods(
+    write.define_builtin_instance_methods_with_sig(
         gc_context,
         activation.avm2().as3_namespace,
-        AS3_INSTANCE_METHODS,
+        as3_instance_methods,
     );
 
     const INTERNAL_INIT_METHOD: &[(&str, NativeMethodImpl)] = &[("init", init)];
