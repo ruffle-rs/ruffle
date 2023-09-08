@@ -146,7 +146,7 @@ pub fn get_child_at<'gc>(
             // Flash error message: The supplied index is out of bounds.
             Err(Error::AvmError(range_error(
                 activation,
-                "Display object container has no child with id {index}",
+                &format!("Display object container has no child with id {index}"),
                 2006,
             )?))
         };
