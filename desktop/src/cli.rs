@@ -1,7 +1,7 @@
 use crate::RUFFLE_VERSION;
 use anyhow::Error;
 use clap::Parser;
-use ruffle_core::backend::navigator::{OpenLinks, SocketMode};
+use ruffle_core::backend::navigator::{OpenURLMode, SocketMode};
 use ruffle_core::config::Letterbox;
 use ruffle_core::{LoadBehavior, StageAlign, StageScaleMode};
 use ruffle_render::quality::StageQuality;
@@ -125,7 +125,7 @@ pub struct Opt {
 
     /// The handling mode of links opening a new website.
     #[clap(long, default_value = "allow")]
-    pub open_links: OpenLinks,
+    pub open_url_mode: OpenURLMode,
 
     /// Provide a dummy (completely empty) External Interface to the movie.
     /// This may break some movies that expect an External Interface to be functional,
