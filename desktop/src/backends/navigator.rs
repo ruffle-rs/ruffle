@@ -14,7 +14,7 @@ use isahc::{
 use rfd::{AsyncMessageDialog, MessageButtons, MessageDialog, MessageLevel};
 use ruffle_core::backend::navigator::{
     async_return, create_fetch_error, create_specific_fetch_error, ErrorResponse, NavigationMethod,
-    NavigatorBackend, OpenLinks, OwnedFuture, Request, SocketMode, SuccessResponse,
+    NavigatorBackend, OpenURLMode, OwnedFuture, Request, SocketMode, SuccessResponse,
 };
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
@@ -51,7 +51,7 @@ pub struct ExternalNavigatorBackend {
 
     upgrade_to_https: bool,
 
-    open_links: OpenLinks,
+    open_url_mode: OpenURLMode,
 }
 
 impl ExternalNavigatorBackend {
@@ -63,7 +63,7 @@ impl ExternalNavigatorBackend {
         event_loop: EventLoopProxy<RuffleEvent>,
         proxy: Option<Url>,
         upgrade_to_https: bool,
-        open_links: OpenLinks,
+        open_url_mode: OpenURLMode,
         socket_allowed: HashSet<String>,
         socket_mode: SocketMode,
     ) -> Self {
@@ -86,7 +86,7 @@ impl ExternalNavigatorBackend {
             client,
             base_url,
             upgrade_to_https,
-            open_links,
+            open_url_mode,
             socket_allowed,
             socket_mode,
         }
@@ -139,7 +139,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
             return;
         }
 
-        if self.open_links == OpenLinks::Ask {
+        if self.open_url_mode == OpenURLMode::Ask {
             let message = format!("The SWF file wants to open the website {}", modified_url);
             // TODO: Add a checkbox with a GUI toolkit
             let confirm = MessageDialog::new()
@@ -152,7 +152,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                 tracing::info!("SWF tried to open a website, but the user declined the request");
                 return;
             }
-        } else if self.open_links == OpenLinks::Deny {
+        } else if self.open_url_mode == OpenURLMode::Deny {
             tracing::warn!("SWF tried to open a website, but opening a website is not allowed");
             return;
         }
