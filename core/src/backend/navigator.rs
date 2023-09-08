@@ -47,9 +47,9 @@ pub enum OpenURLMode {
     #[serde(rename = "allow")]
     Allow,
 
-    /// Ask the user every time a link is trying to open a new website.
-    #[serde(rename = "ask")]
-    Ask,
+    /// A confirmation dialog opens with every link trying to open a new website.
+    #[serde(rename = "confirm")]
+    Confirm,
 
     /// Deny all links to open a new website.
     #[serde(rename = "deny")]
