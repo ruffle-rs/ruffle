@@ -139,7 +139,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
             return;
         }
 
-        if self.open_url_mode == OpenURLMode::Ask {
+        if self.open_url_mode == OpenURLMode::Confirm {
             let message = format!("The SWF file wants to open the website {}", modified_url);
             // TODO: Add a checkbox with a GUI toolkit
             let confirm = MessageDialog::new()
