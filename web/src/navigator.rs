@@ -148,10 +148,10 @@ impl NavigatorBackend for WebNavigatorBackend {
             if self.open_links == OpenLinks::Ask {
                 let message = format!("The SWF file wants to open the website {}", &url);
                 // TODO: Add a checkbox with a GUI toolkit
-                let ask = window
+                let confirm = window
                     .confirm_with_message(&message)
                     .expect("confirm_with_message()");
-                if !ask {
+                if !confirm {
                     tracing::info!(
                         "SWF tried to open a website, but the user declined the request"
                     );
