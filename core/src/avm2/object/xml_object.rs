@@ -17,7 +17,6 @@ use ruffle_wstr::WString;
 use std::cell::{Ref, RefMut};
 
 use super::xml_list_object::{E4XOrXml, XmlOrXmlListObject};
-use super::PrimitiveObject;
 
 /// A class instance allocator that allocates XML objects.
 pub fn xml_allocator<'gc>(
@@ -343,11 +342,8 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
             let prop = self.get_property_local(multiname, activation)?;
             if let Some(list) = prop.as_object().and_then(|obj| obj.as_xml_list_object()) {
                 if list.length() == 0 && this.node().has_simple_content() {
-                    let receiver = PrimitiveObject::from_primitive(
-                        this.node().xml_to_string(activation).into(),
-                        activation,
-                    )?;
-                    return receiver.call_property(multiname, arguments, activation);
+                    return Value::from(this.node().xml_to_string(activation))
+                        .call_property(multiname, arguments, activation);
                 }
             }
         }

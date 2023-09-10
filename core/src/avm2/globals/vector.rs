@@ -34,12 +34,16 @@ pub fn generic_vector_allocator<'gc>(
 /// Implements `Vector`'s instance constructor.
 pub fn instance_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     activation.super_init(this, &[])?;
 
-    if let Some(mut vector) = this.as_vector_storage_mut(activation.context.gc_context) {
+    if let Some(mut vector) = this
+        .as_object()
+        .as_ref()
+        .and_then(|this| this.as_vector_storage_mut(activation.context.gc_context))
+    {
         let length = args
             .get(0)
             .cloned()
@@ -60,7 +64,7 @@ pub fn instance_init<'gc>(
 
 fn class_call<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if args.len() != 1 {
@@ -97,7 +101,7 @@ fn class_call<'gc>(
         .value_type_for_coercion(activation)
         .inner_class_definition();
 
-    let mut iter = ArrayIter::new(activation, arg)?;
+    let mut iter = ArrayIter::new(activation, arg.into())?;
 
     while let Some(r) = iter.next(activation) {
         let (_, item) = r?;
@@ -110,7 +114,7 @@ fn class_call<'gc>(
 
 pub fn generic_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     activation.super_init(this, args)
@@ -118,7 +122,7 @@ pub fn generic_init<'gc>(
 
 fn class_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let proto = this
@@ -126,8 +130,8 @@ fn class_init<'gc>(
         .as_object()
         .ok_or_else(|| {
             format!(
-                "Specialization {} has a prototype of null or undefined",
-                this.instance_of_class_name(activation.context.gc_context)
+                "Specialization {:?} has a prototype of null or undefined",
+                this.instance_of(activation)
             )
         })?;
     let scope = activation.create_scopechain();
@@ -177,10 +181,14 @@ fn class_init<'gc>(
 /// `Vector.length` getter
 pub fn length<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(vector) = this.as_vector_storage() {
+    if let Some(vector) = this
+        .as_object()
+        .as_ref()
+        .and_then(|this| this.as_vector_storage())
+    {
         return Ok(vector.length().into());
     }
 
@@ -190,10 +198,14 @@ pub fn length<'gc>(
 /// `Vector.length` setter
 pub fn set_length<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut vector) = this.as_vector_storage_mut(activation.context.gc_context) {
+    if let Some(mut vector) = this
+        .as_object()
+        .as_mut()
+        .and_then(|this| this.as_vector_storage_mut(activation.context.gc_context))
+    {
         let new_length = args
             .get(0)
             .cloned()
@@ -209,10 +221,14 @@ pub fn set_length<'gc>(
 /// `Vector.fixed` getter
 pub fn fixed<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(vector) = this.as_vector_storage() {
+    if let Some(vector) = this
+        .as_object()
+        .as_ref()
+        .and_then(|this| this.as_vector_storage())
+    {
         return Ok(vector.is_fixed().into());
     }
 
@@ -222,10 +238,14 @@ pub fn fixed<'gc>(
 /// `Vector.fixed` setter
 pub fn set_fixed<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut vector) = this.as_vector_storage_mut(activation.context.gc_context) {
+    if let Some(mut vector) = this
+        .as_object()
+        .as_ref()
+        .and_then(|this| this.as_vector_storage_mut(activation.context.gc_context))
+    {
         let new_fixed = args
             .get(0)
             .cloned()
@@ -241,10 +261,14 @@ pub fn set_fixed<'gc>(
 /// `Vector.concat` impl
 pub fn concat<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let mut new_vector_storage = if let Some(vector) = this.as_vector_storage() {
+    let mut new_vector_storage = if let Some(vector) = this
+        .as_object()
+        .as_ref()
+        .and_then(|this| this.as_vector_storage())
+    {
         vector.clone()
     } else {
         return Err("Not a vector-structured object".into());
@@ -270,12 +294,13 @@ pub fn concat<'gc>(
                 .name()
                 .to_qualified_name_err_message(activation.context.gc_context);
 
+            let class_name = arg.instance_of_class_name(activation);
+
             return Err(Error::AvmError(type_error(
                 activation,
                 &format!(
                     "Error #1034: Type Coercion failed: cannot convert {}@00000000000 to {}.",
-                    arg_obj.instance_of_class_name(activation.context.gc_context),
-                    base_vector_name,
+                    class_name, base_vector_name,
                 ),
                 1034,
             )?));
@@ -289,18 +314,16 @@ pub fn concat<'gc>(
         };
 
         for val in old_vec {
-            if let Ok(val_obj) = val.coerce_to_object(activation) {
-                if !val.is_of_type(activation, val_class) {
-                    let other_val_class = val_obj
-                        .instance_of_class_definition()
-                        .ok_or("TypeError: Tried to concat a bare object into a Vector")?;
-                    return Err(format!(
-                        "TypeError: Cannot coerce Vector value of type {:?} to type {:?}",
-                        other_val_class.read().name(),
-                        val_class.read().name()
-                    )
-                    .into());
-                }
+            if !val.is_of_type(activation, val_class) {
+                let other_val_class = val
+                    .instance_of_class_definition(activation)
+                    .ok_or("TypeError: Tried to concat a bare object into a Vector")?;
+                return Err(format!(
+                    "TypeError: Cannot coerce Vector value of type {:?} to type {:?}",
+                    other_val_class.read().name(),
+                    val_class.read().name()
+                )
+                .into());
             }
 
             let coerced_val = val.coerce_to_type(activation, val_class)?;
@@ -313,7 +336,7 @@ pub fn concat<'gc>(
 
 fn join_inner<'gc, 'a, 'ctxt, C>(
     activation: &mut Activation<'a, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
     mut conv: C,
 ) -> Result<Value<'gc>, Error<'gc>>
@@ -325,7 +348,11 @@ where
         separator = ",".into();
     }
 
-    if let Some(vector) = this.as_vector_storage() {
+    if let Some(vector) = this
+        .as_object()
+        .as_ref()
+        .and_then(|this| this.as_vector_storage())
+    {
         let string_separator = separator.coerce_to_string(activation)?;
         let mut accum = Vec::with_capacity(vector.length());
 
@@ -350,7 +377,7 @@ where
 /// Implements `Vector.join`
 pub fn join<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     join_inner(activation, this, args, |v, _act| Ok(v))
@@ -359,7 +386,7 @@ pub fn join<'gc>(
 /// Implements `Vector.toString`
 pub fn to_string<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     join_inner(activation, this, &[",".into()], |v, _act| Ok(v))
@@ -368,22 +395,18 @@ pub fn to_string<'gc>(
 /// Implements `Vector.toLocaleString`
 pub fn to_locale_string<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     join_inner(activation, this, &[",".into()], |v, act| {
-        if let Ok(o) = v.coerce_to_object(act) {
-            o.call_public_property("toLocaleString", &[], act)
-        } else {
-            Ok(v)
-        }
+        v.call_public_property("toLocaleString", &[], act)
     })
 }
 
 /// Implements `Vector.every`
 pub fn every<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let callback = args
@@ -398,7 +421,7 @@ pub fn every<'gc>(
         let (i, item) = r?;
 
         let result = callback
-            .call(receiver, &[item, i.into(), this.into()], activation)?
+            .call(receiver, &[item, i.into(), this], activation)?
             .coerce_to_boolean();
 
         if !result {
@@ -412,7 +435,7 @@ pub fn every<'gc>(
 /// Implements `Vector.some`
 pub fn some<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let callback = args
@@ -427,7 +450,7 @@ pub fn some<'gc>(
         let (i, item) = r?;
 
         let result = callback
-            .call(receiver, &[item, i.into(), this.into()], activation)?
+            .call(receiver, &[item, i.into(), this], activation)?
             .coerce_to_boolean();
 
         if result {
@@ -441,7 +464,7 @@ pub fn some<'gc>(
 /// Implements `Vector.filter`
 pub fn filter<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let callback = args
@@ -452,7 +475,7 @@ pub fn filter<'gc>(
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
 
     let value_type = this
-        .instance_of()
+        .instance_of(activation)
         .unwrap()
         .as_class_params()
         .ok_or("Cannot filter unparameterized vector")?; // technically unreachable
@@ -463,7 +486,7 @@ pub fn filter<'gc>(
         let (i, item) = r?;
 
         let result = callback
-            .call(receiver, &[item, i.into(), this.into()], activation)?
+            .call(receiver, &[item, i.into(), this], activation)?
             .coerce_to_boolean();
 
         if result {
@@ -477,7 +500,7 @@ pub fn filter<'gc>(
 /// Implements `Vector.forEach`
 pub fn for_each<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let callback = args
@@ -491,7 +514,7 @@ pub fn for_each<'gc>(
     while let Some(r) = iter.next(activation) {
         let (i, item) = r?;
 
-        callback.call(receiver, &[item, i.into(), this.into()], activation)?;
+        callback.call(receiver, &[item, i.into(), this], activation)?;
     }
 
     Ok(Value::Undefined)
@@ -500,7 +523,7 @@ pub fn for_each<'gc>(
 /// Implements `Vector.indexOf`
 pub fn index_of<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let search_for = args.get(0).cloned().unwrap_or(Value::Undefined);
@@ -535,7 +558,7 @@ pub fn index_of<'gc>(
 /// Implements `Vector.lastIndexOf`
 pub fn last_index_of<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let search_for = args.get(0).cloned().unwrap_or(Value::Undefined);
@@ -570,7 +593,7 @@ pub fn last_index_of<'gc>(
 /// Implements `Vector.map`
 pub fn map<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let callback = args
@@ -581,7 +604,7 @@ pub fn map<'gc>(
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
 
     let value_type = this
-        .instance_of()
+        .instance_of(activation)
         .unwrap()
         .as_class_params()
         .ok_or("Cannot filter unparameterized vector")?; // technically unreachable
@@ -594,7 +617,7 @@ pub fn map<'gc>(
     while let Some(r) = iter.next(activation) {
         let (i, item) = r?;
 
-        let new_item = callback.call(receiver, &[item, i.into(), this.into()], activation)?;
+        let new_item = callback.call(receiver, &[item, i.into(), this], activation)?;
         let coerced_item = new_item.coerce_to_type(activation, value_type_for_coercion)?;
 
         new_storage.push(coerced_item, activation)?;
@@ -606,10 +629,14 @@ pub fn map<'gc>(
 /// Implements `Vector.pop`
 pub fn pop<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
+    if let Some(mut vs) = this
+        .as_object()
+        .as_ref()
+        .and_then(|this| this.as_vector_storage_mut(activation.context.gc_context))
+    {
         return vs.pop(activation);
     }
 
@@ -619,10 +646,14 @@ pub fn pop<'gc>(
 /// Implements `Vector.push`
 pub fn push<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
+    if let Some(mut vs) = this
+        .as_object()
+        .as_ref()
+        .and_then(|this| this.as_vector_storage_mut(activation.context.gc_context))
+    {
         let value_type = vs
             .value_type_for_coercion(activation)
             .inner_class_definition();
@@ -645,10 +676,14 @@ pub fn push<'gc>(
 /// Implements `Vector.shift`
 pub fn shift<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
+    if let Some(mut vs) = this
+        .as_object()
+        .as_ref()
+        .and_then(|this| this.as_vector_storage_mut(activation.context.gc_context))
+    {
         return vs.shift(activation);
     }
 
@@ -658,10 +693,14 @@ pub fn shift<'gc>(
 /// Implements `Vector.unshift`
 pub fn unshift<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
+    if let Some(mut vs) = this
+        .as_object()
+        .as_ref()
+        .and_then(|this| this.as_vector_storage_mut(activation.context.gc_context))
+    {
         let value_type = vs
             .value_type_for_coercion(activation)
             .inner_class_definition();
@@ -681,10 +720,14 @@ pub fn unshift<'gc>(
 /// Implements `Vector.insertAt`
 pub fn insert_at<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
+    if let Some(mut vs) = this
+        .as_object()
+        .as_ref()
+        .and_then(|this| this.as_vector_storage_mut(activation.context.gc_context))
+    {
         let index = args
             .get(0)
             .cloned()
@@ -708,10 +751,14 @@ pub fn insert_at<'gc>(
 /// Implements `Vector.removeAt`
 pub fn remove_at<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
+    if let Some(mut vs) = this
+        .as_object()
+        .as_ref()
+        .and_then(|this| this.as_vector_storage_mut(activation.context.gc_context))
+    {
         let index = args
             .get(0)
             .cloned()
@@ -727,13 +774,17 @@ pub fn remove_at<'gc>(
 /// Implements `Vector.reverse`
 pub fn reverse<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
+    if let Some(mut vs) = this
+        .as_object()
+        .as_ref()
+        .and_then(|this| this.as_vector_storage_mut(activation.context.gc_context))
+    {
         vs.reverse();
 
-        return Ok(this.into());
+        return Ok(this);
     }
 
     Ok(Value::Undefined)
@@ -742,10 +793,14 @@ pub fn reverse<'gc>(
 /// Implements `Vector.slice`
 pub fn slice<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(vs) = this.as_vector_storage_mut(activation.context.gc_context) {
+    if let Some(vs) = this
+        .as_object()
+        .as_ref()
+        .and_then(|this| this.as_vector_storage_mut(activation.context.gc_context))
+    {
         let from = args
             .get(0)
             .cloned()
@@ -780,10 +835,14 @@ pub fn slice<'gc>(
 /// Implements `Vector.sort`
 pub fn sort<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(vs) = this.as_vector_storage_mut(activation.context.gc_context) {
+    if let Some(vs) = this
+        .as_object()
+        .as_ref()
+        .and_then(|this| this.as_vector_storage_mut(activation.context.gc_context))
+    {
         let fn_or_options = args.get(0).cloned().unwrap_or(Value::Undefined);
 
         let (compare_fnc, options) = if fn_or_options
@@ -804,7 +863,7 @@ pub fn sort<'gc>(
         let compare = move |activation: &mut Activation<'_, 'gc>, a, b| {
             if let Some(compare_fnc) = compare_fnc {
                 let order = compare_fnc
-                    .call(this.into(), &[a, b], activation)?
+                    .call(this, &[a, b], activation)?
                     .coerce_to_number(activation)?;
 
                 if order > 0.0 {
@@ -846,17 +905,18 @@ pub fn sort<'gc>(
         //NOTE: RETURNINDEXEDARRAY does NOT actually return anything useful.
         //The actual sorting still happens, but the results are discarded.
         if options.contains(SortOptions::RETURN_INDEXED_ARRAY) {
-            return Ok(this.into());
+            return Ok(this);
         }
 
         if !options.contains(SortOptions::UNIQUE_SORT) || unique_sort_satisfied {
-            let mut vs = this
+            let vs = this.as_object().unwrap();
+            let mut vs = vs
                 .as_vector_storage_mut(activation.context.gc_context)
                 .unwrap();
             vs.replace_storage(values.into_iter().collect());
         }
 
-        return Ok(this.into());
+        return Ok(this);
     }
 
     Ok(Value::Undefined)
@@ -865,10 +925,14 @@ pub fn sort<'gc>(
 /// Implements `Vector.splice`
 pub fn splice<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
+    if let Some(mut vs) = this
+        .as_object()
+        .as_ref()
+        .and_then(|this| this.as_vector_storage_mut(activation.context.gc_context))
+    {
         let start_len = args
             .get(0)
             .cloned()

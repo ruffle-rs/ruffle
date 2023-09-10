@@ -12,7 +12,7 @@ use crate::avm2::property::Property;
 use crate::avm2::regexp::RegExp;
 use crate::avm2::value::{Hint, Value};
 use crate::avm2::vector::VectorStorage;
-use crate::avm2::vtable::{ClassBoundMethod, VTable};
+use crate::avm2::vtable::VTable;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
@@ -49,7 +49,6 @@ mod local_connection_object;
 mod namespace_object;
 mod net_connection_object;
 mod netstream_object;
-mod primitive_object;
 mod program_3d_object;
 mod proxy_object;
 mod qname_object;
@@ -113,9 +112,6 @@ pub use crate::avm2::object::net_connection_object::{
 pub use crate::avm2::object::netstream_object::{
     netstream_allocator, NetStreamObject, NetStreamObjectWeak,
 };
-pub use crate::avm2::object::primitive_object::{
-    primitive_allocator, PrimitiveObject, PrimitiveObjectWeak,
-};
 pub use crate::avm2::object::program_3d_object::{Program3DObject, Program3DObjectWeak};
 pub use crate::avm2::object::proxy_object::{proxy_allocator, ProxyObject, ProxyObjectWeak};
 pub use crate::avm2::object::qname_object::{q_name_allocator, QNameObject, QNameObjectWeak};
@@ -152,6 +148,15 @@ pub use crate::avm2::object::xml_list_object::{
 pub use crate::avm2::object::xml_object::{xml_allocator, XmlObject, XmlObjectWeak};
 use crate::font::Font;
 
+use super::value::default_call_property_local;
+
+pub fn primitive_allocator<'gc>(
+    _class: ClassObject<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+) -> Result<Object<'gc>, Error<'gc>> {
+    unreachable!("Tried to construct primitive class")
+}
+
 /// Represents an object that can be directly interacted with by the AVM2
 /// runtime.
 #[enum_trait_object(
@@ -161,7 +166,6 @@ use crate::font::Font;
     pub enum Object<'gc> {
         ScriptObject(ScriptObject<'gc>),
         FunctionObject(FunctionObject<'gc>),
-        PrimitiveObject(PrimitiveObject<'gc>),
         NamespaceObject(NamespaceObject<'gc>),
         ArrayObject(ArrayObject<'gc>),
         StageObject(StageObject<'gc>),
@@ -206,84 +210,68 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn base(&self) -> Ref<ScriptObjectData<'gc>>;
     fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>>;
 
+    // Shim to ease migration
+    fn get_property(
+        self,
+        multiname: &Multiname<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        Value::from(self.into()).get_property(multiname, activation)
+    }
+
+    // Shim to ease migration
+    fn get_public_property(
+        self,
+        name: impl Into<AvmString<'gc>>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        Value::from(self.into()).get_public_property(name, activation)
+    }
+
+    // Shim to ease migration
+    fn set_property(
+        self,
+        multiname: &Multiname<'gc>,
+        value: Value<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<(), Error<'gc>> {
+        Value::from(self.into()).set_property(multiname, value, activation)
+    }
+
+    // Shim to ease migration
+    fn set_public_property(
+        self,
+        name: impl Into<AvmString<'gc>>,
+        value: Value<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<(), Error<'gc>> {
+        Value::from(self.into()).set_public_property(name, value, activation)
+    }
+
+    // Shim to ease migration
+    fn call_public_property(
+        self,
+        name: impl Into<AvmString<'gc>>,
+        arguments: &[Value<'gc>],
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        Value::from(self.into()).call_public_property(name, arguments, activation)
+    }
+
     /// Retrieve a local property of the object. The Multiname should always be public.
     ///
     /// This skips class field lookups and looks at:
     /// - object-specific storage (like arrays)
     /// - Object dynamic properties
     /// - prototype chain.
+    ///
+    /// This can be overriden to customize local property lookup
     fn get_property_local(
         self,
         name: &Multiname<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        self.base().get_property_local(name, activation)
-    }
-
-    /// Retrieve a property by Multiname lookup.
-    ///
-    /// This method should not be overridden.
-    ///
-    /// This corresponds directly to the AVM2 operation `getproperty`, with the
-    /// exception that it does not special-case object lookups on dictionary
-    /// structured objects.
-    #[allow(unused_mut)] //Not unused.
-    fn get_property(
-        mut self,
-        multiname: &Multiname<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
-        match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
-            Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
-                self.base().get_slot(slot_id)
-            }
-            Some(Property::Method { disp_id }) => {
-                // avmplus has a special case for XML and XMLList objects, so we need one as well
-                // https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/Toplevel.cpp#L629-L634
-                if (self.as_xml_object().is_some() || self.as_xml_list_object().is_some())
-                    && multiname.contains_public_namespace()
-                {
-                    return self.get_property_local(multiname, activation);
-                }
-
-                if let Some(bound_method) = self.get_bound_method(disp_id) {
-                    return Ok(bound_method.into());
-                }
-                let vtable = self.vtable().unwrap();
-                if let Some(bound_method) =
-                    vtable.make_bound_method(activation, self.into(), disp_id)
-                {
-                    self.install_bound_method(activation.context.gc_context, disp_id, bound_method);
-                    Ok(bound_method.into())
-                } else {
-                    Err("Method not found".into())
-                }
-            }
-            Some(Property::Virtual { get: Some(get), .. }) => {
-                self.call_method(get, &[], activation)
-            }
-            Some(Property::Virtual { get: None, .. }) => {
-                return Err(error::make_reference_error(
-                    activation,
-                    error::ReferenceErrorCode::ReadFromWriteOnly,
-                    multiname,
-                    self.instance_of(),
-                ));
-            }
-            None => self.get_property_local(multiname, activation),
-        }
-    }
-
-    /// Same as get_property, but constructs a public Multiname for you.
-    fn get_public_property(
-        self,
-        name: impl Into<AvmString<'gc>>,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
-        self.get_property(
-            &Multiname::new(activation.avm2().find_public_namespace(), name),
-            activation,
-        )
+        ScriptObjectData::get_property_local(self.into(), name, activation)
     }
 
     /// Purely an optimization for "array-like" access. This should return
@@ -321,75 +309,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         self.set_property_local(&name, value, activation)
     }
 
-    /// Set a property by Multiname lookup.
-    ///
-    /// This method should not be overridden.
-    ///
-    /// This corresponds directly with the AVM2 operation `setproperty`, with
-    /// the exception that it does not special-case object lookups on
-    /// dictionary structured objects.
-    fn set_property(
-        &self,
-        multiname: &Multiname<'gc>,
-        value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<(), Error<'gc>> {
-        match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
-            Some(Property::Slot { slot_id }) => {
-                let value = self
-                    .vtable()
-                    .unwrap()
-                    .coerce_trait_value(slot_id, value, activation)?;
-                self.base_mut(activation.context.gc_context).set_slot(
-                    slot_id,
-                    value,
-                    activation.context.gc_context,
-                )
-            }
-            Some(Property::Method { .. }) => {
-                // Similar to the get_property special case for XML/XMLList.
-                if (self.as_xml_object().is_some() || self.as_xml_list_object().is_some())
-                    && multiname.contains_public_namespace()
-                {
-                    return self.set_property_local(multiname, value, activation);
-                }
-
-                return Err(error::make_reference_error(
-                    activation,
-                    error::ReferenceErrorCode::AssignToMethod,
-                    multiname,
-                    self.instance_of(),
-                ));
-            }
-            Some(Property::Virtual { set: Some(set), .. }) => {
-                self.call_method(set, &[value], activation).map(|_| ())
-            }
-            Some(Property::ConstSlot { .. }) | Some(Property::Virtual { set: None, .. }) => {
-                return Err(error::make_reference_error(
-                    activation,
-                    error::ReferenceErrorCode::WriteToReadOnly,
-                    multiname,
-                    self.instance_of(),
-                ));
-            }
-            None => self.set_property_local(multiname, value, activation),
-        }
-    }
-
-    /// Same as set_property, but constructs a public Multiname for you.
-    fn set_public_property(
-        &self,
-        name: impl Into<AvmString<'gc>>,
-        value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<(), Error<'gc>> {
-        self.set_property(
-            &Multiname::new(activation.avm2().public_namespace_vm_internal, name),
-            value,
-            activation,
-        )
-    }
-
     /// Init a local property of the object. The Multiname should always be public.
     ///
     /// This skips class field lookups and looks at:
@@ -408,52 +327,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         base.init_property_local(name, value, activation)
     }
 
-    /// Initialize a property by Multiname lookup.
-    ///
-    /// This method should not be overridden.
-    ///
-    /// This corresponds directly with the AVM2 operation `initproperty`.
-    fn init_property(
-        &self,
-        multiname: &Multiname<'gc>,
-        value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<(), Error<'gc>> {
-        match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
-            Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
-                let value = self
-                    .vtable()
-                    .unwrap()
-                    .coerce_trait_value(slot_id, value, activation)?;
-                self.base_mut(activation.context.gc_context).set_slot(
-                    slot_id,
-                    value,
-                    activation.context.gc_context,
-                )
-            }
-            Some(Property::Method { .. }) => {
-                return Err(error::make_reference_error(
-                    activation,
-                    error::ReferenceErrorCode::AssignToMethod,
-                    multiname,
-                    self.instance_of(),
-                ));
-            }
-            Some(Property::Virtual { set: Some(set), .. }) => {
-                self.call_method(set, &[value], activation).map(|_| ())
-            }
-            Some(Property::Virtual { set: None, .. }) => {
-                return Err(error::make_reference_error(
-                    activation,
-                    error::ReferenceErrorCode::WriteToReadOnly,
-                    multiname,
-                    self.instance_of(),
-                ));
-            }
-            None => self.init_property_local(multiname, value, activation),
-        }
-    }
-
     /// Call a local property of the object. The Multiname should always be public.
     ///
     /// This skips class field lookups and looks at:
@@ -466,112 +339,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        // Note: normally this would just call into ScriptObjectData::call_property_local
-        // but because calling into ScriptObjectData borrows it for entire duration,
-        // we run a risk of a double borrow if the inner call borrows again.
-        let self_val: Value<'gc> = Value::from(self.into());
-        let result = self
-            .base()
-            .get_property_local(multiname, activation)?
-            .as_callable(activation, Some(multiname), Some(self_val), false)?;
-
-        result.call(self_val, arguments, activation)
-    }
-
-    /// Call a named property on the object.
-    ///
-    /// This method should not be overridden.
-    ///
-    /// This corresponds directly to the `callproperty` operation in AVM2.
-    #[allow(unused_mut)]
-    fn call_property(
-        mut self,
-        multiname: &Multiname<'gc>,
-        arguments: &[Value<'gc>],
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
-        match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
-            Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
-                let obj = self.base().get_slot(slot_id)?.as_callable(
-                    activation,
-                    Some(multiname),
-                    Some(Value::from(self.into())),
-                    false,
-                )?;
-
-                obj.call(Value::from(self.into()), arguments, activation)
-            }
-            Some(Property::Method { disp_id }) => {
-                let vtable = self.vtable().unwrap();
-                if let Some(ClassBoundMethod {
-                    class,
-                    scope,
-                    method,
-                }) = vtable.get_full_method(disp_id)
-                {
-                    if !method.needs_arguments_object() {
-                        Executable::from_method(method, scope, None, Some(class)).exec(
-                            Value::from(self.into()),
-                            arguments,
-                            activation,
-                            class.into(), //Deliberately invalid.
-                        )
-                    } else {
-                        if let Some(bound_method) = self.get_bound_method(disp_id) {
-                            return bound_method.call(
-                                Value::from(self.into()),
-                                arguments,
-                                activation,
-                            );
-                        }
-                        let bound_method = vtable
-                            .make_bound_method(activation, self.into(), disp_id)
-                            .unwrap();
-                        self.install_bound_method(
-                            activation.context.gc_context,
-                            disp_id,
-                            bound_method,
-                        );
-                        bound_method.call(Value::from(self.into()), arguments, activation)
-                    }
-                } else {
-                    Err("Method not found".into())
-                }
-            }
-            Some(Property::Virtual { get: Some(get), .. }) => {
-                let obj = self.call_method(get, &[], activation)?.as_callable(
-                    activation,
-                    Some(multiname),
-                    Some(Value::from(self.into())),
-                    false,
-                )?;
-
-                obj.call(Value::from(self.into()), arguments, activation)
-            }
-            Some(Property::Virtual { get: None, .. }) => {
-                return Err(error::make_reference_error(
-                    activation,
-                    error::ReferenceErrorCode::ReadFromWriteOnly,
-                    multiname,
-                    self.instance_of(),
-                ));
-            }
-            None => self.call_property_local(multiname, arguments, activation),
-        }
-    }
-
-    /// Same as call_property, but constructs a public Multiname for you.
-    fn call_public_property(
-        self,
-        name: impl Into<AvmString<'gc>>,
-        arguments: &[Value<'gc>],
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
-        self.call_property(
-            &Multiname::new(activation.avm2().find_public_namespace(), name),
-            arguments,
-            activation,
-        )
+        default_call_property_local(Value::from(self.into()), multiname, arguments, activation)
     }
 
     /// Retrieve a slot by its index.
@@ -616,7 +384,9 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) -> Result<Value<'gc>, Error<'gc>> {
         if self.get_bound_method(id).is_none() {
             if let Some(vtable) = self.vtable() {
-                if let Some(bound_method) = vtable.make_bound_method(activation, self.into(), id) {
+                if let Some(bound_method) =
+                    vtable.make_bound_method(activation, Value::from(self.into()), id)
+                {
                     self.install_bound_method(activation.context.gc_context, id, bound_method);
                 }
             }
@@ -636,21 +406,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// other object types to change the behavior of the `in` operator only.
     fn has_property_via_in(
         self,
-        _activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         name: &Multiname<'gc>,
     ) -> Result<bool, Error<'gc>> {
-        Ok(self.has_property(name))
-    }
-
-    /// Indicates whether or not a property exists on an object.
-    fn has_property(self, name: &Multiname<'gc>) -> bool {
-        if self.has_own_property(name) {
-            true
-        } else if let Some(proto) = self.proto() {
-            proto.has_own_property(name)
-        } else {
-            false
-        }
+        Ok(Value::from(self.into()).has_property(name, activation))
     }
 
     /// Same as has_property, but constructs a public Multiname for you.
@@ -659,10 +418,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: impl Into<AvmString<'gc>>,
         activation: &mut Activation<'_, 'gc>,
     ) -> bool {
-        self.has_property(&Multiname::new(
-            activation.avm2().find_public_namespace(),
-            name,
-        ))
+        Value::from(self.into()).has_property(
+            &Multiname::new(activation.avm2().find_public_namespace(), name),
+            activation,
+        )
     }
 
     /// Indicates whether or not a property or trait exists on an object and is
@@ -683,12 +442,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         )))
     }
 
-    /// Returns true if an object has one or more traits of a given name.
-    fn has_trait(self, name: &Multiname<'gc>) -> bool {
-        let base = self.base();
-        base.has_trait(name)
-    }
-
     /// Delete a property by QName, after multiname resolution and all other
     /// considerations have been taken.
     ///
@@ -702,57 +455,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         let mut base = self.base_mut(activation.context.gc_context);
 
         Ok(base.delete_property_local(name))
-    }
-
-    /// Delete a named property from the object.
-    ///
-    /// Returns false if the property cannot be deleted.
-    fn delete_property(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        multiname: &Multiname<'gc>,
-    ) -> Result<bool, Error<'gc>> {
-        if self.as_primitive().is_some() {
-            return Err(error::make_reference_error(
-                activation,
-                error::ReferenceErrorCode::InvalidDelete,
-                multiname,
-                self.instance_of(),
-            ));
-        }
-
-        match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
-            None => {
-                if self
-                    .instance_of_class_definition()
-                    .map(|c| c.read().is_sealed())
-                    .unwrap_or(false)
-                {
-                    Ok(false)
-                } else {
-                    self.delete_property_local(activation, multiname)
-                }
-            }
-            _ => {
-                // Similar to the get_property special case for XML/XMLList.
-                if (self.as_xml_object().is_some() || self.as_xml_list_object().is_some())
-                    && multiname.contains_public_namespace()
-                {
-                    return self.delete_property_local(activation, multiname);
-                }
-                Ok(false)
-            }
-        }
-    }
-
-    /// Same as delete_property, but constructs a public Multiname for you.
-    fn delete_public_property(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        name: impl Into<AvmString<'gc>>,
-    ) -> Result<bool, Error<'gc>> {
-        let name = Multiname::new(activation.avm2().public_namespace_base_version, name);
-        self.delete_property(activation, &name)
     }
 
     /// Retrieve the `__proto__` of a given object.
@@ -926,7 +628,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         multiname: &Multiname<'gc>,
         args: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Object<'gc>, Error<'gc>> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         let ctor = self.get_property(multiname, activation)?.as_callable(
             activation,
             Some(multiname),
@@ -934,7 +636,37 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             true,
         )?;
 
-        ctor.construct(activation, args)
+        if Object::from(activation.avm2().classes().boolean) == ctor {
+            Ok(Value::from(
+                args.get(0).unwrap_or(&Value::Undefined).coerce_to_boolean(),
+            ))
+        } else if Object::from(activation.avm2().classes().number) == ctor {
+            Ok(Value::from(
+                args.get(0)
+                    .unwrap_or(&Value::Number(0.0))
+                    .coerce_to_number(activation)?,
+            ))
+        } else if Object::from(activation.avm2().classes().int) == ctor {
+            Ok(Value::from(
+                args.get(0)
+                    .unwrap_or(&Value::Undefined)
+                    .coerce_to_i32(activation)?,
+            ))
+        } else if Object::from(activation.avm2().classes().uint) == ctor {
+            Ok(Value::from(
+                args.get(0)
+                    .unwrap_or(&Value::Undefined)
+                    .coerce_to_u32(activation)?,
+            ))
+        } else if Object::from(activation.avm2().classes().string) == ctor {
+            Ok(Value::from(
+                args.get(0)
+                    .unwrap_or(&Value::String("".into()))
+                    .coerce_to_string(activation)?,
+            ))
+        } else {
+            Ok(ctor.construct(activation, args)?.into())
+        }
     }
 
     /// Construct a parameterization of this particular type and return it.
@@ -979,16 +711,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// prototype; this is then picked up by the VM runtime when doing
     /// coercions.
     fn to_string(&self, activation: &mut Activation<'_, 'gc>) -> Result<Value<'gc>, Error<'gc>> {
-        let class_name = self
-            .instance_of_class_definition()
-            .map(|c| c.read().name().local_name())
-            .unwrap_or_else(|| "Object".into());
-
-        Ok(AvmString::new_utf8(
-            activation.context.gc_context,
-            format!("[object {class_name}]"),
-        )
-        .into())
+        Value::from((*self).into()).default_to_string(activation)
     }
 
     /// Implement the result of calling `Object.prototype.toLocaleString` on this
@@ -1003,16 +726,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         &self,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let class_name = self
-            .instance_of_class_definition()
-            .map(|c| c.read().name().local_name())
-            .unwrap_or_else(|| "Object".into());
-
-        Ok(AvmString::new_utf8(
-            activation.context.gc_context,
-            format!("[object {class_name}]"),
-        )
-        .into())
+        Value::from((*self).into()).default_to_locale_string(activation)
     }
 
     /// Implement the result of calling `Object.prototype.valueOf` on this
@@ -1150,13 +864,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         self.instance_of().map(|cls| cls.inner_class_definition())
     }
 
-    /// Get this object's class's name, formatted for debug output.
-    fn instance_of_class_name(&self, mc: &Mutation<'gc>) -> AvmString<'gc> {
-        self.instance_of_class_definition()
-            .map(|r| r.read().name().to_qualified_name(mc))
-            .unwrap_or_else(|| "<Unknown type>".into())
-    }
-
     fn set_instance_of(&self, mc: &Mutation<'gc>, instance_of: ClassObject<'gc>) {
         let instance_vtable = instance_of.instance_vtable();
 
@@ -1278,20 +985,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Unwrap this object as a mutable list of event handlers.
     fn as_dispatch_mut(&self, _mc: &Mutation<'gc>) -> Option<RefMut<DispatchList<'gc>>> {
-        None
-    }
-
-    /// Unwrap this object as an immutable primitive value.
-    ///
-    /// This function should not be called in cases where a normal `Value`
-    /// coercion would do. It *only* accounts for boxed primitives, and not
-    /// `valueOf`.
-    fn as_primitive(&self) -> Option<Ref<Value<'gc>>> {
-        None
-    }
-
-    /// Unwrap this object as a mutable primitive value.
-    fn as_primitive_mut(&self, _mc: &Mutation<'gc>) -> Option<RefMut<Value<'gc>>> {
         None
     }
 
@@ -1443,7 +1136,6 @@ impl<'gc> Object<'gc> {
         match self {
             Self::ScriptObject(o) => WeakObject::ScriptObject(ScriptObjectWeak(GcCell::downgrade(o.0))),
             Self::FunctionObject(o) => WeakObject::FunctionObject(FunctionObjectWeak(GcCell::downgrade(o.0))),
-            Self::PrimitiveObject(o) => WeakObject::PrimitiveObject(PrimitiveObjectWeak(GcCell::downgrade(o.0))),
             Self::NamespaceObject(o) => WeakObject::NamespaceObject(NamespaceObjectWeak(GcCell::downgrade(o.0))),
             Self::ArrayObject(o) => WeakObject::ArrayObject(ArrayObjectWeak(GcCell::downgrade(o.0))),
             Self::StageObject(o) => WeakObject::StageObject(StageObjectWeak(GcCell::downgrade(o.0))),
@@ -1504,7 +1196,6 @@ impl<'gc> Hash for Object<'gc> {
 pub enum WeakObject<'gc> {
     ScriptObject(ScriptObjectWeak<'gc>),
     FunctionObject(FunctionObjectWeak<'gc>),
-    PrimitiveObject(PrimitiveObjectWeak<'gc>),
     NamespaceObject(NamespaceObjectWeak<'gc>),
     ArrayObject(ArrayObjectWeak<'gc>),
     StageObject(StageObjectWeak<'gc>),
@@ -1548,7 +1239,6 @@ impl<'gc> WeakObject<'gc> {
         Some(match self {
             Self::ScriptObject(o) => ScriptObject(o.0.upgrade(mc)?).into(),
             Self::FunctionObject(o) => FunctionObject(o.0.upgrade(mc)?).into(),
-            Self::PrimitiveObject(o) => PrimitiveObject(o.0.upgrade(mc)?).into(),
             Self::NamespaceObject(o) => NamespaceObject(o.0.upgrade(mc)?).into(),
             Self::ArrayObject(o) => ArrayObject(o.0.upgrade(mc)?).into(),
             Self::StageObject(o) => StageObject(o.0.upgrade(mc)?).into(),

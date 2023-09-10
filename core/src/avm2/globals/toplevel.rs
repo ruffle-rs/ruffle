@@ -4,9 +4,9 @@ use ruffle_wstr::Units;
 
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{uri_error, Error};
-use crate::avm2::object::Object;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
+use crate::avm2::Object;
 use crate::string::{AvmString, WStr, WString};
 use ruffle_wstr::Integer;
 use std::fmt::Write;

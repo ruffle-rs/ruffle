@@ -467,7 +467,7 @@ pub fn load_player_globals<'gc>(
     let mc = activation.context.gc_context;
 
     let globals = ScriptObject::custom_object(mc, None, None);
-    let gs = ScopeChain::new(domain).chain(mc, &[Scope::new(globals)]);
+    let gs = ScopeChain::new(domain).chain(mc, &[Scope::new(globals.into())]);
     let script = Script::empty_script(mc, globals, domain);
 
     // Set the outer scope of this activation to the global scope.

@@ -26,7 +26,7 @@ pub struct BytecodeExecutable<'gc> {
     ///
     /// If `None`, then the receiver provided by the caller is used. A
     /// `Some` value indicates a bound executable.
-    receiver: Option<Object<'gc>>,
+    receiver: Option<Value<'gc>>,
 
     /// The bound superclass for this method.
     ///
@@ -46,7 +46,7 @@ pub struct NativeExecutable<'gc> {
     scope: ScopeChain<'gc>,
 
     /// The bound receiver for this method.
-    bound_receiver: Option<Object<'gc>>,
+    bound_receiver: Option<Value<'gc>>,
 
     /// The bound superclass for this method.
     ///
@@ -72,7 +72,7 @@ impl<'gc> Executable<'gc> {
     pub fn from_method(
         method: Method<'gc>,
         scope: ScopeChain<'gc>,
-        receiver: Option<Object<'gc>>,
+        receiver: Option<Value<'gc>>,
         superclass: Option<ClassObject<'gc>>,
     ) -> Self {
         match method {
@@ -113,7 +113,7 @@ impl<'gc> Executable<'gc> {
             Executable::Native(bm) => {
                 let method = bm.method.method;
 
-                let receiver = if let Some(receiver) = bm.bound_receiver {
+                let receiver: Value<'gc> = if let Some(receiver) = bm.bound_receiver {
                     receiver
                 } else if matches!(unbound_receiver, Value::Null | Value::Undefined) {
                     bm.scope
@@ -121,7 +121,7 @@ impl<'gc> Executable<'gc> {
                         .expect("No global scope for function call")
                         .values()
                 } else {
-                    unbound_receiver.coerce_to_object(activation)?
+                    unbound_receiver
                 };
 
                 let caller_domain = activation.caller_domain();
@@ -173,7 +173,7 @@ impl<'gc> Executable<'gc> {
                         .expect("No global scope for function call")
                         .values()
                 } else {
-                    unbound_receiver.coerce_to_object(activation)?
+                    unbound_receiver
                 };
 
                 let subclass_object = bm.bound_superclass;

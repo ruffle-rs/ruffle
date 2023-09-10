@@ -15,10 +15,13 @@ pub fn describe_type_json<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let value = args[0].coerce_to_object(activation)?;
+    let value = args[0];
     let flags = DescribeTypeFlags::from_bits(args.get_u32(activation, 1)?).expect("Invalid flags!");
 
-    let class_obj = value.as_class_object().or_else(|| value.instance_of());
+    let class_obj = value
+        .as_object()
+        .and_then(|obj| obj.as_class_object())
+        .or_else(|| value.instance_of(activation));
     let object = activation
         .avm2()
         .classes()
@@ -28,7 +31,9 @@ pub fn describe_type_json<'gc>(
         return Ok(Value::Null);
     };
 
-    let is_static = value.as_class_object().is_some();
+    let is_static = value
+        .as_object()
+        .map_or(false, |o| o.as_class_object().is_some());
     if !is_static && flags.contains(DescribeTypeFlags::USE_ITRAITS) {
         return Ok(Value::Null);
     }

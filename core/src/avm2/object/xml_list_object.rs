@@ -595,8 +595,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
             if let Some(list) = prop.as_object().and_then(|obj| obj.as_xml_list_object()) {
                 if list.length() == 0 && self.length() == 1 {
                     let mut this = self.0.write(activation.context.gc_context);
-                    return this.children[0]
-                        .get_or_create_xml(activation)
+                    return Value::from(this.children[0].get_or_create_xml(activation))
                         .call_property(multiname, arguments, activation);
                 }
             }

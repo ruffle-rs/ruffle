@@ -5,7 +5,7 @@ use crate::avm2::array::ArrayStorage;
 use crate::avm2::class::Class;
 use crate::avm2::error::range_error;
 use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::object::{array_allocator, ArrayObject, FunctionObject, Object, TObject};
+use crate::avm2::object::{array_allocator, ArrayObject, FunctionObject, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
@@ -68,12 +68,16 @@ const PUBLIC_PROTO_METHODS: &[(&str, NativeMethodImpl)] = &[
 /// Implements `Array`'s instance initializer.
 pub fn instance_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     activation.super_init(this, &[])?;
 
-    if let Some(mut array) = this.as_array_storage_mut(activation.context.gc_context) {
+    if let Some(mut array) = this
+        .as_object()
+        .as_mut()
+        .and_then(|this| this.as_array_storage_mut(activation.context.gc_context))
+    {
         if args.len() == 1 {
             if let Some(expected_len) = args
                 .get(0)
@@ -111,7 +115,7 @@ pub fn instance_init<'gc>(
 
 pub fn class_call<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(activation
@@ -125,12 +129,12 @@ pub fn class_call<'gc>(
 /// Implements `Array`'s class initializer.
 pub fn class_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let scope = activation.create_scopechain();
     let gc_context = activation.context.gc_context;
-    let this_class = this.as_class_object().unwrap();
+    let this_class = this.as_object().unwrap().as_class_object().unwrap();
     let array_proto = this_class.prototype();
 
     for (name, method) in PUBLIC_PROTO_METHODS {
@@ -155,10 +159,14 @@ pub fn class_init<'gc>(
 /// Implements `Array.length`'s getter
 pub fn length<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(array) = this.as_array_storage() {
+    if let Some(array) = this
+        .as_object()
+        .as_ref()
+        .and_then(|this| this.as_array_storage())
+    {
         return Ok(array.length().into());
     }
 
@@ -168,10 +176,14 @@ pub fn length<'gc>(
 /// Implements `Array.length`'s setter
 pub fn set_length<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut array) = this.as_array_storage_mut(activation.context.gc_context) {
+    if let Some(mut array) = this
+        .as_object()
+        .as_mut()
+        .and_then(|this| this.as_array_storage_mut(activation.context.gc_context))
+    {
         let size = args
             .get(0)
             .unwrap_or(&Value::Undefined)
@@ -194,11 +206,13 @@ pub fn build_array<'gc>(
 #[allow(clippy::map_clone)] //You can't clone `Option<Ref<T>>` without it
 pub fn concat<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let mut base_array = this
-        .as_array_storage()
+        .as_object()
+        .as_ref()
+        .and_then(|this| this.as_array_storage())
         .map(|a| a.clone())
         .unwrap_or_else(|| ArrayStorage::new(0));
 
@@ -220,7 +234,7 @@ pub fn concat<'gc>(
 /// Resolves array holes.
 pub fn resolve_array_hole<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     i: usize,
     item: Option<Value<'gc>>,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -228,7 +242,7 @@ pub fn resolve_array_hole<'gc>(
         return Ok(item);
     }
 
-    if let Some(proto) = this.proto() {
+    if let Some(proto) = this.proto(activation) {
         proto.get_public_property(
             AvmString::new_utf8(activation.context.gc_context, i.to_string()),
             activation,
@@ -240,7 +254,7 @@ pub fn resolve_array_hole<'gc>(
 
 pub fn join_inner<'gc, 'a, 'ctxt, C>(
     activation: &mut Activation<'a, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
     mut conv: C,
 ) -> Result<Value<'gc>, Error<'gc>>
@@ -252,7 +266,11 @@ where
         separator = ",".into();
     }
 
-    if let Some(array) = this.as_array_storage() {
+    if let Some(array) = this
+        .as_object()
+        .as_ref()
+        .and_then(|this| this.as_array_storage())
+    {
         let string_separator = separator.coerce_to_string(activation)?;
         let mut accum = Vec::with_capacity(array.length());
 
@@ -279,7 +297,7 @@ where
 /// Implements `Array.join`
 pub fn join<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     join_inner(activation, this, args, |v, _act| Ok(v))
@@ -288,7 +306,7 @@ pub fn join<'gc>(
 /// Implements `Array.toString`
 pub fn to_string<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     join_inner(activation, this, &[",".into()], |v, _act| Ok(v))
@@ -297,15 +315,11 @@ pub fn to_string<'gc>(
 /// Implements `Array.toLocaleString`
 pub fn to_locale_string<'gc>(
     act: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     join_inner(act, this, &[",".into()], |v, activation| {
-        if let Ok(o) = v.coerce_to_object(activation) {
-            o.call_public_property("toLocaleString", &[], activation)
-        } else {
-            Ok(v)
-        }
+        v.call_public_property("toLocaleString", &[], activation)
     })
 }
 
@@ -328,7 +342,7 @@ pub fn to_locale_string<'gc>(
 /// array while this happens would cause a panic; this code exists to prevent
 /// that.
 pub struct ArrayIter<'gc> {
-    array_object: Object<'gc>,
+    array_object: Value<'gc>,
     pub index: u32,
     pub rev_index: u32,
 }
@@ -337,7 +351,7 @@ impl<'gc> ArrayIter<'gc> {
     /// Construct a new `ArrayIter`.
     pub fn new(
         activation: &mut Activation<'_, 'gc>,
-        array_object: Object<'gc>,
+        array_object: Value<'gc>,
     ) -> Result<Self, Error<'gc>> {
         Self::with_bounds(activation, array_object, 0, u32::MAX)
     }
@@ -345,7 +359,7 @@ impl<'gc> ArrayIter<'gc> {
     /// Construct a new `ArrayIter` that is bounded to a given range.
     pub fn with_bounds(
         activation: &mut Activation<'_, 'gc>,
-        array_object: Object<'gc>,
+        array_object: Value<'gc>,
         start_index: u32,
         end_index: u32,
     ) -> Result<Self, Error<'gc>> {
@@ -416,7 +430,7 @@ impl<'gc> ArrayIter<'gc> {
 /// Implements `Array.forEach`
 pub fn for_each<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let callback = args
@@ -430,7 +444,7 @@ pub fn for_each<'gc>(
     while let Some(r) = iter.next(activation) {
         let (i, item) = r?;
 
-        callback.call(receiver, &[item, i.into(), this.into()], activation)?;
+        callback.call(receiver, &[item, i.into(), this], activation)?;
     }
 
     Ok(Value::Undefined)
@@ -439,7 +453,7 @@ pub fn for_each<'gc>(
 /// Implements `Array.map`
 pub fn map<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let callback = args
@@ -453,7 +467,7 @@ pub fn map<'gc>(
 
     while let Some(r) = iter.next(activation) {
         let (i, item) = r?;
-        let new_item = callback.call(receiver, &[item, i.into(), this.into()], activation)?;
+        let new_item = callback.call(receiver, &[item, i.into(), this], activation)?;
 
         new_array.push(new_item);
     }
@@ -464,7 +478,7 @@ pub fn map<'gc>(
 /// Implements `Array.filter`
 pub fn filter<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let callback = args
@@ -479,7 +493,7 @@ pub fn filter<'gc>(
     while let Some(r) = iter.next(activation) {
         let (i, item) = r?;
         let is_allowed = callback
-            .call(receiver, &[item, i.into(), this.into()], activation)?
+            .call(receiver, &[item, i.into(), this], activation)?
             .coerce_to_boolean();
 
         if is_allowed {
@@ -493,7 +507,7 @@ pub fn filter<'gc>(
 /// Implements `Array.every`
 pub fn every<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let callback = args
@@ -508,7 +522,7 @@ pub fn every<'gc>(
         let (i, item) = r?;
 
         let result = callback
-            .call(receiver, &[item, i.into(), this.into()], activation)?
+            .call(receiver, &[item, i.into(), this], activation)?
             .coerce_to_boolean();
 
         if !result {
@@ -522,7 +536,7 @@ pub fn every<'gc>(
 /// Implements `Array.some`
 pub fn some<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let callback = args
@@ -537,7 +551,7 @@ pub fn some<'gc>(
         let (i, item) = r?;
 
         let result = callback
-            .call(receiver, &[item, i.into(), this.into()], activation)?
+            .call(receiver, &[item, i.into(), this], activation)?
             .coerce_to_boolean();
 
         if result {
@@ -551,10 +565,14 @@ pub fn some<'gc>(
 /// Implements `Array.indexOf`
 pub fn index_of<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(array) = this.as_array_storage() {
+    if let Some(array) = this
+        .as_object()
+        .as_ref()
+        .and_then(|this| this.as_array_storage())
+    {
         let search_val = args.get(0).cloned().unwrap_or(Value::Undefined);
         let from = args
             .get(1)
@@ -578,10 +596,14 @@ pub fn index_of<'gc>(
 /// Implements `Array.lastIndexOf`
 pub fn last_index_of<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(array) = this.as_array_storage() {
+    if let Some(array) = this
+        .as_object()
+        .as_ref()
+        .and_then(|this| this.as_array_storage())
+    {
         let search_val = args.get(0).cloned().unwrap_or(Value::Undefined);
         let from = args
             .get(1)
@@ -605,10 +627,14 @@ pub fn last_index_of<'gc>(
 /// Implements `Array.pop`
 pub fn pop<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut array) = this.as_array_storage_mut(activation.context.gc_context) {
+    if let Some(mut array) = this
+        .as_object()
+        .as_mut()
+        .and_then(|this| this.as_array_storage_mut(activation.context.gc_context))
+    {
         return Ok(array.pop());
     }
 
@@ -618,10 +644,14 @@ pub fn pop<'gc>(
 /// Implements `Array.push`
 pub fn push<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut array) = this.as_array_storage_mut(activation.context.gc_context) {
+    if let Some(mut array) = this
+        .as_object()
+        .as_mut()
+        .and_then(|this| this.as_array_storage_mut(activation.context.gc_context))
+    {
         for arg in args {
             array.push(*arg)
         }
@@ -633,10 +663,14 @@ pub fn push<'gc>(
 
 pub fn reverse<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut array) = this.as_array_storage_mut(activation.context.gc_context) {
+    if let Some(mut array) = this
+        .as_object()
+        .as_mut()
+        .and_then(|this| this.as_array_storage_mut(activation.context.gc_context))
+    {
         let mut last_non_hole_index = None;
         for (i, val) in array.iter().enumerate() {
             if val.is_some() {
@@ -659,7 +693,7 @@ pub fn reverse<'gc>(
 
         swap(&mut *array, &mut new_array);
 
-        return Ok(this.into());
+        return Ok(this);
     }
 
     Ok(Value::Undefined)
@@ -668,10 +702,14 @@ pub fn reverse<'gc>(
 /// Implements `Array.shift`
 pub fn shift<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut array) = this.as_array_storage_mut(activation.context.gc_context) {
+    if let Some(mut array) = this
+        .as_object()
+        .as_mut()
+        .and_then(|this| this.as_array_storage_mut(activation.context.gc_context))
+    {
         return Ok(array.shift());
     }
 
@@ -681,10 +719,14 @@ pub fn shift<'gc>(
 /// Implements `Array.unshift`
 pub fn unshift<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut array) = this.as_array_storage_mut(activation.context.gc_context) {
+    if let Some(mut array) = this
+        .as_object()
+        .as_mut()
+        .and_then(|this| this.as_array_storage_mut(activation.context.gc_context))
+    {
         for arg in args.iter().rev() {
             array.unshift(*arg)
         }
@@ -713,10 +755,14 @@ pub fn resolve_index<'gc>(
 /// Implements `Array.slice`
 pub fn slice<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let array_length = this.as_array_storage().map(|a| a.length());
+    let array_length = this
+        .as_object()
+        .as_ref()
+        .and_then(|this| this.as_array_storage())
+        .map(|a| a.length());
 
     if let Some(array_length) = array_length {
         let actual_start = resolve_index(
@@ -739,7 +785,11 @@ pub fn slice<'gc>(
                 activation,
                 this,
                 i,
-                this.as_array_storage().unwrap().get(i),
+                this.as_object()
+                    .as_ref()
+                    .and_then(|this| this.as_array_storage())
+                    .unwrap()
+                    .get(i),
             )?);
         }
 
@@ -752,10 +802,14 @@ pub fn slice<'gc>(
 /// Implements `Array.splice`
 pub fn splice<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let array_length = this.as_array_storage().map(|a| a.length());
+    let array_length = this
+        .as_object()
+        .as_ref()
+        .and_then(|this| this.as_array_storage())
+        .map(|a| a.length());
 
     if let Some(array_length) = array_length {
         if let Some(start) = args.get(0).cloned() {
@@ -774,9 +828,12 @@ pub fn splice<'gc>(
             };
 
             let contents = this
+                .as_object()
+                .unwrap()
                 .as_array_storage()
-                .map(|a| a.iter().collect::<Vec<Option<Value<'gc>>>>())
-                .unwrap();
+                .unwrap()
+                .iter()
+                .collect::<Vec<Option<Value<'gc>>>>();
 
             let mut resolved = Vec::with_capacity(contents.len());
             for (i, v) in contents.iter().enumerate() {
@@ -790,7 +847,11 @@ pub fn splice<'gc>(
 
             let mut resolved_array = ArrayStorage::from_args(&resolved[..]);
 
-            if let Some(mut array) = this.as_array_storage_mut(activation.context.gc_context) {
+            if let Some(mut array) = this
+                .as_object()
+                .as_mut()
+                .and_then(|this| this.as_array_storage_mut(activation.context.gc_context))
+            {
                 swap(&mut *array, &mut resolved_array)
             }
 
@@ -804,7 +865,7 @@ pub fn splice<'gc>(
 /// Insert an element into a specific position of an array.
 pub fn insert_at<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     splice(
@@ -951,7 +1012,7 @@ pub fn compare_numeric<'gc>(
 /// Take a sorted set of values and produce the result requested by the caller.
 fn sort_postprocess<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     options: SortOptions,
     unique_satisfied: bool,
     values: Vec<(usize, Value<'gc>)>,
@@ -965,7 +1026,11 @@ fn sort_postprocess<'gc>(
                 ),
             );
         } else {
-            if let Some(mut old_array) = this.as_array_storage_mut(activation.context.gc_context) {
+            if let Some(mut old_array) = this
+                .as_object()
+                .as_mut()
+                .and_then(|this| this.as_array_storage_mut(activation.context.gc_context))
+            {
                 let new_vec = values
                     .iter()
                     .map(|(src, v)| {
@@ -984,7 +1049,7 @@ fn sort_postprocess<'gc>(
                 swap(&mut *old_array, &mut new_array);
             }
 
-            return Ok(this.into());
+            return Ok(this);
         }
     }
 
@@ -1011,7 +1076,12 @@ fn extract_array_values<'gc>(
 
     let mut unholey_vec = Vec::with_capacity(holey_vec.length());
     for (i, v) in holey_vec.iter().enumerate() {
-        unholey_vec.push(resolve_array_hole(activation, object.unwrap(), i, v)?);
+        unholey_vec.push(resolve_array_hole(
+            activation,
+            object.unwrap().into(),
+            i,
+            v,
+        )?);
     }
 
     Ok(Some(unholey_vec))
@@ -1020,7 +1090,7 @@ fn extract_array_values<'gc>(
 /// Impl `Array.sort`
 pub fn sort<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let (compare_fnc, options) = if args.len() > 1 {
@@ -1050,7 +1120,7 @@ pub fn sort<'gc>(
         }
     };
 
-    let mut values = if let Some(values) = extract_array_values(activation, this.into())? {
+    let mut values = if let Some(values) = extract_array_values(activation, this)? {
         values
             .iter()
             .enumerate()
@@ -1067,7 +1137,7 @@ pub fn sort<'gc>(
             options,
             constrain(|activation, a, b| {
                 let order = v
-                    .call(this.into(), &[a, b], activation)?
+                    .call(this, &[a, b], activation)?
                     .coerce_to_number(activation)?;
 
                 if order > 0.0 {
@@ -1155,7 +1225,7 @@ fn extract_maybe_array_sort_options<'gc>(
 /// Impl `Array.sortOn`
 pub fn sort_on<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(field_names_value) = args.get(0).cloned() {
@@ -1167,7 +1237,7 @@ pub fn sort_on<'gc>(
 
         let first_option = options.get(0).cloned().unwrap_or_else(SortOptions::empty)
             & (SortOptions::UNIQUE_SORT | SortOptions::RETURN_INDEXED_ARRAY);
-        let mut values = if let Some(values) = extract_array_values(activation, this.into())? {
+        let mut values = if let Some(values) = extract_array_values(activation, this)? {
             values
                 .iter()
                 .enumerate()
@@ -1232,10 +1302,14 @@ pub fn sort_on<'gc>(
 /// Implements `Array.removeAt`
 pub fn remove_at<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut array) = this.as_array_storage_mut(activation.context.gc_context) {
+    if let Some(mut array) = this
+        .as_object()
+        .as_mut()
+        .and_then(|this| this.as_array_storage_mut(activation.context.gc_context))
+    {
         let index = args
             .get(0)
             .cloned()

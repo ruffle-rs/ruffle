@@ -191,19 +191,23 @@ pub fn get_qualified_class_name<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     // This is a native method, which enforces the argument count.
     let val = args[0];
-    match val {
+    let class = match val {
         Value::Null => return Ok("null".into()),
         Value::Undefined => return Ok("void".into()),
-        _ => {}
-    }
-    let obj = val.coerce_to_object(activation)?;
-
-    let class = match obj.as_class_object() {
-        Some(class) => class,
-        None => match obj.instance_of() {
-            Some(cls) => cls,
-            None => return Ok(Value::Null),
-        },
+        Value::Object(obj) => {
+            if let Some(class) = obj.as_class_object() {
+                class
+            } else {
+                match obj.instance_of() {
+                    Some(cls) => cls,
+                    None => return Ok(Value::Null),
+                }
+            }
+        }
+        Value::Integer(_) => return Ok("int".into()),
+        Value::Number(_) => return Ok("Number".into()),
+        Value::Bool(_) => return Ok("Boolean".into()),
+        Value::String(_) => return Ok("String".into()),
     };
 
     Ok(class

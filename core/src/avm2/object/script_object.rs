@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::dynamic_map::{DynamicKey, DynamicMap};
 use crate::avm2::error;
 use crate::avm2::object::{ClassObject, FunctionObject, Object, ObjectPtr, TObject};
-use crate::avm2::value::Value;
+use crate::avm2::value::{default_get_property_local, maybe_int_property, Value};
 use crate::avm2::vtable::VTable;
 use crate::avm2::Multiname;
 use crate::avm2::{Error, QName};
@@ -78,14 +78,6 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     }
 }
 
-fn maybe_int_property(name: AvmString<'_>) -> DynamicKey<'_> {
-    if let Ok(val) = name.parse::<u32>() {
-        DynamicKey::Uint(val)
-    } else {
-        DynamicKey::String(name)
-    }
-}
-
 impl<'gc> ScriptObject<'gc> {
     /// Construct an instance with a possibly-none class and proto chain.
     /// NOTE: this is a low-level function.
@@ -152,62 +144,22 @@ impl<'gc> ScriptObjectData<'gc> {
         &self.values
     }
 
+    /// Runs the local property lookup logic on an object's ScriptObjectData
+    /// (only looking at the prototype and dynamic properties).
+    /// This is used by array-like objects (Array, ByteArray, and Vector)
+    /// to implement "base" local property lookup after trying their object-specific
+    /// logic.
     pub fn get_property_local(
-        &self,
+        this: Object<'gc>,
         multiname: &Multiname<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        if !multiname.contains_public_namespace() {
-            return Err(error::make_reference_error(
-                activation,
-                error::ReferenceErrorCode::InvalidRead,
-                multiname,
-                self.instance_of(),
-            ));
-        }
-
-        let Some(local_name) = multiname.local_name() else {
-            // when can this happen?
-            return Err(error::make_reference_error(
-                activation,
-                error::ReferenceErrorCode::InvalidRead,
-                multiname,
-                self.instance_of(),
-            ));
-        };
-
-        // Unbelievably cursed special case in avmplus:
-        // https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/ScriptObject.cpp#L195-L199
-        let key = maybe_int_property(local_name);
-        let value = self.values.as_hashmap().get(&key);
-        if let Some(value) = value {
-            return Ok(value.value);
-        }
-
-        // follow the prototype chain
-        let mut proto = self.proto();
-        while let Some(obj) = proto {
-            let obj = obj.base();
-            let value = obj.values.as_hashmap().get(&key);
-            if let Some(value) = value {
-                return Ok(value.value);
-            }
-            proto = obj.proto();
-        }
-
-        // Special case: Unresolvable properties on dynamic classes are treated
-        // as dynamic properties that have not yet been set, and yield
-        // `undefined`
-        if self.is_sealed() {
-            return Err(error::make_reference_error(
-                activation,
-                error::ReferenceErrorCode::InvalidRead,
-                multiname,
-                self.instance_of(),
-            ));
-        } else {
-            Ok(Value::Undefined)
-        }
+        default_get_property_local(
+            this.into(),
+            multiname,
+            Some(this.base().values.as_hashmap()),
+            activation,
+        )
     }
 
     pub fn set_property_local(
@@ -330,19 +282,6 @@ impl<'gc> ScriptObjectData<'gc> {
         self.bound_methods.get(id as usize).and_then(|v| *v)
     }
 
-    pub fn has_trait(&self, name: &Multiname<'gc>) -> bool {
-        match self.vtable {
-            //Class instances have instance traits from any class in the base
-            //class chain.
-            Some(vtable) => vtable.has_trait(name),
-
-            // bare objects do not have traits.
-            // TODO: should we have bare objects at all?
-            // Shouldn't every object have a vtable?
-            None => false,
-        }
-    }
-
     pub fn has_own_dynamic_property(&self, name: &Multiname<'gc>) -> bool {
         if name.contains_public_namespace() {
             if let Some(name) = name.local_name() {
@@ -354,7 +293,7 @@ impl<'gc> ScriptObjectData<'gc> {
     }
 
     pub fn has_own_property(&self, name: &Multiname<'gc>) -> bool {
-        self.has_trait(name) || self.has_own_dynamic_property(name)
+        self.vtable.map_or(false, |v| v.has_trait(name)) || self.has_own_dynamic_property(name)
     }
 
     pub fn proto(&self) -> Option<Object<'gc>> {

@@ -1,0 +1,6 @@
+'foo'.hasOwnProperty('toString'): false
+'foo'.hasOwnProperty('charAt'): false
+true.hasOwnProperty('toString'): false
+(20).hasOwnProperty('toString'): false
+(1.5).hasOwnProperty('toString'): false
+true.propertyIsEnumerable('dummy'): false

@@ -20,7 +20,7 @@ fn dispatch_list<'gc>(
         Value::Object(o) => Ok(o),
         _ => {
             let dispatch_list = DispatchObject::empty_list(activation.context.gc_context);
-            this.init_property(
+            Value::from(this).init_property(
                 &Multiname::new(activation.avm2().flash_events_internal, "_dispatchList"),
                 dispatch_list.into(),
                 activation,

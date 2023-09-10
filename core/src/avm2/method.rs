@@ -1,7 +1,7 @@
 //! AVM2 methods
 
 use crate::avm2::activation::Activation;
-use crate::avm2::object::{ClassObject, Object};
+use crate::avm2::object::ClassObject;
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::value::{abc_default_value, Value};
 use crate::avm2::verify::VerifiedMethodInfo;
@@ -34,7 +34,7 @@ use swf::avm2::types::{
 /// Native functions are allowed to return a Value or an Error.
 pub type NativeMethodImpl = for<'gc> fn(
     &mut Activation<'_, 'gc>,
-    Object<'gc>,
+    Value<'gc>,
     &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>>;
 

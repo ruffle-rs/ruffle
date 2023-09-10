@@ -21,7 +21,7 @@ pub fn native_instance_init<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    activation.super_init(this, &[])?;
+    activation.super_init(this.into(), &[])?;
 
     Ok(Value::Undefined)
 }

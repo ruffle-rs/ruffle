@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::object::{primitive_allocator, FunctionObject, Object, TObject};
+use crate::avm2::object::{primitive_allocator, FunctionObject, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
@@ -12,28 +12,17 @@ use gc_arena::GcCell;
 
 /// Implements `Boolean`'s instance initializer.
 fn instance_init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
+    _activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut prim) = this.as_primitive_mut(activation.context.gc_context) {
-        if matches!(*prim, Value::Undefined | Value::Null) {
-            *prim = args
-                .get(0)
-                .cloned()
-                .unwrap_or(Value::Bool(false))
-                .coerce_to_boolean()
-                .into();
-        }
-    }
-
-    Ok(Value::Undefined)
+    unreachable!()
 }
 
 /// Implements `Boolean`'s native instance initializer.
 fn native_instance_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     activation.super_init(this, args)?;
@@ -44,12 +33,12 @@ fn native_instance_init<'gc>(
 /// Implements `Boolean`'s class initializer.
 fn class_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let scope = activation.create_scopechain();
     let gc_context = activation.context.gc_context;
-    let this_class = this.as_class_object().unwrap();
+    let this_class = this.as_object().unwrap().as_class_object().unwrap();
     let boolean_proto = this_class.prototype();
 
     boolean_proto.set_string_property_local(
@@ -84,7 +73,7 @@ fn class_init<'gc>(
 
 pub fn call_handler<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(args
@@ -98,15 +87,13 @@ pub fn call_handler<'gc>(
 /// Implements `Boolean.toString`
 fn to_string<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.as_primitive() {
-        match *this {
-            Value::Bool(true) => return Ok("true".into()),
-            Value::Bool(false) => return Ok("false".into()),
-            _ => {}
-        };
+    match this {
+        Value::Bool(true) => return Ok("true".into()),
+        Value::Bool(false) => return Ok("false".into()),
+        _ => {}
     }
 
     Ok("false".into())
@@ -115,14 +102,13 @@ fn to_string<'gc>(
 /// Implements `Boolean.valueOf`
 fn value_of<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.as_primitive() {
-        return Ok(*this);
+    match this {
+        Value::Bool(_) | Value::String(_) | Value::Number(_) | Value::Integer(_) => Ok(this),
+        _ => Ok(false.into()),
     }
-
-    Ok(false.into())
 }
 
 /// Construct `Boolean`'s class.

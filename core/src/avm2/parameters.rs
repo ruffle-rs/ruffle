@@ -1,5 +1,4 @@
 use crate::avm2::error::type_error;
-use crate::avm2::object::PrimitiveObject;
 use crate::avm2::Object;
 use crate::avm2::{Activation, Error, Value};
 use crate::string::AvmString;
@@ -11,6 +10,13 @@ use crate::string::AvmString;
 pub trait ParametersExt<'gc> {
     /// Gets the value at the given index.
     fn get_value(&self, index: usize) -> Value<'gc>;
+
+    fn get_value_non_null(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        index: usize,
+        name: &'static str,
+    ) -> Result<Value<'gc>, Error<'gc>>;
 
     /// Gets the value at the given index and coerces it to an Object.
     ///
@@ -100,6 +106,18 @@ impl<'gc> ParametersExt<'gc> for &[Value<'gc>] {
         self[index]
     }
 
+    fn get_value_non_null(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        index: usize,
+        name: &'static str,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        match self[index] {
+            Value::Null | Value::Undefined => Err(null_parameter_error(activation, name)),
+            val => Ok(val),
+        }
+    }
+
     fn get_object(
         &self,
         activation: &mut Activation<'_, 'gc>,
@@ -109,23 +127,19 @@ impl<'gc> ParametersExt<'gc> for &[Value<'gc>] {
         match self[index] {
             Value::Null | Value::Undefined => Err(null_parameter_error(activation, name)),
             Value::Object(o) => Ok(o),
-            primitive => Ok(PrimitiveObject::from_primitive(primitive, activation)
-                .expect("Primitive object is infallible at this point")),
+            primitive => panic!("get_object on primitive {:?}", primitive),
         }
     }
 
     fn try_get_object(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        _activation: &mut Activation<'_, 'gc>,
         index: usize,
     ) -> Option<Object<'gc>> {
         match self[index] {
             Value::Null | Value::Undefined => None,
             Value::Object(o) => Some(o),
-            primitive => Some(
-                PrimitiveObject::from_primitive(primitive, activation)
-                    .expect("Primitive object is infallible at this point"),
-            ),
+            primitive => panic!("get_object on primitive {:?}", primitive),
         }
     }
 

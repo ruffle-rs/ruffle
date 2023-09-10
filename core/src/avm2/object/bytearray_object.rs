@@ -118,8 +118,6 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
         name: &Multiname<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let read = self.0.read();
-
         if name.contains_public_namespace() {
             if let Some(name) = name.local_name() {
                 if let Ok(index) = name.parse::<usize>() {
@@ -128,7 +126,7 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
             }
         }
 
-        read.base.get_property_local(name, activation)
+        ScriptObjectData::get_property_local(self.into(), name, activation)
     }
 
     fn get_index_property(self, index: usize) -> Option<Value<'gc>> {

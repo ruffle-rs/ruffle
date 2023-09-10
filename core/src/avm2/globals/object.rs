@@ -14,7 +14,7 @@ use gc_arena::GcCell;
 /// Implements `Object`'s instance initializer.
 pub fn instance_init<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(Value::Undefined)
@@ -22,7 +22,7 @@ pub fn instance_init<'gc>(
 
 fn class_call<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this_class = activation.subclass_object().unwrap();
@@ -40,12 +40,12 @@ fn class_call<'gc>(
 /// Implements `Object`'s class initializer
 pub fn class_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let scope = activation.create_scopechain();
     let gc_context = activation.context.gc_context;
-    let this_class = this.as_class_object().unwrap();
+    let this_class = this.as_object().unwrap().as_class_object().unwrap();
     let object_proto = this_class.prototype();
 
     object_proto.set_string_property_local(
@@ -155,7 +155,7 @@ pub fn class_init<'gc>(
 /// Implements `Object.prototype.toString`
 fn to_string<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     this.to_string(activation)
@@ -164,7 +164,7 @@ fn to_string<'gc>(
 /// Implements `Object.prototype.toLocaleString`
 fn to_locale_string<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     this.to_locale_string(activation)
@@ -173,16 +173,20 @@ fn to_locale_string<'gc>(
 /// Implements `Object.prototype.valueOf`
 fn value_of<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    this.value_of(activation.context.gc_context)
+    if let Some(obj) = this.as_object() {
+        obj.value_of(activation.context.gc_context)
+    } else {
+        Ok(this)
+    }
 }
 
 /// `Object.prototype.hasOwnProperty`
 pub fn has_own_property<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let name: Result<&Value<'gc>, Error<'gc>> =
@@ -195,17 +199,19 @@ pub fn has_own_property<'gc>(
 /// `Object.prototype.isPrototypeOf`
 pub fn is_prototype_of<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let mut target_proto = args.get(0).cloned().unwrap_or(Value::Undefined);
 
-    while let Value::Object(proto) = target_proto {
-        if Object::ptr_eq(this, proto) {
-            return Ok(true.into());
-        }
+    if let Some(this) = this.as_object() {
+        while let Value::Object(proto) = target_proto {
+            if Object::ptr_eq(this, proto) {
+                return Ok(true.into());
+            }
 
-        target_proto = proto.proto().map(|o| o.into()).unwrap_or(Value::Undefined);
+            target_proto = proto.proto().map(|o| o.into()).unwrap_or(Value::Undefined);
+        }
     }
 
     Ok(false.into())
@@ -214,20 +220,25 @@ pub fn is_prototype_of<'gc>(
 /// `Object.prototype.propertyIsEnumerable`
 pub fn property_is_enumerable<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let name: Result<&Value<'gc>, Error<'gc>> =
         args.get(0).ok_or_else(|| "No name specified".into());
     let name = name?.coerce_to_string(activation)?;
 
-    Ok(this.property_is_enumerable(name).into())
+    if let Some(object) = this.as_object() {
+        Ok(object.property_is_enumerable(name).into())
+    } else {
+        // Primitives never have enumerable properties
+        Ok(false.into())
+    }
 }
 
 /// `Object.prototype.setPropertyIsEnumerable`
 pub fn set_property_is_enumerable<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let name: Result<&Value<'gc>, Error<'gc>> =
@@ -235,7 +246,9 @@ pub fn set_property_is_enumerable<'gc>(
     let name = name?.coerce_to_string(activation)?;
 
     if let Some(Value::Bool(is_enum)) = args.get(1) {
-        this.set_local_property_is_enumerable(activation.context.gc_context, name, *is_enum);
+        if let Some(object) = this.as_object() {
+            object.set_local_property_is_enumerable(activation.context.gc_context, name, *is_enum);
+        }
     }
 
     Ok(Value::Undefined)
@@ -244,7 +257,7 @@ pub fn set_property_is_enumerable<'gc>(
 /// Undocumented `Object.init`, which is a no-op
 pub fn init<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(Value::Undefined)

@@ -78,7 +78,7 @@ pub fn call_handler<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if args.len() == 1 {
         // We do *not* create a new object when AS does 'XMLList(someXMLList)'
-        if let Some(obj) = args.try_get_object(activation, 0) {
+        if let Some(obj) = args[0].as_object() {
             if let Some(xml_list) = obj.as_xml_list_object() {
                 return Ok(xml_list.into());
             }

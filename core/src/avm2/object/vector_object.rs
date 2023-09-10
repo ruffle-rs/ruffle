@@ -113,7 +113,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
             }
         }
 
-        read.base.get_property_local(name, activation)
+        ScriptObjectData::get_property_local(self.into(), name, activation)
     }
 
     fn get_index_property(self, index: usize) -> Option<Value<'gc>> {

@@ -43,7 +43,7 @@ fn deserialize_json_inner<'gc>(
                     Some(reviver) => reviver.call(Value::Null, &[key.into(), val], activation)?,
                 };
                 if matches!(mapped_val, Value::Undefined) {
-                    obj.delete_public_property(activation, key)?;
+                    Value::from(obj).delete_public_property(activation, key)?;
                 } else {
                     obj.set_public_property(key, mapped_val, activation)?;
                 }
@@ -199,7 +199,7 @@ impl<'gc> AvmSerializer<'gc> {
         iterable: Object<'gc>,
     ) -> Result<JsonValue, Error<'gc>> {
         let mut js_arr = Vec::new();
-        let mut iter = ArrayIter::new(activation, iterable)?;
+        let mut iter = ArrayIter::new(activation, iterable.into())?;
         while let Some(r) = iter.next(activation) {
             let (i, item) = r?;
             let mc = activation.context.gc_context;
@@ -223,10 +223,6 @@ impl<'gc> AvmSerializer<'gc> {
             Value::Bool(b) => JsonValue::from(b),
             Value::String(s) => JsonValue::from(s.to_utf8_lossy().deref()),
             Value::Object(obj) => {
-                // special case for boxed primitives
-                if let Some(prim) = obj.as_primitive() {
-                    return self.serialize_value(activation, *prim);
-                }
                 if self.obj_stack.contains(&obj) {
                     return Err(Error::AvmError(type_error(
                         activation,
@@ -292,7 +288,7 @@ pub fn stringify<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let val = args.get_value(0);
-    let replacer = args.try_get_object(activation, 1);
+    let replacer = args[1].as_object();
     let spaces = args.get_value(2);
 
     // If the replacer is None, that means it was either undefined or null.

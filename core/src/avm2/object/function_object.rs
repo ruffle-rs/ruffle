@@ -115,7 +115,7 @@ impl<'gc> FunctionObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         method: Method<'gc>,
         scope: ScopeChain<'gc>,
-        receiver: Option<Object<'gc>>,
+        receiver: Option<Value<'gc>>,
         subclass_object: Option<ClassObject<'gc>>,
     ) -> FunctionObject<'gc> {
         let fn_class = activation.avm2().classes().function;

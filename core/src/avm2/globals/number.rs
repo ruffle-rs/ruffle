@@ -13,28 +13,17 @@ use gc_arena::GcCell;
 
 /// Implements `Number`'s instance initializer.
 fn instance_init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
+    _activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut prim) = this.as_primitive_mut(activation.context.gc_context) {
-        if matches!(*prim, Value::Undefined | Value::Null) {
-            *prim = args
-                .get(0)
-                .cloned()
-                .unwrap_or(Value::Number(0.0))
-                .coerce_to_number(activation)?
-                .into();
-        }
-    }
-
-    Ok(Value::Undefined)
+    unreachable!()
 }
 
 /// Implements `Number`'s native instance initializer.
 fn native_instance_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     activation.super_init(this, args)?;
@@ -45,12 +34,12 @@ fn native_instance_init<'gc>(
 /// Implements `Number`'s class initializer.
 fn class_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let scope = activation.create_scopechain();
     let gc_context = activation.context.gc_context;
-    let this_class = this.as_class_object().unwrap();
+    let this_class = this.as_object().unwrap().as_class_object().unwrap();
     let number_proto = this_class.prototype();
 
     number_proto.set_string_property_local(
@@ -137,7 +126,7 @@ fn class_init<'gc>(
 
 pub fn call_handler<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(args
@@ -151,10 +140,10 @@ pub fn call_handler<'gc>(
 /// Implements `Number.toExponential`
 pub fn to_exponential<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let number = Value::from(this).coerce_to_number(activation)?;
+    let number = this.coerce_to_number(activation)?;
 
     let digits = args
         .get(0)
@@ -181,10 +170,10 @@ pub fn to_exponential<'gc>(
 /// Implements `Number.toFixed`
 pub fn to_fixed<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let number = Value::from(this).coerce_to_number(activation)?;
+    let number = this.coerce_to_number(activation)?;
 
     let digits = args
         .get(0)
@@ -237,10 +226,10 @@ pub fn print_with_precision<'gc>(
 /// Implements `Number.toPrecision`
 pub fn to_precision<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let number = Value::from(this).coerce_to_number(activation)?;
+    let number = this.coerce_to_number(activation)?;
 
     let wanted_digits = args.get(0).cloned().unwrap_or(Value::Integer(0));
 
@@ -314,22 +303,20 @@ pub fn print_with_radix<'gc>(
 /// Implements `Number.toString`
 fn to_string<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let number_proto = activation.avm2().classes().number.prototype();
-    if Object::ptr_eq(number_proto, this) {
-        return Ok("0".into());
+    if let Some(this) = this.as_object() {
+        let number_proto = activation.avm2().classes().number.prototype();
+        if Object::ptr_eq(number_proto, this) {
+            return Ok("0".into());
+        }
     }
 
-    let number = if let Some(this) = this.as_primitive() {
-        match *this {
-            Value::Integer(o) => o as f64,
-            Value::Number(o) => o,
-            _ => return Err(make_error_1004(activation, "Number.prototype.toString")),
-        }
-    } else {
-        return Err(make_error_1004(activation, "Number.prototype.toString"));
+    let number = match this {
+        Value::Integer(o) => o as f64,
+        Value::Number(o) => o,
+        _ => return Err(make_error_1004(activation, "Number.prototype.toString")),
     };
 
     let radix = args
@@ -348,22 +335,20 @@ fn to_string<'gc>(
 /// Implements `Number.valueOf`
 fn value_of<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let number_proto = activation.avm2().classes().number.prototype();
-    if Object::ptr_eq(number_proto, this) {
-        return Ok(0.into());
+    if let Some(this) = this.as_object() {
+        let number_proto = activation.avm2().classes().number.prototype();
+        if Object::ptr_eq(number_proto, this) {
+            return Ok(0.into());
+        }
     }
 
-    if let Some(this) = this.as_primitive() {
-        match *this {
-            Value::Integer(_) => Ok(*this),
-            Value::Number(_) => Ok(*this),
-            _ => Err(make_error_1004(activation, "Number.prototype.valueOf")),
-        }
-    } else {
-        Err(make_error_1004(activation, "Number.prototype.valueOf"))
+    match this {
+        Value::Integer(_) => Ok(this),
+        Value::Number(_) => Ok(this),
+        _ => Err(make_error_1004(activation, "Number.prototype.valueOf")),
     }
 }
 

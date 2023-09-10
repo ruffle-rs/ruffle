@@ -302,7 +302,7 @@ impl<'gc> Avm2<'gc> {
                     .context
                     .avm2
                     .push_global_init(init_activation.context.gc_context, script);
-                let r = (method.method)(&mut init_activation, scope, &[]);
+                let r = (method.method)(&mut init_activation, scope.into(), &[]);
                 init_activation
                     .context
                     .avm2
@@ -608,15 +608,7 @@ impl<'gc> Avm2<'gc> {
             self.stack_overflow();
             return;
         }
-        let mut value = value.into();
-        if let Value::Object(o) = value {
-            // this is hot, so let's avoid a non-inlined call here
-            if let Object::PrimitiveObject(_) = o {
-                if let Some(prim) = o.as_primitive() {
-                    value = *prim;
-                }
-            }
-        }
+        let value = value.into();
 
         avm_debug!(self, "Stack push {}: {value:?}", self.stack.len());
         self.stack.push(value);

@@ -71,7 +71,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
     ) -> Result<Value<'gc>, Error<'gc>> {
         let qname = QNameObject::from_name(activation, multiname.clone())?;
 
-        self.call_property(
+        Value::from(self).call_property(
             &Multiname::new(activation.avm2().proxy_namespace, "getProperty"),
             &[qname.into()],
             activation,
@@ -86,7 +86,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
     ) -> Result<(), Error<'gc>> {
         let qname = QNameObject::from_name(activation, multiname.clone())?;
 
-        self.call_property(
+        Value::from(self).call_property(
             &Multiname::new(activation.avm2().proxy_namespace, "setProperty"),
             &[qname.into(), value],
             activation,
@@ -105,7 +105,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         let mut args = vec![qname.into()];
         args.extend_from_slice(arguments);
 
-        self.call_property(
+        Value::from(self).call_property(
             &Multiname::new(activation.avm2().proxy_namespace, "callProperty"),
             &args,
             activation,
@@ -119,7 +119,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
     ) -> Result<bool, Error<'gc>> {
         let qname = QNameObject::from_name(activation, multiname.clone())?;
 
-        Ok(self
+        Ok(Value::from(self)
             .call_property(
                 &Multiname::new(activation.avm2().proxy_namespace, "deleteProperty"),
                 &[qname.into()],
@@ -133,7 +133,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         name: &Multiname<'gc>,
     ) -> Result<bool, Error<'gc>> {
-        Ok(self
+        Ok(Value::from(self)
             .call_property(
                 &Multiname::new(activation.avm2().proxy_namespace, "hasProperty"),
                 &[name
@@ -151,12 +151,13 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Option<u32>, Error<'gc>> {
         Ok(Some(
-            self.call_property(
-                &Multiname::new(activation.avm2().proxy_namespace, "nextNameIndex"),
-                &[last_index.into()],
-                activation,
-            )?
-            .coerce_to_u32(activation)?,
+            Value::from(self)
+                .call_property(
+                    &Multiname::new(activation.avm2().proxy_namespace, "nextNameIndex"),
+                    &[last_index.into()],
+                    activation,
+                )?
+                .coerce_to_u32(activation)?,
         ))
     }
 
@@ -165,7 +166,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         index: u32,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        self.call_property(
+        Value::from(self).call_property(
             &Multiname::new(activation.avm2().proxy_namespace, "nextName"),
             &[index.into()],
             activation,
@@ -177,7 +178,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         index: u32,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        self.call_property(
+        Value::from(self).call_property(
             &Multiname::new(activation.avm2().proxy_namespace, "nextValue"),
             &[index.into()],
             activation,

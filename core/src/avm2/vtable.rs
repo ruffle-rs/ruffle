@@ -1,7 +1,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::metadata::Metadata;
 use crate::avm2::method::Method;
-use crate::avm2::object::{ClassObject, FunctionObject, Object};
+use crate::avm2::object::{ClassObject, FunctionObject};
 use crate::avm2::property::{Property, PropertyClass};
 use crate::avm2::property_map::PropertyMap;
 use crate::avm2::scope::ScopeChain;
@@ -522,7 +522,7 @@ impl<'gc> VTable<'gc> {
     pub fn make_bound_method(
         self,
         activation: &mut Activation<'_, 'gc>,
-        receiver: Object<'gc>,
+        receiver: Value<'gc>,
         disp_id: u32,
     ) -> Option<FunctionObject<'gc>> {
         if let Some(ClassBoundMethod {

@@ -2,6 +2,8 @@
 //! `library.swf`
 
 use convert_case::{Boundary, Case, Casing};
+use proc_macro2::Ident;
+use proc_macro2::Span;
 use proc_macro2::TokenStream;
 use quote::quote;
 use regex::RegexBuilder;
@@ -208,6 +210,7 @@ fn rust_method_name_and_path(
     parent: Option<Index<Multiname>>,
     prefix: &str,
     suffix: &str,
+    shims: Option<&mut Vec<TokenStream>>,
 ) -> TokenStream {
     let mut path = "crate::avm2::globals::".to_string();
 
@@ -271,7 +274,27 @@ fn rust_method_name_and_path(
     // generate a reference to the function pointer that should exist
     // at that path in Rust code.
     let path_tokens = TokenStream::from_str(&path).unwrap();
-    quote! { Some((#flash_method_path, #path_tokens)) }
+
+    if let Some(shims) = shims {
+        let shim_suffix = path.replace("::", "_");
+        let shim_name = Ident::new(&format!("shim_method_{shim_suffix}"), Span::call_site());
+
+        shims.push(quote! {
+            #[allow(non_snake_case)]
+            pub fn #shim_name<'gc>(
+                activation: &mut crate::avm2::Activation<'_, 'gc>,
+                this: crate::avm2::Value<'gc>,
+                args: &[crate::avm2::Value<'gc>],
+            ) -> Result<crate::avm2::Value<'gc>, crate::avm2::Error<'gc>> {
+                let this = this.as_object().expect("Called with primitive!");
+                #path_tokens(activation, this, args)
+            }
+        });
+
+        quote! { Some((#flash_method_path, #shim_name as crate::avm2::method::NativeMethodImpl)) }
+    } else {
+        quote! { Some((#flash_method_path, #path_tokens)) }
+    }
 }
 
 fn strip_metadata(abc: &mut AbcFile) {
@@ -325,43 +348,48 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
     let mut rust_native_instance_initializers = vec![none_tokens.clone(); abc.classes.len()];
     let mut rust_call_handlers = vec![none_tokens; abc.classes.len()];
 
-    let mut check_trait = |trait_: &Trait, parent: Option<Index<Multiname>>| {
-        let method_id = match trait_.kind {
-            TraitKind::Method { method, .. }
-            | TraitKind::Getter { method, .. }
-            | TraitKind::Setter { method, .. } => {
-                let abc_method = &abc.methods[method.0 as usize];
-                // We only want to process native methods
-                if !abc_method.flags.contains(MethodFlags::NATIVE) {
-                    return;
+    let mut shims = Vec::new();
+
+    let mut check_trait =
+        |trait_: &Trait, parent: Option<Index<Multiname>>, shims: &mut Vec<TokenStream>| {
+            let method_id = match trait_.kind {
+                TraitKind::Method { method, .. }
+                | TraitKind::Getter { method, .. }
+                | TraitKind::Setter { method, .. } => {
+                    let abc_method = &abc.methods[method.0 as usize];
+                    // We only want to process native methods
+                    if !abc_method.flags.contains(MethodFlags::NATIVE) {
+                        return;
+                    }
+                    method
                 }
-                method
-            }
-            TraitKind::Function { .. } => {
-                panic!("TraitKind::Function is not supported: {trait_:?}")
-            }
-            _ => return,
-        };
+                TraitKind::Function { .. } => {
+                    panic!("TraitKind::Function is not supported: {trait_:?}")
+                }
+                _ => return,
+            };
 
-        // Note - technically, this could conflict with
-        // a method with a name starting with `get_` or `set_`.
-        // However, all Flash methods are named with lowerCamelCase,
-        // so we'll never actually need to implement a native method that
-        // would cause such a conflict.
-        let method_prefix = match trait_.kind {
-            TraitKind::Getter { .. } => "get_",
-            TraitKind::Setter { .. } => "set_",
-            _ => "",
-        };
+            // Note - technically, this could conflict with
+            // a method with a name starting with `get_` or `set_`.
+            // However, all Flash methods are named with lowerCamelCase,
+            // so we'll never actually need to implement a native method that
+            // would cause such a conflict.
+            let method_prefix = match trait_.kind {
+                TraitKind::Getter { .. } => "get_",
+                TraitKind::Setter { .. } => "set_",
+                _ => "",
+            };
 
-        rust_paths[method_id.0 as usize] =
-            rust_method_name_and_path(&abc, trait_, parent, method_prefix, "");
-    };
+            let method_path =
+                rust_method_name_and_path(&abc, trait_, parent, method_prefix, "", Some(shims));
+
+            rust_paths[method_id.0 as usize] = method_path;
+        };
 
     // Look for `[Ruffle(InstanceAllocator)]` metadata - if present,
     // generate a reference to an allocator function in the native instance
     // allocators table.
-    let mut check_instance_allocator = |trait_: &Trait| {
+    let mut check_instance_allocator = |trait_: &Trait, shims: &mut Vec<TokenStream>| {
         let class_id = if let TraitKind::Class { class, .. } = trait_.kind {
             class.0
         } else {
@@ -408,6 +436,7 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
                             None,
                             "",
                             &instance_allocator_method_name,
+                            None,
                         );
                     }
                     (None, METADATA_NATIVE_INSTANCE_INIT) if !is_versioning => {
@@ -418,6 +447,7 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
                                 None,
                                 "",
                                 &native_instance_init_method_name,
+                                Some(shims),
                             )
                     }
                     (None, METADATA_CALL_HANDLER) if !is_versioning => {
@@ -427,6 +457,7 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
                             None,
                             "",
                             &call_handler_method_name,
+                            Some(shims),
                         )
                     }
                     (None, _) if is_versioning => {}
@@ -443,24 +474,27 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
     for (i, instance) in abc.instances.iter().enumerate() {
         // Look for native instance methods
         for trait_ in &instance.traits {
-            check_trait(trait_, Some(instance.name));
+            check_trait(trait_, Some(instance.name), &mut shims);
         }
         // Look for native class methods (in the corresponding
         // `Class` definition)
         for trait_ in &abc.classes[i].traits {
-            check_trait(trait_, Some(instance.name));
+            check_trait(trait_, Some(instance.name), &mut shims);
         }
     }
 
     // Look for freestanding methods
     for script in &abc.scripts {
         for trait_ in &script.traits {
-            check_trait(trait_, None);
-            check_instance_allocator(trait_);
+            check_trait(trait_, None, &mut shims);
+            check_instance_allocator(trait_, &mut shims);
         }
     }
     // Finally, generate the actual code.
     let make_native_table = quote! {
+
+        #(#shims)*
+
         // This is a Rust array -
         // the entry at index `i` is the method name and Rust function pointer for the native
         // method with id `i`. Not all methods in playerglobal will be native

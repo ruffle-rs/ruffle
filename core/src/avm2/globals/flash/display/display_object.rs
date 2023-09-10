@@ -69,7 +69,7 @@ pub fn native_instance_init<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    activation.super_init(this, &[])?;
+    activation.super_init(this.into(), &[])?;
 
     if let Some(dobj) = this.as_display_object() {
         if let Some(clip) = dobj.as_movie_clip() {
@@ -312,13 +312,14 @@ pub fn set_filters<'gc>(
                         if matches!(filter, Value::Undefined | Value::Null) {
                             return build_argument_type_error(activation);
                         } else {
-                            let filter_object = filter.coerce_to_object(activation)?;
-
-                            if !filter_object.is_of_type(filter_class, &mut activation.context) {
+                            if !filter.is_of_type(activation, filter_class) {
                                 return build_argument_type_error(activation);
                             }
 
-                            filter_vec.push(Filter::from_avm2_object(activation, filter_object)?);
+                            filter_vec.push(Filter::from_avm2_object(
+                                activation,
+                                filter.as_object().unwrap(),
+                            )?);
                         }
                     }
 

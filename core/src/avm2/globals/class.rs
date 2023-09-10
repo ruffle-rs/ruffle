@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::object::{Object, TObject};
+use crate::avm2::object::TObject;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
@@ -16,7 +16,7 @@ use gc_arena::GcCell;
 /// error.
 pub fn instance_init<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Err("Classes cannot be constructed.".into())
@@ -25,7 +25,7 @@ pub fn instance_init<'gc>(
 /// Implement's `Class`'s class initializer.
 pub fn class_init<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(Value::Undefined)
@@ -33,10 +33,10 @@ pub fn class_init<'gc>(
 
 fn prototype<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(class) = this.as_class_object() {
+    if let Some(class) = this.as_object().and_then(|this| this.as_class_object()) {
         return Ok(class.prototype().into());
     }
 

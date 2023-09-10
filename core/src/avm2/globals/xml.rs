@@ -440,7 +440,7 @@ pub fn call_handler<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if args.len() == 1 {
-        if let Some(obj) = args.try_get_object(activation, 0) {
+        if let Some(obj) = args[0].as_object() {
             // We do *not* create a new object when AS does 'XML(someXML)'
             if let Some(xml) = obj.as_xml_object() {
                 return Ok(xml.into());
