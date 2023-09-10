@@ -563,6 +563,76 @@ impl<'gc> NetStream<'gc> {
         Ok(())
     }
 
+    /// Attempt to sniff the stream type from data in the buffer.
+    ///
+    /// Returns true if the stream type was successfully sniffed. False
+    /// indicates that there is either not enough data in the buffer, or the
+    /// data is of an unrecognized format. This should be used as a signal to
+    /// stop stream processing until new data has been retrieved.
+    pub fn sniff_stream_type(self, context: &mut UpdateContext<'_, 'gc>) -> bool {
+        #![allow(clippy::explicit_auto_deref)] //Erroneous lint
+        let mut write = self.0.write(context.gc_context);
+        let slice = write.buffer.to_full_slice();
+        let buffer = slice.data();
+
+        // A nonzero preload offset indicates that we tried and failed to
+        // sniff the container format, so in that case do not process the
+        // stream anymore.
+        if write.preload_offset > 0 {
+            return false;
+        }
+
+        match buffer.get(0..3) {
+            Some([0x46, 0x4C, 0x56]) => {
+                let mut reader = FlvReader::from_parts(&*buffer, write.offset);
+                match FlvHeader::parse(&mut reader) {
+                    Ok(header) => {
+                        write.offset = reader.into_parts().1;
+                        write.preload_offset = write.offset;
+                        write.stream_type = Some(NetStreamType::Flv {
+                            header,
+                            video_stream: None,
+                            frame_id: 0,
+                        });
+                        true
+                    }
+                    Err(FlvError::EndOfData) => return false,
+                    Err(e) => {
+                        //TODO: Fire an error event to AS & stop playing too
+                        tracing::error!("FLV header parsing failed: {}", e);
+                        write.preload_offset = 3;
+                        return false;
+                    }
+                }
+            }
+            Some(magic) => {
+                //Unrecognized signature
+                //TODO: Fire an error event to AS & stop playing too
+                tracing::error!("Unrecognized file signature: {:?}", magic);
+                write.preload_offset = 3;
+                if let Some(url) = &write.url {
+                    if url.is_empty() {
+                        return false;
+                    }
+                    let parsed_url = match context.navigator.resolve_url(url) {
+                        Ok(parsed_url) => parsed_url,
+                        Err(e) => {
+                            tracing::error!(
+                                "Could not parse URL because of {}, the corrupt URL was: {}",
+                                e,
+                                url
+                            );
+                            return false;
+                        }
+                    };
+                    context.ui.display_unsupported_video(parsed_url);
+                }
+                return false;
+            }
+            None => false, //Data not yet loaded
+        }
+    }
+
     /// Process a parsed FLV video tag.
     ///
     /// `write` must be an active borrow of the current `NetStream`. `slice`
@@ -798,71 +868,16 @@ impl<'gc> NetStream<'gc> {
     }
 
     pub fn tick(self, context: &mut UpdateContext<'_, 'gc>, dt: f64) {
-        #![allow(clippy::explicit_auto_deref)] //Erroneous lint
+        // Ensure the container stream type is known before continuing.
+        if self.0.read().stream_type.is_none() && !self.sniff_stream_type(context) {
+            return;
+        }
+
         let mut write = self.0.write(context.gc_context);
 
         self.cleanup_sound_stream(context, &mut write);
         let slice = write.buffer.to_full_slice();
         let buffer = slice.data();
-
-        // First, try to sniff the stream's container format from headers.
-        if write.stream_type.is_none() {
-            // A nonzero preload offset indicates that we tried and failed to
-            // sniff the container format, so in that case do not process the
-            // stream anymore.
-            if write.preload_offset > 0 {
-                return;
-            }
-
-            match buffer.get(0..3) {
-                Some([0x46, 0x4C, 0x56]) => {
-                    let mut reader = FlvReader::from_parts(&*buffer, write.offset);
-                    match FlvHeader::parse(&mut reader) {
-                        Ok(header) => {
-                            write.offset = reader.into_parts().1;
-                            write.preload_offset = write.offset;
-                            write.stream_type = Some(NetStreamType::Flv {
-                                header,
-                                video_stream: None,
-                                frame_id: 0,
-                            });
-                        }
-                        Err(FlvError::EndOfData) => return,
-                        Err(e) => {
-                            //TODO: Fire an error event to AS & stop playing too
-                            tracing::error!("FLV header parsing failed: {}", e);
-                            write.preload_offset = 3;
-                            return;
-                        }
-                    }
-                }
-                Some(magic) => {
-                    //Unrecognized signature
-                    //TODO: Fire an error event to AS & stop playing too
-                    tracing::error!("Unrecognized file signature: {:?}", magic);
-                    write.preload_offset = 3;
-                    if let Some(url) = &write.url {
-                        if url.is_empty() {
-                            return;
-                        }
-                        let parsed_url = match context.navigator.resolve_url(url) {
-                            Ok(parsed_url) => parsed_url,
-                            Err(e) => {
-                                tracing::error!(
-                                    "Could not parse URL because of {}, the corrupt URL was: {}",
-                                    e,
-                                    url
-                                );
-                                return;
-                            }
-                        };
-                        context.ui.display_unsupported_video(parsed_url);
-                    }
-                    return;
-                }
-                None => return, //Data not yet loaded
-            }
-        }
 
         let end_time = write.stream_time + dt;
         let mut end_of_video = false;
