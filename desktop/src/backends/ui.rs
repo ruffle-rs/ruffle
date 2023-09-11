@@ -116,7 +116,7 @@ impl UiBackend for DesktopUiBackend {
             let confirm = MessageDialog::new()
                 .set_title("Open website?")
                 .set_level(MessageLevel::Info)
-                .set_description(&message)
+                .set_description(message)
                 .set_buttons(MessageButtons::OkCancel)
                 .show()
                 == MessageDialogResult::Ok;

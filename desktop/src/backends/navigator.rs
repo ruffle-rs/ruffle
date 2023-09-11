@@ -145,7 +145,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
             let confirm = MessageDialog::new()
                 .set_title("Open website?")
                 .set_level(MessageLevel::Info)
-                .set_description(&message)
+                .set_description(message)
                 .set_buttons(MessageButtons::OkCancel)
                 .show()
                 == MessageDialogResult::Ok;
@@ -209,7 +209,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                         if e.kind() == ErrorKind::PermissionDenied {
                             let attempt_sandbox_open = MessageDialog::new()
                                 .set_level(MessageLevel::Warning)
-                                .set_description(&format!("The current movie is attempting to read files stored in {}.\n\nTo allow it to do so, click Yes, and then Open to grant read access to that directory.\n\nOtherwise, click No to deny access.", path.parent().unwrap_or(&path).to_string_lossy()))
+                                .set_description(format!("The current movie is attempting to read files stored in {}.\n\nTo allow it to do so, click Yes, and then Open to grant read access to that directory.\n\nOtherwise, click No to deny access.", path.parent().unwrap_or(&path).to_string_lossy()))
                                 .set_buttons(MessageButtons::YesNo)
                                 .show() == MessageDialogResult::Yes;
 
@@ -359,7 +359,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                     return Ok(());
                 }
                 (false, SocketMode::Ask) => {
-                    let attempt_sandbox_connect = AsyncMessageDialog::new().set_level(MessageLevel::Warning).set_description(&format!("The current movie is attempting to connect to {:?} (port {}).\n\nTo allow it to do so, click Yes to grant network access to that host.\n\nOtherwise, click No to deny access.", host, port)).set_buttons(MessageButtons::YesNo)
+                    let attempt_sandbox_connect = AsyncMessageDialog::new().set_level(MessageLevel::Warning).set_description(format!("The current movie is attempting to connect to {:?} (port {}).\n\nTo allow it to do so, click Yes to grant network access to that host.\n\nOtherwise, click No to deny access.", host, port)).set_buttons(MessageButtons::YesNo)
                     .show()
                     .await == MessageDialogResult::Yes;
 
