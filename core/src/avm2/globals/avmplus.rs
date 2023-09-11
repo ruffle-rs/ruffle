@@ -482,7 +482,7 @@ fn describe_internal_body<'gc>(
     }
 
     if flags.contains(DescribeTypeFlags::INCLUDE_METADATA) {
-        avm2_stub_method!(activation, "avmplus.describeTypeJSON", "top-level metadata");
+        avm2_stub_method!(activation, "avmplus", "describeTypeJSON", "with top-level metadata");
         let metadata_object = ArrayObject::empty(activation)?;
         traits.set_public_property("metadata", metadata_object.into(), activation)?;
     } else {
