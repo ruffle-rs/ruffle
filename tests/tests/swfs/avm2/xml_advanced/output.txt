@@ -1,0 +1,28 @@
+<root>
+  <hello/>
+</root>
+Set XML as child
+<root>
+  <hello/>
+  <item>
+    <stuff>Hello</stuff>
+    <more>
+      <stuff/>
+    </more>
+  </item>
+</root>
+Set XMLList as child
+<root>
+  <hello/>
+  <item>
+    <stuff>Hello</stuff>
+    <more>
+      <stuff/>
+    </more>
+  </item>
+  <list>
+    <item>A</item>
+    <item>B</item>
+    <item>C</item>
+  </list>
+</root>
