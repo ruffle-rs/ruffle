@@ -21,6 +21,7 @@ use anyhow::Error;
 use app::App;
 use clap::Parser;
 use cli::Opt;
+use rfd::MessageDialogResult;
 use ruffle_core::StaticCallstack;
 use std::cell::RefCell;
 use std::panic::PanicInfo;
@@ -108,6 +109,7 @@ fn panic_hook(info: &PanicInfo) {
         ))
         .set_buttons(rfd::MessageButtons::YesNo)
         .show()
+        == MessageDialogResult::Yes
     {
         let mut params = vec![
             ("panic_text", info.to_string()),

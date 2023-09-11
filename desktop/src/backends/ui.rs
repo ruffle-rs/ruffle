@@ -1,6 +1,6 @@
 use anyhow::{Context, Error};
 use arboard::Clipboard;
-use rfd::{MessageButtons, MessageDialog, MessageLevel};
+use rfd::{MessageButtons, MessageDialog, MessageDialogResult, MessageLevel};
 use ruffle_core::backend::navigator::OpenURLMode;
 use ruffle_core::backend::ui::{
     FullscreenError, LanguageIdentifier, MouseCursor, UiBackend, US_ENGLISH,
@@ -118,7 +118,8 @@ impl UiBackend for DesktopUiBackend {
                 .set_level(MessageLevel::Info)
                 .set_description(&message)
                 .set_buttons(MessageButtons::OkCancel)
-                .show();
+                .show()
+                == MessageDialogResult::Ok;
             if !confirm {
                 tracing::info!("SWF tried to open a website, but the user declined the request");
                 return;
