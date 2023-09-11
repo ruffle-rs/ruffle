@@ -101,7 +101,7 @@ fn panic_hook(info: &PanicInfo) {
     if rfd::MessageDialog::new()
         .set_level(rfd::MessageLevel::Error)
         .set_title("Ruffle")
-        .set_description(&format!(
+        .set_description(format!(
             "Ruffle has encountered a fatal error, this is a bug.\n\n\
             {message}\n\n\
             Please report this to us so that we can fix it. Thank you!\n\
