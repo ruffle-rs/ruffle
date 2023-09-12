@@ -552,10 +552,19 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Set a slot by its index.
-    fn set_slot(self, id: u32, value: Value<'gc>, mc: &Mutation<'gc>) -> Result<(), Error<'gc>> {
-        let mut base = self.base_mut(mc);
+    fn set_slot(
+        self,
+        id: u32,
+        value: Value<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<(), Error<'gc>> {
+        let value = self
+            .vtable()
+            .unwrap()
+            .coerce_trait_value(id, value, activation)?;
+        let mut base = self.base_mut(activation.gc());
 
-        base.set_slot(id, value, mc)
+        base.set_slot(id, value, activation.gc())
     }
 
     /// Initialize a slot by its index.

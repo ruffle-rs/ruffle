@@ -1837,7 +1837,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let value = self.pop_stack();
         let object = self.pop_stack().coerce_to_object_or_typeerror(self, None)?;
 
-        object.set_slot(index, value, self.context.gc_context)?;
+        object.set_slot(index, value, self)?;
 
         Ok(FrameControl::Continue)
     }
@@ -1858,7 +1858,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let value = self.pop_stack();
 
         self.global_scope()
-            .map(|global| global.set_slot(index, value, self.context.gc_context))
+            .map(|global| global.set_slot(index, value, self))
             .transpose()?;
 
         Ok(FrameControl::Continue)
