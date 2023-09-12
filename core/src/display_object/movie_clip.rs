@@ -2712,7 +2712,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                                 context,
                             ) {
                                 tracing::error!(
-                                    "Error occured when running AVM2 frame script: {}",
+                                    "Error occurred when running AVM2 frame script: {}",
                                     e
                                 );
                             }
