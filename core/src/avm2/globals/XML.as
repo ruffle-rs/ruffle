@@ -8,7 +8,7 @@ package {
             stub_method("XML", "normalize");
             return this;
         }
-        
+
         AS3 static function setSettings(settings:Object = null): void {
             if (settings == null) {
                 settings = XML.AS3::defaultSettings();
@@ -60,7 +60,10 @@ package {
         AS3 native function hasSimpleContent():Boolean;
         AS3 native function name():Object;
         AS3 native function setName(name:*):void;
-        AS3 native function namespace(prefix:String = null):*;
+        private native function namespace_internal_impl(hasPrefix:Boolean, prefix:String = null):*;
+        AS3 function namespace(prefix:String = null):* {
+            return namespace_internal_impl(arguments.length > 0, prefix);
+        }
         AS3 native function localName():Object;
         AS3 native function toXMLString():String;
         AS3 native function child(name:Object):XMLList;
@@ -120,7 +123,7 @@ package {
 
         prototype.namespace = function(prefix:String = null):* {
             var self:XML = this;
-            return self.AS3::namespace(prefix);
+            return self.AS3::namespace.apply(self, arguments);
         }
 
         prototype.localName = function():Object {
@@ -205,7 +208,7 @@ package {
             var self:XML = this;
             return self.AS3::text();
         };
-        
+
         prototype.normalize = function():XML {
             var self:XML = this;
             return self.AS3::normalize();
