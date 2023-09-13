@@ -16,10 +16,10 @@ tcp-connections-allow = Allow
 tcp-connections-ask = Ask
 tcp-connections-deny = Deny
 
-open-links = Open Links
-open-links-allow = Allow
-open-links-ask = Ask
-open-links-deny = Deny
+open-url-mode = Open Links
+open-url-mode-allow = Allow
+open-url-mode-confirm = Ask
+open-url-mode-deny = Deny
 
 load-behavior = Load Behavior
 load-behavior-streaming = Streaming
