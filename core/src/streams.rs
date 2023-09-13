@@ -22,10 +22,10 @@ use crate::string::AvmString;
 use crate::vminterface::AvmObject;
 use flv_rs::{
     AudioData as FlvAudioData, AudioDataType as FlvAudioDataType, Error as FlvError, FlvReader,
-    Header as FlvHeader, ScriptData as FlvScriptData, SoundFormat as FlvSoundFormat,
-    SoundRate as FlvSoundRate, SoundSize as FlvSoundSize, SoundType as FlvSoundType, Tag as FlvTag,
-    TagData as FlvTagData, Value as FlvValue, VideoData as FlvVideoData,
-    VideoPacket as FlvVideoPacket,
+    FrameType as FlvFrameType, Header as FlvHeader, ScriptData as FlvScriptData,
+    SoundFormat as FlvSoundFormat, SoundRate as FlvSoundRate, SoundSize as FlvSoundSize,
+    SoundType as FlvSoundType, Tag as FlvTag, TagData as FlvTagData, Value as FlvValue,
+    VideoData as FlvVideoData, VideoPacket as FlvVideoPacket,
 };
 use gc_arena::{Collect, GcCell, Mutation};
 use ruffle_render::bitmap::BitmapInfo;
@@ -331,6 +331,101 @@ impl<'gc> NetStream<'gc> {
         self.0.read().buffer.len()
     }
 
+    /// Seek to a new position in the stream.
+    ///
+    /// All existing audio will be paused. The stream offset will be snapped to
+    /// the prior keyframe. If the stream is playing then new tag processing
+    /// will occur when the stream ticks next.
+    ///
+    /// This always does an in-buffer seek. Seek-driven requests are not
+    /// currently supported. When progressive download is implemented this seek
+    /// algorithm will need to detect out-of-buffer seeks and trigger fresh
+    /// downloads.
+    ///
+    /// Note that `offset` is in seconds, unlike `tick`'s `dt` parameter which
+    /// is milliseconds.
+    pub fn seek(self, context: &mut UpdateContext<'_, 'gc>, offset: f64) {
+        #![allow(clippy::explicit_auto_deref)] //Erroneous lint
+
+        // Ensure the container stream type is known before continuing.
+        if self.0.read().stream_type.is_none() && !self.sniff_stream_type(context) {
+            return;
+        }
+
+        let offset = offset * 1000.0;
+        let mut write = self.0.write(context.gc_context);
+
+        if let Some(sound) = write.sound_instance {
+            context.stop_sounds_with_handle(sound);
+            context.audio.stop_sound(sound);
+
+            write.sound_instance = None;
+            write.audio_stream = None;
+        }
+
+        if matches!(write.stream_type, Some(NetStreamType::Flv { .. })) {
+            let slice = write.buffer.to_full_slice();
+            let buffer = slice.data();
+            let mut reader = FlvReader::from_parts(&*buffer, write.offset);
+            let skipping_back = write.stream_time > offset;
+
+            loop {
+                if skipping_back {
+                    let res = FlvTag::skip_back(&mut reader);
+                    if matches!(res, Err(FlvError::EndOfData)) {
+                        //At start of video, can't skip further back
+                        break;
+                    }
+
+                    if let Err(e) = res {
+                        tracing::error!("FLV tag parsing failed during seek backward: {}", e);
+                        break;
+                    }
+                }
+
+                let tag = FlvTag::parse(&mut reader);
+                if matches!(tag, Err(FlvError::EndOfData)) {
+                    //At end of video, can't skip further forward
+                    break;
+                }
+
+                if let Err(e) = tag {
+                    tracing::error!("FLV tag parsing failed during seek forward: {}", e);
+                    break;
+                }
+
+                if skipping_back {
+                    //Tag position won't actually move backwards if we don't do this.
+                    FlvTag::skip_back(&mut reader)
+                        .expect("skipping back, forward, then back again should not fail");
+                }
+
+                let tag = tag.unwrap();
+                write.stream_time = tag.timestamp as f64;
+
+                if skipping_back && write.stream_time > offset
+                    || !skipping_back && write.stream_time < offset
+                {
+                    continue;
+                }
+
+                match tag.data {
+                    FlvTagData::Video(FlvVideoData {
+                        frame_type: FlvFrameType::Keyframe,
+                        ..
+                    }) => {
+                        break;
+                    }
+                    _ => continue,
+                }
+            }
+
+            write.offset = reader
+                .stream_position()
+                .expect("FLV reader stream position") as usize;
+        }
+    }
+
     /// Start playing media from this NetStream.
     ///
     /// If `name` is specified, this will also trigger streaming download of
@@ -596,12 +691,12 @@ impl<'gc> NetStream<'gc> {
                         });
                         true
                     }
-                    Err(FlvError::EndOfData) => return false,
+                    Err(FlvError::EndOfData) => false,
                     Err(e) => {
                         //TODO: Fire an error event to AS & stop playing too
                         tracing::error!("FLV header parsing failed: {}", e);
                         write.preload_offset = 3;
-                        return false;
+                        false
                     }
                 }
             }
@@ -627,7 +722,7 @@ impl<'gc> NetStream<'gc> {
                     };
                     context.ui.display_unsupported_video(parsed_url);
                 }
-                return false;
+                false
             }
             None => false, //Data not yet loaded
         }
@@ -868,6 +963,8 @@ impl<'gc> NetStream<'gc> {
     }
 
     pub fn tick(self, context: &mut UpdateContext<'_, 'gc>, dt: f64) {
+        #![allow(clippy::explicit_auto_deref)] //Erroneous lint
+
         // Ensure the container stream type is known before continuing.
         if self.0.read().stream_type.is_none() && !self.sniff_stream_type(context) {
             return;
