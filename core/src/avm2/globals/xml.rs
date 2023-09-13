@@ -8,6 +8,7 @@ use crate::avm2::object::{
 };
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::string::AvmString;
+use crate::avm2::Namespace;
 use crate::avm2::{Activation, Error, Multiname, Object, Value};
 use crate::avm2_stub_method;
 
@@ -128,15 +129,60 @@ pub fn set_name<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn namespace<'gc>(
+// namespace_internal_impl(hasPrefix:Boolean, prefix:String = null):*
+pub fn namespace_internal_impl<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    this: Object<'gc>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    // FIXME: Implement namespace support (including prefix)
     avm2_stub_method!(activation, "XML", "namespace");
-    let namespace = activation.avm2().public_namespace;
-    Ok(NamespaceObject::from_namespace(activation, namespace)?.into())
+
+    // FIXME:
+    // 1. Let y = x
+    // 2. Let inScopeNS = { }
+    // 3. While (y is not null)
+    //     a. For each ns in y.[[InScopeNamespaces]]
+    //     ....
+
+    let xml = this.as_xml_object().unwrap();
+    let node = xml.node();
+
+    // 4. If prefix was not specified
+    if args[0] == Value::Bool(false) {
+        // a. If x.[[Class]] ∈ {"text", "comment", "processing-instruction"}, return null
+        if matches!(
+            &*node.kind(),
+            E4XNodeKind::Text(_)
+                | E4XNodeKind::CData(_)
+                | E4XNodeKind::Comment(_)
+                | E4XNodeKind::ProcessingInstruction(_)
+        ) {
+            return Ok(Value::Null);
+        }
+
+        // b. Return the result of calling the [[GetNamespace]] method of x.[[Name]] with argument inScopeNS
+        // FIXME: Use inScopeNS
+        let namespace = match node.namespace() {
+            Some(ns) => Namespace::package(ns, &mut activation.context.borrow_gc()),
+            None => activation.avm2().public_namespace,
+        };
+        Ok(NamespaceObject::from_namespace(activation, namespace)?.into())
+    } else {
+        // a. Let prefix = ToString(prefix)
+        let prefix = args.get_string(activation, 1)?;
+
+        // b. Find a Namespace ns ∈ inScopeNS, such that ns.prefix = prefix. If no such ns exists, let ns = undefined.
+        // c. Return ns
+
+        // FIXME: Nodes currently either have zero or one namespace, which has the prefix "" (empty string)
+        Ok(match node.namespace() {
+            Some(ns) if prefix.is_empty() => {
+                let namespace = Namespace::package(ns, &mut activation.context.borrow_gc());
+                NamespaceObject::from_namespace(activation, namespace)?.into()
+            }
+            _ => Value::Undefined,
+        })
+    }
 }
 
 pub fn local_name<'gc>(
