@@ -83,9 +83,7 @@ package flash.net {
 
         public native function resume();
 
-        public function seek(offset:Number) {
-            stub_method("flash.net.NetStream", "seek");
-        }
+        public native function seek(offset:Number);
 
         public function send(handlerName:String, ...args) {
             stub_method("flash.net.NetStream", "send");
