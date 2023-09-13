@@ -24,6 +24,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "bytesTotal" => property(get_bytes_total);
     "play" => method(play; DONT_ENUM | DONT_DELETE);
     "pause" => method(pause; DONT_ENUM | DONT_DELETE);
+    "seek" => method(seek; DONT_ENUM | DONT_DELETE);
 };
 
 fn get_bytes_loaded<'gc>(
@@ -84,6 +85,24 @@ fn pause<'gc>(
         } else {
             ns.resume(&mut activation.context);
         }
+    }
+
+    Ok(Value::Undefined)
+}
+
+fn seek<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let NativeObject::NetStream(ns) = this.native() {
+        let offset = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_f64(activation)?;
+
+        ns.seek(&mut activation.context, offset);
     }
 
     Ok(Value::Undefined)
