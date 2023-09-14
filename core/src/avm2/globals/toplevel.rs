@@ -241,7 +241,13 @@ pub fn is_xml_name<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let name = args.get(0).unwrap_or(&Value::Undefined);
-    Ok(crate::avm2::e4x::is_xml_name(activation, *name)?.into())
+    if matches!(name, Value::Undefined | Value::Null) {
+        return Ok(false.into());
+    }
+
+    let name = name.coerce_to_string(activation)?;
+
+    Ok(crate::avm2::e4x::is_xml_name(name).into())
 }
 
 pub fn escape<'gc>(

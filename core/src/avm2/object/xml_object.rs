@@ -361,9 +361,10 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         }
 
         // 7. Let isValidName be the result of calling the function isXMLName (section 13.1.2.1) with argument n
-        let is_valid_name = name.local_name().map_or(Ok(false), |x| {
-            crate::avm2::e4x::is_xml_name(activation, x.into())
-        })?;
+        let is_valid_name = name
+            .local_name()
+            .map(crate::avm2::e4x::is_xml_name)
+            .unwrap_or(false);
         // 8. If isValidName is false and n.localName is not equal to the string "*", return
         if !is_valid_name && !name.is_any_name() {
             return Ok(());

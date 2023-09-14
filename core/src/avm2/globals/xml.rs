@@ -114,7 +114,7 @@ pub fn set_name<'gc>(
         new_name.coerce_to_string(activation)?
     };
 
-    let is_name_valid = crate::avm2::e4x::is_xml_name(activation, new_name.into())?;
+    let is_name_valid = crate::avm2::e4x::is_xml_name(new_name);
     if !is_name_valid {
         return Err(Error::AvmError(type_error(
             activation,
