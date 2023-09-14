@@ -246,11 +246,11 @@ impl<'gc> E4XNode<'gc> {
 
     /// Returns the amount of children in this node if this node is of Element kind, otherwise returns [None].
     pub fn length(&self) -> Option<usize> {
-        let E4XNodeKind::Element { children, .. } = &*self.kind() else {
-            return None;
-        };
-
-        Some(children.len())
+        if let E4XNodeKind::Element { children, .. } = &*self.kind() {
+            Some(children.len())
+        } else {
+            None
+        }
     }
 
     /// Removes all matching children matching provided name, returns the first child removed along with its index (if any).

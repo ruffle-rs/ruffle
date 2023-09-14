@@ -1,7 +1,7 @@
 // NOTE: Regex to match character groups: '\[#(.{5})-#(.{5})\]', substitution '(0$1, 0$2),\n'
 //       and regex to match single characters: '#(.{5})', substitution '(0$1, 0$1), // single\n'
 
-use crate::avm2::{Activation, Error, Value};
+use crate::string::AvmString;
 
 // https://www.w3.org/TR/2004/REC-xml-20040204/#NT-Letter
 static LETTER_TABLE: &[(u32, u32)] = &[
@@ -411,30 +411,22 @@ fn is_extender(c: char) -> bool {
 }
 
 // Based on https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/AvmCore.cpp#L3478
-pub fn is_xml_name<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    name: Value<'gc>,
-) -> Result<bool, Error<'gc>> {
-    if matches!(name, Value::Undefined | Value::Null) {
-        return Ok(false);
-    }
-
-    let name = name.coerce_to_string(activation)?;
+pub fn is_xml_name(name: AvmString<'_>) -> bool {
     if name.is_empty() {
-        return Ok(false);
+        return false;
     }
 
     let mut name = name.chars();
     let first_char = match name.next().expect("At least one character should exist") {
         Ok(c) => c,
-        Err(_) => return Ok(false),
+        Err(_) => return false,
     };
 
     if !is_letter(first_char) && first_char != '_' {
-        return Ok(false);
+        return false;
     }
 
-    Ok(name.map(|x| x.ok()).all(|x| {
+    name.map(|x| x.ok()).all(|x| {
         if let Some(x) = x {
             is_digit(x)
                 || is_letter(x)
@@ -446,7 +438,7 @@ pub fn is_xml_name<'gc>(
         } else {
             false
         }
-    }))
+    })
 }
 
 #[cfg(test)]
