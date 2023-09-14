@@ -121,9 +121,20 @@ impl<'a> Tag<'a> {
     /// tag at the current location and skips back to prior data in the file.
     pub fn skip_back(reader: &mut FlvReader<'a>) -> Result<(), Error> {
         let previous_tag_size = reader.read_u32()?;
-        reader.seek(SeekFrom::Current(-(previous_tag_size as i64)))?;
 
-        Ok(())
+        if previous_tag_size == 0 {
+            // We have to stay in a valid end position but we can't seek back
+            // any further, so we un-read the prior u32
+            reader.seek(SeekFrom::Current(-4))?;
+            Err(Error::EndOfData)
+        } else {
+            // NOTE: We need to seek back an extra 4 bytes for the u32 we just
+            // read, which gets us to the start of the next tag. Then we need
+            // to skip back another 4 bytes for the prior tag's back tag so
+            // that we're in a valid position for another `parse`/`skip_back`.
+            reader.seek(SeekFrom::Current(-(previous_tag_size as i64) - 8))?;
+            Ok(())
+        }
     }
 }
 
