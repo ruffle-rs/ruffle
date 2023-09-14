@@ -32,7 +32,7 @@ use ruffle_render::bitmap::BitmapInfo;
 use ruffle_video::frame::EncodedFrame;
 use ruffle_video::VideoStreamHandle;
 use std::cmp::max;
-use std::io::Seek;
+use std::io::{Seek, SeekFrom};
 use swf::{AudioCompression, SoundFormat, VideoCodec, VideoDeblocking};
 use thiserror::Error;
 use url::Url;
@@ -383,6 +383,10 @@ impl<'gc> NetStream<'gc> {
                     }
                 }
 
+                let old_position = reader
+                    .stream_position()
+                    .expect("valid stream position when seeking");
+
                 let tag = FlvTag::parse(&mut reader);
                 if matches!(tag, Err(FlvError::EndOfData)) {
                     //At end of video, can't skip further forward
@@ -396,8 +400,9 @@ impl<'gc> NetStream<'gc> {
 
                 if skipping_back {
                     //Tag position won't actually move backwards if we don't do this.
-                    FlvTag::skip_back(&mut reader)
-                        .expect("skipping back, forward, then back again should not fail");
+                    reader
+                        .seek(SeekFrom::Start(old_position))
+                        .expect("valid backseek position");
                 }
 
                 let tag = tag.unwrap();
