@@ -315,7 +315,7 @@ impl<'gc> NetStream<'gc> {
         // NOTE: The onMetaData event triggers before this event in Flash due to its streaming behavior.
         self.trigger_status_event(
             context,
-            &[("code", "NetStream.Buffer.Full"), ("level", "status")],
+            vec![("code", "NetStream.Buffer.Full"), ("level", "status")],
         );
     }
 
@@ -346,6 +346,19 @@ impl<'gc> NetStream<'gc> {
     /// is milliseconds.
     pub fn seek(self, context: &mut UpdateContext<'_, 'gc>, offset: f64) {
         #![allow(clippy::explicit_auto_deref)] //Erroneous lint
+
+        let trigger = AvmString::new_utf8(
+            context.gc_context,
+            format!("Start Seeking {}", (offset * 1000.0) as u64),
+        );
+        self.trigger_status_event(
+            context,
+            vec![
+                ("description", trigger),
+                ("level", "status".into()),
+                ("code", "NetStream.SeekStart.Notify".into()),
+            ],
+        );
 
         // Ensure the container stream type is known before continuing.
         if self.0.read().stream_type.is_none() && !self.sniff_stream_type(context) {
@@ -459,7 +472,7 @@ impl<'gc> NetStream<'gc> {
 
         self.trigger_status_event(
             context,
-            &[("code", "NetStream.Play.Start"), ("level", "status")],
+            vec![("code", "NetStream.Play.Start"), ("level", "status")],
         );
     }
 
@@ -1069,15 +1082,15 @@ impl<'gc> NetStream<'gc> {
         if end_of_video {
             self.trigger_status_event(
                 context,
-                &[("code", "NetStream.Buffer.Flush"), ("level", "status")],
+                vec![("code", "NetStream.Buffer.Flush"), ("level", "status")],
             );
             self.trigger_status_event(
                 context,
-                &[("code", "NetStream.Play.Stop"), ("level", "status")],
+                vec![("code", "NetStream.Play.Stop"), ("level", "status")],
             );
             self.trigger_status_event(
                 context,
-                &[("code", "NetStream.Buffer.Empty"), ("level", "status")],
+                vec![("code", "NetStream.Buffer.Empty"), ("level", "status")],
             );
             self.pause(context);
         }
@@ -1096,7 +1109,7 @@ impl<'gc> NetStream<'gc> {
     pub fn trigger_status_event(
         self,
         context: &mut UpdateContext<'_, 'gc>,
-        values: &[(&'static str, &'static str)],
+        values: Vec<(impl Into<AvmString<'gc>>, impl Into<AvmString<'gc>>)>,
     ) {
         let object = self.0.read().avm_object;
         match object {
@@ -1113,11 +1126,7 @@ impl<'gc> NetStream<'gc> {
 
                 for (key, value) in values {
                     info_object
-                        .set(
-                            AvmString::from(*key),
-                            Avm1Value::String(AvmString::from(*value)),
-                            &mut activation,
-                        )
+                        .set(key.into(), Avm1Value::String(value.into()), &mut activation)
                         .expect("valid set");
                 }
 

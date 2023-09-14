@@ -177,7 +177,7 @@ impl<'gc> EventObject<'gc> {
     pub fn net_status_event<S>(
         activation: &mut Activation<'_, 'gc>,
         event_type: S,
-        info: &[(&'static str, &'static str)],
+        info: Vec<(impl Into<AvmString<'gc>>, impl Into<AvmString<'gc>>)>,
     ) -> Object<'gc>
     where
         S: Into<AvmString<'gc>>,
@@ -190,11 +190,7 @@ impl<'gc> EventObject<'gc> {
             .unwrap();
         for (key, value) in info {
             info_object
-                .set_public_property(
-                    AvmString::from(*key),
-                    Value::String(AvmString::from(*value)),
-                    activation,
-                )
+                .set_public_property(key.into(), Value::String(value.into()), activation)
                 .unwrap();
         }
 
