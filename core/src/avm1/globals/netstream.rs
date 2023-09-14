@@ -81,7 +81,7 @@ fn pause<'gc>(
         if matches!(action, Value::Undefined) {
             ns.toggle_paused(&mut activation.context);
         } else if is_pause {
-            ns.pause(&mut activation.context);
+            ns.pause(&mut activation.context, true);
         } else {
             ns.resume(&mut activation.context);
         }

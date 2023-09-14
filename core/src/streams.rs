@@ -477,8 +477,19 @@ impl<'gc> NetStream<'gc> {
     }
 
     /// Pause stream playback.
-    pub fn pause(self, context: &mut UpdateContext<'_, 'gc>) {
+    pub fn pause(self, context: &mut UpdateContext<'_, 'gc>, notify: bool) {
         StreamManager::ensure_paused(context, self);
+
+        if notify {
+            self.trigger_status_event(
+                context,
+                vec![
+                    ("description", "Pausing"),
+                    ("level", "status"),
+                    ("code", "NetStream.Pause.Notify"),
+                ],
+            );
+        }
     }
 
     /// Resume stream playback.
@@ -1092,12 +1103,12 @@ impl<'gc> NetStream<'gc> {
                 context,
                 vec![("code", "NetStream.Buffer.Empty"), ("level", "status")],
             );
-            self.pause(context);
+            self.pause(context, false);
         }
 
         if error {
             //TODO: Fire an error event at AS.
-            self.pause(context);
+            self.pause(context, false);
         }
     }
 
