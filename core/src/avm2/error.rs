@@ -188,6 +188,20 @@ pub fn make_error_1004<'gc>(activation: &mut Activation<'_, 'gc>, method_name: &
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1087<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = type_error(
+        activation,
+        "Error #1087: Assignment to indexed XML is not allowed.",
+        1087,
+    );
+    match err {
+        Ok(err) => Error::AvmError(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1118<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     let err = type_error(
         activation,

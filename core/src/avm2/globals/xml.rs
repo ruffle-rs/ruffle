@@ -239,8 +239,7 @@ pub fn copy<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let xml = this.as_xml_object().unwrap();
-    let node = xml.node();
-    Ok(XmlObject::new(node.deep_copy(activation.context.gc_context), activation).into())
+    Ok(xml.deep_copy(activation).into())
 }
 
 pub fn parent<'gc>(
@@ -690,29 +689,12 @@ pub fn replace<'gc>(
     //       2. And then we insert a dummy E4XNode at the previously stored index, and use the replace method to correct it.
 
     let index =
-        if let E4XNodeKind::Element { children, .. } = &mut *self_node.kind_mut(activation.gc()) {
-            let index = children
-                .iter()
-                .position(|x| multiname.is_any_name() || x.matches_name(&multiname));
-            children.retain(|x| {
-                if multiname.is_any_name() || x.matches_name(&multiname) {
-                    // Remove parent.
-                    x.set_parent(None, activation.gc());
-                    false
-                } else {
-                    true
-                }
-            });
-
-            if let Some(index) = index {
-                children.insert(index, E4XNode::dummy(activation.gc()));
-                index
-            // 8. If i == undefined, return x
-            } else {
-                return Ok(xml.into());
-            }
+        if let Some((index, _)) = self_node.remove_matching_children(activation.gc(), &multiname) {
+            self_node.insert_at(activation.gc(), index, E4XNode::dummy(activation.gc()));
+            index
+        // 8. If i == undefined, return x
         } else {
-            unreachable!("E4XNode kind should be of element kind");
+            return Ok(xml.into());
         };
 
     // 9. Call the [[Replace]] method of x with arguments ToString(i) and c
