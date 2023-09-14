@@ -17,6 +17,7 @@ file-menu-exit = 退出
 controls-menu = 控制
 controls-menu-suspend = 暂停
 controls-menu-resume = 继续
+controls-menu-volume = 音量控制
 help-menu = 帮助
 help-menu-join-discord = 加入 Discord 服务器
 help-menu-report-a-bug = 反馈问题

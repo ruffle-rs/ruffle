@@ -9,3 +9,4 @@ context-menu-about-ruffle =
 context-menu-hide = 隐藏此菜单
 context-menu-exit-fullscreen = 退出全屏
 context-menu-enter-fullscreen = 进入全屏
+context-menu-volume-controls = 音量控制

@@ -17,6 +17,7 @@ file-menu-exit = Avsluta
 controls-menu = Kontroller
 controls-menu-suspend = Suspendera
 controls-menu-resume = Fortsätt
+controls-menu-volume = Ljudkontroller
 help-menu = Hjälp
 help-menu-join-discord = Gå med i Discord
 help-menu-report-a-bug = Rapportera en Bugg...

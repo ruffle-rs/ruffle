@@ -17,6 +17,7 @@ file-menu-exit = 終了
 controls-menu = 操作
 controls-menu-suspend = 一時停止
 controls-menu-resume = 再開
+controls-menu-volume = 音量調節
 help-menu = ヘルプ
 help-menu-join-discord = Discordに参加
 help-menu-report-a-bug = バグを報告する

@@ -9,3 +9,4 @@ context-menu-about-ruffle =
 context-menu-hide = Dölj denna meny
 context-menu-exit-fullscreen = Avsluta helskärm
 context-menu-enter-fullscreen = Gå in i helskärm
+context-menu-volume-controls = Ljudkontroller
