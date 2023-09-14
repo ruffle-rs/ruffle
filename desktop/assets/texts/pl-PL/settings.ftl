@@ -6,7 +6,6 @@ tcp-connections-allow = Zezwól
 tcp-connections-ask = Pytaj
 tcp-connections-deny = Zabroń
 open-url-mode-allow = Zezwól
-open-url-mode-confirm = Potwierdź
 open-url-mode-deny = Zabroń
 load-behavior-streaming = Strumieniowanie
 load-behavior-delayed = Opóźnione

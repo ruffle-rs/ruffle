@@ -9,3 +9,4 @@ context-menu-about-ruffle =
 context-menu-hide = 이 메뉴 숨기기
 context-menu-exit-fullscreen = 전체화면 나가기
 context-menu-enter-fullscreen = 전체화면으로 열기
+context-menu-volume-controls = 음량 조절

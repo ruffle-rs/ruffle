@@ -17,6 +17,7 @@ file-menu-exit = Kilépés
 controls-menu = Vezérlők
 controls-menu-suspend = Felfüggesztés
 controls-menu-resume = Folytatás
+controls-menu-volume = Hangerőszabályzó
 help-menu = Súgó
 help-menu-join-discord = Csatlakozás a Discordhoz
 help-menu-report-a-bug = Hiba jelentése...
