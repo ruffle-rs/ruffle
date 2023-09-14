@@ -53,7 +53,7 @@ pub fn pause<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(ns) = this.as_netstream() {
-        ns.pause(&mut activation.context);
+        ns.pause(&mut activation.context, true);
     }
 
     Ok(Value::Undefined)
