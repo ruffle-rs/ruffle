@@ -15,6 +15,14 @@ pub static US_ENGLISH: LanguageIdentifier = langid!("en-US");
 pub enum FontDefinition<'a> {
     /// A singular DefineFont tag extracted from a swf.
     SwfTag(swf::Font<'a>, &'static swf::Encoding),
+
+    /// A font contained in an external file, such as a ttf.
+    FontFile {
+        name: String,
+        is_bold: bool,
+        is_italic: bool,
+        data: Vec<u8>,
+    },
 }
 
 /// A filter specifying a category that can be selected from a file chooser dialog

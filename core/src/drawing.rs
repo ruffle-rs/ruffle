@@ -404,7 +404,7 @@ impl Drawing {
     }
 
     // Ensures that the path is closed for a pending fill.
-    fn close_path(&mut self) {
+    pub fn close_path(&mut self) {
         if let Some(fill) = &mut self.current_fill {
             if self.cursor != self.fill_start {
                 fill.commands.push(DrawCommand::LineTo(self.fill_start));
