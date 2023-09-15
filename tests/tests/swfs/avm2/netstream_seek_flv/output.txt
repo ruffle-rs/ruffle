@@ -6,14 +6,14 @@ code: NetStream.Buffer.Full
 level: status
 netStatusOnMetaData
 //ns.time;
-0
+0.042
 //ns.seek(0.5);
 netStatus
 description: Start Seeking 500
 level: status
 code: NetStream.SeekStart.Notify
 //ns.time;
-0
+0.042
 netStatus
 code: NetStream.Seek.Notify
 level: status
@@ -22,26 +22,23 @@ description: Seek Complete -1
 level: status
 code: NetStream.Seek.Complete
 //ns.time;
-0.671
+0.706
 //ns.seek(1.5);
 netStatus
 description: Start Seeking 1500
 level: status
 code: NetStream.SeekStart.Notify
 //ns.time;
-0.671
+0.706
 netStatus
 code: NetStream.Seek.Notify
-level: status
-netStatus
-code: NetStream.Buffer.Full
 level: status
 netStatus
 description: Seek Complete -1
 level: status
 code: NetStream.Seek.Complete
 //ns.time;
-2.157
+2.039
 //ns.pause();
 netStatus
 description: Pausing
@@ -54,16 +51,16 @@ description: Start Seeking 500
 level: status
 code: NetStream.SeekStart.Notify
 //ns.time;
-2.157
+2.039
 netStatus
 code: NetStream.Seek.Notify
-level: status
-netStatus
-code: NetStream.Buffer.Full
 level: status
 netStatus
 description: Seek Complete -1
 level: status
 code: NetStream.Seek.Complete
+netStatus
+code: NetStream.Buffer.Full
+level: status
 //ns.time;
 0.667
