@@ -62,6 +62,7 @@ async-channel = "2.1.1"
 jpegxr = { git = "https://github.com/ruffle-rs/jpegxr", branch = "ruffle", optional = true }
 image = { version = "0.24.7", default-features = false, features = ["tiff", "dxt"] }
 enum-map = "2.7.3"
+ttf-parser = "0.20"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
 version = "0.3.30"
