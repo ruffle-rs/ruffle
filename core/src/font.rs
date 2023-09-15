@@ -778,7 +778,7 @@ impl Default for TextRenderSettings {
 #[cfg(test)]
 mod tests {
     use crate::font::{EvalParameters, Font};
-    use crate::player::Player;
+    use crate::player::FALLBACK_DEVICE_FONT_TAG;
     use crate::string::WStr;
     use gc_arena::{rootless_arena, Mutation};
     use ruffle_render::backend::{null::NullRenderer, ViewportDimensions};
@@ -794,7 +794,15 @@ mod tests {
                 height: 0,
                 scale_factor: 1.0,
             });
-            let device_font = Player::load_device_font(mc, &mut renderer);
+            let mut reader = swf::read::Reader::new(FALLBACK_DEVICE_FONT_TAG, 8);
+            let device_font = Font::from_swf_tag(
+                mc,
+                &mut renderer,
+                reader
+                    .read_define_font_2(3)
+                    .expect("Built-in font should compile"),
+                reader.encoding(),
+            );
 
             callback(mc, device_font);
         })
