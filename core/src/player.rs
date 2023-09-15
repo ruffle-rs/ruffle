@@ -68,6 +68,8 @@ use tracing::{info, instrument};
 /// `player_version`.
 pub const NEWEST_PLAYER_VERSION: u8 = 32;
 
+pub const FALLBACK_DEVICE_FONT_TAG: &[u8] = include_bytes!("../assets/noto-sans-definefont3.bin");
+
 #[derive(Collect)]
 #[collect(no_drop)]
 struct GcRoot<'gc> {
@@ -1977,8 +1979,7 @@ impl Player {
         gc_context: &'gc gc_arena::Mutation<'gc>,
         renderer: &mut dyn RenderBackend,
     ) -> Font<'gc> {
-        const DEVICE_FONT_TAG: &[u8] = include_bytes!("../assets/noto-sans-definefont3.bin");
-        let mut reader = swf::read::Reader::new(DEVICE_FONT_TAG, 8);
+        let mut reader = swf::read::Reader::new(FALLBACK_DEVICE_FONT_TAG, 8);
         Font::from_swf_tag(
             gc_context,
             renderer,
