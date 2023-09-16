@@ -204,10 +204,10 @@ pub struct NetStreamData<'gc> {
     #[collect(require_static)]
     stream_type: Option<NetStreamType>,
 
-    /// The current seek offset in the stream.
+    /// The current seek offset in the stream in milliseconds.
     stream_time: f64,
 
-    /// The next queued seek offset.
+    /// The next queued seek offset in milliseconds.
     ///
     /// Seeks are only executed on the next stream tick.
     queued_seek_time: Option<f64>,
@@ -343,13 +343,15 @@ impl<'gc> NetStream<'gc> {
     }
 
     /// Queue a seek to be executed on the next frame tick.
+    ///
+    /// `offset` is in milliseconds.
     pub fn seek(self, context: &mut UpdateContext<'_, 'gc>, offset: f64) {
         self.0.write(context.gc_context).queued_seek_time = Some(offset);
 
         if context.is_action_script_3() {
             let trigger = AvmString::new_utf8(
                 context.gc_context,
-                format!("Start Seeking {}", (offset * 1000.0) as u64),
+                format!("Start Seeking {}", offset as u64),
             );
             self.trigger_status_event(
                 context,
@@ -373,8 +375,7 @@ impl<'gc> NetStream<'gc> {
     /// algorithm will need to detect out-of-buffer seeks and trigger fresh
     /// downloads.
     ///
-    /// Note that `offset` is in seconds, unlike `tick`'s `dt` parameter which
-    /// is milliseconds.
+    /// `offset` is in milliseconds.
     ///
     /// This function should be run during stream ticks and *not* called by AVM
     /// code to service seek requests.
@@ -391,7 +392,6 @@ impl<'gc> NetStream<'gc> {
             return;
         }
 
-        let offset = offset * 1000.0;
         let mut write = self.0.write(context.gc_context);
 
         if let Some(sound) = write.sound_instance {
@@ -1028,6 +1028,9 @@ impl<'gc> NetStream<'gc> {
         }
     }
 
+    /// Process stream data.
+    ///
+    /// `dt` is in milliseconds.
     pub fn tick(self, context: &mut UpdateContext<'_, 'gc>, dt: f64) {
         #![allow(clippy::explicit_auto_deref)] //Erroneous lint
 
@@ -1076,7 +1079,7 @@ impl<'gc> NetStream<'gc> {
                 }
 
                 let tag = tag.expect("valid tag");
-                is_lookahead_tag = tag.timestamp as f64 >= end_time;
+                is_lookahead_tag = tag.timestamp as f64 >= end_time; //FLV timestamps are also ms
                 if is_lookahead_tag && max_lookahead_audio_tags == 0 {
                     break;
                 }

@@ -124,7 +124,7 @@ pub fn seek<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(ns) = this.as_netstream() {
         let offset = args.get_f64(activation, 0)?;
-        ns.seek(&mut activation.context, offset);
+        ns.seek(&mut activation.context, offset * 1000.0);
     }
 
     Ok(Value::Undefined)
@@ -136,7 +136,7 @@ pub fn get_time<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(ns) = this.as_netstream() {
-        return Ok(ns.time().into());
+        return Ok((ns.time() / 1000.0).into());
     }
 
     Ok(Value::Undefined)
