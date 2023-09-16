@@ -1203,6 +1203,14 @@ impl<'gc> Value<'gc> {
             if let Some(xml_obj) = obj.as_xml_object() {
                 return xml_obj.abstract_eq(other, activation);
             }
+
+            if let Some(self_ns) = obj.as_namespace_object() {
+                if let Value::Object(other_obj) = other {
+                    if let Some(other_ns) = other_obj.as_namespace_object() {
+                        return Ok(self_ns.namespace().as_uri() == other_ns.namespace().as_uri());
+                    }
+                }
+            }
         }
 
         if let Value::Object(obj) = other {
