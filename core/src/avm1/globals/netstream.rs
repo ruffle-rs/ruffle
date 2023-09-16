@@ -22,6 +22,7 @@ pub fn constructor<'gc>(
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "bytesLoaded" => property(get_bytes_loaded);
     "bytesTotal" => property(get_bytes_total);
+    "time" => property(get_time);
     "play" => method(play; DONT_ENUM | DONT_DELETE);
     "pause" => method(pause; DONT_ENUM | DONT_DELETE);
     "seek" => method(seek; DONT_ENUM | DONT_DELETE);
@@ -103,6 +104,18 @@ fn seek<'gc>(
             .coerce_to_f64(activation)?;
 
         ns.seek(&mut activation.context, offset * 1000.0);
+    }
+
+    Ok(Value::Undefined)
+}
+
+fn get_time<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let NativeObject::NetStream(ns) = this.native() {
+        return Ok((ns.time() / 1000.0).into());
     }
 
     Ok(Value::Undefined)
