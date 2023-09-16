@@ -1,0 +1,40 @@
+onStatus update
+level: status
+code: NetStream.Play.Start
+
+netStatusOnMetaData
+//ns.time;
+0.2
+//ns.seek(0.5);
+//ns.time;
+0.2
+onStatus update
+level: status
+code: NetStream.Seek.Notify
+
+//ns.time;
+0.8
+//ns.seek(1.5);
+//ns.time;
+0.8
+onStatus update
+level: status
+code: NetStream.Seek.Notify
+
+//ns.time;
+2.133
+//ns.pause();
+undefined
+//ns.seek(0.5);
+//ns.time;
+2.133
+onStatus update
+level: status
+code: NetStream.Seek.Notify
+
+//ns.time;
+0.8
+onStatus update
+level: status
+code: NetStream.Buffer.Full
+
