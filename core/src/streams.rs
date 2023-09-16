@@ -469,6 +469,8 @@ impl<'gc> NetStream<'gc> {
                 .expect("FLV reader stream position") as usize;
         }
 
+        drop(write);
+
         if context.is_action_script_3() {
             self.trigger_status_event(
                 context,
@@ -1034,7 +1036,8 @@ impl<'gc> NetStream<'gc> {
     pub fn tick(self, context: &mut UpdateContext<'_, 'gc>, dt: f64) {
         #![allow(clippy::explicit_auto_deref)] //Erroneous lint
 
-        if let Some(offset) = self.0.write(context.gc_context).queued_seek_time.take() {
+        let seek_offset = self.0.write(context.gc_context).queued_seek_time.take();
+        if let Some(offset) = seek_offset {
             self.execute_seek(context, offset);
         }
 
