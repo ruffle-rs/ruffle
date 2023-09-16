@@ -716,7 +716,7 @@ fn string_index(i: f64, len: usize) -> usize {
 /// Negative values will count backwards from `len`.
 /// The returned index will be within the range of `[0, len]`.
 fn string_wrapping_index(i: f64, len: usize) -> usize {
-    if i < 0. {
+    if (i as isize) < 0 {
         if i.is_infinite() {
             return 0;
         }
