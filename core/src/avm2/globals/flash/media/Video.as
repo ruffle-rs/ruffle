@@ -1,5 +1,7 @@
 package flash.media
 {
+    import __ruffle__.stub_method;
+
     import flash.display.DisplayObject
     import flash.net.NetStream
     
@@ -12,6 +14,9 @@ package flash.media
         private var _videoHeight: int;
 
         public function Video(width: int = 320, height: int = 240) {
+            if (width < 0 || height < 0) {
+                throw new RangeError("Error #2006: The supplied index is out of bounds.", 2006);
+            }
             this._videoWidth = width;
             this._videoHeight = height;
             this.init(width, height);
@@ -44,5 +49,9 @@ package flash.media
         }
 
         public native function attachNetStream(netStream: NetStream);
+
+        public function clear():void {
+            stub_method("flash.media.Video", "clear");
+        }
     }
 }
