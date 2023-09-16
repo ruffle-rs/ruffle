@@ -309,10 +309,7 @@ package flash.net {
             stub_setter("flash.net.NetStream", "soundTransform");
         };
 
-        public function get time(): Number {
-            stub_getter("flash.net.NetStream", "time");
-            return 0;
-        };
+        public native function get time(): Number;
 
         public function get useHardwareDecoder(): Boolean {
             stub_getter("flash.net.NetStream", "useHardwareDecoder");
