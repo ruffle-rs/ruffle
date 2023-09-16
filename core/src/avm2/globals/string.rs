@@ -529,12 +529,14 @@ fn substr<'gc>(
     let len = if len < 0. {
         if len.is_infinite() {
             0.
-        } else {
+        } else if (len as isize) < 0 {
             let wrapped_around = this.len() as f64 + len;
             if wrapped_around as usize + start_index >= this.len() {
                 return Ok("".into());
             };
             wrapped_around
+        } else {
+            (len as isize) as f64
         }
     } else {
         len
