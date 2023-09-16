@@ -143,5 +143,12 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
         activation,
     );
 
+    const AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[("toString", uri)];
+    write.define_builtin_instance_methods(
+        mc,
+        activation.avm2().as3_namespace,
+        AS3_INSTANCE_METHODS,
+    );
+
     class
 }
