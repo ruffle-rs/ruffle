@@ -331,6 +331,10 @@ impl<'gc> NetStream<'gc> {
         self.0.read().buffer.len()
     }
 
+    pub fn time(self) -> f64 {
+        self.0.read().stream_time
+    }
+
     /// Seek to a new position in the stream.
     ///
     /// All existing audio will be paused. The stream offset will be snapped to

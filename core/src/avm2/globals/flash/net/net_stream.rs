@@ -133,3 +133,15 @@ pub fn seek<'gc>(
 
     Ok(Value::Undefined)
 }
+
+pub fn get_time<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(ns) = this.as_netstream() {
+        return Ok(ns.time().into());
+    }
+
+    Ok(Value::Undefined)
+}
