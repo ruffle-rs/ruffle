@@ -1,5 +1,6 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::e4x::{E4XNode, E4XNodeKind};
+use crate::avm2::error::make_error_1089;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
@@ -417,7 +418,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
         }
 
         // 4. Return
-        Ok(())
+        Err(make_error_1089(activation))
     }
 
     fn get_next_enumerant(
