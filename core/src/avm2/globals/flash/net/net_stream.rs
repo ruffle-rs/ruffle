@@ -123,11 +123,7 @@ pub fn seek<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(ns) = this.as_netstream() {
-        let offset = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_number(activation)?;
+        let offset = args.get_f64(activation, 0)?;
         ns.seek(&mut activation.context, offset);
     }
 
