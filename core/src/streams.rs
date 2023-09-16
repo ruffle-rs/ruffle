@@ -207,6 +207,11 @@ pub struct NetStreamData<'gc> {
     /// The current seek offset in the stream.
     stream_time: f64,
 
+    /// The next queued seek offset.
+    ///
+    /// Seeks are only executed on the next stream tick.
+    queued_seek_time: Option<f64>,
+
     /// The last decoded bitmap.
     ///
     /// Any `Video`s on the stage will display the bitmap here when attached to
@@ -248,6 +253,7 @@ impl<'gc> NetStream<'gc> {
                 preload_offset: 0,
                 stream_type: None,
                 stream_time: 0.0,
+                queued_seek_time: None,
                 last_decoded_bitmap: None,
                 avm_object,
                 avm2_client: None,
@@ -296,6 +302,7 @@ impl<'gc> NetStream<'gc> {
         write.preload_offset = 0;
         write.stream_type = None;
         write.stream_time = 0.0;
+        write.queued_seek_time = None;
         write.audio_stream = None;
         write.sound_instance = None;
     }
@@ -335,6 +342,26 @@ impl<'gc> NetStream<'gc> {
         self.0.read().stream_time
     }
 
+    /// Queue a seek to be executed on the next frame tick.
+    pub fn seek(self, context: &mut UpdateContext<'_, 'gc>, offset: f64) {
+        self.0.write(context.gc_context).queued_seek_time = Some(offset);
+
+        if context.is_action_script_3() {
+            let trigger = AvmString::new_utf8(
+                context.gc_context,
+                format!("Start Seeking {}", (offset * 1000.0) as u64),
+            );
+            self.trigger_status_event(
+                context,
+                vec![
+                    ("description", trigger),
+                    ("level", "status".into()),
+                    ("code", "NetStream.SeekStart.Notify".into()),
+                ],
+            );
+        }
+    }
+
     /// Seek to a new position in the stream.
     ///
     /// All existing audio will be paused. The stream offset will be snapped to
@@ -348,20 +375,15 @@ impl<'gc> NetStream<'gc> {
     ///
     /// Note that `offset` is in seconds, unlike `tick`'s `dt` parameter which
     /// is milliseconds.
-    pub fn seek(self, context: &mut UpdateContext<'_, 'gc>, offset: f64) {
+    ///
+    /// This function should be run during stream ticks and *not* called by AVM
+    /// code to service seek requests.
+    pub fn execute_seek(self, context: &mut UpdateContext<'_, 'gc>, offset: f64) {
         #![allow(clippy::explicit_auto_deref)] //Erroneous lint
 
-        let trigger = AvmString::new_utf8(
-            context.gc_context,
-            format!("Start Seeking {}", (offset * 1000.0) as u64),
-        );
         self.trigger_status_event(
             context,
-            vec![
-                ("description", trigger),
-                ("level", "status".into()),
-                ("code", "NetStream.SeekStart.Notify".into()),
-            ],
+            vec![("level", "status"), ("code", "NetStream.Seek.Notify")],
         );
 
         // Ensure the container stream type is known before continuing.
@@ -445,6 +467,17 @@ impl<'gc> NetStream<'gc> {
             write.offset = reader
                 .stream_position()
                 .expect("FLV reader stream position") as usize;
+        }
+
+        if context.is_action_script_3() {
+            self.trigger_status_event(
+                context,
+                vec![
+                    ("description", "Seek Complete -1"),
+                    ("level", "status"),
+                    ("code", "NetStream.Seek.Complete"),
+                ],
+            );
         }
     }
 
@@ -997,6 +1030,10 @@ impl<'gc> NetStream<'gc> {
 
     pub fn tick(self, context: &mut UpdateContext<'_, 'gc>, dt: f64) {
         #![allow(clippy::explicit_auto_deref)] //Erroneous lint
+
+        if let Some(offset) = self.0.write(context.gc_context).queued_seek_time.take() {
+            self.execute_seek(context, offset);
+        }
 
         // Ensure the container stream type is known before continuing.
         if self.0.read().stream_type.is_none() && !self.sniff_stream_type(context) {
