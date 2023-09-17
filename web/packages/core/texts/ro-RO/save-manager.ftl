@@ -1,9 +1,9 @@
-save-delete-prompt = Sunteţi sigur că doriţi să ştergeţi acest fişier salvat?
+save-delete-prompt = Sigur vrei să ștergi acest fișier de salvare?
 save-reload-prompt =
     Singura cale de a { $action ->
         [delete] șterge
-       *[replace] înlocuiește
-    } acest fișier de salvare fără un conflict potențial este de a reîncărca acest conținut. Doriți să continuați oricum?
-save-download = Descărcare
+       *[replace] înlocui
+    } acest fișier de salvare fără un conflict potențial este de a reîncărca acest conținut. Dorești să continui oricum?
+save-download = Descarcă
 save-replace = Înlocuiește
-save-delete = Ștergere
+save-delete = Șterge
