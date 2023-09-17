@@ -167,6 +167,7 @@ pub struct SystemClasses<'gc> {
     pub statusevent: ClassObject<'gc>,
     pub contextmenuevent: ClassObject<'gc>,
     pub font: ClassObject<'gc>,
+    pub textline: ClassObject<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -293,6 +294,7 @@ impl<'gc> SystemClasses<'gc> {
             statusevent: object,
             contextmenuevent: object,
             font: object,
+            textline: object,
         }
     }
 }
@@ -801,6 +803,7 @@ fn load_playerglobal<'gc>(
             ("flash.text", "TextFormat", textformat),
             ("flash.text", "TextField", textfield),
             ("flash.text", "TextLineMetrics", textlinemetrics),
+            ("flash.text.engine", "TextLine", textline),
             ("flash.filters", "BevelFilter", bevelfilter),
             ("flash.filters", "BitmapFilter", bitmapfilter),
             ("flash.filters", "BlurFilter", blurfilter),
