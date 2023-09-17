@@ -33,9 +33,9 @@ env_logger = "0.10.0"
 tracing = { workspace = true}
 tracing-subscriber = { workspace = true }
 serde = "1.0.188"
-toml = "0.7.6"
+toml = "0.8.0"
 libtest-mimic = "0.6.1"
-walkdir = "2.3.3"
+walkdir = "2.4.0"
 anyhow = "1.0.75"
 async-channel = "1.9.0"
 
