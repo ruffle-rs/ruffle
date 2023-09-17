@@ -3,16 +3,16 @@
         "message": "Redă conținut Flash în Ruffle"
     },
     "settings_ignore_optout": {
-        "message": "Joacă conținut Flash chiar și pe site-urile care nu permit Ruffle"
+        "message": "Redă conținut Flash chiar și pe site-urile care nu permit Ruffle"
     },
     "settings_show_swf_download": {
-        "message": "Arată descărcarea SWF în meniul contextual"
+        "message": "Afișează descărcarea de SWF-uri în meniul contextual"
     },
     "settings_autostart": {
-        "message": "Redă automat fără ecranul de pornire (apoi apasă pentru a dezactiva)"
+        "message": "Redă automat fără ecranul de pornire (apoi dă click pentru a dezmuți)"
     },
     "settings_log_level": {
-        "message": "Nivel jurnale"
+        "message": "Nivel pentru jurnale"
     },
     "settings_log_level_error": {
         "message": "Erori"
@@ -30,13 +30,13 @@
         "message": "Numărul versiunii player-ului Flash de emulat (interval 1-32)"
     },
     "settings_preferred_renderer": {
-        "message": "Dispozitiv de redare preferat"
+        "message": "Renderer preferat"
     },
     "settings_preferred_renderer_auto": {
         "message": "Automat"
     },
     "settings_advanced_options": {
-        "message": "Opţiuni avansate"
+        "message": "Opțiuni avansate"
     },
     "status_init": {
         "message": "Se citește fila actuală…"
