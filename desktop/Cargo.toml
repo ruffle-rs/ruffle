@@ -8,7 +8,7 @@ repository.workspace = true
 version.workspace = true
 
 [dependencies]
-clap = { version = "4.4.2", features = ["derive"] }
+clap = { version = "4.4.3", features = ["derive"] }
 cpal = "0.15.2"
 egui = { workspace = true }
 egui-wgpu = { git = "https://github.com/emilk/egui", rev = "98087029e020a1b2d78a4eb840d0a8505340ecad", features = ["winit"] }
@@ -27,9 +27,9 @@ url = "2.4.1"
 arboard = "3.2.1"
 dirs = "5.0"
 isahc = "1.7.2"
-rfd = "0.11.4"
+rfd = "0.12.0"
 anyhow = "1.0"
-bytemuck = "1.13.1"
+bytemuck = "1.14.0"
 os_info = { version = "3", default-features = false }
 unic-langid = "0.9.1"
 sys-locale = "0.3.1"
@@ -50,7 +50,7 @@ winapi = "0.3.9"
 
 [build-dependencies]
 embed-resource = "2"
-vergen = { version = "8.2.4", features = ["build", "git", "gitcl", "cargo"] }
+vergen = { version = "8.2.5", features = ["build", "git", "gitcl", "cargo"] }
 
 [features]
 default = ["software_video"]

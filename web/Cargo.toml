@@ -43,12 +43,12 @@ ruffle_video_software = { path = "../video/software" }
 url = "2.4.1"
 wasm-bindgen = "=0.2.87"
 wasm-bindgen-futures = "0.4.37"
-serde-wasm-bindgen = "0.5.0"
+serde-wasm-bindgen = "0.6.0"
 chrono = { version = "0.4", default-features = false, features = ["wasmbind", "clock"] }
 getrandom = { version = "0.2", features = ["js"] }
 serde = { version = "1.0.188", features = ["derive"] }
 thiserror = "1.0"
-base64 = "0.21.3"
+base64 = "0.21.4"
 async-channel = "1.9.0"
 
 [dependencies.ruffle_core]

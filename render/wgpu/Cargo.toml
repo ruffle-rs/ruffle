@@ -11,10 +11,10 @@ version.workspace = true
 wgpu = { workspace = true, features = ["naga"] }
 tracing = { workspace = true }
 ruffle_render = { path = "..", features = ["tessellator", "wgpu"] }
-bytemuck = { version = "1.13.1", features = ["derive"] }
+bytemuck = { version = "1.14.0", features = ["derive"] }
 raw-window-handle = "0.5"
-clap = { version = "4.4.2", features = ["derive"], optional = true }
-enum-map = "2.6.1"
+clap = { version = "4.4.3", features = ["derive"], optional = true }
+enum-map = "2.6.3"
 fnv = "1.0.7"
 swf = { path = "../../swf" }
 image = { version = "0.24.7", default-features = false }
@@ -25,7 +25,7 @@ naga-agal = { path = "../naga-agal" }
 naga-pixelbender = { path = "../naga-pixelbender" }
 downcast-rs = "1.2.0"
 profiling = { version = "1.0", default-features = false, optional = true }
-lru = "0.11.0"
+lru = "0.11.1"
 naga = { workspace = true }
 indexmap = "2.0.0"
 
