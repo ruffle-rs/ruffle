@@ -560,9 +560,9 @@ export class RufflePlayer extends HTMLElement {
         if (this.dynamicStyles.sheet) {
             if (this.dynamicStyles.sheet.rules) {
                 for (
-                    let i = 0;
-                    i < this.dynamicStyles.sheet.rules.length;
-                    i++
+                    let i = this.dynamicStyles.sheet.rules.length - 1;
+                    i >= 0;
+                    i--
                 ) {
                     this.dynamicStyles.sheet.deleteRule(i);
                 }
