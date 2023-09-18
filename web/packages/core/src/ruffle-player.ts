@@ -558,9 +558,9 @@ export class RufflePlayer extends HTMLElement {
      */
     protected updateStyles(): void {
         if (this.dynamicStyles.sheet) {
-            if (this.dynamicStyles.sheet.rules) {
+            if (this.dynamicStyles.sheet.cssRules) {
                 for (
-                    let i = this.dynamicStyles.sheet.rules.length - 1;
+                    let i = this.dynamicStyles.sheet.cssRules.length - 1;
                     i >= 0;
                     i--
                 ) {
