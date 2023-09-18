@@ -189,11 +189,17 @@ async function injectRuffle(
  */
 function initMutationObserver(): void {
     const observer = new MutationObserver(function (mutationsList) {
-        // If any nodes were added, re-run the polyfill to detect any new instances.
-        const nodesAdded = mutationsList.some(
-            (mutation) => mutation.addedNodes.length > 0,
+        // If any embed or object nodes were added, re-run the polyfill to detect any new instances.
+        const embedOrObjectAdded = mutationsList.some((mutation) =>
+            Array.from(mutation.addedNodes).some(
+                (node) =>
+                    ["EMBED", "OBJECT"].includes(node.nodeName) ||
+                    (node instanceof Element &&
+                        (node as Element).querySelector("embed, object") !==
+                            null),
+            ),
         );
-        if (nodesAdded) {
+        if (embedOrObjectAdded) {
             polyfillFlashInstances();
             polyfillFrames();
         }
