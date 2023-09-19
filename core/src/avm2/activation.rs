@@ -2140,7 +2140,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             ) => {
                 let mut children = value1.children().clone();
                 children.push(E4XOrXml::Xml(value2));
-                XmlListObject::new(self, children, None).into()
+                XmlListObject::new(self, children, None, None).into()
             }
             (
                 Value::Object(Object::XmlObject(value1)),
@@ -2148,14 +2148,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             ) => {
                 let mut children = vec![E4XOrXml::Xml(value1)];
                 children.extend(value2.children().clone());
-                XmlListObject::new(self, children, None).into()
+                XmlListObject::new(self, children, None, None).into()
             }
             (
                 Value::Object(Object::XmlObject(value1)),
                 Value::Object(Object::XmlObject(value2)),
             ) => {
                 let children = vec![E4XOrXml::Xml(value1), E4XOrXml::Xml(value2)];
-                XmlListObject::new(self, children, None).into()
+                XmlListObject::new(self, children, None, None).into()
             }
             (value1, value2) => {
                 let prim_value1 = value1.coerce_to_primitive(None, self)?;

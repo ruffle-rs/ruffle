@@ -6,6 +6,7 @@ pub use crate::avm2::object::xml_list_allocator;
 use crate::avm2::{
     e4x::{name_to_multiname, simple_content_to_string, E4XNode, E4XNodeKind},
     error::type_error,
+    multiname::Multiname,
     object::{E4XOrXml, XmlListObject},
     parameters::ParametersExt,
     string::AvmString,
@@ -176,7 +177,7 @@ pub fn child<'gc>(
             );
         }
     }
-    Ok(XmlListObject::new(activation, sub_children, Some(list.into())).into())
+    Ok(XmlListObject::new(activation, sub_children, Some(list.into()), None).into())
 }
 
 pub fn children<'gc>(
@@ -192,7 +193,14 @@ pub fn children<'gc>(
             sub_children.extend(children.iter().map(|node| E4XOrXml::E4X(*node)));
         }
     }
-    Ok(XmlListObject::new(activation, sub_children, Some(list.into())).into())
+    // FIXME: This method should just call get_property_local with "*".
+    Ok(XmlListObject::new(
+        activation,
+        sub_children,
+        Some(list.into()),
+        Some(Multiname::any(activation.gc())),
+    )
+    .into())
 }
 
 pub fn copy<'gc>(
@@ -227,7 +235,9 @@ pub fn attribute<'gc>(
             }
         }
     }
-    Ok(XmlListObject::new(activation, sub_children, Some(list.into())).into())
+
+    // FIXME: This should just use get_property_local with an attribute Multiname.
+    Ok(XmlListObject::new(activation, sub_children, Some(list.into()), Some(multiname)).into())
 }
 
 pub fn attributes<'gc>(
@@ -244,7 +254,14 @@ pub fn attributes<'gc>(
         }
     }
 
-    Ok(XmlListObject::new(activation, child_attrs, Some(list.into())).into())
+    // FIXME: This should just use get_property_local with an any attribute Multiname.
+    Ok(XmlListObject::new(
+        activation,
+        child_attrs,
+        Some(list.into()),
+        Some(Multiname::any_attribute(activation.gc())),
+    )
+    .into())
 }
 
 pub fn name<'gc>(
@@ -299,7 +316,7 @@ pub fn text<'gc>(
             );
         }
     }
-    Ok(XmlListObject::new(activation, nodes, Some(xml_list.into())).into())
+    Ok(XmlListObject::new(activation, nodes, Some(xml_list.into()), None).into())
 }
 
 pub fn comments<'gc>(
@@ -319,7 +336,7 @@ pub fn comments<'gc>(
             );
         }
     }
-    Ok(XmlListObject::new(activation, nodes, Some(xml_list.into())).into())
+    Ok(XmlListObject::new(activation, nodes, Some(xml_list.into()), None).into())
 }
 
 pub fn processing_instructions<'gc>(
@@ -344,5 +361,5 @@ pub fn processing_instructions<'gc>(
         }
     }
 
-    Ok(XmlListObject::new(activation, nodes, Some(xml_list.into())).into())
+    Ok(XmlListObject::new(activation, nodes, Some(xml_list.into()), None).into())
 }
