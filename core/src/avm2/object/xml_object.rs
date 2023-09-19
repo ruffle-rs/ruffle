@@ -69,6 +69,11 @@ impl<'gc> XmlObject<'gc> {
             },
         ))
     }
+
+    pub fn length(&self) -> Option<usize> {
+        self.node().length()
+    }
+
     pub fn set_node(&self, mc: &Mutation<'gc>, node: E4XNode<'gc>) {
         self.0.write(mc).node = node;
     }
