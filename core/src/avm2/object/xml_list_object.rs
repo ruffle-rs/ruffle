@@ -53,7 +53,7 @@ impl<'gc> XmlListObject<'gc> {
     pub fn new(
         activation: &mut Activation<'_, 'gc>,
         children: Vec<E4XOrXml<'gc>>,
-        target_object: Option<Object<'gc>>,
+        target_object: Option<XmlOrXmlListObject<'gc>>,
         target_property: Option<Multiname<'gc>>,
     ) -> Self {
         let base = ScriptObjectData::new(activation.context.avm2.classes().xml_list);
@@ -97,7 +97,7 @@ impl<'gc> XmlListObject<'gc> {
         self.0.write(mc).children = children;
     }
 
-    pub fn target_object(&self) -> Option<Object<'gc>> {
+    pub fn target_object(&self) -> Option<XmlOrXmlListObject<'gc>> {
         self.0.read().target_object
     }
 
@@ -117,6 +117,67 @@ impl<'gc> XmlListObject<'gc> {
             self.target_object(),
             self.target_property(),
         )
+    }
+
+    pub fn resolve_value(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Option<XmlOrXmlListObject<'gc>>, Error<'gc>> {
+        // 1. If x.[[Length]] > 0, return x
+        if self.length() > 0 {
+            Ok(Some(XmlOrXmlListObject::XmlList(*self)))
+        // 2. Else
+        } else {
+            // 2.a. If (x.[[TargetObject]] == null)
+            let Some(target_object) = self.target_object() else {
+                // 2.a.i. Return null
+                return Ok(None);
+            };
+            // or (x.[[TargetProperty]] == null)
+            let Some(target_property) = self.target_property() else {
+                // 2.a.i. Return null
+                return Ok(None);
+            };
+
+            // or (type(x.[[TargetProperty]]) is AttributeName) or (x.[[TargetProperty]].localName == "*")
+            if target_property.is_attribute() || target_property.is_any_name() {
+                // 2.a.i. Return null
+                return Ok(None);
+            }
+
+            // 2.b. Let base be the result of calling the [[ResolveValue]] method of x.[[TargetObject]] recursively
+            let Some(base) = target_object.resolve_value(activation)? else {
+                // 2.c. If base == null, return null
+                return Ok(None);
+            };
+
+            // 2.d. Let target be the result of calling [[Get]] on base with argument x.[[TargetProperty]]
+            let Some(target) = base.get_property_local(&target_property, activation)? else {
+                // NOTE: Not specified in spec, but avmplus checks if null/undefined was returned, so we do the same, since there is
+                //       an invariant in get_property_local of XmlListObject/XmlObject.
+                return Ok(None);
+            };
+
+            // 2.e. If (target.[[Length]] == 0)
+            if target.length().unwrap_or(0) == 0 {
+                // 2.e.i. If (Type(base) is XMLList) and (base.[[Length]] > 1), return null
+                if let XmlOrXmlListObject::XmlList(x) = &base {
+                    if x.length() > 1 {
+                        return Ok(None);
+                    }
+                }
+
+                // 2.e.ii. Call [[Put]] on base with arguments x.[[TargetProperty]] and the empty string
+                base.as_object()
+                    .set_property_local(&target_property, "".into(), activation)?;
+
+                // 2.e.iii. Let target be the result of calling [[Get]] on base with argument x.[[TargetProperty]]
+                return base.get_property_local(&target_property, activation);
+            }
+
+            // 2.f. Return target
+            Ok(Some(target))
+        }
     }
 
     pub fn equals(
@@ -189,7 +250,7 @@ pub struct XmlListObjectData<'gc> {
     /// The XML or XMLList object that this list was created from.
     /// If `Some`, then modifications to this list are reflected
     /// in the original object.
-    target_object: Option<Object<'gc>>,
+    target_object: Option<XmlOrXmlListObject<'gc>>,
 
     target_property: Option<Multiname<'gc>>,
 }
@@ -241,6 +302,79 @@ impl<'a, 'gc> Deref for E4XWrapper<'a, 'gc> {
             E4XWrapper::E4X(node) => node,
             E4XWrapper::XmlRef(node) => node,
         }
+    }
+}
+
+/// Represents either a XmlObject or a XmlListObject. Used
+/// for resolving the value of empty XMLLists.
+#[derive(Clone, Collect, Copy, Debug)]
+#[collect(no_drop)]
+pub enum XmlOrXmlListObject<'gc> {
+    XmlList(XmlListObject<'gc>),
+    Xml(XmlObject<'gc>),
+}
+
+impl<'gc> XmlOrXmlListObject<'gc> {
+    pub fn length(&self) -> Option<usize> {
+        match self {
+            XmlOrXmlListObject::Xml(x) => x.length(),
+            XmlOrXmlListObject::XmlList(x) => Some(x.length()),
+        }
+    }
+
+    pub fn resolve_value(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Option<XmlOrXmlListObject<'gc>>, Error<'gc>> {
+        match self {
+            // NOTE: XmlObjects just resolve to themselves.
+            XmlOrXmlListObject::Xml(x) => Ok(Some(XmlOrXmlListObject::Xml(*x))),
+            XmlOrXmlListObject::XmlList(x) => x.resolve_value(activation),
+        }
+    }
+
+    pub fn as_object(&self) -> Object<'gc> {
+        match self {
+            XmlOrXmlListObject::Xml(x) => Object::XmlObject(*x),
+            XmlOrXmlListObject::XmlList(x) => Object::XmlListObject(*x),
+        }
+    }
+
+    pub fn get_property_local(
+        &self,
+        name: &Multiname<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Option<XmlOrXmlListObject<'gc>>, Error<'gc>> {
+        let value = self.as_object().get_property_local(name, activation)?;
+
+        if let Some(xml) = value.as_object().and_then(|x| x.as_xml_object()) {
+            return Ok(Some(XmlOrXmlListObject::Xml(xml)));
+        }
+
+        if let Some(list) = value.as_object().and_then(|x| x.as_xml_list_object()) {
+            return Ok(Some(XmlOrXmlListObject::XmlList(list)));
+        }
+
+        if matches!(value, Value::Null | Value::Undefined) {
+            return Ok(None);
+        }
+
+        unreachable!(
+            "Invalid value {:?}, expected XmlListObject/XmlObject or a null value",
+            value
+        );
+    }
+}
+
+impl<'gc> From<XmlListObject<'gc>> for XmlOrXmlListObject<'gc> {
+    fn from(value: XmlListObject<'gc>) -> XmlOrXmlListObject<'gc> {
+        XmlOrXmlListObject::XmlList(value)
+    }
+}
+
+impl<'gc> From<XmlObject<'gc>> for XmlOrXmlListObject<'gc> {
+    fn from(value: XmlObject<'gc>) -> XmlOrXmlListObject<'gc> {
+        XmlOrXmlListObject::Xml(value)
     }
 }
 
