@@ -183,11 +183,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
     ) -> Option<XmlListObject<'gc>> {
         let mut descendants = Vec::new();
         self.0.read().node.descendants(multiname, &mut descendants);
-        Some(XmlListObject::new(
-            activation,
-            descendants,
-            Some((*self).into()),
-        ))
+        Some(XmlListObject::new(activation, descendants, None, None))
     }
 
     fn get_property_local(
@@ -236,7 +232,13 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
             Vec::new()
         };
 
-        return Ok(XmlListObject::new(activation, matched_children, Some(self.into())).into());
+        return Ok(XmlListObject::new(
+            activation,
+            matched_children,
+            Some(self.into()),
+            Some(name.clone()),
+        )
+        .into());
     }
 
     fn call_property_local(

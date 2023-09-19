@@ -224,7 +224,7 @@ pub fn child<'gc>(
                 } else {
                     Vec::new()
                 };
-                return Ok(XmlListObject::new(activation, children, None).into());
+                return Ok(XmlListObject::new(activation, children, None, None).into());
             }
         }
 
@@ -237,7 +237,8 @@ pub fn child<'gc>(
         Vec::new()
     };
 
-    Ok(XmlListObject::new(activation, children, Some(xml.into())).into())
+    // FIXME: If name is not a number index, then we should call [[Get]] (get_property_local) with the name.
+    Ok(XmlListObject::new(activation, children, Some(xml.into()), Some(multiname)).into())
 }
 
 pub fn child_index<'gc>(
@@ -281,7 +282,14 @@ pub fn children<'gc>(
         Vec::new()
     };
 
-    Ok(XmlListObject::new(activation, children, Some(xml.into())).into())
+    // FIXME: Spec says to just call [[Get]] with * (any multiname).
+    Ok(XmlListObject::new(
+        activation,
+        children,
+        Some(xml.into()),
+        Some(Multiname::any(activation.gc())),
+    )
+    .into())
 }
 
 pub fn copy<'gc>(
@@ -329,7 +337,7 @@ pub fn elements<'gc>(
         Vec::new()
     };
 
-    Ok(XmlListObject::new(activation, children, Some(xml.into())).into())
+    Ok(XmlListObject::new(activation, children, Some(xml.into()), None).into())
 }
 
 pub fn attributes<'gc>(
@@ -344,7 +352,14 @@ pub fn attributes<'gc>(
         Vec::new()
     };
 
-    Ok(XmlListObject::new(activation, attributes, Some(xml.into())).into())
+    // FIXME: Spec/avmplus says to call [[Get]] with * attribute name (any attribute multiname).
+    Ok(XmlListObject::new(
+        activation,
+        attributes,
+        Some(xml.into()),
+        Some(Multiname::any_attribute(activation.gc())),
+    )
+    .into())
 }
 
 pub fn attribute<'gc>(
@@ -364,7 +379,8 @@ pub fn attribute<'gc>(
         Vec::new()
     };
 
-    Ok(XmlListObject::new(activation, attributes, Some(xml.into())).into())
+    // FIXME: Spec/avmplus call [[Get]] with attribute name.
+    Ok(XmlListObject::new(activation, attributes, Some(xml.into()), Some(multiname)).into())
 }
 
 pub fn call_handler<'gc>(
@@ -510,9 +526,10 @@ pub fn descendants<'gc>(
     let multiname = name_to_multiname(activation, &args[0], false)?;
     let mut descendants = Vec::new();
     xml.node().descendants(&multiname, &mut descendants);
-    Ok(XmlListObject::new(activation, descendants, Some(xml.into())).into())
+    Ok(XmlListObject::new(activation, descendants, None, None).into())
 }
 
+// ECMA-357 13.4.4.37 XML.prototype.text ( )
 pub fn text<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
@@ -528,7 +545,9 @@ pub fn text<'gc>(
     } else {
         Vec::new()
     };
-    Ok(XmlListObject::new(activation, nodes, Some(xml.into())).into())
+    // 1. Let list be a new XMLList with list.[[TargetObject]] = x and list.[[TargetProperty]] = null
+    // 3. Return list
+    Ok(XmlListObject::new(activation, nodes, Some(xml.into()), None).into())
 }
 
 pub fn length<'gc>(
@@ -559,6 +578,7 @@ pub fn has_simple_content<'gc>(
     Ok(result.into())
 }
 
+// ECMA-357 13.4.4.9 XML.prototype.comments ( )
 pub fn comments<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
@@ -575,9 +595,12 @@ pub fn comments<'gc>(
         Vec::new()
     };
 
-    Ok(XmlListObject::new(activation, comments, Some(xml.into())).into())
+    // 1. Let list be a new XMLList with list.[[TargetObject]] = x and list.[[TargetProperty]] = null
+    // 3. Return list
+    Ok(XmlListObject::new(activation, comments, Some(xml.into()), None).into())
 }
 
+// ECMA-357 13.4.4.28 XML.prototype.processingInstructions ( [ name ] )
 pub fn processing_instructions<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
@@ -598,7 +621,9 @@ pub fn processing_instructions<'gc>(
         Vec::new()
     };
 
-    Ok(XmlListObject::new(activation, nodes, Some(xml.into())).into())
+    // 3. Let list = a new XMLList with list.[[TargetObject]] = x and list.[[TargetProperty]] = null
+    // 5. Return list
+    Ok(XmlListObject::new(activation, nodes, Some(xml.into()), None).into())
 }
 
 // ECMA-357 13.4.4.18 XML.prototype.insertChildAfter (child1, child2)

@@ -310,6 +310,16 @@ impl<'gc> Multiname<'gc> {
         }
     }
 
+    /// Indicates the any attribute type (any attribute in any namespace).
+    pub fn any_attribute(mc: &Mutation<'gc>) -> Self {
+        Self {
+            ns: NamespaceSet::single(Namespace::any(mc)),
+            name: None,
+            param: None,
+            flags: MultinameFlags::ATTRIBUTE,
+        }
+    }
+
     pub fn new(ns: Namespace<'gc>, name: impl Into<AvmString<'gc>>) -> Self {
         Self {
             ns: NamespaceSet::single(ns),

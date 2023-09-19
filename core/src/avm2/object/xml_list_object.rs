@@ -26,7 +26,8 @@ pub fn xml_list_allocator<'gc>(
             children: Vec::new(),
             // An XMLList created by 'new XMLList()' is not linked
             // to any object
-            target: None,
+            target_object: None,
+            target_property: None,
         },
     ))
     .into())
@@ -52,7 +53,8 @@ impl<'gc> XmlListObject<'gc> {
     pub fn new(
         activation: &mut Activation<'_, 'gc>,
         children: Vec<E4XOrXml<'gc>>,
-        target: Option<Object<'gc>>,
+        target_object: Option<Object<'gc>>,
+        target_property: Option<Multiname<'gc>>,
     ) -> Self {
         let base = ScriptObjectData::new(activation.context.avm2.classes().xml_list);
         XmlListObject(GcCell::new(
@@ -60,7 +62,8 @@ impl<'gc> XmlListObject<'gc> {
             XmlListObjectData {
                 base,
                 children,
-                target,
+                target_object,
+                target_property,
             },
         ))
     }
@@ -94,8 +97,12 @@ impl<'gc> XmlListObject<'gc> {
         self.0.write(mc).children = children;
     }
 
-    pub fn target(&self) -> Option<Object<'gc>> {
-        self.0.read().target
+    pub fn target_object(&self) -> Option<Object<'gc>> {
+        self.0.read().target_object
+    }
+
+    pub fn target_property(&self) -> Option<Multiname<'gc>> {
+        self.0.read().target_property.clone()
     }
 
     pub fn deep_copy(&self, activation: &mut Activation<'_, 'gc>) -> XmlListObject<'gc> {
@@ -104,7 +111,12 @@ impl<'gc> XmlListObject<'gc> {
             .iter()
             .map(|child| E4XOrXml::E4X(child.node().deep_copy(activation.context.gc_context)))
             .collect();
-        XmlListObject::new(activation, children, self.target())
+        XmlListObject::new(
+            activation,
+            children,
+            self.target_object(),
+            self.target_property(),
+        )
     }
 
     pub fn equals(
@@ -160,7 +172,7 @@ impl<'gc> XmlListObject<'gc> {
             let mut out = vec![];
             out.extend(left.children().clone());
             out.extend(right.children().clone());
-            Self::new(activation, out, None)
+            Self::new(activation, out, None, None)
         }
     }
 }
@@ -177,7 +189,9 @@ pub struct XmlListObjectData<'gc> {
     /// The XML or XMLList object that this list was created from.
     /// If `Some`, then modifications to this list are reflected
     /// in the original object.
-    target: Option<Object<'gc>>,
+    target_object: Option<Object<'gc>>,
+
+    target_property: Option<Multiname<'gc>>,
 }
 
 /// Holds either an `E4XNode` or an `XmlObject`. This can be converted
@@ -260,11 +274,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
         for child in self.0.read().children.iter() {
             child.node().descendants(multiname, &mut descendants);
         }
-        Some(XmlListObject::new(
-            activation,
-            descendants,
-            Some((*self).into()),
-        ))
+        Some(XmlListObject::new(activation, descendants, None, None))
     }
 
     fn get_property_local(
@@ -309,7 +319,13 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
             })
             .collect();
 
-        Ok(XmlListObject::new(activation, matched_children, Some(self.into())).into())
+        Ok(XmlListObject::new(
+            activation,
+            matched_children,
+            Some(self.into()),
+            Some(name.clone()),
+        )
+        .into())
     }
 
     fn call_property_local(
@@ -377,7 +393,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
             if let Some(local_name) = name.local_name() {
                 if let Ok(index) = local_name.parse::<usize>() {
                     // 2.a. If x.[[TargetObject]] is not null
-                    if let Some(target) = write.target {
+                    if let Some(target) = write.target_object {
                         return Err(format!(
                             "Modifying an XMLList object is not yet implemented: target {:?}",
                             target
