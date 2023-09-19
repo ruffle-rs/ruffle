@@ -17,6 +17,7 @@ file-menu-exit = יציאה
 controls-menu = פקדים
 controls-menu-suspend = השעייה
 controls-menu-resume = המשך
+controls-menu-volume = בקרת עוצמת קול
 help-menu = עזרה
 help-menu-join-discord = הצטרף לדיסקורד
 help-menu-report-a-bug = דווח על בעיה...
