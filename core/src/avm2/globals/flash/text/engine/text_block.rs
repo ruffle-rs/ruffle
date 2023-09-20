@@ -31,6 +31,7 @@ pub fn create_text_line<'gc>(
     let text = match previous_text_line {
         Some(_) => {
             // Some SWFs rely on eventually getting `null` from createLineText.
+            // TODO: Support multiple lines
             this.set_property(
                 &Multiname::new(
                     activation.avm2().flash_text_engine_internal,
@@ -124,6 +125,7 @@ fn apply_format<'gc>(
     element_format: Option<Object<'gc>>,
 ) -> Result<f64, Error<'gc>> {
     if let Some(element_format) = element_format {
+        // TODO: Support more ElementFormat properties
         let color = element_format
             .get_public_property("color", activation)?
             .coerce_to_u32(activation)?;
