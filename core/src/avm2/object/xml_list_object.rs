@@ -119,6 +119,28 @@ impl<'gc> XmlListObject<'gc> {
         )
     }
 
+    // ECMA-357 9.2.1.6 [[Append]] (V)
+    pub fn append(&self, value: Value<'gc>, activation: &mut Activation<'_, 'gc>) {
+        let mut write = self.0.write(activation.gc());
+
+        // 3. If Type(V) is XMLList,
+        if let Some(list) = value.as_object().and_then(|x| x.as_xml_list_object()) {
+            // 3.a. Let x.[[TargetObject]] = V.[[TargetObject]]
+            write.target_object = list.target_object();
+            // 3.b. Let x.[[TargetProperty]] = V.[[TargetProperty]]
+            write.target_property = list.target_property();
+
+            for el in &*list.children() {
+                write.children.push(el.clone());
+            }
+        }
+
+        if let Some(xml) = value.as_object().and_then(|x| x.as_xml_object()) {
+            write.children.push(E4XOrXml::Xml(xml));
+        }
+    }
+
+    // ECMA-357 9.2.1.10 [[ResolveValue]] ( )
     pub fn resolve_value(
         &self,
         activation: &mut Activation<'_, 'gc>,
@@ -519,11 +541,11 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        let mut write = self.0.write(activation.context.gc_context);
-
         // 1. Let i = ToUint32(P)
         // 2. If ToString(i) == P
         if !name.is_any_name() && !name.is_attribute() {
+            let mut write = self.0.write(activation.context.gc_context);
+
             if let Some(local_name) = name.local_name() {
                 if let Ok(index) = local_name.parse::<usize>() {
                     // 2.a. If x.[[TargetObject]] is not null
@@ -554,13 +576,27 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
         }
 
         // 3. Else if x.[[Length]] is less than or equal to 1
-        if write.children.len() <= 1 {
+        if self.length() <= 1 {
             // 3.a. If x.[[Length]] == 0
-            if write.children.is_empty() {
-                return Err(
-                    "Modifying an XMLList object is not yet implemented: need to resolve".into(),
-                );
+            if self.length() == 0 {
+                // 3.a.i. Let r be the result of calling the [[ResolveValue]] method of x
+                let r = self.resolve_value(activation)?;
+
+                // 3.a.ii. If (r == null)
+                let Some(r) = r else {
+                    return Ok(());
+                };
+
+                // or (r.[[Length]] is not equal to 1), return
+                if r.length().unwrap_or(0) != 1 {
+                    return Ok(());
+                }
+
+                // 3.a.iii. Call the [[Append]] method of x with argument r
+                self.append(r.as_object().into(), activation);
             }
+
+            let mut write = self.0.write(activation.gc());
 
             // 3.b. Call the [[Put]] method of x[0] with arguments P and V
             let xml = write.children[0].get_or_create_xml(activation);
