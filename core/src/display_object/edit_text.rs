@@ -158,6 +158,9 @@ pub struct EditTextData<'gc> {
     /// Flags indicating the text field's settings.
     #[collect(require_static)]
     flags: EditTextFlag,
+
+    /// Whether this EditText represents an AVM2 TextLine.
+    is_tlf: bool,
 }
 
 impl<'gc> EditTextData<'gc> {
@@ -322,6 +325,7 @@ impl<'gc> EditText<'gc> {
                 line_data,
                 scroll: 1,
                 max_chars: swf_tag.max_length().unwrap_or_default() as i32,
+                is_tlf: false,
             },
         ));
 
@@ -366,6 +370,21 @@ impl<'gc> EditText<'gc> {
         }
 
         text_field
+    }
+
+    /// Create a new, dynamic `EditText` representing an AVM2 TextLine.
+    pub fn new_tlf(
+        context: &mut UpdateContext<'_, 'gc>,
+        swf_movie: Arc<SwfMovie>,
+        x: f64,
+        y: f64,
+        width: f64,
+        height: f64,
+    ) -> Self {
+        let text = Self::new(context, swf_movie, x, y, width, height);
+        text.set_is_tlf(context.gc_context, true);
+
+        text
     }
 
     pub fn text(self) -> WString {
@@ -578,6 +597,14 @@ impl<'gc> EditText<'gc> {
             .set(EditTextFlag::HTML, is_html);
     }
 
+    pub fn is_tlf(self) -> bool {
+        self.0.read().is_tlf
+    }
+
+    pub fn set_is_tlf(self, gc_context: &Mutation<'gc>, is_tlf: bool) {
+        self.0.write(gc_context).is_tlf = is_tlf;
+    }
+
     pub fn replace_text(
         self,
         from: usize,
@@ -746,6 +773,12 @@ impl<'gc> EditText<'gc> {
             is_word_wrap,
             !edit_text.flags.contains(EditTextFlag::USE_OUTLINES),
         );
+
+        if edit_text.is_tlf {
+            // Resize the TLF textfield to match the height of the text.
+            // FIXME: This should probably be done in text_block::create_text_line.
+            edit_text.bounds.set_height(intrinsic_bounds.extent_y());
+        }
 
         edit_text.line_data = get_line_data(&new_layout);
         edit_text.layout = new_layout;
