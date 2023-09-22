@@ -61,7 +61,7 @@ pub fn create_text_line<'gc>(
 
     // FIXME: TextLine should be its own DisplayObject
     let display_object: EditText =
-        EditText::new(&mut activation.context, movie, 0.0, 0.0, width, 15.0).into();
+        EditText::new_tlf(&mut activation.context, movie, 0.0, 0.0, width, 15.0).into();
 
     display_object.set_text(text.as_wstr(), &mut activation.context);
 
@@ -69,9 +69,7 @@ pub fn create_text_line<'gc>(
         .get_public_property("elementFormat", activation)?
         .as_object();
 
-    let new_height = apply_format(activation, display_object, text.as_wstr(), element_format)?;
-
-    display_object.set_height(activation.gc(), new_height);
+    apply_format(activation, display_object, text.as_wstr(), element_format)?;
 
     let instance = initialize_for_allocator(activation, display_object.into(), class)?;
     class.call_native_init(instance.into(), &[], activation)?;
@@ -123,7 +121,7 @@ fn apply_format<'gc>(
     display_object: EditText<'gc>,
     text: &WStr,
     element_format: Option<Object<'gc>>,
-) -> Result<f64, Error<'gc>> {
+) -> Result<(), Error<'gc>> {
     if let Some(element_format) = element_format {
         // TODO: Support more ElementFormat properties
         let color = element_format
@@ -141,9 +139,9 @@ fn apply_format<'gc>(
 
         display_object.set_text_format(0, text.len(), format.clone(), &mut activation.context);
         display_object.set_new_text_format(format, &mut activation.context);
-
-        return Ok(size * 1.2 + 3.0);
     }
 
-    Ok(15.0)
+    display_object.set_word_wrap(true, &mut activation.context);
+
+    Ok(())
 }

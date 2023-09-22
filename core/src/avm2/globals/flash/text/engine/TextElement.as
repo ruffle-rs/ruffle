@@ -6,6 +6,7 @@ package flash.text.engine {
     public final class TextElement extends ContentElement {
         public function TextElement(text:String = null, elementFormat:ElementFormat = null, eventMirror:EventDispatcher = null, textRotation:String = "rotate0") {
             super(elementFormat, eventMirror, textRotation);
+            this.text = text;
         }
         
         // Contrary to the documentation, TextElement does not implement a getter here. It inherits the getter from ContentElement.
