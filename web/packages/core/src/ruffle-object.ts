@@ -1,17 +1,14 @@
 import {
-    isBuiltInContextMenuVisible,
     isFallbackElement,
-    isScriptAccessAllowed,
     isYoutubeFlashSource,
     workaroundYoutubeMixedContent,
     RufflePlayer,
+    getPolyfillOptions,
 } from "./ruffle-player";
 import { FLASH_ACTIVEX_CLASSID } from "./flash-identifiers";
 import { registerElement } from "./register-element";
-import type { URLLoadOptions, WindowMode } from "./load-options";
 import { RuffleEmbed } from "./ruffle-embed";
 import { isSwf } from "./swf-utils";
-import { NetworkingAccessMode } from "./load-options";
 
 /**
  * Find and return the first value in obj with the given key.
@@ -95,74 +92,23 @@ export class RuffleObject extends RufflePlayer {
             url = this.params["movie"];
         }
 
-        const allowScriptAccess = findCaseInsensitive(
-            this.params,
-            "allowScriptAccess",
-            null,
-        );
-
-        const parameters = findCaseInsensitive(
-            this.params,
-            "flashvars",
-            this.getAttribute("flashvars"),
-        );
-
-        const backgroundColor = findCaseInsensitive(
-            this.params,
-            "bgcolor",
-            this.getAttribute("bgcolor"),
-        );
-
-        const allowNetworking = findCaseInsensitive(
-            this.params,
-            "allowNetworking",
-            this.getAttribute("allowNetworking"),
-        );
-
-        const base = findCaseInsensitive(
-            this.params,
-            "base",
-            this.getAttribute("base"),
-        );
-
-        const menu = findCaseInsensitive(this.params, "menu", null);
-        const salign = findCaseInsensitive(this.params, "salign", "");
-        const quality = findCaseInsensitive(this.params, "quality", "high");
-        const scale = findCaseInsensitive(this.params, "scale", "showAll");
-        const wmode = findCaseInsensitive(this.params, "wmode", "window");
-
         if (url) {
-            const options: URLLoadOptions = { url };
-            options.allowScriptAccess = isScriptAccessAllowed(
-                allowScriptAccess,
-                url,
-            );
-            if (parameters) {
-                options.parameters = parameters;
-            }
-            if (backgroundColor) {
-                options.backgroundColor = backgroundColor;
-            }
-            if (base) {
-                options.base = base;
-            }
-            options.menu = isBuiltInContextMenuVisible(menu);
-            if (salign) {
-                options.salign = salign;
-            }
-            if (quality) {
-                options.quality = quality;
-            }
-            if (scale) {
-                options.scale = scale;
-            }
-            if (wmode) {
-                options.wmode = wmode as WindowMode;
-            }
-            if (allowNetworking) {
-                options.allowNetworking =
-                    allowNetworking as NetworkingAccessMode;
-            }
+            // Get the configuration options that have been overwritten for this movie.
+            const attributeCheckOptions = [
+                "allowNetworking",
+                "base",
+                "bgcolor",
+                "flashvars",
+            ];
+            const getOptionString = (optionName: string) =>
+                findCaseInsensitive(
+                    this.params,
+                    optionName,
+                    attributeCheckOptions.includes(optionName)
+                        ? this.getAttribute(optionName)
+                        : null,
+                );
+            const options = getPolyfillOptions(url, getOptionString);
 
             // Kick off the SWF download.
             this.load(options);

@@ -27,8 +27,10 @@ const optionGroups = {
     "Game": document.getElementById("games-optgroup"),
 };
 
-// Default config used by the player.
-const defaultConfig = {
+// This is the base config used by the demo player (except for specific SWF files
+// with their own base config).
+// It has the highest priority and its options cannot be overwritten.
+const baseDemoConfig = {
     letterbox: "on",
     logLevel: "warn",
     forceScale: true,
@@ -147,7 +149,7 @@ async function loadFile(file) {
     }
     hideSample();
     const data = await new Response(file).arrayBuffer();
-    load({ data: data, swfFileName: file.name, ...defaultConfig });
+    load({ data: data, swfFileName: file.name, ...baseDemoConfig });
 }
 
 function loadSample() {
@@ -155,7 +157,7 @@ function loadSample() {
     localFileName.textContent = "No file selected.";
     if (swfData) {
         showSample(swfData);
-        const config = swfData.config || defaultConfig;
+        const config = swfData.config || baseDemoConfig;
         load({ url: swfData.location, ...config });
     } else {
         hideSample();

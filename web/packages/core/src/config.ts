@@ -36,7 +36,7 @@ export const DEFAULT_CONFIG: Required<BaseLoadOptions> = {
     scale: "showAll",
     forceScale: false,
     frameRate: null,
-    wmode: WindowMode.Opaque,
+    wmode: WindowMode.Window,
     publicPath: null,
     polyfills: true,
     playerVersion: null,
