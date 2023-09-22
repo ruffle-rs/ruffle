@@ -7,6 +7,7 @@ import type { DataLoadOptions, URLLoadOptions } from "./load-options";
 import {
     AutoPlay,
     ContextMenu,
+    NetworkingAccessMode,
     UnmuteOverlay,
     WindowMode,
 } from "./load-options";
@@ -931,6 +932,9 @@ export class RufflePlayer extends HTMLElement {
      * - A URL, passed as a string, which will load a URL with default options.
      * - A [[URLLoadOptions]] object, to load a URL with options.
      * - A [[DataLoadOptions]] object, to load data with options.
+     * The options, if provided, must only contain values provided for this specific movie.
+     * They must not contain any default values, since those would overwrite other configuration
+     * settings with a lower priority (e.g. the general RufflePlayer config).
      *
      * The options will be defaulted by the [[config]] field, which itself
      * is defaulted by a global `window.RufflePlayer.config`.
@@ -2367,26 +2371,42 @@ export const enum ReadyState {
 }
 
 /**
- * Returns whether a SWF file can call JavaScript code in the surrounding HTML file.
+ * Parses a given string or null value to a boolean or null and returns it.
  *
- * @param access The value of the `allowScriptAccess` attribute.
- * @param url The URL of the SWF file.
- * @returns True if script access is allowed.
+ * @param value The string or null value that should be parsed to a boolean or null.
+ * @returns The string as a boolean, if it exists and contains a boolean, otherwise null.
  */
-export function isScriptAccessAllowed(
+function parseBoolean(value: string | null): boolean | null {
+    switch (value?.toLowerCase()) {
+        case "true":
+            return true;
+        case "false":
+            return false;
+        default:
+            return null;
+    }
+}
+
+/**
+ * Parses a string with script access options or null and returns whether the script
+ * access options allow the SWF file with the given URL to call JavaScript code in
+ * the surrounding HTML file if they exist correctly, otherwise null.
+ *
+ * @param access The string with the script access options or null.
+ * @param url The URL of the SWF file.
+ * @returns Whether the script access options allow the SWF file with the given URL to
+ * call JavaScript code in the surrounding HTML file if they exist correctly, otherwise null.
+ */
+function parseAllowScriptAccess(
     access: string | null,
     url: string,
-): boolean {
-    if (!access) {
-        access = "sameDomain";
-    }
-    switch (access.toLowerCase()) {
+): boolean | null {
+    switch (access?.toLowerCase()) {
         case "always":
             return true;
         case "never":
             return false;
         case "samedomain":
-        default:
             try {
                 return (
                     new URL(window.location.href).origin ===
@@ -2395,20 +2415,79 @@ export function isScriptAccessAllowed(
             } catch {
                 return false;
             }
+        default:
+            return null;
     }
 }
 
 /**
- * Returns whether a SWF file should show the built-in context menu items.
+ * Returns the URLLoadOptions that have been provided for a specific movie.
  *
- * @param menu The value of the `menu` attribute.
- * @returns True if the built-in context items should be shown.
+ * The function getOptionString is given as an argument and used to get values of configuration
+ * options that have been overwritten for this specific movie.
+ *
+ * The returned URLLoadOptions interface only contains values for the configuration options
+ * that have been overwritten for the movie and no default values.
+ * This is necessary because any default values would overwrite other configuration
+ * settings with a lower priority (e.g. the general RufflePlayer config).
+ *
+ * @param url The url of the movie.
+ * @param getOptionString A function that takes the name of a configuration option.
+ * If that configuration option has been overwritten for this specific movie, it returns that value.
+ * Otherwise, it returns null.
+ * @returns The URLLoadOptions for the movie.
  */
-export function isBuiltInContextMenuVisible(menu: string | null): boolean {
-    if (menu === null || menu.toLowerCase() === "true") {
-        return true;
+export function getPolyfillOptions(
+    url: string,
+    getOptionString: (optionName: string) => string | null,
+): URLLoadOptions {
+    const options: URLLoadOptions = { url };
+
+    const allowNetworking = getOptionString("allowNetworking");
+    if (allowNetworking !== null) {
+        options.allowNetworking = allowNetworking as NetworkingAccessMode;
     }
-    return false;
+    const allowScriptAccess = parseAllowScriptAccess(
+        getOptionString("allowScriptAccess"),
+        url,
+    );
+    if (allowScriptAccess !== null) {
+        options.allowScriptAccess = allowScriptAccess;
+    }
+    const backgroundColor = getOptionString("bgcolor");
+    if (backgroundColor !== null) {
+        options.backgroundColor = backgroundColor;
+    }
+    const base = getOptionString("base");
+    if (base !== null) {
+        options.base = base;
+    }
+    const menu = parseBoolean(getOptionString("menu"));
+    if (menu !== null) {
+        options.menu = menu;
+    }
+    const parameters = getOptionString("flashvars");
+    if (parameters !== null) {
+        options.parameters = parameters;
+    }
+    const quality = getOptionString("quality");
+    if (quality !== null) {
+        options.quality = quality;
+    }
+    const salign = getOptionString("salign");
+    if (salign !== null) {
+        options.salign = salign;
+    }
+    const scale = getOptionString("scale");
+    if (scale !== null) {
+        options.scale = scale;
+    }
+    const wmode = getOptionString("wmode");
+    if (wmode !== null) {
+        options.wmode = wmode as WindowMode;
+    }
+
+    return options;
 }
 
 /**
