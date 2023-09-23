@@ -1,11 +1,23 @@
 package flash.display {
+    import __ruffle__.stub_setter;
 
+    import flash.accessibility.AccessibilityImplementation;
 	import flash.ui.ContextMenu;
 
 	[Ruffle(NativeInstanceInit)]
 	public class InteractiveObject extends DisplayObject {
+	    private var _accessibilityImpl:AccessibilityImplementation = null;
+
 		public function InteractiveObject() {
 			throw new Error("You cannot directly construct InteractiveObject.")
+		}
+
+		public function get accessibilityImplementation():AccessibilityImplementation {
+		    return this._accessibilityImpl;
+		}
+		public function set accessibilityImplementation(value:AccessibilityImplementation):void {
+		    stub_setter("flash.display.InteractiveObject", "accessibilityImplementation");
+		    this._accessibilityImpl = value;
 		}
 
 		public native function get mouseEnabled():Boolean;
