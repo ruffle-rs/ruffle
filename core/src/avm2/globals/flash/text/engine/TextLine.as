@@ -87,6 +87,10 @@ package flash.text.engine {
             return null;
         }
 
+        public function get previousLine():TextLine {
+            return null;
+        }
+
         public function getBaselinePosition(baseline:String):Number {
             stub_method("flash.text.engine.TextLine", "getBaselinePosition");
             return 0.0;
