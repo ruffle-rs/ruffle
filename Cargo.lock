@@ -2509,7 +2509,7 @@ checksum = "bc0000e42512c92e31c2252315bda326620a4e034105e900c98ec492fa077b3e"
 [[package]]
 name = "jpegxr"
 version = "0.3.0"
-source = "git+https://github.com/ruffle-rs/jpegxr?branch=ruffle#dcfe024e278dce75d1ced7e98ec5b4c2a66736e5"
+source = "git+https://github.com/ruffle-rs/jpegxr?branch=ruffle#0251753f3ea4b7e301cb89e92c5707055b1db501"
 dependencies = [
  "bindgen 0.68.1",
  "cc",
