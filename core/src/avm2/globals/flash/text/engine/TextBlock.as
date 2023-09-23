@@ -1,4 +1,6 @@
 package flash.text.engine {
+    import __ruffle__.stub_method;
+
     public final class TextBlock {
         public var userData;
 
@@ -131,6 +133,19 @@ package flash.text.engine {
         }
 
         public native function createTextLine(previousLine:TextLine = null, width:Number = 1000000, lineOffset:Number = 0, fitSomething:Boolean = false):TextLine;
+
+        public function recreateTextLine(textLine:TextLine, previousLine:TextLine = null, width:Number = 1000000, lineOffset:Number = 0, fitSomething:Boolean = false):TextLine {
+            if (textLine == null) {
+                throw new ArgumentError("Error #2004: One of the parameters is invalid.", 2004);
+            }
+
+            if (previousLine) {
+                return null;
+            }
+
+            stub_method("flash.text.engine.TextBlock", "recreateTextLine");
+            return createTextLine(null, width, lineOffset, fitSomething);
+        }
 
         public function get textLineCreationResult():String {
             return this._textLineCreationResult;
