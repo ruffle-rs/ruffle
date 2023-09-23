@@ -185,7 +185,8 @@ impl<'gc> XmlListObject<'gc> {
                 // 2.e.i. If (Type(base) is XMLList) and (base.[[Length]] > 1), return null
                 if let XmlOrXmlListObject::XmlList(x) = &base {
                     if x.length() > 1 {
-                        return Ok(None);
+                        // NOTE: Not mentioned in the spec, but avmplus throws an Error 1089 here.
+                        return Err(make_error_1089(activation));
                     }
                 }
 
