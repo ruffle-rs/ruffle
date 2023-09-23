@@ -529,7 +529,7 @@ fn substr<'gc>(
     let len = if len < 0. {
         if len.is_infinite() {
             0.
-        } else if (len as isize) < 0 {
+        } else if len <= -1.0 {
             let wrapped_around = this.len() as f64 + len;
             if wrapped_around as usize + start_index >= this.len() {
                 return Ok("".into());
@@ -715,10 +715,10 @@ fn string_index(i: f64, len: usize) -> usize {
 }
 
 /// Normalizes an wrapping index parameter used in `String` functions such as `slice`.
-/// Negative values will count backwards from `len`.
+/// Values less than or equal to -1.0 will count backwards from `len`.
 /// The returned index will be within the range of `[0, len]`.
 fn string_wrapping_index(i: f64, len: usize) -> usize {
-    if (i as isize) < 0 {
+    if i <= -1.0 {
         if i.is_infinite() {
             return 0;
         }
