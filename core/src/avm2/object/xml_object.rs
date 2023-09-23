@@ -7,6 +7,7 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject, XmlListObject};
 use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
+use crate::avm2::Namespace;
 use crate::avm2::{Error, Multiname};
 use core::fmt;
 use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
@@ -73,6 +74,13 @@ impl<'gc> XmlObject<'gc> {
 
     pub fn local_name(&self) -> Option<AvmString<'gc>> {
         self.0.read().node.local_name()
+    }
+
+    pub fn namespace(&self, activation: &mut Activation<'_, 'gc>) -> Namespace<'gc> {
+        match self.0.read().node.namespace() {
+            Some(ns) => Namespace::package(ns, &mut activation.context.borrow_gc()),
+            None => activation.avm2().public_namespace,
+        }
     }
 
     pub fn matches_name(&self, multiname: &Multiname<'gc>) -> bool {
