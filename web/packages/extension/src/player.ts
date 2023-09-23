@@ -132,7 +132,13 @@ async function loadFile(file: File | undefined) {
         localFileName.textContent = file.name;
     }
     const data = await new Response(file).arrayBuffer();
-    load({ data: data, swfFileName: file.name, ...baseExtensionConfig });
+    const options = await utils.getExplicitOptions();
+    load({
+        ...options,
+        data: data,
+        swfFileName: file.name,
+        ...baseExtensionConfig,
+    });
     history.pushState("", document.title, window.location.pathname);
 }
 
