@@ -73,9 +73,7 @@ pub fn name<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let node = this.as_xml_object().unwrap();
     if let Some(local_name) = node.local_name() {
-        avm2_stub_method!(activation, "XML", "name", "namespaces");
-        // FIXME - use namespace
-        let namespace = activation.avm2().public_namespace;
+        let namespace = node.namespace(activation);
         Ok(QNameObject::from_name(activation, Multiname::new(namespace, local_name))?.into())
     } else {
         Ok(Value::Null)
@@ -162,10 +160,7 @@ pub fn namespace_internal_impl<'gc>(
 
         // b. Return the result of calling the [[GetNamespace]] method of x.[[Name]] with argument inScopeNS
         // FIXME: Use inScopeNS
-        let namespace = match node.namespace() {
-            Some(ns) => Namespace::package(ns, &mut activation.context.borrow_gc()),
-            None => activation.avm2().public_namespace,
-        };
+        let namespace = xml.namespace(activation);
         Ok(NamespaceObject::from_namespace(activation, namespace)?.into())
     } else {
         // a. Let prefix = ToString(prefix)
