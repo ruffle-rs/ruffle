@@ -6,7 +6,7 @@ use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Multiname;
 use crate::avm2_stub_method;
-use crate::display_object::{EditText, TDisplayObject};
+use crate::display_object::EditText;
 use crate::html::TextFormat;
 use crate::string::WStr;
 
@@ -61,7 +61,7 @@ pub fn create_text_line<'gc>(
 
     // FIXME: TextLine should be its own DisplayObject
     let display_object: EditText =
-        EditText::new_tlf(&mut activation.context, movie, 0.0, 0.0, width, 15.0).into();
+        EditText::new_tlf(&mut activation.context, movie, 0.0, 0.0, width, 15.0);
 
     display_object.set_text(text.as_wstr(), &mut activation.context);
 
