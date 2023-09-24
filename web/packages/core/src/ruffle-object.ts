@@ -111,7 +111,7 @@ export class RuffleObject extends RufflePlayer {
             const options = getPolyfillOptions(url, getOptionString);
 
             // Kick off the SWF download.
-            this.load(options);
+            this.load(options, true);
         }
     }
 
