@@ -1,6 +1,8 @@
 // List is ordered alphabetically, except where superclasses/interfaces
 // need to come before subclasses and implementations.
 
+include "__ruffle__/stubs.as"
+
 include "Error.as"
 
 include "ArgumentError.as"
