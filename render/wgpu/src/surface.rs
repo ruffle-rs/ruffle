@@ -151,21 +151,21 @@ impl Surface {
 
         for chunk in chunks {
             match chunk {
-                Chunk::Draw(chunk, needs_depth) => {
+                Chunk::Draw(chunk, needs_stencil) => {
                     let mut render_pass =
                         draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                             label: create_debug_label!(
                                 "Chunked draw calls {}",
-                                if needs_depth {
-                                    "(with depth)"
+                                if needs_stencil {
+                                    "(with stencil)"
                                 } else {
-                                    "(Depthless)"
+                                    "(Stencilless)"
                                 }
                             )
                             .as_deref(),
                             color_attachments: &[target.color_attachments()],
-                            depth_stencil_attachment: if needs_depth {
-                                target.depth_attachment(descriptors, texture_pool)
+                            depth_stencil_attachment: if needs_stencil {
+                                target.stencil_attachment(descriptors, texture_pool)
                             } else {
                                 None
                             },
@@ -180,7 +180,7 @@ impl Surface {
                         render_pass,
                         num_masks,
                         mask_state,
-                        needs_depth,
+                        needs_stencil,
                     );
 
                     for command in &chunk {
@@ -190,8 +190,11 @@ impl Surface {
                     num_masks = renderer.num_masks();
                     mask_state = renderer.mask_state();
                 }
-                Chunk::Blend(texture, ChunkBlendMode::Shader(shader), needs_depth) => {
-                    assert!(!needs_depth, "Shader blend should not need depth buffer");
+                Chunk::Blend(texture, ChunkBlendMode::Shader(shader), needs_stencil) => {
+                    assert!(
+                        !needs_stencil,
+                        "Shader blend should not need stencil buffer"
+                    );
                     let parent_blend_buffer =
                         target.update_blend_buffer(descriptors, texture_pool, draw_encoder);
                     run_pixelbender_shader_impl(
@@ -222,7 +225,7 @@ impl Surface {
                     )
                     .expect("Failed to run PixelBender blend mode");
                 }
-                Chunk::Blend(texture, ChunkBlendMode::Complex(blend_mode), needs_depth) => {
+                Chunk::Blend(texture, ChunkBlendMode::Complex(blend_mode), needs_stencil) => {
                     let parent = match blend_mode {
                         ComplexBlend::Alpha | ComplexBlend::Erase => {
                             match nearest_layer {
@@ -247,10 +250,10 @@ impl Surface {
                                 label: create_debug_label!(
                                     "Complex blend binds {:?} {}",
                                     blend_mode,
-                                    if needs_depth {
-                                        "(with depth)"
+                                    if needs_stencil {
+                                        "(with stencil)"
                                     } else {
-                                        "(Depthless)"
+                                        "(Stencilless)"
                                     }
                                 )
                                 .as_deref(),
@@ -282,23 +285,23 @@ impl Surface {
                             label: create_debug_label!(
                                 "Complex blend {:?} {}",
                                 blend_mode,
-                                if needs_depth {
-                                    "(with depth)"
+                                if needs_stencil {
+                                    "(with stencil)"
                                 } else {
-                                    "(Depthless)"
+                                    "(Stencilless)"
                                 }
                             )
                             .as_deref(),
                             color_attachments: &[target.color_attachments()],
-                            depth_stencil_attachment: if needs_depth {
-                                target.depth_attachment(descriptors, texture_pool)
+                            depth_stencil_attachment: if needs_stencil {
+                                target.stencil_attachment(descriptors, texture_pool)
                             } else {
                                 None
                             },
                         });
                     render_pass.set_bind_group(0, target.globals().bind_group(), &[]);
 
-                    if needs_depth {
+                    if needs_stencil {
                         match mask_state {
                             MaskState::NoMask => {}
                             MaskState::DrawMaskStencil => {
@@ -316,7 +319,7 @@ impl Surface {
                         );
                     } else {
                         render_pass.set_pipeline(
-                            self.pipelines.complex_blends[blend_mode].depthless_pipeline(),
+                            self.pipelines.complex_blends[blend_mode].stencilless_pipeline(),
                         );
                     }
 

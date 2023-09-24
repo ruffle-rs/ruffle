@@ -29,7 +29,7 @@ pub struct CommandRenderer<'pass, 'frame: 'pass, 'global: 'frame> {
     uniform_buffers: &'frame mut UniformBuffer<'global, Transforms>,
     color_buffers: &'frame mut UniformBuffer<'global, ColorAdjustments>,
     uniform_encoder: &'frame mut wgpu::CommandEncoder,
-    needs_depth: bool,
+    needs_stencil: bool,
 }
 
 impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'global> {
@@ -43,7 +43,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         render_pass: wgpu::RenderPass<'pass>,
         num_masks: u32,
         mask_state: MaskState,
-        needs_depth: bool,
+        needs_stencil: bool,
     ) -> Self {
         Self {
             pipelines,
@@ -54,12 +54,12 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
             uniform_buffers,
             color_buffers,
             uniform_encoder,
-            needs_depth,
+            needs_stencil,
         }
     }
 
     pub fn execute(&mut self, command: &'frame DrawCommand) {
-        if self.needs_depth {
+        if self.needs_stencil {
             match self.mask_state {
                 MaskState::NoMask => {}
                 MaskState::DrawMaskStencil => {
@@ -106,22 +106,22 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
     }
 
     pub fn prep_color(&mut self) {
-        if self.needs_depth {
+        if self.needs_stencil {
             self.render_pass
                 .set_pipeline(self.pipelines.color.pipeline_for(self.mask_state));
         } else {
             self.render_pass
-                .set_pipeline(self.pipelines.color.depthless_pipeline());
+                .set_pipeline(self.pipelines.color.stencilless_pipeline());
         }
     }
 
     pub fn prep_gradient(&mut self, bind_group: &'pass wgpu::BindGroup) {
-        if self.needs_depth {
+        if self.needs_stencil {
             self.render_pass
                 .set_pipeline(self.pipelines.gradients.pipeline_for(self.mask_state));
         } else {
             self.render_pass
-                .set_pipeline(self.pipelines.gradients.depthless_pipeline());
+                .set_pipeline(self.pipelines.gradients.stencilless_pipeline());
         }
 
         self.render_pass.set_bind_group(
@@ -141,10 +141,10 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         blend_mode: TrivialBlend,
         render_stage3d: bool,
     ) {
-        match (self.needs_depth, render_stage3d) {
+        match (self.needs_stencil, render_stage3d) {
             (true, true) => {
                 self.render_pass
-                    .set_pipeline(&self.pipelines.bitmap_opaque_dummy_depth);
+                    .set_pipeline(&self.pipelines.bitmap_opaque_dummy_stencil);
             }
             (true, false) => {
                 self.render_pass
@@ -155,7 +155,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
             }
             (false, false) => {
                 self.render_pass
-                    .set_pipeline(self.pipelines.bitmap[blend_mode].depthless_pipeline());
+                    .set_pipeline(self.pipelines.bitmap[blend_mode].stencilless_pipeline());
             }
         }
 
@@ -481,7 +481,7 @@ pub fn chunk_blends<'a>(
 ) -> Vec<Chunk> {
     let mut result = vec![];
     let mut current = vec![];
-    let mut needs_depth = false;
+    let mut needs_stencil = false;
     let mut num_masks = 0;
 
     for command in commands {
@@ -561,7 +561,7 @@ pub fn chunk_blends<'a>(
                     }
                     blend_type => {
                         if !current.is_empty() {
-                            result.push(Chunk::Draw(std::mem::take(&mut current), needs_depth));
+                            result.push(Chunk::Draw(std::mem::take(&mut current), needs_stencil));
                         }
                         let chunk_blend_mode = match blend_type {
                             BlendType::Complex(complex) => ChunkBlendMode::Complex(complex),
@@ -573,7 +573,7 @@ pub fn chunk_blends<'a>(
                             chunk_blend_mode,
                             num_masks > 0,
                         ));
-                        needs_depth = num_masks > 0;
+                        needs_stencil = num_masks > 0;
                     }
                 }
             }
@@ -607,20 +607,20 @@ pub fn chunk_blends<'a>(
                 current.push(DrawCommand::DrawRect { color, matrix })
             }
             Command::PushMask => {
-                needs_depth = true;
+                needs_stencil = true;
                 num_masks += 1;
                 current.push(DrawCommand::PushMask);
             }
             Command::ActivateMask => {
-                needs_depth = true;
+                needs_stencil = true;
                 current.push(DrawCommand::ActivateMask);
             }
             Command::DeactivateMask => {
-                needs_depth = true;
+                needs_stencil = true;
                 current.push(DrawCommand::DeactivateMask);
             }
             Command::PopMask => {
-                needs_depth = true;
+                needs_stencil = true;
                 num_masks -= 1;
                 current.push(DrawCommand::PopMask);
             }
@@ -628,7 +628,7 @@ pub fn chunk_blends<'a>(
     }
 
     if !current.is_empty() {
-        result.push(Chunk::Draw(current, needs_depth));
+        result.push(Chunk::Draw(current, needs_stencil));
     }
 
     result
