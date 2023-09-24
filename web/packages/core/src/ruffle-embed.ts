@@ -41,7 +41,7 @@ export class RuffleEmbed extends RufflePlayer {
             const options = getPolyfillOptions(src.value, getOptionString);
 
             // Kick off the SWF download.
-            this.load(options);
+            this.load(options, true);
         }
     }
 
@@ -95,7 +95,7 @@ export class RuffleEmbed extends RufflePlayer {
                 const getOptionString = (optionName: string) =>
                     this.attributes.getNamedItem(optionName)?.value ?? null;
                 const options = getPolyfillOptions(src.value, getOptionString);
-                this.load(options);
+                this.load(options, true);
             }
         }
     }

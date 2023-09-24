@@ -98,7 +98,7 @@ function load(options) {
     player = ruffle.createPlayer();
     player.id = "player";
     main.append(player);
-    player.load(options);
+    player.load(options, false);
     player.addEventListener("loadedmetadata", function () {
         if (this.metadata) {
             for (const [key, value] of Object.entries(this.metadata)) {

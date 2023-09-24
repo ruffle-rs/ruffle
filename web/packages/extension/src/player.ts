@@ -94,7 +94,7 @@ function load(options: string | DataLoadOptions | URLLoadOptions) {
     player = ruffle.createPlayer();
     player.id = "player";
     playerContainer.append(player);
-    player.load(options);
+    player.load(options, false);
     player.addEventListener("loadedmetadata", () => {
         if (player.metadata) {
             for (const [key, value] of Object.entries(player.metadata)) {

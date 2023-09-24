@@ -935,12 +935,15 @@ export class RufflePlayer extends HTMLElement {
      * The options, if provided, must only contain values provided for this specific movie.
      * They must not contain any default values, since those would overwrite other configuration
      * settings with a lower priority (e.g. the general RufflePlayer config).
+     * @param isPolyfillElement Whether the element is a polyfilled Flash element or not.
+     * This is used to determine a default value of the configuration.
      *
      * The options will be defaulted by the [[config]] field, which itself
      * is defaulted by a global `window.RufflePlayer.config`.
      */
     async load(
         options: string | URLLoadOptions | DataLoadOptions,
+        isPolyfillElement: boolean = false,
     ): Promise<void> {
         options = this.checkOptions(options);
 
@@ -959,6 +962,15 @@ export class RufflePlayer extends HTMLElement {
         try {
             this.loadedConfig = {
                 ...DEFAULT_CONFIG,
+                // The default allowScriptAccess value for polyfilled elements is samedomain.
+                ...(isPolyfillElement && "url" in options
+                    ? {
+                          allowScriptAccess: parseAllowScriptAccess(
+                              "samedomain",
+                              options.url,
+                          )!,
+                      }
+                    : {}),
                 ...(window.RufflePlayer?.config ?? {}),
                 ...this.config,
                 ...options,
