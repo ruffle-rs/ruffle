@@ -28,7 +28,7 @@ pub const VERTEX_BUFFERS_DESCRIPTION_COLOR: [wgpu::VertexBufferLayout; 1] =
 #[derive(Debug)]
 pub struct ShapePipeline {
     pub pipelines: EnumMap<MaskState, wgpu::RenderPipeline>,
-    depthless: wgpu::RenderPipeline,
+    stencilless: wgpu::RenderPipeline,
 }
 
 #[derive(Debug)]
@@ -40,9 +40,9 @@ pub struct Pipelines {
     pub bitmap_opaque: wgpu::RenderPipeline,
     /// Like `bitmap_opaque`, but with a no-op `DepthStencilState`.
     /// This is used when we're inside a `RenderPass` that is
-    /// using a depth buffer, but we don't want to write to it
+    /// using a stencil buffer, but we don't want to write to it
     /// or use it any any way.
-    pub bitmap_opaque_dummy_depth: wgpu::RenderPipeline,
+    pub bitmap_opaque_dummy_stencil: wgpu::RenderPipeline,
     pub bitmap: EnumMap<TrivialBlend, ShapePipeline>,
     pub gradients: ShapePipeline,
     pub complex_blends: EnumMap<ComplexBlend, ShapePipeline>,
@@ -53,15 +53,15 @@ impl ShapePipeline {
         &self.pipelines[mask_state]
     }
 
-    pub fn depthless_pipeline(&self) -> &wgpu::RenderPipeline {
-        &self.depthless
+    pub fn stencilless_pipeline(&self) -> &wgpu::RenderPipeline {
+        &self.stencilless
     }
 
     /// Builds of a nested `EnumMap` that maps a `MaskState` to
     /// a `RenderPipeline`. The provided callback is used to construct the `RenderPipeline`
     /// for each possible `MaskState`.
     fn build(
-        depthless: wgpu::RenderPipeline,
+        stencilless: wgpu::RenderPipeline,
         mut f: impl FnMut(MaskState) -> wgpu::RenderPipeline,
     ) -> Self {
         let mask_array: [wgpu::RenderPipeline; MaskState::LENGTH] = (0..MaskState::LENGTH)
@@ -74,7 +74,7 @@ impl ShapePipeline {
             .unwrap();
         ShapePipeline {
             pipelines: EnumMap::from_array(mask_array),
-            depthless,
+            stencilless,
         }
     }
 }
@@ -259,7 +259,7 @@ impl Pipelines {
             color: color_pipelines,
             bitmap: EnumMap::from_array(bitmap_pipelines),
             bitmap_opaque,
-            bitmap_opaque_dummy_depth,
+            bitmap_opaque_dummy_stencil: bitmap_opaque_dummy_depth,
             gradients: gradient_pipeline,
             complex_blends: complex_blend_pipelines,
         }
@@ -358,7 +358,7 @@ fn create_shape_pipeline(
 
     ShapePipeline::build(
         device.create_render_pipeline(&create_pipeline_descriptor(
-            create_debug_label!("{} depthless pipeline", name).as_deref(),
+            create_debug_label!("{} stencilless pipeline", name).as_deref(),
             shader,
             shader,
             &pipeline_layout,
