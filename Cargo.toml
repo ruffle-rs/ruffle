@@ -82,3 +82,6 @@ inherits = "release"
 
 [profile.web-wasm-extensions]
 inherits = "release"
+
+[profile.web-wasm-webgpu]
+inherits = "release"

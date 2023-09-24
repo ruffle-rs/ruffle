@@ -28,7 +28,7 @@ function runWasmBindgen({ path, outName, flags, dir }) {
         stdio: "inherit",
     });
 }
-function cargoBuild({ profile, features, rustFlags }) {
+function cargoBuild({ profile, features, rustFlags, webgpu }) {
     let args = ["build", "--target", "wasm32-unknown-unknown"];
     if (profile) {
         args.push("--profile", profile);
@@ -40,6 +40,11 @@ function cargoBuild({ profile, features, rustFlags }) {
     }
     if (features) {
         args.push("--features", features.join(","));
+    }
+    if (webgpu) {
+        args.push("--features", "webgpu");
+    } else {
+        args.push("--features", "wgpu-webgl");
     }
     let totalRustFlags = process.env["RUSTFLAGS"] || "";
     if (rustFlags) {
@@ -64,11 +69,11 @@ function cargoClean() {
         stdio: "inherit",
     });
 }
-function buildWasm(profile, filename, optimise, extensions) {
+function buildWasm(profile, filename, optimise, extensions, webgpu) {
     const rustFlags = ["--cfg=web_sys_unstable_apis", "-Aunknown_lints"];
     const wasmBindgenFlags = [];
     const wasmOptFlags = [];
-    const flavor = extensions ? "extensions" : "vanilla";
+    const flavor = webgpu ? "webgpu" : extensions ? "extensions" : "vanilla";
     if (extensions) {
         rustFlags.push(
             "-C",
@@ -81,6 +86,7 @@ function buildWasm(profile, filename, optimise, extensions) {
     cargoBuild({
         profile,
         rustFlags,
+        webgpu,
     });
     console.log(`Running wasm-bindgen on ${flavor}...`);
     runWasmBindgen({
@@ -117,20 +123,39 @@ function detectWasmOpt() {
     }
 }
 const buildExtensions = !!process.env["ENABLE_WASM_EXTENSIONS"];
+const buildWebGPU = !!process.env["ENABLE_WASM_WEBGPU"];
 const hasWasmOpt = detectWasmOpt();
 if (!hasWasmOpt) {
     console.log(
         "NOTE: Since wasm-opt could not be found (or it failed), the resulting module might not perform that well, but it should still work.",
     );
 }
-buildWasm("web-vanilla-wasm", "ruffle_web", hasWasmOpt, false);
+buildWasm("web-vanilla-wasm", "ruffle_web", hasWasmOpt, false, false);
 if (buildExtensions) {
     buildWasm(
         "web-wasm-extensions",
         "ruffle_web-wasm_extensions",
         hasWasmOpt,
         true,
+        false,
     );
 } else {
     copyStandIn("ruffle_web", "ruffle_web-wasm_extensions");
+}
+if (buildWebGPU) {
+    // Our webgpu build always has extensions enabled, since any browser with webgpu support
+    // should also support the extensions we need.
+    buildWasm(
+        "web-wasm-webgpu",
+        "ruffle_web-wasm_webgpu",
+        hasWasmOpt,
+        true,
+        true,
+    );
+} else {
+    if (buildExtensions) {
+        copyStandIn("ruffle_web-wasm_extensions", "ruffle_web-wasm_webgpu");
+    } else {
+        copyStandIn("ruffle_web", "ruffle_web-wasm_webgpu");
+    }
 }

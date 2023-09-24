@@ -20,6 +20,36 @@ declare global {
 type ProgressCallback = (bytesLoaded: number, bytesTotal: number) => void;
 
 /**
+ * Detects support for the type-reflection proposal.
+ *
+ * @returns whether type-reflection is supported
+ */
+function typeReflection() {
+    return "Function" in WebAssembly;
+}
+
+/**
+ * Detects support for the Javascript promise integration proposal.
+ *
+ * @returns whether Javascript promise integration is supported
+ */
+function jspi() {
+    return "Suspender" in WebAssembly;
+}
+
+/**
+ * Detects support for WebGPU.
+ *
+ * @returns whether WebGPU is supported
+ */
+function webGPU() {
+    return "gpu" in navigator;
+}
+
+// Set this to 'true' to allow using WebGPU for local development
+const ALLOW_WEBGPU = false;
+
+/**
  * Load ruffle from an automatically-detected location.
  *
  * This function returns a new instance of Ruffle and downloads it every time.
@@ -50,6 +80,15 @@ async function fetchRuffle(
         ])
     ).every(Boolean);
 
+    const webgpuSupported =
+        ALLOW_WEBGPU && typeReflection() && jspi() && webGPU();
+
+    if (!webgpuSupported) {
+        console.log(
+            "WebGPU is NOT available, falling back to the webgpu-webgl WebAssembly module",
+        );
+    }
+
     if (!extensionsSupported) {
         console.log(
             "Some WebAssembly extensions are NOT available, falling back to the vanilla WebAssembly module",
@@ -60,11 +99,15 @@ async function fetchRuffle(
 
     // Note: The argument passed to import() has to be a simple string literal,
     // otherwise some bundler will get confused and won't include the module?
-    const { default: init, Ruffle } = await (extensionsSupported
+    const { default: init, Ruffle } = await (webgpuSupported
+        ? import("../dist/ruffle_web-wasm_webgpu")
+        : extensionsSupported
         ? import("../dist/ruffle_web-wasm_extensions")
         : import("../dist/ruffle_web"));
     let response;
-    const wasmUrl = extensionsSupported
+    const wasmUrl = webgpuSupported
+        ? new URL("../dist/ruffle_web-wasm_webgpu_bg.wasm", import.meta.url)
+        : extensionsSupported
         ? new URL("../dist/ruffle_web-wasm_extensions_bg.wasm", import.meta.url)
         : new URL("../dist/ruffle_web_bg.wasm", import.meta.url);
     const wasmResponse = await fetch(wasmUrl);
@@ -113,7 +156,8 @@ async function fetchRuffle(
 
 type Ruffle =
     | (typeof import("../dist/ruffle_web"))["Ruffle"]
-    | (typeof import("../dist/ruffle_web-wasm_extensions"))["Ruffle"];
+    | (typeof import("../dist/ruffle_web-wasm_extensions"))["Ruffle"]
+    | (typeof import("../dist/ruffle_web-wasm_webgpu"))["Ruffle"];
 
 let lastLoaded: Promise<Ruffle> | null = null;
 
