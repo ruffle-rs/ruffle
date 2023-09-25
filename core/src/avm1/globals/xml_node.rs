@@ -3,7 +3,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{ArrayObject, NativeObject, Object, ScriptObject, TObject, Value};
+use crate::avm1::{NativeObject, Object, ScriptObject, TObject, Value};
 use crate::context::GcContext;
 use crate::string::{AvmString, WStr};
 use crate::xml::{XmlNode, TEXT_NODE};
@@ -64,6 +64,7 @@ fn append_child<'gc>(
         if !xmlnode.has_child(child_xmlnode) {
             let position = xmlnode.children_len();
             xmlnode.insert_child(activation.context.gc_context, position, child_xmlnode);
+            xmlnode.refresh_cached_child_nodes(activation)?;
         }
     }
 
@@ -85,6 +86,7 @@ fn insert_before<'gc>(
         if !xmlnode.has_child(child_xmlnode) {
             if let Some(position) = xmlnode.child_position(insertpoint_xmlnode) {
                 xmlnode.insert_child(activation.context.gc_context, position, child_xmlnode);
+                xmlnode.refresh_cached_child_nodes(activation)?;
             }
         }
     }
@@ -173,7 +175,11 @@ fn remove_node<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mut node) = this.as_xml_node() {
+        let old_parent = node.parent();
         node.remove_node(activation.context.gc_context);
+        if let Some(old_parent) = old_parent {
+            old_parent.refresh_cached_child_nodes(activation)?;
+        }
     }
 
     Ok(Value::Undefined)
@@ -275,13 +281,7 @@ fn child_nodes<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
-        return Ok(ArrayObject::new(
-            activation.context.gc_context,
-            activation.context.avm1.prototypes().array,
-            node.children()
-                .map(|mut child| child.script_object(activation).into()),
-        )
-        .into());
+        return Ok(node.get_or_init_cached_child_nodes(activation)?.into());
     }
 
     Ok(Value::Undefined)

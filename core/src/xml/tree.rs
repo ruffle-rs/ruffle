@@ -2,7 +2,7 @@
 
 use crate::avm1::Attribute;
 use crate::avm1::{Activation, NativeObject};
-use crate::avm1::{Error, Object, ScriptObject, TObject, Value};
+use crate::avm1::{ArrayObject, Error, Object, ScriptObject, TObject, Value};
 use crate::string::{AvmString, WStr, WString};
 use crate::xml;
 use gc_arena::{Collect, GcCell, Mutation};
@@ -45,6 +45,9 @@ pub struct XmlNodeData<'gc> {
     /// Attributes of the element.
     attributes: ScriptObject<'gc>,
 
+    /// The array object used for AS2 `.childNodes`
+    cached_child_nodes: Option<ArrayObject<'gc>>,
+
     /// Child nodes of this element.
     children: Vec<XmlNode<'gc>>,
 }
@@ -62,6 +65,7 @@ impl<'gc> XmlNode<'gc> {
                 node_type,
                 node_value,
                 attributes: ScriptObject::new(mc, None),
+                cached_child_nodes: None,
                 children: Vec::new(),
             },
         ))
@@ -373,6 +377,40 @@ impl<'gc> XmlNode<'gc> {
         self.0.read().attributes
     }
 
+    /// Gets a lazy-created .childNodes array
+    pub fn get_or_init_cached_child_nodes(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<ArrayObject<'gc>, Error<'gc>> {
+        let array = self.0.read().cached_child_nodes;
+        if let Some(array) = array {
+            Ok(array)
+        } else {
+            let array = ArrayObject::empty(activation);
+            self.0
+                .write(activation.context.gc_context)
+                .cached_child_nodes = Some(array);
+            self.refresh_cached_child_nodes(activation)?;
+            Ok(array)
+        }
+    }
+
+    /// Refreshes the .childNodes array. Call this after every child list mutation.
+    pub fn refresh_cached_child_nodes(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<(), Error<'gc>> {
+        let array = self.0.read().cached_child_nodes;
+        if let Some(array) = array {
+            array.set_length(activation, 0)?;
+            for (i, mut child) in self.children().enumerate() {
+                let value = child.script_object(activation).into();
+                array.set_element(activation, i as i32, value)?;
+            }
+        }
+        Ok(())
+    }
+
     /// Create a duplicate copy of this node.
     ///
     /// If the `deep` flag is set true, then the entire node tree will be cloned.
@@ -392,6 +430,7 @@ impl<'gc> XmlNode<'gc> {
                 node_type: self.0.read().node_type,
                 node_value: self.0.read().node_value,
                 attributes,
+                cached_child_nodes: None,
                 children: Vec::new(),
             },
         ));
