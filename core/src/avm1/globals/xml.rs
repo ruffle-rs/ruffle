@@ -222,6 +222,8 @@ impl<'gc> Xml<'gc> {
             }
         }
 
+        self.root().refresh_cached_child_nodes(activation).unwrap(); // :(
+
         Ok(())
     }
 
