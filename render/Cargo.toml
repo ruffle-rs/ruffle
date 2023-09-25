@@ -14,7 +14,7 @@ tracing = { workspace = true }
 gif = "0.12.0"
 png = { version = "0.17.10" }
 flate2 = "1.0.27"
-smallvec = { version = "1.11.0", features = ["union"] }
+smallvec = { version = "1.11.1", features = ["union"] }
 downcast-rs = "1.2.0"
 lyon = { version = "1.0.1", optional = true }
 lyon_geom = "1.0.4"
@@ -22,7 +22,7 @@ thiserror = "1.0"
 wasm-bindgen = { version = "=0.2.87", optional = true }
 enum-map = "2.6.3"
 serde = { version = "1.0.188", features = ["derive"] }
-clap = { version = "4.4.3", features = ["derive"], optional = true }
+clap = { version = "4.4.4", features = ["derive"], optional = true }
 h263-rs-yuv = { git = "https://github.com/ruffle-rs/h263-rs", rev = "16700664e2b3334f0a930f99af86011aebee14cc"}
 lru = "0.11.1"
 num-traits = "0.2"

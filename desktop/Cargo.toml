@@ -8,7 +8,7 @@ repository.workspace = true
 version.workspace = true
 
 [dependencies]
-clap = { version = "4.4.3", features = ["derive"] }
+clap = { version = "4.4.4", features = ["derive"] }
 cpal = "0.15.2"
 egui = { workspace = true }
 egui-wgpu = { git = "https://github.com/emilk/egui", rev = "98087029e020a1b2d78a4eb840d0a8505340ecad", features = ["winit"] }

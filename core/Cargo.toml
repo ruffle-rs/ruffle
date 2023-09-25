@@ -23,7 +23,7 @@ ruffle_macros = { path = "macros" }
 ruffle_wstr = { path = "../wstr" }
 swf = { path = "../swf" }
 bitflags = "2.4.0"
-smallvec = { version = "1.11.0", features = ["union"] }
+smallvec = { version = "1.11.1", features = ["union"] }
 num-traits = "0.2"
 num-derive = "0.4"
 quick-xml = "0.30.0"
@@ -46,7 +46,7 @@ dasp = { git = "https://github.com/RustAudio/dasp", rev = "f05a703", features = 
 symphonia = { version = "0.5.3", default-features = false, features = ["mp3"], optional = true }
 enumset = "1.1.2"
 bytemuck = "1.14.0"
-clap = { version = "4.4.3", features = ["derive"], optional=true }
+clap = { version = "4.4.4", features = ["derive"], optional=true }
 realfft = "3.3.0"
 hashbrown = { version = "0.14.0", features = ["raw"] }
 scopeguard = "1.2.0"
