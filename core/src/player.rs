@@ -1381,10 +1381,20 @@ impl Player {
                 if context.input.is_mouse_down() {
                     context.mouse_over_object = new_over_object;
                     cur_over_object.map(|old_hovered_object| {
-                        events.push((old_hovered_object, ClipEvent::DragOut { to: new_over_object }));
+                        events.push((
+                            old_hovered_object,
+                            ClipEvent::DragOut {
+                                to: new_over_object,
+                            },
+                        ));
                     });
                     new_over_object.map(|new_hovered_object| {
-                        events.push((new_hovered_object, ClipEvent::DragOver { from: cur_over_object }));
+                        events.push((
+                            new_hovered_object,
+                            ClipEvent::DragOver {
+                                from: cur_over_object,
+                            },
+                        ));
                     });
                 } else {
                     // The mouse button is up, so fire rollover states for the object we are hovering over.
