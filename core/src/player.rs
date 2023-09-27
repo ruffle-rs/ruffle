@@ -1380,31 +1380,12 @@ impl Player {
                 // and fires "drag" events. Other objects are ignored.
                 if context.input.is_mouse_down() {
                     context.mouse_over_object = new_over_object;
-                    if let Some(down_object) = context.mouse_down_object {
-                        if InteractiveObject::option_ptr_eq(
-                            context.mouse_down_object,
-                            cur_over_object,
-                        ) {
-                            // Dragged from outside the clicked object to the inside.
-                            events.push((
-                                down_object,
-                                ClipEvent::DragOut {
-                                    to: new_over_object,
-                                },
-                            ));
-                        } else if InteractiveObject::option_ptr_eq(
-                            context.mouse_down_object,
-                            new_over_object,
-                        ) {
-                            // Dragged from inside the clicked object to the outside.
-                            events.push((
-                                down_object,
-                                ClipEvent::DragOver {
-                                    from: cur_over_object,
-                                },
-                            ));
-                        }
-                    }
+                    cur_over_object.map(|old_hovered_object| {
+                        events.push((old_hovered_object, ClipEvent::DragOut { to: new_over_object }));
+                    });
+                    new_over_object.map(|new_hovered_object| {
+                        events.push((new_hovered_object, ClipEvent::DragOver { from: cur_over_object }));
+                    });
                 } else {
                     // The mouse button is up, so fire rollover states for the object we are hovering over.
                     // Rolled out of the previous object.
