@@ -124,7 +124,7 @@ impl<'gc> Context3DObject<'gc> {
         })?;
 
         Ok(Value::Object(TextureObject::from_handle(
-            activation, *self, texture, class,
+            activation, *self, texture, format, class,
         )?))
     }
 
@@ -418,7 +418,7 @@ impl<'gc> Context3DObject<'gc> {
         let class = activation.avm2().classes().cubetexture;
 
         Ok(Value::Object(TextureObject::from_handle(
-            activation, *self, texture, class,
+            activation, *self, texture, format, class,
         )?))
     }
 

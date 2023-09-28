@@ -347,13 +347,21 @@ pub struct VertexBufferWrapper {
     pub data_32_per_vertex: u8,
 }
 
+#[derive(Debug)]
 pub struct TextureWrapper {
     texture: wgpu::Texture,
 }
 
 impl IndexBuffer for IndexBufferWrapper {}
 impl VertexBuffer for VertexBufferWrapper {}
-impl ruffle_render::backend::Texture for TextureWrapper {}
+impl ruffle_render::backend::Texture for TextureWrapper {
+    fn width(&self) -> u32 {
+        self.texture.width()
+    }
+    fn height(&self) -> u32 {
+        self.texture.height()
+    }
+}
 
 // Context3D.setVertexBufferAt supports up to 8 vertex buffer attributes
 const MAX_VERTEX_ATTRIBUTES: usize = 8;
