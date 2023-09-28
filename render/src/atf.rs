@@ -32,12 +32,11 @@ impl ATFTexture {
         // Based on https://github.com/openfl/openfl/blob/develop/src/openfl/display3D/_internal/ATFReader.hx
         let bytes = &mut bytes;
 
-        let mut string_bytes = vec![0; 3];
+        let mut string_bytes = [0; 3];
         bytes.read_exact(&mut string_bytes)?;
-        let signature = String::from_utf8(string_bytes)?;
 
-        if signature != "ATF" {
-            return Err(format!("Invalid ATF signature {signature}").into());
+        if &string_bytes != b"ATF" {
+            return Err(format!("Invalid ATF signature {string_bytes:?}").into());
         }
 
         let version;
@@ -92,10 +91,9 @@ impl ATFTexture {
                     } else {
                         bytes.read_u32::<BigEndian>()?
                     };
-                    // FIXME - make this more efficient
-                    let mut data = vec![0; len as usize];
-                    bytes.read_exact(&mut data)?;
-                    all_data.extend(data);
+                    let orig_len = all_data.len();
+                    all_data.resize(orig_len + len as usize, 0);
+                    bytes.read_exact(&mut all_data[orig_len..])?;
                 }
                 face_mip_data[face].push(all_data);
             }
