@@ -1453,7 +1453,8 @@ impl<W: Write> Writer<W> {
                 let num_bits = count_sbits_twips(control_delta.dx)
                     .max(count_sbits_twips(control_delta.dy))
                     .max(count_sbits_twips(anchor_delta.dx))
-                    .max(count_sbits_twips(anchor_delta.dy));
+                    .max(count_sbits_twips(anchor_delta.dy))
+                    .max(2);
                 bits.write_ubits(4, num_bits - 2)?;
                 bits.write_sbits_twips(num_bits, control_delta.dx)?;
                 bits.write_sbits_twips(num_bits, control_delta.dy)?;
