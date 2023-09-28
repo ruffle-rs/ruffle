@@ -56,7 +56,7 @@ egui_extras = { git = "https://github.com/emilk/egui", rev = "98087029e020a1b2d7
 png = { version = "0.17.10", optional = true }
 flv-rs = { path = "../flv" }
 async-channel = "1.9.0"
-jpegxr = { git = "https://github.com/ruffle-rs/jpegxr", branch = "ruffle" }
+jpegxr = { git = "https://github.com/ruffle-rs/jpegxr", branch = "ruffle", optional = true }
 image = { version = "0.24.7", default-features = false, features = ["tiff"] }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
@@ -78,6 +78,7 @@ audio = ["dasp"]
 known_stubs = ["linkme"]
 default_compatibility_rules = []
 egui = ["dep:egui", "dep:egui_extras", "png"]
+jpegxr = ["dep:jpegxr"]
 
 [build-dependencies]
 build_playerglobal = { path = "build_playerglobal" }

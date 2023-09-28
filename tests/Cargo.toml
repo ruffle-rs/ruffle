@@ -23,7 +23,7 @@ url = "2.4.1"
 # Enable running image comparison tests. This is off by default,
 # since the images we compare against are generated on CI, and may
 # not match your local machine's Vulkan version / image output.
-imgtests = ["ruffle_video_software"]
+imgtests = ["ruffle_video_software", "ruffle_core/jpegxr"]
 lzma = ["ruffle_core/lzma"]
 
 [dev-dependencies]

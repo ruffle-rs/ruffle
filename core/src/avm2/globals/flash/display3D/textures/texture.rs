@@ -1,7 +1,4 @@
-use std::io::Cursor;
-
 use gc_arena::GcCell;
-use ruffle_render::atf::ATFTexture;
 use ruffle_render::backend::Context3DTextureFormat;
 
 use crate::avm2::object::TextureObject;
@@ -69,6 +66,18 @@ pub fn do_copy<'gc>(
     Ok(())
 }
 
+#[cfg(not(feature = "jpegxr"))]
+pub(super) fn do_compressed_upload<'gc>(
+    _: &mut Activation<'_, 'gc>,
+    _: TextureObject<'gc>,
+    _: Object<'gc>,
+    _: usize,
+    _: bool,
+) -> Result<(), Error<'gc>> {
+    Err("Support for compressed textures not compiled in.".into())
+}
+
+#[cfg(feature = "jpegxr")]
 pub(super) fn do_compressed_upload<'gc>(
     activation: &mut Activation<'_, 'gc>,
     texture: TextureObject<'gc>,
@@ -76,6 +85,9 @@ pub(super) fn do_compressed_upload<'gc>(
     byte_array_offset: usize,
     is_cube: bool,
 ) -> Result<(), Error<'gc>> {
+    use ruffle_render::atf::ATFTexture;
+    use std::io::Cursor;
+
     let atf_texture =
         ATFTexture::from_bytes(&data.as_bytearray().unwrap().bytes()[byte_array_offset..])
             .expect("Failed to parse ATF texture");
