@@ -76,6 +76,7 @@ If you are building for a Linux platform, the following are typical dependencies
 * default-jre-headless
 * cmake
 * g++
+* clang
 
 
 Use the following command to build and run the desktop app:
