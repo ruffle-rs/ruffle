@@ -1104,6 +1104,13 @@ async fn request_device(
         features |= wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES;
     }
 
+    if adapter
+        .features()
+        .contains(wgpu::Features::SHADER_UNUSED_VERTEX_OUTPUT)
+    {
+        features |= wgpu::Features::SHADER_UNUSED_VERTEX_OUTPUT;
+    }
+
     adapter
         .request_device(
             &wgpu::DeviceDescriptor {
