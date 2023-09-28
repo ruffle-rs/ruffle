@@ -10,6 +10,18 @@ use std::cmp::max;
 
 pub use swf::TextGridFit;
 
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub enum DefaultFont {
+    /// `_sans`, a Sans-Serif font (similar to Helvetica or Arial)
+    Sans,
+
+    /// `_serif`, a Serif font (similar to Times Roman)
+    Serif,
+
+    /// `_typewriter`, a Monospace font (similar to Courier)
+    Typewriter,
+}
+
 /// Certain Flash routines measure text by rounding down to the nearest whole pixel.
 pub fn round_down_to_pixel(t: Twips) -> Twips {
     Twips::from_pixels(t.to_pixels().floor())

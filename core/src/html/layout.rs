@@ -7,9 +7,11 @@ use crate::html::dimensions::{BoxBounds, Position, Size};
 use crate::html::text_format::{FormatSpans, TextFormat, TextSpan};
 use crate::string::{utils as string_utils, WStr};
 use crate::tag_utils::SwfMovie;
+use crate::DefaultFont;
 use gc_arena::Collect;
 use ruffle_render::shape_utils::DrawCommand;
 use std::cmp::{max, min};
+use std::ops::Deref;
 use std::sync::Arc;
 use swf::{Point, Twips};
 
@@ -462,20 +464,47 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         is_device_font: bool,
     ) -> Option<Font<'gc>> {
         let library = context.library.library_for_movie_mut(self.movie.clone());
+        let font_name = span.font.to_utf8_lossy();
 
-        // If this text field is set to use device fonts, fallback to using our embedded Noto Sans.
         // Note that the SWF can still contain a DefineFont tag with no glyphs/layout info in this case (see #451).
         // In an ideal world, device fonts would search for a matching font on the system and render it in some way.
-        if let Some(font) = library
-            .get_font_by_name(&span.font.to_utf8_lossy(), span.bold, span.italic)
-            .filter(|f| !is_device_font && f.has_glyphs())
-            .or_else(|| context.library.device_font())
-        {
-            self.font = Some(font);
-            return self.font;
+        if !is_device_font {
+            if let Some(font) = library
+                .get_font_by_name(&font_name, span.bold, span.italic)
+                .filter(|f| f.has_glyphs())
+            {
+                return Some(font);
+            }
         }
 
-        None
+        if let Some(font) = context.library.load_device_font(
+            &font_name,
+            context.ui,
+            context.renderer,
+            context.gc_context,
+        ) {
+            return Some(font);
+        }
+
+        // [NA] I suspect that there might be undocumented more aliases.
+        // I think I've seen translated versions of these used in the wild...
+        let default_font = match font_name.deref() {
+            "_serif" => DefaultFont::Serif,
+            "_typewriter" => DefaultFont::Typewriter,
+            _ => DefaultFont::Sans,
+        };
+
+        // TODO: handle multiple fonts for a definition, each covering different sets of glyphs
+        context
+            .library
+            .default_font(
+                default_font,
+                context.ui,
+                context.renderer,
+                context.gc_context,
+            )
+            .first()
+            .copied()
     }
 
     /// Append text to the current line of the ongoing layout operation.
@@ -505,15 +534,17 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     /// This function bypasses the text fragmentation necessary for justify to
     /// work and it should only be called internally.
     fn append_text_fragment(&mut self, text: &'a WStr, start: usize, end: usize, span: &TextSpan) {
-        let params = EvalParameters::from_span(span);
-        let text_size = Size::from(self.font.unwrap().measure(text, params, false));
-        let text_bounds = BoxBounds::from_position_and_size(self.cursor, text_size);
-        let mut new_text = LayoutBox::from_text(start, end, self.font.unwrap(), span);
+        if let Some(font) = self.font {
+            let params = EvalParameters::from_span(span);
+            let text_size = Size::from(font.measure(text, params, false));
+            let text_bounds = BoxBounds::from_position_and_size(self.cursor, text_size);
+            let mut new_text = LayoutBox::from_text(start, end, font, span);
 
-        new_text.bounds = text_bounds;
+            new_text.bounds = text_bounds;
 
-        self.cursor += Position::from((text_size.width(), Twips::default()));
-        self.append_box(new_text);
+            self.cursor += Position::from((text_size.width(), Twips::default()));
+            self.append_box(new_text);
+        }
     }
 
     /// Append a bullet to the start of the current line.
@@ -527,12 +558,8 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         span: &TextSpan,
         is_device_font: bool,
     ) {
-        let library = context.library.library_for_movie_mut(self.movie.clone());
-
-        if let Some(bullet_font) = library
-            .get_font_by_name(&span.font.to_utf8_lossy(), span.bold, span.italic)
-            .filter(|f| !is_device_font && f.has_glyphs())
-            .or_else(|| context.library.device_font())
+        if let Some(bullet_font) = self
+            .resolve_font(context, span, is_device_font)
             .or(self.font)
         {
             let mut bullet_cursor = self.cursor;
@@ -764,6 +791,7 @@ impl<'gc> LayoutBox<'gc> {
 
         for (span_start, _end, span_text, span) in fs.iter_spans() {
             if let Some(font) = layout_context.resolve_font(context, span, is_device_font) {
+                layout_context.font = Some(font);
                 layout_context.newspan(span);
 
                 let params = EvalParameters::from_span(span);
