@@ -9,6 +9,11 @@ use url::Url;
 pub type FullscreenError = Cow<'static, str>;
 pub static US_ENGLISH: LanguageIdentifier = langid!("en-US");
 
+pub enum FontDefinition<'a> {
+    /// A singular DefineFont tag extracted from a swf.
+    SwfTag(swf::Font<'a>, &'static swf::Encoding),
+}
+
 pub trait UiBackend: Downcast {
     fn mouse_visible(&self) -> bool;
 
@@ -39,6 +44,14 @@ pub trait UiBackend: Downcast {
     fn language(&self) -> &LanguageIdentifier;
 
     fn display_unsupported_video(&self, url: Url);
+
+    /// Called when a previously unknown device font is requested by a movie.
+    /// The backend is requested to call `register` with any fonts that match the given name.
+    ///
+    /// You may call `register` any amount of times with any amount of found device fonts.
+    /// If you do not call `register` with any fonts that match the request,
+    /// then the font will simply be marked as not found - this may or may not fall back to another font.  
+    fn load_device_font(&self, name: &str, register: &dyn FnMut(FontDefinition));
 }
 impl_downcast!(UiBackend);
 
@@ -174,6 +187,8 @@ impl UiBackend for NullUiBackend {
     fn message(&self, _message: &str) {}
 
     fn display_unsupported_video(&self, _url: Url) {}
+
+    fn load_device_font(&self, _name: &str, _register: &dyn FnMut(FontDefinition)) {}
 
     fn open_virtual_keyboard(&self) {}
 

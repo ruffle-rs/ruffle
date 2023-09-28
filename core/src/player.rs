@@ -10,6 +10,7 @@ use crate::avm2::{
     object::LoaderInfoObject, object::TObject as _, Activation as Avm2Activation, Avm2, CallStack,
     Object as Avm2Object,
 };
+use crate::backend::ui::FontDefinition;
 use crate::backend::{
     audio::{AudioBackend, AudioManager},
     log::LogBackend,
@@ -33,7 +34,6 @@ use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, MouseBut
 use crate::external::{ExternalInterface, ExternalInterfaceProvider, NullFsCommandProvider};
 use crate::external::{FsCommandProvider, Value as ExternalValue};
 use crate::focus_tracker::FocusTracker;
-use crate::font::Font;
 use crate::frame_lifecycle::{run_all_phases_avm2, FramePhase};
 use crate::library::Library;
 use crate::limits::ExecutionLimit;
@@ -47,6 +47,7 @@ use crate::stub::StubCollection;
 use crate::tag_utils::SwfMovie;
 use crate::timer::Timers;
 use crate::vminterface::Instantiator;
+use crate::DefaultFont;
 use gc_arena::{Collect, DynamicRootSet, GcCell, Rootable};
 use instant::Instant;
 use rand::{rngs::SmallRng, SeedableRng};
@@ -431,12 +432,6 @@ impl Player {
             root.post_instantiation(context, flashvars, Instantiator::Movie, false);
             root.set_default_root_name(context);
             context.stage.replace_at_depth(context, root, 0);
-
-            // Load and parse the device font.
-            if context.library.device_font().is_none() {
-                let device_font = Self::load_device_font(context.gc_context, context.renderer);
-                context.library.set_device_font(device_font);
-            }
 
             // Set the version parameter on the root.
             let mut activation = Activation::from_stub(
@@ -1975,21 +1970,6 @@ impl Player {
         })
     }
 
-    pub fn load_device_font<'gc>(
-        gc_context: &'gc gc_arena::Mutation<'gc>,
-        renderer: &mut dyn RenderBackend,
-    ) -> Font<'gc> {
-        let mut reader = swf::read::Reader::new(FALLBACK_DEVICE_FONT_TAG, 8);
-        Font::from_swf_tag(
-            gc_context,
-            renderer,
-            reader
-                .read_define_font_2(3)
-                .expect("Built-in font should compile"),
-            reader.encoding(),
-        )
-    }
-
     #[cfg(feature = "egui")]
     pub fn show_debug_ui(&mut self, egui_ctx: &egui::Context, movie_offset: f64) {
         // To allow using `mutate_with_update_context` and passing the context inside the debug ui,
@@ -2130,6 +2110,23 @@ impl Player {
         StaticCallstack {
             arena: Rc::downgrade(&self.gc_arena),
         }
+    }
+
+    /// Eagerly load any device fonts.
+    /// It's preferable to use [UiBackend::load_device_font] for lazy font loading,
+    /// but this is for situations where you don't know the names of the fonts you're going to register.
+    pub fn register_device_font(&mut self, definition: FontDefinition<'_>) {
+        self.mutate_with_update_context(|context| {
+            context
+                .library
+                .register_device_font(context.gc_context, context.renderer, definition);
+        });
+    }
+
+    pub fn set_default_font(&mut self, font: DefaultFont, names: Vec<String>) {
+        self.mutate_with_update_context(|context| {
+            context.library.set_default_font(font, names);
+        });
     }
 }
 
@@ -2533,6 +2530,17 @@ impl PlayerBuilder {
 
         // Finalize configuration and load the movie.
         let mut player_lock = player.lock().unwrap();
+
+        // TODO: This should be done by the frontend... probably?
+        let mut font_reader = swf::read::Reader::new(FALLBACK_DEVICE_FONT_TAG, 8);
+        let font_tag = font_reader
+            .read_define_font_2(3)
+            .expect("Built-in font should compile");
+        player_lock.register_device_font(FontDefinition::SwfTag(font_tag, font_reader.encoding()));
+        player_lock.set_default_font(DefaultFont::Sans, vec!["Noto Sans".to_string()]);
+        player_lock.set_default_font(DefaultFont::Serif, vec!["Noto Sans".to_string()]);
+        player_lock.set_default_font(DefaultFont::Typewriter, vec!["Noto Sans".to_string()]);
+
         player_lock.mutate_with_update_context(|context| {
             Avm2::load_player_globals(context).expect("Unable to load AVM2 globals");
             let stage = context.stage;

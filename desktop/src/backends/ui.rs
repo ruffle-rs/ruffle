@@ -3,7 +3,7 @@ use arboard::Clipboard;
 use rfd::{MessageButtons, MessageDialog, MessageDialogResult, MessageLevel};
 use ruffle_core::backend::navigator::OpenURLMode;
 use ruffle_core::backend::ui::{
-    FullscreenError, LanguageIdentifier, MouseCursor, UiBackend, US_ENGLISH,
+    FontDefinition, FullscreenError, LanguageIdentifier, MouseCursor, UiBackend, US_ENGLISH,
 };
 use std::rc::Rc;
 use sys_locale::get_locale;
@@ -141,6 +141,8 @@ impl UiBackend for DesktopUiBackend {
             Err(e) => tracing::error!("Could not open URL {}: {}", url, e),
         };
     }
+
+    fn load_device_font(&self, _name: &str, _register: &dyn FnMut(FontDefinition)) {}
 
     // Unused on desktop
     fn open_virtual_keyboard(&self) {}

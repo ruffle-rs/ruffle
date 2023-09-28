@@ -1,6 +1,6 @@
 use super::JavascriptPlayer;
 use ruffle_core::backend::ui::{
-    FullscreenError, LanguageIdentifier, MouseCursor, UiBackend, US_ENGLISH,
+    FontDefinition, FullscreenError, LanguageIdentifier, MouseCursor, UiBackend, US_ENGLISH,
 };
 use ruffle_web_common::JsResult;
 use std::borrow::Cow;
@@ -144,4 +144,6 @@ impl UiBackend for WebUiBackend {
     fn display_unsupported_video(&self, url: Url) {
         self.js_player.display_unsupported_video(url.as_str());
     }
+
+    fn load_device_font(&self, _name: &str, _register: &dyn FnMut(FontDefinition)) {}
 }

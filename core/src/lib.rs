@@ -62,6 +62,7 @@ pub mod stub;
 pub use avm1::globals::system::SandboxType;
 pub use context_menu::ContextMenuItem;
 pub use events::PlayerEvent;
+pub use font::DefaultFont;
 pub use indexmap;
 pub use loader::LoadBehavior;
 pub use player::{Player, PlayerBuilder, StaticCallstack};
