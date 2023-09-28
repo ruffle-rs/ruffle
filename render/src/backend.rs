@@ -117,7 +117,10 @@ impl_downcast!(VertexBuffer);
 pub trait ShaderModule: Downcast {}
 impl_downcast!(ShaderModule);
 
-pub trait Texture: Downcast {}
+pub trait Texture: Downcast + Debug {
+    fn width(&self) -> u32;
+    fn height(&self) -> u32;
+}
 impl_downcast!(Texture);
 
 pub trait RawTexture: Downcast + Debug {}
