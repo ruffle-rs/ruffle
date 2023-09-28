@@ -14,7 +14,7 @@ egui = { workspace = true }
 egui-wgpu = { version = "0.23.0", features = ["winit"] }
 egui-winit = "0.23.0"
 fontdb = "0.15"
-ruffle_core = { path = "../core", features = ["audio", "clap", "mp3", "nellymoser", "default_compatibility_rules", "egui"] }
+ruffle_core = { path = "../core", features = ["audio", "clap", "mp3", "nellymoser", "default_compatibility_rules", "egui", "default_font"] }
 ruffle_render = { path = "../render", features = ["clap"] }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
 ruffle_video_software = { path = "../video/software", optional = true }

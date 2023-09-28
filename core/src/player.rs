@@ -69,6 +69,7 @@ use tracing::{info, instrument};
 /// `player_version`.
 pub const NEWEST_PLAYER_VERSION: u8 = 32;
 
+#[cfg(feature = "default_font")]
 pub const FALLBACK_DEVICE_FONT_TAG: &[u8] = include_bytes!("../assets/noto-sans-definefont3.bin");
 
 #[derive(Collect)]
@@ -2531,15 +2532,18 @@ impl PlayerBuilder {
         // Finalize configuration and load the movie.
         let mut player_lock = player.lock().unwrap();
 
-        // TODO: This should be done by the frontend... probably?
-        let mut font_reader = swf::read::Reader::new(FALLBACK_DEVICE_FONT_TAG, 8);
-        let font_tag = font_reader
-            .read_define_font_2(3)
-            .expect("Built-in font should compile");
-        player_lock.register_device_font(FontDefinition::SwfTag(font_tag, font_reader.encoding()));
-        player_lock.set_default_font(DefaultFont::Sans, vec!["Noto Sans".to_string()]);
-        player_lock.set_default_font(DefaultFont::Serif, vec!["Noto Sans".to_string()]);
-        player_lock.set_default_font(DefaultFont::Typewriter, vec!["Noto Sans".to_string()]);
+        #[cfg(feature = "default_font")]
+        {
+            let mut font_reader = swf::read::Reader::new(FALLBACK_DEVICE_FONT_TAG, 8);
+            let font_tag = font_reader
+                .read_define_font_2(3)
+                .expect("Built-in font should compile");
+            player_lock
+                .register_device_font(FontDefinition::SwfTag(font_tag, font_reader.encoding()));
+            player_lock.set_default_font(DefaultFont::Sans, vec!["Noto Sans".to_string()]);
+            player_lock.set_default_font(DefaultFont::Serif, vec!["Noto Sans".to_string()]);
+            player_lock.set_default_font(DefaultFont::Typewriter, vec!["Noto Sans".to_string()]);
+        }
 
         player_lock.mutate_with_update_context(|context| {
             Avm2::load_player_globals(context).expect("Unable to load AVM2 globals");
