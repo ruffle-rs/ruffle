@@ -28,6 +28,7 @@ use crate::streams::NetStream;
 use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
+use chardetng::EncodingDetector;
 use encoding_rs::UTF_8;
 use gc_arena::{Collect, GcCell};
 use generational_arena::{Arena, Index};
@@ -1022,7 +1023,19 @@ impl<'gc> Loader<'gc> {
                     ActivationIdentifier::root("[Form Loader]"),
                 );
 
-                for (k, v) in form_urlencoded::parse(&response.body) {
+                let mut encoding_detector = EncodingDetector::new();
+                encoding_detector.feed(&response.body, true);
+                let encoding = encoding_detector.guess(None, true);
+
+                let utf8_string;
+                let utf8_body = if encoding == UTF_8 {
+                    &response.body
+                } else {
+                    utf8_string = encoding.decode(&response.body).0;
+                    utf8_string.as_bytes()
+                };
+
+                for (k, v) in form_urlencoded::parse(utf8_body) {
                     let k = AvmString::new_utf8(activation.context.gc_context, k);
                     let v = AvmString::new_utf8(activation.context.gc_context, v);
                     that.set(k, v.into(), &mut activation)?;
