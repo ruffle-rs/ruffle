@@ -397,7 +397,7 @@ dependencies = [
  "regex",
  "rustc-hash",
  "shlex",
- "syn 2.0.36",
+ "syn 2.0.37",
  "which",
 ]
 
@@ -3578,7 +3578,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ae005bd773ab59b4725093fd7df83fd7892f7d8eafb48dbd7de6e024e4215f9d"
 dependencies = [
  "proc-macro2",
- "syn 2.0.36",
+ "syn 2.0.37",
 ]
 
 [[package]]
