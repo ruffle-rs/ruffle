@@ -5505,9 +5505,8 @@ checksum = "9193164d4de03a926d909d3bc7c30543cecb35400c02114792c2cae20d5e2dbb"
 
 [[package]]
 name = "wgpu"
-version = "0.17.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7472f3b69449a8ae073f6ec41d05b6f846902d92a6c45313c50cb25857b736ce"
+version = "0.17.1"
+source = "git+https://github.com/ruffle-rs/wgpu?branch=backport-shader-unconsumed#c4b878785fefbbbd8ad190dfffd02e74c0723a74"
 dependencies = [
  "arrayvec",
  "cfg-if",
@@ -5530,9 +5529,8 @@ dependencies = [
 
 [[package]]
 name = "wgpu-core"
-version = "0.17.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ecf7454d9386f602f7399225c92dd2fbdcde52c519bc8fb0bd6fbeb388075dc2"
+version = "0.17.1"
+source = "git+https://github.com/ruffle-rs/wgpu?branch=backport-shader-unconsumed#c4b878785fefbbbd8ad190dfffd02e74c0723a74"
 dependencies = [
  "arrayvec",
  "bit-vec",
@@ -5555,9 +5553,8 @@ dependencies = [
 
 [[package]]
 name = "wgpu-hal"
-version = "0.17.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6654a13885a17f475e8324efb46dc6986d7aaaa98353330f8de2077b153d0101"
+version = "0.17.1"
+source = "git+https://github.com/ruffle-rs/wgpu?branch=backport-shader-unconsumed#c4b878785fefbbbd8ad190dfffd02e74c0723a74"
 dependencies = [
  "android_system_properties",
  "arrayvec",
@@ -5597,8 +5594,7 @@ dependencies = [
 [[package]]
 name = "wgpu-types"
 version = "0.17.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ee64d7398d0c2f9ca48922c902ef69c42d000c759f3db41e355f4a570b052b67"
+source = "git+https://github.com/ruffle-rs/wgpu?branch=backport-shader-unconsumed#c4b878785fefbbbd8ad190dfffd02e74c0723a74"
 dependencies = [
  "bitflags 2.4.0",
  "js-sys",

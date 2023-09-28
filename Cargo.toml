@@ -82,3 +82,10 @@ inherits = "release"
 
 [profile.web-wasm-extensions]
 inherits = "release"
+
+# FIXME - remove this when wgpu v0.18 is released
+[patch.crates-io]
+wgpu = { git = "https://github.com/ruffle-rs/wgpu", branch = "backport-shader-unconsumed" }
+
+[patch.'https://github.com/gfx-rs/naga']
+naga = { version = "0.13.0" }
