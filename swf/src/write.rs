@@ -2026,6 +2026,9 @@ impl<W: Write> Writer<W> {
 
             // We must write the glyph shapes into a temporary buffer
             // so that we can calculate their offsets.
+            // Note: these offsets are still wrong,
+            // as there's a variable size CodeTableOffset field in between.
+            // We correct for it with a +4/+2 addition later.
             let mut offsets = Vec::with_capacity(num_glyphs);
             let mut has_wide_offsets = false;
             let has_wide_codes = !font.flags.contains(FontFlag::IS_ANSI);
@@ -2070,10 +2073,11 @@ impl<W: Write> Writer<W> {
             if num_glyphs > 0 {
                 // OffsetTable
                 for offset in offsets {
+                    // +4/+2 are an extra correction for code_table_offset
                     if has_wide_offsets {
-                        writer.write_u32(offset as u32)?;
+                        writer.write_u32((offset + 4) as u32)?;
                     } else {
-                        writer.write_u16(offset as u16)?;
+                        writer.write_u16((offset + 2) as u16)?;
                     }
                 }
 
