@@ -79,6 +79,7 @@ known_stubs = ["linkme"]
 default_compatibility_rules = []
 egui = ["dep:egui", "dep:egui_extras", "png"]
 jpegxr = ["dep:jpegxr"]
+default_font = []
 
 [build-dependencies]
 build_playerglobal = { path = "build_playerglobal" }

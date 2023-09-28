@@ -10,7 +10,7 @@ version.workspace = true
 [dependencies]
 clap = { version = "4.4.6", features = ["derive"] }
 futures = "0.3"
-ruffle_core = { path = "../core", features = ["deterministic"] }
+ruffle_core = { path = "../core", features = ["deterministic", "default_font"] }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
 image = { version = "0.24.7", default-features = false, features = ["png"] }
 log = "0.4"

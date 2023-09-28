@@ -790,11 +790,12 @@ impl Default for TextRenderSettings {
 #[cfg(test)]
 mod tests {
     use crate::font::{EvalParameters, Font};
-    use crate::player::FALLBACK_DEVICE_FONT_TAG;
     use crate::string::WStr;
     use gc_arena::{rootless_arena, Mutation};
     use ruffle_render::backend::{null::NullRenderer, ViewportDimensions};
     use swf::Twips;
+
+    const DEVICE_FONT_TAG: &[u8] = include_bytes!("../assets/noto-sans-definefont3.bin");
 
     fn with_device_font<F>(callback: F)
     where
@@ -806,7 +807,7 @@ mod tests {
                 height: 0,
                 scale_factor: 1.0,
             });
-            let mut reader = swf::read::Reader::new(FALLBACK_DEVICE_FONT_TAG, 8);
+            let mut reader = swf::read::Reader::new(DEVICE_FONT_TAG, 8);
             let device_font = Font::from_swf_tag(
                 mc,
                 &mut renderer,
