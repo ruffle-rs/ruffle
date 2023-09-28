@@ -1435,13 +1435,14 @@ impl<W: Write> Writer<W> {
                 let is_axis_aligned = delta.dx == Twips::ZERO || delta.dy == Twips::ZERO;
                 bits.write_ubits(4, num_bits - 2)?;
                 bits.write_bit(!is_axis_aligned)?;
+                let is_vertical = is_axis_aligned && delta.dx == Twips::ZERO;
                 if is_axis_aligned {
-                    bits.write_bit(delta.dx == Twips::ZERO)?;
+                    bits.write_bit(is_vertical)?;
                 }
-                if delta.dx != Twips::ZERO {
+                if !is_axis_aligned || !is_vertical {
                     bits.write_sbits_twips(num_bits, delta.dx)?;
                 }
-                if delta.dy != Twips::ZERO {
+                if !is_axis_aligned || is_vertical {
                     bits.write_sbits_twips(num_bits, delta.dy)?;
                 }
             }
