@@ -143,6 +143,7 @@ export class RufflePlayer extends HTMLElement {
     private readonly saveManager: HTMLDivElement;
     private readonly volumeControls: HTMLDivElement;
     private readonly videoModal: HTMLDivElement;
+    private readonly hardwareAccelerationModal: HTMLDivElement;
 
     private readonly contextMenuOverlay: HTMLElement;
     // Firefox has a read-only "contextMenu" property,
@@ -261,12 +262,16 @@ export class RufflePlayer extends HTMLElement {
         this.videoModal = <HTMLDivElement>(
             this.shadow.getElementById("video-modal")!
         );
+        this.hardwareAccelerationModal = <HTMLDivElement>(
+            this.shadow.getElementById("hardware-acceleration-modal")!
+        );
         this.volumeControls = <HTMLDivElement>(
             this.shadow.getElementById("volume-controls-modal")
         );
         this.addModalJavaScript(this.saveManager);
         this.addModalJavaScript(this.volumeControls);
         this.addModalJavaScript(this.videoModal);
+        this.addModalJavaScript(this.hardwareAccelerationModal);
 
         this.volumeSettings = new VolumeControls(false, 100);
         this.addVolumeControlsJavaScript(this.volumeControls);
@@ -712,6 +717,16 @@ export class RufflePlayer extends HTMLElement {
         this.instance!.set_volume(this.volumeSettings.get_volume());
 
         this.rendererDebugInfo = this.instance!.renderer_debug_info();
+
+        if (this.rendererDebugInfo.includes("Adapter Device Type: Cpu")) {
+            this.container.addEventListener(
+                "mouseover",
+                this.openHardwareAccelerationModal.bind(this),
+                {
+                    once: true,
+                },
+            );
+        }
 
         const actuallyUsedRendererName = this.instance!.renderer_name();
 
@@ -1300,6 +1315,13 @@ export class RufflePlayer extends HTMLElement {
         });
         const blob = await zip.generateAsync({ type: "blob" });
         this.saveFile(blob, "saves.zip");
+    }
+
+    /**
+     * Opens the hardware acceleration info modal.
+     */
+    private openHardwareAccelerationModal(): void {
+        this.hardwareAccelerationModal.classList.remove("hidden");
     }
 
     /**
