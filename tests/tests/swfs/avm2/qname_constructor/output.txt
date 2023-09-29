@@ -1,0 +1,110 @@
+# new QName();
+q.toString(): 
+q.localName: 
+q.uri: 
+
+# new QName("name");
+q.toString(): name
+q.localName: name
+q.uri: 
+
+# new QName("*");
+q.toString(): *::*
+q.localName: *
+q.uri: null
+
+# new QName(undefined);
+q.toString(): 
+q.localName: 
+q.uri: 
+
+# new QName(undefined, undefined);
+q.toString(): 
+q.localName: 
+q.uri: 
+
+# new QName(null);
+q.toString(): null
+q.localName: null
+q.uri: 
+
+# new QName(null, null);
+q.toString(): *::null
+q.localName: null
+q.uri: null
+
+# new QName("http://namespace.example", "name");
+q.toString(): http://namespace.example::name
+q.localName: name
+q.uri: http://namespace.example
+
+# new QName(new Namespace("http://namespace.example"), "name");
+q.toString(): http://namespace.example::name
+q.localName: name
+q.uri: http://namespace.example
+
+# new QName(undefined, "name");
+q.toString(): name
+q.localName: name
+q.uri: 
+
+# new QName(null, "name");
+q.toString(): *::name
+q.localName: name
+q.uri: null
+
+# new QName(undefined, "*");
+q.toString(): *::*
+q.localName: *
+q.uri: null
+
+# new QName(null, "*");
+q.toString(): *::*
+q.localName: *
+q.uri: null
+
+# new QName("name", undefined);
+q.toString(): name::
+q.localName: 
+q.uri: name
+
+# new QName("name", null);
+q.toString(): name::null
+q.localName: null
+q.uri: name
+
+# new QName(new QName("name"));
+q.toString(): name
+q.localName: name
+q.uri: 
+
+# new QName(undefined, new QName("name"));
+q.toString(): name
+q.localName: name
+q.uri: 
+
+# new QName(new QName("http://namespace.example", "name"));
+q.toString(): http://namespace.example::name
+q.localName: name
+q.uri: http://namespace.example
+
+# new QName(undefined, new QName("http://namespace.example", "name"));
+q.toString(): http://namespace.example::name
+q.localName: name
+q.uri: http://namespace.example
+
+# new QName(new QName("http://namespace.example", "name"), "foo");
+q.toString(): http://namespace.example::foo
+q.localName: foo
+q.uri: http://namespace.example
+
+# new QName(new QName(null, "name"), "foo");
+q.toString(): *::name::foo
+q.localName: foo
+q.uri: *::name
+
+# new QName("http://example.org", new QName("http://namespace.example", "name"));
+q.toString(): http://example.org::name
+q.localName: name
+q.uri: http://example.org
+
