@@ -69,11 +69,14 @@ impl From<SubstreamError> for NetstreamError {
 #[derive(Collect)]
 #[collect(no_drop)]
 pub struct StreamManager<'gc> {
-    /// List of actively playing streams.
+    /// List of streams that need tick processing.
     ///
     /// This is not the total list of all created NetStreams; only the ones
     /// that have been configured to play media.
-    playing_streams: Vec<NetStream<'gc>>,
+    ///
+    /// A stream becomes active if it is either playing streaming media or is
+    /// doing other tick-time processing such as seeking.
+    active_streams: Vec<NetStream<'gc>>,
 }
 
 impl<'gc> Default for StreamManager<'gc> {
@@ -85,41 +88,37 @@ impl<'gc> Default for StreamManager<'gc> {
 impl<'gc> StreamManager<'gc> {
     pub fn new() -> Self {
         StreamManager {
-            playing_streams: Vec::new(),
+            active_streams: Vec::new(),
         }
     }
 
-    pub fn ensure_playing(context: &mut UpdateContext<'_, 'gc>, stream: NetStream<'gc>) {
-        if !context.stream_manager.playing_streams.contains(&stream) {
-            context.stream_manager.playing_streams.push(stream);
+    /// Activate a `NetStream`.
+    ///
+    /// This can be called at any time to flag that a `NetStream` has work to
+    /// do, and called multiple times. The `NetStream` will determine what to
+    /// do at tick time.
+    pub fn activate(context: &mut UpdateContext<'_, 'gc>, stream: NetStream<'gc>) {
+        if !context.stream_manager.active_streams.contains(&stream) {
+            context.stream_manager.active_streams.push(stream);
         }
     }
 
-    pub fn ensure_paused(context: &mut UpdateContext<'_, 'gc>, stream: NetStream<'gc>) {
+    /// Deactivate a `NetStream`.
+    ///
+    /// This should only ever be called at tick time if the stream itself has
+    /// determined there is no future work for it to do.
+    pub fn deactivate(context: &mut UpdateContext<'_, 'gc>, stream: NetStream<'gc>) {
         let index = context
             .stream_manager
-            .playing_streams
+            .active_streams
             .iter()
             .position(|x| *x == stream);
         if let Some(index) = index {
-            context.stream_manager.playing_streams.remove(index);
+            context.stream_manager.active_streams.remove(index);
         }
     }
 
-    pub fn toggle_paused(context: &mut UpdateContext<'_, 'gc>, stream: NetStream<'gc>) {
-        let index = context
-            .stream_manager
-            .playing_streams
-            .iter()
-            .position(|x| *x == stream);
-        if let Some(index) = index {
-            context.stream_manager.playing_streams.remove(index);
-        } else {
-            context.stream_manager.playing_streams.push(stream);
-        }
-    }
-
-    /// Process all playing media streams.
+    /// Process all active media streams.
     ///
     /// This is an unlocked timestep; the `dt` parameter indicates how many
     /// milliseconds have elapsed since the last tick. This is intended to
@@ -127,7 +126,7 @@ impl<'gc> StreamManager<'gc> {
     ///
     /// This does not borrow `&mut self` as we need the `UpdateContext`, too.
     pub fn tick(context: &mut UpdateContext<'_, 'gc>, dt: f64) {
-        let streams = context.stream_manager.playing_streams.clone();
+        let streams = context.stream_manager.active_streams.clone();
         for stream in streams {
             stream.tick(context, dt)
         }
@@ -239,6 +238,9 @@ pub struct NetStreamData<'gc> {
 
     /// The MovieClip this `NetStream` is attached to.
     attached_to: Option<MovieClip<'gc>>,
+
+    /// True if the stream should play when ticked.
+    playing: bool,
 }
 
 impl<'gc> NetStream<'gc> {
@@ -261,6 +263,7 @@ impl<'gc> NetStream<'gc> {
                 audio_stream: None,
                 sound_instance: None,
                 attached_to: None,
+                playing: false,
             },
         ))
     }
@@ -347,6 +350,7 @@ impl<'gc> NetStream<'gc> {
     /// `offset` is in milliseconds.
     pub fn seek(self, context: &mut UpdateContext<'_, 'gc>, offset: f64, notify: bool) {
         self.0.write(context.gc_context).queued_seek_time = Some(offset);
+        StreamManager::activate(context, self);
 
         if notify {
             let trigger = AvmString::new_utf8(
@@ -507,7 +511,8 @@ impl<'gc> NetStream<'gc> {
             context.navigator.spawn_future(future);
         }
 
-        StreamManager::ensure_playing(context, self);
+        self.0.write(context.gc_context).playing = true;
+        StreamManager::activate(context, self);
 
         self.trigger_status_event(
             context,
@@ -517,7 +522,9 @@ impl<'gc> NetStream<'gc> {
 
     /// Pause stream playback.
     pub fn pause(self, context: &mut UpdateContext<'_, 'gc>, notify: bool) {
-        StreamManager::ensure_paused(context, self);
+        // NOTE: We do not deactivate the stream here as there may be other
+        // work to be done at tick time.
+        self.0.write(context.gc_context).playing = false;
 
         if notify {
             self.trigger_status_event(
@@ -533,12 +540,18 @@ impl<'gc> NetStream<'gc> {
 
     /// Resume stream playback.
     pub fn resume(self, context: &mut UpdateContext<'_, 'gc>) {
-        StreamManager::ensure_playing(context, self);
+        self.0.write(context.gc_context).playing = true;
+        StreamManager::activate(context, self);
     }
 
     /// Resume stream playback if paused, pause otherwise.
     pub fn toggle_paused(self, context: &mut UpdateContext<'_, 'gc>) {
-        StreamManager::toggle_paused(context, self);
+        let mut write = self.0.write(context.gc_context);
+        write.playing = !write.playing;
+
+        if write.playing {
+            StreamManager::activate(context, self);
+        }
     }
 
     /// Indicates that this `NetStream`'s audio was detached from a `MovieClip` (AVM1)
@@ -1039,6 +1052,12 @@ impl<'gc> NetStream<'gc> {
         let seek_offset = self.0.write(context.gc_context).queued_seek_time.take();
         if let Some(offset) = seek_offset {
             self.execute_seek(context, offset);
+        }
+
+        // Paused streams deactivate themselves after seek processing.
+        if !self.0.read().playing {
+            StreamManager::deactivate(context, self);
+            return;
         }
 
         // Ensure the container stream type is known before continuing.
