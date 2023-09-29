@@ -103,7 +103,7 @@ fn seek<'gc>(
             .unwrap_or(Value::Undefined)
             .coerce_to_f64(activation)?;
 
-        ns.seek(&mut activation.context, offset * 1000.0);
+        ns.seek(&mut activation.context, offset * 1000.0, false);
     }
 
     Ok(Value::Undefined)
