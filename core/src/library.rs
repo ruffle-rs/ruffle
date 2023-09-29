@@ -400,7 +400,10 @@ pub struct Library<'gc> {
     font_lookup_cache: FnvHashSet<String>,
 
     /// The implementation names of each default font.
-    default_fonts: FnvHashMap<DefaultFont, Vec<String>>,
+    default_font_names: FnvHashMap<DefaultFont, Vec<String>>,
+
+    /// The cached list of implementations per default font.
+    default_font_cache: FnvHashMap<DefaultFont, Vec<Font<'gc>>>,
 
     /// A list of the symbols associated with specific AVM2 constructor
     /// prototypes.
@@ -411,6 +414,9 @@ unsafe impl<'gc> gc_arena::Collect for Library<'gc> {
     #[inline]
     fn trace(&self, cc: &gc_arena::Collection) {
         for (_, val) in self.movie_libraries.iter() {
+            val.trace(cc);
+        }
+        for (_, val) in self.default_font_cache.iter() {
             val.trace(cc);
         }
         self.device_fonts.trace(cc);
@@ -424,7 +430,8 @@ impl<'gc> Library<'gc> {
             movie_libraries: PtrWeakKeyHashMap::new(),
             device_fonts: Default::default(),
             font_lookup_cache: Default::default(),
-            default_fonts: Default::default(),
+            default_font_names: Default::default(),
+            default_font_cache: Default::default(),
             avm2_class_registry: Default::default(),
         }
     }
@@ -453,15 +460,20 @@ impl<'gc> Library<'gc> {
         renderer: &mut dyn RenderBackend,
         gc_context: &Mutation<'gc>,
     ) -> Vec<Font<'gc>> {
-        // TODO: cache this vec. Invalidate whenever a new font is registered, or the default font definitions change.
-        let mut result = vec![];
+        // Can't use entry api here as we want to use self for `load_device_font`.
+        // Cache the value as this will be looked up a lot, and font lookup by name can be expensive if lots of fonts exist.
+        if let Some(cache) = self.default_font_cache.get(&name) {
+            return cache.clone();
+        }
 
-        for name in self.default_fonts.entry(name).or_default().clone() {
+        let mut result = vec![];
+        for name in self.default_font_names.entry(name).or_default().clone() {
             if let Some(font) = self.load_device_font(&name, ui, renderer, gc_context) {
                 result.push(font);
             }
         }
 
+        self.default_font_cache.insert(name, result.clone());
         result
     }
 
@@ -502,7 +514,8 @@ impl<'gc> Library<'gc> {
     }
 
     pub fn set_default_font(&mut self, font: DefaultFont, names: Vec<String>) {
-        self.default_fonts.insert(font, names);
+        self.default_font_names.insert(font, names);
+        self.default_font_cache.clear();
     }
 
     pub fn register_device_font(
@@ -519,6 +532,7 @@ impl<'gc> Library<'gc> {
                 self.device_fonts.insert(name, font);
             }
         }
+        self.default_font_cache.clear();
     }
 
     /// Get the AVM2 class registry.
