@@ -384,7 +384,7 @@ impl<'gc> NetStream<'gc> {
 
         self.trigger_status_event(
             context,
-            vec![("level", "status"), ("code", "NetStream.Seek.Notify")],
+            vec![("code", "NetStream.Seek.Notify"), ("level", "status")],
         );
 
         // Ensure the container stream type is known before continuing.
