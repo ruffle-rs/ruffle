@@ -345,10 +345,10 @@ impl<'gc> NetStream<'gc> {
     /// Queue a seek to be executed on the next frame tick.
     ///
     /// `offset` is in milliseconds.
-    pub fn seek(self, context: &mut UpdateContext<'_, 'gc>, offset: f64) {
+    pub fn seek(self, context: &mut UpdateContext<'_, 'gc>, offset: f64, notify: bool) {
         self.0.write(context.gc_context).queued_seek_time = Some(offset);
 
-        if context.is_action_script_3() {
+        if notify {
             let trigger = AvmString::new_utf8(
                 context.gc_context,
                 format!("Start Seeking {}", offset as u64),
