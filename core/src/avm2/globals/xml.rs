@@ -477,7 +477,7 @@ pub fn append_child<'gc>(
                 activation.context.gc_context,
                 last_child_namespace,
                 last_child_name,
-                *xml.node(),
+                Some(*xml.node()),
             ); // Creating an element requires passing a parent node, unlike creating a text node
 
             let text_node = E4XNode::text(activation.context.gc_context, text, None);

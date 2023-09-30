@@ -108,12 +108,12 @@ impl<'gc> E4XNode<'gc> {
         mc: &Mutation<'gc>,
         namespace: Option<AvmString<'gc>>,
         name: AvmString<'gc>,
-        parent: Self,
+        parent: Option<Self>,
     ) -> Self {
         E4XNode(GcCell::new(
             mc,
             E4XNodeData {
-                parent: Some(parent),
+                parent,
                 namespace,
                 local_name: Some(name),
                 kind: E4XNodeKind::Element {
@@ -128,12 +128,12 @@ impl<'gc> E4XNode<'gc> {
         mc: &Mutation<'gc>,
         name: AvmString<'gc>,
         value: AvmString<'gc>,
-        parent: E4XNode<'gc>,
+        parent: Option<E4XNode<'gc>>,
     ) -> Self {
         E4XNode(GcCell::new(
             mc,
             E4XNodeData {
-                parent: Some(parent),
+                parent,
                 namespace: None,
                 local_name: Some(name),
                 kind: E4XNodeKind::Attribute(value),
@@ -822,6 +822,10 @@ impl<'gc> E4XNode<'gc> {
         }
 
         Ok(result)
+    }
+
+    pub fn set_namespace(&self, namespace: AvmString<'gc>, mc: &Mutation<'gc>) {
+        self.0.write(mc).namespace = Some(namespace);
     }
 
     pub fn namespace(&self) -> Option<AvmString<'gc>> {
