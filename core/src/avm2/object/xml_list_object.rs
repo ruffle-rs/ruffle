@@ -637,30 +637,38 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                         if !matches!(*y.kind(), E4XNodeKind::Attribute(_)) {
                             // 2.c.viii.1. If r is not null
                             if let Some(r) = r {
-                                if let E4XNodeKind::Element { children, .. } = &*r.kind() {
+                                let j = if let E4XNodeKind::Element { children, .. } = &*r.kind() {
                                     // 2.c.viii.1.a. If (i > 0)
                                     let j = if index > 0 {
                                         // 2.c.viii.1.a.i. Let j = 0
                                         let mut j = 0;
 
                                         // 2.c.viii.1.a.ii. While (j < r.[[Length]]-1) and (r[j] is not the same object as x[i-1])
-                                        while j < children.len()
-                                            && E4XNode::ptr_eq(
+                                        while j < children.len() - 1
+                                            && !E4XNode::ptr_eq(
                                                 children[j],
-                                                *self.children()[index].node(),
+                                                *self.children()[index - 1].node(),
                                             )
                                         {
                                             // 2.c.viii.1.a.ii.1. Let j = j + 1
                                             j += 1;
                                         }
 
-                                        j
+                                        // NOTE: Not listed in spec, but avmplus does this, so we do the same.
+                                        j + 1
                                     // 2.c.viii.1.b. Else
                                     } else {
                                         // 2.c.viii.1.b.i. Let j = r.[[Length]]-1
                                         children.len()
                                     };
 
+                                    Some(j)
+                                } else {
+                                    None
+                                };
+
+                                // NOTE: This is to bypass borrow errors.
+                                if let Some(j) = j {
                                     // 2.c.viii.1.c. Call the [[Insert]] method of r with arguments ToString(j+1) and y
                                     r.insert(j, XmlObject::new(y, activation).into(), activation)?;
                                 }
