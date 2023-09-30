@@ -393,7 +393,7 @@ fn clone<'gc>(
             return Ok(new_bitmap_data(
                 activation.context.gc_context,
                 this.get_local_stored("__proto__", activation, false),
-                operations::clone(bitmap_data),
+                bitmap_data.clone_data(),
             )
             .into());
         }
