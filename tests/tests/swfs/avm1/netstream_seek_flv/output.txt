@@ -2,6 +2,10 @@ onStatus update
 level: status
 code: NetStream.Play.Start
 
+onStatus update
+level: status
+code: NetStream.Buffer.Full
+
 netStatusOnMetaData
 //ns.seek(0.5);
 onStatus update
@@ -19,7 +23,3 @@ undefined
 onStatus update
 level: status
 code: NetStream.Seek.Notify
-
-onStatus update
-level: status
-code: NetStream.Buffer.Full
