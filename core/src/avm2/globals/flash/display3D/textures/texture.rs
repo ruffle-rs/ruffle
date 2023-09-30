@@ -160,7 +160,7 @@ pub(super) fn do_compressed_upload<'gc>(
     Ok(())
 }
 
-pub fn upload_compressed_texture_from_byte_array<'gc>(
+pub fn upload_compressed_texture_from_byte_array_internal<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -168,15 +168,6 @@ pub fn upload_compressed_texture_from_byte_array<'gc>(
     let texture = this.as_texture().unwrap();
     let data = args.get_object(activation, 0, "data")?;
     let byte_array_offset = args.get_u32(activation, 1)? as usize;
-    let async_ = args.get_bool(2);
-    if async_ {
-        avm2_stub_method!(
-            activation,
-            "flash.display3D.textures.Texture",
-            "uploadCompressedTextureFromByteArray",
-            "with async"
-        );
-    }
 
     if !matches!(texture.original_format(), Context3DTextureFormat::Bgra) {
         avm2_stub_method!(
