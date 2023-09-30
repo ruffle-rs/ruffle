@@ -392,7 +392,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
             let Some(local_name) = name.local_name() else {
                 return Err(format!("Cannot set attribute {:?} without a local name", name).into());
             };
-            let new_attr = E4XNode::attribute(mc, local_name, value, *self.node());
+            let new_attr = E4XNode::attribute(mc, local_name, value, Some(*self.node()));
 
             let write = self.0.write(mc);
             let mut kind = write.node.kind_mut(mc);
@@ -447,7 +447,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
                     activation.gc(),
                     name.explict_namespace(),
                     name.local_name().unwrap(),
-                    *self_node,
+                    Some(*self_node),
                 );
                 // 12.b.v. Call the [[Replace]] method of x with arguments ToString(i) and y
                 self_node.replace(index, XmlObject::new(node, activation).into(), activation)?;
