@@ -11,6 +11,7 @@ use crate::avm2::Namespace;
 use crate::avm2::{Error, Multiname};
 use core::fmt;
 use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
+use ruffle_wstr::WString;
 use std::cell::{Ref, RefMut};
 
 use super::xml_list_object::E4XOrXml;
@@ -350,12 +351,40 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         // 5. Let n = ToXMLName(P)
         // 6. If Type(n) is AttributeName
         if name.is_attribute() {
+            // 6.b. If Type(c) is XMLList
+            let value = if let Some(list) = value.as_object().and_then(|x| x.as_xml_list_object()) {
+                let mut out = WString::new();
+
+                // 6.b.i. If c.[[Length]] == 0, let c be the empty string, NOTE: String is already empty, no case needed.
+                // 6.b.ii. Else
+                if list.length() != 0 {
+                    // 6.b.ii.1. Let s = ToString(c[0])
+                    out.push_str(
+                        list.children()[0]
+                            .node()
+                            .xml_to_string(activation)
+                            .as_wstr(),
+                    );
+
+                    // 6.b.ii.2. For i = 1 to c.[[Length]]-1
+                    for child in list.children().iter().skip(1) {
+                        // 6.b.ii.2.a. Let s be the result of concatenating s, the string " " (space) and ToString(c[i])
+                        out.push_char(' ');
+                        out.push_str(child.node().xml_to_string(activation).as_wstr())
+                    }
+                }
+
+                AvmString::new(activation.gc(), out)
+            // 6.c. Else
+            } else {
+                value.coerce_to_string(activation)?
+            };
+
             let mc = activation.context.gc_context;
             self.delete_property_local(activation, name)?;
             let Some(local_name) = name.local_name() else {
                 return Err(format!("Cannot set attribute {:?} without a local name", name).into());
             };
-            let value = value.coerce_to_string(activation)?;
             let new_attr = E4XNode::attribute(mc, local_name, value, *self.node());
 
             let write = self.0.write(mc);
