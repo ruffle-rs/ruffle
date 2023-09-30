@@ -1183,3 +1183,29 @@ pub fn name_to_multiname<'gc>(
     };
     Ok(multiname)
 }
+
+// Based on https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/XMLObject.cpp#L1543
+// This is needed to reproduce some weird behavior in SWFv9.
+pub fn maybe_escape_child<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    child: Value<'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    // NOTE: This depends on root SWF version, not caller movie version.
+    if activation.context.swf.version() <= 9 {
+        if child.as_object().map_or(false, |x| {
+            x.as_xml_object().is_some() || x.as_xml_list_object().is_some()
+        }) {
+            Ok(child)
+        } else {
+            let string = child.coerce_to_string(activation)?;
+            let xml = activation
+                .avm2()
+                .classes()
+                .xml
+                .construct(activation, &[string.into()])?;
+            Ok(xml.into())
+        }
+    } else {
+        Ok(child)
+    }
+}

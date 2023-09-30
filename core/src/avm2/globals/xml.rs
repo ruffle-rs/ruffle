@@ -419,8 +419,9 @@ pub fn append_child<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let xml = this.as_xml_object().unwrap();
-
     let child = args.get_value(0);
+    let child = crate::avm2::e4x::maybe_escape_child(activation, child)?;
+
     if let Some(child) = child.as_object().and_then(|o| o.as_xml_object()) {
         xml.node()
             .append_child(activation.context.gc_context, *child.node())?;
@@ -491,6 +492,8 @@ pub fn prepend_child<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let xml = this.as_xml_object().unwrap();
     let child = args.get_value(0);
+    let child = crate::avm2::e4x::maybe_escape_child(activation, child)?;
+
     // 1. Call the [[Insert]] method of this object with arguments "0" and value
     xml.node().insert(0, child, activation)?;
 
@@ -606,7 +609,8 @@ pub fn insert_child_after<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let xml = this.as_xml_object().unwrap();
     let child1 = args.try_get_object(activation, 0);
-    let child2 = args.get_object(activation, 1, "child2")?;
+    let child2 = args.get_value(1);
+    let child2 = crate::avm2::e4x::maybe_escape_child(activation, child2)?;
 
     // 1. If x.[[Class]] ∈ {"text", "comment", "processing-instruction", "attribute"}, return
     if !matches!(*xml.node().kind(), E4XNodeKind::Element { .. }) {
@@ -628,14 +632,14 @@ pub fn insert_child_after<'gc>(
 
         if let Some(index) = index {
             // 3.a.i.1. Call the [[Insert]] method of x with arguments ToString(i + 1) and child2
-            xml.node().insert(index + 1, child2.into(), activation)?;
+            xml.node().insert(index + 1, child2, activation)?;
             // 3.a.i.2. Return x
             return Ok(xml.into());
         }
     // 2. If (child1 == null)
     } else {
         // 2.a. Call the [[Insert]] method of x with arguments "0" and child2
-        xml.node().insert(0, child2.into(), activation)?;
+        xml.node().insert(0, child2, activation)?;
         // 2.b. Return x
         return Ok(xml.into());
     }
@@ -652,7 +656,8 @@ pub fn insert_child_before<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let xml = this.as_xml_object().unwrap();
     let child1 = args.try_get_object(activation, 0);
-    let child2 = args.get_object(activation, 1, "child2")?;
+    let child2 = args.get_value(1);
+    let child2 = crate::avm2::e4x::maybe_escape_child(activation, child2)?;
 
     // 1. If x.[[Class]] ∈ {"text", "comment", "processing-instruction", "attribute"}, return
     if !matches!(*xml.node().kind(), E4XNodeKind::Element { .. }) {
@@ -674,7 +679,7 @@ pub fn insert_child_before<'gc>(
 
         if let Some(index) = index {
             // 3.a.i.1. Call the [[Insert]] method of x with arguments ToString(i) and child2
-            xml.node().insert(index, child2.into(), activation)?;
+            xml.node().insert(index, child2, activation)?;
             // 3.a.i.2. Return x
             return Ok(xml.into());
         }
@@ -687,7 +692,7 @@ pub fn insert_child_before<'gc>(
         };
 
         // 2.a. Call the [[Insert]] method of x with arguments ToString(x.[[Length]]) and child2
-        xml.node().insert(length, child2.into(), activation)?;
+        xml.node().insert(length, child2, activation)?;
         // 2.b. Return x
         return Ok(xml.into());
     }
