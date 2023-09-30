@@ -1309,12 +1309,22 @@ impl<'a> NagaBuilder<'a> {
             }
             Opcode::Rcp => {
                 let source = self.emit_source_field_load(source1, true)?;
-                let rcp = self.evaluate_expr(Expression::Math {
-                    fun: MathFunction::Inverse,
-                    arg: source,
-                    arg1: None,
-                    arg2: None,
-                    arg3: None,
+
+                let f32_one = self
+                    .func
+                    .expressions
+                    .append(Expression::Literal(Literal::F32(1.0)), Span::UNDEFINED);
+
+                let vec_one = self.evaluate_expr(Expression::Splat {
+                    size: naga::VectorSize::Quad,
+                    value: f32_one,
+                });
+
+                // Perform 'vec4(1.0, 1.0, 1.0. 1.0) / src'
+                let rcp = self.evaluate_expr(Expression::Binary {
+                    op: BinaryOperator::Divide,
+                    left: vec_one,
+                    right: source,
                 });
                 self.emit_dest_store(dest, rcp)?;
             }
