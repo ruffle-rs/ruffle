@@ -2753,4 +2753,48 @@ mod tests {
             assert_eq!(buf, expected);
         }
     }
+
+    #[test]
+    fn write_font_3() {
+        use crate::read::Reader;
+
+        let font = Font {
+            version: 3,
+            id: 1,
+            name: SwfStr::from_bytes(b"font"),
+            language: Language::Unknown,
+            layout: None,
+            glyphs: vec![Glyph {
+                shape_records: vec![
+                    ShapeRecord::StraightEdge {
+                        delta: PointDelta::new(Twips::ONE, -Twips::ONE),
+                    },
+                    ShapeRecord::CurvedEdge {
+                        control_delta: PointDelta::new(Twips::ONE, Twips::ONE),
+                        anchor_delta: PointDelta::new(Twips::ONE, -Twips::ONE),
+                    },
+                    ShapeRecord::StraightEdge {
+                        delta: PointDelta::new(Twips::ZERO, Twips::ZERO),
+                    },
+                    ShapeRecord::CurvedEdge {
+                        control_delta: PointDelta::new(Twips::ZERO, Twips::ZERO),
+                        anchor_delta: PointDelta::new(Twips::ZERO, Twips::ZERO),
+                    },
+                ],
+                code: 1,
+                advance: 0,
+                bounds: None,
+            }],
+            flags: FontFlag::empty(),
+        };
+
+        let mut buf = Vec::new();
+        let mut writer = Writer::new(&mut buf, 13);
+        writer.write_define_font_2(&font).unwrap();
+
+        let mut reader = Reader::new(&buf, 13);
+        let tag = reader.read_tag().unwrap();
+
+        assert_eq!(tag, Tag::DefineFont2(Box::new(font)));
+    }
 }
