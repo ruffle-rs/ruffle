@@ -2046,7 +2046,7 @@ impl<W: Write> Writer<W> {
                 };
                 for glyph in &font.glyphs {
                     // Store offset for later.
-                    let offset = num_glyphs * 4 + shape_writer.output.len();
+                    let offset = shape_writer.output.len();
                     offsets.push(offset);
                     if offset > 0xFFFF {
                         has_wide_offsets = true;
@@ -2072,13 +2072,19 @@ impl<W: Write> Writer<W> {
 
             // If there are no glyphs, then the following tables are omitted.
             if num_glyphs > 0 {
+                // OffsetTable size, plus CodeTableOffset size
+                let init_offset = if has_wide_offsets {
+                    num_glyphs * 4 + 4
+                } else {
+                    num_glyphs * 2 + 2
+                };
+
                 // OffsetTable
                 for offset in offsets {
-                    // +4/+2 are an extra correction for code_table_offset
                     if has_wide_offsets {
-                        writer.write_u32((offset + 4) as u32)?;
+                        writer.write_u32((offset + init_offset) as u32)?;
                     } else {
-                        writer.write_u16((offset + 2) as u16)?;
+                        writer.write_u16((offset + init_offset) as u16)?;
                     }
                 }
 
