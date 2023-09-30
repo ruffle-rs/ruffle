@@ -47,6 +47,3 @@ netStatus
 description: Seek Complete -1
 level: status
 code: NetStream.Seek.Complete
-netStatus
-code: NetStream.Buffer.Full
-level: status
