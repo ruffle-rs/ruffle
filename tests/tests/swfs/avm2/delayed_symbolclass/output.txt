@@ -1,0 +1,28 @@
+In constructor
+Finished constructor
+Called frameConstructed
+Main framescript 1
+Called init event!
+Called complete event!
+In SecondFrameChild class initializer
+In SecondFrameChild script initializer
+Called enterFrame
+SecondFrameChild: [class SecondFrameChild]
+In FourthFrameChild class initializer
+In FourthFrameChild script initializer
+FourthFrameChild: [class FourthFrameChild]
+Constructed SecondFrameChild
+Called frameConstructed
+Main framescript 2
+Called enterFrame
+SecondFrameChild: [class SecondFrameChild]
+FourthFrameChild: [class FourthFrameChild]
+Called frameConstructed
+Main framescript 3 - running gotoAndPlay(5)
+Called frameConstructed
+Main framescript 5
+Called enterFrame
+SecondFrameChild: [class SecondFrameChild]
+FourthFrameChild: [class FourthFrameChild]
+Called frameConstructed
+Main framescript 1

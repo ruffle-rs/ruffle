@@ -46,7 +46,7 @@ use std::cmp::max;
 use std::collections::HashMap;
 use std::sync::Arc;
 use swf::extensions::ReadSwfExt;
-use swf::{ClipEventFlag, FontFlag, FrameLabelData, SwfStr};
+use swf::{ClipEventFlag, FontFlag, FrameLabelData, SwfStr, TagCode};
 
 use super::interactive::Avm2MousePick;
 
@@ -452,8 +452,6 @@ impl<'gc> MovieClip<'gc> {
         context: &mut UpdateContext<'_, 'gc>,
         chunk_limit: &mut ExecutionLimit,
     ) -> bool {
-        use swf::TagCode;
-
         {
             let read = self.0.read();
             if read.static_data.preload_progress.read().next_preload_chunk
@@ -641,9 +639,6 @@ impl<'gc> MovieClip<'gc> {
                     .write(context.gc_context)
                     .define_text(context, reader, 2),
                 TagCode::DoInitAction => self.do_init_action(context, reader, tag_len),
-                TagCode::DoAbc => self.do_abc(context, reader),
-                TagCode::DoAbc2 => self.do_abc_2(context, reader),
-                TagCode::SymbolClass => self.symbol_class(context, reader),
                 TagCode::DefineSceneAndFrameLabelData => {
                     self.scene_and_frame_labels(reader, &mut static_data)
                 }
@@ -1429,7 +1424,7 @@ impl<'gc> MovieClip<'gc> {
         _context: &mut UpdateContext<'_, 'gc>,
         frame: FrameNumber,
     ) -> impl DoubleEndedIterator<Item = SwfSlice> {
-        use swf::{read::Reader, TagCode};
+        use swf::read::Reader;
 
         let mut actions: SmallVec<[SwfSlice; 2]> = SmallVec::new();
 
@@ -1506,7 +1501,6 @@ impl<'gc> MovieClip<'gc> {
         let mut reader = data.read_from(mc.tag_stream_pos);
         drop(mc);
 
-        use swf::TagCode;
         let tag_callback = |reader: &mut SwfStream<'_>, tag_code, tag_len| {
             match tag_code {
                 TagCode::DoAction => self.do_action(context, reader, tag_len),
@@ -1549,6 +1543,9 @@ impl<'gc> MovieClip<'gc> {
                 TagCode::SetBackgroundColor => self.set_background_color(context, reader),
                 TagCode::StartSound if run_sounds => self.start_sound_1(context, reader),
                 TagCode::SoundStreamBlock if run_sounds => self.sound_stream_block(context, reader),
+                TagCode::DoAbc | TagCode::DoAbc2 | TagCode::SymbolClass => {
+                    self.handle_bytecode_tag(tag_code, reader, context)
+                }
                 TagCode::ShowFrame => return Ok(ControlFlow::Exit),
                 _ => Ok(()),
             }?;
@@ -1824,7 +1821,6 @@ impl<'gc> MovieClip<'gc> {
             frame_pos = reader.get_ref().as_ptr() as u64 - tag_stream_start;
 
             let tag_callback = |reader: &mut _, tag_code, _tag_len| {
-                use swf::TagCode;
                 match tag_code {
                     TagCode::PlaceObject => {
                         index += 1;
@@ -1864,6 +1860,9 @@ impl<'gc> MovieClip<'gc> {
                         from_frame,
                         &mut removed_frame_scripts,
                     ),
+                    TagCode::DoAbc | TagCode::DoAbc2 | TagCode::SymbolClass => {
+                        self.handle_bytecode_tag(tag_code, reader, context)
+                    }
                     TagCode::ShowFrame => return Ok(ControlFlow::Exit),
                     _ => Ok(()),
                 }?;
@@ -4150,6 +4149,33 @@ impl<'gc, 'a> MovieClip<'gc> {
         Ok(())
     }
 
+    /// Handles a DoAbc, DoAbc2, or SymbolClass tag
+    fn handle_bytecode_tag(
+        self,
+        tag_code: TagCode,
+        reader: &mut SwfStream<'a>,
+        context: &mut UpdateContext<'_, 'gc>,
+    ) -> Result<(), Error> {
+        let mc = self.0.read();
+        let tag_stream_start = mc.static_data.swf.as_ref().as_ptr() as u64;
+        let tag_start = reader.get_ref().as_ptr() as u64 - tag_stream_start;
+        let processed_pos = self.0.read().static_data.processed_bytecode_tags_pos;
+
+        if *processed_pos.read() < tag_start as i64 {
+            *processed_pos.write(context.gc_context) = tag_start as i64;
+            drop(mc);
+
+            match tag_code {
+                TagCode::DoAbc => self.do_abc(context, reader),
+                TagCode::DoAbc2 => self.do_abc_2(context, reader),
+                TagCode::SymbolClass => self.symbol_class(context, reader),
+                _ => unreachable!(),
+            }
+        } else {
+            Ok(())
+        }
+    }
+
     fn queue_place_object(
         self,
         context: &mut UpdateContext<'_, 'gc>,
@@ -4438,6 +4464,12 @@ struct MovieClipStatic<'gc> {
 
     /// Preload progress for the given clip's tag stream.
     preload_progress: GcCell<'gc, PreloadProgress>,
+
+    /// Holds the tag offset for the furthest DoAbc/DoAbc2/SymbolClass tags that we've
+    /// already run. These tags are run as part of normal frame processing - this
+    /// is observable by ActionScript, which might load a class in a stop()'d MovieClip,
+    /// and then advance to a frame containing a SymbolClass that references the loaded class.
+    processed_bytecode_tags_pos: GcCell<'gc, i64>,
 }
 
 impl<'gc> MovieClipStatic<'gc> {
@@ -4469,6 +4501,7 @@ impl<'gc> MovieClipStatic<'gc> {
             exported_name: GcCell::new(gc_context, None),
             loader_info,
             preload_progress: GcCell::new(gc_context, Default::default()),
+            processed_bytecode_tags_pos: GcCell::new(gc_context, -1),
         }
     }
 }
