@@ -26,7 +26,7 @@ webbrowser = "0.8.11"
 url = "2.4.1"
 arboard = "3.2.1"
 dirs = "5.0"
-isahc = "1.7.2"
+isahc = { version = "1.7.2", features = ["cookies"] }
 rfd = "0.12.0"
 anyhow = "1.0"
 bytemuck = "1.14.0"
