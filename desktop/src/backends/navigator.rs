@@ -70,6 +70,7 @@ impl ExternalNavigatorBackend {
         let proxy = proxy.and_then(|url| url.as_str().parse().ok());
         let builder = HttpClient::builder()
             .proxy(proxy)
+            .cookies()
             .redirect_policy(RedirectPolicy::Follow);
 
         let client = builder.build().ok().map(Rc::new);
@@ -244,6 +245,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                     NavigationMethod::Get => IsahcRequest::get(processed_url.to_string()),
                     NavigationMethod::Post => IsahcRequest::post(processed_url.to_string()),
                 };
+                let (body_data, mime) = request.body().clone().unwrap_or_default();
                 if let Some(headers) = isahc_request.headers_mut() {
                     for (name, val) in request.headers().iter() {
                         headers.insert(
@@ -257,9 +259,15 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                             })?,
                         );
                     }
+                    headers.insert(
+                        "Content-Type",
+                        HeaderValue::from_str(&mime).map_err(|e| ErrorResponse {
+                            url: processed_url.to_string(),
+                            error: Error::FetchError(e.to_string()),
+                        })?,
+                    );
                 }
 
-                let (body_data, _) = request.body().clone().unwrap_or_default();
                 let body = isahc_request.body(body_data).map_err(|e| ErrorResponse {
                     url: processed_url.to_string(),
                     error: Error::FetchError(e.to_string()),
