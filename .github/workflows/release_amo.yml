@@ -22,7 +22,7 @@ jobs:
         with:
           run: GH_TOKEN=${{ secrets.GITHUB_TOKEN }} GH_REPO=${{github.repository}} gh release list -L1 | awk '{print $4}'
       
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: ${{steps.release_tag.outputs.stdout}}
 
