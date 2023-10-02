@@ -42,7 +42,9 @@ import flash.xml.XMLNodeType;
 
       private function _convertXmlNode(original: XML): XMLNode {
          var nodeType = _convertXmlNodeType(original.nodeKind());
-         var nodeValue = nodeType == XMLNodeType.ELEMENT_NODE ? original.name() : original.toString();
+         // TODO: Use namespace().prefix
+         var nodeValue = nodeType == XMLNodeType.ELEMENT_NODE ?
+            original.localName() : original.toString();
          var result = new XMLNode(nodeType, nodeValue);
          for each (var originalChild in original.children()) {
             result.appendChild(_convertXmlNode(originalChild));
@@ -50,7 +52,8 @@ import flash.xml.XMLNodeType;
          var attributeList = original.attributes();
          var attributes = {};
          for each (var attribute in attributeList) {
-            attributes[attribute.name()] = attribute.toString();
+            // TODO: Use namespace().prefix
+            attributes[attribute.localName()] = attribute.toString();
          }
          result.attributes = attributes;
          return result;
