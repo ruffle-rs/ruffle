@@ -1222,9 +1222,7 @@ fn convert_texture_format(input: Context3DTextureFormat) -> Result<wgpu::Texture
         // to be an alpha channel, so we're relying on SWFS doing "the right thing"
         // as with BgrPacked
         Context3DTextureFormat::Compressed => Ok(TextureFormat::Rgba8Unorm),
-        _ => Err(Error::Unimplemented(
-            format!("Texture format {input:?}").into(),
-        )),
+        Context3DTextureFormat::RgbaHalfFloat => Ok(TextureFormat::Rgba16Float),
     }
 }
 
