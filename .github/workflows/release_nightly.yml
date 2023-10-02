@@ -76,23 +76,25 @@ jobs:
             os: macos-latest
             target: x86_64-apple-darwin
             MACOSX_DEPLOYMENT_TARGET: 10.7
-            DESKTOP_FEATURES: sandbox
+            DESKTOP_FEATURES: sandbox,jpegxr
 
           - build_name: macos-aarch64
             os: macos-latest
             target: aarch64-apple-darwin
             MACOSX_DEPLOYMENT_TARGET: 11.0
-            DESKTOP_FEATURES: sandbox
+            DESKTOP_FEATURES: sandbox,jpegxr
 
           - build_name: windows-x86_32
             os: windows-latest
             target: i686-pc-windows-msvc
             RUSTFLAGS: -Ctarget-feature=+crt-static
+            DESKTOP_FEATURES: jpegxr
 
           - build_name: windows-x86_64
             os: windows-latest
             target: x86_64-pc-windows-msvc
             RUSTFLAGS: -Ctarget-feature=+crt-static
+            DESKTOP_FEATURES: jpegxr
 
     env:
       PACKAGE_FILE: ${{ needs.create-nightly-release.outputs.package_prefix }}-${{ matrix.build_name }}.${{ startsWith(matrix.build_name, 'win') && 'zip' || 'tar.gz' }}
