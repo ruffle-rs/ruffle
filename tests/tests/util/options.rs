@@ -117,11 +117,12 @@ impl Approximations {
 #[serde(default, deny_unknown_fields)]
 pub struct RequiredFeatures {
     lzma: bool,
+    jpegxr: bool,
 }
 
 impl RequiredFeatures {
     pub fn can_run(&self) -> bool {
-        !self.lzma || cfg!(feature = "lzma")
+        (!self.lzma || cfg!(feature = "lzma")) && (!self.jpegxr || cfg!(feature = "jpegxr"))
     }
 }
 

@@ -82,7 +82,7 @@ jobs:
           RUSTDOCFLAGS: -D warnings
 
       - name: Run tests with image tests
-        run: cargo test --all --locked --features imgtests,lzma
+        run: cargo test --all --locked --features imgtests,lzma,jpegxr
         env:
           XDG_RUNTIME_DIR: '' # dummy value, just to silence warnings about it missing
 

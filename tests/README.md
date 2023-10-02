@@ -51,6 +51,7 @@ trigger = "last_frame" # When to trigger this capture. Options are last_frame (d
 # Which build features are required for this test to run.
 [required_features]
 lzma = false # If LZMA support is enabled in this build
+jpegxr = false # If JPEG XR support is enabled in this build
 ```
 
 ## Frame-based tests
