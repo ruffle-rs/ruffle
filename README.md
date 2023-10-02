@@ -76,7 +76,7 @@ If you are building for a Linux platform, the following are typical dependencies
 * default-jre-headless
 * cmake
 * g++
-* clang
+* clang - If you want to skip this dependency, compile with `cargo build --release --no-default-features --features software_video` Additional features can be comma-separated after software_video.
 
 
 Use the following command to build and run the desktop app:
