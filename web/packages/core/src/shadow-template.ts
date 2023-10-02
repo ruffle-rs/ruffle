@@ -1,3 +1,5 @@
+import { text } from "./i18n";
+
 /**
  * Insert all rules from array in the style sheet.
  *
@@ -406,6 +408,15 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
             text-align: right;
             width: 28px;
         }`,
+
+        `.acceleration-link {
+            color: var(--ruffle-blue);
+            text-decoration: none;
+        }`,
+
+        `.acceleration-link:hover {
+            text-decoration: underline;
+        }`,
     ];
     insertRules(styleElement.sheet, rules);
 }
@@ -791,16 +802,12 @@ const hardwareModal = createElement(
 const hardwareModalArea = createElement("div", undefined, "modal-area");
 const hardwareModalClose = createElement("span", undefined, "close-modal");
 hardwareModalClose.textContent = "\u00D7";
-const hardwareModalSpanOne = createElement("span");
-hardwareModalSpanOne.textContent =
-    "It looks like hardware acceleration is not enabled. While Ruffle may work, it could be unreasonably slow. You can enable hardware acceleration by ";
 const hardwareModalLink = document.createElement("a");
 hardwareModalLink.href =
     "https://github.com/ruffle-rs/ruffle/wiki/Frequently-Asked-Questions-For-Users#chrome-hardware-acceleration";
 hardwareModalLink.target = "_blank";
-hardwareModalLink.textContent = "following these steps";
-const hardwareModalSpanTwo = createElement("span");
-hardwareModalSpanTwo.textContent = ".";
+hardwareModalLink.className = "acceleration-link";
+hardwareModalLink.textContent = text("enable-hardware-acceleration");
 
 // Context menu overlay elements
 const contextMenuOverlay = createElement(
@@ -874,9 +881,7 @@ appendElement(videoModalArea, videoHolder);
 appendElement(ruffleShadowTemplate.content, hardwareModal);
 appendElement(hardwareModal, hardwareModalArea);
 appendElement(hardwareModalArea, hardwareModalClose);
-appendElement(hardwareModalArea, hardwareModalSpanOne);
 appendElement(hardwareModalArea, hardwareModalLink);
-appendElement(hardwareModalArea, hardwareModalSpanTwo);
 // Context menu overlay append
 appendElement(ruffleShadowTemplate.content, contextMenuOverlay);
 appendElement(contextMenuOverlay, contextMenu);
