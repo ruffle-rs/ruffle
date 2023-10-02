@@ -14,7 +14,7 @@ jobs:
       max-parallel: 1
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Crowdin push
         uses: crowdin/github-action@v1

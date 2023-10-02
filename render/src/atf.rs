@@ -113,5 +113,5 @@ fn read_uint24<R: Read>(data: &mut R) -> Result<u32, Box<dyn std::error::Error>>
     let ch1 = data.read_u8()? as u32;
     let ch2 = data.read_u8()? as u32;
     let ch3 = data.read_u8()? as u32;
-    Ok(ch1 | (ch2 << 8) | (ch3 << 16))
+    Ok(ch3 | (ch2 << 8) | (ch1 << 16))
 }

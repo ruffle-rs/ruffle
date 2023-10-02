@@ -914,8 +914,8 @@ impl<'a> ShaderBuilder<'a> {
                                 right: src,
                             })
                         }
-                        Opcode::LogicalOr => {
-                            // The destination is also used as the first operand: 'dst = dst - src'
+                        Opcode::LogicalOr | Opcode::LogicalAnd => {
+                            // The destination is also used as the first operand: 'dst = dst || src' or 'dst = dst && src'
                             let left = self.load_src_register(&dst)?;
                             let left_bool = self.evaluate_expr(Expression::As {
                                 expr: left,
@@ -928,7 +928,7 @@ impl<'a> ShaderBuilder<'a> {
                                 convert: Some(1),
                             });
 
-                            // Note - this should just be a `LogicalOr` between two vectors.
+                            // Note - this should just be a `LogicalOr/LogicalAnd` between two vectors.
                             // However, Naga currently handles this incorrectly - see https://github.com/gfx-rs/naga/issues/1931
                             // For now, work around this by manually applying it component-wise.
 
@@ -950,15 +950,21 @@ impl<'a> ShaderBuilder<'a> {
                                 })
                                 .collect();
 
+                            let binary_op = match opcode {
+                                Opcode::LogicalOr => BinaryOperator::LogicalOr,
+                                Opcode::LogicalAnd => BinaryOperator::LogicalAnd,
+                                _ => unreachable!(),
+                            };
+
                             let res_components = (0..4)
                                 .map(|index| {
                                     let component_or = self.evaluate_expr(Expression::Binary {
-                                        op: BinaryOperator::LogicalOr,
+                                        op: binary_op,
                                         left: source_components[index],
                                         right: dest_components[index],
                                     });
 
-                                    // We get back a bool from BinaryOperator::LogicalOr, so convert it to a float
+                                    // We get back a bool from BinaryOperator::LogicalOr/LogicalAnd, so convert it to a float
                                     self.evaluate_expr(Expression::As {
                                         expr: component_or,
                                         kind: ScalarKind::Float,

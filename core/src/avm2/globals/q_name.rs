@@ -21,6 +21,11 @@ pub fn init<'gc>(
 
         let namespace = match ns_arg {
             Value::Object(o) if o.as_namespace().is_some() => o.as_namespace().as_deref().copied(),
+            Value::Object(o) if o.as_qname_object().is_some() => o
+                .as_qname_object()
+                .unwrap()
+                .uri()
+                .map(|uri| Namespace::package(uri, &mut activation.borrow_gc())),
             Value::Undefined | Value::Null => None,
             v => Some(Namespace::package(
                 v.coerce_to_string(activation)?,
@@ -42,7 +47,11 @@ pub fn init<'gc>(
             this.init_name(activation.context.gc_context, qname_obj.name().clone());
             return Ok(Value::Undefined);
         }
-        let local = qname_arg.coerce_to_string(activation)?;
+        let local = if qname_arg == Value::Undefined {
+            "".into()
+        } else {
+            qname_arg.coerce_to_string(activation)?
+        };
         if &*local != b"*" {
             this.set_local_name(activation.context.gc_context, local);
             Some(activation.avm2().public_namespace)

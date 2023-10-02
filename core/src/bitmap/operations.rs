@@ -122,14 +122,6 @@ pub fn get_pixel(target: BitmapDataWrapper, x: u32, y: u32) -> u32 {
         .with_alpha(0x0)
         .into()
 }
-
-pub fn clone(original: BitmapDataWrapper) -> BitmapData {
-    // Sync now to bring everything to cpu so we don't force multiple syncs to happen later
-    let original = original.sync();
-    let read = original.read();
-    read.clone()
-}
-
 pub fn flood_fill<'gc>(
     mc: &Mutation<'gc>,
     target: BitmapDataWrapper<'gc>,

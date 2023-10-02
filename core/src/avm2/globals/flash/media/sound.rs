@@ -264,14 +264,26 @@ pub fn load<'gc>(
 /// `Sound.loadCompressedDataFromByteArray`
 pub fn load_compressed_data_from_byte_array<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    this: Object<'gc>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(
-        activation,
-        "flash.media.Sound",
-        "loadCompressedDataFromByteArray"
-    );
+    let bytearray = args.get_object(activation, 0, "bytes")?;
+    let bytes_length = args.get_u32(activation, 1)?;
+    let bytearray = bytearray.as_bytearray().unwrap();
+
+    // FIXME - determine the actual errors thrown by Flash Player
+    let bytes = bytearray.read_bytes(bytes_length as usize).map_err(|e| {
+        Error::RustError(format!("Missing bytes from sound bytearray: {e:?}").into())
+    })?;
+
+    let handle = activation.context.audio.register_mp3(bytes).map_err(|e| {
+        Error::RustError(format!("Failed to register sound from bytearray: {e:?}").into())
+    })?;
+
+    this.as_sound_object()
+        .unwrap()
+        .set_sound(&mut activation.context, handle)?;
+
     Ok(Value::Undefined)
 }
 

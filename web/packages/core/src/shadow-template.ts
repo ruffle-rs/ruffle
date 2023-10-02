@@ -1,3 +1,5 @@
+import { text } from "./i18n";
+
 /**
  * Insert all rules from array in the style sheet.
  *
@@ -321,7 +323,7 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
             position: sticky;
             background: white;
             width: fit-content;
-            padding: 16px;
+            padding: 16px 28px 16px 16px;
             border: 3px solid black;
             margin: auto;
         }`,
@@ -405,6 +407,15 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
         `#volume-slider-text {
             text-align: right;
             width: 28px;
+        }`,
+
+        `.acceleration-link {
+            color: var(--ruffle-blue);
+            text-decoration: none;
+        }`,
+
+        `.acceleration-link:hover {
+            text-decoration: underline;
         }`,
     ];
     insertRules(styleElement.sheet, rules);
@@ -782,6 +793,22 @@ const videoModalClose = createElement("span", undefined, "close-modal");
 videoModalClose.textContent = "\u00D7";
 const videoHolder = createElement("div", "video-holder");
 
+// Hardware acceleration modal elements
+const hardwareModal = createElement(
+    "div",
+    "hardware-acceleration-modal",
+    "modal hidden",
+);
+const hardwareModalArea = createElement("div", undefined, "modal-area");
+const hardwareModalClose = createElement("span", undefined, "close-modal");
+hardwareModalClose.textContent = "\u00D7";
+const hardwareModalLink = document.createElement("a");
+hardwareModalLink.href =
+    "https://github.com/ruffle-rs/ruffle/wiki/Frequently-Asked-Questions-For-Users#chrome-hardware-acceleration";
+hardwareModalLink.target = "_blank";
+hardwareModalLink.className = "acceleration-link";
+hardwareModalLink.textContent = text("enable-hardware-acceleration");
+
 // Context menu overlay elements
 const contextMenuOverlay = createElement(
     "div",
@@ -850,6 +877,11 @@ appendElement(ruffleShadowTemplate.content, videoModal);
 appendElement(videoModal, videoModalArea);
 appendElement(videoModalArea, videoModalClose);
 appendElement(videoModalArea, videoHolder);
+// Hardware acceleration modal append
+appendElement(ruffleShadowTemplate.content, hardwareModal);
+appendElement(hardwareModal, hardwareModalArea);
+appendElement(hardwareModalArea, hardwareModalClose);
+appendElement(hardwareModalArea, hardwareModalLink);
 // Context menu overlay append
 appendElement(ruffleShadowTemplate.content, contextMenuOverlay);
 appendElement(contextMenuOverlay, contextMenu);

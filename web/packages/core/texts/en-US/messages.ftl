@@ -10,6 +10,7 @@ update-ruffle = Update Ruffle
 ruffle-demo = Web Demo
 ruffle-desktop = Desktop Application
 ruffle-wiki = View Ruffle Wiki
+enable-hardware-acceleration = It looks like hardware acceleration is not enabled. While Ruffle may work, it could be unreasonably slow. You can find out how to enable hardware acceleration by following this link.
 view-error-details = View Error Details
 open-in-new-tab = Open in a new tab
 click-to-unmute = Click to unmute

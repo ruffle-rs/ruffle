@@ -193,7 +193,7 @@ bitflags! {
     }
 }
 
-#[derive(Clone, Collect)]
+#[derive(Collect)]
 #[collect(no_drop)]
 pub struct BitmapData<'gc> {
     /// The pixels in the bitmap, stored as a array of pre-multiplied ARGB colour values
@@ -307,6 +307,27 @@ mod wrapper {
                     dirty_state: DirtyState::Clean,
                 },
             ))
+        }
+
+        /// Clones the underlying data, producing a new `BitmapData`
+        /// that has no GPU texture or associated display objects
+        pub fn clone_data(&self) -> BitmapData<'gc> {
+            // Sync from the GPU to CPU, since our new BitmapData starts out
+            // with no GPU texture
+            let data = self.sync();
+            let data = data.read();
+            BitmapData {
+                pixels: data.pixels.clone(),
+                width: data.width,
+                height: data.height,
+                transparency: data.transparency,
+                disposed: data.disposed,
+                bitmap_handle: None,
+                avm2_object: None,
+                display_objects: vec![],
+                // We have no GPU texture, so there's no need to mark as dirty
+                dirty_state: DirtyState::Clean,
+            }
         }
 
         // Provides access to the underlying `BitmapData`. If a GPU -> CPU sync
