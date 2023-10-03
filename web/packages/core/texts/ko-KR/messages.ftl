@@ -8,6 +8,7 @@ update-ruffle = Ruffle 업데이트
 ruffle-demo = 웹 데모
 ruffle-desktop = 데스크톱 애플리케이션
 ruffle-wiki = Ruffle 위키 보기
+enable-hardware-acceleration = 하드웨어 가속이 활성화되지 않은 것 같습니다. Ruffle은 계속 작동하지만 실행 속도가 매우 느릴 수 있습니다. 하드웨어 가속을 활성화하는 방법을 알아보려면 다음 링크를 참고해보세요.
 view-error-details = 오류 세부 정보 보기
 open-in-new-tab = 새 탭에서 열기
 click-to-unmute = 클릭하여 음소거 해제
