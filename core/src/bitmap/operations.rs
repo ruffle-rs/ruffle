@@ -1622,8 +1622,8 @@ pub fn get_pixels_as_byte_array<'gc>(
     y: i32,
     width: i32,
     height: i32,
-) -> Result<ByteArrayStorage, Error<'gc>> {
-    let mut result = ByteArrayStorage::new();
+    result: &mut ByteArrayStorage,
+) -> Result<(), Error<'gc>> {
     let mut region = PixelRegion::for_region_i32(x, y, width, height);
     region.clamp(target.width(), target.height());
 
@@ -1637,7 +1637,7 @@ pub fn get_pixels_as_byte_array<'gc>(
         }
     }
 
-    Ok(result)
+    Ok(())
 }
 
 pub fn set_pixels_from_byte_array<'gc>(
