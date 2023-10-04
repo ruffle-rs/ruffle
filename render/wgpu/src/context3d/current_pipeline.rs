@@ -80,6 +80,8 @@ pub struct CurrentPipeline {
 
     sample_count: u32,
 
+    target_format: TextureFormat,
+
     dirty: Cell<bool>,
 
     sampler_override: [Option<SamplerOverride>; 8],
@@ -155,6 +157,8 @@ impl CurrentPipeline {
             alpha_component: wgpu::BlendComponent::REPLACE,
             sample_count: 1,
 
+            target_format: TextureFormat::Rgba8Unorm,
+
             sampler_override: [None; 8],
         }
     }
@@ -214,6 +218,13 @@ impl CurrentPipeline {
         if self.sample_count != sample_count {
             self.dirty.set(true);
             self.sample_count = sample_count;
+        }
+    }
+
+    pub fn update_target_format(&mut self, format: TextureFormat) {
+        if self.target_format != format {
+            self.dirty.set(true);
+            self.target_format = format;
         }
     }
 
@@ -464,7 +475,7 @@ impl CurrentPipeline {
                     module: &compiled_shaders.fragment_module,
                     entry_point: naga_agal::SHADER_ENTRY_POINT,
                     targets: &[Some(ColorTargetState {
-                        format: TextureFormat::Rgba8Unorm,
+                        format: self.target_format,
                         blend: Some(wgpu::BlendState {
                             color: self.color_component,
                             alpha: self.alpha_component,
