@@ -1172,6 +1172,21 @@ impl<'a> NagaBuilder<'a> {
                     (Filter::Nearest, Wrapping::RepeatUClampV) => {
                         texture_samplers.repeat_u_clamp_v_nearest
                     }
+                    (
+                        Filter::Anisotropic2x
+                        | Filter::Anisotropic4x
+                        | Filter::Anisotropic8x
+                        | Filter::Anisotropic16x,
+                        _,
+                    ) => {
+                        // FIXME - implement anisotropic filters with wgpu
+                        match wrapping {
+                            Wrapping::Clamp => texture_samplers.clamp_linear,
+                            Wrapping::Repeat => texture_samplers.repeat_linear,
+                            Wrapping::ClampURepeatV => texture_samplers.clamp_u_repeat_v_linear,
+                            Wrapping::RepeatUClampV => texture_samplers.repeat_u_clamp_v_linear,
+                        }
+                    }
                 };
 
                 let coord = self.emit_source_field_load(source1, false)?;

@@ -131,6 +131,10 @@ impl SourceField {
 pub enum Filter {
     Nearest = 0,
     Linear = 1,
+    Anisotropic2x = 2,
+    Anisotropic4x = 3,
+    Anisotropic8x = 4,
+    Anisotropic16x = 5,
 }
 
 #[derive(FromPrimitive, Debug, Copy, Clone, PartialEq, Eq, Hash)]
