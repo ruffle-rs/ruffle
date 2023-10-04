@@ -24,6 +24,7 @@ package flash.display {
         public native function get transparent():Boolean;
 
         public native function getPixels(rect:Rectangle):ByteArray;
+        public native function copyPixelsToByteArray(rect:Rectangle, data:ByteArray):void;
         public native function getVector(rect:Rectangle):Vector.<uint>;
         public native function getPixel(x:int, y:int):uint;
         public native function getPixel32(x:int, y:int):uint;

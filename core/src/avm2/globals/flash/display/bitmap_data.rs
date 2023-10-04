@@ -1,6 +1,7 @@
 //! `flash.display.BitmapData` builtin/prototype
 
 use crate::avm2::activation::Activation;
+use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::error::{argument_error, make_error_2008, range_error};
 use crate::avm2::filters::FilterAvm2Ext;
 pub use crate::avm2::object::bitmap_data_allocator;
@@ -297,10 +298,47 @@ pub fn get_pixels<'gc>(
         bitmap_data.check_valid(activation)?;
         let rectangle = args.get_object(activation, 0, "rect")?;
         let (x, y, width, height) = get_rectangle_x_y_width_height(activation, rectangle)?;
-        let storage =
-            operations::get_pixels_as_byte_array(activation, bitmap_data, x, y, width, height)?;
+        let mut storage = ByteArrayStorage::new();
+
+        operations::get_pixels_as_byte_array(
+            activation,
+            bitmap_data,
+            x,
+            y,
+            width,
+            height,
+            &mut storage,
+        )?;
         let bytearray = ByteArrayObject::from_storage(activation, storage)?;
         return Ok(bytearray.into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `BitmapData.copyPixelsToByteArray`.
+pub fn copy_pixels_to_byte_array<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(bitmap_data) = this.as_bitmap_data() {
+        bitmap_data.check_valid(activation)?;
+        let rectangle = args.get_object(activation, 0, "rect")?;
+        let storage = args.get_object(activation, 1, "data")?;
+        let mut storage = storage
+            .as_bytearray_mut(activation.context.gc_context)
+            .unwrap();
+        let (x, y, width, height) = get_rectangle_x_y_width_height(activation, rectangle)?;
+        operations::get_pixels_as_byte_array(
+            activation,
+            bitmap_data,
+            x,
+            y,
+            width,
+            height,
+            &mut storage,
+        )?;
     }
 
     Ok(Value::Undefined)
