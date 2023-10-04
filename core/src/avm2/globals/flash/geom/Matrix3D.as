@@ -404,6 +404,10 @@ package flash.geom {
 			other.rawData = rawData;
 		}
 
+		public function pointAt(pos:Vector3D, at:Vector3D = null, up:Vector3D = null):void {
+			stub_method("flash.geom.Matrix3D", "pointAt");
+		}
+
 		// Based on OpenFL: https://github.com/openfl/openfl/blob/971a4c9e43b5472fd84d73920a2b7c1b3d8d9257/src/openfl/geom/Matrix3D.hx#L1437
 		public function recompose(components:Vector.<Vector3D>, orientationStyle:String = "eulerAngles"):Boolean {
 			checkOrientation(orientationStyle);
