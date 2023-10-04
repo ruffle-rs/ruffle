@@ -938,9 +938,18 @@ impl<'a> NagaBuilder<'a> {
             }
         };
 
+        // TODO - ideally, Naga would be able to tell us this information.
+        let source_is_scalar = matches!(
+            self.func.expressions[expr],
+            Expression::Math {
+                fun: MathFunction::Dot,
+                ..
+            }
+        );
+
         // Optimization - use a Store instead of writing individual fields
         // when we're writing to the entire output register.
-        if dest.write_mask.is_all() {
+        if dest.write_mask.is_all() && !source_is_scalar {
             self.push_statement(Statement::Store {
                 pointer: base_expr,
                 value: expr,
@@ -955,16 +964,7 @@ impl<'a> NagaBuilder<'a> {
 
             for (i, mask) in [(0, Mask::X), (1, Mask::Y), (2, Mask::Z), (3, Mask::W)] {
                 if dest.write_mask.contains(mask) {
-                    let source_component = if scalar_write {
-                        // TODO - ideally, Naga would be able to tell us this information.
-                        let source_is_scalar = matches!(
-                            self.func.expressions[expr],
-                            Expression::Math {
-                                fun: MathFunction::Dot,
-                                ..
-                            }
-                        );
-
+                    let source_component = if scalar_write || source_is_scalar {
                         if source_is_scalar {
                             expr
                         } else {
