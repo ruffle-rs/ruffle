@@ -177,7 +177,6 @@ export class RufflePlayer extends HTMLElement {
     private pointerMoveMaxDistance = 0;
 
     private volumeSettings: VolumeControls;
-    private resizeObserver: ResizeObserver;
 
     /**
      * Triggered when a movie metadata has been loaded (such as movie width and height).
@@ -276,14 +275,6 @@ export class RufflePlayer extends HTMLElement {
 
         this.volumeSettings = new VolumeControls(false, 100);
         this.addVolumeControlsJavaScript(this.volumeControls);
-        this.resizeObserver = new ResizeObserver((entries) => {
-            for (const entry of entries) {
-                if (entry.target === this.parentElement) {
-                    setTimeout(() => this.updateStyles(), 0);
-                    break;
-                }
-            }
-        });
 
         const backupSaves = <HTMLElement>(
             this.saveManager.querySelector("#backup-saves")
@@ -567,42 +558,6 @@ export class RufflePlayer extends HTMLElement {
     }
 
     /**
-     * Update resizeObserver to watch this element.
-     *
-     * @param parentElement The parent element of the RufflePlayer
-     */
-    updateResizeObserver(parentElement: HTMLElement | null): void {
-        if (parentElement) {
-            this.resizeObserver.disconnect();
-            this.resizeObserver.observe(parentElement);
-        }
-    }
-
-    /**
-     * Check if this element has an ancestor with a non-percentage-based height
-     * found before any elements without a height found when recursing up the tree.
-     *
-     * @param el The base element.
-     * @returns true if the aforementioned condition is true, otherwise false
-     */
-    private anyAncestorHasNonPercentHeight(el: HTMLElement): boolean {
-        let ancestorEl = el.parentElement;
-        // If the parent element of the RufflePlayer is resized, check if the RufflePlayer should be resized
-        this.updateResizeObserver(ancestorEl);
-        while (ancestorEl) {
-            const height = ancestorEl?.style?.height;
-            if (!height) {
-                return false;
-            }
-            if (!height.endsWith("%")) {
-                return true;
-            }
-            ancestorEl = ancestorEl.parentElement;
-        }
-        return false;
-    }
-
-    /**
      * Updates the internal shadow DOM to reflect any set attributes from
      * this element.
      */
@@ -631,22 +586,15 @@ export class RufflePlayer extends HTMLElement {
             }
 
             const heightAttr = this.attributes.getNamedItem("height");
-            const heightStyle = this.style?.height;
-            const height = heightAttr
-                ? RufflePlayer.htmlDimensionToCssDimension(heightAttr.value)
-                : null;
-            if (
-                (height?.endsWith("%") || heightStyle?.endsWith("%")) &&
-                !this.anyAncestorHasNonPercentHeight(this)
-            ) {
-                // !important needed to override a potential percent-based style
-                this.dynamicStyles.sheet.insertRule(
-                    ":host { height: 200px !important; }",
+            if (heightAttr !== undefined && heightAttr !== null) {
+                const height = RufflePlayer.htmlDimensionToCssDimension(
+                    heightAttr.value,
                 );
-            } else if (height !== null) {
-                this.dynamicStyles.sheet.insertRule(
-                    `:host { height: ${height}; }`,
-                );
+                if (height !== null) {
+                    this.dynamicStyles.sheet.insertRule(
+                        `:host { height: ${height}; }`,
+                    );
+                }
             }
         }
     }
