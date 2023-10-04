@@ -210,6 +210,8 @@ impl WgpuContext3D {
             .update_has_depth_texture(self.current_depth_texture_view.is_some());
         self.current_pipeline
             .update_sample_count(self.back_buffer_sample_count);
+        self.current_pipeline
+            .update_target_format(TextureFormat::Rgba8Unorm);
     }
 
     pub(crate) fn present(&mut self) {
@@ -828,6 +830,8 @@ impl Context3D for WgpuContext3D {
                     .update_has_depth_texture(enable_depth_and_stencil);
                 self.current_pipeline.remove_texture(&texture);
                 self.current_pipeline.update_sample_count(sample_count);
+                self.current_pipeline
+                    .update_target_format(texture_wrapper.texture.format());
             }
 
             Context3DCommand::SetRenderToBackBuffer => {
