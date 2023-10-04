@@ -642,6 +642,7 @@ export class RufflePlayer extends HTMLElement {
             // ancestors have a percentage-based height.
             if (
                 (height?.endsWith("%") || heightStyle?.endsWith("%")) &&
+                document.doctype &&
                 !this.anyAncestorHasNonPercentHeight(this)
             ) {
                 // !important needed to override a potential percent-based style
