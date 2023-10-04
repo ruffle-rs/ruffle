@@ -8,12 +8,12 @@ repository.workspace = true
 version.workspace = true
 
 [dependencies]
-clap = { version = "4.4.4", features = ["derive"] }
+clap = { version = "4.4.6", features = ["derive"] }
 cpal = "0.15.2"
 egui = { workspace = true }
 egui-wgpu = { git = "https://github.com/emilk/egui", rev = "98087029e020a1b2d78a4eb840d0a8505340ecad", features = ["winit"] }
 egui-winit = { git = "https://github.com/emilk/egui", rev = "98087029e020a1b2d78a4eb840d0a8505340ecad" }
-fontdb = "0.14"
+fontdb = "0.15"
 ruffle_core = { path = "../core", features = ["audio", "clap", "mp3", "nellymoser", "default_compatibility_rules", "egui"] }
 ruffle_render = { path = "../render", features = ["clap"] }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
@@ -21,7 +21,7 @@ ruffle_video_software = { path = "../video/software", optional = true }
 tracing = { workspace = true}
 tracing-subscriber = { workspace = true }
 generational-arena = "0.2.9"
-winit = "0.28.6"
+winit = "0.28.7"
 webbrowser = "0.8.11"
 url = "2.4.1"
 arboard = "3.2.1"
@@ -39,7 +39,7 @@ chrono = { version = "0.4", default-features = false, features = [] }
 fluent-templates = "0.8.0"
 futures-lite = "1.13.0"
 async-io = "1.13.0"
-async-net = "1.7.0"
+async-net = "1.8.0"
 async-channel = "1.9.0"
 
 # Deliberately held back to match tracy client used by profiling crate
