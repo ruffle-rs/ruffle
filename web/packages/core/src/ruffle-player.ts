@@ -635,11 +635,6 @@ export class RufflePlayer extends HTMLElement {
             const height = heightAttr
                 ? RufflePlayer.htmlDimensionToCssDimension(heightAttr.value)
                 : null;
-            // A default height of 200px is used if the height attribute or
-            // height style of the Flash element is percentage-based and its
-            // first ancestor without a percentage-based height found when
-            // recursing up the DOM tree has no height style or all its
-            // ancestors have a percentage-based height.
             if (
                 (height?.endsWith("%") || heightStyle?.endsWith("%")) &&
                 !this.anyAncestorHasNonPercentHeight(this)
