@@ -746,7 +746,7 @@ impl<'gc> EditText<'gc> {
 
     /// Relayout the `EditText`.
     ///
-    /// This function operats exclusively with the text-span representation of
+    /// This function operates exclusively with the text-span representation of
     /// the text, and no higher-level representation. Specifically, CSS should
     /// have already been calculated and applied to HTML trees lowered into the
     /// text-span representation.
