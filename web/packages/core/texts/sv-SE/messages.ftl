@@ -32,7 +32,7 @@ error-wasm-mime-type =
     Om du är serveradministratören konsultera vänligen Rufflewikin för hjälp.
 error-swf-fetch =
     Ruffle misslyckades ladda SWF-filen.
-    Det mest sannolika skälet är att filen inte längre existerar, så det finns inget för Ruffle att ladda.
+    Det mest sannolika skälet är att filen inte längre existerar, så det finns inget för Ruffle att köra.
     Försök att kontakta webbplatsadministratören för hjälp.
 error-swf-cors =
     Ruffle misslyckades ladda SWF-filen.
@@ -49,7 +49,7 @@ error-wasm-invalid =
 error-wasm-download =
     Ruffle har stött på ett stort fel under initialiseringen.
     Detta kan ofta lösas av sig själv så du kan prova att ladda om sidan.
-    Kontakta annars webbplatsens administratör.
+    Kontakta annars vänligen webbplatsens administratör.
 error-wasm-disabled-on-edge =
     Ruffle misslyckades ladda ".wasm"-filkomponenten.
     För att åtgärda detta försök att öppna webbläsarens inställningar, klicka på "Sekretess, sökning och tjänster", bläddra ner och stäng av "Förbättra säkerheten på webben".
