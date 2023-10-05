@@ -130,9 +130,8 @@ pub fn set_height<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.as_display_object() {
         let new_height = args.get_f64(activation, 0)?;
-
         if new_height >= 0.0 {
-            dobj.set_height(activation.context.gc_context, new_height);
+            dobj.set_height(&mut activation.context, new_height);
         }
     }
 
@@ -187,9 +186,8 @@ pub fn set_width<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.as_display_object() {
         let new_width = args.get_f64(activation, 0)?;
-
         if new_width >= 0.0 {
-            dobj.set_width(activation.context.gc_context, new_width);
+            dobj.set_width(&mut activation.context, new_width);
         }
     }
 

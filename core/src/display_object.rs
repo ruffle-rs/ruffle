@@ -1353,7 +1353,8 @@ pub trait TDisplayObject<'gc>:
     /// The width is based on the AABB of the object.
     /// Set by the ActionScript `_width`/`width` properties.
     /// This does odd things on rotated clips to match the behavior of Flash.
-    fn set_width(&self, gc_context: &Mutation<'gc>, value: f64) {
+    fn set_width(&self, context: &mut UpdateContext<'_, 'gc>, value: f64) {
+        let gc_context = context.gc_context;
         let object_bounds = self.bounds();
         let object_width = object_bounds.width().to_pixels();
         let object_height = object_bounds.height().to_pixels();
@@ -1400,7 +1401,8 @@ pub trait TDisplayObject<'gc>:
     /// Sets the pixel height of this display object in local space.
     /// Set by the ActionScript `_height`/`height` properties.
     /// This does odd things on rotated clips to match the behavior of Flash.
-    fn set_height(&self, gc_context: &Mutation<'gc>, value: f64) {
+    fn set_height(&self, context: &mut UpdateContext<'_, 'gc>, value: f64) {
+        let gc_context = context.gc_context;
         let object_bounds = self.bounds();
         let object_width = object_bounds.width().to_pixels();
         let object_height = object_bounds.height().to_pixels();
