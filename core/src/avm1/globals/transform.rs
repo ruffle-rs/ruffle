@@ -21,7 +21,7 @@ pub struct TransformObject<'gc> {
 impl<'gc> TransformObject<'gc> {
     fn new(activation: &mut Activation<'_, 'gc>, args: &[Value<'gc>]) -> Option<Self> {
         let clip = match args {
-            // `Tranform` constructor accepts exactly 1 argument.
+            // `Transform` constructor accepts exactly 1 argument.
             [Value::MovieClip(clip)] => Some(*clip),
             [Value::Object(clip)] => {
                 let stage_object = clip.as_stage_object()?;
