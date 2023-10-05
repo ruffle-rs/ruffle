@@ -1887,14 +1887,12 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             .to_pixels()
     }
 
-    fn set_width(&self, gc_context: &Mutation<'gc>, value: f64) {
-        let mut write = self.0.write(gc_context);
-
-        write.bounds.set_width(Twips::from_pixels(value));
-        write.base.base.set_transformed_by_script(true);
-
-        drop(write);
-        self.redraw_border(gc_context);
+    fn set_width(&self, context: &mut UpdateContext<'_, 'gc>, value: f64) {
+        let mut edit_text = self.0.write(context.gc_context);
+        edit_text.bounds.set_width(Twips::from_pixels(value));
+        edit_text.base.base.set_transformed_by_script(true);
+        drop(edit_text);
+        self.relayout(context);
     }
 
     fn height(&self) -> f64 {
@@ -1904,14 +1902,12 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             .to_pixels()
     }
 
-    fn set_height(&self, gc_context: &Mutation<'gc>, value: f64) {
-        let mut write = self.0.write(gc_context);
-
-        write.bounds.set_height(Twips::from_pixels(value));
-        write.base.base.set_transformed_by_script(true);
-
-        drop(write);
-        self.redraw_border(gc_context);
+    fn set_height(&self, context: &mut UpdateContext<'_, 'gc>, value: f64) {
+        let mut edit_text = self.0.write(context.gc_context);
+        edit_text.bounds.set_height(Twips::from_pixels(value));
+        edit_text.base.base.set_transformed_by_script(true);
+        drop(edit_text);
+        self.relayout(context);
     }
 
     fn set_matrix(&self, gc_context: &Mutation<'gc>, matrix: Matrix) {

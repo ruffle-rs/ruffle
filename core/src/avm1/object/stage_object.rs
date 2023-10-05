@@ -609,7 +609,7 @@ fn set_width<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(val) = property_coerce_to_number(activation, val)? {
-        this.set_width(activation.context.gc_context, val);
+        this.set_width(&mut activation.context, val);
     }
     Ok(())
 }
@@ -624,7 +624,7 @@ fn set_height<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(val) = property_coerce_to_number(activation, val)? {
-        this.set_height(activation.context.gc_context, val);
+        this.set_height(&mut activation.context, val);
     }
     Ok(())
 }
