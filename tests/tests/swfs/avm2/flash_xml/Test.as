@@ -36,3 +36,11 @@ trace("doc2.firstChild.toString(): " + doc2.firstChild.toString());
 trace("doc2.firstChild.nextSibling: " + doc2.firstChild.nextSibling);
 trace("JSON.stringify(doc2.firstChild.attributes): " + JSON.stringify(doc2.firstChild.attributes));
 trace("doc2.firstChild.nextSibling.nodeName: " + doc2.firstChild.nextSibling.nodeName);
+
+trace("///")
+
+// Smoke test that ensures there is no error.
+var doc3 = new XMLDocument('<abc xml:lang="de">hello</abc>');
+trace("doc3.firstChild.firstChild: " + doc3.firstChild.firstChild);
+var doc4 = new XMLDocument('<xml:abc>world</xml:abc>');
+trace("doc4.firstChild.firstChild: " + doc4.firstChild.firstChild);

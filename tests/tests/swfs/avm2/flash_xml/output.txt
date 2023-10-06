@@ -24,3 +24,6 @@ doc2.firstChild.toString(): <a hello="world">xxx</a>
 doc2.firstChild.nextSibling: <B>yyy</B>
 JSON.stringify(doc2.firstChild.attributes): {"hello":"world"}
 doc2.firstChild.nextSibling.nodeName: B
+///
+doc3.firstChild.firstChild: hello
+doc4.firstChild.firstChild: world
