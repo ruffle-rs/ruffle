@@ -40,7 +40,7 @@ use swf::{Color, ColorTransform, Twips};
 use super::interactive::Avm2MousePick;
 
 /// The kind of autosizing behavior an `EditText` should have, if any
-#[derive(Copy, Clone, Collect, PartialEq, Eq)]
+#[derive(Copy, Clone, Collect, Debug, PartialEq, Eq)]
 #[collect(no_drop)]
 pub enum AutoSizeMode {
     None,
