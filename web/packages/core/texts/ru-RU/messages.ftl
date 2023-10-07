@@ -10,6 +10,7 @@ update-ruffle = Обновить Ruffle
 ruffle-demo = Веб-демо
 ruffle-desktop = Настольное приложение
 ruffle-wiki = Открыть вики Ruffle
+enable-hardware-acceleration = Похоже, что аппаратное ускорение не включено. Хоть Ruffle и будет работать, он может быть неоправданно медленным. О том, как включить аппаратное ускорение, можно узнать, перейдя по ссылке.
 view-error-details = Сведения об ошибке
 open-in-new-tab = Открыть в новой вкладке
 click-to-unmute = Включить звук

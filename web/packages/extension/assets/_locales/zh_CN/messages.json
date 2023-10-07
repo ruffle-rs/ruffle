@@ -54,7 +54,7 @@
         "message": "查找当前标签页时发生错误。"
     },
     "status_message_init": {
-        "message": "正在此标签页上检查 Ruffle 状态…"
+        "message": "正在当前标签页上检查 Ruffle 状态…"
     },
     "status_result_running": {
         "message": "Ruffle 已经加载并准备在当前标签页上运行 Flash 内容。"

@@ -9,3 +9,4 @@ context-menu-about-ruffle =
 context-menu-hide = Скрыть это меню
 context-menu-exit-fullscreen = Оконный режим
 context-menu-enter-fullscreen = Полноэкранный режим
+context-menu-volume-controls = Громкость
