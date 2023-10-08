@@ -55,6 +55,11 @@ body {
 .option select {
     position: absolute;
     right: 0;
+    background: var(--ruffle-dark-blue);
+    color: white;
+    padding: 4px;
+    border: none;
+    border-radius: 4px;
 }
 
 .option label {

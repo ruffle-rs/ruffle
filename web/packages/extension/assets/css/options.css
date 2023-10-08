@@ -3,19 +3,18 @@
 }
 
 .container {
-    max-width: 400px;
+    max-width: 600px;
     margin: auto;
     padding: 24px 32px;
 }
 
-details > .options {
-    padding-top: 10px;
+#advanced_options {
+    color: var(--ruffle-orange);
+    font-size: 28px;
+    margin: 8px auto 0;
 }
 
-details > .options.special {
-    padding-top: 30px;
-}
-
-details > summary {
-    cursor: pointer;
+#reset_settings {
+    margin: 0 auto;
+    padding: 0 24px;
 }
