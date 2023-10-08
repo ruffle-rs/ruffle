@@ -6,6 +6,10 @@ package flash.text.engine {
     import flash.display.DisplayObjectContainer;
     import flash.geom.Rectangle;
 
+    // FIXME: None of the DisplayObjectContainer methods actually work on
+    // the TextLine class in Ruffle, despite the methods working fine in FP-
+    // however, it's unlikely that SWFs will actually attempt to add children
+    // to a TextLine.
     [Ruffle(NativeInstanceInit)]
     public final class TextLine extends DisplayObjectContainer {
         internal var _specifiedWidth:Number = 0.0;
