@@ -39,6 +39,27 @@ body {
 
 /* Controls */
 
+input,
+select {
+    background: var(--ruffle-dark-blue);
+    color: white;
+    padding: 6px;
+    border: none;
+    border-radius: 4px;
+}
+
+button {
+    padding: 6px 8px;
+    border: 2px solid var(--ruffle-blue);
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: center;
+    background: var(--ruffle-light-blue);
+    color: white;
+    /* This gives the text a little more weight without outright bolding it */
+    text-shadow: 0 0 0.1px white;
+}
+
 .options {
     display: flex;
     flex-flow: column;
@@ -53,13 +74,9 @@ body {
 
 .option input,
 .option select {
+    padding: 4px;
     position: absolute;
     right: 0;
-    background: var(--ruffle-dark-blue);
-    color: white;
-    padding: 4px;
-    border: none;
-    border-radius: 4px;
 }
 
 .option label {
@@ -118,20 +135,4 @@ body {
     width: 60px;
     height: 20px;
     margin: auto;
-}
-
-/* Button */
-
-button {
-    display: block;
-    height: 33px;
-    padding: 0;
-    border: 2px solid var(--ruffle-blue);
-    border-radius: 8px;
-    cursor: pointer;
-    text-align: center;
-    background: var(--ruffle-light-blue);
-    color: white;
-    /* This gives the text a little more weight without outright bolding it */
-    text-shadow: 0 0 0.1px white;
 }
