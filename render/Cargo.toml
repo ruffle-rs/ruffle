@@ -12,7 +12,7 @@ ruffle_wstr = { path = "../wstr" }
 swf = { path = "../swf"}
 tracing = { workspace = true }
 gif = "0.12.0"
-png = { version = "0.17.10" }
+png = "0.17.10"
 flate2 = "1.0.27"
 smallvec = { version = "1.11.1", features = ["union"] }
 downcast-rs = "1.2.0"

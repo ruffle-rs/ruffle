@@ -45,7 +45,7 @@ tracing = "0.1.37"
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
 naga = { version = "0.13.0", features = ["validate", "wgsl-out"] }
 naga_oil = "0.9.0"
-wgpu = { version = "0.17.1" }
+wgpu = "0.17.1"
 egui = "0.23.0"
 
 # Don't optimize build scripts and macros.
@@ -88,4 +88,4 @@ inherits = "release"
 wgpu = { git = "https://github.com/ruffle-rs/wgpu", branch = "backport-shader-unconsumed" }
 
 [patch.'https://github.com/gfx-rs/naga']
-naga = { version = "0.13.0" }
+naga = "0.13.0"
