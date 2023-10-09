@@ -105,7 +105,7 @@ body {
 }
 
 #info-container span:first-child {
-    font-weight: bold;
+    text-shadow: 0 0 1px white;
 }
 
 #info-container span:first-child::after {

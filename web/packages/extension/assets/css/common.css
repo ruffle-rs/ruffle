@@ -48,6 +48,11 @@ select {
     border-radius: 4px;
 }
 
+input::placeholder {
+    opacity: 0.5;
+    color: white;
+}
+
 button {
     padding: 6px 8px;
     border: 2px solid var(--ruffle-blue);
