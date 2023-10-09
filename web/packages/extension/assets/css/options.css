@@ -8,12 +8,12 @@
     padding: 24px 32px;
 }
 
-#advanced_options {
+#advanced-options {
     color: var(--ruffle-orange);
     font-size: 28px;
     margin: 8px auto 0;
 }
 
-#reset_settings {
+#reset-settings {
     margin: 0 auto;
 }

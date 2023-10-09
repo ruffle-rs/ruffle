@@ -51,7 +51,9 @@ body {
 #reload-button {
     height: 0;
     padding: 0;
-    transition: height 0.2s ease-in, margin-bottom 0.2s ease-in;
+    transition:
+        height 0.2s ease-in,
+        margin-bottom 0.2s ease-in;
     overflow: hidden;
     cursor: default;
     background: var(--ruffle-orange);
@@ -63,7 +65,9 @@ body {
 #reload-button:enabled {
     height: 33px;
     margin-bottom: 6px;
-    transition: height 0.2s ease-out, margin-bottom 0.2s ease-out;
+    transition:
+        height 0.2s ease-out,
+        margin-bottom 0.2s ease-out;
     cursor: pointer;
 }
 

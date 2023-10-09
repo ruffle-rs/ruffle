@@ -83,7 +83,8 @@ function unload() {
         document.querySelectorAll("span.metadata").forEach((el) => {
             el.textContent = "Loading";
         });
-        document.getElementById("backgroundColor")!.style.backgroundColor = "white";
+        document.getElementById("backgroundColor")!.style.backgroundColor =
+            "white";
     }
 }
 
@@ -100,7 +101,8 @@ function load(options: string | DataLoadOptions | URLLoadOptions) {
                 if (metadataElement) {
                     switch (key) {
                         case "backgroundColor":
-                            metadataElement.style.backgroundColor = value ?? "white";
+                            metadataElement.style.backgroundColor =
+                                value ?? "white";
                             break;
                         case "uncompressedLength":
                             metadataElement.textContent = `${value >> 10}Kb`;
@@ -188,7 +190,7 @@ localFileInput.addEventListener("drop", (event) => {
 });
 
 toggleInfo.addEventListener("click", () => {
-    if (infoContainer.style.display == "none") {
+    if (infoContainer.style.display === "none") {
         infoContainer.style.display = "flex";
     } else {
         infoContainer.style.display = "none";
@@ -248,9 +250,11 @@ window.addEventListener("pageshow", loadSwfFromHash);
 window.addEventListener("hashchange", loadSwfFromHash);
 
 window.addEventListener("DOMContentLoaded", () => {
-    document.getElementById("local-file-label")!.addEventListener("click", () => {
-        document.getElementById("local-file")!.click();
-    });
+    document
+        .getElementById("local-file-label")!
+        .addEventListener("click", () => {
+            document.getElementById("local-file")!.click();
+        });
     webFormSubmit.addEventListener("click", () => {
         if (webURL.value !== "") {
             window.location.hash = webURL.value;

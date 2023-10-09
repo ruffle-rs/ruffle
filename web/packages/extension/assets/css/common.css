@@ -15,7 +15,9 @@
 
 body {
     background: var(--ruffle-blue);
-    font: 14px Arial, sans-serif;
+    font:
+        14px Arial,
+        sans-serif;
     margin: auto;
     color: white;
 }
@@ -61,6 +63,7 @@ button {
     text-align: center;
     background: var(--ruffle-light-blue);
     color: white;
+
     /* This gives the text a little more weight without outright bolding it */
     text-shadow: 0 0 0.1px white;
 }
@@ -108,7 +111,9 @@ button {
     top: 0;
     bottom: 0;
     margin: auto;
-    transition: background 0.2s, right 0.2s;
+    transition:
+        background 0.2s,
+        right 0.2s;
 }
 
 .option.checkbox label::before {

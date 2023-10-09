@@ -63,11 +63,8 @@ body {
 }
 
 #player-container {
-    flex-grow: 1;
-}
-
-#player-container {
     overflow-y: hidden;
+    flex-grow: 1;
 }
 
 #player-container > * {
