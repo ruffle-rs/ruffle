@@ -468,7 +468,7 @@ impl<'gc> Library<'gc> {
 
         let mut result = vec![];
         for name in self.default_font_names.entry(name).or_default().clone() {
-            if let Some(font) = self.load_device_font(&name, ui, renderer, gc_context) {
+            if let Some(font) = self.get_or_load_device_font(&name, ui, renderer, gc_context) {
                 result.push(font);
             }
         }
@@ -478,7 +478,7 @@ impl<'gc> Library<'gc> {
     }
 
     /// Returns the device font for use when a font is unavailable.
-    pub fn load_device_font(
+    pub fn get_or_load_device_font(
         &mut self,
         name: &str,
         ui: &dyn UiBackend,
