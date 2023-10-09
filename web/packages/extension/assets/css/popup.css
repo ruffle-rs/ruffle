@@ -33,7 +33,7 @@ body {
     display: flex;
     flex-wrap: wrap;
     row-gap: 2px;
-    margin: 0 12px;
+    padding: 0 12px 4px;
 }
 
 .buttons-container button {
@@ -69,13 +69,6 @@ body {
         height 0.2s ease-out,
         margin-bottom 0.2s ease-out;
     cursor: pointer;
-}
-
-#version-text {
-    text-align: center;
-    font-size: 12px;
-    opacity: 0.8;
-    padding-bottom: 6px;
 }
 
 @media (prefers-color-scheme: dark) {

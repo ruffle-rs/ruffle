@@ -159,7 +159,7 @@ window.addEventListener("DOMContentLoaded", () => {
     const versionText = document.getElementById(
         "version-text",
     ) as HTMLDivElement;
-    versionText.textContent = `Ruffle extension ${buildInfo.versionName}`;
+    versionText.textContent = buildInfo.versionName;
 
     const optionsButton = document.getElementById(
         "options-button",
