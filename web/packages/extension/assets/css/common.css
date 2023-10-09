@@ -30,6 +30,11 @@ body {
     box-shadow: 0 0 15px #0008;
 }
 
+.header a {
+    display: inline-block;
+    line-height: 0;
+}
+
 #version-text {
     text-align: center;
     font-size: 12px;
