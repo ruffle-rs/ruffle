@@ -9,7 +9,7 @@ version.workspace = true
 
 [dependencies]
 linkme = { version = "0.3", optional = true }
-byteorder = "1.4"
+byteorder = "1.5"
 bitstream-io = "1.7.0"
 flate2 = "1.0.27"
 fnv = "1.0.7"
