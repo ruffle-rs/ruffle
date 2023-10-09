@@ -16,8 +16,8 @@
         },
         {
             "matchCategories": ["rust"],
-            "matchPackageNames": ["wgpu", "naga", "naga_oil", "egui-wgpu"],
-            "groupName": "Rust dependencies related to wgpu",
+            "matchPackageNames": ["winit", "wgpu", "naga", "naga_oil", "egui-winit", "egui-wgpu", "raw-window-handle"],
+            "groupName": "Rust dependencies related to winit and wgpu",
             "rangeStrategy": "bump",
             "extends": ["schedule:weekly"],
         },
