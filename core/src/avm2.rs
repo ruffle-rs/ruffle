@@ -346,7 +346,8 @@ impl<'gc> Avm2<'gc> {
             .map(|e| e.event_type())
             .unwrap_or_else(|| panic!("cannot dispatch non-event object: {:?}", event));
 
-        let mut activation = Activation::from_nothing(context.reborrow());
+        let movie = context.swf.clone();
+        let mut activation = Activation::from_movie(context.reborrow(), movie);
         if let Err(err) = events::dispatch_event(&mut activation, target, event) {
             tracing::error!(
                 "Encountered AVM2 error when dispatching `{}` event: {:?}",
