@@ -17,6 +17,7 @@ file-menu-exit = Ukončit
 controls-menu = Ovládání
 controls-menu-suspend = Pozastavit
 controls-menu-resume = Pokračovat
+controls-menu-volume = Ovládání hlasitosti
 help-menu = Pomoc
 help-menu-join-discord = Připojte se na Discord
 help-menu-report-a-bug = Nahlásit chybu...

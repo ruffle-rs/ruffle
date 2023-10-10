@@ -10,6 +10,7 @@ update-ruffle = Ruffle frissítése
 ruffle-demo = Webes demó
 ruffle-desktop = Asztali alkalmazás
 ruffle-wiki = Ruffle Wiki megnyitása
+enable-hardware-acceleration = Úgy tűnik, a hardveres gyorsítás nincs engedélyezve. Bár a Ruffle működhet, nagyon lassú lehet. Ezt a hivatkozást követve megtudhatod, hogyan engedélyezd a hardveres gyorsítást.
 view-error-details = Hiba részletei
 open-in-new-tab = Megnyitás új lapon
 click-to-unmute = Kattints a némítás feloldásához
