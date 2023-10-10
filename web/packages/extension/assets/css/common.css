@@ -27,7 +27,7 @@ body {
     background: var(--ruffle-dark-blue);
     text-align: center;
     padding: 16px 16px 6px;
-    box-shadow: 0 0 15px #0008;
+    box-shadow: 0 0 12px #0008;
 }
 
 .header a {
