@@ -150,9 +150,13 @@ impl<'gc> Timers<'gc> {
                     }
                 }
                 TimerCallback::Avm2Callback { closure, params } => {
+                    // Timer callbacks execute in the context of the root movie, so
+                    // provide the root SWF and the stage domain
+
                     let domain = context.avm2.stage_domain();
+                    let movie = context.swf.clone();
                     let mut avm2_activation =
-                        Avm2Activation::from_domain(context.reborrow(), domain);
+                        Avm2Activation::from_domain_and_movie(context.reborrow(), domain, movie);
                     match closure.call(Avm2Value::Null, &params, &mut avm2_activation) {
                         Ok(v) => v.coerce_to_boolean(),
                         Err(e) => {

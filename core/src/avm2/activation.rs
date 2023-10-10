@@ -207,6 +207,31 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
     }
 
+    /// Like `from_domain`, but with a specified movie.
+    /// Used when you
+    pub fn from_domain_and_movie(
+        context: UpdateContext<'a, 'gc>,
+        domain: Domain<'gc>,
+        movie: Arc<SwfMovie>,
+    ) -> Self {
+        let local_registers = RegisterSet::new(0);
+
+        Self {
+            actions_since_timeout_check: 0,
+            local_registers,
+            outer: ScopeChain::new(context.avm2.stage_domain),
+            caller_domain: Some(domain),
+            caller_movie: Some(movie),
+            subclass_object: None,
+            activation_class: None,
+            stack_depth: context.avm2.stack.len(),
+            scope_depth: context.avm2.scope_stack.len(),
+            max_stack_size: 0,
+            max_scope_size: 0,
+            context,
+        }
+    }
+
     /// Construct an activation for the execution of a particular script's
     /// initializer method.
     pub fn from_script(
