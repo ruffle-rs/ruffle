@@ -437,7 +437,8 @@ impl<'gc> Avm2<'gc> {
                 .copied();
 
             if let Some(object) = object.and_then(|obj| obj.upgrade(context.gc_context)) {
-                let mut activation = Activation::from_nothing(context.reborrow());
+                let movie = context.swf.clone();
+                let mut activation = Activation::from_movie(context.reborrow(), movie);
 
                 if object.is_of_type(on_type.inner_class_definition(), &mut activation.context) {
                     if let Err(err) = events::dispatch_event(&mut activation, object, event) {
