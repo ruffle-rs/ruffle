@@ -77,6 +77,9 @@
     "action_reload": {
         "message": "Chcete-li použít změny, znovu načtěte kartu"
     },
+    "open_player_page": {
+        "message": "Otevřít SWF přehrávač"
+    },
     "open_settings_page": {
         "message": "Otevřít stránku s nastaveními"
     },
