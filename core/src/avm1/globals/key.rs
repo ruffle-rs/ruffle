@@ -27,6 +27,7 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "TAB" => int(KeyCode::Tab as i32; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "UP" => int(KeyCode::Up as i32; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "isDown" => method(is_down; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "isToggled" => method(is_toggled; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "getAscii" => method(get_ascii; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "getCode" => method(get_code; DONT_ENUM | DONT_DELETE | READ_ONLY);
 };
@@ -42,6 +43,25 @@ pub fn is_down<'gc>(
             .coerce_to_i32(activation)? as u8,
     ) {
         Ok(activation.context.input.is_key_down(key).into())
+    } else {
+        Ok(false.into())
+    }
+}
+
+pub fn is_toggled<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    // This is not perfect: Flash Player could get the status of the Caps Lock, Num Lock,
+    // and Scroll Lock keys properly. We are just toggling them if the Ruffle window is
+    // in focus. This is the desired behavior for all keys, except these three.
+    if let Some(key) = KeyCode::from_u8(
+        args.get(0)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_i32(activation)? as u8,
+    ) {
+        Ok(activation.context.input.is_key_toggled(key).into())
     } else {
         Ok(false.into())
     }

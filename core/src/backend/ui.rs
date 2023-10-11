@@ -78,6 +78,7 @@ pub enum MouseCursor {
 
 pub struct InputManager {
     keys_down: HashSet<KeyCode>,
+    keys_toggled: HashSet<KeyCode>,
     last_key: KeyCode,
     last_char: Option<char>,
     last_text_control: Option<TextControlCode>,
@@ -87,6 +88,7 @@ impl InputManager {
     pub fn new() -> Self {
         Self {
             keys_down: HashSet::new(),
+            keys_toggled: HashSet::new(),
             last_key: KeyCode::Unknown,
             last_char: None,
             last_text_control: None,
@@ -97,6 +99,17 @@ impl InputManager {
         self.last_key = key_code;
         if key_code != KeyCode::Unknown {
             self.keys_down.insert(key_code);
+        }
+    }
+
+    fn toggle_key(&mut self, key_code: KeyCode) {
+        if key_code == KeyCode::Unknown || self.keys_down.contains(&key_code) {
+            return;
+        }
+        if self.keys_toggled.contains(&key_code) {
+            self.keys_toggled.remove(&key_code);
+        } else {
+            self.keys_toggled.insert(key_code);
         }
     }
 
@@ -111,6 +124,7 @@ impl InputManager {
         match *event {
             PlayerEvent::KeyDown { key_code, key_char } => {
                 self.last_char = key_char;
+                self.toggle_key(key_code);
                 self.add_key(key_code);
             }
             PlayerEvent::KeyUp { key_code, key_char } => {
@@ -121,7 +135,10 @@ impl InputManager {
             PlayerEvent::TextControl { code } => {
                 self.last_text_control = Some(code);
             }
-            PlayerEvent::MouseDown { button, .. } => self.add_key(button.into()),
+            PlayerEvent::MouseDown { button, .. } => {
+                self.toggle_key(button.into());
+                self.add_key(button.into())
+            }
             PlayerEvent::MouseUp { button, .. } => self.remove_key(button.into()),
             _ => {}
         }
@@ -129,6 +146,10 @@ impl InputManager {
 
     pub fn is_key_down(&self, key: KeyCode) -> bool {
         self.keys_down.contains(&key)
+    }
+
+    pub fn is_key_toggled(&self, key: KeyCode) -> bool {
+        self.keys_toggled.contains(&key)
     }
 
     pub fn last_key_code(&self) -> KeyCode {
