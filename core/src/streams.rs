@@ -371,8 +371,9 @@ impl<'gc> NetStream<'gc> {
     /// Seek to a new position in the stream.
     ///
     /// All existing audio will be paused. The stream offset will be snapped to
-    /// the prior keyframe. If the stream is playing then new tag processing
-    /// will occur when the stream ticks next.
+    /// either the prior or next keyframe depending on seek direction. If the
+    /// stream is playing then new tag processing will occur when the stream
+    /// ticks next.
     ///
     /// This always does an in-buffer seek. Seek-driven requests are not
     /// currently supported. When progressive download is implemented this seek
