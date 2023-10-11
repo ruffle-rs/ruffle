@@ -37,7 +37,7 @@ body {
 
 #version-text {
     text-align: center;
-    font-size: 12px;
+    font-size: smaller;
     opacity: 0.6;
 }
 
@@ -82,7 +82,7 @@ button {
 .options {
     display: flex;
     flex-flow: column;
-    gap: 24px;
+    gap: 20px;
 }
 
 .option {
