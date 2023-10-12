@@ -7,7 +7,7 @@ use crate::avm2::{
     e4x::{name_to_multiname, simple_content_to_string, E4XNode, E4XNodeKind},
     error::type_error,
     multiname::Multiname,
-    object::{E4XOrXml, XmlListObject},
+    object::{E4XOrXml, XmlListObject, XmlObject},
     parameters::ParametersExt,
     string::AvmString,
     Activation, Error, Object, TObject, Value,
@@ -340,6 +340,43 @@ pub fn comments<'gc>(
         }
     }
     Ok(XmlListObject::new(activation, nodes, Some(xml_list.into()), None).into())
+}
+
+// ECMA-357 13.5.4.17 XMLList.prototype.parent ( )
+pub fn parent<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let list = this.as_xml_list_object().unwrap();
+
+    // 1. If list.[[Length]] = 0, return undefined
+    if list.length() == 0 {
+        return Ok(Value::Undefined);
+    }
+
+    // 2. Let parent = list[0].[[Parent]]
+    let parent = list.children()[0].node().parent();
+
+    // 3. For i = 1 to list.[[Length]]-1, if list[i].[[Parent]] is not equal to parent, return undefined
+    for child in list.children().iter().skip(1) {
+        let other = child.node().parent();
+
+        match (parent, other) {
+            (Some(v1), Some(v2)) if !E4XNode::ptr_eq(v1, v2) => {
+                return Ok(Value::Undefined);
+            }
+            (None, Some(_)) | (Some(_), None) => return Ok(Value::Undefined),
+            _ => {}
+        }
+    }
+
+    // 4. Return parent
+    if let Some(parent) = parent {
+        Ok(XmlObject::new(parent, activation).into())
+    } else {
+        Ok(Value::Undefined)
+    }
 }
 
 pub fn processing_instructions<'gc>(
