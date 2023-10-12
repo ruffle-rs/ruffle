@@ -10,6 +10,9 @@ update-ruffle = 更新Ruffle
 ruffle-demo = 網頁展示
 ruffle-desktop = 桌面應用程式
 ruffle-wiki = 查看Ruffle Wiki
+enable-hardware-acceleration =
+    看起來你的硬體加速沒有開啟，雖然Ruffle還可以執行，但是你會感覺到會很慢。
+    你可以在下方連結找到如何開啟硬體加速。
 view-error-details = 檢視錯誤詳細資料
 open-in-new-tab = 開啟新增分頁
 click-to-unmute = 點擊以取消靜音
