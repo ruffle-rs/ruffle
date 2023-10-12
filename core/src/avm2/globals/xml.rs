@@ -589,7 +589,7 @@ pub fn insert_child_after<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let xml = this.as_xml_object().unwrap();
-    let child1 = args.try_get_object(activation, 0);
+    let child1 = args.get_value(0);
     let child2 = args.get_value(1);
     let child2 = crate::avm2::e4x::maybe_escape_child(activation, child2)?;
 
@@ -599,14 +599,23 @@ pub fn insert_child_after<'gc>(
     }
 
     // 3. Else if Type(child1) is XML
-    if let Some(child1) = child1.and_then(|x| x.as_xml_object()) {
+    if let Some(child1) = child1.as_object().and_then(|x| {
+        if let Some(xml) = x.as_xml_object() {
+            return Some(*xml.node());
+        // NOTE: Non-standard avmplus behavior, single element XMLLists are treated as XML objects.
+        } else if let Some(list) = x.as_xml_list_object() {
+            if list.length() == 1 {
+                return Some(*list.children()[0].node());
+            }
+        }
+
+        None
+    }) {
         // NOTE: We fetch the index separately to avoid borrowing errors.
         let index = if let E4XNodeKind::Element { children, .. } = &*xml.node().kind() {
             // 3.a. For i = 0 to x.[[Length]]-1
             // 3.a.i. If x[i] is the same object as child1
-            children
-                .iter()
-                .position(|x| E4XNode::ptr_eq(*x, *child1.node()))
+            children.iter().position(|x| E4XNode::ptr_eq(*x, child1))
         } else {
             None
         };
@@ -618,7 +627,7 @@ pub fn insert_child_after<'gc>(
             return Ok(xml.into());
         }
     // 2. If (child1 == null)
-    } else {
+    } else if matches!(child1, Value::Null) {
         // 2.a. Call the [[Insert]] method of x with arguments "0" and child2
         xml.node().insert(0, child2, activation)?;
         // 2.b. Return x
@@ -636,7 +645,7 @@ pub fn insert_child_before<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let xml = this.as_xml_object().unwrap();
-    let child1 = args.try_get_object(activation, 0);
+    let child1 = args.get_value(0);
     let child2 = args.get_value(1);
     let child2 = crate::avm2::e4x::maybe_escape_child(activation, child2)?;
 
@@ -646,14 +655,23 @@ pub fn insert_child_before<'gc>(
     }
 
     // 3. Else if Type(child1) is XML
-    if let Some(child1) = child1.and_then(|x| x.as_xml_object()) {
+    if let Some(child1) = child1.as_object().and_then(|x| {
+        if let Some(xml) = x.as_xml_object() {
+            return Some(*xml.node());
+        // NOTE: Non-standard avmplus behavior, single element XMLLists are treated as XML objects.
+        } else if let Some(list) = x.as_xml_list_object() {
+            if list.length() == 1 {
+                return Some(*list.children()[0].node());
+            }
+        }
+
+        None
+    }) {
         // NOTE: We fetch the index separately to avoid borrowing errors.
         let index = if let E4XNodeKind::Element { children, .. } = &*xml.node().kind() {
             // 3.a. For i = 0 to x.[[Length]]-1
             // 3.a.i. If x[i] is the same object as child1
-            children
-                .iter()
-                .position(|x| E4XNode::ptr_eq(*x, *child1.node()))
+            children.iter().position(|x| E4XNode::ptr_eq(*x, child1))
         } else {
             None
         };
@@ -665,7 +683,7 @@ pub fn insert_child_before<'gc>(
             return Ok(xml.into());
         }
     // 2. If (child1 == null)
-    } else {
+    } else if matches!(child1, Value::Null) {
         let length = if let E4XNodeKind::Element { children, .. } = &*xml.node().kind() {
             children.len()
         } else {
