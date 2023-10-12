@@ -1,0 +1,35 @@
+[
+    {
+        "type": "KeyDown",
+        "key_code": 65
+    },
+    {
+        "type": "MouseDown",
+        "pos": [10, 10],
+        "btn": "Left"
+    },
+    {
+        "type": "Wait"
+    },
+    {
+        "type": "KeyDown",
+        "key_code": 20
+    },
+    {
+        "type": "MouseUp",
+        "pos": [1, 1],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseDown",
+        "pos": [1, 1],
+        "btn": "Left"
+    },
+    {
+        "type": "Wait"
+    },
+    {
+        "type": "KeyDown",
+        "key_code": 0
+    }
+]
