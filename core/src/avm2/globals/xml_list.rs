@@ -83,12 +83,15 @@ pub fn call_handler<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    // We do *not* create a new object when AS does 'XMLList(someXMLList)'
-    if let Some(obj) = args.try_get_object(activation, 0) {
-        if let Some(xml_list) = obj.as_xml_list_object() {
-            return Ok(xml_list.into());
+    if args.len() == 1 {
+        // We do *not* create a new object when AS does 'XMLList(someXMLList)'
+        if let Some(obj) = args.try_get_object(activation, 0) {
+            if let Some(xml_list) = obj.as_xml_list_object() {
+                return Ok(xml_list.into());
+            }
         }
     }
+
     Ok(activation
         .avm2()
         .classes()
