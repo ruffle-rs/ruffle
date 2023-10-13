@@ -144,6 +144,10 @@ package flash.text.engine {
             }
 
             stub_method("flash.text.engine.TextBlock", "recreateTextLine");
+
+            // FIXME: In FP, in certain cases (probably to do with currently-unsupported TextLine validity),
+            // this modifies internal properties of the original line (first argument to this function)
+            // and returns the original line, instead of creating a new line.
             return createTextLine(null, width, lineOffset, fitSomething);
         }
 
