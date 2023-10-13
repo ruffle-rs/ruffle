@@ -110,7 +110,7 @@ pub fn serialize_value<'gc>(
                         .iter()
                         .map(|v| {
                             serialize_value(activation, v, amf_version, object_table)
-                                .expect("Unexpected non-object value in object vector")
+                                .unwrap_or(AmfValue::Undefined)
                         })
                         .collect();
 
@@ -421,7 +421,10 @@ pub fn deserialize_value<'gc>(
             let class = alias_to_class(activation, name)?;
             let storage = VectorStorage::from_values(
                 vec.iter()
-                    .map(|v| deserialize_value(activation, v))
+                    .map(|v| {
+                        deserialize_value(activation, v)
+                            .map(|value| value.as_object().map(Value::from).unwrap_or(Value::Null))
+                    })
                     .collect::<Result<Vec<_>, _>>()?,
                 *is_fixed,
                 Some(class),
