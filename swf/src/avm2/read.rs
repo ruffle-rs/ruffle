@@ -507,6 +507,7 @@ impl<'a> Reader<'a> {
             init_scope_depth,
             max_scope_depth,
             code,
+            parsed_code: vec![],
             exceptions,
             traits,
         })

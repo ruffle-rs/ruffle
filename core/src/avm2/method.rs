@@ -11,6 +11,8 @@ use crate::tag_utils::SwfMovie;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
+use std::cell::Cell;
+use std::cell::RefCell;
 use std::fmt;
 use std::ops::Deref;
 use std::rc::Rc;
@@ -57,7 +59,7 @@ impl<'gc> ParamConfig<'gc> {
     ) -> Result<Self, Error<'gc>> {
         let param_name = if let Some(name) = &config.name {
             txunit
-                .pool_string(name.0, &mut activation.borrow_gc())?
+                .pool_string(name.0, &mut &mut activation.borrow_gc())?
                 .into()
         } else {
             AvmString::from("<Unnamed Parameter>")
@@ -118,6 +120,9 @@ pub struct BytecodeMethod<'gc> {
     /// The ABC method body this function uses.
     pub abc_method_body: Option<u32>,
 
+    pub try_verify: Cell<bool>,
+    pub verified_method_body: RefCell<Option<AbcMethodBody>>,
+
     /// The parameter signature of this method.
     pub signature: Vec<ParamConfig<'gc>>,
 
@@ -165,6 +170,8 @@ impl<'gc> BytecodeMethod<'gc> {
                         abc: txunit.abc(),
                         abc_method: abc_method.0,
                         abc_method_body: Some(index as u32),
+                        try_verify: Cell::new(true),
+                        verified_method_body: RefCell::new(None),
                         signature,
                         return_type,
                         is_function,
@@ -179,6 +186,8 @@ impl<'gc> BytecodeMethod<'gc> {
             abc: txunit.abc(),
             abc_method: abc_method.0,
             abc_method_body: None,
+            try_verify: Cell::new(true),
+            verified_method_body: RefCell::new(None),
             signature,
             return_type,
             is_function,
@@ -215,6 +224,19 @@ impl<'gc> BytecodeMethod<'gc> {
         } else {
             None
         }
+    }
+
+    #[inline(never)]
+    pub fn verify(&self, activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
+        // TODO: avmplus seems to eaglerly verify some methods
+
+        *self.verified_method_body.borrow_mut() = Some(crate::avm2::verify::verify_method(
+            activation,
+            self.body()
+                .expect("Cannot execute non-native method without body!"),
+        )?);
+
+        Ok(())
     }
 
     /// Get the list of method params for this method.

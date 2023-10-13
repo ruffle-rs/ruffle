@@ -61,6 +61,7 @@ mod stubs;
 mod traits;
 mod value;
 pub mod vector;
+mod verify;
 mod vtable;
 
 pub use crate::avm2::activation::Activation;
@@ -650,22 +651,14 @@ impl<'gc> Avm2<'gc> {
         args
     }
 
-    fn push_scope(&mut self, scope: Scope<'gc>, depth: usize, max: usize) {
-        if self.scope_stack.len() - depth > max {
-            tracing::warn!("Avm2::push_scope: Scope Stack overflow");
-            return;
-        }
-
+    fn push_scope(&mut self, scope: Scope<'gc>) {
+        // Verification should ensure that this is safe
         self.scope_stack.push(scope);
     }
 
-    fn pop_scope(&mut self, depth: usize) -> Option<Scope<'gc>> {
-        if self.scope_stack.len() <= depth {
-            tracing::warn!("Avm2::pop_scope: Scope Stack underflow");
-            None
-        } else {
-            self.scope_stack.pop()
-        }
+    fn pop_scope(&mut self) {
+        // Verification should ensure that this is safe
+        self.scope_stack.pop();
     }
 
     #[cfg(feature = "avm_debug")]
