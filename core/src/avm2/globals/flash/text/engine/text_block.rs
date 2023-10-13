@@ -54,7 +54,8 @@ pub fn create_text_line<'gc>(
                 // `o` is already coerced to a String because of the AS bindings.
                 return Ok(Value::Null);
             } else {
-                txt.coerce_to_string(activation).expect("Guaranteed by AS bindings")
+                txt.coerce_to_string(activation)
+                    .expect("Guaranteed by AS bindings")
             }
         }
     };
