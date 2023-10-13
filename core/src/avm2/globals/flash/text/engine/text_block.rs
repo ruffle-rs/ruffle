@@ -43,17 +43,20 @@ pub fn create_text_line<'gc>(
             return Ok(Value::Null);
         }
         // Get the content element's text property.
-        // TODO: GraphicElement and GroupElement
-        None => content
-            .get_public_property("text", activation)
-            .and_then(|o| {
-                if matches!(o, Value::Null) {
-                    Ok("".into())
-                } else {
-                    o.coerce_to_string(activation)
-                }
-            })
-            .unwrap_or("".into()),
+        // TODO: GraphicElement?
+        None => {
+            let txt = content
+                .get_public_property("text", activation)
+                .unwrap_or("".into());
+
+            if matches!(txt, Value::Null) {
+                // FP returns a null TextLine when `o` is null- note that
+                // `o` is already coerced to a String because of the AS bindings.
+                return Ok(Value::Null);
+            } else {
+                txt.coerce_to_string(activation).expect("Guaranteed by AS bindings")
+            }
+        }
     };
 
     let class = activation.avm2().classes().textline;
