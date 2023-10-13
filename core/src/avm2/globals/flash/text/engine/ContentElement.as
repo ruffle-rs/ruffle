@@ -16,6 +16,10 @@ package flash.text.engine {
         public function get text():String {
             return this._text;
         }
+
+        public function get rawText():String {
+            return this._text;
+        }
         
         public function get elementFormat():ElementFormat {
             return this._elementFormat;
