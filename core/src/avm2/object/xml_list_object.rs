@@ -4,7 +4,7 @@ use crate::avm2::error::make_error_1089;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
-use crate::avm2::{Error, Multiname};
+use crate::avm2::{Error, Multiname, Namespace};
 use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
 use std::cell::{Ref, RefMut};
 use std::fmt::{self, Debug};
@@ -28,6 +28,7 @@ pub fn xml_list_allocator<'gc>(
             // to any object
             target_object: None,
             target_property: None,
+            target_dirty: false,
         },
     ))
     .into())
@@ -64,6 +65,7 @@ impl<'gc> XmlListObject<'gc> {
                 children,
                 target_object,
                 target_property,
+                target_dirty: false,
             },
         ))
     }
@@ -106,6 +108,8 @@ impl<'gc> XmlListObject<'gc> {
     }
 
     pub fn deep_copy(&self, activation: &mut Activation<'_, 'gc>) -> XmlListObject<'gc> {
+        self.reevaluate_target_object(activation);
+
         let children = self
             .children()
             .iter()
@@ -119,12 +123,49 @@ impl<'gc> XmlListObject<'gc> {
         )
     }
 
+    // Based on https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/XMLListObject.cpp#L621
+    pub fn reevaluate_target_object(&self, activation: &mut Activation<'_, 'gc>) {
+        let mut write = self.0.write(activation.gc());
+
+        if write.target_dirty && !write.children.is_empty() {
+            let last_node = *write
+                .children
+                .last()
+                .expect("At least one child exists")
+                .node();
+
+            if let Some(parent) = last_node.parent() {
+                if let Some(XmlOrXmlListObject::Xml(target_obj)) = write.target_object {
+                    if !E4XNode::ptr_eq(*target_obj.node(), parent) {
+                        write.target_object = Some(XmlObject::new(parent, activation).into());
+                    }
+                }
+            } else {
+                write.target_object = None;
+            }
+
+            if !matches!(*last_node.kind(), E4XNodeKind::ProcessingInstruction(_)) {
+                if let Some(name) = last_node.local_name() {
+                    let ns = match last_node.namespace() {
+                        Some(ns) => Namespace::package(ns, &mut activation.context.borrow_gc()),
+                        None => activation.avm2().public_namespace,
+                    };
+
+                    write.target_property = Some(Multiname::new(ns, name));
+                }
+            }
+
+            write.target_dirty = false;
+        }
+    }
+
     // ECMA-357 9.2.1.6 [[Append]] (V)
     pub fn append(&self, value: Value<'gc>, activation: &mut Activation<'_, 'gc>) {
         let mut write = self.0.write(activation.gc());
 
         // 3. If Type(V) is XMLList,
         if let Some(list) = value.as_object().and_then(|x| x.as_xml_list_object()) {
+            write.target_dirty = false;
             // 3.a. Let x.[[TargetObject]] = V.[[TargetObject]]
             write.target_object = list.target_object();
             // 3.b. Let x.[[TargetProperty]] = V.[[TargetProperty]]
@@ -136,6 +177,7 @@ impl<'gc> XmlListObject<'gc> {
         }
 
         if let Some(xml) = value.as_object().and_then(|x| x.as_xml_object()) {
+            write.target_dirty = true;
             write.children.push(E4XOrXml::Xml(xml));
         }
     }
@@ -150,6 +192,8 @@ impl<'gc> XmlListObject<'gc> {
             Ok(Some(XmlOrXmlListObject::XmlList(*self)))
         // 2. Else
         } else {
+            self.reevaluate_target_object(activation);
+
             // 2.a. If (x.[[TargetObject]] == null)
             let Some(target_object) = self.target_object() else {
                 // 2.a.i. Return null
@@ -276,6 +320,8 @@ pub struct XmlListObjectData<'gc> {
     target_object: Option<XmlOrXmlListObject<'gc>>,
 
     target_property: Option<Multiname<'gc>>,
+
+    target_dirty: bool,
 }
 
 /// Holds either an `E4XNode` or an `XmlObject`. This can be converted
@@ -547,6 +593,8 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
         if !name.is_any_name() && !name.is_attribute() {
             if let Some(local_name) = name.local_name() {
                 if let Ok(mut index) = local_name.parse::<usize>() {
+                    self.reevaluate_target_object(activation);
+
                     // 2.a. If x.[[TargetObject]] is not null
                     let r = if let Some(target) = self.target_object() {
                         // 2.a.i. Let r be the result of calling the [[ResolveValue]] method of x.[[TargetObject]]
