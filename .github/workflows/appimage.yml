@@ -32,7 +32,7 @@ jobs:
         run: sed -i 's|AI\x02|\x00\x00\x00|' /usr/local/bin/appimagetool
       
       - name: Install Cargo AppImage
-        run: cargo install cargo-appimage
+        run: cargo install --version 1.4.2 cargo-appimage
         
       - name: Making empty src directory, to bypass issue with Cargo AppImage
         run: mkdir src
