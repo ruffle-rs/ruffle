@@ -1,0 +1,6 @@
+MYXML = new XML(xmlDoc), MYXML.elements('Team').toString() PASSED!
+MYXML = new XML(xmlDoc), MYXML.elements('TEAM').toString() PASSED!
+MYXML = new XML(xmlDoc), MYXML.elements('bogus').toString() PASSED!
+MYXML = new XML(xmlDoc), MYXML.elements() PASSED!
+MYXML = new XML(xmlDoc), MYXML.elements('City').toString() PASSED!
+MYXML = new XML(xmlDoc), MYXML.elements('MLB') PASSED!

@@ -251,21 +251,27 @@ pub fn concat<'gc>(
         let arg_obj = arg
             .as_object()
             .ok_or("Cannot concat Vector with null or undefined")?;
-        let arg_class = arg_obj
-            .instance_of_class_definition()
-            .ok_or("TypeError: Tried to concat from a bare object")?;
 
         // this is Vector.<int/uint/Number/*>
         let my_base_vector_class = activation
             .subclass_object()
             .expect("Method call without bound class?");
         if !arg.is_of_type(activation, my_base_vector_class.inner_class_definition()) {
-            return Err(format!(
-                "TypeError: Cannot coerce argument of type {:?} to argument of type {:?}",
-                arg_class.read().name(),
-                my_base_vector_class.inner_class_definition().read().name()
-            )
-            .into());
+            let base_vector_name = my_base_vector_class
+                .inner_class_definition()
+                .read()
+                .name()
+                .to_qualified_name_err_message(activation.context.gc_context);
+
+            return Err(Error::AvmError(type_error(
+                activation,
+                &format!(
+                    "Error #1034: Type Coercion failed: cannot convert {}@00000000000 to {}.",
+                    arg_obj.instance_of_class_name(activation.context.gc_context),
+                    base_vector_name,
+                ),
+                1034,
+            )?));
         }
 
         let old_vec = arg_obj.as_vector_storage();
@@ -377,7 +383,7 @@ pub fn every<'gc>(
         .get(0)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .as_callable(activation, None, None)?;
+        .as_callable(activation, None, None, false)?;
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
     let mut iter = ArrayIter::new(activation, this)?;
 
@@ -406,7 +412,7 @@ pub fn some<'gc>(
         .get(0)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .as_callable(activation, None, None)?;
+        .as_callable(activation, None, None, false)?;
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
     let mut iter = ArrayIter::new(activation, this)?;
 
@@ -435,7 +441,7 @@ pub fn filter<'gc>(
         .get(0)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .as_callable(activation, None, None)?;
+        .as_callable(activation, None, None, false)?;
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
 
     let value_type = this
@@ -471,7 +477,7 @@ pub fn for_each<'gc>(
         .get(0)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .as_callable(activation, None, None)?;
+        .as_callable(activation, None, None, false)?;
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
     let mut iter = ArrayIter::new(activation, this)?;
 
@@ -564,7 +570,7 @@ pub fn map<'gc>(
         .get(0)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .as_callable(activation, None, None)?;
+        .as_callable(activation, None, None, false)?;
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
 
     let value_type = this
@@ -613,6 +619,9 @@ pub fn push<'gc>(
         let value_type = vs
             .value_type_for_coercion(activation)
             .inner_class_definition();
+
+        // Pushing nothing will still throw if the Vector is fixed.
+        vs.check_fixed(activation)?;
 
         for arg in args {
             let coerced_arg = arg.coerce_to_type(activation, value_type)?;
@@ -770,7 +779,10 @@ pub fn sort<'gc>(
     if let Some(vs) = this.as_vector_storage_mut(activation.context.gc_context) {
         let fn_or_options = args.get(0).cloned().unwrap_or(Value::Undefined);
 
-        let (compare_fnc, options) = if fn_or_options.as_callable(activation, None, None).is_ok() {
+        let (compare_fnc, options) = if fn_or_options
+            .as_callable(activation, None, None, false)
+            .is_ok()
+        {
             (
                 Some(fn_or_options.as_object().unwrap()),
                 SortOptions::empty(),

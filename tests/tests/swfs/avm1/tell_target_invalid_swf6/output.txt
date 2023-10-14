@@ -1,0 +1,5 @@
+Target not found: Target="dummy" Base="_level0.mc"
+/tellTarget('dummy') { gotoAndPlay(n); }
+pass
+/tellTarget(undefined) { gotoAndStop(5); }
+This should only be reached in SWF6 and below

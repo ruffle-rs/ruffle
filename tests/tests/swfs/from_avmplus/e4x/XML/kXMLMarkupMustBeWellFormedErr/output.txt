@@ -1,0 +1,2 @@
+Asserting for TypeError PASSED!
+new XML("<root><a><b>c</b></a></root></root>") PASSED!

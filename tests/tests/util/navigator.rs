@@ -1,5 +1,5 @@
 use crate::util::runner::TestLogBackend;
-use async_io::Timer;
+use async_channel::Receiver;
 use ruffle_core::backend::log::LogBackend;
 use ruffle_core::backend::navigator::{
     fetch_path, resolve_url_with_relative_base_path, ErrorResponse, NavigationMethod,
@@ -10,7 +10,7 @@ use ruffle_core::loader::Error;
 use ruffle_core::socket::{ConnectionState, SocketAction, SocketHandle};
 use ruffle_socket_format::SocketEvent;
 use std::path::{Path, PathBuf};
-use std::sync::mpsc::{Receiver, Sender, TryRecvError};
+use std::sync::mpsc::Sender;
 use std::time::Duration;
 use url::{ParseError, Url};
 
@@ -131,33 +131,19 @@ impl NavigatorBackend for TestNavigatorBackend {
                                 .expect("working channel send");
                         },
                         SocketEvent::WaitForDisconnect => {
-                            loop {
-                                match receiver.try_recv() {
-                                    Err(TryRecvError::Empty) => {
-                                        //NOTE: We need to yield to executor.
-                                        Timer::after(Duration::from_millis(30)).await;
-                                    }
-                                    Err(_) => break,
-                                    Ok(_) => panic!("Expected client to disconnect, data was sent instead"),
-                                }
+                            match receiver.recv().await {
+                                Err(_) => break,
+                                Ok(_) => panic!("Expected client to disconnect, data was sent instead"),
                             }
                         },
                         SocketEvent::Receive { expected } => {
-                            loop {
-                                match receiver.try_recv() {
-                                    Ok(val) => {
-                                        if expected != val {
-                                            panic!("Received data did not match expected data\nExpected: {:?}\nActual: {:?}", expected, val);
-                                        }
-
-                                        break;
+                            match receiver.recv().await {
+                                Ok(val) => {
+                                    if expected != val {
+                                        panic!("Received data did not match expected data\nExpected: {:?}\nActual: {:?}", expected, val);
                                     }
-                                    Err(TryRecvError::Empty) => {
-                                        //NOTE: We need to yield to executor.
-                                        Timer::after(Duration::from_millis(30)).await;
-                                    }
-                                    Err(_) => panic!("Expected client to send data, but connection was closed instead"),
                                 }
+                                Err(_) => panic!("Expected client to send data, but connection was closed instead"),
                             }
                         },
                         SocketEvent::Send { payload } => {

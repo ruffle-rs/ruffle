@@ -10,6 +10,7 @@ update-ruffle = Aktualizovat Ruffle
 ruffle-demo = Web Demo
 ruffle-desktop = Desktopová aplikace
 ruffle-wiki = Zobrazit Ruffle Wiki
+enable-hardware-acceleration = Zdá se, že hardwarová akcelerace není povolena. I když Ruffle funguje správně, může být nepřiměřeně pomalý. Jak povolit hardwarovou akceleraci zjistíte na tomto odkazu.
 view-error-details = Zobrazit podrobnosti o chybě
 open-in-new-tab = Otevřít na nové kartě
 click-to-unmute = Kliknutím zrušíte ztlumení

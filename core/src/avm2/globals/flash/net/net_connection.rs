@@ -12,7 +12,7 @@ pub fn connect<'gc>(
         let event = EventObject::net_status_event(
             activation,
             "netStatus",
-            &[
+            vec![
                 ("code", "NetConnection.Connect.Success"),
                 ("level", "status"),
             ],

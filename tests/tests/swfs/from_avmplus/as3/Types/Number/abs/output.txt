@@ -1,0 +1,41 @@
+Number.abs(3.14) returns a Number PASSED!
+Number.abs(-0) returns a int PASSED!
+Number.abs(1) returns a int PASSED!
+Number.abs() length is 1 PASSED!
+Asserting for ArgumentError PASSED!
+Number.abs() with no args PASSED!
+Number.abs(undefined) PASSED!
+Number.abs(string) PASSED!
+Number.abs(NaN) PASSED!
+Number.abs(NaN) check() PASSED!
+Number.abs(0.0) PASSED!
+Number.POSITIVE_INFINITY/Number.abs(0.0) PASSED!
+Number.abs(-0.0) PASSED!
+Number.POSITIVE_INFINITY/Number.abs(-0.0) PASSED!
+Number.POSITIVE_INFINITY/cehck(-0.0) PASSED!
+Number.abs(Number.NEGATIVE_INFINITY) PASSED!
+Number.abs(Number.POSITIVE_INFINITY) PASSED!
+Number.abs(Number.NEGATIVE_INFINITY) check() PASSED!
+Number.abs(Number.POSITIVE_INFINITY) check() PASSED!
+Number.abs(-NumberLiteral) PASSED!
+Number.abs(NumberLiteral) PASSED!
+Number.abs(-NumberLiteral) check() PASSED!
+Number.abs(NumberLiteral) check() PASSED!
+Number.abs(-typed) PASSED!
+Number.abs(typed) PASSED!
+Number.abs(-typed) check() PASSED!
+Number.abs(typed) check() PASSED!
+Number.abs(null) PASSED!
+Number.abs(true) PASSED!
+Number.abs(false) PASSED!
+Number.abs('1') PASSED!
+Number.abs('0') PASSED!
+Number.NEGATIVE_INFINITY/Number.abs('0') PASSED!
+Number.abs(-Number.MIN_VALUE) PASSED!
+Number.abs(-Number.MAX_VALUE) PASSED!
+Number.abs(Number.MIN_VALUE) PASSED!
+Number.abs(Number.MAX_VALUE) PASSED!
+Number.abs(-Number.MIN_VALUE) check() PASSED!
+Number.abs(-Number.MAX_VALUE) check() PASSED!
+Number.abs(Number.MIN_VALUE) check() PASSED!
+Number.abs(Number.MAX_VALUE) check() PASSED!

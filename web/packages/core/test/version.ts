@@ -20,7 +20,7 @@ const testMatrix = [
         "1-alpha",
     ],
     ["0.1.2", "0.1.1-dev", "0.1"],
-    ["0.0.2", "0.0.2-dev", "0.0.2+build"],
+    ["0.0.2+build", "0.0.2+124", "0.0.2+123", "0.0.2", "0.0.2-dev"],
     ["0.0.1", "0.0.1-dev", "0.0.1-5", "0.0.1-2"],
 ];
 
@@ -107,13 +107,6 @@ describe("Version", function () {
             const tests = flatten(testMatrix);
             for (let a = 0; a < tests.length; a++) {
                 for (let b = a + 1; b < tests.length; b++) {
-                    if (
-                        tests[a]!.indexOf("+") > -1 ||
-                        tests[b]!.indexOf("+") > -1
-                    ) {
-                        // Skip "builds" for purposes of this test.
-                        continue;
-                    }
                     assert(
                         Version.fromSemver(tests[a]!).hasPrecedenceOver(
                             Version.fromSemver(tests[b]!),
@@ -127,13 +120,6 @@ describe("Version", function () {
             const tests = flatten(testMatrix).reverse();
             for (let a = 0; a < tests.length; a++) {
                 for (let b = a + 1; b < tests.length; b++) {
-                    if (
-                        tests[a]!.indexOf("+") > -1 ||
-                        tests[b]!.indexOf("+") > -1
-                    ) {
-                        // Skip "builds" for purposes of this test.
-                        continue;
-                    }
                     assert(
                         !Version.fromSemver(tests[a]!).hasPrecedenceOver(
                             Version.fromSemver(tests[b]!),

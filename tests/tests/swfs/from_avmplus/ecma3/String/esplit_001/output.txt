@@ -1,0 +1,18 @@
+( splitme ).split('').constructor == Array PASSED!
+( splitme ).split('').length PASSED!
+( splitme ).split('')[0] PASSED!
+( splitme ).split('')[1] PASSED!
+( splitme ).split('')[2] PASSED!
+( splitme ).split('')[3] PASSED!
+( splitme ).split('')[4] PASSED!
+( splitme ).split('')[5] PASSED!
+( splitme ).split('')[6] PASSED!
+( splitme ).split(new RegExp()).constructor == Array PASSED!
+( splitme ).split(new RegExp()).length PASSED!
+( splitme ).split(new RegExp())[0] PASSED!
+( splitme ).split(new RegExp())[1] PASSED!
+( splitme ).split(new RegExp())[2] PASSED!
+( splitme ).split(new RegExp())[3] PASSED!
+( splitme ).split(new RegExp())[4] PASSED!
+( splitme ).split(new RegExp())[5] PASSED!
+( splitme ).split(new RegExp())[6] PASSED!

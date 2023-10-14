@@ -1,6 +1,7 @@
 use crate::{
     avm1::SoundObject,
     avm2::{Avm2, EventObject as Avm2EventObject, SoundChannelObject},
+    buffer::Substream,
     context::UpdateContext,
     display_object::{self, DisplayObject, MovieClip, TDisplayObject},
 };
@@ -25,7 +26,10 @@ pub use mixer::*;
 #[cfg(not(feature = "audio"))]
 mod decoders {
     #[derive(Debug, thiserror::Error)]
-    pub enum Error {}
+    pub enum Error {
+        #[error("Too many sounds are playing")]
+        TooManySounds,
+    }
 }
 
 use instant::Duration;
@@ -34,6 +38,40 @@ use thiserror::Error;
 pub type SoundHandle = Index;
 pub type SoundInstanceHandle = Index;
 pub type DecodeError = decoders::Error;
+
+#[derive(Eq, PartialEq, Clone, Copy, Debug)]
+pub enum SoundStreamWrapping {
+    /// Sound is being streamed from an SWF.
+    ///
+    /// MP3 chunks within SWFs are wrapped in a header that lists the number of
+    /// samples in the chunk.
+    Swf,
+
+    /// Sound is being streamed from an unwrapped bitstream.
+    ///
+    /// Container formats that expose unwrapped bitstreams - that is, without
+    /// needing additional unwrapping - may also use `Unwrapped`.
+    Unwrapped,
+}
+
+#[derive(Eq, PartialEq, Clone, Debug)]
+pub struct SoundStreamInfo {
+    pub wrapping: SoundStreamWrapping,
+    pub stream_format: swf::SoundFormat,
+    pub num_samples_per_block: u16,
+    pub latency_seek: i16,
+}
+
+impl From<swf::SoundStreamHead> for SoundStreamInfo {
+    fn from(swfhead: swf::SoundStreamHead) -> SoundStreamInfo {
+        SoundStreamInfo {
+            wrapping: SoundStreamWrapping::Swf,
+            stream_format: swfhead.stream_format,
+            num_samples_per_block: swfhead.num_samples_per_block,
+            latency_seek: swfhead.latency_seek,
+        }
+    }
+}
 
 #[derive(Debug, Error)]
 pub enum RegisterError {
@@ -60,14 +98,37 @@ pub trait AudioBackend: Downcast {
 
     /// Starts playing a "stream" sound, which is an audio stream that is distributed
     /// among the frames of a Flash MovieClip.
-    /// On the web backend, `stream_handle` should be the handle for the preloaded stream.
-    /// Other backends can pass `None`.
+    ///
+    /// NOTE: `stream_handle` and `clip_frame` are no longer used on any
+    /// backends.
     fn start_stream(
         &mut self,
         stream_handle: Option<SoundHandle>,
         clip_frame: u16,
         clip_data: crate::tag_utils::SwfSlice,
         handle: &swf::SoundStreamHead,
+    ) -> Result<SoundInstanceHandle, DecodeError>;
+
+    /// Starts playing a "stream" sound, which is an audio stream that is
+    /// distributed among multiple chunks of a larger data stream such as a
+    /// Flash MovieClip or video container format.
+    ///
+    /// The `handle` parameter should refer to an actual SWF `SoundStreamHead`
+    /// tag for SWF-wrapped audio. Other container formats will need to have
+    /// their data converted to an equivalent SWF tag.
+    ///
+    /// MP3 data within the substream is expected to have sample count and
+    /// seek offset data at the head of each chunk (SWF19 p.184). This is used
+    /// to allow MP3 data to be buffered across multiple chunks or frames as
+    /// necessary for playback.
+    ///
+    /// The sound instance constructed by this function explicitly supports
+    /// streaming additional data to it by appending chunks to the underlying
+    /// `Substream`, if the sound is still playing.
+    fn start_substream(
+        &mut self,
+        stream_data: Substream,
+        stream_info: &SoundStreamInfo,
     ) -> Result<SoundInstanceHandle, DecodeError>;
 
     /// Stops a playing sound instance.
@@ -131,6 +192,11 @@ pub trait AudioBackend: Downcast {
 
     /// Returns the last whole window of output samples.
     fn get_sample_history(&self) -> [[f32; 2]; 1024];
+
+    /// Determine if a sound is still playing.
+    fn is_sound_playing(&self, instance: SoundInstanceHandle) -> bool {
+        self.get_sound_position(instance).is_some()
+    }
 }
 
 impl_downcast!(AudioBackend);
@@ -216,6 +282,14 @@ impl AudioBackend for NullAudioBackend {
         Ok(SoundInstanceHandle::from_raw_parts(0, 0))
     }
 
+    fn start_substream(
+        &mut self,
+        _stream_data: Substream,
+        _handle: &SoundStreamInfo,
+    ) -> Result<SoundInstanceHandle, DecodeError> {
+        Ok(SoundInstanceHandle::from_raw_parts(0, 0))
+    }
+
     fn stop_sound(&mut self, _sound: SoundInstanceHandle) {}
 
     fn stop_all_sounds(&mut self) {}
@@ -273,6 +347,7 @@ pub struct AudioManager<'gc> {
     sounds: Vec<SoundInstance<'gc>>,
 
     /// The global sound transform applied to all sounds.
+    #[collect(require_static)]
     global_sound_transform: display_object::SoundTransform,
 
     /// The number of seconds that a timeline audio stream should buffer before playing.
@@ -490,6 +565,32 @@ impl<'gc> AudioManager<'gc> {
         }
     }
 
+    pub fn start_substream(
+        &mut self,
+        audio: &mut dyn AudioBackend,
+        stream_data: Substream,
+        movie_clip: MovieClip<'gc>,
+        stream_info: &SoundStreamInfo,
+    ) -> Result<SoundInstanceHandle, DecodeError> {
+        if self.sounds.len() < Self::MAX_SOUNDS {
+            let handle = audio.start_substream(stream_data, stream_info)?;
+            let instance = SoundInstance {
+                sound: None,
+                instance: handle,
+                display_object: Some(movie_clip.into()),
+                transform: display_object::SoundTransform::default(),
+                avm1_object: None,
+                avm2_object: None,
+                stream_start_frame: None,
+            };
+            audio.set_sound_transform(handle, self.transform_for_sound(&instance));
+            self.sounds.push(instance);
+            Ok(handle)
+        } else {
+            Err(DecodeError::TooManySounds)
+        }
+    }
+
     /// Returns the difference in seconds between the primary audio stream's time and the player's time.
     pub fn audio_skew_time(&mut self, audio: &mut dyn AudioBackend, offset_ms: f64) -> f64 {
         // Consider the first playing "stream" sound to be the primary audio track.
@@ -654,6 +755,7 @@ pub struct SoundInstance<'gc> {
     /// Only AVM2 sounds have a local sound transform. In AVM1, sound instances
     /// instead get the sound transform of the display object they're
     /// associated with.
+    #[collect(require_static)]
     transform: display_object::SoundTransform,
 
     /// The AVM1 `Sound` object associated with this sound, if any.
@@ -668,8 +770,7 @@ pub struct SoundInstance<'gc> {
 /// A sound transform for a playing sound, for use by audio backends.
 /// This differs from `display_object::SoundTransform` by being
 /// already converted to `f32` and having `volume` baked in.
-#[derive(Debug, PartialEq, Clone, Collect)]
-#[collect(require_static)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct SoundTransform {
     pub left_to_left: f32,
     pub left_to_right: f32,

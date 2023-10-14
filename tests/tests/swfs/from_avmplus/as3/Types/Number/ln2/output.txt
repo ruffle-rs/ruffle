@@ -1,0 +1,8 @@
+Number.LN2 PASSED!
+typeof Number.LN2 PASSED!
+Number.LN2 - DontDelete PASSED!
+Number.LN2 is still ok PASSED!
+Number.LN2 - DontEnum PASSED!
+Number.LN2 is no enumberable PASSED!
+Number.LN2 - ReadOnly PASSED!
+Number.LN2 is still here PASSED!

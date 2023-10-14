@@ -1,0 +1,52 @@
+x.__proto.charAt = String.prototype.charAt; x.charAt(0) PASSED!
+x.__proto.charAt = String.prototype.charAt; x.charAt(1) PASSED!
+x.__proto.charAt = String.prototype.charAt; x.charAt(2) PASSED!
+x.__proto.charAt = String.prototype.charAt; x.charAt(3) PASSED!
+x.__proto.charAt = String.prototype.charAt; x.charAt(0) PASSED!
+x.__proto.charAt = String.prototype.charAt; x.charAt(1) PASSED!
+x.__proto.charAt = String.prototype.charAt; x.charAt(2) PASSED!
+x.__proto.charAt = String.prototype.charAt; x.charAt(3) PASSED!
+x.__proto.charAt = String.prototype.charAt; x.charAt(0) PASSED!
+x.__proto.charAt = String.prototype.charAt; x.charAt(1) PASSED!
+x.__proto.charAt = String.prototype.charAt; x.charAt(2) PASSED!
+x.__proto.charAt = String.prototype.charAt; x.charAt(3) PASSED!
+x.__proto.charAt = String.prototype.charAt; x.charAt(4) PASSED!
+x.__proto.charAt = String.prototype.charAt; x.charAt(0) PASSED!
+x.__proto.charAt = String.prototype.charAt; x.charAt(1) PASSED!
+x.__proto.charAt = String.prototype.charAt; x.charAt(2) PASSED!
+x.__proto.charAt = String.prototype.charAt; x.charAt(3) PASSED!
+x.__proto.charAt = String.prototype.charAt; x.charAt(4) PASSED!
+x.__proto.charAt = String.prototype.charAt; x.charAt(0) PASSED!
+x.__proto.charAt = String.prototype.charAt; x.charAt(1) PASSED!
+x.__proto.charAt = String.prototype.charAt; x.charAt(2) PASSED!
+x.__proto.charAt = String.prototype.charAt; x.charAt(3) PASSED!
+x.__proto.charAt = String.prototype.charAt; x.charAt(4) PASSED!
+x.__proto.charAt = String.prototype.charAt; x.charAt(0) PASSED!
+x.__proto.charAt = String.prototype.charAt; x.charAt(1) PASSED!
+x.__proto.charAt = String.prototype.charAt; x.charAt(2) PASSED!
+x.__proto.charAt = String.prototype.charAt; x.charAt(3) PASSED!
+x.__proto.charAt = String.prototype.charAt; x.charAt(4) PASSED!
+x = new Array(1,2,3); x.charAt = String.prototype.charAt; x.charAt(0) PASSED!
+x = new Array(1,2,3); x.charAt = String.prototype.charAt; x.charAt(1) PASSED!
+x = new Array(1,2,3); x.charAt = String.prototype.charAt; x.charAt(2) PASSED!
+x = new Array(1,2,3); x.charAt = String.prototype.charAt; x.charAt(3) PASSED!
+x = new Array(1,2,3); x.charAt = String.prototype.charAt; x.charAt(4) PASSED!
+x = new Array(); x.charAt = String.prototype.charAt; x.charAt(0) PASSED!
+x = new Number(123); x.charAt = String.prototype.charAt; x.charAt(0) PASSED!
+x = new Number(123); x.charAt = String.prototype.charAt; x.charAt(1) PASSED!
+x = new Number(123); x.charAt = String.prototype.charAt; x.charAt(2) PASSED!
+x = new Object(); x.charAt = String.prototype.charAt; x.charAt(0) PASSED!
+x = new Object(); x.charAt = String.prototype.charAt; x.charAt(1) PASSED!
+x = new Object(); x.charAt = String.prototype.charAt; x.charAt(2) PASSED!
+x = new Object(); x.charAt = String.prototype.charAt; x.charAt(3) PASSED!
+x = new Object(); x.charAt = String.prototype.charAt; x.charAt(4) PASSED!
+x = new Object(); x.charAt = String.prototype.charAt; x.charAt(5) PASSED!
+x = new Object(); x.charAt = String.prototype.charAt; x.charAt(6) PASSED!
+x = new Object(); x.charAt = String.prototype.charAt; x.charAt(7) PASSED!
+x = new Object(); x.charAt = String.prototype.charAt; x.charAt(8) PASSED!
+x = new Object(); x.charAt = String.prototype.charAt; x.charAt(9) PASSED!
+x = new Object(); x.charAt = String.prototype.charAt; x.charAt(10) PASSED!
+x = new Object(); x.charAt = String.prototype.charAt; x.charAt(11) PASSED!
+x = new Object(); x.charAt = String.prototype.charAt; x.charAt(12) PASSED!
+x = new Object(); x.charAt = String.prototype.charAt; x.charAt(13) PASSED!
+x = new Object(); x.charAt = String.prototype.charAt; x.charAt(14) PASSED!

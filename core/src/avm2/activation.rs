@@ -5,8 +5,8 @@ use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
 use crate::avm2::e4x::{escape_attribute_value, escape_element_value};
 use crate::avm2::error::{
-    argument_error, make_null_or_undefined_error, make_reference_error, type_error,
-    ReferenceErrorCode,
+    argument_error, make_error_1127, make_error_1506, make_null_or_undefined_error,
+    make_reference_error, type_error, ReferenceErrorCode,
 };
 use crate::avm2::method::{BytecodeMethod, Method, ParamConfig};
 use crate::avm2::object::{
@@ -24,17 +24,17 @@ use crate::avm2::{value, Avm2, Error};
 use crate::context::{GcContext, UpdateContext};
 use crate::string::{AvmAtom, AvmString};
 use crate::swf::extensions::ReadSwfExt;
+use crate::tag_utils::SwfMovie;
 use gc_arena::{Gc, GcCell};
 use smallvec::SmallVec;
 use std::borrow::Cow;
 use std::cmp::{min, Ordering};
+use std::sync::Arc;
 use swf::avm2::read::Reader;
 use swf::avm2::types::{
     Class as AbcClass, Exception, Index, Method as AbcMethod, MethodFlags as AbcMethodFlags,
     Multiname as AbcMultiname, Namespace as AbcNamespace, Op,
 };
-
-use super::object::QNameObject;
 
 /// Represents a particular register set.
 ///
@@ -102,6 +102,11 @@ pub struct Activation<'a, 'gc: 'a> {
     /// current domain instead.
     caller_domain: Option<Domain<'gc>>,
 
+    /// The movie that called this builtin method.
+    /// This is intended to be used only for builtin methods- if this activation's method
+    /// is a bytecode method, the movie will instead be the movie that the bytecode method came from.
+    caller_movie: Option<Arc<SwfMovie>>,
+
     /// The class that yielded the currently executing method.
     ///
     /// This is used to maintain continuity when multiple methods supercall
@@ -163,6 +168,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             local_registers,
             outer: ScopeChain::new(context.avm2.stage_domain),
             caller_domain: None,
+            caller_movie: None,
             subclass_object: None,
             activation_class: None,
             stack_depth: context.avm2.stack.len(),
@@ -190,6 +196,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             local_registers,
             outer: ScopeChain::new(context.avm2.stage_domain),
             caller_domain: Some(domain),
+            caller_movie: None,
             subclass_object: None,
             activation_class: None,
             stack_depth: context.avm2.stack.len(),
@@ -230,6 +237,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             local_registers,
             outer: ScopeChain::new(domain),
             caller_domain: Some(domain),
+            caller_movie: None,
             subclass_object: None,
             activation_class: None,
             stack_depth: context.avm2.stack.len(),
@@ -402,12 +410,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             RegisterSet::new(num_locals + num_declared_arguments + arg_register + 1);
         *local_registers.get_mut(0).unwrap() = this.into();
 
-        let activation_class = if let Some(class_cache) = method.activation_class {
-            let cached_cls = class_cache.read();
-            let activation_class = if let Some(cls) = *cached_cls {
-                cls
-            } else {
-                drop(cached_cls);
+        let activation_class =
+            BytecodeMethod::get_or_init_activation_class(method, context.gc_context, || {
                 let translation_unit = method.translation_unit();
                 let abc_method = method.method();
                 let mut dummy_activation =
@@ -419,24 +423,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     abc_method,
                     body,
                 )?;
-                let activation_class_object =
-                    ClassObject::from_class(&mut dummy_activation, activation_class, None)?;
-                drop(dummy_activation);
-
-                *class_cache.write(context.gc_context) = Some(activation_class_object);
-                activation_class_object
-            };
-
-            Some(activation_class)
-        } else {
-            None
-        };
+                ClassObject::from_class(&mut dummy_activation, activation_class, None)
+            })?;
 
         let mut activation = Self {
             actions_since_timeout_check: 0,
             local_registers,
             outer,
             caller_domain: Some(outer.domain()),
+            caller_movie: Some(method.owner_movie()),
             subclass_object,
             activation_class,
             stack_depth: context.avm2.stack.len(),
@@ -512,6 +507,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         subclass_object: Option<ClassObject<'gc>>,
         outer: ScopeChain<'gc>,
         caller_domain: Option<Domain<'gc>>,
+        caller_movie: Option<Arc<SwfMovie>>,
     ) -> Result<Self, Error<'gc>> {
         let local_registers = RegisterSet::new(0);
 
@@ -520,6 +516,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             local_registers,
             outer,
             caller_domain,
+            caller_movie,
             subclass_object,
             activation_class: None,
             stack_depth: context.avm2.stack.len(),
@@ -588,6 +585,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// if this activation was constructed with `from_nothing`
     pub fn caller_domain(&self) -> Option<Domain<'gc>> {
         self.caller_domain
+    }
+
+    /// Returns the movie of the original AS3 caller. This will be `None`
+    /// if this activation was constructed with `from_nothing`
+    pub fn caller_movie(&self) -> Option<Arc<SwfMovie>> {
+        self.caller_movie.clone()
     }
 
     /// Returns the global scope of this activation.
@@ -1254,7 +1257,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_call(&mut self, arg_count: u32) -> Result<FrameControl<'gc>, Error<'gc>> {
         let args = self.pop_stack_args(arg_count);
         let receiver = self.pop_stack();
-        let function = self.pop_stack().as_callable(self, None, Some(receiver))?;
+        let function = self
+            .pop_stack()
+            .as_callable(self, None, Some(receiver), false)?;
         let value = function.call(receiver, &args, self)?;
 
         self.push_stack(value);
@@ -1279,7 +1284,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         #[allow(unreachable_code)]
         {
             let args = self.pop_stack_args(arg_count);
-            let receiver = self.pop_stack().as_callable(self, None, None)?;
+            let receiver = self.pop_stack().as_callable(self, None, None, false)?;
 
             let value = receiver.call_method(index.0, &args, self)?;
 
@@ -1323,6 +1328,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             self,
             Some(&multiname),
             Some(receiver.into()),
+            false,
         )?;
         let value = function.call(Value::Null, &args, self)?;
 
@@ -1478,7 +1484,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // default path for static names
         if !multiname.has_lazy_component() {
             let object = self.pop_stack();
-            let mut object = object.coerce_to_object_or_typeerror(self, Some(&multiname))?;
+            let object = object.coerce_to_object_or_typeerror(self, Some(&multiname))?;
             object.set_property(&multiname, value, self)?;
             return Ok(FrameControl::Continue);
         }
@@ -1510,7 +1516,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // main path for dynamic names
         let multiname = multiname.fill_with_runtime_params(self)?;
         let object = self.pop_stack();
-        let mut object = object.coerce_to_object_or_typeerror(self, Some(&multiname))?;
+        let object = object.coerce_to_object_or_typeerror(self, Some(&multiname))?;
         object.set_property(&multiname, value, self)?;
 
         Ok(FrameControl::Continue)
@@ -1523,7 +1529,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value = self.pop_stack();
         let multiname = self.pool_multiname_and_initialize(method, index)?;
-        let mut object = self
+        let object = self
             .pop_stack()
             .coerce_to_object_or_typeerror(self, Some(&multiname))?;
 
@@ -1775,12 +1781,28 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let multiname = self.pool_multiname_and_initialize(method, index)?;
         let object = self.pop_stack().coerce_to_object_or_typeerror(self, None)?;
-        let descendants = object.call_public_property(
-            "descendants",
-            &[QNameObject::from_name(self, (*multiname).clone())?.into()],
-            self,
-        )?;
-        self.push_stack(descendants);
+        if let Some(descendants) = object.xml_descendants(self, &multiname) {
+            self.push_stack(descendants);
+        } else {
+            // Even if it's an object with the "descendants" property, we won't support it.
+            let class_name = object
+                .instance_of()
+                .map(|cls| {
+                    cls.inner_class_definition()
+                        .read()
+                        .name()
+                        .to_qualified_name_err_message(self.context.gc_context)
+                })
+                .unwrap_or_else(|| AvmString::from("<UNKNOWN>"));
+            return Err(Error::AvmError(type_error(
+                self,
+                &format!(
+                    "Error #1016: Descendants operator (..) not supported on type {}",
+                    class_name
+                ),
+                1016,
+            )?));
+        }
 
         Ok(FrameControl::Continue)
     }
@@ -1815,7 +1837,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let value = self.pop_stack();
         let object = self.pop_stack().coerce_to_object_or_typeerror(self, None)?;
 
-        object.set_slot(index, value, self.context.gc_context)?;
+        object.set_slot(index, value, self)?;
 
         Ok(FrameControl::Continue)
     }
@@ -1836,7 +1858,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let value = self.pop_stack();
 
         self.global_scope()
-            .map(|global| global.set_slot(index, value, self.context.gc_context))
+            .map(|global| global.set_slot(index, value, self))
             .transpose()?;
 
         Ok(FrameControl::Continue)
@@ -1844,7 +1866,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_construct(&mut self, arg_count: u32) -> Result<FrameControl<'gc>, Error<'gc>> {
         let args = self.pop_stack_args(arg_count);
-        let ctor = self.pop_stack().as_callable(self, None, None)?;
+        let ctor = self.pop_stack().as_callable(self, None, None, true)?;
 
         let object = ctor.construct(self, &args)?;
 
@@ -1895,7 +1917,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_new_object(&mut self, num_args: u32) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let mut object = self.context.avm2.classes().object.construct(self, &[])?;
+        let object = self.context.avm2.classes().object.construct(self, &[])?;
 
         for _ in 0..num_args {
             let value = self.pop_stack();
@@ -1953,17 +1975,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let base = self
             .pop_stack()
             .as_object()
-            .ok_or("Cannot specialize null or undefined")?;
+            .ok_or_else(|| make_error_1127(self))?;
 
-        if args.len() > 1 {
-            return Err(format!(
-                "VerifyError: Cannot specialize classes with more than one parameter, {} given",
-                args.len()
-            )
-            .into());
-        }
+        let applied = base.apply(self, &args)?;
 
-        let applied = base.apply(self, args[0])?;
         self.push_stack(applied);
 
         Ok(FrameControl::Continue)
@@ -2125,7 +2140,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             ) => {
                 let mut children = value1.children().clone();
                 children.push(E4XOrXml::Xml(value2));
-                XmlListObject::new(self, children, None).into()
+                XmlListObject::new(self, children, None, None).into()
             }
             (
                 Value::Object(Object::XmlObject(value1)),
@@ -2133,14 +2148,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             ) => {
                 let mut children = vec![E4XOrXml::Xml(value1)];
                 children.extend(value2.children().clone());
-                XmlListObject::new(self, children, None).into()
+                XmlListObject::new(self, children, None, None).into()
             }
             (
                 Value::Object(Object::XmlObject(value1)),
                 Value::Object(Object::XmlObject(value2)),
             ) => {
                 let children = vec![E4XOrXml::Xml(value1), E4XOrXml::Xml(value2)];
-                XmlListObject::new(self, children, None).into()
+                XmlListObject::new(self, children, None, None).into()
             }
             (value1, value2) => {
                 let prim_value1 = value1.coerce_to_primitive(None, self)?;
@@ -2798,15 +2813,20 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_is_type_late(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let type_object = self
+        let Some(type_object) = self
             .pop_stack()
             .as_object()
             .and_then(|o| o.as_class_object())
-            .ok_or("Cannot check if value is of a type that is null, undefined, or not a class")?
-            .inner_class_definition();
+        else {
+            return Err(Error::AvmError(type_error(
+                self,
+                "Error #1041: The right-hand side of operator must be a class.",
+                1041,
+            )?));
+        };
         let value = self.pop_stack();
 
-        let is_instance_of = value.is_of_type(self, type_object);
+        let is_instance_of = value.is_of_type(self, type_object.inner_class_definition());
         self.push_stack(is_instance_of);
 
         Ok(FrameControl::Continue)
@@ -3012,8 +3032,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .as_bytearray_mut(self.context.gc_context)
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
 
-        let address =
-            usize::try_from(address).map_err(|_| "RangeError: The specified range is invalid")?;
+        let Ok(address) = usize::try_from(address) else {
+            return Err(make_error_1506(self));
+        };
+
+        if address >= dm.len() {
+            return Err(make_error_1506(self));
+        }
+
         dm.write_at_nongrowing(&val.to_le_bytes(), address)
             .map_err(|e| e.to_avm(self))?;
 
@@ -3030,8 +3056,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .as_bytearray_mut(self.context.gc_context)
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
 
-        let address =
-            usize::try_from(address).map_err(|_| "RangeError: The specified range is invalid")?;
+        let Ok(address) = usize::try_from(address) else {
+            return Err(make_error_1506(self));
+        };
+        if address + 2 > dm.len() {
+            return Err(make_error_1506(self));
+        }
         dm.write_at_nongrowing(&val.to_le_bytes(), address)
             .map_err(|e| e.to_avm(self))?;
 
@@ -3048,8 +3078,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .as_bytearray_mut(self.context.gc_context)
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
 
-        let address =
-            usize::try_from(address).map_err(|_| "RangeError: The specified range is invalid")?;
+        let Ok(address) = usize::try_from(address) else {
+            return Err(make_error_1506(self));
+        };
+        if address + 4 > dm.len() {
+            return Err(make_error_1506(self));
+        }
         dm.write_at_nongrowing(&val.to_le_bytes(), address)
             .map_err(|e| e.to_avm(self))?;
 
@@ -3066,8 +3100,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .as_bytearray_mut(self.context.gc_context)
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
 
-        let address =
-            usize::try_from(address).map_err(|_| "RangeError: The specified range is invalid")?;
+        let Ok(address) = usize::try_from(address) else {
+            return Err(make_error_1506(self));
+        };
+        if address + 4 > dm.len() {
+            return Err(make_error_1506(self));
+        }
         dm.write_at_nongrowing(&val.to_le_bytes(), address)
             .map_err(|e| e.to_avm(self))?;
 
@@ -3084,8 +3122,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .as_bytearray_mut(self.context.gc_context)
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
 
-        let address =
-            usize::try_from(address).map_err(|_| "RangeError: The specified range is invalid")?;
+        let Ok(address) = usize::try_from(address) else {
+            return Err(make_error_1506(self));
+        };
+        if address + 8 > dm.len() {
+            return Err(make_error_1506(self));
+        }
         dm.write_at_nongrowing(&val.to_le_bytes(), address)
             .map_err(|e| e.to_avm(self))?;
 
@@ -3105,7 +3147,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         if let Some(val) = val {
             self.push_stack(val);
         } else {
-            return Err("RangeError: The specified range is invalid".into());
+            return Err(make_error_1506(self));
         }
 
         Ok(FrameControl::Continue)
@@ -3119,6 +3161,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let dm = dm
             .as_bytearray()
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
+
+        if dm.len() < address + 2 {
+            return Err(make_error_1506(self));
+        }
+
         let val = dm.read_at(2, address).map_err(|e| e.to_avm(self))?;
         self.push_stack(u16::from_le_bytes(val.try_into().unwrap()));
 
@@ -3133,6 +3180,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let dm = dm
             .as_bytearray()
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
+
+        if dm.len() < address + 4 {
+            return Err(make_error_1506(self));
+        }
+
         let val = dm.read_at(4, address).map_err(|e| e.to_avm(self))?;
         self.push_stack(i32::from_le_bytes(val.try_into().unwrap()));
         Ok(FrameControl::Continue)
@@ -3146,6 +3198,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let dm = dm
             .as_bytearray()
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
+
+        if dm.len() < address + 4 {
+            return Err(make_error_1506(self));
+        }
+
         let val = dm.read_at(4, address).map_err(|e| e.to_avm(self))?;
         self.push_stack(f32::from_le_bytes(val.try_into().unwrap()));
 
@@ -3160,6 +3217,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let dm = dm
             .as_bytearray()
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
+
+        if dm.len() < address + 8 {
+            return Err(make_error_1506(self));
+        }
+
         let val = dm.read_at(8, address).map_err(|e| e.to_avm(self))?;
         self.push_stack(f64::from_le_bytes(val.try_into().unwrap()));
         Ok(FrameControl::Continue)

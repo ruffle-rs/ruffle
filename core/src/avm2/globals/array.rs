@@ -29,6 +29,7 @@ const PUBLIC_AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
     ("lastIndexOf", last_index_of),
     ("pop", pop),
     ("push", push),
+    ("insertAt", insert_at),
     ("removeAt", remove_at),
     ("reverse", reverse),
     ("shift", shift),
@@ -422,7 +423,7 @@ pub fn for_each<'gc>(
         .get(0)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .as_callable(activation, None, None)?;
+        .as_callable(activation, None, None, false)?;
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
     let mut iter = ArrayIter::new(activation, this)?;
 
@@ -445,7 +446,7 @@ pub fn map<'gc>(
         .get(0)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .as_callable(activation, None, None)?;
+        .as_callable(activation, None, None, false)?;
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
     let mut new_array = ArrayStorage::new(0);
     let mut iter = ArrayIter::new(activation, this)?;
@@ -470,7 +471,7 @@ pub fn filter<'gc>(
         .get(0)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .as_callable(activation, None, None)?;
+        .as_callable(activation, None, None, false)?;
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
     let mut new_array = ArrayStorage::new(0);
     let mut iter = ArrayIter::new(activation, this)?;
@@ -499,7 +500,7 @@ pub fn every<'gc>(
         .get(0)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .as_callable(activation, None, None)?;
+        .as_callable(activation, None, None, false)?;
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
     let mut iter = ArrayIter::new(activation, this)?;
 
@@ -528,7 +529,7 @@ pub fn some<'gc>(
         .get(0)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .as_callable(activation, None, None)?;
+        .as_callable(activation, None, None, false)?;
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
     let mut iter = ArrayIter::new(activation, this)?;
 
@@ -800,6 +801,23 @@ pub fn splice<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Insert an element into a specific position of an array.
+pub fn insert_at<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    splice(
+        activation,
+        this,
+        &[
+            args.get(0).cloned().unwrap_or(0.into()),
+            0.into(),
+            args.get(1).cloned().unwrap_or(Value::Undefined),
+        ],
+    )
+}
+
 bitflags! {
     /// The array options that a given sort operation may use.
     ///
@@ -1011,7 +1029,7 @@ pub fn sort<'gc>(
                 args.get(0)
                     .cloned()
                     .unwrap_or(Value::Undefined)
-                    .as_callable(activation, None, None)?,
+                    .as_callable(activation, None, None, false)?,
             ),
             SortOptions::from_bits_truncate(
                 args.get(1)
@@ -1022,7 +1040,7 @@ pub fn sort<'gc>(
         )
     } else {
         let arg = args.get(0).cloned().unwrap_or(Value::Undefined);
-        if let Ok(callable) = arg.as_callable(activation, None, None) {
+        if let Ok(callable) = arg.as_callable(activation, None, None, false) {
             (Some(callable), SortOptions::empty())
         } else {
             (

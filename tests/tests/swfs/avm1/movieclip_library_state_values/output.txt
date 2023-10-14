@@ -1,0 +1,78 @@
+_accProps = undefined
+_alpha = 100
+_currentframe = 1
+_droptarget = 
+_focusrect = null
+_framesloaded = 1
+_height = 0
+_highquality = 1
+_lockroot = false
+_name = childClip
+_parent = _level0
+_quality = HIGH
+_rotation = 0
+_soundbuftime = 5
+_target = /childClip
+_totalframes = 1
+_visible = true
+_width = 0
+_x = 0
+_xmouse = 21
+_xscale = 100
+_y = 0
+_ymouse = 0
+_yscale = 100
+blendMode = normal
+cacheAsBitmap = false
+enabled = true
+filters = 
+filters.length = 0
+focusEnabled = undefined
+forceSmoothing = undefined
+hitArea = undefined
+menu = undefined
+opaqueBackground = undefined
+scale9Grid = undefined
+scrollRect = undefined
+tabChildren = undefined
+tabEnabled = undefined
+tabIndex = undefined
+trackAsMenu = undefined
+transform.colorTransform = (redMultiplier=1, greenMultiplier=1, blueMultiplier=1, alphaMultiplier=1, redOffset=0, greenOffset=0, blueOffset=0, alphaOffset=0)
+transform.concatenatedColorTransform = (redMultiplier=1, greenMultiplier=1, blueMultiplier=1, alphaMultiplier=1, redOffset=0, greenOffset=0, blueOffset=0, alphaOffset=0)
+transform.matrix = (a=1, b=0, c=0, d=1, tx=0, ty=0)
+transform.concatenatedMatrix = (a=1, b=0, c=0, d=1, tx=0, ty=0)
+transform.pixelBounds = (x=0, y=0, w=0, h=0)
+useHandCursor = true
+_url = movieclip_library_state_values/test.swf
+getBounds(this).xMin = 6710886.4
+getBounds(this).xMax = 6710886.4
+getBounds(this).yMin = 6710886.4
+getBounds(this).yMax = 6710886.4
+getBounds(mc).xMin = 6710886.35
+getBounds(mc).xMax = 6710886.35
+getBounds(mc).yMin = 6710886.35
+getBounds(mc).yMax = 6710886.35
+getBytesLoaded() = 4
+getBytesTotal() = 4
+getDepth() = 0
+getInstanceAtDepth(0) = undefined
+getNextHighestDepth() = 0
+getRect(this).xMin = 6710886.4
+getRect(this).xMax = 6710886.4
+getRect(this).yMin = 6710886.4
+getRect(this).yMax = 6710886.4
+getRect(mc).xMin = 6710886.35
+getRect(mc).xMax = 6710886.35
+getRect(mc).yMin = 6710886.35
+getRect(mc).yMax = 6710886.35
+getSWFVersion() = 10
+getTextSnapshot().getCount() = 0
+
+Both targets have the same props.
+
+Change: Prop _currentframe is "1" on the first, but "0" on the second target.
+Change: Prop _framesloaded is "1" on the first, but "0" on the second target.
+Change: Prop _totalframes is "1" on the first, but "0" on the second target.
+Change: Prop getBytesLoaded() is "4" on the first, but "0" on the second target.
+Change: Prop getBytesTotal() is "4" on the first, but "0" on the second target.

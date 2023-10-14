@@ -41,7 +41,7 @@ impl<'gc> Context3DObject<'gc> {
     ) -> Result<Object<'gc>, Error<'gc>> {
         let class = activation.avm2().classes().context3d;
 
-        let mut this: Object<'gc> = Context3DObject(Gc::new(
+        let this: Object<'gc> = Context3DObject(Gc::new(
             activation.gc(),
             Context3DData {
                 base: RefLock::new(ScriptObjectData::new(class)),
@@ -124,7 +124,7 @@ impl<'gc> Context3DObject<'gc> {
         })?;
 
         Ok(Value::Object(TextureObject::from_handle(
-            activation, *self, texture, class,
+            activation, *self, texture, format, class,
         )?))
     }
 
@@ -418,7 +418,7 @@ impl<'gc> Context3DObject<'gc> {
         let class = activation.avm2().classes().cubetexture;
 
         Ok(Value::Object(TextureObject::from_handle(
-            activation, *self, texture, class,
+            activation, *self, texture, format, class,
         )?))
     }
 

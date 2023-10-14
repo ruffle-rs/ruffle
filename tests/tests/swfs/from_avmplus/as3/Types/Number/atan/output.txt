@@ -1,0 +1,33 @@
+Number.atan() returns a Number PASSED!
+Number.atan() length is 1 PASSED!
+Asserting for ArgumentError PASSED!
+Number.atan() with no args PASSED!
+Number.atan(undefined) PASSED!
+Number.atan(string) PASSED!
+Number.atan(NaN) PASSED!
+Number.atan(NaN) check() PASSED!
+Number.atan(0) PASSED!
+Number.atan(0) check() PASSED!
+Ensure that Number.atan(+0) returns +0 PASSED!
+Ensure that Number.atan(+0) returns +0 check() PASSED!
+Number.atan(-0) PASSED!
+Number.atan(-0) check() PASSED!
+Ensure that Number.atan(-0) returns -0 PASSED!
+Ensure that Number.atan(-0) returns -0 check() PASSED!
+Number.atan(Number.POSITIVE_INFINITY) PASSED!
+Number.atan(Number.POSITIVE_INFINITY) check() PASSED!
+Number.atan(Number.NEGATIVE_INFINITY) PASSED!
+Number.atan(Number.NEGATIVE_INFINITY) check() PASSED!
+Number.atan(null) PASSED!
+Number.atan(true) PASSED!
+Number.atan(false) PASSED!
+Number.atan('1') PASSED!
+Number.atan('0') PASSED!
+Number.atan(myNum=1) PASSED!
+Number.atan(myNum=0) PASSED!
+Number.atan(myNum=-0) PASSED!
+Number.atan(myNum=-1) PASSED!
+Number.atan(1) NumberLiteral PASSED!
+Number.atan(0) NumberLiteral PASSED!
+Number.atan(-0) NumberLiteral PASSED!
+Number.atan(-1) NumberLiteral PASSED!

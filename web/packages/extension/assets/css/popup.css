@@ -20,6 +20,7 @@ button {
     text-align: center;
     background: var(--ruffle-orange);
     color: black;
+    border-top: 1px solid var(--ruffle-blue);
 }
 
 #version-text {

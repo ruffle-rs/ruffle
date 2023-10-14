@@ -1,0 +1,5 @@
+SECTION var x = 3; function f() { var a = x;return a; };f() PASSED!
+SECTION var x = 3; function g() { var a = x;return; };g() PASSED!
+SECTION var x = 3; function h() { var a = x;return a; a=x+y};h() PASSED!
+SECTION var x = 3; function I() { var a = x;return;a=x+y; };I() PASSED!
+SECTION var x = 3; function f() { var a = x;return a=x+y; };J() PASSED!

@@ -1,0 +1,10 @@
+switch with no breaks:  input is 0 PASSED!
+switch with no breaks:  input is 1 PASSED!
+switch with no breaks:  input is 2 PASSED!
+switch with no breaks:  input is 3 PASSED!
+switch with no breaks:  input is 4 PASSED!
+switch with no breaks:  input is true PASSED!
+switch with no breaks:  input is false PASSED!
+switch with no breaks:  input is null PASSED!
+switch with no breaks:  input is undefined PASSED!
+switch with no breaks:  input is 0 PASSED!

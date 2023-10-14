@@ -1,0 +1,9 @@
+Object PASSED!
+Function PASSED!
+Array PASSED!
+String PASSED!
+Boolean PASSED!
+Number PASSED!
+Date PASSED!
+RegExp PASSED!
+Error PASSED!

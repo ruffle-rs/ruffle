@@ -1,0 +1,3 @@
+switch with only default case: input is 4294967295 PASSED!
+switch with only default case: input is 0 PASSED!
+switch with only default case: input is 2 PASSED!

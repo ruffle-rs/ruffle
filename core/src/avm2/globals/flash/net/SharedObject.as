@@ -1,37 +1,36 @@
-package flash.net
-{
-   import flash.events.EventDispatcher;
-   import __ruffle__.stub_method;
+package flash.net {
+    import flash.events.EventDispatcher;
+    import __ruffle__.stub_method;
 
-   namespace ruffle = "__ruffle__";
-   
-   public class SharedObject extends EventDispatcher
-   {
-      public function SharedObject()
-      {
-         this.data = {};
-      }
+    namespace ruffle = "__ruffle__";
 
-      // NOTE: We currently always use AMF3 serialization.
-      // If you implement the `defaultObjectEncoding` or `objectEncoding`,
-      // you will need to adjust the serialization and deserialization code
-      // to work with AMF0.
+    public class SharedObject extends EventDispatcher {
+        public function SharedObject() {
+           this.data = {};
+        }
 
-      native public static function getLocal(name:String, localPath:String = null, secure:Boolean = false): SharedObject;
+        // NOTE: We currently always use AMF3 serialization.
+        // If you implement the `defaultObjectEncoding` or `objectEncoding`,
+        // you will need to adjust the serialization and deserialization code
+        // to work with AMF0.
 
-      native public function get size() : uint;
+        public static native function getLocal(name:String, localPath:String = null, secure:Boolean = false): SharedObject;
 
-      native public function flush(minDiskSpace:int = 0) : String;
-      native public function close() : void;
-      native public function clear() : void;
+        public native function get size() : uint;
 
-      public function setProperty(propertyName:String, value:Object = null):void {
-         stub_method("flash.net.SharedObject", "setProperty");
-      }
+        public native function flush(minDiskSpace:int = 0) : String;
+        public native function close() : void;
+        public native function clear() : void;
 
-      // note: this is supposed to be a read-only property
-      public var data: Object;
+        public function setProperty(propertyName:String, value:Object = null):void {
+            this.data[propertyName] = value;
+            // This should also mark remote SharedObjects as dirty,
+            // but we don't support them yet
+        }
 
-      ruffle var _ruffleName: String;
-   }
+        // note: this is supposed to be a read-only property
+        public var data: Object;
+
+        ruffle var _ruffleName: String;
+    }
 }

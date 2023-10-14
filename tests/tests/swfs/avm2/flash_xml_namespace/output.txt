@@ -1,0 +1,42 @@
+/// doc.childNodes[0].toString()
+<xml:a />
+/// doc.childNodes[0].prefix
+xml
+/// doc.childNodes[0].localName
+a
+/// doc.childNodes[0].namespaceURI
+null
+/// doc.childNodes[1].toString()
+<foo xml:bar="hello" />
+/// doc.childNodes[1].prefix
+
+/// doc.childNodes[1].localName
+foo
+/// doc.childNodes[1].namespaceURI
+null
+/// doc.childNodes[2].toString()
+<a xmlns:example="http://example.org"><b /><example:c /></a>
+/// doc.childNodes[2].prefix
+
+/// doc.childNodes[2].localName
+a
+/// doc.childNodes[2].namespaceURI
+null
+/// doc.childNodes[2].childNodes[0].toString()
+<b />
+/// doc.childNodes[2].childNodes[0].prefix
+
+/// doc.childNodes[2].childNodes[0].localName
+b
+/// doc.childNodes[2].childNodes[0].namespaceURI
+null
+/// doc.childNodes[2].childNodes[1].toString()
+<example:c />
+/// doc.childNodes[2].childNodes[1].prefix
+example
+/// doc.childNodes[2].childNodes[1].localName
+c
+/// doc.childNodes[2].childNodes[1].namespaceURI
+http://example.org
+/// attribute name
+xml:bar

@@ -1,0 +1,18 @@
+2 PASSED!
+3 PASSED!
+4 PASSED!
+5 PASSED!
+8 PASSED!
+Two namespaces in toplevel scope: PASSED!
+Two namespaces in toplevel scope: PASSED!
+No namespace: PASSED!
+Undefined namespace: PASSED!
+Undefined namespace, length: PASSED!
+One namespace w/o prefix, length: PASSED!
+One namespace w/ prefix, length: PASSED!
+One namespace at toplevel, one at child, length at toplevel: PASSED!
+One namespace at toplevel, two at child, length at child: PASSED!
+inScopeNamespaces[0].typeof: PASSED!
+inScopeNamespaces[1].prefix: PASSED!
+Reading one toplevel namespace: PASSED!
+Reading two namespaces up parent chain: PASSED!

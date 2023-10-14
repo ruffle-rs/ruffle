@@ -1,0 +1,5 @@
+2 PASSED!
+3 PASSED!
+4 PASSED!
+MYXML = new XMLList(xmlDoc),MYOBJ = new XML(xmlobj1), MYXML.contains(MYOBJ) PASSED!
+MYXML = new XMLList(xmlDoc), MYOBJ = new XML(xmlobj2), MYXML.contains(MYOBJ) PASSED!

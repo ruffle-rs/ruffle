@@ -1,0 +1,52 @@
+<root>
+  <hello/>
+</root>
+Set XML as child
+<root>
+  <hello/>
+  <item>
+    <stuff>Hello</stuff>
+    <more>
+      <stuff/>
+    </more>
+  </item>
+</root>
+Set XMLList as child
+<root>
+  <hello/>
+  <item>
+    <stuff>Hello</stuff>
+    <more>
+      <stuff/>
+    </more>
+  </item>
+  <list>
+    <item>A</item>
+    <item>B</item>
+    <item>C</item>
+  </list>
+</root>
+Assignment without target
+
+Assignment list without target
+
+Assignment to init list without target
+<root>
+  <item>ASdasdasd</item>
+</root>
+Assignment to init list without target
+<root>
+  <new_item>abcdefg</new_item>
+</root>
+Assignment to list with target
+abcdefg
+<new_item>
+  abcdefg
+  <item>def</item>
+</new_item>
+Assignment to list with target
+<new_item>
+  abcdefg
+  <item>def</item>
+  <new_item>abc</new_item>
+</new_item>

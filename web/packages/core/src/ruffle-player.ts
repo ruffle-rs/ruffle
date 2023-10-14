@@ -1,6 +1,6 @@
 import type { Ruffle } from "../dist/ruffle_web";
 import { loadRuffle } from "./load-ruffle";
-import { ruffleShadowTemplate } from "./shadow-template";
+import { applyStaticStyles, ruffleShadowTemplate } from "./shadow-template";
 import { lookupElement } from "./register-element";
 import { DEFAULT_CONFIG } from "./config";
 import type { DataLoadOptions, URLLoadOptions } from "./load-options";
@@ -119,6 +119,13 @@ class Point {
     }
 }
 
+class PanicLinkInfo {
+    constructor(
+        public url: string = "#",
+        public label: string = text("view-error-details"),
+    ) {}
+}
+
 /**
  * The ruffle player element that should be inserted onto the page.
  *
@@ -127,12 +134,16 @@ class Point {
 export class RufflePlayer extends HTMLElement {
     private readonly shadow: ShadowRoot;
     private readonly dynamicStyles: HTMLStyleElement;
+    private readonly staticStyles: HTMLStyleElement;
     private readonly container: HTMLElement;
     private readonly playButton: HTMLElement;
     private readonly unmuteOverlay: HTMLElement;
     private readonly splashScreen: HTMLElement;
     private readonly virtualKeyboard: HTMLInputElement;
     private readonly saveManager: HTMLDivElement;
+    private readonly volumeControls: HTMLDivElement;
+    private readonly videoModal: HTMLDivElement;
+    private readonly hardwareAccelerationModal: HTMLDivElement;
 
     private readonly contextMenuOverlay: HTMLElement;
     // Firefox has a read-only "contextMenu" property,
@@ -164,6 +175,8 @@ export class RufflePlayer extends HTMLElement {
     private longPressTimer: ReturnType<typeof setTimeout> | null = null;
     private pointerDownPosition: Point | null = null;
     private pointerMoveMaxDistance = 0;
+
+    private volumeSettings: VolumeControls;
 
     /**
      * Triggered when a movie metadata has been loaded (such as movie width and height).
@@ -225,13 +238,16 @@ export class RufflePlayer extends HTMLElement {
         this.shadow.appendChild(ruffleShadowTemplate.content.cloneNode(true));
 
         this.dynamicStyles = <HTMLStyleElement>(
-            this.shadow.getElementById("dynamic_styles")
+            this.shadow.getElementById("dynamic-styles")
+        );
+        this.staticStyles = <HTMLStyleElement>(
+            this.shadow.getElementById("static-styles")
         );
         this.container = this.shadow.getElementById("container")!;
-        this.playButton = this.shadow.getElementById("play_button")!;
+        this.playButton = this.shadow.getElementById("play-button")!;
         this.playButton.addEventListener("click", () => this.play());
 
-        this.unmuteOverlay = this.shadow.getElementById("unmute_overlay")!;
+        this.unmuteOverlay = this.shadow.getElementById("unmute-overlay")!;
         this.splashScreen = this.shadow.getElementById("splash-screen")!;
         this.virtualKeyboard = <HTMLInputElement>(
             this.shadow.getElementById("virtual-keyboard")!
@@ -243,21 +259,23 @@ export class RufflePlayer extends HTMLElement {
         this.saveManager = <HTMLDivElement>(
             this.shadow.getElementById("save-manager")!
         );
-        this.saveManager.addEventListener("click", () =>
-            this.saveManager.classList.add("hidden"),
+        this.videoModal = <HTMLDivElement>(
+            this.shadow.getElementById("video-modal")!
         );
-        const modalArea = this.saveManager.querySelector("#modal-area");
-        if (modalArea) {
-            modalArea.addEventListener("click", (event) =>
-                event.stopPropagation(),
-            );
-        }
-        const closeSaveManager = this.saveManager.querySelector("#close-modal");
-        if (closeSaveManager) {
-            closeSaveManager.addEventListener("click", () =>
-                this.saveManager.classList.add("hidden"),
-            );
-        }
+        this.hardwareAccelerationModal = <HTMLDivElement>(
+            this.shadow.getElementById("hardware-acceleration-modal")!
+        );
+        this.volumeControls = <HTMLDivElement>(
+            this.shadow.getElementById("volume-controls-modal")
+        );
+        this.addModalJavaScript(this.saveManager);
+        this.addModalJavaScript(this.volumeControls);
+        this.addModalJavaScript(this.videoModal);
+        this.addModalJavaScript(this.hardwareAccelerationModal);
+
+        this.volumeSettings = new VolumeControls(false, 100);
+        this.addVolumeControlsJavaScript(this.volumeControls);
+
         const backupSaves = <HTMLElement>(
             this.saveManager.querySelector("#backup-saves")
         );
@@ -267,11 +285,11 @@ export class RufflePlayer extends HTMLElement {
         }
 
         const unmuteSvg = <SVGElement>(
-            this.unmuteOverlay.querySelector("#unmute_overlay_svg")
+            this.unmuteOverlay.querySelector("#unmute-overlay-svg")
         );
         if (unmuteSvg) {
             const unmuteText = <SVGTextElement>(
-                unmuteSvg.querySelector("#unmute_text")
+                unmuteSvg.querySelector("#unmute-text")
             );
             unmuteText.textContent = text("click-to-unmute");
         }
@@ -319,6 +337,97 @@ export class RufflePlayer extends HTMLElement {
     }
 
     /**
+     * Add functions to open and close a modal.
+     *
+     * @param modalElement The element containing the modal.
+     */
+    private addModalJavaScript(modalElement: HTMLDivElement): void {
+        const videoHolder = modalElement.querySelector("#video-holder");
+        this.container.addEventListener("click", () => {
+            modalElement.classList.add("hidden");
+            if (videoHolder) {
+                videoHolder.textContent = "";
+            }
+        });
+        const modalArea = modalElement.querySelector(".modal-area");
+        if (modalArea) {
+            modalArea.addEventListener("click", (event) =>
+                event.stopPropagation(),
+            );
+        }
+        const closeModal = modalElement.querySelector(".close-modal");
+        if (closeModal) {
+            closeModal.addEventListener("click", () => {
+                modalElement.classList.add("hidden");
+                if (videoHolder) {
+                    videoHolder.textContent = "";
+                }
+            });
+        }
+    }
+
+    /**
+     * Add the volume control texts, set the controls to the current settings and
+     * add event listeners to update the settings and controls when being changed.
+     *
+     * @param volumeControlsModal The element containing the volume controls modal.
+     */
+    private addVolumeControlsJavaScript(
+        volumeControlsModal: HTMLDivElement,
+    ): void {
+        const muteCheckbox = volumeControlsModal.querySelector(
+            "#mute-checkbox",
+        ) as HTMLInputElement;
+        const volumeSlider = volumeControlsModal.querySelector(
+            "#volume-slider",
+        ) as HTMLInputElement;
+        const volumeSliderText = volumeControlsModal.querySelector(
+            "#volume-slider-text",
+        ) as HTMLSpanElement;
+
+        const heading = volumeControlsModal.querySelector(
+            "#volume-controls-heading",
+        ) as HTMLHeadingElement;
+        const muteCheckboxLabel = volumeControlsModal.querySelector(
+            "#mute-checkbox-label",
+        ) as HTMLLabelElement;
+        const volumeSliderLabel = volumeControlsModal.querySelector(
+            "#volume-slider-label",
+        ) as HTMLLabelElement;
+
+        // Add the texts.
+        heading.textContent = text("volume-controls");
+        muteCheckboxLabel.textContent = text("volume-controls-mute");
+        volumeSliderLabel.textContent = text("volume-controls-volume");
+
+        // Set the controls to the current settings.
+        muteCheckbox.checked = this.volumeSettings.isMuted;
+        volumeSlider.disabled = muteCheckbox.checked;
+        volumeSlider.valueAsNumber = this.volumeSettings.volume;
+        volumeSliderLabel.style.color = muteCheckbox.checked ? "grey" : "black";
+        volumeSliderText.style.color = muteCheckbox.checked ? "grey" : "black";
+        volumeSliderText.textContent = String(this.volumeSettings.volume);
+
+        // Add event listeners to update the settings and controls.
+        muteCheckbox.addEventListener("change", () => {
+            volumeSlider.disabled = muteCheckbox.checked;
+            volumeSliderLabel.style.color = muteCheckbox.checked
+                ? "grey"
+                : "black";
+            volumeSliderText.style.color = muteCheckbox.checked
+                ? "grey"
+                : "black";
+            this.volumeSettings.isMuted = muteCheckbox.checked;
+            this.instance?.set_volume(this.volumeSettings.get_volume());
+        });
+        volumeSlider.addEventListener("input", () => {
+            volumeSliderText.textContent = volumeSlider.value;
+            this.volumeSettings.volume = volumeSlider.valueAsNumber;
+            this.instance?.set_volume(this.volumeSettings.get_volume());
+        });
+    }
+
+    /**
      * Setup event listener to detect when tab is not active to pause instance playback.
      * this.instance.play() is called when the tab becomes visible only if the
      * the instance was not paused before tab became hidden.
@@ -350,11 +459,72 @@ export class RufflePlayer extends HTMLElement {
     }
 
     /**
+     * Polyfill of height getter for HTMLEmbedElement and HTMLObjectElement
+     *
+     * @ignore
+     * @internal
+     */
+    get height(): string {
+        return this.getAttribute("height") || "";
+    }
+
+    /**
+     * Polyfill of height setter for HTMLEmbedElement and HTMLObjectElement
+     *
+     * @ignore
+     * @internal
+     */
+    set height(height: string) {
+        this.setAttribute("height", height);
+    }
+
+    /**
+     * Polyfill of width getter for HTMLEmbedElement and HTMLObjectElement
+     *
+     * @ignore
+     * @internal
+     */
+    get width(): string {
+        return this.getAttribute("width") || "";
+    }
+
+    /**
+     * Polyfill of width setter for HTMLEmbedElement and HTMLObjectElement
+     *
+     * @ignore
+     * @internal
+     */
+    set width(widthVal: string) {
+        this.setAttribute("width", widthVal);
+    }
+
+    /**
+     * Polyfill of type getter for HTMLEmbedElement and HTMLObjectElement
+     *
+     * @ignore
+     * @internal
+     */
+    get type(): string {
+        return this.getAttribute("type") || "";
+    }
+
+    /**
+     * Polyfill of type setter for HTMLEmbedElement and HTMLObjectElement
+     *
+     * @ignore
+     * @internal
+     */
+    set type(typeVal: string) {
+        this.setAttribute("type", typeVal);
+    }
+
+    /**
      * @ignore
      * @internal
      */
     connectedCallback(): void {
         this.updateStyles();
+        applyStaticStyles(this.staticStyles);
     }
 
     /**
@@ -393,11 +563,11 @@ export class RufflePlayer extends HTMLElement {
      */
     protected updateStyles(): void {
         if (this.dynamicStyles.sheet) {
-            if (this.dynamicStyles.sheet.rules) {
+            if (this.dynamicStyles.sheet.cssRules) {
                 for (
-                    let i = 0;
-                    i < this.dynamicStyles.sheet.rules.length;
-                    i++
+                    let i = this.dynamicStyles.sheet.cssRules.length - 1;
+                    i >= 0;
+                    i--
                 ) {
                     this.dynamicStyles.sheet.deleteRule(i);
                 }
@@ -544,13 +714,27 @@ export class RufflePlayer extends HTMLElement {
             this,
             this.loadedConfig,
         );
+        this.instance!.set_volume(this.volumeSettings.get_volume());
+
         this.rendererDebugInfo = this.instance!.renderer_debug_info();
+
+        if (this.rendererDebugInfo.includes("Adapter Device Type: Cpu")) {
+            this.container.addEventListener(
+                "mouseover",
+                this.openHardwareAccelerationModal.bind(this),
+                {
+                    once: true,
+                },
+            );
+        }
 
         const actuallyUsedRendererName = this.instance!.renderer_name();
 
         console.log(
             "%c" +
-                "New Ruffle instance created (WebAssembly extensions: " +
+                "New Ruffle instance created (Version: " +
+                buildInfo.versionName +
+                " | WebAssembly extensions: " +
                 (ruffleConstructor.is_wasm_simd_used() ? "ON" : "OFF") +
                 " | Used renderer: " +
                 (actuallyUsedRendererName ?? "") +
@@ -687,23 +871,18 @@ export class RufflePlayer extends HTMLElement {
         );
         return options;
     }
+
     /**
-     * Gets the configuration set by the Ruffle extension
+     * Reloads the player, as if you called {@link RufflePlayer.load} with the same config as the last time it was called.
      *
-     * @returns The configuration set by the Ruffle extension
+     * If this player has never been loaded, this method will return an error.
      */
-    getExtensionConfig(): Record<string, unknown> {
-        return window.RufflePlayer &&
-            window.RufflePlayer.conflict &&
-            (window.RufflePlayer.conflict["newestName"] === "extension" ||
-                (window.RufflePlayer as Record<string, unknown>)[
-                    "newestName"
-                ] === "extension")
-            ? (window.RufflePlayer?.conflict["config"] as Record<
-                  string,
-                  unknown
-              >)
-            : {};
+    async reload(): Promise<void> {
+        if (this.loadedConfig) {
+            await this.load(this.loadedConfig);
+        } else {
+            throw new Error("Cannot reload if load wasn't first called");
+        }
     }
 
     /**
@@ -737,10 +916,8 @@ export class RufflePlayer extends HTMLElement {
         }
 
         try {
-            const extensionConfig = this.getExtensionConfig();
             this.loadedConfig = {
                 ...DEFAULT_CONFIG,
-                ...extensionConfig,
                 ...(window.RufflePlayer?.config ?? {}),
                 ...this.config,
                 ...options,
@@ -809,6 +986,8 @@ export class RufflePlayer extends HTMLElement {
     /**
      * Returns the master volume of the player.
      *
+     * The volume is linear and not adapted for logarithmic hearing.
+     *
      * @returns The volume. 1.0 is 100% volume.
      */
     get volume(): number {
@@ -820,6 +999,8 @@ export class RufflePlayer extends HTMLElement {
 
     /**
      * Sets the master volume of the player.
+     *
+     * The volume should be linear and not adapted for logarithmic hearing.
      *
      * @param value The volume. 1.0 is 100% volume.
      */
@@ -859,7 +1040,7 @@ export class RufflePlayer extends HTMLElement {
      * @param isFull Whether to set to fullscreen or return to normal.
      */
     setFullscreen(isFull: boolean): void {
-        if (this.fullscreenEnabled) {
+        if (this.fullscreenEnabled && isFull !== this.isFullscreen) {
             if (isFull) {
                 this.enterFullscreen();
             } else {
@@ -983,7 +1164,7 @@ export class RufflePlayer extends HTMLElement {
                         replace
                             ? localStorage.setItem(solKey, b64SolData)
                             : localStorage.removeItem(solKey);
-                        this.load(this.loadedConfig);
+                        this.reload();
                         this.populateSaves();
                         this.saveManager.classList.add("hidden");
                     }
@@ -1137,10 +1318,24 @@ export class RufflePlayer extends HTMLElement {
     }
 
     /**
+     * Opens the hardware acceleration info modal.
+     */
+    private openHardwareAccelerationModal(): void {
+        this.hardwareAccelerationModal.classList.remove("hidden");
+    }
+
+    /**
      * Opens the save manager.
      */
     private openSaveManager(): void {
         this.saveManager.classList.remove("hidden");
+    }
+
+    /**
+     * Opens the volume controls.
+     */
+    private openVolumeControls(): void {
+        this.volumeControls.classList.remove("hidden");
     }
 
     /**
@@ -1241,6 +1436,13 @@ export class RufflePlayer extends HTMLElement {
                 });
             }
         }
+
+        items.push({
+            text: text("context-menu-volume-controls"),
+            onClick: () => {
+                this.openVolumeControls();
+            },
+        });
 
         if (
             this.instance &&
@@ -1344,7 +1546,10 @@ export class RufflePlayer extends HTMLElement {
     }
 
     private showContextMenu(event: MouseEvent | PointerEvent): void {
-        if (this.panicked || !this.saveManager.classList.contains("hidden")) {
+        const modalOpen = Array.from(
+            this.shadow.querySelectorAll(".modal"),
+        ).some((modal) => !modal.classList.contains("hidden"));
+        if (this.panicked || modalOpen) {
             return;
         }
 
@@ -1387,14 +1592,14 @@ export class RufflePlayer extends HTMLElement {
         for (const item of this.contextMenuItems()) {
             if (item === null) {
                 const menuSeparator = document.createElement("li");
-                menuSeparator.className = "menu_separator";
+                menuSeparator.className = "menu-separator";
                 const hr = document.createElement("hr");
                 menuSeparator.appendChild(hr);
                 this.contextMenuElement.appendChild(menuSeparator);
             } else {
                 const { text, onClick, enabled } = item;
                 const menuItem = document.createElement("li");
-                menuItem.className = "menu_item";
+                menuItem.className = "menu-item";
                 menuItem.textContent = text;
                 this.contextMenuElement.appendChild(menuItem);
 
@@ -1661,6 +1866,31 @@ export class RufflePlayer extends HTMLElement {
     }
 
     /**
+     * @param footerInfo An array of PanicLinkInfo objects.
+     *
+     * @returns The <ul> element to be used as the error footer
+     */
+    private createErrorFooter(
+        footerInfo: Array<PanicLinkInfo>,
+    ): HTMLUListElement {
+        const errorFooter = document.createElement("ul");
+        for (const linkInfo of footerInfo) {
+            const footerItem = document.createElement("li");
+            const footerLink = document.createElement("a");
+            footerLink.href = linkInfo.url;
+            footerLink.textContent = linkInfo.label;
+            if (linkInfo.url === "#") {
+                footerLink.id = "panic-view-details";
+            } else {
+                footerLink.target = "_top";
+            }
+            footerItem.appendChild(footerLink);
+            errorFooter.appendChild(footerItem);
+        }
+        return errorFooter;
+    }
+
+    /**
      * Panics this specific player, forcefully destroying all resources and displays an error message to the user.
      *
      * This should be called when something went absolutely, incredibly and disastrously wrong and there is no chance
@@ -1736,7 +1966,7 @@ export class RufflePlayer extends HTMLElement {
 
         // Create a link to GitHub with all of the error data, if the build is not outdated.
         // Otherwise, create a link to the downloads section on the Ruffle website.
-        let actionTag;
+        let actionLink: PanicLinkInfo;
         if (!isBuildOutdated) {
             let url;
             if (document.location.protocol.includes("extension")) {
@@ -1766,13 +1996,12 @@ export class RufflePlayer extends HTMLElement {
                 issueBody = encodeURIComponent(errorArray.join(""));
             }
             issueLink += issueBody;
-            actionTag = `<a target="_top" href="${issueLink}">${text(
-                "report-bug",
-            )}</a>`;
+            actionLink = new PanicLinkInfo(issueLink, text("report-bug"));
         } else {
-            actionTag = `<a target="_top" href="${RUFFLE_ORIGIN}#downloads">${text(
-                "update-ruffle",
-            )}</a>`;
+            actionLink = new PanicLinkInfo(
+                RUFFLE_ORIGIN + "#downloads",
+                text("update-ruffle"),
+            );
         }
 
         // Clears out any existing content (ie play button or canvas) and replaces it with the error screen
@@ -1781,144 +2010,129 @@ export class RufflePlayer extends HTMLElement {
             case PanicError.FileProtocol:
                 // General error: Running on the `file:` protocol
                 errorBody = textAsParagraphs("error-file-protocol");
-                errorFooter = `
-                    <li><a target="_top" href="${RUFFLE_ORIGIN}/demo">${text(
-                        "ruffle-demo",
-                    )}</a></li>
-                    <li><a target="_top" href="${RUFFLE_ORIGIN}#downloads">${text(
-                        "ruffle-desktop",
-                    )}</a></li>
-                `;
+                errorFooter = this.createErrorFooter([
+                    new PanicLinkInfo(
+                        RUFFLE_ORIGIN + "/demo",
+                        text("ruffle-demo"),
+                    ),
+                    new PanicLinkInfo(
+                        RUFFLE_ORIGIN + "#downloads",
+                        text("ruffle-desktop"),
+                    ),
+                ]);
                 break;
             case PanicError.JavascriptConfiguration:
                 // General error: Incorrect JavaScript configuration
                 errorBody = textAsParagraphs("error-javascript-config");
-                errorFooter = `
-                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#javascript-api">${text(
-                        "ruffle-wiki",
-                    )}</a></li>
-                    <li><a href="#" id="panic-view-details">${text(
-                        "view-error-details",
-                    )}</a></li>
-                `;
+                errorFooter = this.createErrorFooter([
+                    new PanicLinkInfo(
+                        "https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#javascript-api",
+                        text("ruffle-wiki"),
+                    ),
+                    new PanicLinkInfo(),
+                ]);
                 break;
             case PanicError.WasmNotFound:
                 // Self hosted: Cannot load `.wasm` file - file not found
                 errorBody = textAsParagraphs("error-wasm-not-found");
-                errorFooter = `
-                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configuration-options">${text(
-                        "ruffle-wiki",
-                    )}</a></li>
-                    <li><a href="#" id="panic-view-details">${text(
-                        "view-error-details",
-                    )}</a></li>
-                `;
+                errorFooter = this.createErrorFooter([
+                    new PanicLinkInfo(
+                        "https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configuration-options",
+                        text("ruffle-wiki"),
+                    ),
+                    new PanicLinkInfo(),
+                ]);
                 break;
             case PanicError.WasmMimeType:
                 // Self hosted: Cannot load `.wasm` file - incorrect MIME type
                 errorBody = textAsParagraphs("error-wasm-mime-type");
-                errorFooter = `
-                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-webassembly-mime-type">${text(
-                        "ruffle-wiki",
-                    )}</a></li>
-                    <li><a href="#" id="panic-view-details">${text(
-                        "view-error-details",
-                    )}</a></li>
-                `;
+                errorFooter = this.createErrorFooter([
+                    new PanicLinkInfo(
+                        "https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-webassembly-mime-type",
+                        text("ruffle-wiki"),
+                    ),
+                    new PanicLinkInfo(),
+                ]);
                 break;
             case PanicError.SwfFetchError:
                 errorBody = textAsParagraphs("error-swf-fetch");
-                errorFooter = `
-                    <li><a href="#" id="panic-view-details">${text(
-                        "view-error-details",
-                    )}</a></li>
-                `;
+                errorFooter = this.createErrorFooter([new PanicLinkInfo()]);
                 break;
             case PanicError.SwfCors:
                 // Self hosted: Cannot load SWF file - CORS issues
                 errorBody = textAsParagraphs("error-swf-cors");
-                errorFooter = `
-                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-cors-header">${text(
-                        "ruffle-wiki",
-                    )}</a></li>
-                    <li><a href="#" id="panic-view-details">${text(
-                        "view-error-details",
-                    )}</a></li>
-                `;
+                errorFooter = this.createErrorFooter([
+                    new PanicLinkInfo(
+                        "https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-cors-header",
+                        text("ruffle-wiki"),
+                    ),
+                    new PanicLinkInfo(),
+                ]);
                 break;
             case PanicError.WasmCors:
                 // Self hosted: Cannot load `.wasm` file - CORS issues
                 errorBody = textAsParagraphs("error-wasm-cors");
-                errorFooter = `
-                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-cors-header">${text(
-                        "ruffle-wiki",
-                    )}</a></li>
-                    <li><a href="#" id="panic-view-details">${text(
-                        "view-error-details",
-                    )}</a></li>
-                `;
+                errorFooter = this.createErrorFooter([
+                    new PanicLinkInfo(
+                        "https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-cors-header",
+                        text("ruffle-wiki"),
+                    ),
+                    new PanicLinkInfo(),
+                ]);
                 break;
             case PanicError.InvalidWasm:
                 // Self hosted: Cannot load `.wasm` file - incorrect configuration or missing files
                 errorBody = textAsParagraphs("error-wasm-invalid");
-                errorFooter = `
-                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#addressing-a-compileerror">${text(
-                        "ruffle-wiki",
-                    )}</a></li>
-                    <li><a href="#" id="panic-view-details">${text(
-                        "view-error-details",
-                    )}</a></li>
-                `;
+                errorFooter = this.createErrorFooter([
+                    new PanicLinkInfo(
+                        "https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#addressing-a-compileerror",
+                        text("ruffle-wiki"),
+                    ),
+                    new PanicLinkInfo(),
+                ]);
                 break;
             case PanicError.WasmDownload:
                 // Usually a transient network error or botched deployment
                 errorBody = textAsParagraphs("error-wasm-download");
-                errorFooter = `
-                    <li><a href="#" id="panic-view-details">${text(
-                        "view-error-details",
-                    )}</a></li>
-                `;
+                errorFooter = this.createErrorFooter([new PanicLinkInfo()]);
                 break;
             case PanicError.WasmDisabledMicrosoftEdge:
                 // Self hosted: User has disabled WebAssembly in Microsoft Edge through the
                 // "Enhance your Security on the web" setting.
                 errorBody = textAsParagraphs("error-wasm-disabled-on-edge");
-                errorFooter = `
-                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Frequently-Asked-Questions-For-Users#edge-webassembly-error">${text(
-                        "more-info",
-                    )}</a></li>
-                    <li><a href="#" id="panic-view-details">${text(
-                        "view-error-details",
-                    )}</a></li>
-                `;
+                errorFooter = this.createErrorFooter([
+                    new PanicLinkInfo(
+                        "https://github.com/ruffle-rs/ruffle/wiki/Frequently-Asked-Questions-For-Users#edge-webassembly-error",
+                        text("more-info"),
+                    ),
+                    new PanicLinkInfo(),
+                ]);
                 break;
             case PanicError.JavascriptConflict:
                 // Self hosted: Cannot load `.wasm` file - a native object / function is overriden
                 errorBody = textAsParagraphs("error-javascript-conflict");
                 if (isBuildOutdated) {
-                    errorBody += textAsParagraphs(
-                        "error-javascript-conflict-outdated",
-                        { buildDate: buildInfo.buildDate },
+                    errorBody.appendChild(
+                        textAsParagraphs("error-javascript-conflict-outdated", {
+                            buildDate: buildInfo.buildDate,
+                        }),
                     );
                 }
-                errorFooter = `
-                    <li>${actionTag}</li>
-                    <li><a href="#" id="panic-view-details">${text(
-                        "view-error-details",
-                    )}</a></li>
-                `;
+                errorFooter = this.createErrorFooter([
+                    actionLink,
+                    new PanicLinkInfo(),
+                ]);
                 break;
             case PanicError.CSPConflict:
                 // General error: Cannot load `.wasm` file - a native object / function is overriden
                 errorBody = textAsParagraphs("error-csp-conflict");
-                errorFooter = `
-                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-wasm-csp">${text(
-                        "ruffle-wiki",
-                    )}</a></li>
-                    <li><a href="#" id="panic-view-details">${text(
-                        "view-error-details",
-                    )}</a></li>
-                `;
+                errorFooter = this.createErrorFooter([
+                    new PanicLinkInfo(
+                        "https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-wasm-csp",
+                        text("ruffle-wiki"),
+                    ),
+                    new PanicLinkInfo(),
+                ]);
                 break;
             default:
                 // Unknown error
@@ -1926,23 +2140,28 @@ export class RufflePlayer extends HTMLElement {
                     buildDate: buildInfo.buildDate,
                     outdated: String(isBuildOutdated),
                 });
-                errorFooter = `
-                    <li>${actionTag}</li>
-                    <li><a href="#" id="panic-view-details">${text(
-                        "view-error-details",
-                    )}</a></li>
-                `;
+                errorFooter = this.createErrorFooter([
+                    actionLink,
+                    new PanicLinkInfo(),
+                ]);
                 break;
         }
-        this.container.innerHTML = `
-            <div id="panic">
-                <div id="panic-title">${text("panic-title")}</div>
-                <div id="panic-body">${errorBody}</div>
-                <div id="panic-footer">
-                    <ul>${errorFooter}</ul>
-                </div>
-            </div>
-        `;
+        const panicDiv = document.createElement("div");
+        panicDiv.id = "panic";
+        const panicTitle = document.createElement("div");
+        panicTitle.id = "panic-title";
+        panicTitle.textContent = text("panic-title");
+        panicDiv.appendChild(panicTitle);
+        const panicBody = document.createElement("div");
+        panicBody.id = "panic-body";
+        panicBody.appendChild(errorBody);
+        panicDiv.appendChild(panicBody);
+        const panicFooter = document.createElement("div");
+        panicFooter.id = "panic-footer";
+        panicFooter.appendChild(errorFooter);
+        panicDiv.appendChild(panicFooter);
+        this.container.textContent = "";
+        this.container.appendChild(panicDiv);
         const viewDetails = <HTMLLinkElement>(
             this.container.querySelector("#panic-view-details")
         );
@@ -1966,33 +2185,43 @@ export class RufflePlayer extends HTMLElement {
     }
 
     protected displayRootMovieDownloadFailedMessage(): void {
-        if (isExtension && window.location.origin !== this.swfUrl!.origin) {
+        const openInNewTab = this.loadedConfig?.openInNewTab;
+        if (openInNewTab && window.location.origin !== this.swfUrl!.origin) {
             const url = new URL(this.swfUrl!);
             if (this.loadedConfig?.parameters) {
                 const parameters = sanitizeParameters(
-                    this.loadedConfig.parameters,
+                    this.loadedConfig?.parameters,
                 );
                 Object.entries(parameters).forEach(([key, value]) => {
                     url.searchParams.set(key, value);
                 });
             }
             this.hideSplashScreen();
+
             const div = document.createElement("div");
-            div.id = "message_overlay";
-            div.innerHTML = `<div class="message">
-                ${textAsParagraphs("message-cant-embed")}
-                <div>
-                    <a target="_blank" href="${url}">${text(
-                        "open-in-new-tab",
-                    )}</a>
-                </div>
-            </div>`;
+            div.id = "message-overlay";
+            const innerDiv = document.createElement("div");
+            innerDiv.className = "message";
+            innerDiv.appendChild(textAsParagraphs("message-cant-embed"));
+
+            const buttonDiv = document.createElement("div");
+            const link = document.createElement("a");
+            link.innerText = text("open-in-new-tab");
+            link.onclick = () => openInNewTab(url);
+            buttonDiv.appendChild(link);
+
+            innerDiv.appendChild(buttonDiv);
+            div.appendChild(innerDiv);
             this.container.prepend(div);
         } else {
             const error = new Error("Failed to fetch: " + this.swfUrl);
             if (!this.swfUrl!.protocol.includes("http")) {
                 error.ruffleIndexError = PanicError.FileProtocol;
-            } else if (window.location.origin === this.swfUrl!.origin) {
+            } else if (
+                window.location.origin === this.swfUrl!.origin ||
+                // The extension's internal player page is not restricted by CORS
+                window.location.protocol.includes("extension")
+            ) {
                 error.ruffleIndexError = PanicError.SwfFetchError;
             } else {
                 // This is a selfhosted build of Ruffle that tried to make a cross-origin request
@@ -2009,19 +2238,46 @@ export class RufflePlayer extends HTMLElement {
      */
     protected displayMessage(message: string): void {
         const div = document.createElement("div");
-        div.id = "message_overlay";
-        div.innerHTML = `<div class="message">
-            <p>${message}</p>
-            <div>
-                <button id="continue-btn">${text("continue")}</button>
-            </div>
-        </div>`;
+        div.id = "message-overlay";
+        const messageDiv = document.createElement("div");
+        messageDiv.className = "message";
+        const messageP = document.createElement("p");
+        messageP.textContent = message;
+        messageDiv.appendChild(messageP);
+        const buttonDiv = document.createElement("div");
+        const continueButton = document.createElement("button");
+        continueButton.id = "continue-btn";
+        continueButton.textContent = text("continue");
+        buttonDiv.appendChild(continueButton);
+        messageDiv.appendChild(buttonDiv);
+        div.appendChild(messageDiv);
         this.container.prepend(div);
         (<HTMLButtonElement>(
             this.container.querySelector("#continue-btn")
         )).onclick = () => {
             div.parentNode!.removeChild(div);
         };
+    }
+
+    /**
+     * Show a video that uses an unsupported codec in a pop up.
+     *
+     * @param url The url of the video to be shown over the canvas.
+     */
+    protected displayUnsupportedVideo(url: string): void {
+        const videoHolder = this.videoModal.querySelector("#video-holder");
+        if (videoHolder) {
+            const video = document.createElement("video");
+            video.addEventListener("contextmenu", (event) =>
+                event.stopPropagation(),
+            );
+            video.src = url;
+            video.autoplay = true;
+            video.controls = true;
+            videoHolder.textContent = "";
+            videoHolder.appendChild(video);
+            this.videoModal.classList.remove("hidden");
+        }
     }
 
     protected debugPlayerInfo(): string {
@@ -2194,4 +2450,27 @@ export function isFallbackElement(elem: Element): boolean {
         parent = parent.parentElement;
     }
     return false;
+}
+
+/**
+ * The volume controls of the Ruffle web GUI.
+ */
+class VolumeControls {
+    isMuted: boolean;
+    volume: number;
+
+    constructor(isMuted: boolean, volume: number) {
+        this.isMuted = isMuted;
+        this.volume = volume;
+    }
+
+    /**
+     * Returns the volume between 0 and 1 (calculated out of the
+     * checkbox and the slider).
+     *
+     * @returns The volume between 0 and 1.
+     */
+    public get_volume(): number {
+        return !this.isMuted ? this.volume / 100 : 0;
+    }
 }

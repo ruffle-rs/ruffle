@@ -327,6 +327,14 @@ pub fn str_split<'a, P: Pattern<'a>>(string: &'a WStr, pattern: P) -> Split<'a, 
     }
 }
 
+pub fn str_split_once<'a, P: Pattern<'a>>(
+    string: &'a WStr,
+    pattern: P,
+) -> Option<(&'a WStr, &'a WStr)> {
+    let (start, end) = pattern.into_searcher(string).next_match()?;
+    Some((&string[..start], &string[end..]))
+}
+
 pub fn str_rsplit_once<'a, P: Pattern<'a>>(
     string: &'a WStr,
     pattern: P,

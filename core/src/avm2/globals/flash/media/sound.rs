@@ -2,12 +2,13 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::object::{Object, QueuedPlay, SoundChannelObject, TObject};
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::backend::navigator::Request;
 use crate::character::Character;
 use crate::display_object::SoundTransform;
-use crate::{avm2_stub_constructor, avm2_stub_getter, avm2_stub_method};
+use crate::{avm2_stub_getter, avm2_stub_method};
 use swf::{SoundEvent, SoundInfo};
 
 pub use crate::avm2::object::sound_allocator;
@@ -18,10 +19,6 @@ pub fn init<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if !args.is_empty() {
-        avm2_stub_constructor!(activation, "flash.media.Sound", "with arguments");
-    }
-
     if let Some(sound_object) = this.as_sound_object() {
         let class_object = this
             .instance_of()
@@ -45,6 +42,10 @@ pub fn init<'gc>(
                 tracing::warn!("Attempted to construct subclass of Sound, {}, which is associated with non-Sound character {}", class_object.inner_class_definition().read().name().local_name(), symbol);
             }
         }
+    }
+
+    if args.try_get_object(activation, 0).is_some() {
+        this.call_public_property("load", args, activation)?;
     }
 
     Ok(Value::Undefined)
@@ -244,8 +245,8 @@ pub fn load<'gc>(
         .coerce_to_string(activation)?;
 
     // TODO: context parameter currently unused.
-    let _sound_context = args.get(1);
-    if _sound_context.is_some() {
+    let sound_context = args.try_get_object(activation, 1);
+    if sound_context.is_some() {
         avm2_stub_method!(activation, "flash.media.Sound", "load", "with context");
     }
 
@@ -263,14 +264,26 @@ pub fn load<'gc>(
 /// `Sound.loadCompressedDataFromByteArray`
 pub fn load_compressed_data_from_byte_array<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    this: Object<'gc>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(
-        activation,
-        "flash.media.Sound",
-        "loadCompressedDataFromByteArray"
-    );
+    let bytearray = args.get_object(activation, 0, "bytes")?;
+    let bytes_length = args.get_u32(activation, 1)?;
+    let bytearray = bytearray.as_bytearray().unwrap();
+
+    // FIXME - determine the actual errors thrown by Flash Player
+    let bytes = bytearray.read_bytes(bytes_length as usize).map_err(|e| {
+        Error::RustError(format!("Missing bytes from sound bytearray: {e:?}").into())
+    })?;
+
+    let handle = activation.context.audio.register_mp3(bytes).map_err(|e| {
+        Error::RustError(format!("Failed to register sound from bytearray: {e:?}").into())
+    })?;
+
+    this.as_sound_object()
+        .unwrap()
+        .set_sound(&mut activation.context, handle)?;
+
     Ok(Value::Undefined)
 }
 

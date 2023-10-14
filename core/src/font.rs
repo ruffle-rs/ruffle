@@ -1,11 +1,11 @@
 use crate::html::TextSpan;
 use crate::prelude::*;
 use crate::string::WStr;
-use gc_arena::{Collect, Gc, MutationContext};
+use gc_arena::{Collect, Gc, Mutation};
 use ruffle_render::backend::null::NullBitmapSource;
 use ruffle_render::backend::{RenderBackend, ShapeHandle};
 use ruffle_render::transform::Transform;
-use std::cell::{Ref, RefCell};
+use std::cell::RefCell;
 use std::cmp::max;
 
 pub use swf::TextGridFit;
@@ -16,8 +16,7 @@ pub fn round_down_to_pixel(t: Twips) -> Twips {
 }
 
 /// Parameters necessary to evaluate a font.
-#[derive(Copy, Clone, Debug, Collect)]
-#[collect(require_static)]
+#[derive(Copy, Clone, Debug)]
 pub struct EvalParameters {
     /// The height of each glyph, equivalent to a font size.
     height: Twips,
@@ -61,48 +60,107 @@ impl EvalParameters {
     }
 }
 
+#[derive(Debug)]
+pub enum GlyphSource {
+    Memory {
+        /// The list of glyphs defined in the font.
+        /// Used directly by `DefineText` tags.
+        glyphs: Vec<Glyph>,
+
+        /// A map from a Unicode code point to glyph in the `glyphs` array.
+        /// Used by `DefineEditText` tags.
+        code_point_to_glyph: fnv::FnvHashMap<u16, usize>,
+
+        /// Kerning infomration.
+        /// Maps from a pair of unicode code points to horizontal offset value.
+        kerning_pairs: fnv::FnvHashMap<(u16, u16), Twips>,
+    },
+    Empty,
+}
+
+impl GlyphSource {
+    pub fn get_by_index(&self, index: usize) -> Option<&Glyph> {
+        match self {
+            GlyphSource::Memory { glyphs, .. } => glyphs.get(index),
+            GlyphSource::Empty => None,
+        }
+    }
+
+    pub fn get_by_code_point(&self, code_point: char) -> Option<&Glyph> {
+        match self {
+            GlyphSource::Memory {
+                glyphs,
+                code_point_to_glyph,
+                ..
+            } => {
+                // TODO: Properly handle UTF-16/out-of-bounds code points.
+                let code_point = code_point as u16;
+                if let Some(index) = code_point_to_glyph.get(&code_point) {
+                    glyphs.get(*index)
+                } else {
+                    None
+                }
+            }
+            GlyphSource::Empty => None,
+        }
+    }
+
+    pub fn has_kerning_info(&self) -> bool {
+        match self {
+            GlyphSource::Memory { kerning_pairs, .. } => !kerning_pairs.is_empty(),
+            GlyphSource::Empty => false,
+        }
+    }
+
+    pub fn get_kerning_offset(&self, left: char, right: char) -> Twips {
+        match self {
+            GlyphSource::Memory { kerning_pairs, .. } => {
+                // TODO: Properly handle UTF-16/out-of-bounds code points.
+                let left_code_point = left as u16;
+                let right_code_point = right as u16;
+                kerning_pairs
+                    .get(&(left_code_point, right_code_point))
+                    .cloned()
+                    .unwrap_or_default()
+            }
+            GlyphSource::Empty => Twips::ZERO,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct Font<'gc>(Gc<'gc, FontData>);
 
-#[derive(Debug, Clone, Collect)]
+#[derive(Debug, Collect)]
 #[collect(require_static)]
 struct FontData {
-    /// The list of glyphs defined in the font.
-    /// Used directly by `DefineText` tags.
-    glyphs: Vec<Glyph>,
-
-    /// A map from a Unicode code point to glyph in the `glyphs` array.
-    /// Used by `DefineEditText` tags.
-    code_point_to_glyph: fnv::FnvHashMap<u16, usize>,
+    glyphs: GlyphSource,
 
     /// The scaling applied to the font height to render at the proper size.
     /// This depends on the DefineFont tag version.
     scale: f32,
 
-    /// Kerning infomration.
-    /// Maps from a pair of unicode code points to horizontal offset value.
-    kerning_pairs: fnv::FnvHashMap<(u16, u16), Twips>,
-
     /// The distance from the top of each glyph to the baseline of the font, in
     /// EM-square coordinates.
-    ascent: u16,
+    ascent: i16,
 
     /// The distance from the baseline of the font to the bottom of each glyph,
     /// in EM-square coordinates.
-    descent: u16,
+    descent: i16,
 
     /// The distance between the bottom of any one glyph and the top of
     /// another, in EM-square coordinates.
     leading: i16,
 
     /// The identity of the font.
+    #[collect(require_static)]
     descriptor: FontDescriptor,
 }
 
 impl<'gc> Font<'gc> {
     pub fn from_swf_tag(
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         renderer: &mut dyn RenderBackend,
         tag: swf::Font,
         encoding: &'static swf::Encoding,
@@ -111,12 +169,12 @@ impl<'gc> Font<'gc> {
 
         let descriptor = FontDescriptor::from_swf_tag(&tag, encoding);
         let (ascent, descent, leading) = if let Some(layout) = &tag.layout {
-            (layout.ascent, layout.descent, layout.leading)
+            (layout.ascent as i16, layout.descent as i16, layout.leading)
         } else {
             (0, 0, 0)
         };
 
-        let glyphs = tag
+        let glyphs: Vec<Glyph> = tag
             .glyphs
             .into_iter()
             .enumerate()
@@ -126,8 +184,8 @@ impl<'gc> Font<'gc> {
 
                 let glyph = Glyph {
                     shape_handle: None.into(),
-                    shape: None.into(),
-                    swf_glyph,
+                    advance: Twips::new(swf_glyph.advance.into()),
+                    shape: GlyphShape::Swf(RefCell::new(SwfGlyphOrShape::Glyph(swf_glyph))),
                 };
 
                 // Eager-load ASCII characters.
@@ -152,13 +210,19 @@ impl<'gc> Font<'gc> {
         Font(Gc::new(
             gc_context,
             FontData {
-                glyphs,
-                code_point_to_glyph,
+                glyphs: if glyphs.is_empty() {
+                    GlyphSource::Empty
+                } else {
+                    GlyphSource::Memory {
+                        glyphs,
+                        code_point_to_glyph,
+                        kerning_pairs,
+                    }
+                },
 
-                /// DefineFont3 stores coordinates at 20x the scale of DefineFont1/2.
-                /// (SWF19 p.164)
+                // DefineFont3 stores coordinates at 20x the scale of DefineFont1/2.
+                // (SWF19 p.164)
                 scale: if tag.version >= 3 { 20480.0 } else { 1024.0 },
-                kerning_pairs,
                 ascent,
                 descent,
                 leading,
@@ -170,25 +234,19 @@ impl<'gc> Font<'gc> {
     /// Returns whether this font contains glyph shapes.
     /// If not, this font should be rendered as a device font.
     pub fn has_glyphs(&self) -> bool {
-        !self.0.glyphs.is_empty()
+        !matches!(self.0.glyphs, GlyphSource::Empty)
     }
 
     /// Returns a glyph entry by index.
     /// Used by `Text` display objects.
     pub fn get_glyph(&self, i: usize) -> Option<&Glyph> {
-        self.0.glyphs.get(i)
+        self.0.glyphs.get_by_index(i)
     }
 
     /// Returns a glyph entry by character.
     /// Used by `EditText` display objects.
     pub fn get_glyph_for_char(&self, c: char) -> Option<&Glyph> {
-        // TODO: Properly handle UTF-16/out-of-bounds code points.
-        let code_point = c as u16;
-        if let Some(index) = self.0.code_point_to_glyph.get(&code_point) {
-            self.get_glyph(*index)
-        } else {
-            None
-        }
+        self.0.glyphs.get_by_code_point(c)
     }
 
     /// Determine if this font contains all the glyphs within a given string.
@@ -203,18 +261,16 @@ impl<'gc> Font<'gc> {
         true
     }
 
+    /// Returns whether this font contains kerning information.
+    pub fn has_kerning_info(&self) -> bool {
+        self.0.glyphs.has_kerning_info()
+    }
+
     /// Given a pair of characters, applies the offset that should be applied
     /// to the advance value between these two characters.
     /// Returns 0 twips if no kerning offset exists between these two characters.
     pub fn get_kerning_offset(&self, left: char, right: char) -> Twips {
-        // TODO: Properly handle UTF-16/out-of-bounds code points.
-        let left_code_point = left as u16;
-        let right_code_point = right as u16;
-        self.0
-            .kerning_pairs
-            .get(&(left_code_point, right_code_point))
-            .cloned()
-            .unwrap_or_default()
+        self.0.glyphs.get_kerning_offset(left, right)
     }
 
     /// Return the leading for this font at a given height.
@@ -236,11 +292,6 @@ impl<'gc> Font<'gc> {
         let scale = height.get() as f32 / self.scale();
 
         Twips::new((self.0.descent as f32 * scale) as i32)
-    }
-
-    /// Returns whether this font contains kerning information.
-    pub fn has_kerning_info(&self) -> bool {
-        !self.0.kerning_pairs.is_empty()
     }
 
     pub fn scale(&self) -> f32 {
@@ -275,7 +326,7 @@ impl<'gc> Font<'gc> {
         while let Some((pos, c)) = char_indices.next() {
             let c = c.unwrap_or(char::REPLACEMENT_CHARACTER);
             if let Some(glyph) = self.get_glyph_for_char(c) {
-                let mut advance = Twips::new(glyph.swf_glyph.advance.into());
+                let mut advance = glyph.advance();
                 if has_kerning_info && params.kerning {
                     let next_char = char_indices.peek().cloned().unwrap_or((0, Ok('\0'))).1;
                     let next_char = next_char.unwrap_or(char::REPLACEMENT_CHARACTER);
@@ -419,36 +470,76 @@ impl<'gc> Font<'gc> {
 }
 
 #[derive(Debug, Clone)]
+enum SwfGlyphOrShape {
+    Glyph(swf::Glyph),
+    Shape(swf::Shape),
+}
+
+impl SwfGlyphOrShape {
+    pub fn shape(&mut self) -> &mut swf::Shape {
+        if let SwfGlyphOrShape::Glyph(glyph) = self {
+            *self = SwfGlyphOrShape::Shape(ruffle_render::shape_utils::swf_glyph_to_shape(glyph));
+        }
+
+        match self {
+            SwfGlyphOrShape::Shape(shape) => shape,
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+enum GlyphShape {
+    Swf(RefCell<SwfGlyphOrShape>),
+}
+
+impl GlyphShape {
+    pub fn hit_test(&self, point: Point<Twips>, local_matrix: &Matrix) -> bool {
+        match self {
+            GlyphShape::Swf(glyph) => {
+                let mut glyph = glyph.borrow_mut();
+                let shape = glyph.shape();
+                shape.shape_bounds.contains(point)
+                    && ruffle_render::shape_utils::shape_hit_test(shape, point, local_matrix)
+            }
+        }
+    }
+
+    pub fn register(&self, renderer: &mut dyn RenderBackend) -> Option<ShapeHandle> {
+        match self {
+            GlyphShape::Swf(glyph) => {
+                let mut glyph = glyph.borrow_mut();
+                Some(renderer.register_shape((&*glyph.shape()).into(), &NullBitmapSource))
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct Glyph {
     // Handle to registered shape.
     // If None, it'll be loaded lazily on first render of this glyph.
-    shape_handle: RefCell<Option<ShapeHandle>>,
+    // It's a double option; the outer one is "have we registered", the inner one is option because it may not exist
+    shape_handle: RefCell<Option<Option<ShapeHandle>>>,
 
-    // Same shape as one in swf_glyph, but wrapped in an swf::Shape;
-    // For use in hit tests. Created lazily on first use.
-    // (todo: refactor hit tests to not require this?
-    // this literally copies the shape_record, which is wasteful...)
-    shape: RefCell<Option<swf::Shape>>,
-
-    // The underlying glyph record, containing its shape.
-    swf_glyph: swf::Glyph,
+    shape: GlyphShape,
+    advance: Twips,
 }
 
 impl Glyph {
-    pub fn as_shape(&self) -> Ref<'_, swf::Shape> {
-        self.shape
-            .borrow_mut()
-            .get_or_insert_with(|| ruffle_render::shape_utils::swf_glyph_to_shape(&self.swf_glyph));
-        Ref::map(self.shape.borrow(), |s| s.as_ref().unwrap())
-    }
-
-    pub fn shape_handle(&self, renderer: &mut dyn RenderBackend) -> ShapeHandle {
+    pub fn shape_handle(&self, renderer: &mut dyn RenderBackend) -> Option<ShapeHandle> {
         self.shape_handle
             .borrow_mut()
-            .get_or_insert_with(|| {
-                renderer.register_shape((&*self.as_shape()).into(), &NullBitmapSource)
-            })
+            .get_or_insert_with(|| self.shape.register(renderer))
             .clone()
+    }
+
+    pub fn hit_test(&self, point: Point<Twips>, local_matrix: &Matrix) -> bool {
+        self.shape.hit_test(point, local_matrix)
+    }
+
+    pub fn advance(&self) -> Twips {
+        self.advance
     }
 }
 
@@ -508,8 +599,7 @@ impl FontDescriptor {
 /// This is controlled by the "Anti-alias" setting in the Flash IDE.
 /// Using "Anti-alias for readibility" switches to the "Advanced" text
 /// rendering engine.
-#[derive(Debug, PartialEq, Clone, Collect)]
-#[collect(require_static)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TextRenderSettings {
     /// This text should render with the standard rendering engine.
     /// Set via "Anti-alias for animation" in the Flash IDE.
@@ -690,13 +780,13 @@ mod tests {
     use crate::font::{EvalParameters, Font};
     use crate::player::Player;
     use crate::string::WStr;
-    use gc_arena::{rootless_arena, MutationContext};
+    use gc_arena::{rootless_arena, Mutation};
     use ruffle_render::backend::{null::NullRenderer, ViewportDimensions};
     use swf::Twips;
 
     fn with_device_font<F>(callback: F)
     where
-        F: for<'gc> FnOnce(MutationContext<'gc, '_>, Font<'gc>),
+        F: for<'gc> FnOnce(&Mutation<'gc>, Font<'gc>),
     {
         rootless_arena(|mc| {
             let mut renderer = NullRenderer::new(ViewportDimensions {

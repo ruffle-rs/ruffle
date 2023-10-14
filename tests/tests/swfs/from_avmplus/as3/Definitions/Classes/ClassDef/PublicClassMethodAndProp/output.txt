@@ -1,0 +1,20 @@
+*** Access default method of a class *** PASSED!
+Obj.setArray(arr), Obj.getArray() PASSED!
+*** Access public method of a class *** PASSED!
+Obj.setPubBoolean(b), Obj.getPubBoolean() PASSED!
+*** Access static method of a class *** PASSED!
+Obj.setStatFunction(f), Obj.getStatFunction() PASSED!
+*** Access private static method of a class *** PASSED!
+Obj.setPrivStatString(s), Obj.getPrivStatString PASSED!
+*** Access public static method of a class *** PASSED!
+AccPubClassMAndP.setPubStatObject(ob), AccPubClassMAndP.getPubStatObject() PASSED!
+*** Access final method of a class *** PASSED!
+Obj.setFinNumber(10), Obj.getFinNumber() PASSED!
+*** Access public final method of a class *** PASSED!
+Obj.setPubFinArray(arr), Obj.getPubFinArray() PASSED!
+*** Access public property of a class *** PASSED!
+Obj.pubBoolean = true, Obj.pubBoolean PASSED!
+*** Access public satic property of a class *** PASSED!
+AccPubClassMAndP.pubStatObject = ob, AccPubClassMAndP.pubStatObject PASSED!
+*** Access public final property of a class *** PASSED!
+Obj.pubFinArray = arr, Obj.pubFinArray PASSED!

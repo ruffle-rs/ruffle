@@ -1,0 +1,7 @@
+String.prototype.valueOf.length PASSED!
+String.prototype.valueOf() PASSED!
+(new String()).valueOf() PASSED!
+(new String("")).valueOf() PASSED!
+(new String( String() )).valueOf() PASSED!
+(new String( "h e l l o" )).valueOf() PASSED!
+(new String( 0 )).valueOf() PASSED!

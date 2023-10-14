@@ -20,6 +20,7 @@ use ruffle_core::debug_ui::Message as DebugMessage;
 use ruffle_core::Player;
 use std::collections::HashMap;
 use std::fs;
+use std::sync::MutexGuard;
 use sys_locale::get_locale;
 use unic_langid::LanguageIdentifier;
 use winit::event_loop::EventLoopProxy;
@@ -64,6 +65,8 @@ pub const MENU_HEIGHT: u32 = 24;
 pub struct RuffleGui {
     event_loop: EventLoopProxy<RuffleEvent>,
     is_about_visible: bool,
+    is_volume_visible: bool,
+    volume_controls: VolumeControls,
     is_open_dialog_visible: bool,
     context_menu: Vec<ruffle_core::ContextMenuItem>,
     open_dialog: OpenDialog,
@@ -89,6 +92,8 @@ impl RuffleGui {
 
         Self {
             is_about_visible: false,
+            is_volume_visible: false,
+            volume_controls: VolumeControls::new(false, default_player_options.volume * 100.0),
             is_open_dialog_visible: false,
             was_suspended_before_debug: false,
 
@@ -148,6 +153,10 @@ impl RuffleGui {
                     }
                 });
             }
+
+            self.volume_window(egui_ctx, Some(player));
+        } else {
+            self.volume_window(egui_ctx, None);
         }
 
         if !self.context_menu.is_empty() {
@@ -164,7 +173,12 @@ impl RuffleGui {
     }
 
     /// Notifies the GUI that a new player was created.
-    fn on_player_created(&mut self, opt: PlayerOptions, movie_url: Url) {
+    fn on_player_created(
+        &mut self,
+        opt: PlayerOptions,
+        movie_url: Url,
+        mut player: MutexGuard<Player>,
+    ) {
         self.currently_opened = Some((movie_url.clone(), opt.clone()));
 
         // Update dialog state to reflect the newly-opened movie's options.
@@ -175,6 +189,8 @@ impl RuffleGui {
             self.event_loop.clone(),
             self.locale.clone(),
         );
+
+        player.set_volume(self.volume_controls.get_volume());
     }
 
     /// Renders the main menu bar at the top of the window.
@@ -255,6 +271,9 @@ impl RuffleGui {
                             }
                         }
                     });
+                    if Button::new(text(&self.locale, "controls-menu-volume")).ui(ui).clicked() {
+                        self.show_volume_screen(ui);
+                    }
                 });
                 menu::menu_button(ui, text(&self.locale, "debug-menu"), |ui| {
                     ui.add_enabled_ui(player.is_some(), |ui| {
@@ -306,6 +325,7 @@ impl RuffleGui {
         });
     }
 
+    /// Renders the About Ruffle window.
     fn about_window(&mut self, egui_ctx: &egui::Context) {
         egui::Window::new(text(&self.locale, "about-ruffle"))
             .collapsible(false)
@@ -392,6 +412,40 @@ impl RuffleGui {
             });
     }
 
+    /// Renders the volume controls window.
+    fn volume_window(&mut self, egui_ctx: &egui::Context, player: Option<&mut Player>) {
+        egui::Window::new(text(&self.locale, "volume-controls"))
+            .collapsible(false)
+            .resizable(false)
+            .anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO)
+            .open(&mut self.is_volume_visible)
+            .show(egui_ctx, |ui| {
+                let mut changed_slider = false;
+
+                let changed_checkbox = ui
+                    .checkbox(
+                        &mut self.volume_controls.is_muted,
+                        text(&self.locale, "volume-controls-mute"),
+                    )
+                    .changed();
+
+                ui.add_enabled_ui(!self.volume_controls.is_muted, |ui| {
+                    ui.horizontal(|ui| {
+                        ui.label(text(&self.locale, "volume-controls-volume"));
+                        changed_slider = ui
+                            .add(Slider::new(&mut self.volume_controls.volume, 0.0..=100.0))
+                            .changed();
+                    });
+                });
+
+                if changed_checkbox || changed_slider {
+                    if let Some(player) = player {
+                        player.set_volume(self.volume_controls.get_volume());
+                    }
+                }
+            });
+    }
+
     /// Renders the right-click context menu.
     fn context_menu(&mut self, egui_ctx: &egui::Context) {
         let mut item_clicked = false;
@@ -410,7 +464,9 @@ impl RuffleGui {
                     let clicked = if item.checked {
                         Checkbox::new(&mut true, &item.caption).ui(ui).clicked()
                     } else {
-                        Button::new(&item.caption).ui(ui).clicked()
+                        let button = Button::new(&item.caption).wrap(false);
+
+                        ui.add_enabled(item.enabled, button).clicked()
                     };
                     if clicked {
                         let _ = self
@@ -480,5 +536,32 @@ impl RuffleGui {
     fn show_about_screen(&mut self, ui: &mut egui::Ui) {
         self.is_about_visible = true;
         ui.close_menu();
+    }
+
+    fn show_volume_screen(&mut self, ui: &mut egui::Ui) {
+        self.is_volume_visible = true;
+        ui.close_menu();
+    }
+}
+
+/// The volume controls of the Ruffle GUI.
+pub struct VolumeControls {
+    is_muted: bool,
+    volume: f32,
+}
+
+impl VolumeControls {
+    fn new(is_muted: bool, volume: f32) -> Self {
+        Self { is_muted, volume }
+    }
+
+    /// Returns the volume between 0 and 1 (calculated out of the
+    /// checkbox and the slider).
+    fn get_volume(&self) -> f32 {
+        if !self.is_muted {
+            self.volume / 100.0
+        } else {
+            0.0
+        }
     }
 }

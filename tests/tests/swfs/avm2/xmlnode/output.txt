@@ -1,0 +1,3542 @@
+// var test = new XMLNode(XMLNodeType.ELEMENT_NODE, "test")
+// test
+<test><list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list><contact:mailbox>foo@example.org</contact:mailbox></test>
+
+// test.attributes
+(empty)
+
+// test.childNodes
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>,<contact:mailbox>foo@example.org</contact:mailbox>
+
+// test.firstChild
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.lastChild
+<contact:mailbox>foo@example.org</contact:mailbox>
+
+// test.localName
+test
+
+// test.namespaceURI
+null
+
+// test.nextSibling
+null
+
+// test.nodeName
+test
+
+// test.nodeType
+1
+
+// test.nodeValue
+null
+
+// test.parentNode
+null
+
+// test.prefix
+
+
+// test.previousSibling
+null
+
+// test.childNodes[0]
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.childNodes[0].attributes
+(empty)
+
+// test.childNodes[0].childNodes
+<item first="true" id="a">first item! &lt;3</item>,<item first="false" id="b">&amp; me too!</item>,<item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item>,<item first="false" id="d">I should be fourth! :&gt;</item>
+
+// test.childNodes[0].firstChild
+<item first="true" id="a">first item! &lt;3</item>
+
+// test.childNodes[0].lastChild
+<item first="false" id="d">I should be fourth! :&gt;</item>
+
+// test.childNodes[0].localName
+list
+
+// test.childNodes[0].namespaceURI
+null
+
+// test.childNodes[0].nextSibling
+<contact:mailbox>foo@example.org</contact:mailbox>
+
+// test.childNodes[0].nodeName
+list
+
+// test.childNodes[0].nodeType
+1
+
+// test.childNodes[0].nodeValue
+null
+
+// test.childNodes[0].parentNode
+<test><list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list><contact:mailbox>foo@example.org</contact:mailbox></test>
+
+// test.childNodes[0].prefix
+
+
+// test.childNodes[0].previousSibling
+null
+
+// test.childNodes[0].childNodes[0]
+<item first="true" id="a">first item! &lt;3</item>
+
+// test.childNodes[0].childNodes[0].attributes
+(empty)
+
+// test.childNodes[0].childNodes[0].childNodes
+first item! &lt;3
+
+// test.childNodes[0].childNodes[0].firstChild
+first item! &lt;3
+
+// test.childNodes[0].childNodes[0].lastChild
+first item! &lt;3
+
+// test.childNodes[0].childNodes[0].localName
+item
+
+// test.childNodes[0].childNodes[0].namespaceURI
+null
+
+// test.childNodes[0].childNodes[0].nextSibling
+<item first="false" id="b">&amp; me too!</item>
+
+// test.childNodes[0].childNodes[0].nodeName
+item
+
+// test.childNodes[0].childNodes[0].nodeType
+1
+
+// test.childNodes[0].childNodes[0].nodeValue
+null
+
+// test.childNodes[0].childNodes[0].parentNode
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.childNodes[0].childNodes[0].prefix
+
+
+// test.childNodes[0].childNodes[0].previousSibling
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0]
+first item! &lt;3
+
+// test.childNodes[0].childNodes[0].childNodes[0].attributes
+(empty)
+
+// test.childNodes[0].childNodes[0].childNodes[0].childNodes
+
+
+// test.childNodes[0].childNodes[0].childNodes[0].firstChild
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].lastChild
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].localName
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].namespaceURI
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].nextSibling
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].nodeName
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].nodeType
+3
+
+// test.childNodes[0].childNodes[0].childNodes[0].nodeValue
+first item! <3
+
+// test.childNodes[0].childNodes[0].childNodes[0].parentNode
+<item first="true" id="a">first item! &lt;3</item>
+
+// test.childNodes[0].childNodes[0].childNodes[0].prefix
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].previousSibling
+null
+
+// test.childNodes[0].childNodes[1]
+<item first="false" id="b">&amp; me too!</item>
+
+// test.childNodes[0].childNodes[1].attributes
+(empty)
+
+// test.childNodes[0].childNodes[1].childNodes
+&amp; me too!
+
+// test.childNodes[0].childNodes[1].firstChild
+&amp; me too!
+
+// test.childNodes[0].childNodes[1].lastChild
+&amp; me too!
+
+// test.childNodes[0].childNodes[1].localName
+item
+
+// test.childNodes[0].childNodes[1].namespaceURI
+null
+
+// test.childNodes[0].childNodes[1].nextSibling
+<item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item>
+
+// test.childNodes[0].childNodes[1].nodeName
+item
+
+// test.childNodes[0].childNodes[1].nodeType
+1
+
+// test.childNodes[0].childNodes[1].nodeValue
+null
+
+// test.childNodes[0].childNodes[1].parentNode
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.childNodes[0].childNodes[1].prefix
+
+
+// test.childNodes[0].childNodes[1].previousSibling
+<item first="true" id="a">first item! &lt;3</item>
+
+// test.childNodes[0].childNodes[1].childNodes[0]
+&amp; me too!
+
+// test.childNodes[0].childNodes[1].childNodes[0].attributes
+(empty)
+
+// test.childNodes[0].childNodes[1].childNodes[0].childNodes
+
+
+// test.childNodes[0].childNodes[1].childNodes[0].firstChild
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].lastChild
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].localName
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].namespaceURI
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].nextSibling
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].nodeName
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].nodeType
+3
+
+// test.childNodes[0].childNodes[1].childNodes[0].nodeValue
+& me too!
+
+// test.childNodes[0].childNodes[1].childNodes[0].parentNode
+<item first="false" id="b">&amp; me too!</item>
+
+// test.childNodes[0].childNodes[1].childNodes[0].prefix
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].previousSibling
+null
+
+// test.childNodes[0].childNodes[2]
+<item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item>
+
+// test.childNodes[0].childNodes[2].attributes
+(empty)
+
+// test.childNodes[0].childNodes[2].childNodes
+I was &quot;insertedBefore()&quot;&apos;d!
+
+// test.childNodes[0].childNodes[2].firstChild
+I was &quot;insertedBefore()&quot;&apos;d!
+
+// test.childNodes[0].childNodes[2].lastChild
+I was &quot;insertedBefore()&quot;&apos;d!
+
+// test.childNodes[0].childNodes[2].localName
+item
+
+// test.childNodes[0].childNodes[2].namespaceURI
+null
+
+// test.childNodes[0].childNodes[2].nextSibling
+<item first="false" id="d">I should be fourth! :&gt;</item>
+
+// test.childNodes[0].childNodes[2].nodeName
+item
+
+// test.childNodes[0].childNodes[2].nodeType
+1
+
+// test.childNodes[0].childNodes[2].nodeValue
+null
+
+// test.childNodes[0].childNodes[2].parentNode
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.childNodes[0].childNodes[2].prefix
+
+
+// test.childNodes[0].childNodes[2].previousSibling
+<item first="false" id="b">&amp; me too!</item>
+
+// test.childNodes[0].childNodes[2].childNodes[0]
+I was &quot;insertedBefore()&quot;&apos;d!
+
+// test.childNodes[0].childNodes[2].childNodes[0].attributes
+(empty)
+
+// test.childNodes[0].childNodes[2].childNodes[0].childNodes
+
+
+// test.childNodes[0].childNodes[2].childNodes[0].firstChild
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].lastChild
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].localName
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].namespaceURI
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].nextSibling
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].nodeName
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].nodeType
+3
+
+// test.childNodes[0].childNodes[2].childNodes[0].nodeValue
+I was "insertedBefore()"'d!
+
+// test.childNodes[0].childNodes[2].childNodes[0].parentNode
+<item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item>
+
+// test.childNodes[0].childNodes[2].childNodes[0].prefix
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].previousSibling
+null
+
+// test.childNodes[0].childNodes[3]
+<item first="false" id="d">I should be fourth! :&gt;</item>
+
+// test.childNodes[0].childNodes[3].attributes
+(empty)
+
+// test.childNodes[0].childNodes[3].childNodes
+I should be fourth! :&gt;
+
+// test.childNodes[0].childNodes[3].firstChild
+I should be fourth! :&gt;
+
+// test.childNodes[0].childNodes[3].lastChild
+I should be fourth! :&gt;
+
+// test.childNodes[0].childNodes[3].localName
+item
+
+// test.childNodes[0].childNodes[3].namespaceURI
+null
+
+// test.childNodes[0].childNodes[3].nextSibling
+null
+
+// test.childNodes[0].childNodes[3].nodeName
+item
+
+// test.childNodes[0].childNodes[3].nodeType
+1
+
+// test.childNodes[0].childNodes[3].nodeValue
+null
+
+// test.childNodes[0].childNodes[3].parentNode
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.childNodes[0].childNodes[3].prefix
+
+
+// test.childNodes[0].childNodes[3].previousSibling
+<item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item>
+
+// test.childNodes[0].childNodes[3].childNodes[0]
+I should be fourth! :&gt;
+
+// test.childNodes[0].childNodes[3].childNodes[0].attributes
+(empty)
+
+// test.childNodes[0].childNodes[3].childNodes[0].childNodes
+
+
+// test.childNodes[0].childNodes[3].childNodes[0].firstChild
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].lastChild
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].localName
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].namespaceURI
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].nextSibling
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].nodeName
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].nodeType
+3
+
+// test.childNodes[0].childNodes[3].childNodes[0].nodeValue
+I should be fourth! :>
+
+// test.childNodes[0].childNodes[3].childNodes[0].parentNode
+<item first="false" id="d">I should be fourth! :&gt;</item>
+
+// test.childNodes[0].childNodes[3].childNodes[0].prefix
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].previousSibling
+null
+
+// test.childNodes[1]
+<contact:mailbox>foo@example.org</contact:mailbox>
+
+// test.childNodes[1].attributes
+(empty)
+
+// test.childNodes[1].childNodes
+foo@example.org
+
+// test.childNodes[1].firstChild
+foo@example.org
+
+// test.childNodes[1].lastChild
+foo@example.org
+
+// test.childNodes[1].localName
+mailbox
+
+// test.childNodes[1].namespaceURI
+null
+
+// test.childNodes[1].nextSibling
+null
+
+// test.childNodes[1].nodeName
+contact:mailbox
+
+// test.childNodes[1].nodeType
+1
+
+// test.childNodes[1].nodeValue
+null
+
+// test.childNodes[1].parentNode
+<test><list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list><contact:mailbox>foo@example.org</contact:mailbox></test>
+
+// test.childNodes[1].prefix
+contact
+
+// test.childNodes[1].previousSibling
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.childNodes[1].childNodes[0]
+foo@example.org
+
+// test.childNodes[1].childNodes[0].attributes
+(empty)
+
+// test.childNodes[1].childNodes[0].childNodes
+
+
+// test.childNodes[1].childNodes[0].firstChild
+null
+
+// test.childNodes[1].childNodes[0].lastChild
+null
+
+// test.childNodes[1].childNodes[0].localName
+null
+
+// test.childNodes[1].childNodes[0].namespaceURI
+null
+
+// test.childNodes[1].childNodes[0].nextSibling
+null
+
+// test.childNodes[1].childNodes[0].nodeName
+null
+
+// test.childNodes[1].childNodes[0].nodeType
+3
+
+// test.childNodes[1].childNodes[0].nodeValue
+foo@example.org
+
+// test.childNodes[1].childNodes[0].parentNode
+<contact:mailbox>foo@example.org</contact:mailbox>
+
+// test.childNodes[1].childNodes[0].prefix
+null
+
+// test.childNodes[1].childNodes[0].previousSibling
+null
+
+
+// var test = new XMLNode(XMLNodeType.TEXT_NODE, "test")
+// test
+test
+
+// test.attributes
+(empty)
+
+// test.childNodes
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>,<contact:mailbox>foo@example.org</contact:mailbox>
+
+// test.firstChild
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.lastChild
+<contact:mailbox>foo@example.org</contact:mailbox>
+
+// test.localName
+null
+
+// test.namespaceURI
+null
+
+// test.nextSibling
+null
+
+// test.nodeName
+null
+
+// test.nodeType
+3
+
+// test.nodeValue
+test
+
+// test.parentNode
+null
+
+// test.prefix
+null
+
+// test.previousSibling
+null
+
+// test.childNodes[0]
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.childNodes[0].attributes
+(empty)
+
+// test.childNodes[0].childNodes
+<item first="true" id="a">first item! &lt;3</item>,<item first="false" id="b">&amp; me too!</item>,<item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item>,<item first="false" id="d">I should be fourth! :&gt;</item>
+
+// test.childNodes[0].firstChild
+<item first="true" id="a">first item! &lt;3</item>
+
+// test.childNodes[0].lastChild
+<item first="false" id="d">I should be fourth! :&gt;</item>
+
+// test.childNodes[0].localName
+list
+
+// test.childNodes[0].namespaceURI
+null
+
+// test.childNodes[0].nextSibling
+<contact:mailbox>foo@example.org</contact:mailbox>
+
+// test.childNodes[0].nodeName
+list
+
+// test.childNodes[0].nodeType
+1
+
+// test.childNodes[0].nodeValue
+null
+
+// test.childNodes[0].parentNode
+test
+
+// test.childNodes[0].prefix
+
+
+// test.childNodes[0].previousSibling
+null
+
+// test.childNodes[0].childNodes[0]
+<item first="true" id="a">first item! &lt;3</item>
+
+// test.childNodes[0].childNodes[0].attributes
+(empty)
+
+// test.childNodes[0].childNodes[0].childNodes
+first item! &lt;3
+
+// test.childNodes[0].childNodes[0].firstChild
+first item! &lt;3
+
+// test.childNodes[0].childNodes[0].lastChild
+first item! &lt;3
+
+// test.childNodes[0].childNodes[0].localName
+item
+
+// test.childNodes[0].childNodes[0].namespaceURI
+null
+
+// test.childNodes[0].childNodes[0].nextSibling
+<item first="false" id="b">&amp; me too!</item>
+
+// test.childNodes[0].childNodes[0].nodeName
+item
+
+// test.childNodes[0].childNodes[0].nodeType
+1
+
+// test.childNodes[0].childNodes[0].nodeValue
+null
+
+// test.childNodes[0].childNodes[0].parentNode
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.childNodes[0].childNodes[0].prefix
+
+
+// test.childNodes[0].childNodes[0].previousSibling
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0]
+first item! &lt;3
+
+// test.childNodes[0].childNodes[0].childNodes[0].attributes
+(empty)
+
+// test.childNodes[0].childNodes[0].childNodes[0].childNodes
+
+
+// test.childNodes[0].childNodes[0].childNodes[0].firstChild
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].lastChild
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].localName
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].namespaceURI
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].nextSibling
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].nodeName
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].nodeType
+3
+
+// test.childNodes[0].childNodes[0].childNodes[0].nodeValue
+first item! <3
+
+// test.childNodes[0].childNodes[0].childNodes[0].parentNode
+<item first="true" id="a">first item! &lt;3</item>
+
+// test.childNodes[0].childNodes[0].childNodes[0].prefix
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].previousSibling
+null
+
+// test.childNodes[0].childNodes[1]
+<item first="false" id="b">&amp; me too!</item>
+
+// test.childNodes[0].childNodes[1].attributes
+(empty)
+
+// test.childNodes[0].childNodes[1].childNodes
+&amp; me too!
+
+// test.childNodes[0].childNodes[1].firstChild
+&amp; me too!
+
+// test.childNodes[0].childNodes[1].lastChild
+&amp; me too!
+
+// test.childNodes[0].childNodes[1].localName
+item
+
+// test.childNodes[0].childNodes[1].namespaceURI
+null
+
+// test.childNodes[0].childNodes[1].nextSibling
+<item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item>
+
+// test.childNodes[0].childNodes[1].nodeName
+item
+
+// test.childNodes[0].childNodes[1].nodeType
+1
+
+// test.childNodes[0].childNodes[1].nodeValue
+null
+
+// test.childNodes[0].childNodes[1].parentNode
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.childNodes[0].childNodes[1].prefix
+
+
+// test.childNodes[0].childNodes[1].previousSibling
+<item first="true" id="a">first item! &lt;3</item>
+
+// test.childNodes[0].childNodes[1].childNodes[0]
+&amp; me too!
+
+// test.childNodes[0].childNodes[1].childNodes[0].attributes
+(empty)
+
+// test.childNodes[0].childNodes[1].childNodes[0].childNodes
+
+
+// test.childNodes[0].childNodes[1].childNodes[0].firstChild
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].lastChild
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].localName
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].namespaceURI
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].nextSibling
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].nodeName
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].nodeType
+3
+
+// test.childNodes[0].childNodes[1].childNodes[0].nodeValue
+& me too!
+
+// test.childNodes[0].childNodes[1].childNodes[0].parentNode
+<item first="false" id="b">&amp; me too!</item>
+
+// test.childNodes[0].childNodes[1].childNodes[0].prefix
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].previousSibling
+null
+
+// test.childNodes[0].childNodes[2]
+<item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item>
+
+// test.childNodes[0].childNodes[2].attributes
+(empty)
+
+// test.childNodes[0].childNodes[2].childNodes
+I was &quot;insertedBefore()&quot;&apos;d!
+
+// test.childNodes[0].childNodes[2].firstChild
+I was &quot;insertedBefore()&quot;&apos;d!
+
+// test.childNodes[0].childNodes[2].lastChild
+I was &quot;insertedBefore()&quot;&apos;d!
+
+// test.childNodes[0].childNodes[2].localName
+item
+
+// test.childNodes[0].childNodes[2].namespaceURI
+null
+
+// test.childNodes[0].childNodes[2].nextSibling
+<item first="false" id="d">I should be fourth! :&gt;</item>
+
+// test.childNodes[0].childNodes[2].nodeName
+item
+
+// test.childNodes[0].childNodes[2].nodeType
+1
+
+// test.childNodes[0].childNodes[2].nodeValue
+null
+
+// test.childNodes[0].childNodes[2].parentNode
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.childNodes[0].childNodes[2].prefix
+
+
+// test.childNodes[0].childNodes[2].previousSibling
+<item first="false" id="b">&amp; me too!</item>
+
+// test.childNodes[0].childNodes[2].childNodes[0]
+I was &quot;insertedBefore()&quot;&apos;d!
+
+// test.childNodes[0].childNodes[2].childNodes[0].attributes
+(empty)
+
+// test.childNodes[0].childNodes[2].childNodes[0].childNodes
+
+
+// test.childNodes[0].childNodes[2].childNodes[0].firstChild
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].lastChild
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].localName
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].namespaceURI
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].nextSibling
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].nodeName
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].nodeType
+3
+
+// test.childNodes[0].childNodes[2].childNodes[0].nodeValue
+I was "insertedBefore()"'d!
+
+// test.childNodes[0].childNodes[2].childNodes[0].parentNode
+<item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item>
+
+// test.childNodes[0].childNodes[2].childNodes[0].prefix
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].previousSibling
+null
+
+// test.childNodes[0].childNodes[3]
+<item first="false" id="d">I should be fourth! :&gt;</item>
+
+// test.childNodes[0].childNodes[3].attributes
+(empty)
+
+// test.childNodes[0].childNodes[3].childNodes
+I should be fourth! :&gt;
+
+// test.childNodes[0].childNodes[3].firstChild
+I should be fourth! :&gt;
+
+// test.childNodes[0].childNodes[3].lastChild
+I should be fourth! :&gt;
+
+// test.childNodes[0].childNodes[3].localName
+item
+
+// test.childNodes[0].childNodes[3].namespaceURI
+null
+
+// test.childNodes[0].childNodes[3].nextSibling
+null
+
+// test.childNodes[0].childNodes[3].nodeName
+item
+
+// test.childNodes[0].childNodes[3].nodeType
+1
+
+// test.childNodes[0].childNodes[3].nodeValue
+null
+
+// test.childNodes[0].childNodes[3].parentNode
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.childNodes[0].childNodes[3].prefix
+
+
+// test.childNodes[0].childNodes[3].previousSibling
+<item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item>
+
+// test.childNodes[0].childNodes[3].childNodes[0]
+I should be fourth! :&gt;
+
+// test.childNodes[0].childNodes[3].childNodes[0].attributes
+(empty)
+
+// test.childNodes[0].childNodes[3].childNodes[0].childNodes
+
+
+// test.childNodes[0].childNodes[3].childNodes[0].firstChild
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].lastChild
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].localName
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].namespaceURI
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].nextSibling
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].nodeName
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].nodeType
+3
+
+// test.childNodes[0].childNodes[3].childNodes[0].nodeValue
+I should be fourth! :>
+
+// test.childNodes[0].childNodes[3].childNodes[0].parentNode
+<item first="false" id="d">I should be fourth! :&gt;</item>
+
+// test.childNodes[0].childNodes[3].childNodes[0].prefix
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].previousSibling
+null
+
+// test.childNodes[1]
+<contact:mailbox>foo@example.org</contact:mailbox>
+
+// test.childNodes[1].attributes
+(empty)
+
+// test.childNodes[1].childNodes
+foo@example.org
+
+// test.childNodes[1].firstChild
+foo@example.org
+
+// test.childNodes[1].lastChild
+foo@example.org
+
+// test.childNodes[1].localName
+mailbox
+
+// test.childNodes[1].namespaceURI
+null
+
+// test.childNodes[1].nextSibling
+null
+
+// test.childNodes[1].nodeName
+contact:mailbox
+
+// test.childNodes[1].nodeType
+1
+
+// test.childNodes[1].nodeValue
+null
+
+// test.childNodes[1].parentNode
+test
+
+// test.childNodes[1].prefix
+contact
+
+// test.childNodes[1].previousSibling
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.childNodes[1].childNodes[0]
+foo@example.org
+
+// test.childNodes[1].childNodes[0].attributes
+(empty)
+
+// test.childNodes[1].childNodes[0].childNodes
+
+
+// test.childNodes[1].childNodes[0].firstChild
+null
+
+// test.childNodes[1].childNodes[0].lastChild
+null
+
+// test.childNodes[1].childNodes[0].localName
+null
+
+// test.childNodes[1].childNodes[0].namespaceURI
+null
+
+// test.childNodes[1].childNodes[0].nextSibling
+null
+
+// test.childNodes[1].childNodes[0].nodeName
+null
+
+// test.childNodes[1].childNodes[0].nodeType
+3
+
+// test.childNodes[1].childNodes[0].nodeValue
+foo@example.org
+
+// test.childNodes[1].childNodes[0].parentNode
+<contact:mailbox>foo@example.org</contact:mailbox>
+
+// test.childNodes[1].childNodes[0].prefix
+null
+
+// test.childNodes[1].childNodes[0].previousSibling
+null
+
+
+// var test = new XMLNode(XMLNodeType.CDATA_NODE, "test")
+// test
+test
+
+// test.attributes
+(empty)
+
+// test.childNodes
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>,<contact:mailbox>foo@example.org</contact:mailbox>
+
+// test.firstChild
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.lastChild
+<contact:mailbox>foo@example.org</contact:mailbox>
+
+// test.localName
+null
+
+// test.namespaceURI
+null
+
+// test.nextSibling
+null
+
+// test.nodeName
+null
+
+// test.nodeType
+4
+
+// test.nodeValue
+test
+
+// test.parentNode
+null
+
+// test.prefix
+null
+
+// test.previousSibling
+null
+
+// test.childNodes[0]
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.childNodes[0].attributes
+(empty)
+
+// test.childNodes[0].childNodes
+<item first="true" id="a">first item! &lt;3</item>,<item first="false" id="b">&amp; me too!</item>,<item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item>,<item first="false" id="d">I should be fourth! :&gt;</item>
+
+// test.childNodes[0].firstChild
+<item first="true" id="a">first item! &lt;3</item>
+
+// test.childNodes[0].lastChild
+<item first="false" id="d">I should be fourth! :&gt;</item>
+
+// test.childNodes[0].localName
+list
+
+// test.childNodes[0].namespaceURI
+null
+
+// test.childNodes[0].nextSibling
+<contact:mailbox>foo@example.org</contact:mailbox>
+
+// test.childNodes[0].nodeName
+list
+
+// test.childNodes[0].nodeType
+1
+
+// test.childNodes[0].nodeValue
+null
+
+// test.childNodes[0].parentNode
+test
+
+// test.childNodes[0].prefix
+
+
+// test.childNodes[0].previousSibling
+null
+
+// test.childNodes[0].childNodes[0]
+<item first="true" id="a">first item! &lt;3</item>
+
+// test.childNodes[0].childNodes[0].attributes
+(empty)
+
+// test.childNodes[0].childNodes[0].childNodes
+first item! &lt;3
+
+// test.childNodes[0].childNodes[0].firstChild
+first item! &lt;3
+
+// test.childNodes[0].childNodes[0].lastChild
+first item! &lt;3
+
+// test.childNodes[0].childNodes[0].localName
+item
+
+// test.childNodes[0].childNodes[0].namespaceURI
+null
+
+// test.childNodes[0].childNodes[0].nextSibling
+<item first="false" id="b">&amp; me too!</item>
+
+// test.childNodes[0].childNodes[0].nodeName
+item
+
+// test.childNodes[0].childNodes[0].nodeType
+1
+
+// test.childNodes[0].childNodes[0].nodeValue
+null
+
+// test.childNodes[0].childNodes[0].parentNode
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.childNodes[0].childNodes[0].prefix
+
+
+// test.childNodes[0].childNodes[0].previousSibling
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0]
+first item! &lt;3
+
+// test.childNodes[0].childNodes[0].childNodes[0].attributes
+(empty)
+
+// test.childNodes[0].childNodes[0].childNodes[0].childNodes
+
+
+// test.childNodes[0].childNodes[0].childNodes[0].firstChild
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].lastChild
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].localName
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].namespaceURI
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].nextSibling
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].nodeName
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].nodeType
+3
+
+// test.childNodes[0].childNodes[0].childNodes[0].nodeValue
+first item! <3
+
+// test.childNodes[0].childNodes[0].childNodes[0].parentNode
+<item first="true" id="a">first item! &lt;3</item>
+
+// test.childNodes[0].childNodes[0].childNodes[0].prefix
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].previousSibling
+null
+
+// test.childNodes[0].childNodes[1]
+<item first="false" id="b">&amp; me too!</item>
+
+// test.childNodes[0].childNodes[1].attributes
+(empty)
+
+// test.childNodes[0].childNodes[1].childNodes
+&amp; me too!
+
+// test.childNodes[0].childNodes[1].firstChild
+&amp; me too!
+
+// test.childNodes[0].childNodes[1].lastChild
+&amp; me too!
+
+// test.childNodes[0].childNodes[1].localName
+item
+
+// test.childNodes[0].childNodes[1].namespaceURI
+null
+
+// test.childNodes[0].childNodes[1].nextSibling
+<item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item>
+
+// test.childNodes[0].childNodes[1].nodeName
+item
+
+// test.childNodes[0].childNodes[1].nodeType
+1
+
+// test.childNodes[0].childNodes[1].nodeValue
+null
+
+// test.childNodes[0].childNodes[1].parentNode
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.childNodes[0].childNodes[1].prefix
+
+
+// test.childNodes[0].childNodes[1].previousSibling
+<item first="true" id="a">first item! &lt;3</item>
+
+// test.childNodes[0].childNodes[1].childNodes[0]
+&amp; me too!
+
+// test.childNodes[0].childNodes[1].childNodes[0].attributes
+(empty)
+
+// test.childNodes[0].childNodes[1].childNodes[0].childNodes
+
+
+// test.childNodes[0].childNodes[1].childNodes[0].firstChild
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].lastChild
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].localName
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].namespaceURI
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].nextSibling
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].nodeName
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].nodeType
+3
+
+// test.childNodes[0].childNodes[1].childNodes[0].nodeValue
+& me too!
+
+// test.childNodes[0].childNodes[1].childNodes[0].parentNode
+<item first="false" id="b">&amp; me too!</item>
+
+// test.childNodes[0].childNodes[1].childNodes[0].prefix
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].previousSibling
+null
+
+// test.childNodes[0].childNodes[2]
+<item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item>
+
+// test.childNodes[0].childNodes[2].attributes
+(empty)
+
+// test.childNodes[0].childNodes[2].childNodes
+I was &quot;insertedBefore()&quot;&apos;d!
+
+// test.childNodes[0].childNodes[2].firstChild
+I was &quot;insertedBefore()&quot;&apos;d!
+
+// test.childNodes[0].childNodes[2].lastChild
+I was &quot;insertedBefore()&quot;&apos;d!
+
+// test.childNodes[0].childNodes[2].localName
+item
+
+// test.childNodes[0].childNodes[2].namespaceURI
+null
+
+// test.childNodes[0].childNodes[2].nextSibling
+<item first="false" id="d">I should be fourth! :&gt;</item>
+
+// test.childNodes[0].childNodes[2].nodeName
+item
+
+// test.childNodes[0].childNodes[2].nodeType
+1
+
+// test.childNodes[0].childNodes[2].nodeValue
+null
+
+// test.childNodes[0].childNodes[2].parentNode
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.childNodes[0].childNodes[2].prefix
+
+
+// test.childNodes[0].childNodes[2].previousSibling
+<item first="false" id="b">&amp; me too!</item>
+
+// test.childNodes[0].childNodes[2].childNodes[0]
+I was &quot;insertedBefore()&quot;&apos;d!
+
+// test.childNodes[0].childNodes[2].childNodes[0].attributes
+(empty)
+
+// test.childNodes[0].childNodes[2].childNodes[0].childNodes
+
+
+// test.childNodes[0].childNodes[2].childNodes[0].firstChild
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].lastChild
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].localName
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].namespaceURI
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].nextSibling
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].nodeName
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].nodeType
+3
+
+// test.childNodes[0].childNodes[2].childNodes[0].nodeValue
+I was "insertedBefore()"'d!
+
+// test.childNodes[0].childNodes[2].childNodes[0].parentNode
+<item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item>
+
+// test.childNodes[0].childNodes[2].childNodes[0].prefix
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].previousSibling
+null
+
+// test.childNodes[0].childNodes[3]
+<item first="false" id="d">I should be fourth! :&gt;</item>
+
+// test.childNodes[0].childNodes[3].attributes
+(empty)
+
+// test.childNodes[0].childNodes[3].childNodes
+I should be fourth! :&gt;
+
+// test.childNodes[0].childNodes[3].firstChild
+I should be fourth! :&gt;
+
+// test.childNodes[0].childNodes[3].lastChild
+I should be fourth! :&gt;
+
+// test.childNodes[0].childNodes[3].localName
+item
+
+// test.childNodes[0].childNodes[3].namespaceURI
+null
+
+// test.childNodes[0].childNodes[3].nextSibling
+null
+
+// test.childNodes[0].childNodes[3].nodeName
+item
+
+// test.childNodes[0].childNodes[3].nodeType
+1
+
+// test.childNodes[0].childNodes[3].nodeValue
+null
+
+// test.childNodes[0].childNodes[3].parentNode
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.childNodes[0].childNodes[3].prefix
+
+
+// test.childNodes[0].childNodes[3].previousSibling
+<item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item>
+
+// test.childNodes[0].childNodes[3].childNodes[0]
+I should be fourth! :&gt;
+
+// test.childNodes[0].childNodes[3].childNodes[0].attributes
+(empty)
+
+// test.childNodes[0].childNodes[3].childNodes[0].childNodes
+
+
+// test.childNodes[0].childNodes[3].childNodes[0].firstChild
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].lastChild
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].localName
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].namespaceURI
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].nextSibling
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].nodeName
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].nodeType
+3
+
+// test.childNodes[0].childNodes[3].childNodes[0].nodeValue
+I should be fourth! :>
+
+// test.childNodes[0].childNodes[3].childNodes[0].parentNode
+<item first="false" id="d">I should be fourth! :&gt;</item>
+
+// test.childNodes[0].childNodes[3].childNodes[0].prefix
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].previousSibling
+null
+
+// test.childNodes[1]
+<contact:mailbox>foo@example.org</contact:mailbox>
+
+// test.childNodes[1].attributes
+(empty)
+
+// test.childNodes[1].childNodes
+foo@example.org
+
+// test.childNodes[1].firstChild
+foo@example.org
+
+// test.childNodes[1].lastChild
+foo@example.org
+
+// test.childNodes[1].localName
+mailbox
+
+// test.childNodes[1].namespaceURI
+null
+
+// test.childNodes[1].nextSibling
+null
+
+// test.childNodes[1].nodeName
+contact:mailbox
+
+// test.childNodes[1].nodeType
+1
+
+// test.childNodes[1].nodeValue
+null
+
+// test.childNodes[1].parentNode
+test
+
+// test.childNodes[1].prefix
+contact
+
+// test.childNodes[1].previousSibling
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.childNodes[1].childNodes[0]
+foo@example.org
+
+// test.childNodes[1].childNodes[0].attributes
+(empty)
+
+// test.childNodes[1].childNodes[0].childNodes
+
+
+// test.childNodes[1].childNodes[0].firstChild
+null
+
+// test.childNodes[1].childNodes[0].lastChild
+null
+
+// test.childNodes[1].childNodes[0].localName
+null
+
+// test.childNodes[1].childNodes[0].namespaceURI
+null
+
+// test.childNodes[1].childNodes[0].nextSibling
+null
+
+// test.childNodes[1].childNodes[0].nodeName
+null
+
+// test.childNodes[1].childNodes[0].nodeType
+3
+
+// test.childNodes[1].childNodes[0].nodeValue
+foo@example.org
+
+// test.childNodes[1].childNodes[0].parentNode
+<contact:mailbox>foo@example.org</contact:mailbox>
+
+// test.childNodes[1].childNodes[0].prefix
+null
+
+// test.childNodes[1].childNodes[0].previousSibling
+null
+
+
+// var test = new XMLNode(XMLNodeType.PROCESSING_INSTRUCTION_NODE, "test")
+// test
+test
+
+// test.attributes
+(empty)
+
+// test.childNodes
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>,<contact:mailbox>foo@example.org</contact:mailbox>
+
+// test.firstChild
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.lastChild
+<contact:mailbox>foo@example.org</contact:mailbox>
+
+// test.localName
+null
+
+// test.namespaceURI
+null
+
+// test.nextSibling
+null
+
+// test.nodeName
+null
+
+// test.nodeType
+7
+
+// test.nodeValue
+test
+
+// test.parentNode
+null
+
+// test.prefix
+null
+
+// test.previousSibling
+null
+
+// test.childNodes[0]
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.childNodes[0].attributes
+(empty)
+
+// test.childNodes[0].childNodes
+<item first="true" id="a">first item! &lt;3</item>,<item first="false" id="b">&amp; me too!</item>,<item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item>,<item first="false" id="d">I should be fourth! :&gt;</item>
+
+// test.childNodes[0].firstChild
+<item first="true" id="a">first item! &lt;3</item>
+
+// test.childNodes[0].lastChild
+<item first="false" id="d">I should be fourth! :&gt;</item>
+
+// test.childNodes[0].localName
+list
+
+// test.childNodes[0].namespaceURI
+null
+
+// test.childNodes[0].nextSibling
+<contact:mailbox>foo@example.org</contact:mailbox>
+
+// test.childNodes[0].nodeName
+list
+
+// test.childNodes[0].nodeType
+1
+
+// test.childNodes[0].nodeValue
+null
+
+// test.childNodes[0].parentNode
+test
+
+// test.childNodes[0].prefix
+
+
+// test.childNodes[0].previousSibling
+null
+
+// test.childNodes[0].childNodes[0]
+<item first="true" id="a">first item! &lt;3</item>
+
+// test.childNodes[0].childNodes[0].attributes
+(empty)
+
+// test.childNodes[0].childNodes[0].childNodes
+first item! &lt;3
+
+// test.childNodes[0].childNodes[0].firstChild
+first item! &lt;3
+
+// test.childNodes[0].childNodes[0].lastChild
+first item! &lt;3
+
+// test.childNodes[0].childNodes[0].localName
+item
+
+// test.childNodes[0].childNodes[0].namespaceURI
+null
+
+// test.childNodes[0].childNodes[0].nextSibling
+<item first="false" id="b">&amp; me too!</item>
+
+// test.childNodes[0].childNodes[0].nodeName
+item
+
+// test.childNodes[0].childNodes[0].nodeType
+1
+
+// test.childNodes[0].childNodes[0].nodeValue
+null
+
+// test.childNodes[0].childNodes[0].parentNode
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.childNodes[0].childNodes[0].prefix
+
+
+// test.childNodes[0].childNodes[0].previousSibling
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0]
+first item! &lt;3
+
+// test.childNodes[0].childNodes[0].childNodes[0].attributes
+(empty)
+
+// test.childNodes[0].childNodes[0].childNodes[0].childNodes
+
+
+// test.childNodes[0].childNodes[0].childNodes[0].firstChild
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].lastChild
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].localName
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].namespaceURI
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].nextSibling
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].nodeName
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].nodeType
+3
+
+// test.childNodes[0].childNodes[0].childNodes[0].nodeValue
+first item! <3
+
+// test.childNodes[0].childNodes[0].childNodes[0].parentNode
+<item first="true" id="a">first item! &lt;3</item>
+
+// test.childNodes[0].childNodes[0].childNodes[0].prefix
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].previousSibling
+null
+
+// test.childNodes[0].childNodes[1]
+<item first="false" id="b">&amp; me too!</item>
+
+// test.childNodes[0].childNodes[1].attributes
+(empty)
+
+// test.childNodes[0].childNodes[1].childNodes
+&amp; me too!
+
+// test.childNodes[0].childNodes[1].firstChild
+&amp; me too!
+
+// test.childNodes[0].childNodes[1].lastChild
+&amp; me too!
+
+// test.childNodes[0].childNodes[1].localName
+item
+
+// test.childNodes[0].childNodes[1].namespaceURI
+null
+
+// test.childNodes[0].childNodes[1].nextSibling
+<item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item>
+
+// test.childNodes[0].childNodes[1].nodeName
+item
+
+// test.childNodes[0].childNodes[1].nodeType
+1
+
+// test.childNodes[0].childNodes[1].nodeValue
+null
+
+// test.childNodes[0].childNodes[1].parentNode
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.childNodes[0].childNodes[1].prefix
+
+
+// test.childNodes[0].childNodes[1].previousSibling
+<item first="true" id="a">first item! &lt;3</item>
+
+// test.childNodes[0].childNodes[1].childNodes[0]
+&amp; me too!
+
+// test.childNodes[0].childNodes[1].childNodes[0].attributes
+(empty)
+
+// test.childNodes[0].childNodes[1].childNodes[0].childNodes
+
+
+// test.childNodes[0].childNodes[1].childNodes[0].firstChild
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].lastChild
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].localName
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].namespaceURI
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].nextSibling
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].nodeName
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].nodeType
+3
+
+// test.childNodes[0].childNodes[1].childNodes[0].nodeValue
+& me too!
+
+// test.childNodes[0].childNodes[1].childNodes[0].parentNode
+<item first="false" id="b">&amp; me too!</item>
+
+// test.childNodes[0].childNodes[1].childNodes[0].prefix
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].previousSibling
+null
+
+// test.childNodes[0].childNodes[2]
+<item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item>
+
+// test.childNodes[0].childNodes[2].attributes
+(empty)
+
+// test.childNodes[0].childNodes[2].childNodes
+I was &quot;insertedBefore()&quot;&apos;d!
+
+// test.childNodes[0].childNodes[2].firstChild
+I was &quot;insertedBefore()&quot;&apos;d!
+
+// test.childNodes[0].childNodes[2].lastChild
+I was &quot;insertedBefore()&quot;&apos;d!
+
+// test.childNodes[0].childNodes[2].localName
+item
+
+// test.childNodes[0].childNodes[2].namespaceURI
+null
+
+// test.childNodes[0].childNodes[2].nextSibling
+<item first="false" id="d">I should be fourth! :&gt;</item>
+
+// test.childNodes[0].childNodes[2].nodeName
+item
+
+// test.childNodes[0].childNodes[2].nodeType
+1
+
+// test.childNodes[0].childNodes[2].nodeValue
+null
+
+// test.childNodes[0].childNodes[2].parentNode
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.childNodes[0].childNodes[2].prefix
+
+
+// test.childNodes[0].childNodes[2].previousSibling
+<item first="false" id="b">&amp; me too!</item>
+
+// test.childNodes[0].childNodes[2].childNodes[0]
+I was &quot;insertedBefore()&quot;&apos;d!
+
+// test.childNodes[0].childNodes[2].childNodes[0].attributes
+(empty)
+
+// test.childNodes[0].childNodes[2].childNodes[0].childNodes
+
+
+// test.childNodes[0].childNodes[2].childNodes[0].firstChild
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].lastChild
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].localName
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].namespaceURI
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].nextSibling
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].nodeName
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].nodeType
+3
+
+// test.childNodes[0].childNodes[2].childNodes[0].nodeValue
+I was "insertedBefore()"'d!
+
+// test.childNodes[0].childNodes[2].childNodes[0].parentNode
+<item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item>
+
+// test.childNodes[0].childNodes[2].childNodes[0].prefix
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].previousSibling
+null
+
+// test.childNodes[0].childNodes[3]
+<item first="false" id="d">I should be fourth! :&gt;</item>
+
+// test.childNodes[0].childNodes[3].attributes
+(empty)
+
+// test.childNodes[0].childNodes[3].childNodes
+I should be fourth! :&gt;
+
+// test.childNodes[0].childNodes[3].firstChild
+I should be fourth! :&gt;
+
+// test.childNodes[0].childNodes[3].lastChild
+I should be fourth! :&gt;
+
+// test.childNodes[0].childNodes[3].localName
+item
+
+// test.childNodes[0].childNodes[3].namespaceURI
+null
+
+// test.childNodes[0].childNodes[3].nextSibling
+null
+
+// test.childNodes[0].childNodes[3].nodeName
+item
+
+// test.childNodes[0].childNodes[3].nodeType
+1
+
+// test.childNodes[0].childNodes[3].nodeValue
+null
+
+// test.childNodes[0].childNodes[3].parentNode
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.childNodes[0].childNodes[3].prefix
+
+
+// test.childNodes[0].childNodes[3].previousSibling
+<item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item>
+
+// test.childNodes[0].childNodes[3].childNodes[0]
+I should be fourth! :&gt;
+
+// test.childNodes[0].childNodes[3].childNodes[0].attributes
+(empty)
+
+// test.childNodes[0].childNodes[3].childNodes[0].childNodes
+
+
+// test.childNodes[0].childNodes[3].childNodes[0].firstChild
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].lastChild
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].localName
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].namespaceURI
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].nextSibling
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].nodeName
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].nodeType
+3
+
+// test.childNodes[0].childNodes[3].childNodes[0].nodeValue
+I should be fourth! :>
+
+// test.childNodes[0].childNodes[3].childNodes[0].parentNode
+<item first="false" id="d">I should be fourth! :&gt;</item>
+
+// test.childNodes[0].childNodes[3].childNodes[0].prefix
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].previousSibling
+null
+
+// test.childNodes[1]
+<contact:mailbox>foo@example.org</contact:mailbox>
+
+// test.childNodes[1].attributes
+(empty)
+
+// test.childNodes[1].childNodes
+foo@example.org
+
+// test.childNodes[1].firstChild
+foo@example.org
+
+// test.childNodes[1].lastChild
+foo@example.org
+
+// test.childNodes[1].localName
+mailbox
+
+// test.childNodes[1].namespaceURI
+null
+
+// test.childNodes[1].nextSibling
+null
+
+// test.childNodes[1].nodeName
+contact:mailbox
+
+// test.childNodes[1].nodeType
+1
+
+// test.childNodes[1].nodeValue
+null
+
+// test.childNodes[1].parentNode
+test
+
+// test.childNodes[1].prefix
+contact
+
+// test.childNodes[1].previousSibling
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.childNodes[1].childNodes[0]
+foo@example.org
+
+// test.childNodes[1].childNodes[0].attributes
+(empty)
+
+// test.childNodes[1].childNodes[0].childNodes
+
+
+// test.childNodes[1].childNodes[0].firstChild
+null
+
+// test.childNodes[1].childNodes[0].lastChild
+null
+
+// test.childNodes[1].childNodes[0].localName
+null
+
+// test.childNodes[1].childNodes[0].namespaceURI
+null
+
+// test.childNodes[1].childNodes[0].nextSibling
+null
+
+// test.childNodes[1].childNodes[0].nodeName
+null
+
+// test.childNodes[1].childNodes[0].nodeType
+3
+
+// test.childNodes[1].childNodes[0].nodeValue
+foo@example.org
+
+// test.childNodes[1].childNodes[0].parentNode
+<contact:mailbox>foo@example.org</contact:mailbox>
+
+// test.childNodes[1].childNodes[0].prefix
+null
+
+// test.childNodes[1].childNodes[0].previousSibling
+null
+
+
+// var test = new XMLNode(XMLNodeType.COMMENT_NODE, "test")
+// test
+test
+
+// test.attributes
+(empty)
+
+// test.childNodes
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>,<contact:mailbox>foo@example.org</contact:mailbox>
+
+// test.firstChild
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.lastChild
+<contact:mailbox>foo@example.org</contact:mailbox>
+
+// test.localName
+null
+
+// test.namespaceURI
+null
+
+// test.nextSibling
+null
+
+// test.nodeName
+null
+
+// test.nodeType
+8
+
+// test.nodeValue
+test
+
+// test.parentNode
+null
+
+// test.prefix
+null
+
+// test.previousSibling
+null
+
+// test.childNodes[0]
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.childNodes[0].attributes
+(empty)
+
+// test.childNodes[0].childNodes
+<item first="true" id="a">first item! &lt;3</item>,<item first="false" id="b">&amp; me too!</item>,<item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item>,<item first="false" id="d">I should be fourth! :&gt;</item>
+
+// test.childNodes[0].firstChild
+<item first="true" id="a">first item! &lt;3</item>
+
+// test.childNodes[0].lastChild
+<item first="false" id="d">I should be fourth! :&gt;</item>
+
+// test.childNodes[0].localName
+list
+
+// test.childNodes[0].namespaceURI
+null
+
+// test.childNodes[0].nextSibling
+<contact:mailbox>foo@example.org</contact:mailbox>
+
+// test.childNodes[0].nodeName
+list
+
+// test.childNodes[0].nodeType
+1
+
+// test.childNodes[0].nodeValue
+null
+
+// test.childNodes[0].parentNode
+test
+
+// test.childNodes[0].prefix
+
+
+// test.childNodes[0].previousSibling
+null
+
+// test.childNodes[0].childNodes[0]
+<item first="true" id="a">first item! &lt;3</item>
+
+// test.childNodes[0].childNodes[0].attributes
+(empty)
+
+// test.childNodes[0].childNodes[0].childNodes
+first item! &lt;3
+
+// test.childNodes[0].childNodes[0].firstChild
+first item! &lt;3
+
+// test.childNodes[0].childNodes[0].lastChild
+first item! &lt;3
+
+// test.childNodes[0].childNodes[0].localName
+item
+
+// test.childNodes[0].childNodes[0].namespaceURI
+null
+
+// test.childNodes[0].childNodes[0].nextSibling
+<item first="false" id="b">&amp; me too!</item>
+
+// test.childNodes[0].childNodes[0].nodeName
+item
+
+// test.childNodes[0].childNodes[0].nodeType
+1
+
+// test.childNodes[0].childNodes[0].nodeValue
+null
+
+// test.childNodes[0].childNodes[0].parentNode
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.childNodes[0].childNodes[0].prefix
+
+
+// test.childNodes[0].childNodes[0].previousSibling
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0]
+first item! &lt;3
+
+// test.childNodes[0].childNodes[0].childNodes[0].attributes
+(empty)
+
+// test.childNodes[0].childNodes[0].childNodes[0].childNodes
+
+
+// test.childNodes[0].childNodes[0].childNodes[0].firstChild
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].lastChild
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].localName
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].namespaceURI
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].nextSibling
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].nodeName
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].nodeType
+3
+
+// test.childNodes[0].childNodes[0].childNodes[0].nodeValue
+first item! <3
+
+// test.childNodes[0].childNodes[0].childNodes[0].parentNode
+<item first="true" id="a">first item! &lt;3</item>
+
+// test.childNodes[0].childNodes[0].childNodes[0].prefix
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].previousSibling
+null
+
+// test.childNodes[0].childNodes[1]
+<item first="false" id="b">&amp; me too!</item>
+
+// test.childNodes[0].childNodes[1].attributes
+(empty)
+
+// test.childNodes[0].childNodes[1].childNodes
+&amp; me too!
+
+// test.childNodes[0].childNodes[1].firstChild
+&amp; me too!
+
+// test.childNodes[0].childNodes[1].lastChild
+&amp; me too!
+
+// test.childNodes[0].childNodes[1].localName
+item
+
+// test.childNodes[0].childNodes[1].namespaceURI
+null
+
+// test.childNodes[0].childNodes[1].nextSibling
+<item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item>
+
+// test.childNodes[0].childNodes[1].nodeName
+item
+
+// test.childNodes[0].childNodes[1].nodeType
+1
+
+// test.childNodes[0].childNodes[1].nodeValue
+null
+
+// test.childNodes[0].childNodes[1].parentNode
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.childNodes[0].childNodes[1].prefix
+
+
+// test.childNodes[0].childNodes[1].previousSibling
+<item first="true" id="a">first item! &lt;3</item>
+
+// test.childNodes[0].childNodes[1].childNodes[0]
+&amp; me too!
+
+// test.childNodes[0].childNodes[1].childNodes[0].attributes
+(empty)
+
+// test.childNodes[0].childNodes[1].childNodes[0].childNodes
+
+
+// test.childNodes[0].childNodes[1].childNodes[0].firstChild
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].lastChild
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].localName
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].namespaceURI
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].nextSibling
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].nodeName
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].nodeType
+3
+
+// test.childNodes[0].childNodes[1].childNodes[0].nodeValue
+& me too!
+
+// test.childNodes[0].childNodes[1].childNodes[0].parentNode
+<item first="false" id="b">&amp; me too!</item>
+
+// test.childNodes[0].childNodes[1].childNodes[0].prefix
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].previousSibling
+null
+
+// test.childNodes[0].childNodes[2]
+<item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item>
+
+// test.childNodes[0].childNodes[2].attributes
+(empty)
+
+// test.childNodes[0].childNodes[2].childNodes
+I was &quot;insertedBefore()&quot;&apos;d!
+
+// test.childNodes[0].childNodes[2].firstChild
+I was &quot;insertedBefore()&quot;&apos;d!
+
+// test.childNodes[0].childNodes[2].lastChild
+I was &quot;insertedBefore()&quot;&apos;d!
+
+// test.childNodes[0].childNodes[2].localName
+item
+
+// test.childNodes[0].childNodes[2].namespaceURI
+null
+
+// test.childNodes[0].childNodes[2].nextSibling
+<item first="false" id="d">I should be fourth! :&gt;</item>
+
+// test.childNodes[0].childNodes[2].nodeName
+item
+
+// test.childNodes[0].childNodes[2].nodeType
+1
+
+// test.childNodes[0].childNodes[2].nodeValue
+null
+
+// test.childNodes[0].childNodes[2].parentNode
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.childNodes[0].childNodes[2].prefix
+
+
+// test.childNodes[0].childNodes[2].previousSibling
+<item first="false" id="b">&amp; me too!</item>
+
+// test.childNodes[0].childNodes[2].childNodes[0]
+I was &quot;insertedBefore()&quot;&apos;d!
+
+// test.childNodes[0].childNodes[2].childNodes[0].attributes
+(empty)
+
+// test.childNodes[0].childNodes[2].childNodes[0].childNodes
+
+
+// test.childNodes[0].childNodes[2].childNodes[0].firstChild
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].lastChild
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].localName
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].namespaceURI
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].nextSibling
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].nodeName
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].nodeType
+3
+
+// test.childNodes[0].childNodes[2].childNodes[0].nodeValue
+I was "insertedBefore()"'d!
+
+// test.childNodes[0].childNodes[2].childNodes[0].parentNode
+<item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item>
+
+// test.childNodes[0].childNodes[2].childNodes[0].prefix
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].previousSibling
+null
+
+// test.childNodes[0].childNodes[3]
+<item first="false" id="d">I should be fourth! :&gt;</item>
+
+// test.childNodes[0].childNodes[3].attributes
+(empty)
+
+// test.childNodes[0].childNodes[3].childNodes
+I should be fourth! :&gt;
+
+// test.childNodes[0].childNodes[3].firstChild
+I should be fourth! :&gt;
+
+// test.childNodes[0].childNodes[3].lastChild
+I should be fourth! :&gt;
+
+// test.childNodes[0].childNodes[3].localName
+item
+
+// test.childNodes[0].childNodes[3].namespaceURI
+null
+
+// test.childNodes[0].childNodes[3].nextSibling
+null
+
+// test.childNodes[0].childNodes[3].nodeName
+item
+
+// test.childNodes[0].childNodes[3].nodeType
+1
+
+// test.childNodes[0].childNodes[3].nodeValue
+null
+
+// test.childNodes[0].childNodes[3].parentNode
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.childNodes[0].childNodes[3].prefix
+
+
+// test.childNodes[0].childNodes[3].previousSibling
+<item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item>
+
+// test.childNodes[0].childNodes[3].childNodes[0]
+I should be fourth! :&gt;
+
+// test.childNodes[0].childNodes[3].childNodes[0].attributes
+(empty)
+
+// test.childNodes[0].childNodes[3].childNodes[0].childNodes
+
+
+// test.childNodes[0].childNodes[3].childNodes[0].firstChild
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].lastChild
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].localName
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].namespaceURI
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].nextSibling
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].nodeName
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].nodeType
+3
+
+// test.childNodes[0].childNodes[3].childNodes[0].nodeValue
+I should be fourth! :>
+
+// test.childNodes[0].childNodes[3].childNodes[0].parentNode
+<item first="false" id="d">I should be fourth! :&gt;</item>
+
+// test.childNodes[0].childNodes[3].childNodes[0].prefix
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].previousSibling
+null
+
+// test.childNodes[1]
+<contact:mailbox>foo@example.org</contact:mailbox>
+
+// test.childNodes[1].attributes
+(empty)
+
+// test.childNodes[1].childNodes
+foo@example.org
+
+// test.childNodes[1].firstChild
+foo@example.org
+
+// test.childNodes[1].lastChild
+foo@example.org
+
+// test.childNodes[1].localName
+mailbox
+
+// test.childNodes[1].namespaceURI
+null
+
+// test.childNodes[1].nextSibling
+null
+
+// test.childNodes[1].nodeName
+contact:mailbox
+
+// test.childNodes[1].nodeType
+1
+
+// test.childNodes[1].nodeValue
+null
+
+// test.childNodes[1].parentNode
+test
+
+// test.childNodes[1].prefix
+contact
+
+// test.childNodes[1].previousSibling
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.childNodes[1].childNodes[0]
+foo@example.org
+
+// test.childNodes[1].childNodes[0].attributes
+(empty)
+
+// test.childNodes[1].childNodes[0].childNodes
+
+
+// test.childNodes[1].childNodes[0].firstChild
+null
+
+// test.childNodes[1].childNodes[0].lastChild
+null
+
+// test.childNodes[1].childNodes[0].localName
+null
+
+// test.childNodes[1].childNodes[0].namespaceURI
+null
+
+// test.childNodes[1].childNodes[0].nextSibling
+null
+
+// test.childNodes[1].childNodes[0].nodeName
+null
+
+// test.childNodes[1].childNodes[0].nodeType
+3
+
+// test.childNodes[1].childNodes[0].nodeValue
+foo@example.org
+
+// test.childNodes[1].childNodes[0].parentNode
+<contact:mailbox>foo@example.org</contact:mailbox>
+
+// test.childNodes[1].childNodes[0].prefix
+null
+
+// test.childNodes[1].childNodes[0].previousSibling
+null
+
+
+// var test = new XMLNode(XMLNodeType.DOCUMENT_TYPE_NODE, "test")
+// test
+test
+
+// test.attributes
+(empty)
+
+// test.childNodes
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>,<contact:mailbox>foo@example.org</contact:mailbox>
+
+// test.firstChild
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.lastChild
+<contact:mailbox>foo@example.org</contact:mailbox>
+
+// test.localName
+null
+
+// test.namespaceURI
+null
+
+// test.nextSibling
+null
+
+// test.nodeName
+null
+
+// test.nodeType
+10
+
+// test.nodeValue
+test
+
+// test.parentNode
+null
+
+// test.prefix
+null
+
+// test.previousSibling
+null
+
+// test.childNodes[0]
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.childNodes[0].attributes
+(empty)
+
+// test.childNodes[0].childNodes
+<item first="true" id="a">first item! &lt;3</item>,<item first="false" id="b">&amp; me too!</item>,<item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item>,<item first="false" id="d">I should be fourth! :&gt;</item>
+
+// test.childNodes[0].firstChild
+<item first="true" id="a">first item! &lt;3</item>
+
+// test.childNodes[0].lastChild
+<item first="false" id="d">I should be fourth! :&gt;</item>
+
+// test.childNodes[0].localName
+list
+
+// test.childNodes[0].namespaceURI
+null
+
+// test.childNodes[0].nextSibling
+<contact:mailbox>foo@example.org</contact:mailbox>
+
+// test.childNodes[0].nodeName
+list
+
+// test.childNodes[0].nodeType
+1
+
+// test.childNodes[0].nodeValue
+null
+
+// test.childNodes[0].parentNode
+test
+
+// test.childNodes[0].prefix
+
+
+// test.childNodes[0].previousSibling
+null
+
+// test.childNodes[0].childNodes[0]
+<item first="true" id="a">first item! &lt;3</item>
+
+// test.childNodes[0].childNodes[0].attributes
+(empty)
+
+// test.childNodes[0].childNodes[0].childNodes
+first item! &lt;3
+
+// test.childNodes[0].childNodes[0].firstChild
+first item! &lt;3
+
+// test.childNodes[0].childNodes[0].lastChild
+first item! &lt;3
+
+// test.childNodes[0].childNodes[0].localName
+item
+
+// test.childNodes[0].childNodes[0].namespaceURI
+null
+
+// test.childNodes[0].childNodes[0].nextSibling
+<item first="false" id="b">&amp; me too!</item>
+
+// test.childNodes[0].childNodes[0].nodeName
+item
+
+// test.childNodes[0].childNodes[0].nodeType
+1
+
+// test.childNodes[0].childNodes[0].nodeValue
+null
+
+// test.childNodes[0].childNodes[0].parentNode
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.childNodes[0].childNodes[0].prefix
+
+
+// test.childNodes[0].childNodes[0].previousSibling
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0]
+first item! &lt;3
+
+// test.childNodes[0].childNodes[0].childNodes[0].attributes
+(empty)
+
+// test.childNodes[0].childNodes[0].childNodes[0].childNodes
+
+
+// test.childNodes[0].childNodes[0].childNodes[0].firstChild
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].lastChild
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].localName
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].namespaceURI
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].nextSibling
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].nodeName
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].nodeType
+3
+
+// test.childNodes[0].childNodes[0].childNodes[0].nodeValue
+first item! <3
+
+// test.childNodes[0].childNodes[0].childNodes[0].parentNode
+<item first="true" id="a">first item! &lt;3</item>
+
+// test.childNodes[0].childNodes[0].childNodes[0].prefix
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].previousSibling
+null
+
+// test.childNodes[0].childNodes[1]
+<item first="false" id="b">&amp; me too!</item>
+
+// test.childNodes[0].childNodes[1].attributes
+(empty)
+
+// test.childNodes[0].childNodes[1].childNodes
+&amp; me too!
+
+// test.childNodes[0].childNodes[1].firstChild
+&amp; me too!
+
+// test.childNodes[0].childNodes[1].lastChild
+&amp; me too!
+
+// test.childNodes[0].childNodes[1].localName
+item
+
+// test.childNodes[0].childNodes[1].namespaceURI
+null
+
+// test.childNodes[0].childNodes[1].nextSibling
+<item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item>
+
+// test.childNodes[0].childNodes[1].nodeName
+item
+
+// test.childNodes[0].childNodes[1].nodeType
+1
+
+// test.childNodes[0].childNodes[1].nodeValue
+null
+
+// test.childNodes[0].childNodes[1].parentNode
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.childNodes[0].childNodes[1].prefix
+
+
+// test.childNodes[0].childNodes[1].previousSibling
+<item first="true" id="a">first item! &lt;3</item>
+
+// test.childNodes[0].childNodes[1].childNodes[0]
+&amp; me too!
+
+// test.childNodes[0].childNodes[1].childNodes[0].attributes
+(empty)
+
+// test.childNodes[0].childNodes[1].childNodes[0].childNodes
+
+
+// test.childNodes[0].childNodes[1].childNodes[0].firstChild
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].lastChild
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].localName
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].namespaceURI
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].nextSibling
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].nodeName
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].nodeType
+3
+
+// test.childNodes[0].childNodes[1].childNodes[0].nodeValue
+& me too!
+
+// test.childNodes[0].childNodes[1].childNodes[0].parentNode
+<item first="false" id="b">&amp; me too!</item>
+
+// test.childNodes[0].childNodes[1].childNodes[0].prefix
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].previousSibling
+null
+
+// test.childNodes[0].childNodes[2]
+<item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item>
+
+// test.childNodes[0].childNodes[2].attributes
+(empty)
+
+// test.childNodes[0].childNodes[2].childNodes
+I was &quot;insertedBefore()&quot;&apos;d!
+
+// test.childNodes[0].childNodes[2].firstChild
+I was &quot;insertedBefore()&quot;&apos;d!
+
+// test.childNodes[0].childNodes[2].lastChild
+I was &quot;insertedBefore()&quot;&apos;d!
+
+// test.childNodes[0].childNodes[2].localName
+item
+
+// test.childNodes[0].childNodes[2].namespaceURI
+null
+
+// test.childNodes[0].childNodes[2].nextSibling
+<item first="false" id="d">I should be fourth! :&gt;</item>
+
+// test.childNodes[0].childNodes[2].nodeName
+item
+
+// test.childNodes[0].childNodes[2].nodeType
+1
+
+// test.childNodes[0].childNodes[2].nodeValue
+null
+
+// test.childNodes[0].childNodes[2].parentNode
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.childNodes[0].childNodes[2].prefix
+
+
+// test.childNodes[0].childNodes[2].previousSibling
+<item first="false" id="b">&amp; me too!</item>
+
+// test.childNodes[0].childNodes[2].childNodes[0]
+I was &quot;insertedBefore()&quot;&apos;d!
+
+// test.childNodes[0].childNodes[2].childNodes[0].attributes
+(empty)
+
+// test.childNodes[0].childNodes[2].childNodes[0].childNodes
+
+
+// test.childNodes[0].childNodes[2].childNodes[0].firstChild
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].lastChild
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].localName
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].namespaceURI
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].nextSibling
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].nodeName
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].nodeType
+3
+
+// test.childNodes[0].childNodes[2].childNodes[0].nodeValue
+I was "insertedBefore()"'d!
+
+// test.childNodes[0].childNodes[2].childNodes[0].parentNode
+<item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item>
+
+// test.childNodes[0].childNodes[2].childNodes[0].prefix
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].previousSibling
+null
+
+// test.childNodes[0].childNodes[3]
+<item first="false" id="d">I should be fourth! :&gt;</item>
+
+// test.childNodes[0].childNodes[3].attributes
+(empty)
+
+// test.childNodes[0].childNodes[3].childNodes
+I should be fourth! :&gt;
+
+// test.childNodes[0].childNodes[3].firstChild
+I should be fourth! :&gt;
+
+// test.childNodes[0].childNodes[3].lastChild
+I should be fourth! :&gt;
+
+// test.childNodes[0].childNodes[3].localName
+item
+
+// test.childNodes[0].childNodes[3].namespaceURI
+null
+
+// test.childNodes[0].childNodes[3].nextSibling
+null
+
+// test.childNodes[0].childNodes[3].nodeName
+item
+
+// test.childNodes[0].childNodes[3].nodeType
+1
+
+// test.childNodes[0].childNodes[3].nodeValue
+null
+
+// test.childNodes[0].childNodes[3].parentNode
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.childNodes[0].childNodes[3].prefix
+
+
+// test.childNodes[0].childNodes[3].previousSibling
+<item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item>
+
+// test.childNodes[0].childNodes[3].childNodes[0]
+I should be fourth! :&gt;
+
+// test.childNodes[0].childNodes[3].childNodes[0].attributes
+(empty)
+
+// test.childNodes[0].childNodes[3].childNodes[0].childNodes
+
+
+// test.childNodes[0].childNodes[3].childNodes[0].firstChild
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].lastChild
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].localName
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].namespaceURI
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].nextSibling
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].nodeName
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].nodeType
+3
+
+// test.childNodes[0].childNodes[3].childNodes[0].nodeValue
+I should be fourth! :>
+
+// test.childNodes[0].childNodes[3].childNodes[0].parentNode
+<item first="false" id="d">I should be fourth! :&gt;</item>
+
+// test.childNodes[0].childNodes[3].childNodes[0].prefix
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].previousSibling
+null
+
+// test.childNodes[1]
+<contact:mailbox>foo@example.org</contact:mailbox>
+
+// test.childNodes[1].attributes
+(empty)
+
+// test.childNodes[1].childNodes
+foo@example.org
+
+// test.childNodes[1].firstChild
+foo@example.org
+
+// test.childNodes[1].lastChild
+foo@example.org
+
+// test.childNodes[1].localName
+mailbox
+
+// test.childNodes[1].namespaceURI
+null
+
+// test.childNodes[1].nextSibling
+null
+
+// test.childNodes[1].nodeName
+contact:mailbox
+
+// test.childNodes[1].nodeType
+1
+
+// test.childNodes[1].nodeValue
+null
+
+// test.childNodes[1].parentNode
+test
+
+// test.childNodes[1].prefix
+contact
+
+// test.childNodes[1].previousSibling
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.childNodes[1].childNodes[0]
+foo@example.org
+
+// test.childNodes[1].childNodes[0].attributes
+(empty)
+
+// test.childNodes[1].childNodes[0].childNodes
+
+
+// test.childNodes[1].childNodes[0].firstChild
+null
+
+// test.childNodes[1].childNodes[0].lastChild
+null
+
+// test.childNodes[1].childNodes[0].localName
+null
+
+// test.childNodes[1].childNodes[0].namespaceURI
+null
+
+// test.childNodes[1].childNodes[0].nextSibling
+null
+
+// test.childNodes[1].childNodes[0].nodeName
+null
+
+// test.childNodes[1].childNodes[0].nodeType
+3
+
+// test.childNodes[1].childNodes[0].nodeValue
+foo@example.org
+
+// test.childNodes[1].childNodes[0].parentNode
+<contact:mailbox>foo@example.org</contact:mailbox>
+
+// test.childNodes[1].childNodes[0].prefix
+null
+
+// test.childNodes[1].childNodes[0].previousSibling
+null
+
+
+// var test = new XMLNode(XMLNodeType.XML_DECLARATION, "test")
+// test
+test
+
+// test.attributes
+(empty)
+
+// test.childNodes
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>,<contact:mailbox>foo@example.org</contact:mailbox>
+
+// test.firstChild
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.lastChild
+<contact:mailbox>foo@example.org</contact:mailbox>
+
+// test.localName
+null
+
+// test.namespaceURI
+null
+
+// test.nextSibling
+null
+
+// test.nodeName
+null
+
+// test.nodeType
+13
+
+// test.nodeValue
+test
+
+// test.parentNode
+null
+
+// test.prefix
+null
+
+// test.previousSibling
+null
+
+// test.childNodes[0]
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.childNodes[0].attributes
+(empty)
+
+// test.childNodes[0].childNodes
+<item first="true" id="a">first item! &lt;3</item>,<item first="false" id="b">&amp; me too!</item>,<item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item>,<item first="false" id="d">I should be fourth! :&gt;</item>
+
+// test.childNodes[0].firstChild
+<item first="true" id="a">first item! &lt;3</item>
+
+// test.childNodes[0].lastChild
+<item first="false" id="d">I should be fourth! :&gt;</item>
+
+// test.childNodes[0].localName
+list
+
+// test.childNodes[0].namespaceURI
+null
+
+// test.childNodes[0].nextSibling
+<contact:mailbox>foo@example.org</contact:mailbox>
+
+// test.childNodes[0].nodeName
+list
+
+// test.childNodes[0].nodeType
+1
+
+// test.childNodes[0].nodeValue
+null
+
+// test.childNodes[0].parentNode
+test
+
+// test.childNodes[0].prefix
+
+
+// test.childNodes[0].previousSibling
+null
+
+// test.childNodes[0].childNodes[0]
+<item first="true" id="a">first item! &lt;3</item>
+
+// test.childNodes[0].childNodes[0].attributes
+(empty)
+
+// test.childNodes[0].childNodes[0].childNodes
+first item! &lt;3
+
+// test.childNodes[0].childNodes[0].firstChild
+first item! &lt;3
+
+// test.childNodes[0].childNodes[0].lastChild
+first item! &lt;3
+
+// test.childNodes[0].childNodes[0].localName
+item
+
+// test.childNodes[0].childNodes[0].namespaceURI
+null
+
+// test.childNodes[0].childNodes[0].nextSibling
+<item first="false" id="b">&amp; me too!</item>
+
+// test.childNodes[0].childNodes[0].nodeName
+item
+
+// test.childNodes[0].childNodes[0].nodeType
+1
+
+// test.childNodes[0].childNodes[0].nodeValue
+null
+
+// test.childNodes[0].childNodes[0].parentNode
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.childNodes[0].childNodes[0].prefix
+
+
+// test.childNodes[0].childNodes[0].previousSibling
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0]
+first item! &lt;3
+
+// test.childNodes[0].childNodes[0].childNodes[0].attributes
+(empty)
+
+// test.childNodes[0].childNodes[0].childNodes[0].childNodes
+
+
+// test.childNodes[0].childNodes[0].childNodes[0].firstChild
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].lastChild
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].localName
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].namespaceURI
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].nextSibling
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].nodeName
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].nodeType
+3
+
+// test.childNodes[0].childNodes[0].childNodes[0].nodeValue
+first item! <3
+
+// test.childNodes[0].childNodes[0].childNodes[0].parentNode
+<item first="true" id="a">first item! &lt;3</item>
+
+// test.childNodes[0].childNodes[0].childNodes[0].prefix
+null
+
+// test.childNodes[0].childNodes[0].childNodes[0].previousSibling
+null
+
+// test.childNodes[0].childNodes[1]
+<item first="false" id="b">&amp; me too!</item>
+
+// test.childNodes[0].childNodes[1].attributes
+(empty)
+
+// test.childNodes[0].childNodes[1].childNodes
+&amp; me too!
+
+// test.childNodes[0].childNodes[1].firstChild
+&amp; me too!
+
+// test.childNodes[0].childNodes[1].lastChild
+&amp; me too!
+
+// test.childNodes[0].childNodes[1].localName
+item
+
+// test.childNodes[0].childNodes[1].namespaceURI
+null
+
+// test.childNodes[0].childNodes[1].nextSibling
+<item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item>
+
+// test.childNodes[0].childNodes[1].nodeName
+item
+
+// test.childNodes[0].childNodes[1].nodeType
+1
+
+// test.childNodes[0].childNodes[1].nodeValue
+null
+
+// test.childNodes[0].childNodes[1].parentNode
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.childNodes[0].childNodes[1].prefix
+
+
+// test.childNodes[0].childNodes[1].previousSibling
+<item first="true" id="a">first item! &lt;3</item>
+
+// test.childNodes[0].childNodes[1].childNodes[0]
+&amp; me too!
+
+// test.childNodes[0].childNodes[1].childNodes[0].attributes
+(empty)
+
+// test.childNodes[0].childNodes[1].childNodes[0].childNodes
+
+
+// test.childNodes[0].childNodes[1].childNodes[0].firstChild
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].lastChild
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].localName
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].namespaceURI
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].nextSibling
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].nodeName
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].nodeType
+3
+
+// test.childNodes[0].childNodes[1].childNodes[0].nodeValue
+& me too!
+
+// test.childNodes[0].childNodes[1].childNodes[0].parentNode
+<item first="false" id="b">&amp; me too!</item>
+
+// test.childNodes[0].childNodes[1].childNodes[0].prefix
+null
+
+// test.childNodes[0].childNodes[1].childNodes[0].previousSibling
+null
+
+// test.childNodes[0].childNodes[2]
+<item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item>
+
+// test.childNodes[0].childNodes[2].attributes
+(empty)
+
+// test.childNodes[0].childNodes[2].childNodes
+I was &quot;insertedBefore()&quot;&apos;d!
+
+// test.childNodes[0].childNodes[2].firstChild
+I was &quot;insertedBefore()&quot;&apos;d!
+
+// test.childNodes[0].childNodes[2].lastChild
+I was &quot;insertedBefore()&quot;&apos;d!
+
+// test.childNodes[0].childNodes[2].localName
+item
+
+// test.childNodes[0].childNodes[2].namespaceURI
+null
+
+// test.childNodes[0].childNodes[2].nextSibling
+<item first="false" id="d">I should be fourth! :&gt;</item>
+
+// test.childNodes[0].childNodes[2].nodeName
+item
+
+// test.childNodes[0].childNodes[2].nodeType
+1
+
+// test.childNodes[0].childNodes[2].nodeValue
+null
+
+// test.childNodes[0].childNodes[2].parentNode
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.childNodes[0].childNodes[2].prefix
+
+
+// test.childNodes[0].childNodes[2].previousSibling
+<item first="false" id="b">&amp; me too!</item>
+
+// test.childNodes[0].childNodes[2].childNodes[0]
+I was &quot;insertedBefore()&quot;&apos;d!
+
+// test.childNodes[0].childNodes[2].childNodes[0].attributes
+(empty)
+
+// test.childNodes[0].childNodes[2].childNodes[0].childNodes
+
+
+// test.childNodes[0].childNodes[2].childNodes[0].firstChild
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].lastChild
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].localName
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].namespaceURI
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].nextSibling
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].nodeName
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].nodeType
+3
+
+// test.childNodes[0].childNodes[2].childNodes[0].nodeValue
+I was "insertedBefore()"'d!
+
+// test.childNodes[0].childNodes[2].childNodes[0].parentNode
+<item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item>
+
+// test.childNodes[0].childNodes[2].childNodes[0].prefix
+null
+
+// test.childNodes[0].childNodes[2].childNodes[0].previousSibling
+null
+
+// test.childNodes[0].childNodes[3]
+<item first="false" id="d">I should be fourth! :&gt;</item>
+
+// test.childNodes[0].childNodes[3].attributes
+(empty)
+
+// test.childNodes[0].childNodes[3].childNodes
+I should be fourth! :&gt;
+
+// test.childNodes[0].childNodes[3].firstChild
+I should be fourth! :&gt;
+
+// test.childNodes[0].childNodes[3].lastChild
+I should be fourth! :&gt;
+
+// test.childNodes[0].childNodes[3].localName
+item
+
+// test.childNodes[0].childNodes[3].namespaceURI
+null
+
+// test.childNodes[0].childNodes[3].nextSibling
+null
+
+// test.childNodes[0].childNodes[3].nodeName
+item
+
+// test.childNodes[0].childNodes[3].nodeType
+1
+
+// test.childNodes[0].childNodes[3].nodeValue
+null
+
+// test.childNodes[0].childNodes[3].parentNode
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.childNodes[0].childNodes[3].prefix
+
+
+// test.childNodes[0].childNodes[3].previousSibling
+<item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item>
+
+// test.childNodes[0].childNodes[3].childNodes[0]
+I should be fourth! :&gt;
+
+// test.childNodes[0].childNodes[3].childNodes[0].attributes
+(empty)
+
+// test.childNodes[0].childNodes[3].childNodes[0].childNodes
+
+
+// test.childNodes[0].childNodes[3].childNodes[0].firstChild
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].lastChild
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].localName
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].namespaceURI
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].nextSibling
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].nodeName
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].nodeType
+3
+
+// test.childNodes[0].childNodes[3].childNodes[0].nodeValue
+I should be fourth! :>
+
+// test.childNodes[0].childNodes[3].childNodes[0].parentNode
+<item first="false" id="d">I should be fourth! :&gt;</item>
+
+// test.childNodes[0].childNodes[3].childNodes[0].prefix
+null
+
+// test.childNodes[0].childNodes[3].childNodes[0].previousSibling
+null
+
+// test.childNodes[1]
+<contact:mailbox>foo@example.org</contact:mailbox>
+
+// test.childNodes[1].attributes
+(empty)
+
+// test.childNodes[1].childNodes
+foo@example.org
+
+// test.childNodes[1].firstChild
+foo@example.org
+
+// test.childNodes[1].lastChild
+foo@example.org
+
+// test.childNodes[1].localName
+mailbox
+
+// test.childNodes[1].namespaceURI
+null
+
+// test.childNodes[1].nextSibling
+null
+
+// test.childNodes[1].nodeName
+contact:mailbox
+
+// test.childNodes[1].nodeType
+1
+
+// test.childNodes[1].nodeValue
+null
+
+// test.childNodes[1].parentNode
+test
+
+// test.childNodes[1].prefix
+contact
+
+// test.childNodes[1].previousSibling
+<list><item first="true" id="a">first item! &lt;3</item><item first="false" id="b">&amp; me too!</item><item first="false" id="c">I was &quot;insertedBefore()&quot;&apos;d!</item><item first="false" id="d">I should be fourth! :&gt;</item></list>
+
+// test.childNodes[1].childNodes[0]
+foo@example.org
+
+// test.childNodes[1].childNodes[0].attributes
+(empty)
+
+// test.childNodes[1].childNodes[0].childNodes
+
+
+// test.childNodes[1].childNodes[0].firstChild
+null
+
+// test.childNodes[1].childNodes[0].lastChild
+null
+
+// test.childNodes[1].childNodes[0].localName
+null
+
+// test.childNodes[1].childNodes[0].namespaceURI
+null
+
+// test.childNodes[1].childNodes[0].nextSibling
+null
+
+// test.childNodes[1].childNodes[0].nodeName
+null
+
+// test.childNodes[1].childNodes[0].nodeType
+3
+
+// test.childNodes[1].childNodes[0].nodeValue
+foo@example.org
+
+// test.childNodes[1].childNodes[0].parentNode
+<contact:mailbox>foo@example.org</contact:mailbox>
+
+// test.childNodes[1].childNodes[0].prefix
+null
+
+// test.childNodes[1].childNodes[0].previousSibling
+null
+
+

@@ -220,7 +220,7 @@ impl<'builder, 'activation_a, 'gc, T: TimeZone> DateAdjustment<'builder, 'activa
         } else {
             None
         };
-        object.set_date_time(self.activation.context.gc_context, date);
+        object.set_date_time(date);
         if let Some(date) = date {
             date.timestamp_millis() as f64
         } else {
@@ -243,16 +243,13 @@ pub fn instance_init<'gc>(
                 let timezone = get_timezone();
 
                 // We need a starting value to adjust from.
-                date.set_date_time(
-                    activation.context.gc_context,
-                    Some(
-                        timezone
-                            .with_ymd_and_hms(0, 1, 1, 0, 0, 0)
-                            .single()
-                            .expect("Found ambiguous epoch time when constructing Date")
-                            .into(),
-                    ),
-                );
+                date.set_date_time(Some(
+                    timezone
+                        .with_ymd_and_hms(0, 1, 1, 0, 0, 0)
+                        .single()
+                        .expect("Found ambiguous epoch time when constructing Date")
+                        .into(),
+                ));
 
                 DateAdjustment::new(activation, &timezone)
                     .year(args.get(0))?
@@ -272,12 +269,12 @@ pub fn instance_init<'gc>(
                 };
                 if timestamp.is_finite() {
                     if let LocalResult::Single(time) = Utc.timestamp_millis_opt(timestamp as i64) {
-                        date.set_date_time(activation.context.gc_context, Some(time))
+                        date.set_date_time(Some(time))
                     }
                 }
             }
         } else {
-            date.set_date_time(activation.context.gc_context, Some(get_current_date_time()))
+            date.set_date_time(Some(get_current_date_time()))
         }
     }
 
@@ -355,10 +352,10 @@ pub fn set_time<'gc>(
                 .timestamp_millis_opt(new_time as i64)
                 .single()
                 .expect("Found ambiguous timestamp for current time zone");
-            this.set_date_time(activation.context.gc_context, Some(time));
+            this.set_date_time(Some(time));
             return Ok((time.timestamp_millis() as f64).into());
         } else {
-            this.set_date_time(activation.context.gc_context, None);
+            this.set_date_time(None);
             return Ok(f64::NAN.into());
         }
     }
@@ -612,16 +609,13 @@ pub fn set_full_year<'gc>(
     if let Some(this) = this.as_date_object() {
         let timezone = get_timezone();
         if this.date_time().is_none() {
-            this.set_date_time(
-                activation.context.gc_context,
-                Some(
-                    timezone
-                        .with_ymd_and_hms(0, 1, 1, 0, 0, 0)
-                        .single()
-                        .expect("Found ambiguous epoch time when constructing Date")
-                        .into(),
-                ),
-            );
+            this.set_date_time(Some(
+                timezone
+                    .with_ymd_and_hms(0, 1, 1, 0, 0, 0)
+                    .single()
+                    .expect("Found ambiguous epoch time when constructing Date")
+                    .into(),
+            ));
         }
         let timestamp = DateAdjustment::new(activation, &timezone)
             .year(args.get(0))?
@@ -877,14 +871,11 @@ pub fn set_full_year_utc<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.as_date_object() {
         if this.date_time().is_none() {
-            this.set_date_time(
-                activation.context.gc_context,
-                Some(
-                    Utc.with_ymd_and_hms(0, 1, 1, 0, 0, 0)
-                        .single()
-                        .expect("Found ambiguous epoch time when constructing Date"),
-                ),
-            );
+            this.set_date_time(Some(
+                Utc.with_ymd_and_hms(0, 1, 1, 0, 0, 0)
+                    .single()
+                    .expect("Found ambiguous epoch time when constructing Date"),
+            ));
         }
         let timestamp = DateAdjustment::new(activation, &Utc)
             .year(args.get(0))?

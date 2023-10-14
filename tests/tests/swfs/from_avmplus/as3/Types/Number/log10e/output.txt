@@ -1,0 +1,9 @@
+Number.LOG10E PASSED!
+typeof Number.LOG10E PASSED!
+Number.LOG10E - DontDelete PASSED!
+Number.LOG10E is still ok PASSED!
+Number.LOG10E - DontEnum PASSED!
+Number.LOG10E is no enumberable PASSED!
+Number.LOG10E - ReadOnly PASSED!
+Number.LOG10E is still here PASSED!
+Number.LOG10E is approximately the reciprocal of the value of Number.LN10 PASSED!

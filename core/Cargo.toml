@@ -9,52 +9,55 @@ version.workspace = true
 
 [dependencies]
 linkme = { version = "0.3", optional = true }
-byteorder = "1.4"
+byteorder = "1.5"
 bitstream-io = "1.7.0"
-flate2 = "1.0.26"
+flate2 = "1.0.27"
 fnv = "1.0.7"
 gc-arena = { package = "ruffle_gc_arena", path = "../ruffle_gc_arena" }
 generational-arena = "0.2.9"
-indexmap = "2.0.0"
+indexmap = "2.0.2"
 tracing = { workspace = true }
 ruffle_render = { path = "../render", features = ["tessellator"] }
 ruffle_video = { path = "../video" }
 ruffle_macros = { path = "macros" }
 ruffle_wstr = { path = "../wstr" }
 swf = { path = "../swf" }
-bitflags = "2.3.3"
-smallvec = { version = "1.11.0", features = ["union"] }
+bitflags = "2.4.0"
+smallvec = { version = "1.11.1", features = ["union"] }
 num-traits = "0.2"
 num-derive = "0.4"
 quick-xml = "0.30.0"
 downcast-rs = "1.2.0"
-url = "2.4.0"
+url = "2.4.1"
 weak-table = "0.3.2"
 percent-encoding = "2.3.0"
 thiserror = "1.0"
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
 instant = "0.1"
-encoding_rs = "0.8.32"
+encoding_rs = "0.8.33"
 rand = { version = "0.8.5", features = ["std", "small_rng"], default-features = false }
-serde = { version = "1.0.175", features = ["derive"] }
+serde = { version = "1.0.188", features = ["derive"] }
 serde_json = { version = "1.0", features = ["preserve_order"] }
 nellymoser-rs = { git = "https://github.com/ruffle-rs/nellymoser", rev = "4a33521c29a918950df8ae9fe07e527ac65553f5", optional = true }
-regress = "0.6"
+regress = "0.7"
 flash-lso = { git = "https://github.com/ruffle-rs/rust-flash-lso", rev = "3669a352c14192d0d301e594ae6047ae99725006" }
 lzma-rs = {version = "0.3.0", optional = true }
 dasp = { git = "https://github.com/RustAudio/dasp", rev = "f05a703", features = ["interpolate", "interpolate-linear", "signal"], optional = true }
 symphonia = { version = "0.5.3", default-features = false, features = ["mp3"], optional = true }
 enumset = "1.1.2"
-bytemuck = "1.13.1"
-clap = { version = "4.3.19", features = ["derive"], optional=true }
+bytemuck = "1.14.0"
+clap = { version = "4.4.6", features = ["derive"], optional=true }
 realfft = "3.3.0"
-hashbrown = { version = "0.14.0", features = ["raw"] }
+hashbrown = { version = "0.14.1", features = ["raw"] }
 scopeguard = "1.2.0"
 fluent-templates = "0.8.0"
-egui = { version = "0.22.0", optional = true }
-egui_extras = { version = "0.22.0", optional = true }
-png = { version = "0.17.9", optional = true }
+egui = { workspace = true, optional = true }
+egui_extras = { version = "0.23.0", optional = true }
+png = { version = "0.17.10", optional = true }
 flv-rs = { path = "../flv" }
+async-channel = "1.9.0"
+jpegxr = { git = "https://github.com/ruffle-rs/jpegxr", branch = "ruffle", optional = true }
+image = { version = "0.24.7", default-features = false, features = ["tiff"] }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
 version = "0.3.28"
@@ -75,6 +78,7 @@ audio = ["dasp"]
 known_stubs = ["linkme"]
 default_compatibility_rules = []
 egui = ["dep:egui", "dep:egui_extras", "png"]
+jpegxr = ["dep:jpegxr"]
 
 [build-dependencies]
 build_playerglobal = { path = "build_playerglobal" }

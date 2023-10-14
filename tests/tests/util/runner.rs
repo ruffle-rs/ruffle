@@ -1,10 +1,12 @@
 use crate::util::fs_commands::{FsCommand, TestFsCommandProvider};
+use crate::util::image_trigger::ImageTrigger;
 use crate::util::navigator::TestNavigatorBackend;
+use crate::util::options::ImageComparison;
 use crate::util::test::Test;
 use anyhow::{anyhow, Result};
 use ruffle_core::backend::audio::{
     swf, AudioBackend, AudioMixer, DecodeError, RegisterError, SoundHandle, SoundInstanceHandle,
-    SoundTransform,
+    SoundStreamInfo, SoundTransform,
 };
 use ruffle_core::backend::log::LogBackend;
 use ruffle_core::backend::navigator::NullExecutor;
@@ -18,6 +20,7 @@ use ruffle_input_format::{
     AutomatedEvent, InputInjector, MouseButton as InputMouseButton,
     TextControlCode as InputTextControlCode,
 };
+use ruffle_render_wgpu::descriptors::Descriptors;
 use ruffle_socket_format::SocketEvent;
 use std::cell::RefCell;
 use std::path::Path;
@@ -130,6 +133,14 @@ pub fn run_swf(
         .with_autoplay(true) //.tick() requires playback
         .build();
 
+    let mut images = test.options.image_comparisons.clone();
+
+    let wgpu_descriptors = if cfg!(feature = "imgtests") && !images.is_empty() {
+        crate::util::environment::wgpu_descriptors()
+    } else {
+        None
+    };
+
     before_start(player.clone())?;
 
     if test.options.num_frames.is_none() && test.options.num_ticks.is_none() {
@@ -144,6 +155,7 @@ pub fn run_swf(
         .num_frames
         .or(test.options.num_ticks)
         .expect("valid iteration count");
+    let mut current_iteration = 0;
 
     while remaining_iterations > 0 {
         // If requested, ensure that the 'expected' amount of
@@ -177,12 +189,30 @@ pub fn run_swf(
             player.lock().unwrap().audio_mut().tick();
         }
         remaining_iterations -= 1;
+        current_iteration += 1;
         executor.run();
 
         for command in fs_commands.try_iter() {
             match command {
                 FsCommand::Quit => {
                     remaining_iterations = 0;
+                }
+                FsCommand::CaptureImage(name) => {
+                    if let Some(image_comparison) = images.remove(&name) {
+                        if image_comparison.trigger != ImageTrigger::FsCommand {
+                            return Err(anyhow!("Encountered fscommand to capture and compare image '{name}', but the trigger was expected to be {:?}", image_comparison.trigger));
+                        }
+                        capture_and_compare_image(
+                            base_path,
+                            &player,
+                            wgpu_descriptors,
+                            &name,
+                            image_comparison,
+                            test.options.known_failure,
+                        )?;
+                    } else {
+                        return Err(anyhow!("Encountered fscommand to capture and compare image '{name}', but no [image_comparison] was set up for this."));
+                    }
                 }
             }
         }
@@ -235,57 +265,50 @@ pub fn run_swf(
         });
         // Rendering has side-effects (such as processing 'DisplayObject.scrollRect' updates)
         player.lock().unwrap().render();
+
+        if let Some(name) = images
+            .iter()
+            .find(|(_k, v)| v.trigger == ImageTrigger::SpecificIteration(current_iteration))
+            .map(|(k, _v)| k.to_owned())
+        {
+            let image_comparison = images
+                .remove(&name)
+                .expect("Name was just retrieved from map, should not be missing!");
+            capture_and_compare_image(
+                base_path,
+                &player,
+                wgpu_descriptors,
+                &name,
+                image_comparison,
+                test.options.known_failure,
+            )?;
+        }
     }
 
-    // Render the image to disk
-    // FIXME: Determine how we want to compare against on on-disk image
-    #[allow(unused_variables)]
-    if let Some(image_comparison) = &test.options.image_comparison {
-        #[allow(unused_mut)]
-        let mut checked_image = false;
+    if let Some(name) = images
+        .iter()
+        .find(|(_k, v)| v.trigger == ImageTrigger::LastFrame)
+        .map(|(k, _v)| k.to_owned())
+    {
+        let image_comparison = images
+            .remove(&name)
+            .expect("Name was just retrieved from map, should not be missing!");
 
-        #[cfg(feature = "imgtests")]
-        if crate::util::environment::wgpu_descriptors().is_some() {
-            use anyhow::Context;
-            use ruffle_render_wgpu::backend::WgpuRenderBackend;
-            use ruffle_render_wgpu::target::TextureTarget;
+        capture_and_compare_image(
+            base_path,
+            &player,
+            wgpu_descriptors,
+            &name,
+            image_comparison,
+            test.options.known_failure,
+        )?;
+    }
 
-            checked_image = true;
-            let mut player_lock = player.lock().unwrap();
-            player_lock.render();
-            let renderer = player_lock
-                .renderer_mut()
-                .downcast_mut::<WgpuRenderBackend<TextureTarget>>()
-                .unwrap();
-
-            let actual_image = renderer.capture_frame().expect("Failed to capture image");
-
-            let expected_image_path = base_path.join("expected.png");
-            if expected_image_path.is_file() {
-                let expected_image = image::open(&expected_image_path)
-                    .context("Failed to open expected image")?
-                    .into_rgba8();
-
-                image_comparison.test(
-                    actual_image,
-                    expected_image,
-                    base_path,
-                    renderer.descriptors().adapter.get_info(),
-                    test.options.known_failure,
-                )?;
-            } else if !test.options.known_failure {
-                // If we're expecting this to be wrong, don't save a likely wrong image
-                actual_image.save(expected_image_path)?;
-            }
-        }
-
-        if test.options.known_failure && !checked_image {
-            // It's possible that the trace output matched but the image might not.
-            // If we aren't checking the image, pretend the match failed (which makes it actually pass, since it's expecting failure).
-            return Err(anyhow!(
-                "Not checking images, pretending this failed since we don't know if it worked."
-            ));
-        }
+    if !images.is_empty() {
+        return Err(anyhow!(
+            "Image comparisons didn't trigger: {:?}",
+            images.keys()
+        ));
     }
 
     before_end(player)?;
@@ -298,4 +321,76 @@ pub fn run_swf(
     // bytes should explicitly test for them in ActionScript.
     let normalized_trace = trace.replace('\0', "");
     Ok(normalized_trace)
+}
+
+#[cfg(not(feature = "imgtests"))]
+fn capture_and_compare_image(
+    _base_path: &Path,
+    _player: &Arc<Mutex<Player>>,
+    _wgpu_descriptors: Option<&Arc<Descriptors>>,
+    _name: &String,
+    _image_comparison: ImageComparison,
+    known_failure: bool,
+) -> Result<()> {
+    if known_failure {
+        // It's possible that the trace output matched but the image might not.
+        // If we aren't checking the image, pretend the match failed (which makes it actually pass, since it's expecting failure).
+        return Err(anyhow!(
+            "Not checking images, pretending this failed since we don't know if it worked."
+        ));
+    } else {
+        Ok(())
+    }
+}
+
+#[cfg(feature = "imgtests")]
+fn capture_and_compare_image(
+    base_path: &Path,
+    player: &Arc<Mutex<Player>>,
+    wgpu_descriptors: Option<&Arc<Descriptors>>,
+    name: &String,
+    image_comparison: ImageComparison,
+    known_failure: bool,
+) -> Result<()> {
+    use anyhow::Context;
+    use ruffle_render_wgpu::backend::WgpuRenderBackend;
+    use ruffle_render_wgpu::target::TextureTarget;
+
+    if let Some(wgpu_descriptors) = wgpu_descriptors {
+        let mut player_lock = player.lock().unwrap();
+        player_lock.render();
+        let renderer = player_lock
+            .renderer_mut()
+            .downcast_mut::<WgpuRenderBackend<TextureTarget>>()
+            .unwrap();
+
+        let actual_image = renderer.capture_frame().expect("Failed to capture image");
+
+        let expected_image_path = base_path.join(format!("{name}.expected.png"));
+        if expected_image_path.is_file() {
+            let expected_image = image::open(&expected_image_path)
+                .context("Failed to open expected image")?
+                .into_rgba8();
+
+            image_comparison.test(
+                name,
+                actual_image,
+                expected_image,
+                base_path,
+                wgpu_descriptors.adapter.get_info(),
+                known_failure,
+            )?;
+        } else if !known_failure {
+            // If we're expecting this to be wrong, don't save a likely wrong image
+            actual_image.save(expected_image_path)?;
+        }
+    } else if known_failure {
+        // It's possible that the trace output matched but the image might not.
+        // If we aren't checking the image, pretend the match failed (which makes it actually pass, since it's expecting failure).
+        return Err(anyhow!(
+            "Not checking images, pretending this failed since we don't know if it worked."
+        ));
+    }
+
+    Ok(())
 }

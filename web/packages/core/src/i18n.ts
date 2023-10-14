@@ -108,7 +108,7 @@ export function text(
 export function textAsParagraphs(
     id: string,
     args?: Record<string, FluentVariable> | null,
-): string {
+): HTMLDivElement {
     const result = document.createElement("div");
     text(id, args)
         .split("\n")
@@ -117,5 +117,5 @@ export function textAsParagraphs(
             p.innerText = line;
             result.appendChild(p);
         });
-    return result.innerHTML;
+    return result;
 }

@@ -83,9 +83,7 @@ package flash.net {
 
         public native function resume();
 
-        public function seek(offset:Number) {
-            stub_method("flash.net.NetStream", "seek");
-        }
+        public native function seek(offset:Number);
 
         public function send(handlerName:String, ...args) {
             stub_method("flash.net.NetStream", "send");
@@ -311,10 +309,7 @@ package flash.net {
             stub_setter("flash.net.NetStream", "soundTransform");
         };
 
-        public function get time(): Number {
-            stub_getter("flash.net.NetStream", "time");
-            return 0;
-        };
+        public native function get time(): Number;
 
         public function get useHardwareDecoder(): Boolean {
             stub_getter("flash.net.NetStream", "useHardwareDecoder");

@@ -1,0 +1,8 @@
+Number.PI PASSED!
+typeof Number.PI PASSED!
+Number.PI - DontDelete PASSED!
+Number.PI is still ok PASSED!
+Number.PI - DontEnum PASSED!
+Number.PI is no enumberable PASSED!
+Number.PI - ReadOnly PASSED!
+Number.PI is still here PASSED!

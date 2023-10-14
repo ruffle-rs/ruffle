@@ -1,0 +1,8 @@
+num_ticks = 3
+
+[image_comparisons.output]
+tolerance = 0
+
+[player_options]
+# Visual test will test the render bounds, whereas output test does the "normal" bounds
+with_renderer = { optional = true, sample_count = 1 }

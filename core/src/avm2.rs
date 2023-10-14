@@ -10,9 +10,11 @@ use crate::avm2::script::{Script, TranslationUnit};
 use crate::context::{GcContext, UpdateContext};
 use crate::display_object::{DisplayObject, DisplayObjectWeak, TDisplayObject};
 use crate::string::AvmString;
+use crate::tag_utils::SwfMovie;
 
 use fnv::FnvHashMap;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, Mutation};
+use std::sync::Arc;
 use swf::avm2::read::Reader;
 use swf::DoAbc2Flag;
 
@@ -479,6 +481,7 @@ impl<'gc> Avm2<'gc> {
         name: Option<AvmString<'gc>>,
         flags: DoAbc2Flag,
         domain: Domain<'gc>,
+        movie: Arc<SwfMovie>,
     ) -> Result<(), Error<'gc>> {
         let mut reader = Reader::new(data);
         let abc = match reader.read() {
@@ -494,7 +497,7 @@ impl<'gc> Avm2<'gc> {
         };
 
         let num_scripts = abc.scripts.len();
-        let tunit = TranslationUnit::from_abc(abc, domain, name, context.gc_context);
+        let tunit = TranslationUnit::from_abc(abc, domain, name, movie, context.gc_context);
         for i in 0..num_scripts {
             tunit.load_script(i as u32, context)?;
         }
@@ -514,17 +517,17 @@ impl<'gc> Avm2<'gc> {
     }
 
     /// Pushes an executable on the call stack
-    pub fn push_call(&self, mc: MutationContext<'gc, '_>, calling: &Executable<'gc>) {
+    pub fn push_call(&self, mc: &Mutation<'gc>, calling: &Executable<'gc>) {
         self.call_stack.write(mc).push(calling)
     }
 
     /// Pushes script initializer (global init) on the call stack
-    pub fn push_global_init(&self, mc: MutationContext<'gc, '_>, script: Script<'gc>) {
+    pub fn push_global_init(&self, mc: &Mutation<'gc>, script: Script<'gc>) {
         self.call_stack.write(mc).push_global_init(script)
     }
 
     /// Pops an executable off the call stack
-    pub fn pop_call(&self, mc: MutationContext<'gc, '_>) -> Option<CallNode<'gc>> {
+    pub fn pop_call(&self, mc: &Mutation<'gc>) -> Option<CallNode<'gc>> {
         self.call_stack.write(mc).pop()
     }
 
@@ -635,7 +638,7 @@ impl<'gc> Avm2<'gc> {
 /// If this returns `None`, the entry should be removed from the orphan list.
 fn valid_orphan<'gc>(
     dobj: DisplayObjectWeak<'gc>,
-    mc: MutationContext<'gc, '_>,
+    mc: &Mutation<'gc>,
 ) -> Option<DisplayObject<'gc>> {
     if let Some(dobj) = dobj.upgrade(mc) {
         if dobj.parent().is_none() {

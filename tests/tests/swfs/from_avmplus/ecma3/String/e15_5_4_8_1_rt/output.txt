@@ -1,0 +1,30 @@
+String.prototype.split.length PASSED!
+delete String.prototype.split.length PASSED!
+delete String.prototype.split.length; String.prototype.split.length PASSED!
+var s = new String('this is a string object'); typeof s.split() PASSED!
+var s = new String('this is a string object'); Array.prototype.getClass = Object.prototype.toString; (s.split()).getClass() PASSED!
+var s = new String('this is a string object'); s.split().length PASSED!
+var s = new String('this is a string object'); s.split()[0] PASSED!
+var obj = new Object(); obj.split = String.prototype.split; typeof obj.split() PASSED!
+var obj = new Object(); obj.split = String.prototype.split; Array.prototype.getClass = Object.prototype.toString; obj.getClass() PASSED!
+var obj = new Object(); obj.split = String.prototype.split; obj.split().length PASSED!
+var obj = new Object(); obj.split = String.prototype.split; obj.split()[0] PASSED!
+var obj = function() {}; obj.split = String.prototype.split; typeof obj.split() PASSED!
+var obj = function() {}; obj.split = String.prototype.split; Array.prototype.getClass = Object.prototype.toString; obj.getClass() PASSED!
+var obj = function() {}; obj.split = String.prototype.split; obj.split().length PASSED!
+var obj = new Number(NaN); obj.split = String.prototype.split; typeof obj.split() PASSED!
+var obj = new Number(Infinity); obj.split = String.prototype.split; Array.prototype.getClass = Object.prototype.toString; obj.getClass() PASSED!
+var obj = new Number(-1234567890); obj.split = String.prototype.split; obj.split().length PASSED!
+var obj = new Number(-1e21); obj.split = String.prototype.split; obj.split()[0] PASSED!
+var obj = Math; obj.split = String.prototype.split; typeof obj.split() PASSED!
+var obj = Math; obj.split = String.prototype.split;Array.prototype.getClass = Object.prototype.toString; obj.getClass() PASSED!
+var obj = Math; obj.split = String.prototype.split; obj.split().length PASSED!
+var obj = Math; obj.split = String.prototype.split; obj.split()[0] PASSED!
+var obj = new Array(1,2,3,4,5); obj.split = String.prototype.split; typeof obj.split() PASSED!
+var obj = new Array(1,2,3,4,5); obj.split = String.prototype.split; Array.prototype.getClass = Object.prototype.toString; obj.getClass() PASSED!
+var obj = new Array(1,2,3,4,5); obj.split = String.prototype.split; obj.split().length PASSED!
+var obj = new Array(1,2,3,4,5); obj.split = String.prototype.split; obj.split()[0] PASSED!
+var obj = new Boolean(); obj.split = String.prototype.split; typeof obj.split() PASSED!
+var obj = new Boolean(); obj.split = String.prototype.split; Array.prototype.getClass = Object.prototype.toString; obj.getClass() PASSED!
+var obj = new Boolean(); obj.split = String.prototype.split;obj.split().length PASSED!
+var obj = new Boolean(); obj.split = String.prototype.split;obj.split()[0] PASSED!

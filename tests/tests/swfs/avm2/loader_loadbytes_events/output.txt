@@ -12,6 +12,12 @@ loader.contentLoaderInfo === loader.content.loaderInfo : true
 loader.contentLoaderInfo.content === loader.content : true
 Event [Event type="init" bubbles=false cancelable=false eventPhase=2]: loader.numChildren = 1, loader.content = [object LoadableMainTimeline], loader.contentLoaderInfo.bytesLoaded = 738, loader.contentLoaderInfo.bytesTotal = 738, loader.contentLoaderInfo.url = file:///
 Event [Event type="complete" bubbles=false cancelable=false eventPhase=2]: loader.numChildren = 1, loader.content = [object LoadableMainTimeline], loader.contentLoaderInfo.bytesLoaded = 738, loader.contentLoaderInfo.bytesTotal = 738, loader.contentLoaderInfo.url = file:///
+Stage children before addChild attempt: 3
+loader.numChildren before addChild attempt: 1
+loader.content before addChild attempt: [object LoadableMainTimeline]
+Stage children after addChild attempt: 4
+loader.numChildren after addChild attempt: 0
+loader.content after addChild attempt: [object LoadableMainTimeline]
 Framescript frame 2
 Framescript frame 1
 Hello from loaded SWF!

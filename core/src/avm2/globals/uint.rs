@@ -2,13 +2,12 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::globals::number::{print_with_precision, print_with_radix};
+use crate::avm2::error::{make_error_1003, make_error_1004};
+use crate::avm2::globals::number::print_with_radix;
 use crate::avm2::method::{Method, NativeMethodImpl, ParamConfig};
 use crate::avm2::object::{primitive_allocator, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
-use crate::avm2::Multiname;
-use crate::avm2::QName;
-use crate::avm2::{AvmString, Error};
+use crate::avm2::{AvmString, Error, Multiname, QName};
 use gc_arena::GcCell;
 
 /// Implements `uint`'s instance initializer.
@@ -90,6 +89,18 @@ fn class_init<'gc>(
         activation,
     )?;
     uint_proto.set_string_property_local(
+        "toLocaleString",
+        FunctionObject::from_method(
+            activation,
+            Method::from_builtin(to_string, "toLocaleString", gc_context),
+            scope,
+            None,
+            Some(this_class),
+        )
+        .into(),
+        activation,
+    )?;
+    uint_proto.set_string_property_local(
         "toString",
         FunctionObject::from_method(
             activation,
@@ -113,9 +124,11 @@ fn class_init<'gc>(
         .into(),
         activation,
     )?;
+
     uint_proto.set_local_property_is_enumerable(gc_context, "toExponential".into(), false);
     uint_proto.set_local_property_is_enumerable(gc_context, "toFixed".into(), false);
     uint_proto.set_local_property_is_enumerable(gc_context, "toPrecision".into(), false);
+    uint_proto.set_local_property_is_enumerable(gc_context, "toLocaleString".into(), false);
     uint_proto.set_local_property_is_enumerable(gc_context, "toString".into(), false);
     uint_proto.set_local_property_is_enumerable(gc_context, "valueOf".into(), false);
 
@@ -123,90 +136,13 @@ fn class_init<'gc>(
 }
 
 /// Implements `uint.toExponential`
-fn to_exponential<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.as_primitive() {
-        if let Value::Integer(number) = *this {
-            let digits = args
-                .get(0)
-                .cloned()
-                .unwrap_or(Value::Integer(0))
-                .coerce_to_u32(activation)? as usize;
-
-            if digits > 20 {
-                return Err("toExponential can only print with 0 through 20 digits.".into());
-            }
-
-            return Ok(AvmString::new_utf8(
-                activation.context.gc_context,
-                format!("{number:.digits$e}")
-                    .replace('e', "e+")
-                    .replace("e+-", "e-")
-                    .replace("e+0", ""),
-            )
-            .into());
-        }
-    }
-
-    Err("uint.prototype.toExponential has been called on an incompatible object".into())
-}
+use crate::avm2::globals::number::to_exponential;
 
 /// Implements `uint.toFixed`
-fn to_fixed<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.as_primitive() {
-        if let Value::Integer(number) = *this {
-            let digits = args
-                .get(0)
-                .cloned()
-                .unwrap_or(Value::Integer(0))
-                .coerce_to_u32(activation)? as usize;
-
-            if digits > 20 {
-                return Err("toFixed can only print with 0 through 20 digits.".into());
-            }
-
-            return Ok(AvmString::new_utf8(
-                activation.context.gc_context,
-                format!("{0:.1$}", number as f64, digits),
-            )
-            .into());
-        }
-    }
-
-    Err("uint.prototype.toFixed has been called on an incompatible object".into())
-}
+use crate::avm2::globals::number::to_fixed;
 
 /// Implements `uint.toPrecision`
-fn to_precision<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.as_primitive() {
-        if let Value::Integer(number) = *this {
-            let wanted_digits = args
-                .get(0)
-                .cloned()
-                .unwrap_or(Value::Integer(0))
-                .coerce_to_u32(activation)? as usize;
-
-            if wanted_digits < 1 || wanted_digits > 21 {
-                return Err("toPrecision can only print with 1 through 21 digits.".into());
-            }
-
-            return Ok(print_with_precision(activation, number as f64, wanted_digits)?.into());
-        }
-    }
-
-    Err("uint.prototype.toPrecision has been called on an incompatible object".into())
-}
+use crate::avm2::globals::number::to_precision;
 
 /// Implements `uint.toString`
 fn to_string<'gc>(
@@ -214,36 +150,53 @@ fn to_string<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.as_primitive() {
-        if let Value::Integer(number) = *this {
-            let radix = args
-                .get(0)
-                .cloned()
-                .unwrap_or(Value::Integer(10))
-                .coerce_to_u32(activation)? as usize;
-
-            if radix < 2 || radix > 36 {
-                return Err("toString can only print in bases 2 thru 36.".into());
-            }
-
-            return Ok(print_with_radix(activation, number as f64, radix)?.into());
-        }
+    let uint_proto = activation.avm2().classes().uint.prototype();
+    if Object::ptr_eq(uint_proto, this) {
+        return Ok("0".into());
     }
 
-    Err("uint.prototype.toString has been called on an incompatible object".into())
+    let number = if let Some(this) = this.as_primitive() {
+        match *this {
+            Value::Integer(o) => o as f64,
+            Value::Number(o) => o,
+            _ => return Err(make_error_1004(activation, "uint.prototype.toString")),
+        }
+    } else {
+        return Err(make_error_1004(activation, "uint.prototype.toString"));
+    };
+
+    let radix = args
+        .get(0)
+        .cloned()
+        .unwrap_or(Value::Integer(10))
+        .coerce_to_i32(activation)?;
+
+    if radix < 2 || radix > 36 {
+        return Err(make_error_1003(activation, radix));
+    }
+
+    Ok(print_with_radix(activation, number, radix as usize)?.into())
 }
 
 /// Implements `uint.valueOf`
 fn value_of<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.as_primitive() {
-        return Ok(*this);
+    let uint_proto = activation.avm2().classes().uint.prototype();
+    if Object::ptr_eq(uint_proto, this) {
+        return Ok(0.into());
     }
 
-    Ok(Value::Undefined)
+    if let Some(this) = this.as_primitive() {
+        match *this {
+            Value::Integer(_) => Ok(*this),
+            _ => Err(make_error_1004(activation, "uint.prototype.valueOf")),
+        }
+    } else {
+        Err(make_error_1004(activation, "uint.prototype.valueOf"))
+    }
 }
 
 /// Construct `uint`'s class.
@@ -252,7 +205,18 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
     let class = Class::new(
         QName::new(activation.avm2().public_namespace, "uint"),
         Some(Multiname::new(activation.avm2().public_namespace, "Object")),
-        Method::from_builtin(instance_init, "<uint instance initializer>", mc),
+        Method::from_builtin_and_params(
+            instance_init,
+            "<uint instance initializer>",
+            vec![ParamConfig {
+                param_name: AvmString::new_utf8(activation.context.gc_context, "value"),
+                param_type_name: Multiname::any(activation.context.gc_context),
+                default_value: Some(Value::Integer(0)),
+            }],
+            Multiname::any(activation.context.gc_context),
+            true,
+            mc,
+        ),
         Method::from_builtin(class_init, "<uint class initializer>", mc),
         mc,
     );
@@ -260,14 +224,9 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
     let mut write = class.write(mc);
     write.set_attributes(ClassAttributes::FINAL | ClassAttributes::SEALED);
     write.set_instance_allocator(primitive_allocator);
-    write.set_native_instance_init(Method::from_builtin_and_params(
+    write.set_native_instance_init(Method::from_builtin(
         native_instance_init,
         "<uint native instance initializer>",
-        vec![ParamConfig::of_type(
-            "num",
-            Multiname::new(activation.avm2().public_namespace, "Object"),
-        )],
-        false,
         mc,
     ));
 

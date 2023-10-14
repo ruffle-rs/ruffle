@@ -9,3 +9,4 @@ context-menu-about-ruffle =
 context-menu-hide = הסתר תפריט זה
 context-menu-exit-fullscreen = יציאה ממסך מלא
 context-menu-enter-fullscreen = מסך מלא
+context-menu-volume-controls = בקרת עוצמת קול

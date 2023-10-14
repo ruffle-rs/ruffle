@@ -1,0 +1,22 @@
+SealedDictionary constructor no args PASSED!
+SealedDictionary constructor weakKeys=false PASSED!
+SealedDictionary constructor weakKeys=true PASSED!
+empty SealedDictionary toString PASSED!
+SealedDictionary key lookup fails PASSED!
+weak SealedDictionary key lookup fails PASSED!
+SealedDictionary key is literal PASSED!
+weak SealedDictionary key is literal PASSED!
+SealedDictionary key is object PASSED!
+weak SealedDictionary key is object PASSED!
+literal in SealedDictionary key PASSED!
+object in SealedDictionary key PASSED!
+literal in weak SealedDictionary key PASSED!
+object in weak SealedDictionary key PASSED!
+for in SealedDictionary PASSED!
+for in weak SealedDictionary PASSED!
+for each in SealedDictionary PASSED!
+for each in weak SealedDictionary PASSED!
+delete literal key from SealedDictionary PASSED!
+delete object key from SealedDictionary PASSED!
+delete literal key from weak SealedDictionary PASSED!
+delete object key from weak SealedDictionary PASSED!

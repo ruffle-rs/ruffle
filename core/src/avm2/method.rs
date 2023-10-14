@@ -7,10 +7,14 @@ use crate::avm2::value::{abc_default_value, Value};
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::string::AvmString;
-use gc_arena::{Collect, Gc, GcCell, MutationContext};
+use crate::tag_utils::SwfMovie;
+use gc_arena::barrier::unlock;
+use gc_arena::lock::Lock;
+use gc_arena::{Collect, Gc, Mutation};
 use std::fmt;
 use std::ops::Deref;
 use std::rc::Rc;
+use std::sync::Arc;
 use swf::avm2::types::{
     AbcFile, Index, Method as AbcMethod, MethodBody as AbcMethodBody,
     MethodFlags as AbcMethodFlags, MethodParam as AbcMethodParam,
@@ -120,8 +124,9 @@ pub struct BytecodeMethod<'gc> {
     /// The return type of this method.
     pub return_type: Multiname<'gc>,
 
-    /// The associated activation class. None if not needed. Initialized lazily.
-    pub activation_class: Option<GcCell<'gc, Option<ClassObject<'gc>>>>,
+    /// The associated activation class. Initialized lazily, and only
+    /// if the method requires it.
+    activation_class: Lock<Option<ClassObject<'gc>>>,
 
     /// Whether or not this method was declared as a free-standing function.
     ///
@@ -152,12 +157,6 @@ impl<'gc> BytecodeMethod<'gc> {
                 .deref()
                 .clone();
 
-            let activation_class = if method.flags.contains(AbcMethodFlags::NEED_ACTIVATION) {
-                Some(GcCell::new(activation.context.gc_context, None))
-            } else {
-                None
-            };
-
             for (index, method_body) in abc.method_bodies.iter().enumerate() {
                 if method_body.method.0 == abc_method.0 {
                     return Ok(Self {
@@ -168,7 +167,7 @@ impl<'gc> BytecodeMethod<'gc> {
                         signature,
                         return_type,
                         is_function,
-                        activation_class,
+                        activation_class: Lock::new(None),
                     });
                 }
             }
@@ -180,9 +179,9 @@ impl<'gc> BytecodeMethod<'gc> {
             abc_method: abc_method.0,
             abc_method_body: None,
             signature,
-            return_type: Multiname::any(activation.context.gc_context),
+            return_type: Multiname::any(activation.gc()),
             is_function,
-            activation_class: None,
+            activation_class: Lock::new(None),
         })
     }
 
@@ -199,6 +198,11 @@ impl<'gc> BytecodeMethod<'gc> {
     /// Get a reference to the ABC method entry this refers to.
     pub fn method(&self) -> &AbcMethod {
         self.abc.methods.get(self.abc_method as usize).unwrap()
+    }
+
+    /// Get a reference to the SwfMovie this method came from.
+    pub fn owner_movie(&self) -> Arc<SwfMovie> {
+        self.txunit.movie()
     }
 
     /// Get a reference to the ABC method body entry this refers to.
@@ -261,6 +265,27 @@ impl<'gc> BytecodeMethod<'gc> {
 
         !self.method().flags.contains(AbcMethodFlags::NEED_REST)
     }
+
+    /// Initialize and return the activation class object, if the method requires it.
+    pub fn get_or_init_activation_class(
+        this: Gc<'gc, Self>,
+        mc: &Mutation<'gc>,
+        init: impl FnOnce() -> Result<ClassObject<'gc>, Error<'gc>>,
+    ) -> Result<Option<ClassObject<'gc>>, Error<'gc>> {
+        Ok(if let Some(cached) = this.activation_class.get() {
+            Some(cached)
+        } else if this
+            .method()
+            .flags
+            .contains(AbcMethodFlags::NEED_ACTIVATION)
+        {
+            let cls = Some(init()?);
+            unlock!(Gc::write(mc, this), Self, activation_class).set(cls);
+            cls
+        } else {
+            None
+        })
+    }
 }
 
 /// An uninstantiated method
@@ -320,8 +345,9 @@ impl<'gc> Method<'gc> {
         method: NativeMethodImpl,
         name: &'static str,
         signature: Vec<ParamConfig<'gc>>,
+        return_type: Multiname<'gc>,
         is_variadic: bool,
-        mc: MutationContext<'gc, '_>,
+        mc: &Mutation<'gc>,
     ) -> Self {
         Self::Native(Gc::new(
             mc,
@@ -329,19 +355,14 @@ impl<'gc> Method<'gc> {
                 method,
                 name,
                 signature,
-                // FIXME - take in the real return type. This is needed for 'describeType'
-                return_type: Multiname::any(mc),
+                return_type,
                 is_variadic,
             },
         ))
     }
 
     /// Define a builtin with no parameter constraints.
-    pub fn from_builtin(
-        method: NativeMethodImpl,
-        name: &'static str,
-        mc: MutationContext<'gc, '_>,
-    ) -> Self {
+    pub fn from_builtin(method: NativeMethodImpl, name: &'static str, mc: &Mutation<'gc>) -> Self {
         Self::Native(Gc::new(
             mc,
             NativeMethod {

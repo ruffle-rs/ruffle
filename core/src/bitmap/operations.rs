@@ -9,7 +9,7 @@ use crate::bitmap::bitmap_data::{
 use crate::bitmap::turbulence::Turbulence;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::TDisplayObject;
-use gc_arena::MutationContext;
+use gc_arena::Mutation;
 use ruffle_render::bitmap::{PixelRegion, PixelSnapping};
 use ruffle_render::commands::{CommandHandler, CommandList, RenderBlendMode};
 use ruffle_render::filters::Filter;
@@ -27,7 +27,7 @@ use swf::{BlendMode, ColorTransform, Fixed8, Rectangle, Twips};
 /// same code between VMs.
 
 pub fn fill_rect<'gc>(
-    mc: MutationContext<'gc, '_>,
+    mc: &Mutation<'gc>,
     target: BitmapDataWrapper<'gc>,
     x: i32,
     y: i32,
@@ -57,11 +57,11 @@ pub fn fill_rect<'gc>(
             write.set_pixel32_raw(x, y, color);
         }
     }
-    write.set_cpu_dirty(rect);
+    write.set_cpu_dirty(mc, rect);
 }
 
 pub fn set_pixel32<'gc>(
-    mc: MutationContext<'gc, '_>,
+    mc: &Mutation<'gc>,
     target: BitmapDataWrapper<'gc>,
     x: u32,
     y: u32,
@@ -78,7 +78,7 @@ pub fn set_pixel32<'gc>(
         y,
         Color::from(color).to_premultiplied_alpha(transparency),
     );
-    write.set_cpu_dirty(PixelRegion::for_pixel(x, y));
+    write.set_cpu_dirty(mc, PixelRegion::for_pixel(x, y));
 }
 
 pub fn get_pixel32(target: BitmapDataWrapper, x: u32, y: u32) -> u32 {
@@ -90,7 +90,7 @@ pub fn get_pixel32(target: BitmapDataWrapper, x: u32, y: u32) -> u32 {
 }
 
 pub fn set_pixel<'gc>(
-    mc: MutationContext<'gc, '_>,
+    mc: &Mutation<'gc>,
     target: BitmapDataWrapper<'gc>,
     x: u32,
     y: u32,
@@ -109,7 +109,7 @@ pub fn set_pixel<'gc>(
     } else {
         write.set_pixel32_raw(x, y, color.with_alpha(0xFF));
     }
-    write.set_cpu_dirty(PixelRegion::for_pixel(x, y));
+    write.set_cpu_dirty(mc, PixelRegion::for_pixel(x, y));
 }
 
 pub fn get_pixel(target: BitmapDataWrapper, x: u32, y: u32) -> u32 {
@@ -122,16 +122,8 @@ pub fn get_pixel(target: BitmapDataWrapper, x: u32, y: u32) -> u32 {
         .with_alpha(0x0)
         .into()
 }
-
-pub fn clone(original: BitmapDataWrapper) -> BitmapData {
-    // Sync now to bring everything to cpu so we don't force multiple syncs to happen later
-    let original = original.sync();
-    let read = original.read();
-    read.clone()
-}
-
 pub fn flood_fill<'gc>(
-    mc: MutationContext<'gc, '_>,
+    mc: &Mutation<'gc>,
     target: BitmapDataWrapper<'gc>,
     x: u32,
     y: u32,
@@ -174,11 +166,11 @@ pub fn flood_fill<'gc>(
             }
         }
     }
-    write.set_cpu_dirty(dirty_region);
+    write.set_cpu_dirty(mc, dirty_region);
 }
 
 pub fn noise<'gc>(
-    mc: MutationContext<'gc, '_>,
+    mc: &Mutation<'gc>,
     target: BitmapDataWrapper<'gc>,
     seed: i32,
     low: u8,
@@ -240,12 +232,12 @@ pub fn noise<'gc>(
         }
     }
     let region = PixelRegion::for_whole_size(write.width(), write.height());
-    write.set_cpu_dirty(region);
+    write.set_cpu_dirty(mc, region)
 }
 
 #[allow(clippy::too_many_arguments)]
 pub fn perlin_noise<'gc>(
-    mc: MutationContext<'gc, '_>,
+    mc: &Mutation<'gc>,
     target: BitmapDataWrapper<'gc>,
     base: (f64, f64),
     num_octaves: usize,
@@ -261,6 +253,11 @@ pub fn perlin_noise<'gc>(
 
     let turb = Turbulence::from_seed(random_seed);
 
+    let base_freq = (
+        if base.0 == 0.0 { 0.0 } else { 1.0 / base.0 },
+        if base.1 == 0.0 { 0.0 } else { 1.0 / base.1 },
+    );
+
     for y in 0..write.height() {
         for x in 0..write.width() {
             let px = x as f64;
@@ -273,7 +270,7 @@ pub fn perlin_noise<'gc>(
                 noise[0] = turb.turbulence(
                     0,
                     (px, py),
-                    (1.0 / base.0, 1.0 / base.1),
+                    base_freq,
                     num_octaves,
                     fractal_noise,
                     stitch,
@@ -289,7 +286,7 @@ pub fn perlin_noise<'gc>(
                     turb.turbulence(
                         1,
                         (px, py),
-                        (1.0 / base.0, 1.0 / base.1),
+                        base_freq,
                         num_octaves,
                         fractal_noise,
                         stitch,
@@ -318,7 +315,7 @@ pub fn perlin_noise<'gc>(
                         *noise_c = turb.turbulence(
                             channel,
                             (px, py),
-                            (1.0 / base.0, 1.0 / base.1),
+                            base_freq,
                             num_octaves,
                             fractal_noise,
                             stitch,
@@ -352,11 +349,11 @@ pub fn perlin_noise<'gc>(
         }
     }
     let region = PixelRegion::for_whole_size(write.width(), write.height());
-    write.set_cpu_dirty(region);
+    write.set_cpu_dirty(mc, region)
 }
 
 pub fn copy_channel<'gc>(
-    mc: MutationContext<'gc, '_>,
+    mc: &Mutation<'gc>,
     target: BitmapDataWrapper<'gc>,
     dest_point: (i32, i32),
     src_rect: (i32, i32, i32, i32),
@@ -441,11 +438,11 @@ pub fn copy_channel<'gc>(
         }
     }
 
-    write.set_cpu_dirty(dest_region);
+    write.set_cpu_dirty(mc, dest_region);
 }
 
 pub fn color_transform<'gc>(
-    mc: MutationContext<'gc, '_>,
+    mc: &Mutation<'gc>,
     target: BitmapDataWrapper<'gc>,
     x_min: u32,
     y_min: u32,
@@ -490,15 +487,15 @@ pub fn color_transform<'gc>(
             )
         }
     }
-    write.set_cpu_dirty(PixelRegion::encompassing_pixels(
-        (x_min, y_min),
-        (x_max - 1, y_max - 1),
-    ));
+    write.set_cpu_dirty(
+        mc,
+        PixelRegion::encompassing_pixels((x_min, y_min), (x_max - 1, y_max - 1)),
+    );
 }
 
 #[allow(clippy::too_many_arguments)]
 pub fn threshold<'gc>(
-    mc: MutationContext<'gc, '_>,
+    mc: &Mutation<'gc>,
     target: BitmapDataWrapper<'gc>,
     source_bitmap: BitmapDataWrapper<'gc>,
     src_rect: (i32, i32, i32, i32),
@@ -590,13 +587,13 @@ pub fn threshold<'gc>(
     }
 
     if let Some(dirty_area) = dirty_area {
-        write.set_cpu_dirty(dirty_area);
+        write.set_cpu_dirty(mc, dirty_area);
     }
 
     modified_count
 }
 
-pub fn scroll<'gc>(mc: MutationContext<'gc, '_>, target: BitmapDataWrapper<'gc>, x: i32, y: i32) {
+pub fn scroll<'gc>(mc: &Mutation<'gc>, target: BitmapDataWrapper<'gc>, x: i32, y: i32) {
     let width = target.width() as i32;
     let height = target.height() as i32;
 
@@ -641,11 +638,11 @@ pub fn scroll<'gc>(mc: MutationContext<'gc, '_>, target: BitmapDataWrapper<'gc>,
     }
 
     let region = PixelRegion::for_whole_size(write.width(), write.height());
-    write.set_cpu_dirty(region);
+    write.set_cpu_dirty(mc, region)
 }
 
 pub fn palette_map<'gc>(
-    mc: MutationContext<'gc, '_>,
+    mc: &Mutation<'gc>,
     target: BitmapDataWrapper<'gc>,
     source_bitmap: BitmapDataWrapper<'gc>,
     src_rect: (i32, i32, i32, i32),
@@ -705,7 +702,7 @@ pub fn palette_map<'gc>(
         }
     }
 
-    write.set_cpu_dirty(dest_region);
+    write.set_cpu_dirty(mc, dest_region);
 }
 
 /// Compare two BitmapData objects.
@@ -899,7 +896,7 @@ pub fn color_bounds_rect(
 }
 
 pub fn merge<'gc>(
-    mc: MutationContext<'gc, '_>,
+    mc: &Mutation<'gc>,
     target: BitmapDataWrapper<'gc>,
     source_bitmap: BitmapDataWrapper<'gc>,
     src_rect: (i32, i32, i32, i32),
@@ -980,7 +977,7 @@ pub fn merge<'gc>(
         }
     }
 
-    write.set_cpu_dirty(dest_region);
+    write.set_cpu_dirty(mc, dest_region);
 }
 
 pub fn copy_pixels<'gc>(
@@ -1156,7 +1153,7 @@ pub fn copy_pixels_with_alpha_source<'gc>(
         ((dest_min_x + src_width), (dest_min_y + src_height)),
     );
     dirty_region.clamp(write.width(), write.height());
-    write.set_cpu_dirty(dirty_region);
+    write.set_cpu_dirty(context.gc_context, dirty_region);
 }
 
 pub fn apply_filter<'gc>(
@@ -1209,7 +1206,7 @@ pub fn apply_filter<'gc>(
     );
     let region = PixelRegion::for_whole_size(write.width(), write.height());
     match sync_handle {
-        Some(sync_handle) => write.set_gpu_dirty(sync_handle, region),
+        Some(sync_handle) => write.set_gpu_dirty(context.gc_context, sync_handle, region),
         None => {
             tracing::warn!("BitmapData.apply_filter: Renderer not yet implemented")
         }
@@ -1218,7 +1215,7 @@ pub fn apply_filter<'gc>(
 
 #[allow(clippy::too_many_arguments)]
 fn copy_on_cpu<'gc>(
-    context: MutationContext<'gc, '_>,
+    context: &Mutation<'gc>,
     source: BitmapDataWrapper<'gc>,
     dest: BitmapDataWrapper<'gc>,
     source_region: PixelRegion,
@@ -1251,7 +1248,7 @@ fn copy_on_cpu<'gc>(
             }
         }
 
-        write.set_cpu_dirty(dest_region);
+        write.set_cpu_dirty(context, dest_region);
     } else {
         let dest = dest.sync();
         let mut dest_write = dest.write(context);
@@ -1308,7 +1305,7 @@ fn copy_on_cpu<'gc>(
             }
         }
 
-        dest_write.set_cpu_dirty(dest_region);
+        dest_write.set_cpu_dirty(context, dest_region);
     }
 }
 
@@ -1341,7 +1338,7 @@ fn blend_and_transform<'gc>(
             }
         }
 
-        write.set_cpu_dirty(dest_region);
+        write.set_cpu_dirty(context.gc_context, dest_region);
     } else {
         let dest = dest.sync();
         let mut dest_write = dest.write(context.gc_context);
@@ -1364,7 +1361,7 @@ fn blend_and_transform<'gc>(
             }
         }
 
-        dest_write.set_cpu_dirty(dest_region);
+        dest_write.set_cpu_dirty(context.gc_context, dest_region);
     }
 }
 
@@ -1542,7 +1539,7 @@ pub fn draw<'gc>(
 
     match image {
         Some(sync_handle) => {
-            write.set_gpu_dirty(sync_handle, dirty_region);
+            write.set_gpu_dirty(context.gc_context, sync_handle, dirty_region);
             Ok(())
         }
         None => Err(BitmapDataDrawError::Unimplemented),
@@ -1600,7 +1597,7 @@ pub fn set_vector<'gc>(
     let mut bitmap_data = bitmap_data.write(activation.context.gc_context);
     let transparency = bitmap_data.transparency();
     let mut iter = vector.iter();
-    bitmap_data.set_cpu_dirty(region);
+    bitmap_data.set_cpu_dirty(activation.context.gc_context, region);
     for y in region.y_min..region.y_max {
         for x in region.x_min..region.x_max {
             let color = iter
@@ -1625,8 +1622,8 @@ pub fn get_pixels_as_byte_array<'gc>(
     y: i32,
     width: i32,
     height: i32,
-) -> Result<ByteArrayStorage, Error<'gc>> {
-    let mut result = ByteArrayStorage::new();
+    result: &mut ByteArrayStorage,
+) -> Result<(), Error<'gc>> {
     let mut region = PixelRegion::for_region_i32(x, y, width, height);
     region.clamp(target.width(), target.height());
 
@@ -1640,11 +1637,11 @@ pub fn get_pixels_as_byte_array<'gc>(
         }
     }
 
-    Ok(result)
+    Ok(())
 }
 
 pub fn set_pixels_from_byte_array<'gc>(
-    mc: MutationContext<'gc, '_>,
+    mc: &Mutation<'gc>,
     target: BitmapDataWrapper<'gc>,
     x: i32,
     y: i32,
@@ -1678,7 +1675,7 @@ pub fn set_pixels_from_byte_array<'gc>(
             }
         }
 
-        write.set_cpu_dirty(region);
+        write.set_cpu_dirty(mc, region)
     }
 
     Ok(())
@@ -1686,7 +1683,7 @@ pub fn set_pixels_from_byte_array<'gc>(
 
 #[allow(clippy::too_many_arguments)]
 pub fn pixel_dissolve<'gc>(
-    mc: MutationContext<'gc, '_>,
+    mc: &Mutation<'gc>,
     target: BitmapDataWrapper<'gc>,
     source_bitmap: BitmapDataWrapper<'gc>,
     src_rect: (i32, i32, i32, i32),
@@ -1898,7 +1895,7 @@ pub fn pixel_dissolve<'gc>(
         );
     }
 
-    write.set_cpu_dirty(dest_region);
+    write.set_cpu_dirty(mc, dest_region);
 
     raw_perm_index as i32
 }

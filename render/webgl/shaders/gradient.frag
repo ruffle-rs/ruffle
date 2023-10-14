@@ -21,8 +21,14 @@ uniform int u_interpolation;
 
 varying vec2 frag_uv;
 
-vec3 linear_to_srgb(vec3 linear)
-{
+vec4 interpolate(float t, float ratio1, float ratio2, vec4 color1, vec4 color2) {
+    color1 = clamp(mult_color * color1 + add_color, 0.0, 1.0);
+    color2 = clamp(mult_color * color2 + add_color, 0.0, 1.0);
+    float a = (t - ratio1) / (ratio2 - ratio1);
+    return mix(color1, color2, a);
+}
+
+vec3 linear_to_srgb(vec3 linear) {
     vec3 a = 12.92 * linear;
     vec3 b = 1.055 * pow(linear, vec3(1.0 / 2.4)) - 0.055;
     vec3 c = step(vec3(0.0031308), linear);
@@ -75,61 +81,44 @@ void main() {
     // TODO: No non-constant array access in WebGL 1, so the following is kind of painful.
     // We'd probably be better off passing in the gradient as a texture and sampling from there.
     vec4 color;
-    float a;
     if( t <= u_ratios[0] ) {
-        color = u_colors[0];
+        color = clamp(mult_color * u_colors[0] + add_color, 0.0, 1.0);
     } else if( t <= u_ratios[1] ) {
-        a = (t - u_ratios[0]) / (u_ratios[1] - u_ratios[0]);
-        color = mix(u_colors[0], u_colors[1], a);
+        color = interpolate(t, u_ratios[0], u_ratios[1], u_colors[0], u_colors[1]);
     } else if( t <= u_ratios[2] ) {
-        a = (t - u_ratios[1]) / (u_ratios[2] - u_ratios[1]);
-        color = mix(u_colors[1], u_colors[2], a);
+        color = interpolate(t, u_ratios[1], u_ratios[2], u_colors[1], u_colors[2]);
     } else if( t <= u_ratios[3] ) {
-        a = (t - u_ratios[2]) / (u_ratios[3] - u_ratios[2]);
-        color = mix(u_colors[2], u_colors[3], a);
+        color = interpolate(t, u_ratios[2], u_ratios[3], u_colors[2], u_colors[3]);
     } else if( t <= u_ratios[4] ) {
-        a = (t - u_ratios[3]) / (u_ratios[4] - u_ratios[3]);
-        color = mix(u_colors[3], u_colors[4], a);
+        color = interpolate(t, u_ratios[3], u_ratios[4], u_colors[3], u_colors[4]);
     } else if( t <= u_ratios[5] ) {
-        a = (t - u_ratios[4]) / (u_ratios[5] - u_ratios[4]);
-        color = mix(u_colors[4], u_colors[5], a);
+        color = interpolate(t, u_ratios[4], u_ratios[5], u_colors[4], u_colors[5]);
     } else if( t <= u_ratios[6] ) {
-        a = (t - u_ratios[5]) / (u_ratios[6] - u_ratios[5]);
-        color = mix(u_colors[5], u_colors[6], a);
+        color = interpolate(t, u_ratios[5], u_ratios[6], u_colors[5], u_colors[6]);
     } else if( t <= u_ratios[7] ) {
-        a = (t - u_ratios[6]) / (u_ratios[7] - u_ratios[6]);
-        color = mix(u_colors[6], u_colors[7], a);
+        color = interpolate(t, u_ratios[6], u_ratios[7], u_colors[6], u_colors[7]);
     } else if( t <= u_ratios[8] ) {
-        a = (t - u_ratios[7]) / (u_ratios[8] - u_ratios[7]);
-        color = mix(u_colors[7], u_colors[8], a);
+        color = interpolate(t, u_ratios[7], u_ratios[8], u_colors[7], u_colors[8]);
     } else if( t <= u_ratios[9] ) {
-        a = (t - u_ratios[8]) / (u_ratios[9] - u_ratios[8]);
-        color = mix(u_colors[8], u_colors[9], a);
+        color = interpolate(t, u_ratios[8], u_ratios[9], u_colors[8], u_colors[9]);
     } else if( t <= u_ratios[10] ) {
-        a = (t - u_ratios[9]) / (u_ratios[10] - u_ratios[9]);
-        color = mix(u_colors[9], u_colors[10], a);
+        color = interpolate(t, u_ratios[9], u_ratios[10], u_colors[9], u_colors[10]);
     } else if( t <= u_ratios[11] ) {
-        a = (t - u_ratios[10]) / (u_ratios[11] - u_ratios[10]);
-        color = mix(u_colors[10], u_colors[11], a);
+        color = interpolate(t, u_ratios[10], u_ratios[11], u_colors[10], u_colors[11]);
     } else if( t <= u_ratios[12] ) {
-        a = (t - u_ratios[11]) / (u_ratios[12] - u_ratios[11]);
-        color = mix(u_colors[11], u_colors[12], a);
+        color = interpolate(t, u_ratios[11], u_ratios[12], u_colors[11], u_colors[12]);
     } else if( t <= u_ratios[13] ) {
-        a = (t - u_ratios[12]) / (u_ratios[13] - u_ratios[12]);
-        color = mix(u_colors[12], u_colors[13], a);
+        color = interpolate(t, u_ratios[12], u_ratios[13], u_colors[12], u_colors[13]);
     } else if( t <= u_ratios[14] ) {
-        a = (t - u_ratios[13]) / (u_ratios[14] - u_ratios[13]);
-        color = mix(u_colors[13], u_colors[14], a);
+        color = interpolate(t, u_ratios[13], u_ratios[14], u_colors[13], u_colors[14]);
     } else {
-        color = u_colors[14];
+        color = clamp(mult_color * u_colors[14] + add_color, 0.0, 1.0);
     }
 
     if( u_interpolation != 0 ) {
         color = vec4(linear_to_srgb(vec3(color)), color.a);
     }
 
-    color = clamp(mult_color * color + add_color, 0.0, 1.0);
     float alpha = clamp(color.a, 0.0, 1.0);
     gl_FragColor = vec4(color.rgb * alpha, alpha);
 }
-

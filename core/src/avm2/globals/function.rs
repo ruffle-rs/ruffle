@@ -2,6 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
+use crate::avm2::error::eval_error;
 use crate::avm2::globals::array::resolve_array_hole;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{function_allocator, FunctionObject, Object, TObject};
@@ -15,11 +16,32 @@ use gc_arena::GcCell;
 pub fn instance_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    if !args.is_empty() {
+        return Err(Error::AvmError(eval_error(
+            activation,
+            "Error #1066: The form function('function body') is not supported.",
+            1066,
+        )?));
+    }
+
     activation.super_init(this, &[])?;
 
     Ok(Value::Undefined)
+}
+
+pub fn class_call<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(activation
+        .avm2()
+        .classes()
+        .function
+        .construct(activation, args)?
+        .into())
 }
 
 /// Implements `Function`'s class initializer.
@@ -199,6 +221,11 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
     );
 
     write.set_instance_allocator(function_allocator);
+    write.set_call_handler(Method::from_builtin(
+        class_call,
+        "<Function call handler>",
+        gc_context,
+    ));
 
     function_class
 }

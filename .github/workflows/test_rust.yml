@@ -15,20 +15,23 @@ jobs:
     name: Paths filter
     runs-on: ubuntu-22.04
     outputs:
-      src: ${{ steps.filter.outputs.src }}
+      should_run: ${{ steps.filter.outputs.src }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - uses: dorny/paths-filter@v2
+      - uses: AurorNZ/paths-filter@v3
         id: filter
         with:
           filters: |
             src:
-              - '!(web/package.json|web/package-lock.json|web/packages/**|**.md)'
+              - '!web/package.json'
+              - '!web/package-lock.json'
+              - '!web/packages/**'
+              - '!**/*.md'
 
   build:
     needs: changes
-    if: needs.changes.outputs.src == 'true'
+    if: needs.changes.outputs.should_run== 'true'
     name: Test Rust ${{ matrix.rust_version }} / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.rust_version == 'nightly' || matrix.rust_version == 'beta' }}
@@ -44,7 +47,7 @@ jobs:
             os: ubuntu-22.04
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -62,11 +65,14 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           shared-key: "desktop"
+          save-if: ${{ github.ref == 'refs/heads/master' }}
 
       - name: Check formatting
         run: cargo fmt --all -- --check
 
       - name: Check clippy
+        # not critical on other platforms, and slows down Windows
+        if: runner.os == 'Linux'
         # Don't fail the build for clippy on nightly, since we get a lot of false-positives
         run: cargo clippy --all --all-features --tests ${{ (matrix.rust_version != 'nightly' && '-- -D warnings') || '' }}
 
@@ -76,7 +82,7 @@ jobs:
           RUSTDOCFLAGS: -D warnings
 
       - name: Run tests with image tests
-        run: cargo test --all --locked --features imgtests,lzma
+        run: cargo test --all --locked --features imgtests,lzma,jpegxr
         env:
           XDG_RUNTIME_DIR: '' # dummy value, just to silence warnings about it missing
 
@@ -86,12 +92,12 @@ jobs:
         with:
           name: swf_images
           path: |
-            tests*/**/actual*.png
-            tests*/**/difference*.png
+            tests*/**/*.actual*.png
+            tests*/**/*.difference*.png
 
   check-required:
     needs: changes
-    if: needs.changes.outputs.src == 'false'
+    if: needs.changes.outputs.should_run == 'false'
     name: Test Rust ${{ matrix.rust_version }} / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:

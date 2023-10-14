@@ -77,6 +77,9 @@
     "action_reload": {
         "message": "Recargar la pestaña para aplicar los cambios"
     },
+    "open_player_page": {
+        "message": "Abrir Reproductor de SWF"
+    },
     "open_settings_page": {
         "message": "Abrir la página de configuración"
     },

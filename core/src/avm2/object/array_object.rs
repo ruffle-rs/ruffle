@@ -9,7 +9,7 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::string::AvmString;
 use core::fmt;
-use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates array objects.
@@ -72,7 +72,7 @@ impl<'gc> ArrayObject<'gc> {
         let class = activation.avm2().classes().array;
         let base = ScriptObjectData::new(class);
 
-        let mut instance: Object<'gc> = ArrayObject(GcCell::new(
+        let instance: Object<'gc> = ArrayObject(GcCell::new(
             activation.context.gc_context,
             ArrayObjectData { base, array },
         ))
@@ -90,7 +90,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         Ref::map(self.0.read(), |read| &read.base)
     }
 
-    fn base_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<ScriptObjectData<'gc>> {
+    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
         RefMut::map(self.0.write(mc), |write| &mut write.base)
     }
 
@@ -251,7 +251,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
 
     fn property_is_enumerable(&self, name: AvmString<'gc>) -> bool {
         name.parse::<u32>()
-            .map(|index| self.0.read().array.length() as u32 >= index)
+            .map(|index| index < self.0.read().array.length() as u32)
             .unwrap_or(false)
             || self.base().property_is_enumerable(name)
     }
@@ -260,7 +260,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         Ok(Value::Object(Object::from(*self)))
     }
 
-    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error<'gc>> {
+    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Value::Object(Object::from(*self)))
     }
 
@@ -272,10 +272,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         Some(Ref::map(self.0.read(), |aod| &aod.array))
     }
 
-    fn as_array_storage_mut(
-        &self,
-        mc: MutationContext<'gc, '_>,
-    ) -> Option<RefMut<ArrayStorage<'gc>>> {
+    fn as_array_storage_mut(&self, mc: &Mutation<'gc>) -> Option<RefMut<ArrayStorage<'gc>>> {
         Some(RefMut::map(self.0.write(mc), |aod| &mut aod.array))
     }
 }

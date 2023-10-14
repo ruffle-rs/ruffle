@@ -1,0 +1,10 @@
+(new Object()).toString() PASSED!
+myvar = this;  myvar.toString = Object.prototype.toString; myvar.toString() PASSED!
+myvar = new MyObject( true ); myvar.toString = Object.prototype.toString; myvar.toString() PASSED!
+myvar = new Number(0); myvar.toString = Object.prototype.toString; myvar.toString() PASSED!
+myvar = new String(''); myvar.toString = Object.prototype.toString; myvar.toString() PASSED!
+myvar = function() {}; myvar.toString = Object.prototype.toString; myvar.toString() PASSED!
+var MYVAR = new Object( this ); MYVAR.toString() PASSED!
+var MYVAR = new Object(); MYVAR.toString() PASSED!
+var MYVAR = new Object(void 0); MYVAR.toString() PASSED!
+var MYVAR = new Object(null); MYVAR.toString() PASSED!

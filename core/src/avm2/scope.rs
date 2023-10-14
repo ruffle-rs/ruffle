@@ -7,7 +7,9 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::{Multiname, Namespace};
 use core::fmt;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::barrier::field;
+use gc_arena::lock::RefLock;
+use gc_arena::{Collect, Gc, Mutation};
 
 use super::property_map::PropertyMap;
 
@@ -57,12 +59,12 @@ struct ScopeContainer<'gc> {
 
     /// The cache of this ScopeChain. A value of None indicates that caching is disabled
     /// for this ScopeChain.
-    cache: Option<PropertyMap<'gc, Object<'gc>>>,
+    cache: Option<RefLock<PropertyMap<'gc, Object<'gc>>>>,
 }
 
 impl<'gc> ScopeContainer<'gc> {
     fn new(scopes: Vec<Scope<'gc>>) -> Self {
-        let cache = (!scopes.iter().any(|scope| scope.with)).then(PropertyMap::default);
+        let cache = (!scopes.iter().any(|scope| scope.with)).then(RefLock::default);
         Self { scopes, cache }
     }
 
@@ -91,7 +93,7 @@ impl<'gc> ScopeContainer<'gc> {
 #[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
 pub struct ScopeChain<'gc> {
-    container: Option<GcCell<'gc, ScopeContainer<'gc>>>,
+    container: Option<Gc<'gc, ScopeContainer<'gc>>>,
     domain: Domain<'gc>,
 }
 
@@ -113,7 +115,7 @@ impl<'gc> ScopeChain<'gc> {
     }
 
     /// Creates a new ScopeChain by chaining new scopes on top of this ScopeChain
-    pub fn chain(&self, mc: MutationContext<'gc, '_>, new_scopes: &[Scope<'gc>]) -> Self {
+    pub fn chain(&self, mc: &Mutation<'gc>, new_scopes: &[Scope<'gc>]) -> Self {
         if new_scopes.is_empty() {
             // If we are not actually adding any new scopes, we don't need to do anything.
             return *self;
@@ -123,10 +125,10 @@ impl<'gc> ScopeChain<'gc> {
             Some(container) => {
                 // The new ScopeChain is created by cloning the scopes of this ScopeChain,
                 // and pushing the new scopes on top of that.
-                let mut cloned = container.read().scopes.clone();
+                let mut cloned = container.scopes.clone();
                 cloned.extend_from_slice(new_scopes);
                 Self {
-                    container: Some(GcCell::new(mc, ScopeContainer::new(cloned))),
+                    container: Some(Gc::new(mc, ScopeContainer::new(cloned))),
                     domain: self.domain,
                 }
             }
@@ -134,7 +136,7 @@ impl<'gc> ScopeChain<'gc> {
                 // We are chaining on top of an empty ScopeChain, so we don't actually
                 // need to chain anything.
                 Self {
-                    container: Some(GcCell::new(mc, ScopeContainer::new(new_scopes.to_vec()))),
+                    container: Some(Gc::new(mc, ScopeContainer::new(new_scopes.to_vec()))),
                     domain: self.domain,
                 }
             }
@@ -142,13 +144,12 @@ impl<'gc> ScopeChain<'gc> {
     }
 
     pub fn get(&self, index: usize) -> Option<Scope<'gc>> {
-        self.container
-            .and_then(|container| container.read().get(index))
+        self.container.and_then(|container| container.get(index))
     }
 
     pub fn is_empty(&self) -> bool {
         self.container
-            .map(|container| container.read().is_empty())
+            .map(|container| container.is_empty())
             .unwrap_or(true)
     }
 
@@ -164,7 +165,7 @@ impl<'gc> ScopeChain<'gc> {
     ) -> Result<Option<(Option<Namespace<'gc>>, Object<'gc>)>, Error<'gc>> {
         if let Some(container) = self.container {
             // We skip the scope at depth 0 (the global scope). The global scope will be checked in a different phase.
-            for scope in container.read().scopes.iter().skip(1).rev() {
+            for scope in container.scopes.iter().skip(1).rev() {
                 // NOTE: We are manually searching the vtable's traits so we can figure out which namespace the trait
                 // belongs to.
                 let values = scope.values();
@@ -199,25 +200,24 @@ impl<'gc> ScopeChain<'gc> {
     ) -> Result<Option<Object<'gc>>, Error<'gc>> {
         // First we check the cache of our container
         if let Some(container) = self.container {
-            if let Some(cache) = &container.read().cache {
-                let cached = cache.get_for_multiname(multiname);
-                if cached.is_some() {
-                    return Ok(cached.cloned());
+            if let Some(cache) = &container.cache {
+                if let Some(cached) = cache.borrow().get_for_multiname(multiname) {
+                    return Ok(Some(*cached));
                 }
             }
         }
         let found = self.find_internal(multiname, activation)?;
         if let (Some((Some(ns), obj)), Some(container)) = (found, self.container) {
             // We found a value that hasn't been cached yet, so let's try to cache it now
-            let mut write = container.write(activation.context.gc_context);
-            if let Some(ref mut cache) = write.cache {
-                cache.insert_with_namespace(
-                    ns,
-                    multiname
-                        .local_name()
-                        .expect("Resolvable multinames should always have a local name"),
-                    obj,
-                );
+            let cache = field!(Gc::write(activation.gc(), container), ScopeContainer, cache);
+            if let Some(cache) = cache.as_write() {
+                let name = multiname
+                    .local_name()
+                    .expect("Resolvable multinames should always have a local name");
+                cache
+                    .unlock()
+                    .borrow_mut()
+                    .insert_with_namespace(ns, name, obj);
             }
         }
         Ok(found.map(|o| o.1))

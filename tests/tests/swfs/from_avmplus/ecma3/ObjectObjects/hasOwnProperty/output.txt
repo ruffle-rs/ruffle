@@ -1,0 +1,10 @@
+String.prototype.hasOwnProperty("split") PASSED!
+str.hasOwnProperty("split") PASSED!
+Array.prototype.hasOwnProperty("pop") PASSED!
+Number.prototype.hasOwnProperty("toPrecision") PASSED!
+Date.prototype.hasOwnProperty("getTime") PASSED!
+RegExp.prototype.hasOwnProperty("exec") PASSED!
+String.prototype.hasOwnProperty("random") PASSED!
+Object.prototype.hasOwnProperty("constructor") PASSED!
+Object.prototype.hasOwnProperty("getTime") PASSED!
+myobj.hasOwnProperty("constructor") PASSED!

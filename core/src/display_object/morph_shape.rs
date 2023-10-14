@@ -7,7 +7,7 @@ use crate::library::{Library, MovieLibrarySource};
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use core::fmt;
-use gc_arena::{Collect, Gc, GcCell, MutationContext};
+use gc_arena::{Collect, Gc, GcCell, Mutation};
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::commands::CommandHandler;
 use std::cell::{Ref, RefCell, RefMut};
@@ -38,7 +38,7 @@ pub struct MorphShapeData<'gc> {
 
 impl<'gc> MorphShape<'gc> {
     pub fn from_swf_tag(
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         tag: swf::DefineMorphShape,
         movie: Arc<SwfMovie>,
     ) -> Self {
@@ -58,7 +58,7 @@ impl<'gc> MorphShape<'gc> {
         self.0.read().ratio
     }
 
-    pub fn set_ratio(&mut self, gc_context: MutationContext<'gc, '_>, ratio: u16) {
+    pub fn set_ratio(&mut self, gc_context: &Mutation<'gc>, ratio: u16) {
         self.0.write(gc_context).ratio = ratio;
         self.invalidate_cached_bitmap(gc_context);
     }
@@ -69,11 +69,11 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         Ref::map(self.0.read(), |r| &r.base)
     }
 
-    fn base_mut<'a>(&'a self, mc: MutationContext<'gc, '_>) -> RefMut<'a, DisplayObjectBase<'gc>> {
+    fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>> {
         RefMut::map(self.0.write(mc), |w| &mut w.base)
     }
 
-    fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc> {
+    fn instantiate(&self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
         Self(GcCell::new(gc_context, self.0.read().clone())).into()
     }
 

@@ -1,0 +1,9 @@
+Number.prototype.toString() PASSED!
+typeof(Number.prototype.toString()) PASSED!
+s = Number.prototype.toString PASSED!
+s = Number.prototype.toString PASSED!
+s = Number.prototype.toString PASSED!
+var MYNUM = new Number(255); MYNUM.toString(10) PASSED!
+var MYNUM = new Number(Number.NaN); MYNUM.toString(10) PASSED!
+var MYNUM = new Number(Infinity); MYNUM.toString(10) PASSED!
+var MYNUM = new Number(-Infinity); MYNUM.toString(10) PASSED!

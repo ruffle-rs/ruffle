@@ -1,0 +1,9 @@
+Object.prototype.valueOf.length PASSED!
+myarray = new Array(); myarray.valueOf = Object.prototype.valueOf; myarray.valueOf() PASSED!
+myboolean = new Boolean(); myboolean.valueOf = Object.prototype.valueOf; myboolean.valueOf() PASSED!
+myfunction = function() {}; myfunction.valueOf = Object.prototype.valueOf; myfunction.valueOf() PASSED!
+myobject = new Object(); myobject.valueOf = Object.prototype.valueOf; myobject.valueOf() PASSED!
+mymath = Math; mymath.valueOf = Object.prototype.valueOf;mymath.valueOf() PASSED!
+mynumber = new Number(); mynumber.valueOf = Object.prototype.valueOf; mynumber.valueOf() PASSED!
+mystring = new String(); mystring.valueOf = Object.prototype.valueOf; mystring.valueOf() PASSED!
+mydate = new Date(); mydate.valueOf = Object.prototype.valueOf; mydate.valueOf() PASSED!

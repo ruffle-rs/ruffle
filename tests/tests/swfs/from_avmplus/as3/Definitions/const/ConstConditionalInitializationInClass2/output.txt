@@ -1,0 +1,1 @@
+Conditional initiailization of const inside a class constructor PASSED!

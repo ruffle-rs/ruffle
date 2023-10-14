@@ -1,0 +1,11 @@
+Timeout clamp
+20000
+250
+Socket errors
+Error: Error #2002: Operation attempted on invalid socket.
+Error: Error #2002: Operation attempted on invalid socket.
+connected
+[DataEvent type="data" bubbles=false cancelable=false eventPhase=2 data="Hello!"]
+[DataEvent type="data" bubbles=false cancelable=false eventPhase=2 data="<root><item>Hello world!</item></root>"]
+[DataEvent type="data" bubbles=false cancelable=false eventPhase=2 data="<root>Hello!</root>"]
+closed

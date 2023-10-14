@@ -220,7 +220,7 @@ reloadSwf.addEventListener("click", () => {
     if (player) {
         const confirmReload = confirm("Reload the current SWF?");
         if (confirmReload) {
-            player.load(player.loadedConfig);
+            player.reload();
         }
     }
 });

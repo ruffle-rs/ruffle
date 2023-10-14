@@ -1,5 +1,13 @@
-use crate::Fixed16;
+use crate::{Fixed16, Rectangle, Twips};
 use bitflags::bitflags;
+
+/// How much each pass should multiply the requested blur size by - accumulative.
+/// These are very approximate to Flash, and not 100% exact.
+/// Pass 1 would be 100%, but pass 2 would be 110%.
+/// This is accumulative so you can calculate the size upfront for how many passes you'll need to perform.
+const PASS_SCALES: [f64; 15] = [
+    1.0, 2.1, 2.7, 3.1, 3.5, 3.8, 4.0, 4.2, 4.4, 4.6, 5.0, 6.0, 6.0, 7.0, 7.0,
+];
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct BlurFilter {
@@ -21,6 +29,18 @@ impl BlurFilter {
 
     pub fn impotent(&self) -> bool {
         self.num_passes() == 0 || (self.blur_x <= Fixed16::ONE && self.blur_y <= Fixed16::ONE)
+    }
+
+    pub fn calculate_dest_rect(&self, source_rect: Rectangle<Twips>) -> Rectangle<Twips> {
+        let scale = PASS_SCALES[self.num_passes().clamp(1, 15) as usize - 1];
+        let x = Twips::from_pixels((scale * self.blur_x.to_f64()).max(0.0));
+        let y = Twips::from_pixels((scale * self.blur_y.to_f64()).max(0.0));
+        Rectangle {
+            x_min: source_rect.x_min - x,
+            x_max: source_rect.x_max + x,
+            y_min: source_rect.y_min - y,
+            y_max: source_rect.y_max + y,
+        }
     }
 }
 

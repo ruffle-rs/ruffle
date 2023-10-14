@@ -27,3 +27,4 @@ debug-menu = Ferramentas de Depuração
 debug-menu-open-stage = Ver Info do Palco
 debug-menu-open-movie = Ver Filme
 debug-menu-open-movie-list = Mostrar Filmes Conhecidos
+debug-menu-search-display-objects = Procurar por Display Objects...

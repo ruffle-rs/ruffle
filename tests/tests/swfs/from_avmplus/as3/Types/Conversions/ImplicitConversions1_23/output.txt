@@ -1,0 +1,6 @@
+var string:String = 1.23 PASSED!
+number:Number = 1.23 PASSED!
+myint:int = 1.23 PASSED!
+myUInt:uint = 1.23 PASSED!
+boolean:Boolean = 1.23 PASSED!
+var object:Object = 1.23 PASSED!

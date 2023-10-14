@@ -2,21 +2,21 @@ message-cant-embed =
     Ruffle nu a putut rula Flash încorporat în această pagină.
     Puteți încerca să deschideți fișierul într-o filă separată, pentru a evita această problemă.
 panic-title = Ceva a mers prost :(
-more-info = Mai multe informatii
+more-info = Mai multe informații
 run-anyway = Rulează oricum
-continue = Continuare
-report-bug = Raportează o eroare
-update-ruffle = Actualizează
-ruffle-demo = Demo Web
+continue = Continuă
+report-bug = Raportează un bug
+update-ruffle = Actualizează Ruffle
+ruffle-demo = Demo web
 ruffle-desktop = Aplicație desktop
-ruffle-wiki = Vezi Ruffle Wiki
-view-error-details = Vezi detaliile de eroare
-open-in-new-tab = Deschidere in filă nouă
-click-to-unmute = Înlătură amuțirea
+ruffle-wiki = Vezi wikiul Ruffle
+view-error-details = Vezi detaliile erorii
+open-in-new-tab = Deschide într-o filă nouă
+click-to-unmute = Dă click pentru a dezmuți
 error-file-protocol =
-    Se pare că rulați Ruffle pe protocolul "fișier:".
-    Aceasta nu funcționează ca browsere blochează multe caracteristici din motive de securitate.
-    În schimb, vă invităm să configurați un server local sau să folosiți aplicația web demo sau desktop.
+    Se pare că rulezi Ruffle pe protocolul „file:”.
+    Acesta nu funcționează, deoarece browserele blochează funcționarea multor funcții din motive de securitate.
+    În schimb, te invităm să configurezi un server local sau să folosești fie demoul web, fie aplicația desktop.
 error-javascript-config =
     Ruffle a întâmpinat o problemă majoră din cauza unei configurări incorecte a JavaScript.
     Dacă sunteți administratorul serverului, vă invităm să verificați detaliile de eroare pentru a afla care parametru este defect.
@@ -64,8 +64,8 @@ error-csp-conflict =
     Politica de securitate a conținutului acestui server web nu permite serviciul necesar". asm" componentă pentru a rula.
     Dacă sunteți administratorul de server, consultați Ruffle wiki pentru ajutor.
 error-unknown =
-    Ruffle a întâmpinat o problemă majoră în timp ce se încerca afișarea conținutului Flash.
+    Ruffle a întâmpinat o problemă majoră în timp ce încerca să afișeze acest conținut Flash.
     { $outdated ->
-        [true] Dacă sunteți administratorul de server, vă rugăm să încercaţi să încărcaţi o versiune mai recentă de Ruffle (versiunea curentă este depăşită: { $buildDate }).
+        [true] Dacă ești administratorul serverului, te rugăm să încerci să încarci o versiune mai recentă de Ruffle (versiunea actuală este depăşită: { $buildDate }).
        *[false] Acest lucru nu ar trebui să se întâmple, așa că am aprecia foarte mult dacă ai putea trimite un bug!
     }

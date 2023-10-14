@@ -10,7 +10,7 @@ use crate::avm1::{ArrayObject, Object, ObjectPtr, ScriptObject, TObject};
 use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::string::{AvmString, SwfStrExt as _};
 use crate::tag_utils::SwfSlice;
-use gc_arena::{Collect, Gc, GcCell, MutationContext};
+use gc_arena::{Collect, Gc, GcCell, Mutation};
 use std::{borrow::Cow, fmt, num::NonZeroU8};
 use swf::{avm1::types::FunctionFlags, SwfStr};
 
@@ -84,7 +84,7 @@ pub struct Avm1Function<'gc> {
 impl<'gc> Avm1Function<'gc> {
     /// Construct a function from a DefineFunction2 action.
     pub fn from_swf_function(
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         swf_version: u8,
         actions: SwfSlice,
         swf_function: swf::avm1::types::DefineFunction2,
@@ -501,7 +501,7 @@ struct FunctionObjectData<'gc> {
 impl<'gc> FunctionObject<'gc> {
     /// Construct a function sans prototype.
     pub fn bare_function(
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         function: Option<Executable<'gc>>,
         constructor: Option<Executable<'gc>>,
         fn_proto: Object<'gc>,
@@ -527,7 +527,7 @@ impl<'gc> FunctionObject<'gc> {
     /// `prototype` refers to the explicit prototype of the function.
     /// The function and its prototype will be linked to each other.
     fn allocate_function(
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         function: Option<Executable<'gc>>,
         constructor: Option<Executable<'gc>>,
         fn_proto: Object<'gc>,
@@ -553,7 +553,7 @@ impl<'gc> FunctionObject<'gc> {
 
     /// Construct a regular function from an executable and associated protos.
     pub fn function(
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         function: impl Into<Executable<'gc>>,
         fn_proto: Object<'gc>,
         prototype: Object<'gc>,
@@ -563,7 +563,7 @@ impl<'gc> FunctionObject<'gc> {
 
     /// Construct a regular and constructor function from an executable and associated protos.
     pub fn constructor(
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         constructor: impl Into<Executable<'gc>>,
         function: impl Into<Executable<'gc>>,
         fn_proto: Object<'gc>,

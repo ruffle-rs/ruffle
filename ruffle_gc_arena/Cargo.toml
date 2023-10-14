@@ -9,4 +9,4 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
-gc-arena = { git = "https://github.com/kyren/gc-arena", rev = "ad3e24f89c78d8bb94db18383987290f88e4edcb" }
+gc-arena = { git = "https://github.com/kyren/gc-arena", rev = "efd89fc683c6bb456af3e226c33763cb822645e9" }

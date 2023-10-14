@@ -1,0 +1,2 @@
+verify statements in for loop are evaluated PASSED!
+verify continue of labeled for...in loop PASSED!

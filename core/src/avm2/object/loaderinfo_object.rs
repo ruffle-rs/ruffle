@@ -1,6 +1,7 @@
 //! Loader-info object
 
 use crate::avm2::activation::Activation;
+use crate::avm2::error::argument_error;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
@@ -11,40 +12,22 @@ use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::tag_utils::SwfMovie;
 use core::fmt;
-use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
 use std::cell::{Ref, RefMut};
 use std::sync::Arc;
 
-/// A class instance allocator that allocates LoaderInfo objects.
+/// ActionScript cannot construct a LoaderInfo. Note that LoaderInfo isn't a final class.
 pub fn loader_info_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class);
+    let class_name = class.inner_class_definition().read().name().local_name();
 
-    Ok(LoaderInfoObject(GcCell::new(
-        activation.context.gc_context,
-        LoaderInfoObjectData {
-            base,
-            loaded_stream: None,
-            loader: None,
-            init_event_fired: false,
-            complete_event_fired: false,
-            shared_events: activation
-                .context
-                .avm2
-                .classes()
-                .eventdispatcher
-                .construct(activation, &[])?,
-            uncaught_error_events: activation
-                .context
-                .avm2
-                .classes()
-                .uncaughterrorevents
-                .construct(activation, &[])?,
-        },
-    ))
-    .into())
+    Err(Error::AvmError(argument_error(
+        activation,
+        &format!("Error #2012: {class_name}$ class cannot be instantiated."),
+        2012,
+    )?))
 }
 
 /// Represents a thing which can be loaded by a loader.
@@ -97,7 +80,7 @@ pub struct LoaderInfoObjectData<'gc> {
     /// All normal script data.
     base: ScriptObjectData<'gc>,
 
-    /// The loaded stream that this gets it's info from.
+    /// The loaded stream that this gets its info from.
     loaded_stream: Option<LoaderStream<'gc>>,
 
     loader: Option<Object<'gc>>,
@@ -128,7 +111,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         let base = ScriptObjectData::new(class);
         let loaded_stream = Some(LoaderStream::Swf(movie, root));
 
-        let mut this: Object<'gc> = LoaderInfoObject(GcCell::new(
+        let this: Object<'gc> = LoaderInfoObject(GcCell::new(
             activation.context.gc_context,
             LoaderInfoObjectData {
                 base,
@@ -172,7 +155,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         let class = activation.avm2().classes().loaderinfo;
         let base = ScriptObjectData::new(class);
 
-        let mut this: Object<'gc> = LoaderInfoObject(GcCell::new(
+        let this: Object<'gc> = LoaderInfoObject(GcCell::new(
             activation.context.gc_context,
             LoaderInfoObjectData {
                 base,
@@ -278,8 +261,14 @@ impl<'gc> LoaderInfoObject<'gc> {
         }
     }
 
-    pub fn set_loader_stream(&self, stream: LoaderStream<'gc>, mc: MutationContext<'gc, '_>) {
+    pub fn set_loader_stream(&self, stream: LoaderStream<'gc>, mc: &Mutation<'gc>) {
         self.0.write(mc).loaded_stream = Some(stream);
+    }
+
+    pub fn unload(&self, activation: &mut Activation<'_, 'gc>) {
+        let empty_swf = Arc::new(SwfMovie::empty(activation.context.swf.version()));
+        let loader_stream = LoaderStream::NotYetLoaded(empty_swf, None, false);
+        self.set_loader_stream(loader_stream, activation.context.gc_context);
     }
 }
 
@@ -288,7 +277,7 @@ impl<'gc> TObject<'gc> for LoaderInfoObject<'gc> {
         Ref::map(self.0.read(), |read| &read.base)
     }
 
-    fn base_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<ScriptObjectData<'gc>> {
+    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
         RefMut::map(self.0.write(mc), |write| &mut write.base)
     }
 
@@ -296,7 +285,7 @@ impl<'gc> TObject<'gc> for LoaderInfoObject<'gc> {
         self.0.as_ptr() as *const ObjectPtr
     }
 
-    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error<'gc>> {
+    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Value::Object((*self).into()))
     }
 

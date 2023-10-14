@@ -177,7 +177,11 @@ pub fn start<'gc>(
 
     let width = target_bitmap_data.width();
     let height = target_bitmap_data.height();
-    target_bitmap_data.set_gpu_dirty(sync_handle, PixelRegion::for_whole_size(width, height));
+    target_bitmap_data.set_gpu_dirty(
+        activation.context.gc_context,
+        sync_handle,
+        PixelRegion::for_whole_size(width, height),
+    );
 
     Ok(Value::Undefined)
 }

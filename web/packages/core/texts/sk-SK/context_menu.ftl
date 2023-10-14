@@ -9,3 +9,4 @@ context-menu-about-ruffle =
 context-menu-hide = Skryť menu
 context-menu-exit-fullscreen = Ukončiť režim celej obrazovky
 context-menu-enter-fullscreen = Prejsť do režimu celej obrazovky
+context-menu-volume-controls = Ovládanie hlasitosti

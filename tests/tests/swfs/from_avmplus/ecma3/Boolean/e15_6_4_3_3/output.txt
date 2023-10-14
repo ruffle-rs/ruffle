@@ -1,0 +1,2 @@
+valof=Boolean.prototype.valueOf; Boolean.prototype.valueOf=valof; x=true; x.valueOf() PASSED!
+valof=Boolean.prototype.valueOf; Boolean.prototype.valueOf=valof; x=false; x.valueOf() PASSED!

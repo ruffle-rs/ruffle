@@ -23,7 +23,7 @@ pub fn add_frame_script<'gc>(
     {
         for (frame_id, callable) in args.chunks_exact(2).map(|s| (s[0], s[1])) {
             let frame_id = frame_id.coerce_to_u32(activation)? as u16 + 1;
-            let callable = callable.as_callable(activation, None, None).ok();
+            let callable = callable.as_callable(activation, None, None, false).ok();
 
             mc.register_frame_script(frame_id, callable, &mut activation.context);
         }
@@ -392,7 +392,13 @@ pub fn goto_frame<'gc>(
                 }
 
                 let frame = mc.frame_label_to_number(&frame_or_label, &activation.context);
-                if mc.movie().version() >= 11 {
+
+                if activation
+                    .caller_movie()
+                    .expect("Caller SWF should exist")
+                    .version()
+                    >= 11
+                {
                     frame.ok_or(
                         // TODO: Also include the scene in the error message, as done above
                         Error::AvmError(argument_error(

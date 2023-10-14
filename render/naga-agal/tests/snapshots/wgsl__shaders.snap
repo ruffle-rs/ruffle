@@ -1,6 +1,6 @@
 ---
-source: tests/wgsl.rs
-assertion_line: 35
+source: render/naga-agal/tests/wgsl.rs
+assertion_line: 33
 expression: output
 ---
 struct VertexOutput {
@@ -9,7 +9,7 @@ struct VertexOutput {
 }
 
 @group(0) @binding(0) 
-var<uniform> constant_registers: array<vec4<f32>,128u>;
+var<uniform> constant_registers: array<vec4<f32>, 128>;
 
 @vertex 
 fn main(@location(0) param: vec3<f32>, @location(1) param_1: vec3<f32>) -> VertexOutput {

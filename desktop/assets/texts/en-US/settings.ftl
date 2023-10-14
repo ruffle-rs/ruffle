@@ -16,9 +16,9 @@ tcp-connections-allow = Allow
 tcp-connections-ask = Ask
 tcp-connections-deny = Deny
 
-open-url-mode = Open URL Mode
+open-url-mode = Open Links
 open-url-mode-allow = Allow
-open-url-mode-confirm = Confirm
+open-url-mode-confirm = Ask
 open-url-mode-deny = Deny
 
 load-behavior = Load Behavior

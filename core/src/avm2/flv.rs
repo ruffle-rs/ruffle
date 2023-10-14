@@ -6,7 +6,7 @@ fn avm2_object_from_flv_variables<'gc>(
     activation: &mut Activation<'_, 'gc>,
     variables: Vec<FlvVariable>,
 ) -> Avm2Value<'gc> {
-    let mut info_object = activation
+    let info_object = activation
         .context
         .avm2
         .classes()

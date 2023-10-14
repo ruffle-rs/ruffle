@@ -2,6 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Allocator, AllocatorFn, Class, ClassHashWrapper};
+use crate::avm2::error::{make_error_1127, type_error};
 use crate::avm2::function::Executable;
 use crate::avm2::method::Method;
 use crate::avm2::object::function_object::FunctionObject;
@@ -17,7 +18,7 @@ use crate::avm2::TranslationUnit;
 use crate::avm2::{Domain, Error};
 use crate::string::AvmString;
 use fnv::FnvHashMap;
-use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
 use std::cell::{BorrowError, Ref, RefMut};
 use std::collections::HashSet;
 use std::fmt::Debug;
@@ -58,6 +59,7 @@ pub struct ClassObjectData<'gc> {
     superclass_object: Option<ClassObject<'gc>>,
 
     /// The instance allocator for this class.
+    #[collect(require_static)]
     instance_allocator: Allocator,
 
     /// The instance constructor function
@@ -290,7 +292,7 @@ impl<'gc> ClassObject<'gc> {
         Ok(self)
     }
 
-    fn install_class_vtable_and_slots(&mut self, mc: MutationContext<'gc, '_>) {
+    fn install_class_vtable_and_slots(&mut self, mc: &Mutation<'gc>) {
         self.set_vtable(mc, self.class_vtable());
         self.base_mut(mc).install_instance_slots();
     }
@@ -393,7 +395,7 @@ impl<'gc> ClassObject<'gc> {
         &self,
         domain: Domain<'gc>,
         class_name: &Multiname<'gc>,
-        mc: MutationContext<'gc, '_>,
+        mc: &Mutation<'gc>,
     ) -> Result<GcCell<'gc, Class<'gc>>, Error<'gc>> {
         domain
             .get_class(class_name, mc)?
@@ -823,7 +825,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         Ref::map(self.0.read(), |read| &read.base)
     }
 
-    fn base_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<ScriptObjectData<'gc>> {
+    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
         RefMut::map(self.0.write(mc), |write| &mut write.base)
     }
 
@@ -846,7 +848,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         self.to_string(activation)
     }
 
-    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error<'gc>> {
+    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Value::Object(Object::from(*self)))
     }
 
@@ -877,7 +879,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
     ) -> Result<Object<'gc>, Error<'gc>> {
         let instance_allocator = self.0.read().instance_allocator.0;
 
-        let mut instance = instance_allocator(self, activation)?;
+        let instance = instance_allocator(self, activation)?;
 
         instance.install_instance_slots(activation.context.gc_context);
 
@@ -898,7 +900,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
 
     fn set_local_property_is_enumerable(
         &self,
-        mc: MutationContext<'gc, '_>,
+        mc: &Mutation<'gc>,
         name: AvmString<'gc>,
         is_enumerable: bool,
     ) {
@@ -911,17 +913,35 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
     fn apply(
         &self,
         activation: &mut Activation<'_, 'gc>,
-        nullable_param: Value<'gc>,
+        nullable_params: &[Value<'gc>],
     ) -> Result<ClassObject<'gc>, Error<'gc>> {
         let self_class = self.inner_class_definition();
 
         if !self_class.read().is_generic() {
-            return Err(format!("Class {:?} is not generic", self_class.read().name()).into());
+            return Err(make_error_1127(activation));
+        }
+
+        if nullable_params.len() != 1 {
+            let class_name = self
+                .inner_class_definition()
+                .read()
+                .name()
+                .to_qualified_name(activation.context.gc_context);
+
+            return Err(Error::AvmError(type_error(
+                activation,
+                &format!(
+                    "Error #1128: Incorrect number of type parameters for {}. Expected 1, got {}.",
+                    class_name,
+                    nullable_params.len()
+                ),
+                1128,
+            )?));
         }
 
         //Because `null` is a valid parameter, we have to accept values as
         //parameters instead of objects. We coerce them to objects now.
-        let object_param = match nullable_param {
+        let object_param = match nullable_params[0] {
             Value::Null => None,
             v => Some(v),
         };
@@ -931,6 +951,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
                 cls.as_object()
                     .and_then(|c| c.as_class_object())
                     .ok_or_else(|| {
+                        // Note: FP throws VerifyError #1107 here
                         format!(
                             "Cannot apply class {:?} with non-class parameter",
                             self_class.read().name()

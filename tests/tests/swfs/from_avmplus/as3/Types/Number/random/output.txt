@@ -1,0 +1,4 @@
+Number.random() returns a Number PASSED!
+Number.random() length is 0 PASSED!
+Asserting for ArgumentError PASSED!
+Number.random() with args PASSED!

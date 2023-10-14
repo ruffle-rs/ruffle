@@ -1,0 +1,2 @@
+start = Rozpocznij
+browse = Przeglądaj

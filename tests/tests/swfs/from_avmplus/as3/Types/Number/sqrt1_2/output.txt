@@ -1,0 +1,9 @@
+Number.SQRT1_2 PASSED!
+typeof Number.SQRT1_2 PASSED!
+Number.SQRT1_2 - DontDelete PASSED!
+Number.SQRT1_2 is still ok PASSED!
+Number.SQRT1_2 - DontEnum PASSED!
+Number.SQRT1_2 is no enumberable PASSED!
+Number.SQRT1_2 - ReadOnly PASSED!
+Number.SQRT1_2 is still here PASSED!
+Number.SQRT1_2 is approximately the reciprocal of the value of Number.SQRT2 PASSED!

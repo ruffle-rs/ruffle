@@ -14,8 +14,7 @@ use gc_arena::Collect;
 /// A secondary purpose of this type is to flag which VM is creating an object,
 /// which can be used to ensure the object is instantiated as tied to the
 /// correct VM.
-#[derive(Copy, Clone, Debug, Collect)]
-#[collect(require_static)]
+#[derive(Copy, Clone, Debug)]
 pub enum Instantiator {
     /// This object was instantiated by a tag in a given SWF movie, or by a VM
     /// action which does not implicitly instantiate a given object. Acceptable

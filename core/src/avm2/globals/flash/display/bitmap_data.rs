@@ -1,6 +1,7 @@
 //! `flash.display.BitmapData` builtin/prototype
 
 use crate::avm2::activation::Activation;
+use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::error::{argument_error, make_error_2008, range_error};
 use crate::avm2::filters::FilterAvm2Ext;
 pub use crate::avm2::object::bitmap_data_allocator;
@@ -297,10 +298,47 @@ pub fn get_pixels<'gc>(
         bitmap_data.check_valid(activation)?;
         let rectangle = args.get_object(activation, 0, "rect")?;
         let (x, y, width, height) = get_rectangle_x_y_width_height(activation, rectangle)?;
-        let storage =
-            operations::get_pixels_as_byte_array(activation, bitmap_data, x, y, width, height)?;
+        let mut storage = ByteArrayStorage::new();
+
+        operations::get_pixels_as_byte_array(
+            activation,
+            bitmap_data,
+            x,
+            y,
+            width,
+            height,
+            &mut storage,
+        )?;
         let bytearray = ByteArrayObject::from_storage(activation, storage)?;
         return Ok(bytearray.into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `BitmapData.copyPixelsToByteArray`.
+pub fn copy_pixels_to_byte_array<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(bitmap_data) = this.as_bitmap_data() {
+        bitmap_data.check_valid(activation)?;
+        let rectangle = args.get_object(activation, 0, "rect")?;
+        let storage = args.get_object(activation, 1, "data")?;
+        let mut storage = storage
+            .as_bytearray_mut(activation.context.gc_context)
+            .unwrap();
+        let (x, y, width, height) = get_rectangle_x_y_width_height(activation, rectangle)?;
+        operations::get_pixels_as_byte_array(
+            activation,
+            bitmap_data,
+            x,
+            y,
+            width,
+            height,
+            &mut storage,
+        )?;
     }
 
     Ok(Value::Undefined)
@@ -1124,7 +1162,7 @@ pub fn clone<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.as_bitmap_data() {
         if !bitmap_data.disposed() {
-            let new_bitmap_data = operations::clone(bitmap_data);
+            let new_bitmap_data = bitmap_data.clone_data();
 
             let class = activation.avm2().classes().bitmapdata;
             let new_bitmap_data_object = BitmapDataObject::from_bitmap_data_internal(
@@ -1454,6 +1492,58 @@ pub fn pixel_dissolve<'gc>(
                 fill_color,
             )
             .into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+// Implements `BitmapData.merge`.
+pub fn merge<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(bitmap_data) = this.as_bitmap_data() {
+        if !bitmap_data.disposed() {
+            let src_bitmap = args.get_object(activation, 0, "sourceBitmapData")?;
+
+            let (src_min_x, src_min_y, src_width, src_height) = {
+                let source_rect = args.get_object(activation, 1, "sourceRect")?;
+                get_rectangle_x_y_width_height(activation, source_rect)?
+            };
+
+            let dest_point = {
+                let dest_point = args.get_object(activation, 2, "destPoint")?;
+
+                let x = dest_point
+                    .get_public_property("x", activation)?
+                    .coerce_to_i32(activation)?;
+
+                let y = dest_point
+                    .get_public_property("y", activation)?
+                    .coerce_to_i32(activation)?;
+
+                (x, y)
+            };
+
+            let red_mult = args.get_i32(activation, 3)?;
+            let green_mult = args.get_i32(activation, 4)?;
+            let blue_mult = args.get_i32(activation, 5)?;
+            let alpha_mult = args.get_i32(activation, 6)?;
+
+            if let Some(src_bitmap) = src_bitmap.as_bitmap_data() {
+                if !src_bitmap.disposed() {
+                    operations::merge(
+                        activation.context.gc_context,
+                        bitmap_data,
+                        src_bitmap,
+                        (src_min_x, src_min_y, src_width, src_height),
+                        dest_point,
+                        (red_mult, green_mult, blue_mult, alpha_mult),
+                    );
+                }
+            }
         }
     }
 

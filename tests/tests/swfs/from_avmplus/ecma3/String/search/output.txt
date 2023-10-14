@@ -1,0 +1,8 @@
+aString.search("string") PASSED!
+aString.search("String") PASSED!
+aString.search(/String/i) PASSED!
+bString.search(regExp) PASSED!
+bString.search(regExp) PASSED!
+bString.search(/Four/i) PASSED!
+aString.search(/notexist/) PASSED!
+bString.search("notexist") PASSED!

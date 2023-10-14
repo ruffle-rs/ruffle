@@ -107,7 +107,7 @@ fn recursive_serialize<'gc>(
                             .expect("Failed to convert xml to string in SharedObject");
                         writer.xml(name.as_ref(), string.to_utf8_lossy().as_ref(), true)
                     } else if let NativeObject::Date(date) = o.native() {
-                        writer.date(name.as_ref(), date.read().time(), None)
+                        writer.date(name.as_ref(), date.get().time(), None)
                     } else {
                         let (ow, token) = writer.object(CacheKey::from_ptr(o.as_ptr()));
 

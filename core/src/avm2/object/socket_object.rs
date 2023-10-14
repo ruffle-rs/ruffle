@@ -90,7 +90,7 @@ impl<'gc> SocketObject<'gc> {
         self.0.timeout.set(std::cmp::max(250, timeout));
     }
 
-    pub fn get_handle(&self) -> Option<SocketHandle> {
+    pub fn handle(&self) -> Option<SocketHandle> {
         self.0.handle.get()
     }
 

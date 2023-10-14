@@ -33,7 +33,7 @@ use std::cell::Cell;
 use std::mem;
 use std::path::Path;
 use std::sync::Arc;
-use swf::{Color, Rectangle};
+use swf::Color;
 use tracing::instrument;
 use wgpu::SubmissionIndex;
 
@@ -110,6 +110,21 @@ impl WgpuRenderBackend<SwapChainTarget> {
         let descriptors = Descriptors::new(instance, adapter, device, queue);
         let target = SwapChainTarget::new(surface, &descriptors.adapter, size, &descriptors.device);
         Self::new(Arc::new(descriptors), target)
+    }
+
+    #[cfg(not(target_family = "wasm"))]
+    pub fn recreate_surface<
+        W: raw_window_handle::HasRawWindowHandle + raw_window_handle::HasRawDisplayHandle,
+    >(
+        &mut self,
+        window: &W,
+        size: (u32, u32),
+    ) -> Result<(), Error> {
+        let descriptors = &self.descriptors;
+        let surface = unsafe { descriptors.wgpu_instance.create_surface(window) }?;
+        self.target =
+            SwapChainTarget::new(surface, &descriptors.adapter, size, &descriptors.device);
+        Ok(())
     }
 }
 
@@ -910,12 +925,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         Some(self.make_queue_sync_handle(target, index, destination, copy_area))
     }
 
-    fn calculate_dest_rect(&self, filter: &Filter, source_rect: Rectangle<i32>) -> Rectangle<i32> {
-        self.descriptors
-            .filters
-            .calculate_dest_rect(filter, source_rect)
-    }
-
     fn compile_pixelbender_shader(
         &mut self,
         shader: PixelBenderShader,
@@ -1093,6 +1102,13 @@ async fn request_device(
         .contains(wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES)
     {
         features |= wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES;
+    }
+
+    if adapter
+        .features()
+        .contains(wgpu::Features::SHADER_UNUSED_VERTEX_OUTPUT)
+    {
+        features |= wgpu::Features::SHADER_UNUSED_VERTEX_OUTPUT;
     }
 
     adapter

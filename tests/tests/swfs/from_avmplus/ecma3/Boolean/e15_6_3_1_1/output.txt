@@ -1,0 +1,1 @@
+var str='';for ( p in Boolean ) { str += p } str; PASSED!

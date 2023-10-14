@@ -1,2 +1,2 @@
-start = 开始
+start = 启动
 browse = 浏览

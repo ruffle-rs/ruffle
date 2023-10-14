@@ -1,0 +1,24 @@
+new Boolean(1) PASSED!
+new Boolean(0) PASSED!
+new Boolean(-1) PASSED!
+new Boolean('1') PASSED!
+new Boolean('0') PASSED!
+new Boolean(true) PASSED!
+new Boolean(false) PASSED!
+new Boolean('true') PASSED!
+new Boolean('false') PASSED!
+new Boolean('') PASSED!
+new Boolean(null) PASSED!
+new Boolean(void(0)) PASSED!
+new Boolean(-Infinity) PASSED!
+new Boolean(NaN) PASSED!
+new Boolean() PASSED!
+new Boolean(x=1) PASSED!
+new Boolean(x=0) PASSED!
+new Boolean(x=false) PASSED!
+new Boolean(x=true) PASSED!
+new Boolean(x=null) PASSED!
+new Boolean(x='') PASSED!
+new Boolean(x=' ') PASSED!
+new Boolean(new MyObject(true)) PASSED!
+new Boolean(new MyObject(false)) PASSED!

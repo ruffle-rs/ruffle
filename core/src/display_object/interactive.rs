@@ -16,7 +16,7 @@ use crate::display_object::{
 };
 use crate::events::{ClipEvent, ClipEventResult};
 use bitflags::bitflags;
-use gc_arena::{Collect, MutationContext};
+use gc_arena::{Collect, Mutation};
 use instant::Instant;
 use ruffle_macros::enum_trait_object;
 use std::cell::{Ref, RefMut};
@@ -64,8 +64,7 @@ fn lowest_common_ancestor<'gc>(
 
 bitflags! {
     /// Boolean state flags used by `InteractiveObject`.
-    #[derive(Clone, Copy, Collect)]
-    #[collect(require_static)]
+    #[derive(Clone, Copy)]
     struct InteractiveObjectFlags: u8 {
         /// Whether this `InteractiveObject` accepts mouse and other user
         /// events.
@@ -80,6 +79,7 @@ bitflags! {
 #[collect(no_drop)]
 pub struct InteractiveObjectBase<'gc> {
     pub base: DisplayObjectBase<'gc>,
+    #[collect(require_static)]
     flags: InteractiveObjectFlags,
     context_menu: Avm2Value<'gc>,
 
@@ -119,10 +119,7 @@ pub trait TInteractiveObject<'gc>:
 {
     fn raw_interactive(&self) -> Ref<InteractiveObjectBase<'gc>>;
 
-    fn raw_interactive_mut(
-        &self,
-        mc: MutationContext<'gc, '_>,
-    ) -> RefMut<InteractiveObjectBase<'gc>>;
+    fn raw_interactive_mut(&self, mc: &Mutation<'gc>) -> RefMut<InteractiveObjectBase<'gc>>;
 
     fn as_displayobject(self) -> DisplayObject<'gc>;
 
@@ -134,7 +131,7 @@ pub trait TInteractiveObject<'gc>:
     }
 
     /// Set if the interactive object accepts user input.
-    fn set_mouse_enabled(self, mc: MutationContext<'gc, '_>, value: bool) {
+    fn set_mouse_enabled(self, mc: &Mutation<'gc>, value: bool) {
         self.raw_interactive_mut(mc)
             .flags
             .set(InteractiveObjectFlags::MOUSE_ENABLED, value)
@@ -148,7 +145,7 @@ pub trait TInteractiveObject<'gc>:
     }
 
     // Set if the interactive object accepts double-click events.
-    fn set_double_click_enabled(self, mc: MutationContext<'gc, '_>, value: bool) {
+    fn set_double_click_enabled(self, mc: &Mutation<'gc>, value: bool) {
         self.raw_interactive_mut(mc)
             .flags
             .set(InteractiveObjectFlags::DOUBLE_CLICK_ENABLED, value)
@@ -158,7 +155,7 @@ pub trait TInteractiveObject<'gc>:
         self.raw_interactive().context_menu
     }
 
-    fn set_context_menu(self, mc: MutationContext<'gc, '_>, value: Avm2Value<'gc>) {
+    fn set_context_menu(self, mc: &Mutation<'gc>, value: Avm2Value<'gc>) {
         self.raw_interactive_mut(mc).context_menu = value;
     }
 

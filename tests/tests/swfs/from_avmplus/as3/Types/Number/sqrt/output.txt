@@ -1,0 +1,69 @@
+Number.sqrt() returns a Number PASSED!
+Number.sqrt() length is 1 PASSED!
+Asserting for ArgumentError PASSED!
+Number.sqrt() with no args PASSED!
+Number.sqrt(undefined) PASSED!
+Number.sqrt(string) PASSED!
+Number.sqrt(NaN) PASSED!
+Number.sqrt(NaN) check() PASSED!
+Number.sqrt(-0.1) PASSED!
+Number.sqrt(-0.1) check() PASSED!
+Number.sqrt(-Number.MIN_VALUE) PASSED!
+Number.sqrt(Number.NEGATIVE_INFINITY) PASSED!
+Number.sqrt(zero=0) PASSED!
+Number.sqrt(0) NumberLiteral PASSED!
+Number.sqrt(0) sign check PASSED!
+Number.sqrt(0) check() PASSED!
+Number.sqrt(0) check() sign check PASSED!
+Number.sqrt(null) PASSED!
+Number.sqrt(false) PASSED!
+Number.sqrt(neg_zero=-0) PASSED!
+Number.sqrt(-0) NumberLiteral PASSED!
+Number.sqrt(-0) sign check PASSED!
+Number.sqrt(-0) check() PASSED!
+Number.sqrt(-0) check() sign check PASSED!
+Number.sqrt(Number.POSITIVE_INFINITY) PASSED!
+Number.sqrt(Number.POSITIVE_INFINITY) check() PASSED!
+Number.sqrt(true) PASSED!
+Number.sqrt(2) PASSED!
+Number.sqrt(0.5) PASSED!
+Number.sqrt(3) PASSED!
+Number.sqrt(3) PASSED!
+Number.sqrt(3) PASSED!
+Number.sqrt(3) PASSED!
+Number.sqrt(3) PASSED!
+Number.sqrt(3) PASSED!
+Number.sqrt(3) PASSED!
+Number.sqrt(3) PASSED!
+Number.sqrt(3) PASSED!
+Number.sqrt(3) PASSED!
+Number.sqrt(3) PASSED!
+Number.sqrt(3) PASSED!
+Number.sqrt(3) PASSED!
+Number.sqrt(3) PASSED!
+Number.sqrt(3) PASSED!
+Number.sqrt(3) PASSED!
+Number.sqrt(3) PASSED!
+Number.sqrt(3) PASSED!
+Number.sqrt(3) PASSED!
+Number.sqrt(3) PASSED!
+Number.sqrt(2) PASSED!
+Number.sqrt(2) PASSED!
+Number.sqrt(2) PASSED!
+Number.sqrt(2) PASSED!
+Number.sqrt(2) PASSED!
+Number.sqrt(2) PASSED!
+Number.sqrt(2) PASSED!
+Number.sqrt(2) PASSED!
+Number.sqrt(2) PASSED!
+Number.sqrt(2) PASSED!
+Number.sqrt(2) PASSED!
+Number.sqrt(2) PASSED!
+Number.sqrt(2) PASSED!
+Number.sqrt(2) PASSED!
+Number.sqrt(2) PASSED!
+Number.sqrt(2) PASSED!
+Number.sqrt(2) PASSED!
+Number.sqrt(2) PASSED!
+Number.sqrt(2) PASSED!
+Number.sqrt(2) PASSED!

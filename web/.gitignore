@@ -11,3 +11,6 @@ anonymous-cli-metrics.json
 # but it's still generated when doing `npm install` inside
 # of them.
 /packages/**/package-lock.json
+
+# Jetbrains tools (CLion, IntelliJ, etc)
+/.idea

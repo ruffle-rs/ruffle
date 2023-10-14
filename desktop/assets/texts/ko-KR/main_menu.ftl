@@ -17,6 +17,7 @@ file-menu-exit = 종료
 controls-menu = 컨트롤
 controls-menu-suspend = 일시 정지
 controls-menu-resume = 재개
+controls-menu-volume = 음량 조절
 help-menu = 도움말
 help-menu-join-discord = 디스코드 참여
 help-menu-report-a-bug = 버그 제보...

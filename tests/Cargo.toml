@@ -8,36 +8,37 @@ repository.workspace = true
 version.workspace = true
 
 [dependencies]
-futures = "0.3.25"
+futures = "0.3.28"
 ruffle_core = { path = "../core", features = ["deterministic", "timeline_debug", "avm_debug", "audio", "mp3"] }
 ruffle_render_wgpu = { path = "../render/wgpu" }
 ruffle_render = { path = "../render" }
 ruffle_input_format = { path = "input-format" }
 ruffle_socket_format = { path = "socket-format" }
 ruffle_video_software = { path = "../video/software", optional = true }
-image = { version = "0.24.5", default-features = false, features = ["png"] }
-regex = "1.7.1"
-url = "2.3.1"
+image = { version = "0.24.7", default-features = false, features = ["png"] }
+regex = "1.10.0"
+url = "2.4.1"
 
 [features]
 # Enable running image comparison tests. This is off by default,
 # since the images we compare against are generated on CI, and may
 # not match your local machine's Vulkan version / image output.
 imgtests = ["ruffle_video_software"]
+jpegxr = ["ruffle_core/jpegxr"]
 lzma = ["ruffle_core/lzma"]
 
 [dev-dependencies]
 approx = "0.5.1"
-pretty_assertions = "1.3.0"
+pretty_assertions = "1.4.0"
 env_logger = "0.10.0"
 tracing = { workspace = true}
 tracing-subscriber = { workspace = true }
-serde = "1.0"
-toml = "0.7.4"
-libtest-mimic = "0.6.0"
-walkdir = "2.3.2"
-anyhow = "1.0"
-async-io = "1.13.0"
+serde = "1.0.188"
+toml = "0.8.2"
+libtest-mimic = "0.6.1"
+walkdir = "2.4.0"
+anyhow = "1.0.75"
+async-channel = "1.9.0"
 
 [[test]]
 name = "tests"

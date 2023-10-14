@@ -23,7 +23,7 @@ jobs:
     if: github.repository == 'ruffle-rs/ruffle' || github.event_name == 'repository_dispatch' || github.event_name == 'workflow_dispatch'
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Check for repo activity
         id: activity
@@ -76,23 +76,25 @@ jobs:
             os: macos-latest
             target: x86_64-apple-darwin
             MACOSX_DEPLOYMENT_TARGET: 10.7
-            DESKTOP_FEATURES: sandbox
+            DESKTOP_FEATURES: sandbox,jpegxr
 
           - build_name: macos-aarch64
             os: macos-latest
             target: aarch64-apple-darwin
             MACOSX_DEPLOYMENT_TARGET: 11.0
-            DESKTOP_FEATURES: sandbox
+            DESKTOP_FEATURES: sandbox,jpegxr
 
           - build_name: windows-x86_32
             os: windows-latest
             target: i686-pc-windows-msvc
             RUSTFLAGS: -Ctarget-feature=+crt-static
+            DESKTOP_FEATURES: jpegxr
 
           - build_name: windows-x86_64
             os: windows-latest
             target: x86_64-pc-windows-msvc
             RUSTFLAGS: -Ctarget-feature=+crt-static
+            DESKTOP_FEATURES: jpegxr
 
     env:
       PACKAGE_FILE: ${{ needs.create-nightly-release.outputs.package_prefix }}-${{ matrix.build_name }}.${{ startsWith(matrix.build_name, 'win') && 'zip' || 'tar.gz' }}
@@ -101,7 +103,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Clone Ruffle repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -172,7 +174,7 @@ jobs:
       PACKAGE_FILE: ${{ needs.create-nightly-release.outputs.package_prefix }}-macos-universal.tar.gz
     steps:
       - name: Clone Ruffle repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Download aarch64 binary
         uses: actions/download-artifact@v3
@@ -272,7 +274,7 @@ jobs:
         demo: [false, true]
     steps:
       - name: Clone Ruffle repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -412,7 +414,7 @@ jobs:
 
       - name: Clone web demo
         if: matrix.demo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: ruffle-rs/demo
           path: demo
@@ -447,7 +449,7 @@ jobs:
 
       - name: Clone JS docs
         if: ${{ !matrix.demo }}
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: ruffle-rs/js-docs
           path: js-docs
@@ -486,7 +488,7 @@ jobs:
     runs-on: ubuntu-22.04
     if: github.repository == 'ruffle-rs/ruffle'
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Get current time with dashes
         uses: 1466587594/get-current-time@v2.1.1

@@ -1,4 +1,4 @@
-use crate::{BlurFilter, BlurFilterFlags, Color, Fixed16, Fixed8};
+use crate::{BlurFilter, BlurFilterFlags, Color, Fixed16, Fixed8, Rectangle, Twips};
 use bitflags::bitflags;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -34,6 +34,11 @@ impl GlowFilter {
     pub fn scale(&mut self, x: f32, y: f32) {
         self.blur_x *= Fixed16::from_f32(x);
         self.blur_y *= Fixed16::from_f32(y);
+    }
+
+    pub fn calculate_dest_rect(&self, source_rect: Rectangle<Twips>) -> Rectangle<Twips> {
+        // TODO: Inner might not need this. Docs suggest it doesn't care about source rect, but rather source *size*?
+        self.inner_blur_filter().calculate_dest_rect(source_rect)
     }
 
     pub fn inner_blur_filter(&self) -> BlurFilter {

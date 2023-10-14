@@ -10,18 +10,19 @@
 
 file-menu = 文件
 file-menu-open-quick = 打开...
-file-menu-open-advanced = 高级打开...
+file-menu-open-advanced = 打开(高级)...
 file-menu-close = 关闭
 file-menu-reload = 重新加载
 file-menu-exit = 退出
 controls-menu = 控制
 controls-menu-suspend = 暂停
 controls-menu-resume = 继续
+controls-menu-volume = 音量控制
 help-menu = 帮助
 help-menu-join-discord = 加入 Discord 服务器
 help-menu-report-a-bug = 反馈问题
 help-menu-sponsor-development = 赞助项目...
-help-menu-translate-ruffle = 翻译 Ruffle
+help-menu-translate-ruffle = 翻译 Ruffle...
 help-menu-about = 关于 Ruffle
 debug-menu = 调试工具
 debug-menu-open-stage = 查看舞台信息

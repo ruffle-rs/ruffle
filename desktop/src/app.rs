@@ -37,7 +37,7 @@ impl App {
 
         let event_loop = EventLoopBuilder::with_user_event().build();
 
-        let min_window_size = (16, MENU_HEIGHT + 16).into();
+        let min_window_size = (16, if opt.no_gui { 16 } else { MENU_HEIGHT + 16 }).into();
         let max_window_size = get_screen_size(&event_loop);
 
         let window = WindowBuilder::new()
@@ -145,7 +145,7 @@ impl App {
                         // Event consumed by GUI.
                         return;
                     }
-                    let height_offset = if self.window.fullscreen().is_some() {
+                    let height_offset = if self.window.fullscreen().is_some() || self.opt.no_gui {
                         0.0
                     } else {
                         MENU_HEIGHT as f64 * self.window.scale_factor()
@@ -339,7 +339,7 @@ impl App {
                 winit::event::Event::UserEvent(RuffleEvent::OnMetadata(swf_header)) => {
                     let movie_width = swf_header.stage_size().width().to_pixels();
                     let movie_height = swf_header.stage_size().height().to_pixels();
-                    let height_offset = if self.window.fullscreen().is_some() {
+                    let height_offset = if self.window.fullscreen().is_some() || self.opt.no_gui {
                         0.0
                     } else {
                         MENU_HEIGHT as f64

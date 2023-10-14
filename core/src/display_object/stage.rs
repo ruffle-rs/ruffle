@@ -24,7 +24,7 @@ use crate::string::{FromWStr, WStr};
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use bitflags::bitflags;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, Mutation};
 use ruffle_render::backend::ViewportDimensions;
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::quality::StageQuality;
@@ -70,6 +70,7 @@ pub struct StageData<'gc> {
     background_color: Option<Color>,
 
     /// Determines how player content is resized to fit the stage.
+    #[collect(require_static)]
     letterbox: Letterbox,
 
     /// The dimensions of the SWF file.
@@ -85,15 +86,18 @@ pub struct StageData<'gc> {
     stage_size: (u32, u32),
 
     /// The scale mode of the stage.
+    #[collect(require_static)]
     scale_mode: StageScaleMode,
 
     /// Whether to prevent movies from changing the stage scale mode.
     forced_scale_mode: bool,
 
     /// The display state of the stage.
+    #[collect(require_static)]
     display_state: StageDisplayState,
 
     /// The alignment of the stage.
+    #[collect(require_static)]
     align: StageAlign,
 
     /// Whether to prevent movies from the changing the stage alignment
@@ -116,6 +120,7 @@ pub struct StageData<'gc> {
     /// The window mode of the viewport.
     ///
     /// Only used on web to control how the Flash content layers with other content on the page.
+    #[collect(require_static)]
     window_mode: WindowMode,
 
     /// Whether or not objects display a glowing border when they have focus.
@@ -146,11 +151,7 @@ pub struct StageData<'gc> {
 }
 
 impl<'gc> Stage<'gc> {
-    pub fn empty(
-        gc_context: MutationContext<'gc, '_>,
-        fullscreen: bool,
-        movie: Arc<SwfMovie>,
-    ) -> Stage<'gc> {
+    pub fn empty(gc_context: &Mutation<'gc>, fullscreen: bool, movie: Arc<SwfMovie>) -> Stage<'gc> {
         let stage = Self(GcCell::new(
             gc_context,
             StageData {
@@ -193,7 +194,7 @@ impl<'gc> Stage<'gc> {
         self.0.read().background_color
     }
 
-    pub fn set_background_color(self, gc_context: MutationContext<'gc, '_>, color: Option<Color>) {
+    pub fn set_background_color(self, gc_context: &Mutation<'gc>, color: Option<Color>) {
         self.0.write(gc_context).background_color = color;
     }
 
@@ -214,7 +215,7 @@ impl<'gc> Stage<'gc> {
         self.0.read().letterbox
     }
 
-    pub fn set_letterbox(self, gc_context: MutationContext<'gc, '_>, letterbox: Letterbox) {
+    pub fn set_letterbox(self, gc_context: &Mutation<'gc>, letterbox: Letterbox) {
         self.0.write(gc_context).letterbox = letterbox
     }
 
@@ -224,19 +225,15 @@ impl<'gc> Stage<'gc> {
     }
 
     /// Set the size of the SWF file.
-    pub fn set_movie_size(self, gc_context: MutationContext<'gc, '_>, width: u32, height: u32) {
+    pub fn set_movie_size(self, gc_context: &Mutation<'gc>, width: u32, height: u32) {
         self.0.write(gc_context).movie_size = (width, height);
     }
 
-    pub fn set_movie(self, gc_context: MutationContext<'gc, '_>, movie: Arc<SwfMovie>) {
+    pub fn set_movie(self, gc_context: &Mutation<'gc>, movie: Arc<SwfMovie>) {
         self.0.write(gc_context).movie = movie;
     }
 
-    pub fn set_loader_info(
-        self,
-        gc_context: MutationContext<'gc, '_>,
-        loader_info: Avm2Object<'gc>,
-    ) {
+    pub fn set_loader_info(self, gc_context: &Mutation<'gc>, loader_info: Avm2Object<'gc>) {
         self.0.write(gc_context).loader_info = loader_info;
     }
 
@@ -246,7 +243,7 @@ impl<'gc> Stage<'gc> {
     }
 
     // Set the invalidation state
-    pub fn set_invalidated(self, gc_context: MutationContext<'gc, '_>, value: bool) {
+    pub fn set_invalidated(self, gc_context: &Mutation<'gc>, value: bool) {
         self.0.write(gc_context).invalidated = value;
     }
 
@@ -294,7 +291,7 @@ impl<'gc> Stage<'gc> {
     /// when they have focus.
     ///
     /// This setting is currently ignored in Ruffle.
-    pub fn set_stage_focus_rect(self, gc_context: MutationContext<'gc, '_>, fr: bool) {
+    pub fn set_stage_focus_rect(self, gc_context: &Mutation<'gc>, fr: bool) {
         let mut this = self.0.write(gc_context);
         this.stage_focus_rect = fr
     }
@@ -415,7 +412,7 @@ impl<'gc> Stage<'gc> {
 
     /// Sets whether bitmaps will use high quality downsampling when scaled down.
     /// This setting is currently ignored in Ruffle.
-    pub fn set_use_bitmap_downsampling(self, gc_context: MutationContext<'gc, '_>, value: bool) {
+    pub fn set_use_bitmap_downsampling(self, gc_context: &Mutation<'gc>, value: bool) {
         self.0.write(gc_context).use_bitmap_downsampling = value;
     }
 
@@ -728,11 +725,11 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         Ref::map(self.0.read(), |r| &r.base.base)
     }
 
-    fn base_mut<'a>(&'a self, mc: MutationContext<'gc, '_>) -> RefMut<'a, DisplayObjectBase<'gc>> {
+    fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>> {
         RefMut::map(self.0.write(mc), |w| &mut w.base.base)
     }
 
-    fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc> {
+    fn instantiate(&self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
         Self(GcCell::new(gc_context, self.0.read().clone())).into()
     }
 
@@ -868,10 +865,7 @@ impl<'gc> TDisplayObjectContainer<'gc> for Stage<'gc> {
         Ref::map(self.0.read(), |this| &this.child)
     }
 
-    fn raw_container_mut(
-        &self,
-        gc_context: MutationContext<'gc, '_>,
-    ) -> RefMut<'_, ChildContainer<'gc>> {
+    fn raw_container_mut(&self, gc_context: &Mutation<'gc>) -> RefMut<'_, ChildContainer<'gc>> {
         RefMut::map(self.0.write(gc_context), |this| &mut this.child)
     }
 }
@@ -881,10 +875,7 @@ impl<'gc> TInteractiveObject<'gc> for Stage<'gc> {
         Ref::map(self.0.read(), |r| &r.base)
     }
 
-    fn raw_interactive_mut(
-        &self,
-        mc: MutationContext<'gc, '_>,
-    ) -> RefMut<InteractiveObjectBase<'gc>> {
+    fn raw_interactive_mut(&self, mc: &Mutation<'gc>) -> RefMut<InteractiveObjectBase<'gc>> {
         RefMut::map(self.0.write(mc), |w| &mut w.base)
     }
 
@@ -918,8 +909,7 @@ pub struct ParseEnumError;
 /// The scale mode of a stage.
 /// This controls the behavior when the player viewport size differs from the SWF size.
 #[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
-#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Collect)]
-#[collect(require_static)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StageScaleMode {
     /// The movie will be stretched to fit the container.
     ExactFit,
@@ -986,8 +976,7 @@ impl FromWStr for StageScaleMode {
 
 /// The scale mode of a stage.
 /// This controls the behavior when the player viewport size differs from the SWF size.
-#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Collect)]
-#[collect(require_static)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StageDisplayState {
     /// Sets AIR application or content in Flash Player to expand the stage over the user's entire screen.
     /// Keyboard input is disabled, with the exception of a limited set of non-printing keys.
@@ -1051,8 +1040,7 @@ bitflags! {
     ///
     /// This is a bitflags instead of an enum to mimic Flash Player behavior.
     /// You can theoretically have both TOP and BOTTOM bits set, for example.
-    #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Collect)]
-    #[collect(require_static)]
+    #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
     pub struct StageAlign: u8 {
         /// Align to the top of the viewport.
         const TOP    = 1 << 0;
@@ -1114,8 +1102,7 @@ impl FromWStr for StageAlign {
 /// the page. This setting is only used on web.
 ///
 /// [Apply OBJECT and EMBED tag attributes in Adobe Flash Professional](https://helpx.adobe.com/flash/kb/flash-object-embed-tag-attributes.html)
-#[derive(Default, Clone, Collect, Copy, Debug, Eq, PartialEq)]
-#[collect(require_static)]
+#[derive(Default, Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WindowMode {
     /// The Flash content is rendered in its own window and layering is done with the browser's
     /// default behavior.

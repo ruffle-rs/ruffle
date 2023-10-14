@@ -14,10 +14,12 @@ use crate::avm2::Namespace;
 use crate::avm2::{Avm2, Error};
 use crate::context::{GcContext, UpdateContext};
 use crate::string::{AvmAtom, AvmString};
-use gc_arena::{Collect, Gc, GcCell, MutationContext};
+use crate::tag_utils::SwfMovie;
+use gc_arena::{Collect, Gc, GcCell, Mutation};
 use std::cell::Ref;
 use std::mem::drop;
 use std::rc::Rc;
+use std::sync::Arc;
 use swf::avm2::types::{
     AbcFile, Index, Method as AbcMethod, Multiname as AbcMultiname, Namespace as AbcNamespace,
     Script as AbcScript,
@@ -72,6 +74,9 @@ struct TranslationUnitData<'gc> {
     /// Note that some of these may have a runtime (lazy) component.
     /// Make sure to check for that before using them.
     multinames: Vec<Option<Gc<'gc, Multiname<'gc>>>>,
+
+    /// The movie that this TranslationUnit was loaded from.
+    movie: Arc<SwfMovie>,
 }
 
 impl<'gc> TranslationUnit<'gc> {
@@ -81,7 +86,8 @@ impl<'gc> TranslationUnit<'gc> {
         abc: AbcFile,
         domain: Domain<'gc>,
         name: Option<AvmString<'gc>>,
-        mc: MutationContext<'gc, '_>,
+        movie: Arc<SwfMovie>,
+        mc: &Mutation<'gc>,
     ) -> Self {
         let classes = vec![None; abc.classes.len()];
         let methods = vec![None; abc.methods.len()];
@@ -102,6 +108,7 @@ impl<'gc> TranslationUnit<'gc> {
                 strings,
                 namespaces,
                 multinames,
+                movie,
             },
         ))
     }
@@ -118,6 +125,10 @@ impl<'gc> TranslationUnit<'gc> {
     /// Retrieve the underlying `AbcFile` for this translation unit.
     pub fn abc(self) -> Rc<AbcFile> {
         self.0.read().abc.clone()
+    }
+
+    pub fn movie(self) -> Arc<SwfMovie> {
+        self.0.read().movie.clone()
     }
 
     /// Load a method from the ABC file and return its method definition.
@@ -155,6 +166,7 @@ impl<'gc> TranslationUnit<'gc> {
                         native,
                         name,
                         bc_method.signature,
+                        bc_method.return_type,
                         variadic,
                         activation.context.gc_context,
                     );
@@ -399,11 +411,7 @@ impl<'gc> Script<'gc> {
     ///
     /// The `globals` object should be constructed using the `global`
     /// prototype.
-    pub fn empty_script(
-        mc: MutationContext<'gc, '_>,
-        globals: Object<'gc>,
-        domain: Domain<'gc>,
-    ) -> Self {
+    pub fn empty_script(mc: &Mutation<'gc>, globals: Object<'gc>, domain: Domain<'gc>) -> Self {
         Self(GcCell::new(
             mc,
             ScriptData {
@@ -532,7 +540,7 @@ impl<'gc> Script<'gc> {
         if !write.initialized {
             write.initialized = true;
 
-            let mut globals = write.globals;
+            let globals = write.globals;
             let mut null_activation = Activation::from_nothing(context.reborrow());
             let domain = write.domain;
 

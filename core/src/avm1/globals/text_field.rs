@@ -1,14 +1,15 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
+use crate::avm1::globals::bitmap_filter;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{globals, Object, ScriptObject, TObject, Value};
+use crate::avm1::{globals, ArrayObject, Object, ScriptObject, TObject, Value};
 use crate::context::GcContext;
 use crate::display_object::{AutoSizeMode, EditText, TDisplayObject, TextSelection};
 use crate::font::round_down_to_pixel;
 use crate::html::TextFormat;
 use crate::string::{AvmString, WStr};
-use gc_arena::GcCell;
+use gc_arena::Gc;
 use swf::Color;
 
 macro_rules! tf_method {
@@ -66,6 +67,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "borderColor" => property(tf_getter!(border_color), tf_setter!(set_border_color));
     "bottomScroll" => property(tf_getter!(bottom_scroll));
     "embedFonts" => property(tf_getter!(embed_fonts), tf_setter!(set_embed_fonts));
+    "filters" => property(tf_getter!(filters), tf_setter!(set_filters); DONT_DELETE | DONT_ENUM | VERSION_8);
     "getDepth" => method(globals::get_depth; DONT_ENUM | DONT_DELETE | READ_ONLY | VERSION_6);
     "hscroll" => property(tf_getter!(hscroll), tf_setter!(set_hscroll));
     "html" => property(tf_getter!(html), tf_setter!(set_html));
@@ -135,7 +137,7 @@ fn new_text_format<'gc>(
     let object = ScriptObject::new(activation.context.gc_context, Some(proto));
     object.set_native(
         activation.context.gc_context,
-        NativeObject::TextFormat(GcCell::new(activation.context.gc_context, text_format)),
+        NativeObject::TextFormat(Gc::new(activation.context.gc_context, text_format.into())),
     );
     object
 }
@@ -156,7 +158,7 @@ fn set_new_text_format<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let [Value::Object(text_format), ..] = args {
         if let NativeObject::TextFormat(text_format) = text_format.native() {
-            text_field.set_new_text_format(text_format.read().clone(), &mut activation.context);
+            text_field.set_new_text_format(text_format.borrow().clone(), &mut activation.context);
         }
     }
 
@@ -219,7 +221,7 @@ fn set_text_format<'gc>(
             text_field.set_text_format(
                 begin_index,
                 end_index,
-                text_format.read().clone(),
+                text_format.borrow().clone(),
                 &mut activation.context,
             );
         }
@@ -798,5 +800,39 @@ pub fn set_sharpness<'gc>(
         old_settings.with_sharpness(new_sharpness as f32),
     );
 
+    Ok(())
+}
+
+fn filters<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(ArrayObject::new(
+        activation.context.gc_context,
+        activation.context.avm1.prototypes().array,
+        this.filters()
+            .into_iter()
+            .map(|filter| bitmap_filter::filter_to_avm1(activation, filter)),
+    )
+    .into())
+}
+
+fn set_filters<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    let mut filters = vec![];
+    if let Value::Object(value) = value {
+        for index in value.get_keys(activation, false).into_iter().rev() {
+            let filter_object = value.get(index, activation)?.coerce_to_object(activation);
+            if let Some(filter) =
+                bitmap_filter::avm1_to_filter(filter_object, &mut activation.context)
+            {
+                filters.push(filter);
+            }
+        }
+    }
+    this.set_filters(activation.context.gc_context, filters);
     Ok(())
 }

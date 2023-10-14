@@ -1,0 +1,30 @@
+Number.exp() returns a Number PASSED!
+Number.exp() length is 1 PASSED!
+Asserting for ArgumentError PASSED!
+Number.exp() with no args PASSED!
+Number.exp(undefined) PASSED!
+Number.exp(string) PASSED!
+Number.exp(NaN) PASSED!
+Number.exp(NaN) check() PASSED!
+Number.exp(0) PASSED!
+Number.exp('0') PASSED!
+Number.exp(0) check() PASSED!
+Number.exp(-0) PASSED!
+Number.exp('-0') PASSED!
+Number.exp(-0) check() PASSED!
+Number.exp(Number.POSITIVE_INFINITY) PASSED!
+Number.exp(Number.POSITIVE_INFINITY) check() PASSED!
+Number.exp(Number.NEGATIVE_INFINITY) PASSED!
+Number.exp(Number.NEGATIVE_INFINITY) sign check PASSED!
+Number.exp(Number.NEGATIVE_INFINITY) check() PASSED!
+Number.exp(Number.NEGATIVE_INFINITY) check() sign check PASSED!
+Number.exp(null) PASSED!
+Number.exp(false) PASSED!
+Number.exp(1) PASSED!
+Number.exp(1) check() PASSED!
+Number.exp('1') PASSED!
+Number.exp(true) PASSED!
+Number.exp(Number.MIN_VALUE) PASSED!
+Number.exp(Number.MAX_VALUE) PASSED!
+Number.exp(1.0e+3) PASSED!
+Number.exp(-1.0e+3) PASSED!

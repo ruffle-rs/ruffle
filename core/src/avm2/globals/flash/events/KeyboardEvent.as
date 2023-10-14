@@ -11,6 +11,7 @@ package flash.events
         private var _altKey:Boolean;
         private var _shiftKey:Boolean;
         private var _controlKey:Boolean;
+        private var _commandKey:Boolean;
 
         public function KeyboardEvent(type:String, 
                                       bubbles:Boolean = true, 
@@ -32,6 +33,7 @@ package flash.events
             this._altKey = altKeyValue;
             this._shiftKey = shiftKeyValue;
             this._controlKey = controlKeyValue;
+            this._commandKey = commandKeyValue;
         }
 
         public function get charCode():uint {
@@ -83,9 +85,16 @@ package flash.events
             this._controlKey = val;
         }
 
+        public function get commandKey():Boolean {
+            return this._commandKey;
+        }
+        public function set commandKey(val:Boolean) {
+            this._commandKey = val;
+        }
+
         override public function clone() : Event
         {
-            return new KeyboardEvent(this.type,this.bubbles,this.cancelable);
+            return new KeyboardEvent(this.type,this.bubbles,this.cancelable,this._charCode,this._keyCode,this._keyLocation,this._ctrlKey,this._altKey,this._shiftKey,this._controlKey,this._commandKey);
         }
 
         public native function updateAfterEvent():void;

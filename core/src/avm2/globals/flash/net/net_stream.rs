@@ -53,7 +53,7 @@ pub fn pause<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(ns) = this.as_netstream() {
-        ns.pause(&mut activation.context);
+        ns.pause(&mut activation.context, true);
     }
 
     Ok(Value::Undefined)
@@ -112,6 +112,31 @@ pub fn set_client<'gc>(
             "Error #2004: One of the parameters is invalid.",
             2004,
         )?));
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn seek<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(ns) = this.as_netstream() {
+        let offset = args.get_f64(activation, 0)?;
+        ns.seek(&mut activation.context, offset * 1000.0, true);
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn get_time<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(ns) = this.as_netstream() {
+        return Ok((ns.time() / 1000.0).into());
     }
 
     Ok(Value::Undefined)

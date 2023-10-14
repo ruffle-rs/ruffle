@@ -1,0 +1,10 @@
+XML.ignoreWhitespace = false, XML.ignoreWhitespace PASSED!
+XML.ignoreWhitespace = true, XML.ignoreWhitespace PASSED!
+MYXML = new XML(xmlDoc), MYXML.toString() PASSED!
+MYXML = new XML(xmlDoc), MYXML.toString() with ignoreWhitespace=false PASSED!
+XML with tab and XML.ignoreWhiteSpace = true PASSED!
+XML with tab and XML.ignoreWhiteSpace = false PASSED!
+XML with new line and XML.ignoreWhiteSpace = true PASSED!
+XML with new line and XML.ignoreWhiteSpace = false PASSED!
+new XML("<a><a><b      attr='1      2'>tab</b></a>") PASSED!
+new XML("<a><a><b      attr='1      2'>tab</b></a>") PASSED!

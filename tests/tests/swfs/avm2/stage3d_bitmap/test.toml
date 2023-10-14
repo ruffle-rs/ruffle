@@ -2,7 +2,7 @@
 # It performs Stage3D bitmap rendering, and uses multiple different VertexBuffers in the same pipeline
 num_frames = 50
 
-[image_comparison]
+[image_comparisons.output]
 tolerance = 2
 
 [player_options]

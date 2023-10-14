@@ -1,0 +1,1 @@
+var str = '';for ( p in Object ) { str += p; }; str PASSED!

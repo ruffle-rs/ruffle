@@ -1,0 +1,16 @@
+num_frames = 3
+
+[image_comparisons.initial]
+tolerance = 0
+trigger = "fs_command"
+
+[image_comparisons.fillrect]
+tolerance = 0
+trigger = "fs_command"
+
+[image_comparisons.applyfilter]
+tolerance = 0
+trigger = "fs_command"
+
+[player_options]
+with_renderer = { optional = false, sample_count = 1 }

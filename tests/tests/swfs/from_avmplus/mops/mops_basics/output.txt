@@ -1,0 +1,56 @@
+domainClass != null PASSED!
+byteArrayClass != null PASSED!
+currentDomain != null PASSED!
+minMemSize >= 8 PASSED!
+currentDomain.domainMemory == null PASSED!
+Empty byte array ok PASSED!
+Small byte array ok PASSED!
+Wrong obj (Array) ok PASSED!
+Wrong obj (Object) ok PASSED!
+Wrong obj (Function) ok PASSED!
+Wrong obj (user) ok PASSED!
+Min sized byte array ok PASSED!
+Read test byte w/ min sized PASSED!
+Read test byte w/ sign extend w/ min sized PASSED!
+Read test short w/ min sized PASSED!
+Read test short w/ sign extend w/ min sized PASSED!
+Read test int w/ min sized PASSED!
+Read test float w/ min sized PASSED!
+Read test double w/ min sized PASSED!
+Write test byte w/ min sized PASSED!
+Write test short w/ min sized PASSED!
+Write test int w/ min sized PASSED!
+Write test float w/ min sized PASSED!
+Write test double w/ min sized PASSED!
+Write min / verify min PASSED!
+Write min / verify scratch PASSED!
+Write scratch / verify scratch PASSED!
+Write scratch / verify min PASSED!
+Range read test byte min PASSED!
+Range offs read test byte min PASSED!
+Range read test short min PASSED!
+Range offs read test short min PASSED!
+Range read test int min PASSED!
+Range offs read test int min PASSED!
+Range read test float min PASSED!
+Range offs read test float min PASSED!
+Range read test double min PASSED!
+Range offs read test double min PASSED!
+Range read test wide PASSED!
+Range write test byte min PASSED!
+Range write test short min PASSED!
+Range write test int min PASSED!
+Range write test float min PASSED!
+Range write test double min PASSED!
+Range write test wide PASSED!
+Sign extend test PASSED!
+Read/write byte min PASSED!
+Read/write short min PASSED!
+Read/write int min PASSED!
+Read/write float min PASSED!
+Read/write double min PASSED!
+Read/write byte scratch PASSED!
+Read/write short scratch PASSED!
+Read/write int scratch PASSED!
+Read/write float scratch PASSED!
+Read/write double scratch PASSED!

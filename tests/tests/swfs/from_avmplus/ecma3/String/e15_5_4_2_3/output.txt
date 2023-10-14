@@ -1,0 +1,4 @@
+var tostr=String.prototype.toString, String.prototype.toString=tostr,astring=new String(), astring.toString() PASSED!
+var tostr=String.prototype.toString, String.prototype.toString=tostr,astring=new String(0),astring.toString() PASSED!
+var tostr=String.prototype.toString, String.prototype.toString=tostr,astring=new String('hello'), astring.toString() PASSED!
+var tostr=String.prototype.toString, String.prototype.toString=tostr,astring=new String(''), astring.toString() PASSED!

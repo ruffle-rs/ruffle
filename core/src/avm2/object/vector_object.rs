@@ -7,9 +7,8 @@ use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
-use crate::string::AvmString;
 use core::fmt;
-use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates Vector objects.
@@ -69,9 +68,9 @@ impl<'gc> VectorObject<'gc> {
         let value_type = vector.value_type().map(|o| o.into()).unwrap_or(Value::Null);
         let vector_class = activation.avm2().classes().generic_vector;
 
-        let applied_class = vector_class.apply(activation, value_type)?;
+        let applied_class = vector_class.apply(activation, &[value_type])?;
 
-        let mut object: Object<'gc> = VectorObject(GcCell::new(
+        let object: Object<'gc> = VectorObject(GcCell::new(
             activation.context.gc_context,
             VectorObjectData {
                 base: ScriptObjectData::new(applied_class),
@@ -91,7 +90,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         Ref::map(self.0.read(), |read| &read.base)
     }
 
-    fn base_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<ScriptObjectData<'gc>> {
+    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
         RefMut::map(self.0.write(mc), |write| &mut write.base)
     }
 
@@ -109,10 +108,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         if name.contains_public_namespace() {
             if let Some(name) = name.local_name() {
                 if let Ok(index) = name.parse::<usize>() {
-                    return Ok(read
-                        .vector
-                        .get(index, activation)
-                        .unwrap_or(Value::Undefined));
+                    return read.vector.get(index, activation);
                 }
             }
         }
@@ -250,17 +246,11 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         }
     }
 
-    fn property_is_enumerable(&self, name: AvmString<'gc>) -> bool {
-        name.parse::<u32>()
-            .map(|index| self.0.read().vector.length() as u32 >= index)
-            .unwrap_or(false)
-    }
-
     fn to_string(&self, _activation: &mut Activation<'_, 'gc>) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Value::Object(Object::from(*self)))
     }
 
-    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error<'gc>> {
+    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Value::Object(Object::from(*self)))
     }
 
@@ -268,10 +258,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         Some(Ref::map(self.0.read(), |vod| &vod.vector))
     }
 
-    fn as_vector_storage_mut(
-        &self,
-        mc: MutationContext<'gc, '_>,
-    ) -> Option<RefMut<VectorStorage<'gc>>> {
+    fn as_vector_storage_mut(&self, mc: &Mutation<'gc>) -> Option<RefMut<VectorStorage<'gc>>> {
         Some(RefMut::map(self.0.write(mc), |vod| &mut vod.vector))
     }
 }

@@ -1,0 +1,16 @@
+num_frames = 3
+
+[image_comparisons.frame1]
+tolerance = 1
+trigger = 1
+
+[image_comparisons.frame2]
+tolerance = 1
+trigger = 2
+
+[image_comparisons.frame3]
+tolerance = 1
+trigger = 3
+
+[player_options]
+with_renderer = { optional = false, sample_count = 1 }

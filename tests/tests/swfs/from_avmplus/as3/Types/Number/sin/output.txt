@@ -1,0 +1,28 @@
+Number.sin() returns a Number PASSED!
+Number.sin() length is 1 PASSED!
+Asserting for ArgumentError PASSED!
+Number.sin() with no args PASSED!
+Number.sin(undefined) PASSED!
+Number.sin(string) PASSED!
+Number.sin(NaN) PASSED!
+Number.sin(NaN) check() PASSED!
+Number.sin(zero=0) PASSED!
+Number.sin(zero=0) sign check PASSED!
+Number.sin(0) PASSED!
+Number.sin(0) sign check PASSED!
+Number.sin(0) check() PASSED!
+Number.sin(0) check() sign check PASSED!
+Number.sin('0') PASSED!
+Number.sin(null) PASSED!
+Number.sin(false) PASSED!
+Number.sin(zero=-0) PASSED!
+Number.sin(zero=-0) sign check PASSED!
+Number.sin(-0) NumberLiteral PASSED!
+Number.sin(-0) NumberLiteral sign check PASSED!
+Number.sin(-0) check() PASSED!
+Number.sin(-0) check() sign check PASSED!
+Number.sin(Number.POSITIVE_INFINITY) PASSED!
+Number.sin(Number.NEGATIVE_INFINITY) PASSED!
+Number.sin(Number.PI/4) PASSED!
+Number.sin(Number.PI/2) PASSED!
+Number.sin(Number.PI) PASSED!

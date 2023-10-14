@@ -1,12 +1,10 @@
 //! CSS dimension types
-use gc_arena::Collect;
 use std::cmp::{max, min, Ord};
 use std::ops::{Add, AddAssign, Sub};
 use swf::{Rectangle, Twips};
 
 /// A type which represents the top-left position of a layout box.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Collect)]
-#[collect(require_static)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Position<T> {
     x: T,
     y: T,
@@ -81,8 +79,7 @@ where
 }
 
 /// A type which represents the size of a layout box.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Collect)]
-#[collect(require_static)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Size<T> {
     width: T,
     height: T,
@@ -133,8 +130,7 @@ impl<T> From<Position<T>> for Size<T> {
 }
 
 /// A type which represents the offset and size of a text box.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Collect)]
-#[collect(require_static)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct BoxBounds<T> {
     offset_x: T,
     extent_x: T,
@@ -206,6 +202,19 @@ where
             (self.offset_x, self.offset_y).into(),
             (width, height).into(),
         )
+    }
+}
+
+#[allow(dead_code)]
+impl<T> BoxBounds<T>
+where
+    T: Copy + std::cmp::PartialOrd,
+{
+    pub fn contains(&self, local_position: Position<T>) -> bool {
+        local_position.x >= self.offset_x
+            && local_position.x <= self.extent_x
+            && local_position.y >= self.offset_y
+            && local_position.y <= self.extent_y
     }
 }
 

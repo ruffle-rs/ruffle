@@ -59,7 +59,7 @@ fn get_component(map: vec4<f32>, component: u32) -> f32 {
             return map.a * 255.0;
         }
         default: {
-            return 0.0;
+            return 128.0; // here this means zero displacement
         }
     }
 }

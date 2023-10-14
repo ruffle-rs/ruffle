@@ -7,20 +7,20 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::html::TextFormat;
 use core::fmt;
-use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
-use std::cell::{Ref, RefMut};
+use gc_arena::barrier::unlock;
+use gc_arena::lock::RefLock;
+use gc_arena::{Collect, Gc, GcWeak, Mutation};
+use std::cell::{Ref, RefCell, RefMut};
 
 /// A class instance allocator that allocates TextFormat objects.
 pub fn textformat_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class);
-
-    Ok(TextFormatObject(GcCell::new(
-        activation.context.gc_context,
+    Ok(TextFormatObject(Gc::new(
+        activation.gc(),
         TextFormatObjectData {
-            base,
+            base: RefLock::new(ScriptObjectData::new(class)),
             text_format: Default::default(),
         },
     ))
@@ -29,16 +29,16 @@ pub fn textformat_allocator<'gc>(
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct TextFormatObject<'gc>(pub GcCell<'gc, TextFormatObjectData<'gc>>);
+pub struct TextFormatObject<'gc>(pub Gc<'gc, TextFormatObjectData<'gc>>);
 
 #[derive(Clone, Collect, Copy, Debug)]
 #[collect(no_drop)]
-pub struct TextFormatObjectWeak<'gc>(pub GcWeakCell<'gc, TextFormatObjectData<'gc>>);
+pub struct TextFormatObjectWeak<'gc>(pub GcWeak<'gc, TextFormatObjectData<'gc>>);
 
 impl fmt::Debug for TextFormatObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("TextFormatObject")
-            .field("ptr", &self.0.as_ptr())
+            .field("ptr", &Gc::as_ptr(self.0))
             .finish()
     }
 }
@@ -47,9 +47,9 @@ impl fmt::Debug for TextFormatObject<'_> {
 #[collect(no_drop)]
 pub struct TextFormatObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: RefLock<ScriptObjectData<'gc>>,
 
-    text_format: TextFormat,
+    text_format: RefCell<TextFormat>,
 }
 
 impl<'gc> TextFormatObject<'gc> {
@@ -58,14 +58,16 @@ impl<'gc> TextFormatObject<'gc> {
         text_format: TextFormat,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let class = activation.avm2().classes().textformat;
-        let base = ScriptObjectData::new(class);
 
-        let mut this: Object<'gc> = Self(GcCell::new(
-            activation.context.gc_context,
-            TextFormatObjectData { base, text_format },
+        let this: Object<'gc> = Self(Gc::new(
+            activation.gc(),
+            TextFormatObjectData {
+                base: RefLock::new(ScriptObjectData::new(class)),
+                text_format: RefCell::new(text_format),
+            },
         ))
         .into();
-        this.install_instance_slots(activation.context.gc_context);
+        this.install_instance_slots(activation.gc());
 
         Ok(this)
     }
@@ -73,28 +75,28 @@ impl<'gc> TextFormatObject<'gc> {
 
 impl<'gc> TObject<'gc> for TextFormatObject<'gc> {
     fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        Ref::map(self.0.read(), |read| &read.base)
+        self.0.base.borrow()
     }
 
-    fn base_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<ScriptObjectData<'gc>> {
-        RefMut::map(self.0.write(mc), |write| &mut write.base)
+    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
+        unlock!(Gc::write(mc, self.0), TextFormatObjectData, base).borrow_mut()
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
-        self.0.as_ptr() as *const ObjectPtr
+        Gc::as_ptr(self.0) as *const ObjectPtr
     }
 
-    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error<'gc>> {
+    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Value::Object(Object::from(*self)))
     }
 
     /// Unwrap this object as a text format.
     fn as_text_format(&self) -> Option<Ref<TextFormat>> {
-        Some(Ref::map(self.0.read(), |d| &d.text_format))
+        Some(self.0.text_format.borrow())
     }
 
     /// Unwrap this object as a mutable text format.
-    fn as_text_format_mut(&self, mc: MutationContext<'gc, '_>) -> Option<RefMut<TextFormat>> {
-        Some(RefMut::map(self.0.write(mc), |d| &mut d.text_format))
+    fn as_text_format_mut(&self) -> Option<RefMut<TextFormat>> {
+        Some(self.0.text_format.borrow_mut())
     }
 }

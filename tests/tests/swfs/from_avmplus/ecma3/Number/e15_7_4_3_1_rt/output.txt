@@ -1,0 +1,7 @@
+15.7.4.1 Number.prototype.valueOf() PASSED!
+15.7.4.1 (new Number(1)).valueOf() PASSED!
+15.7.4.1 (new Number(-1)).valueOf() PASSED!
+15.7.4.1 (new Number(0)).valueOf() PASSED!
+15.7.4.1 (new Number(Number.POSITIVE_INFINITY)).valueOf() PASSED!
+15.7.4.1 (new Number(Number.NaN)).valueOf() PASSED!
+15.7.4.1 (new Number()).valueOf() PASSED!

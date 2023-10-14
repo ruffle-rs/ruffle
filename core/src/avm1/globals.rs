@@ -61,6 +61,7 @@ pub(crate) mod transform;
 mod video;
 pub(crate) mod xml;
 mod xml_node;
+pub(crate) mod xml_socket;
 
 const GLOBAL_DECLS: &[Declaration] = declare_properties! {
     "trace" => method(trace; DONT_ENUM);
@@ -447,6 +448,9 @@ pub fn unescape<'gc>(
                 remain = 0;
                 hex_chars.clear();
             }
+            b'+' => {
+                out_bytes.push(b' ');
+            }
             _ => {
                 out_bytes.push(c);
             }
@@ -576,6 +580,7 @@ pub fn create_globals<'gc>(
 
     let video_proto = video::create_proto(context, object_proto, function_proto);
     let netstream_proto = netstream::create_proto(context, object_proto, function_proto);
+    let xml_socket_proto = xml_socket::create_proto(context, object_proto, function_proto);
 
     //TODO: These need to be constructors and should also set `.prototype` on each one
     let object = object::create_object_object(context, object_proto, function_proto);
@@ -669,6 +674,7 @@ pub fn create_globals<'gc>(
     let boolean = boolean::create_boolean_object(context, boolean_proto, function_proto);
     let date = date::create_constructor(context, object_proto, function_proto);
     let netstream = netstream::create_class(context, netstream_proto, function_proto);
+    let xml_socket = xml_socket::create_class(context, xml_socket_proto, function_proto);
 
     let flash = ScriptObject::new(gc_context, Some(object_proto));
 
@@ -1049,6 +1055,12 @@ pub fn create_globals<'gc>(
         gc_context,
         "NetStream",
         netstream.into(),
+        Attribute::DONT_ENUM,
+    );
+    globals.define_value(
+        gc_context,
+        "XMLSocket",
+        xml_socket.into(),
         Attribute::DONT_ENUM,
     );
 

@@ -1,0 +1,1 @@
+Calling a global multi-arg function which declares a local const variable PASSED!

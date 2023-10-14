@@ -1,0 +1,15 @@
+Access default property from same package PASSED!
+Access internal property from same package PASSED!
+Access public property from same package PASSED!
+Access private property from same class and package PASSED!
+Access namespace property from same package PASSED!
+Access public static property from same package PASSED!
+Access default method from same package PASSED!
+Access internal method from same package PASSED!
+Access public method from same package PASSED!
+Access private method from same class and package PASSED!
+Access namespace method from same package PASSED!
+Access final public method from same package PASSED!
+Access static public method from same package PASSED!
+Access private property from same package not same class PASSED!
+Access private method from same package not same class PASSED!

@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::ops::Deref;
 
-use gc_arena::{Collect, Gc, MutationContext};
+use gc_arena::{Collect, Gc, Mutation};
 use ruffle_wstr::{wstr_impl_traits, WStr, WString};
 
 use crate::string::{AvmAtom, AvmStringRepr};
@@ -20,7 +20,7 @@ pub struct AvmString<'gc> {
 }
 
 impl<'gc> AvmString<'gc> {
-    pub(super) fn to_owned(self, gc_context: MutationContext<'gc, '_>) -> Gc<'gc, AvmStringRepr> {
+    pub(super) fn to_owned(self, gc_context: &Mutation<'gc>) -> Gc<'gc, AvmStringRepr> {
         match self.source {
             Source::Owned(s) => s,
             Source::Static(s) => {
@@ -30,10 +30,7 @@ impl<'gc> AvmString<'gc> {
         }
     }
 
-    pub fn new_utf8<'s, S: Into<Cow<'s, str>>>(
-        gc_context: MutationContext<'gc, '_>,
-        string: S,
-    ) -> Self {
+    pub fn new_utf8<'s, S: Into<Cow<'s, str>>>(gc_context: &Mutation<'gc>, string: S) -> Self {
         let buf = match string.into() {
             Cow::Owned(utf8) => WString::from_utf8_owned(utf8),
             Cow::Borrowed(utf8) => WString::from_utf8(utf8),
@@ -44,12 +41,12 @@ impl<'gc> AvmString<'gc> {
         }
     }
 
-    pub fn new_utf8_bytes(gc_context: MutationContext<'gc, '_>, bytes: &[u8]) -> Self {
+    pub fn new_utf8_bytes(gc_context: &Mutation<'gc>, bytes: &[u8]) -> Self {
         let buf = WString::from_utf8_bytes(bytes.to_vec());
         Self::new(gc_context, buf)
     }
 
-    pub fn new<S: Into<WString>>(gc_context: MutationContext<'gc, '_>, string: S) -> Self {
+    pub fn new<S: Into<WString>>(gc_context: &Mutation<'gc>, string: S) -> Self {
         let repr = AvmStringRepr::from_raw(string.into(), false);
         Self {
             source: Source::Owned(Gc::new(gc_context, repr)),
@@ -71,7 +68,7 @@ impl<'gc> AvmString<'gc> {
     }
 
     pub fn concat(
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         left: AvmString<'gc>,
         right: AvmString<'gc>,
     ) -> AvmString<'gc> {

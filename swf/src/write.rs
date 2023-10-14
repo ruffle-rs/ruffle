@@ -1435,13 +1435,14 @@ impl<W: Write> Writer<W> {
                 let is_axis_aligned = delta.dx == Twips::ZERO || delta.dy == Twips::ZERO;
                 bits.write_ubits(4, num_bits - 2)?;
                 bits.write_bit(!is_axis_aligned)?;
+                let is_vertical = is_axis_aligned && delta.dx == Twips::ZERO;
                 if is_axis_aligned {
-                    bits.write_bit(delta.dx == Twips::ZERO)?;
+                    bits.write_bit(is_vertical)?;
                 }
-                if delta.dx != Twips::ZERO {
+                if !is_axis_aligned || !is_vertical {
                     bits.write_sbits_twips(num_bits, delta.dx)?;
                 }
-                if delta.dy != Twips::ZERO {
+                if !is_axis_aligned || is_vertical {
                     bits.write_sbits_twips(num_bits, delta.dy)?;
                 }
             }
@@ -1453,7 +1454,8 @@ impl<W: Write> Writer<W> {
                 let num_bits = count_sbits_twips(control_delta.dx)
                     .max(count_sbits_twips(control_delta.dy))
                     .max(count_sbits_twips(anchor_delta.dx))
-                    .max(count_sbits_twips(anchor_delta.dy));
+                    .max(count_sbits_twips(anchor_delta.dy))
+                    .max(2);
                 bits.write_ubits(4, num_bits - 2)?;
                 bits.write_sbits_twips(num_bits, control_delta.dx)?;
                 bits.write_sbits_twips(num_bits, control_delta.dy)?;
@@ -2025,6 +2027,9 @@ impl<W: Write> Writer<W> {
 
             // We must write the glyph shapes into a temporary buffer
             // so that we can calculate their offsets.
+            // Note: these offsets are still wrong,
+            // as there's a variable size CodeTableOffset field in between.
+            // We correct for it with a +4/+2 addition later.
             let mut offsets = Vec::with_capacity(num_glyphs);
             let mut has_wide_offsets = false;
             let has_wide_codes = !font.flags.contains(FontFlag::IS_ANSI);
@@ -2041,7 +2046,7 @@ impl<W: Write> Writer<W> {
                 };
                 for glyph in &font.glyphs {
                     // Store offset for later.
-                    let offset = num_glyphs * 4 + shape_writer.output.len();
+                    let offset = shape_writer.output.len();
                     offsets.push(offset);
                     if offset > 0xFFFF {
                         has_wide_offsets = true;
@@ -2067,12 +2072,19 @@ impl<W: Write> Writer<W> {
 
             // If there are no glyphs, then the following tables are omitted.
             if num_glyphs > 0 {
+                // OffsetTable size, plus CodeTableOffset size
+                let init_offset = if has_wide_offsets {
+                    num_glyphs * 4 + 4
+                } else {
+                    num_glyphs * 2 + 2
+                };
+
                 // OffsetTable
                 for offset in offsets {
                     if has_wide_offsets {
-                        writer.write_u32(offset as u32)?;
+                        writer.write_u32((offset + init_offset) as u32)?;
                     } else {
-                        writer.write_u16(offset as u16)?;
+                        writer.write_u16((offset + init_offset) as u16)?;
                     }
                 }
 
@@ -2740,5 +2752,49 @@ mod tests {
             expected.extend_from_slice(&[0b01_000000, 0b00000000, 0, 0]);
             assert_eq!(buf, expected);
         }
+    }
+
+    #[test]
+    fn write_font_3() {
+        use crate::read::Reader;
+
+        let font = Font {
+            version: 3,
+            id: 1,
+            name: SwfStr::from_bytes(b"font"),
+            language: Language::Unknown,
+            layout: None,
+            glyphs: vec![Glyph {
+                shape_records: vec![
+                    ShapeRecord::StraightEdge {
+                        delta: PointDelta::new(Twips::ONE, -Twips::ONE),
+                    },
+                    ShapeRecord::CurvedEdge {
+                        control_delta: PointDelta::new(Twips::ONE, Twips::ONE),
+                        anchor_delta: PointDelta::new(Twips::ONE, -Twips::ONE),
+                    },
+                    ShapeRecord::StraightEdge {
+                        delta: PointDelta::new(Twips::ZERO, Twips::ZERO),
+                    },
+                    ShapeRecord::CurvedEdge {
+                        control_delta: PointDelta::new(Twips::ZERO, Twips::ZERO),
+                        anchor_delta: PointDelta::new(Twips::ZERO, Twips::ZERO),
+                    },
+                ],
+                code: 1,
+                advance: 0,
+                bounds: None,
+            }],
+            flags: FontFlag::empty(),
+        };
+
+        let mut buf = Vec::new();
+        let mut writer = Writer::new(&mut buf, 13);
+        writer.write_define_font_2(&font).unwrap();
+
+        let mut reader = Reader::new(&buf, 13);
+        let tag = reader.read_tag().unwrap();
+
+        assert_eq!(tag, Tag::DefineFont2(Box::new(font)));
     }
 }

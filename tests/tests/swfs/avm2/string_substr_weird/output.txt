@@ -1,0 +1,156 @@
+Substr of 0-0: 
+Substr of 0--0.01: 
+Substr of 0-Infinity: 123456789
+Substr of 0--Infinity: 
+Substr of 0-NaN: 
+Substr of 0-NaN: 
+Substr of 0-1.001: 1
+Substr of 0--0.6: 
+Substr of 0--0.3: 
+Substr of 0-4: 1234
+Substr of 0-1: 1
+Substr of 0--1: 12345678
+Substr of 0: 123456789
+Substr of -0.01-0: 
+Substr of -0.01--0.01: 
+Substr of -0.01-Infinity: 123456789
+Substr of -0.01--Infinity: 
+Substr of -0.01-NaN: 
+Substr of -0.01-NaN: 
+Substr of -0.01-1.001: 1
+Substr of -0.01--0.6: 
+Substr of -0.01--0.3: 
+Substr of -0.01-4: 1234
+Substr of -0.01-1: 1
+Substr of -0.01--1: 12345678
+Substr of -0.01: 123456789
+Substr of Infinity-0: 
+Substr of Infinity--0.01: 
+Substr of Infinity-Infinity: 
+Substr of Infinity--Infinity: 
+Substr of Infinity-NaN: 
+Substr of Infinity-NaN: 
+Substr of Infinity-1.001: 
+Substr of Infinity--0.6: 
+Substr of Infinity--0.3: 
+Substr of Infinity-4: 
+Substr of Infinity-1: 
+Substr of Infinity--1: 
+Substr of Infinity: 
+Substr of -Infinity-0: 
+Substr of -Infinity--0.01: 
+Substr of -Infinity-Infinity: 123456789
+Substr of -Infinity--Infinity: 
+Substr of -Infinity-NaN: 
+Substr of -Infinity-NaN: 
+Substr of -Infinity-1.001: 1
+Substr of -Infinity--0.6: 
+Substr of -Infinity--0.3: 
+Substr of -Infinity-4: 1234
+Substr of -Infinity-1: 1
+Substr of -Infinity--1: 12345678
+Substr of -Infinity: 123456789
+Substr of NaN-0: 
+Substr of NaN--0.01: 
+Substr of NaN-Infinity: 123456789
+Substr of NaN--Infinity: 
+Substr of NaN-NaN: 
+Substr of NaN-NaN: 
+Substr of NaN-1.001: 1
+Substr of NaN--0.6: 
+Substr of NaN--0.3: 
+Substr of NaN-4: 1234
+Substr of NaN-1: 1
+Substr of NaN--1: 12345678
+Substr of NaN: 123456789
+Substr of NaN-0: 
+Substr of NaN--0.01: 
+Substr of NaN-Infinity: 123456789
+Substr of NaN--Infinity: 
+Substr of NaN-NaN: 
+Substr of NaN-NaN: 
+Substr of NaN-1.001: 1
+Substr of NaN--0.6: 
+Substr of NaN--0.3: 
+Substr of NaN-4: 1234
+Substr of NaN-1: 1
+Substr of NaN--1: 12345678
+Substr of NaN: 123456789
+Substr of 1.001-0: 
+Substr of 1.001--0.01: 
+Substr of 1.001-Infinity: 23456789
+Substr of 1.001--Infinity: 
+Substr of 1.001-NaN: 
+Substr of 1.001-NaN: 
+Substr of 1.001-1.001: 2
+Substr of 1.001--0.6: 
+Substr of 1.001--0.3: 
+Substr of 1.001-4: 2345
+Substr of 1.001-1: 2
+Substr of 1.001--1: 
+Substr of 1.001: 23456789
+Substr of -0.6-0: 
+Substr of -0.6--0.01: 
+Substr of -0.6-Infinity: 123456789
+Substr of -0.6--Infinity: 
+Substr of -0.6-NaN: 
+Substr of -0.6-NaN: 
+Substr of -0.6-1.001: 1
+Substr of -0.6--0.6: 
+Substr of -0.6--0.3: 
+Substr of -0.6-4: 1234
+Substr of -0.6-1: 1
+Substr of -0.6--1: 12345678
+Substr of -0.6: 123456789
+Substr of -0.3-0: 
+Substr of -0.3--0.01: 
+Substr of -0.3-Infinity: 123456789
+Substr of -0.3--Infinity: 
+Substr of -0.3-NaN: 
+Substr of -0.3-NaN: 
+Substr of -0.3-1.001: 1
+Substr of -0.3--0.6: 
+Substr of -0.3--0.3: 
+Substr of -0.3-4: 1234
+Substr of -0.3-1: 1
+Substr of -0.3--1: 12345678
+Substr of -0.3: 123456789
+Substr of 4-0: 
+Substr of 4--0.01: 
+Substr of 4-Infinity: 56789
+Substr of 4--Infinity: 
+Substr of 4-NaN: 
+Substr of 4-NaN: 
+Substr of 4-1.001: 5
+Substr of 4--0.6: 
+Substr of 4--0.3: 
+Substr of 4-4: 5678
+Substr of 4-1: 5
+Substr of 4--1: 
+Substr of 4: 56789
+Substr of 1-0: 
+Substr of 1--0.01: 
+Substr of 1-Infinity: 23456789
+Substr of 1--Infinity: 
+Substr of 1-NaN: 
+Substr of 1-NaN: 
+Substr of 1-1.001: 2
+Substr of 1--0.6: 
+Substr of 1--0.3: 
+Substr of 1-4: 2345
+Substr of 1-1: 2
+Substr of 1--1: 
+Substr of 1: 23456789
+Substr of -1-0: 
+Substr of -1--0.01: 
+Substr of -1-Infinity: 9
+Substr of -1--Infinity: 
+Substr of -1-NaN: 
+Substr of -1-NaN: 
+Substr of -1-1.001: 9
+Substr of -1--0.6: 
+Substr of -1--0.3: 
+Substr of -1-4: 9
+Substr of -1-1: 9
+Substr of -1--1: 
+Substr of -1: 9

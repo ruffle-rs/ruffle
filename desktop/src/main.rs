@@ -21,6 +21,7 @@ use anyhow::Error;
 use app::App;
 use clap::Parser;
 use cli::Opt;
+use rfd::MessageDialogResult;
 use ruffle_core::StaticCallstack;
 use std::cell::RefCell;
 use std::panic::PanicInfo;
@@ -100,7 +101,7 @@ fn panic_hook(info: &PanicInfo) {
     if rfd::MessageDialog::new()
         .set_level(rfd::MessageLevel::Error)
         .set_title("Ruffle")
-        .set_description(&format!(
+        .set_description(format!(
             "Ruffle has encountered a fatal error, this is a bug.\n\n\
             {message}\n\n\
             Please report this to us so that we can fix it. Thank you!\n\
@@ -108,6 +109,7 @@ fn panic_hook(info: &PanicInfo) {
         ))
         .set_buttons(rfd::MessageButtons::YesNo)
         .show()
+        == MessageDialogResult::Yes
     {
         let mut params = vec![
             ("panic_text", info.to_string()),

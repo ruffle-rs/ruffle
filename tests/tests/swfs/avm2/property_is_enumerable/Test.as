@@ -1,5 +1,12 @@
-﻿package {
-	public class Test {}
+﻿// compiled with mxmlc
+
+package {
+	import flash.display.MovieClip;
+	import flash.text.TextField;
+	public class Test extends MovieClip {
+		public function Test(){
+		}
+	}
 }
 
 class ES4Class extends Object {
@@ -175,3 +182,21 @@ trace("//ES3Class.prototype.propertyIsEnumerable('test_static_var')");
 trace(ES3Class.prototype.propertyIsEnumerable('test_static_var'));
 trace("//ES3Class.prototype.propertyIsEnumerable('test_static_function')");
 trace(ES3Class.prototype.propertyIsEnumerable('test_static_function'));
+
+var arr = [1, 2];
+trace("//arr.propertyIsEnumerable('0')");
+trace(arr.propertyIsEnumerable("0"))
+trace("//arr.propertyIsEnumerable('1')");
+trace(arr.propertyIsEnumerable("1"))
+trace("//arr.propertyIsEnumerable('2')");
+trace(arr.propertyIsEnumerable("2"))
+
+var vec = new Vector.<int>();
+vec.push(1);
+vec.push(2);
+trace("//vec.propertyIsEnumerable('0')");
+trace(vec.propertyIsEnumerable("0"))
+trace("//vec.propertyIsEnumerable('1')");
+trace(vec.propertyIsEnumerable("1"))
+trace("//vec.propertyIsEnumerable('2')");
+trace(vec.propertyIsEnumerable("2"))

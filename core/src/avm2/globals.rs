@@ -1,8 +1,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
-use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::object::{ClassObject, FunctionObject, Object, ScriptObject, TObject};
+use crate::avm2::object::{ClassObject, Object, ScriptObject, TObject};
 use crate::avm2::scope::{Scope, ScopeChain};
 use crate::avm2::script::Script;
 use crate::avm2::Avm2;
@@ -11,10 +10,11 @@ use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::string::AvmString;
 use crate::tag_utils::{self, ControlFlow, SwfMovie, SwfSlice, SwfStream};
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, Mutation};
 use std::sync::Arc;
 use swf::TagCode;
 
+mod __ruffle__;
 mod array;
 mod avmplus;
 mod boolean;
@@ -39,6 +39,19 @@ mod vector;
 mod void;
 mod xml;
 mod xml_list;
+
+pub use toplevel::decode_uri;
+pub use toplevel::decode_uri_component;
+pub use toplevel::encode_uri;
+pub use toplevel::encode_uri_component;
+pub use toplevel::escape;
+pub use toplevel::is_finite;
+pub use toplevel::is_na_n;
+pub use toplevel::is_xml_name;
+pub use toplevel::parse_float;
+pub use toplevel::parse_int;
+pub use toplevel::trace;
+pub use toplevel::unescape;
 
 /// This structure represents all system builtin classes.
 #[derive(Clone, Collect)]
@@ -77,6 +90,7 @@ pub struct SystemClasses<'gc> {
     pub graphicspath: ClassObject<'gc>,
     pub graphicstrianglepath: ClassObject<'gc>,
     pub graphicssolidfill: ClassObject<'gc>,
+    pub graphicsshaderfill: ClassObject<'gc>,
     pub graphicsstroke: ClassObject<'gc>,
     pub loader: ClassObject<'gc>,
     pub loaderinfo: ClassObject<'gc>,
@@ -110,6 +124,7 @@ pub struct SystemClasses<'gc> {
     pub rectangle: ClassObject<'gc>,
     pub keyboardevent: ClassObject<'gc>,
     pub point: ClassObject<'gc>,
+    pub evalerror: ClassObject<'gc>,
     pub rangeerror: ClassObject<'gc>,
     pub referenceerror: ClassObject<'gc>,
     pub argumenterror: ClassObject<'gc>,
@@ -150,6 +165,7 @@ pub struct SystemClasses<'gc> {
     pub netstatusevent: ClassObject<'gc>,
     pub shaderfilter: ClassObject<'gc>,
     pub statusevent: ClassObject<'gc>,
+    pub contextmenuevent: ClassObject<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -201,6 +217,7 @@ impl<'gc> SystemClasses<'gc> {
             graphicspath: object,
             graphicstrianglepath: object,
             graphicssolidfill: object,
+            graphicsshaderfill: object,
             graphicsstroke: object,
             loader: object,
             loaderinfo: object,
@@ -232,6 +249,7 @@ impl<'gc> SystemClasses<'gc> {
             rectangle: object,
             keyboardevent: object,
             point: object,
+            evalerror: object,
             rangeerror: object,
             referenceerror: object,
             argumenterror: object,
@@ -272,31 +290,35 @@ impl<'gc> SystemClasses<'gc> {
             netstatusevent: object,
             shaderfilter: object,
             statusevent: object,
+            contextmenuevent: object,
         }
     }
 }
 
-/// Add a free-function builtin to the global scope.
-fn function<'gc>(
+/// Looks up a function defined in the script domain, and defines it on the global object.
+///
+/// This expects the looked-up value to be a function.
+fn define_fn_on_global<'gc>(
     activation: &mut Activation<'_, 'gc>,
     package: impl Into<AvmString<'gc>>,
     name: &'static str,
-    nf: NativeMethodImpl,
     script: Script<'gc>,
-) -> Result<(), Error<'gc>> {
-    let (_, mut global, mut domain) = script.init();
-    let mc = activation.context.gc_context;
-    let scope = activation.create_scopechain();
+) {
+    let (_, global, domain) = script.init();
     let qname = QName::new(
         Namespace::package(package, &mut activation.borrow_gc()),
         name,
     );
-    let method = Method::from_builtin(nf, name, mc);
-    let as3fn = FunctionObject::from_method(activation, method, scope, None, None).into();
-    domain.export_definition(qname, script, mc);
-    global.install_const_late(mc, qname, as3fn, activation.avm2().classes().function);
+    let func = domain
+        .get_defined_value(activation, qname)
+        .expect("Function being defined on global should be defined in domain!");
 
-    Ok(())
+    global.install_const_late(
+        activation.context.gc_context,
+        qname,
+        func,
+        activation.avm2().classes().function,
+    );
 }
 
 /// Add a fully-formed class object builtin to the global scope.
@@ -304,13 +326,13 @@ fn function<'gc>(
 /// This allows the caller to pre-populate the class's prototype with dynamic
 /// properties, if necessary.
 fn dynamic_class<'gc>(
-    mc: MutationContext<'gc, '_>,
+    mc: &Mutation<'gc>,
     class_object: ClassObject<'gc>,
     script: Script<'gc>,
     // The `ClassObject` of the `Class` class
     class_class: ClassObject<'gc>,
 ) {
-    let (_, mut global, mut domain) = script.init();
+    let (_, global, mut domain) = script.init();
     let class = class_object.inner_class_definition();
     let name = class.read().name();
 
@@ -327,7 +349,7 @@ fn class<'gc>(
     script: Script<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<ClassObject<'gc>, Error<'gc>> {
-    let (_, mut global, mut domain) = script.init();
+    let (_, global, mut domain) = script.init();
 
     let class_read = class_def.read();
     let super_class = if let Some(sc_name) = class_read.super_class_name() {
@@ -378,7 +400,7 @@ fn vector_class<'gc>(
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<ClassObject<'gc>, Error<'gc>> {
     let mc = activation.context.gc_context;
-    let (_, mut global, mut domain) = script.init();
+    let (_, global, mut domain) = script.init();
 
     let cls = param_class.map(|c| c.inner_class_definition());
     let vector_cls = class(
@@ -555,66 +577,6 @@ pub fn load_player_globals<'gc>(
     // it should only be visible as an type for typecheck/cast purposes.
     avm2_system_class!(void, activation, void::create_class(activation), script);
 
-    function(activation, "", "trace", toplevel::trace, script)?;
-    function(
-        activation,
-        "__ruffle__",
-        "log_warn",
-        toplevel::log_warn,
-        script,
-    )?;
-    function(
-        activation,
-        "__ruffle__",
-        "stub_method",
-        toplevel::stub_method,
-        script,
-    )?;
-    function(
-        activation,
-        "__ruffle__",
-        "stub_getter",
-        toplevel::stub_getter,
-        script,
-    )?;
-    function(
-        activation,
-        "__ruffle__",
-        "stub_setter",
-        toplevel::stub_setter,
-        script,
-    )?;
-    function(
-        activation,
-        "__ruffle__",
-        "stub_constructor",
-        toplevel::stub_constructor,
-        script,
-    )?;
-    function(activation, "", "isFinite", toplevel::is_finite, script)?;
-    function(activation, "", "isNaN", toplevel::is_nan, script)?;
-    function(activation, "", "isXMLName", toplevel::is_xml_name, script)?;
-    function(activation, "", "parseInt", toplevel::parse_int, script)?;
-    function(activation, "", "parseFloat", toplevel::parse_float, script)?;
-    function(activation, "", "escape", toplevel::escape, script)?;
-    function(activation, "", "encodeURI", toplevel::encode_uri, script)?;
-    function(
-        activation,
-        "",
-        "encodeURIComponent",
-        toplevel::encode_uri_component,
-        script,
-    )?;
-    function(activation, "", "decodeURI", toplevel::decode_uri, script)?;
-    function(
-        activation,
-        "",
-        "decodeURIComponent",
-        toplevel::decode_uri_component,
-        script,
-    )?;
-    function(activation, "", "unescape", toplevel::unescape, script)?;
-
     avm2_system_class!(
         generic_vector,
         activation,
@@ -652,9 +614,23 @@ pub fn load_player_globals<'gc>(
 
     // Inside this call, the macro `avm2_system_classes_playerglobal`
     // triggers classloading. Therefore, we run `load_playerglobal`
-    // relative late, so that it can access classes defined before
+    // relatively late, so that it can access classes defined before
     // this call.
     load_playerglobal(activation, domain)?;
+
+    // Except for `trace`, top-level builtin functions are defined
+    // on the `global` object.
+    define_fn_on_global(activation, "", "decodeURI", script);
+    define_fn_on_global(activation, "", "decodeURIComponent", script);
+    define_fn_on_global(activation, "", "encodeURI", script);
+    define_fn_on_global(activation, "", "encodeURIComponent", script);
+    define_fn_on_global(activation, "", "escape", script);
+    define_fn_on_global(activation, "", "unescape", script);
+    define_fn_on_global(activation, "", "isXMLName", script);
+    define_fn_on_global(activation, "", "isFinite", script);
+    define_fn_on_global(activation, "", "isNaN", script);
+    define_fn_on_global(activation, "", "parseFloat", script);
+    define_fn_on_global(activation, "", "parseInt", script);
 
     Ok(())
 }
@@ -678,10 +654,12 @@ fn load_playerglobal<'gc>(
     activation.avm2().native_instance_init_table = native::NATIVE_INSTANCE_INIT_TABLE;
     activation.avm2().native_call_handler_table = native::NATIVE_CALL_HANDLER_TABLE;
 
-    let movie = SwfMovie::from_data(PLAYERGLOBAL, "file:///".into(), None)
-        .expect("playerglobal.swf should be valid");
+    let movie = Arc::new(
+        SwfMovie::from_data(PLAYERGLOBAL, "file:///".into(), None)
+            .expect("playerglobal.swf should be valid"),
+    );
 
-    let slice = SwfSlice::from(Arc::new(movie));
+    let slice = SwfSlice::from(movie.clone());
 
     let mut reader = slice.read_from(0);
 
@@ -696,6 +674,7 @@ fn load_playerglobal<'gc>(
                 None,
                 do_abc.flags,
                 domain,
+                movie.clone(),
             )
             .expect("playerglobal.swf should be valid");
         } else if tag_code != TagCode::End {
@@ -729,6 +708,7 @@ fn load_playerglobal<'gc>(
             ("", "Error", error),
             ("", "ArgumentError", argumenterror),
             ("", "QName", qname),
+            ("", "EvalError", evalerror),
             ("", "RangeError", rangeerror),
             ("", "RegExp", regexp),
             ("", "ReferenceError", referenceerror),
@@ -803,6 +783,7 @@ fn load_playerglobal<'gc>(
             ("flash.events", "UncaughtErrorEvents", uncaughterrorevents),
             ("flash.events", "NetStatusEvent", netstatusevent),
             ("flash.events", "StatusEvent", statusevent),
+            ("flash.events", "ContextMenuEvent", contextmenuevent),
             ("flash.geom", "Matrix", matrix),
             ("flash.geom", "Point", point),
             ("flash.geom", "Rectangle", rectangle),

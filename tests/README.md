@@ -40,16 +40,18 @@ with_renderer = { optional = false, sample_count = 4, exclude_warp = false } # I
 with_audio = false # If this test requires an audio backend to run.
 with_video = false # If this test requires a video decoder backend to run.
 
-# Whether or not to compare the image rendered with an expected image
+# A list of image comparisons to perform during the test. This block is repeatable infinitely, as long as each name is unique.
 # The comparison part of a test is optional and only runs when `imgtests` feature is enabled
 # This requires a render to be setup for this test
-[image_comparison]
+[image_comparisons.COMPARISON_NAME] # COMPARISON_NAME is a name of this particular image
 tolerance = 0 # The tolerance per pixel channel to be considered "the same". Increase as needed with tests that aren't pixel perfect across platforms.
 max_outliers = 0 # Maximum number of outliers allowed over the given tolerance levels. Increase as needed with tests that aren't pixel perfect across platforms.
+trigger = "last_frame" # When to trigger this capture. Options are last_frame (default), fs_command, or a frame/tick number (1-based). Only one image may exist per frame/tick number or last_frame.
 
 # Which build features are required for this test to run.
 [required_features]
 lzma = false # If LZMA support is enabled in this build
+jpegxr = false # If JPEG XR support is enabled in this build
 ```
 
 ## Frame-based tests

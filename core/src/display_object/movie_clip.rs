@@ -34,18 +34,19 @@ use crate::limits::ExecutionLimit;
 use crate::loader;
 use crate::loader::Loader;
 use crate::prelude::*;
+use crate::streams::NetStream;
 use crate::string::{AvmString, SwfStrExt as _, WStr, WString};
 use crate::tag_utils::{self, ControlFlow, DecodeResult, Error, SwfMovie, SwfSlice, SwfStream};
 use crate::vminterface::{AvmObject, Instantiator};
 use core::fmt;
-use gc_arena::{Collect, Gc, GcCell, GcWeakCell, MutationContext};
+use gc_arena::{Collect, Gc, GcCell, GcWeakCell, Mutation};
 use smallvec::SmallVec;
 use std::cell::{Ref, RefMut};
 use std::cmp::max;
 use std::collections::HashMap;
 use std::sync::Arc;
 use swf::extensions::ReadSwfExt;
-use swf::{ClipEventFlag, FontFlag, FrameLabelData, SwfStr};
+use swf::{ClipEventFlag, FontFlag, FrameLabelData, SwfStr, TagCode};
 
 use super::interactive::Avm2MousePick;
 
@@ -130,7 +131,7 @@ impl fmt::Debug for MovieClip<'_> {
 pub struct MovieClipWeak<'gc>(GcWeakCell<'gc, MovieClipData<'gc>>);
 
 impl<'gc> MovieClipWeak<'gc> {
-    pub fn upgrade(self, mc: MutationContext<'gc, '_>) -> Option<MovieClip<'gc>> {
+    pub fn upgrade(self, mc: &Mutation<'gc>) -> Option<MovieClip<'gc>> {
         self.0.upgrade(mc).map(MovieClip)
     }
 
@@ -150,12 +151,15 @@ pub struct MovieClipData<'gc> {
     audio_stream: Option<SoundInstanceHandle>,
     container: ChildContainer<'gc>,
     object: Option<AvmObject<'gc>>,
+    #[collect(require_static)]
     clip_event_handlers: Vec<ClipEventHandler>,
     #[collect(require_static)]
     clip_event_flags: ClipEventFlag,
     frame_scripts: Vec<Option<Avm2Object<'gc>>>,
+    #[collect(require_static)]
     flags: MovieClipFlags,
     avm2_class: Option<Avm2ClassObject<'gc>>,
+    #[collect(require_static)]
     drawing: Drawing,
     has_focus: bool,
     avm2_enabled: bool,
@@ -179,11 +183,15 @@ pub struct MovieClipData<'gc> {
     tag_frame_boundaries: HashMap<FrameNumber, (u64, u64)>,
 
     /// List of tags queued up for the current frame.
+    #[collect(require_static)]
     queued_tags: HashMap<Depth, QueuedTagList>,
+
+    /// Attached audio (AVM1)
+    attached_audio: Option<NetStream<'gc>>,
 }
 
 impl<'gc> MovieClip<'gc> {
-    pub fn new(movie: Arc<SwfMovie>, gc_context: MutationContext<'gc, '_>) -> Self {
+    pub fn new(movie: Arc<SwfMovie>, gc_context: &Mutation<'gc>) -> Self {
         MovieClip(GcCell::new(
             gc_context,
             MovieClipData {
@@ -213,6 +221,7 @@ impl<'gc> MovieClip<'gc> {
                 #[cfg(feature = "timeline_debug")]
                 tag_frame_boundaries: Default::default(),
                 queued_tags: HashMap::new(),
+                attached_audio: None,
             },
         ))
     }
@@ -221,7 +230,7 @@ impl<'gc> MovieClip<'gc> {
         movie: Arc<SwfMovie>,
         this: Avm2Object<'gc>,
         class: Avm2ClassObject<'gc>,
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
     ) -> Self {
         MovieClip(GcCell::new(
             gc_context,
@@ -252,13 +261,14 @@ impl<'gc> MovieClip<'gc> {
                 #[cfg(feature = "timeline_debug")]
                 tag_frame_boundaries: Default::default(),
                 queued_tags: HashMap::new(),
+                attached_audio: None,
             },
         ))
     }
 
     /// Constructs a non-root movie
     pub fn new_with_data(
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         id: CharacterId,
         swf: SwfSlice,
         num_frames: u16,
@@ -295,6 +305,7 @@ impl<'gc> MovieClip<'gc> {
                 #[cfg(feature = "timeline_debug")]
                 tag_frame_boundaries: Default::default(),
                 queued_tags: HashMap::new(),
+                attached_audio: None,
             },
         ))
     }
@@ -360,6 +371,7 @@ impl<'gc> MovieClip<'gc> {
                 #[cfg(feature = "timeline_debug")]
                 tag_frame_boundaries: Default::default(),
                 queued_tags: HashMap::new(),
+                attached_audio: None,
             },
         ));
 
@@ -382,20 +394,20 @@ impl<'gc> MovieClip<'gc> {
 
     /// Replace the current MovieClipData with a completely new SwfMovie.
     ///
+    /// If no movie is provided, then the movie clip will be replaced with an
+    /// empty movie of the same SWF version.
+    ///
     /// Playback will start at position zero, any existing streamed audio will
     /// be terminated, and so on. Children and AVM data will NOT be kept across
     /// the load boundary.
-    ///
-    /// If no movie is provided, then the movie clip will be replaced with an
-    /// empty movie of the same SWF version.
     pub fn replace_with_movie(
         self,
         context: &mut UpdateContext<'_, 'gc>,
         movie: Option<Arc<SwfMovie>>,
+        is_root: bool,
         loader_info: Option<LoaderInfoObject<'gc>>,
     ) {
         let mut mc = self.0.write(context.gc_context);
-        let is_swf = movie.is_some();
         let movie = movie.unwrap_or_else(|| Arc::new(SwfMovie::empty(mc.movie().version())));
         let total_frames = movie.num_frames();
         assert_eq!(
@@ -416,7 +428,7 @@ impl<'gc> MovieClip<'gc> {
         );
         mc.tag_stream_pos = 0;
         mc.flags = MovieClipFlags::PLAYING;
-        mc.base.base.set_is_root(is_swf);
+        mc.base.base.set_is_root(is_root);
         mc.current_frame = 0;
         mc.audio_stream = None;
         mc.container = ChildContainer::new();
@@ -440,8 +452,6 @@ impl<'gc> MovieClip<'gc> {
         context: &mut UpdateContext<'_, 'gc>,
         chunk_limit: &mut ExecutionLimit,
     ) -> bool {
-        use swf::TagCode;
-
         {
             let read = self.0.read();
             if read.static_data.preload_progress.read().next_preload_chunk
@@ -629,9 +639,6 @@ impl<'gc> MovieClip<'gc> {
                     .write(context.gc_context)
                     .define_text(context, reader, 2),
                 TagCode::DoInitAction => self.do_init_action(context, reader, tag_len),
-                TagCode::DoAbc => self.do_abc(context, reader),
-                TagCode::DoAbc2 => self.do_abc_2(context, reader),
-                TagCode::SymbolClass => self.symbol_class(context, reader),
                 TagCode::DefineSceneAndFrameLabelData => {
                     self.scene_and_frame_labels(reader, &mut static_data)
                 }
@@ -790,6 +797,7 @@ impl<'gc> MovieClip<'gc> {
                 None,
                 swf::DoAbc2Flag::LAZY_INITIALIZE,
                 domain,
+                self.movie(),
             ) {
                 tracing::warn!("Error loading ABC file: {e:?}");
             }
@@ -815,7 +823,14 @@ impl<'gc> MovieClip<'gc> {
             let domain = context.library.library_for_movie_mut(movie).avm2_domain();
             let name = AvmString::new(context.gc_context, do_abc.name.decode(reader.encoding()));
 
-            if let Err(e) = Avm2::do_abc(context, do_abc.data, Some(name), do_abc.flags, domain) {
+            if let Err(e) = Avm2::do_abc(
+                context,
+                do_abc.data,
+                Some(name),
+                do_abc.flags,
+                domain,
+                self.movie(),
+            ) {
                 tracing::warn!("Error loading ABC file: {e:?}");
             }
         }
@@ -905,7 +920,7 @@ impl<'gc> MovieClip<'gc> {
                         }
                     }
                 }
-                Err(e) => tracing::warn!(
+                Err(e) => tracing::error!(
                     "Got AVM2 error {:?} when attempting to assign symbol class {}",
                     e,
                     class_name
@@ -982,13 +997,13 @@ impl<'gc> MovieClip<'gc> {
 
     pub fn set_drop_target(
         self,
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         drop_target: Option<DisplayObject<'gc>>,
     ) {
         self.0.write(gc_context).drop_target = drop_target;
     }
 
-    pub fn set_programmatically_played(self, mc: MutationContext<'gc, '_>) {
+    pub fn set_programmatically_played(self, mc: &Mutation<'gc>) {
         self.0.write(mc).set_programmatically_played()
     }
 
@@ -1058,7 +1073,7 @@ impl<'gc> MovieClip<'gc> {
             }
         } else if context.is_action_script_3() {
             // Pretend we actually did a goto, but don't do anything.
-            run_inner_goto_frame(context, &[]);
+            run_inner_goto_frame(context, &[], self);
         }
     }
 
@@ -1123,6 +1138,7 @@ impl<'gc> MovieClip<'gc> {
                         .unwrap_or(true)
             },
         )
+        .or(self.current_scene())
     }
 
     /// Return the next scene.
@@ -1148,6 +1164,7 @@ impl<'gc> MovieClip<'gc> {
                         .unwrap_or(true)
             },
         )
+        .or(self.current_scene())
     }
 
     /// Return all scenes in the movie.
@@ -1235,11 +1252,7 @@ impl<'gc> MovieClip<'gc> {
 
     /// This sets the current preload frame of this MovieClipto a given number (resulting
     /// in the _framesloaded / framesLoaded property being the given number - 1).
-    pub fn set_cur_preload_frame(
-        self,
-        gc_context: MutationContext<'gc, '_>,
-        cur_preload_frame: u16,
-    ) {
+    pub fn set_cur_preload_frame(self, gc_context: &Mutation<'gc>, cur_preload_frame: u16) {
         self.0
             .read()
             .static_data
@@ -1249,11 +1262,7 @@ impl<'gc> MovieClip<'gc> {
     }
 
     /// This sets the current frame of this MovieClip to a given number.
-    pub fn set_current_frame(
-        self,
-        gc_context: MutationContext<'gc, '_>,
-        current_frame: FrameNumber,
-    ) {
+    pub fn set_current_frame(self, gc_context: &Mutation<'gc>, current_frame: FrameNumber) {
         self.0.write(gc_context).current_frame = current_frame;
     }
 
@@ -1316,11 +1325,7 @@ impl<'gc> MovieClip<'gc> {
             / self.total_bytes() as f64) as u32
     }
 
-    pub fn set_avm2_class(
-        self,
-        gc_context: MutationContext<'gc, '_>,
-        constr: Option<Avm2ClassObject<'gc>>,
-    ) {
+    pub fn set_avm2_class(self, gc_context: &Mutation<'gc>, constr: Option<Avm2ClassObject<'gc>>) {
         let mut write = self.0.write(gc_context);
         write.avm2_class = constr;
     }
@@ -1405,7 +1410,7 @@ impl<'gc> MovieClip<'gc> {
     /// tag on a MovieClip instance.
     pub fn set_clip_event_handlers(
         self,
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         event_handlers: Vec<ClipEventHandler>,
     ) {
         let mut mc = self.0.write(gc_context);
@@ -1419,7 +1424,7 @@ impl<'gc> MovieClip<'gc> {
         _context: &mut UpdateContext<'_, 'gc>,
         frame: FrameNumber,
     ) -> impl DoubleEndedIterator<Item = SwfSlice> {
-        use swf::{read::Reader, TagCode};
+        use swf::read::Reader;
 
         let mut actions: SmallVec<[SwfSlice; 2]> = SmallVec::new();
 
@@ -1496,7 +1501,6 @@ impl<'gc> MovieClip<'gc> {
         let mut reader = data.read_from(mc.tag_stream_pos);
         drop(mc);
 
-        use swf::TagCode;
         let tag_callback = |reader: &mut SwfStream<'_>, tag_code, tag_len| {
             match tag_code {
                 TagCode::DoAction => self.do_action(context, reader, tag_len),
@@ -1539,6 +1543,9 @@ impl<'gc> MovieClip<'gc> {
                 TagCode::SetBackgroundColor => self.set_background_color(context, reader),
                 TagCode::StartSound if run_sounds => self.start_sound_1(context, reader),
                 TagCode::SoundStreamBlock if run_sounds => self.sound_stream_block(context, reader),
+                TagCode::DoAbc | TagCode::DoAbc2 | TagCode::SymbolClass => {
+                    self.handle_bytecode_tag(tag_code, reader, context)
+                }
                 TagCode::ShowFrame => return Ok(ControlFlow::Exit),
                 _ => Ok(()),
             }?;
@@ -1814,7 +1821,6 @@ impl<'gc> MovieClip<'gc> {
             frame_pos = reader.get_ref().as_ptr() as u64 - tag_stream_start;
 
             let tag_callback = |reader: &mut _, tag_code, _tag_len| {
-                use swf::TagCode;
                 match tag_code {
                     TagCode::PlaceObject => {
                         index += 1;
@@ -1854,6 +1860,9 @@ impl<'gc> MovieClip<'gc> {
                         from_frame,
                         &mut removed_frame_scripts,
                     ),
+                    TagCode::DoAbc | TagCode::DoAbc2 | TagCode::SymbolClass => {
+                        self.handle_bytecode_tag(tag_code, reader, context)
+                    }
                     TagCode::ShowFrame => return Ok(ControlFlow::Exit),
                     _ => Ok(()),
                 }?;
@@ -1992,7 +2001,7 @@ impl<'gc> MovieClip<'gc> {
         //
         // Our queued place tags will now run at this time, too.
         if !is_implicit {
-            run_inner_goto_frame(context, &removed_frame_scripts);
+            run_inner_goto_frame(context, &removed_frame_scripts, self);
         }
 
         self.assert_expected_tag_end(context, hit_target_frame);
@@ -2343,7 +2352,7 @@ impl<'gc> MovieClip<'gc> {
         self.0.write(context.gc_context).button_mode = button_mode;
     }
 
-    pub fn drawing(&self, gc_context: MutationContext<'gc, '_>) -> RefMut<'_, Drawing> {
+    pub fn drawing(&self, gc_context: &Mutation<'gc>) -> RefMut<'_, Drawing> {
         // We're about to change graphics, so invalidate on the next frame
         self.invalidate_cached_bitmap(gc_context);
         RefMut::map(self.0.write(gc_context), |s| &mut s.drawing)
@@ -2426,37 +2435,53 @@ impl<'gc> MovieClip<'gc> {
     // after one frame if the target is a MovieClip? Test the behaviour and adapt the code
     // if necessary.
     pub fn avm1_unload_movie(&self, context: &mut UpdateContext<'_, 'gc>) {
-        let unloader = Loader::MovieUnloader {
-            self_handle: None,
-            target_clip: DisplayObject::MovieClip(*self),
-        };
-        let handle = context.load_manager.add_loader(unloader);
+        // TODO: In Flash player, the MovieClip properties change to the unloaded state
+        // one frame after the unloadMovie command has been read, even if the MovieClip
+        // is not a root MovieClip (see the movieclip_library_state_values test).
+        // However, if avm1_unload and transform_to_unloaded_state are called with a one
+        // frame delay when the MovieClip is not a root MovieClip, regressions appear.
+        // Ruffle is probably replacing a MovieClip differently to Flash, therefore
+        // introducing these regressions when trying to emulate that delay.
 
-        let player = context
-            .player
-            .clone()
-            .upgrade()
-            .expect("Could not upgrade weak reference to player");
-        let future = Box::pin(async move {
-            player
-                .lock()
-                .unwrap()
-                .update(|uc| -> Result<(), loader::Error> {
-                    let clip = match uc.load_manager.get_loader(handle) {
-                        Some(Loader::MovieUnloader { target_clip, .. }) => *target_clip,
-                        _ => unreachable!(),
-                    };
-                    if let Some(mc) = clip.as_movie_clip() {
-                        mc.avm1_unload(uc);
-                        mc.transform_to_unloaded_state(uc);
-                    }
+        if self.is_root() {
+            let unloader = Loader::MovieUnloader {
+                self_handle: None,
+                target_clip: DisplayObject::MovieClip(*self),
+            };
+            let handle = context.load_manager.add_loader(unloader);
 
-                    Ok(())
-                })?;
-            Ok(())
-        });
+            let player = context
+                .player
+                .clone()
+                .upgrade()
+                .expect("Could not upgrade weak reference to player");
+            let future = Box::pin(async move {
+                player
+                    .lock()
+                    .unwrap()
+                    .update(|uc| -> Result<(), loader::Error> {
+                        let clip = match uc.load_manager.get_loader(handle) {
+                            Some(Loader::MovieUnloader { target_clip, .. }) => *target_clip,
+                            None => return Err(loader::Error::Cancelled),
+                            _ => unreachable!(),
+                        };
+                        if let Some(mc) = clip.as_movie_clip() {
+                            mc.avm1_unload(uc);
+                            mc.transform_to_unloaded_state(uc);
+                        }
 
-        context.navigator.spawn_future(future);
+                        uc.load_manager.remove_loader(handle);
+
+                        Ok(())
+                    })?;
+                Ok(())
+            });
+
+            context.navigator.spawn_future(future);
+        } else {
+            self.avm1_unload(context);
+            self.transform_to_unloaded_state(context);
+        }
     }
 
     /// This makes the MovieClip enter the unloaded state in which some attributes have
@@ -2479,7 +2504,26 @@ impl<'gc> MovieClip<'gc> {
             None
         };
 
-        self.replace_with_movie(context, movie, None);
+        self.replace_with_movie(context, movie, self.is_root(), None);
+    }
+
+    pub fn attach_audio(
+        self,
+        context: &mut UpdateContext<'_, 'gc>,
+        netstream: Option<NetStream<'gc>>,
+    ) {
+        let mut write = self.0.write(context.gc_context);
+        if netstream != write.attached_audio {
+            if let Some(old_netstream) = write.attached_audio {
+                old_netstream.was_detached(context);
+            }
+
+            write.attached_audio = netstream;
+
+            if let Some(netstream) = netstream {
+                netstream.was_attached(context, self);
+            }
+        }
     }
 }
 
@@ -2488,11 +2532,11 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         Ref::map(self.0.read(), |r| &r.base.base)
     }
 
-    fn base_mut<'a>(&'a self, mc: MutationContext<'gc, '_>) -> RefMut<'a, DisplayObjectBase<'gc>> {
+    fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>> {
         RefMut::map(self.0.write(mc), |w| &mut w.base.base)
     }
 
-    fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc> {
+    fn instantiate(&self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
         Self(GcCell::new(gc_context, self.0.read().clone())).into()
     }
 
@@ -2667,7 +2711,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                                 context,
                             ) {
                                 tracing::error!(
-                                    "Error occured when running AVM2 frame script: {}",
+                                    "Error occurred when running AVM2 frame script: {}",
                                     e
                                 );
                             }
@@ -2793,7 +2837,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         Some(self.into())
     }
 
-    fn as_drawing(&self, gc_context: MutationContext<'gc, '_>) -> Option<RefMut<'_, Drawing>> {
+    fn as_drawing(&self, gc_context: &Mutation<'gc>) -> Option<RefMut<'_, Drawing>> {
         Some(self.drawing(gc_context))
     }
 
@@ -2908,7 +2952,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
     }
 
-    fn on_focus_changed(&self, gc_context: MutationContext<'gc, '_>, focused: bool) {
+    fn on_focus_changed(&self, gc_context: &Mutation<'gc>, focused: bool) {
         self.0.write(gc_context).has_focus = focused;
     }
 }
@@ -2918,10 +2962,7 @@ impl<'gc> TDisplayObjectContainer<'gc> for MovieClip<'gc> {
         Ref::map(self.0.read(), |this| &this.container)
     }
 
-    fn raw_container_mut(
-        &self,
-        gc_context: MutationContext<'gc, '_>,
-    ) -> RefMut<'_, ChildContainer<'gc>> {
+    fn raw_container_mut(&self, gc_context: &Mutation<'gc>) -> RefMut<'_, ChildContainer<'gc>> {
         RefMut::map(self.0.write(gc_context), |this| &mut this.container)
     }
 }
@@ -2931,10 +2972,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
         Ref::map(self.0.read(), |r| &r.base)
     }
 
-    fn raw_interactive_mut(
-        &self,
-        mc: MutationContext<'gc, '_>,
-    ) -> RefMut<InteractiveObjectBase<'gc>> {
+    fn raw_interactive_mut(&self, mc: &Mutation<'gc>) -> RefMut<InteractiveObjectBase<'gc>> {
         RefMut::map(self.0.write(mc), |w| &mut w.base)
     }
 
@@ -4111,6 +4149,33 @@ impl<'gc, 'a> MovieClip<'gc> {
         Ok(())
     }
 
+    /// Handles a DoAbc, DoAbc2, or SymbolClass tag
+    fn handle_bytecode_tag(
+        self,
+        tag_code: TagCode,
+        reader: &mut SwfStream<'a>,
+        context: &mut UpdateContext<'_, 'gc>,
+    ) -> Result<(), Error> {
+        let mc = self.0.read();
+        let tag_stream_start = mc.static_data.swf.as_ref().as_ptr() as u64;
+        let tag_start = reader.get_ref().as_ptr() as u64 - tag_stream_start;
+        let processed_pos = self.0.read().static_data.processed_bytecode_tags_pos;
+
+        if *processed_pos.read() < tag_start as i64 {
+            *processed_pos.write(context.gc_context) = tag_start as i64;
+            drop(mc);
+
+            match tag_code {
+                TagCode::DoAbc => self.do_abc(context, reader),
+                TagCode::DoAbc2 => self.do_abc_2(context, reader),
+                TagCode::SymbolClass => self.symbol_class(context, reader),
+                _ => unreachable!(),
+            }
+        } else {
+            Ok(())
+        }
+    }
+
     fn queue_place_object(
         self,
         context: &mut UpdateContext<'_, 'gc>,
@@ -4399,10 +4464,16 @@ struct MovieClipStatic<'gc> {
 
     /// Preload progress for the given clip's tag stream.
     preload_progress: GcCell<'gc, PreloadProgress>,
+
+    /// Holds the tag offset for the furthest DoAbc/DoAbc2/SymbolClass tags that we've
+    /// already run. These tags are run as part of normal frame processing - this
+    /// is observable by ActionScript, which might load a class in a stop()'d MovieClip,
+    /// and then advance to a frame containing a SymbolClass that references the loaded class.
+    processed_bytecode_tags_pos: GcCell<'gc, i64>,
 }
 
 impl<'gc> MovieClipStatic<'gc> {
-    fn empty(movie: Arc<SwfMovie>, gc_context: MutationContext<'gc, '_>) -> Self {
+    fn empty(movie: Arc<SwfMovie>, gc_context: &Mutation<'gc>) -> Self {
         let s = Self::with_data(0, SwfSlice::empty(movie), 1, None, gc_context);
 
         s.preload_progress.write(gc_context).cur_preload_frame = s.total_frames + 1;
@@ -4415,7 +4486,7 @@ impl<'gc> MovieClipStatic<'gc> {
         swf: SwfSlice,
         total_frames: FrameNumber,
         loader_info: Option<Avm2Object<'gc>>,
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
     ) -> Self {
         Self {
             id,
@@ -4430,6 +4501,7 @@ impl<'gc> MovieClipStatic<'gc> {
             exported_name: GcCell::new(gc_context, None),
             loader_info,
             preload_progress: GcCell::new(gc_context, Default::default()),
+            processed_bytecode_tags_pos: GcCell::new(gc_context, -1),
         }
     }
 }
@@ -4560,8 +4632,7 @@ impl<'a> GotoPlaceObject<'a> {
 ///
 /// Any other configuration in the SWF tag stream is normalized to one of
 /// these patterns.
-#[derive(Default, Debug, Eq, PartialEq, Clone, Copy, Collect)]
-#[collect(require_static)]
+#[derive(Default, Debug, Eq, PartialEq, Clone, Copy)]
 pub enum QueuedTagList {
     #[default]
     None,
@@ -4628,8 +4699,7 @@ impl QueuedTagList {
 /// A single tag we encountered this frame that we intend to process on a queue.
 ///
 /// No more than one queued action is allowed to be processed on-queue.
-#[derive(Debug, Eq, PartialEq, Clone, Copy, Collect)]
-#[collect(require_static)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub struct QueuedTag {
     pub tag_type: QueuedTagAction,
     pub tag_start: u64,
@@ -4638,8 +4708,7 @@ pub struct QueuedTag {
 /// The type of queued tag.
 ///
 /// The u8 parameter is the tag version.
-#[derive(Debug, Eq, PartialEq, Clone, Copy, Collect)]
-#[collect(require_static)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum QueuedTagAction {
     Place(u8),
     Remove(u8),
@@ -4647,8 +4716,7 @@ pub enum QueuedTagAction {
 
 bitflags! {
     /// Boolean state flags used by `MovieClip`.
-    #[derive(Clone, Copy, Collect)]
-    #[collect(require_static)]
+    #[derive(Clone, Copy)]
     struct MovieClipFlags: u8 {
         /// Whether this `MovieClip` has run its initial frame.
         const INITIALIZED             = 1 << 0;
@@ -4677,8 +4745,7 @@ bitflags! {
 
 /// Actions that are attached to a `MovieClip` event in
 /// an `onClipEvent`/`on` handler.
-#[derive(Debug, Clone, Collect)]
-#[collect(require_static)]
+#[derive(Debug, Clone)]
 pub struct ClipEventHandler {
     /// The events that triggers this handler.
     events: ClipEventFlag,

@@ -3,6 +3,7 @@
 
 pub mod environment;
 pub mod fs_commands;
+pub mod image_trigger;
 pub mod navigator;
 pub mod options;
 pub mod runner;

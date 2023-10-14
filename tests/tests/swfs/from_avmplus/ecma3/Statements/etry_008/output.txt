@@ -1,0 +1,6 @@
+Integer( 3 ) PASSED!
+Integer( NaN ) PASSED!
+Integer( 0 ) PASSED!
+Integer( Infinity ) PASSED!
+Integer( -2.12 ) PASSED!
+Integer( 0.6931471805599453 ) PASSED!

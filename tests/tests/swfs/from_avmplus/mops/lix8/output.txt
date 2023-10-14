@@ -1,0 +1,21 @@
+lix8(ApplicationDomain.MIN_DOMAIN_MEMORY_LENGTH) prior to initMemory() PASSED!
+lix8(-1) PASSED!
+lix8(mem.length) PASSED!
+lix8(mem.length-1) PASSED!
+lix8 load byte written by si8(0x7F) PASSED!
+lix8 load byte written by si8(0x80) PASSED!
+lix8 load byte written by si8(0xFF) PASSED!
+lix8 load 1st byte written by si16(0x7F80) PASSED!
+lix8 load 2nd byte written by si16(0x7F80) PASSED!
+lix8 load 1st byte written by si32(0x007F80FF) PASSED!
+lix8 load 2nd byte written by si32(0x007F80FF) PASSED!
+lix8 load 3rd byte written by si32(0x007F80FF) PASSED!
+lix8 load 4th byte written by si32(0x007F80FF) PASSED!
+lix8 load byte written by writeByte(0) PASSED!
+lix8 load byte written by writeByte(127) PASSED!
+lix8 load byte written by writeByte(128) PASSED!
+lix8 load byte written by writeByte(255) PASSED!
+lix8 load 1st byte written by writeInt(2147473647) PASSED!
+lix8 load 2nd byte written by writeInt(2147473647) PASSED!
+lix8 load 3rd byte written by writeInt(2147473647) PASSED!
+lix8 load 4th byte written by writeInt(2147473647) PASSED!

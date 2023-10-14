@@ -6,17 +6,9 @@ use crate::surface::target::CommandTarget;
 use crate::utils::SampleCountMap;
 use bytemuck::{Pod, Zeroable};
 use std::sync::OnceLock;
-use swf::{BlurFilter as BlurFilterArgs, Rectangle};
+use swf::BlurFilter as BlurFilterArgs;
 use wgpu::util::DeviceExt;
 use wgpu::{BufferSlice, CommandEncoder, RenderPipeline, TextureView};
-
-/// How much each pass should multiply the requested blur size by - accumulative.
-/// These are very approximate to Flash, and not 100% exact.
-/// Pass 1 would be 100%, but pass 2 would be 110%.
-/// This is accumulative so you can calculate the size upfront for how many passes you'll need to perform.
-const PASS_SCALES: [f32; 15] = [
-    1.0, 2.1, 2.7, 3.1, 3.5, 3.8, 4.0, 4.2, 4.4, 4.6, 5.0, 6.0, 6.0, 7.0, 7.0,
-];
 
 /// This is a 1:1 match of of `struct Filter` in `blur.wgsl`. See that, and the usage below, for more info.
 /// Since WebGL requires 16 byte struct size (alignment), some of these fields (namely m2 and last_weight)
@@ -141,22 +133,6 @@ impl BlurFilter {
                     multiview: None,
                 })
         })
-    }
-
-    pub fn calculate_dest_rect(
-        &self,
-        filter: &BlurFilterArgs,
-        source_rect: Rectangle<i32>,
-    ) -> Rectangle<i32> {
-        let scale = PASS_SCALES[filter.num_passes().clamp(1, 15) as usize - 1];
-        let x = (scale * filter.blur_x.to_f32()).ceil().max(0.0) as i32;
-        let y = (scale * filter.blur_y.to_f32()).ceil().max(0.0) as i32;
-        Rectangle {
-            x_min: source_rect.x_min - x,
-            x_max: source_rect.x_max + x,
-            y_min: source_rect.y_min - y,
-            y_max: source_rect.y_max + y,
-        }
     }
 
     pub fn apply(

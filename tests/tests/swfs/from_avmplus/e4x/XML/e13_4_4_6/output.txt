@@ -1,0 +1,30 @@
+2 PASSED!
+3 PASSED!
+4 PASSED!
+MYXML = new XML(xmlDoc), MYXML.child('Team') PASSED!
+MYXML = new XML(xmlDoc), MYXML.child('Team') instanceof XMLList PASSED!
+MYXML = new XML(xmlDoc), MYXML.child('Team') instanceof XML PASSED!
+MYXML = new XML(xmlDoc), MYXML.child('Team').length() PASSED!
+MYXML = new XML(null), MYXML.child('Team') PASSED!
+MYXML = new XML(undefined), MYXML.child('Team') PASSED!
+MYXML = new XML(), MYXML.child('Team') PASSED!
+MYXML = new XML(xmlDoc), MYXML.child(1) instanceof XMLList PASSED!
+MYXML = new XML(xmlDoc), MYXML.child(1) PASSED!
+MYXML = new XML(null), MYXML.child(1) PASSED!
+MYXML = new XML(undefined), MYXML.child(1) PASSED!
+MYXML = new XML(), MYXML.child(1) PASSED!
+MYXML = new XML(xmlDoc), MYXML.child(0) instanceof XMLList PASSED!
+MYXML = new XML(xmlDoc), MYXML.child(0) PASSED!
+MYXML = new XML(null), MYXML.child(0) PASSED!
+MYXML = new XML(undefined), MYXML.child(0) PASSED!
+MYXML = new XML(), MYXML.child(0) PASSED!
+MYXML = new XML(xmlDoc), MYXML.child('DoesNotExist') instanceof XMLList PASSED!
+MYXML = new XML(xmlDoc), MYXML.child('DoesNotExist') PASSED!
+MYXML = new XML(null), MYXML.child('DoesNotExist') PASSED!
+MYXML = new XML(undefined), MYXML.child('DoesNotExist') PASSED!
+MYXML = new XML(), MYXML.child('DoesNotExist') PASSED!
+MYXML = new XML(xmlDoc), MYXML.child(8) instanceof XMLList PASSED!
+MYXML = new XML(xmlDoc), MYXML.child(8) PASSED!
+MYXML = new XML(null), MYXML.child(8) PASSED!
+MYXML = new XML(undefined), MYXML.child(8) PASSED!
+MYXML = new XML(), MYXML.child(8) PASSED!

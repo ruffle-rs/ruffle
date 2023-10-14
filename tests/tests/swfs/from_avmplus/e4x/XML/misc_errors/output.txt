@@ -1,0 +1,32 @@
+Asserting for TypeError PASSED!
+missing " after attribute PASSED!
+Asserting for TypeError PASSED!
+missing quotes around attribute PASSED!
+Asserting for TypeError PASSED!
+missing starting quote for attribute PASSED!
+Asserting for TypeError PASSED!
+missing ! at start of CDATA section PASSED!
+Asserting for TypeError PASSED!
+unterminated CDATA section PASSED!
+Asserting for TypeError PASSED!
+unterminated comment PASSED!
+Asserting for TypeError PASSED!
+unterminated doctype PASSED!
+Asserting for TypeError PASSED!
+bad attribute PASSED!
+Asserting for TypeError PASSED!
+unterminated tag PASSED!
+Asserting for TypeError PASSED!
+mismatched end tag PASSED!
+Asserting for TypeError PASSED!
+wrong case in root end tag PASSED!
+Asserting for TypeError PASSED!
+wrong case end tag PASSED!
+Asserting for TypeError PASSED!
+missing attribute value PASSED!
+Asserting for TypeError PASSED!
+unterminated XML decl PASSED!
+Asserting for TypeError PASSED!
+XML must start and end with same entity PASSED!
+Asserting for TypeError PASSED!
+XML must start and end with same entity PASSED!

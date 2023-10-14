@@ -4,7 +4,7 @@ use crate::{
 };
 use downcast_rs::{impl_downcast, Downcast};
 use std::fmt::Debug;
-use swf::Color;
+use swf::{Color, Rectangle, Twips};
 
 #[derive(Debug, Clone)]
 pub enum Filter {
@@ -57,6 +57,17 @@ impl Filter {
             Filter::GradientGlowFilter(filter) => filter.scale(x, y),
             Filter::DisplacementMapFilter(filter) => filter.scale(x, y),
             _ => {}
+        }
+    }
+
+    pub fn calculate_dest_rect(&self, source_rect: Rectangle<Twips>) -> Rectangle<Twips> {
+        match self {
+            Filter::BlurFilter(filter) => filter.calculate_dest_rect(source_rect),
+            Filter::GlowFilter(filter) => filter.calculate_dest_rect(source_rect),
+            Filter::DropShadowFilter(filter) => filter.calculate_dest_rect(source_rect),
+            Filter::BevelFilter(filter) => filter.calculate_dest_rect(source_rect),
+            Filter::DisplacementMapFilter(filter) => filter.calculate_dest_rect(source_rect),
+            _ => source_rect,
         }
     }
 
@@ -139,6 +150,24 @@ impl DisplacementMapFilter {
     pub fn scale(&mut self, x: f32, y: f32) {
         self.viewscale_x *= x;
         self.viewscale_y *= y;
+    }
+
+    pub fn calculate_dest_rect(&self, source_rect: Rectangle<Twips>) -> Rectangle<Twips> {
+        source_rect
+        // [NA] TODO: This *appears* to be correct, but I'm not entirely sure why Flash does this.
+        // This is commented out for now because Flash actually might need us to resize the texture *after* we make it,
+        // which is unsupported in our current architecture as of time of writing.
+
+        // if filter.mode == DisplacementMapFilterMode::Color {
+        //     Rectangle {
+        //         x_min: source_rect.x_min - ((filter.scale_x / 2.0).floor() as i32),
+        //         x_max: source_rect.x_max + (filter.scale_x.floor() as i32),
+        //         y_min: source_rect.y_min - ((filter.scale_y / 2.0).floor() as i32),
+        //         y_max: source_rect.y_max + (filter.scale_y.floor() as i32),
+        //     }
+        // } else {
+        //     source_rect
+        // }
     }
 }
 

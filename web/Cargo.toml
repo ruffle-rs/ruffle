@@ -13,7 +13,7 @@ publish = false # This crate is useless alone, people should use the npm package
 crate-type = ["cdylib", "rlib"]
 
 [features]
-default = ["canvas", "console_error_panic_hook", "webgl", "wgpu-webgl"]
+default = ["canvas", "console_error_panic_hook", "webgl", "wgpu-webgl", "ruffle_core/jpegxr"]
 
 # core features
 avm_debug = ["ruffle_core/avm_debug"]
@@ -40,15 +40,16 @@ ruffle_render = { path = "../render" }
 ruffle_render_webgl = { path = "../render/webgl", optional = true }
 ruffle_render_wgpu = { path = "../render/wgpu", optional = true }
 ruffle_video_software = { path = "../video/software" }
-url = "2.4.0"
+url = "2.4.1"
 wasm-bindgen = "=0.2.87"
 wasm-bindgen-futures = "0.4.37"
-serde-wasm-bindgen = "0.5.0"
+serde-wasm-bindgen = "0.6.0"
 chrono = { version = "0.4", default-features = false, features = ["wasmbind", "clock"] }
 getrandom = { version = "0.2", features = ["js"] }
-serde = { version = "1.0.175", features = ["derive"] }
+serde = { version = "1.0.188", features = ["derive"] }
 thiserror = "1.0"
-base64 = "0.21.2"
+base64 = "0.21.4"
+async-channel = "1.9.0"
 
 [dependencies.ruffle_core]
 path = "../core"
@@ -62,6 +63,6 @@ features = [
     "AudioDestinationNode", "AudioNode", "AudioParam", "Blob", "BlobPropertyBag",
     "ChannelMergerNode", "ChannelSplitterNode", "ClipboardEvent", "DataTransfer", "Element", "Event",
     "EventTarget", "GainNode", "Headers", "HtmlCanvasElement", "HtmlDocument", "HtmlElement", "HtmlFormElement",
-    "HtmlInputElement", "HtmlTextAreaElement", "KeyboardEvent", "Location", "PointerEvent", 
+    "HtmlInputElement", "HtmlTextAreaElement", "KeyboardEvent", "Location", "PointerEvent",
     "Request", "RequestInit", "Response", "Storage", "WheelEvent", "Window",
 ]

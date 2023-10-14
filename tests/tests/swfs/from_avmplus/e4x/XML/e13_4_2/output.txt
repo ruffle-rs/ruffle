@@ -1,0 +1,35 @@
+1 PASSED!
+2 PASSED!
+3 PASSED!
+4 PASSED!
+5 PASSED!
+6 PASSED!
+7 PASSED!
+8 PASSED!
+9 PASSED!
+typeof new XML(null) PASSED!
+new XML(null) instanceof XML PASSED!
+(new XML(null).nodeKind()) PASSED!
+MYOB = new XML(null); MYOB.toString() PASSED!
+typeof new XML(undefined) PASSED!
+new XML(undefined) instanceof XML PASSED!
+(new XML(undefined).nodeKind()) PASSED!
+MYOB = new XML(undefined); MYOB.toString() PASSED!
+typeof new XML() PASSED!
+new XML() instanceof XML PASSED!
+(new XML().nodeKind()) PASSED!
+MYOB = new XML(); MYOB.toString() PASSED!
+typeof new XML(5) PASSED!
+new XML(5) instanceof XML PASSED!
+(new XML(5).nodeKind()) PASSED!
+MYOB = new XML(5); MYOB.toString() PASSED!
+typeof new XML(thisXML) PASSED!
+new XML(thisXML) instanceof XML PASSED!
+MYOB = new XML(thisXML); MYOB.toString() PASSED!
+Strongly typed XML object PASSED!
+var MYXML:XML = new XML(<x><a>b</a><c>d</c></x>); PASSED!
+var MYXML:XML = <x><a>b</a><c>d</c></x>; PASSED!
+var MYXML:XML = new XML() PASSED!
+var MYXML:XML = new XML(5) PASSED!
+XML with PI and comments PASSED!
+new XML("<a/><b/>") PASSED!

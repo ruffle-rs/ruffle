@@ -1,0 +1,16 @@
+2 PASSED!
+3 PASSED!
+4 PASSED!
+MYXML = new XML(xmlDoc), MYXML.setName('employees'),MYXML.name().toString() PASSED!
+MYXML = new XML(xmlDoc), MYXML.setName(new QName('employees')),MYXML.name().toString() PASSED!
+MYXML = new XML(xmlDoc), MYXML.setName(new QName('ns', 'employees')),MYXML.name().toString() PASSED!
+MYXML = new XML(xmlDoc), MYXML.setName('employees'),MYXML.toString() PASSED!
+MYXML = new XML(xmlDoc), MYXML.employee.@id.setName('num') PASSED!
+MYXML = new XML(xmlDoc), MYXML.employee.@id.setName("num"),MYXML.employee.@id.name()) PASSED!
+Calling setName() on an attribute with same name as namespace PASSED!
+MYXML.setName('@employees') PASSED!
+MYXML.setName('!hi') PASSED!
+MYXML.setName('1+1=5') PASSED!
+MYXML.setName('555') PASSED!
+MYXML.setName('1love') PASSED!
+MYXML.setName('*') PASSED!

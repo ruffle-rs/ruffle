@@ -1,0 +1,10 @@
+string:String = true PASSED!
+string:String = true PASSED!
+number:Number = true PASSED!
+number:Number = true PASSED!
+myInt:int = true PASSED!
+myInt:int = true PASSED!
+myUInt:uint = true PASSED!
+myUInt:uint = true PASSED!
+boolean:Boolean = true PASSED!
+var object:Object = true PASSED!

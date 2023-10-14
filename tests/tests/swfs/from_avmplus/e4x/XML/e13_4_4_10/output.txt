@@ -1,0 +1,10 @@
+2 PASSED!
+MYXML = new XML(xmlDoc), MYXML.contains(MYMXL) PASSED!
+MYXML = new XML(xmlDoc), MYXML.contains(MYMXL.copy()) PASSED!
+MYXML = new XML(xmlDoc), MYXML2 = new XML(xmlDoc), MYXML.contains(MYMXL2) PASSED!
+MYXML = new XML(xmlDoc), MYXML2 = new XML(xmlDoc), MYXML2.contains(MYMXL) PASSED!
+MYXML = new XML(xmlDoc), MYXML2 = new XML(xmlDoc), MYXML2.foo = 'bar', MYXML.contains(MYMXL2) PASSED!
+MYXML = new XML(xmlDoc), MYXML2 = new XML(xmlDoc), MYXML2.Team[0].foo = 'bar', MYXML.contains(MYMXL2) PASSED!
+MYXML = new XML(xmlDoc), MYXML.Team[0].contains('Giants') PASSED!
+MYXML = new XML(xmlDoc), MYXML.Team[1].contains('Giants') PASSED!
+MYXML = new XML(xmlDoc), MYXML.City.contains('Giants') PASSED!

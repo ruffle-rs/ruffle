@@ -1,8 +1,8 @@
 //! Management of async loaders
 
-use crate::avm1::Avm1;
 use crate::avm1::ExecutionReason;
 use crate::avm1::{Activation, ActivationIdentifier};
+use crate::avm1::{Attribute, Avm1};
 use crate::avm1::{Object, SoundObject, TObject, Value};
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::object::{
@@ -211,8 +211,12 @@ impl<'gc> LoadManager<'gc> {
     /// Add a new loader to the `LoadManager`.
     ///
     /// Returns the loader handle for later inspection. A loader handle is
-    /// valid for as long as the load operation. Once the load finishes,
-    /// the handle will be invalidated (and the underlying loader deleted).
+    /// valid for as long as the load operation.
+    ///
+    /// After the load finishes, the loader should be removed (and the handle
+    /// invalidated). This can be done with remove_loader.
+    /// Movie loaders are removed automatically after the loader status is set
+    /// accordingly.
     pub fn add_loader(&mut self, loader: Loader<'gc>) -> Handle {
         let handle = self.0.insert(loader);
         match self.get_loader_mut(handle).unwrap() {
@@ -227,6 +231,12 @@ impl<'gc> LoadManager<'gc> {
             | Loader::MovieUnloader { self_handle, .. } => *self_handle = Some(handle),
         }
         handle
+    }
+
+    /// Remove a completed loader.
+    /// This is used to remove a loader after the loading or unloading process has completed.
+    pub fn remove_loader(&mut self, handle: Handle) {
+        self.0.remove(handle);
     }
 
     /// Retrieve a loader by handle.
@@ -303,9 +313,10 @@ impl<'gc> LoadManager<'gc> {
         loader.movie_loader_bytes(player, bytes)
     }
 
-    /// Indicates that a movie clip has initialized (ran its first frame).
+    /// Fires the `onLoad` listener event for every MovieClip that has been
+    /// initialized (ran its first frame).
     ///
-    /// Interested loaders will be invoked from here.
+    /// This also removes all movie loaders that have completed.
     pub fn movie_clip_on_load(&mut self, queue: &mut ActionQueue<'gc>) {
         let mut invalidated_loaders = vec![];
 
@@ -460,8 +471,7 @@ impl<'gc> Default for LoadManager<'gc> {
 }
 
 /// The completion status of a `Loader` loading a movie.
-#[derive(Clone, Collect, Copy, Debug, Eq, PartialEq)]
-#[collect(require_static)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum LoaderStatus {
     /// The movie hasn't been loaded yet.
     Pending,
@@ -521,6 +531,7 @@ pub enum Loader<'gc> {
         /// the movie has been replaced (and thus Load events can be trusted)
         /// or an error has occurred (in which case we don't care about the
         /// loader anymore).
+        #[collect(require_static)]
         loader_status: LoaderStatus,
 
         /// The SWF being loaded.
@@ -849,7 +860,7 @@ impl<'gc> Loader<'gc> {
                     if !uc.is_action_script_3() {
                         mc.avm1_unload(uc);
                     }
-                    mc.replace_with_movie(uc, None, None);
+                    mc.replace_with_movie(uc, None, false, None);
                 }
 
                 // NOTE: We do NOT call `movie_loader_start` as `loadBytes` does
@@ -1065,7 +1076,7 @@ impl<'gc> Loader<'gc> {
                 fn set_data<'a, 'gc: 'a>(
                     body: Vec<u8>,
                     activation: &mut Avm2Activation<'a, 'gc>,
-                    mut target: Avm2Object<'gc>,
+                    target: Avm2Object<'gc>,
                     data_format: DataFormat,
                 ) {
                     let data_object = match data_format {
@@ -1381,6 +1392,7 @@ impl<'gc> Loader<'gc> {
 
                 match response {
                     Ok(mut response) => {
+                        stream.reset_buffer(uc);
                         stream.load_buffer(uc, &mut response.body);
                     }
                     Err(response) => {
@@ -1565,7 +1577,12 @@ impl<'gc> Loader<'gc> {
                         // Store our downloaded `SwfMovie` into our target `MovieClip`,
                         // and initialize it.
 
-                        mc.replace_with_movie(&mut activation.context, Some(movie), loader_info);
+                        mc.replace_with_movie(
+                            &mut activation.context,
+                            Some(movie),
+                            true,
+                            loader_info,
+                        );
                     }
 
                     // NOTE: Certain tests specifically expect small files to preload immediately
@@ -1786,6 +1803,24 @@ impl<'gc> Loader<'gc> {
                 // frame behind objects placed by the timeline (even if they were
                 // both placed in the same frame to begin with).
                 dobj.base_mut(uc.gc_context).set_skip_next_enter_frame(true);
+
+                let flashvars = movie.clone().unwrap().parameters().to_owned();
+                if !flashvars.is_empty() {
+                    let mut activation = Activation::from_nothing(
+                        uc.reborrow(),
+                        ActivationIdentifier::root("[Loader]"),
+                        dobj,
+                    );
+                    let object = dobj.object().coerce_to_object(&mut activation);
+                    for (key, value) in flashvars.iter() {
+                        object.define_value(
+                            activation.context.gc_context,
+                            AvmString::new_utf8(activation.context.gc_context, key),
+                            AvmString::new_utf8(activation.context.gc_context, value).into(),
+                            Attribute::empty(),
+                        );
+                    }
+                }
             }
         }
 
@@ -1818,7 +1853,7 @@ impl<'gc> Loader<'gc> {
             // This is a load of an image into AVM1 - add it as a child of the target clip.
             if dobj.as_movie_clip().is_none() {
                 let mc = target_clip.as_movie_clip().unwrap();
-                mc.replace_with_movie(uc, Some(movie.unwrap()), None);
+                mc.replace_with_movie(uc, Some(movie.unwrap()), true, None);
                 mc.replace_at_depth(uc, dobj, 1);
 
                 // This sets the MovieClip image state correctly.
@@ -1991,7 +2026,7 @@ impl<'gc> Loader<'gc> {
                     let mut initial_loading_movie = SwfMovie::empty(current_version);
                     initial_loading_movie.set_url(current_url.to_string());
 
-                    mc.replace_with_movie(uc, Some(Arc::new(initial_loading_movie)), None);
+                    mc.replace_with_movie(uc, Some(Arc::new(initial_loading_movie)), true, None);
 
                     // Maybe this (keeping the current URL) should be the default behaviour
                     // of replace_with_movie?
@@ -2028,7 +2063,7 @@ impl<'gc> Loader<'gc> {
 
         let error_movie = SwfMovie::error_movie(swf_url);
         // This also sets total_frames correctly
-        mc.replace_with_movie(uc, Some(Arc::new(error_movie)), None);
+        mc.replace_with_movie(uc, Some(Arc::new(error_movie)), true, None);
         mc.set_cur_preload_frame(uc.gc_context, 0);
     }
 

@@ -1,0 +1,9 @@
+x = "hi" PASSED!
+x = "hi" PASSED!
+x = "hi" PASSED!
+throw "boo" PASSED!
+throw "boo" PASSED!
+throw "boo" PASSED!
+throw 3 PASSED!
+throw 3 PASSED!
+throw 3 PASSED!

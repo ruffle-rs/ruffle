@@ -1,0 +1,5 @@
+switch with large case values and dense range: input is 10000000 PASSED!
+switch with large case values and dense range: input is 10000001 PASSED!
+switch with large case values and dense range: input is 10000002 PASSED!
+switch with large case values and dense range: input is 10000003 PASSED!
+switch with large case values and dense range: input is 0 PASSED!

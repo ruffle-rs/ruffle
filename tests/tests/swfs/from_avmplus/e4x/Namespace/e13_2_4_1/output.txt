@@ -1,0 +1,2 @@
+Namespace.prototype.constructor PASSED!
+Namespace.prototype.constructor PASSED!

@@ -1,4 +1,7 @@
-use crate::{BlurFilter, BlurFilterFlags, Color, Fixed16, Fixed8, GlowFilter, GlowFilterFlags};
+use crate::{
+    BlurFilter, BlurFilterFlags, Color, Fixed16, Fixed8, GlowFilter, GlowFilterFlags, Rectangle,
+    Twips,
+};
 use bitflags::bitflags;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -59,6 +62,25 @@ impl DropShadowFilter {
             strength: self.strength,
             flags,
         }
+    }
+
+    pub fn calculate_dest_rect(&self, source_rect: Rectangle<Twips>) -> Rectangle<Twips> {
+        let mut result = self.inner_glow_filter().calculate_dest_rect(source_rect);
+        let distance = self.distance.to_f64();
+        let angle = self.angle.to_f64();
+        let x = Twips::from_pixels(angle.cos() * distance);
+        let y = Twips::from_pixels(angle.sin() * distance);
+        if x < Twips::ZERO {
+            result.x_min += x;
+        } else {
+            result.x_max += x;
+        }
+        if y < Twips::ZERO {
+            result.y_min += y;
+        } else {
+            result.y_max += y;
+        }
+        result
     }
 }
 

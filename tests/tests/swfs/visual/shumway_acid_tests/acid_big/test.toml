@@ -2,7 +2,7 @@
 
 num_frames = 300
 
-[image_comparison]
+[image_comparisons.output]
 tolerance = 50
 max_outliers = 20
 

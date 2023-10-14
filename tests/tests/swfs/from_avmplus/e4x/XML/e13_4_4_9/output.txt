@@ -1,0 +1,13 @@
+2 PASSED!
+3 PASSED!
+4 PASSED!
+5 PASSED!
+MYXML = new XML(xmlDoc), MYXML.comments().toString() PASSED!
+MYXML = new XML(xmlDoc), MYXML.comments() instanceof XMLList PASSED!
+MYXML = new XML(xmlDoc), MYXML.comments() instanceof XML PASSED!
+MYXML = new XML(xmlDoc), MYXML.comments().length() PASSED!
+XML.ignoreComments = false, MYXML = new XML(xmlDoc), MYXML.comments().toString() PASSED!
+XML.ignoreComments = false, MYXML = new XML(xmlDoc), MYXML.comments() instanceof XMLList PASSED!
+XML.ignoreComments = false, MYXML = new XML(xmlDoc), MYXML.comments() instanceof XML PASSED!
+XML.ignoreComments = false, MYXML = new XML(xmlDoc), MYXML.comments().length() PASSED!
+XML.ignoreComments = false, MYXML = new XML(xmlDoc), XML.ignoreComments = true, MYXML.comments().toString() PASSED!

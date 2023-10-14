@@ -125,12 +125,14 @@ impl<'gc> Executable<'gc> {
                 };
 
                 let caller_domain = activation.caller_domain();
+                let caller_movie = activation.caller_movie();
                 let subclass_object = bm.bound_superclass;
                 let mut activation = Activation::from_builtin(
                     activation.context.reborrow(),
                     subclass_object,
                     bm.scope,
                     caller_domain,
+                    caller_movie,
                 )?;
 
                 if arguments.len() > bm.method.signature.len() && !bm.method.is_variadic {

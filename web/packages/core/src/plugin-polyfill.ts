@@ -155,15 +155,6 @@ export const FLASH_PLUGIN = new RufflePlugin(
     "ruffle.js",
 );
 
-/**
- * A fake plugin designed to allow early detection of if the Ruffle extension is in use.
- */
-export const RUFFLE_EXTENSION = new RufflePlugin(
-    "Ruffle Extension",
-    "Ruffle Extension",
-    "ruffle.js",
-);
-
 FLASH_PLUGIN.install({
     type: FUTURESPLASH_MIMETYPE,
     description: "Shockwave Flash",
@@ -187,12 +178,6 @@ FLASH_PLUGIN.install({
     description: "Shockwave Flash",
     suffixes: "swf",
     enabledPlugin: FLASH_PLUGIN,
-});
-RUFFLE_EXTENSION.install({
-    type: "",
-    description: "Ruffle Detection",
-    suffixes: "",
-    enabledPlugin: RUFFLE_EXTENSION,
 });
 
 declare global {

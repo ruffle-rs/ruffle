@@ -33,7 +33,7 @@ pub fn get_pan<'gc>(
 /// Implements `SoundTransform.pan`'s setter.
 pub fn set_pan<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    mut this: Object<'gc>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let pan = args.get_f64(activation, 0)?;

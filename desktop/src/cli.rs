@@ -132,6 +132,10 @@ pub struct Opt {
     /// but may fix others that always require an External Interface.
     #[clap(long)]
     pub dummy_external_interface: bool,
+
+    /// Hides the menu bar (the bar at the top of the window).
+    #[clap(long)]
+    pub no_gui: bool,
 }
 
 fn parse_movie_file_or_url(path: &str) -> Result<Url, Error> {

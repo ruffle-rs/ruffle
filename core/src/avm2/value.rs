@@ -10,7 +10,7 @@ use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::ecma_conversions::{f64_to_wrapping_i32, f64_to_wrapping_u32};
 use crate::string::{AvmAtom, AvmString, WStr};
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, Mutation};
 use std::cell::Ref;
 use std::mem::size_of;
 use swf::avm2::types::{DefaultValue as AbcDefaultValue, Index};
@@ -557,7 +557,7 @@ impl<'gc> Value<'gc> {
     /// object methods called. This should only be used if you specifically
     /// need the behavior of only handling actual numbers; otherwise you should
     /// use the appropriate `coerce_to_` method.
-    pub fn as_number(&self, mc: MutationContext<'gc, '_>) -> Result<f64, Error<'gc>> {
+    pub fn as_number(&self, mc: &Mutation<'gc>) -> Result<f64, Error<'gc>> {
         match self {
             // Methods that look for numbers in Flash Player don't seem to care
             // about user-defined `valueOf` implementations. This code upholds
@@ -575,7 +575,7 @@ impl<'gc> Value<'gc> {
     }
 
     /// Like `as_number`, but for `i32`
-    pub fn as_integer(&self, mc: MutationContext<'gc, '_>) -> Result<i32, Error<'gc>> {
+    pub fn as_integer(&self, mc: &Mutation<'gc>) -> Result<i32, Error<'gc>> {
         match self {
             Value::Object(num) => match num.value_of(mc)? {
                 Value::Number(num) => Ok(num as i32),
@@ -589,7 +589,7 @@ impl<'gc> Value<'gc> {
     }
 
     /// Like `as_number`, but for `u32`
-    pub fn as_u32(&self, mc: MutationContext<'gc, '_>) -> Result<u32, Error<'gc>> {
+    pub fn as_u32(&self, mc: &Mutation<'gc>) -> Result<u32, Error<'gc>> {
         match self {
             Value::Object(num) => match num.value_of(mc)? {
                 Value::Number(num) => Ok(num as u32),
@@ -679,7 +679,7 @@ impl<'gc> Value<'gc> {
                 Err(Error::AvmError(type_error(
                     activation,
                     &format!(
-                        "Cannot convert {} to primitive.",
+                        "Error #1050: Cannot convert {} to primitive.",
                         o.instance_of_class_name(activation.context.gc_context)
                     ),
                     1050,
@@ -708,7 +708,7 @@ impl<'gc> Value<'gc> {
                 Err(Error::AvmError(type_error(
                     activation,
                     &format!(
-                        "Cannot convert {} to primitive.",
+                        "Error #1050: Cannot convert {} to primitive.",
                         o.instance_of_class_name(activation.context.gc_context)
                     ),
                     1050,
@@ -924,6 +924,7 @@ impl<'gc> Value<'gc> {
         activation: &mut Activation<'_, 'gc>,
         name: Option<&Multiname<'gc>>,
         receiver: Option<Value<'gc>>,
+        as_constructor: bool,
     ) -> Result<Object<'gc>, Error<'gc>> {
         match self.as_object() {
             Some(o) if o.as_class_object().is_some() || o.as_executable().is_some() => Ok(o),
@@ -934,16 +935,38 @@ impl<'gc> Value<'gc> {
                 } else {
                     "value".into()
                 };
-                let msg = if let Some(Value::Object(receiver)) = receiver {
-                    format!(
-                        "Error #1006: {} is not a function of class {}.",
-                        name,
-                        receiver.instance_of_class_name(activation.context.gc_context)
+                let error = if as_constructor {
+                    if activation.context.swf.version() < 11 {
+                        type_error(
+                            activation,
+                            &format!("Error #1115: {} is not a constructor.", name),
+                            1115,
+                        )
+                    } else {
+                        type_error(
+                            activation,
+                            "Error #1007: Instantiation attempted on a non-constructor.",
+                            1007,
+                        )
+                    }
+                } else if let Some(Value::Object(receiver)) = receiver {
+                    type_error(
+                        activation,
+                        &format!(
+                            "Error #1006: {} is not a function of class {}.",
+                            name,
+                            receiver.instance_of_class_name(activation.context.gc_context)
+                        ),
+                        1006,
                     )
                 } else {
-                    format!("Error #1006: {} is not a function.", name)
+                    type_error(
+                        activation,
+                        &format!("Error #1006: {} is not a function.", name),
+                        1006,
+                    )
                 };
-                Err(Error::AvmError(type_error(activation, &msg, 1006)?))
+                Err(Error::AvmError(error?))
             }
         }
     }
@@ -1179,6 +1202,14 @@ impl<'gc> Value<'gc> {
 
             if let Some(xml_obj) = obj.as_xml_object() {
                 return xml_obj.abstract_eq(other, activation);
+            }
+
+            if let Some(self_ns) = obj.as_namespace_object() {
+                if let Value::Object(other_obj) = other {
+                    if let Some(other_ns) = other_obj.as_namespace_object() {
+                        return Ok(self_ns.namespace().as_uri() == other_ns.namespace().as_uri());
+                    }
+                }
             }
         }
 

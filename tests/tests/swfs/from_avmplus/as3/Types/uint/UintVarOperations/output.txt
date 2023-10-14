@@ -1,0 +1,17 @@
+Uint addition PASSED!
+Uint subtraction PASSED!
+Uint multiplication PASSED!
+Uint division PASSED!
+Adding uint and Number variables PASSED!
+Subtracting Number variable from uint variable PASSED!
+Multiplying uint and Number variable PASSED!
+Diving uint by a Number variable PASSED!
+Adding uint and Number variables PASSED!
+Subtracting Number variable from uint variable PASSED!
+Multiplying uint and Number variable PASSED!
+Diving uint by a Number variable PASSED!
+var temp:uint; num1(+20) + num5(-100) PASSED!
+var temp:uint; temp = -100 PASSED!
+var temp:uint; temp = -100/2 PASSED!
+var temp:uint; temp = -100*2 PASSED!
+var temp:uint; temp = 1-100 PASSED!

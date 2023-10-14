@@ -371,6 +371,12 @@ package flash.geom {
 			this._rawData[15] = m141 * m214 + m142 * m224 + m143 * m234 + m144 * m244;
 		}
 
+		public function prependScale(xScale:Number, yScale:Number, zScale:Number):void {
+			var m = new Matrix3D();
+			m.appendScale(xScale, yScale, zScale);
+			this.prepend(m);
+		}
+
 		public function copyFrom(other:Matrix3D):void {
 			// This makes a copy of other.rawData
 			this._rawData = other.rawData;
@@ -396,6 +402,10 @@ package flash.geom {
 
 		public function copyToMatrix3D(other:Matrix3D):void {
 			other.rawData = rawData;
+		}
+
+		public function pointAt(pos:Vector3D, at:Vector3D = null, up:Vector3D = null):void {
+			stub_method("flash.geom.Matrix3D", "pointAt");
 		}
 
 		// Based on OpenFL: https://github.com/openfl/openfl/blob/971a4c9e43b5472fd84d73920a2b7c1b3d8d9257/src/openfl/geom/Matrix3D.hx#L1437

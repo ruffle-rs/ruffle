@@ -10,6 +10,7 @@ update-ruffle = עדכן את Ruffle
 ruffle-demo = הדגמה
 ruffle-desktop = אפליקציית שולחן עבודה
 ruffle-wiki = ראה את Ruffle wiki
+enable-hardware-acceleration = נראה שהאצת החומרה שלך לא מופעלת. בעוד שראפל עשוי לעבוד, הוא יכול להיות איטי. תוכל לראות כיצד להפעיל תכונה זו בלחיצה על הלינק הזה.
 view-error-details = ראה פרטי שגיאה
 open-in-new-tab = פתח בכרטיסייה חדשה
 click-to-unmute = לחץ על מנת לבטל השתקה

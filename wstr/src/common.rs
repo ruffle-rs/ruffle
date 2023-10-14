@@ -382,6 +382,12 @@ impl WStr {
         (&self[..index], &self[index..])
     }
 
+    /// Analogue of [`str::split_once`].
+    #[inline]
+    pub fn split_once<'a, P: Pattern<'a>>(&'a self, pattern: P) -> Option<(&'a WStr, &'a WStr)> {
+        super::ops::str_split_once(self, pattern)
+    }
+
     /// Analogue of [`str::rsplit_once`].
     #[inline]
     pub fn rsplit_once<'a, P: Pattern<'a>>(&'a self, pattern: P) -> Option<(&'a WStr, &'a WStr)> {
@@ -485,7 +491,7 @@ impl<R: RangeBounds<usize>> IndexMut<R> for WStr {
     }
 }
 
-impl core::cmp::PartialEq<WStr> for WStr {
+impl core::cmp::PartialEq for WStr {
     #[inline]
     fn eq(&self, other: &WStr) -> bool {
         super::ops::str_eq(self, other)
@@ -498,6 +504,13 @@ impl core::cmp::Ord for WStr {
     #[inline]
     fn cmp(&self, other: &Self) -> core::cmp::Ordering {
         super::ops::str_cmp(self, other)
+    }
+}
+
+impl core::cmp::PartialOrd for WStr {
+    #[inline]
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+        Some(self.cmp(other))
     }
 }
 
@@ -582,13 +595,6 @@ macro_rules! __wstr_impl_internal {
     };
 
     (@eq_ord_self [$($generics:tt)*] for $ty:ty) => {
-        impl<$($generics)*> ::core::cmp::PartialOrd<$ty> for $ty {
-            #[inline]
-            fn partial_cmp(&self, other: &$ty) -> Option<::core::cmp::Ordering> {
-                Some(::core::cmp::Ord::cmp(self, other))
-            }
-        }
-
         $crate::__wstr_impl_internal! { @eq_ord_units [$($generics)* const N: usize] for $ty, [u8; N] }
         $crate::__wstr_impl_internal! { @eq_ord_units [$($generics)* const N: usize] for $ty, [u16; N] }
         $crate::__wstr_impl_internal! { @eq_ord_units [$($generics)*] for $ty, [u8] }
@@ -621,10 +627,19 @@ macro_rules! __wstr_impl_internal {
             }
         }
 
+        #[automatically_derived]
         impl<$($generics)*> ::core::cmp::Ord for $ty {
             #[inline]
             fn cmp(&self, other: &Self) -> ::core::cmp::Ordering {
                 ::core::cmp::Ord::cmp(::core::ops::Deref::deref(self), ::core::ops::Deref::deref(other))
+            }
+        }
+
+        #[automatically_derived]
+        impl<$($generics)*> ::core::cmp::PartialOrd<$ty> for $ty {
+            #[inline]
+            fn partial_cmp(&self, other: &$ty) -> Option<::core::cmp::Ordering> {
+                Some(::core::cmp::Ord::cmp(::core::ops::Deref::deref(self), other))
             }
         }
 

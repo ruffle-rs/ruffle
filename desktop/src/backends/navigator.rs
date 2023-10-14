@@ -1,6 +1,7 @@
 //! Navigator backend for web
 
 use crate::custom_event::RuffleEvent;
+use async_channel::{Receiver, TryRecvError};
 use async_io::Timer;
 use async_net::TcpStream;
 use futures::future::select;
@@ -10,7 +11,7 @@ use isahc::http::{HeaderName, HeaderValue};
 use isahc::{
     config::RedirectPolicy, prelude::*, AsyncReadResponseExt, HttpClient, Request as IsahcRequest,
 };
-use rfd::{AsyncMessageDialog, MessageButtons, MessageDialog, MessageLevel};
+use rfd::{AsyncMessageDialog, MessageButtons, MessageDialog, MessageDialogResult, MessageLevel};
 use ruffle_core::backend::navigator::{
     async_return, create_fetch_error, create_specific_fetch_error, ErrorResponse, NavigationMethod,
     NavigatorBackend, OpenURLMode, OwnedFuture, Request, SocketMode, SuccessResponse,
@@ -23,7 +24,7 @@ use std::io;
 use std::io::ErrorKind;
 use std::rc::Rc;
 use std::str::FromStr;
-use std::sync::mpsc::{Receiver, Sender, TryRecvError};
+use std::sync::mpsc::Sender;
 use std::time::Duration;
 use tracing::warn;
 use url::{ParseError, Url};
@@ -69,6 +70,7 @@ impl ExternalNavigatorBackend {
         let proxy = proxy.and_then(|url| url.as_str().parse().ok());
         let builder = HttpClient::builder()
             .proxy(proxy)
+            .cookies()
             .redirect_policy(RedirectPolicy::Follow);
 
         let client = builder.build().ok().map(Rc::new);
@@ -144,9 +146,10 @@ impl NavigatorBackend for ExternalNavigatorBackend {
             let confirm = MessageDialog::new()
                 .set_title("Open website?")
                 .set_level(MessageLevel::Info)
-                .set_description(&message)
+                .set_description(message)
                 .set_buttons(MessageButtons::OkCancel)
-                .show();
+                .show()
+                == MessageDialogResult::Ok;
             if !confirm {
                 tracing::info!("SWF tried to open a website, but the user declined the request");
                 return;
@@ -207,9 +210,9 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                         if e.kind() == ErrorKind::PermissionDenied {
                             let attempt_sandbox_open = MessageDialog::new()
                                 .set_level(MessageLevel::Warning)
-                                .set_description(&format!("The current movie is attempting to read files stored in {}.\n\nTo allow it to do so, click Yes, and then Open to grant read access to that directory.\n\nOtherwise, click No to deny access.", path.parent().unwrap_or(&path).to_string_lossy()))
+                                .set_description(format!("The current movie is attempting to read files stored in {}.\n\nTo allow it to do so, click Yes, and then Open to grant read access to that directory.\n\nOtherwise, click No to deny access.", path.parent().unwrap_or(&path).to_string_lossy()))
                                 .set_buttons(MessageButtons::YesNo)
-                                .show();
+                                .show() == MessageDialogResult::Yes;
 
                             if attempt_sandbox_open {
                                 FileDialog::new().set_directory(&path).pick_folder();
@@ -242,6 +245,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                     NavigationMethod::Get => IsahcRequest::get(processed_url.to_string()),
                     NavigationMethod::Post => IsahcRequest::post(processed_url.to_string()),
                 };
+                let (body_data, mime) = request.body().clone().unwrap_or_default();
                 if let Some(headers) = isahc_request.headers_mut() {
                     for (name, val) in request.headers().iter() {
                         headers.insert(
@@ -255,9 +259,15 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                             })?,
                         );
                     }
+                    headers.insert(
+                        "Content-Type",
+                        HeaderValue::from_str(&mime).map_err(|e| ErrorResponse {
+                            url: processed_url.to_string(),
+                            error: Error::FetchError(e.to_string()),
+                        })?,
+                    );
                 }
 
-                let (body_data, _) = request.body().clone().unwrap_or_default();
                 let body = isahc_request.body(body_data).map_err(|e| ErrorResponse {
                     url: processed_url.to_string(),
                     error: Error::FetchError(e.to_string()),
@@ -357,9 +367,9 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                     return Ok(());
                 }
                 (false, SocketMode::Ask) => {
-                    let attempt_sandbox_connect = AsyncMessageDialog::new().set_level(MessageLevel::Warning).set_description(&format!("The current movie is attempting to connect to {:?} (port {}).\n\nTo allow it to do so, click Yes to grant network access to that host.\n\nOtherwise, click No to deny access.", host, port)).set_buttons(MessageButtons::YesNo)
+                    let attempt_sandbox_connect = AsyncMessageDialog::new().set_level(MessageLevel::Warning).set_description(format!("The current movie is attempting to connect to {:?} (port {}).\n\nTo allow it to do so, click Yes to grant network access to that host.\n\nOtherwise, click No to deny access.", host, port)).set_buttons(MessageButtons::YesNo)
                     .show()
-                    .await;
+                    .await == MessageDialogResult::Yes;
 
                     if !attempt_sandbox_connect {
                         // fail the connection.
@@ -442,7 +452,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                             Ok(val) => {
                                 pending_write.extend(val);
                             }
-                            Err(TryRecvError::Disconnected) => {
+                            Err(TryRecvError::Closed) => {
                                 //NOTE: Channel sender has been dropped.
                                 //      This means we have to close the connection.
                                 drop(write);

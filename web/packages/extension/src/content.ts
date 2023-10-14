@@ -19,6 +19,7 @@
  */
 
 import * as utils from "./utils";
+import { isMessage } from "./messages";
 
 const pendingMessages: ({
     resolve(value: unknown): void;
@@ -108,11 +109,12 @@ function isXMLDocument(): boolean {
 
 (async () => {
     const options = await utils.getOptions();
+    const explicitOptions = await utils.getExplicitOptions();
+
     const pageOptout = checkPageOptout();
     const shouldLoad =
         !isXMLDocument() &&
         options.ruffleEnable &&
-        !window.RufflePlayer &&
         (options.ignoreOptout || !pageOptout);
 
     utils.runtime.onMessage.addListener((message, _sender, sendResponse) => {
@@ -141,11 +143,16 @@ function isXMLDocument(): boolean {
     }
 
     // We must run the plugin polyfill before any flash detection scripts.
-    // Unfortunately, this might still be too late for some websites when using Chrome (issue #969).
+    // Unfortunately, this might still be too late for some websites (issue #969).
     // NOTE: The script code injected here is the compiled form of
     // plugin-polyfill.ts. It is injected by tools/inject_plugin_polyfill.js
     // which just search-and-replaces for this particular string.
-    injectScriptRaw("%PLUGIN_POLYFILL_SOURCE%");
+    const permissions = (chrome || browser).runtime.getManifest().permissions;
+    if (!permissions?.includes("scripting")) {
+        // Chrome does this differently, by injecting it straight into the main world.
+        // This isn't as fast, oh well.
+        injectScriptRaw("%PLUGIN_POLYFILL_SOURCE%");
+    }
 
     await injectScriptURL(utils.runtime.getURL(`dist/ruffle.js?id=${ID}`));
 
@@ -157,13 +164,21 @@ function isXMLDocument(): boolean {
 
         const { to, index, data } = event.data;
         if (to === `ruffle_content${ID}`) {
-            const request = pendingMessages[index];
+            const request = index !== null ? pendingMessages[index] : null;
             if (request) {
                 pendingMessages[index] = null;
                 request.resolve(data);
-            } else {
-                // TODO: Handle page-initiated messages.
-                console.warn("No pending request.");
+            } else if (isMessage(data)) {
+                switch (data.type) {
+                    case "open_url_in_player":
+                        chrome.runtime.sendMessage({
+                            type: "open_url_in_player",
+                            url: data.url,
+                        });
+                        break;
+                    default:
+                    // Ignore unknown messages.
+                }
             }
         }
     });
@@ -171,7 +186,7 @@ function isXMLDocument(): boolean {
     await sendMessageToPage({
         type: "load",
         config: {
-            ...options,
+            ...explicitOptions,
             autoplay: options.autostart ? "on" : "auto",
             unmuteOverlay: options.autostart ? "hidden" : "visible",
             splashScreen: !options.autostart,

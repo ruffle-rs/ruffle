@@ -1,0 +1,54 @@
+Number.round() returns a int PASSED!
+Number.round() length is 1 PASSED!
+Asserting for ArgumentError PASSED!
+Number.round() with no args PASSED!
+Number.round(undefined) PASSED!
+Number.round(string) PASSED!
+Number.round(NaN) PASSED!
+Number.round(NaN) check() PASSED!
+Number.round(0) PASSED!
+Number.round(0) is +0 PASSED!
+Number.round(0) check() PASSED!
+Number.round(0) is +0 check() PASSED!
+Number.round(null) PASSED!
+Number.round(false) PASSED!
+Number.round(-0) PASSED!
+Number.round(-0) sign check FAILED! expected: -Infinity got: Infinity
+Number.round(-0) check() PASSED!
+Number.round(-0) check() sign check FAILED! expected: -Infinity got: Infinity
+Number.round(Number.POSITIVE_INFINITY) PASSED!
+Number.round(Number.POSITIVE_INFINITY) check() PASSED!
+Number.round(Number.NEGATIVE_INFINITY) PASSED!
+Number.round(Number.NEGATIVE_INFINITY) check() PASSED!
+Number.round(0.49) PASSED!
+Number.round(0.49999) PASSED!
+Number.round(49.999e-2) PASSED!
+Number.round(0.49) check() PASSED!
+Number.round(49.999e-2) check() PASSED!
+Number.round(Number.MIN_VALUE) PASSED!
+Number.round(-0.49) PASSED!
+Number.round(-0.49) sign check FAILED! expected: -Infinity got: Infinity
+Number.round(-0.49) check() PASSED!
+Number.round(-0.49) check() sign check FAILED! expected: -Infinity got: Infinity
+Number.round(-0.49999) PASSED!
+Number.round(-0.49999) sign check FAILED! expected: -Infinity got: Infinity
+Number.round(-4.9999e-1) PASSED!
+Number.round(-4.9999e-1) sign check FAILED! expected: -Infinity got: Infinity
+Number.round(-Number.MIN_VALUE) PASSED!
+Number.round(-Number.MIN_VALUE) sign check FAILED! expected: -Infinity got: Infinity
+Number.round(-0.5) PASSED!
+Number.round(-0.5) sign check FAILED! expected: -Infinity got: Infinity
+Number.round(3.5) PASSED!
+Number.round(3.5) check() PASSED!
+Number.round(-3.5) PASSED!
+Number.round(-3.5) check() PASSED!
+x=5.26 Number.round(x) == Number.floor(x+0.5) PASSED!
+x=-0 Number.round(x) != Number.floor(x+0.5) FAILED! expected: true got: false
+x=-0.49 Number.round(x) != Number.floor(x+0.5) FAILED! expected: true got: false
+Number.round(-5.000001e-1) PASSED!
+Number.round(true) PASSED!
+Number.round(0.5) PASSED!
+Number.round(5.000001e-1) PASSED!
+Number.round(3.124) PASSED!
+Number.round(3.124) NumberLiteral PASSED!
+Number.round(Number.MAX_VALUE) PASSED!

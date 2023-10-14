@@ -1,0 +1,32 @@
+Number.log() returns a Number PASSED!
+Number.log() length is 1 PASSED!
+Asserting for ArgumentError PASSED!
+Number.log() with no args PASSED!
+Number.log(undefined) PASSED!
+Number.log(string) PASSED!
+Number.log(NaN) PASSED!
+Number.log(NaN) check() PASSED!
+Number.log(-1) PASSED!
+Number.log(-1) check() PASSED!
+Number.log(Number.NEGATIVE_INFINITY) PASSED!
+Number.log(Number.NEGATIVE_INFINITY) check() PASSED!
+Number.log(0) PASSED!
+Number.log(0) check() PASSED!
+Number.log(-0) PASSED!
+Number.log(-0) check() PASSED!
+Number.log(false) PASSED!
+Number.log(1) PASSED!
+Number.log(1) check() PASSED!
+Number.log(1) is +0 PASSED!
+Number.log(1) is +0 check() PASSED!
+Number.log(true) PASSED!
+Number.log(Number.POSITIVE_INFINITY) PASSED!
+Number.log(Number.POSITIVE_INFINITY) check() PASSED!
+Number.log(-1.0e-6) PASSED!
+Number.log(1.0e-6) PASSED!
+Number.log(-1.0e-6) NumberLiteral PASSED!
+Number.log(1.0e-6) NumberLiteral PASSED!
+Number.log(-1) PASSED!
+Number.log(1) PASSED!
+Number.log(-1) NumberLiteral PASSED!
+Number.log(1) NumberLiteral PASSED!

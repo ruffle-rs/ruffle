@@ -1,0 +1,3 @@
+var MYOB = Object(); MYOB.valueOf() PASSED!
+typeof Object() PASSED!
+var MYOB = Object();  MYOB.toString() PASSED!

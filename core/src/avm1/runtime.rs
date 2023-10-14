@@ -12,7 +12,7 @@ use crate::prelude::*;
 use crate::string::AvmString;
 use crate::tag_utils::SwfSlice;
 use crate::{avm1, avm_debug};
-use gc_arena::{Collect, Gc, MutationContext};
+use gc_arena::{Collect, Gc, Mutation};
 use std::borrow::Cow;
 use swf::avm1::read::Reader;
 use tracing::instrument;
@@ -489,7 +489,7 @@ impl<'gc> Avm1<'gc> {
             }
         }
 
-        // Fire "onLoadInit" events.
+        // Fire "onLoadInit" events and remove completed movie loaders.
         context
             .load_manager
             .movie_clip_on_load(context.action_queue);
@@ -501,11 +501,7 @@ impl<'gc> Avm1<'gc> {
     ///
     /// This should be called whenever a movie clip is created, and controls the order of
     /// execution for AVM1 movies.
-    pub fn add_to_exec_list(
-        &mut self,
-        gc_context: MutationContext<'gc, '_>,
-        clip: DisplayObject<'gc>,
-    ) {
+    pub fn add_to_exec_list(&mut self, gc_context: &Mutation<'gc>, clip: DisplayObject<'gc>) {
         // Adding while iterating is safe, as this does not modify any active nodes.
         if clip.next_avm1_clip().is_none() {
             clip.set_next_avm1_clip(gc_context, self.clip_exec_list);

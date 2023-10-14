@@ -1,0 +1,42 @@
+var error = Error() PASSED!
+var ee = EvalError() PASSED!
+var te = TypeError() PASSED!
+var re = ReferenceError() PASSED!
+var ra = RangeError() PASSED!
+var SE = SyntaxError() PASSED!
+var URI = URIError() PASSED!
+var error = Error('test') PASSED!
+var ee = EvalError('eval error') PASSED!
+var te = TypeError('type error') PASSED!
+var re = ReferenceError('reference error') PASSED!
+var ra = RangeError('range error') PASSED!
+var SE = SyntaxError('syntax error') PASSED!
+var URI = URIError('uri error') PASSED!
+typeof Error() PASSED!
+typeof EvalError() PASSED!
+typeof TypeError() PASSED!
+typeof ReferenceError() PASSED!
+typeof RangeError() PASSED!
+typeof SyntaxError() PASSED!
+typeof URIError() PASSED!
+typeof Error('test') PASSED!
+typeof EvalError('test') PASSED!
+typeof TypeError('test') PASSED!
+typeof ReferenceError('test') PASSED!
+typeof RangeError('test') PASSED!
+typeof SyntaxError() PASSED!
+typeof URIError() PASSED!
+(err = Error(), err.getClass = Object.prototype.toString, err.getClass() ) PASSED!
+(err = EvalError(), err.getClass = Object.prototype.toString, err.getClass() ) PASSED!
+(err = TypeError(), err.getClass = Object.prototype.toString, err.getClass() ) PASSED!
+(err = ReferenceError(), err.getClass = Object.prototype.toString, err.getClass() ) PASSED!
+(err = RangeError(), err.getClass = Object.prototype.toString, err.getClass() ) PASSED!
+(err = SyntaxError(), err.getClass = Object.prototype.toString, err.getClass() ) PASSED!
+(err = URIError(), err.getClass = Object.prototype.toString, err.getClass() ) PASSED!
+(err = Error('test'), err.getClass = Object.prototype.toString, err.getClass() ) PASSED!
+(err = EvalError('test'), err.getClass = Object.prototype.toString, err.getClass() ) PASSED!
+(err = TypeError('test'), err.getClass = Object.prototype.toString, err.getClass() ) PASSED!
+(err = ReferenceError('test'), err.getClass = Object.prototype.toString, err.getClass() ) PASSED!
+(err = RangeError('test'), err.getClass = Object.prototype.toString, err.getClass() ) PASSED!
+(err = SyntaxError('test'), err.getClass = Object.prototype.toString, err.getClass() ) PASSED!
+(err = URIError('test'), err.getClass = Object.prototype.toString, err.getClass() ) PASSED!

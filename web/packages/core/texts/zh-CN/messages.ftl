@@ -10,6 +10,7 @@ update-ruffle = 更新 Ruffle
 ruffle-demo = 网页演示
 ruffle-desktop = 桌面应用程序
 ruffle-wiki = 查看 Ruffle Wiki
+enable-hardware-acceleration = 看起来硬件加速未启用。虽然 Ruffle 可能运行，但可能会非常慢。您可以通过此链接了解启用硬件加速的方法。
 view-error-details = 查看错误详情
 open-in-new-tab = 在新标签页中打开
 click-to-unmute = 点击取消静音
@@ -51,7 +52,7 @@ error-wasm-download =
     否则请联系网站管理员。
 error-wasm-disabled-on-edge =
     Ruffle 无法加载所需的 “.wasm” 文件组件。
-    要解决这个问题，请尝试打开您的浏览器设置，单击"隐私、搜索和服务"，向下滚动并关闭"增强您的网络安全"。
+    要解决这个问题，请尝试打开您的浏览器设置，单击"隐私、搜索和服务"，向下滚动并关闭"增强 Web 安全性"。
     这将允许您的浏览器加载所需的 “.wasm” 文件。
     如果问题仍然存在，您可能必须使用不同的浏览器。
 error-javascript-conflict =

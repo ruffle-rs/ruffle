@@ -8,7 +8,7 @@ use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use core::fmt;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, Mutation};
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::transform::Transform;
 use std::cell::{Ref, RefMut};
@@ -31,6 +31,7 @@ impl fmt::Debug for Text<'_> {
 pub struct TextData<'gc> {
     base: DisplayObjectBase<'gc>,
     static_data: gc_arena::Gc<'gc, TextStatic>,
+    #[collect(require_static)]
     render_settings: TextRenderSettings,
     avm2_object: Option<Avm2Object<'gc>>,
 }
@@ -61,11 +62,7 @@ impl<'gc> Text<'gc> {
         ))
     }
 
-    pub fn set_render_settings(
-        self,
-        gc_context: MutationContext<'gc, '_>,
-        settings: TextRenderSettings,
-    ) {
+    pub fn set_render_settings(self, gc_context: &Mutation<'gc>, settings: TextRenderSettings) {
         self.0.write(gc_context).render_settings = settings;
         self.invalidate_cached_bitmap(gc_context);
     }
@@ -76,11 +73,11 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         Ref::map(self.0.read(), |r| &r.base)
     }
 
-    fn base_mut<'a>(&'a self, mc: MutationContext<'gc, '_>) -> RefMut<'a, DisplayObjectBase<'gc>> {
+    fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>> {
         RefMut::map(self.0.write(mc), |w| &mut w.base)
     }
 
-    fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc> {
+    fn instantiate(&self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
         Self(GcCell::new(gc_context, self.0.read().clone())).into()
     }
 
@@ -151,12 +148,15 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
                 transform.color_transform.set_mult_color(&color);
                 for c in &block.glyphs {
                     if let Some(glyph) = font.get_glyph(c.index as usize) {
-                        context.transform_stack.push(&transform);
-                        let glyph_shape_handle = glyph.shape_handle(context.renderer);
-                        context
-                            .commands
-                            .render_shape(glyph_shape_handle, context.transform_stack.transform());
-                        context.transform_stack.pop();
+                        if let Some(glyph_shape_handle) = glyph.shape_handle(context.renderer) {
+                            context.transform_stack.push(&transform);
+                            context.commands.render_shape(
+                                glyph_shape_handle,
+                                context.transform_stack.transform(),
+                            );
+                            context.transform_stack.pop();
+                        }
+
                         transform.matrix.tx += Twips::new(c.advance);
                     }
                 }
@@ -222,14 +222,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
                                 return false;
                             };
                             let point = matrix * point;
-                            let glyph_shape = glyph.as_shape();
-                            if glyph_shape.shape_bounds.contains(point)
-                                && ruffle_render::shape_utils::shape_hit_test(
-                                    &glyph_shape,
-                                    point,
-                                    &local_matrix,
-                                )
-                            {
+                            if glyph.hit_test(point, &local_matrix) {
                                 return true;
                             }
 

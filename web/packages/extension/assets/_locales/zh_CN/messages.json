@@ -54,28 +54,31 @@
         "message": "查找当前标签页时发生错误。"
     },
     "status_message_init": {
-        "message": "在此标签页上检查 Ruffle 状态。"
+        "message": "正在当前标签页上检查 Ruffle 状态…"
     },
     "status_result_running": {
-        "message": "Ruffle 已经加载并准备在当前标签上运行 Flash 内容。"
+        "message": "Ruffle 已经加载并准备在当前标签页上运行 Flash 内容。"
     },
     "status_result_running_protected": {
-        "message": "Ruffle 已加载并运行您请求的 Flash 内容。"
+        "message": "Ruffle 已加载并正在运行您请求的 Flash 内容。"
     },
     "status_result_optout": {
-        "message": "Ruffle 未加载因为当前页面标注自己不兼容。"
+        "message": "Ruffle 未加载，因为当前页面标注自己不兼容。"
     },
     "status_result_disabled": {
         "message": "Ruffle 未加载，因为它已被禁用。"
     },
     "status_result_error": {
-        "message": "在查询此标签页中的 Ruffle 实例时发生错误。"
+        "message": "在查询当前标签页中的 Ruffle 实例时发生错误。"
     },
     "status_result_protected": {
         "message": "Ruffle 无法在被浏览器保护的页面中加载。"
     },
     "action_reload": {
         "message": "刷新页面以应用更改"
+    },
+    "open_player_page": {
+        "message": "打开 SWF 播放器"
     },
     "open_settings_page": {
         "message": "打开设置页"
@@ -84,7 +87,7 @@
         "message": "设置"
     },
     "description": {
-        "message": "将 Flash 重新带回网络。"
+        "message": "将 Flash 移动到 web 中的默认位置。"
     },
     "save_settings": {
         "message": "保存设置"

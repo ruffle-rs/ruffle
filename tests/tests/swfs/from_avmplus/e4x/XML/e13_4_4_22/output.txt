@@ -1,0 +1,14 @@
+2 PASSED!
+3 PASSED!
+4 PASSED!
+5 PASSED!
+6 PASSED!
+7 PASSED!
+8 PASSED!
+9 PASSED!
+MYXML = new XML(xmlDoc), MYXML.name() PASSED!
+MYXML = new XML(xmlDoc), MYXML.name() instanceof QName PASSED!
+MYXML = new XML(xmlDoc), MYXML.name().toString() PASSED!
+MYXML = new XML(xmlDoc), MYXML.children()[0].name() PASSED!
+MYXML = new XML(xmlDoc), MYXML.children()[0].name() instanceof QName PASSED!
+MYXML = new XML(xmlDoc), MYXML.children()[0].name().toString() PASSED!

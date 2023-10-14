@@ -1,0 +1,20 @@
+lf32(ApplicationDomain.MIN_DOMAIN_MEMORY_LENGTH) prior to initMemory() PASSED!
+lf32(-1) PASSED!
+lf32(mem.length) PASSED!
+lf32(mem.length-1) PASSED!
+lf32(mem.length-2) PASSED!
+lf32(mem.length-3) PASSED!
+lf32(mem.length-4) PASSED!
+lf32(1) loads do not need to be aligned PASSED!
+lf32 load float written by si8() PASSED!
+lf32 load float written by si16() PASSED!
+lf32 load float written by si32(0x41460200) PASSED!
+lf32 load float written by sf32(12.37548828125) PASSED!
+lf32 load 1st float written by sf64(0x4146020041460200) PASSED!
+lf32 load 2nd float written by sf64(0x4146020041460200) PASSED!
+lf32 load float written by writeByte() PASSED!
+lf32 load float written by writeBoolean() PASSED!
+lf32 load float written by writeInt(2147473647) PASSED!
+lf32 load float written by writeFloat(12.375) PASSED!
+lf32 load 1st float written by writeDouble(2.8846085099489688873291015625E6) PASSED!
+lf32 load 2nd float written by writeDouble(2.8846085099489688873291015625E6) PASSED!

@@ -166,11 +166,11 @@ impl BlendBuffer {
 }
 
 #[derive(Debug)]
-pub struct DepthBuffer {
+pub struct StencilBuffer {
     texture: PoolEntry<(wgpu::Texture, wgpu::TextureView), AlwaysCompatible>,
 }
 
-impl DepthBuffer {
+impl StencilBuffer {
     pub fn new(
         descriptors: &Descriptors,
         msaa_sample_count: u32,
@@ -197,7 +197,7 @@ pub struct CommandTarget {
     frame_buffer: FrameBuffer,
     blend_buffer: OnceCell<BlendBuffer>,
     resolve_buffer: Option<ResolveBuffer>,
-    depth: OnceCell<DepthBuffer>,
+    depth: OnceCell<StencilBuffer>,
     globals: Arc<Globals>,
     size: wgpu::Extent3d,
     format: wgpu::TextureFormat,
@@ -375,21 +375,18 @@ impl CommandTarget {
         self.sample_count
     }
 
-    pub fn depth_attachment(
+    pub fn stencil_attachment(
         &self,
         descriptors: &Descriptors,
         pool: &mut TexturePool,
     ) -> Option<wgpu::RenderPassDepthStencilAttachment> {
         let new_buffer = self.depth.get().is_none();
-        let depth = self
+        let stencil = self
             .depth
-            .get_or_init(|| DepthBuffer::new(descriptors, self.sample_count, self.size, pool));
+            .get_or_init(|| StencilBuffer::new(descriptors, self.sample_count, self.size, pool));
         Some(wgpu::RenderPassDepthStencilAttachment {
-            view: depth.view(),
-            depth_ops: Some(wgpu::Operations {
-                load: wgpu::LoadOp::Load,
-                store: false,
-            }),
+            view: stencil.view(),
+            depth_ops: None,
             stencil_ops: Some(wgpu::Operations {
                 load: if new_buffer {
                     wgpu::LoadOp::Clear(0)

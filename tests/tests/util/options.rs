@@ -1,4 +1,5 @@
 use crate::util::environment::wgpu_descriptors;
+use crate::util::image_trigger::ImageTrigger;
 use crate::util::runner::TestAudioBackend;
 use anyhow::{anyhow, Result};
 use approx::assert_relative_eq;
@@ -8,6 +9,7 @@ use ruffle_core::{PlayerBuilder, ViewportDimensions};
 use ruffle_render::quality::StageQuality;
 use ruffle_render_wgpu::wgpu;
 use serde::Deserialize;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -20,7 +22,7 @@ pub struct TestOptions {
     pub tick_rate: Option<f64>,
     pub output_path: PathBuf,
     pub sleep_to_meet_frame_rate: bool,
-    pub image_comparison: Option<ImageComparison>,
+    pub image_comparisons: HashMap<String, ImageComparison>,
     pub ignore: bool,
     pub known_failure: bool,
     pub approximations: Option<Approximations>,
@@ -37,7 +39,7 @@ impl Default for TestOptions {
             tick_rate: None,
             output_path: PathBuf::from("output.txt"),
             sleep_to_meet_frame_rate: false,
-            image_comparison: None,
+            image_comparisons: Default::default(),
             ignore: false,
             known_failure: false,
             approximations: None,
@@ -50,7 +52,27 @@ impl Default for TestOptions {
 
 impl TestOptions {
     pub fn read<P: AsRef<Path>>(path: P) -> Result<Self> {
-        Ok(toml::from_str(&fs::read_to_string(path)?)?)
+        let result: Self = toml::from_str(&fs::read_to_string(path)?)?;
+        result.validate()?;
+        Ok(result)
+    }
+
+    fn validate(&self) -> Result<()> {
+        if !self.image_comparisons.is_empty() {
+            let mut seen_triggers = HashSet::new();
+            for comparison in self.image_comparisons.values() {
+                if comparison.trigger != ImageTrigger::FsCommand
+                    && !seen_triggers.insert(comparison.trigger)
+                {
+                    return Err(anyhow!(
+                        "Multiple captures are set to trigger {:?}. This likely isn't intended!",
+                        comparison.trigger
+                    ));
+                }
+            }
+        }
+
+        Ok(())
     }
 
     pub fn output_path(&self, test_directory: &Path) -> PathBuf {
@@ -95,11 +117,12 @@ impl Approximations {
 #[serde(default, deny_unknown_fields)]
 pub struct RequiredFeatures {
     lzma: bool,
+    jpegxr: bool,
 }
 
 impl RequiredFeatures {
     pub fn can_run(&self) -> bool {
-        !self.lzma || cfg!(feature = "lzma")
+        (!self.lzma || cfg!(feature = "lzma")) && (!self.jpegxr || cfg!(feature = "jpegxr"))
     }
 }
 
@@ -193,11 +216,12 @@ impl PlayerOptions {
     }
 }
 
-#[derive(Deserialize, Default)]
+#[derive(Deserialize, Default, Clone, Debug)]
 #[serde(default, deny_unknown_fields)]
 pub struct ImageComparison {
     tolerance: u8,
     max_outliers: usize,
+    pub trigger: ImageTrigger,
 }
 
 #[cfg(feature = "imgtests")]
@@ -209,6 +233,7 @@ impl ImageComparison {
     #[cfg(feature = "imgtests")]
     pub fn test(
         &self,
+        name: &str,
         actual_image: image::RgbaImage,
         expected_image: image::RgbaImage,
         test_path: &Path,
@@ -223,7 +248,7 @@ impl ImageComparison {
             if !known_failure {
                 // If we're expecting failure, spamming files isn't productive.
                 actual_image
-                    .save(test_path.join(format!("actual-{suffix}.png")))
+                    .save(test_path.join(format!("{name}.actual-{suffix}.png")))
                     .context("Couldn't save actual image")
             } else {
                 Ok(())
@@ -235,7 +260,8 @@ impl ImageComparison {
         {
             save_actual_image()?;
             return Err(anyhow!(
-                "Image is not the right size. Expected = {}x{}, actual = {}x{}.",
+                "'{}' image is not the right size. Expected = {}x{}, actual = {}x{}.",
+                name,
                 expected_image.width(),
                 expected_image.height(),
                 actual_image.width(),
@@ -297,7 +323,7 @@ impl ImageComparison {
                     difference_color,
                 )
                 .context("Couldn't create color difference image")?
-                .save(test_path.join(format!("difference-color-{suffix}.png")))
+                .save(test_path.join(format!("{name}.difference-color-{suffix}.png")))
                 .context("Couldn't save color difference image")?;
             }
 
@@ -317,19 +343,20 @@ impl ImageComparison {
                         difference_alpha,
                     )
                     .context("Couldn't create alpha difference image")?
-                    .save(test_path.join(format!("difference-alpha-{suffix}.png")))
+                    .save(test_path.join(format!("{name}.difference-alpha-{suffix}.png")))
                     .context("Couldn't save alpha difference image")?;
                 }
             }
 
             return Err(anyhow!(
-                "Number of outliers ({}) is bigger than allowed limit of {}. Max difference is {}",
+                "Image '{}' failed: Number of outliers ({}) is bigger than allowed limit of {}. Max difference is {}",
+                name,
                 outliers,
                 self.max_outliers,
                 max_difference
             ));
         } else {
-            println!("{outliers} outliers found, max difference {max_difference}",);
+            println!("Image '{name}' succeeded: {outliers} outliers found, max difference {max_difference}",);
         }
 
         Ok(())

@@ -4,6 +4,7 @@ use ruffle_core::backend::ui::{
 };
 use ruffle_web_common::JsResult;
 use std::borrow::Cow;
+use url::Url;
 use wasm_bindgen::JsCast;
 use web_sys::{HtmlCanvasElement, HtmlDocument, HtmlTextAreaElement};
 
@@ -138,5 +139,9 @@ impl UiBackend for WebUiBackend {
 
     fn language(&self) -> &LanguageIdentifier {
         &self.language
+    }
+
+    fn display_unsupported_video(&self, url: Url) {
+        self.js_player.display_unsupported_video(url.as_str());
     }
 }

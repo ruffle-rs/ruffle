@@ -6,6 +6,7 @@ pub use crate::avm2::object::xml_list_allocator;
 use crate::avm2::{
     e4x::{name_to_multiname, simple_content_to_string, E4XNode, E4XNodeKind},
     error::type_error,
+    multiname::Multiname,
     object::{E4XOrXml, XmlListObject},
     parameters::ParametersExt,
     string::AvmString,
@@ -39,6 +40,9 @@ pub fn init<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_xml_list_object().unwrap();
     let value = args[0];
+    let ignore_comments = args.get_bool(1);
+    let ignore_processing_instructions = args.get_bool(2);
+    let ignore_whitespace = args.get_bool(3);
 
     if let Some(obj) = value.as_object() {
         if let Some(xml) = obj.as_xml_object() {
@@ -51,7 +55,13 @@ pub fn init<'gc>(
         }
     }
 
-    match E4XNode::parse(value, activation) {
+    match E4XNode::parse(
+        value,
+        activation,
+        ignore_comments,
+        ignore_processing_instructions,
+        ignore_whitespace,
+    ) {
         Ok(nodes) => {
             this.set_children(
                 activation.context.gc_context,
@@ -115,7 +125,7 @@ pub fn to_string<'gc>(
     let list = this.as_xml_list_object().unwrap();
     let children = list.children();
     if has_simple_content_inner(&children) {
-        Ok(simple_content_to_string(children.iter().cloned(), activation)?.into())
+        Ok(simple_content_to_string(children.iter().cloned(), activation).into())
     } else {
         to_xml_string(activation, this, args)
     }
@@ -133,7 +143,7 @@ pub fn to_xml_string<'gc>(
         if i != 0 {
             out.push_char('\n');
         }
-        out.push_str(child.node().xml_to_xml_string(activation)?.as_wstr())
+        out.push_str(child.node().xml_to_xml_string(activation).as_wstr())
     }
     Ok(AvmString::new(activation.context.gc_context, out).into())
 }
@@ -167,7 +177,7 @@ pub fn child<'gc>(
             );
         }
     }
-    Ok(XmlListObject::new(activation, sub_children, Some(list.into())).into())
+    Ok(XmlListObject::new(activation, sub_children, Some(list.into()), None).into())
 }
 
 pub fn children<'gc>(
@@ -183,7 +193,14 @@ pub fn children<'gc>(
             sub_children.extend(children.iter().map(|node| E4XOrXml::E4X(*node)));
         }
     }
-    Ok(XmlListObject::new(activation, sub_children, Some(list.into())).into())
+    // FIXME: This method should just call get_property_local with "*".
+    Ok(XmlListObject::new(
+        activation,
+        sub_children,
+        Some(list.into()),
+        Some(Multiname::any(activation.gc())),
+    )
+    .into())
 }
 
 pub fn copy<'gc>(
@@ -192,12 +209,7 @@ pub fn copy<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let list = this.as_xml_list_object().unwrap();
-    let children = list
-        .children()
-        .iter()
-        .map(|child| E4XOrXml::E4X(child.node().deep_copy(activation.context.gc_context)))
-        .collect();
-    Ok(XmlListObject::new(activation, children, list.target()).into())
+    Ok(list.deep_copy(activation).into())
 }
 
 pub fn attribute<'gc>(
@@ -223,7 +235,9 @@ pub fn attribute<'gc>(
             }
         }
     }
-    Ok(XmlListObject::new(activation, sub_children, Some(list.into())).into())
+
+    // FIXME: This should just use get_property_local with an attribute Multiname.
+    Ok(XmlListObject::new(activation, sub_children, Some(list.into()), Some(multiname)).into())
 }
 
 pub fn attributes<'gc>(
@@ -240,7 +254,14 @@ pub fn attributes<'gc>(
         }
     }
 
-    Ok(XmlListObject::new(activation, child_attrs, Some(list.into())).into())
+    // FIXME: This should just use get_property_local with an any attribute Multiname.
+    Ok(XmlListObject::new(
+        activation,
+        child_attrs,
+        Some(list.into()),
+        Some(Multiname::any_attribute(activation.gc())),
+    )
+    .into())
 }
 
 pub fn name<'gc>(
@@ -270,13 +291,12 @@ pub fn descendants<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let xml_list = this.as_xml_list_object().unwrap();
     let multiname = name_to_multiname(activation, &args[0], false)?;
-    let mut descendants = Vec::new();
-    for child in xml_list.children().iter() {
-        child.node().descendants(&multiname, &mut descendants);
+    if let Some(descendants) = this.xml_descendants(activation, &multiname) {
+        Ok(descendants.into())
+    } else {
+        Ok(Value::Undefined)
     }
-    Ok(XmlListObject::new(activation, descendants, Some(xml_list.into())).into())
 }
 
 pub fn text<'gc>(
@@ -296,5 +316,50 @@ pub fn text<'gc>(
             );
         }
     }
-    Ok(XmlListObject::new(activation, nodes, Some(xml_list.into())).into())
+    Ok(XmlListObject::new(activation, nodes, Some(xml_list.into()), None).into())
+}
+
+pub fn comments<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let xml_list = this.as_xml_list_object().unwrap();
+    let mut nodes = Vec::new();
+    for child in xml_list.children().iter() {
+        if let E4XNodeKind::Element { ref children, .. } = &*child.node().kind() {
+            nodes.extend(
+                children
+                    .iter()
+                    .filter(|node| matches!(&*node.kind(), E4XNodeKind::Comment(_)))
+                    .map(|node| E4XOrXml::E4X(*node)),
+            );
+        }
+    }
+    Ok(XmlListObject::new(activation, nodes, Some(xml_list.into()), None).into())
+}
+
+pub fn processing_instructions<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let xml_list = this.as_xml_list_object().unwrap();
+    let multiname = name_to_multiname(activation, &args[0], false)?;
+    let mut nodes = Vec::new();
+    for child in xml_list.children().iter() {
+        if let E4XNodeKind::Element { ref children, .. } = &*child.node().kind() {
+            nodes.extend(
+                children
+                    .iter()
+                    .filter(|node| {
+                        matches!(&*node.kind(), E4XNodeKind::ProcessingInstruction(_))
+                            && node.matches_name(&multiname)
+                    })
+                    .map(|node| E4XOrXml::E4X(*node)),
+            );
+        }
+    }
+
+    Ok(XmlListObject::new(activation, nodes, Some(xml_list.into()), None).into())
 }

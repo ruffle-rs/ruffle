@@ -12,8 +12,9 @@
 //! inline in the order that clips were originally created.
 
 use crate::avm2::Avm2;
+use crate::avm2_stub_method_context;
 use crate::context::UpdateContext;
-use crate::display_object::{DisplayObject, TDisplayObject};
+use crate::display_object::{DisplayObject, MovieClip, TDisplayObject};
 use tracing::instrument;
 
 /// Which phase of the frame we're currently in.
@@ -117,7 +118,30 @@ pub fn run_all_phases_avm2(context: &mut UpdateContext<'_, '_>) {
 pub fn run_inner_goto_frame<'gc>(
     context: &mut UpdateContext<'_, 'gc>,
     removed_frame_scripts: &[DisplayObject<'gc>],
+    initial_clip: MovieClip<'gc>,
 ) {
+    if initial_clip.swf_version() <= 9 {
+        avm2_stub_method_context!(
+            context,
+            "flash.display.MovieClip",
+            "goto",
+            "with SWF 9 movie"
+        );
+        // Note - this runs `construct_frame` at the wrong time - testing shows that
+        // clips in the target frame get constructed at some point *after* the
+        // call to `gotoAndStop/gotoAndPlay` returns. However, I suspect that this is related
+        // to the very odd framescript behavior in SWF 9 gotos (the *same* framescript can run twice
+        // in a row). For now, this is enough to get several games working.
+        initial_clip.construct_frame(context);
+        // We skip the next `enter_frame` call, so that we will still run the framescripts
+        // queued for our target frame.
+        initial_clip
+            .base_mut(context.gc_context)
+            .set_skip_next_enter_frame(true);
+
+        return;
+    }
+
     let stage = context.stage;
     let old_phase = *context.frame_phase;
 

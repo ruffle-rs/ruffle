@@ -9,7 +9,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::string::WString;
 use core::fmt;
-use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 use tracing::{enabled, Level};
@@ -105,7 +105,7 @@ impl<'gc> ErrorObject<'gc> {
         Ok(output)
     }
 
-    fn call_stack(&self) -> Ref<CallStack<'gc>> {
+    pub fn call_stack(&self) -> Ref<CallStack<'gc>> {
         Ref::map(self.0.read(), |r| &r.call_stack)
     }
 
@@ -127,7 +127,7 @@ impl<'gc> TObject<'gc> for ErrorObject<'gc> {
         Ref::map(self.0.read(), |read| &read.base)
     }
 
-    fn base_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<ScriptObjectData<'gc>> {
+    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
         RefMut::map(self.0.write(mc), |write| &mut write.base)
     }
 
@@ -135,7 +135,7 @@ impl<'gc> TObject<'gc> for ErrorObject<'gc> {
         self.0.as_ptr() as *const ObjectPtr
     }
 
-    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error<'gc>> {
+    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Value::Object(Object::from(*self)))
     }
 

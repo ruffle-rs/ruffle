@@ -24,6 +24,7 @@ package flash.display {
         public native function get transparent():Boolean;
 
         public native function getPixels(rect:Rectangle):ByteArray;
+        public native function copyPixelsToByteArray(rect:Rectangle, data:ByteArray):void;
         public native function getVector(rect:Rectangle):Vector.<uint>;
         public native function getPixel(x:int, y:int):uint;
         public native function getPixel32(x:int, y:int):uint;
@@ -67,7 +68,9 @@ package flash.display {
             sourceBitmapData:BitmapData, sourceRect:Rectangle, destPoint:Point, randomSeed:int = 0, numPixels:int = 0,
             fillColor:uint = 0
         ):int;
-
+        public native function merge(
+            sourceBitmapData:BitmapData, sourceRect:Rectangle, destPoint:Point, redMultiplier:uint, greenMultiplier:uint, blueMultiplier:uint, alphaMultiplier:uint
+        ):void 
         public function generateFilterRect(sourceRect:Rectangle, filter:BitmapFilter):Rectangle {
             // Flash always reports that a ShaderFilter affects the entire BitampData, ignoring SourceRect.
             if (filter is ShaderFilter) {

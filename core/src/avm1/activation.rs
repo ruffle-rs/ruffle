@@ -4,7 +4,7 @@ use crate::avm1::function::{Avm1Function, ExecutionReason, FunctionObject};
 use crate::avm1::object::{Object, TObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::runtime::skip_actions;
-use crate::avm1::scope::Scope;
+use crate::avm1::scope::{Scope, ScopeClass};
 use crate::avm1::{fscommand, globals, scope, ArrayObject, ScriptObject, Value};
 use crate::backend::navigator::{NavigationMethod, Request};
 use crate::context::UpdateContext;
@@ -15,7 +15,7 @@ use crate::string::{AvmString, SwfStrExt as _, WStr, WString};
 use crate::tag_utils::SwfSlice;
 use crate::vminterface::Instantiator;
 use crate::{avm_error, avm_warn};
-use gc_arena::{Gc, GcCell, MutationContext};
+use gc_arena::{Gc, GcCell, Mutation};
 use indexmap::IndexMap;
 use instant::Instant;
 use rand::Rng;
@@ -1981,9 +1981,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 return self.set_target(&target);
             }
             Value::Undefined => {
-                // Reset.
-                let base_clip = self.base_clip();
-                self.set_target_clip(Some(base_clip));
+                // In SWF6 and below, SetTarget2 on an undefined object resets the target to the base clip
+                if self.swf_version() > 6 {
+                    self.set_target_clip(None);
+                } else {
+                    self.set_target_clip(Some(base_clip));
+                }
             }
             Value::Object(o) => {
                 if let Some(clip) = o.as_display_object() {
@@ -2012,7 +2015,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             }
         };
 
-        let clip_obj = self.target_clip_or_root().object().coerce_to_object(self);
+        let clip_obj = self
+            .target_clip_or_base_clip()
+            .object()
+            .coerce_to_object(self);
 
         self.set_scope(Scope::new_target_scope(
             self.scope(),
@@ -2925,6 +2931,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .unwrap_or_else(|| self.base_clip().avm1_root())
     }
 
+    /// The current target clip of the executing code.
+    /// Actions that affect the base clip after an invalid `tellTarget` will use this.
+    pub fn target_clip_or_base_clip(&self) -> DisplayObject<'gc> {
+        self.target_clip().unwrap_or_else(|| self.base_clip())
+    }
+
     /// Obtain the value of `_root`.
     pub fn root_object(&self) -> Value<'gc> {
         self.base_clip().avm1_root().object()
@@ -2968,6 +2980,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Completely replace the current scope with a new one.
     pub fn set_scope(&mut self, scope: Gc<'gc, Scope<'gc>>) {
         self.scope = scope;
+    }
+
+    pub fn set_scope_to_display_object(&mut self, object: DisplayObject<'gc>) {
+        self.scope = Gc::new(
+            self.context.gc_context,
+            Scope::new(
+                self.scope,
+                ScopeClass::Target,
+                object.object().coerce_to_object(self),
+            ),
+        );
     }
 
     /// Whether this activation operates in a local scope.
@@ -3047,7 +3070,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .unwrap_or(false)
     }
 
-    pub fn allocate_local_registers(&mut self, num: u8, mc: MutationContext<'gc, '_>) {
+    pub fn allocate_local_registers(&mut self, num: u8, mc: &Mutation<'gc>) {
         self.local_registers = match num {
             0 => None,
             num => Some(GcCell::new(mc, RegisterSet::new(num))),

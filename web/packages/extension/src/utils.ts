@@ -63,6 +63,7 @@ export let runtime: {
 };
 
 export let openOptionsPage: () => Promise<void>;
+export let openPlayerPage: () => Promise<void>;
 
 function promisify<T>(
     func: (callback: (result: T) => void) => void,
@@ -129,12 +130,20 @@ if (typeof chrome !== "undefined") {
         promisify((cb: () => void) =>
             chrome.tabs.create({ url: "/options.html" }, cb),
         );
+    openPlayerPage = () =>
+        promisify((_cb: () => void) =>
+            chrome.tabs.create({ url: "/player.html" }),
+        );
 } else if (typeof browser !== "undefined") {
     i18n = browser.i18n;
     storage = browser.storage;
     tabs = browser.tabs;
     runtime = browser.runtime;
     openOptionsPage = () => browser.runtime.openOptionsPage();
+    openPlayerPage = () =>
+        promisify((_cb: () => void) =>
+            browser.tabs.create({ url: "/player.html" }),
+        );
 } else {
     throw new Error("Extension API not found.");
 }
@@ -144,4 +153,23 @@ export async function getOptions(): Promise<Options> {
 
     // Copy over default options if they don't exist yet.
     return { ...DEFAULT_OPTIONS, ...options };
+}
+
+/**
+ * Gets the options that are explicitly different from the defaults.
+ *
+ * In the future we should just not store options we don't want to set.
+ */
+export async function getExplicitOptions(): Promise<Options> {
+    const options = await getOptions();
+    const defaultOptions = DEFAULT_OPTIONS;
+    for (const key in defaultOptions) {
+        // @ts-expect-error: Element implicitly has an any type
+        if (key in options && defaultOptions[key] === options[key]) {
+            // @ts-expect-error: Element implicitly has an any type
+            delete options[key];
+        }
+    }
+
+    return options;
 }

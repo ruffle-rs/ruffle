@@ -27,7 +27,7 @@ pub fn loader_allocator<'gc>(
     // Loader does not have an associated `Character` variant, and can never be
     // instantiated from the timeline.
     let display_object = LoaderDisplay::empty(activation, activation.context.swf.clone()).into();
-    let mut loader = initialize_for_allocator(activation, display_object, class)?;
+    let loader = initialize_for_allocator(activation, display_object, class)?;
 
     // Note that the initialization of `_contentLoaderInfo` is intentionally done here,
     // and not in the Loader constructor - subclasess of Loader can observe 'contentLoaderInfo'
@@ -226,6 +226,7 @@ pub fn load_bytes<'gc>(
         )?
         .as_object()
         .unwrap();
+
     let future = activation.context.load_manager.load_movie_into_clip_bytes(
         activation.context.player.clone(),
         content.into(),
@@ -255,5 +256,21 @@ pub fn unload<'gc>(
         this,
         &[0.into()],
     );
+
+    let loader_info = this
+        .get_property(
+            &Multiname::new(
+                activation.avm2().flash_display_internal,
+                "_contentLoaderInfo",
+            ),
+            activation,
+        )?
+        .as_object()
+        .unwrap();
+
+    let loader_info_object = loader_info.as_loader_info_object().unwrap();
+
+    loader_info_object.unload(activation);
+
     Ok(Value::Undefined)
 }

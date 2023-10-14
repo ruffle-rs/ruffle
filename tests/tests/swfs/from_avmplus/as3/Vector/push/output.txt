@@ -1,0 +1,12 @@
+push empty vector PASSED!
+push single item to int vector PASSED!
+push nothing to small int vector PASSED!
+push several elements to small int vector PASSED!
+attempt to push to a fixed int vector PASSED!
+attempt to push nothing to a fixed uint vector PASSED!
+push several elements to Object vector PASSED!
+push several elements to Object vector PASSED!
+attempt to push to a fixed Object vector PASSED!
+attempt to push nothing to a fixed Object vector PASSED!
+TypeError: Error #1034: Type Coercion failed
+push an Object to an Function vector PASSED!

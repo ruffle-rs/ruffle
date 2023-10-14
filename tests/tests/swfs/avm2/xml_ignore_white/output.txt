@@ -1,0 +1,6 @@
+XML.ignoreWhitespace = true: <outer><first/><second><![CDATA[	]]></second><third><![CDATA[]]></third></outer>
+XML.ignoreWhitespace = false: <outer><first>  	</first><second><![CDATA[	]]></second><third><![CDATA[]]></third></outer>
+XMLDocument ignoreWhite = true: <outer><first /><second>	</second><third></third></outer>
+ignoreWhiteDoc.firstChild.childNodes[1].firstChild.nodeType = 3
+XMLDocument ignoreWhite = false: <outer><first>  	</first><second>	</second><third></third></outer>
+noIgnoreWhiteDoc.firstChild.childNodes[1].firstChild.nodeType = 3

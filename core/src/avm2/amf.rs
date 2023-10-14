@@ -112,10 +112,7 @@ pub fn serialize_value<'gc>(
             } else if let Some(xml) = o.as_xml_object() {
                 // `is_string` is `true` for the AS3 XML class
                 Some(AmfValue::XML(
-                    xml.node()
-                        .xml_to_xml_string(activation)
-                        .expect("Failed to stringify XML")
-                        .to_string(),
+                    xml.node().xml_to_xml_string(activation).to_string(),
                     true,
                 ))
             } else if let Some(bytearray) = o.as_bytearray() {
@@ -193,7 +190,7 @@ pub fn deserialize_value<'gc>(
                 arr.push(Some(deserialize_value(activation, value)?));
             }
             let storage = ArrayStorage::from_storage(arr);
-            let mut array = ArrayObject::from_storage(activation, storage)?;
+            let array = ArrayObject::from_storage(activation, storage)?;
             // Now let's add each element as a property
             for element in elements {
                 array.set_public_property(
@@ -220,7 +217,7 @@ pub fn deserialize_value<'gc>(
                 }
             }
 
-            let mut obj = activation
+            let obj = activation
                 .avm2()
                 .classes()
                 .object
@@ -305,7 +302,7 @@ pub fn deserialize_lso<'gc>(
     activation: &mut Activation<'_, 'gc>,
     lso: &Lso,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let mut obj = activation
+    let obj = activation
         .avm2()
         .classes()
         .object

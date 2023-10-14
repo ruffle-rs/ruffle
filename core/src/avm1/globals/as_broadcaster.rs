@@ -9,7 +9,7 @@ use crate::avm1::property_decl::Declaration;
 use crate::avm1::{Activation, ArrayObject, Object, ScriptObject, Value};
 use crate::context::GcContext;
 use crate::string::AvmString;
-use gc_arena::{Collect, MutationContext};
+use gc_arena::{Collect, Mutation};
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "initialize" => method(initialize; DONT_ENUM | DONT_DELETE);
@@ -63,7 +63,7 @@ pub struct BroadcasterFunctions<'gc> {
 impl<'gc> BroadcasterFunctions<'gc> {
     pub fn initialize(
         self,
-        gc_context: MutationContext<'gc, '_>,
+        gc_context: &Mutation<'gc>,
         broadcaster: Object<'gc>,
         array_proto: Object<'gc>,
     ) {
@@ -198,7 +198,7 @@ fn initialize<'gc>(
 }
 
 fn initialize_internal<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    gc_context: &Mutation<'gc>,
     broadcaster: Object<'gc>,
     functions: BroadcasterFunctions<'gc>,
     array_proto: Object<'gc>,

@@ -1,0 +1,1 @@
+Object.prototype = null; Object.prototype PASSED!

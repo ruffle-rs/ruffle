@@ -21,12 +21,12 @@ version = "0.1.0"
 
 
 [dependencies]
-clap = { version = "4.3.19", features = ["derive"] }
+clap = { version = "4.4.6", features = ["derive"] }
 cpal = "0.15.2"
-egui = "0.22.0"
-egui-wgpu = { version = "0.22.0", features = ["winit"] }
-egui-winit = "0.22.0"
-fontdb = "0.14"
+egui = { workspace = true }
+egui-wgpu = { version = "0.23.0", features = ["winit"] }
+egui-winit = "0.23.0"
+fontdb = "0.15"
 ruffle_core = { path = "../core", features = ["audio", "clap", "mp3", "nellymoser", "default_compatibility_rules", "egui"] }
 ruffle_render = { path = "../render", features = ["clap"] }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
@@ -34,25 +34,26 @@ ruffle_video_software = { path = "../video/software", optional = true }
 tracing = { workspace = true}
 tracing-subscriber = { workspace = true }
 generational-arena = "0.2.9"
-winit = "0.28.6"
-webbrowser = "0.8.10"
-url = "2.4.0"
-arboard = "3.2.0"
+winit = "0.28.7"
+webbrowser = "0.8.11"
+url = "2.4.1"
+arboard = "3.2.1"
 dirs = "5.0"
-isahc = "1.7.2"
-rfd = "0.11.4"
+isahc = { version = "1.7.2", features = ["cookies"] }
+rfd = "0.12.0"
 anyhow = "1.0"
-bytemuck = "1.13.1"
+bytemuck = "1.14.0"
 os_info = { version = "3", default-features = false }
 unic-langid = "0.9.1"
-sys-locale = "0.3.0"
+sys-locale = "0.3.1"
 wgpu = { workspace = true }
 futures = "0.3.28"
 chrono = { version = "0.4", default-features = false, features = [] }
 fluent-templates = "0.8.0"
 futures-lite = "1.13.0"
 async-io = "1.13.0"
-async-net = "1.7.0"
+async-net = "1.8.0"
+async-channel = "1.9.0"
 
 # Deliberately held back to match tracy client used by profiling crate
 tracing-tracy = { version = "=0.10.2", optional = true }
@@ -62,10 +63,11 @@ winapi = "0.3.9"
 
 [build-dependencies]
 embed-resource = "2"
-vergen = { version = "8.2.4", features = ["build", "git", "gitcl", "cargo"] }
+vergen = { version = "8.2.5", features = ["build", "git", "gitcl", "cargo"] }
 
 [features]
 default = ["software_video"]
+jpegxr = ["ruffle_core/jpegxr"]
 
 # core features
 avm_debug = ["ruffle_core/avm_debug"]

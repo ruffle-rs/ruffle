@@ -13,14 +13,14 @@ ruffle_video = { path = ".." }
 swf = { path = "../../swf" }
 generational-arena = "0.2.9"
 thiserror = "1.0"
-flate2 = "1.0.26"
+flate2 = "1.0.27"
 log = "0.4"
 
-h263-rs = { git = "https://github.com/ruffle-rs/h263-rs", rev = "128cdbd85455d19783c88927bb535e8a26fe5220", optional = true }
-h263-rs-deblock = { git = "https://github.com/ruffle-rs/h263-rs", rev = "128cdbd85455d19783c88927bb535e8a26fe5220", optional = true }
-nihav_core = { git = "https://github.com/ruffle-rs/nihav-vp6", rev = "9416fcc9fc8aab8f4681aa9093b42922214abbd3", optional = true }
-nihav_codec_support = { git = "https://github.com/ruffle-rs/nihav-vp6", rev = "9416fcc9fc8aab8f4681aa9093b42922214abbd3", optional = true }
-nihav_duck = { git = "https://github.com/ruffle-rs/nihav-vp6", rev = "9416fcc9fc8aab8f4681aa9093b42922214abbd3", optional = true }
+h263-rs = { git = "https://github.com/ruffle-rs/h263-rs", rev = "16700664e2b3334f0a930f99af86011aebee14cc", optional = true }
+h263-rs-deblock = { git = "https://github.com/ruffle-rs/h263-rs", rev = "16700664e2b3334f0a930f99af86011aebee14cc", optional = true }
+nihav_core = { git = "https://github.com/ruffle-rs/nihav-vp6", rev = "83c7e1094d603d9fc1212d39d99abb17f3a3226b", optional = true }
+nihav_codec_support = { git = "https://github.com/ruffle-rs/nihav-vp6", rev = "83c7e1094d603d9fc1212d39d99abb17f3a3226b", optional = true }
+nihav_duck = { git = "https://github.com/ruffle-rs/nihav-vp6", rev = "83c7e1094d603d9fc1212d39d99abb17f3a3226b", optional = true }
 
 [features]
 default = ["h263", "vp6", "screenvideo"]
