@@ -1,0 +1,13 @@
+[test.swf] <root>
+  <a>Test</a>
+</root>
+[test.swf] <root>
+  <a>Test</a>
+  <a>Test</a>
+</root>
+[loadable.swf] <root>
+  <a>Test</a>
+</root>
+[loadable.swf] <root>
+  <a>Test</a>
+</root>

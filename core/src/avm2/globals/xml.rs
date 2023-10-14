@@ -229,25 +229,10 @@ pub fn child_index<'gc>(
     let xml = this.as_xml_object().unwrap();
     let node = xml.node();
 
-    let parent = if let Some(parent) = node.parent() {
-        parent
-    } else {
-        return Ok(Value::Number(-1.0));
-    };
-
-    if let E4XNodeKind::Attribute(_) = &*node.kind() {
-        return Ok(Value::Number(-1.0));
-    }
-
-    if let E4XNodeKind::Element { children, .. } = &*parent.kind() {
-        let index = children
-            .iter()
-            .position(|child| E4XNode::ptr_eq(*child, *node))
-            .unwrap();
-        return Ok(Value::Number(index as f64));
-    }
-
-    unreachable!("parent must be an element")
+    Ok(node
+        .child_index()
+        .map(|x| Value::Number(x as f64))
+        .unwrap_or(Value::Number(-1.0)))
 }
 
 pub fn children<'gc>(
