@@ -77,6 +77,9 @@
     "action_reload": {
         "message": "Recarregar separador para aplicar alterações"
     },
+    "open_player_page": {
+        "message": "Abrir Leitor de SWF"
+    },
     "open_settings_page": {
         "message": "Abrir página de opções"
     },
