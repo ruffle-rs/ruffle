@@ -394,6 +394,24 @@ impl<'gc> E4XNode<'gc> {
         Ok(())
     }
 
+    pub fn child_index(&self) -> Option<usize> {
+        let parent = self.parent()?;
+
+        if let E4XNodeKind::Attribute(_) = &*self.kind() {
+            return None;
+        }
+
+        if let E4XNodeKind::Element { children, .. } = &*parent.kind() {
+            let index = children
+                .iter()
+                .position(|child| E4XNode::ptr_eq(*child, *self))
+                .unwrap();
+            return Some(index);
+        }
+
+        unreachable!("parent must be an element")
+    }
+
     // ECMA-357 9.1.1.4 [[DeleteByIndex]] (P)
     pub fn delete_by_index(&self, index: usize, activation: &mut Activation<'_, 'gc>) {
         let E4XNodeKind::Element { children, .. } = &mut *self.kind_mut(activation.gc()) else {
@@ -1268,7 +1286,7 @@ pub fn maybe_escape_child<'gc>(
         if child.as_object().map_or(false, |x| {
             x.as_xml_object().is_some() || x.as_xml_list_object().is_some()
         }) {
-            Ok(child)
+            return Ok(child);
         } else {
             let string = child.coerce_to_string(activation)?;
             let xml = activation
@@ -1276,9 +1294,24 @@ pub fn maybe_escape_child<'gc>(
                 .classes()
                 .xml
                 .construct(activation, &[string.into()])?;
-            Ok(xml.into())
+            return Ok(xml.into());
         }
-    } else {
-        Ok(child)
     }
+
+    if activation.caller_movie().unwrap().version() >= 21 {
+        if let Some(xml) = child.as_object().and_then(|x| x.as_xml_object()) {
+            let node = xml.node();
+            let parent = node.parent();
+
+            let index = node.child_index();
+
+            if let Some(parent) = parent {
+                if let Some(index) = index {
+                    parent.delete_by_index(index, activation);
+                }
+            }
+        }
+    }
+
+    Ok(child)
 }
