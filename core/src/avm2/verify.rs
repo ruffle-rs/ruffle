@@ -1,4 +1,4 @@
-use crate::avm2::error::verify_error;
+use crate::avm2::error::{make_error_1025, make_error_1054, make_error_1107, verify_error};
 use crate::avm2::method::BytecodeMethod;
 use crate::avm2::{Activation, Error};
 use std::collections::HashMap;
@@ -20,11 +20,7 @@ pub fn verify_method<'gc>(
     // Ensure there are enough local variables
     // to fit the parameters in.
     if (locals_count as usize) < param_count + 1 {
-        return Err(Error::AvmError(verify_error(
-            activation,
-            "Error #1107: The ABC data is corrupt, attempt to read out of bounds.",
-            1107,
-        )?));
+        return Err(make_error_1107(activation));
     }
 
     let mut new_body = AbcMethodBody {
@@ -118,11 +114,7 @@ pub fn verify_method<'gc>(
                 .copied();
             offs += 1;
             if offs as usize >= new_code.len() {
-                return Err(Error::AvmError(verify_error(
-                    activation,
-                    "Error #1054: Illegal range or target offsets in exception handler.",
-                    1054,
-                )?));
+                return Err(make_error_1054(activation));
             }
         }
 
@@ -137,21 +129,13 @@ pub fn verify_method<'gc>(
                 .get(&((exception.to_offset + offs) as i32))
                 .copied();
             if offs == 0 {
-                return Err(Error::AvmError(verify_error(
-                    activation,
-                    "Error #1054: Illegal range or target offsets in exception handler.",
-                    1054,
-                )?));
+                return Err(make_error_1054(activation));
             }
             offs -= 1;
         }
 
         if to_offset.unwrap() < from_offset.unwrap() {
-            return Err(Error::AvmError(verify_error(
-                activation,
-                "Error #1054: Illegal range or target offsets in exception handler.",
-                1054,
-            )?));
+            return Err(make_error_1054(activation));
         }
 
         exception.from_offset = from_offset.unwrap() as u32;
@@ -164,11 +148,7 @@ pub fn verify_method<'gc>(
             .unwrap() as u32;
 
         if exception.target_offset < exception.to_offset {
-            return Err(Error::AvmError(verify_error(
-                activation,
-                "Error #1054: Illegal range or target offsets in exception handler.",
-                1054,
-            )?));
+            return Err(make_error_1054(activation));
         }
 
         // FIXME: avmplus only verifies the exception target
@@ -438,11 +418,7 @@ fn verify_block<'gc>(
             | Op::IncLocalI { index } => {
                 let max = body.num_locals;
                 if *index >= max {
-                    return Err(Error::AvmError(verify_error(
-                        activation,
-                        &format!("Error #1025: An invalid register {} was accessed.", index),
-                        1025,
-                    )?));
+                    return Err(make_error_1025(activation, *index));
                 }
             }
 
@@ -454,23 +430,9 @@ fn verify_block<'gc>(
 
                 // NOTE: This is the correct order (first check object register, then check index register)
                 if *object_register >= max {
-                    return Err(Error::AvmError(verify_error(
-                        activation,
-                        &format!(
-                            "Error #1025: An invalid register {} was accessed.",
-                            object_register
-                        ),
-                        1025,
-                    )?));
+                    return Err(make_error_1025(activation, *object_register));
                 } else if *index_register >= max {
-                    return Err(Error::AvmError(verify_error(
-                        activation,
-                        &format!(
-                            "Error #1025: An invalid register {} was accessed.",
-                            index_register
-                        ),
-                        1025,
-                    )?));
+                    return Err(make_error_1025(activation, *index_register));
                 }
             }
 
@@ -482,14 +444,7 @@ fn verify_block<'gc>(
                 if *is_local_register {
                     let max = body.num_locals;
                     if *register as u32 >= max {
-                        return Err(Error::AvmError(verify_error(
-                            activation,
-                            &format!(
-                                "Error #1025: An invalid register {} was accessed.",
-                                register
-                            ),
-                            1025,
-                        )?));
+                        return Err(make_error_1025(activation, *register as u32));
                     }
                 }
             }

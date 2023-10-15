@@ -3,6 +3,7 @@
 use std::rc::Rc;
 
 use crate::avm2::class::AllocatorFn;
+use crate::avm2::error::make_error_1107;
 use crate::avm2::function::Executable;
 use crate::avm2::globals::SystemClasses;
 use crate::avm2::method::{Method, NativeMethodImpl};
@@ -544,11 +545,7 @@ impl<'gc> Avm2<'gc> {
             Ok(abc) => abc,
             Err(_) => {
                 let mut activation = Activation::from_nothing(context.reborrow());
-                return Err(Error::AvmError(crate::avm2::error::verify_error(
-                    &mut activation,
-                    "Error #1107: The ABC data is corrupt, attempt to read out of bounds.",
-                    1107,
-                )?));
+                return Err(make_error_1107(&mut activation));
             }
         };
 
