@@ -667,7 +667,9 @@ export class RufflePlayer extends HTMLElement {
                 'The configuration option contextMenu no longer takes a boolean. Use "on", "off", or "rightClickOnly".',
             );
         }
-        const ruffleConstructor = await loadRuffle(
+        this.instance = await loadRuffle(
+            this.container,
+            this,
             this.loadedConfig || {},
             this.onRuffleDownloadProgress.bind(this),
         ).catch((e) => {
@@ -709,11 +711,6 @@ export class RufflePlayer extends HTMLElement {
             throw e;
         });
 
-        this.instance = await new ruffleConstructor(
-            this.container,
-            this,
-            this.loadedConfig,
-        );
         this.instance!.set_volume(this.volumeSettings.get_volume());
 
         this.rendererDebugInfo = this.instance!.renderer_debug_info();
@@ -729,13 +726,14 @@ export class RufflePlayer extends HTMLElement {
         }
 
         const actuallyUsedRendererName = this.instance!.renderer_name();
+        const constructor = <typeof Ruffle>this.instance!.constructor;
 
         console.log(
             "%c" +
                 "New Ruffle instance created (Version: " +
                 buildInfo.versionName +
                 " | WebAssembly extensions: " +
-                (ruffleConstructor.is_wasm_simd_used() ? "ON" : "OFF") +
+                (constructor.is_wasm_simd_used() ? "ON" : "OFF") +
                 " | Used renderer: " +
                 (actuallyUsedRendererName ?? "") +
                 ")",
