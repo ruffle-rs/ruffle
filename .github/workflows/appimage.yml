@@ -44,7 +44,7 @@ jobs:
         run: cd desktop
 
       - name: Copy icon for Cargo Packager
-        run: cp /assets/favicon.ico favicon.ico
+        run: cp assets/favicon.ico favicon.ico
 
       - name: Cargo Packager
         run: cargo packager --release
