@@ -483,7 +483,7 @@ fn verify_block<'gc>(
             }
 
             // Ensure the global scope exists for these opcodes
-            Op::FindProperty { .. } | Op::FindPropStrict { .. } | Op::GetLex { .. } => {
+            Op::FindProperty { .. } | Op::FindPropStrict { .. } => {
                 // FP checks the scope that the function was defined in
                 // for freestanding functions. We can't do that easily,
                 // so just avoid this verification step for them.
@@ -521,6 +521,31 @@ fn verify_block<'gc>(
                         activation,
                         "Error #1113: OP_newactivation used in method without NEED_ACTIVATION flag.",
                         1113,
+                    )?));
+                }
+            }
+
+            Op::GetLex { index } => {
+                // See comment for FindProperty/FindPropStrict.
+                if !method.is_function {
+                    if body.init_scope_depth + current_scope_depth == 0 {
+                        return Err(Error::AvmError(verify_error(
+                            activation,
+                            "Error #1013: Cannot call OP_findproperty when scopeDepth is 0.",
+                            1013,
+                        )?));
+                    }
+                }
+
+                let multiname = method
+                    .translation_unit()
+                    .pool_maybe_uninitialized_multiname(*index, &mut activation.borrow_gc())?;
+
+                if multiname.has_lazy_component() {
+                    return Err(Error::AvmError(verify_error(
+                        activation,
+                        "Error #1078: Illegal opcode/multiname combination.",
+                        1078,
                     )?));
                 }
             }
