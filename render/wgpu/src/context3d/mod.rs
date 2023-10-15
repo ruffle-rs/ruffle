@@ -1,10 +1,10 @@
 use ruffle_render::backend::{
     Context3D, Context3DBlendFactor, Context3DCommand, Context3DCompareMode,
-    Context3DTextureFormat, Context3DVertexBufferFormat, IndexBuffer, ProgramType, VertexBuffer,
+    Context3DTextureFormat, Context3DVertexBufferFormat, IndexBuffer, ProgramType, Texture as _,
+    VertexBuffer,
 };
-use ruffle_render::bitmap::{BitmapFormat, BitmapHandle};
+use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::error::Error;
-use std::borrow::Cow;
 use std::cell::Cell;
 use swf::{Rectangle, Twips};
 
@@ -440,6 +440,14 @@ impl Context3D for WgpuContext3D {
     ) -> Result<Rc<dyn ruffle_render::backend::Texture>, Error> {
         let format = convert_texture_format(format)?;
 
+        // Wgpu doesn't support using this as a render attachment. Hopefully no swfs try
+        // to use it as one.
+        let render_attachment = if matches!(format, TextureFormat::Bc3RgbaUnorm) {
+            TextureUsages::empty()
+        } else {
+            TextureUsages::RENDER_ATTACHMENT
+        };
+
         if streaming_levels != 0 {
             return Err(Error::Unimplemented(
                 format!("streamingLevels={streaming_levels}").into(),
@@ -458,9 +466,7 @@ impl Context3D for WgpuContext3D {
             dimension: TextureDimension::D2,
             format,
             view_formats: &[format],
-            usage: TextureUsages::TEXTURE_BINDING
-                | TextureUsages::COPY_DST
-                | TextureUsages::RENDER_ATTACHMENT,
+            usage: TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_DST | render_attachment,
         });
         Ok(Rc::new(TextureWrapper { texture }))
     }
@@ -983,7 +989,7 @@ impl Context3D for WgpuContext3D {
                 self.current_pipeline.set_culling(face);
             }
             Context3DCommand::CopyBitmapToTexture {
-                source,
+                mut source,
                 dest,
                 layer,
             } => {
@@ -994,39 +1000,38 @@ impl Context3D for WgpuContext3D {
                 // If we were to use `self.buffer_command_encoder.copy_texture_to_texture`, the
                 // BitmapData's gpu texture might be modified before we actually submit
                 // `buffer_command_encoder` to the device.
-                let mut image_data = match (source.format(), dest.texture.format()) {
-                    (BitmapFormat::Rgba, wgpu::TextureFormat::Rgba8Unorm) => {
-                        Cow::Borrowed(source.data())
-                    }
-                    (source_format, dest_format) => {
-                        unimplemented!("Trying to copy from bitmap format {source_format:?} to texture format {dest_format:?}")
-                    }
-                };
+                let dest_format = dest.texture.format();
+                let mut bytes_per_row = dest_format.block_size(None).unwrap()
+                    * (dest.width() / dest_format.block_dimensions().0);
+
+                let rows_per_image = dest.height() / dest_format.block_dimensions().1;
 
                 // Wgpu requires us to pad the image rows to a multiple of COPY_BYTES_PER_ROW_ALIGNMENT
-                if (source.width() * 4) % COPY_BYTES_PER_ROW_ALIGNMENT != 0 {
-                    image_data = Cow::Owned(
-                        image_data
-                            .chunks_exact(source.width() as usize * 4)
-                            .flat_map(|row| {
-                                let padding_len = COPY_BYTES_PER_ROW_ALIGNMENT as usize
-                                    - (row.len() % COPY_BYTES_PER_ROW_ALIGNMENT as usize);
-                                let padding = vec![0; padding_len];
-                                row.iter().copied().chain(padding)
-                            })
-                            .collect(),
-                    )
+                if (dest.width() * 4) % COPY_BYTES_PER_ROW_ALIGNMENT != 0
+                    && matches!(dest.texture.format(), wgpu::TextureFormat::Rgba8Unorm)
+                {
+                    source = source
+                        .chunks_exact(dest.width() as usize * 4)
+                        .flat_map(|row| {
+                            let padding_len = COPY_BYTES_PER_ROW_ALIGNMENT as usize
+                                - (row.len() % COPY_BYTES_PER_ROW_ALIGNMENT as usize);
+                            let padding = vec![0; padding_len];
+                            row.iter().copied().chain(padding)
+                        })
+                        .collect();
+
+                    bytes_per_row = source.len() as u32 / dest.height();
                 }
 
                 let texture_buffer = self.descriptors.device.create_buffer(&BufferDescriptor {
                     label: None,
-                    size: image_data.len() as u64,
+                    size: source.len() as u64,
                     usage: BufferUsages::COPY_SRC,
                     mapped_at_creation: true,
                 });
 
                 let mut texture_buffer_view = texture_buffer.slice(..).get_mapped_range_mut();
-                texture_buffer_view.copy_from_slice(&image_data);
+                texture_buffer_view.copy_from_slice(&source);
                 drop(texture_buffer_view);
                 texture_buffer.unmap();
 
@@ -1036,8 +1041,8 @@ impl Context3D for WgpuContext3D {
                         // The copy source uses the padded image data, with larger rows
                         layout: wgpu::ImageDataLayout {
                             offset: 0,
-                            bytes_per_row: Some(image_data.len() as u32 / source.height()),
-                            rows_per_image: Some(source.height()),
+                            bytes_per_row: Some(bytes_per_row),
+                            rows_per_image: Some(rows_per_image),
                         },
                     },
                     wgpu::ImageCopyTexture {
@@ -1052,8 +1057,8 @@ impl Context3D for WgpuContext3D {
                     },
                     // The copy size uses the orignal image, with the original row size
                     wgpu::Extent3d {
-                        width: source.width(),
-                        height: source.height(),
+                        width: dest.width(),
+                        height: dest.height(),
                         depth_or_array_layers: 1,
                     },
                 );
@@ -1202,9 +1207,8 @@ pub struct ClearColor {
 
 fn convert_texture_format(input: Context3DTextureFormat) -> Result<wgpu::TextureFormat, Error> {
     match input {
-        // All of these formats are unsupported by wgpu to various degrees:
+        // Some of these formats are unsupported by wgpu to various degrees:
         // * Bgra doesn't exist in webgl
-        // * None of the other formats seem to exist at all in wgpu
         //
         // Instead, we just use Rgba8Unorm, which is the closest thing we have.
         // When we implement Texture.uploadFromByteArray, we'll need to convert
@@ -1221,7 +1225,7 @@ fn convert_texture_format(input: Context3DTextureFormat) -> Result<wgpu::Texture
         // error if we get an unexpected bitmap from ActionScript
         Context3DTextureFormat::BgrPacked => Ok(TextureFormat::Rgba8Unorm),
         // Starling claims that this is dxt5, which has an alpha channel
-        Context3DTextureFormat::CompressedAlpha => Ok(TextureFormat::Rgba8Unorm),
+        Context3DTextureFormat::CompressedAlpha => Ok(TextureFormat::Bc3RgbaUnorm),
         // Starling claims that this is dxt1. It's unclear if there's supposed
         // to be an alpha channel, so we're relying on SWFS doing "the right thing"
         // as with BgrPacked

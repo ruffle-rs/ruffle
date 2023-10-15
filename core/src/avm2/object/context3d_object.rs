@@ -16,7 +16,6 @@ use ruffle_render::backend::{
     Context3DTextureFormat, Context3DTriangleFace, Context3DVertexBufferFormat, ProgramType,
     Texture,
 };
-use ruffle_render::bitmap::{Bitmap, BitmapFormat};
 use ruffle_render::commands::CommandHandler;
 use std::cell::{Cell, Ref, RefMut};
 use std::rc::Rc;
@@ -340,22 +339,36 @@ impl<'gc> Context3DObject<'gc> {
             })
         });
     }
-
-    pub(crate) fn copy_bitmap_to_texture(
+    pub(crate) fn copy_bitmapdata_to_texture(
         &self,
         source: GcCell<'gc, BitmapData<'gc>>,
         dest: Rc<dyn Texture>,
         layer: u32,
     ) {
         let source = source.read();
+
+        assert_eq!(source.width(), dest.width(), "Mismatched width");
+        assert_eq!(source.height(), dest.height(), "Mismatched height");
+
         self.with_context_3d(|ctx| {
             ctx.process_command(Context3DCommand::CopyBitmapToTexture {
-                source: Bitmap::new(
-                    source.width(),
-                    source.height(),
-                    BitmapFormat::Rgba,
-                    source.pixels_rgba(),
-                ),
+                source: source.pixels_rgba(),
+                dest,
+                layer,
+            })
+        });
+    }
+
+    #[cfg_attr(not(feature = "jpegxr"), allow(unused))]
+    pub(crate) fn copy_pixels_to_texture(
+        &self,
+        source: Vec<u8>,
+        dest: Rc<dyn Texture>,
+        layer: u32,
+    ) {
+        self.with_context_3d(|ctx| {
+            ctx.process_command(Context3DCommand::CopyBitmapToTexture {
+                source,
                 dest,
                 layer,
             })

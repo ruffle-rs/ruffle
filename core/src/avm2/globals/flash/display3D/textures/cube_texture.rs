@@ -1,6 +1,6 @@
 use ruffle_render::backend::Context3DTextureFormat;
 
-use crate::avm2::globals::flash::display3D::textures::texture::do_compressed_upload;
+use crate::avm2::globals::flash::display3D::textures::atf_jpegxr::do_compressed_upload;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::Activation;
 use crate::avm2::TObject;
@@ -73,7 +73,7 @@ pub fn upload_compressed_texture_from_byte_array<'gc>(
         return Ok(Value::Undefined);
     }
 
-    do_compressed_upload(activation, texture, data, byte_array_offset, true)?;
+    do_compressed_upload(texture, data, byte_array_offset, true)?;
     Ok(Value::Undefined)
 }
 
@@ -87,7 +87,7 @@ pub fn upload_from_bitmap_data<'gc>(
             let side = args[1].coerce_to_u32(activation)?;
             let mip_level = args[2].coerce_to_u32(activation)?;
             if mip_level == 0 {
-                texture.context3d().copy_bitmap_to_texture(
+                texture.context3d().copy_bitmapdata_to_texture(
                     source.sync(),
                     texture.handle(),
                     // FIXME - is this right?
