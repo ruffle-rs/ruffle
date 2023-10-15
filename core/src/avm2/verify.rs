@@ -508,9 +508,7 @@ fn verify_block<'gc>(
             }
 
             // Ensure the global scope exists for these opcodes
-            Op::FindProperty { .. }
-            | Op::FindPropStrict { .. }
-            | Op::GetLex { .. } => {
+            Op::FindProperty { .. } | Op::FindPropStrict { .. } | Op::GetLex { .. } => {
                 if method_body.init_scope_depth + current_scope_depth == 0 {
                     return Err(Error::AvmError(verify_error(
                         activation,

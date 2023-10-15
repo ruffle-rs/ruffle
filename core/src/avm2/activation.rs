@@ -229,10 +229,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 let body = bytecode
                     .body()
                     .ok_or("Cannot execute non-native method (for script) without body")?;
-                (
-                    body.num_locals,
-                    body.max_stack,
-                )
+                (body.num_locals, body.max_stack)
             }
         };
         let mut local_registers = RegisterSet::new(num_locals + 1);
