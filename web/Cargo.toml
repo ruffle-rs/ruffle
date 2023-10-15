@@ -13,11 +13,12 @@ publish = false # This crate is useless alone, people should use the npm package
 crate-type = ["cdylib", "rlib"]
 
 [features]
-default = ["canvas", "console_error_panic_hook", "webgl", "wgpu-webgl", "ruffle_core/jpegxr"]
+default = ["canvas", "console_error_panic_hook", "webgl", "wgpu-webgl"]
 
 # core features
 avm_debug = ["ruffle_core/avm_debug"]
 lzma = ["ruffle_core/lzma"]
+jpegxr = ["ruffle_core/jpegxr"]
 
 # web features
 canvas = ["ruffle_render_canvas"]
