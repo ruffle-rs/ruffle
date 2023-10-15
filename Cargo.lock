@@ -5600,7 +5600,7 @@ checksum = "9193164d4de03a926d909d3bc7c30543cecb35400c02114792c2cae20d5e2dbb"
 [[package]]
 name = "wgpu"
 version = "0.17.1"
-source = "git+https://github.com/ruffle-rs/wgpu?branch=backport-shader-unconsumed#c4b878785fefbbbd8ad190dfffd02e74c0723a74"
+source = "git+https://github.com/gfx-rs/wgpu?branch=v0.17#49d16f748859e41af373f664ecd39b4916d1453c"
 dependencies = [
  "arrayvec",
  "cfg-if",
@@ -5624,7 +5624,7 @@ dependencies = [
 [[package]]
 name = "wgpu-core"
 version = "0.17.1"
-source = "git+https://github.com/ruffle-rs/wgpu?branch=backport-shader-unconsumed#c4b878785fefbbbd8ad190dfffd02e74c0723a74"
+source = "git+https://github.com/gfx-rs/wgpu?branch=v0.17#49d16f748859e41af373f664ecd39b4916d1453c"
 dependencies = [
  "arrayvec",
  "bit-vec",
@@ -5647,8 +5647,8 @@ dependencies = [
 
 [[package]]
 name = "wgpu-hal"
-version = "0.17.1"
-source = "git+https://github.com/ruffle-rs/wgpu?branch=backport-shader-unconsumed#c4b878785fefbbbd8ad190dfffd02e74c0723a74"
+version = "0.17.2"
+source = "git+https://github.com/gfx-rs/wgpu?branch=v0.17#49d16f748859e41af373f664ecd39b4916d1453c"
 dependencies = [
  "android_system_properties",
  "arrayvec",
@@ -5666,7 +5666,7 @@ dependencies = [
  "js-sys",
  "khronos-egl",
  "libc",
- "libloading 0.8.1",
+ "libloading 0.7.4",
  "log",
  "metal",
  "naga",
@@ -5688,7 +5688,7 @@ dependencies = [
 [[package]]
 name = "wgpu-types"
 version = "0.17.0"
-source = "git+https://github.com/ruffle-rs/wgpu?branch=backport-shader-unconsumed#c4b878785fefbbbd8ad190dfffd02e74c0723a74"
+source = "git+https://github.com/gfx-rs/wgpu?branch=v0.17#49d16f748859e41af373f664ecd39b4916d1453c"
 dependencies = [
  "bitflags 2.4.0",
  "js-sys",
