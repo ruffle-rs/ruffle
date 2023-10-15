@@ -1,4 +1,4 @@
-import type { DataLoadOptions, URLLoadOptions } from "./load-options";
+import { BaseLoadOptions } from "./load-options";
 import { currentScriptURL, isExtension } from "./current-script";
 
 /**
@@ -18,9 +18,7 @@ import { currentScriptURL, isExtension } from "./current-script";
  * @param config The `window.RufflePlayer.config` object.
  * @returns The public path for the given source.
  */
-export function publicPath(
-    config: URLLoadOptions | DataLoadOptions | object,
-): string {
+export function publicPath(config: BaseLoadOptions): string {
     // Default to the directory where this script resides.
     let path = currentScriptURL?.href ?? "";
     if (
