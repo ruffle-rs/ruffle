@@ -14,10 +14,23 @@ pub fn verify_method<'gc>(
         .body()
         .expect("Cannot verify non-native method without body!");
 
+    let param_count = method.method().params.len();
+    let locals_count = body.num_locals;
+
+    // Ensure there are enough local variables
+    // to fit the parameters in.
+    if (locals_count as usize) < param_count + 1 {
+        return Err(Error::AvmError(verify_error(
+            activation,
+            "Error #1107: The ABC data is corrupt, attempt to read out of bounds.",
+            1107,
+        )?));
+    }
+
     let mut new_body = AbcMethodBody {
         method: body.method,
         max_stack: body.max_stack,
-        num_locals: body.num_locals,
+        num_locals: locals_count,
         init_scope_depth: body.init_scope_depth,
         max_scope_depth: body.max_scope_depth,
         code: vec![],
