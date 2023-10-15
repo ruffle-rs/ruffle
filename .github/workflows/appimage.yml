@@ -32,17 +32,23 @@ jobs:
         run: sed -i 's|AI\x02|\x00\x00\x00|' /usr/local/bin/appimagetool
       
       - name: Install Cargo AppImage
-        run: cargo install --version 1.4.2 cargo-appimage
+        run: cargo install cargo-packager --locked
         
       - name: Making empty src directory, to bypass issue with Cargo AppImage
         run: mkdir src
         
       - name: Show directory
         run: ls
+
+      - name: Go into package directory
+        run: cd desktop
+
+      - name: Cargo Packager
+        run: cargo packager --release
         
-      - name: AppImage Export
-        # APPIMAGE_EXTRACT_AND_RUN=1
-        run: cargo appimage --package ruffle_desktop --verbose
+      #- name: AppImage Export
+      #  # APPIMAGE_EXTRACT_AND_RUN=1
+      #  run: cargo appimage --package ruffle_desktop --verbose
       
       - name: Show directory
         run: ls
