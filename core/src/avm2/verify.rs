@@ -1,14 +1,19 @@
 use crate::avm2::error::verify_error;
+use crate::avm2::method::BytecodeMethod;
 use crate::avm2::{Activation, Error};
 use std::collections::HashMap;
 use swf::avm2::read::Reader;
-use swf::avm2::types::{MethodBody as AbcMethodBody, Op};
+use swf::avm2::types::{MethodBody as AbcMethodBody, MethodFlags as AbcMethodFlags, Op};
 use swf::error::Error as AbcReadError;
 
 pub fn verify_method<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    body: &AbcMethodBody,
+    method: &BytecodeMethod<'gc>,
 ) -> Result<AbcMethodBody, Error<'gc>> {
+    let body = method
+        .body()
+        .expect("Cannot verify non-native method without body!");
+
     let mut new_body = AbcMethodBody {
         method: body.method,
         max_stack: body.max_stack,
@@ -72,7 +77,7 @@ pub fn verify_method<'gc>(
 
     verify_block(
         activation,
-        body,
+        method,
         idx_to_byte_offset.as_slice(),
         &byte_offset_to_idx,
         &mut verified_blocks,
@@ -85,8 +90,6 @@ pub fn verify_method<'gc>(
 
     // Adjust exception offsets
     for exception in new_body.exceptions.iter_mut() {
-        // FIXME: VerifyError instead of panicking if these don't match to a branch target.
-
         // FIXME: This is actually wrong, we should be using the byte offsets, not the opcode offsets.
         // avmplus allows for from/to (but not targets) that aren't on a opcode, and some obfuscated
         // SWFs have them. FFDEC handles them correctly, stepping forward byte-by-byte until it
@@ -161,7 +164,7 @@ pub fn verify_method<'gc>(
         // but not getlocal0, setlocal0, and add)
         verify_block(
             activation,
-            body,
+            method,
             idx_to_byte_offset.as_slice(),
             &byte_offset_to_idx,
             &mut verified_blocks,
@@ -254,7 +257,7 @@ fn adjust_jump_offset<'gc>(
 
 fn verify_block<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    method_body: &AbcMethodBody,
+    method: &BytecodeMethod<'gc>,
     idx_to_byte_offset: &[i32],
     byte_offset_to_idx: &HashMap<i32, i32>,
     verified_blocks: &mut Vec<(i32, Option<i32>)>,
@@ -268,10 +271,14 @@ fn verify_block<'gc>(
         return Ok(());
     }
 
+    let body = method
+        .body()
+        .expect("Cannot verify non-native method without body!");
+
     verified_blocks.push((start_idx, end_idx));
 
     let initial_scope_depth = current_scope_depth;
-    let max_scope_depth = method_body.max_scope_depth - method_body.init_scope_depth;
+    let max_scope_depth = body.max_scope_depth - body.init_scope_depth;
 
     let mut i = start_idx;
     while (i as usize) < ops.len() {
@@ -315,7 +322,7 @@ fn verify_block<'gc>(
                     if matches!(op, Op::Jump { .. }) {
                         verify_block(
                             activation,
-                            method_body,
+                            method,
                             idx_to_byte_offset,
                             byte_offset_to_idx,
                             verified_blocks,
@@ -331,7 +338,7 @@ fn verify_block<'gc>(
                     } else {
                         verify_block(
                             activation,
-                            method_body,
+                            method,
                             idx_to_byte_offset,
                             byte_offset_to_idx,
                             verified_blocks,
@@ -368,7 +375,7 @@ fn verify_block<'gc>(
 
                 verify_block(
                     activation,
-                    method_body,
+                    method,
                     idx_to_byte_offset,
                     byte_offset_to_idx,
                     verified_blocks,
@@ -390,7 +397,7 @@ fn verify_block<'gc>(
 
                     verify_block(
                         activation,
-                        method_body,
+                        method,
                         idx_to_byte_offset,
                         byte_offset_to_idx,
                         verified_blocks,
@@ -416,7 +423,7 @@ fn verify_block<'gc>(
             | Op::DecLocalI { index }
             | Op::IncLocal { index }
             | Op::IncLocalI { index } => {
-                let max = method_body.num_locals;
+                let max = body.num_locals;
                 if *index >= max {
                     return Err(Error::AvmError(verify_error(
                         activation,
@@ -430,7 +437,7 @@ fn verify_block<'gc>(
                 object_register,
                 index_register,
             } => {
-                let max = method_body.num_locals;
+                let max = body.num_locals;
 
                 // NOTE: This is the correct order (first check object register, then check index register)
                 if *object_register >= max {
@@ -460,7 +467,7 @@ fn verify_block<'gc>(
                 ..
             } => {
                 if *is_local_register {
-                    let max = method_body.num_locals;
+                    let max = body.num_locals;
                     if *register as u32 >= max {
                         return Err(Error::AvmError(verify_error(
                             activation,
@@ -509,12 +516,17 @@ fn verify_block<'gc>(
 
             // Ensure the global scope exists for these opcodes
             Op::FindProperty { .. } | Op::FindPropStrict { .. } | Op::GetLex { .. } => {
-                if method_body.init_scope_depth + current_scope_depth == 0 {
-                    return Err(Error::AvmError(verify_error(
-                        activation,
-                        "Error #1013: Cannot call OP_findproperty when scopeDepth is 0.",
-                        1013,
-                    )?));
+                // FP checks the scope that the function was defined in
+                // for freestanding functions. We can't do that easily,
+                // so just avoid this verification step for them.
+                if !method.is_function {
+                    if body.init_scope_depth + current_scope_depth == 0 {
+                        return Err(Error::AvmError(verify_error(
+                            activation,
+                            "Error #1013: Cannot call OP_findproperty when scopeDepth is 0.",
+                            1013,
+                        )?));
+                    }
                 }
             }
 
@@ -529,6 +541,20 @@ fn verify_block<'gc>(
                         1051,
                     )?
                 }));
+            }
+
+            Op::NewActivation => {
+                if !method
+                    .method()
+                    .flags
+                    .contains(AbcMethodFlags::NEED_ACTIVATION)
+                {
+                    return Err(Error::AvmError(verify_error(
+                        activation,
+                        "Error #1113: OP_newactivation used in method without NEED_ACTIVATION flag.",
+                        1113,
+                    )?));
+                }
             }
 
             _ => {}

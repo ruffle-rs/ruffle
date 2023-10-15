@@ -230,11 +230,8 @@ impl<'gc> BytecodeMethod<'gc> {
     pub fn verify(&self, activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
         // TODO: avmplus seems to eaglerly verify some methods
 
-        *self.verified_method_body.borrow_mut() = Some(crate::avm2::verify::verify_method(
-            activation,
-            self.body()
-                .expect("Cannot execute non-native method without body!"),
-        )?);
+        *self.verified_method_body.borrow_mut() =
+            Some(crate::avm2::verify::verify_method(activation, self)?);
 
         Ok(())
     }
