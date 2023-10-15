@@ -86,18 +86,74 @@ pub fn verify_method<'gc>(
     // Adjust exception offsets
     for exception in new_body.exceptions.iter_mut() {
         // FIXME: VerifyError instead of panicking if these don't match to a branch target.
-        exception.from_offset = byte_offset_to_idx
+
+        // FIXME: This is actually wrong, we should be using the byte offsets, not the opcode offsets.
+        // avmplus allows for from/to (but not targets) that aren't on a opcode, and some obfuscated
+        // SWFs have them. FFDEC handles them correctly, stepping forward byte-by-byte until it
+        // reaches the next opcode.
+        let mut from_offset = byte_offset_to_idx
             .get(&(exception.from_offset as i32))
-            .copied()
-            .unwrap() as u32;
-        exception.to_offset = byte_offset_to_idx
+            .copied();
+
+        let mut offs = 0;
+        while from_offset.is_none() {
+            from_offset = byte_offset_to_idx
+                .get(&((exception.from_offset + offs) as i32))
+                .copied();
+            offs += 1;
+            if offs as usize >= new_code.len() {
+                return Err(Error::AvmError(verify_error(
+                    activation,
+                    "Error #1054: Illegal range or target offsets in exception handler.",
+                    1054,
+                )?));
+            }
+        }
+
+        // Now for the `to_offset`.
+        let mut to_offset = byte_offset_to_idx
             .get(&(exception.to_offset as i32))
-            .copied()
-            .unwrap() as u32;
+            .copied();
+
+        let mut offs = 0;
+        while from_offset.is_none() {
+            to_offset = byte_offset_to_idx
+                .get(&((exception.to_offset + offs) as i32))
+                .copied();
+            if offs == 0 {
+                return Err(Error::AvmError(verify_error(
+                    activation,
+                    "Error #1054: Illegal range or target offsets in exception handler.",
+                    1054,
+                )?));
+            }
+            offs -= 1;
+        }
+
+        if to_offset.unwrap() < from_offset.unwrap() {
+            return Err(Error::AvmError(verify_error(
+                activation,
+                "Error #1054: Illegal range or target offsets in exception handler.",
+                1054,
+            )?));
+        }
+
+        exception.from_offset = from_offset.unwrap() as u32;
+        exception.to_offset = to_offset.unwrap() as u32;
+
+        // FIXME: Use correct error instead of `.unwrap()`
         exception.target_offset = byte_offset_to_idx
             .get(&(exception.target_offset as i32))
             .copied()
             .unwrap() as u32;
+
+        if exception.target_offset < exception.to_offset {
+            return Err(Error::AvmError(verify_error(
+                activation,
+                "Error #1054: Illegal range or target offsets in exception handler.",
+                1054,
+            )?));
+        }
 
         // FIXME: avmplus only verifies the exception target
         // if there's an opcode within `to` and `from` that could
@@ -447,6 +503,19 @@ fn verify_block<'gc>(
                         activation,
                         &format!("Error #1019: Getscopeobject {} is out of bounds.", index),
                         1019,
+                    )?));
+                }
+            }
+
+            // Ensure the global scope exists for these opcodes
+            Op::FindProperty { .. }
+            | Op::FindPropStrict { .. }
+            | Op::GetLex { .. } => {
+                if method_body.init_scope_depth + current_scope_depth == 0 {
+                    return Err(Error::AvmError(verify_error(
+                        activation,
+                        "Error #1013: Cannot call OP_findproperty when scopeDepth is 0.",
+                        1013,
                     )?));
                 }
             }
