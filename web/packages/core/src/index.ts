@@ -1,15 +1,12 @@
-export * from "./load-ruffle";
-export * from "./plugin-polyfill";
+/**
+ * This is the public API of the web version of Ruffle.
+ *
+ * Types should only be exported here if they are intended to be part of that public API, not internal.
+ */
+
 export * from "./polyfills";
 export * from "./public-api";
-export * from "./public-path";
-export * from "./register-element";
-export * from "./ruffle-embed";
-export * from "./ruffle-imports";
-export * from "./ruffle-object";
 export * from "./ruffle-player";
-export * from "./flash-identifiers";
-export * from "./shadow-template";
 export * from "./version";
 export * from "./version-range";
 export * from "./config";
