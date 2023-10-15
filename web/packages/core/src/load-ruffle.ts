@@ -115,7 +115,7 @@ type Ruffle =
     | (typeof import("../dist/ruffle_web"))["Ruffle"]
     | (typeof import("../dist/ruffle_web-wasm_extensions"))["Ruffle"];
 
-let lastLoaded: Promise<Ruffle> | null = null;
+let nativeConstructor: Promise<Ruffle> | null = null;
 
 /**
  * Obtain an instance of `Ruffle`.
@@ -131,9 +131,9 @@ export function loadRuffle(
     config: BaseLoadOptions,
     progressCallback?: ProgressCallback,
 ): Promise<Ruffle> {
-    if (lastLoaded === null) {
-        lastLoaded = fetchRuffle(config, progressCallback);
+    if (nativeConstructor === null) {
+        nativeConstructor = fetchRuffle(config, progressCallback);
     }
 
-    return lastLoaded;
+    return nativeConstructor;
 }
