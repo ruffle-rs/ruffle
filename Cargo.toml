@@ -83,9 +83,10 @@ inherits = "release"
 [profile.web-wasm-extensions]
 inherits = "release"
 
-# FIXME - remove this when wgpu v0.18 is released
+# The `v0.17` branch is a single backport commit ahead of the `v0.17.2` release,
+# which we need. FIXME: Remove when wgpu `v0.18` is released and we can switch to it.
 [patch.crates-io]
-wgpu = { git = "https://github.com/ruffle-rs/wgpu", branch = "backport-shader-unconsumed" }
+wgpu = { git = "https://github.com/gfx-rs/wgpu", branch = "v0.17" }
 
 [patch.'https://github.com/gfx-rs/naga']
 naga = "0.13.0"
