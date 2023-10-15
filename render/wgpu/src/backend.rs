@@ -1097,18 +1097,16 @@ async fn request_device(
         features |= wgpu::Features::PUSH_CONSTANTS;
     }
 
-    if adapter
-        .features()
-        .contains(wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES)
-    {
-        features |= wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES;
-    }
+    let try_features = [
+        wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES,
+        wgpu::Features::SHADER_UNUSED_VERTEX_OUTPUT,
+        wgpu::Features::TEXTURE_COMPRESSION_BC,
+    ];
 
-    if adapter
-        .features()
-        .contains(wgpu::Features::SHADER_UNUSED_VERTEX_OUTPUT)
-    {
-        features |= wgpu::Features::SHADER_UNUSED_VERTEX_OUTPUT;
+    for feature in try_features {
+        if adapter.features().contains(feature) {
+            features |= feature;
+        }
     }
 
     adapter

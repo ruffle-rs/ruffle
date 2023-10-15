@@ -57,7 +57,7 @@ png = { version = "0.17.10", optional = true }
 flv-rs = { path = "../flv" }
 async-channel = "1.9.0"
 jpegxr = { git = "https://github.com/ruffle-rs/jpegxr", branch = "ruffle", optional = true }
-image = { version = "0.24.7", default-features = false, features = ["tiff"] }
+image = { version = "0.24.7", default-features = false, features = ["tiff", "dxt"] }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
 version = "0.3.28"
@@ -78,7 +78,7 @@ audio = ["dasp"]
 known_stubs = ["linkme"]
 default_compatibility_rules = []
 egui = ["dep:egui", "dep:egui_extras", "png"]
-jpegxr = ["dep:jpegxr"]
+jpegxr = ["dep:jpegxr", "lzma"]
 default_font = []
 
 [build-dependencies]
