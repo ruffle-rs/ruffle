@@ -21,5 +21,6 @@ ENV PATH="/root/.cargo/bin:$PATH"
 RUN cargo install wasm-bindgen-cli --version 0.2.87
 COPY . ruffle
 WORKDIR ruffle/web
+ENV CARGO_FEATURES=jpegxr
 RUN npm install --omit=optional
 RUN npm run build:repro
