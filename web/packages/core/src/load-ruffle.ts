@@ -9,9 +9,11 @@ import {
     signExtensions,
     referenceTypes,
 } from "wasm-feature-detect";
+import type { Ruffle } from "../dist/ruffle_web";
 import { setPolyfillsOnLoad } from "./js-polyfills";
 import { publicPath } from "./public-path";
 import { BaseLoadOptions } from "./load-options";
+import { RufflePlayer } from "./ruffle-player";
 
 declare global {
     let __webpack_public_path__: string;
@@ -111,23 +113,22 @@ async function fetchRuffle(
     return Ruffle;
 }
 
-type Ruffle =
-    | (typeof import("../dist/ruffle_web"))["Ruffle"]
-    | (typeof import("../dist/ruffle_web-wasm_extensions"))["Ruffle"];
-
-let nativeConstructor: Promise<Ruffle> | null = null;
+let nativeConstructor: Promise<typeof Ruffle> | null = null;
 
 /**
  * Obtain an instance of `Ruffle`.
  *
  * This function returns a promise which yields `Ruffle` asynchronously.
  *
+ * @param container The container that the resulting canvas will be added to.
+ * @param player The `RufflePlayer` object responsible for this instance of Ruffle.
  * @param config The `window.RufflePlayer.config` object.
  * @param progressCallback The callback that will be run with Ruffle's download progress.
- * @returns A ruffle constructor that may be used to create new Ruffle
- * instances.
+ * @returns A ruffle instance.
  */
-export function loadRuffle(
+export async function loadRuffle(
+    container: HTMLElement,
+    player: RufflePlayer,
     config: BaseLoadOptions,
     progressCallback?: ProgressCallback,
 ): Promise<Ruffle> {
@@ -135,5 +136,6 @@ export function loadRuffle(
         nativeConstructor = fetchRuffle(config, progressCallback);
     }
 
-    return nativeConstructor;
+    const constructor = await nativeConstructor;
+    return new constructor(container, player, config);
 }
