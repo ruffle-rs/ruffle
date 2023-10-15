@@ -82,7 +82,14 @@ jobs:
           RUSTDOCFLAGS: -D warnings
 
       - name: Run tests with image tests
+        if: runner.os != 'macOS'
         run: cargo test --all --locked --features imgtests,lzma,jpegxr
+        env:
+          XDG_RUNTIME_DIR: '' # dummy value, just to silence warnings about it missing
+
+      - name: Run tests without image tests
+        if: runner.os == 'macOS'
+        run: cargo test --all --locked --features lzma,jpegxr
         env:
           XDG_RUNTIME_DIR: '' # dummy value, just to silence warnings about it missing
 
