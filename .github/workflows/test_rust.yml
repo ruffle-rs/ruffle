@@ -76,6 +76,10 @@ jobs:
         # Don't fail the build for clippy on nightly, since we get a lot of false-positives
         run: cargo clippy --all --all-features --tests ${{ (matrix.rust_version != 'nightly' && '-- -D warnings') || '' }}
 
+      - name: Check licensing and duplicates in used crates
+        if: ${{ runner.os == 'Linux' && matrix.rust_version == 'stable' }}
+        uses: EmbarkStudios/cargo-deny-action@v1
+
       - name: Check documentation
         run: cargo doc --no-deps --all-features
         env:
