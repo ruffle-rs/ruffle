@@ -8,11 +8,11 @@ repository.workspace = true
 version.workspace = true
 
 [dependencies]
-bitflags = "2.4.0"
+bitflags = "2.4.1"
 naga = { workspace = true }
 num-derive = "0.4.1"
 num-traits = "0.2.17"
 
 [dev-dependencies]
-insta = "1.33.0"
+insta = "1.34.0"
 naga = { workspace = true, features = ["wgsl-out", "validate"] }

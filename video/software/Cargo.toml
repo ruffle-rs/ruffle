@@ -13,7 +13,7 @@ ruffle_video = { path = ".." }
 swf = { path = "../../swf" }
 generational-arena = "0.2.9"
 thiserror = "1.0"
-flate2 = "1.0.27"
+flate2 = "1.0.28"
 log = "0.4"
 
 h263-rs = { git = "https://github.com/ruffle-rs/h263-rs", rev = "16700664e2b3334f0a930f99af86011aebee14cc", optional = true }

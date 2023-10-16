@@ -13,7 +13,7 @@ swf = { path = "../swf"}
 tracing = { workspace = true }
 gif = "0.12.0"
 png = "0.17.10"
-flate2 = "1.0.27"
+flate2 = "1.0.28"
 smallvec = { version = "1.11.1", features = ["union"] }
 downcast-rs = "1.2.0"
 lyon = { version = "1.0.1", optional = true }
@@ -21,7 +21,7 @@ lyon_geom = "1.0.4"
 thiserror = "1.0"
 wasm-bindgen = { version = "=0.2.87", optional = true }
 enum-map = "2.6.3"
-serde = { version = "1.0.188", features = ["derive"] }
+serde = { version = "1.0.189", features = ["derive"] }
 clap = { version = "4.4.6", features = ["derive"], optional = true }
 h263-rs-yuv = { git = "https://github.com/ruffle-rs/h263-rs", rev = "16700664e2b3334f0a930f99af86011aebee14cc"}
 lru = "0.12.0"
