@@ -6,6 +6,48 @@ use swf::avm2::read::Reader;
 use swf::avm2::types::{MethodBody as AbcMethodBody, MethodFlags as AbcMethodFlags, Op};
 use swf::error::Error as AbcReadError;
 
+#[derive(Clone)]
+enum ValueType {
+    Any,
+    // More types should be added here eventually
+}
+
+impl std::fmt::Display for ValueType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ValueType::Any => write!(f, "*"),
+        }
+    }
+}
+
+#[derive(Clone)]
+struct StateScope {
+    value_type: ValueType,
+
+    is_with: bool,
+}
+
+impl StateScope {
+    pub fn new_any() -> Self {
+        StateScope {
+            value_type: ValueType::Any,
+            is_with: false,
+        }
+    }
+
+    pub fn new_any_with() -> Self {
+        StateScope {
+            value_type: ValueType::Any,
+            is_with: true,
+        }
+    }
+}
+
+#[allow(dead_code)]
+struct StateValue {
+    value_type: ValueType,
+}
+
 pub fn verify_method<'gc>(
     activation: &mut Activation<'_, 'gc>,
     method: &BytecodeMethod<'gc>,
@@ -84,6 +126,8 @@ pub fn verify_method<'gc>(
     // Avoid verifying the same blocks again.
     let mut verified_blocks = Vec::new();
 
+    let mut scope_stack = Vec::new();
+
     verify_block(
         activation,
         method,
@@ -93,7 +137,7 @@ pub fn verify_method<'gc>(
         new_code.as_slice(),
         0,
         None,
-        0,
+        &mut scope_stack,
         true,
     )?;
 
@@ -155,6 +199,8 @@ pub fn verify_method<'gc>(
         // if there's an opcode within `to` and `from` that could
         // potentially throw an error (e.g. getproperty, and findpropstrict,
         // but not getlocal0, setlocal0, and add)
+        let mut scope_stack = Vec::new();
+
         verify_block(
             activation,
             method,
@@ -164,7 +210,7 @@ pub fn verify_method<'gc>(
             new_code.as_slice(),
             exception.target_offset as i32,
             None,
-            0,
+            &mut scope_stack,
             true,
         )?;
     }
@@ -257,7 +303,7 @@ fn verify_block<'gc>(
     ops: &[Op],
     start_idx: i32,
     end_idx: Option<i32>,
-    mut current_scope_depth: u32,
+    scope_stack: &mut Vec<StateScope>,
     top_level: bool,
 ) -> Result<(), Error<'gc>> {
     if verified_blocks.iter().any(|o| *o == (start_idx, end_idx)) {
@@ -270,8 +316,9 @@ fn verify_block<'gc>(
 
     verified_blocks.push((start_idx, end_idx));
 
-    let initial_scope_depth = current_scope_depth;
-    let max_scope_depth = body.max_scope_depth - body.init_scope_depth;
+    let initial_scope_stack = scope_stack.clone();
+    let initial_scope_depth = scope_stack.len();
+    let max_scope_depth = (body.max_scope_depth - body.init_scope_depth) as usize;
 
     let mut i = start_idx;
     while (i as usize) < ops.len() {
@@ -322,7 +369,7 @@ fn verify_block<'gc>(
                             ops,
                             end + 1,
                             None,
-                            current_scope_depth,
+                            &mut scope_stack.clone(),
                             false,
                         )?;
 
@@ -338,7 +385,7 @@ fn verify_block<'gc>(
                             ops,
                             start,
                             Some(end),
-                            current_scope_depth,
+                            &mut scope_stack.clone(),
                             false,
                         )?;
                         if op_idx > i {
@@ -375,7 +422,7 @@ fn verify_block<'gc>(
                     ops,
                     default_idx,
                     None,
-                    current_scope_depth,
+                    &mut scope_stack.clone(),
                     false,
                 )?;
                 for case in case_offsets.iter() {
@@ -397,7 +444,7 @@ fn verify_block<'gc>(
                         ops,
                         case_idx,
                         None,
-                        current_scope_depth,
+                        &mut scope_stack.clone(),
                         false,
                     )?;
                 }
@@ -450,9 +497,20 @@ fn verify_block<'gc>(
             }
 
             // Scope stack-related verifications
-            Op::PushWith | Op::PushScope => {
-                current_scope_depth += 1;
-                if current_scope_depth > max_scope_depth {
+            Op::PushWith => {
+                scope_stack.push(StateScope::new_any_with());
+                if scope_stack.len() > max_scope_depth {
+                    return Err(Error::AvmError(verify_error(
+                        activation,
+                        "Error #1017: Scope stack overflow occurred.",
+                        1018,
+                    )?));
+                }
+            }
+
+            Op::PushScope => {
+                scope_stack.push(StateScope::new_any());
+                if scope_stack.len() > max_scope_depth {
                     return Err(Error::AvmError(verify_error(
                         activation,
                         "Error #1017: Scope stack overflow occurred.",
@@ -462,18 +520,18 @@ fn verify_block<'gc>(
             }
 
             Op::PopScope => {
-                if current_scope_depth == 0 {
+                if scope_stack.len() == 0 {
                     return Err(Error::AvmError(verify_error(
                         activation,
                         "Error #1018: Scope stack underflow occurred.",
                         1018,
                     )?));
                 }
-                current_scope_depth -= 1;
+                scope_stack.pop();
             }
 
             Op::GetScopeObject { index } => {
-                if (index + 1) as u32 > current_scope_depth {
+                if (index + 1) as usize > scope_stack.len() {
                     return Err(Error::AvmError(verify_error(
                         activation,
                         &format!("Error #1019: Getscopeobject {} is out of bounds.", index),
@@ -488,7 +546,7 @@ fn verify_block<'gc>(
                 // for freestanding functions. We can't do that easily,
                 // so just avoid this verification step for them.
                 if !method.is_function {
-                    if body.init_scope_depth + current_scope_depth == 0 {
+                    if body.init_scope_depth as usize + scope_stack.len() == 0 {
                         return Err(Error::AvmError(verify_error(
                             activation,
                             "Error #1013: Cannot call OP_findproperty when scopeDepth is 0.",
@@ -528,7 +586,7 @@ fn verify_block<'gc>(
             Op::GetLex { index } => {
                 // See comment for FindProperty/FindPropStrict.
                 if !method.is_function {
-                    if body.init_scope_depth + current_scope_depth == 0 {
+                    if body.init_scope_depth as usize + scope_stack.len() == 0 {
                         return Err(Error::AvmError(verify_error(
                             activation,
                             "Error #1013: Cannot call OP_findproperty when scopeDepth is 0.",
@@ -554,15 +612,31 @@ fn verify_block<'gc>(
         }
         if let Some(end_idx) = end_idx {
             if i >= end_idx {
-                if !top_level && current_scope_depth != initial_scope_depth {
+                if !top_level && scope_stack.len() != initial_scope_depth {
                     return Err(Error::AvmError(verify_error(
                         activation,
                         &format!(
                             "Error #1031: Scope depth unbalanced. {} != {}.",
-                            current_scope_depth, initial_scope_depth
+                            scope_stack.len(),
+                            initial_scope_depth
                         ),
                         1031,
                     )?));
+                }
+
+                for scope_idx in 0..scope_stack.len() {
+                    let original_scope = &initial_scope_stack[scope_idx];
+                    let current_scope = &scope_stack[scope_idx];
+                    if original_scope.is_with != current_scope.is_with {
+                        return Err(Error::AvmError(verify_error(
+                            activation,
+                            &format!(
+                                "Error #1068: {} and {} cannot be reconciled.",
+                                original_scope.value_type, current_scope.value_type
+                            ),
+                            1068,
+                        )?));
+                    }
                 }
                 return Ok(());
             }
