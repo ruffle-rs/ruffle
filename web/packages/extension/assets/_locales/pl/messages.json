@@ -2,6 +2,15 @@
     "settings_ruffle_enable": {
         "message": "Odtwarzaj zawartość Flash w Ruffle"
     },
+    "settings_ignore_optout": {
+        "message": "Odtwarzaj zawartość Flash nawet na stronach uniemożliwiających Ruffle"
+    },
+    "settings_show_swf_download": {
+        "message": "Pokaż pobieranie SWF w menu kontekstowym"
+    },
+    "settings_autostart": {
+        "message": "Odtwarzaj automatycznie bez ekranu powitalnego (następnie kliknij aby cofnąć wyciszenie)"
+    },
     "settings_log_level": {
         "message": "Poziom rejestrowania"
     },
@@ -13,6 +22,12 @@
     },
     "settings_log_level_info": {
         "message": "Info"
+    },
+    "settings_max_execution_duration": {
+        "message": "Maksymalny dozwolony czas wykonania ActionScript (w sekundach)"
+    },
+    "settings_player_version": {
+        "message": "Numer wersji Flash odtwarzacza do emulowania (zakres 1-32)"
     },
     "settings_preferred_renderer": {
         "message": "Preferowany renderer"
@@ -26,14 +41,53 @@
     "settings_reset": {
         "message": "Resetuj ustawienia"
     },
+    "settings_reset_confirm": {
+        "message": "Czy na pewno chcesz przywrócić ustawienia Ruffle do oryginalnych domyślnych?"
+    },
+    "status_init": {
+        "message": "Czytanie bieżącej karty…"
+    },
     "status_no_tabs": {
         "message": "Brak aktywnej karty."
+    },
+    "status_tabs_error": {
+        "message": "Wystąpił błąd podczas wyszukiwania bieżącej karty."
+    },
+    "status_message_init": {
+        "message": "Sprawdzanie statusu Ruffle na bieżącej karcie…"
+    },
+    "status_result_running": {
+        "message": "Ruffle jest załadowany i gotowy do uruchomienia zawartości Flash na bieżącej karcie."
+    },
+    "status_result_running_protected": {
+        "message": "Ruffle jest załadowany i uruchamia zawartość Flasha, której żądałeś."
+    },
+    "status_result_optout": {
+        "message": "Ruffle nie jest załadowany, ponieważ bieżąca strona oznaczyła się jako niekompatybilna."
+    },
+    "status_result_disabled": {
+        "message": "Ruffle nie jest załadowany, ponieważ jest wyłączony."
+    },
+    "status_result_error": {
+        "message": "Wystąpił błąd podczas zapytania bieżącej karty o Ruffle."
+    },
+    "status_result_protected": {
+        "message": "Ruffle nie może załadować się na chronionych stronach przeglądarki."
+    },
+    "action_reload": {
+        "message": "Przeładuj kartę aby zastosować zmiany"
+    },
+    "open_player_page": {
+        "message": "Otwórz Odtwarzacz SWF"
     },
     "open_settings_page": {
         "message": "Otwórz stronę ustawień"
     },
     "settings_page": {
         "message": "Strona ustawień"
+    },
+    "description": {
+        "message": "Wrzuć Flash z powrotem na stronę, na której się znajduje."
     },
     "save_settings": {
         "message": "Zapisz ustawienia"
