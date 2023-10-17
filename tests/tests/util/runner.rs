@@ -3,6 +3,7 @@ use crate::util::image_trigger::ImageTrigger;
 use crate::util::navigator::TestNavigatorBackend;
 use crate::util::options::ImageComparison;
 use crate::util::test::Test;
+use crate::util::test_ui::TestUiBackend;
 use anyhow::{anyhow, Result};
 use ruffle_core::backend::audio::{
     swf, AudioBackend, AudioMixer, DecodeError, RegisterError, SoundHandle, SoundInstanceHandle,
@@ -118,6 +119,7 @@ pub fn run_swf(
         .with_navigator(navigator)
         .with_max_execution_duration(Duration::from_secs(300))
         .with_fs_commands(Box::new(fs_command_provider))
+        .with_ui(TestUiBackend)
         .with_viewport_dimensions(
             movie.width().to_pixels() as u32,
             movie.height().to_pixels() as u32,
@@ -328,16 +330,16 @@ fn capture_and_compare_image(
     _base_path: &Path,
     _player: &Arc<Mutex<Player>>,
     _wgpu_descriptors: Option<&Arc<Descriptors>>,
-    _name: &String,
+    _name: &str,
     _image_comparison: ImageComparison,
     known_failure: bool,
 ) -> Result<()> {
     if known_failure {
         // It's possible that the trace output matched but the image might not.
         // If we aren't checking the image, pretend the match failed (which makes it actually pass, since it's expecting failure).
-        return Err(anyhow!(
+        Err(anyhow!(
             "Not checking images, pretending this failed since we don't know if it worked."
-        ));
+        ))
     } else {
         Ok(())
     }

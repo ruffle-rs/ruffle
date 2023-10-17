@@ -1,8 +1,8 @@
 //! Management of async loaders
 
-use crate::avm1::ExecutionReason;
 use crate::avm1::{Activation, ActivationIdentifier};
 use crate::avm1::{Attribute, Avm1};
+use crate::avm1::{ExecutionReason, NativeObject};
 use crate::avm1::{Object, SoundObject, TObject, Value};
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::object::{
@@ -13,6 +13,7 @@ use crate::avm2::{
     Value as Avm2Value,
 };
 use crate::backend::navigator::{OwnedFuture, Request};
+use crate::backend::ui::DialogResultFuture;
 use crate::bitmap::bitmap_data::Color;
 use crate::bitmap::bitmap_data::{BitmapData, BitmapDataWrapper};
 use crate::context::{ActionQueue, ActionType, UpdateContext};
@@ -31,6 +32,7 @@ use encoding_rs::UTF_8;
 use gc_arena::{Collect, GcCell};
 use generational_arena::{Arena, Index};
 use ruffle_render::utils::{determine_jpeg_tag_format, JpegTagFormat};
+use std::borrow::Borrow;
 use std::fmt;
 use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
@@ -157,10 +159,11 @@ pub enum Error {
     NotMovieUnloader,
 
     #[error("HTTP Status is not OK: {0} redirected: {1}")]
-    HttpNotOk(String, u16, bool),
+    HttpNotOk(String, u16, bool, u64),
 
-    #[error("Could not fetch: {0}")]
-    FetchError(String),
+    /// The domain could not be resolved, either because it is invalid or a DNS error occurred
+    #[error("Domain resolution failure: {0}")]
+    InvalidDomain(String),
 
     #[error("Invalid SWF: {0}")]
     InvalidSwf(#[from] crate::tag_utils::Error),
@@ -173,6 +176,18 @@ pub enum Error {
 
     #[error("Unexpected content of type {1}, expected {0}")]
     UnexpectedData(ContentType, ContentType),
+
+    #[error("Non-file dialog loader spawned as file dialog loader")]
+    NotFileDialogLoader,
+
+    #[error("Non-file download dialog loader spawned as file download dialog loader")]
+    NotFileDownloadDialogLoader,
+
+    #[error("Non-file upload loader spawned as file upload loader")]
+    NotFileUploadLoader,
+
+    #[error("Could not fetch: {0:?}")]
+    FetchError(String),
 
     // TODO: We can't support lifetimes on this error object yet (or we'll need some backends inside
     // the GC arena). We're losing info here. How do we fix that?
@@ -228,6 +243,9 @@ impl<'gc> LoadManager<'gc> {
             | Loader::SoundAvm1 { self_handle, .. }
             | Loader::SoundAvm2 { self_handle, .. }
             | Loader::NetStream { self_handle, .. }
+            | Loader::FileDialog { self_handle, .. }
+            | Loader::DownloadFileDialog { self_handle, .. }
+            | Loader::UploadFile { self_handle, .. }
             | Loader::MovieUnloader { self_handle, .. } => *self_handle = Some(handle),
         }
         handle
@@ -462,6 +480,66 @@ impl<'gc> LoadManager<'gc> {
 
         did_finish
     }
+
+    /// Display a dialog allowing a user to select a file
+    ///
+    /// Returns a future that will be resolved when a file is selected
+    #[must_use]
+    pub fn select_file_dialog(
+        &mut self,
+        player: Weak<Mutex<Player>>,
+        target_object: Object<'gc>,
+        dialog: DialogResultFuture,
+    ) -> OwnedFuture<(), Error> {
+        let loader = Loader::FileDialog {
+            self_handle: None,
+            target_object,
+        };
+        let handle = self.add_loader(loader);
+        let loader = self.get_loader_mut(handle).unwrap();
+        loader.file_dialog_loader(player, dialog)
+    }
+
+    /// Display a dialog allowing a user to download a file
+    ///
+    /// Returns a future that will be resolved when a file is selected and the download has completed
+    #[must_use]
+    pub fn download_file_dialog(
+        &mut self,
+        player: Weak<Mutex<Player>>,
+        target_object: Object<'gc>,
+        dialog: DialogResultFuture,
+        url: String,
+    ) -> OwnedFuture<(), Error> {
+        let loader = Loader::DownloadFileDialog {
+            self_handle: None,
+            target_object,
+        };
+        let handle = self.add_loader(loader);
+        let loader = self.get_loader_mut(handle).unwrap();
+        loader.file_download_dialog_loader(player, dialog, url)
+    }
+
+    /// Upload a file
+    ///
+    /// Returns a future that will be resolved when the file upload has completed
+    #[must_use]
+    pub fn upload_file(
+        &mut self,
+        player: Weak<Mutex<Player>>,
+        target_object: Object<'gc>,
+        url: String,
+        data: Vec<u8>,
+        file_name: String,
+    ) -> OwnedFuture<(), Error> {
+        let loader = Loader::UploadFile {
+            self_handle: None,
+            target_object,
+        };
+        let handle = self.add_loader(loader);
+        let loader = self.get_loader_mut(handle).unwrap();
+        loader.file_upload_loader(player, url, data, file_name)
+    }
 }
 
 impl<'gc> Default for LoadManager<'gc> {
@@ -611,6 +689,36 @@ pub enum Loader<'gc> {
 
         /// The target MovieClip to unload.
         target_clip: DisplayObject<'gc>,
+    },
+
+    /// Loader that is choosing a file from an AVM1 object scope.
+    FileDialog {
+        /// The handle to refer to this loader instance.
+        #[collect(require_static)]
+        self_handle: Option<Handle>,
+
+        /// The target AVM1 object to select a file path from.
+        target_object: Object<'gc>,
+    },
+
+    /// Loader that is downloading a file from an AVM1 object scope.
+    DownloadFileDialog {
+        /// The handle to refer to this loader instance.
+        #[collect(require_static)]
+        self_handle: Option<Handle>,
+
+        /// The target AVM1 object to select a file path from.
+        target_object: Object<'gc>,
+    },
+
+    /// Loader that is uploading a file from an AVM1 object scope.
+    UploadFile {
+        /// The handle to refer to this loader instance.
+        #[collect(require_static)]
+        self_handle: Option<Handle>,
+
+        /// The target AVM1 object to select a file path from.
+        target_object: Object<'gc>,
     },
 }
 
@@ -806,7 +914,8 @@ impl<'gc> Loader<'gc> {
                         // FIXME - match Flash's error message
 
                         let (status_code, redirected) =
-                            if let Error::HttpNotOk(_, status_code, redirected) = response.error {
+                            if let Error::HttpNotOk(_, status_code, redirected, _) = response.error
+                            {
                                 (status_code, redirected)
                             } else {
                                 (0, false)
@@ -1013,7 +1122,7 @@ impl<'gc> Loader<'gc> {
                         // TODO: Log "Error opening URL" trace similar to the Flash Player?
 
                         let status_code =
-                            if let Error::HttpNotOk(_, status_code, _) = response.error {
+                            if let Error::HttpNotOk(_, status_code, _, _) = response.error {
                                 status_code
                             } else {
                                 0
@@ -1172,7 +1281,8 @@ impl<'gc> Loader<'gc> {
                         set_data(Vec::new(), &mut activation, target, data_format);
 
                         let (status_code, redirected) =
-                            if let Error::HttpNotOk(_, status_code, redirected) = response.error {
+                            if let Error::HttpNotOk(_, status_code, redirected, _) = response.error
+                            {
                                 (status_code, redirected)
                             } else {
                                 (0, false)
@@ -2106,5 +2216,456 @@ impl<'gc> Loader<'gc> {
                 true
             }
         }
+    }
+
+    /// Loader to process callbacks for a file selection dialog
+    pub fn file_dialog_loader(
+        &mut self,
+        player: Weak<Mutex<Player>>,
+        dialog: DialogResultFuture,
+    ) -> OwnedFuture<(), Error> {
+        let handle = match self {
+            Loader::FileDialog { self_handle, .. } => {
+                self_handle.expect("Loader not self-introduced")
+            }
+            _ => return Box::pin(async { Err(Error::NotFileDialogLoader) }),
+        };
+
+        let player = player
+            .upgrade()
+            .expect("Could not upgrade weak reference to player");
+
+        Box::pin(async move {
+            let dialog_result = dialog.await;
+
+            // Dialog is done, allow opening new dialogs
+            player.lock().unwrap().ui_mut().close_file_dialog();
+
+            // Fire the load handler.
+            player.lock().unwrap().update(|uc| -> Result<(), Error> {
+                let loader = uc.load_manager.get_loader(handle);
+                let target_object = match loader {
+                    Some(&Loader::FileDialog { target_object, .. }) => target_object,
+                    None => return Err(Error::Cancelled),
+                    _ => return Err(Error::NotFileDialogLoader),
+                };
+
+                let file_ref = match target_object.native() {
+                    NativeObject::FileReference(fr) => fr,
+                    _ => panic!("NativeObject must be FileReference"),
+                };
+
+                let mut activation = Activation::from_stub(
+                    uc.reborrow(),
+                    ActivationIdentifier::root("[File Dialog]"),
+                );
+
+                match dialog_result {
+                    Ok(dialog_result) => {
+                        use crate::avm1::globals::as_broadcaster;
+
+                        if !dialog_result.is_cancelled() {
+                            file_ref
+                                .init_from_dialog_result(&mut activation, dialog_result.borrow());
+                            as_broadcaster::broadcast_internal(
+                                &mut activation,
+                                target_object,
+                                &[target_object.into()],
+                                "onSelect".into(),
+                            )?;
+                        } else {
+                            println!("File dialog res = cancel");
+
+                            as_broadcaster::broadcast_internal(
+                                &mut activation,
+                                target_object,
+                                &[target_object.into()],
+                                "onCancel".into(),
+                            )?;
+                        }
+                    }
+                    Err(err) => {
+                        tracing::warn!("Error on file dialog: {:?}", err);
+                    }
+                }
+
+                Ok(())
+            })
+        })
+    }
+
+    /// Loader to handle a file download dialog
+    ///
+    /// Fetches the data from `url`, saves the data to the selected destination and processes callbacks
+    pub fn file_download_dialog_loader(
+        &mut self,
+        player: Weak<Mutex<Player>>,
+        dialog: DialogResultFuture,
+        url: String,
+    ) -> OwnedFuture<(), Error> {
+        let handle = match self {
+            Loader::DownloadFileDialog { self_handle, .. } => {
+                self_handle.expect("Loader not self-introduced")
+            }
+            _ => return Box::pin(async { Err(Error::NotFileDownloadDialogLoader) }),
+        };
+
+        let player = player
+            .upgrade()
+            .expect("Could not upgrade weak reference to player");
+
+        Box::pin(async move {
+            let dialog_result = dialog.await;
+
+            // Dialog is done, allow opening new dialogs
+            player.lock().unwrap().ui_mut().close_file_dialog();
+
+            // Download the data
+            let req = Request::get(url.clone());
+            // Doing this in two steps to prevent holding the player lock during fetch
+            let future = player.lock().unwrap().navigator().fetch(req);
+            let download_res = future.await;
+
+            // Fire the load handler.
+            player.lock().unwrap().update(|uc| -> Result<(), Error> {
+                let loader = uc.load_manager.get_loader(handle);
+                let target_object = match loader {
+                    Some(&Loader::DownloadFileDialog { target_object, .. }) => target_object,
+                    None => return Err(Error::Cancelled),
+                    _ => return Err(Error::NotFileDownloadDialogLoader),
+                };
+
+                let file_ref = match target_object.native() {
+                    NativeObject::FileReference(fr) => fr,
+                    _ => panic!("NativeObject must be FileReference"),
+                };
+
+                let mut activation = Activation::from_stub(
+                    uc.reborrow(),
+                    ActivationIdentifier::root("[File Dialog]"),
+                );
+                use crate::avm1::globals::as_broadcaster;
+
+                match dialog_result {
+                    Ok(mut dialog_result) => {
+                        if !dialog_result.is_cancelled() {
+                            // onSelect and onOpen should be called before the download begins
+                            // We simulate this by using the initial dialog result
+                            file_ref
+                                .init_from_dialog_result(&mut activation, dialog_result.borrow());
+
+                            as_broadcaster::broadcast_internal(
+                                &mut activation,
+                                target_object,
+                                &[target_object.into()],
+                                "onSelect".into(),
+                            )?;
+
+                            match download_res {
+                                Ok(download_res) => {
+                                    as_broadcaster::broadcast_internal(
+                                        &mut activation,
+                                        target_object,
+                                        &[target_object.into()],
+                                        "onOpen".into(),
+                                    )?;
+
+                                    // onProgress and onComplete expect to receive the current state
+                                    // of the file, as we simulate an instant 100% download from the
+                                    // perspective of AS, we want to refresh the file_ref internal data
+                                    // before invoking the callbacks
+
+                                    dialog_result.write(&download_res.body);
+                                    dialog_result.refresh();
+                                    file_ref.init_from_dialog_result(
+                                        &mut activation,
+                                        dialog_result.borrow(),
+                                    );
+
+                                    let total_bytes = download_res.body.len();
+
+                                    as_broadcaster::broadcast_internal(
+                                        &mut activation,
+                                        target_object,
+                                        &[
+                                            target_object.into(),
+                                            total_bytes.into(),
+                                            total_bytes.into(),
+                                        ],
+                                        "onProgress".into(),
+                                    )?;
+
+                                    as_broadcaster::broadcast_internal(
+                                        &mut activation,
+                                        target_object,
+                                        &[target_object.into()],
+                                        "onComplete".into(),
+                                    )?;
+                                }
+                                Err(err) => {
+                                    match err.error {
+                                        Error::InvalidDomain(_) => {
+                                            activation
+                                                .context
+                                                .avm_trace(&format!("Error opening URL '{}'", url));
+
+                                            as_broadcaster::broadcast_internal(
+                                                &mut activation,
+                                                target_object,
+                                                &[target_object.into()],
+                                                "onIOError".into(),
+                                            )?;
+                                        }
+                                        Error::HttpNotOk(_, _, _, body_len) => {
+                                            // If the error happens before the connection is
+                                            // established, then don't invoke onOpen
+                                            as_broadcaster::broadcast_internal(
+                                                &mut activation,
+                                                target_object,
+                                                &[target_object.into()],
+                                                "onOpen".into(),
+                                            )?;
+
+                                            activation
+                                                .context
+                                                .avm_trace(&format!("Error opening URL '{}'", url));
+
+                                            as_broadcaster::broadcast_internal(
+                                                &mut activation,
+                                                target_object,
+                                                &[target_object.into()],
+                                                "onIOError".into(),
+                                            )?;
+
+                                            // Flash still executes the onProgress callback, even after an error
+                                            // However it should only be called if the error occurred after the connection was established
+                                            as_broadcaster::broadcast_internal(
+                                                &mut activation,
+                                                target_object,
+                                                &[
+                                                    target_object.into(),
+                                                    body_len.into(),
+                                                    body_len.into(),
+                                                ],
+                                                "onProgress".into(),
+                                            )?;
+                                        }
+                                        Error::FetchError(_) => {
+                                            // If the error happens before the connection is
+                                            // established, then don't invoke onOpen
+                                            as_broadcaster::broadcast_internal(
+                                                &mut activation,
+                                                target_object,
+                                                &[target_object.into()],
+                                                "onOpen".into(),
+                                            )?;
+
+                                            activation
+                                                .context
+                                                .avm_trace(&format!("Error opening URL '{}'", url));
+
+                                            as_broadcaster::broadcast_internal(
+                                                &mut activation,
+                                                target_object,
+                                                &[target_object.into()],
+                                                "onIOError".into(),
+                                            )?;
+                                        }
+                                        _ => {
+                                            tracing::warn!(
+                                                "Unhandled non-fetch error on download: {:?}",
+                                                err.error
+                                            );
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            as_broadcaster::broadcast_internal(
+                                &mut activation,
+                                target_object,
+                                &[target_object.into()],
+                                "onCancel".into(),
+                            )?;
+                        }
+                    }
+                    Err(err) => {
+                        tracing::warn!("Download dialog had an error {:?}", err);
+                    }
+                }
+
+                Ok(())
+            })
+        })
+    }
+
+    /// Loader to handle a file upload task
+    ///
+    /// Uploads the given `data` to the provided `url`.
+    /// `file_name` is sent along with the data, as part of the multipart/form-data body
+    pub fn file_upload_loader(
+        &mut self,
+        player: Weak<Mutex<Player>>,
+        url: String,
+        data: Vec<u8>,
+        file_name: String,
+    ) -> OwnedFuture<(), Error> {
+        let handle = match self {
+            Loader::UploadFile { self_handle, .. } => {
+                self_handle.expect("Loader not self-introduced")
+            }
+            _ => return Box::pin(async { Err(Error::NotFileUploadLoader) }),
+        };
+
+        let player = player
+            .upgrade()
+            .expect("Could not upgrade weak reference to player");
+
+        Box::pin(async move {
+            let total_size_bytes = data.len();
+
+            //FIXME: The code below won't work if the payload contains the boundary separator
+            if file_name.contains("------------BOUNDARY")
+                || data.windows(20).any(|b| b == b"------------BOUNDARY")
+            {
+                tracing::error!(
+                    "File upload data contains boundary separator, request cannot be sent"
+                );
+                return Err(Error::Cancelled);
+            }
+
+            // Format the data into multipart/form-data
+            let mut out_data = Vec::new();
+            out_data.extend_from_slice(b"------------BOUNDARY\n");
+            out_data.extend_from_slice(b"Content-Disposition: form-data; name=\"Filename\"\n\n");
+            out_data.extend_from_slice(file_name.as_bytes());
+            out_data.extend_from_slice(b"\n------------BOUNDARY\n");
+            out_data.extend_from_slice(
+                b"Content-Disposition: form-data; name=\"Filedata\"; filename=\"",
+            );
+            out_data.extend_from_slice(file_name.as_bytes());
+            out_data.extend_from_slice(b"\"\n");
+            out_data.extend_from_slice(b"Content-Type: application/octet-stream\n\n");
+            out_data.extend_from_slice(&data);
+            out_data.extend_from_slice(b"\n------------BOUNDARY\n");
+            out_data.extend_from_slice(b"Content-Disposition: form-data; name=\"Upload\"\n\n");
+            out_data.extend_from_slice(b"Submit Query");
+            out_data.extend_from_slice(b"\n------------BOUNDARY\n");
+
+            // Upload the data
+            let req = Request::post(
+                url,
+                Some((
+                    out_data,
+                    "multipart/form-data; boundary=------------BOUNDARY".to_string(),
+                )),
+            );
+            // Doing this in two steps to prevent holding the player lock during fetch
+            let future = player.lock().unwrap().navigator().fetch(req);
+            let result = future.await;
+
+            // Fire the load handler.
+            player.lock().unwrap().update(|uc| -> Result<(), Error> {
+                let loader = uc.load_manager.get_loader(handle);
+
+                // Get the file reference
+                let target_object = match loader {
+                    Some(&Loader::UploadFile { target_object, .. }) => target_object,
+                    None => return Err(Error::Cancelled),
+                    _ => return Err(Error::NotFileUploadLoader),
+                };
+
+                let mut activation = Activation::from_stub(
+                    uc.reborrow(),
+                    ActivationIdentifier::root("[File Dialog]"),
+                );
+
+                use crate::avm1::globals::as_broadcaster;
+                as_broadcaster::broadcast_internal(
+                    &mut activation,
+                    target_object,
+                    &[target_object.into()],
+                    "onOpen".into(),
+                )?;
+
+                match result {
+                    Ok(_) => {
+                        as_broadcaster::broadcast_internal(
+                            &mut activation,
+                            target_object,
+                            &[
+                                target_object.into(),
+                                total_size_bytes.into(),
+                                total_size_bytes.into(),
+                            ],
+                            "onProgress".into(),
+                        )?;
+
+                        as_broadcaster::broadcast_internal(
+                            &mut activation,
+                            target_object,
+                            &[target_object.into()],
+                            "onComplete".into(),
+                        )?;
+                    }
+                    Err(err) => {
+                        // If the error was due to the domain not existing, then this should call
+                        // onIoError only
+                        // If the error was instead due to the server returning a non successful response code,
+                        // this should call onProgress with the size of the error response body,
+                        // then should call onHTTPError
+
+                        match err.error {
+                            Error::InvalidDomain(_) => {
+                                as_broadcaster::broadcast_internal(
+                                    &mut activation,
+                                    target_object,
+                                    &[target_object.into()],
+                                    "onIOError".into(),
+                                )?;
+                            }
+                            Error::HttpNotOk(_, _, _, _) => {
+                                as_broadcaster::broadcast_internal(
+                                    &mut activation,
+                                    target_object,
+                                    &[
+                                        target_object.into(),
+                                        total_size_bytes.into(),
+                                        total_size_bytes.into(),
+                                    ],
+                                    "onProgress".into(),
+                                )?;
+
+                                as_broadcaster::broadcast_internal(
+                                    &mut activation,
+                                    target_object,
+                                    &[target_object.into()],
+                                    "onHTTPError".into(),
+                                )?;
+                            }
+                            Error::FetchError(msg) => {
+                                tracing::warn!("Unhandled fetch error: {:?}", msg);
+                                // For now we will just handle this like a dns error
+                                as_broadcaster::broadcast_internal(
+                                    &mut activation,
+                                    target_object,
+                                    &[target_object.into()],
+                                    "onIOError".into(),
+                                )?;
+                            }
+                            _ => {
+                                // We got something other than a FetchError from calling fetch, this should be unlikely
+                                tracing::warn!(
+                                    "Unhandled non-fetch error on upload: {:?}",
+                                    err.error
+                                );
+                            }
+                        }
+                    }
+                }
+
+                Ok(())
+            })
+        })
     }
 }

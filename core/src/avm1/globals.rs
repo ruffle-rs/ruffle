@@ -30,6 +30,7 @@ pub(crate) mod displacement_map_filter;
 pub(crate) mod drop_shadow_filter;
 pub(crate) mod error;
 mod external_interface;
+pub(crate) mod file_reference;
 mod function;
 pub(crate) mod glow_filter;
 pub(crate) mod gradient_filter;
@@ -681,6 +682,7 @@ pub fn create_globals<'gc>(
     let geom = ScriptObject::new(gc_context, Some(object_proto));
     let filters = ScriptObject::new(gc_context, Some(object_proto));
     let display = ScriptObject::new(gc_context, Some(object_proto));
+    let net = ScriptObject::new(gc_context, Some(object_proto));
 
     let matrix = matrix::create_matrix_object(context, matrix_proto, function_proto);
     let point = point::create_point_object(context, point_proto, function_proto);
@@ -863,6 +865,23 @@ pub fn create_globals<'gc>(
         gc_context,
         "ExternalInterface",
         external_interface.into(),
+        Attribute::empty(),
+    );
+
+    flash.define_value(gc_context, "net", net.into(), Attribute::empty());
+
+    let file_reference_obj = file_reference::create_constructor(
+        context,
+        object_proto,
+        function_proto,
+        array_proto,
+        broadcaster_functions,
+    );
+
+    net.define_value(
+        gc_context,
+        "FileReference",
+        file_reference_obj.into(),
         Attribute::empty(),
     );
 

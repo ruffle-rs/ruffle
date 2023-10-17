@@ -273,9 +273,17 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                     error: Error::FetchError(e.to_string()),
                 })?;
 
-                let mut response = client.send_async(body).await.map_err(|e| ErrorResponse {
-                    url: processed_url.to_string(),
-                    error: Error::FetchError(e.to_string()),
+                let mut response = client.send_async(body).await.map_err(|e| {
+                    let inner = match e.kind() {
+                        isahc::error::ErrorKind::NameResolution => {
+                            Error::InvalidDomain(processed_url.to_string())
+                        }
+                        _ => Error::FetchError(e.to_string()),
+                    };
+                    ErrorResponse {
+                        url: processed_url.to_string(),
+                        error: inner,
+                    }
                 })?;
 
                 let url = if let Some(uri) = response.effective_uri() {
@@ -291,6 +299,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                         format!("HTTP status is not ok, got {}", response.status()),
                         status,
                         redirected,
+                        response.body().len().unwrap_or(0),
                     );
                     return Err(ErrorResponse { url, error });
                 }

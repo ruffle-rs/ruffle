@@ -302,6 +302,7 @@ impl NavigatorBackend for WebNavigatorBackend {
                     format!("HTTP status is not ok, got {}", response.status_text()),
                     status,
                     redirected,
+                    0,
                 );
                 return Err(ErrorResponse { url, error });
             }

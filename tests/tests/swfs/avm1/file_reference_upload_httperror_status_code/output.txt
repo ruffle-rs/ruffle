@@ -1,0 +1,23 @@
+// browse success
+true
+// onSelect
+C:undefined
+N:test.txt
+T:.txt
+-----
+// upload http failure (status code)
+// onOpen
+C:undefined
+N:test.txt
+T:.txt
+-----
+// onProgress
+C:undefined
+N:test.txt
+T:.txt
+13/13
+-----
+// onHttpError
+C:undefined
+N:test.txt
+T:.txt

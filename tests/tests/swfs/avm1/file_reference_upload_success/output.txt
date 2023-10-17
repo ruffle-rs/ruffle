@@ -1,0 +1,23 @@
+// browse success
+true
+// onSelect
+C:undefined
+N:test.txt
+T:.txt
+-----
+// upload success
+// onOpen
+C:undefined
+N:test.txt
+T:.txt
+-----
+// onProgress
+C:undefined
+N:test.txt
+T:.txt
+-----
+// onComplete
+C:undefined
+N:test.txt
+T:.txt
+-----
