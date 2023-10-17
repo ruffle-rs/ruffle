@@ -1,0 +1,7 @@
+// fileref.download cancel
+true
+// onCancel
+C:undefined
+N:undefined
+T:undefined
+-----

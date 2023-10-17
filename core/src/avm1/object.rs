@@ -9,6 +9,7 @@ use crate::avm1::globals::convolution_filter::ConvolutionFilter;
 use crate::avm1::globals::date::Date;
 use crate::avm1::globals::displacement_map_filter::DisplacementMapFilter;
 use crate::avm1::globals::drop_shadow_filter::DropShadowFilter;
+use crate::avm1::globals::file_reference::FileReferenceObject;
 use crate::avm1::globals::glow_filter::GlowFilter;
 use crate::avm1::globals::gradient_filter::GradientFilter;
 use crate::avm1::globals::shared_object::SharedObject;
@@ -62,6 +63,7 @@ pub enum NativeObject<'gc> {
     XmlNode(XmlNode<'gc>),
     SharedObject(GcCell<'gc, SharedObject>),
     XmlSocket(XmlSocket<'gc>),
+    FileReference(FileReferenceObject<'gc>),
 }
 
 /// Represents an object that can be directly interacted with by the AVM

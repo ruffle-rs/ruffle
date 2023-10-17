@@ -17,6 +17,14 @@ use url::{ParseError, Url};
 /// A `NavigatorBackend` used by tests that supports logging fetch requests.
 ///
 /// This can be used by tests that fetch data to verify that the request is correct.
+///
+/// Attempting to fetch URLs containing the following "hints" will cause a simulated response:
+/// * "?debug-success" -> Simulates a successful fetch, with body "Hello, World!"
+/// * "?debug-error-statuscode" -> Simulates a failed fetch due to a unsuccessful status
+/// * "?debug-error-dns" -> Simulates a failed fetch due to a dns resolution error
+///
+/// These are formatted as query params, rather than domains/whole URLs, so that real/real-invalid
+/// URLs can be used in Flash Player when writing tests
 pub struct TestNavigatorBackend {
     spawner: NullSpawner,
     relative_base_path: PathBuf,
@@ -62,6 +70,35 @@ impl NavigatorBackend for TestNavigatorBackend {
     }
 
     fn fetch(&self, request: Request) -> OwnedFuture<SuccessResponse, ErrorResponse> {
+        if request.url().contains("?debug-success") {
+            return Box::pin(async move {
+                Ok(SuccessResponse {
+                    url: request.url().to_string(),
+                    body: b"Hello, World!".to_vec(),
+                    status: 200,
+                    redirected: false,
+                })
+            });
+        }
+
+        if request.url().contains("?debug-error-statuscode") {
+            return Box::pin(async move {
+                Err(ErrorResponse {
+                    url: request.url().to_string(),
+                    error: Error::HttpNotOk(request.url().to_string(), 0, false, 0),
+                })
+            });
+        }
+
+        if request.url().contains("?debug-error-dns") {
+            return Box::pin(async move {
+                Err(ErrorResponse {
+                    url: request.url().to_string(),
+                    error: Error::InvalidDomain(request.url().to_string()),
+                })
+            });
+        }
+
         // Log request.
         if let Some(log) = &self.log {
             log.avm_trace("Navigator::fetch:");

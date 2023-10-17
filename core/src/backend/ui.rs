@@ -1,4 +1,7 @@
+use crate::backend::navigator::OwnedFuture;
 use crate::events::{KeyCode, PlayerEvent, TextControlCode};
+pub use crate::loader::Error as DialogLoaderError;
+use chrono::{DateTime, Utc};
 use downcast_rs::Downcast;
 use fluent_templates::loader::langid;
 pub use fluent_templates::LanguageIdentifier;
@@ -13,6 +16,43 @@ pub enum FontDefinition<'a> {
     /// A singular DefineFont tag extracted from a swf.
     SwfTag(swf::Font<'a>, &'static swf::Encoding),
 }
+
+/// A filter specifying a category that can be selected from a file chooser dialog
+pub struct FileFilter {
+    /// The description of the category
+    pub description: String,
+    /// A semicolon ';' delimited list of acceptable windows file extensions that can be selected
+    /// in this category, with a */wildcard before each extension
+    pub extensions: String,
+    /// A semicolon ';' delimited list of acceptable MacOs file extensions that can be selected in
+    /// this category, with a */wildcard before each extension
+    /// Note that a list of file filters will either all have Some(_) mac_type or all will have None
+    pub mac_type: Option<String>,
+}
+
+/// A result of a file selection
+pub trait FileDialogResult: Downcast {
+    /// Was the file selection canceled by the user
+    fn is_cancelled(&self) -> bool;
+    fn creation_time(&self) -> Option<DateTime<Utc>>;
+    fn modification_time(&self) -> Option<DateTime<Utc>>;
+    fn file_name(&self) -> Option<String>;
+    fn size(&self) -> Option<u64>;
+    fn file_type(&self) -> Option<String>;
+    fn creator(&self) -> Option<String>;
+    fn contents(&self) -> &[u8];
+    /// Write the given data to the chosen file
+    /// This will not necessarily by reflected in future calls to other functions (such as [FileDialogResult::size]),
+    /// until [FileDialogResult::refresh] is called
+    fn write(&self, data: &[u8]);
+    /// Refresh any internal metadata, any future calls to other functions (such as [FileDialogResult::size]) will reflect
+    /// the state at the time of the last refresh
+    fn refresh(&mut self);
+}
+impl_downcast!(FileDialogResult);
+
+/// Future representing a file selection in process
+pub type DialogResultFuture = OwnedFuture<Box<dyn FileDialogResult>, DialogLoaderError>;
 
 pub trait UiBackend: Downcast {
     fn mouse_visible(&self) -> bool;
@@ -52,6 +92,24 @@ pub trait UiBackend: Downcast {
     /// If you do not call `register` with any fonts that match the request,
     /// then the font will simply be marked as not found - this may or may not fall back to another font.  
     fn load_device_font(&self, name: &str, register: &dyn FnMut(FontDefinition));
+
+    /// Displays a file selection dialog, returning None if the dialog cannot be displayed
+    /// (e.g because it is already open)
+    /// * `filters` represents a list of filters to the possible file types that can be selected
+    fn display_file_open_dialog(&mut self, filters: Vec<FileFilter>) -> Option<DialogResultFuture>;
+
+    /// Display a dialog allowing a user to select a destination to save a file to
+    ///
+    /// * `file_name` is a suggestion for the file name to save the file as
+    /// * `title` is a title that should be displayed in the dialog
+    fn display_file_save_dialog(
+        &mut self,
+        file_name: String,
+        title: String,
+    ) -> Option<DialogResultFuture>;
+
+    /// Mark that any previously open dialog has been closed
+    fn close_file_dialog(&mut self);
 }
 impl_downcast!(UiBackend);
 
@@ -216,10 +274,77 @@ impl UiBackend for NullUiBackend {
     fn language(&self) -> &LanguageIdentifier {
         &US_ENGLISH
     }
+
+    fn display_file_open_dialog(
+        &mut self,
+        _filters: Vec<FileFilter>,
+    ) -> Option<DialogResultFuture> {
+        Some(Box::pin(async move {
+            let result: Result<Box<dyn FileDialogResult>, DialogLoaderError> =
+                Ok(Box::new(NullFileDialogResult::new()));
+            result
+        }))
+    }
+
+    fn close_file_dialog(&mut self) {}
+
+    fn display_file_save_dialog(
+        &mut self,
+        _file_name: String,
+        _domain: String,
+    ) -> Option<DialogResultFuture> {
+        None
+    }
 }
 
 impl Default for NullUiBackend {
     fn default() -> Self {
         NullUiBackend::new()
     }
+}
+
+pub struct NullFileDialogResult {}
+
+impl NullFileDialogResult {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+
+impl Default for NullFileDialogResult {
+    fn default() -> Self {
+        NullFileDialogResult::new()
+    }
+}
+
+impl FileDialogResult for NullFileDialogResult {
+    fn is_cancelled(&self) -> bool {
+        true
+    }
+
+    fn creation_time(&self) -> Option<DateTime<Utc>> {
+        None
+    }
+    fn modification_time(&self) -> Option<DateTime<Utc>> {
+        None
+    }
+    fn file_name(&self) -> Option<String> {
+        None
+    }
+    fn size(&self) -> Option<u64> {
+        None
+    }
+    fn file_type(&self) -> Option<String> {
+        None
+    }
+    fn creator(&self) -> Option<String> {
+        None
+    }
+
+    fn contents(&self) -> &[u8] {
+        &[]
+    }
+
+    fn write(&self, _data: &[u8]) {}
+    fn refresh(&mut self) {}
 }

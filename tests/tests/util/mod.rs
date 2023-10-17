@@ -8,6 +8,7 @@ pub mod navigator;
 pub mod options;
 pub mod runner;
 pub mod test;
+pub mod test_ui;
 
 /// Wrapper around string slice that makes debug output `{:?}` to print string same way as `{}`.
 /// Used in different `assert*!` macros in combination with `pretty_assertions` crate to make
