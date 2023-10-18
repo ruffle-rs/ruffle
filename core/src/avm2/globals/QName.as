@@ -1,5 +1,6 @@
 package {
     [Ruffle(InstanceAllocator)]
+    [Ruffle(CallHandler)]
     public final class QName {
         public static const length = 2;
         

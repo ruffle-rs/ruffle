@@ -8,6 +8,33 @@ use crate::avm2::Namespace;
 
 pub use crate::avm2::object::q_name_allocator;
 
+pub fn call_handler<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if args.len() == 1 {
+        // 1. If Namespace is not specified and Type(Name) is Object and Name.[[Class]] == “QName”
+        if args[0]
+            .as_object()
+            .and_then(|x| x.as_qname_object())
+            .is_some()
+        {
+            // 1.a. Return Name
+            return Ok(args[0]);
+        }
+    }
+
+    // 2. Create and return a new QName object exactly as if the QName constructor had been called with the
+    //    same arguments (section 13.3.2).
+    Ok(activation
+        .avm2()
+        .classes()
+        .qname
+        .construct(activation, args)?
+        .into())
+}
+
 /// Implements `QName`'s `init` method, which is called from the constructor.
 pub fn init<'gc>(
     activation: &mut Activation<'_, 'gc>,
