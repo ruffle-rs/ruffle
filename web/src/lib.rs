@@ -19,8 +19,8 @@ use ruffle_core::external::{
     ExternalInterfaceMethod, ExternalInterfaceProvider, FsCommandProvider, Value as ExternalValue,
     Value,
 };
-use ruffle_core::swf;
 use ruffle_core::tag_utils::SwfMovie;
+use ruffle_core::{swf, DefaultFont};
 use ruffle_core::{
     Color, Player, PlayerBuilder, PlayerEvent, SandboxType, StageAlign, StageScaleMode,
     StaticCallstack, ViewportDimensions,
@@ -491,6 +491,27 @@ impl Ruffle {
             }
 
             tracing::warn!("Font source {font_name} was not recognised (not a valid SWF?)");
+        });
+    }
+
+    pub fn set_default_font(&mut self, default_name: &str, fonts: Vec<JsValue>) {
+        let _ = self.with_core_mut(|core| {
+            let default = match default_name {
+                "sans" => DefaultFont::Sans,
+                "serif" => DefaultFont::Serif,
+                "typewriter" => DefaultFont::Typewriter,
+                name => {
+                    tracing::error!("Unknown default font name '{name}'");
+                    return;
+                }
+            };
+            core.set_default_font(
+                default,
+                fonts
+                    .into_iter()
+                    .flat_map(|value| value.as_string())
+                    .collect(),
+            );
         });
     }
 

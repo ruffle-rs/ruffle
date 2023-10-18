@@ -268,6 +268,30 @@ export interface SocketProxy {
 }
 
 /**
+ * Defines the names of the fonts to use for each "default" Flash device font.
+ *
+ * The name of each font provided will be used, in priority order.
+ *
+ * For example, defining `sans: ["Helvetica", "Arial"]` would use Helvetica if present, before trying Arial.
+ */
+export interface DefaultFonts {
+    /**
+     * `_sans`, a Sans-Serif font (similar to Helvetica or Arial)
+     */
+    sans?: Array<string>;
+
+    /**
+     * `_serif`, a Serif font (similar to Times Roman)
+     */
+    serif?: Array<string>;
+
+    /**
+     * `_typewriter`, a Monospace font (similar to Courier)
+     */
+    typewriter?: Array<string>;
+}
+
+/**
  * Any options used for loading a movie.
  */
 export interface BaseLoadOptions {
@@ -574,6 +598,13 @@ export interface BaseLoadOptions {
      * @default []
      */
     fontSources?: Array<string>;
+
+    /**
+     * The font names to use for each "default" Flash device font.
+     *
+     * @default {}
+     */
+    defaultFonts?: DefaultFonts;
 }
 
 /**
