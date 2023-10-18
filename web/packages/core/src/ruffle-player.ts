@@ -731,6 +731,25 @@ export class RufflePlayer extends HTMLElement {
             }
         }
 
+        if (this.loadedConfig?.defaultFonts?.sans) {
+            this.instance!.set_default_font(
+                "sans",
+                this.loadedConfig?.defaultFonts.sans,
+            );
+        }
+        if (this.loadedConfig?.defaultFonts?.serif) {
+            this.instance!.set_default_font(
+                "serif",
+                this.loadedConfig?.defaultFonts.serif,
+            );
+        }
+        if (this.loadedConfig?.defaultFonts?.typewriter) {
+            this.instance!.set_default_font(
+                "typewriter",
+                this.loadedConfig?.defaultFonts.typewriter,
+            );
+        }
+
         this.instance!.set_volume(this.volumeSettings.get_volume());
 
         this.rendererDebugInfo = this.instance!.renderer_debug_info();

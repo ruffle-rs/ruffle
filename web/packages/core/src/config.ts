@@ -46,4 +46,5 @@ export const DEFAULT_CONFIG: Required<BaseLoadOptions> = {
     openInNewTab: null,
     socketProxy: [],
     fontSources: [],
+    defaultFonts: {},
 };
