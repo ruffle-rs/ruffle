@@ -714,6 +714,23 @@ export class RufflePlayer extends HTMLElement {
             throw e;
         });
 
+        if (this.loadedConfig?.fontSources) {
+            for (const url of this.loadedConfig.fontSources) {
+                try {
+                    const response = await fetch(url);
+                    this.instance!.add_font(
+                        url,
+                        new Uint8Array(await response.arrayBuffer()),
+                    );
+                } catch (error) {
+                    console.warn(
+                        `Couldn't download font source from ${url}`,
+                        error,
+                    );
+                }
+            }
+        }
+
         this.instance!.set_volume(this.volumeSettings.get_volume());
 
         this.rendererDebugInfo = this.instance!.renderer_debug_info();
