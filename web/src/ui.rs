@@ -145,5 +145,8 @@ impl UiBackend for WebUiBackend {
         self.js_player.display_unsupported_video(url.as_str());
     }
 
-    fn load_device_font(&self, _name: &str, _register: &dyn FnMut(FontDefinition)) {}
+    fn load_device_font(&self, _name: &str, _register: &dyn FnMut(FontDefinition)) {
+        // Because fonts must be loaded instantly (no async),
+        // we actually just provide them all upfront at time of Player creation.
+    }
 }
