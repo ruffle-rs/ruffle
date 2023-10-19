@@ -30,7 +30,7 @@ pub fn get_font_name<'gc>(
         {
             return Ok(AvmString::new_utf8(
                 activation.context.gc_context,
-                font.descriptor().class(),
+                font.descriptor().name(),
             )
             .into());
         }

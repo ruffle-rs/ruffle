@@ -146,7 +146,7 @@ impl TextFormat {
         let font_class = et
             .font_class()
             .map(|s| s.decode(encoding).into_owned())
-            .or_else(|| font.map(|font| WString::from_utf8(font.descriptor().class())))
+            .or_else(|| font.map(|font| WString::from_utf8(font.descriptor().name())))
             .unwrap_or_else(|| WString::from_utf8("Times New Roman"));
         let align = et.layout().map(|l| l.align);
         let left_margin = et.layout().map(|l| l.left_margin.to_pixels());

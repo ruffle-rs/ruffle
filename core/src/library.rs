@@ -259,24 +259,88 @@ impl<'gc> MovieLibrary<'gc> {
     }
 
     /// Find a font by it's name and parameters.
-    pub fn get_font_by_name(
+    pub fn get_embedded_font_by_name(
         &self,
         name: &str,
         is_bold: bool,
         is_italic: bool,
     ) -> Option<Font<'gc>> {
-        let descriptor = FontDescriptor::from_parts(name, is_bold, is_italic);
-        if let Some(font) = self.fonts.get(&descriptor) {
+        // The order here is specific, and tested in `tests/swfs/fonts/embed_matching/fallback_preferences`
+
+        // Exact match
+        if let Some(font) = self
+            .fonts
+            .get(&FontDescriptor::from_parts(name, is_bold, is_italic))
+        {
             return Some(*font);
         }
-        // If we don't have a direct match, fallback to something with the same name
-        // [NA]TODO: This isn't *entirely* correct. I think we're storing fonts wrong.
-        // We might need to merge fonts as they're defined, and there should only be one font per name.
-        self.fonts
-            .iter()
-            .find(|(d, _)| d.class() == name)
-            .map(|(_, f)| f)
-            .copied()
+
+        if is_italic ^ is_bold {
+            // If one is set (but not both), then try upgrading to bold italic...
+            if let Some(font) = self
+                .fonts
+                .get(&FontDescriptor::from_parts(name, true, true))
+            {
+                return Some(*font);
+            }
+
+            // and then downgrading to regular
+            if let Some(font) = self
+                .fonts
+                .get(&FontDescriptor::from_parts(name, false, false))
+            {
+                return Some(*font);
+            }
+
+            // and then finally whichever one we don't have set
+            if let Some(font) = self
+                .fonts
+                .get(&FontDescriptor::from_parts(name, !is_bold, !is_italic))
+            {
+                return Some(*font);
+            }
+        } else {
+            // We don't have an exact match and we were either looking for regular or bold-italic
+
+            if is_italic && is_bold {
+                // Do we have regular? (unless we already looked for it)
+                if let Some(font) = self
+                    .fonts
+                    .get(&FontDescriptor::from_parts(name, false, false))
+                {
+                    return Some(*font);
+                }
+            }
+
+            // Do we have bold?
+            if let Some(font) = self
+                .fonts
+                .get(&FontDescriptor::from_parts(name, true, false))
+            {
+                return Some(*font);
+            }
+
+            // Do we have italic?
+            if let Some(font) = self
+                .fonts
+                .get(&FontDescriptor::from_parts(name, false, true))
+            {
+                return Some(*font);
+            }
+
+            if !is_bold && !is_italic {
+                // Do we have bold italic? (unless we already looked for it)
+                if let Some(font) = self
+                    .fonts
+                    .get(&FontDescriptor::from_parts(name, true, true))
+                {
+                    return Some(*font);
+                }
+            }
+        }
+
+        // If there's no match at all, then it should not show anything...
+        None
     }
 
     /// Returns the `Graphic` with the given character ID.
@@ -527,7 +591,7 @@ impl<'gc> Library<'gc> {
         match definition {
             FontDefinition::SwfTag(tag, encoding) => {
                 let font = Font::from_swf_tag(gc_context, renderer, tag, encoding);
-                let name = font.descriptor().class().to_owned();
+                let name = font.descriptor().name().to_owned();
                 info!("Loaded new device font \"{name}\" from swf tag");
                 self.device_fonts.insert(name, font);
             }

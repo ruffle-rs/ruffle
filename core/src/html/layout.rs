@@ -470,11 +470,15 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         // In an ideal world, device fonts would search for a matching font on the system and render it in some way.
         if !is_device_font {
             if let Some(font) = library
-                .get_font_by_name(&font_name, span.bold, span.italic)
+                .get_embedded_font_by_name(&font_name, span.bold, span.italic)
                 .filter(|f| f.has_glyphs())
             {
                 return Some(font);
             }
+            // TODO: If set to use embedded fonts and we couldn't find any matching font, show nothing
+            // However - at time of writing, we don't support DefineFont4. If we matched this behaviour,
+            // then a bunch of SWFs would just show no text suddenly.
+            // return None;
         }
 
         if let Some(font) = context.library.get_or_load_device_font(
