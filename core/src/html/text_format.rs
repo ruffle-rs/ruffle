@@ -710,6 +710,9 @@ impl FormatSpans {
                                     format.kerning = Some(false);
                                 }
                             }
+
+                            format.bold = Some(false);
+                            format.italic = Some(false);
                         }
                         b"b" => {
                             format.bold = Some(true);
