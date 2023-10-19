@@ -1,0 +1,10 @@
+# There are no fonts embedded in this swf. It should not render anything at all, or error.
+
+num_frames = 1
+known_failure = true # Right now we intentionally fall back, because we don't support DefineFont4 embedded fonts yet
+
+[image_comparisons.output]
+tolerance = 0
+
+[player_options]
+with_renderer = { optional = false, sample_count = 1 }
