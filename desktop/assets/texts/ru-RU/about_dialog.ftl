@@ -1,11 +1,11 @@
-about-ruffle = О программе Ruffle
-about-ruffle-version = Версия
-about-ruffle-channel = Канал
-about-ruffle-build-time = Дата сборки
+about-ruffle = О Ruffle
+about-ruffle-version = Версия:
+about-ruffle-channel = Каналы
+about-ruffle-build-time = Время сборки
 about-ruffle-build-features = Параметры сборки
 about-ruffle-commit-ref = Посл. коммит
 about-ruffle-commit-time = Дата коммита
 about-ruffle-visit-website = Веб-сайт
 about-ruffle-visit-github = GitHub
 about-ruffle-visit-discord = Discord
-about-ruffle-visit-sponsor = Спонсировать
+about-ruffle-visit-sponsor = Спонсировать проект
