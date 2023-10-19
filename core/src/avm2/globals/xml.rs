@@ -388,19 +388,21 @@ pub fn call_handler<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(obj) = args.try_get_object(activation, 0) {
-        // We do *not* create a new object when AS does 'XML(someXML)'
-        if let Some(xml) = obj.as_xml_object() {
-            return Ok(xml.into());
-        }
-        // This re-uses the XML object stored in the list
-        if let Some(xml_list) = obj.as_xml_list_object() {
-            if xml_list.length() == 1 {
-                return Ok(xml_list.children_mut(activation.context.gc_context)[0]
-                    .get_or_create_xml(activation)
-                    .into());
+    if args.len() == 1 {
+        if let Some(obj) = args.try_get_object(activation, 0) {
+            // We do *not* create a new object when AS does 'XML(someXML)'
+            if let Some(xml) = obj.as_xml_object() {
+                return Ok(xml.into());
             }
-            return Err(Error::AvmError(ill_formed_markup_err(activation)?));
+            // This re-uses the XML object stored in the list
+            if let Some(xml_list) = obj.as_xml_list_object() {
+                if xml_list.length() == 1 {
+                    return Ok(xml_list.children_mut(activation.context.gc_context)[0]
+                        .get_or_create_xml(activation)
+                        .into());
+                }
+                return Err(Error::AvmError(ill_formed_markup_err(activation)?));
+            }
         }
     }
 
