@@ -176,7 +176,7 @@ impl DisplayObjectWindow {
             .id_source(ui.id().with("spans"))
             .show(ui, |ui| {
                 Grid::new(ui.id().with("spans"))
-                    .num_columns(4)
+                    .num_columns(7)
                     .striped(true)
                     .show(ui, |ui| {
                         ui.label("Start");
@@ -184,6 +184,7 @@ impl DisplayObjectWindow {
                         ui.label("Length");
                         ui.label("URL");
                         ui.label("Font");
+                        ui.label("Style");
                         ui.label("Text");
                         ui.end_row();
 
@@ -194,6 +195,16 @@ impl DisplayObjectWindow {
                             ui.label(format.span_length.to_string());
                             ui.label(format.url.to_string());
                             ui.label(format.font.to_string());
+
+                            if format.bold && format.italic {
+                                ui.label("Bold Italic");
+                            } else if format.bold {
+                                ui.label("Bold");
+                            } else if format.italic {
+                                ui.label("Italic");
+                            } else {
+                                ui.label("Regular");
+                            }
 
                             ui.label(text.to_string());
                             ui.end_row();
