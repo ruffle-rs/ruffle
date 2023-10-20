@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Allocator, AllocatorFn, Class, ClassHashWrapper};
-use crate::avm2::error::{make_error_1127, type_error};
+use crate::avm2::error::{argument_error, make_error_1127, type_error};
 use crate::avm2::function::Executable;
 use crate::avm2::method::Method;
 use crate::avm2::object::function_object::FunctionObject;
@@ -857,11 +857,18 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
 
             func.exec(receiver, arguments, activation, self.into())
         } else {
-            arguments
-                .get(0)
-                .cloned()
-                .unwrap_or(Value::Undefined)
-                .coerce_to_type(activation, self.inner_class_definition())
+            if arguments.len() == 1 {
+                arguments[0].coerce_to_type(activation, self.inner_class_definition())
+            } else {
+                Err(Error::AvmError(argument_error(
+                    activation,
+                    &format!(
+                        "Error #1112: Argument count mismatch on class coercion.  Expected 1, got {}.",
+                        arguments.len()
+                    ),
+                    1112,
+                )?))
+            }
         }
     }
 
