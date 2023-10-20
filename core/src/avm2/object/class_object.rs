@@ -867,19 +867,17 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             let func = Executable::from_method(call_handler, scope, None, Some(self));
 
             func.exec(receiver, arguments, activation, self.into())
+        } else if arguments.len() == 1 {
+            arguments[0].coerce_to_type(activation, self.inner_class_definition())
         } else {
-            if arguments.len() == 1 {
-                arguments[0].coerce_to_type(activation, self.inner_class_definition())
-            } else {
-                Err(Error::AvmError(argument_error(
-                    activation,
-                    &format!(
-                        "Error #1112: Argument count mismatch on class coercion.  Expected 1, got {}.",
-                        arguments.len()
-                    ),
-                    1112,
-                )?))
-            }
+            Err(Error::AvmError(argument_error(
+                activation,
+                &format!(
+                    "Error #1112: Argument count mismatch on class coercion.  Expected 1, got {}.",
+                    arguments.len()
+                ),
+                1112,
+            )?))
         }
     }
 
