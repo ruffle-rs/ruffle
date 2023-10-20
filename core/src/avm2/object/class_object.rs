@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Allocator, AllocatorFn, Class, ClassHashWrapper};
-use crate::avm2::error::{argument_error, make_error_1127, type_error};
+use crate::avm2::error::{argument_error, make_error_1127, reference_error, type_error};
 use crate::avm2::function::Executable;
 use crate::avm2::method::Method;
 use crate::avm2::object::function_object::FunctionObject;
@@ -555,12 +555,23 @@ impl<'gc> ClassObject<'gc> {
     ) -> Result<Value<'gc>, Error<'gc>> {
         let property = self.instance_vtable().get_trait(multiname);
         if property.is_none() {
-            return Err(format!(
-                "Attempted to supercall method {:?}, which does not exist",
-                multiname.local_name()
-            )
-            .into());
+            let qualified_multiname_name = multiname.as_uri(activation.context.gc_context);
+            let qualified_class_name = self
+                .inner_class_definition()
+                .read()
+                .name()
+                .to_qualified_name_err_message(activation.context.gc_context);
+
+            return Err(Error::AvmError(reference_error(
+                activation,
+                &format!(
+                    "Error #1070: Method {} not found on {}",
+                    qualified_multiname_name, qualified_class_name
+                ),
+                1070,
+            )?));
         }
+
         if let Some(Property::Method { disp_id, .. }) = property {
             // todo: handle errors
             let ClassBoundMethod {
