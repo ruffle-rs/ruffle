@@ -349,6 +349,7 @@ fn class<'gc>(
     script: Script<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<ClassObject<'gc>, Error<'gc>> {
+    let mc = activation.context.gc_context;
     let (_, global, mut domain) = script.init();
 
     let class_read = class_def.read();
@@ -361,10 +362,8 @@ fn class<'gc>(
             .ok_or_else(|| {
                 format!(
                     "Could not resolve superclass {} when defining global class {}",
-                    sc_name.to_qualified_name(activation.context.gc_context),
-                    class_read
-                        .name()
-                        .to_qualified_name(activation.context.gc_context)
+                    sc_name.to_qualified_name(mc),
+                    class_read.name().to_qualified_name(mc)
                 )
                 .into()
             });
@@ -382,13 +381,13 @@ fn class<'gc>(
 
     let class_object = ClassObject::from_class(activation, class_def, super_class)?;
     global.install_const_late(
-        activation.context.gc_context,
+        mc,
         class_name,
         class_object.into(),
         activation.avm2().classes().class,
     );
-    domain.export_definition(class_name, script, activation.context.gc_context);
-    domain.export_class(class_def, activation.context.gc_context);
+    domain.export_definition(class_name, script, mc);
+    domain.export_class(class_def, mc);
 
     Ok(class_object)
 }
@@ -408,10 +407,10 @@ fn vector_class<'gc>(
         script,
         activation,
     )?;
-    vector_cls.set_param(activation, Some(param_class));
+    vector_cls.set_param(mc, Some(param_class));
 
     let generic_vector = activation.avm2().classes().generic_vector;
-    generic_vector.add_application(activation, param_class, vector_cls);
+    generic_vector.add_application(mc, param_class, vector_cls);
     let generic_cls = generic_vector.inner_class_definition();
     generic_cls
         .write(mc)
@@ -449,7 +448,7 @@ pub fn load_player_globals<'gc>(
 ) -> Result<(), Error<'gc>> {
     let mc = activation.context.gc_context;
 
-    let globals = ScriptObject::custom_object(activation.context.gc_context, None, None);
+    let globals = ScriptObject::custom_object(mc, None, None);
     let gs = ScopeChain::new(domain).chain(mc, &[Scope::new(globals)]);
     let script = Script::empty_script(mc, globals, domain);
 
@@ -496,16 +495,16 @@ pub fn load_player_globals<'gc>(
 
     // Now to weave the Gordian knot...
     object_class.link_prototype(activation, object_proto)?;
-    object_class.link_type(activation, class_proto, class_class);
+    object_class.link_type(mc, class_proto, class_class);
 
     fn_class.link_prototype(activation, fn_proto)?;
-    fn_class.link_type(activation, class_proto, class_class);
+    fn_class.link_type(mc, class_proto, class_class);
 
     class_class.link_prototype(activation, class_proto)?;
-    class_class.link_type(activation, class_proto, class_class);
+    class_class.link_type(mc, class_proto, class_class);
 
     global_class.link_prototype(activation, global_proto)?;
-    global_class.link_type(activation, class_proto, class_class);
+    global_class.link_type(mc, class_proto, class_class);
 
     // At this point, we need at least a partial set of system classes in
     // order to continue initializing the player. The rest of the classes
@@ -542,7 +541,7 @@ pub fn load_player_globals<'gc>(
 
     globals.set_proto(mc, global_proto);
     globals.set_instance_of(mc, global_class);
-    globals.fork_vtable(activation.context.gc_context);
+    globals.fork_vtable(mc);
 
     activation.context.avm2.toplevel_global_object = Some(globals);
 
