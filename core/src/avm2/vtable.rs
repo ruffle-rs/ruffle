@@ -559,7 +559,7 @@ impl<'gc> VTable<'gc> {
         let new_slot_id = write.default_slots.len() as u32 - 1;
         write
             .resolved_traits
-            .insert(name, Property::new_slot(new_slot_id));
+            .insert(name, Property::new_const_slot(new_slot_id));
         write
             .slot_classes
             .push(PropertyClass::Class(class.inner_class_definition()));
