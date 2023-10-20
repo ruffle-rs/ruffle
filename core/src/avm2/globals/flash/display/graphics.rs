@@ -993,7 +993,7 @@ fn draw_triangles_internal<'gc>(
         let indices = &mut indices.iter();
 
         while let Some(triangle) = next_triangle(&vertices, indices, activation)? {
-            draw_triangle_internal(triangle, drawing, culling);
+            draw_triangle_internal(activation, triangle, drawing, culling);
         }
     } else {
         let mut vertices = vertices.iter();
@@ -1037,14 +1037,19 @@ fn draw_triangles_internal<'gc>(
         }
 
         while let Some(triangle) = next_triangle(&mut vertices, activation)? {
-            draw_triangle_internal(triangle, drawing, culling);
+            draw_triangle_internal(activation, triangle, drawing, culling);
         }
     }
 
     Ok(())
 }
 
-fn draw_triangle_internal((a, b, c): Triangle, drawing: &mut Drawing, culling: TriangleCulling) {
+fn draw_triangle_internal(
+    activation: &mut Activation<'_, '_>,
+    (a, b, c): Triangle,
+    drawing: &mut Drawing,
+    culling: TriangleCulling,
+) {
     match culling {
         TriangleCulling::None => {
             drawing.draw_command(DrawCommand::MoveTo(a));
@@ -1054,10 +1059,20 @@ fn draw_triangle_internal((a, b, c): Triangle, drawing: &mut Drawing, culling: T
             drawing.draw_command(DrawCommand::LineTo(a));
         }
         TriangleCulling::Positive => {
-            panic!("Positive culling not implemented")
+            avm2_stub_method!(
+                activation,
+                "flash.display.Graphics",
+                "drawTriangles",
+                "with positive culling"
+            );
         }
         TriangleCulling::Negative => {
-            panic!("Negative culling not implemented")
+            avm2_stub_method!(
+                activation,
+                "flash.display.Graphics",
+                "drawTriangles",
+                "with negative culling"
+            );
         }
     }
 }
@@ -1427,22 +1442,8 @@ fn handle_graphics_triangle_path<'gc>(
 
             let indices = &mut indices.iter();
 
-            while let Some((a, b, c)) = next_triangle(&vertices, indices, activation)? {
-                match culling {
-                    TriangleCulling::None => {
-                        drawing.draw_command(DrawCommand::MoveTo(a));
-
-                        drawing.draw_command(DrawCommand::LineTo(b));
-                        drawing.draw_command(DrawCommand::LineTo(c));
-                        drawing.draw_command(DrawCommand::LineTo(a));
-                    }
-                    TriangleCulling::Positive => {
-                        panic!("Positive culling not implemented")
-                    }
-                    TriangleCulling::Negative => {
-                        panic!("Negative culling not implemented")
-                    }
-                }
+            while let Some(triangle) = next_triangle(&vertices, indices, activation)? {
+                draw_triangle_internal(activation, triangle, drawing, culling);
             }
         } else {
             panic!("Indices is not a vector");
