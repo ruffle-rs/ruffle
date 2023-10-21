@@ -1,0 +1,25 @@
+Text input: R
+New text: 
+R
+Text input: u
+New text: 
+Ru
+Text input: f
+New text: 
+Ruf
+Text input: f
+New text: 
+Ruff
+Text input: l
+New text: 
+Ruffl
+Text input: e
+New text: 
+Ruffle
+New text: 
+Ruffl
+Text input: #
+Prevented default!
+Text input: !
+New text: 
+Ruffl!

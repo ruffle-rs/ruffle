@@ -29,6 +29,10 @@
     },
     {
         "type": "TextInput",
+        "codepoint": "#"
+    },
+    {
+        "type": "TextInput",
         "codepoint": "!"
     }
 ]
