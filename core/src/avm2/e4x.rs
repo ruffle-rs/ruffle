@@ -13,7 +13,7 @@ use quick_xml::{
 use crate::{avm2::TObject, xml::custom_unescape};
 
 use super::{
-    error::{make_error_1118, type_error},
+    error::{make_error_1010, make_error_1118, type_error},
     object::E4XOrXml,
     string::AvmString,
     Activation, Error, Multiname, Value,
@@ -1216,6 +1216,10 @@ pub fn name_to_multiname<'gc>(
     name: &Value<'gc>,
     force_attribute: bool,
 ) -> Result<Multiname<'gc>, Error<'gc>> {
+    if matches!(name, Value::Undefined | Value::Null) {
+        return Err(make_error_1010(activation, None));
+    }
+
     if let Value::Object(o) = name {
         if let Some(qname) = o.as_qname_object() {
             let mut name = qname.name().clone();
