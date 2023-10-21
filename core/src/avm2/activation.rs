@@ -2472,7 +2472,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let value2 = self.pop_stack();
         let value1 = self.pop_stack();
 
-        if value1 == value2 {
+        if value1.strict_eq(&value2) {
             reader.seek(full_data, offset);
         }
 
@@ -2488,7 +2488,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let value2 = self.pop_stack();
         let value1 = self.pop_stack();
 
-        if value1 != value2 {
+        if !value1.strict_eq(&value2) {
             reader.seek(full_data, offset);
         }
 
