@@ -75,6 +75,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "length" => property(tf_getter!(length));
     "maxhscroll" => property(tf_getter!(maxhscroll));
     "maxscroll" => property(tf_getter!(maxscroll));
+    "maxChars" => property(tf_getter!(max_chars), tf_setter!(set_max_chars));
     "multiline" => property(tf_getter!(multiline), tf_setter!(set_multiline));
     "password" => property(tf_getter!(password), tf_setter!(set_password));
     "scroll" => property(tf_getter!(scroll), tf_setter!(set_scroll));
@@ -675,6 +676,28 @@ pub fn maxscroll<'gc>(
     _activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(this.maxscroll().into())
+}
+
+pub fn set_max_chars<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    let input = value.coerce_to_i32(activation)?;
+    this.set_max_chars(input, &mut activation.context);
+    Ok(())
+}
+
+pub fn max_chars<'gc>(
+    this: EditText<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let max = if this.max_chars() != 0 {
+        this.max_chars().into()
+    } else {
+        Value::Null
+    };
+    Ok(max)
 }
 
 pub fn bottom_scroll<'gc>(
