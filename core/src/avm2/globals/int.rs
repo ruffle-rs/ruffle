@@ -135,6 +135,19 @@ fn class_init<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn call_handler<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(args
+        .get(0)
+        .cloned()
+        .unwrap_or(Value::Integer(0))
+        .coerce_to_i32(activation)?
+        .into())
+}
+
 /// Implements `int.toExponential`
 use crate::avm2::globals::number::to_exponential;
 
@@ -228,6 +241,7 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
         "<int native instance initializer>",
         mc,
     ));
+    write.set_call_handler(Method::from_builtin(call_handler, "<int call handler>", mc));
 
     // 'length' is a weird undocumented constant in int.
     // We need to define it, since it shows up in 'describeType'

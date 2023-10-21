@@ -135,6 +135,19 @@ fn class_init<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn call_handler<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(args
+        .get(0)
+        .cloned()
+        .unwrap_or(Value::Integer(0))
+        .coerce_to_u32(activation)?
+        .into())
+}
+
 /// Implements `uint.toExponential`
 use crate::avm2::globals::number::to_exponential;
 
@@ -227,6 +240,11 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
     write.set_native_instance_init(Method::from_builtin(
         native_instance_init,
         "<uint native instance initializer>",
+        mc,
+    ));
+    write.set_call_handler(Method::from_builtin(
+        call_handler,
+        "<uint call handler>",
         mc,
     ));
 
