@@ -5,9 +5,9 @@ use std::{
 
 use gc_arena::{Collect, GcCell, Mutation};
 use quick_xml::{
-    events::{BytesStart, Event},
+    events::{attributes::AttrError as XmlAttrError, BytesStart, Event},
     name::ResolveResult,
-    NsReader,
+    Error as XmlError, NsReader,
 };
 
 use crate::{avm2::TObject, xml::custom_unescape};
@@ -51,15 +51,51 @@ impl<'gc> Debug for E4XNodeData<'gc> {
     }
 }
 
-fn malformed_element<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    Error::AvmError(
-        type_error(
+fn make_xml_error<'gc>(activation: &mut Activation<'_, 'gc>, err: XmlError) -> Error<'gc> {
+    let error = match err {
+        XmlError::InvalidAttr(XmlAttrError::Duplicated(_, _)) => type_error(
+            activation,
+            "Error #1104: Attribute was already specified for element.",
+            1104,
+        ),
+        XmlError::UnexpectedEof(currently_parsing) => match currently_parsing.as_str() {
+            "CData" => type_error(
+                activation,
+                "Error #1091: XML parser failure: Unterminated CDATA section.",
+                1091,
+            ),
+            "DOCTYPE" => type_error(
+                activation,
+                "Error #1093: XML parser failure: Unterminated DOCTYPE declaration.",
+                1093,
+            ),
+            "Comment" => type_error(
+                activation,
+                "Error #1094: XML parser failure: Unterminated comment.",
+                1094,
+            ),
+            "XmlDecl" => type_error(
+                activation,
+                "Error #1097: XML parser failure: Unterminated processing instruction.",
+                1097,
+            ),
+            _ => type_error(
+                activation,
+                "Error #1090: XML parser failure: element is malformed.",
+                1090,
+            ),
+        },
+        _ => type_error(
             activation,
             "Error #1090: XML parser failure: element is malformed.",
             1090,
-        )
-        .expect("Failed to construct XML TypeError"),
-    )
+        ),
+    };
+
+    match error {
+        Ok(err) => Error::AvmError(err),
+        Err(err) => err,
+    }
 }
 
 #[derive(Collect, Debug)]
@@ -607,7 +643,7 @@ impl<'gc> E4XNode<'gc> {
         loop {
             let event = parser
                 .read_event()
-                .map_err(|_| malformed_element(activation))?;
+                .map_err(|e| make_xml_error(activation, e))?;
 
             match &event {
                 Event::Start(bs) => {
@@ -633,7 +669,7 @@ impl<'gc> E4XNode<'gc> {
                 Event::Text(bt) => {
                     handle_text_cdata(
                         custom_unescape(bt, parser.decoder())
-                            .map_err(|_| malformed_element(activation))?
+                            .map_err(|e| make_xml_error(activation, e))?
                             .as_bytes(),
                         ignore_white,
                         &mut open_tags,
@@ -659,7 +695,7 @@ impl<'gc> E4XNode<'gc> {
                         continue;
                     }
                     let text = custom_unescape(bt, parser.decoder())
-                        .map_err(|_| malformed_element(activation))?;
+                        .map_err(|e| make_xml_error(activation, e))?;
                     let text =
                         AvmString::new_utf8_bytes(activation.context.gc_context, text.as_bytes());
                     let node = E4XNode(GcCell::new(
@@ -679,7 +715,7 @@ impl<'gc> E4XNode<'gc> {
                         continue;
                     }
                     let text = custom_unescape(bt, parser.decoder())
-                        .map_err(|_| malformed_element(activation))?;
+                        .map_err(|e| make_xml_error(activation, e))?;
                     let (name, value) = if let Some((name, value)) = text.split_once(' ') {
                         (
                             AvmString::new_utf8_bytes(
@@ -733,7 +769,9 @@ impl<'gc> E4XNode<'gc> {
         let mut attribute_nodes = Vec::new();
 
         let attributes: Result<Vec<_>, _> = bs.attributes().collect();
-        for attribute in attributes.map_err(|_| malformed_element(activation))? {
+        for attribute in
+            attributes.map_err(|e| make_xml_error(activation, XmlError::InvalidAttr(e)))?
+        {
             let (ns, local_name) = parser.resolve_attribute(attribute.key);
             let name =
                 AvmString::new_utf8_bytes(activation.context.gc_context, local_name.into_inner());
@@ -763,7 +801,7 @@ impl<'gc> E4XNode<'gc> {
             };
 
             let value_str = custom_unescape(&attribute.value, decoder)
-                .map_err(|_| malformed_element(activation))?;
+                .map_err(|e| make_xml_error(activation, e))?;
             let value =
                 AvmString::new_utf8_bytes(activation.context.gc_context, value_str.as_bytes());
 
