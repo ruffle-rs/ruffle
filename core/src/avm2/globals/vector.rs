@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::error::type_error;
+use crate::avm2::error::{argument_error, type_error};
 use crate::avm2::globals::array::{
     compare_numeric, compare_string_case_insensitive, compare_string_case_sensitive, ArrayIter,
     SortOptions,
@@ -64,7 +64,14 @@ fn class_call<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if args.len() != 1 {
-        return Err("Argument count mismatch on class coercion".into());
+        return Err(Error::AvmError(argument_error(
+            activation,
+            &format!(
+                "Error #1112: Argument count mismatch on class coercion.  Expected 1, got {}.",
+                args.len()
+            ),
+            1112,
+        )?));
     }
 
     let this_class = activation.subclass_object().unwrap();
