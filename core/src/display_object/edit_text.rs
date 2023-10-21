@@ -1365,14 +1365,17 @@ impl<'gc> EditText<'gc> {
                     }
                 }
                 TextControlCode::Paste => {
-                    let text = &context.ui.clipboard_content();
-                    // TODO: To match Flash Player, we should truncate pasted text that is longer than max_chars
-                    // instead of canceling the paste action entirely
+                    let mut text = context.ui.clipboard_content();
+
+                    if text.len() > self.available_chars() && self.available_chars() > 0 {
+                        text = text[0..self.available_chars()].to_owned();
+                    }
+
                     if text.len() <= self.available_chars() {
                         self.replace_text(
                             selection.start(),
                             selection.end(),
-                            &WString::from_utf8(text),
+                            &WString::from_utf8(&text),
                             context,
                         );
                         let new_pos = selection.start() + text.len();
