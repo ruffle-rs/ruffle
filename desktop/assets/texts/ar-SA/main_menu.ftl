@@ -17,6 +17,7 @@ file-menu-exit = خروج
 controls-menu = عناصر التحكم
 controls-menu-suspend = تعليق
 controls-menu-resume = استئناف
+controls-menu-volume = التحكم بالصوت
 help-menu = التعليمات
 help-menu-join-discord = انضم لنا على الدسكورد
 help-menu-report-a-bug = الإبلاغ عن خطأ

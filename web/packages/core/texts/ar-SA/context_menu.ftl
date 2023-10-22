@@ -9,3 +9,4 @@ context-menu-about-ruffle =
 context-menu-hide = إخفاء هذه القائمة
 context-menu-exit-fullscreen = الخروج من وضعية الشاشة الكاملة
 context-menu-enter-fullscreen = تفعيل وضعية الشاشة الكاملة
+context-menu-volume-controls = التحكم بالصوت
