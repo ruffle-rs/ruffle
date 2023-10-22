@@ -430,65 +430,23 @@ pub fn append_child<'gc>(
     let child = args.get_value(0);
     let child = crate::avm2::e4x::maybe_escape_child(activation, child)?;
 
-    if let Some(child) = child.as_object().and_then(|o| o.as_xml_object()) {
-        xml.node()
-            .append_child(activation.context.gc_context, *child.node())?;
-    } else if let Some(list) = child.as_object().and_then(|o| o.as_xml_list_object()) {
-        for child in &*list.children() {
-            xml.node()
-                .append_child(activation.context.gc_context, *child.node())?;
-        }
-    } else {
-        // Appending a non-XML/XMLList object
-        let (last_child_namespace, last_child_name) =
-            if let E4XNodeKind::Element { children, .. } = &*xml.node().kind() {
-                let num_children = children.len();
+    // 1. Let children be the result of calling the [[Get]] method of x with argument "*"
+    let name = Multiname::any(activation.gc());
+    let children = xml.get_property_local(&name, activation)?;
 
-                match num_children {
-                    0 => (None, None),
-                    _ => (
-                        children[num_children - 1].namespace(),
-                        children[num_children - 1].local_name(),
-                    ),
-                }
-            } else {
-                // FIXME - figure out exactly when appending is allowed in FP,
-                // and throw the proper AVM error.
-                return Err(Error::RustError(
-                    format!(
-                        "Cannot append child {child:?} to node {:?}",
-                        xml.node().kind()
-                    )
-                    .into(),
-                ));
-            };
+    // 2. Call the [[Put]] method of children with arguments children.[[Length]] and child
+    let xml_list = children
+        .as_object()
+        .and_then(|o| o.as_xml_list_object())
+        .expect("Should have an XMLList");
+    let length = xml_list.length();
+    let name = Multiname::new(
+        activation.avm2().public_namespace,
+        AvmString::new_utf8(activation.context.gc_context, length.to_string()),
+    );
+    xml_list.set_property_local(&name, child, activation)?;
 
-        let text = child.coerce_to_string(activation)?;
-        if let Some(last_child_name) = last_child_name {
-            let element_node = E4XNode::element(
-                activation.context.gc_context,
-                last_child_namespace,
-                last_child_name,
-                Some(*xml.node()),
-            ); // Creating an element requires passing a parent node, unlike creating a text node
-
-            let text_node = E4XNode::text(activation.context.gc_context, text, None);
-
-            element_node
-                .append_child(activation.context.gc_context, text_node)
-                .expect("Appending to an element node should succeed");
-
-            xml.node()
-                .append_child(activation.context.gc_context, element_node)?;
-        } else {
-            let node = E4XNode::text(activation.context.gc_context, text, None);
-            // The text node will be parented in the append_child operation
-
-            xml.node()
-                .append_child(activation.context.gc_context, node)?;
-        }
-    };
-
+    // 3. Return x
     Ok(this.into())
 }
 
