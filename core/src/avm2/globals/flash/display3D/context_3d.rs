@@ -243,7 +243,7 @@ pub fn set_culling<'gc>(
             Context3DTriangleFace::Back
         } else if &*culling == b"front" {
             Context3DTriangleFace::Front
-        } else if &*culling == b"front_and_back" {
+        } else if &*culling == b"frontAndBack" {
             Context3DTriangleFace::FrontAndBack
         } else {
             tracing::error!("Unknown culling {:?}", culling);
