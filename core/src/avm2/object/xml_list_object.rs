@@ -160,8 +160,8 @@ impl<'gc> XmlListObject<'gc> {
     }
 
     // ECMA-357 9.2.1.6 [[Append]] (V)
-    pub fn append(&self, value: Value<'gc>, activation: &mut Activation<'_, 'gc>) {
-        let mut write = self.0.write(activation.gc());
+    pub fn append(&self, value: Value<'gc>, mc: &Mutation<'gc>) {
+        let mut write = self.0.write(mc);
 
         // 3. If Type(V) is XMLList,
         if let Some(list) = value.as_object().and_then(|x| x.as_xml_list_object()) {
@@ -750,7 +750,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                         }
 
                         // 2.c.ix. Call the [[Append]] method of x with argument y
-                        self.append(XmlObject::new(y, activation).into(), activation);
+                        self.append(XmlObject::new(y, activation).into(), activation.gc());
                     }
 
                     // 2.d. If (Type(V) ∉ {XML, XMLList}) or (V.[[Class]] ∈ {"text", "attribute"}), let V = ToString(V)
@@ -941,7 +941,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                 }
 
                 // 3.a.iii. Call the [[Append]] method of x with argument r
-                self.append(r.as_object().into(), activation);
+                self.append(r.as_object().into(), activation.gc());
             }
 
             let mut write = self.0.write(activation.gc());
