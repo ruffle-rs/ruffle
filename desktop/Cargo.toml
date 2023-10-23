@@ -27,7 +27,7 @@ url = "2.4.1"
 arboard = "3.2.1"
 dirs = "5.0"
 isahc = { version = "1.7.2", features = ["cookies"] }
-rfd = "0.12.0"
+rfd = "0.12.1"
 anyhow = "1.0"
 bytemuck = "1.14.0"
 os_info = { version = "3", default-features = false }
