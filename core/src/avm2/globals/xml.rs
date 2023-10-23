@@ -216,29 +216,9 @@ pub fn child<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let xml = this.as_xml_object().unwrap();
     let multiname = name_to_multiname(activation, &args[0], false)?;
-    let children = if let E4XNodeKind::Element { children, .. } = &*xml.node().kind() {
-        if let Some(local_name) = multiname.local_name() {
-            if let Ok(index) = local_name.parse::<usize>() {
-                let children = if let Some(node) = children.get(index) {
-                    vec![E4XOrXml::E4X(*node)]
-                } else {
-                    Vec::new()
-                };
-                return Ok(XmlListObject::new(activation, children, None, None).into());
-            }
-        }
 
-        children
-            .iter()
-            .filter(|node| node.matches_name(&multiname))
-            .map(|node| E4XOrXml::E4X(*node))
-            .collect()
-    } else {
-        Vec::new()
-    };
-
-    // FIXME: If name is not a number index, then we should call [[Get]] (get_property_local) with the name.
-    Ok(XmlListObject::new(activation, children, Some(xml.into()), Some(multiname)).into())
+    let list = xml.child(&multiname, activation);
+    Ok(list.into())
 }
 
 pub fn child_index<'gc>(

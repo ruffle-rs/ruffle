@@ -14,7 +14,7 @@ use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
 use ruffle_wstr::WString;
 use std::cell::{Ref, RefMut};
 
-use super::xml_list_object::E4XOrXml;
+use super::xml_list_object::{E4XOrXml, XmlOrXmlListObject};
 use super::PrimitiveObject;
 
 /// A class instance allocator that allocates XML objects.
@@ -68,6 +68,49 @@ impl<'gc> XmlObject<'gc> {
                 node,
             },
         ))
+    }
+
+    pub fn child(
+        &self,
+        name: &Multiname<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> XmlListObject<'gc> {
+        let children = if let E4XNodeKind::Element { children, .. } = &*self.node().kind() {
+            if let Some(local_name) = name.local_name() {
+                if let Ok(index) = local_name.parse::<usize>() {
+                    let children = if let Some(node) = children.get(index) {
+                        vec![E4XOrXml::E4X(*node)]
+                    } else {
+                        Vec::new()
+                    };
+
+                    let list = XmlListObject::new_with_children(activation, children, None, None);
+
+                    if list.length() > 0 {
+                        // NOTE: Since avmplus uses appendNode here, when the node exists, that implicitly sets the target_dirty flag.
+                        list.set_dirty_flag(activation.gc());
+                    }
+
+                    return list;
+                }
+            }
+
+            children
+                .iter()
+                .filter(|node| node.matches_name(name))
+                .map(|node| E4XOrXml::E4X(*node))
+                .collect()
+        } else {
+            Vec::new()
+        };
+
+        // FIXME: If name is not a number index, then we should call [[Get]] (get_property_local) with the name.
+        XmlListObject::new_with_children(
+            activation,
+            children,
+            Some(XmlOrXmlListObject::Xml(*self)),
+            Some(name.clone()),
+        )
     }
 
     pub fn length(&self) -> Option<usize> {
