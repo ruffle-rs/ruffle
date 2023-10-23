@@ -6,8 +6,9 @@ use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::{ArrayObject, ArrayStorage, Error};
 use crate::avm2_stub_method;
-use crate::character::Character;
 use crate::string::AvmString;
+
+pub use crate::avm2::object::font_allocator;
 
 /// Implements `Font.fontName`
 pub fn get_font_name<'gc>(
@@ -15,86 +16,46 @@ pub fn get_font_name<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some((movie, character_id)) = this.instance_of().and_then(|this| {
-        activation
-            .context
-            .library
-            .avm2_class_registry()
-            .class_symbol(this)
-    }) {
-        if let Some(Character::Font(font)) = activation
-            .context
-            .library
-            .library_for_movie_mut(movie)
-            .character_by_id(character_id)
-        {
-            return Ok(AvmString::new_utf8(
-                activation.context.gc_context,
-                font.descriptor().name(),
-            )
-            .into());
-        }
+    if let Some(font) = this.as_font() {
+        return Ok(
+            AvmString::new_utf8(activation.context.gc_context, font.descriptor().name()).into(),
+        );
     }
 
-    Ok(Value::Undefined)
+    Ok(Value::Null)
 }
 
 /// Implements `Font.fontStyle`
 pub fn get_font_style<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some((movie, character_id)) = this.instance_of().and_then(|this| {
-        activation
-            .context
-            .library
-            .avm2_class_registry()
-            .class_symbol(this)
-    }) {
-        if let Some(Character::Font(font)) = activation
-            .context
-            .library
-            .library_for_movie_mut(movie)
-            .character_by_id(character_id)
-        {
-            return match (font.descriptor().bold(), font.descriptor().italic()) {
-                (false, false) => Ok("regular".into()),
-                (false, true) => Ok("italic".into()),
-                (true, false) => Ok("bold".into()),
-                (true, true) => Ok("boldItalic".into()),
-            };
-        }
+    if let Some(font) = this.as_font() {
+        return match (font.descriptor().bold(), font.descriptor().italic()) {
+            (false, false) => Ok("regular".into()),
+            (false, true) => Ok("italic".into()),
+            (true, false) => Ok("bold".into()),
+            (true, true) => Ok("boldItalic".into()),
+        };
     }
 
-    Ok(Value::Undefined)
+    Ok(Value::Null)
 }
 
 /// Implements `Font.fontType`
 pub fn get_font_type<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some((movie, character_id)) = this.instance_of().and_then(|this| {
-        activation
-            .context
-            .library
-            .avm2_class_registry()
-            .class_symbol(this)
-    }) {
-        if let Some(Character::Font(_)) = activation
-            .context
-            .library
-            .library_for_movie_mut(movie)
-            .character_by_id(character_id)
-        {
-            //TODO: How do we distinguish between CFF and non-CFF embedded fonts?
-            return Ok("embedded".into());
-        }
+    if let Some(_font) = this.as_font() {
+        // [?] How do we distinguish between CFF and non-CFF embedded fonts?
+        // [NA] DefineFont4 is CFF. This should be a property of Font struct
+        return Ok("embedded".into());
     }
 
-    Ok(Value::Undefined)
+    Ok(Value::Null)
 }
 
 /// Implements `Font.hasGlyphs`
@@ -103,26 +64,12 @@ pub fn has_glyphs<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some((movie, character_id)) = this.instance_of().and_then(|this| {
-        activation
-            .context
-            .library
-            .avm2_class_registry()
-            .class_symbol(this)
-    }) {
+    if let Some(font) = this.as_font() {
         let my_str = args.get_string(activation, 0)?;
-
-        if let Some(Character::Font(font)) = activation
-            .context
-            .library
-            .library_for_movie_mut(movie)
-            .character_by_id(character_id)
-        {
-            return Ok(font.has_glyphs_for_str(&my_str).into());
-        }
+        return Ok(font.has_glyphs_for_str(&my_str).into());
     }
 
-    Ok(Value::Undefined)
+    Ok(Value::Bool(false))
 }
 
 /// `Font.enumerateFonts`
