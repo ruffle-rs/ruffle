@@ -166,6 +166,7 @@ pub struct SystemClasses<'gc> {
     pub shaderfilter: ClassObject<'gc>,
     pub statusevent: ClassObject<'gc>,
     pub contextmenuevent: ClassObject<'gc>,
+    pub font: ClassObject<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -291,6 +292,7 @@ impl<'gc> SystemClasses<'gc> {
             shaderfilter: object,
             statusevent: object,
             contextmenuevent: object,
+            font: object,
         }
     }
 }
@@ -794,6 +796,7 @@ fn load_playerglobal<'gc>(
             ("flash.net", "URLVariables", urlvariables),
             ("flash.utils", "ByteArray", bytearray),
             ("flash.system", "ApplicationDomain", application_domain),
+            ("flash.text", "Font", font),
             ("flash.text", "StaticText", statictext),
             ("flash.text", "TextFormat", textformat),
             ("flash.text", "TextField", textfield),

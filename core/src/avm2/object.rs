@@ -40,6 +40,7 @@ mod dispatch_object;
 mod domain_object;
 mod error_object;
 mod event_object;
+mod font_object;
 mod function_object;
 mod index_buffer_3d_object;
 mod loaderinfo_object;
@@ -83,6 +84,7 @@ pub use crate::avm2::object::domain_object::{
 };
 pub use crate::avm2::object::error_object::{error_allocator, ErrorObject, ErrorObjectWeak};
 pub use crate::avm2::object::event_object::{event_allocator, EventObject, EventObjectWeak};
+pub use crate::avm2::object::font_object::{font_allocator, FontObject, FontObjectWeak};
 pub use crate::avm2::object::function_object::{
     function_allocator, FunctionObject, FunctionObjectWeak,
 };
@@ -132,6 +134,7 @@ pub use crate::avm2::object::xml_list_object::{
     xml_list_allocator, E4XOrXml, XmlListObject, XmlListObjectWeak,
 };
 pub use crate::avm2::object::xml_object::{xml_allocator, XmlObject, XmlObjectWeak};
+use crate::font::Font;
 
 /// Represents an object that can be directly interacted with by the AVM2
 /// runtime.
@@ -173,7 +176,8 @@ pub use crate::avm2::object::xml_object::{xml_allocator, XmlObject, XmlObjectWea
         Program3DObject(Program3DObject<'gc>),
         NetStreamObject(NetStreamObject<'gc>),
         ShaderDataObject(ShaderDataObject<'gc>),
-        SocketObject(SocketObject<'gc>)
+        SocketObject(SocketObject<'gc>),
+        FontObject(FontObject<'gc>)
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -1276,6 +1280,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         None
     }
 
+    /// Unwrap this object as a font.
+    fn as_font(&self) -> Option<Font<'gc>> {
+        None
+    }
+
     /// Unwrap this object as a mutable regexp.
     fn as_regexp_mut(&self, _mc: &Mutation<'gc>) -> Option<RefMut<RegExp<'gc>>> {
         None
@@ -1424,7 +1433,8 @@ impl<'gc> Object<'gc> {
             Self::Program3DObject(o) => WeakObject::Program3DObject(Program3DObjectWeak(Gc::downgrade(o.0))),
             Self::NetStreamObject(o) => WeakObject::NetStreamObject(NetStreamObjectWeak(GcCell::downgrade(o.0))),
             Self::ShaderDataObject(o) => WeakObject::ShaderDataObject(ShaderDataObjectWeak(Gc::downgrade(o.0))),
-            Self::SocketObject(o) => WeakObject::SocketObject(SocketObjectWeak(Gc::downgrade(o.0)))
+            Self::SocketObject(o) => WeakObject::SocketObject(SocketObjectWeak(Gc::downgrade(o.0))),
+            Self::FontObject(o) => WeakObject::FontObject(FontObjectWeak(GcCell::downgrade(o.0))),
         }
     }
 }
@@ -1481,6 +1491,7 @@ pub enum WeakObject<'gc> {
     NetStreamObject(NetStreamObjectWeak<'gc>),
     ShaderDataObject(ShaderDataObjectWeak<'gc>),
     SocketObject(SocketObjectWeak<'gc>),
+    FontObject(FontObjectWeak<'gc>),
 }
 
 impl<'gc> WeakObject<'gc> {
@@ -1520,6 +1531,7 @@ impl<'gc> WeakObject<'gc> {
             Self::NetStreamObject(o) => NetStreamObject(o.0.upgrade(mc)?).into(),
             Self::ShaderDataObject(o) => ShaderDataObject(o.0.upgrade(mc)?).into(),
             Self::SocketObject(o) => SocketObject(o.0.upgrade(mc)?).into(),
+            Self::FontObject(o) => FontObject(o.0.upgrade(mc)?).into(),
         })
     }
 }
