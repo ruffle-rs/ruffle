@@ -46,6 +46,20 @@ pub fn font_allocator<'gc>(
 #[collect(no_drop)]
 pub struct FontObject<'gc>(pub GcCell<'gc, FontObjectData<'gc>>);
 
+impl<'gc> FontObject<'gc> {
+    pub fn for_font(mc: &Mutation<'gc>, class: ClassObject<'gc>, font: Font<'gc>) -> Object<'gc> {
+        let base = ScriptObjectData::new(class);
+        FontObject(GcCell::new(
+            mc,
+            FontObjectData {
+                base,
+                font: Some(font),
+            },
+        ))
+        .into()
+    }
+}
+
 #[derive(Clone, Collect, Copy, Debug)]
 #[collect(no_drop)]
 pub struct FontObjectWeak<'gc>(pub GcWeakCell<'gc, FontObjectData<'gc>>);
