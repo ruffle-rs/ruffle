@@ -412,6 +412,18 @@ jobs:
           refresh-token: ${{ secrets.CHROME_REFRESH_TOKEN }}
           file-path: ./web/packages/extension/dist/ruffle_extension.zip
 
+      - name: Publish Edge extension
+        if: env.EDGE_PRODUCT_ID != '' && !matrix.demo
+        id: publish-edge-extension
+        continue-on-error: true
+        uses: wdzeng/edge-addon@v1
+        with:
+          product-id: ${{ secrets.EDGE_PRODUCT_ID }}
+          zip-path: ./web/packages/extension/dist/ruffle_extension.zip
+          client-id: ${{ secrets.EDGE_CLIENT_ID }}
+          client-secret: ${{ secrets.EDGE_CLIENT_SECRET }}
+          access-token-url: ${{ secrets.EDGE_ACCESS_TOKEN_URL }}
+
       - name: Clone web demo
         if: matrix.demo
         uses: actions/checkout@v4
