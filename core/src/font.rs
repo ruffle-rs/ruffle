@@ -141,6 +141,13 @@ impl GlyphSource {
     }
 }
 
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum FontType {
+    Embedded,
+    EmbeddedCFF,
+    Device,
+}
+
 #[derive(Debug, Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct Font<'gc>(Gc<'gc, FontData>);
@@ -169,6 +176,8 @@ struct FontData {
     /// The identity of the font.
     #[collect(require_static)]
     descriptor: FontDescriptor,
+
+    font_type: FontType,
 }
 
 impl<'gc> Font<'gc> {
@@ -177,6 +186,7 @@ impl<'gc> Font<'gc> {
         renderer: &mut dyn RenderBackend,
         tag: swf::Font,
         encoding: &'static swf::Encoding,
+        font_type: FontType,
     ) -> Font<'gc> {
         let mut code_point_to_glyph = fnv::FnvHashMap::default();
 
@@ -240,6 +250,7 @@ impl<'gc> Font<'gc> {
                 descent,
                 leading,
                 descriptor,
+                font_type,
             },
         ))
     }
@@ -479,6 +490,10 @@ impl<'gc> Font<'gc> {
 
     pub fn descriptor(&self) -> &FontDescriptor {
         &self.0.descriptor
+    }
+
+    pub fn font_type(&self) -> FontType {
+        self.0.font_type
     }
 }
 
@@ -818,7 +833,7 @@ impl Default for TextRenderSettings {
 
 #[cfg(test)]
 mod tests {
-    use crate::font::{EvalParameters, Font};
+    use crate::font::{EvalParameters, Font, FontType};
     use crate::string::WStr;
     use gc_arena::{rootless_arena, Mutation};
     use ruffle_render::backend::{null::NullRenderer, ViewportDimensions};
@@ -844,6 +859,7 @@ mod tests {
                     .read_define_font_2(3)
                     .expect("Built-in font should compile"),
                 reader.encoding(),
+                FontType::Device,
             );
 
             callback(mc, device_font);

@@ -4,7 +4,7 @@ use crate::backend::audio::SoundHandle;
 use crate::character::Character;
 
 use crate::display_object::{Bitmap, Graphic, MorphShape, TDisplayObject, Text};
-use crate::font::{Font, FontDescriptor};
+use crate::font::{Font, FontDescriptor, FontType};
 use crate::prelude::*;
 use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
@@ -256,6 +256,10 @@ impl<'gc> MovieLibrary<'gc> {
         } else {
             None
         }
+    }
+
+    pub fn embedded_fonts(&self) -> Vec<Font<'gc>> {
+        self.fonts.values().cloned().collect()
     }
 
     /// Find a font by it's name and parameters.
@@ -590,7 +594,8 @@ impl<'gc> Library<'gc> {
     ) {
         match definition {
             FontDefinition::SwfTag(tag, encoding) => {
-                let font = Font::from_swf_tag(gc_context, renderer, tag, encoding);
+                let font =
+                    Font::from_swf_tag(gc_context, renderer, tag, encoding, FontType::Device);
                 let name = font.descriptor().name().to_owned();
                 info!("Loaded new device font \"{name}\" from swf tag");
                 self.device_fonts.insert(name, font);
