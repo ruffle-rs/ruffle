@@ -126,7 +126,7 @@ pub struct MovieLibrary<'gc> {
     characters: HashMap<CharacterId, Character<'gc>>,
     export_characters: Avm1PropertyMap<'gc, CharacterId>,
     jpeg_tables: Option<Vec<u8>>,
-    fonts: HashMap<FontDescriptor, Font<'gc>>,
+    fonts: FontMap<'gc>,
     avm2_domain: Option<Avm2Domain<'gc>>,
 }
 
@@ -136,7 +136,7 @@ impl<'gc> MovieLibrary<'gc> {
             characters: HashMap::new(),
             export_characters: Avm1PropertyMap::new(),
             jpeg_tables: None,
-            fonts: HashMap::new(),
+            fonts: Default::default(),
             avm2_domain: None,
         }
     }
@@ -145,10 +145,7 @@ impl<'gc> MovieLibrary<'gc> {
         // TODO(Herschel): What is the behavior if id already exists?
         if !self.contains_character(id) {
             if let Character::Font(font) = character {
-                // The first font with a given descriptor wins
-                if !self.fonts.contains_key(font.descriptor()) {
-                    self.fonts.insert(font.descriptor().clone(), font);
-                }
+                self.fonts.register(font);
             }
 
             self.characters.insert(id, character);
@@ -259,92 +256,7 @@ impl<'gc> MovieLibrary<'gc> {
     }
 
     pub fn embedded_fonts(&self) -> Vec<Font<'gc>> {
-        self.fonts.values().cloned().collect()
-    }
-
-    /// Find a font by it's name and parameters.
-    pub fn get_embedded_font_by_name(
-        &self,
-        name: &str,
-        is_bold: bool,
-        is_italic: bool,
-    ) -> Option<Font<'gc>> {
-        // The order here is specific, and tested in `tests/swfs/fonts/embed_matching/fallback_preferences`
-
-        // Exact match
-        if let Some(font) = self
-            .fonts
-            .get(&FontDescriptor::from_parts(name, is_bold, is_italic))
-        {
-            return Some(*font);
-        }
-
-        if is_italic ^ is_bold {
-            // If one is set (but not both), then try upgrading to bold italic...
-            if let Some(font) = self
-                .fonts
-                .get(&FontDescriptor::from_parts(name, true, true))
-            {
-                return Some(*font);
-            }
-
-            // and then downgrading to regular
-            if let Some(font) = self
-                .fonts
-                .get(&FontDescriptor::from_parts(name, false, false))
-            {
-                return Some(*font);
-            }
-
-            // and then finally whichever one we don't have set
-            if let Some(font) = self
-                .fonts
-                .get(&FontDescriptor::from_parts(name, !is_bold, !is_italic))
-            {
-                return Some(*font);
-            }
-        } else {
-            // We don't have an exact match and we were either looking for regular or bold-italic
-
-            if is_italic && is_bold {
-                // Do we have regular? (unless we already looked for it)
-                if let Some(font) = self
-                    .fonts
-                    .get(&FontDescriptor::from_parts(name, false, false))
-                {
-                    return Some(*font);
-                }
-            }
-
-            // Do we have bold?
-            if let Some(font) = self
-                .fonts
-                .get(&FontDescriptor::from_parts(name, true, false))
-            {
-                return Some(*font);
-            }
-
-            // Do we have italic?
-            if let Some(font) = self
-                .fonts
-                .get(&FontDescriptor::from_parts(name, false, true))
-            {
-                return Some(*font);
-            }
-
-            if !is_bold && !is_italic {
-                // Do we have bold italic? (unless we already looked for it)
-                if let Some(font) = self
-                    .fonts
-                    .get(&FontDescriptor::from_parts(name, true, true))
-                {
-                    return Some(*font);
-                }
-            }
-        }
-
-        // If there's no match at all, then it should not show anything...
-        None
+        self.fonts.all()
     }
 
     /// Returns the `Graphic` with the given character ID.
@@ -463,6 +375,10 @@ pub struct Library<'gc> {
     // TODO: Descriptors shouldn't be stored in fonts. Fonts should be a list that we iterate and ask "do you match". A font can have zero or many names.
     device_fonts: FnvHashMap<String, Font<'gc>>,
 
+    /// "Global" embedded fonts, registered through AVM2 `Font.registerFont`.
+    /// These should be checked before any Movie-specific library's own fonts.
+    global_fonts: FontMap<'gc>,
+
     /// A set of which fonts we've asked from the backend already, to help with negative caching.
     /// If we've asked for a specific font, record it here and don't ask again.
     font_lookup_cache: FnvHashSet<String>,
@@ -488,6 +404,7 @@ unsafe impl<'gc> gc_arena::Collect for Library<'gc> {
             val.trace(cc);
         }
         self.device_fonts.trace(cc);
+        self.global_fonts.trace(cc);
         self.avm2_class_registry.trace(cc);
     }
 }
@@ -497,6 +414,7 @@ impl<'gc> Library<'gc> {
         Self {
             movie_libraries: PtrWeakKeyHashMap::new(),
             device_fonts: Default::default(),
+            global_fonts: Default::default(),
             font_lookup_cache: Default::default(),
             default_font_names: Default::default(),
             default_font_cache: Default::default(),
@@ -604,6 +522,35 @@ impl<'gc> Library<'gc> {
         self.default_font_cache.clear();
     }
 
+    /// Find a font by it's name and parameters.
+    pub fn get_embedded_font_by_name(
+        &self,
+        name: &str,
+        is_bold: bool,
+        is_italic: bool,
+        movie: Option<Arc<SwfMovie>>,
+    ) -> Option<Font<'gc>> {
+        if let Some(font) = self.global_fonts.find(name, is_bold, is_italic) {
+            return Some(font);
+        }
+        if let Some(movie) = movie {
+            if let Some(library) = self.library_for_movie(movie) {
+                if let Some(font) = library.fonts.find(name, is_bold, is_italic) {
+                    return Some(font);
+                }
+            }
+        }
+        None
+    }
+
+    pub fn global_fonts(&self) -> Vec<Font<'gc>> {
+        self.global_fonts.all()
+    }
+
+    pub fn register_global_font(&mut self, font: Font<'gc>) {
+        self.global_fonts.register(font);
+    }
+
     /// Get the AVM2 class registry.
     pub fn avm2_class_registry(&self) -> &Avm2ClassRegistry<'gc> {
         &self.avm2_class_registry
@@ -612,5 +559,82 @@ impl<'gc> Library<'gc> {
     /// Mutate the AVM2 class registry.
     pub fn avm2_class_registry_mut(&mut self) -> &mut Avm2ClassRegistry<'gc> {
         &mut self.avm2_class_registry
+    }
+}
+
+#[derive(Collect, Default)]
+#[collect(no_drop)]
+struct FontMap<'gc>(FnvHashMap<FontDescriptor, Font<'gc>>);
+
+impl<'gc> FontMap<'gc> {
+    pub fn register(&mut self, font: Font<'gc>) {
+        // The first font with a given descriptor wins
+        if !self.0.contains_key(font.descriptor()) {
+            self.0.insert(font.descriptor().clone(), font);
+        }
+    }
+
+    pub fn find(&self, name: &str, is_bold: bool, is_italic: bool) -> Option<Font<'gc>> {
+        // The order here is specific, and tested in `tests/swfs/fonts/embed_matching/fallback_preferences`
+
+        // Exact match
+        if let Some(font) = self
+            .0
+            .get(&FontDescriptor::from_parts(name, is_bold, is_italic))
+        {
+            return Some(*font);
+        }
+
+        if is_italic ^ is_bold {
+            // If one is set (but not both), then try upgrading to bold italic...
+            if let Some(font) = self.0.get(&FontDescriptor::from_parts(name, true, true)) {
+                return Some(*font);
+            }
+
+            // and then downgrading to regular
+            if let Some(font) = self.0.get(&FontDescriptor::from_parts(name, false, false)) {
+                return Some(*font);
+            }
+
+            // and then finally whichever one we don't have set
+            if let Some(font) = self
+                .0
+                .get(&FontDescriptor::from_parts(name, !is_bold, !is_italic))
+            {
+                return Some(*font);
+            }
+        } else {
+            // We don't have an exact match and we were either looking for regular or bold-italic
+
+            if is_italic && is_bold {
+                // Do we have regular? (unless we already looked for it)
+                if let Some(font) = self.0.get(&FontDescriptor::from_parts(name, false, false)) {
+                    return Some(*font);
+                }
+            }
+
+            // Do we have bold?
+            if let Some(font) = self.0.get(&FontDescriptor::from_parts(name, true, false)) {
+                return Some(*font);
+            }
+
+            // Do we have italic?
+            if let Some(font) = self.0.get(&FontDescriptor::from_parts(name, false, true)) {
+                return Some(*font);
+            }
+
+            if !is_bold && !is_italic {
+                // Do we have bold italic? (unless we already looked for it)
+                if let Some(font) = self.0.get(&FontDescriptor::from_parts(name, true, true)) {
+                    return Some(*font);
+                }
+            }
+        }
+
+        None
+    }
+
+    pub fn all(&self) -> Vec<Font<'gc>> {
+        self.0.values().copied().collect()
     }
 }
