@@ -16,7 +16,7 @@ ruffle_input_format = { path = "input-format" }
 ruffle_socket_format = { path = "socket-format" }
 ruffle_video_software = { path = "../video/software", optional = true }
 image = { version = "0.24.7", default-features = false, features = ["png"] }
-regex = "1.10.1"
+regex = "1.10.2"
 url = "2.4.1"
 
 [features]
