@@ -53,10 +53,18 @@ impl<'gc> Debug for XmlListObject<'gc> {
 impl<'gc> XmlListObject<'gc> {
     pub fn new(
         activation: &mut Activation<'_, 'gc>,
-        children: Vec<E4XOrXml<'gc>>,
         target_object: Option<XmlOrXmlListObject<'gc>>,
         target_property: Option<Multiname<'gc>>,
     ) -> Self {
+        Self::new_with_children(activation, Vec::new(), target_object, target_property)
+    }
+
+    pub fn new_with_children(
+        activation: &mut Activation<'_, 'gc>,
+        children: Vec<E4XOrXml<'gc>>,
+        target_object: Option<XmlOrXmlListObject<'gc>>,
+        target_property: Option<Multiname<'gc>>,
+    ) -> XmlListObject<'gc> {
         let base = ScriptObjectData::new(activation.context.avm2.classes().xml_list);
         XmlListObject(GcCell::new(
             activation.context.gc_context,
@@ -68,6 +76,10 @@ impl<'gc> XmlListObject<'gc> {
                 target_dirty: false,
             },
         ))
+    }
+
+    pub fn set_dirty_flag(&self, mc: &Mutation<'gc>) {
+        self.0.write(mc).target_dirty = true;
     }
 
     pub fn length(&self) -> usize {
@@ -115,7 +127,7 @@ impl<'gc> XmlListObject<'gc> {
             .iter()
             .map(|child| E4XOrXml::E4X(child.node().deep_copy(activation.context.gc_context)))
             .collect();
-        XmlListObject::new(
+        XmlListObject::new_with_children(
             activation,
             children,
             self.target_object(),
@@ -285,23 +297,6 @@ impl<'gc> XmlListObject<'gc> {
         }
 
         Ok(false)
-    }
-
-    pub fn concat(
-        activation: &mut Activation<'_, 'gc>,
-        left: XmlListObject<'gc>,
-        right: XmlListObject<'gc>,
-    ) -> XmlListObject<'gc> {
-        if left.length() == 0 {
-            right
-        } else if right.length() == 0 {
-            left
-        } else {
-            let mut out = vec![];
-            out.extend(left.children().clone());
-            out.extend(right.children().clone());
-            Self::new(activation, out, None, None)
-        }
     }
 }
 
@@ -477,7 +472,17 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
         for child in self.0.read().children.iter() {
             child.node().descendants(multiname, &mut descendants);
         }
-        Some(XmlListObject::new(activation, descendants, None, None))
+
+        // NOTE: The way avmplus implemented this means we do not need to set target_dirty flag.
+        //       avmplus used the _append method which explicitly unsets the target_dirty flag when appending an XMLListObject.
+        //       and XMLObject's getDescendants method never returns a XMLList with target object/property set,
+        //       so we do not need to do anything special here.
+        Some(XmlListObject::new_with_children(
+            activation,
+            descendants,
+            None,
+            None,
+        ))
     }
 
     fn get_property_local(
@@ -485,9 +490,9 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
         name: &Multiname<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        // FIXME - implement everything from E4X spec (XMLListObject::getMultinameProperty in avmplus)
-        let mut write = self.0.write(activation.context.gc_context);
+        let mut write = self.0.write(activation.gc());
 
+        // 1. If ToString(ToUint32(P)) == P
         if !name.has_explicit_namespace() {
             if let Some(local_name) = name.local_name() {
                 if let Ok(index) = local_name.parse::<usize>() {
@@ -500,35 +505,37 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
             }
         }
 
-        let matched_children = write
-            .children
-            .iter_mut()
-            .flat_map(|child| {
-                let child_prop = child
-                    .get_or_create_xml(activation)
-                    .get_property_local(name, activation)
-                    .unwrap();
-                if let Some(prop_xml) = child_prop.as_object().and_then(|obj| obj.as_xml_object()) {
-                    vec![E4XOrXml::Xml(prop_xml)]
-                } else if let Some(prop_xml_list) = child_prop
-                    .as_object()
-                    .and_then(|obj| obj.as_xml_list_object())
-                {
-                    // Flatten children
-                    prop_xml_list.children().clone()
-                } else {
-                    vec![]
-                }
-            })
-            .collect();
+        // 2. Let list be a new XMLList with list.[[TargetObject]] = x and list.[[TargetProperty]] = P
+        let out = XmlListObject::new(activation, Some(self.into()), Some(name.clone()));
 
-        Ok(XmlListObject::new(
-            activation,
-            matched_children,
-            Some(self.into()),
-            Some(name.clone()),
-        )
-        .into())
+        // 3. For i = 0 to x.[[Length]]-1,
+        for child in write.children.iter_mut() {
+            let child = child.get_or_create_xml(activation);
+
+            // 3.a. If x[i].[[Class]] == "element",
+            if matches!(*child.node().kind(), E4XNodeKind::Element { .. }) {
+                // 3.a.i. Let gq be the result of calling the [[Get]] method of x[i] with argument P
+                let gq = child.get_property_local(name, activation)?;
+
+                // 3.a.ii. If gq.[[Length]] > 0, call the [[Append]] method of list with argument gq
+                if let Some(obj) = gq.as_object() {
+                    if let Some(xml) = obj.as_xml_object() {
+                        let length = xml.length().unwrap_or(0);
+                        if length > 0 {
+                            out.append(gq, activation.gc());
+                        }
+                    } else if let Some(list) = obj.as_xml_list_object() {
+                        let length = list.length();
+                        if length > 0 {
+                            out.append(gq, activation.gc());
+                        }
+                    }
+                }
+            }
+        }
+
+        // 4. Return list
+        Ok(out.into())
     }
 
     fn call_property_local(
@@ -812,11 +819,11 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                         value.as_object().and_then(|x| x.as_xml_list_object())
                     {
                         // 2.f.i. Create a shallow copy c of V
-                        let c = XmlListObject::new(
+                        let c = XmlListObject::new_with_children(
                             activation,
                             list.children().clone(),
-                            list.target_object(),
-                            list.target_property(),
+                            None,
+                            None,
                         );
                         // 2.f.ii. Let parent = x[i].[[Parent]]
                         let parent = child.parent();

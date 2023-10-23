@@ -283,7 +283,7 @@ pub fn children<'gc>(
     };
 
     // FIXME: Spec says to just call [[Get]] with * (any multiname).
-    Ok(XmlListObject::new(
+    Ok(XmlListObject::new_with_children(
         activation,
         children,
         Some(xml.into()),
@@ -337,7 +337,14 @@ pub fn elements<'gc>(
         Vec::new()
     };
 
-    Ok(XmlListObject::new(activation, children, Some(xml.into()), None).into())
+    let list = XmlListObject::new_with_children(activation, children, Some(xml.into()), None);
+
+    if list.length() > 0 {
+        // NOTE: Since avmplus uses appendNode to build the list here, we need to set target dirty flag.
+        list.set_dirty_flag(activation.gc());
+    }
+
+    Ok(list.into())
 }
 
 pub fn attributes<'gc>(
@@ -353,7 +360,7 @@ pub fn attributes<'gc>(
     };
 
     // FIXME: Spec/avmplus says to call [[Get]] with * attribute name (any attribute multiname).
-    Ok(XmlListObject::new(
+    Ok(XmlListObject::new_with_children(
         activation,
         attributes,
         Some(xml.into()),
@@ -380,7 +387,10 @@ pub fn attribute<'gc>(
     };
 
     // FIXME: Spec/avmplus call [[Get]] with attribute name.
-    Ok(XmlListObject::new(activation, attributes, Some(xml.into()), Some(multiname)).into())
+    Ok(
+        XmlListObject::new_with_children(activation, attributes, Some(xml.into()), Some(multiname))
+            .into(),
+    )
 }
 
 pub fn call_handler<'gc>(
@@ -526,9 +536,12 @@ pub fn descendants<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let xml = this.as_xml_object().unwrap();
     let multiname = name_to_multiname(activation, &args[0], false)?;
-    let mut descendants = Vec::new();
-    xml.node().descendants(&multiname, &mut descendants);
-    Ok(XmlListObject::new(activation, descendants, None, None).into())
+
+    // 2. Return the result of calling the [[Descendants]] method of x with argument name
+    Ok(xml
+        .xml_descendants(activation, &multiname)
+        .expect("XmlObject always returns a XmlListObject here")
+        .into())
 }
 
 // ECMA-357 13.4.4.37 XML.prototype.text ( )
@@ -547,9 +560,17 @@ pub fn text<'gc>(
     } else {
         Vec::new()
     };
+
     // 1. Let list be a new XMLList with list.[[TargetObject]] = x and list.[[TargetProperty]] = null
+    let list = XmlListObject::new_with_children(activation, nodes, Some(xml.into()), None);
+
+    if list.length() > 0 {
+        // NOTE: Since avmplus uses appendNode to build the list here, we need to set target dirty flag.
+        list.set_dirty_flag(activation.gc());
+    }
+
     // 3. Return list
-    Ok(XmlListObject::new(activation, nodes, Some(xml.into()), None).into())
+    Ok(list.into())
 }
 
 pub fn length<'gc>(
@@ -598,8 +619,15 @@ pub fn comments<'gc>(
     };
 
     // 1. Let list be a new XMLList with list.[[TargetObject]] = x and list.[[TargetProperty]] = null
+    let list = XmlListObject::new_with_children(activation, comments, Some(xml.into()), None);
+
+    if list.length() > 0 {
+        // NOTE: Since avmplus uses appendNode to build the list here, we need to set target dirty flag.
+        list.set_dirty_flag(activation.gc());
+    }
+
     // 3. Return list
-    Ok(XmlListObject::new(activation, comments, Some(xml.into()), None).into())
+    Ok(list.into())
 }
 
 // ECMA-357 13.4.4.28 XML.prototype.processingInstructions ( [ name ] )
@@ -624,8 +652,15 @@ pub fn processing_instructions<'gc>(
     };
 
     // 3. Let list = a new XMLList with list.[[TargetObject]] = x and list.[[TargetProperty]] = null
+    let list = XmlListObject::new_with_children(activation, nodes, Some(xml.into()), None);
+
+    if list.length() > 0 {
+        // NOTE: Since avmplus uses appendNode to build the list here, we need to set target dirty flag.
+        list.set_dirty_flag(activation.gc());
+    }
+
     // 5. Return list
-    Ok(XmlListObject::new(activation, nodes, Some(xml.into()), None).into())
+    Ok(list.into())
 }
 
 // ECMA-357 13.4.4.18 XML.prototype.insertChildAfter (child1, child2)

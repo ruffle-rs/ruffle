@@ -197,7 +197,7 @@ pub fn children<'gc>(
         }
     }
     // FIXME: This method should just call get_property_local with "*".
-    Ok(XmlListObject::new(
+    Ok(XmlListObject::new_with_children(
         activation,
         sub_children,
         Some(list.into()),
@@ -240,7 +240,13 @@ pub fn attribute<'gc>(
     }
 
     // FIXME: This should just use get_property_local with an attribute Multiname.
-    Ok(XmlListObject::new(activation, sub_children, Some(list.into()), Some(multiname)).into())
+    Ok(XmlListObject::new_with_children(
+        activation,
+        sub_children,
+        Some(list.into()),
+        Some(multiname),
+    )
+    .into())
 }
 
 pub fn attributes<'gc>(
@@ -258,7 +264,7 @@ pub fn attributes<'gc>(
     }
 
     // FIXME: This should just use get_property_local with an any attribute Multiname.
-    Ok(XmlListObject::new(
+    Ok(XmlListObject::new_with_children(
         activation,
         child_attrs,
         Some(list.into()),
@@ -319,7 +325,9 @@ pub fn text<'gc>(
             );
         }
     }
-    Ok(XmlListObject::new(activation, nodes, Some(xml_list.into()), None).into())
+    // FIXME: This should call XmlObject's text() and concat everything together
+    //        (Necessary for correct target object/property and dirty flag).
+    Ok(XmlListObject::new_with_children(activation, nodes, Some(xml_list.into()), None).into())
 }
 
 pub fn comments<'gc>(
@@ -339,7 +347,10 @@ pub fn comments<'gc>(
             );
         }
     }
-    Ok(XmlListObject::new(activation, nodes, Some(xml_list.into()), None).into())
+
+    // FIXME: This should call XmlObject's comments() and concat everything together
+    //        (Necessary for correct target object/property and dirty flag).
+    Ok(XmlListObject::new_with_children(activation, nodes, Some(xml_list.into()), None).into())
 }
 
 // ECMA-357 13.5.4.17 XMLList.prototype.parent ( )
@@ -401,5 +412,7 @@ pub fn processing_instructions<'gc>(
         }
     }
 
-    Ok(XmlListObject::new(activation, nodes, Some(xml_list.into()), None).into())
+    // FIXME: This should call XmlObject's processing_instructions() and concat everything together
+    //        (Necessary for correct target object/property and dirty flag).
+    Ok(XmlListObject::new_with_children(activation, nodes, Some(xml_list.into()), None).into())
 }
