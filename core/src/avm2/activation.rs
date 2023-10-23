@@ -10,8 +10,8 @@ use crate::avm2::error::{
 };
 use crate::avm2::method::{BytecodeMethod, Method, ParamConfig};
 use crate::avm2::object::{
-    ArrayObject, ByteArrayObject, ClassObject, E4XOrXml, FunctionObject, NamespaceObject,
-    ScriptObject, XmlListObject,
+    ArrayObject, ByteArrayObject, ClassObject, FunctionObject, NamespaceObject, ScriptObject,
+    XmlListObject,
 };
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::scope::{search_scope_stack, Scope, ScopeChain};
@@ -2142,32 +2142,16 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 value1.coerce_to_string(self)?,
                 s,
             )),
-            (
-                Value::Object(Object::XmlListObject(value1)),
-                Value::Object(Object::XmlListObject(value2)),
-            ) => Value::Object(XmlListObject::concat(self, value1, value2).into()),
-            (
-                Value::Object(Object::XmlListObject(value1)),
-                Value::Object(Object::XmlObject(value2)),
-            ) => {
-                let mut children = value1.children().clone();
-                children.push(E4XOrXml::Xml(value2));
-                XmlListObject::new(self, children, None, None).into()
-            }
-            (
-                Value::Object(Object::XmlObject(value1)),
-                Value::Object(Object::XmlListObject(value2)),
-            ) => {
-                let mut children = vec![E4XOrXml::Xml(value1)];
-                children.extend(value2.children().clone());
-                XmlListObject::new(self, children, None, None).into()
-            }
-            (
-                Value::Object(Object::XmlObject(value1)),
-                Value::Object(Object::XmlObject(value2)),
-            ) => {
-                let children = vec![E4XOrXml::Xml(value1), E4XOrXml::Xml(value2)];
-                XmlListObject::new(self, children, None, None).into()
+            (Value::Object(value1), Value::Object(value2))
+                if (value1.as_xml_list_object().is_some() || value1.as_xml_object().is_some())
+                    && (value2.as_xml_list_object().is_some()
+                        || value2.as_xml_object().is_some()) =>
+            {
+                let list = XmlListObject::new(self, None, None);
+                // NOTE: Use append here since that correctly sets target property/object.
+                list.append(value1.into(), self.gc());
+                list.append(value2.into(), self.gc());
+                list.into()
             }
             (value1, value2) => {
                 let prim_value1 = value1.coerce_to_primitive(None, self)?;
