@@ -1,6 +1,7 @@
 //! `flash.text.Font` builtin/prototype
 
 use crate::avm2::activation::Activation;
+use crate::avm2::error::make_error_1508;
 use crate::avm2::object::{FontObject, Object, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
@@ -9,6 +10,7 @@ use crate::avm2_stub_method;
 use crate::string::AvmString;
 
 pub use crate::avm2::object::font_allocator;
+use crate::character::Character;
 use crate::font::FontType;
 
 /// Implements `Font.fontName`
@@ -95,10 +97,14 @@ pub fn enumerate_fonts<'gc>(
         );
     }
 
+    for font in activation.context.library.global_fonts() {
+        storage.push(FontObject::for_font(activation.context.gc_context, font_class, font).into());
+    }
+
     if let Some(library) = activation
         .context
         .library
-        .library_for_movie(activation.context.swf.clone())
+        .library_for_movie(activation.caller_movie().unwrap())
     {
         for font in library.embedded_fonts() {
             // TODO: EmbeddedCFF isn't supposed to show until it's been used (some kind of internal initialization method?)
@@ -118,8 +124,25 @@ pub fn enumerate_fonts<'gc>(
 pub fn register_font<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.text.Font", "registerFont");
-    Ok(Value::Undefined)
+    let object = args.get_object(activation, 0, "font")?;
+
+    if let Some(class) = object.as_class_object() {
+        if let Some((movie, id)) = activation
+            .context
+            .library
+            .avm2_class_registry()
+            .class_symbol(class)
+        {
+            if let Some(lib) = activation.context.library.library_for_movie(movie) {
+                if let Some(Character::Font(font)) = lib.character_by_id(id) {
+                    activation.context.library.register_global_font(*font);
+                    return Ok(Value::Undefined);
+                }
+            }
+        }
+    }
+
+    Err(make_error_1508(activation, "font"))
 }

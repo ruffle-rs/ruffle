@@ -463,14 +463,19 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         span: &TextSpan,
         is_device_font: bool,
     ) -> Option<Font<'gc>> {
-        let library = context.library.library_for_movie_mut(self.movie.clone());
         let font_name = span.font.to_utf8_lossy();
 
         // Note that the SWF can still contain a DefineFont tag with no glyphs/layout info in this case (see #451).
         // In an ideal world, device fonts would search for a matching font on the system and render it in some way.
         if !is_device_font {
-            if let Some(font) = library
-                .get_embedded_font_by_name(&font_name, span.bold, span.italic)
+            if let Some(font) = context
+                .library
+                .get_embedded_font_by_name(
+                    &font_name,
+                    span.bold,
+                    span.italic,
+                    Some(self.movie.clone()),
+                )
                 .filter(|f| f.has_glyphs())
             {
                 return Some(font);
