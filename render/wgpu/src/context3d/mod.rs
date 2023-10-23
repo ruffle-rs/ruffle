@@ -545,6 +545,12 @@ impl Context3D for WgpuContext3D {
                 if sample_count == 0 {
                     sample_count = 1;
                 }
+                let next_pot = sample_count.next_power_of_two();
+                if sample_count != next_pot {
+                    // Round down to nearest power of 2
+                    sample_count = next_pot / 2;
+                }
+
                 let texture_label = create_debug_label!("Render target texture");
                 let format = wgpu::TextureFormat::Rgba8Unorm;
 
