@@ -416,6 +416,8 @@ jobs:
         if: env.EDGE_PRODUCT_ID != '' && !matrix.demo
         id: publish-edge-extension
         continue-on-error: true
+        env:
+          EDGE_PRODUCT_ID: ${{ secrets.EDGE_PRODUCT_ID }}
         uses: wdzeng/edge-addon@v1
         with:
           product-id: ${{ secrets.EDGE_PRODUCT_ID }}
