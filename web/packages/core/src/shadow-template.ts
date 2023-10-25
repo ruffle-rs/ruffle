@@ -30,6 +30,7 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
     const rules = [
         `:host {
             all: initial;
+            pointer-events: inherit;
 
             --ruffle-blue: #37528c;
             --ruffle-orange: #ffad33;
