@@ -210,10 +210,10 @@ impl MovieView {
         render_pass.set_vertex_buffer(0, renderer.vertices.slice(..));
         render_pass.draw(0..6, 0..1);
     }
-}
 
-pub fn texture(&self) -> &wgpu::Texture {
-    &self.texture
+    pub fn texture(&self) -> &wgpu::Texture {
+        &self.texture
+    }
 }
 
 impl RenderTarget for MovieView {
