@@ -298,7 +298,10 @@ export class RufflePlayer extends HTMLElement {
             "context-menu-overlay",
         )!;
         this.contextMenuElement = this.shadow.getElementById("context-menu")!;
-        window.addEventListener("pointerdown", this.checkIfTouch.bind(this));
+        document.documentElement.addEventListener(
+            "pointerdown",
+            this.checkIfTouch.bind(this),
+        );
         this.addEventListener("contextmenu", this.showContextMenu.bind(this));
         this.container.addEventListener(
             "pointerdown",
@@ -1555,11 +1558,15 @@ export class RufflePlayer extends HTMLElement {
 
         if (event.type === "contextmenu") {
             this.contextMenuSupported = true;
-            window.addEventListener("click", this.hideContextMenu.bind(this), {
-                once: true,
-            });
+            document.documentElement.addEventListener(
+                "click",
+                this.hideContextMenu.bind(this),
+                {
+                    once: true,
+                },
+            );
         } else {
-            window.addEventListener(
+            document.documentElement.addEventListener(
                 "pointerup",
                 this.hideContextMenu.bind(this),
                 { once: true },
