@@ -274,7 +274,7 @@ impl GuiController {
         };
 
         let screenshot = if let Some(movie_view) = movie_view {
-            if (taking_screenshot) {
+            if taking_screenshot {
                 let size = wgpu::Extent3d {
                     width: movie_view.width(),
                     height: movie_view.height(),
@@ -315,7 +315,7 @@ impl GuiController {
                 Some((buffer_dimensions, buffer, size))
             } else {
                 None
-            };
+            }
         } else {
             None
         };
