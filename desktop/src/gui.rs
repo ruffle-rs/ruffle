@@ -97,7 +97,7 @@ impl RuffleGui {
             volume_controls: VolumeControls::new(false, default_player_options.volume * 100.0),
             is_open_dialog_visible: false,
             was_suspended_before_debug: false,
-            taking_screenshot: false
+            taking_screenshot: false,
 
             context_menu: vec![],
             open_dialog: OpenDialog::new(
