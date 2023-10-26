@@ -1455,7 +1455,7 @@ export class RufflePlayer extends HTMLElement {
             });
         }
 
-        if (window.isSecureContext) {
+        if (navigator.clipboard && window.isSecureContext) {
             items.push({
                 text: text("context-menu-copy-debug-info"),
                 onClick: () =>
