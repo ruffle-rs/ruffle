@@ -4093,6 +4093,7 @@ dependencies = [
  "futures",
  "futures-lite",
  "generational-arena",
+ "image",
  "isahc",
  "os_info",
  "rfd",
