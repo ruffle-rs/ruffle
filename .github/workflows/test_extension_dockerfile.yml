@@ -1,0 +1,45 @@
+name: Test extension builder Dockerfile
+
+on:
+  #Run weekly every Thursday (one day before AMO submission)
+  schedule:
+   - cron: "0 2 * * 5"
+
+  #Allow for manual tests if needed
+  workflow_dispatch:
+
+jobs:
+  test-dockerfile:
+    name: Test the Dockerfile
+    runs-on: ubuntu-22.04
+
+    if: github.repository == 'ruffle-rs/ruffle'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate version seal
+        env:
+          ENABLE_VERSION_SEAL: true
+        working-directory: ./web
+        run: |
+          npm install
+          node packages/core/tools/set_version.js
+
+      - name: Build Docker image with Ruffle in it
+        run: docker build --tag ruffle-web-docker -f web/docker/Dockerfile .
+
+      - name: Copy extensions out of Docker image
+        run: docker cp $(docker create ruffle-web-docker:latest):/ruffle/web/packages web/docker/docker_builds/packages
+
+      - name: Check that the Firefox extension was built
+        run: test -f web/docker/docker_builds/packages/extension/dist/firefox_unsigned.xpi
+
+      - name: Notify Discord
+        uses: th0th/notify-discord@v0.4.1
+        if: ${{ always() }}
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_UPDATES }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_JOB_NAME: "Build extension via Dockerfile"
+          GITHUB_JOB_STATUS: ${{ job.status }}
