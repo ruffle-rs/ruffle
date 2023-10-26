@@ -74,6 +74,7 @@ pub struct RuffleGui {
     default_player_options: PlayerOptions,
     currently_opened: Option<(Url, PlayerOptions)>,
     was_suspended_before_debug: bool,
+    taking_screenshot: bool
 }
 
 impl RuffleGui {
@@ -96,6 +97,7 @@ impl RuffleGui {
             volume_controls: VolumeControls::new(false, default_player_options.volume * 100.0),
             is_open_dialog_visible: false,
             was_suspended_before_debug: false,
+            taking_screenshot: false
 
             context_menu: vec![],
             open_dialog: OpenDialog::new(
@@ -191,6 +193,13 @@ impl RuffleGui {
         );
 
         player.set_volume(self.volume_controls.get_volume());
+    }
+
+    fn is_taking_screenshot(&mut self) -> bool {
+        let taking_screenshot = self.taking_screenshot;
+        self.taking_screenshot = false;
+
+        taking_screenshot
     }
 
     /// Renders the main menu bar at the top of the window.
@@ -300,6 +309,10 @@ impl RuffleGui {
                             if let Some(player) = &mut player {
                                 player.debug_ui().queue_message(DebugMessage::SearchForDisplayObject);
                             }
+                        }
+                        if Button::new(text(&self.locale, "debug-menu-take-screenshot")).ui(ui).clicked() {
+                            ui.close_menu();
+                            self.taking_screenshot = true;
                         }
                     });
                 });

@@ -31,4 +31,5 @@ debug-menu-open-stage = View Stage Info
 debug-menu-open-movie = View Movie
 debug-menu-open-movie-list = Show Known Movies
 debug-menu-search-display-objects = Search Display Objects...
+debug-menu-take-screenshot = Take Screenshot
 
