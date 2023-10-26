@@ -74,7 +74,7 @@ pub struct RuffleGui {
     default_player_options: PlayerOptions,
     currently_opened: Option<(Url, PlayerOptions)>,
     was_suspended_before_debug: bool,
-    taking_screenshot: bool
+    taking_screenshot: bool,
 }
 
 impl RuffleGui {
