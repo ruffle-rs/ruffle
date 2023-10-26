@@ -274,17 +274,19 @@ impl GuiController {
         };
 
         let screenshot = if let Some(movie_view) = movie_view {
-            if (taking_screenshot){
+            if (taking_screenshot) {
                 let size = wgpu::Extent3d {
                     width: movie_view.width(),
                     height: movie_view.height(),
                     depth_or_array_layers: 1,
                 };
-    
+
                 // Calculate the right buffer size for a given texture, accounting for texture alignment / stride
-                let buffer_dimensions =
-                    BufferDimensions::new(movie_view.width() as usize, movie_view.height() as usize);
-    
+                let buffer_dimensions = BufferDimensions::new(
+                    movie_view.width() as usize,
+                    movie_view.height() as usize,
+                );
+
                 // The final buffer that will hold our screenshot. It needs to be copy_dst ("allowed to be copied into") and map_read ("the cpu can read the contents")
                 let buffer = self
                     .descriptors
@@ -295,7 +297,7 @@ impl GuiController {
                         usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
                         mapped_at_creation: false,
                     });
-    
+
                 // Tell the gpu to copy our movie texture into this new buffer
                 encoder.copy_texture_to_buffer(
                     movie_view.texture().as_image_copy(),
@@ -309,7 +311,7 @@ impl GuiController {
                     },
                     size,
                 );
-    
+
                 Some((buffer_dimensions, buffer, size))
             } else {
                 None
@@ -364,7 +366,9 @@ impl GuiController {
                 .duration_since(UNIX_EPOCH)
                 .expect("Time went backwards");
 
-            match image.save("ruffle_screenshots/".to_owned() + &unix_timestamp.as_millis().to_string() + ".png") {
+            match image.save(
+                "ruffle_screenshots/".to_owned() + &unix_timestamp.as_millis().to_string() + ".png",
+            ) {
                 Ok(()) => {
                     tracing::info!("Screenshot saved to {:?}.png", unix_timestamp);
                 }
