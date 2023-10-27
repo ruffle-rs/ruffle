@@ -713,7 +713,8 @@ impl<W: Write> Writer<W> {
             Tag::DefineShape(ref shape) => self.write_define_shape(shape)?,
             Tag::DefineSound(ref sound) => self.write_define_sound(sound)?,
             Tag::DefineSprite(ref sprite) => self.write_define_sprite(sprite)?,
-            Tag::DefineText(ref text) => self.write_define_text(text)?,
+            Tag::DefineText(ref text) => self.write_define_text(text, 1)?,
+            Tag::DefineText2(ref text) => self.write_define_text(text, 2)?,
             Tag::DefineVideoStream(ref video) => self.write_define_video_stream(video)?,
             Tag::DoAbc(data) => {
                 self.write_tag_header(TagCode::DoAbc, data.len() as u32)?;
@@ -2225,7 +2226,7 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    fn write_define_text(&mut self, text: &Text) -> Result<()> {
+    fn write_define_text(&mut self, text: &Text, version: u8) -> Result<()> {
         let mut buf = Vec::new();
         {
             let mut writer = Writer::new(&mut buf, self.version);
@@ -2258,7 +2259,11 @@ impl<W: Write> Writer<W> {
                     writer.write_character_id(id)?;
                 }
                 if let Some(ref color) = record.color {
-                    writer.write_rgb(color)?;
+                    if version == 1 {
+                        writer.write_rgb(color)?;
+                    } else {
+                        writer.write_rgba(color)?;
+                    }
                 }
                 if let Some(x) = record.x_offset {
                     writer.write_i16(x.get() as i16)?; // TODO(Herschel): Handle overflow.
@@ -2278,7 +2283,11 @@ impl<W: Write> Writer<W> {
             }
             writer.write_u8(0)?; // End of text records.
         }
-        self.write_tag_header(TagCode::DefineText, buf.len() as u32)?;
+        if version == 1 {
+            self.write_tag_header(TagCode::DefineText, buf.len() as u32)?;
+        } else {
+            self.write_tag_header(TagCode::DefineText2, buf.len() as u32)?;
+        }
         self.output.write_all(&buf)?;
         Ok(())
     }
@@ -2906,5 +2915,119 @@ mod tests {
         let reread = reader.read_filter().unwrap();
 
         assert_eq!(reread, filter);
+    }
+
+    #[test]
+    fn write_define_text_2() {
+        use crate::read::Reader;
+
+        let text = Text {
+            id: 60,
+            bounds: Rectangle {
+                x_min: Twips::new(2),
+                x_max: Twips::new(559),
+                y_min: Twips::new(-4),
+                y_max: Twips::new(76),
+            },
+            matrix: Matrix {
+                a: Fixed16::ONE,
+                b: Fixed16::ZERO,
+                c: Fixed16::ZERO,
+                d: Fixed16::ONE,
+                tx: Twips::ZERO,
+                ty: Twips::ZERO,
+            },
+            records: vec![TextRecord {
+                font_id: Some(57),
+                color: Some(Color {
+                    r: 112,
+                    g: 103,
+                    b: 5,
+                    a: 69,
+                }),
+                x_offset: None,
+                y_offset: Some(Twips::new(76)),
+                height: Some(Twips::new(100)),
+                glyphs: vec![
+                    GlyphEntry {
+                        index: 13,
+                        advance: 32,
+                    },
+                    GlyphEntry {
+                        index: 2,
+                        advance: 38,
+                    },
+                    GlyphEntry {
+                        index: 8,
+                        advance: 41,
+                    },
+                    GlyphEntry {
+                        index: 6,
+                        advance: 18,
+                    },
+                    GlyphEntry {
+                        index: 7,
+                        advance: 33,
+                    },
+                    GlyphEntry {
+                        index: 7,
+                        advance: 33,
+                    },
+                    GlyphEntry {
+                        index: 2,
+                        advance: 38,
+                    },
+                    GlyphEntry {
+                        index: 0,
+                        advance: 19,
+                    },
+                    GlyphEntry {
+                        index: 6,
+                        advance: 18,
+                    },
+                    GlyphEntry {
+                        index: 3,
+                        advance: 35,
+                    },
+                    GlyphEntry {
+                        index: 4,
+                        advance: 37,
+                    },
+                    GlyphEntry {
+                        index: 0,
+                        advance: 19,
+                    },
+                    GlyphEntry {
+                        index: 1,
+                        advance: 23,
+                    },
+                    GlyphEntry {
+                        index: 0,
+                        advance: 19,
+                    },
+                    GlyphEntry {
+                        index: 7,
+                        advance: 33,
+                    },
+                    GlyphEntry {
+                        index: 5,
+                        advance: 39,
+                    },
+                    GlyphEntry {
+                        index: 10,
+                        advance: 40,
+                    },
+                ],
+            }],
+        };
+
+        let mut buf = Vec::new();
+        let mut writer = Writer::new(&mut buf, 4);
+        writer.write_define_text(&text, 2).unwrap();
+
+        let mut reader = Reader::new(&buf, 4);
+        let reread = reader.read_tag().unwrap();
+
+        assert_eq!(reread, Tag::DefineText2(Box::new(text)));
     }
 }
