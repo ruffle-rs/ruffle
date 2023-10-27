@@ -455,7 +455,7 @@ impl<'a> Reader<'a> {
             TagCode::DefineShape4 => Tag::DefineShape(tag_reader.read_define_shape(4)?),
             TagCode::DefineSound => Tag::DefineSound(Box::new(tag_reader.read_define_sound()?)),
             TagCode::DefineText => Tag::DefineText(Box::new(tag_reader.read_define_text(1)?)),
-            TagCode::DefineText2 => Tag::DefineText(Box::new(tag_reader.read_define_text(2)?)),
+            TagCode::DefineText2 => Tag::DefineText2(Box::new(tag_reader.read_define_text(2)?)),
             TagCode::DefineVideoStream => {
                 Tag::DefineVideoStream(tag_reader.read_define_video_stream()?)
             }
