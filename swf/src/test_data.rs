@@ -218,7 +218,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 ],
                 actions: vec![ButtonAction {
                     conditions: ButtonActionCondition::OVER_DOWN_TO_OVER_UP,
-                    key_code: None,
                     action_data: &[0],
                 }],
             })),
@@ -271,13 +270,11 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 actions: vec![
                     ButtonAction {
                         conditions: ButtonActionCondition::OVER_DOWN_TO_OVER_UP,
-                        key_code: None,
                         action_data: &[150, 3, 0, 0, 65, 0, 38, 0], // trace("A");
                     },
                     ButtonAction {
-                        conditions: ButtonActionCondition::KEY_PRESS,
-                        key_code: Some(3),                          // Home
-                        action_data: &[150, 3, 0, 0, 66, 0, 38, 0], // trace("B");
+                        conditions: ButtonActionCondition::from_key_code(3), // Home
+                        action_data: &[150, 3, 0, 0, 66, 0, 38, 0],          // trace("B");
                     },
                 ],
             })),

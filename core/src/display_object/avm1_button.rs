@@ -8,7 +8,7 @@ use crate::display_object::interactive::{
     InteractiveObject, InteractiveObjectBase, TInteractiveObject,
 };
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
-use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
+use crate::events::{ClipEvent, ClipEventResult};
 use crate::prelude::*;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::vminterface::Instantiator;
@@ -60,7 +60,6 @@ impl<'gc> Avm1Button<'gc> {
             .map(|action| ButtonAction {
                 action_data: source_movie.to_unbounded_subslice(action.action_data),
                 conditions: action.conditions,
-                key_code: action.key_code.and_then(ButtonKeyCode::from_u8),
             })
             .collect();
 
@@ -517,15 +516,14 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
             ClipEvent::KeyPress { key_code } => {
                 return write.run_actions(
                     context,
-                    swf::ButtonActionCondition::KEY_PRESS,
-                    Some(key_code),
+                    swf::ButtonActionCondition::from_key_code(key_code.to_u8()),
                 );
             }
             _ => return ClipEventResult::NotHandled,
         };
 
         let (update_state, new_state) = if is_enabled {
-            write.run_actions(context, condition, None);
+            write.run_actions(context, condition);
             write.play_sound(context, sound);
 
             // Queue ActionScript-defined event handlers after the SWF defined ones.
@@ -618,15 +616,11 @@ impl<'gc> Avm1ButtonData<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc>,
         condition: swf::ButtonActionCondition,
-        key_code: Option<ButtonKeyCode>,
     ) -> ClipEventResult {
         let mut handled = ClipEventResult::NotHandled;
         if let Some(parent) = self.base.base.parent {
             for action in &self.static_data.read().actions {
-                if action.conditions.contains(condition)
-                    && (condition != swf::ButtonActionCondition::KEY_PRESS
-                        || action.key_code == key_code)
-                {
+                if action.conditions.matches(condition) {
                     // Note that AVM1 buttons run actions relative to their parent, not themselves.
                     handled = ClipEventResult::Handled;
                     context.action_queue.queue_action(
@@ -670,7 +664,6 @@ impl From<ButtonState> for swf::ButtonState {
 struct ButtonAction {
     action_data: SwfSlice,
     conditions: swf::ButtonActionCondition,
-    key_code: Option<ButtonKeyCode>,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]

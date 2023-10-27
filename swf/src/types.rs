@@ -8,6 +8,7 @@ use crate::string::SwfStr;
 use bitflags::bitflags;
 use enum_map::Enum;
 use std::fmt::{self, Display, Formatter};
+use std::num::NonZeroU8;
 use std::str::FromStr;
 
 mod bevel_filter;
@@ -1099,8 +1100,13 @@ pub type ButtonSound = (CharacterId, SoundInfo);
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ButtonAction<'a> {
     pub conditions: ButtonActionCondition,
-    pub key_code: Option<u8>,
     pub action_data: &'a [u8],
+}
+
+impl ButtonAction<'_> {
+    pub fn key_press(&self) -> Option<NonZeroU8> {
+        NonZeroU8::new(((self.conditions & ButtonActionCondition::KEY_PRESS).bits() >> 9) as u8)
+    }
 }
 
 bitflags! {
@@ -1115,7 +1121,26 @@ bitflags! {
         const OUT_DOWN_TO_IDLE      = 1 << 6;
         const IDLE_TO_OVER_DOWN     = 1 << 7;
         const OVER_DOWN_TO_IDLE     = 1 << 8;
-        const KEY_PRESS             = 1 << 9;
+        const KEY_PRESS             = 0b1111111 << 9;
+    }
+}
+
+impl ButtonActionCondition {
+    #[inline]
+    pub fn from_key_code(key_code: u8) -> Self {
+        Self::from_bits_retain((key_code as u16) << 9)
+    }
+
+    /// Checks if the given test condition matches any of the conditions defined in self
+    #[inline]
+    pub fn matches(self, test_condition: ButtonActionCondition) -> bool {
+        let self_key_press = (self & Self::KEY_PRESS).bits();
+        let test_key_press = (test_condition & Self::KEY_PRESS).bits();
+        let self_without_key = self & !Self::KEY_PRESS;
+        let test_without_key = test_condition & !Self::KEY_PRESS;
+
+        self_without_key.contains(test_without_key)
+            && (test_key_press == 0 || test_key_press == self_key_press)
     }
 }
 
@@ -1780,4 +1805,34 @@ pub type DebugId = [u8; 16];
 pub struct NameCharacter<'a> {
     pub id: CharacterId,
     pub name: &'a SwfStr,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ButtonActionCondition;
+
+    #[test]
+    fn button_conditions_match() {
+        assert!(ButtonActionCondition::OVER_DOWN_TO_OVER_UP
+            .matches(ButtonActionCondition::OVER_DOWN_TO_OVER_UP));
+
+        assert!(!ButtonActionCondition::OVER_DOWN_TO_OVER_UP
+            .matches(ButtonActionCondition::IDLE_TO_OVER_UP));
+
+        assert!((ButtonActionCondition::OVER_DOWN_TO_OVER_UP
+            | ButtonActionCondition::IDLE_TO_OVER_UP)
+            .matches(ButtonActionCondition::IDLE_TO_OVER_UP));
+
+        assert!((ButtonActionCondition::OVER_DOWN_TO_OVER_UP
+            | ButtonActionCondition::from_key_code(3))
+        .matches(ButtonActionCondition::OVER_DOWN_TO_OVER_UP));
+
+        assert!((ButtonActionCondition::OVER_DOWN_TO_OVER_UP
+            | ButtonActionCondition::from_key_code(3))
+        .matches(ButtonActionCondition::from_key_code(3)));
+
+        assert!(!(ButtonActionCondition::OVER_DOWN_TO_OVER_UP
+            | ButtonActionCondition::from_key_code(3))
+        .matches(ButtonActionCondition::from_key_code(1)));
+    }
 }
