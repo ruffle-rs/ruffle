@@ -33,7 +33,7 @@ function transformManifest(content, env) {
             firefoxExtensionId = versionSeal.firefox_extension_id;
         } else {
             throw new Error(
-                "Version seal requested but not found. To generate it, please run web/packages/core/tools/set_version.js using npm in the web directory, with the ENABLE_VERSION_SEAL environment variable set to true.",
+                "Version seal requested but not found. To generate it, please run web/packages/core/tools/set_version.js using node in the web directory, with the ENABLE_VERSION_SEAL environment variable set to true.",
             );
         }
     }
