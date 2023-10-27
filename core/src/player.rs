@@ -49,7 +49,6 @@ use crate::timer::Timers;
 use crate::vminterface::Instantiator;
 use crate::DefaultFont;
 use gc_arena::{Collect, DynamicRootSet, GcCell, Rootable};
-use instant::Instant;
 use rand::{rngs::SmallRng, SeedableRng};
 use ruffle_render::backend::{null::NullRenderer, RenderBackend, ViewportDimensions};
 use ruffle_render::commands::CommandList;
@@ -64,6 +63,7 @@ use std::str::FromStr;
 use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
 use tracing::{info, instrument};
+use web_time::Instant;
 
 /// The newest known Flash Player version, serves as a default to
 /// `player_version`.

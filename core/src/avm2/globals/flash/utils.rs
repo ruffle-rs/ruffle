@@ -5,8 +5,8 @@ use crate::avm2::object::TObject;
 use crate::avm2::{Activation, Error, Object, Value};
 use crate::string::AvmString;
 use crate::string::WString;
-use instant::Instant;
 use std::fmt::Write;
+use web_time::Instant;
 
 pub mod byte_array;
 pub mod dictionary;

@@ -4039,7 +4039,6 @@ dependencies = [
  "hashbrown 0.14.2",
  "image",
  "indexmap 2.0.2",
- "instant",
  "jpegxr",
  "linkme",
  "lzma-rs",
@@ -4068,6 +4067,7 @@ dependencies = [
  "url",
  "wasm-bindgen-futures",
  "weak-table",
+ "web-time",
 ]
 
 [[package]]
@@ -5608,9 +5608,9 @@ dependencies = [
 
 [[package]]
 name = "web-time"
-version = "0.2.2"
+version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8208e3fdbc243c8fd30805721869242a7f6de3e2e9f3b057652ab36e52ae1e87"
+checksum = "57099a701fb3a8043f993e8228dc24229c7b942e2b009a1b962e54489ba1d3bf"
 dependencies = [
  "js-sys",
  "wasm-bindgen",
