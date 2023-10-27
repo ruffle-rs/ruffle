@@ -2120,7 +2120,7 @@ impl<'a> Reader<'a> {
 
     fn read_bevel_filter(&mut self) -> Result<BevelFilter> {
         Ok(BevelFilter {
-            // Note that the color order is wrong in the spec, it's hightlight then shadow.
+            // Note that the color order is wrong in the spec, it's highlight then shadow.
             highlight_color: self.read_rgba()?,
             shadow_color: self.read_rgba()?,
             blur_x: self.read_fixed16()?,

@@ -1821,8 +1821,9 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_bevel_filter(&mut self, filter: &BevelFilter) -> Result<()> {
-        self.write_rgba(&filter.shadow_color)?;
+        // Note that the color order is wrong in the spec, it's highlight then shadow.
         self.write_rgba(&filter.highlight_color)?;
+        self.write_rgba(&filter.shadow_color)?;
         self.write_fixed16(filter.blur_x)?;
         self.write_fixed16(filter.blur_y)?;
         self.write_fixed16(filter.angle)?;
@@ -2835,5 +2836,42 @@ mod tests {
         let tag = reader.read_tag().unwrap();
 
         assert_eq!(tag, Tag::DefineButton2(Box::new(button)));
+    }
+
+    #[test]
+    fn write_bevel_filter() {
+        use crate::read::Reader;
+
+        let filter = Filter::BevelFilter(Box::new(BevelFilter {
+            shadow_color: Color {
+                r: 111,
+                g: 222,
+                b: 33,
+                a: 4,
+            },
+            highlight_color: Color {
+                r: 10,
+                g: 20,
+                b: 30,
+                a: 40,
+            },
+            blur_x: Fixed16::from_f32(3.1),
+            blur_y: Fixed16::from_f32(5.5),
+            angle: Fixed16::from_f32(180.0),
+            distance: Fixed16::from_f32(10.8),
+            strength: Fixed8::from_f32(3.1),
+            flags: BevelFilterFlags::COMPOSITE_SOURCE
+                | BevelFilterFlags::ON_TOP
+                | BevelFilterFlags::from_passes(2),
+        }));
+
+        let mut buf = Vec::new();
+        let mut writer = Writer::new(&mut buf, 15);
+        writer.write_filter(&filter).unwrap();
+
+        let mut reader = Reader::new(&buf, 15);
+        let reread = reader.read_filter().unwrap();
+
+        assert_eq!(reread, filter);
     }
 }
