@@ -11,6 +11,7 @@ use encoding_rs::UTF_8;
 use flash_lso::amf0::read::AMF0Decoder;
 use flash_lso::amf3::read::AMF3Decoder;
 use flash_lso::types::{AMFVersion, Element};
+use ruffle_wstr::WString;
 
 /// Writes a single byte to the bytearray
 pub fn write_byte<'gc>(
@@ -189,6 +190,28 @@ pub fn to_string<'gc>(
         let mut bytes = bytearray.bytes();
         if let Some(without_bom) = bytes.strip_prefix(&[0xEF, 0xBB, 0xBF]) {
             bytes = without_bom;
+        // Little-endian UTF-16 BOM
+        } else if let Some(without_bom) = bytes.strip_prefix(&[0xFF, 0xFE]) {
+            let utf16_bytes: Vec<_> = without_bom
+                .chunks_exact(2)
+                .map(|pair| u16::from_le_bytes([pair[0], pair[1]]))
+                .collect();
+            return Ok(AvmString::new(
+                activation.context.gc_context,
+                WString::from_buf(utf16_bytes),
+            )
+            .into());
+        // Big-endian UTF-16 BOM
+        } else if let Some(without_bom) = bytes.strip_prefix(&[0xFE, 0xFF]) {
+            let utf16_bytes: Vec<_> = without_bom
+                .chunks_exact(2)
+                .map(|pair| u16::from_be_bytes([pair[0], pair[1]]))
+                .collect();
+            return Ok(AvmString::new(
+                activation.context.gc_context,
+                WString::from_buf(utf16_bytes),
+            )
+            .into());
         }
         return Ok(AvmString::new_utf8_bytes(activation.context.gc_context, bytes).into());
     }
