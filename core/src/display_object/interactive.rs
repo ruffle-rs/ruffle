@@ -17,12 +17,12 @@ use crate::display_object::{
 use crate::events::{ClipEvent, ClipEventResult};
 use bitflags::bitflags;
 use gc_arena::{Collect, Mutation};
-use instant::Instant;
 use ruffle_macros::enum_trait_object;
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 use std::time::Duration;
 use swf::{Point, Twips};
+use web_time::Instant;
 
 /// Find the lowest common ancestor between the display objects in `from` and
 /// `to`.

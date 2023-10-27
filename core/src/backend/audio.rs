@@ -32,8 +32,8 @@ mod decoders {
     }
 }
 
-use instant::Duration;
 use thiserror::Error;
+use web_time::Duration;
 
 pub type SoundHandle = Index;
 pub type SoundInstanceHandle = Index;

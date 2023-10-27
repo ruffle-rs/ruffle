@@ -28,7 +28,6 @@ use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::timer::Timers;
 use core::fmt;
 use gc_arena::{Collect, Mutation};
-use instant::Instant;
 use rand::rngs::SmallRng;
 use ruffle_render::backend::{BitmapCacheEntry, RenderBackend};
 use ruffle_render::commands::CommandList;
@@ -37,6 +36,7 @@ use ruffle_video::backend::VideoBackend;
 use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
+use web_time::Instant;
 
 /// Minimal context, useful for manipulating the GC heap.
 pub struct GcContext<'a, 'gc> {

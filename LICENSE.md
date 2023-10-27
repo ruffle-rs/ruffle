@@ -388,7 +388,6 @@ Ruffle depends on third-party libraries with compatible licenses.
 | [indexmap](https://github.com/bluss/indexmap) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2016--2017  | 
 | [indicatif](https://github.com/mitsuhiko/indicatif) | [MIT](#MIT) | Copyright (c) 2017 Armin Ronacher <armin.ronacher@active-4.com>  | 
 | [inplace_it](https://github.com/NotIntMan/inplace_it) | [MIT](#MIT) | Copyright (c) 2018 Dmitry Demin <shepardiwe@gmail.com>  | 
-| [instant](https://github.com/sebcrozet/instant) | [BSD-3-Clause](#BSD-3-Clause) | Copyright (c) 2019, Sébastien Crozet  | 
 | [iovec](https://github.com/carllerche/iovec) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2017 Carl Lerche  | 
 | [isahc](https://github.com/sagebind/isahc) | [MIT](#MIT) | Copyright (c) 2019 Stephen M. Coakley  | 
 | [itoa](https://github.com/dtolnay/itoa) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) David Tolnay <dtolnay@gmail.com> | 
@@ -609,6 +608,7 @@ Ruffle depends on third-party libraries with compatible licenses.
 | [wayland-sys](https://github.com/smithay/wayland-rs) | [MIT](#MIT) | Copyright (c) 2015 Victor Berger  | 
 | [weak-table](https://github.com/tov/weak-table-rs) | [MIT](#MIT) | Copyright (c) 2018 Jesse A. Tov  | 
 | [web-sys](https://github.com/rustwasm/wasm-bindgen/tree/master/crates/web-sys) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2014 Alex Crichton  | 
+| [web-time](https://github.com/daxpedda/web-time) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2023 dAxpeDDa <daxpedda@gmail.com>  | 
 | [webbrowser](https://github.com/amodm/webbrowser-rs) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2015 Amod Malviya  | 
 | [webpki](https://github.com/briansmith/webpki) | Custom ISC-style | Copyright 2015 Brian Smith.  | 
 | [webpki-roots](https://github.com/ctz/webpki-roots) | [MPL-2.0](#MPL-20) | Copyright (c) Joseph Birr-Pixton <jpixton@gmail.com> | 
