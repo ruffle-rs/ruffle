@@ -56,8 +56,7 @@ gloo-net =  { version = "0.4.0", default-features = false, features = ["websocke
 
 [dependencies.ruffle_core]
 path = "../core"
-default-features = false
-features = ["audio", "mp3", "nellymoser", "wasm-bindgen", "default", "default_compatibility_rules", "default_font"]
+features = ["audio", "mp3", "nellymoser", "wasm-bindgen", "default_compatibility_rules", "default_font"]
 
 [dependencies.web-sys]
 version = "0.3.64"
