@@ -991,12 +991,7 @@ impl<W: Write> Writer<W> {
                 } else {
                     writer.write_u16(0)?;
                 }
-                let mut flags = action.conditions.bits();
-                if action.conditions.contains(ButtonActionCondition::KEY_PRESS) {
-                    if let Some(key_code) = action.key_code {
-                        flags |= (key_code as u16) << 9;
-                    }
-                }
+                let flags = action.conditions.bits();
                 writer.write_u16(flags)?;
                 writer.output.write_all(action.action_data)?;
             }
@@ -2826,6 +2821,44 @@ mod tests {
                 blend_mode: BlendMode::Normal,
             }],
             actions: vec![],
+        };
+
+        let mut buf = Vec::new();
+        let mut writer = Writer::new(&mut buf, 15);
+        writer.write_define_button_2(&button).unwrap();
+
+        let mut reader = Reader::new(&buf, 15);
+        let tag = reader.read_tag().unwrap();
+
+        assert_eq!(tag, Tag::DefineButton2(Box::new(button)));
+    }
+
+    #[test]
+    fn write_define_button_2_with_keycode() {
+        use crate::read::Reader;
+
+        let button = Button {
+            id: 3,
+            is_track_as_menu: false,
+            records: vec![ButtonRecord {
+                states: ButtonState::UP
+                    | ButtonState::OVER
+                    | ButtonState::DOWN
+                    | ButtonState::HIT_TEST,
+                id: 2,
+                depth: 1,
+                matrix: Matrix::translate(Twips::from_pixels(2.0), Twips::from_pixels(3.0)),
+                color_transform: ColorTransform::default(),
+                filters: vec![],
+                blend_mode: BlendMode::Normal,
+            }],
+            actions: vec![ButtonAction {
+                conditions: ButtonActionCondition::from_key_code(18),
+                action_data: &[
+                    150, 15, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 116, 104, 105, 115, 0, 28, 150, 12,
+                    0, 0, 116, 97, 98, 72, 97, 110, 100, 108, 101, 114, 0, 82, 23, 0,
+                ],
+            }],
         };
 
         let mut buf = Vec::new();

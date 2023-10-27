@@ -502,7 +502,7 @@ impl From<MouseButton> for KeyCode {
 /// TODO: After 18, these are mostly ASCII... should we just use u8? How are different
 /// keyboard layouts/languages handled?
 /// SWF19 pp. 198-199
-#[derive(Debug, PartialEq, Eq, Copy, Clone, FromPrimitive)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone, FromPrimitive, ToPrimitive)]
 pub enum ButtonKeyCode {
     Unknown = 0,
     Left = 1,
@@ -619,6 +619,10 @@ pub enum ButtonKeyCode {
 impl ButtonKeyCode {
     pub fn from_u8(n: u8) -> Option<Self> {
         num_traits::FromPrimitive::from_u8(n)
+    }
+
+    pub fn to_u8(&self) -> u8 {
+        num_traits::ToPrimitive::to_u8(self).unwrap_or_default()
     }
 }
 

@@ -756,7 +756,6 @@ impl<'a> Reader<'a> {
             records,
             actions: vec![ButtonAction {
                 conditions: ButtonActionCondition::OVER_DOWN_TO_OVER_UP,
-                key_code: None,
                 action_data,
             }],
         })
@@ -885,9 +884,7 @@ impl<'a> Reader<'a> {
     fn read_button_action(&mut self) -> Result<(ButtonAction<'a>, bool)> {
         let length = self.read_u16()?;
         let flags = self.read_u16()?;
-        let mut conditions = ButtonActionCondition::from_bits_truncate(flags);
-        let key_code = (flags >> 9) as u8;
-        conditions.set(ButtonActionCondition::KEY_PRESS, key_code != 0);
+        let conditions = ButtonActionCondition::from_bits_retain(flags);
         let action_data = if length >= 4 {
             self.read_slice(length as usize - 4)?
         } else if length == 0 {
@@ -902,7 +899,6 @@ impl<'a> Reader<'a> {
         Ok((
             ButtonAction {
                 conditions,
-                key_code: if key_code != 0 { Some(key_code) } else { None },
                 action_data,
             },
             length != 0,
