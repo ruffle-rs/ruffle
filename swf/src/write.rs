@@ -973,7 +973,14 @@ impl<W: Write> Writer<W> {
                 }
                 writer_2.write_u8(0)?; // End button records
             }
-            writer.write_u16(record_data.len() as u16 + 2)?;
+
+            // Write action offset, this is explicitly 0 when there are no actions.
+            if button.actions.is_empty() {
+                writer.write_u16(0)?;
+            } else {
+                writer.write_u16(record_data.len() as u16 + 2)?;
+            }
+
             writer.output.write_all(&record_data)?;
 
             let mut iter = button.actions.iter().peekable();
@@ -2796,5 +2803,37 @@ mod tests {
         let tag = reader.read_tag().unwrap();
 
         assert_eq!(tag, Tag::DefineFont2(Box::new(font)));
+    }
+
+    #[test]
+    fn write_define_button_2() {
+        use crate::read::Reader;
+
+        let button = Button {
+            id: 3,
+            is_track_as_menu: false,
+            records: vec![ButtonRecord {
+                states: ButtonState::UP
+                    | ButtonState::OVER
+                    | ButtonState::DOWN
+                    | ButtonState::HIT_TEST,
+                id: 2,
+                depth: 1,
+                matrix: Matrix::translate(Twips::from_pixels(2.0), Twips::from_pixels(3.0)),
+                color_transform: ColorTransform::default(),
+                filters: vec![],
+                blend_mode: BlendMode::Normal,
+            }],
+            actions: vec![],
+        };
+
+        let mut buf = Vec::new();
+        let mut writer = Writer::new(&mut buf, 15);
+        writer.write_define_button_2(&button).unwrap();
+
+        let mut reader = Reader::new(&buf, 15);
+        let tag = reader.read_tag().unwrap();
+
+        assert_eq!(tag, Tag::DefineButton2(Box::new(button)));
     }
 }
