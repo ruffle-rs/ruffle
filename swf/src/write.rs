@@ -2165,7 +2165,9 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_define_font_info(&mut self, font_info: &FontInfo) -> Result<()> {
-        let use_wide_codes = self.version >= 6 || font_info.version >= 2;
+        let use_wide_codes = self.version >= 6
+            || font_info.version >= 2
+            || font_info.flags.contains(FontInfoFlag::HAS_WIDE_CODES);
 
         let len = font_info.name.len()
             + if use_wide_codes { 2 } else { 1 } * font_info.code_table.len()
@@ -3029,5 +3031,32 @@ mod tests {
         let reread = reader.read_tag().unwrap();
 
         assert_eq!(reread, Tag::DefineText2(Box::new(text)));
+    }
+
+    #[test]
+    fn write_define_font_info() {
+        use crate::read::Reader;
+
+        let font_info = FontInfo {
+            id: 1,
+            version: 1,
+            name: SwfStr::from_bytes(b"Schauer"),
+            flags: FontInfoFlag::HAS_WIDE_CODES | FontInfoFlag::IS_BOLD,
+            language: Language::Unknown,
+            code_table: vec![
+                80, 108, 97, 121, 32, 109, 111, 118, 105, 101, 53, 48, 54, 75, 103, 115, 116, 74,
+                65, 67, 83, 86, 71, 84, 89, 76, 69, 42, 104, 46, 73, 100, 87, 107, 110, 102, 117,
+                99, 114, 63, 79, 39, 119, 44, 112, 33, 120, 72, 122, 58, 77, 45, 98, 40, 41, 70,
+            ],
+        };
+
+        let mut buf = Vec::new();
+        let mut writer = Writer::new(&mut buf, 4);
+        writer.write_define_font_info(&font_info).unwrap();
+
+        let mut reader = Reader::new(&buf, 4);
+        let reread = reader.read_tag().unwrap();
+
+        assert_eq!(reread, Tag::DefineFontInfo(Box::new(font_info)));
     }
 }
