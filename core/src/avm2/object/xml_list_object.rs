@@ -1001,7 +1001,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
     fn get_enumerant_name(
         self,
         index: u32,
-        _activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let children_len = self.0.read().children.len() as u32;
         if children_len >= index {
@@ -1011,7 +1011,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                 .unwrap_or(Value::Undefined))
         } else {
             Ok(self
-                .base()
+                .base_mut(activation.context.gc_context)
                 .get_enumerant_name(index - children_len)
                 .unwrap_or(Value::Undefined))
         }

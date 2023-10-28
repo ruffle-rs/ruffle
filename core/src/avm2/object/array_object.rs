@@ -207,10 +207,9 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
     fn get_next_enumerant(
         self,
         mut last_index: u32,
-        _activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<Option<u32>, Error<'gc>> {
         let read = self.0.read();
-        let num_enumerants = read.base.num_enumerants();
         let array_length = read.array.length() as u32;
 
         // Array enumeration skips over holes.
@@ -221,11 +220,18 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
             last_index += 1;
         }
 
+        drop(read);
+
         // After enumerating all of the 'normal' array entries,
         // we enumerate all of the local properties stored on the
         // ScriptObject.
-        if last_index < num_enumerants + array_length {
-            return Ok(Some(last_index + 1));
+        if let Some(index) = self
+            .0
+            .write(activation.context.gc_context)
+            .base
+            .get_next_enumerant(last_index - array_length)
+        {
+            return Ok(Some(index + array_length));
         }
         Ok(None)
     }
@@ -233,7 +239,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
     fn get_enumerant_name(
         self,
         index: u32,
-        _activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let arr_len = self.0.read().array.length() as u32;
         if arr_len >= index {
@@ -243,7 +249,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
                 .unwrap_or(Value::Undefined))
         } else {
             Ok(self
-                .base()
+                .base_mut(activation.context.gc_context)
                 .get_enumerant_name(index - arr_len)
                 .unwrap_or(Value::Undefined))
         }

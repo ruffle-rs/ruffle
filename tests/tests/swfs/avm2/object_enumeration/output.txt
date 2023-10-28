@@ -1,12 +1,11 @@
 enumerating: [object Object]
-key2
-value2
-key
-value
+key = value,key2 = value2
 Delete key2
 enumerating: [object Object]
-key
-value
+key = value
 enumerating: [object Object]
+
 enumerating: null
+
 enumerating: undefined
+
