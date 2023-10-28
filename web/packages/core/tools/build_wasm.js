@@ -29,7 +29,7 @@ function runWasmBindgen({ path, outName, flags, dir }) {
     });
 }
 function cargoBuild({ profile, features, rustFlags }) {
-    let args = ["build", "--target", "wasm32-unknown-unknown"];
+    let args = ["build", "--locked", "--target", "wasm32-unknown-unknown"];
     if (profile) {
         args.push("--profile", profile);
     }
