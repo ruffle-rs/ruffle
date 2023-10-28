@@ -81,7 +81,7 @@ jobs:
         env:
           RUSTFLAGS: -D warnings
           # Verify that all features build.
-          CARGO_FLAGS: --locked --all-features
+          CARGO_FLAGS: --all-features
         working-directory: web
         shell: bash -l {0}
         run: |
