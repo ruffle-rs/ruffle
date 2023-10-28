@@ -759,3 +759,29 @@ pub fn replace<'gc>(
     // 10. Return x
     Ok(xml.into())
 }
+
+pub fn set_notification<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_method!(activation, "XML", "setNotification");
+    let xml = this.as_xml_object().unwrap();
+    let node = xml.node();
+    let fun = args.try_get_object(activation, 0);
+    node.set_notification(
+        fun.and_then(|f| f.as_function_object()),
+        activation.context.gc_context,
+    );
+    Ok(Value::Undefined)
+}
+
+pub fn notification<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let xml = this.as_xml_object().unwrap();
+    let node = xml.node();
+    Ok(node.notification().map_or(Value::Null, |fun| fun.into()))
+}

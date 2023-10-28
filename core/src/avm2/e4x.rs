@@ -14,7 +14,7 @@ use crate::{avm2::TObject, xml::custom_unescape};
 
 use super::{
     error::{make_error_1010, make_error_1118, type_error},
-    object::E4XOrXml,
+    object::{E4XOrXml, FunctionObject},
     string::AvmString,
     Activation, Error, Multiname, Value,
 };
@@ -38,6 +38,7 @@ pub struct E4XNodeData<'gc> {
     namespace: Option<AvmString<'gc>>,
     local_name: Option<AvmString<'gc>>,
     kind: E4XNodeKind<'gc>,
+    notification: Option<FunctionObject<'gc>>,
 }
 
 impl<'gc> Debug for E4XNodeData<'gc> {
@@ -124,6 +125,7 @@ impl<'gc> E4XNode<'gc> {
                     attributes: vec![],
                     children: vec![],
                 },
+                notification: None,
             },
         ))
     }
@@ -136,6 +138,7 @@ impl<'gc> E4XNode<'gc> {
                 namespace: None,
                 local_name: None,
                 kind: E4XNodeKind::Text(text),
+                notification: None,
             },
         ))
     }
@@ -156,6 +159,7 @@ impl<'gc> E4XNode<'gc> {
                     attributes: vec![],
                     children: vec![],
                 },
+                notification: None,
             },
         ))
     }
@@ -173,6 +177,7 @@ impl<'gc> E4XNode<'gc> {
                 namespace: None,
                 local_name: Some(name),
                 kind: E4XNodeKind::Attribute(value),
+                notification: None,
             },
         ))
     }
@@ -258,6 +263,7 @@ impl<'gc> E4XNode<'gc> {
                 namespace: this.namespace,
                 local_name: this.local_name,
                 kind,
+                notification: None,
             },
         ));
 
@@ -633,6 +639,7 @@ impl<'gc> E4XNode<'gc> {
                         } else {
                             E4XNodeKind::CData(text)
                         },
+                        notification: None,
                     },
                 ));
                 push_childless_node(node, open_tags, top_level, activation)?;
@@ -705,6 +712,7 @@ impl<'gc> E4XNode<'gc> {
                             namespace: None,
                             local_name: None,
                             kind: E4XNodeKind::Comment(text),
+                            notification: None,
                         },
                     ));
 
@@ -743,6 +751,7 @@ impl<'gc> E4XNode<'gc> {
                             namespace: None,
                             local_name: Some(name),
                             kind: E4XNodeKind::ProcessingInstruction(value),
+                            notification: None,
                         },
                     ));
 
@@ -810,6 +819,7 @@ impl<'gc> E4XNode<'gc> {
                 namespace,
                 local_name: Some(name),
                 kind: E4XNodeKind::Attribute(value),
+                notification: None,
             };
             let attribute = E4XNode(GcCell::new(activation.context.gc_context, attribute_data));
             attribute_nodes.push(attribute);
@@ -848,6 +858,7 @@ impl<'gc> E4XNode<'gc> {
                 attributes: attribute_nodes,
                 children: Vec::new(),
             },
+            notification: None,
         };
 
         let result = E4XNode(GcCell::new(activation.context.gc_context, data));
@@ -884,6 +895,14 @@ impl<'gc> E4XNode<'gc> {
 
     pub fn parent(&self) -> Option<E4XNode<'gc>> {
         self.0.read().parent
+    }
+
+    pub fn set_notification(&self, notification: Option<FunctionObject<'gc>>, mc: &Mutation<'gc>) {
+        self.0.write(mc).notification = notification;
+    }
+
+    pub fn notification(&self) -> Option<FunctionObject<'gc>> {
+        self.0.read().notification
     }
 
     pub fn matches_name(&self, name: &Multiname<'gc>) -> bool {

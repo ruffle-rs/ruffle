@@ -96,6 +96,10 @@ package {
             return this.toJSON(k);
         }
 
+        // undocumented functions
+        AS3 native function notification():Function;
+        AS3 native function setNotification(f:Function):*;
+
         public static var ignoreComments:Boolean = true;
         public static var ignoreProcessingInstructions:Boolean = true;
         public static var ignoreWhitespace:Boolean = true;
