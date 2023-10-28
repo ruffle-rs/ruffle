@@ -743,15 +743,14 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                             if let Some(list) =
                                 value.as_object().and_then(|x| x.as_xml_list_object())
                             {
-                                // FIXME: What if XMLList does not have a target property.
-                                let target_property =
-                                    list.target_property().expect("Not validated yet");
-
-                                if let Some(name) = target_property.local_name() {
-                                    y.set_local_name(name, activation.gc());
-                                }
-                                if let Some(namespace) = target_property.explict_namespace() {
-                                    y.set_namespace(namespace, activation.gc());
+                                // Note: Don't set anything when there is no [[TargetProperty]].
+                                if let Some(target_property) = list.target_property() {
+                                    if let Some(name) = target_property.local_name() {
+                                        y.set_local_name(name, activation.gc());
+                                    }
+                                    if let Some(namespace) = target_property.explict_namespace() {
+                                        y.set_namespace(namespace, activation.gc());
+                                    }
                                 }
                             }
                         }
