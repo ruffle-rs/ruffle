@@ -689,7 +689,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                         index = self.length();
 
                         // 2.c.viii. If (y.[[Class]] is not equal to "attribute")
-                        if !matches!(*y.kind(), E4XNodeKind::Attribute(_)) {
+                        if !y.is_attribute() {
                             // 2.c.viii.1. If r is not null
                             if let Some(r) = r {
                                 let j = if let E4XNodeKind::Element { children, .. } = &*r.kind() {
@@ -792,7 +792,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                     drop(children);
 
                     // 2.e. If x[i].[[Class]] == "attribute"
-                    if matches!(*child.kind(), E4XNodeKind::Attribute(_)) {
+                    if child.is_attribute() {
                         // FIXME: We probably need to take the namespace too.
                         // 2.e.i. Let z = ToAttributeName(x[i].[[Name]])
                         let z = Multiname::attribute(
@@ -1031,7 +1031,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                         let removed = write.children.remove(index);
                         let removed_node = removed.node();
                         if let Some(parent) = removed_node.parent() {
-                            if let E4XNodeKind::Attribute(_) = &*removed_node.kind() {
+                            if removed_node.is_attribute() {
                                 parent
                                     .remove_attribute(activation.context.gc_context, &removed_node);
                             } else {

@@ -182,6 +182,11 @@ impl<'gc> E4XNode<'gc> {
         ))
     }
 
+    /// Returns true when the node is an attribute (E4XNodeKind::Attribute)
+    pub fn is_attribute(&self) -> bool {
+        matches!(self.0.read().kind, E4XNodeKind::Attribute(_))
+    }
+
     /// Returns an iterator that yields ancestor nodes (including itself).
     pub fn ancestors(self) -> impl Iterator<Item = E4XNode<'gc>> {
         iterators::AnscIter::for_node(self)
@@ -397,7 +402,7 @@ impl<'gc> E4XNode<'gc> {
     pub fn child_index(&self) -> Option<usize> {
         let parent = self.parent()?;
 
-        if let E4XNodeKind::Attribute(_) = &*self.kind() {
+        if self.is_attribute() {
             return None;
         }
 
@@ -491,7 +496,7 @@ impl<'gc> E4XNode<'gc> {
         if let Some(xml) = value
             .as_object()
             .and_then(|x| x.as_xml_object())
-            .filter(|x| !matches!(*x.node().kind(), E4XNodeKind::Attribute(_)))
+            .filter(|x| !x.node().is_attribute())
         {
             // 5.a. If V.[[Class]] is “element” and (V is x or an ancestor of x) throw an Error exception
             if matches!(*xml.node().kind(), E4XNodeKind::Element { .. })
@@ -918,8 +923,7 @@ impl<'gc> E4XNode<'gc> {
     }
 
     pub fn matches_name(&self, name: &Multiname<'gc>) -> bool {
-        let self_is_attr = matches!(self.0.read().kind, E4XNodeKind::Attribute(_));
-        if self_is_attr != name.is_attribute() {
+        if self.is_attribute() != name.is_attribute() {
             return false;
         }
 
