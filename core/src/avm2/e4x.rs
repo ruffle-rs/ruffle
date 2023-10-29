@@ -488,11 +488,11 @@ impl<'gc> E4XNode<'gc> {
         }
 
         // 5. If Type(V) is XML and V.[[Class]] ∈ {"element", "comment", "processing-instruction", "text"}
-        if let Some(xml) = value.as_object().and_then(|x| x.as_xml_object()) {
-            if matches!(*xml.node().kind(), E4XNodeKind::Attribute(_)) {
-                return Ok(());
-            }
-
+        if let Some(xml) = value
+            .as_object()
+            .and_then(|x| x.as_xml_object())
+            .filter(|x| !matches!(*x.node().kind(), E4XNodeKind::Attribute(_)))
+        {
             // 5.a. If V.[[Class]] is “element” and (V is x or an ancestor of x) throw an Error exception
             if matches!(*xml.node().kind(), E4XNodeKind::Element { .. })
                 && self.ancestors().any(|x| E4XNode::ptr_eq(x, *xml.node()))

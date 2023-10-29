@@ -1,0 +1,12 @@
+val
+attribute
+<root>
+  <child1/>
+  <child2/>
+  <child3/>
+</root>
+<root>
+  <child1/>
+  val
+  <child3/>
+</root>
