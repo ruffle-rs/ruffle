@@ -1,6 +1,8 @@
 //! `flash.net.SharedObject` builtin/prototype
 
+use crate::avm2::error::error;
 use crate::avm2::object::TObject;
+use crate::avm2::Error::AvmError;
 use crate::avm2::Multiname;
 use crate::avm2::{Activation, Error, Namespace, Object, Value};
 use crate::avm2_stub_method;
@@ -203,11 +205,20 @@ pub fn flush<'gc>(
     let mut lso = new_lso(activation, &name, data)?;
     // Flash does not write empty LSOs to disk
     if lso.body.is_empty() {
-        Ok(true.into())
+        Ok("flushed".into())
     } else {
         let bytes = flash_lso::write::write_to_bytes(&mut lso).unwrap_or_default();
-        Ok(activation.context.storage.put(&name, &bytes).into())
+        if activation.context.storage.put(&name, &bytes) {
+            Ok("flushed".into())
+        } else {
+            Err(AvmError(error(
+                activation,
+                "Error #2130: Unable to flush SharedObject.",
+                2130,
+            )?))
+        }
     }
+    // FIXME - We should dispatch a NetStatusEvent after this function returns
 }
 
 pub fn get_size<'gc>(
