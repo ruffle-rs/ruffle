@@ -239,7 +239,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             local_registers,
             outer: ScopeChain::new(domain),
             caller_domain: Some(domain),
-            caller_movie: None,
+            caller_movie: script.translation_unit().map(|t| t.movie()),
             subclass_object: None,
             activation_class: None,
             stack_depth: context.avm2.stack.len(),
