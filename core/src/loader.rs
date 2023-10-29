@@ -768,6 +768,7 @@ impl<'gc> Loader<'gc> {
                 if let Some(mut mc) = clip.as_movie_clip() {
                     if !uc.is_action_script_3() {
                         mc.avm1_unload(uc);
+                        uc.stop_all_sounds();
                     }
 
                     // Before the actual SWF is loaded, an initial loading state is entered.
