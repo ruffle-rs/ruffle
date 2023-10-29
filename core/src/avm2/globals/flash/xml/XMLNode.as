@@ -60,9 +60,30 @@ package flash.xml
             return clone;
         }
 
-        public function removeNode() : void
-        {
-            stub_method("flash.xml.XMLNode", "removeNode");
+        public function removeNode(): void {
+            if (parentNode) {
+                if (parentNode.firstChild === this) {
+                    parentNode.firstChild = nextSibling;
+                }
+                if (parentNode.lastChild === this) {
+                    parentNode.lastChild = previousSibling;
+                }
+                var index = parentNode.childNodes.indexOf(this);
+                if (index > -1) {
+                    parentNode.childNodes.removeAt(index);
+                }
+            }
+
+            if (previousSibling) {
+                previousSibling.nextSibling = nextSibling;
+            }
+            if (nextSibling) {
+                nextSibling.previousSibling = previousSibling;
+            }
+
+            parentNode = null;
+            previousSibling = null;
+            nextSibling = null;
         }
 
         public function insertBefore(node: XMLNode, before: XMLNode = null): void {

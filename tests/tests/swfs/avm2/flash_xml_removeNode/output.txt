@@ -1,0 +1,60 @@
+///
+doc: <parent><child hello="world">a single child</child></parent>
+single: <child hello="world">a single child</child>
+/// After removal
+doc: <parent />
+single: <child hello="world">a single child</child>
+single.parentNode: null
+single.nextSibling: null
+single.previousSibling: null
+///
+doc: <parent><first /><second /><last /></parent>
+root.childNodes[0]: <first />
+/// After removal
+doc: <parent><second /><last /></parent>
+child: <first />
+child.parentNode: null
+child.nextSibling: null
+child.previousSibling: null
+root.firstChild: <second />
+root.lastChild: <last />
+childNodes[0]: <second />
+childNodes[0].previousSibling: null
+childNodes[0].nextSibling: <last />
+childNodes[1]: <last />
+childNodes[1].previousSibling: <second />
+childNodes[1].nextSibling: null
+///
+doc: <parent><first /><second /><last /></parent>
+root.childNodes[1]: <second />
+/// After removal
+doc: <parent><first /><last /></parent>
+child: <second />
+child.parentNode: null
+child.nextSibling: null
+child.previousSibling: null
+root.firstChild: <first />
+root.lastChild: <last />
+childNodes[0]: <first />
+childNodes[0].previousSibling: null
+childNodes[0].nextSibling: <last />
+childNodes[1]: <last />
+childNodes[1].previousSibling: <first />
+childNodes[1].nextSibling: null
+///
+doc: <parent><first /><second /><last /></parent>
+root.childNodes[2]: <last />
+/// After removal
+doc: <parent><first /><second /></parent>
+child: <last />
+child.parentNode: null
+child.nextSibling: null
+child.previousSibling: null
+root.firstChild: <first />
+root.lastChild: <second />
+childNodes[0]: <first />
+childNodes[0].previousSibling: null
+childNodes[0].nextSibling: <second />
+childNodes[1]: <second />
+childNodes[1].previousSibling: <first />
+childNodes[1].nextSibling: null
