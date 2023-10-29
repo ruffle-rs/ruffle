@@ -40,15 +40,24 @@ package flash.xml
             return _children;
         }
 
-        public function hasChildNodes() : Boolean
-        {
+        public function hasChildNodes(): Boolean {
             return _children.length > 0;
         }
 
-        public function cloneNode() : XMLNode
-        {
-            stub_method("flash.xml.XMLNode", "cloneNode");
-            return null;
+        public function cloneNode(deep: Boolean): XMLNode {
+            var clone = new XMLNode(nodeType, nodeType == XMLNodeType.ELEMENT_NODE
+                                              ? nodeName : nodeValue);
+            for (var key in attributes) {
+                clone.attributes[key] = attributes[key];
+            }
+
+            if (deep) {
+                for (var i = 0; i < childNodes.length; i++) {
+                    clone.appendChild(childNodes[i].cloneNode(true));
+                }
+            }
+
+            return clone;
         }
 
         public function removeNode() : void
