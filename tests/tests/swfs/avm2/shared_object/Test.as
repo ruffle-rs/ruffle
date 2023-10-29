@@ -76,8 +76,8 @@
 				dump(otherObj.data.props);
 			
 				trace("sizes: obj = " + obj.size + ", otherObj = " + otherObj.size);
-				obj.flush();
-				otherObj.flush();
+				trace("obj status: " + obj.flush());
+				trace("otherObj status: " + otherObj.flush());
 				trace("sizes: obj = " + obj.size + ", otherObj = " + otherObj.size);
 			} else {		
 				trace("obj.data.hidden: " + obj.data.hidden);
