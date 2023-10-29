@@ -75,6 +75,10 @@ import flash.xml.XMLNodeType;
       public function createElement(name:String): XMLNode {
          return new XMLNode(XMLNodeType.ELEMENT_NODE, name);
       }
+
+      public function createTextNode(text:String): XMLNode {
+         return new XMLNode(XMLNodeType.TEXT_NODE, text);
+      }
    }
 }
 
