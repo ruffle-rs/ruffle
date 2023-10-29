@@ -364,6 +364,13 @@ impl<'gc> Multiname<'gc> {
         }
     }
 
+    pub fn has_nonempty_namespace(&self) -> bool {
+        match self.ns {
+            NamespaceSet::Single(ns) => !ns.is_public(),
+            NamespaceSet::Multiple(_) => true,
+        }
+    }
+
     pub fn explict_namespace(&self) -> Option<AvmString<'gc>> {
         match self.ns {
             NamespaceSet::Single(ns) if ns.is_namespace() && !ns.is_public() => Some(ns.as_uri()),

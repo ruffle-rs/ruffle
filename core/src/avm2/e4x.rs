@@ -934,6 +934,8 @@ impl<'gc> E4XNode<'gc> {
         self.0.read().notification
     }
 
+    // FIXME - avmplus constructs an actual QName here, and does the normal
+    // Multiname matching logic. We should do the same.
     pub fn matches_name(&self, name: &Multiname<'gc>) -> bool {
         if self.is_attribute() != name.is_attribute() {
             return false;
@@ -943,21 +945,21 @@ impl<'gc> E4XNode<'gc> {
             return false;
         }
 
+        // The Multiname is not a QName, so an any name matches everything.
+        // See https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/Multiname.cpp#L59
+        if name.is_any_name() && name.namespace_set().len() > 1 {
+            return true;
+        }
+
         if name.is_any_namespace() {
             return true;
         }
 
-        if name.has_explicit_namespace() {
-            return self.namespace() == name.explict_namespace();
-        }
+        let self_ns = self.namespace().unwrap_or_default();
 
-        // By default `xml.*` matches in all namespaces, unless an explicit
-        // namespace is given (`xml.ns::*`).
-        // However normal properties like "xml.prop" match only in the
-        // default namespace.
-        // TODO: Implement this by better handling default namespaces.
-        // See also "The QName Constructor Called as a Function".
-        name.is_any_name() || self.namespace().is_none()
+        name.namespace_set()
+            .iter()
+            .any(|ns| ns.is_any() || ns.as_uri() == self_ns)
     }
 
     pub fn descendants(&self, name: &Multiname<'gc>, out: &mut Vec<E4XOrXml<'gc>>) {
