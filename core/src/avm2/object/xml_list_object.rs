@@ -766,6 +766,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                                 .xml_object_child(0, activation)
                                 .expect("List length was just verified");
 
+                            // NOTE: avmplus contrary to specification doesn't consider CData here.
                             if matches!(
                                 *xml.node().kind(),
                                 E4XNodeKind::Attribute(_) | E4XNodeKind::Text(_)
@@ -776,6 +777,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                             }
                         }
                     } else if let Some(xml) = value.as_object().and_then(|x| x.as_xml_object()) {
+                        // NOTE: This also doesn't consider CData.
                         if matches!(
                             *xml.node().kind(),
                             E4XNodeKind::Attribute(_) | E4XNodeKind::Text(_)
