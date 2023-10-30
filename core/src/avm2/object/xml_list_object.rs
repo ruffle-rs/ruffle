@@ -513,7 +513,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
             let child = child.get_or_create_xml(activation);
 
             // 3.a. If x[i].[[Class]] == "element",
-            if matches!(*child.node().kind(), E4XNodeKind::Element { .. }) {
+            if child.node().is_element() {
                 // 3.a.i. Let gq be the result of calling the [[Get]] method of x[i] with argument P
                 let gq = child.get_property_local(name, activation)?;
 
@@ -637,7 +637,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
 
                         // 2.c.ii. If r.[[Class]] is not equal to "element", return
                         if let Some(r) = r {
-                            if !matches!(*r.kind(), E4XNodeKind::Element { .. }) {
+                            if !r.is_element() {
                                 return Ok(());
                             }
                         }
@@ -1045,7 +1045,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
         }
 
         for child in write.children.iter_mut() {
-            if matches!(&*child.node().kind(), E4XNodeKind::Element { .. }) {
+            if child.node().is_element() {
                 child
                     .get_or_create_xml(activation)
                     .delete_property_local(activation, name)?;

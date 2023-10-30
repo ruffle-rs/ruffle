@@ -17,9 +17,7 @@ fn has_complex_content_inner(children: &[E4XOrXml<'_>]) -> bool {
     match children {
         [] => false,
         [child] => child.node().has_complex_content(),
-        _ => children
-            .iter()
-            .any(|child| matches!(&*child.node().kind(), E4XNodeKind::Element { .. })),
+        _ => children.iter().any(|child| child.node().is_element()),
     }
 }
 
@@ -27,9 +25,7 @@ fn has_simple_content_inner(children: &[E4XOrXml<'_>]) -> bool {
     match children {
         [] => true,
         [child] => child.node().has_simple_content(),
-        _ => children
-            .iter()
-            .all(|child| !matches!(&*child.node().kind(), E4XNodeKind::Element { .. })),
+        _ => children.iter().all(|child| !child.node().is_element()),
     }
 }
 

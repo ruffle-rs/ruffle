@@ -292,10 +292,7 @@ pub fn elements<'gc>(
     let children = if let E4XNodeKind::Element { children, .. } = &*xml.node().kind() {
         children
             .iter()
-            .filter(|node| {
-                matches!(&*node.kind(), E4XNodeKind::Element { .. })
-                    && node.matches_name(&multiname)
-            })
+            .filter(|node| node.is_element() && node.matches_name(&multiname))
             .map(|node| E4XOrXml::E4X(*node))
             .collect()
     } else {
@@ -598,7 +595,7 @@ pub fn insert_child_after<'gc>(
     let child2 = crate::avm2::e4x::maybe_escape_child(activation, child2)?;
 
     // 1. If x.[[Class]] ∈ {"text", "comment", "processing-instruction", "attribute"}, return
-    if !matches!(*xml.node().kind(), E4XNodeKind::Element { .. }) {
+    if !xml.node().is_element() {
         return Ok(Value::Undefined);
     }
 
@@ -645,7 +642,7 @@ pub fn insert_child_before<'gc>(
     let child2 = crate::avm2::e4x::maybe_escape_child(activation, child2)?;
 
     // 1. If x.[[Class]] ∈ {"text", "comment", "processing-instruction", "attribute"}, return
-    if !matches!(*xml.node().kind(), E4XNodeKind::Element { .. }) {
+    if !xml.node().is_element() {
         return Ok(Value::Undefined);
     }
 
@@ -698,7 +695,7 @@ pub fn replace<'gc>(
     let value = args.get_value(1);
 
     // 1. If x.[[Class]] ∈ {"text", "comment", "processing-instruction", "attribute"}, return x
-    if !matches!(*self_node.kind(), E4XNodeKind::Element { .. }) {
+    if !self_node.is_element() {
         return Ok(xml.into());
     }
 
