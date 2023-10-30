@@ -410,7 +410,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         }
 
         // 2. If x.[[Class]] ∈ {"text", "comment", "processing-instruction", "attribute"}, return
-        if !matches!(*self.node().kind(), E4XNodeKind::Element { .. }) {
+        if !self.node().is_element() {
             return Ok(());
         }
 
