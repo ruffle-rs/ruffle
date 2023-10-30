@@ -1,8 +1,10 @@
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::object::TextureObject;
+use crate::avm2::Activation;
 use crate::avm2::Error;
 use crate::avm2::Object;
 use crate::avm2::TObject;
+use crate::avm2_stub_method;
 use ruffle_render::atf::ATFTexture;
 use ruffle_render::atf::ATFTextureData;
 use std::io::Cursor;
@@ -12,6 +14,7 @@ use std::io::Read;
 use std::io::Seek;
 
 pub fn do_compressed_upload<'gc>(
+    activation: &mut Activation<'_, 'gc>,
     texture: TextureObject<'gc>,
     data: Object<'gc>,
     byte_array_offset: usize,
@@ -141,6 +144,25 @@ pub fn do_compressed_upload<'gc>(
             }
 
             reconstructed_dxt
+        }
+        ATFTextureData::CompressedRawAlpha {
+            dxt5,
+            pvrtc: _,
+            etc1: _,
+            etc2: _,
+        } => {
+            // DXT5 seems to be the most widely supported, so let's use that for now.
+            // TODO - fallback to other formats if DXT5 data isn't present
+            // (or if we're on Android/iOS).
+            if dxt5.is_empty() {
+                avm2_stub_method!(
+                    activation,
+                    "flash.display3D.textures.Texture",
+                    "uploadCompressedTextureFromByteArray",
+                    "with empty DXT5 data in CompressedRawAlpha"
+                );
+            }
+            dxt5.clone()
         }
         ATFTextureData::Unknown(_) => {
             return Err(format!("Unsupported ATF format: {:?}", atf_texture.format).into())
