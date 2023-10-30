@@ -73,7 +73,7 @@ pub fn upload_compressed_texture_from_byte_array<'gc>(
         return Ok(Value::Undefined);
     }
 
-    do_compressed_upload(texture, data, byte_array_offset, true)?;
+    do_compressed_upload(activation, texture, data, byte_array_offset, true)?;
     Ok(Value::Undefined)
 }
 

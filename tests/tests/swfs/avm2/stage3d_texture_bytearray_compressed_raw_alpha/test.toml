@@ -1,0 +1,15 @@
+num_frames = 1
+
+[image_comparisons.output]
+tolerance = 2
+max_outliers = 66
+
+[player_options]
+with_renderer = { optional = false, sample_count = 1 }
+
+[required_features]
+jpegxr = true
+
+# Textures were generated with:
+# png2atf.exe -i ruffle_logo.png -c d -o ruffle_logo.atf
+# png2atf.exe -i circle.png -c d -o circle.atf
