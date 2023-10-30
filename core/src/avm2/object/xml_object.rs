@@ -176,25 +176,26 @@ impl<'gc> XmlObject<'gc> {
         // 3.a. If both x and y are the same type (XML)
         if let Value::Object(obj) = other {
             if let Some(xml_obj) = obj.as_xml_object() {
-                if (matches!(
-                    &*self.node().kind(),
-                    E4XNodeKind::Text(_) | E4XNodeKind::CData(_) | E4XNodeKind::Attribute(_)
-                ) && xml_obj.node().has_simple_content())
-                    || (matches!(
-                        &*xml_obj.node().kind(),
-                        E4XNodeKind::Text(_) | E4XNodeKind::CData(_) | E4XNodeKind::Attribute(_)
-                    ) && self.node().has_simple_content())
+                // 3.a.i. If ((x.[[Class]] ∈ {"text", "attribute"}) and (y.hasSimpleContent())
+                // or ((y.[[Class]] ∈ {"text", "attribute"}) and (x.hasSimpleContent())
+                if ((self.node().is_text() || self.node().is_attribute())
+                    && xml_obj.node().has_simple_content())
+                    || ((xml_obj.node().is_text() || xml_obj.node().is_attribute())
+                        && self.node().has_simple_content())
                 {
+                    // 3.a.i.1. Return the result of the comparison ToString(x) == ToString(y)
                     return Ok(self.node().xml_to_string(activation)
                         == xml_obj.node().xml_to_string(activation));
                 }
 
+                // 3.a.i. Else return the result of calling the [[Equals]] method of x with argument y
                 return self.equals(other, activation);
             }
         }
 
-        // 4. If (Type(x) is XML) and x.hasSimpleContent() == true)
+        // 4. If (Type(x) is XML and x.hasSimpleContent() == true)
         if self.node().has_simple_content() {
+            // 4.a. Return the result of the comparison ToString(x) == ToString(y)
             return Ok(self.node().xml_to_string(activation) == other.coerce_to_string(activation)?);
         }
 

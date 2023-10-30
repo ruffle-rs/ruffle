@@ -192,6 +192,14 @@ impl<'gc> E4XNode<'gc> {
         matches!(self.0.read().kind, E4XNodeKind::Element { .. })
     }
 
+    /// Returns true when the node is text (E4XNodeKind::Text or E4XNodeKind::CData)
+    pub fn is_text(&self) -> bool {
+        matches!(
+            self.0.read().kind,
+            E4XNodeKind::Text(_) | E4XNodeKind::CData(_)
+        )
+    }
+
     /// Returns an iterator that yields ancestor nodes (including itself).
     pub fn ancestors(self) -> impl Iterator<Item = E4XNode<'gc>> {
         iterators::AnscIter::for_node(self)

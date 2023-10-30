@@ -474,7 +474,7 @@ pub fn text<'gc>(
     let nodes = if let E4XNodeKind::Element { children, .. } = &*xml.node().kind() {
         children
             .iter()
-            .filter(|node| matches!(&*node.kind(), E4XNodeKind::Text(_)))
+            .filter(|node| node.is_text())
             .map(|node| E4XOrXml::E4X(*node))
             .collect()
     } else {
