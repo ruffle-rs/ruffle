@@ -8,7 +8,7 @@ repository.workspace = true
 version.workspace = true
 
 [dependencies]
-futures = "0.3.28"
+futures = "0.3.29"
 ruffle_core = { path = "../core", features = ["deterministic", "timeline_debug", "avm_debug", "audio", "mp3", "default_font"] }
 ruffle_render_wgpu = { path = "../render/wgpu" }
 ruffle_render = { path = "../render" }
@@ -33,8 +33,8 @@ pretty_assertions = "1.4.0"
 env_logger = "0.10.0"
 tracing = { workspace = true}
 tracing-subscriber = { workspace = true }
-serde = "1.0.189"
-toml = "0.8.2"
+serde = "1.0.190"
+toml = "0.8.6"
 libtest-mimic = "0.6.1"
 walkdir = "2.4.0"
 anyhow = "1.0.75"

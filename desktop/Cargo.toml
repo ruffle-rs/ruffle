@@ -8,12 +8,12 @@ repository.workspace = true
 version.workspace = true
 
 [dependencies]
-clap = { version = "4.4.6", features = ["derive"] }
+clap = { version = "4.4.7", features = ["derive"] }
 cpal = "0.15.2"
 egui = { workspace = true }
 egui-wgpu = { version = "0.23.0", features = ["winit"] }
 egui-winit = "0.23.0"
-fontdb = "0.15"
+fontdb = "0.16"
 ruffle_core = { path = "../core", features = ["audio", "clap", "mp3", "nellymoser", "default_compatibility_rules", "egui", "default_font"] }
 ruffle_render = { path = "../render", features = ["clap"] }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
@@ -34,11 +34,11 @@ os_info = { version = "3", default-features = false }
 unic-langid = "0.9.1"
 sys-locale = "0.3.1"
 wgpu = { workspace = true }
-futures = "0.3.28"
+futures = "0.3.29"
 chrono = { version = "0.4", default-features = false, features = [] }
 fluent-templates = "0.8.0"
 futures-lite = "1.13.0"
-async-io = "2.0.0"
+async-io = "2.1.0"
 async-net = "1.8.0"
 async-channel = "1.9.0"
 

@@ -21,8 +21,8 @@ lyon_geom = "1.0.4"
 thiserror = "1.0"
 wasm-bindgen = { version = "=0.2.87", optional = true }
 enum-map = "2.7.0"
-serde = { version = "1.0.189", features = ["derive"] }
-clap = { version = "4.4.6", features = ["derive"], optional = true }
+serde = { version = "1.0.190", features = ["derive"] }
+clap = { version = "4.4.7", features = ["derive"], optional = true }
 h263-rs-yuv = { git = "https://github.com/ruffle-rs/h263-rs", rev = "16700664e2b3334f0a930f99af86011aebee14cc"}
 lru = "0.12.0"
 num-traits = "0.2"
