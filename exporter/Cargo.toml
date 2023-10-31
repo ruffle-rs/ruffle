@@ -8,7 +8,7 @@ repository.workspace = true
 version.workspace = true
 
 [dependencies]
-clap = { version = "4.4.6", features = ["derive"] }
+clap = { version = "4.4.7", features = ["derive"] }
 futures = "0.3"
 ruffle_core = { path = "../core", features = ["deterministic", "default_font"] }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }

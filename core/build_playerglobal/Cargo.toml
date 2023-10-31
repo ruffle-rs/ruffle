@@ -12,8 +12,8 @@ convert_case = "0.6.0"
 proc-macro2 = "1.0.69"
 quote = "1.0.33"
 swf = { path = "../../swf" }
-clap = {version = "4.4.6", features = ["derive"]}
-serde = {version = "1.0.189", features = ["derive"]}
+clap = {version = "4.4.7", features = ["derive"]}
+serde = {version = "1.0.190", features = ["derive"]}
 serde-xml-rs = "0.6.0"
 colored = "2.0.4"
 regex = "1.10.2"
