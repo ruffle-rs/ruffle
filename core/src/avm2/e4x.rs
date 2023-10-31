@@ -803,16 +803,13 @@ impl<'gc> E4XNode<'gc> {
             let name =
                 AvmString::new_utf8_bytes(activation.context.gc_context, local_name.into_inner());
             let namespace = match ns {
+                ResolveResult::Bound(ns) if ns.into_inner() == b"http://www.w3.org/2000/xmlns/" => {
+                    continue
+                }
                 ResolveResult::Bound(ns) => Some(AvmString::new_utf8_bytes(
                     activation.context.gc_context,
                     ns.into_inner(),
                 )),
-                ResolveResult::Unknown(ns) if ns == b"xmlns" => continue,
-                // https://www.w3.org/TR/xml-names/#xmlReserved
-                // The prefix xml is by definition bound to the namespace name http://www.w3.org/XML/1998/namespace.
-                ResolveResult::Unknown(ns) if ns == b"xml" => {
-                    Some("http://www.w3.org/XML/1998/namespace".into())
-                }
                 ResolveResult::Unknown(ns) => {
                     return Err(Error::AvmError(type_error(
                         activation,
@@ -851,9 +848,6 @@ impl<'gc> E4XNode<'gc> {
                 activation.context.gc_context,
                 ns.into_inner(),
             )),
-            ResolveResult::Unknown(ns) if ns == b"xml" => {
-                Some("http://www.w3.org/XML/1998/namespace".into())
-            }
             ResolveResult::Unknown(ns) => {
                 return Err(Error::AvmError(type_error(
                     activation,
