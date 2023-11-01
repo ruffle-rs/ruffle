@@ -45,6 +45,7 @@ mod function_object;
 mod index_buffer_3d_object;
 mod loaderinfo_object;
 mod namespace_object;
+mod net_connection_object;
 mod netstream_object;
 mod primitive_object;
 mod program_3d_object;
@@ -96,6 +97,9 @@ pub use crate::avm2::object::loaderinfo_object::{
 };
 pub use crate::avm2::object::namespace_object::{
     namespace_allocator, NamespaceObject, NamespaceObjectWeak,
+};
+pub use crate::avm2::object::net_connection_object::{
+    net_connection_allocator, NetConnectionObject, NetConnectionObjectWeak,
 };
 pub use crate::avm2::object::netstream_object::{
     netstream_allocator, NetStreamObject, NetStreamObjectWeak,
@@ -175,6 +179,7 @@ use crate::font::Font;
         TextureObject(TextureObject<'gc>),
         Program3DObject(Program3DObject<'gc>),
         NetStreamObject(NetStreamObject<'gc>),
+        NetConnectionObject(NetConnectionObject<'gc>),
         ShaderDataObject(ShaderDataObject<'gc>),
         SocketObject(SocketObject<'gc>),
         FontObject(FontObject<'gc>)
@@ -1385,6 +1390,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         None
     }
 
+    fn as_net_connection(self) -> Option<NetConnectionObject<'gc>> {
+        None
+    }
+
     fn as_socket(&self) -> Option<SocketObject<'gc>> {
         None
     }
@@ -1432,6 +1441,7 @@ impl<'gc> Object<'gc> {
             Self::TextureObject(o) => WeakObject::TextureObject(TextureObjectWeak(Gc::downgrade(o.0))),
             Self::Program3DObject(o) => WeakObject::Program3DObject(Program3DObjectWeak(Gc::downgrade(o.0))),
             Self::NetStreamObject(o) => WeakObject::NetStreamObject(NetStreamObjectWeak(GcCell::downgrade(o.0))),
+            Self::NetConnectionObject(o) => WeakObject::NetConnectionObject(NetConnectionObjectWeak(Gc::downgrade(o.0))),
             Self::ShaderDataObject(o) => WeakObject::ShaderDataObject(ShaderDataObjectWeak(Gc::downgrade(o.0))),
             Self::SocketObject(o) => WeakObject::SocketObject(SocketObjectWeak(Gc::downgrade(o.0))),
             Self::FontObject(o) => WeakObject::FontObject(FontObjectWeak(GcCell::downgrade(o.0))),
@@ -1489,6 +1499,7 @@ pub enum WeakObject<'gc> {
     TextureObject(TextureObjectWeak<'gc>),
     Program3DObject(Program3DObjectWeak<'gc>),
     NetStreamObject(NetStreamObjectWeak<'gc>),
+    NetConnectionObject(NetConnectionObjectWeak<'gc>),
     ShaderDataObject(ShaderDataObjectWeak<'gc>),
     SocketObject(SocketObjectWeak<'gc>),
     FontObject(FontObjectWeak<'gc>),
@@ -1529,6 +1540,7 @@ impl<'gc> WeakObject<'gc> {
             Self::TextureObject(o) => TextureObject(o.0.upgrade(mc)?).into(),
             Self::Program3DObject(o) => Program3DObject(o.0.upgrade(mc)?).into(),
             Self::NetStreamObject(o) => NetStreamObject(o.0.upgrade(mc)?).into(),
+            Self::NetConnectionObject(o) => NetConnectionObject(o.0.upgrade(mc)?).into(),
             Self::ShaderDataObject(o) => ShaderDataObject(o.0.upgrade(mc)?).into(),
             Self::SocketObject(o) => SocketObject(o.0.upgrade(mc)?).into(),
             Self::FontObject(o) => FontObject(o.0.upgrade(mc)?).into(),
