@@ -745,6 +745,22 @@ pub fn replace<'gc>(
     Ok(xml.into())
 }
 
+// ECMA-357 13.4.4.33 XML.prototype.setChildren (value)
+pub fn set_children<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let xml = this.as_xml_object().unwrap();
+    let value = args.get_value(0);
+
+    // 1. Call the [[Put]] method of x with arguments "*" and value
+    xml.set_property_local(&Multiname::any(activation.gc()), value, activation)?;
+
+    // 2. Return x
+    Ok(xml.into())
+}
+
 pub fn set_notification<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
