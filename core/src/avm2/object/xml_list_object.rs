@@ -731,12 +731,12 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
 
                             // 2.c.viii.2. If Type(V) is XML, let y.[[Name]] = V.[[Name]]
                             if let Some(xml) = value.as_object().and_then(|x| x.as_xml_object()) {
-                                // FIXME: What if XML value does not have a local name?
-                                y.set_local_name(
-                                    xml.node().local_name().expect("Not validated yet"),
-                                    activation.gc(),
-                                );
-                                // FIXME: Also set the namespace.
+                                if let Some(name) = xml.node().local_name() {
+                                    y.set_local_name(name, activation.gc());
+                                }
+                                if let Some(namespace) = xml.node().namespace() {
+                                    y.set_namespace(namespace, activation.gc());
+                                }
                             }
 
                             // 2.c.viii.3. Else if Type(V) is XMLList, let y.[[Name]] = V.[[TargetProperty]]
