@@ -15,6 +15,17 @@ package flash.text.engine {
             return this._elements.length;
         }
 
+        public function getElementAt(index:int):ContentElement {
+            if (index < 0 || index >= this._elements.length) {
+                throw new RangeError("Error #2006: The supplied index is out of bounds.", 2006);
+            }
+            return this._elements[index];
+        }
+
+        public function getElementIndex(element:ContentElement):int {
+            return this._elements.indexOf(element);
+         }
+
         public function setElements(elements:Vector.<ContentElement>):void {
             if (elements == null) {
                 this._elements = new Vector.<ContentElement>();
@@ -24,18 +35,39 @@ package flash.text.engine {
         }
 
         public function replaceElements(beginIndex:int, endIndex:int, newElements:Vector.<ContentElement>):Vector.<ContentElement> {
-            if (beginIndex == endIndex && newElements.length == 1) {
-                if (beginIndex == this._elements.length) {
-                    this._elements.push(newElements[0]);
-                } else if (beginIndex < this._elements.length) {
-                    this._elements[beginIndex] = newElements[0];
-                } else {
-                    throw new RangeError("Error #2006: The supplied index is out of bounds.", 2006);
-                }
-            } else {
-                stub_method("flash.text.engine.GroupElement", "replaceElements", "with beginIndex != endIndex or newElements.length != 1");
-                return new Vector.<ContentElement>();
+            // This some sort of special case that doesn't throw.
+            if (beginIndex == endIndex && newElements == null) {
+                return null;
             }
+            if (beginIndex < 0 || beginIndex > this._elements.length ||
+                endIndex < 0 || endIndex > this._elements.length) {
+                throw new RangeError("Error #2006: The supplied index is out of bounds.", 2006);
+            }
+
+            var old = this._elements.AS3::splice(beginIndex, endIndex - beginIndex);
+            if (newElements) {
+                for (var i = 0; i < newElements.length; i++) {
+                    this._elements.AS3::insertAt(beginIndex + i, newElements[i]);
+                }
+            }
+            return old;
+        }
+
+        public function splitTextElement(elementIndex:int, splitIndex:int): TextElement {
+            var element = getElementAt(elementIndex);
+            if (!(element instanceof TextElement)) {
+                throw new ArgumentError("Error #2004: One of the parameters is invalid.", 2004);
+            }
+
+            var text = element.text;
+            if (splitIndex < 0 || splitIndex >= text.length) {
+                 throw new RangeError("Error #2006: The supplied index is out of bounds.", 2006);
+            }
+
+            element.text = text.slice(0, splitIndex);
+            var newTextElement = new TextElement(text.slice(splitIndex));
+            this._elements.AS3::insertAt(elementIndex + 1, newTextElement);
+            return newTextElement;
         }
 
         // FIXME: This is wrong, FP doesn't do an override of `get text` in GroupElement
