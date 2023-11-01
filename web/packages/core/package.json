@@ -28,9 +28,9 @@
         "eslint": "^8.52.0",
         "eslint-plugin-jsdoc": "^46.8.2",
         "mocha": "^10.2.0",
-        "replace-in-file": "^7.0.1",
+        "replace-in-file": "^7.0.2",
         "ts-node": "^10.9.1",
-        "typedoc": "^0.25.2",
+        "typedoc": "^0.25.3",
         "typescript": "^5.2.2"
     },
     "sideEffects": false
