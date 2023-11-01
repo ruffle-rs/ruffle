@@ -39,6 +39,7 @@ use crate::library::Library;
 use crate::limits::ExecutionLimit;
 use crate::loader::{LoadBehavior, LoadManager};
 use crate::locale::get_current_date_time;
+use crate::net_connection::NetConnections;
 use crate::prelude::*;
 use crate::socket::Sockets;
 use crate::streams::StreamManager;
@@ -167,6 +168,9 @@ struct GcRootData<'gc> {
 
     sockets: Sockets<'gc>,
 
+    /// List of active NetConnection objects.
+    net_connections: NetConnections<'gc>,
+
     /// Dynamic root for allowing handles to GC objects to exist outside of the GC.
     dynamic_root: DynamicRootSet<'gc>,
 }
@@ -195,6 +199,7 @@ impl<'gc> GcRootData<'gc> {
         &mut AudioManager<'gc>,
         &mut StreamManager<'gc>,
         &mut Sockets<'gc>,
+        &mut NetConnections<'gc>,
         DynamicRootSet<'gc>,
     ) {
         (
@@ -215,6 +220,7 @@ impl<'gc> GcRootData<'gc> {
             &mut self.audio_manager,
             &mut self.stream_manager,
             &mut self.sockets,
+            &mut self.net_connections,
             self.dynamic_root,
         )
     }
@@ -1889,6 +1895,7 @@ impl Player {
                 audio_manager,
                 stream_manager,
                 sockets,
+                net_connections,
                 dynamic_root,
             ) = root_data.update_context_params();
 
@@ -1940,6 +1947,7 @@ impl Player {
                 stub_tracker: &mut self.stub_tracker,
                 stream_manager,
                 sockets,
+                net_connections,
                 dynamic_root,
             };
 
@@ -2423,6 +2431,7 @@ impl PlayerBuilder {
                     unbound_text_fields: Vec::new(),
                     stream_manager: StreamManager::new(),
                     sockets: Sockets::empty(),
+                    net_connections: NetConnections::default(),
                     dynamic_root,
                 },
             ),

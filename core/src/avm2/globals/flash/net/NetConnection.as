@@ -3,6 +3,7 @@ package flash.net {
     import flash.errors.IOError;
     import __ruffle__.stub_method;
 
+    [Ruffle(InstanceAllocator)]
     public class NetConnection extends EventDispatcher {
 
         public static var defaultObjectEncoding:uint = 3;
