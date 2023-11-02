@@ -53,7 +53,10 @@ impl<'gc> NetConnections<'gc> {
         target: O,
     ) {
         let target = target.into();
-        let connection = NetConnection { object: target };
+        let connection = NetConnection {
+            object: target,
+            protocol: NetConnectionProtocol::Local,
+        };
         let handle = context.net_connections.connections.insert(connection);
 
         if let Some(existing_handle) = target.set_handle(Some(handle)) {
@@ -76,6 +79,25 @@ impl<'gc> NetConnections<'gc> {
         }
     }
 
+    pub fn connect_to_flash_remoting<O: Into<NetConnectionObject<'gc>>>(
+        context: &mut UpdateContext<'_, 'gc>,
+        target: O,
+        url: String,
+    ) {
+        let target = target.into();
+        let connection = NetConnection {
+            object: target,
+            protocol: NetConnectionProtocol::FlashRemoting(FlashRemoting { url }),
+        };
+        let handle = context.net_connections.connections.insert(connection);
+
+        if let Some(existing_handle) = target.set_handle(Some(handle)) {
+            NetConnections::close(context, existing_handle)
+        }
+
+        // No open event here
+    }
+
     pub fn close(context: &mut UpdateContext<'_, 'gc>, handle: NetConnectionHandle) {
         let Some(connection) = context.net_connections.connections.remove(handle) else {
             return;
@@ -93,6 +115,21 @@ impl<'gc> NetConnections<'gc> {
                     ],
                 );
                 Avm2::dispatch_event(&mut activation.context, event, object.into());
+
+                if matches!(connection.protocol, NetConnectionProtocol::FlashRemoting(_)) {
+                    // [NA] I have no idea why, but a NetConnection receives a second and nonsensical event on close
+                    let event = Avm2EventObject::net_status_event(
+                        &mut activation,
+                        "netStatus",
+                        vec![
+                            ("code", ""),
+                            ("description", ""),
+                            ("details", ""),
+                            ("level", "status"),
+                        ],
+                    );
+                    Avm2::dispatch_event(&mut activation.context, event, object.into());
+                }
             }
         }
     }
@@ -102,4 +139,22 @@ impl<'gc> NetConnections<'gc> {
 #[collect(no_drop)]
 pub struct NetConnection<'gc> {
     object: NetConnectionObject<'gc>,
+
+    #[collect(require_static)]
+    protocol: NetConnectionProtocol,
+}
+
+#[derive(Debug)]
+pub enum NetConnectionProtocol {
+    /// A "local" connection, caused by connecting to null
+    Local,
+
+    /// Flash Remoting protocol, caused by connecting to a `http://` address.
+    FlashRemoting(FlashRemoting),
+}
+
+#[derive(Debug)]
+pub struct FlashRemoting {
+    #[allow(dead_code)]
+    url: String,
 }

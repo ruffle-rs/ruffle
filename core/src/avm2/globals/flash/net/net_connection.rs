@@ -1,10 +1,12 @@
 pub use crate::avm2::object::net_connection_allocator;
 use crate::avm2::object::TObject;
+use crate::avm2::parameters::ParametersExt;
 use crate::net_connection::NetConnections;
 use crate::{
     avm2::{Activation, Error, Object, Value},
     avm2_stub_method,
 };
+use ruffle_wstr::WStr;
 
 pub fn connect<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -19,11 +21,25 @@ pub fn connect<'gc>(
         NetConnections::connect_to_local(&mut activation.context, connection);
         return Ok(Value::Undefined);
     }
-    avm2_stub_method!(
-        activation,
-        "flash.net.NetConnection",
-        "connect",
-        "with non-null command"
-    );
+
+    let url = args.get_string(activation, 0)?;
+    if url.starts_with(WStr::from_units(b"http://"))
+        || url.starts_with(WStr::from_units(b"https://"))
+    {
+        // HTTP(S) is for Flash Remoting, which is just POST requests to the URL.
+        NetConnections::connect_to_flash_remoting(
+            &mut activation.context,
+            connection,
+            url.to_string(),
+        );
+    } else {
+        avm2_stub_method!(
+            activation,
+            "flash.net.NetConnection",
+            "connect",
+            "with non-null, non-http command"
+        );
+    }
+
     Ok(Value::Undefined)
 }
