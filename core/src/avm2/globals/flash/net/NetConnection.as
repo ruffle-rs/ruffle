@@ -21,8 +21,6 @@ package flash.net {
             stub_method("flash.net.NetConnection", "call");
         }
         
-        public function close():void {
-            stub_method("flash.net.NetConnection", "close");
-        }
+        public native function close():void;
     }
 }
