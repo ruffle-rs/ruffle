@@ -133,6 +133,47 @@ impl<'gc> NetConnections<'gc> {
             }
         }
     }
+
+    pub fn is_connected(&self, handle: NetConnectionHandle) -> bool {
+        self.connections
+            .get(handle)
+            .map(|c| c.is_connected())
+            .unwrap_or_default()
+    }
+
+    pub fn get_connected_proxy_type(&self, handle: NetConnectionHandle) -> Option<&'static str> {
+        self.connections
+            .get(handle)
+            .and_then(|c| c.connected_proxy_type())
+    }
+
+    pub fn get_far_id(&self, handle: NetConnectionHandle) -> Option<&'static str> {
+        self.connections.get(handle).and_then(|c| c.far_id())
+    }
+
+    pub fn get_far_nonce(&self, handle: NetConnectionHandle) -> Option<&'static str> {
+        self.connections.get(handle).and_then(|c| c.far_nonce())
+    }
+
+    pub fn get_near_id(&self, handle: NetConnectionHandle) -> Option<&'static str> {
+        self.connections.get(handle).and_then(|c| c.near_id())
+    }
+
+    pub fn get_near_nonce(&self, handle: NetConnectionHandle) -> Option<&'static str> {
+        self.connections.get(handle).and_then(|c| c.near_nonce())
+    }
+
+    pub fn get_protocol(&self, handle: NetConnectionHandle) -> Option<&'static str> {
+        self.connections.get(handle).and_then(|c| c.protocol())
+    }
+
+    pub fn get_uri(&self, handle: NetConnectionHandle) -> Option<String> {
+        self.connections.get(handle).and_then(|c| c.uri())
+    }
+
+    pub fn is_using_tls(&self, handle: NetConnectionHandle) -> Option<bool> {
+        self.connections.get(handle).and_then(|c| c.using_tls())
+    }
 }
 
 #[derive(Collect)]
@@ -142,6 +183,75 @@ pub struct NetConnection<'gc> {
 
     #[collect(require_static)]
     protocol: NetConnectionProtocol,
+}
+
+impl<'gc> NetConnection<'gc> {
+    pub fn is_connected(&self) -> bool {
+        match self.protocol {
+            NetConnectionProtocol::Local => true,
+            NetConnectionProtocol::FlashRemoting(_) => false,
+        }
+    }
+
+    pub fn connected_proxy_type(&self) -> Option<&'static str> {
+        match self.protocol {
+            NetConnectionProtocol::Local => Some("none"),
+            NetConnectionProtocol::FlashRemoting(_) => None,
+        }
+    }
+
+    pub fn far_id(&self) -> Option<&'static str> {
+        match self.protocol {
+            NetConnectionProtocol::Local => Some(""),
+            NetConnectionProtocol::FlashRemoting(_) => None,
+        }
+    }
+
+    pub fn far_nonce(&self) -> Option<&'static str> {
+        match self.protocol {
+            NetConnectionProtocol::Local => {
+                Some("0000000000000000000000000000000000000000000000000000000000000000")
+            }
+            NetConnectionProtocol::FlashRemoting(_) => None,
+        }
+    }
+
+    pub fn near_id(&self) -> Option<&'static str> {
+        match self.protocol {
+            NetConnectionProtocol::Local => Some(""),
+            NetConnectionProtocol::FlashRemoting(_) => None,
+        }
+    }
+
+    pub fn near_nonce(&self) -> Option<&'static str> {
+        match self.protocol {
+            NetConnectionProtocol::Local => {
+                Some("0000000000000000000000000000000000000000000000000000000000000000")
+            }
+            NetConnectionProtocol::FlashRemoting(_) => None,
+        }
+    }
+
+    pub fn protocol(&self) -> Option<&'static str> {
+        match self.protocol {
+            NetConnectionProtocol::Local => Some("rtmp"),
+            NetConnectionProtocol::FlashRemoting(_) => None,
+        }
+    }
+
+    pub fn uri(&self) -> Option<String> {
+        match &self.protocol {
+            NetConnectionProtocol::Local => Some("null".to_string()), // Yes, it's a string "null", not a real null.
+            NetConnectionProtocol::FlashRemoting(remoting) => Some(remoting.url.to_string()),
+        }
+    }
+
+    pub fn using_tls(&self) -> Option<bool> {
+        match &self.protocol {
+            NetConnectionProtocol::Local => Some(false),
+            NetConnectionProtocol::FlashRemoting(_) => None,
+        }
+    }
 }
 
 #[derive(Debug)]
