@@ -43,3 +43,18 @@ pub fn connect<'gc>(
 
     Ok(Value::Undefined)
 }
+
+pub fn close<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let connection = this
+        .as_net_connection()
+        .expect("Must be NetConnection object");
+    if let Some(previous_handle) = connection.set_handle(None) {
+        NetConnections::close(&mut activation.context, previous_handle);
+    }
+
+    Ok(Value::Undefined)
+}
