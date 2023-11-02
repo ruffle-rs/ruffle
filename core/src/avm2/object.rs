@@ -52,6 +52,7 @@ mod program_3d_object;
 mod proxy_object;
 mod qname_object;
 mod regexp_object;
+mod responder_object;
 mod script_object;
 mod shader_data_object;
 mod socket_object;
@@ -111,6 +112,9 @@ pub use crate::avm2::object::program_3d_object::{Program3DObject, Program3DObjec
 pub use crate::avm2::object::proxy_object::{proxy_allocator, ProxyObject, ProxyObjectWeak};
 pub use crate::avm2::object::qname_object::{q_name_allocator, QNameObject, QNameObjectWeak};
 pub use crate::avm2::object::regexp_object::{reg_exp_allocator, RegExpObject, RegExpObjectWeak};
+pub use crate::avm2::object::responder_object::{
+    responder_allocator, ResponderObject, ResponderObjectWeak,
+};
 pub use crate::avm2::object::script_object::{ScriptObject, ScriptObjectData, ScriptObjectWeak};
 pub use crate::avm2::object::shader_data_object::{
     shader_data_allocator, ShaderDataObject, ShaderDataObjectWeak,
@@ -180,6 +184,7 @@ use crate::font::Font;
         Program3DObject(Program3DObject<'gc>),
         NetStreamObject(NetStreamObject<'gc>),
         NetConnectionObject(NetConnectionObject<'gc>),
+        ResponderObject(ResponderObject<'gc>),
         ShaderDataObject(ShaderDataObject<'gc>),
         SocketObject(SocketObject<'gc>),
         FontObject(FontObject<'gc>)
@@ -1390,6 +1395,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         None
     }
 
+    fn as_responder(self) -> Option<ResponderObject<'gc>> {
+        None
+    }
+
     fn as_net_connection(self) -> Option<NetConnectionObject<'gc>> {
         None
     }
@@ -1442,6 +1451,7 @@ impl<'gc> Object<'gc> {
             Self::Program3DObject(o) => WeakObject::Program3DObject(Program3DObjectWeak(Gc::downgrade(o.0))),
             Self::NetStreamObject(o) => WeakObject::NetStreamObject(NetStreamObjectWeak(GcCell::downgrade(o.0))),
             Self::NetConnectionObject(o) => WeakObject::NetConnectionObject(NetConnectionObjectWeak(Gc::downgrade(o.0))),
+            Self::ResponderObject(o) => WeakObject::ResponderObject(ResponderObjectWeak(GcCell::downgrade(o.0))),
             Self::ShaderDataObject(o) => WeakObject::ShaderDataObject(ShaderDataObjectWeak(Gc::downgrade(o.0))),
             Self::SocketObject(o) => WeakObject::SocketObject(SocketObjectWeak(Gc::downgrade(o.0))),
             Self::FontObject(o) => WeakObject::FontObject(FontObjectWeak(GcCell::downgrade(o.0))),
@@ -1500,6 +1510,7 @@ pub enum WeakObject<'gc> {
     Program3DObject(Program3DObjectWeak<'gc>),
     NetStreamObject(NetStreamObjectWeak<'gc>),
     NetConnectionObject(NetConnectionObjectWeak<'gc>),
+    ResponderObject(ResponderObjectWeak<'gc>),
     ShaderDataObject(ShaderDataObjectWeak<'gc>),
     SocketObject(SocketObjectWeak<'gc>),
     FontObject(FontObjectWeak<'gc>),
@@ -1541,6 +1552,7 @@ impl<'gc> WeakObject<'gc> {
             Self::Program3DObject(o) => Program3DObject(o.0.upgrade(mc)?).into(),
             Self::NetStreamObject(o) => NetStreamObject(o.0.upgrade(mc)?).into(),
             Self::NetConnectionObject(o) => NetConnectionObject(o.0.upgrade(mc)?).into(),
+            Self::ResponderObject(o) => ResponderObject(o.0.upgrade(mc)?).into(),
             Self::ShaderDataObject(o) => ShaderDataObject(o.0.upgrade(mc)?).into(),
             Self::SocketObject(o) => SocketObject(o.0.upgrade(mc)?).into(),
             Self::FontObject(o) => FontObject(o.0.upgrade(mc)?).into(),
