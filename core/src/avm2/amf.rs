@@ -126,11 +126,15 @@ pub fn serialize_value<'gc>(
                     recursive_serialize(activation, o, &mut object_body, amf_version).unwrap();
                     Some(AmfValue::Object(
                         object_body,
-                        Some(ClassDefinition {
-                            name: "".to_string(),
-                            attributes: EnumSet::only(Attribute::Dynamic),
-                            static_properties: Vec::new(),
-                        }),
+                        if amf_version == AMFVersion::AMF3 {
+                            Some(ClassDefinition {
+                                name: "".to_string(),
+                                attributes: EnumSet::only(Attribute::Dynamic),
+                                static_properties: Vec::new(),
+                            })
+                        } else {
+                            None
+                        },
                     ))
                 } else {
                     tracing::warn!(

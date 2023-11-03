@@ -1,2 +1,1 @@
 num_ticks = 10
-known_failure = true # Flash serializes AMF0 Object as object, but ruffle as typed object
