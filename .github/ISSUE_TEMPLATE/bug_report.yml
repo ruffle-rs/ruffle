@@ -20,7 +20,6 @@ body:
       description: |
         Provide a clear and concise description of what the bug is.
         - If there are steps to reproduce, list them here.
-        - If this is an issue with a specific SWF file, please provide a link to the SWF file, or you can attach the SWF by zipping it and dragging it onto the issue box.
         - If this is a visual issue, please attach a screenshot of the problem.
     validations:
       required: true
@@ -28,6 +27,12 @@ body:
     attributes:
       label: Expected behavior
       description: A clear and concise description of what you expected to happen.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Content Location
+      description: Where can we find the Flash content related to this issue? You can link to a webpage that has it, or you can attach the SWF by zipping it and dragging it onto the issue box.
     validations:
       required: true
   - type: dropdown
