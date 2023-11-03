@@ -10,9 +10,7 @@ package flash.display {
 
     [Ruffle(InstanceAllocator)]
     public class BitmapData implements IBitmapDrawable {
-        // FIXME - the first two arguments should not be defaulted, but it's currently
-        // nedded for BitmapData to be contructed internally
-        public function BitmapData(width:int=0, height:int=0, transparent:Boolean = true, fillColor:uint = 0xFFFFFFFF) {
+        public function BitmapData(width:int, height:int, transparent:Boolean = true, fillColor:uint = 0xFFFFFFFF) {
             this.init(width, height, transparent, fillColor);
         }
 
