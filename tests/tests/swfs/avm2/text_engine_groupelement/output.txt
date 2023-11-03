@@ -1,0 +1,64 @@
+/// replaceElements(0, 0, null)
+result: null
+0 aaaaa
+1 bbbbb
+2 ccccc
+/// replaceElements(50, 50, null)
+result: null
+0 aaaaa
+1 bbbbb
+2 ccccc
+/// replaceElements(0, 1, null)
+result: [object TextElement]
+0 bbbbb
+1 ccccc
+/// replaceElements(0, 3, null)
+result: [object TextElement],[object TextElement],[object TextElement]
+/// replaceElements(1, 1, replacement)
+result: 
+0 aaaaa
+1 foobar
+2 bbbbb
+3 ccccc
+/// replaceElements(1, 2, replacement)
+result: [object TextElement]
+0 aaaaa
+1 foobar
+2 ccccc
+/// replaceElements(3, 3, replacement)
+result: 
+0 aaaaa
+1 bbbbb
+2 ccccc
+3 foobar
+/// replaceElements(1, 1, replacements)
+result: 
+0 aaaaa
+1 11111
+2 22222
+3 bbbbb
+4 ccccc
+/// replaceElements(1, 2, replacements)
+result: [object TextElement]
+0 aaaaa
+1 11111
+2 22222
+3 ccccc
+/// splitTextElement(1, 2)
+result: bbb
+0 aaaaa
+1 bb
+2 bbb
+3 ccccc
+/// replaceElements (begin index out-of-bounds)
+RangeError: Error #2006: The supplied index is out of bounds.
+/// replaceElements (end index out-of-bounds)
+RangeError: Error #2006: The supplied index is out of bounds.
+/// getElementAt (out-of-bounds)
+RangeError: Error #2006: The supplied index is out of bounds.
+/// splitTextElement (element index out-of-bounds)
+RangeError: Error #2006: The supplied index is out of bounds.
+/// splitTextElement (text index out-of-bounds)
+RangeError: Error #2006: The supplied index is out of bounds.
+/// splitTextElement (not TextElement)
+ArgumentError: Error #2004: One of the parameters is invalid.
