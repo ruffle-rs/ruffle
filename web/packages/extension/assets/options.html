@@ -12,12 +12,9 @@
     <body>
         <div class="header">
             <a href="https://ruffle.rs/" target="_blank">
-                <img
-                    src="images/logo.svg"
-                    alt="Ruffle"
-                    data-canonical-src="images/logo.svg"
-                    class="logo" />
+                <img src="images/logo.svg" alt="Ruffle" data-canonical-src="images/logo.svg" class="logo" />
             </a>
+            <div id="version-text">nightly YYYY-MM-DD</div>
         </div>
         <div class="options container">
             <div class="option checkbox">
@@ -30,50 +27,40 @@
             </div>
             <div class="option checkbox">
                 <input type="checkbox" id="autostart" />
-                <label for="autostart">Play automatically without splash screen (then click to unmute)</label>
+                <label for="autostart">Autoplay Flash content (click to unmute)</label>
             </div>
-            <details>
-                <summary id="advanced_options">Advanced Options</summary>
-                <div class="options">
-                    <div class="option checkbox">
-                        <input type="checkbox" id="ignore_optout" />
-                        <label for="ignore_optout">Play Flash content even on sites that disallow Ruffle</label>
-                    </div>
-                    <div class="option select">
-                        <select id="log_level">
-                            <option value="info" id="log_level_info">Info</option>
-                            <option value="warn" id="log_level_warn">Warning</option>
-                            <option value="error" id="log_level_error">Error</option>
-                        </select>
-                        <label for="log_level">Log level</label>
-                    </div>
-                    <div class="option select">
-                        <select id="preferred_renderer">
-                            <option value="" id="preferred_renderer_auto">Automatic</option>
-                            <option value="webgpu">WebGPU</option>
-                            <option value="wgpu-webgl">Wgpu (via WebGL)</option>
-                            <option value="webgl">WebGL</option>
-                            <option value="canvas">Canvas2D</option>
-                        </select>
-                        <label for="preferred_renderer">Preferred renderer</label>
-                    </div>
-                    <div class="option number-input">
-                        <input type="number" id="player_version"
-                               min="1"
-                               max="32"
-                               placeholder="32"
-                        />
-                        <label for="player_version">Flash player version number to emulate (range 1-32)</label>
-                    </div>
-                    <div class="option number-input">
-                        <input type="number" id="max_execution_duration" min="1" />
-                        <label for="max_execution_duration">Maximum allowed ActionScript execution duration (in seconds)</label>
-                    </div>
-                </div>
-                <div class="options special">
-                    <button id="reset_settings">Reset settings</button>
-                </div>
-            </details>
+            <div id="advanced-options">Advanced Options</div>
+            <div class="option checkbox">
+                <input type="checkbox" id="ignore_optout" />
+                <label for="ignore_optout">Play Flash content even on sites that disallow Ruffle</label>
+            </div>
+            <div class="option select">
+                <select id="log_level">
+                    <option value="info" id="log_level_info">Info</option>
+                    <option value="warn" id="log_level_warn">Warning</option>
+                    <option value="error" id="log_level_error">Error</option>
+                </select>
+                <label for="log_level">Log level</label>
+            </div>
+            <div class="option select">
+                <select id="preferred_renderer">
+                    <option value="" id="preferred_renderer_auto">Automatic</option>
+                    <option value="webgpu">WebGPU</option>
+                    <option value="wgpu-webgl">Wgpu (via WebGL)</option>
+                    <option value="webgl">WebGL</option>
+                    <option value="canvas">Canvas2D</option>
+                </select>
+                <label for="preferred_renderer">Preferred renderer</label>
+            </div>
+            <div class="option number-input">
+                <input type="number" id="player_version" min="1" max="32" placeholder="32" />
+                <label for="player_version">Flash player version number to emulate (range 1-32)</label>
+            </div>
+            <div class="option number-input">
+                <input type="number" id="max_execution_duration" min="1" />
+                <label for="max_execution_duration">Maximum allowed ActionScript execution duration (in seconds)</label>
+            </div>
+            <button id="reset-settings">Reset settings</button>
         </div>
         <script src="dist/options.js"></script>
     </body>

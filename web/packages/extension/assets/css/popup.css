@@ -8,32 +8,17 @@ body {
 }
 
 .container {
-    padding: 16px;
-}
-
-button {
-    display: block;
-    width: 100%;
-    padding: 10px;
-    border: none;
-    cursor: pointer;
-    text-align: center;
-    background: var(--ruffle-orange);
-    color: black;
-    border-top: 1px solid var(--ruffle-blue);
-}
-
-#version-text {
-    text-align: center;
-    font-size: 12px;
-    opacity: 0.8;
-    margin: 2px 0 6px;
+    font-size: small;
+    padding: 12px;
 }
 
 #status-container {
     text-align: center;
-    background: white;
+    background-color: white;
+    background-image: linear-gradient(#fff1, #fff1 50%, #0001 50%, #0001);
+    background-size: 100% 2px;
     color: black;
+    box-shadow: inset 0 -12px 12px -12px #0008;
 }
 
 #status-indicator {
@@ -48,21 +33,55 @@ button {
     box-shadow: 0 0 10px var(--color);
 }
 
+.options {
+    gap: 12px;
+}
+
+.buttons-container {
+    display: flex;
+    flex-wrap: wrap;
+    row-gap: 2px;
+    padding: 0 8px;
+}
+
+.buttons-container button {
+    flex-grow: 1;
+}
+
+/* TODO: figure out why this appears smaller on Firefox */
+#options-button {
+    width: 24px;
+    margin-left: 4px;
+    padding: 0 2px;
+    cursor: pointer;
+}
+
 #reload-button {
     height: 0;
     padding: 0;
-    transition: height 0.2s ease-in;
+    transition:
+        height 0.2s ease-in,
+        margin-bottom 0.2s ease-in;
     overflow: hidden;
+    cursor: default;
+    background: var(--ruffle-orange);
+    color: var(--ruffle-dark-blue);
+    text-shadow: 0 0 0.1px var(--ruffle-dark-blue);
+    flex-basis: 100%;
 }
 
 #reload-button:enabled {
-    height: calc(1em + 20px);
-    transition: height 0.2s ease-out;
+    height: 33px;
+    margin-bottom: 6px;
+    transition:
+        height 0.2s ease-out,
+        margin-bottom 0.2s ease-out;
+    cursor: pointer;
 }
 
 @media (prefers-color-scheme: dark) {
     #status-container {
-        background: #333;
+        background-color: #333;
         color: white;
     }
 }

@@ -1,9 +1,3 @@
-:root {
-    --ruffle-blue: #37528c;
-    --ruffle-orange: #ffad33;
-    --splash-screen-background: #31497d;
-}
-
 body {
     position: absolute;
     inset: 0;
@@ -12,25 +6,81 @@ body {
     font-family: Lato, sans-serif;
     font-size: 100%;
     display: flex;
-    flex-flow: column;
+    flex-direction: column;
     background: black;
+}
+
+#nav {
+    width: 100%;
+    background: var(--ruffle-blue);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    color: white;
+    padding: 8px 16px;
+    box-sizing: border-box;
+}
+
+#nav > * {
+    display: flex;
+    gap: 16px;
+}
+
+.logo {
+    height: 32px;
+    flex: 0 0 content;
+}
+
+.select-container > div {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+#web-url {
+    width: min(40vw, 500px);
+}
+
+#local-file {
+    display: none;
+}
+
+#local-file-name {
+    font-size: smaller;
+}
+
+#toggle-info,
+#reload-swf {
+    cursor: pointer;
 }
 
 #main {
     position: relative;
     flex: 1;
+    display: flex;
+    flex-direction: row;
+}
+
+#player-container {
+    overflow-y: hidden;
+    flex-grow: 1;
+}
+
+#player-container > * {
+    position: relative;
+    width: 100%;
+    height: 100%;
 }
 
 #overlay {
-    position: absolute;
-    inset: 0;
-    z-index: 1;
     pointer-events: none;
     border: 8px dashed var(--ruffle-orange);
     border-radius: 30px;
     opacity: 0;
     transition: opacity 0.3s ease-in;
-    margin: 10px 5px;
+    box-sizing: border-box;
+    z-index: 1;
 }
 
 #overlay.drag {
@@ -38,160 +88,37 @@ body {
     transition-timing-function: ease-out;
 }
 
-#player {
-    position: absolute;
-    inset: 0;
-    width: auto;
-    height: auto;
-    margin: 10px 0;
+#overlay:not([hidden]) ~ #player {
+    bottom: 100%;
 }
 
-#nav {
-    width: 100%;
-    background: var(--ruffle-blue);
-    box-shadow: 0 3px 6px 5px var(--ruffle-blue);
-    display: flex;
-    align-items: center;
-    justify-content: space-around;
-    color: white;
-    padding: 10px 0 5px;
-    margin-bottom: 5px;
-}
-
-#title {
-    transition: opacity 0.5s;
-}
-
-#title:hover {
-    opacity: 0.5;
-}
-
-#title img {
-    height: 32px;
-}
-
-#file-picker {
-    margin-left: 10px;
-}
-
-#file-picker select,
-#file-picker input {
-    margin-left: 5px;
-}
-
-#local-file-container,
-#web-url-container {
-    display: inline-block;
-    vertical-align: middle;
-}
-
-#local-file {
-    width: 0;
-    opacity: 0;
-    position: absolute;
-}
-
-#local-file-label,
-#web-form-submit {
-    color: var(--ruffle-blue);
-    padding: 3px 10px;
-    margin: 5px 2px;
-    cursor: pointer;
-    border-radius: 50px;
-    background-color: white;
-}
-
-#web-form-submit {
-    border-style: solid;
-    border-color: white;
-    margin-right: 10px;
-}
-
-#local-file-name {
-    min-width: 150px;
-    display: inline-block;
-    font-size: smaller;
-}
-
-.hidden {
-    display: none !important;
-}
-
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 1;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-}
-
-.modal-content {
-    background-color: var(--ruffle-blue);
-    margin: 15vh auto;
-    padding: 20px;
-    border: 2px solid white;
+#info-container {
     width: 300px;
-    height: 270px;
-    overflow: auto;
+    background-color: var(--ruffle-blue);
+    padding: 4px 16px;
+    flex-direction: column;
+    gap: 8px;
+    box-sizing: border-box;
 }
 
-.close {
-    color: #aaa;
+#info-container span:first-child {
+    text-shadow: 0 0 1px white;
+}
+
+#info-container span:first-child::after {
+    content: ":";
+}
+
+#info-container span:last-child {
     float: right;
-    font-size: 28px;
-    font-weight: bold;
-    cursor: pointer;
 }
 
-#open-modal,
-#reload-swf {
-    vertical-align: middle;
-    cursor: pointer;
-}
-
-#metadata {
-    margin: 0 auto;
-}
-
-#metadata td {
-    padding: 2px 1px;
-    border: 1px solid #ddd;
-    color: var(--ruffle-orange);
-}
-
-#metadata tr td:nth-child(1) {
-    font-weight: bold;
-    padding: 0 10px;
-}
-
-#web-url {
-    width: min(40vw, 500px);
-}
-
-@media only screen and (width <= 800px) {
-    #local-file-container,
-    #web-url-container {
-        display: block;
-    }
-
-    #web-url-container {
-        margin-bottom: 10px;
-    }
-}
-
-@media only screen and (width <= 600px) {
-    #local-file-static-label {
-        display: block;
-        margin-bottom: 5px;
-    }
-
-    #local-file-container {
-        margin-bottom: 10px;
-    }
-
-    #nav {
-        flex-flow: column;
-    }
+/* TODO: Make metadata element IDs kebab-case, and convert back and forth
+         between that and the camelCase of metadata JS object keys. */
+/* stylelint-disable-next-line selector-id-pattern */
+#backgroundColor {
+    width: 1em;
+    height: 1em;
+    border: 2px solid var(--ruffle-dark-blue);
+    background-color: white;
 }

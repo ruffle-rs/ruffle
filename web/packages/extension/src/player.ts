@@ -12,16 +12,15 @@ window.RufflePlayer = api;
 const ruffle = api.newest()!;
 let player: RufflePlayer;
 
-const main = document.getElementById("main")!;
+const playerContainer = document.getElementById("player-container")!;
 const overlay = document.getElementById("overlay")!;
 const localFileInput = document.getElementById(
     "local-file",
 )! as HTMLInputElement;
 const localFileName = document.getElementById("local-file-name")!;
-const closeModal = document.getElementById("close-modal")!;
-const openModal = document.getElementById("open-modal")!;
+const toggleInfo = document.getElementById("toggle-info")!;
 const reloadSwf = document.getElementById("reload-swf")!;
-const metadataModal = document.getElementById("metadata-modal")!;
+const infoContainer = document.getElementById("info-container")!;
 const webFormSubmit = document.getElementById("web-form-submit")!;
 const webURL = document.getElementById("web-url")! as HTMLInputElement;
 
@@ -84,9 +83,8 @@ function unload() {
         document.querySelectorAll("span.metadata").forEach((el) => {
             el.textContent = "Loading";
         });
-        (
-            document.getElementById("backgroundColor")! as HTMLInputElement
-        ).value = "#FFFFFF";
+        document.getElementById("backgroundColor")!.style.backgroundColor =
+            "white";
     }
 }
 
@@ -94,7 +92,7 @@ function load(options: string | DataLoadOptions | URLLoadOptions) {
     unload();
     player = ruffle.createPlayer();
     player.id = "player";
-    main.append(player);
+    playerContainer.append(player);
     player.load(options);
     player.addEventListener("loadedmetadata", () => {
         if (player.metadata) {
@@ -103,8 +101,8 @@ function load(options: string | DataLoadOptions | URLLoadOptions) {
                 if (metadataElement) {
                     switch (key) {
                         case "backgroundColor":
-                            (metadataElement as HTMLInputElement).value =
-                                value ?? "#FFFFFF";
+                            metadataElement.style.backgroundColor =
+                                value ?? "white";
                             break;
                         case "uncompressedLength":
                             metadataElement.textContent = `${value >> 10}Kb`;
@@ -148,21 +146,21 @@ localFileInput.addEventListener("change", (event) => {
     }
 });
 
-main.addEventListener("dragenter", (event) => {
+playerContainer.addEventListener("dragenter", (event) => {
     event.stopPropagation();
     event.preventDefault();
 });
-main.addEventListener("dragleave", (event) => {
+playerContainer.addEventListener("dragleave", (event) => {
     event.stopPropagation();
     event.preventDefault();
     overlay.classList.remove("drag");
 });
-main.addEventListener("dragover", (event) => {
+playerContainer.addEventListener("dragover", (event) => {
     event.stopPropagation();
     event.preventDefault();
     overlay.classList.add("drag");
 });
-main.addEventListener("drop", (event) => {
+playerContainer.addEventListener("drop", (event) => {
     event.stopPropagation();
     event.preventDefault();
     overlay.classList.remove("drag");
@@ -191,12 +189,12 @@ localFileInput.addEventListener("drop", (event) => {
     }
 });
 
-closeModal.addEventListener("click", () => {
-    metadataModal.style.display = "none";
-});
-
-openModal.addEventListener("click", () => {
-    metadataModal.style.display = "block";
+toggleInfo.addEventListener("click", () => {
+    if (infoContainer.style.display === "none") {
+        infoContainer.style.display = "flex";
+    } else {
+        infoContainer.style.display = "none";
+    }
 });
 
 reloadSwf.addEventListener("click", () => {
@@ -215,14 +213,8 @@ window.addEventListener("load", () => {
     ) {
         localFileInput.removeAttribute("accept");
     }
-    overlay.classList.remove("hidden");
+    overlay.removeAttribute("hidden");
 });
-
-window.onclick = (event) => {
-    if (event.target === metadataModal) {
-        metadataModal.style.display = "none";
-    }
-};
 
 async function loadSwf(swfUrl: string) {
     try {
@@ -258,6 +250,11 @@ window.addEventListener("pageshow", loadSwfFromHash);
 window.addEventListener("hashchange", loadSwfFromHash);
 
 window.addEventListener("DOMContentLoaded", () => {
+    document
+        .getElementById("local-file-label")!
+        .addEventListener("click", () => {
+            document.getElementById("local-file")!.click();
+        });
     webFormSubmit.addEventListener("click", () => {
         if (webURL.value !== "") {
             window.location.hash = webURL.value;
