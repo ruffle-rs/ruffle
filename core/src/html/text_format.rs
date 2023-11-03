@@ -634,6 +634,9 @@ impl FormatSpans {
                                 text.push_byte(b'\n');
                                 if let Some(span) = spans.last_mut() {
                                     span.span_length += 1;
+                                } else {
+                                    // This must be at the start; make an empty span so our total length is correct
+                                    spans.push(TextSpan::with_length_and_format(1, format));
                                 }
                             }
 
@@ -646,6 +649,9 @@ impl FormatSpans {
                             text.push_byte(b'\n');
                             if let Some(span) = spans.last_mut() {
                                 span.span_length += 1;
+                            } else {
+                                // This must be at the start; make an empty span so our total length is correct
+                                spans.push(TextSpan::with_length_and_format(1, format));
                             }
 
                             // Skip push to `format_stack`.
@@ -792,6 +798,12 @@ impl FormatSpans {
                             text.push_byte(b'\n');
                             if let Some(span) = spans.last_mut() {
                                 span.span_length += 1;
+                            } else {
+                                // This must be at the start; make an empty span so our total length is correct
+                                spans.push(TextSpan::with_length_and_format(
+                                    1,
+                                    format_stack.last().unwrap().clone(),
+                                ));
                             }
                         }
                         _ => {}
