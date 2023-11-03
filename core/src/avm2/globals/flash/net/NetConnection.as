@@ -16,13 +16,9 @@ package flash.net {
 
         public native function connect(command:String, ... arguments):void;
 
-        public function addHeader(operation:String, mustUnderstand:Boolean = false, param:Object = null):void {
-            stub_method("flash.net.NetConnection", "addHeader");
-        }
+        public native function addHeader(operation:String, mustUnderstand:Boolean = false, param:Object = null):void;
 
-        public function call(command:String, responder:Responder, ... arguments):void {
-            stub_method("flash.net.NetConnection", "call");
-        }
+        public native function call(command:String, responder:Responder, ... arguments):void;
         
         public native function close():void;
 

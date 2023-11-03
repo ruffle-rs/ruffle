@@ -2,6 +2,9 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, FunctionObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::{Activation, Error};
+use crate::context::UpdateContext;
+use crate::net_connection::ResponderCallback;
+use flash_lso::types::Value as AMFValue;
 use gc_arena::Mutation;
 use gc_arena::{Collect, GcCell, GcWeakCell};
 use std::cell::{Ref, RefMut};
@@ -72,6 +75,26 @@ impl<'gc> ResponderObject<'gc> {
     ) {
         self.0.write(gc_context).result = result;
         self.0.write(gc_context).status = status;
+    }
+
+    pub fn send_callback(
+        &self,
+        context: &mut UpdateContext<'_, 'gc>,
+        callback: ResponderCallback,
+        message: &AMFValue,
+    ) -> Result<(), Error<'gc>> {
+        let function = match callback {
+            ResponderCallback::Result => self.0.read().result,
+            ResponderCallback::Status => self.0.read().status,
+        };
+
+        if let Some(function) = function {
+            let mut activation = Activation::from_nothing(context.reborrow());
+            let value = crate::avm2::amf::deserialize_value(&mut activation, message)?;
+            function.call((*self).into(), &[value], &mut activation)?;
+        }
+
+        Ok(())
     }
 }
 

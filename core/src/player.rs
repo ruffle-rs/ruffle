@@ -555,6 +555,7 @@ impl Player {
             });
 
             self.update_sockets();
+            self.update_net_connections();
             self.update_timers(dt);
             self.update(|context| {
                 StreamManager::tick(context, dt);
@@ -2066,6 +2067,13 @@ impl Player {
     pub fn update_sockets(&mut self) {
         self.mutate_with_update_context(|context| {
             Sockets::update_sockets(context);
+        })
+    }
+
+    /// Update connected NetConnections.
+    pub fn update_net_connections(&mut self) {
+        self.mutate_with_update_context(|context| {
+            NetConnections::update_connections(context);
         })
     }
 
