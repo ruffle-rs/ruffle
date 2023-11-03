@@ -113,6 +113,9 @@ body {
     float: right;
 }
 
+/* TODO: Make metadata element IDs kebab-case, and convert back and forth
+         between that and the camelCase of metadata JS object keys. */
+/* stylelint-disable-next-line selector-id-pattern */
 #backgroundColor {
     width: 1em;
     height: 1em;
