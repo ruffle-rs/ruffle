@@ -1,10 +1,58 @@
-use crate::avm2::object::NetConnectionObject as Avm2NetConnectionObject;
+use crate::avm2::object::{
+    NetConnectionObject as Avm2NetConnectionObject, ResponderObject as Avm2ResponderObject,
+};
 use crate::avm2::{Activation as Avm2Activation, Avm2, EventObject as Avm2EventObject};
+use crate::backend::navigator::{NavigatorBackend, OwnedFuture, Request};
 use crate::context::UpdateContext;
-use gc_arena::Collect;
+use crate::loader::Error;
+use crate::string::AvmString;
+use crate::Player;
+use flash_lso::packet::{Header, Message, Packet};
+use flash_lso::types::{AMFVersion, Value as AmfValue};
+use gc_arena::{Collect, DynamicRoot, Rootable};
 use generational_arena::{Arena, Index};
+use std::fmt::{Debug, Formatter};
+use std::rc::Rc;
+use std::sync::{Mutex, Weak};
 
 pub type NetConnectionHandle = Index;
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub enum ResponderCallback {
+    Result,
+    Status,
+}
+
+#[derive(Clone)]
+pub enum ResponderHandle {
+    Avm2(DynamicRoot<Rootable![Avm2ResponderObject<'_>]>),
+}
+
+impl Debug for ResponderHandle {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ResponderHandle::Avm2(_) => write!(f, "ResponderHandle::Avm2"),
+        }
+    }
+}
+
+impl ResponderHandle {
+    pub fn call(
+        &self,
+        context: &mut UpdateContext<'_, '_>,
+        callback: ResponderCallback,
+        message: Rc<AmfValue>,
+    ) {
+        match self {
+            ResponderHandle::Avm2(handle) => {
+                let object = context.dynamic_root.fetch(handle);
+                if let Err(e) = object.send_callback(context, callback, &message) {
+                    tracing::error!("Unhandled error sending {callback:?} callback: {e}");
+                }
+            }
+        }
+    }
+}
 
 #[derive(Copy, Clone, Collect)]
 #[collect(no_drop)]
@@ -87,7 +135,11 @@ impl<'gc> NetConnections<'gc> {
         let target = target.into();
         let connection = NetConnection {
             object: target,
-            protocol: NetConnectionProtocol::FlashRemoting(FlashRemoting { url }),
+            protocol: NetConnectionProtocol::FlashRemoting(FlashRemoting {
+                url,
+                headers: vec![],
+                outgoing_queue: vec![],
+            }),
         };
         let handle = context.net_connections.connections.insert(connection);
 
@@ -131,6 +183,43 @@ impl<'gc> NetConnections<'gc> {
                     Avm2::dispatch_event(&mut activation.context, event, object.into());
                 }
             }
+        }
+    }
+
+    pub fn update_connections(context: &mut UpdateContext<'_, 'gc>) {
+        for (handle, connection) in context.net_connections.connections.iter_mut() {
+            connection.update(handle, context.navigator, context.player.clone());
+        }
+    }
+
+    pub fn send_without_response(
+        context: &mut UpdateContext<'_, 'gc>,
+        handle: NetConnectionHandle,
+        command: String,
+        message: AmfValue,
+    ) {
+        if let Some(connection) = context.net_connections.connections.get_mut(handle) {
+            connection.send(command, None, message);
+        }
+    }
+
+    pub fn send_avm2(
+        context: &mut UpdateContext<'_, 'gc>,
+        handle: NetConnectionHandle,
+        command: String,
+        message: AmfValue,
+        responder: Avm2ResponderObject<'gc>,
+    ) {
+        if let Some(connection) = context.net_connections.connections.get_mut(handle) {
+            let responder_handle =
+                ResponderHandle::Avm2(context.dynamic_root.stash(context.gc_context, responder));
+            connection.send(command, Some(responder_handle), message);
+        }
+    }
+
+    pub fn set_header(&mut self, handle: NetConnectionHandle, header: Header) {
+        if let Some(connection) = self.connections.get_mut(handle) {
+            connection.set_header(header);
         }
     }
 
@@ -252,6 +341,45 @@ impl<'gc> NetConnection<'gc> {
             NetConnectionProtocol::FlashRemoting(_) => None,
         }
     }
+
+    pub fn send(
+        &mut self,
+        command: String,
+        responder_handle: Option<ResponderHandle>,
+        message: AmfValue,
+    ) {
+        match &mut self.protocol {
+            NetConnectionProtocol::Local => {}
+            NetConnectionProtocol::FlashRemoting(remoting) => {
+                remoting.send(command, responder_handle, message)
+            }
+        }
+    }
+
+    pub fn update(
+        &mut self,
+        self_handle: NetConnectionHandle,
+        navigator: &mut dyn NavigatorBackend,
+        player: Weak<Mutex<Player>>,
+    ) {
+        match &mut self.protocol {
+            NetConnectionProtocol::Local => {}
+            NetConnectionProtocol::FlashRemoting(remoting) => {
+                if remoting.has_pending_packet() {
+                    navigator.spawn_future(remoting.flush_queue(self_handle, player));
+                }
+            }
+        }
+    }
+
+    pub fn set_header(&mut self, header: Header) {
+        match &mut self.protocol {
+            NetConnectionProtocol::Local => {}
+            NetConnectionProtocol::FlashRemoting(remoting) => {
+                remoting.set_header(header);
+            }
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -265,6 +393,142 @@ pub enum NetConnectionProtocol {
 
 #[derive(Debug)]
 pub struct FlashRemoting {
-    #[allow(dead_code)]
     url: String,
+    headers: Vec<Header>,
+    outgoing_queue: Vec<(Message, Option<ResponderHandle>)>,
+}
+
+impl FlashRemoting {
+    pub fn send(
+        &mut self,
+        command: String,
+        responder_handle: Option<ResponderHandle>,
+        message: AmfValue,
+    ) {
+        self.outgoing_queue.push((
+            Message {
+                target_uri: command,
+                response_uri: format!("/{}", self.outgoing_queue.len()),
+                contents: Rc::new(message),
+            },
+            responder_handle,
+        ));
+    }
+
+    pub fn has_pending_packet(&self) -> bool {
+        !self.outgoing_queue.is_empty()
+    }
+
+    pub fn set_header(&mut self, header: Header) {
+        // Only one header of the same name (case insensitive) should exist
+        self.headers
+            .retain(|h| !h.name.eq_ignore_ascii_case(&header.name));
+
+        self.headers.push(header);
+    }
+
+    pub fn flush_queue(
+        &mut self,
+        self_handle: NetConnectionHandle,
+        player: Weak<Mutex<Player>>,
+    ) -> OwnedFuture<(), Error> {
+        let queue = std::mem::take(&mut self.outgoing_queue);
+        let (messages, responder_handles): (Vec<_>, Vec<_>) = queue.into_iter().unzip();
+        let packet = Packet {
+            version: AMFVersion::AMF0,
+            headers: self.headers.clone(),
+            messages,
+        };
+        let url = self.url.clone();
+
+        Box::pin(async move {
+            let player = player
+                .upgrade()
+                .expect("Could not upgrade weak reference to player");
+            let bytes = flash_lso::packet::write::write_to_bytes(&packet, true)
+                .expect("Must be able to serialize a packet");
+            let request = Request::post(url, Some((bytes, "application/x-amf".to_string())));
+            let fetch = player.lock().unwrap().navigator().fetch(request);
+            let response = match fetch.await {
+                Ok(response) => response,
+                Err(response) => {
+                    player.lock().unwrap().update(|uc| {
+                        tracing::error!(
+                            "Couldn't submit AMF Packet to {}: {:?}",
+                            response.url,
+                            response.error
+                        );
+                        if let Some(connection) = uc.net_connections.connections.get(self_handle) {
+                            match connection.object {
+                                NetConnectionObject::Avm2(object) => {
+                                    let mut activation =
+                                        Avm2Activation::from_nothing(uc.reborrow());
+                                    let url = AvmString::new_utf8(
+                                        activation.context.gc_context,
+                                        response.url,
+                                    );
+                                    let description = AvmString::new_utf8(
+                                        activation.context.gc_context,
+                                        format!("{:?}", response.error),
+                                    );
+                                    let event = Avm2EventObject::net_status_event(
+                                        &mut activation,
+                                        "netStatus",
+                                        vec![
+                                            ("code", "NetConnection.Call.Failed".into()),
+                                            ("level", "error".into()),
+                                            ("details", url),
+                                            ("description", description),
+                                        ],
+                                    );
+                                    Avm2::dispatch_event(
+                                        &mut activation.context,
+                                        event,
+                                        object.into(),
+                                    );
+                                }
+                            }
+                        }
+                    });
+                    return Ok(());
+                }
+            };
+
+            // Flash completely ignores invalid responses, it seems
+            if let Ok(response_packet) = flash_lso::packet::read::parse(&response.body) {
+                player.lock().unwrap().update(|uc| {
+                    for message in response_packet.messages {
+                        if let Some(target_uri) = message.target_uri.strip_prefix('/') {
+                            let mut responder = None;
+                            if let Some(index) = target_uri
+                                .strip_suffix("/onStatus")
+                                .and_then(|str| str::parse::<usize>(str).ok())
+                            {
+                                responder = responder_handles
+                                    .get(index)
+                                    .cloned()
+                                    .flatten()
+                                    .map(|handle| (handle, ResponderCallback::Status));
+                            } else if let Some(index) = target_uri
+                                .strip_suffix("/onResult")
+                                .and_then(|str| str::parse::<usize>(str).ok())
+                            {
+                                responder = responder_handles
+                                    .get(index)
+                                    .cloned()
+                                    .flatten()
+                                    .map(|handle| (handle, ResponderCallback::Result));
+                            }
+
+                            if let Some((responder_handle, callback)) = responder {
+                                responder_handle.call(uc, callback, message.contents);
+                            }
+                        }
+                    }
+                });
+            }
+
+            Ok(())
+        })
+    }
 }

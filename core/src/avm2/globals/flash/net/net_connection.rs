@@ -1,3 +1,4 @@
+use crate::avm2::amf::serialize_value;
 use crate::avm2::error::make_error_2126;
 pub use crate::avm2::object::net_connection_allocator;
 use crate::avm2::object::TObject;
@@ -8,7 +9,11 @@ use crate::{
     avm2::{Activation, Error, Object, Value},
     avm2_stub_method,
 };
+use flash_lso::packet::Header;
+use flash_lso::types::AMFVersion;
+use flash_lso::types::Value as AMFValue;
 use ruffle_wstr::WStr;
+use std::rc::Rc;
 
 pub fn connect<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -233,4 +238,85 @@ pub fn get_using_tls<'gc>(
     }
 
     Err(make_error_2126(activation))
+}
+
+pub fn call<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let connection = this
+        .as_net_connection()
+        .expect("Must be NetConnection object");
+
+    let command = args.get_string(activation, 0)?;
+    let responder = args
+        .try_get_object(activation, 1)
+        .and_then(|o| o.as_responder());
+    let mut arguments = Vec::new();
+
+    for arg in &args[2..] {
+        if let Some(value) = serialize_value(activation, *arg, AMFVersion::AMF0) {
+            arguments.push(Rc::new(value));
+        }
+    }
+
+    if let Some(handle) = connection.handle() {
+        if let Some(responder) = responder {
+            NetConnections::send_avm2(
+                &mut activation.context,
+                handle,
+                command.to_string(),
+                AMFValue::StrictArray(arguments),
+                responder,
+            );
+        } else {
+            NetConnections::send_without_response(
+                &mut activation.context,
+                handle,
+                command.to_string(),
+                AMFValue::StrictArray(arguments),
+            );
+        }
+
+        return Ok(Value::Undefined);
+    }
+
+    Err(make_error_2126(activation))
+}
+
+pub fn add_header<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let connection = this
+        .as_net_connection()
+        .expect("Must be NetConnection object");
+
+    // [NA] The documentation says that the header persists for the duration of this object.
+    // However, this doesn't seem to be true - if you set a header and then open a connection,
+    // the header is lost.
+    // Therefore, we'll only store them on an active connection object - and lose them otherwise.
+
+    // [NA] Another thing the docs have wrong, it says that you can remove a header by just calling
+    // `addHeader(name)` - but this is clearly false. It instead replaces the value of the header
+    // with a null value, sending that over the wire.
+
+    let name = args.get_string(activation, 0)?;
+    let must_understand = args.get_bool(1);
+    let value = serialize_value(activation, args[2], AMFVersion::AMF0).unwrap_or(AMFValue::Null);
+
+    if let Some(handle) = connection.handle() {
+        activation.context.net_connections.set_header(
+            handle,
+            Header {
+                name: name.to_string(),
+                must_understand,
+                value: Rc::new(value),
+            },
+        );
+    }
+
+    Ok(Value::Undefined)
 }
