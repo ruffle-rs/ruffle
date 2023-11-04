@@ -2965,11 +2965,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     /// Implements `Op::EscXElem`
     fn op_esc_elem(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let s = self.pop_stack().coerce_to_string(self)?;
+        let r = match self.pop_stack() {
+            // We explicitly call toXMLString on Xml/XmlListObject since the toString of these objects have special handling for simple content, which is not used here.
+            Value::Object(Object::XmlObject(x)) => x.as_xml_string(self),
+            Value::Object(Object::XmlListObject(x)) => x.as_xml_string(self),
+            // contrary to the avmplus documentation, this escapes the value on the top of the stack using EscapeElementValue from ECMA-357 *NOT* EscapeAttributeValue.
+            x => AvmString::new(self.gc(), escape_element_value(x.coerce_to_string(self)?)),
+        };
 
-        // contrary to the avmplus documentation, this escapes the value on the top of the stack using EscapeElementValue from ECMA-357 *NOT* EscapeAttributeValue.
-        let r = escape_element_value(s);
-        self.push_stack(AvmString::new(self.context.gc_context, r));
+        self.push_stack(r);
 
         Ok(FrameControl::Continue)
     }

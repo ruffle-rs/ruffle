@@ -5,7 +5,9 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::{Error, Multiname, Namespace};
+use crate::string::AvmString;
 use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
+use ruffle_wstr::WString;
 use std::cell::{Ref, RefMut};
 use std::fmt::{self, Debug};
 use std::ops::Deref;
@@ -133,6 +135,18 @@ impl<'gc> XmlListObject<'gc> {
             self.target_object(),
             self.target_property(),
         )
+    }
+
+    pub fn as_xml_string(&self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
+        let children = self.children();
+        let mut out = WString::new();
+        for (i, child) in children.iter().enumerate() {
+            if i != 0 {
+                out.push_char('\n');
+            }
+            out.push_str(child.node().xml_to_xml_string(activation).as_wstr())
+        }
+        AvmString::new(activation.gc(), out)
     }
 
     // Based on https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/XMLListObject.cpp#L621

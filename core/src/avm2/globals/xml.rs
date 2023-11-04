@@ -205,8 +205,7 @@ pub fn to_xml_string<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let xml = this.as_xml_object().unwrap();
-    let node = xml.node();
-    Ok(Value::String(node.xml_to_xml_string(activation)))
+    Ok(xml.as_xml_string(activation).into())
 }
 
 pub fn child<'gc>(
