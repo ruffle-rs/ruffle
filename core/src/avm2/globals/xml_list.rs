@@ -311,7 +311,7 @@ pub fn text<'gc>(
             nodes.extend(
                 children
                     .iter()
-                    .filter(|node| matches!(&*node.kind(), E4XNodeKind::Text(_)))
+                    .filter(|node| node.is_text())
                     .map(|node| E4XOrXml::E4X(*node)),
             );
         }
