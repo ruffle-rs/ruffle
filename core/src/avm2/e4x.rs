@@ -1172,8 +1172,7 @@ fn to_xml_string_inner(xml: E4XOrXml, buf: &mut WString, pretty: Option<(u32, u3
 
     buf.push_char('>');
 
-    let indent_children = children.len() > 1
-        || children.len() == 1 && !matches!(*children[0].kind(), E4XNodeKind::Text(_));
+    let indent_children = children.len() > 1 || children.len() == 1 && !children[0].is_text();
     let child_pretty = if let Some((indent_level, pretty_indent)) = pretty {
         if indent_children {
             Some((indent_level + pretty_indent, pretty_indent))
