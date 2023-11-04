@@ -8,9 +8,6 @@
     "settings_show_swf_download": {
         "message": "Permet la baixada de fitxers SWF des del menú contextual"
     },
-    "settings_autostart": {
-        "message": "Reprodueix automàticament sense pantalla de benvinguda (feu clic per activar el so)"
-    },
     "settings_log_level": {
         "message": "Nivell de registre"
     },
@@ -55,27 +52,6 @@
     },
     "status_message_init": {
         "message": "Comprovant l'estat de Ruffle a la pestanya actual…"
-    },
-    "status_result_running": {
-        "message": "Ruffle està carregat i llest per a reproduir contingut Flash a la pestanya actual."
-    },
-    "status_result_running_protected": {
-        "message": "Ruffle està carregat i reproduint el contingut que heu demanat."
-    },
-    "status_result_optout": {
-        "message": "Ruffle no s'ha carregat perquè el lloc ha indicat que no hi és compatible."
-    },
-    "status_result_disabled": {
-        "message": "Ruffle no s'ha carregat perquè l'heu desactivat."
-    },
-    "status_result_error": {
-        "message": "S'ha produït un error en consultar la instància de Ruffle a la pestanya actual."
-    },
-    "status_result_protected": {
-        "message": "Ruffle no es pot carregar a llocs protegits del navegador."
-    },
-    "action_reload": {
-        "message": "Recarrega la pestanya per a efectuar els canvis"
     },
     "open_settings_page": {
         "message": "Obre la pàgina de configuració"

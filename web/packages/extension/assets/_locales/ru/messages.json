@@ -8,9 +8,6 @@
     "settings_show_swf_download": {
         "message": "Показывать в контекстном меню опцию загрузки SWF"
     },
-    "settings_autostart": {
-        "message": "Воспроизводить автоматически без отображения заставки"
-    },
     "settings_log_level": {
         "message": "Уровень логирования"
     },
@@ -55,27 +52,6 @@
     },
     "status_message_init": {
         "message": "Проверка статуса Ruffle в текущей вкладке…"
-    },
-    "status_result_running": {
-        "message": "Ruffle запущен и готов к запуску Flash-контента в текущей вкладке."
-    },
-    "status_result_running_protected": {
-        "message": "Ruffle проигрывает Flash-контент в текущей вкладке."
-    },
-    "status_result_optout": {
-        "message": "Ruffle отключён, так как текущая страница помечена владельцем как несовместимая."
-    },
-    "status_result_disabled": {
-        "message": "Ruffle отключён пользователем."
-    },
-    "status_result_error": {
-        "message": "Произошла ошибка при запуске Ruffle в текущей вкладке."
-    },
-    "status_result_protected": {
-        "message": "Ruffle не может запускаться на защищённых страницах браузера."
-    },
-    "action_reload": {
-        "message": "Обновите страницу для применения изменений"
     },
     "open_player_page": {
         "message": "Открыть SWF-плеер"

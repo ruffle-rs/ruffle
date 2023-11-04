@@ -8,9 +8,6 @@
     "settings_show_swf_download": {
         "message": "컨텍스트 메뉴에 SWF 다운로드 버튼 표시"
     },
-    "settings_autostart": {
-        "message": "시작 화면 없이 자동으로 실행 (이후 클릭하여 음소거 해제)"
-    },
     "settings_log_level": {
         "message": "로그 수준"
     },
@@ -55,27 +52,6 @@
     },
     "status_message_init": {
         "message": "현재 탭에서 Ruffle의 상태를 확인하는 중…"
-    },
-    "status_result_running": {
-        "message": "Ruffle이 로드되었으며, 현재 탭에서 플래시 콘텐츠를 실행 할 준비가 되었습니다."
-    },
-    "status_result_running_protected": {
-        "message": "Ruffle이 로드되었으며 요청한 플래시 콘텐츠가 실행 중입니다."
-    },
-    "status_result_optout": {
-        "message": "현재 페이지가 호환되지 않는 것으로 표시되었으므로 Ruffle이 로드되지 않았습니다."
-    },
-    "status_result_disabled": {
-        "message": "Ruffle이 비활성화 되어있으므로 로드되지 않았습니다."
-    },
-    "status_result_error": {
-        "message": "현재 탭의 Ruffle 인스턴스를 쿼리하는 도중 오류가 발생했습니다."
-    },
-    "status_result_protected": {
-        "message": "보호된 브라우저 페이지에서 Ruffle을 로드할 수 없습니다."
-    },
-    "action_reload": {
-        "message": "탭을 새로고침하여 변경사항을 적용하세요."
     },
     "open_player_page": {
         "message": "SWF 플레이어 열기"

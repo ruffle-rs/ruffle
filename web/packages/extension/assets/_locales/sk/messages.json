@@ -8,9 +8,6 @@
     "settings_show_swf_download": {
         "message": "Zobraziť možnosť stiahnuť SWF v kontextovej ponuke"
     },
-    "settings_autostart": {
-        "message": "Spustiť automaticky bez úvodnej obrazovky (potom kliknutím zrušíte stlmenie)"
-    },
     "settings_log_level": {
         "message": "Úroveň logu"
     },
@@ -55,27 +52,6 @@
     },
     "status_message_init": {
         "message": "Kontroluje sa stav Ruffle na aktuálnej karte…"
-    },
-    "status_result_running": {
-        "message": "Ruffle je načítaný a pripravený na spustenie Flash obsahu na aktuálnej karte."
-    },
-    "status_result_running_protected": {
-        "message": "Ruffle je načítaný a spúšťa Flash obsah, ktorý ste požadovali."
-    },
-    "status_result_optout": {
-        "message": "Ruffle sa nenačítal, pretože aktuálna stránka sa označila ako nekompatibilná."
-    },
-    "status_result_disabled": {
-        "message": "Ruffle nie je načítaný, pretože je vypnutý."
-    },
-    "status_result_error": {
-        "message": "Pri dotazovaní na inštanciu Ruffle na aktuálnej karte sa vyskytla chyba."
-    },
-    "status_result_protected": {
-        "message": "Ruffle sa nemôže načítať na chránených stránkach prehliadača."
-    },
-    "action_reload": {
-        "message": "Ak chcete použiť zmeny, znova načítajte kartu"
     },
     "open_player_page": {
         "message": "Otvoriť SWF prehrávač"

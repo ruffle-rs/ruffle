@@ -8,9 +8,6 @@
     "settings_show_swf_download": {
         "message": "Mostra download SWF nel menu contestuale"
     },
-    "settings_autostart": {
-        "message": "Riproduci automaticamente senza schermata iniziale (quindi fai clic per disattivare)"
-    },
     "settings_log_level": {
         "message": "Livello di registrazione"
     },
@@ -55,27 +52,6 @@
     },
     "status_message_init": {
         "message": "Controllo dello stato di Ruffle nella tab corrente…"
-    },
-    "status_result_running": {
-        "message": "Ruffle è caricato e pronto per eseguire il contenuto Flash sulla scheda corrente."
-    },
-    "status_result_running_protected": {
-        "message": "Ruffle è caricato ed in esecuzione il contenuto Flash che hai richiesto."
-    },
-    "status_result_optout": {
-        "message": "Ruffle non é caricato perché la pagina corrente si é dichiarata incompatibile."
-    },
-    "status_result_disabled": {
-        "message": "Ruffle non è caricato perché è disabilitato."
-    },
-    "status_result_error": {
-        "message": "C'é stato un errore leggendo lo stato di Ruffle nella tab corrente."
-    },
-    "status_result_protected": {
-        "message": "Ruffle non puó essere caricato su pagine del browser protette."
-    },
-    "action_reload": {
-        "message": "Aggiorna la tab per applicare i cambiamenti"
     },
     "open_player_page": {
         "message": "Apri Riproduttore SWF"

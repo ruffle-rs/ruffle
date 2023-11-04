@@ -8,9 +8,6 @@
     "settings_show_swf_download": {
         "message": "Tunjukan tombol unduh SWF di menu konteks"
     },
-    "settings_autostart": {
-        "message": "Putar secara otomatis tanpa layar pembuka (lalu klik untuk membunyikan)"
-    },
     "settings_log_level": {
         "message": "Tingkat log"
     },
@@ -55,27 +52,6 @@
     },
     "status_message_init": {
         "message": "Sedang mengecek status Ruffle pada tab ini…"
-    },
-    "status_result_running": {
-        "message": "Ruffle telah dimuat dan siap menjalankan konten Flash di tab ini."
-    },
-    "status_result_running_protected": {
-        "message": "Ruffle telah dimuat dan sedang menjalankan konten Flash yang Anda minta."
-    },
-    "status_result_optout": {
-        "message": "Ruffle tidak dimuat karena halaman saat ini telah ditandai sebagai tidak kompatibel."
-    },
-    "status_result_disabled": {
-        "message": "Ruffle tidak dimuat karena dinonaktifkan."
-    },
-    "status_result_error": {
-        "message": "Telah terjadi kesalahan saat meminta instansi Ruffle di tab ini."
-    },
-    "status_result_protected": {
-        "message": "Ruffle tidak bisa dimuat pada halaman browser yang diproteksi."
-    },
-    "action_reload": {
-        "message": "Muat ulang untuk menerapkan perubahan"
     },
     "open_settings_page": {
         "message": "Buka Halaman Pengaturan"

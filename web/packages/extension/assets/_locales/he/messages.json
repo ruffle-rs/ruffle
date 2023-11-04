@@ -8,9 +8,6 @@
     "settings_show_swf_download": {
         "message": "הצג אפשרות להורדת הSWF בתפריט התכנים"
     },
-    "settings_autostart": {
-        "message": "נגן אוטומטית ללא מסך פתיחה (עליך להקיש על מנת לבטל השתקה)"
-    },
     "settings_log_level": {
         "message": "רמת רישום"
     },
@@ -55,27 +52,6 @@
     },
     "status_message_init": {
         "message": "בודק את מצב Ruffle תחת לשונית נוכחית זו…"
-    },
-    "status_result_running": {
-        "message": "נטען ומוכן להפעיל תוכן Ruffle פלאש תחת לשונית נוכחית זו."
-    },
-    "status_result_running_protected": {
-        "message": "נטען ומפעיל את תוכן Ruffle הפלאש אשר ביקשת להפעיל."
-    },
-    "status_result_optout": {
-        "message": "Ruffle לא נטען בגלל שדף זה סימן את עצמו כלא תואם."
-    },
-    "status_result_disabled": {
-        "message": "Ruffle לא נטען כי הוא מושבת."
-    },
-    "status_result_error": {
-        "message": "אירעה שגיאה בעת שאילתה למופע של Ruffle בכרטיסייה הנוכחית."
-    },
-    "status_result_protected": {
-        "message": "Ruffle אינו יכול להיטען על גבי דפי דפדפן מוגנים."
-    },
-    "action_reload": {
-        "message": "טען מחדש לשונית זו כדי לבצע שינויים"
     },
     "open_player_page": {
         "message": "פתח נגן SWF"

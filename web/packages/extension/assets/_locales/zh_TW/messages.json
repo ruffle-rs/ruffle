@@ -8,9 +8,6 @@
     "settings_show_swf_download": {
         "message": "顯示下載SWF檔案(右鍵選單)"
     },
-    "settings_autostart": {
-        "message": "自動播放(無啟動畫面)"
-    },
     "settings_log_level": {
         "message": "日誌層級(用在於開發人員工具裡的主控台)"
     },
@@ -55,27 +52,6 @@
     },
     "status_message_init": {
         "message": "在此標籤頁上檢查 Ruffle 狀態…"
-    },
-    "status_result_running": {
-        "message": "Ruffle 已加載並正在目前標籤頁播放 Flash 内容。"
-    },
-    "status_result_running_protected": {
-        "message": "Ruffle 已加載並正在播放 Flash 内容。"
-    },
-    "status_result_optout": {
-        "message": "Ruffle 未加載因為目前頁面標註自己不相容。"
-    },
-    "status_result_disabled": {
-        "message": "Ruffle 未加載因為被用戶禁用。"
-    },
-    "status_result_error": {
-        "message": "在查詢此標籤頁中的 Ruffle 實例時發生錯誤。"
-    },
-    "status_result_protected": {
-        "message": "Ruffle 無法在被瀏覽器保護的頁面中加載。"
-    },
-    "action_reload": {
-        "message": "重新整理並套用此設定"
     },
     "open_player_page": {
         "message": "開啟 Flash 播放器"

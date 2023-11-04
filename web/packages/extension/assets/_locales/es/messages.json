@@ -8,9 +8,6 @@
     "settings_show_swf_download": {
         "message": "Mostrar descarga de SWF en el menú contextual"
     },
-    "settings_autostart": {
-        "message": "Juegue automáticamente sin la pantalla de presentación (y luego, haga un clic para habilitar el audio)"
-    },
     "settings_log_level": {
         "message": "Nivel de log"
     },
@@ -55,27 +52,6 @@
     },
     "status_message_init": {
         "message": "Comprobando el estado de Ruffle en la pestaña actual…"
-    },
-    "status_result_running": {
-        "message": "Ruffle está cargado y listo para ejecutar contenido Flash en la pestaña actual."
-    },
-    "status_result_running_protected": {
-        "message": "Ruffle está cargado y ejecutando el contenido de Flash que usted pido."
-    },
-    "status_result_optout": {
-        "message": "Ruffle no se carga porque la página actual se ha marcado como incompatible."
-    },
-    "status_result_disabled": {
-        "message": "Ruffle no fue cargado porque está deshabilitado."
-    },
-    "status_result_error": {
-        "message": "Se ha producido un error al consultar la instancia de Ruffle de la pestaña actual."
-    },
-    "status_result_protected": {
-        "message": "Ruffle no se puede cargar en las páginas protegidas por el navegador."
-    },
-    "action_reload": {
-        "message": "Recargar la pestaña para aplicar los cambios"
     },
     "open_player_page": {
         "message": "Abrir Reproductor de SWF"

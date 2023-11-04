@@ -8,9 +8,6 @@
     "settings_show_swf_download": {
         "message": "Bağlam menüsünde SWF indirmesini göster"
     },
-    "settings_autostart": {
-        "message": "Açılış ekranı olmadan otomatik olarak oynat (sonrasında sesi açmak için tıkla)"
-    },
     "settings_log_level": {
         "message": "Kayıt düzeyi"
     },
@@ -55,27 +52,6 @@
     },
     "status_message_init": {
         "message": "Mevcut sekmede Ruffle'ın durumu kontrol ediliyor…"
-    },
-    "status_result_running": {
-        "message": "Ruffle yüklendi ve mevcut sekmede Flash içeriğini çalıştırmaya hazır."
-    },
-    "status_result_running_protected": {
-        "message": "Ruffle yüklendi ve istediğiniz Flash içeriğini çalıştırıyor."
-    },
-    "status_result_optout": {
-        "message": "Geçerli sayfa kendisini uyumsuz olarak işaretlediğinden Ruffle yüklenmedi."
-    },
-    "status_result_disabled": {
-        "message": "Ruffle devre dışı olduğu için yüklenmedi."
-    },
-    "status_result_error": {
-        "message": "Geçerli sekmenin Ruffle örneği sorgulanırken bir hata oluştu."
-    },
-    "status_result_protected": {
-        "message": "Ruffle korumalı tarayıcı sayfalarına yüklenemez."
-    },
-    "action_reload": {
-        "message": "Değişiklikleri uygulamak için sekmeyi yenile"
     },
     "open_player_page": {
         "message": "SWF Oynatıcıyı Aç"

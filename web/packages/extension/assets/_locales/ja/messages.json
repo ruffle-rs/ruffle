@@ -8,9 +8,6 @@
     "settings_show_swf_download": {
         "message": "SWFのダウンロードをコンテキストメニューに表示する"
     },
-    "settings_autostart": {
-        "message": "スプラッシュ画面なしで自動再生(クリックでミュートを解除)"
-    },
     "settings_log_level": {
         "message": "ログレベル"
     },
@@ -55,27 +52,6 @@
     },
     "status_message_init": {
         "message": "Ruffleの状態を確認しています..."
-    },
-    "status_result_running": {
-        "message": "RuffleでFlashを実行する準備が整いました。"
-    },
-    "status_result_running_protected": {
-        "message": "RuffleはリクエストされたFlashコンテンツをロードし、実行しています。"
-    },
-    "status_result_optout": {
-        "message": "Ruffleは現在のページと互換性がないため、読み込まれません。"
-    },
-    "status_result_disabled": {
-        "message": "Ruffleは無効化されているため、読み込まれません。"
-    },
-    "status_result_error": {
-        "message": "現在のタブでRuffleのインスタンスを照会する際にエラーが発生しました。"
-    },
-    "status_result_protected": {
-        "message": "Ruffleは保護されたブラウザのページのため、読み込まれません。"
-    },
-    "action_reload": {
-        "message": "タブをリロードして変更を適用する"
     },
     "open_player_page": {
         "message": "SWFプレーヤーを開く"

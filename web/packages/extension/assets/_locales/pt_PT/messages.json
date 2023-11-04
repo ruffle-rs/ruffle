@@ -8,9 +8,6 @@
     "settings_show_swf_download": {
         "message": "Permitir o download de SWFs pelo menu de contexto"
     },
-    "settings_autostart": {
-        "message": "Reproduzir automaticamente sem ecrã inicial (depois clique para ativar o som)"
-    },
     "settings_log_level": {
         "message": "Nível de registo"
     },
@@ -55,27 +52,6 @@
     },
     "status_message_init": {
         "message": "Verificando o estado do Ruffle no separador atual…"
-    },
-    "status_result_running": {
-        "message": "O Ruffle está carregado e pronto para executar o conteúdo Flash no separador atual."
-    },
-    "status_result_running_protected": {
-        "message": "O Ruffle está carregado e executando o conteúdo Flash solicitado."
-    },
-    "status_result_optout": {
-        "message": "O Ruffle não carregou porque a página atual se marcou como incompatível."
-    },
-    "status_result_disabled": {
-        "message": "O Ruffle não carregou porque está desativado."
-    },
-    "status_result_error": {
-        "message": "Ocorreu um erro ao consultar a instância do Ruffle no separador atual."
-    },
-    "status_result_protected": {
-        "message": "O Ruffle não pode carregar em páginas protegidas do navegador."
-    },
-    "action_reload": {
-        "message": "Recarregar separador para aplicar alterações"
     },
     "open_player_page": {
         "message": "Abrir Leitor de SWF"
