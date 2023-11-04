@@ -145,6 +145,11 @@ impl<'gc> XmlObject<'gc> {
         XmlObject::new(node.deep_copy(activation.gc()), activation)
     }
 
+    pub fn as_xml_string(&self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
+        let node = self.node();
+        node.xml_to_xml_string(activation)
+    }
+
     pub fn equals(
         &self,
         other: &Value<'gc>,
