@@ -854,12 +854,13 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                                     *child = E4XOrXml::E4X(children[q + index]);
                                 }
                             }
+                        }
 
-                            let mut children = self.children_mut(activation.gc());
-                            children.remove(index);
-                            for (index2, child) in c.children().iter().enumerate() {
-                                children.insert(index + index2, child.clone());
-                            }
+                        // 2.f.iv - 2.f.viii.
+                        let mut children = self.children_mut(activation.gc());
+                        children.remove(index);
+                        for (index2, child) in c.children().iter().enumerate() {
+                            children.insert(index + index2, child.clone());
                         }
                     // 2.g. Else if (Type(V) is XML) or (x[i].[[Class]] ∈ {"text", "comment", "processing-instruction"})
                     } else if value

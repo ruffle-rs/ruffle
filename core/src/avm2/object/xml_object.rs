@@ -415,16 +415,39 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
             return Ok(());
         }
 
+        // 3. If (Type(V) ∉ {XML, XMLList}) or (V.[[Class]] ∈ {"text", "attribute"})
+        // 3.a. Let c = ToString(V)
         // 4. Else
         // 4.a. Let c be the result of calling the [[DeepCopy]] method of V
         let value = if let Some(xml) = value.as_object().and_then(|x| x.as_xml_object()) {
-            xml.deep_copy(activation).into()
+            // NOTE: avmplus contrary to specification doesn't consider CData here.
+            if matches!(
+                *xml.node().kind(),
+                E4XNodeKind::Attribute(_) | E4XNodeKind::Text(_)
+            ) {
+                Value::String(value.coerce_to_string(activation)?)
+            } else {
+                xml.deep_copy(activation).into()
+            }
         } else if let Some(list) = value.as_object().and_then(|x| x.as_xml_list_object()) {
-            list.deep_copy(activation).into()
-        // 3. If (Type(V) ∉ {XML, XMLList}) or (V.[[Class]] ∈ {"text", "attribute"})
-        // 3.a. Let c = ToString(V)
+            if list.length() == 1 {
+                let xml = list
+                    .xml_object_child(0, activation)
+                    .expect("List length was just verified");
+
+                if matches!(
+                    *xml.node().kind(),
+                    E4XNodeKind::Attribute(_) | E4XNodeKind::Text(_)
+                ) {
+                    value.coerce_to_string(activation)?.into()
+                } else {
+                    list.deep_copy(activation).into()
+                }
+            } else {
+                list.deep_copy(activation).into()
+            }
         } else {
-            value
+            value.coerce_to_string(activation)?.into()
         };
 
         // 5. Let n = ToXMLName(P)
