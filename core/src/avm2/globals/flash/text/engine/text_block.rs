@@ -69,6 +69,10 @@ pub fn create_text_line<'gc>(
 
     display_object.set_text(text.as_wstr(), &mut activation.context);
 
+    // FIXME: This needs to use `intrinsic_bounds` to measure the width
+    // of the provided text, and set the width of the EditText to that.
+    // Some games depend on this (e.g. Realm Grinder).
+
     let element_format = content
         .get_public_property("elementFormat", activation)?
         .as_object();
