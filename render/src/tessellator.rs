@@ -126,7 +126,7 @@ impl ShapeTessellator {
             } else if !self.is_stroke && next_is_stroke {
                 // Bake solid color fills followed by strokes into a single draw call, and adjust
                 // the index count to omit the strokes when rendering this shape as a mask.
-                debug_assert!(self.mask_index_count.is_none());
+                assert!(self.mask_index_count.is_none());
                 self.mask_index_count = Some(self.lyon_mesh.indices.len() as u32);
             }
             self.is_stroke = next_is_stroke;
@@ -201,6 +201,8 @@ impl ShapeTessellator {
     fn flush_draw(&mut self, draw: DrawType) {
         if self.lyon_mesh.vertices.is_empty() || self.lyon_mesh.indices.len() < 3 {
             // Ignore degenerate fills
+            self.lyon_mesh = VertexBuffers::new();
+            self.mask_index_count = None;
             return;
         }
         let draw_mesh = std::mem::replace(&mut self.lyon_mesh, VertexBuffers::new());
