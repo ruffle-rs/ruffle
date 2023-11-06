@@ -8,11 +8,11 @@ repository.workspace = true
 version.workspace = true
 
 [dependencies]
-js-sys = "0.3.64"
+js-sys = "0.3.65"
 log = "0.4"
 ruffle_web_common = { path = "../../web/common" }
 ruffle_render = { path = "..", features = ["tessellator", "web"] }
-wasm-bindgen = "=0.2.87"
+wasm-bindgen = "=0.2.88"
 bytemuck = { version = "1.14.0", features = ["derive"] }
 fnv = "1.0.7"
 swf = { path = "../../swf" }
@@ -20,7 +20,7 @@ thiserror = "1.0"
 downcast-rs = "1.2.0"
 
 [dependencies.web-sys]
-version = "0.3.64"
+version = "0.3.65"
 features = [
     "HtmlCanvasElement", "OesVertexArrayObject", "WebGl2RenderingContext", "WebGlBuffer", "WebglDebugRendererInfo",
     "WebGlFramebuffer", "WebGlProgram", "WebGlRenderbuffer", "WebGlRenderingContext", "WebGlShader", "WebGlTexture",

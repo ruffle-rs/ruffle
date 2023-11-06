@@ -25,7 +25,7 @@ RUN conda install -y -c conda-forge binaryen
 # Installing Rust using rustup:
 RUN wget 'https://sh.rustup.rs' --quiet -O- | sh -s -- -y --profile minimal --target wasm32-unknown-unknown
 ENV PATH="/root/.cargo/bin:$PATH"
-RUN cargo install wasm-bindgen-cli --version 0.2.87
+RUN cargo install wasm-bindgen-cli --version 0.2.88
 # Building Ruffle:
 COPY . ruffle
 WORKDIR ruffle/web
