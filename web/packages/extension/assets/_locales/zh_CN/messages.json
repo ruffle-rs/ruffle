@@ -9,7 +9,7 @@
         "message": "在右键菜单中显示SWF下载选项"
     },
     "settings_autostart": {
-        "message": "不带启动画面的自动播放 (点击内容取消静音)"
+        "message": "自动播放Flash内容 (点击取消静音)"
     },
     "settings_log_level": {
         "message": "日志级别"
@@ -57,25 +57,25 @@
         "message": "正在当前标签页上检查 Ruffle 状态…"
     },
     "status_result_running": {
-        "message": "Ruffle 已经加载并准备在当前标签页上运行 Flash 内容。"
+        "message": "Ruffle 已准备好在当前标签页中运行 Flash 内容。"
     },
     "status_result_running_protected": {
-        "message": "Ruffle 已加载并正在运行您请求的 Flash 内容。"
+        "message": "Ruffle 已准备好运行您请求的 Flash 内容。"
     },
     "status_result_optout": {
-        "message": "Ruffle 未加载，因为当前页面标注自己不兼容。"
+        "message": "Ruffle 无法加载，因为当前页面标注自己不兼容。"
     },
     "status_result_disabled": {
-        "message": "Ruffle 未加载，因为它已被禁用。"
+        "message": "Ruffle已被禁用。"
     },
     "status_result_error": {
-        "message": "在查询当前标签页中的 Ruffle 实例时发生错误。"
+        "message": "查询当前页面的Ruffle实例时出错。"
     },
     "status_result_protected": {
         "message": "Ruffle 无法在被浏览器保护的页面中加载。"
     },
     "action_reload": {
-        "message": "刷新页面以应用更改"
+        "message": "重新加载页面以应用更改"
     },
     "open_player_page": {
         "message": "打开 SWF 播放器"

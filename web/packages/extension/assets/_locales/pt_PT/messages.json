@@ -63,13 +63,13 @@
         "message": "O Ruffle está carregado e executando o conteúdo Flash solicitado."
     },
     "status_result_optout": {
-        "message": "O Ruffle não carregou porque a página atual se marcou como incompatível."
+        "message": "O Ruffle não pode carregar porque a página atual marcou-se como incompatível."
     },
     "status_result_disabled": {
-        "message": "O Ruffle não carregou porque está desativado."
+        "message": "O Ruffle está desativado."
     },
     "status_result_error": {
-        "message": "Ocorreu um erro ao consultar a instância do Ruffle no separador atual."
+        "message": "Ocorreu um erro ao consultar a instância do Ruffle na página atual."
     },
     "status_result_protected": {
         "message": "O Ruffle não pode carregar em páginas protegidas do navegador."
