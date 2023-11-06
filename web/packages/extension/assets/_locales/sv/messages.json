@@ -9,7 +9,7 @@
         "message": "Visa SWF-nedladdning i snabbmenyn"
     },
     "settings_autostart": {
-        "message": "Kör automatiskt utan startskärm (klicka sedan för ljud)"
+        "message": "Kör Flashinnehåll automatiskt (klicka sedan för ljud)"
     },
     "settings_log_level": {
         "message": "Loggnivå"
@@ -42,7 +42,7 @@
         "message": "Nollställ inställningar"
     },
     "settings_reset_confirm": {
-        "message": "Är du säker på att du vill återställa Ruffleinställningarna till sina ursprungliga värden?"
+        "message": "Är du säker på att du vill återställa Ruffle-inställningarna till sina ursprungliga värden?"
     },
     "status_init": {
         "message": "Avläser aktuell flik…"
@@ -54,28 +54,28 @@
         "message": "Ett fel uppstod när den aktuella fliken slogs upp."
     },
     "status_message_init": {
-        "message": "Kontrollerar Rufflestatus på aktuell flik…"
+        "message": "Kontrollerar Ruffle-status på aktuell flik…"
     },
     "status_result_running": {
-        "message": "Ruffle är laddad och redo att köra Flashinnehåll på den aktuella fliken."
+        "message": "Ruffle är redo att köra Flashinnehåll i fliken."
     },
     "status_result_running_protected": {
-        "message": "Ruffle är laddad och kör Flashinnehållet som du begärde."
+        "message": "Ruffle är redo att köra Flashinnehållen du begär."
     },
     "status_result_optout": {
-        "message": "Ruffle är inte laddad för att den nuvarande sidan har markerat sig själv som inkompatibel."
+        "message": "Ruffle kan ej laddas för att den nuvarande hemsidan har markerat sig själv som inkompatibel."
     },
     "status_result_disabled": {
-        "message": "Ruffle är inte laddad eftersom den är inaktiverad."
+        "message": "Ruffle är inaktiverad."
     },
     "status_result_error": {
-        "message": "Ett fel uppstod när den aktuella flikens instans av Ruffle letades upp."
+        "message": "Ett fel inträffade medan sidans Ruffle-instans efterfrågades."
     },
     "status_result_protected": {
-        "message": "Ruffle kan inte laddas på skyddade webbläsarsidor."
+        "message": "Ruffle kan ej laddas i skyddade webbläsarsidor."
     },
     "action_reload": {
-        "message": "Ladda om fliken för att applicera ändringar"
+        "message": "Ladda om Fliken för att Applicera Ändringar"
     },
     "open_player_page": {
         "message": "Öppna SWF-spelare"

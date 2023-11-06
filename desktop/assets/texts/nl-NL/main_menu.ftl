@@ -17,6 +17,7 @@ file-menu-exit = Afsluiten
 controls-menu = Bediening
 controls-menu-suspend = Onderbreken
 controls-menu-resume = Hervatten
+controls-menu-volume = Geluidsniveaus
 help-menu = Help
 help-menu-join-discord = Bezoek Discord
 help-menu-report-a-bug = Rapporteer een probleem...

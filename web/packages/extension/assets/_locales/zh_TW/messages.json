@@ -9,7 +9,7 @@
         "message": "顯示下載SWF檔案(右鍵選單)"
     },
     "settings_autostart": {
-        "message": "自動播放(無啟動畫面)"
+        "message": "自動播放Flash內容"
     },
     "settings_log_level": {
         "message": "日誌層級(用在於開發人員工具裡的主控台)"
@@ -66,10 +66,10 @@
         "message": "Ruffle 未加載因為目前頁面標註自己不相容。"
     },
     "status_result_disabled": {
-        "message": "Ruffle 未加載因為被用戶禁用。"
+        "message": "Ruffle現在是關閉狀態。"
     },
     "status_result_error": {
-        "message": "在查詢此標籤頁中的 Ruffle 實例時發生錯誤。"
+        "message": "Ruffle 在目前頁面排隊時發生錯誤。"
     },
     "status_result_protected": {
         "message": "Ruffle 無法在被瀏覽器保護的頁面中加載。"

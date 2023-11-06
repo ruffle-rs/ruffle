@@ -9,7 +9,7 @@
         "message": "SWF letöltése opció a helyi menüben"
     },
     "settings_autostart": {
-        "message": "Automatikus lejátszás indítóképernyő nélkül (majd hang kattintásra)"
+        "message": "Automatikus lejátszás (hang kattintásra)"
     },
     "settings_log_level": {
         "message": "Naplózási szint"
@@ -57,16 +57,16 @@
         "message": "A Ruffle állapotának ellenőrzése a jelenlegi fülön…"
     },
     "status_result_running": {
-        "message": "A Ruffle be van töltve és Flash tartalom futtatására kész a jelenlegi fülön."
+        "message": "A Ruffle Flash tartalom futtatására kész a jelenlegi fülön."
     },
     "status_result_running_protected": {
-        "message": "A Ruffle be van töltve és futtatja a kért Flash tartalmat."
+        "message": "A Ruffle kész a kért Flash tartalmak futtatására."
     },
     "status_result_optout": {
         "message": "A Ruffle nincs betöltve, mivel az oldal nem kompatibilisnek jelezte magát."
     },
     "status_result_disabled": {
-        "message": "A Ruffle nincs betöltve, mert a felhasználó kikapcsolta."
+        "message": "A Ruffle ki van kapcsolva."
     },
     "status_result_error": {
         "message": "Hiba történt a Ruffle-lel a jelenlegi fülön."

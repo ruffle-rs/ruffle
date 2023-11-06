@@ -60,13 +60,13 @@
         "message": "Ruffle is geladen en klaar om Flash-inhoud af te spelen op het huidige tabblad."
     },
     "status_result_running_protected": {
-        "message": "Ruffle is geladen en de Flash-inhoud waar je om vroeg aan het draaien."
+        "message": "Ruffle is geladen en klaar om de Flash-inhoud waar je om vroeg te draaien."
     },
     "status_result_optout": {
         "message": "Ruffle is niet geladen omdat de huidige pagina zichzelf als niet compatibel heeft gemarkeerd."
     },
     "status_result_disabled": {
-        "message": "Ruffle is uitgeschakeld en daarom niet geladen."
+        "message": "Ruffle is uitgeschakeld."
     },
     "status_result_error": {
         "message": "Er is een fout opgetreden bij het opvragen van de Ruffle-instantie van het huidige tabblad."
