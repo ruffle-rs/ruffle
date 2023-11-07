@@ -120,7 +120,7 @@ impl NavigatorBackend for TestNavigatorBackend {
                 if mime_type == "application/x-www-form-urlencoded" {
                     log.avm_trace(&format!("  Body: {}", String::from_utf8_lossy(body)));
                 } else {
-                    log.avm_trace(&format!("  Body: ({} bytes)", body.len()));
+                    log.avm_trace(&format!("  Body: {:X?}", body));
                 }
             }
         }
