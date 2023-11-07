@@ -60,7 +60,7 @@ pub fn close<'gc>(
         .as_net_connection()
         .expect("Must be NetConnection object");
     if let Some(previous_handle) = connection.set_handle(None) {
-        NetConnections::close(&mut activation.context, previous_handle);
+        NetConnections::close(&mut activation.context, previous_handle, true);
     }
 
     Ok(Value::Undefined)
