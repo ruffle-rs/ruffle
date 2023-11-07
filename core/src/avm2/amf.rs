@@ -10,6 +10,7 @@ use enumset::EnumSet;
 use flash_lso::types::{AMFVersion, Element, Lso};
 use flash_lso::types::{Attribute, ClassDefinition, Value as AmfValue};
 
+use super::property::Property;
 use super::{Namespace, QName};
 
 /// Serialize a Value to an AmfValue
@@ -45,7 +46,8 @@ pub fn serialize_value<'gc>(
                 Some(AmfValue::Undefined)
             } else if o.as_array_storage().is_some() {
                 let mut values = Vec::new();
-                recursive_serialize(activation, o, &mut values, &mut vec![], amf_version).unwrap();
+                // Don't serialize properties from the vtable (we don't want a 'length' field)
+                recursive_serialize(activation, o, &mut values, None, amf_version).unwrap();
 
                 let mut dense = vec![];
                 let mut sparse = vec![];
@@ -155,7 +157,7 @@ pub fn serialize_value<'gc>(
                     activation,
                     o,
                     &mut object_body,
-                    &mut static_properties,
+                    Some(&mut static_properties),
                     amf_version,
                 )
                 .unwrap();
@@ -182,23 +184,31 @@ pub fn recursive_serialize<'gc>(
     activation: &mut Activation<'_, 'gc>,
     obj: Object<'gc>,
     elements: &mut Vec<Element>,
-    static_properties: &mut Vec<String>,
+    static_properties: Option<&mut Vec<String>>,
     amf_version: AMFVersion,
 ) -> Result<(), Error<'gc>> {
-    if let Some(vtable) = obj.vtable() {
-        let mut props = vtable.public_properties();
-        // Flash appears to use vtable iteration order, but we sort ours
-        // to make our test output consistent.
-        props.sort_by_key(|(name, _)| name.to_utf8_lossy().to_string());
-        for (name, _) in props {
-            let value = obj.get_public_property(name, activation)?;
-            if let Some(value) = serialize_value(activation, value, amf_version) {
-                let name = name.to_utf8_lossy().to_string();
-                elements.push(Element::new(name.clone(), value));
-                static_properties.push(name);
+    if let Some(static_properties) = static_properties {
+        if let Some(vtable) = obj.vtable() {
+            let mut props = vtable.public_properties();
+            // Flash appears to use vtable iteration order, but we sort ours
+            // to make our test output consistent.
+            props.sort_by_key(|(name, _)| name.to_utf8_lossy().to_string());
+            for (name, prop) in props {
+                if let Property::Virtual { get, set } = prop {
+                    if !(get.is_some() && set.is_some()) {
+                        continue;
+                    }
+                }
+                let value = obj.get_public_property(name, activation)?;
+                if let Some(value) = serialize_value(activation, value, amf_version) {
+                    let name = name.to_utf8_lossy().to_string();
+                    elements.push(Element::new(name.clone(), value));
+                    static_properties.push(name);
+                }
             }
         }
     }
+
     let mut last_index = obj.get_next_enumerant(0, activation)?;
     while let Some(index) = last_index {
         let name = obj
