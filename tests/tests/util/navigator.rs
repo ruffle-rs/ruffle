@@ -120,12 +120,17 @@ impl NavigatorBackend for TestNavigatorBackend {
                 if mime_type == "application/x-www-form-urlencoded" {
                     log.avm_trace(&format!("  Body: {}", String::from_utf8_lossy(body)));
                 } else {
-                    log.avm_trace(&format!("  Body: {:X?}", body));
+                    log.avm_trace(&format!("  Body: {:02X?}", body));
                 }
             }
         }
 
-        fetch_path(self, "TestNavigatorBackend", request.url())
+        fetch_path(
+            self,
+            "TestNavigatorBackend",
+            request.url(),
+            Some(&self.relative_base_path),
+        )
     }
 
     fn resolve_url(&self, url: &str) -> Result<Url, ParseError> {

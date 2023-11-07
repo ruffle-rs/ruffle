@@ -403,7 +403,7 @@ impl NavigatorBackend for NullNavigatorBackend {
     }
 
     fn fetch(&self, request: Request) -> OwnedFuture<SuccessResponse, ErrorResponse> {
-        fetch_path(self, "NullNavigatorBackend", request.url())
+        fetch_path(self, "NullNavigatorBackend", request.url(), None)
     }
 
     fn resolve_url(&self, url: &str) -> Result<Url, ParseError> {
@@ -543,6 +543,7 @@ pub fn fetch_path<NavigatorType: NavigatorBackend>(
     navigator: &NavigatorType,
     navigator_name: &str,
     url: &str,
+    base_path: Option<&Path>,
 ) -> OwnedFuture<SuccessResponse, ErrorResponse> {
     let url = match navigator.resolve_url(url) {
         Ok(url) => url,
@@ -565,6 +566,16 @@ pub fn fetch_path<NavigatorType: NavigatorBackend>(
                 ))
             }
         }
+    } else if let Some(base_path) = base_path {
+        // Turn a url like https://localhost/foo/bar to {base_path}/localhost/foo/bar
+        let mut path = base_path.to_path_buf();
+        if let Some(host) = url.host_str() {
+            path.push(host);
+        }
+        if let Some(remaining) = url.path().strip_prefix('/') {
+            path.push(remaining);
+        }
+        path
     } else {
         return async_return(create_specific_fetch_error(
             &format!("{navigator_name} can't fetch non-local URL"),
