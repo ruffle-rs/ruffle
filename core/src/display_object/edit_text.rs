@@ -822,16 +822,15 @@ impl<'gc> EditText<'gc> {
             }
             let height = intrinsic_bounds.height() + padding;
             edit_text.bounds.set_height(height);
-            drop(edit_text);
-            self.redraw_border(context.gc_context);
         } else {
             let width = edit_text.requested_width;
             edit_text.bounds.set_width(width);
             let height = edit_text.requested_height;
             edit_text.bounds.set_height(height);
-            drop(edit_text);
-            self.invalidate_cached_bitmap(context.gc_context);
         }
+        drop(edit_text);
+        self.redraw_border(context.gc_context);
+        self.invalidate_cached_bitmap(context.gc_context);
     }
 
     /// Measure the width and height of the `EditText`'s current text load.
