@@ -9,17 +9,43 @@ import flash.utils.ByteArray;
 import flash.net.registerClassAlias;
 
 class MyClass {
-	public var secondProp: Object;
 	public var firstProp: String;
-	public var thirdProp: Number;
 	private var privProp: String = "Default Private prop";
-	
+
+
 	public function MyClass(priv:String = "Constructor private prop") {
 		this.privProp = priv;
 	}
 	
 	public function toString() {
-		trace("MyClass(firstProp= " + this.firstProp + " secondProp=" + this.secondProp + " thirdProp=" + this.thirdProp + " privProp=" + this.privProp);
+		trace("MyClass(firstProp= " + this.firstProp + " privProp=" + this.privProp);
+	}
+}
+
+class GetterSetterClass {
+	public function get getAndSet(): String {
+		trace("Called getAndSet getter");
+		return "getAndSet getter value";
+	}
+
+	public function set getAndSet(val: String):void {
+		trace("Called getAndSet setter: " + val);
+	}
+	
+	
+	public function get getterOnly(): String {
+		trace("Called getterOnly");
+		return "getterOnly value";
+	}
+
+	public function set setterOnly(val: String): void {
+		trace("Called setterOnly: " + val);
+	}
+
+	AS3 var myAS3Var: String = "AS3 string";
+
+	public function toString():String {
+		return "GetterSetterClass(myAS3Var=" + this.myAS3Var + ")";
 	}
 }
 
@@ -32,14 +58,16 @@ registerClassAlias("MyClassAlias", MyClass);
 
 var mycls = new MyClass("Overwritten private prop");
 mycls.firstProp = "Hello";
-mycls.secondProp = null;
-mycls.thirdProp = -5.1;
 // Note - Flash player appears to serialize properties in
 // vtable order, which cannot in general reproduce. Our raw
 // bytes match for this particular class definition, but all
 // other tests should only test the bytes for single-field classes
 // in order to make it easier to match the exact bytes from Flash Player
 roundtrip(mycls);
+
+var getterSetter = new GetterSetterClass();
+getterSetter.myAS3Var = "Overwritten as3 str";
+roundtrip(getterSetter);
 
 function dump(obj: *) {
 	var keys = [];
@@ -54,7 +82,7 @@ function dump(obj: *) {
 	trace(out);
 }
 
-function roundtrip(obj: Object) {
+function roundtrip(obj: Object): Object {
 	trace("Original: [" + obj + "] class: " + getQualifiedClassName(obj));
 	dump(obj);
 	var out = new ByteArray();
@@ -71,4 +99,5 @@ function roundtrip(obj: Object) {
 	trace("Deserialized: [" + readBack + "] class: " + getQualifiedClassName(readBack));
 	dump(readBack);
 	trace()
+	return readBack;
 }

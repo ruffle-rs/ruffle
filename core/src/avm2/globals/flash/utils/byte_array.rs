@@ -761,7 +761,7 @@ pub fn read_object<'gc>(
                 let mut decoder = AMF0Decoder::default();
                 let (extra, amf) = decoder
                     .parse_single_element(bytes)
-                    .map_err(|e| format!("Error: Invalid AMF0 object: {e:?}"))?;
+                    .map_err(|_| "Error: Invalid object")?;
                 (
                     extra.len(),
                     crate::avm2::amf::deserialize_value(activation, &amf)?,
@@ -771,7 +771,7 @@ pub fn read_object<'gc>(
                 let mut decoder = AMF3Decoder::default();
                 let (extra, amf) = decoder
                     .parse_single_element(bytes)
-                    .map_err(|e| format!("Error: Invalid AMF3 object: {e:?}"))?;
+                    .map_err(|_| "Error: Invalid object")?;
                 (
                     extra.len(),
                     crate::avm2::amf::deserialize_value(activation, &amf)?,
@@ -782,6 +782,7 @@ pub fn read_object<'gc>(
         bytearray.set_position(bytearray.len() - bytes_left);
         return Ok(value);
     }
+
     Ok(Value::Undefined)
 }
 
