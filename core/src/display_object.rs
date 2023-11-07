@@ -556,6 +556,11 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.flags.contains(DisplayObjectFlags::AVM1_REMOVED)
     }
 
+    fn avm1_pending_removal(&self) -> bool {
+        self.flags
+            .contains(DisplayObjectFlags::AVM1_PENDING_REMOVAL)
+    }
+
     pub fn should_skip_next_enter_frame(&self) -> bool {
         self.flags
             .contains(DisplayObjectFlags::SKIP_NEXT_ENTER_FRAME)
@@ -568,6 +573,11 @@ impl<'gc> DisplayObjectBase<'gc> {
 
     fn set_avm1_removed(&mut self, value: bool) {
         self.flags.set(DisplayObjectFlags::AVM1_REMOVED, value);
+    }
+
+    fn set_avm1_pending_removal(&mut self, value: bool) {
+        self.flags
+            .set(DisplayObjectFlags::AVM1_PENDING_REMOVAL, value);
     }
 
     fn scale_rotation_cached(&self) -> bool {
@@ -1650,7 +1660,11 @@ pub trait TDisplayObject<'gc>:
 
     /// Is this object waiting to be removed on the start of the next frame
     fn avm1_pending_removal(&self) -> bool {
-        self.depth() < 0
+        self.base().avm1_pending_removal()
+    }
+
+    fn set_avm1_pending_removal(&self, gc_context: &Mutation<'gc>, value: bool) {
+        self.base_mut(gc_context).set_avm1_pending_removal(value)
     }
 
     /// Whether this display object is visible.
@@ -2394,7 +2408,7 @@ bitflags! {
     struct DisplayObjectFlags: u16 {
         /// Whether this object has been removed from the display list.
         /// Necessary in AVM1 to throw away queued actions from removed movie clips.
-        const AVM1_REMOVED                  = 1 << 0;
+        const AVM1_REMOVED             = 1 << 0;
 
         /// If this object is visible (`_visible` property).
         const VISIBLE                  = 1 << 1;
@@ -2436,10 +2450,13 @@ bitflags! {
         /// This is set for objects constructed from ActionScript,
         /// which are observed to lag behind objects placed by the timeline
         /// (even if they are both placed in the same frame)
-        const SKIP_NEXT_ENTER_FRAME          = 1 << 11;
+        const SKIP_NEXT_ENTER_FRAME    = 1 << 11;
 
         /// If this object has already had `invalidate_cached_bitmap` called this frame
-        const CACHE_INVALIDATED          = 1 << 12;
+        const CACHE_INVALIDATED        = 1 << 12;
+
+        /// If this AVM1 object is pending removal (will be removed on the next frame).
+        const AVM1_PENDING_REMOVAL     = 1 << 13;
     }
 }
 
