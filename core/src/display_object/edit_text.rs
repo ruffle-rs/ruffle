@@ -107,6 +107,13 @@ pub struct EditTextData<'gc> {
     /// apply.
     autosize: AutoSizeMode,
 
+    // Values set by set_width and set_height.
+    #[collect(require_static)]
+    requested_width: Twips,
+
+    #[collect(require_static)]
+    requested_height: Twips,
+
     /// The calculated layout box.
     layout: Vec<LayoutBox<'gc>>,
 
@@ -301,7 +308,6 @@ impl<'gc> EditText<'gc> {
                     EditTextStatic {
                         swf: swf_movie,
                         id: swf_tag.id(),
-                        bounds: swf_tag.bounds().clone(),
                         layout: swf_tag.layout().cloned(),
                         initial_text: swf_tag
                             .initial_text()
@@ -317,6 +323,8 @@ impl<'gc> EditText<'gc> {
                 intrinsic_bounds,
                 bounds: swf_tag.bounds().clone(),
                 autosize,
+                requested_width: swf_tag.bounds().width(),
+                requested_height: swf_tag.bounds().height(),
                 variable: variable.map(|s| s.to_string_lossy(encoding)),
                 bound_stage_object: None,
                 selection,
@@ -765,11 +773,18 @@ impl<'gc> EditText<'gc> {
             edit_text.text_spans.clear_displayed_text();
         }
 
+        // Determine the internal width available for content layout.
+        let content_width = if autosize == AutoSizeMode::None || is_word_wrap {
+            edit_text.requested_width - padding
+        } else {
+            edit_text.bounds.width() - padding
+        };
+
         let (new_layout, intrinsic_bounds) = LayoutBox::lower_from_text_spans(
             &edit_text.text_spans,
             context,
             movie,
-            edit_text.bounds.width() - padding,
+            content_width,
             is_word_wrap,
             !edit_text.flags.contains(EditTextFlag::USE_OUTLINES),
         );
@@ -802,7 +817,7 @@ impl<'gc> EditText<'gc> {
                 edit_text.bounds.x_min = new_x;
                 edit_text.bounds.set_width(width);
             } else {
-                let width = edit_text.static_data.bounds.width();
+                let width = edit_text.requested_width;
                 edit_text.bounds.set_width(width);
             }
             let height = intrinsic_bounds.height() + padding;
@@ -810,6 +825,10 @@ impl<'gc> EditText<'gc> {
             drop(edit_text);
             self.redraw_border(context.gc_context);
         } else {
+            let width = edit_text.requested_width;
+            edit_text.bounds.set_width(width);
+            let height = edit_text.requested_height;
+            edit_text.bounds.set_height(height);
             drop(edit_text);
             self.invalidate_cached_bitmap(context.gc_context);
         }
@@ -1889,7 +1908,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
     fn set_width(&self, context: &mut UpdateContext<'_, 'gc>, value: f64) {
         let mut edit_text = self.0.write(context.gc_context);
-        edit_text.bounds.set_width(Twips::from_pixels(value));
+        edit_text.requested_width = Twips::from_pixels(value);
         edit_text.base.base.set_transformed_by_script(true);
         drop(edit_text);
         self.relayout(context);
@@ -1904,7 +1923,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
     fn set_height(&self, context: &mut UpdateContext<'_, 'gc>, value: f64) {
         let mut edit_text = self.0.write(context.gc_context);
-        edit_text.bounds.set_height(Twips::from_pixels(value));
+        edit_text.requested_height = Twips::from_pixels(value);
         edit_text.base.base.set_transformed_by_script(true);
         drop(edit_text);
         self.relayout(context);
@@ -2200,7 +2219,6 @@ bitflags::bitflags! {
 struct EditTextStatic {
     swf: Arc<SwfMovie>,
     id: CharacterId,
-    bounds: swf::Rectangle<Twips>,
     layout: Option<swf::TextLayout>,
     initial_text: Option<WString>,
 }
