@@ -302,6 +302,8 @@ struct Config {
     allow_networking: NetworkingAccessMode,
 
     socket_proxy: Vec<SocketProxy>,
+
+    credential_allow_list: Vec<String>,
 }
 
 /// Metadata about the playing SWF file to be passed back to JavaScript.
@@ -609,6 +611,7 @@ impl Ruffle {
             log_subscriber.clone(),
             config.open_url_mode,
             config.socket_proxy,
+            config.credential_allow_list,
         ));
 
         match window.local_storage() {

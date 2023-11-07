@@ -23,7 +23,7 @@ use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::{spawn_local, JsFuture};
 use web_sys::{
     window, Blob, BlobPropertyBag, HtmlFormElement, HtmlInputElement, Request as WebRequest,
-    RequestInit, Response as WebResponse,
+    RequestCredentials, RequestInit, Response as WebResponse,
 };
 
 pub struct WebNavigatorBackend {
@@ -34,8 +34,10 @@ pub struct WebNavigatorBackend {
     base_url: Option<Url>,
     open_url_mode: OpenURLMode,
     socket_proxies: Vec<SocketProxy>,
+    credential_allow_list: Vec<String>,
 }
 
+#[allow(clippy::too_many_arguments)]
 impl WebNavigatorBackend {
     pub fn new(
         allow_script_access: bool,
@@ -45,6 +47,7 @@ impl WebNavigatorBackend {
         log_subscriber: Arc<Layered<WASMLayer, Registry>>,
         open_url_mode: OpenURLMode,
         socket_proxies: Vec<SocketProxy>,
+        credential_allow_list: Vec<String>,
     ) -> Self {
         let window = web_sys::window().expect("window()");
 
@@ -87,6 +90,7 @@ impl WebNavigatorBackend {
             log_subscriber,
             open_url_mode,
             socket_proxies,
+            credential_allow_list,
         }
     }
 }
@@ -237,10 +241,25 @@ impl NavigatorBackend for WebNavigatorBackend {
             }
         };
 
+        let credentials = if let Some(host) = url.host_str() {
+            if self
+                .credential_allow_list
+                .iter()
+                .any(|allowed| allowed == &format!("{}://{}", url.scheme(), host))
+            {
+                RequestCredentials::Include
+            } else {
+                RequestCredentials::SameOrigin
+            }
+        } else {
+            RequestCredentials::SameOrigin
+        };
+
         Box::pin(async move {
             let mut init = RequestInit::new();
 
             init.method(&request.method().to_string());
+            init.credentials(credentials);
 
             if let Some((data, mime)) = request.body() {
                 let blob = Blob::new_with_buffer_source_sequence_and_options(

@@ -605,6 +605,24 @@ export interface BaseLoadOptions {
      * @default {}
      */
     defaultFonts?: DefaultFonts;
+
+    /**
+     * An array of origins that credentials may be sent to.
+     * Credentials are cookies, authorization headers, or TLS client certificates.
+     *
+     * Entries should include the protocol and host, for example `https://example.org` or `http://subdomain.example.org`.
+     *
+     * Cookies will always be sent to the same origin as the page the content was loaded on.
+     * If you configure this to send cookies to an origin but that origin does not configure CORS to allow it,
+     * then requests will start failing due to CORS.
+     * See https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Credentials.
+     *
+     * This directly corresponds to https://developer.mozilla.org/en-US/docs/Web/API/fetch#credentials
+     * Every request will be `same-origin` unless specified here, in which case it will be `include`.
+     *
+     * @default []
+     */
+    credentialAllowList?: Array<string>;
 }
 
 /**
