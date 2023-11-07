@@ -108,7 +108,7 @@ impl<'gc> NetConnections<'gc> {
         let handle = context.net_connections.connections.insert(connection);
 
         if let Some(existing_handle) = target.set_handle(Some(handle)) {
-            NetConnections::close(context, existing_handle)
+            NetConnections::close(context, existing_handle, false);
         }
 
         match target {
@@ -144,13 +144,17 @@ impl<'gc> NetConnections<'gc> {
         let handle = context.net_connections.connections.insert(connection);
 
         if let Some(existing_handle) = target.set_handle(Some(handle)) {
-            NetConnections::close(context, existing_handle)
+            NetConnections::close(context, existing_handle, false);
         }
 
         // No open event here
     }
 
-    pub fn close(context: &mut UpdateContext<'_, 'gc>, handle: NetConnectionHandle) {
+    pub fn close(
+        context: &mut UpdateContext<'_, 'gc>,
+        handle: NetConnectionHandle,
+        is_explicit: bool,
+    ) {
         let Some(connection) = context.net_connections.connections.remove(handle) else {
             return;
         };
@@ -168,7 +172,9 @@ impl<'gc> NetConnections<'gc> {
                 );
                 Avm2::dispatch_event(&mut activation.context, event, object.into());
 
-                if matches!(connection.protocol, NetConnectionProtocol::FlashRemoting(_)) {
+                if is_explicit
+                    && matches!(connection.protocol, NetConnectionProtocol::FlashRemoting(_))
+                {
                     // [NA] I have no idea why, but a NetConnection receives a second and nonsensical event on close
                     let event = Avm2EventObject::net_status_event(
                         &mut activation,
@@ -408,7 +414,7 @@ impl FlashRemoting {
         self.outgoing_queue.push((
             Message {
                 target_uri: command,
-                response_uri: format!("/{}", self.outgoing_queue.len()),
+                response_uri: format!("/{}", self.outgoing_queue.len() + 1), // Flash is 1-based... simplifies tests to stay the same
                 contents: Rc::new(message),
             },
             responder_handle,
@@ -467,10 +473,6 @@ impl FlashRemoting {
                                         activation.context.gc_context,
                                         response.url,
                                     );
-                                    let description = AvmString::new_utf8(
-                                        activation.context.gc_context,
-                                        format!("{:?}", response.error),
-                                    );
                                     let event = Avm2EventObject::net_status_event(
                                         &mut activation,
                                         "netStatus",
@@ -478,7 +480,7 @@ impl FlashRemoting {
                                             ("code", "NetConnection.Call.Failed".into()),
                                             ("level", "error".into()),
                                             ("details", url),
-                                            ("description", description),
+                                            ("description", "HTTP: Failed".into()),
                                         ],
                                     );
                                     Avm2::dispatch_event(
@@ -505,7 +507,7 @@ impl FlashRemoting {
                                 .and_then(|str| str::parse::<usize>(str).ok())
                             {
                                 responder = responder_handles
-                                    .get(index)
+                                    .get(index.wrapping_sub(1))
                                     .cloned()
                                     .flatten()
                                     .map(|handle| (handle, ResponderCallback::Status));
@@ -514,7 +516,7 @@ impl FlashRemoting {
                                 .and_then(|str| str::parse::<usize>(str).ok())
                             {
                                 responder = responder_handles
-                                    .get(index)
+                                    .get(index.wrapping_sub(1))
                                     .cloned()
                                     .flatten()
                                     .map(|handle| (handle, ResponderCallback::Result));
