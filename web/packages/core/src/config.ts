@@ -47,4 +47,5 @@ export const DEFAULT_CONFIG: Required<BaseLoadOptions> = {
     socketProxy: [],
     fontSources: [],
     defaultFonts: {},
+    credentialAllowList: [],
 };
