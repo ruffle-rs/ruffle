@@ -69,7 +69,7 @@ fn main() {
                         }
                     } else {
                         match unwind_result {
-                            Ok(r) => r,
+                            Ok(r) => Ok(r?),
                             Err(e) => resume_unwind(e),
                         }
                     }

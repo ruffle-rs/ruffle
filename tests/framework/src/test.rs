@@ -52,7 +52,7 @@ impl Test {
         mut before_start: impl FnMut(Arc<Mutex<Player>>) -> Result<()>,
         mut before_end: impl FnMut(Arc<Mutex<Player>>) -> Result<()>,
         environment: &impl Environment,
-    ) -> std::result::Result<(), libtest_mimic::Failed> {
+    ) -> Result<()> {
         set_logger();
         let movie =
             SwfMovie::from_path(&self.swf_path, None).map_err(|e| anyhow!(e.to_string()))?;
@@ -93,7 +93,7 @@ impl Test {
         Ok(())
     }
 
-    fn socket_events(&self) -> Result<Option<Vec<SocketEvent>>, libtest_mimic::Failed> {
+    fn socket_events(&self) -> Result<Option<Vec<SocketEvent>>> {
         Ok(if self.socket_path.is_file() {
             Some(SocketEvent::from_file(&self.socket_path)?)
         } else {
@@ -101,7 +101,7 @@ impl Test {
         })
     }
 
-    fn input_injector(&self) -> Result<InputInjector, libtest_mimic::Failed> {
+    fn input_injector(&self) -> Result<InputInjector> {
         Ok(if self.input_path.is_file() {
             InputInjector::from_file(&self.input_path)?
         } else {

@@ -4265,7 +4265,6 @@ dependencies = [
  "env_logger",
  "futures",
  "image",
- "libtest-mimic",
  "pretty_assertions",
  "regex",
  "ruffle_core",
