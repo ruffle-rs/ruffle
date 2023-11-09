@@ -1,43 +1,33 @@
-use ruffle_render_wgpu::backend::request_adapter_and_device;
-use ruffle_render_wgpu::descriptors::Descriptors;
-use ruffle_render_wgpu::wgpu;
-use std::sync::{Arc, OnceLock};
+use crate::options::RenderOptions;
 
-/*
-   It can be expensive to construct WGPU, much less Descriptors, so we put it off as long as we can
-   and share it across tests in the same process.
+pub use ruffle_render::backend::RenderBackend;
 
-   Remember:
-       `cargo test` will run all tests in the same process.
-       `cargo nextest run` will create a different process per test.
+pub trait Environment {
+    /// Checks if this environment supports rendering the given test.
+    ///
+    /// This isn't a guarantee that it _will_ construct a renderer,
+    /// but rather a check that it theoretically _can_.
+    ///
+    /// This should be a cheap test to filter out test viability early,
+    /// without creating any expensive rendering overhead.
+    fn is_render_supported(&self, _requirements: &RenderOptions) -> bool {
+        false
+    }
 
-   For `cargo test` it's relatively okay if we spend the time to construct descriptors once,
-   but for `cargo nextest run` it's a big cost per test if it's not going to use it.
-*/
-
-fn create_wgpu_device() -> Option<(wgpu::Instance, wgpu::Adapter, wgpu::Device, wgpu::Queue)> {
-    let instance = wgpu::Instance::new(Default::default());
-    futures::executor::block_on(request_adapter_and_device(
-        wgpu::Backends::all(),
-        &instance,
-        None,
-        Default::default(),
-        None,
-    ))
-    .ok()
-    .map(|(adapter, device, queue)| (instance, adapter, device, queue))
-}
-
-fn build_wgpu_descriptors() -> Option<Arc<Descriptors>> {
-    if let Some((instance, adapter, device, queue)) = create_wgpu_device() {
-        Some(Arc::new(Descriptors::new(instance, adapter, device, queue)))
-    } else {
+    /// Creates a render backend for the given test.
+    ///
+    /// If [Self::is_render_supported] returned false, this won't be attempted.
+    fn create_renderer(&self, _width: u32, _height: u32) -> Option<Box<dyn RenderBackend>> {
         None
     }
-}
 
-pub fn wgpu_descriptors() -> Option<&'static Arc<Descriptors>> {
-    // TODO: Use `std::sync::LazyLock` once it's stabilized?
-    static WGPU: OnceLock<Option<Arc<Descriptors>>> = OnceLock::new();
-    WGPU.get_or_init(build_wgpu_descriptors).as_ref()
+    /// Gets the name of this environment, for use in test reporting.
+    ///
+    /// This name may be used in file paths, so it should contain appropriate characters for such.
+    fn name(&self) -> String;
+
+    /// Capture the stage rendered out by the given render backend.
+    ///
+    /// The provided backend will have previously been created by [Environment::create_renderer].
+    fn capture_renderer(&self, renderer: &mut Box<dyn RenderBackend>) -> image::RgbaImage;
 }

@@ -1,3 +1,4 @@
+use crate::environment::Environment;
 use crate::options::TestOptions;
 use crate::runner::run_swf;
 use crate::set_logger;
@@ -49,6 +50,7 @@ impl Test {
         &self,
         before_start: impl FnOnce(Arc<Mutex<Player>>) -> Result<()>,
         before_end: impl FnOnce(Arc<Mutex<Player>>) -> Result<()>,
+        environment: &impl Environment,
     ) -> std::result::Result<(), libtest_mimic::Failed> {
         set_logger();
         let injector = if self.input_path.is_file() {
@@ -61,17 +63,27 @@ impl Test {
         } else {
             None
         };
-        let output = run_swf(self, injector, socket_events, before_start, before_end)?;
+        let output = run_swf(
+            self,
+            injector,
+            socket_events,
+            before_start,
+            before_end,
+            environment,
+        )?;
         self.compare_output(&output)?;
         Ok(())
     }
 
-    pub fn should_run(&self, check_renderer: bool) -> bool {
+    pub fn should_run(&self, check_renderer: bool, environment: &impl Environment) -> bool {
         if self.options.ignore {
             return false;
         }
         self.options.required_features.can_run()
-            && self.options.player_options.can_run(check_renderer)
+            && self
+                .options
+                .player_options
+                .can_run(check_renderer, environment)
     }
 
     pub fn compare_output(&self, actual_output: &str) -> Result<()> {

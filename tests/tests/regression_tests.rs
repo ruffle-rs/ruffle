@@ -2,6 +2,7 @@
 //!
 //! Trace output can be compared with correct output from the official Flash Player.
 
+use crate::environment::NativeEnvironment;
 use crate::external_interface::tests::{external_interface_avm1, external_interface_avm2};
 use crate::shared_object::{shared_object_avm1, shared_object_avm2, shared_object_self_ref_avm1};
 use anyhow::Context;
@@ -11,6 +12,7 @@ use ruffle_test_framework::test::Test;
 use std::panic::{catch_unwind, resume_unwind};
 use std::path::Path;
 
+mod environment;
 mod external_interface;
 mod shared_object;
 
@@ -55,9 +57,9 @@ fn main() {
                 let test = Test::from_options_file(file.path(), name.clone())
                     .with_context(|| format!("Couldn't create test {name}"))
                     .unwrap();
-                let ignore = !test.should_run(!args.list);
+                let ignore = !test.should_run(!args.list, &NativeEnvironment);
                 let mut trial = Trial::test(test.name.to_string(), move || {
-                    let unwind_result = catch_unwind(|| test.run(|_| Ok(()), |_| Ok(())));
+                    let unwind_result = catch_unwind(|| test.run(|_| Ok(()), |_| Ok(()), &NativeEnvironment));
                     if test.options.known_failure {
                         match unwind_result {
                             Ok(Ok(())) => Err(
@@ -83,20 +85,21 @@ fn main() {
         .collect();
 
     // Manual tests here, since #[test] doesn't work once we use our own test harness
-    tests.push(Trial::test("shared_object_avm1", shared_object_avm1));
-    tests.push(Trial::test(
-        "shared_object_self_ref_avm1",
-        shared_object_self_ref_avm1,
-    ));
-    tests.push(Trial::test("shared_object_avm2", shared_object_avm2));
-    tests.push(Trial::test(
-        "external_interface_avm1",
-        external_interface_avm1,
-    ));
-    tests.push(Trial::test(
-        "external_interface_avm2",
-        external_interface_avm2,
-    ));
+    tests.push(Trial::test("shared_object_avm1", || {
+        shared_object_avm1(&NativeEnvironment)
+    }));
+    tests.push(Trial::test("shared_object_self_ref_avm1", || {
+        shared_object_self_ref_avm1(&NativeEnvironment)
+    }));
+    tests.push(Trial::test("shared_object_avm2", || {
+        shared_object_avm2(&NativeEnvironment)
+    }));
+    tests.push(Trial::test("external_interface_avm1", || {
+        external_interface_avm1(&NativeEnvironment)
+    }));
+    tests.push(Trial::test("external_interface_avm2", || {
+        external_interface_avm2(&NativeEnvironment)
+    }));
 
     tests.sort_unstable_by(|a, b| a.name().cmp(b.name()));
 

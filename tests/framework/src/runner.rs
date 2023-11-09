@@ -1,4 +1,5 @@
 use crate::backends::{TestLogBackend, TestNavigatorBackend};
+use crate::environment::Environment;
 use crate::fs_commands::{FsCommand, TestFsCommandProvider};
 use crate::image_trigger::ImageTrigger;
 use crate::options::ImageComparison;
@@ -15,7 +16,7 @@ use ruffle_input_format::{
     AutomatedEvent, InputInjector, MouseButton as InputMouseButton,
     TextControlCode as InputTextControlCode,
 };
-use ruffle_render_wgpu::descriptors::Descriptors;
+use ruffle_render::backend::null::NullRenderer;
 use ruffle_socket_format::SocketEvent;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
@@ -29,6 +30,7 @@ pub fn run_swf(
     socket_events: Option<Vec<SocketEvent>>,
     before_start: impl FnOnce(Arc<Mutex<Player>>) -> Result<()>,
     before_end: impl FnOnce(Arc<Mutex<Player>>) -> Result<()>,
+    environment: &impl Environment,
 ) -> Result<String> {
     let base_path = Path::new(&test.output_path).parent().unwrap();
     let mut executor = NullExecutor::new();
@@ -65,18 +67,20 @@ pub fn run_swf(
     let player = test
         .options
         .player_options
-        .setup(builder, &movie)?
+        .setup(builder, &movie, environment)?
         .with_movie(movie)
         .with_autoplay(true) //.tick() requires playback
         .build();
 
-    let mut images = test.options.image_comparisons.clone();
+    // If we set anything but a null renderer, then the Environment must have created a valid renderer.
+    let has_renderer = player
+        .lock()
+        .unwrap()
+        .renderer()
+        .downcast_ref::<NullRenderer>()
+        .is_none();
 
-    let wgpu_descriptors = if cfg!(feature = "imgtests") && !images.is_empty() {
-        crate::environment::wgpu_descriptors()
-    } else {
-        None
-    };
+    let mut images = test.options.image_comparisons.clone();
 
     before_start(player.clone())?;
 
@@ -142,10 +146,11 @@ pub fn run_swf(
                         capture_and_compare_image(
                             base_path,
                             &player,
-                            wgpu_descriptors,
                             &name,
                             image_comparison,
                             test.options.known_failure,
+                            environment,
+                            has_renderer,
                         )?;
                     } else {
                         return Err(anyhow!("Encountered fscommand to capture and compare image '{name}', but no [image_comparison] was set up for this."));
@@ -214,10 +219,11 @@ pub fn run_swf(
             capture_and_compare_image(
                 base_path,
                 &player,
-                wgpu_descriptors,
                 &name,
                 image_comparison,
                 test.options.known_failure,
+                environment,
+                has_renderer,
             )?;
         }
     }
@@ -234,10 +240,11 @@ pub fn run_swf(
         capture_and_compare_image(
             base_path,
             &player,
-            wgpu_descriptors,
             &name,
             image_comparison,
             test.options.known_failure,
+            environment,
+            has_renderer,
         )?;
     }
 
@@ -260,48 +267,22 @@ pub fn run_swf(
     Ok(normalized_trace)
 }
 
-#[cfg(not(feature = "imgtests"))]
-fn capture_and_compare_image(
-    _base_path: &Path,
-    _player: &Arc<Mutex<Player>>,
-    _wgpu_descriptors: Option<&Arc<Descriptors>>,
-    _name: &str,
-    _image_comparison: ImageComparison,
-    known_failure: bool,
-) -> Result<()> {
-    if known_failure {
-        // It's possible that the trace output matched but the image might not.
-        // If we aren't checking the image, pretend the match failed (which makes it actually pass, since it's expecting failure).
-        Err(anyhow!(
-            "Not checking images, pretending this failed since we don't know if it worked."
-        ))
-    } else {
-        Ok(())
-    }
-}
-
-#[cfg(feature = "imgtests")]
 fn capture_and_compare_image(
     base_path: &Path,
     player: &Arc<Mutex<Player>>,
-    wgpu_descriptors: Option<&Arc<Descriptors>>,
     name: &String,
     image_comparison: ImageComparison,
     known_failure: bool,
+    environment: &impl Environment,
+    has_renderer: bool,
 ) -> Result<()> {
     use anyhow::Context;
-    use ruffle_render_wgpu::backend::WgpuRenderBackend;
-    use ruffle_render_wgpu::target::TextureTarget;
 
-    if let Some(wgpu_descriptors) = wgpu_descriptors {
+    if has_renderer {
         let mut player_lock = player.lock().unwrap();
         player_lock.render();
-        let renderer = player_lock
-            .renderer_mut()
-            .downcast_mut::<WgpuRenderBackend<TextureTarget>>()
-            .unwrap();
 
-        let actual_image = renderer.capture_frame().expect("Failed to capture image");
+        let actual_image = environment.capture_renderer(player_lock.renderer_mut());
 
         let expected_image_path = base_path.join(format!("{name}.expected.png"));
         if expected_image_path.is_file() {
@@ -314,7 +295,7 @@ fn capture_and_compare_image(
                 actual_image,
                 expected_image,
                 base_path,
-                wgpu_descriptors.adapter.get_info(),
+                environment.name(),
                 known_failure,
             )?;
         } else if !known_failure {

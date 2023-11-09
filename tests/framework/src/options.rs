@@ -1,5 +1,5 @@
 use crate::backends::TestAudioBackend;
-use crate::environment::wgpu_descriptors;
+use crate::environment::Environment;
 use crate::image_trigger::ImageTrigger;
 use anyhow::{anyhow, Result};
 use approx::assert_relative_eq;
@@ -7,7 +7,6 @@ use regex::Regex;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{PlayerBuilder, ViewportDimensions};
 use ruffle_render::quality::StageQuality;
-use ruffle_render_wgpu::wgpu;
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
 use std::fs;
@@ -141,6 +140,7 @@ impl PlayerOptions {
         &self,
         mut player_builder: PlayerBuilder,
         movie: &SwfMovie,
+        environment: &impl Environment,
     ) -> Result<PlayerBuilder> {
         if let Some(max_execution_duration) = self.max_execution_duration {
             player_builder = player_builder.with_max_execution_duration(max_execution_duration);
@@ -161,27 +161,16 @@ impl PlayerOptions {
         };
 
         if let Some(render_options) = &self.with_renderer {
-            use ruffle_render_wgpu::backend::WgpuRenderBackend;
-            use ruffle_render_wgpu::target::TextureTarget;
+            player_builder = player_builder.with_quality(match render_options.sample_count {
+                16 => StageQuality::High16x16,
+                8 => StageQuality::High8x8,
+                4 => StageQuality::High,
+                2 => StageQuality::Medium,
+                _ => StageQuality::Low,
+            });
 
-            if let Some(descriptors) = wgpu_descriptors() {
-                if render_options.is_supported(&descriptors.adapter) {
-                    let target = TextureTarget::new(&descriptors.device, (width, height))
-                        .map_err(|e| anyhow!(e.to_string()))?;
-
-                    player_builder = player_builder
-                        .with_quality(match render_options.sample_count {
-                            16 => StageQuality::High16x16,
-                            8 => StageQuality::High8x8,
-                            4 => StageQuality::High,
-                            2 => StageQuality::Medium,
-                            _ => StageQuality::Low,
-                        })
-                        .with_renderer(
-                            WgpuRenderBackend::new(descriptors.clone(), target)
-                                .map_err(|e| anyhow!(e.to_string()))?,
-                        );
-                }
+            if let Some(renderer) = environment.create_renderer(width, height) {
+                player_builder = player_builder.with_boxed_renderer(renderer);
             }
         }
 
@@ -189,7 +178,7 @@ impl PlayerOptions {
             player_builder = player_builder.with_audio(TestAudioBackend::default());
         }
 
-        #[cfg(feature = "imgtests")]
+        #[cfg(feature = "ruffle_video_software")]
         if self.with_video {
             use ruffle_video_software::backend::SoftwareVideoBackend;
             player_builder = player_builder.with_video(SoftwareVideoBackend::new())
@@ -198,18 +187,12 @@ impl PlayerOptions {
         Ok(player_builder)
     }
 
-    pub fn can_run(&self, check_renderer: bool) -> bool {
+    pub fn can_run(&self, check_renderer: bool, environment: &impl Environment) -> bool {
         if let Some(render) = &self.with_renderer {
             // If we don't actually want to check the renderer (ie we're just listing potential tests),
             // don't spend the cost to create it
-            if check_renderer && !render.optional {
-                if let Some(descriptors) = wgpu_descriptors() {
-                    if !render.is_supported(&descriptors.adapter) {
-                        return false;
-                    }
-                } else {
-                    return false;
-                }
+            if check_renderer && !render.optional && !environment.is_render_supported(render) {
+                return false;
             }
         }
         true
@@ -224,31 +207,27 @@ pub struct ImageComparison {
     pub trigger: ImageTrigger,
 }
 
-#[cfg(feature = "imgtests")]
 fn calc_difference(lhs: u8, rhs: u8) -> u8 {
     (lhs as i16 - rhs as i16).unsigned_abs() as u8
 }
 
 impl ImageComparison {
-    #[cfg(feature = "imgtests")]
     pub fn test(
         &self,
         name: &str,
         actual_image: image::RgbaImage,
         expected_image: image::RgbaImage,
         test_path: &Path,
-        adapter_info: wgpu::AdapterInfo,
+        environment_name: String,
         known_failure: bool,
     ) -> Result<()> {
         use anyhow::Context;
-
-        let suffix = format!("{}-{:?}", std::env::consts::OS, adapter_info.backend);
 
         let save_actual_image = || {
             if !known_failure {
                 // If we're expecting failure, spamming files isn't productive.
                 actual_image
-                    .save(test_path.join(format!("{name}.actual-{suffix}.png")))
+                    .save(test_path.join(format!("{name}.actual-{environment_name}.png")))
                     .context("Couldn't save actual image")
             } else {
                 Ok(())
@@ -323,7 +302,7 @@ impl ImageComparison {
                     difference_color,
                 )
                 .context("Couldn't create color difference image")?
-                .save(test_path.join(format!("{name}.difference-color-{suffix}.png")))
+                .save(test_path.join(format!("{name}.difference-color-{environment_name}.png")))
                 .context("Couldn't save color difference image")?;
             }
 
@@ -343,7 +322,7 @@ impl ImageComparison {
                         difference_alpha,
                     )
                     .context("Couldn't create alpha difference image")?
-                    .save(test_path.join(format!("{name}.difference-alpha-{suffix}.png")))
+                    .save(test_path.join(format!("{name}.difference-alpha-{environment_name}.png")))
                     .context("Couldn't save alpha difference image")?;
                 }
             }
@@ -367,8 +346,8 @@ impl ImageComparison {
 #[serde(default, deny_unknown_fields)]
 pub struct RenderOptions {
     optional: bool,
-    sample_count: u32,
-    exclude_warp: bool,
+    pub sample_count: u32,
+    pub exclude_warp: bool,
 }
 
 impl Default for RenderOptions {
@@ -378,16 +357,5 @@ impl Default for RenderOptions {
             sample_count: 1,
             exclude_warp: false,
         }
-    }
-}
-
-impl RenderOptions {
-    pub fn is_supported(&self, adapter: &wgpu::Adapter) -> bool {
-        let info = adapter.get_info();
-        // 5140 & 140 is WARP, https://learn.microsoft.com/en-us/windows/win32/direct3ddxgi/d3d10-graphics-programming-guide-dxgi#new-info-about-enumerating-adapters-for-windows-8
-        if self.exclude_warp && cfg!(windows) && info.vendor == 5140 && info.device == 140 {
-            return false;
-        }
-        true
     }
 }
