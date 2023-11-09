@@ -49,40 +49,64 @@ impl Test {
 
     pub fn run(
         &self,
-        before_start: impl FnOnce(Arc<Mutex<Player>>) -> Result<()>,
-        before_end: impl FnOnce(Arc<Mutex<Player>>) -> Result<()>,
+        mut before_start: impl FnMut(Arc<Mutex<Player>>) -> Result<()>,
+        mut before_end: impl FnMut(Arc<Mutex<Player>>) -> Result<()>,
         environment: &impl Environment,
     ) -> std::result::Result<(), libtest_mimic::Failed> {
         set_logger();
-        let injector = if self.input_path.is_file() {
-            InputInjector::from_file(&self.input_path)?
-        } else {
-            InputInjector::empty()
-        };
-        let socket_events = if self.socket_path.is_file() {
-            Some(SocketEvent::from_file(&self.socket_path)?)
-        } else {
-            None
-        };
         let movie =
             SwfMovie::from_path(&self.swf_path, None).map_err(|e| anyhow!(e.to_string()))?;
         let viewport_dimensions = self.options.player_options.viewport_dimensions(&movie);
-        let renderer = self
+        let renderers = self
             .options
             .player_options
             .create_renderer(environment, viewport_dimensions);
-        let output = run_swf(
-            self,
-            movie,
-            injector,
-            socket_events,
-            before_start,
-            before_end,
-            renderer,
-            viewport_dimensions,
-        )?;
-        self.compare_output(&output)?;
+
+        if renderers.is_empty() {
+            let output = run_swf(
+                self,
+                movie,
+                self.input_injector()?,
+                self.socket_events()?,
+                &mut before_start,
+                &mut before_end,
+                None,
+                viewport_dimensions,
+            )?;
+            self.compare_output(&output)?;
+        } else {
+            for renderer in renderers {
+                let output = run_swf(
+                    self,
+                    movie.clone(),
+                    self.input_injector()?,
+                    self.socket_events()?,
+                    &mut before_start,
+                    &mut before_end,
+                    Some(renderer),
+                    viewport_dimensions,
+                )?;
+                self.compare_output(&output)?;
+            }
+        }
+
         Ok(())
+    }
+
+    fn socket_events(&self) -> Result<Option<Vec<SocketEvent>>, libtest_mimic::Failed> {
+        Ok(if self.socket_path.is_file() {
+            Some(SocketEvent::from_file(&self.socket_path)?)
+        } else {
+            None
+        })
+    }
+
+    fn input_injector(&self) -> Result<InputInjector, libtest_mimic::Failed> {
+        Ok(if self.input_path.is_file() {
+            InputInjector::from_file(&self.input_path)?
+        } else {
+            InputInjector::empty()
+        })
     }
 
     pub fn should_run(&self, check_renderer: bool, environment: &impl Environment) -> bool {
