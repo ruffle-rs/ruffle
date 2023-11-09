@@ -1,7 +1,6 @@
 use crate::options::TestOptions;
 use crate::runner::run_swf;
 use crate::set_logger;
-use crate::PrettyString;
 use anyhow::{anyhow, Context, Result};
 use pretty_assertions::Comparison;
 use ruffle_core::Player;
@@ -154,6 +153,21 @@ impl Test {
         }
 
         Ok(())
+    }
+}
+
+/// Wrapper around string slice that makes debug output `{:?}` to print string same way as `{}`.
+/// Used in different `assert*!` macros in combination with `pretty_assertions` crate to make
+/// test failures to show nice diffs.
+/// Courtesy of https://github.com/colin-kiegel/rust-pretty-assertions/issues/24
+#[derive(PartialEq, Eq)]
+#[doc(hidden)]
+struct PrettyString<'a>(pub &'a str);
+
+/// Make diff to display string as multi-line string
+impl<'a> std::fmt::Debug for PrettyString<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.write_str(self.0)
     }
 }
 
