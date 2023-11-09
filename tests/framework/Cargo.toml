@@ -26,7 +26,6 @@ tracing-subscriber = { workspace = true }
 serde = "1.0.190"
 toml = "0.8.6"
 libtest-mimic = "0.6.1"
-walkdir = "2.4.0"
 anyhow = "1.0.75"
 async-channel = "1.9.0"
 
