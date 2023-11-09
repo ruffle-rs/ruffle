@@ -1,4 +1,4 @@
-use crate::runner::TestLogBackend;
+use crate::backends::TestLogBackend;
 use async_channel::Receiver;
 use ruffle_core::backend::log::LogBackend;
 use ruffle_core::backend::navigator::{
