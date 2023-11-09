@@ -1,7 +1,7 @@
+use crate::options::TestOptions;
+use crate::runner::run_swf;
 use crate::set_logger;
-use crate::util::options::TestOptions;
-use crate::util::runner::run_swf;
-use crate::util::PrettyString;
+use crate::PrettyString;
 use anyhow::{anyhow, Context, Result};
 use pretty_assertions::Comparison;
 use ruffle_core::Player;

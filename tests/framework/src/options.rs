@@ -1,6 +1,6 @@
-use crate::util::environment::wgpu_descriptors;
-use crate::util::image_trigger::ImageTrigger;
-use crate::util::runner::TestAudioBackend;
+use crate::environment::wgpu_descriptors;
+use crate::image_trigger::ImageTrigger;
+use crate::runner::TestAudioBackend;
 use anyhow::{anyhow, Result};
 use approx::assert_relative_eq;
 use regex::Regex;

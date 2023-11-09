@@ -1,6 +1,3 @@
-// Despite being the older method of defining modules, this is required for test modules
-// https://doc.rust-lang.org/book/ch11-03-test-organization.html
-
 pub mod environment;
 pub mod fs_commands;
 pub mod image_trigger;
@@ -23,4 +20,19 @@ impl<'a> std::fmt::Debug for PrettyString<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         f.write_str(self.0)
     }
+}
+
+pub fn set_logger() {
+    let _ = env_logger::Builder::from_env(
+        env_logger::Env::default().default_filter_or("info,wgpu_core=warn,wgpu_hal=warn"),
+    )
+    .format_timestamp(None)
+    .is_test(true)
+    .try_init();
+
+    let subscriber = tracing_subscriber::fmt::Subscriber::builder()
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .finish();
+    // Ignore error if it's already been set
+    let _ = tracing::subscriber::set_global_default(subscriber);
 }

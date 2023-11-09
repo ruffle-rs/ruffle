@@ -1,7 +1,7 @@
-use crate::set_logger;
-use crate::util::options::TestOptions;
-use crate::util::test::Test;
 use ruffle_core::backend::storage::{MemoryStorageBackend, StorageBackend};
+use ruffle_test_framework::options::TestOptions;
+use ruffle_test_framework::set_logger;
+use ruffle_test_framework::test::Test;
 use std::path::Path;
 
 pub fn shared_object_avm1() -> Result<(), libtest_mimic::Failed> {

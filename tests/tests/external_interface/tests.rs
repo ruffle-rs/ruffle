@@ -1,8 +1,8 @@
 use crate::external_interface::ExternalInterfaceTestProvider;
-use crate::set_logger;
-use crate::util::options::TestOptions;
-use crate::util::test::Test;
 use ruffle_core::external::Value as ExternalValue;
+use ruffle_test_framework::options::TestOptions;
+use ruffle_test_framework::set_logger;
+use ruffle_test_framework::test::Test;
 use std::collections::BTreeMap;
 use std::path::Path;
 
