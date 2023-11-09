@@ -29,8 +29,8 @@ pub fn run_swf(
     movie: SwfMovie,
     mut injector: InputInjector,
     socket_events: Option<Vec<SocketEvent>>,
-    before_start: impl FnOnce(Arc<Mutex<Player>>) -> Result<()>,
-    before_end: impl FnOnce(Arc<Mutex<Player>>) -> Result<()>,
+    before_start: &mut impl FnMut(Arc<Mutex<Player>>) -> Result<()>,
+    before_end: &mut impl FnMut(Arc<Mutex<Player>>) -> Result<()>,
     renderer: Option<(Box<dyn RenderInterface>, Box<dyn RenderBackend>)>,
     viewport_dimensions: ViewportDimensions,
 ) -> Result<String> {
