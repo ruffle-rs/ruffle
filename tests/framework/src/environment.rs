@@ -14,13 +14,25 @@ pub trait Environment {
         false
     }
 
-    /// Creates a render backend for the given test.
+    /// Creates a render backend for a new test run.
+    ///
+    /// This method must return both a [RenderBackend] and [RenderInterface] as a pair,
+    /// and will be treated as a pair for the purposes of this test framework.
+    ///
+    /// All relevant methods in the [RenderInterface] will receive the same [RenderBackend]
+    /// that was provided here with that interface.
     ///
     /// If [Self::is_render_supported] returned false, this won't be attempted.
-    fn create_renderer(&self, _width: u32, _height: u32) -> Option<Box<dyn RenderBackend>> {
+    fn create_renderer(
+        &self,
+        _width: u32,
+        _height: u32,
+    ) -> Option<(Box<dyn RenderInterface>, Box<dyn RenderBackend>)> {
         None
     }
+}
 
+pub trait RenderInterface {
     /// Gets the name of this environment, for use in test reporting.
     ///
     /// This name may be used in file paths, so it should contain appropriate characters for such.
@@ -28,6 +40,6 @@ pub trait Environment {
 
     /// Capture the stage rendered out by the given render backend.
     ///
-    /// The provided backend will have previously been created by [Environment::create_renderer].
-    fn capture_renderer(&self, renderer: &mut Box<dyn RenderBackend>) -> image::RgbaImage;
+    /// The provided backend is guaranteed to be the same one paired with this interface.
+    fn capture(&self, renderer: &mut Box<dyn RenderBackend>) -> image::RgbaImage;
 }

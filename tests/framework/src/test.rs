@@ -4,6 +4,7 @@ use crate::runner::run_swf;
 use crate::set_logger;
 use anyhow::{anyhow, Context, Result};
 use pretty_assertions::Comparison;
+use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::Player;
 use ruffle_input_format::InputInjector;
 use ruffle_socket_format::SocketEvent;
@@ -63,13 +64,22 @@ impl Test {
         } else {
             None
         };
+        let movie =
+            SwfMovie::from_path(&self.swf_path, None).map_err(|e| anyhow!(e.to_string()))?;
+        let viewport_dimensions = self.options.player_options.viewport_dimensions(&movie);
+        let renderer = self
+            .options
+            .player_options
+            .create_renderer(environment, viewport_dimensions);
         let output = run_swf(
             self,
+            movie,
             injector,
             socket_events,
             before_start,
             before_end,
-            environment,
+            renderer,
+            viewport_dimensions,
         )?;
         self.compare_output(&output)?;
         Ok(())

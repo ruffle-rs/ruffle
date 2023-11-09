@@ -1,5 +1,5 @@
 use crate::backends::{TestLogBackend, TestNavigatorBackend, TestUiBackend};
-use crate::environment::Environment;
+use crate::environment::RenderInterface;
 use crate::fs_commands::{FsCommand, TestFsCommandProvider};
 use crate::image_trigger::ImageTrigger;
 use crate::options::ImageComparison;
@@ -15,7 +15,7 @@ use ruffle_input_format::{
     AutomatedEvent, InputInjector, MouseButton as InputMouseButton,
     TextControlCode as InputTextControlCode,
 };
-use ruffle_render::backend::null::NullRenderer;
+use ruffle_render::backend::{RenderBackend, ViewportDimensions};
 use ruffle_socket_format::SocketEvent;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
@@ -23,17 +23,19 @@ use std::time::Duration;
 
 /// Loads an SWF and runs it through the Ruffle core for a number of frames.
 /// Tests that the trace output matches the given expected output.
+#[allow(clippy::too_many_arguments)]
 pub fn run_swf(
     test: &Test,
+    movie: SwfMovie,
     mut injector: InputInjector,
     socket_events: Option<Vec<SocketEvent>>,
     before_start: impl FnOnce(Arc<Mutex<Player>>) -> Result<()>,
     before_end: impl FnOnce(Arc<Mutex<Player>>) -> Result<()>,
-    environment: &impl Environment,
+    renderer: Option<(Box<dyn RenderInterface>, Box<dyn RenderBackend>)>,
+    viewport_dimensions: ViewportDimensions,
 ) -> Result<String> {
     let base_path = Path::new(&test.output_path).parent().unwrap();
     let mut executor = NullExecutor::new();
-    let movie = SwfMovie::from_path(&test.swf_path, None).map_err(|e| anyhow!(e.to_string()))?;
     let mut frame_time = 1000.0 / movie.frame_rate().to_f64();
     if let Some(tr) = test.options.tick_rate {
         frame_time = tr;
@@ -50,34 +52,33 @@ pub fn run_swf(
         test.options.log_fetch.then(|| log.clone()),
     )?;
 
-    let builder = PlayerBuilder::new()
+    let mut builder = PlayerBuilder::new()
         .with_log(log.clone())
         .with_navigator(navigator)
         .with_max_execution_duration(Duration::from_secs(300))
         .with_fs_commands(Box::new(fs_command_provider))
         .with_ui(TestUiBackend)
         .with_viewport_dimensions(
-            movie.width().to_pixels() as u32,
-            movie.height().to_pixels() as u32,
-            1.0,
+            viewport_dimensions.width,
+            viewport_dimensions.height,
+            viewport_dimensions.scale_factor,
         );
+
+    let render_interface = if let Some((interface, backend)) = renderer {
+        builder = builder.with_boxed_renderer(backend);
+        Some(interface)
+    } else {
+        None
+    };
 
     // Test player options may override anything set above
     let player = test
         .options
         .player_options
-        .setup(builder, &movie, environment)?
+        .setup(builder)?
         .with_movie(movie)
         .with_autoplay(true) //.tick() requires playback
         .build();
-
-    // If we set anything but a null renderer, then the Environment must have created a valid renderer.
-    let has_renderer = player
-        .lock()
-        .unwrap()
-        .renderer()
-        .downcast_ref::<NullRenderer>()
-        .is_none();
 
     let mut images = test.options.image_comparisons.clone();
 
@@ -148,8 +149,7 @@ pub fn run_swf(
                             &name,
                             image_comparison,
                             test.options.known_failure,
-                            environment,
-                            has_renderer,
+                            render_interface.as_deref(),
                         )?;
                     } else {
                         return Err(anyhow!("Encountered fscommand to capture and compare image '{name}', but no [image_comparison] was set up for this."));
@@ -221,8 +221,7 @@ pub fn run_swf(
                 &name,
                 image_comparison,
                 test.options.known_failure,
-                environment,
-                has_renderer,
+                render_interface.as_deref(),
             )?;
         }
     }
@@ -242,8 +241,7 @@ pub fn run_swf(
             &name,
             image_comparison,
             test.options.known_failure,
-            environment,
-            has_renderer,
+            render_interface.as_deref(),
         )?;
     }
 
@@ -272,16 +270,15 @@ fn capture_and_compare_image(
     name: &String,
     image_comparison: ImageComparison,
     known_failure: bool,
-    environment: &impl Environment,
-    has_renderer: bool,
+    render_interface: Option<&dyn RenderInterface>,
 ) -> Result<()> {
     use anyhow::Context;
 
-    if has_renderer {
+    if let Some(render_interface) = render_interface {
         let mut player_lock = player.lock().unwrap();
         player_lock.render();
 
-        let actual_image = environment.capture_renderer(player_lock.renderer_mut());
+        let actual_image = render_interface.capture(player_lock.renderer_mut());
 
         let expected_image_path = base_path.join(format!("{name}.expected.png"));
         if expected_image_path.is_file() {
@@ -294,7 +291,7 @@ fn capture_and_compare_image(
                 actual_image,
                 expected_image,
                 base_path,
-                environment.name(),
+                render_interface.name(),
                 known_failure,
             )?;
         } else if !known_failure {
