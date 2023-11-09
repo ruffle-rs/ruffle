@@ -1,6 +1,6 @@
+use crate::backends::TestNavigatorBackend;
 use crate::fs_commands::{FsCommand, TestFsCommandProvider};
 use crate::image_trigger::ImageTrigger;
-use crate::navigator::TestNavigatorBackend;
 use crate::options::ImageComparison;
 use crate::test::Test;
 use crate::test_ui::TestUiBackend;
