@@ -1570,7 +1570,7 @@ dependencies = [
 [[package]]
 name = "flash-lso"
 version = "0.6.0"
-source = "git+https://github.com/ruffle-rs/rust-flash-lso?rev=949ffefaf7c16c829bf0be267011b138b95d935f#949ffefaf7c16c829bf0be267011b138b95d935f"
+source = "git+https://github.com/ruffle-rs/rust-flash-lso?rev=f9526ea0e7e22cf5704972aa43c5b0f9e8896773#f9526ea0e7e22cf5704972aa43c5b0f9e8896773"
 dependencies = [
  "cookie-factory",
  "enumset",
