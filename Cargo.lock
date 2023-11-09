@@ -4255,6 +4255,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "ruffle_test_framework"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "approx",
+ "async-channel",
+ "chrono",
+ "env_logger",
+ "futures",
+ "image",
+ "libtest-mimic",
+ "pretty_assertions",
+ "regex",
+ "ruffle_core",
+ "ruffle_input_format",
+ "ruffle_render",
+ "ruffle_render_wgpu",
+ "ruffle_socket_format",
+ "ruffle_video_software",
+ "serde",
+ "toml",
+ "tracing",
+ "tracing-subscriber",
+ "url",
+ "walkdir",
+]
+
+[[package]]
 name = "ruffle_video"
 version = "0.1.0"
 dependencies = [
@@ -4894,26 +4922,9 @@ name = "tests"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "approx",
- "async-channel",
- "chrono",
- "env_logger",
- "futures",
- "image",
  "libtest-mimic",
- "pretty_assertions",
- "regex",
  "ruffle_core",
- "ruffle_input_format",
- "ruffle_render",
- "ruffle_render_wgpu",
- "ruffle_socket_format",
- "ruffle_video_software",
- "serde",
- "toml",
- "tracing",
- "tracing-subscriber",
- "url",
+ "ruffle_test_framework",
  "walkdir",
 ]
 

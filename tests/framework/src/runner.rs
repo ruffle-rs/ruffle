@@ -1,9 +1,9 @@
-use crate::util::fs_commands::{FsCommand, TestFsCommandProvider};
-use crate::util::image_trigger::ImageTrigger;
-use crate::util::navigator::TestNavigatorBackend;
-use crate::util::options::ImageComparison;
-use crate::util::test::Test;
-use crate::util::test_ui::TestUiBackend;
+use crate::fs_commands::{FsCommand, TestFsCommandProvider};
+use crate::image_trigger::ImageTrigger;
+use crate::navigator::TestNavigatorBackend;
+use crate::options::ImageComparison;
+use crate::test::Test;
+use crate::test_ui::TestUiBackend;
 use anyhow::{anyhow, Result};
 use ruffle_core::backend::audio::{
     swf, AudioBackend, AudioMixer, DecodeError, RegisterError, SoundHandle, SoundInstanceHandle,
@@ -138,7 +138,7 @@ pub fn run_swf(
     let mut images = test.options.image_comparisons.clone();
 
     let wgpu_descriptors = if cfg!(feature = "imgtests") && !images.is_empty() {
-        crate::util::environment::wgpu_descriptors()
+        crate::environment::wgpu_descriptors()
     } else {
         None
     };
