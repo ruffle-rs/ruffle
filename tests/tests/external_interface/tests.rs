@@ -1,12 +1,15 @@
 use crate::external_interface::ExternalInterfaceTestProvider;
 use ruffle_core::external::Value as ExternalValue;
+use ruffle_test_framework::environment::Environment;
 use ruffle_test_framework::options::TestOptions;
 use ruffle_test_framework::set_logger;
 use ruffle_test_framework::test::Test;
 use std::collections::BTreeMap;
 use std::path::Path;
 
-pub fn external_interface_avm1() -> Result<(), libtest_mimic::Failed> {
+pub fn external_interface_avm1(
+    environment: &impl Environment,
+) -> Result<(), libtest_mimic::Failed> {
     set_logger();
     Test::from_options(
         TestOptions {
@@ -59,10 +62,13 @@ pub fn external_interface_avm1() -> Result<(), libtest_mimic::Failed> {
             ));
             Ok(())
         },
+        environment,
     )
 }
 
-pub fn external_interface_avm2() -> Result<(), libtest_mimic::Failed> {
+pub fn external_interface_avm2(
+    environment: &impl Environment,
+) -> Result<(), libtest_mimic::Failed> {
     set_logger();
     Test::from_options(
         TestOptions {
@@ -106,5 +112,6 @@ pub fn external_interface_avm2() -> Result<(), libtest_mimic::Failed> {
             ));
             Ok(())
         },
+        environment,
     )
 }

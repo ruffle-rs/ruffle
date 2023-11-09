@@ -11,9 +11,12 @@ version.workspace = true
 # Enable running image comparison tests. This is off by default,
 # since the images we compare against are generated on CI, and may
 # not match your local machine's Vulkan version / image output.
-imgtests = ["ruffle_test_framework/imgtests"]
+imgtests = ["ruffle_test_framework/ruffle_video_software", "ruffle_render_wgpu"]
 jpegxr = ["ruffle_test_framework/jpegxr"]
 lzma = ["ruffle_test_framework/lzma"]
+
+[dependencies]
+ruffle_render_wgpu = { path = "../render/wgpu", optional = true }
 
 [dev-dependencies]
 ruffle_core = { path = "../core", features = ["deterministic", "timeline_debug", "avm_debug", "audio", "mp3", "default_font"] }
@@ -21,6 +24,8 @@ ruffle_test_framework = { path = "framework" }
 libtest-mimic = "0.6.1"
 walkdir = "2.4.0"
 anyhow = "1.0.75"
+image = { version = "0.24.7", default-features = false, features  = ["png"] }
+futures = "0.3.29"
 
 [[test]]
 name = "tests"

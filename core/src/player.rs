@@ -2270,6 +2270,13 @@ impl PlayerBuilder {
         self
     }
 
+    /// Sets the rendering backend of the player.
+    #[inline]
+    pub fn with_boxed_renderer(mut self, renderer: Box<dyn RenderBackend>) -> Self {
+        self.renderer = Some(renderer);
+        self
+    }
+
     /// Sets the storage backend of the player.
     #[inline]
     pub fn with_storage(mut self, storage: impl 'static + StorageBackend) -> Self {

@@ -1,10 +1,11 @@
 use ruffle_core::backend::storage::{MemoryStorageBackend, StorageBackend};
+use ruffle_test_framework::environment::Environment;
 use ruffle_test_framework::options::TestOptions;
 use ruffle_test_framework::set_logger;
 use ruffle_test_framework::test::Test;
 use std::path::Path;
 
-pub fn shared_object_avm1() -> Result<(), libtest_mimic::Failed> {
+pub fn shared_object_avm1(environment: &impl Environment) -> Result<(), libtest_mimic::Failed> {
     set_logger();
     // Test SharedObject persistence. Run an SWF that saves data
     // to a shared object twice and verify that the data is saved.
@@ -29,6 +30,7 @@ pub fn shared_object_avm1() -> Result<(), libtest_mimic::Failed> {
             std::mem::swap(player.storage_mut(), &mut memory_storage_backend);
             Ok(())
         },
+        environment,
     )?;
 
     // Verify that the flash cookie matches the expected one
@@ -58,12 +60,15 @@ pub fn shared_object_avm1() -> Result<(), libtest_mimic::Failed> {
             Ok(())
         },
         |_| Ok(()),
+        environment,
     )?;
 
     Ok(())
 }
 
-pub fn shared_object_self_ref_avm1() -> Result<(), libtest_mimic::Failed> {
+pub fn shared_object_self_ref_avm1(
+    environment: &impl Environment,
+) -> Result<(), libtest_mimic::Failed> {
     set_logger();
     // Test SharedObject persistence. Run an SWF that saves data
     // to a shared object twice and verify that the data is saved.
@@ -88,6 +93,7 @@ pub fn shared_object_self_ref_avm1() -> Result<(), libtest_mimic::Failed> {
             std::mem::swap(player.storage_mut(), &mut memory_storage_backend);
             Ok(())
         },
+        environment,
     )?;
 
     // Verify that the flash cookie matches the expected one
@@ -117,12 +123,13 @@ pub fn shared_object_self_ref_avm1() -> Result<(), libtest_mimic::Failed> {
             Ok(())
         },
         |_| Ok(()),
+        environment,
     )?;
 
     Ok(())
 }
 
-pub fn shared_object_avm2() -> Result<(), libtest_mimic::Failed> {
+pub fn shared_object_avm2(environment: &impl Environment) -> Result<(), libtest_mimic::Failed> {
     set_logger();
     // Test SharedObject persistence. Run an SWF that saves data
     // to a shared object twice and verify that the data is saved.
@@ -147,6 +154,7 @@ pub fn shared_object_avm2() -> Result<(), libtest_mimic::Failed> {
             std::mem::swap(player.storage_mut(), &mut memory_storage_backend);
             Ok(())
         },
+        environment,
     )?;
 
     // Verify that the flash cookie matches the expected one
@@ -176,6 +184,7 @@ pub fn shared_object_avm2() -> Result<(), libtest_mimic::Failed> {
             Ok(())
         },
         |_player| Ok(()),
+        environment,
     )?;
 
     Ok(())
