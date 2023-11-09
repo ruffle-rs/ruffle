@@ -1,11 +1,10 @@
-use crate::backends::TestNavigatorBackend;
+use crate::backends::{TestLogBackend, TestNavigatorBackend};
 use crate::fs_commands::{FsCommand, TestFsCommandProvider};
 use crate::image_trigger::ImageTrigger;
 use crate::options::ImageComparison;
 use crate::test::Test;
 use crate::test_ui::TestUiBackend;
 use anyhow::{anyhow, Result};
-use ruffle_core::backend::log::LogBackend;
 use ruffle_core::backend::navigator::NullExecutor;
 use ruffle_core::events::MouseButton as RuffleMouseButton;
 use ruffle_core::events::{KeyCode, TextControlCode as RuffleTextControlCode};
@@ -18,37 +17,9 @@ use ruffle_input_format::{
 };
 use ruffle_render_wgpu::descriptors::Descriptors;
 use ruffle_socket_format::SocketEvent;
-use std::cell::RefCell;
 use std::path::Path;
-use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-
-#[derive(Clone)]
-pub struct TestLogBackend {
-    trace_output: Rc<RefCell<String>>,
-}
-
-impl Default for TestLogBackend {
-    fn default() -> Self {
-        Self {
-            trace_output: Rc::new(RefCell::new(String::new())),
-        }
-    }
-}
-
-impl TestLogBackend {
-    pub fn trace_output(self) -> String {
-        self.trace_output.take()
-    }
-}
-
-impl LogBackend for TestLogBackend {
-    fn avm_trace(&self, message: &str) {
-        self.trace_output.borrow_mut().push_str(message);
-        self.trace_output.borrow_mut().push('\n');
-    }
-}
 
 /// Loads an SWF and runs it through the Ruffle core for a number of frames.
 /// Tests that the trace output matches the given expected output.
