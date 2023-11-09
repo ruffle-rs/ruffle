@@ -301,7 +301,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        let name = Multiname::new(activation.avm2().public_namespace_base_version, name);
+        let name = Multiname::new(activation.avm2().public_namespace_vm_internal, name);
         self.set_property_local(&name, value, activation)
     }
 
@@ -368,7 +368,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         self.set_property(
-            &Multiname::new(activation.avm2().public_namespace_base_version, name),
+            &Multiname::new(activation.avm2().public_namespace_vm_internal, name),
             value,
             activation,
         )
