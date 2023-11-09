@@ -186,7 +186,7 @@ impl PlayerOptions {
         }
 
         if self.with_audio {
-            player_builder = player_builder.with_audio(TestAudioBackend::new());
+            player_builder = player_builder.with_audio(TestAudioBackend::default());
         }
 
         #[cfg(feature = "imgtests")]

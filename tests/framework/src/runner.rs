@@ -34,16 +34,18 @@ pub struct TestAudioBackend {
     buffer: Vec<f32>,
 }
 
-impl TestAudioBackend {
-    const NUM_CHANNELS: u8 = 2;
-    const SAMPLE_RATE: u32 = 44100;
-
-    pub fn new() -> Self {
+impl Default for TestAudioBackend {
+    fn default() -> Self {
         Self {
             mixer: AudioMixer::new(Self::NUM_CHANNELS, Self::SAMPLE_RATE),
             buffer: vec![],
         }
     }
+}
+
+impl TestAudioBackend {
+    const NUM_CHANNELS: u8 = 2;
+    const SAMPLE_RATE: u32 = 44100;
 }
 
 impl AudioBackend for TestAudioBackend {
@@ -67,13 +69,15 @@ pub struct TestLogBackend {
     trace_output: Rc<RefCell<String>>,
 }
 
-impl TestLogBackend {
-    pub fn new() -> Self {
+impl Default for TestLogBackend {
+    fn default() -> Self {
         Self {
             trace_output: Rc::new(RefCell::new(String::new())),
         }
     }
+}
 
+impl TestLogBackend {
     pub fn trace_output(self) -> String {
         self.trace_output.take()
     }
@@ -105,7 +109,7 @@ pub fn run_swf(
 
     let frame_time_duration = Duration::from_millis(frame_time as u64);
 
-    let log = TestLogBackend::new();
+    let log = TestLogBackend::default();
     let (fs_command_provider, fs_commands) = TestFsCommandProvider::new();
     let navigator = TestNavigatorBackend::new(
         base_path,
