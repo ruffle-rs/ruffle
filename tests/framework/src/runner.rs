@@ -1,10 +1,9 @@
-use crate::backends::{TestLogBackend, TestNavigatorBackend};
+use crate::backends::{TestLogBackend, TestNavigatorBackend, TestUiBackend};
 use crate::environment::Environment;
 use crate::fs_commands::{FsCommand, TestFsCommandProvider};
 use crate::image_trigger::ImageTrigger;
 use crate::options::ImageComparison;
 use crate::test::Test;
-use crate::test_ui::TestUiBackend;
 use anyhow::{anyhow, Result};
 use ruffle_core::backend::navigator::NullExecutor;
 use ruffle_core::events::MouseButton as RuffleMouseButton;
