@@ -4,7 +4,6 @@ pub mod image_trigger;
 pub mod options;
 pub mod runner;
 pub mod test;
-pub mod test_ui;
 
 mod backends;
 
