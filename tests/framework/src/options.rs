@@ -1,11 +1,12 @@
 use crate::backends::TestAudioBackend;
-use crate::environment::Environment;
+use crate::environment::{Environment, RenderInterface};
 use crate::image_trigger::ImageTrigger;
 use anyhow::{anyhow, Result};
 use approx::assert_relative_eq;
 use regex::Regex;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{PlayerBuilder, ViewportDimensions};
+use ruffle_render::backend::RenderBackend;
 use ruffle_render::quality::StageQuality;
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
@@ -136,29 +137,10 @@ pub struct PlayerOptions {
 }
 
 impl PlayerOptions {
-    pub fn setup(
-        &self,
-        mut player_builder: PlayerBuilder,
-        movie: &SwfMovie,
-        environment: &impl Environment,
-    ) -> Result<PlayerBuilder> {
+    pub fn setup(&self, mut player_builder: PlayerBuilder) -> Result<PlayerBuilder> {
         if let Some(max_execution_duration) = self.max_execution_duration {
             player_builder = player_builder.with_max_execution_duration(max_execution_duration);
         }
-
-        let (width, height) = if let Some(viewport_dimensions) = self.viewport_dimensions {
-            player_builder = player_builder.with_viewport_dimensions(
-                viewport_dimensions.width,
-                viewport_dimensions.height,
-                viewport_dimensions.scale_factor,
-            );
-            (viewport_dimensions.width, viewport_dimensions.height)
-        } else {
-            (
-                movie.width().to_pixels() as u32,
-                movie.height().to_pixels() as u32,
-            )
-        };
 
         if let Some(render_options) = &self.with_renderer {
             player_builder = player_builder.with_quality(match render_options.sample_count {
@@ -168,10 +150,6 @@ impl PlayerOptions {
                 2 => StageQuality::Medium,
                 _ => StageQuality::Low,
             });
-
-            if let Some(renderer) = environment.create_renderer(width, height) {
-                player_builder = player_builder.with_boxed_renderer(renderer);
-            }
         }
 
         if self.with_audio {
@@ -196,6 +174,27 @@ impl PlayerOptions {
             }
         }
         true
+    }
+
+    pub fn viewport_dimensions(&self, movie: &SwfMovie) -> ViewportDimensions {
+        self.viewport_dimensions
+            .unwrap_or_else(|| ViewportDimensions {
+                width: movie.width().to_pixels() as u32,
+                height: movie.height().to_pixels() as u32,
+                scale_factor: 1.0,
+            })
+    }
+
+    pub fn create_renderer(
+        &self,
+        environment: &impl Environment,
+        dimensions: ViewportDimensions,
+    ) -> Option<(Box<dyn RenderInterface>, Box<dyn RenderBackend>)> {
+        if self.with_renderer.is_some() {
+            environment.create_renderer(dimensions.width, dimensions.height)
+        } else {
+            None
+        }
     }
 }
 
