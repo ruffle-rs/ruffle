@@ -36,6 +36,14 @@ impl ShaderObject for ObjectWrapper {
     fn clone_box(&self) -> Box<dyn ShaderObject> {
         Box::new(self.clone())
     }
+
+    fn equals(&self, other: &dyn ShaderObject) -> bool {
+        if let Some(other_wrapper) = other.downcast_ref::<ObjectWrapper>() {
+            self.root.as_ptr() == other_wrapper.root.as_ptr()
+        } else {
+            false
+        }
+    }
 }
 
 impl Debug for ObjectWrapper {

@@ -505,9 +505,14 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.filters.clone()
     }
 
-    fn set_filters(&mut self, filters: Vec<Filter>) {
-        self.filters = filters;
-        self.recheck_cache_as_bitmap();
+    fn set_filters(&mut self, filters: Vec<Filter>) -> bool {
+        if filters != self.filters {
+            self.filters = filters;
+            self.recheck_cache_as_bitmap();
+            true
+        } else {
+            false
+        }
     }
 
     fn alpha(&self) -> f64 {
@@ -1477,8 +1482,9 @@ pub trait TDisplayObject<'gc>:
     }
 
     fn set_filters(&self, gc_context: &Mutation<'gc>, filters: Vec<Filter>) {
-        self.base_mut(gc_context).set_filters(filters);
-        self.invalidate_cached_bitmap(gc_context);
+        if self.base_mut(gc_context).set_filters(filters) {
+            self.invalidate_cached_bitmap(gc_context);
+        }
     }
 
     /// Returns the dot-syntax path to this display object, e.g. `_level0.foo.clip`

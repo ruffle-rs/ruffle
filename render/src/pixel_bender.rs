@@ -22,6 +22,12 @@ pub const OUT_COORD_NAME: &str = "_OutCoord";
 #[derive(Clone, Debug)]
 pub struct PixelBenderShaderHandle(pub Arc<dyn PixelBenderShaderImpl>);
 
+impl PartialEq for PixelBenderShaderHandle {
+    fn eq(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.0, &other.0)
+    }
+}
+
 pub trait PixelBenderShaderImpl: Downcast + Debug {
     fn parsed_shader(&self) -> &PixelBenderShader;
 }
@@ -249,7 +255,7 @@ pub enum Operation {
     },
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum PixelBenderShaderArgument<'a> {
     ImageInput {
         index: u8,
@@ -271,6 +277,18 @@ pub enum PixelBenderShaderArgument<'a> {
 pub enum ImageInputTexture<'a> {
     Bitmap(BitmapHandle),
     TextureRef(&'a dyn RawTexture),
+}
+
+impl PartialEq for ImageInputTexture<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Bitmap(self_bitmap), Self::Bitmap(other_bitmap)) => self_bitmap == other_bitmap,
+            (Self::TextureRef(self_texture), Self::TextureRef(other_texture)) => {
+                self_texture.equals(*other_texture)
+            }
+            _ => false,
+        }
+    }
 }
 
 impl From<BitmapHandle> for ImageInputTexture<'_> {
