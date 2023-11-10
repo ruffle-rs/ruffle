@@ -43,3 +43,4 @@ read back: Array
 Was array, length 0. Elements:
 
 Done with test!
+should be undefined: undefined

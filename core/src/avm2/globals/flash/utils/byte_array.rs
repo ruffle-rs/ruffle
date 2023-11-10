@@ -759,38 +759,31 @@ pub fn read_object<'gc>(
             .read_at(bytearray.bytes_available(), bytearray.position())
             .map_err(|e| e.to_avm(activation))?;
 
-        if matches!(bytearray.object_encoding(), ObjectEncoding::Amf3)
-            && bytes.first().map(|b| *b == 0).unwrap_or(false)
-        {
-            // If the first byte is zero, then FP always returns undefined (in AMF3)
-            return Ok(Value::Undefined);
-        } else {
-            let (bytes_left, value) = match bytearray.object_encoding() {
-                ObjectEncoding::Amf0 => {
-                    let mut decoder = AMF0Decoder::default();
-                    let (extra, amf) = decoder
-                        .parse_single_element(bytes)
-                        .map_err(|_| "Error: Invalid object")?;
-                    (
-                        extra.len(),
-                        crate::avm2::amf::deserialize_value(activation, &amf)?,
-                    )
-                }
-                ObjectEncoding::Amf3 => {
-                    let mut decoder = AMF3Decoder::default();
-                    let (extra, amf) = decoder
-                        .parse_single_element(bytes)
-                        .map_err(|_| "Error: Invalid object")?;
-                    (
-                        extra.len(),
-                        crate::avm2::amf::deserialize_value(activation, &amf)?,
-                    )
-                }
-            };
+        let (bytes_left, value) = match bytearray.object_encoding() {
+            ObjectEncoding::Amf0 => {
+                let mut decoder = AMF0Decoder::default();
+                let (extra, amf) = decoder
+                    .parse_single_element(bytes)
+                    .map_err(|_| "Error: Invalid object")?;
+                (
+                    extra.len(),
+                    crate::avm2::amf::deserialize_value(activation, &amf)?,
+                )
+            }
+            ObjectEncoding::Amf3 => {
+                let mut decoder = AMF3Decoder::default();
+                let (extra, amf) = decoder
+                    .parse_single_element(bytes)
+                    .map_err(|_| "Error: Invalid object")?;
+                (
+                    extra.len(),
+                    crate::avm2::amf::deserialize_value(activation, &amf)?,
+                )
+            }
+        };
 
-            bytearray.set_position(bytearray.len() - bytes_left);
-            return Ok(value);
-        }
+        bytearray.set_position(bytearray.len() - bytes_left);
+        return Ok(value);
     }
 
     Ok(Value::Undefined)
