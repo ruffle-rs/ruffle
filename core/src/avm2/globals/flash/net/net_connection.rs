@@ -12,6 +12,7 @@ use crate::{
 use flash_lso::packet::Header;
 use flash_lso::types::AMFVersion;
 use flash_lso::types::Value as AMFValue;
+use fnv::FnvHashMap;
 use ruffle_wstr::WStr;
 use std::rc::Rc;
 
@@ -255,8 +256,10 @@ pub fn call<'gc>(
         .and_then(|o| o.as_responder());
     let mut arguments = Vec::new();
 
+    let mut object_table = FnvHashMap::default();
     for arg in &args[2..] {
-        if let Some(value) = serialize_value(activation, *arg, AMFVersion::AMF0) {
+        if let Some(value) = serialize_value(activation, *arg, AMFVersion::AMF0, &mut object_table)
+        {
             arguments.push(Rc::new(value));
         }
     }
@@ -305,7 +308,14 @@ pub fn add_header<'gc>(
 
     let name = args.get_string(activation, 0)?;
     let must_understand = args.get_bool(1);
-    let value = serialize_value(activation, args[2], AMFVersion::AMF0).unwrap_or(AMFValue::Null);
+    // FIXME - do we re-use the same object reference table for all headers?
+    let value = serialize_value(
+        activation,
+        args[2],
+        AMFVersion::AMF0,
+        &mut Default::default(),
+    )
+    .unwrap_or(AMFValue::Null);
 
     if let Some(handle) = connection.handle() {
         activation.context.net_connections.set_header(

@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::{Endian, ObjectEncoding};
 use crate::avm2::error::make_error_2008;
@@ -797,8 +799,10 @@ pub fn write_object<'gc>(
             ObjectEncoding::Amf0 => AMFVersion::AMF0,
             ObjectEncoding::Amf3 => AMFVersion::AMF3,
         };
-        if let Some(amf) = crate::avm2::amf::serialize_value(activation, obj, amf_version) {
-            let element = Element::new("", amf);
+        if let Some(amf) =
+            crate::avm2::amf::serialize_value(activation, obj, amf_version, &mut Default::default())
+        {
+            let element = Element::new("", Rc::new(amf));
             let mut lso = flash_lso::types::Lso::new(vec![element], "", amf_version);
             let bytes = flash_lso::write::write_to_bytes(&mut lso)
                 .map_err(|_| "Failed to serialize object")?;
