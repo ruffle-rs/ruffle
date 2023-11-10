@@ -123,11 +123,21 @@ pub trait Texture: Downcast + Debug {
 }
 impl_downcast!(Texture);
 
-pub trait RawTexture: Downcast + Debug {}
+pub trait RawTexture: Downcast + Debug {
+    fn equals(&self, other: &dyn RawTexture) -> bool;
+}
 impl_downcast!(RawTexture);
 
 #[cfg(feature = "wgpu")]
-impl RawTexture for wgpu::Texture {}
+impl RawTexture for wgpu::Texture {
+    fn equals(&self, other: &dyn RawTexture) -> bool {
+        if let Some(other_texture) = other.downcast_ref::<wgpu::Texture>() {
+            std::ptr::eq(self, other_texture)
+        } else {
+            false
+        }
+    }
+}
 
 #[derive(Debug, Copy, Clone)]
 pub enum Context3DTextureFormat {

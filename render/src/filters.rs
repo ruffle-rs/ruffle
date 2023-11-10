@@ -6,7 +6,7 @@ use downcast_rs::{impl_downcast, Downcast};
 use std::fmt::Debug;
 use swf::{Color, Rectangle, Twips};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Filter {
     BevelFilter(swf::BevelFilter),
     BlurFilter(swf::BlurFilter),
@@ -35,8 +35,22 @@ pub struct ShaderFilter<'a> {
     pub shader_args: Vec<PixelBenderShaderArgument<'a>>,
 }
 
+impl<'gc> PartialEq for ShaderFilter<'gc> {
+    fn eq(&self, other: &Self) -> bool {
+        self.bottom_extension == other.bottom_extension
+            && self.left_extension == other.left_extension
+            && self.right_extension == other.right_extension
+            && self.top_extension == other.top_extension
+            && self.shader_object.equals(other.shader_object.as_ref())
+            && self.shader == other.shader
+            && self.shader_args == other.shader_args
+    }
+}
+
 pub trait ShaderObject: Downcast + Debug {
     fn clone_box(&self) -> Box<dyn ShaderObject>;
+
+    fn equals(&self, other: &dyn ShaderObject) -> bool;
 }
 impl_downcast!(ShaderObject);
 
@@ -132,7 +146,7 @@ pub enum DisplacementMapFilterMode {
     Wrap,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct DisplacementMapFilter {
     pub color: Color,
     pub component_x: u8,
