@@ -11,7 +11,7 @@ use flash_lso::types::{AMFVersion, Element, Lso};
 use flash_lso::types::{Attribute, ClassDefinition, Value as AmfValue};
 
 use super::property::Property;
-use super::{Namespace, QName};
+use super::{ClassObject, Namespace, QName};
 
 /// Serialize a Value to an AmfValue
 pub fn serialize_value<'gc>(
@@ -105,12 +105,11 @@ pub fn serialize_value<'gc>(
                                 .expect("Unexpected non-object value in object vector")
                         })
                         .collect();
-                    // Flash always uses an empty type name
-                    Some(AmfValue::VectorObject(
-                        obj_vec,
-                        "".to_string(),
-                        vec.is_fixed(),
-                    ))
+
+                    let val_type = val_type.unwrap_or(activation.avm2().classes().object);
+
+                    let name = class_to_alias(activation, val_type);
+                    Some(AmfValue::VectorObject(obj_vec, name, vec.is_fixed()))
                 }
             } else if let Some(date) = o.as_date_object() {
                 date.date_time()
@@ -125,26 +124,7 @@ pub fn serialize_value<'gc>(
                 Some(AmfValue::ByteArray(bytearray.bytes().to_vec()))
             } else {
                 let class = o.instance_of().expect("Missing ClassObject");
-                let qname = QName::new(activation.avm2().flash_net_internal, "_getAliasByClass");
-                let method = activation
-                    .avm2()
-                    .playerglobals_domain
-                    .get_defined_value(activation, qname)
-                    .expect("Failed to lookup flash.net._getAliasByClass");
-
-                let alias = method
-                    .as_object()
-                    .unwrap()
-                    .as_function_object()
-                    .unwrap()
-                    .call(Value::Undefined, &[class.into()], activation)
-                    .expect("Failed to call flash.net._getAliasByClass");
-
-                let name = if let Value::Null = alias {
-                    "".to_string()
-                } else {
-                    alias.coerce_to_string(activation).unwrap().to_string()
-                };
+                let name = class_to_alias(activation, class);
 
                 let mut attributes = EnumSet::empty();
                 if !class.inner_class_definition().read().is_sealed() {
@@ -176,6 +156,56 @@ pub fn serialize_value<'gc>(
                 ))
             }
         }
+    }
+}
+
+fn alias_to_class<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    alias: AvmString<'gc>,
+) -> Result<ClassObject<'gc>, Error<'gc>> {
+    let mut target_class = activation.avm2().classes().object;
+    let ns = Namespace::package(
+        "flash.net",
+        ApiVersion::AllVersions,
+        &mut activation.context.borrow_gc(),
+    );
+    let method = activation
+        .avm2()
+        .playerglobals_domain
+        .get_defined_value(activation, QName::new(ns, "getClassByAlias"))?;
+
+    let class = method
+        .as_object()
+        .unwrap()
+        .as_function_object()
+        .unwrap()
+        .call(Value::Undefined, &[alias.into()], activation)?;
+    if let Some(class_obj) = class.as_object().and_then(|o| o.as_class_object()) {
+        target_class = class_obj;
+    }
+    Ok(target_class)
+}
+
+fn class_to_alias<'gc>(activation: &mut Activation<'_, 'gc>, class: ClassObject<'gc>) -> String {
+    let qname = QName::new(activation.avm2().flash_net_internal, "_getAliasByClass");
+    let method = activation
+        .avm2()
+        .playerglobals_domain
+        .get_defined_value(activation, qname)
+        .expect("Failed to lookup flash.net._getAliasByClass");
+
+    let alias = method
+        .as_object()
+        .unwrap()
+        .as_function_object()
+        .unwrap()
+        .call(Value::Undefined, &[class.into()], activation)
+        .expect("Failed to call flash.net._getAliasByClass");
+
+    if let Value::Null = alias {
+        "".to_string()
+    } else {
+        alias.coerce_to_string(activation).unwrap().to_string()
     }
 }
 
@@ -269,38 +299,12 @@ pub fn deserialize_value<'gc>(
             array.into()
         }
         AmfValue::Object(elements, class) => {
-            let mut target_class = activation.avm2().classes().object;
-            if let Some(class) = class {
-                if !class.name.is_empty() {
-                    let ns = Namespace::package(
-                        "flash.net",
-                        ApiVersion::AllVersions,
-                        &mut activation.context.borrow_gc(),
-                    );
-                    let method = activation
-                        .avm2()
-                        .playerglobals_domain
-                        .get_defined_value(activation, QName::new(ns, "getClassByAlias"))?;
-
-                    let class = method
-                        .as_object()
-                        .unwrap()
-                        .as_function_object()
-                        .unwrap()
-                        .call(
-                            Value::Undefined,
-                            &[
-                                AvmString::new_utf8(activation.context.gc_context, &class.name)
-                                    .into(),
-                            ],
-                            activation,
-                        )?;
-                    if let Some(class_obj) = class.as_object().and_then(|o| o.as_class_object()) {
-                        target_class = class_obj;
-                    }
-                }
-            }
-
+            let target_class = if let Some(class) = class {
+                let name = AvmString::new_utf8(activation.context.gc_context, &class.name);
+                alias_to_class(activation, name)?
+            } else {
+                activation.avm2().classes().object
+            };
             let obj = target_class.construct(activation, &[])?;
 
             for entry in elements {
@@ -356,16 +360,14 @@ pub fn deserialize_value<'gc>(
             VectorObject::from_vector(storage, activation)?.into()
         }
         AmfValue::VectorObject(vec, ty_name, is_fixed) => {
-            // Flash always serializes Vector.<SomeType> with an empty type name
-            if !ty_name.is_empty() {
-                tracing::error!("Tried to deserialize Vector with type name: {}", ty_name);
-            }
+            let name = AvmString::new_utf8(activation.context.gc_context, ty_name);
+            let class = alias_to_class(activation, name)?;
             let storage = VectorStorage::from_values(
                 vec.iter()
                     .map(|v| deserialize_value(activation, v))
                     .collect::<Result<Vec<_>, _>>()?,
                 *is_fixed,
-                Some(activation.avm2().classes().object),
+                Some(class),
             );
             VectorObject::from_vector(storage, activation)?.into()
         }
