@@ -9,7 +9,7 @@
         "message": "SWFのダウンロードをコンテキストメニューに表示する"
     },
     "settings_autostart": {
-        "message": "スプラッシュ画面なしで自動再生(クリックでミュートを解除)"
+        "message": "Flashを自動再生(クリックでミュートを解除)"
     },
     "settings_log_level": {
         "message": "ログレベル"
@@ -66,13 +66,13 @@
         "message": "Ruffleは現在のページと互換性がないため、読み込まれません。"
     },
     "status_result_disabled": {
-        "message": "Ruffleは無効化されているため、読み込まれません。"
+        "message": "Ruffleは無効化されています。"
     },
     "status_result_error": {
         "message": "現在のタブでRuffleのインスタンスを照会する際にエラーが発生しました。"
     },
     "status_result_protected": {
-        "message": "Ruffleは保護されたブラウザのページのため、読み込まれません。"
+        "message": "Ruffleはブラウザの保護されたページのため、読み込まれません。"
     },
     "action_reload": {
         "message": "タブをリロードして変更を適用する"
@@ -87,7 +87,7 @@
         "message": "設定"
     },
     "description": {
-        "message": "Flashを今までの場所に戻します。"
+        "message": "Flashを元の場所に戻します。"
     },
     "save_settings": {
         "message": "設定を保存"
