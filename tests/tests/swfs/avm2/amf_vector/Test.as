@@ -24,6 +24,9 @@
 			roundtrip(vec);
 			
 			roundtrip(Vector.<String>(["First string", "Second string"]));
+			
+			roundtrip(Vector.<NoAliasClass>([new NoAliasClass("First"), new NoAliasClass("Second")]));
+			roundtrip(Vector.<AliasClass>([new AliasClass("Third"), new AliasClass("Fourth")]));
 		}
 	
 		private function fixed(vec: Object): Object {
@@ -48,3 +51,27 @@
 		}
 	}
 }
+import flash.net.registerClassAlias;
+
+dynamic class NoAliasClass {
+	public var myField: String;
+	
+	public function NoAliasClass(myField: String = null) {
+		this.myField = myField;
+		this.dynamicField = "Dynamic field: " + myField;
+	}
+}
+
+class AliasClass {
+	public var otherField:String;
+	
+	public function AliasClass(otherField: String = null) {
+		this.otherField = otherField;
+	}
+	
+	public function toString() {
+		trace("AliasClass(otherField=" + this.otherField + ")");
+	}
+}
+
+flash.net.registerClassAlias("MyAlias", AliasClass);
