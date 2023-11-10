@@ -422,16 +422,15 @@ pub fn deserialize_value<'gc>(
             let storage = VectorStorage::from_values(
                 vec.iter()
                     .map(|v| {
-                        deserialize_value(activation, v)
-                            .map(|value| {
-                                // There's no Vector.<void>: convert any
-                                // Undefined items in the Vector to Null.
-                                if matches!(value, Value::Undefined) {
-                                    Value::Null
-                                } else {
-                                    value
-                                }
-                            })
+                        deserialize_value(activation, v).map(|value| {
+                            // There's no Vector.<void>: convert any
+                            // Undefined items in the Vector to Null.
+                            if matches!(value, Value::Undefined) {
+                                Value::Null
+                            } else {
+                                value
+                            }
+                        })
                     })
                     .collect::<Result<Vec<_>, _>>()?,
                 *is_fixed,
