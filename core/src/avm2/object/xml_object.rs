@@ -590,6 +590,41 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         Ok(())
     }
 
+    fn get_next_enumerant(
+        self,
+        last_index: u32,
+        _activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Option<u32>, Error<'gc>> {
+        Ok(Some(if last_index == 0 { 1 } else { 0 }))
+    }
+
+    fn get_enumerant_value(
+        self,
+        index: u32,
+        _activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        if index == 1 {
+            Ok(self.into())
+        } else {
+            Ok(Value::Undefined)
+        }
+    }
+
+    fn get_enumerant_name(
+        self,
+        index: u32,
+        _activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        if index == 1 {
+            Ok(index
+                .checked_sub(1)
+                .map(|index| index.into())
+                .unwrap_or(Value::Undefined))
+        } else {
+            Ok(Value::Undefined)
+        }
+    }
+
     fn delete_property_local(
         self,
         activation: &mut Activation<'_, 'gc>,
