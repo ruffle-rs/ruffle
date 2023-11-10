@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use crate::avm2::api_version::ApiVersion;
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::object::{ByteArrayObject, TObject, VectorObject};
@@ -5,19 +7,24 @@ use crate::avm2::vector::VectorStorage;
 use crate::avm2::ArrayObject;
 use crate::avm2::ArrayStorage;
 use crate::avm2::{Activation, Error, Object, Value};
+use crate::avm2_stub_method;
 use crate::string::AvmString;
 use enumset::EnumSet;
 use flash_lso::types::{AMFVersion, Element, Lso};
 use flash_lso::types::{Attribute, ClassDefinition, Value as AmfValue};
+use fnv::FnvHashMap;
 
 use super::property::Property;
 use super::{ClassObject, Namespace, QName};
+
+pub type ObjectTable<'gc> = FnvHashMap<Object<'gc>, Rc<AmfValue>>;
 
 /// Serialize a Value to an AmfValue
 pub fn serialize_value<'gc>(
     activation: &mut Activation<'_, 'gc>,
     elem: Value<'gc>,
     amf_version: AMFVersion,
+    object_table: &mut ObjectTable<'gc>,
 ) -> Option<AmfValue> {
     match elem {
         Value::Undefined => Some(AmfValue::Undefined),
@@ -47,7 +54,8 @@ pub fn serialize_value<'gc>(
             } else if o.as_array_storage().is_some() {
                 let mut values = Vec::new();
                 // Don't serialize properties from the vtable (we don't want a 'length' field)
-                recursive_serialize(activation, o, &mut values, None, amf_version).unwrap();
+                recursive_serialize(activation, o, &mut values, None, amf_version, object_table)
+                    .unwrap();
 
                 let mut dense = vec![];
                 let mut sparse = vec![];
@@ -101,7 +109,7 @@ pub fn serialize_value<'gc>(
                     let obj_vec: Vec<_> = vec
                         .iter()
                         .map(|v| {
-                            serialize_value(activation, v, amf_version)
+                            serialize_value(activation, v, amf_version, object_table)
                                 .expect("Unexpected non-object value in object vector")
                         })
                         .collect();
@@ -139,6 +147,7 @@ pub fn serialize_value<'gc>(
                     &mut object_body,
                     Some(&mut static_properties),
                     amf_version,
+                    object_table,
                 )
                 .unwrap();
                 Some(AmfValue::Object(
@@ -216,6 +225,7 @@ pub fn recursive_serialize<'gc>(
     elements: &mut Vec<Element>,
     static_properties: Option<&mut Vec<String>>,
     amf_version: AMFVersion,
+    object_table: &mut ObjectTable<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(static_properties) = static_properties {
         if let Some(vtable) = obj.vtable() {
@@ -230,9 +240,15 @@ pub fn recursive_serialize<'gc>(
                     }
                 }
                 let value = obj.get_public_property(name, activation)?;
-                if let Some(value) = serialize_value(activation, value, amf_version) {
-                    let name = name.to_utf8_lossy().to_string();
-                    elements.push(Element::new(name.clone(), value));
+                let name = name.to_utf8_lossy().to_string();
+                if let Some(elem) = get_or_create_element(
+                    activation,
+                    name.clone(),
+                    value,
+                    object_table,
+                    amf_version,
+                ) {
+                    elements.push(elem);
                     static_properties.push(name);
                 }
             }
@@ -246,12 +262,53 @@ pub fn recursive_serialize<'gc>(
             .coerce_to_string(activation)?;
         let value = obj.get_public_property(name, activation)?;
 
-        if let Some(value) = serialize_value(activation, value, amf_version) {
-            elements.push(Element::new(name.to_utf8_lossy(), value));
+        let name = name.to_utf8_lossy().to_string();
+        if let Some(elem) =
+            get_or_create_element(activation, name.clone(), value, object_table, amf_version)
+        {
+            elements.push(elem);
         }
         last_index = obj.get_next_enumerant(index, activation)?;
     }
     Ok(())
+}
+
+fn get_or_create_element<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    name: String,
+    val: Value<'gc>,
+    object_table: &mut ObjectTable<'gc>,
+    amf_version: AMFVersion,
+) -> Option<Element> {
+    if let Some(obj) = val.as_object() {
+        let rc_val = match object_table.get(&obj) {
+            Some(rc_val) => {
+                // Even though we'll clone the same 'Rc<AmfValue>' for each occurrence
+                // of 'Object', flash_lso doesn't serialize this correctly yet.
+                avm2_stub_method!(
+                    activation,
+                    "flash.utils.ByteArray",
+                    "writeObject",
+                    "with same Object used multiple times"
+                );
+                Some(rc_val.clone())
+            }
+            None => {
+                if let Some(value) = serialize_value(activation, val, amf_version, object_table) {
+                    let rc_val = Rc::new(value);
+                    // We cannot use Entry, since we need to pass in 'object_table' to 'serialize_value'
+                    object_table.insert(obj, rc_val.clone());
+                    Some(rc_val)
+                } else {
+                    None
+                }
+            }
+        };
+        return rc_val.map(|val| Element::new(name, val));
+    } else if let Some(value) = serialize_value(activation, val, amf_version, object_table) {
+        return Some(Element::new(name, Rc::new(value)));
+    }
+    None
 }
 
 /// Deserialize a AmfValue to a Value
