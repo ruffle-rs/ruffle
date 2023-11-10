@@ -759,8 +759,8 @@ pub fn read_object<'gc>(
             .read_at(bytearray.bytes_available(), bytearray.position())
             .map_err(|e| e.to_avm(activation))?;
 
-        if bytes.get(0).map(|b| *b == 0).unwrap_or(false) {
-            // If the first byte is zero, then FP always returns undefined
+        if matches!(bytearray.object_encoding(), ObjectEncoding::Amf3) && bytes.first().map(|b| *b == 0).unwrap_or(false) {
+            // If the first byte is zero, then FP always returns undefined (in AMF3)
             return Ok(Value::Undefined);
         } else {
             let (bytes_left, value) = match bytearray.object_encoding() {
@@ -825,9 +825,18 @@ pub fn write_object<'gc>(
                 )
                 .map_err(|e| e.to_avm(activation))?;
         } else {
-            bytearray
-                .write_bytes(&[0])
-                .map_err(|e| e.to_avm(activation))?;
+            match bytearray.object_encoding() {
+                ObjectEncoding::Amf0 => {
+                    bytearray
+                        .write_bytes(&[6])
+                        .map_err(|e| e.to_avm(activation))?;
+                }
+                ObjectEncoding::Amf3 => {
+                    bytearray
+                        .write_bytes(&[0])
+                        .map_err(|e| e.to_avm(activation))?;
+                }
+            };
         }
     }
 
