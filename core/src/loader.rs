@@ -2274,8 +2274,6 @@ impl<'gc> Loader<'gc> {
                                 "onSelect".into(),
                             )?;
                         } else {
-                            println!("File dialog res = cancel");
-
                             as_broadcaster::broadcast_internal(
                                 &mut activation,
                                 target_object,
