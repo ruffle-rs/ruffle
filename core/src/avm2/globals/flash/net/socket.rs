@@ -646,24 +646,28 @@ pub fn write_object<'gc>(
             ObjectEncoding::Amf0 => AMFVersion::AMF0,
             ObjectEncoding::Amf3 => AMFVersion::AMF3,
         };
-        if let Some(amf) =
-            crate::avm2::amf::serialize_value(activation, obj, amf_version, &mut Default::default())
-        {
-            let element = Element::new("", Rc::new(amf));
-            let mut lso = flash_lso::types::Lso::new(vec![element], "", amf_version);
-            let bytes = flash_lso::write::write_to_bytes(&mut lso)
-                .map_err(|_| "Failed to serialize object")?;
-            // This is kind of hacky: We need to strip out the header and any padding so that we only write
-            // the value. In the future, there should be a method to do this in the flash_lso crate.
-            let element_padding = match amf_version {
-                AMFVersion::AMF0 => 8,
-                AMFVersion::AMF3 => 7,
-            };
-            socket.write_bytes(
-                &bytes[flash_lso::write::header_length(&lso.header) + element_padding
-                    ..bytes.len() - 1],
-            );
-        }
+
+        let amf = crate::avm2::amf::serialize_value(
+            activation,
+            obj,
+            amf_version,
+            &mut Default::default(),
+        )
+        .unwrap_or(flash_lso::types::Value::Undefined);
+
+        let element = Element::new("", Rc::new(amf));
+        let mut lso = flash_lso::types::Lso::new(vec![element], "", amf_version);
+        let bytes =
+            flash_lso::write::write_to_bytes(&mut lso).map_err(|_| "Failed to serialize object")?;
+        // This is kind of hacky: We need to strip out the header and any padding so that we only write
+        // the value. In the future, there should be a method to do this in the flash_lso crate.
+        let element_padding = match amf_version {
+            AMFVersion::AMF0 => 8,
+            AMFVersion::AMF3 => 7,
+        };
+        socket.write_bytes(
+            &bytes[flash_lso::write::header_length(&lso.header) + element_padding..bytes.len() - 1],
+        );
     }
 
     Ok(Value::Undefined)
