@@ -789,12 +789,6 @@ impl<'gc> EditText<'gc> {
             !edit_text.flags.contains(EditTextFlag::USE_OUTLINES),
         );
 
-        if edit_text.is_tlf {
-            // Resize the TLF textfield to match the height of the text.
-            // FIXME: This should probably be done in text_block::create_text_line.
-            edit_text.bounds.set_height(intrinsic_bounds.extent_y());
-        }
-
         edit_text.line_data = get_line_data(&new_layout);
         edit_text.layout = new_layout;
         edit_text.intrinsic_bounds = intrinsic_bounds;

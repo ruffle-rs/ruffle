@@ -6,7 +6,7 @@ use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Multiname;
 use crate::avm2_stub_method;
-use crate::display_object::EditText;
+use crate::display_object::{EditText, TDisplayObject};
 use crate::html::TextFormat;
 use crate::string::WStr;
 
@@ -150,6 +150,10 @@ fn apply_format<'gc>(
     }
 
     display_object.set_word_wrap(true, &mut activation.context);
+
+    let measured_text = display_object.measure_text(&mut activation.context);
+
+    display_object.set_height(&mut activation.context, measured_text.1.to_pixels());
 
     Ok(())
 }
