@@ -284,11 +284,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         } else if let Some(result) = outer_scope.resolve(name, self)? {
             Ok(Some(result))
         } else if let Some(global) = self.global_scope() {
-            let prop = global.base().get_property_local(name, self)?;
-            if prop == Value::Undefined {
+            if !global.base().has_own_property(name) {
                 return Ok(None);
             }
-            Ok(Some(prop))
+            return Ok(Some(global.base().get_property_local(name, self)?));
         } else {
             Ok(None)
         }
