@@ -801,8 +801,13 @@ pub fn write_object<'gc>(
             ObjectEncoding::Amf3 => AMFVersion::AMF3,
         };
 
-        let amf = crate::avm2::amf::serialize_value(activation, obj, amf_version, &mut Default::default())
-            .unwrap_or(flash_lso::types::Value::Undefined);
+        let amf = crate::avm2::amf::serialize_value(
+            activation,
+            obj,
+            amf_version,
+            &mut Default::default(),
+        )
+        .unwrap_or(flash_lso::types::Value::Undefined);
 
         let element = Element::new("", Rc::new(amf));
         let mut lso = flash_lso::types::Lso::new(vec![element], "", amf_version);
