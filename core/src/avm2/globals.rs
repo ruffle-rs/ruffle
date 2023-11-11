@@ -169,6 +169,7 @@ pub struct SystemClasses<'gc> {
     pub contextmenuevent: ClassObject<'gc>,
     pub font: ClassObject<'gc>,
     pub textline: ClassObject<'gc>,
+    pub sampledataevent: ClassObject<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -296,6 +297,7 @@ impl<'gc> SystemClasses<'gc> {
             contextmenuevent: object,
             font: object,
             textline: object,
+            sampledataevent: object,
         }
     }
 }
@@ -824,6 +826,7 @@ fn load_playerglobal<'gc>(
             ("flash.filters", "GradientBevelFilter", gradientbevelfilter),
             ("flash.filters", "GradientGlowFilter", gradientglowfilter),
             ("flash.filters", "ShaderFilter", shaderfilter),
+            ("flash.events", "SampleDataEvent", sampledataevent),
         ]
     );
 
