@@ -13,6 +13,7 @@ use ruffle_test_framework::test::Test;
 use ruffle_test_framework::vfs::{PhysicalFS, VfsPath};
 use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
 use std::path::Path;
+use walkdir::DirEntry;
 
 mod environment;
 mod external_interface;
@@ -56,36 +57,7 @@ fn main() {
                 .to_string_lossy()
                 .replace('\\', "/");
             if is_candidate(&args, &name) {
-                let root = VfsPath::new(PhysicalFS::new(file.path().parent().unwrap() ));
-                let test = Test::from_options(
-                        TestOptions::read(&root.join("test.toml").unwrap()).context("Couldn't load test options").unwrap(),
-                        root,
-                        name.clone(),
-                    )
-                    .with_context(|| format!("Couldn't create test {name}"))
-                    .unwrap();
-                let ignore = !test.should_run(!args.list, &NativeEnvironment);
-                let mut trial = Trial::test(test.name.to_string(), move || {
-                    let test = AssertUnwindSafe(test);
-                    let unwind_result = catch_unwind(|| test.run(|_| Ok(()), |_| Ok(()), &NativeEnvironment));
-                    if test.options.known_failure {
-                        match unwind_result {
-                            Ok(Ok(())) => Err(
-                                format!("{} was known to be failing, but now passes successfully. Please update it and remove `known_failure = true`!", test.name).into()
-                            ),
-                            Ok(Err(_)) | Err(_) => Ok(()),
-                        }
-                    } else {
-                        match unwind_result {
-                            Ok(r) => Ok(r?),
-                            Err(e) => resume_unwind(e),
-                        }
-                    }
-                });
-                if ignore {
-                    trial = trial.with_ignored_flag(true);
-                }
-                Some(trial)
+                Some(run_test(&args, file, name))
             } else {
                 None
             }
@@ -112,4 +84,41 @@ fn main() {
     tests.sort_unstable_by(|a, b| a.name().cmp(b.name()));
 
     libtest_mimic::run(&args, tests).exit()
+}
+
+fn run_test(args: &Arguments, file: DirEntry, name: String) -> Trial {
+    let root = VfsPath::new(PhysicalFS::new(file.path().parent().unwrap()));
+    let test = Test::from_options(
+        TestOptions::read(&root.join("test.toml").unwrap())
+            .context("Couldn't load test options")
+            .unwrap(),
+        root,
+        name.clone(),
+    )
+    .with_context(|| format!("Couldn't create test {name}"))
+    .unwrap();
+
+    let ignore = !test.should_run(!args.list, &NativeEnvironment);
+
+    let mut trial = Trial::test(test.name.to_string(), move || {
+        let test = AssertUnwindSafe(test);
+        let unwind_result = catch_unwind(|| test.run(|_| Ok(()), |_| Ok(()), &NativeEnvironment));
+        if test.options.known_failure {
+            match unwind_result {
+                Ok(Ok(())) => Err(
+                    format!("{} was known to be failing, but now passes successfully. Please update it and remove `known_failure = true`!", test.name).into()
+                ),
+                Ok(Err(_)) | Err(_) => Ok(()),
+            }
+        } else {
+            match unwind_result {
+                Ok(r) => Ok(r?),
+                Err(e) => resume_unwind(e),
+            }
+        }
+    });
+    if ignore {
+        trial = trial.with_ignored_flag(true);
+    }
+    trial
 }
