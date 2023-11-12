@@ -10,6 +10,8 @@ package flash.accessibility {
             this.stub = false;
         }
 
+        public function accDoDefaultAction(childID:uint):void { }
+
         public function accLocation(childID:uint):* {
             return null;
         }
@@ -29,7 +31,7 @@ package flash.accessibility {
         }
 
         public function get_accRole(childID:uint):uint {
-            throw new Error("Error #2143, AccessibilityImplementation.get_accRole() must be overridden from its default.", 2143);
+            throw new Error("Error #2143: AccessibilityImplementation.get_accRole() must be overridden from its default.", 2143);
         }
 
         public function get_accSelection():Array {
@@ -37,7 +39,7 @@ package flash.accessibility {
         }
 
         public function get_accState(childID:uint):uint {
-            throw new Error("Error #2144, AccessibilityImplementation.get_accState() must be overridden from its default.", 2144);
+            throw new Error("Error #2144: AccessibilityImplementation.get_accState() must be overridden from its default.", 2144);
         }
 
         public function get_accValue(childID:uint):String {
