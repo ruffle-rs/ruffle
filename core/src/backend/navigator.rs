@@ -533,8 +533,7 @@ pub fn resolve_url_with_relative_base_path<NavigatorType: NavigatorBackend>(
     }
 }
 
-/// This is the fetch implementation for the TestNavigatorBackend and the
-/// NullNavigatorBackend.
+/// This is the fetch implementation for NullNavigatorBackend.
 ///
 /// It tries to fetch the given URL as a local path and read and return
 /// its content. It returns an ErrorResponse if the URL is not valid, not

@@ -4,8 +4,8 @@ use ruffle_test_framework::environment::Environment;
 use ruffle_test_framework::options::TestOptions;
 use ruffle_test_framework::set_logger;
 use ruffle_test_framework::test::Test;
+use ruffle_test_framework::vfs::{PhysicalFS, VfsPath};
 use std::collections::BTreeMap;
-use std::path::Path;
 
 pub fn external_interface_avm1(
     environment: &impl Environment,
@@ -16,7 +16,7 @@ pub fn external_interface_avm1(
             num_frames: Some(1),
             ..Default::default()
         },
-        Path::new("tests/swfs/avm1/external_interface/"),
+        VfsPath::new(PhysicalFS::new("tests/swfs/avm1/external_interface/")),
         "external_interface_avm1".to_string(),
     )?
     .run(
@@ -75,7 +75,7 @@ pub fn external_interface_avm2(
             num_frames: Some(1),
             ..Default::default()
         },
-        Path::new("tests/swfs/avm2/external_interface/"),
+        VfsPath::new(PhysicalFS::new("tests/swfs/avm2/external_interface/")),
         "external_interface_avm2".to_string(),
     )?
     .run(

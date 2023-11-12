@@ -3,7 +3,7 @@ use ruffle_test_framework::environment::Environment;
 use ruffle_test_framework::options::TestOptions;
 use ruffle_test_framework::set_logger;
 use ruffle_test_framework::test::Test;
-use std::path::Path;
+use ruffle_test_framework::vfs::{PhysicalFS, VfsPath};
 
 pub fn shared_object_avm1(environment: &impl Environment) -> Result<(), libtest_mimic::Failed> {
     set_logger();
@@ -19,7 +19,7 @@ pub fn shared_object_avm1(environment: &impl Environment) -> Result<(), libtest_
             output_path: "output1.txt".into(),
             ..Default::default()
         },
-        Path::new("tests/swfs/avm1/shared_object/"),
+        VfsPath::new(PhysicalFS::new("tests/swfs/avm1/shared_object/")),
         "shared_object_avm1".to_string(),
     )?
     .run(
@@ -49,7 +49,7 @@ pub fn shared_object_avm1(environment: &impl Environment) -> Result<(), libtest_
             output_path: "output2.txt".into(),
             ..Default::default()
         },
-        Path::new("tests/swfs/avm1/shared_object/"),
+        VfsPath::new(PhysicalFS::new("tests/swfs/avm1/shared_object/")),
         "shared_object_avm1".to_string(),
     )?
     .run(
@@ -82,7 +82,7 @@ pub fn shared_object_self_ref_avm1(
             output_path: "output1.txt".into(),
             ..Default::default()
         },
-        Path::new("tests/swfs/avm1/shared_object_self_ref/"),
+        VfsPath::new(PhysicalFS::new("tests/swfs/avm1/shared_object_self_ref/")),
         "shared_object_self_ref_avm1".to_string(),
     )?
     .run(
@@ -112,7 +112,7 @@ pub fn shared_object_self_ref_avm1(
             output_path: "output2.txt".into(),
             ..Default::default()
         },
-        Path::new("tests/swfs/avm1/shared_object_self_ref/"),
+        VfsPath::new(PhysicalFS::new("tests/swfs/avm1/shared_object_self_ref/")),
         "shared_object_self_ref_avm1".to_string(),
     )?
     .run(
@@ -143,7 +143,7 @@ pub fn shared_object_avm2(environment: &impl Environment) -> Result<(), libtest_
             output_path: "output1.txt".into(),
             ..Default::default()
         },
-        Path::new("tests/swfs/avm2/shared_object/"),
+        VfsPath::new(PhysicalFS::new("tests/swfs/avm2/shared_object/")),
         "shared_object_avm2".to_string(),
     )?
     .run(
@@ -173,7 +173,7 @@ pub fn shared_object_avm2(environment: &impl Environment) -> Result<(), libtest_
             output_path: "output2.txt".into(),
             ..Default::default()
         },
-        Path::new("tests/swfs/avm2/shared_object/"),
+        VfsPath::new(PhysicalFS::new("tests/swfs/avm2/shared_object/")),
         "shared_object_avm2".to_string(),
     )?
     .run(

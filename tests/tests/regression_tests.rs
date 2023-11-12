@@ -8,8 +8,10 @@ use crate::shared_object::{shared_object_avm1, shared_object_avm2, shared_object
 use anyhow::Context;
 use anyhow::Result;
 use libtest_mimic::{Arguments, Trial};
+use ruffle_test_framework::options::TestOptions;
 use ruffle_test_framework::test::Test;
-use std::panic::{catch_unwind, resume_unwind};
+use ruffle_test_framework::vfs::{PhysicalFS, VfsPath};
+use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
 use std::path::Path;
 
 mod environment;
@@ -54,11 +56,17 @@ fn main() {
                 .to_string_lossy()
                 .replace('\\', "/");
             if is_candidate(&args, &name) {
-                let test = Test::from_options_file(file.path(), name.clone())
+                let root = VfsPath::new(PhysicalFS::new(file.path().parent().unwrap() ));
+                let test = Test::from_options(
+                        TestOptions::read(&root.join("test.toml").unwrap()).context("Couldn't load test options").unwrap(),
+                        root,
+                        name.clone(),
+                    )
                     .with_context(|| format!("Couldn't create test {name}"))
                     .unwrap();
                 let ignore = !test.should_run(!args.list, &NativeEnvironment);
                 let mut trial = Trial::test(test.name.to_string(), move || {
+                    let test = AssertUnwindSafe(test);
                     let unwind_result = catch_unwind(|| test.run(|_| Ok(()), |_| Ok(()), &NativeEnvironment));
                     if test.options.known_failure {
                         match unwind_result {
