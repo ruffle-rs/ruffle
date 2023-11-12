@@ -334,10 +334,9 @@ impl RuffleGui {
             .open(&mut self.is_about_visible)
             .show(egui_ctx, |ui| {
                 ui.vertical_centered(|ui| {
-                    ui.label(
-                        RichText::new("Ruffle")
-                            .color(Color32::from_rgb(0xFF, 0xAD, 0x33))
-                            .size(32.0),
+                    ui.add(
+                        Image::new(egui::include_image!("../assets/about_logo.png"))
+                            .max_width(350.0),
                     );
                     Grid::new("about_ruffle_version_info")
                         .striped(true)

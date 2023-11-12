@@ -107,6 +107,9 @@ impl GuiController {
         let gui = RuffleGui::new(event_loop, opt.movie_url.clone(), PlayerOptions::from(opt));
         let system_fonts = load_system_fonts(gui.locale.to_owned()).unwrap_or_default();
         egui_ctx.set_fonts(system_fonts);
+
+        egui_extras::install_image_loaders(&egui_ctx);
+
         Ok(Self {
             descriptors: Arc::new(descriptors),
             egui_ctx,
