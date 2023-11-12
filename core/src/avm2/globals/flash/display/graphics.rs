@@ -912,6 +912,15 @@ pub fn draw_triangles<'gc>(
 
             let uvt_data = args.try_get_object(activation, 2);
 
+            if uvt_data.is_some() {
+                avm2_stub_method!(
+                    activation,
+                    "flash.display.Graphics",
+                    "drawTriangles",
+                    "with uvt data"
+                );
+            }
+
             let culling = {
                 let culling = args.get_string(activation, 3)?;
                 culling_to_triangle_culling(activation, culling)?
@@ -1395,6 +1404,13 @@ fn handle_graphics_triangle_path<'gc>(
     let _uvt_data = obj
         .get_public_property("uvtData", activation)?
         .coerce_to_object(activation)?;
+
+    avm2_stub_method!(
+        activation,
+        "flash.display.Graphics",
+        "drawGraphicsData",
+        "with uvt data"
+    );
 
     if let Some(vertices) = vertices.as_vector_storage() {
         if let Some(indices) = indices.as_vector_storage() {
