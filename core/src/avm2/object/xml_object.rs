@@ -616,10 +616,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         _activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         if index == 1 {
-            Ok(index
-                .checked_sub(1)
-                .map(|index| index.into())
-                .unwrap_or(Value::Undefined))
+            Ok(0.into())
         } else {
             Ok(Value::Undefined)
         }
