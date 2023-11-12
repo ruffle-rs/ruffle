@@ -105,7 +105,7 @@ pub struct UpdateContext<'a, 'gc> {
     /// The audio backend, used by display objects and AVM to play audio.
     pub audio: &'a mut dyn AudioBackend,
 
-    /// The audio manager, manging all actively playing sounds.
+    /// The audio manager, managing all actively playing sounds.
     pub audio_manager: &'a mut AudioManager<'gc>,
 
     /// The navigator backend, used by the AVM to make HTTP requests and visit webpages.
@@ -128,7 +128,7 @@ pub struct UpdateContext<'a, 'gc> {
     /// The video backend, used for video decoding
     pub video: &'a mut dyn VideoBackend,
 
-    /// The RNG, used by the AVM `RandomNumber` opcode,  `Math.random(),` and `random()`.
+    /// The RNG, used by the AVM `RandomNumber` opcode, `Math.random(),` and `random()`.
     pub rng: &'a mut SmallRng,
 
     /// The current player's stage (including all loaded levels)
