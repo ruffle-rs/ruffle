@@ -1,4 +1,4 @@
 ruffle.getBytesTotal(): 2685
 ruffle.getBytesLoaded(): 2685
 ruffle.getSWFVersion(): -1
-ruffle._url (unescaped & split): movieclip_methods_with_loaded_image/target.png
+ruffle._url (unescaped & split): target.png

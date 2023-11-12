@@ -2,30 +2,32 @@ use crate::environment::Environment;
 use crate::options::TestOptions;
 use crate::runner::run_swf;
 use crate::set_logger;
-use anyhow::{anyhow, Context, Result};
+use crate::util::read_bytes;
+use anyhow::{anyhow, Result};
 use pretty_assertions::Comparison;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::Player;
 use ruffle_input_format::InputInjector;
 use ruffle_socket_format::SocketEvent;
-use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
+use vfs::VfsPath;
 
 pub struct Test {
     pub options: TestOptions,
-    pub swf_path: PathBuf,
-    pub input_path: PathBuf,
-    pub socket_path: PathBuf,
-    pub output_path: PathBuf,
+    pub swf_path: VfsPath,
+    pub input_path: VfsPath,
+    pub socket_path: VfsPath,
+    pub output_path: VfsPath,
+    pub root_path: VfsPath,
     pub name: String,
 }
 
 impl Test {
-    pub fn from_options(options: TestOptions, test_dir: &Path, name: String) -> Result<Self> {
-        let swf_path = test_dir.join("test.swf");
-        let input_path = test_dir.join("input.json");
-        let socket_path = test_dir.join("socket.json");
-        let output_path = options.output_path(test_dir);
+    pub fn from_options(options: TestOptions, test_dir: VfsPath, name: String) -> Result<Self> {
+        let swf_path = test_dir.join("test.swf")?;
+        let input_path = test_dir.join("input.json")?;
+        let socket_path = test_dir.join("socket.json")?;
+        let output_path = options.output_path(&test_dir)?;
 
         Ok(Self {
             options,
@@ -33,18 +35,9 @@ impl Test {
             input_path,
             socket_path,
             output_path,
+            root_path: test_dir,
             name,
         })
-    }
-
-    pub fn from_options_file(options_path: &Path, name: String) -> Result<Self> {
-        Self::from_options(
-            TestOptions::read(options_path).context("Couldn't load test options")?,
-            options_path
-                .parent()
-                .context("Couldn't get test directory")?,
-            name,
-        )
     }
 
     pub fn run(
@@ -54,8 +47,10 @@ impl Test {
         environment: &impl Environment,
     ) -> Result<()> {
         set_logger();
-        let movie =
-            SwfMovie::from_path(&self.swf_path, None).map_err(|e| anyhow!(e.to_string()))?;
+
+        let data = read_bytes(&self.swf_path)?;
+        let movie = SwfMovie::from_data(&data, format!("file:///{}", self.swf_path.as_str()), None)
+            .map_err(|e| anyhow!(e.to_string()))?;
         let viewport_dimensions = self.options.player_options.viewport_dimensions(&movie);
         let renderers = self
             .options
@@ -94,16 +89,18 @@ impl Test {
     }
 
     fn socket_events(&self) -> Result<Option<Vec<SocketEvent>>> {
-        Ok(if self.socket_path.is_file() {
-            Some(SocketEvent::from_file(&self.socket_path)?)
+        Ok(if self.socket_path.is_file()? {
+            Some(SocketEvent::from_reader(
+                &read_bytes(&self.socket_path)?[..],
+            )?)
         } else {
             None
         })
     }
 
     fn input_injector(&self) -> Result<InputInjector> {
-        Ok(if self.input_path.is_file() {
-            InputInjector::from_file(&self.input_path)?
+        Ok(if self.input_path.is_file()? {
+            InputInjector::from_reader(&read_bytes(&self.input_path)?[..])?
         } else {
             InputInjector::empty()
         })
@@ -121,7 +118,7 @@ impl Test {
     }
 
     pub fn compare_output(&self, actual_output: &str) -> Result<()> {
-        let expected_output = std::fs::read_to_string(&self.output_path)?.replace("\r\n", "\n");
+        let expected_output = self.output_path.read_to_string()?.replace("\r\n", "\n");
 
         if let Some(approximations) = &self.options.approximations {
             if actual_output.lines().count() != expected_output.lines().count() {

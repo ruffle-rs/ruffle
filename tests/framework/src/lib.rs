@@ -5,7 +5,10 @@ pub mod options;
 pub mod runner;
 pub mod test;
 
+pub use vfs;
+
 mod backends;
+mod util;
 
 pub fn set_logger() {
     let _ = env_logger::Builder::from_env(

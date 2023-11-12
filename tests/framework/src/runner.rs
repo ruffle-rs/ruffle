@@ -4,7 +4,9 @@ use crate::fs_commands::{FsCommand, TestFsCommandProvider};
 use crate::image_trigger::ImageTrigger;
 use crate::options::ImageComparison;
 use crate::test::Test;
+use crate::util::{read_bytes, write_image};
 use anyhow::{anyhow, Result};
+use image::ImageOutputFormat;
 use ruffle_core::backend::navigator::NullExecutor;
 use ruffle_core::events::MouseButton as RuffleMouseButton;
 use ruffle_core::events::{KeyCode, TextControlCode as RuffleTextControlCode};
@@ -17,9 +19,9 @@ use ruffle_input_format::{
 };
 use ruffle_render::backend::{RenderBackend, ViewportDimensions};
 use ruffle_socket_format::SocketEvent;
-use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
+use vfs::VfsPath;
 
 /// Loads an SWF and runs it through the Ruffle core for a number of frames.
 /// Tests that the trace output matches the given expected output.
@@ -34,7 +36,6 @@ pub fn run_swf(
     renderer: Option<(Box<dyn RenderInterface>, Box<dyn RenderBackend>)>,
     viewport_dimensions: ViewportDimensions,
 ) -> Result<String> {
-    let base_path = Path::new(&test.output_path).parent().unwrap();
     let mut executor = NullExecutor::new();
     let mut frame_time = 1000.0 / movie.frame_rate().to_f64();
     if let Some(tr) = test.options.tick_rate {
@@ -46,7 +47,7 @@ pub fn run_swf(
     let log = TestLogBackend::default();
     let (fs_command_provider, fs_commands) = TestFsCommandProvider::new();
     let navigator = TestNavigatorBackend::new(
-        base_path,
+        test.root_path.clone(),
         &executor,
         socket_events,
         test.options.log_fetch.then(|| log.clone()),
@@ -87,7 +88,7 @@ pub fn run_swf(
     if test.options.num_frames.is_none() && test.options.num_ticks.is_none() {
         return Err(anyhow!(
             "Test {} must specify at least one of num_frames or num_ticks",
-            test.swf_path.to_string_lossy()
+            &test.name
         ));
     }
 
@@ -144,7 +145,7 @@ pub fn run_swf(
                             return Err(anyhow!("Encountered fscommand to capture and compare image '{name}', but the trigger was expected to be {:?}", image_comparison.trigger));
                         }
                         capture_and_compare_image(
-                            base_path,
+                            &test.root_path,
                             &player,
                             &name,
                             image_comparison,
@@ -216,7 +217,7 @@ pub fn run_swf(
                 .remove(&name)
                 .expect("Name was just retrieved from map, should not be missing!");
             capture_and_compare_image(
-                base_path,
+                &test.root_path,
                 &player,
                 &name,
                 image_comparison,
@@ -236,7 +237,7 @@ pub fn run_swf(
             .expect("Name was just retrieved from map, should not be missing!");
 
         capture_and_compare_image(
-            base_path,
+            &test.root_path,
             &player,
             &name,
             image_comparison,
@@ -265,7 +266,7 @@ pub fn run_swf(
 }
 
 fn capture_and_compare_image(
-    base_path: &Path,
+    base_path: &VfsPath,
     player: &Arc<Mutex<Player>>,
     name: &String,
     image_comparison: ImageComparison,
@@ -280,9 +281,9 @@ fn capture_and_compare_image(
 
         let actual_image = render_interface.capture(player_lock.renderer_mut());
 
-        let expected_image_path = base_path.join(format!("{name}.expected.png"));
-        if expected_image_path.is_file() {
-            let expected_image = image::open(&expected_image_path)
+        let expected_image_path = base_path.join(format!("{name}.expected.png"))?;
+        if expected_image_path.is_file()? {
+            let expected_image = image::load_from_memory(&read_bytes(&expected_image_path)?)
                 .context("Failed to open expected image")?
                 .into_rgba8();
 
@@ -296,7 +297,7 @@ fn capture_and_compare_image(
             )?;
         } else if !known_failure {
             // If we're expecting this to be wrong, don't save a likely wrong image
-            actual_image.save(expected_image_path)?;
+            write_image(&expected_image_path, &actual_image, ImageOutputFormat::Png)?;
         }
     } else if known_failure {
         // It's possible that the trace output matched but the image might not.

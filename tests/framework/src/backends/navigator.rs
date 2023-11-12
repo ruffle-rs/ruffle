@@ -1,18 +1,20 @@
 use crate::backends::TestLogBackend;
+use crate::util::read_bytes;
 use async_channel::Receiver;
+use percent_encoding::percent_decode_str;
 use ruffle_core::backend::log::LogBackend;
 use ruffle_core::backend::navigator::{
-    fetch_path, resolve_url_with_relative_base_path, ErrorResponse, NavigationMethod,
-    NavigatorBackend, NullExecutor, NullSpawner, OwnedFuture, Request, SuccessResponse,
+    async_return, create_fetch_error, ErrorResponse, NavigationMethod, NavigatorBackend,
+    NullExecutor, NullSpawner, OwnedFuture, Request, SuccessResponse,
 };
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
 use ruffle_core::socket::{ConnectionState, SocketAction, SocketHandle};
 use ruffle_socket_format::SocketEvent;
-use std::path::{Path, PathBuf};
 use std::sync::mpsc::Sender;
 use std::time::Duration;
 use url::{ParseError, Url};
+use vfs::VfsPath;
 
 /// A `NavigatorBackend` used by tests that supports logging fetch requests.
 ///
@@ -27,21 +29,21 @@ use url::{ParseError, Url};
 /// URLs can be used in Flash Player when writing tests
 pub struct TestNavigatorBackend {
     spawner: NullSpawner,
-    relative_base_path: PathBuf,
+    relative_base_path: VfsPath,
     socket_events: Option<Vec<SocketEvent>>,
     log: Option<TestLogBackend>,
 }
 
 impl TestNavigatorBackend {
     pub fn new(
-        path: &Path,
+        path: VfsPath,
         executor: &NullExecutor,
         socket_events: Option<Vec<SocketEvent>>,
         log: Option<TestLogBackend>,
     ) -> Result<Self, std::io::Error> {
         Ok(Self {
             spawner: executor.spawner(),
-            relative_base_path: path.canonicalize()?,
+            relative_base_path: path,
             socket_events,
             log,
         })
@@ -125,16 +127,86 @@ impl NavigatorBackend for TestNavigatorBackend {
             }
         }
 
-        fetch_path(
-            self,
-            "TestNavigatorBackend",
-            request.url(),
-            Some(&self.relative_base_path),
-        )
+        let url = match self.resolve_url(request.url()) {
+            Ok(url) => url,
+            Err(e) => return async_return(create_fetch_error(request.url(), e)),
+        };
+
+        let base_path = self.relative_base_path.clone();
+
+        Box::pin(async move {
+            let path = if url.scheme() == "file" {
+                // Flash supports query parameters with local urls.
+                // SwfMovie takes care of exposing those to ActionScript -
+                // when we actually load a filesystem url, strip them out.
+                let mut filesystem_url = url.clone();
+                filesystem_url.set_query(None);
+
+                base_path
+                    .join(
+                        percent_decode_str(filesystem_url.path())
+                            .decode_utf8()
+                            .map_err(|e| ErrorResponse {
+                                url: url.to_string(),
+                                error: Error::FetchError(e.to_string()),
+                            })?,
+                    )
+                    .map_err(|e| ErrorResponse {
+                        url: url.to_string(),
+                        error: Error::FetchError(e.to_string()),
+                    })?
+            } else {
+                // Turn a url like https://localhost/foo/bar to {base_path}/localhost/foo/bar
+                let mut path = base_path.clone();
+                if let Some(host) = url.host_str() {
+                    path = path.join(host).map_err(|e| ErrorResponse {
+                        url: url.to_string(),
+                        error: Error::FetchError(e.to_string()),
+                    })?;
+                }
+                if let Some(remaining) = url.path().strip_prefix('/') {
+                    path = path
+                        .join(percent_decode_str(remaining).decode_utf8().map_err(|e| {
+                            ErrorResponse {
+                                url: url.to_string(),
+                                error: Error::FetchError(e.to_string()),
+                            }
+                        })?)
+                        .map_err(|e| ErrorResponse {
+                            url: url.to_string(),
+                            error: Error::FetchError(e.to_string()),
+                        })?;
+                }
+                path
+            };
+
+            let body = read_bytes(&path).map_err(|error| ErrorResponse {
+                url: url.to_string(),
+                error: Error::FetchError(error.to_string()),
+            })?;
+            Ok(SuccessResponse {
+                url: url.to_string(),
+                body,
+                status: 0,
+                redirected: false,
+            })
+        })
     }
 
     fn resolve_url(&self, url: &str) -> Result<Url, ParseError> {
-        resolve_url_with_relative_base_path(self, self.relative_base_path.clone(), url)
+        let mut base_url = Url::parse("file:///")?;
+
+        // Make sure we have a trailing slash, so that joining a request url like 'data.txt'
+        // gets appended, rather than replacing the last component.
+        base_url.path_segments_mut().unwrap().push("");
+        if let Ok(parsed_url) = base_url.join(url) {
+            Ok(self.pre_process_url(parsed_url))
+        } else {
+            match Url::parse(url) {
+                Ok(parsed_url) => Ok(self.pre_process_url(parsed_url)),
+                Err(error) => Err(error),
+            }
+        }
     }
 
     fn spawn_future(&mut self, future: OwnedFuture<(), Error>) {

@@ -1,8 +1,10 @@
 use crate::backends::TestAudioBackend;
 use crate::environment::{Environment, RenderInterface};
 use crate::image_trigger::ImageTrigger;
+use crate::util::write_image;
 use anyhow::{anyhow, Result};
 use approx::assert_relative_eq;
+use image::ImageOutputFormat;
 use regex::Regex;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{PlayerBuilder, ViewportDimensions};
@@ -10,9 +12,8 @@ use ruffle_render::backend::RenderBackend;
 use ruffle_render::quality::StageQuality;
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
-use std::fs;
-use std::path::{Path, PathBuf};
 use std::time::Duration;
+use vfs::VfsPath;
 
 #[derive(Deserialize)]
 #[serde(default, deny_unknown_fields)]
@@ -20,7 +21,7 @@ pub struct TestOptions {
     pub num_frames: Option<u32>,
     pub num_ticks: Option<u32>,
     pub tick_rate: Option<f64>,
-    pub output_path: PathBuf,
+    pub output_path: String,
     pub sleep_to_meet_frame_rate: bool,
     pub image_comparisons: HashMap<String, ImageComparison>,
     pub ignore: bool,
@@ -37,7 +38,7 @@ impl Default for TestOptions {
             num_frames: None,
             num_ticks: None,
             tick_rate: None,
-            output_path: PathBuf::from("output.txt"),
+            output_path: "output.txt".to_string(),
             sleep_to_meet_frame_rate: false,
             image_comparisons: Default::default(),
             ignore: false,
@@ -51,8 +52,8 @@ impl Default for TestOptions {
 }
 
 impl TestOptions {
-    pub fn read<P: AsRef<Path>>(path: P) -> Result<Self> {
-        let result: Self = toml::from_str(&fs::read_to_string(path)?)?;
+    pub fn read(path: &VfsPath) -> Result<Self> {
+        let result: Self = toml::from_str(&path.read_to_string()?)?;
         result.validate()?;
         Ok(result)
     }
@@ -75,8 +76,8 @@ impl TestOptions {
         Ok(())
     }
 
-    pub fn output_path(&self, test_directory: &Path) -> PathBuf {
-        test_directory.join(&self.output_path)
+    pub fn output_path(&self, test_directory: &VfsPath) -> Result<VfsPath> {
+        Ok(test_directory.join(&self.output_path)?)
     }
 }
 
@@ -216,7 +217,7 @@ impl ImageComparison {
         name: &str,
         actual_image: image::RgbaImage,
         expected_image: image::RgbaImage,
-        test_path: &Path,
+        test_path: &VfsPath,
         environment_name: String,
         known_failure: bool,
     ) -> Result<()> {
@@ -225,9 +226,11 @@ impl ImageComparison {
         let save_actual_image = || {
             if !known_failure {
                 // If we're expecting failure, spamming files isn't productive.
-                actual_image
-                    .save(test_path.join(format!("{name}.actual-{environment_name}.png")))
-                    .context("Couldn't save actual image")
+                write_image(
+                    &test_path.join(format!("{name}.actual-{environment_name}.png"))?,
+                    &actual_image,
+                    ImageOutputFormat::Png,
+                )
             } else {
                 Ok(())
             }
@@ -295,14 +298,17 @@ impl ImageComparison {
 
             if !known_failure {
                 // If we're expecting failure, spamming files isn't productive.
-                image::RgbImage::from_raw(
+                let difference_image = image::RgbImage::from_raw(
                     actual_image.width(),
                     actual_image.height(),
                     difference_color,
                 )
-                .context("Couldn't create color difference image")?
-                .save(test_path.join(format!("{name}.difference-color-{environment_name}.png")))
-                .context("Couldn't save color difference image")?;
+                .context("Couldn't create color difference image")?;
+                write_image(
+                    &test_path.join(format!("{name}.difference-color-{environment_name}.png"))?,
+                    &difference_image,
+                    ImageOutputFormat::Png,
+                )?;
             }
 
             if is_alpha_different {
@@ -315,14 +321,18 @@ impl ImageComparison {
 
                 if !known_failure {
                     // If we're expecting failure, spamming files isn't productive.
-                    image::GrayImage::from_raw(
+                    let difference_image = image::GrayImage::from_raw(
                         actual_image.width(),
                         actual_image.height(),
                         difference_alpha,
                     )
-                    .context("Couldn't create alpha difference image")?
-                    .save(test_path.join(format!("{name}.difference-alpha-{environment_name}.png")))
-                    .context("Couldn't save alpha difference image")?;
+                    .context("Couldn't create alpha difference image")?;
+                    write_image(
+                        &test_path
+                            .join(format!("{name}.difference-alpha-{environment_name}.png"))?,
+                        &difference_image,
+                        ImageOutputFormat::Png,
+                    )?;
                 }
             }
 

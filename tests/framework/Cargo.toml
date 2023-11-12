@@ -27,6 +27,8 @@ serde = "1.0.192"
 toml = "0.8.8"
 anyhow = "1.0.75"
 async-channel = "1.9.0"
+vfs = "0.10.0"
+percent-encoding = "2.3.0"
 
 [features]
 jpegxr = ["ruffle_core/jpegxr"]
