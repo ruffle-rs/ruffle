@@ -698,7 +698,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                             // 2.c.vi. Else let y.[[Class]] = "element"
                             Some(property) => E4XNode::element(
                                 activation.gc(),
-                                property.explict_namespace(),
+                                property.explicit_namespace(),
                                 property.local_name().expect("Local name should exist"),
                                 r,
                             ),
@@ -767,7 +767,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                                     if let Some(name) = target_property.local_name() {
                                         y.set_local_name(name, activation.gc());
                                     }
-                                    if let Some(namespace) = target_property.explict_namespace() {
+                                    if let Some(namespace) = target_property.explicit_namespace() {
                                         y.set_namespace(namespace, activation.gc());
                                     }
                                 }

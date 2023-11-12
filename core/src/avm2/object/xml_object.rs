@@ -550,7 +550,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
                 // 12.b.iii. Create a new XML object y with y.[[Name]] = name, y.[[Class]] = "element" and y.[[Parent]] = x
                 let node = E4XNode::element(
                     activation.gc(),
-                    name.explict_namespace(),
+                    name.explicit_namespace(),
                     name.local_name().unwrap(),
                     Some(*self_node),
                 );
