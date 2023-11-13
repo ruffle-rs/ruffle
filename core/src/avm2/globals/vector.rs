@@ -329,7 +329,7 @@ where
         let string_separator = separator.coerce_to_string(activation)?;
         let mut accum = Vec::with_capacity(vector.length());
 
-        for (_, item) in vector.iter().enumerate() {
+        for item in vector.iter() {
             if matches!(item, Value::Undefined) || matches!(item, Value::Null) {
                 accum.push("null".into());
             } else {
