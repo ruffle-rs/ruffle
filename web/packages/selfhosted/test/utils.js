@@ -121,8 +121,8 @@ function jsApiBefore(swf) {
 
         if (swf) {
             await browser.execute(
-                (player, swf) => {
-                    player.load(swf);
+                async (player, swf) => {
+                    await player.load(swf);
                 },
                 player,
                 swf,
