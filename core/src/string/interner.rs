@@ -116,9 +116,7 @@ struct WeakSet<'gc, T: 'gc> {
 
 impl<'gc, T: Hash + 'gc> WeakSet<'gc, T> {
     fn hash<K: Hash + ?Sized>(build_hasher: &impl BuildHasher, key: &K) -> u64 {
-        let mut hasher = build_hasher.build_hasher();
-        key.hash(&mut hasher);
-        hasher.finish()
+        build_hasher.hash_one(key)
     }
 
     /// Finds the given key in the map.

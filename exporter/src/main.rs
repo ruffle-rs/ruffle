@@ -239,7 +239,7 @@ fn capture_single_swf(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()> {
     }
 
     if frames.len() == 1 {
-        let image = frames.get(0).unwrap();
+        let image = frames.first().unwrap();
         if opt.output_path == Some(PathBuf::from("-")) {
             let mut bytes: Vec<u8> = Vec::new();
             image
@@ -343,7 +343,7 @@ fn capture_multiple_swfs(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()>
                 if let Some(parent) = destination.parent() {
                     let _ = create_dir_all(parent);
                 }
-                frames.get(0).unwrap().save(&destination)?;
+                frames.first().unwrap().save(&destination)?;
             } else {
                 let mut parent: PathBuf = (&output).into();
                 relative_path.set_extension("");
