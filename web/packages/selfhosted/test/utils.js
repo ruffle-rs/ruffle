@@ -120,9 +120,13 @@ function jsApiBefore(swf) {
         });
 
         if (swf) {
-            await browser.execute((player) => {
-                player.load("/test_assets/example.swf");
-            }, player);
+            await browser.execute(
+                (player, swf) => {
+                    player.load(swf);
+                },
+                player,
+                swf,
+            );
             await playAndMonitor(browser, player);
         }
     });
