@@ -1878,6 +1878,7 @@ fn web_key_to_codepoint(key: &str) -> Option<char> {
         match key {
             "Backspace" => Some(8 as char),
             "Delete" => Some(127 as char),
+            "Enter" => Some(13 as char),
             _ => None,
         }
     }
