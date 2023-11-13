@@ -1,4 +1,5 @@
 const path = require("path");
+const { expect } = require("chai");
 
 async function isRuffleLoaded(browser) {
     return await browser.execute(
@@ -75,16 +76,34 @@ async function playAndMonitor(browser, player, expectedOutput) {
         expectedOutput = "Hello from Flash!\n";
     }
 
+    const actualOutput = await getTraceOutput(browser, player);
+    expect(actualOutput).to.eql(expectedOutput);
+}
+
+async function getTraceOutput(browser, player) {
+    // Await any trace output
     await browser.waitUntil(
-        async () =>
-            (await browser.execute(
-                (player) => player.__ruffle_log__,
-                player,
-            )) === expectedOutput,
+        async () => {
+            return (
+                (await browser.execute(
+                    (player) => player.__ruffle_log__,
+                    player,
+                )) !== ""
+            );
+        },
         {
             timeoutMsg: "Expected Ruffle to trace a message",
         },
     );
+
+    // Get the output, and replace it with an empty string for any future test
+    const output = await browser.execute((player) => {
+        const log = player.__ruffle_log__;
+        player.__ruffle_log__ = "";
+        return log;
+    }, player);
+
+    return output;
 }
 
 async function injectRuffleAndWait(browser) {
@@ -141,4 +160,5 @@ module.exports = {
     openTest,
     setupErrorHandler,
     jsApiBefore,
+    getTraceOutput,
 };
