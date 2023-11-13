@@ -23,7 +23,7 @@ ruffle_video_software = { path = "../video/software", optional = true }
 tracing = { workspace = true}
 tracing-subscriber = { workspace = true }
 generational-arena = "0.2.9"
-winit = "0.28.7"
+winit = "0.29.3"
 webbrowser = "0.8.12"
 url = "2.4.1"
 arboard = "3.2.1"
