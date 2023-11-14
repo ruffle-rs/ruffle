@@ -128,8 +128,9 @@ impl ActivePlayer {
         RENDER_INFO.with(|i| *i.borrow_mut() = Some(renderer.debug_info().to_string()));
 
         if opt.dummy_external_interface {
-            builder =
-                builder.with_external_interface(Box::<DesktopExternalInterfaceProvider>::default());
+            builder = builder.with_external_interface(Box::new(DesktopExternalInterfaceProvider {
+                spoof_url: opt.spoof_url.clone(),
+            }));
         }
 
         let max_execution_duration = if opt.max_execution_duration == f64::INFINITY {
