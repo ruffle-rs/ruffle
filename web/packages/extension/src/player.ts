@@ -7,6 +7,16 @@ import type {
     URLLoadOptions,
 } from "ruffle-core";
 
+declare global {
+    interface Navigator {
+        /**
+         * iPadOS sends a User-Agent string that appears to be from macOS.
+         * navigator.standalone is not defined on macOS, so we use it for iPad detection.
+         */
+        standalone?: boolean;
+    }
+}
+
 const api = PublicAPI.negotiate(window.RufflePlayer!, "local");
 window.RufflePlayer = api;
 const ruffle = api.newest()!;
@@ -216,7 +226,9 @@ reloadSwf.addEventListener("click", () => {
 window.addEventListener("load", () => {
     if (
         navigator.userAgent.match(/iPad/i) ||
-        navigator.userAgent.match(/iPhone/i)
+        navigator.userAgent.match(/iPhone/i) ||
+        (navigator.platform === "MacIntel" &&
+            typeof navigator.standalone !== "undefined")
     ) {
         localFileInput.removeAttribute("accept");
     }
