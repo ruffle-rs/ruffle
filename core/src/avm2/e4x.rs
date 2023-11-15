@@ -574,6 +574,39 @@ impl<'gc> E4XNode<'gc> {
         Ok(())
     }
 
+    // ECMA-357 9.1.1.6 [[HasProperty]] (P)
+    pub fn has_property(&self, name: &Multiname<'gc>) -> bool {
+        if !name.has_explicit_namespace() {
+            if let Some(local_name) = name.local_name() {
+                // 1. If ToString(ToUint32(P)) == P
+                if let Ok(index) = local_name.parse::<usize>() {
+                    // 1.a. Return (P == "0")
+                    return index == 0;
+                }
+            }
+
+            // FIXME: 2. Let n = ToXMLName(P).
+
+            // 3. - 4.
+            if let E4XNodeKind::Element {
+                children,
+                attributes,
+            } = &*self.kind()
+            {
+                let search_children = if name.is_attribute() {
+                    attributes
+                } else {
+                    children
+                };
+
+                return search_children.iter().any(|child| child.matches_name(name));
+            }
+        }
+
+        // 5. Return false
+        false
+    }
+
     /// Parses a value provided to `XML`/`XMLList` into a list of nodes.
     /// The caller is responsible for validating that the number of top-level nodes
     /// is correct (for XML, there should be exactly one.)

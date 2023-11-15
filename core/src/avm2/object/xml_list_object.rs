@@ -607,6 +607,24 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
             .call(self.into(), arguments, activation);
     }
 
+    fn has_own_property(self, name: &Multiname<'gc>) -> bool {
+        // 1. If ToString(ToUint32(P)) == P
+        if let Some(name) = name.local_name() {
+            if let Ok(index) = name.parse::<usize>() {
+                // 1.a. Return (ToUint32(P) < x.[[Length]])
+                return index < self.length();
+            }
+        }
+
+        // 2. For i = 0 to x.[[Length]]-1
+        // 2.a. If x[i].[[Class]] == "element" and the result of calling the [[HasProperty]] method of x[i] with argument P == true, return true
+        // 3. Return false
+        self.children().iter().any(|x| {
+            let node = x.node();
+            node.is_element() && node.has_property(name)
+        })
+    }
+
     // ECMA-357 9.2.1.2 [[Put]] (P, V)
     fn set_property_local(
         self,
