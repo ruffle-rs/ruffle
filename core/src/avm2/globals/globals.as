@@ -376,6 +376,7 @@ include "flash/text/engine/TypographicCase.as"
 
 include "flash/ui/ContextMenu.as"
 include "flash/ui/ContextMenuBuiltInItems.as"
+include "flash/ui/ContextMenuClipboardItems.as"
 include "flash/ui/ContextMenuItem.as"
 include "flash/ui/GameInput.as"
 include "flash/ui/GameInputDevice.as"
