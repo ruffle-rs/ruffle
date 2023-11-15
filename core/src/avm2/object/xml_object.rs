@@ -368,33 +368,11 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
     }
 
     fn has_own_property(self, name: &Multiname<'gc>) -> bool {
-        let read = self.0.read();
-
-        // FIXME - see if we can deduplicate this with get_property_local in
-        // an efficient way
-        if !name.has_explicit_namespace() {
-            if let Some(local_name) = name.local_name() {
-                // The only supported numerical index is 0
-                if let Ok(index) = local_name.parse::<usize>() {
-                    return index == 0;
-                }
-
-                if let E4XNodeKind::Element {
-                    children,
-                    attributes,
-                } = &*read.node.kind()
-                {
-                    let search_children = if name.is_attribute() {
-                        attributes
-                    } else {
-                        children
-                    };
-
-                    return search_children.iter().any(|child| child.matches_name(name));
-                }
-            }
+        if self.node().has_property(name) {
+            return true;
         }
-        read.base.has_own_dynamic_property(name)
+
+        self.0.read().base.has_own_dynamic_property(name)
     }
 
     fn has_own_property_string(
