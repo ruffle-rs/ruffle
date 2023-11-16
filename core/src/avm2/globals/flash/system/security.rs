@@ -6,6 +6,32 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2_stub_method;
 use crate::string::AvmString;
+use url::Url;
+
+pub fn get_page_domain<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(url) = activation
+        .context
+        .page_url
+        .as_ref()
+        .and_then(|page_url| Url::parse(page_url).ok())
+    {
+        if !url.origin().is_tuple() {
+            tracing::warn!("flash.system.Security.pageDomain: Returning null for opaque origin");
+            return Ok(Value::Null);
+        }
+
+        let mut domain = url.origin().ascii_serialization();
+        domain.push('/'); // Add trailing slash that is used by Flash, but isn't part of a standard origin.
+        Ok(AvmString::new_utf8(activation.context.gc_context, domain).into())
+    } else {
+        tracing::warn!("flash.system.Security.pageDomain: No page-url available");
+        Ok(Value::Null)
+    }
+}
 
 pub fn get_sandbox_type<'gc>(
     activation: &mut Activation<'_, 'gc>,

@@ -1,6 +1,8 @@
 package flash.system {
 	public final class Security {
+		public static native function get pageDomain():String;
 		public static native function get sandboxType():String;
+
 		public static native function allowDomain(... domains):void;
 		public static native function allowInsecureDomain(... domains):void;
 		public static native function loadPolicyFile(url: String):void;

@@ -674,6 +674,7 @@ impl Ruffle {
             .with_frame_rate(config.frame_rate)
             // FIXME - should this be configurable?
             .with_sandbox_type(SandboxType::Remote)
+            .with_page_url(window.location().href().ok())
             .build();
 
         let mut callstack = None;
