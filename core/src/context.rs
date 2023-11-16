@@ -164,6 +164,8 @@ pub struct UpdateContext<'a, 'gc> {
     /// The system properties
     pub system: &'a mut SystemProperties,
 
+    pub page_url: &'a mut Option<String>,
+
     /// The current instance ID. Used to generate default `instanceN` names.
     pub instance_counter: &'a mut i32,
 
@@ -377,6 +379,7 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
             player: self.player.clone(),
             load_manager: self.load_manager,
             system: self.system,
+            page_url: self.page_url,
             instance_counter: self.instance_counter,
             avm1_shared_objects: self.avm1_shared_objects,
             avm2_shared_objects: self.avm2_shared_objects,

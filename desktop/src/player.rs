@@ -156,6 +156,7 @@ impl ActivePlayer {
             .with_fullscreen(opt.fullscreen)
             .with_load_behavior(opt.load_behavior)
             .with_spoofed_url(opt.spoof_url.clone().map(|url| url.to_string()))
+            .with_page_url(opt.spoof_url.clone().map(|url| url.to_string()))
             .with_player_version(Some(opt.player_version))
             .with_frame_rate(opt.frame_rate);
         let player = builder.build();

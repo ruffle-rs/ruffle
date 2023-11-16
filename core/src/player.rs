@@ -298,6 +298,8 @@ pub struct Player {
 
     system: SystemProperties,
 
+    page_url: Option<String>,
+
     /// The current instance ID. Used to generate default `instanceN` names.
     instance_counter: i32,
 
@@ -1927,6 +1929,7 @@ impl Player {
                 player: self.self_reference.clone(),
                 load_manager,
                 system: &mut self.system,
+                page_url: &mut self.page_url,
                 instance_counter: &mut self.instance_counter,
                 storage: self.storage.deref_mut(),
                 log: self.log.deref_mut(),
@@ -2184,6 +2187,7 @@ pub struct PlayerBuilder {
     player_version: Option<u8>,
     quality: StageQuality,
     sandbox_type: SandboxType,
+    page_url: Option<String>,
     frame_rate: Option<f64>,
     external_interface_providers: Vec<Box<dyn ExternalInterfaceProvider>>,
     fs_command_provider: Box<dyn FsCommandProvider>,
@@ -2229,6 +2233,7 @@ impl PlayerBuilder {
             player_version: None,
             quality: StageQuality::High,
             sandbox_type: SandboxType::LocalTrusted,
+            page_url: None,
             frame_rate: None,
             external_interface_providers: vec![],
             fs_command_provider: Box::new(NullFsCommandProvider),
@@ -2391,6 +2396,12 @@ impl PlayerBuilder {
         self
     }
 
+    // Configure the embedding page's URL (if applicable)
+    pub fn with_page_url(mut self, page_url: Option<String>) -> Self {
+        self.page_url = page_url;
+        self
+    }
+
     /// Sets and locks the player's frame rate. If None is provided, this has no effect.
     pub fn with_frame_rate(mut self, frame_rate: Option<f64>) -> Self {
         self.frame_rate = frame_rate;
@@ -2532,6 +2543,7 @@ impl PlayerBuilder {
                 // Misc. state
                 rng: SmallRng::seed_from_u64(get_current_date_time().timestamp_millis() as u64),
                 system: SystemProperties::new(self.sandbox_type),
+                page_url: self.page_url.clone(),
                 transform_stack: TransformStack::new(),
                 instance_counter: 0,
                 player_version,
