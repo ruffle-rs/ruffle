@@ -33,7 +33,7 @@ package flash.events
         public var shiftKey: Boolean;
         public var buttonDown: Boolean;
         public var delta: int;
-        public var isRelatedObjectInaccessible: Boolean;
+        private var _isRelatedObjectInaccessible: Boolean;
 
         public var movementX: Number;
         public var movementY: Number;
@@ -59,7 +59,6 @@ package flash.events
             this.shiftKey = shiftKey;
             this.buttonDown = buttonDown;
             this.delta = delta;
-            this.isRelatedObjectInaccessible = false; // unimplemented
 
             this.movementX = 0.0; // unimplemented
             this.movementY = 0.0; // unimplemented
@@ -74,6 +73,14 @@ package flash.events
         override public function toString() : String
         {
             return this.formatToString("MouseEvent","type","bubbles","cancelable","eventPhase","localX","localY","stageX","stageY","relatedObject","ctrlKey","altKey","shiftKey","buttonDown","delta");
+        }
+
+        public function get isRelatedObjectInaccessible():Boolean {
+            return _isRelatedObjectInaccessible;
+        }
+
+        public function set isRelatedObjectInaccessible(value:Boolean):void {
+            _isRelatedObjectInaccessible = value;
         }
 
         public native function updateAfterEvent():void;
