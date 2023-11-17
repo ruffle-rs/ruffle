@@ -1342,7 +1342,7 @@ pub fn maybe_escape_child<'gc>(
         }
     }
 
-    if activation.caller_movie().unwrap().version() >= 21 {
+    if activation.caller_movie_or_root().version() >= 21 {
         if let Some(xml) = child.as_object().and_then(|x| x.as_xml_object()) {
             let node = xml.node();
             let parent = node.parent();

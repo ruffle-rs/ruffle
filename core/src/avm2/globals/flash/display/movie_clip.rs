@@ -393,12 +393,7 @@ pub fn goto_frame<'gc>(
 
                 let frame = mc.frame_label_to_number(&frame_or_label, &activation.context);
 
-                if activation
-                    .caller_movie()
-                    .expect("Caller SWF should exist")
-                    .version()
-                    >= 11
-                {
+                if activation.caller_movie_or_root().version() >= 11 {
                     frame.ok_or(
                         // TODO: Also include the scene in the error message, as done above
                         Error::AvmError(argument_error(
