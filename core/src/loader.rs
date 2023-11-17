@@ -1,6 +1,7 @@
 //! Management of async loaders
 
-use crate::avm1::{Activation, ActivationIdentifier};
+use crate::avm1::globals::as_broadcaster;
+use crate::avm1::{Activation, ActivationIdentifier, ArrayObject};
 use crate::avm1::{Attribute, Avm1};
 use crate::avm1::{ExecutionReason, NativeObject};
 use crate::avm1::{Object, SoundObject, TObject, Value};
@@ -13,7 +14,7 @@ use crate::avm2::{
     Value as Avm2Value,
 };
 use crate::backend::navigator::{OwnedFuture, Request};
-use crate::backend::ui::DialogResultFuture;
+use crate::backend::ui::{DialogResultFuture, FileDialogResult};
 use crate::bitmap::bitmap_data::Color;
 use crate::bitmap::bitmap_data::{BitmapData, BitmapDataWrapper};
 use crate::context::{ActionQueue, ActionType, UpdateContext};
@@ -32,7 +33,6 @@ use encoding_rs::UTF_8;
 use gc_arena::{Collect, GcCell};
 use generational_arena::{Arena, Index};
 use ruffle_render::utils::{determine_jpeg_tag_format, JpegTagFormat};
-use std::borrow::Borrow;
 use std::fmt;
 use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
@@ -186,6 +186,9 @@ pub enum Error {
     #[error("Non-file upload loader spawned as file upload loader")]
     NotFileUploadLoader,
 
+    #[error("Non-multi-file dialog loader spawned as multi-file dialog loader")]
+    NotMultiFileDialogLoader,
+
     #[error("Could not fetch: {0:?}")]
     FetchError(String),
 
@@ -246,6 +249,7 @@ impl<'gc> LoadManager<'gc> {
             | Loader::FileDialog { self_handle, .. }
             | Loader::DownloadFileDialog { self_handle, .. }
             | Loader::UploadFile { self_handle, .. }
+            | Loader::MultiFileDialog { self_handle, .. }
             | Loader::MovieUnloader { self_handle, .. } => *self_handle = Some(handle),
         }
         handle
@@ -540,6 +544,27 @@ impl<'gc> LoadManager<'gc> {
         let loader = self.get_loader_mut(handle).unwrap();
         loader.file_upload_loader(player, url, data, file_name)
     }
+
+    /// Display a dialog allowing a user to select multiple files
+    ///
+    /// Returns a future that will be resolved when the files are selected
+    #[must_use]
+    pub fn select_multiple_file_dialog(
+        &mut self,
+        player: Weak<Mutex<Player>>,
+        target_object: Object<'gc>,
+        dialog: DialogResultFuture,
+    ) -> OwnedFuture<(), Error> {
+        let loader = Loader::MultiFileDialog {
+            self_handle: None,
+            target_object,
+        };
+        let handle = self.add_loader(loader);
+
+        let loader = self.get_loader_mut(handle).unwrap();
+
+        loader.multi_file_dialog_loader(player, dialog)
+    }
 }
 
 impl<'gc> Default for LoadManager<'gc> {
@@ -718,6 +743,16 @@ pub enum Loader<'gc> {
         self_handle: Option<Handle>,
 
         /// The target AVM1 object to select a file path from.
+        target_object: Object<'gc>,
+    },
+
+    /// Loader that is choosing multiple files from an AVM1 object scope.
+    MultiFileDialog {
+        /// The handle to refer to this loader instance.
+        #[collect(require_static)]
+        self_handle: Option<Handle>,
+
+        /// The target AVM1 object to select a set of file paths from.
         target_object: Object<'gc>,
     },
 }
@@ -2307,11 +2342,11 @@ impl<'gc> Loader<'gc> {
 
                 match dialog_result {
                     Ok(dialog_result) => {
-                        use crate::avm1::globals::as_broadcaster;
+                        if let FileDialogResult::Selection(dialog_result) = dialog_result {
+                            // File selections *must* have at least one file
+                            let file_selection = dialog_result.first_file();
 
-                        if !dialog_result.is_cancelled() {
-                            file_ref
-                                .init_from_dialog_result(&mut activation, dialog_result.borrow());
+                            file_ref.init_from_dialog_result(&mut activation, file_selection);
                             as_broadcaster::broadcast_internal(
                                 &mut activation,
                                 target_object,
@@ -2387,15 +2422,16 @@ impl<'gc> Loader<'gc> {
                     uc.reborrow(),
                     ActivationIdentifier::root("[File Dialog]"),
                 );
-                use crate::avm1::globals::as_broadcaster;
 
                 match dialog_result {
-                    Ok(mut dialog_result) => {
-                        if !dialog_result.is_cancelled() {
+                    Ok(dialog_result) => {
+                        if let FileDialogResult::Selection(mut dialog_result) = dialog_result {
+                            // File selections *must* have at least one file
+                            let file_selection = dialog_result.first_file_mut();
+
                             // onSelect and onOpen should be called before the download begins
                             // We simulate this by using the initial dialog result
-                            file_ref
-                                .init_from_dialog_result(&mut activation, dialog_result.borrow());
+                            file_ref.init_from_dialog_result(&mut activation, file_selection);
 
                             as_broadcaster::broadcast_internal(
                                 &mut activation,
@@ -2418,12 +2454,10 @@ impl<'gc> Loader<'gc> {
                                     // perspective of AS, we want to refresh the file_ref internal data
                                     // before invoking the callbacks
 
-                                    dialog_result.write(&download_res.body);
-                                    dialog_result.refresh();
-                                    file_ref.init_from_dialog_result(
-                                        &mut activation,
-                                        dialog_result.borrow(),
-                                    );
+                                    file_selection.write(&download_res.body);
+                                    file_selection.refresh();
+                                    file_ref
+                                        .init_from_dialog_result(&mut activation, file_selection);
 
                                     let total_bytes = download_res.body.len();
 
@@ -2623,7 +2657,6 @@ impl<'gc> Loader<'gc> {
                     ActivationIdentifier::root("[File Dialog]"),
                 );
 
-                use crate::avm1::globals::as_broadcaster;
                 as_broadcaster::broadcast_internal(
                     &mut activation,
                     target_object,
@@ -2704,6 +2737,98 @@ impl<'gc> Loader<'gc> {
                                 );
                             }
                         }
+                    }
+                }
+
+                Ok(())
+            })
+        })
+    }
+
+    /// Loader to process callbacks for a multi-file selection dialog
+    pub fn multi_file_dialog_loader(
+        &mut self,
+        player: Weak<Mutex<Player>>,
+        dialog: DialogResultFuture,
+    ) -> OwnedFuture<(), Error> {
+        let handle = match self {
+            Loader::MultiFileDialog { self_handle, .. } => {
+                self_handle.expect("Loader not self-introduced")
+            }
+            _ => return Box::pin(async { Err(Error::NotMultiFileDialogLoader) }),
+        };
+
+        let player = player
+            .upgrade()
+            .expect("Could not upgrade weak reference to player");
+
+        Box::pin(async move {
+            let dialog_result = dialog.await;
+
+            // Dialog is done, allow opening new dialogs
+            player.lock().unwrap().ui_mut().close_file_dialog();
+
+            // Fire the load handler.
+            player.lock().unwrap().update(|uc| -> Result<(), Error> {
+                let loader = uc.load_manager.get_loader(handle);
+                let target_object = match loader {
+                    Some(&Loader::MultiFileDialog { target_object, .. }) => target_object,
+                    None => return Err(Error::Cancelled),
+                    _ => return Err(Error::NotMultiFileDialogLoader),
+                };
+
+                let mut activation = Activation::from_stub(
+                    uc.reborrow(),
+                    ActivationIdentifier::root("[File Dialog]"),
+                );
+
+                match dialog_result {
+                    Ok(dialog_result) => match dialog_result {
+                        FileDialogResult::Selection(selection) => {
+                            let mut values = Vec::with_capacity(selection.file_count().into());
+                            for ii in 0..(selection.file_count().into()) {
+                                let file = selection.file(ii).unwrap();
+
+                                let proto = activation.context.avm1.prototypes().file_reference;
+                                let fr = proto
+                                    .construct(&mut activation, &[])?
+                                    .coerce_to_object(&mut activation);
+                                if let NativeObject::FileReference(fr) = fr.native() {
+                                    fr.init_from_dialog_result(&mut activation, file);
+                                }
+
+                                values.push(fr.into());
+                            }
+
+                            let array = ArrayObject::new(
+                                activation.context.gc_context,
+                                activation.context.avm1.prototypes().array,
+                                values,
+                            );
+
+                            target_object.set("fileList", array.into(), &mut activation)?;
+
+                            as_broadcaster::broadcast_internal(
+                                &mut activation,
+                                target_object,
+                                &[target_object.into()],
+                                "onSelect".into(),
+                            )?;
+                        }
+                        FileDialogResult::Canceled => {
+                            let array = ArrayObject::empty(&activation);
+                            target_object.set("fileList", array.into(), &mut activation)?;
+
+                            as_broadcaster::broadcast_internal(
+                                &mut activation,
+                                target_object,
+                                &[target_object.into()],
+                                "onCancel".into(),
+                            )?;
+                        }
+                    },
+                    Err(err) => {
+                        tracing::warn!("Error on file dialog: {}", err);
                     }
                 }
 

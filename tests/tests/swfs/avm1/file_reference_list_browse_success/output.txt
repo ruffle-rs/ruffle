@@ -1,0 +1,35 @@
+// fileref.browse([])
+false
+// fileref.browse([{ description: '' }])
+false
+// fileref.browse([{ extension: '' }])
+false
+// fileref.download()
+undefined
+// fileref.download('@')
+undefined
+// fileref.download('baddomain')
+undefined
+// f.fileList
+object
+// f.fileList.length
+0
+// f.fileList (after set to not list)
+1234
+// browse success
+true
+// onSelect
+// filelist.fileList
+object
+// filelist.fileList.length
+2
+// file[0]:
+C:undefined
+N:test.txt
+T:.txt
+-----
+// file[1]:
+C:undefined
+N:test2.txt
+T:.txt
+-----

@@ -6,8 +6,8 @@ use rfd::{
 };
 use ruffle_core::backend::navigator::OpenURLMode;
 use ruffle_core::backend::ui::{
-    DialogLoaderError, DialogResultFuture, FileDialogResult, FileFilter, FontDefinition,
-    FullscreenError, LanguageIdentifier, MouseCursor, UiBackend, US_ENGLISH,
+    DialogResultFuture, FileDialogResult, FileFilter, FileSelection, FileSelectionGroup,
+    FontDefinition, FullscreenError, LanguageIdentifier, MouseCursor, UiBackend, US_ENGLISH,
 };
 use std::rc::Rc;
 use sys_locale::get_locale;
@@ -15,23 +15,18 @@ use tracing::error;
 use url::Url;
 use winit::window::{Fullscreen, Window};
 
-pub struct DesktopFileDialogResult {
-    handle: Option<FileHandle>,
+pub struct DesktopFile {
+    handle: FileHandle,
     md: Option<std::fs::Metadata>,
     contents: Vec<u8>,
 }
 
-impl DesktopFileDialogResult {
-    /// Create a new [`DesktopFileDialogResult`] from a given file handle
-    pub fn new(handle: Option<FileHandle>) -> Self {
-        let md = handle
-            .as_ref()
-            .and_then(|x| std::fs::metadata(x.path()).ok());
+impl DesktopFile {
+    /// Create a new [`DesktopFile`] from a given file handle
+    pub fn new(handle: FileHandle) -> Self {
+        let md = std::fs::metadata(handle.path()).ok();
 
-        let contents = handle
-            .as_ref()
-            .and_then(|handle| std::fs::read(handle.path()).ok())
-            .unwrap_or_default();
+        let contents = std::fs::read(handle.path()).unwrap_or_default();
 
         Self {
             handle,
@@ -41,11 +36,7 @@ impl DesktopFileDialogResult {
     }
 }
 
-impl FileDialogResult for DesktopFileDialogResult {
-    fn is_cancelled(&self) -> bool {
-        self.handle.is_none()
-    }
-
+impl FileSelection for DesktopFile {
     fn creation_time(&self) -> Option<DateTime<Utc>> {
         if let Some(md) = &self.md {
             md.created().ok().map(DateTime::<Utc>::from)
@@ -63,23 +54,18 @@ impl FileDialogResult for DesktopFileDialogResult {
     }
 
     fn file_name(&self) -> Option<String> {
-        self.handle.as_ref().map(|handle| handle.file_name())
+        Some(self.handle.file_name())
     }
-
     fn size(&self) -> Option<u64> {
         self.md.as_ref().map(|md| md.len())
     }
 
     fn file_type(&self) -> Option<String> {
-        if let Some(handle) = &self.handle {
-            handle
-                .path()
-                .extension()
-                .and_then(|x| x.to_str())
-                .map(|x| ".".to_owned() + x)
-        } else {
-            None
-        }
+        self.handle
+            .path()
+            .extension()
+            .and_then(|x| x.to_str())
+            .map(|x| ".".to_owned() + x)
     }
 
     fn creator(&self) -> Option<String> {
@@ -91,25 +77,12 @@ impl FileDialogResult for DesktopFileDialogResult {
     }
 
     fn write(&self, data: &[u8]) {
-        if let Some(handle) = &self.handle {
-            let _ = std::fs::write(handle.path(), data);
-        }
+        let _ = std::fs::write(self.handle.path(), data);
     }
 
     fn refresh(&mut self) {
-        let md = self
-            .handle
-            .as_ref()
-            .and_then(|x| std::fs::metadata(x.path()).ok());
-
-        let contents = if let Some(handle) = &self.handle {
-            std::fs::read(handle.path()).unwrap_or_default()
-        } else {
-            Vec::new()
-        };
-
-        self.md = md;
-        self.contents = contents;
+        self.contents = std::fs::read(self.handle.path()).unwrap_or_default();
+        self.md = std::fs::metadata(self.handle.path()).ok()
     }
 }
 
@@ -263,7 +236,11 @@ impl UiBackend for DesktopUiBackend {
         &self.language
     }
 
-    fn display_file_open_dialog(&mut self, filters: Vec<FileFilter>) -> Option<DialogResultFuture> {
+    fn display_file_open_dialog(
+        &mut self,
+        filters: Vec<FileFilter>,
+        multiple_files: bool,
+    ) -> Option<DialogResultFuture> {
         // Prevent opening multiple dialogs at the same time
         if self.dialog_open {
             return None;
@@ -289,10 +266,34 @@ impl UiBackend for DesktopUiBackend {
                 }
             }
 
-            let result: Result<Box<dyn FileDialogResult>, DialogLoaderError> = Ok(Box::new(
-                DesktopFileDialogResult::new(dialog.pick_file().await),
-            ));
-            result
+            let result = if multiple_files {
+                let files = dialog.pick_files().await;
+
+                if let Some(files) = files {
+                    let files = files
+                        .into_iter()
+                        .map(|f| {
+                            let x: Box<dyn FileSelection> = Box::new(DesktopFile::new(f));
+                            x
+                        })
+                        .collect::<Vec<_>>();
+                    FileDialogResult::Selection(FileSelectionGroup::new(files))
+                } else {
+                    FileDialogResult::Canceled
+                }
+            } else {
+                let file = dialog.pick_file().await;
+
+                if let Some(file) = file {
+                    FileDialogResult::Selection(FileSelectionGroup::new(vec![Box::new(
+                        DesktopFile::new(file),
+                    )]))
+                } else {
+                    FileDialogResult::Canceled
+                }
+            };
+
+            Ok(result)
         }))
     }
 
@@ -314,10 +315,14 @@ impl UiBackend for DesktopUiBackend {
                 .set_title(&title)
                 .set_file_name(&file_name);
 
-            let result: Result<Box<dyn FileDialogResult>, DialogLoaderError> = Ok(Box::new(
-                DesktopFileDialogResult::new(dialog.save_file().await),
-            ));
-            result
+            if let Some(fh) = dialog.save_file().await {
+                let selection = Box::new(DesktopFile::new(fh));
+                Ok(FileDialogResult::Selection(FileSelectionGroup::new(vec![
+                    selection,
+                ])))
+            } else {
+                Ok(FileDialogResult::Canceled)
+            }
         }))
     }
 

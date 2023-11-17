@@ -5,7 +5,7 @@ use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Executable, NativeObject, Object, ScriptObject, TObject, Value};
 use crate::avm1_stub;
-use crate::backend::ui::{FileDialogResult, FileFilter};
+use crate::backend::ui::{FileFilter, FileSelection};
 use crate::context::GcContext;
 use crate::string::AvmString;
 use gc_arena::{Collect, GcCell};
@@ -21,13 +21,13 @@ use url::Url;
 
 #[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
-pub struct FileReferenceObject<'gc>(GcCell<'gc, FileReferenceData<'gc>>);
+pub struct FileReferenceObject<'gc>(pub(crate) GcCell<'gc, FileReferenceData<'gc>>);
 
 impl<'gc> FileReferenceObject<'gc> {
     pub fn init_from_dialog_result(
         &self,
         activation: &mut Activation<'_, 'gc>,
-        dialog_result: &dyn FileDialogResult,
+        dialog_result: &dyn FileSelection,
     ) {
         let mut s = self.0.write(activation.gc());
         s.is_initialised = true;
@@ -290,7 +290,10 @@ pub fn browse<'gc>(
         _ => return Ok(Value::Undefined),
     };
 
-    let dialog = activation.context.ui.display_file_open_dialog(file_filters);
+    let dialog = activation
+        .context
+        .ui
+        .display_file_open_dialog(file_filters, false);
 
     let result = match dialog {
         Some(dialog) => {
