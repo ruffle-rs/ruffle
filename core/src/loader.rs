@@ -1193,23 +1193,32 @@ impl<'gc> Loader<'gc> {
                             let storage = ByteArrayStorage::from_vec(body);
                             let bytearray =
                                 ByteArrayObject::from_storage(activation, storage).unwrap();
-                            bytearray.into()
+
+                            Some(bytearray.into())
                         }
-                        DataFormat::Text => Avm2Value::String(AvmString::new_utf8_bytes(
-                            activation.context.gc_context,
-                            &body,
-                        )),
+                        DataFormat::Text => {
+                            let string_value =
+                                AvmString::new_utf8_bytes(activation.context.gc_context, &body);
+                            Some(Avm2Value::String(string_value))
+                        }
                         DataFormat::Variables => {
-                            tracing::warn!(
-                                "Support for URLLoaderDataFormat.VARIABLES not yet implemented"
-                            );
-                            Avm2Value::Undefined
+                            let string_value =
+                                AvmString::new_utf8_bytes(activation.context.gc_context, &body);
+                            activation
+                                .avm2()
+                                .classes()
+                                .urlvariables
+                                .construct(activation, &[string_value.into()])
+                                .ok()
+                                .map(|o| o.into())
                         }
                     };
 
-                    target
-                        .set_public_property("data", data_object, activation)
-                        .unwrap();
+                    if let Some(data_object) = data_object {
+                        target
+                            .set_public_property("data", data_object, activation)
+                            .unwrap();
+                    }
                 }
 
                 match response {
