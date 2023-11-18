@@ -61,13 +61,13 @@ impl StorageBackend for DiskStorageBackend {
                 match std::fs::read(path) {
                     Ok(data) => Some(data),
                     Err(e) => {
-                        tracing::warn!("Unable to read file {:?}", e);
+                        tracing::warn!("Unable to read file \"{}\": {:?}", name, e);
                         None
                     }
                 }
             }
             Err(e) => {
-                tracing::warn!("Unable to read file {:?}", e);
+                tracing::warn!("Unable to read file \"{}\": {:?}", name, e);
                 None
             }
         }
