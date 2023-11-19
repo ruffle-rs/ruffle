@@ -415,7 +415,7 @@ fn lerp_color(start: &Color, end: &Color, a: f32, b: f32) -> Color {
 }
 
 fn lerp_twips(start: Twips, end: Twips, a: f32, b: f32) -> Twips {
-    Twips::new((start.get() as f32 * a + end.get() as f32 * b) as i32)
+    Twips::new((start.get() as f32 * a + end.get() as f32 * b).round() as i32)
 }
 
 fn lerp_fill(start: &swf::FillStyle, end: &swf::FillStyle, a: f32, b: f32) -> swf::FillStyle {
@@ -598,5 +598,23 @@ fn lerp_gradient(start: &swf::Gradient, end: &swf::Gradient, a: f32, b: f32) -> 
         spread: start.spread,
         interpolation: start.interpolation,
         records,
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    // Regression test for #14074
+    #[test]
+    fn test_lerp_rounding() {
+        let ratio: u16 = 17246;
+        let b = f32::from(ratio) / 65535.0;
+        let a = 1.0 - b;
+
+        assert_eq!(
+            lerp_twips(Twips::new(-7), Twips::new(-7), a, b),
+            Twips::new(-7)
+        );
     }
 }
