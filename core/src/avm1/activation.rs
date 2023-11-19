@@ -2274,6 +2274,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     self.callee,
                 );
 
+                activation.local_registers = self.local_registers;
+
                 match catch_vars {
                     CatchVar::Var(name) => {
                         let name = AvmString::new(
