@@ -142,4 +142,42 @@ impl<'gc> TObject<'gc> for QNameObject<'gc> {
     fn as_qname_object(self) -> Option<QNameObject<'gc>> {
         Some(self)
     }
+
+    fn get_next_enumerant(
+        self,
+        last_index: u32,
+        _activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Option<u32>, Error<'gc>> {
+        Ok(if last_index < 2 {
+            Some(last_index + 1)
+        } else {
+            Some(0)
+        })
+    }
+
+    fn get_enumerant_value(
+        self,
+        index: u32,
+        _activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        // NOTE: Weird avmplus behavior, get_enumerant_name returns uri first, but get_enumerant_value returns localName first.
+        Ok(match index {
+            1 => self.local_name().into(),
+            2 => self.uri().map(Into::into).unwrap_or("".into()),
+            _ => Value::Undefined,
+        })
+    }
+
+    fn get_enumerant_name(
+        self,
+        index: u32,
+        _activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        // NOTE: Weird avmplus behavior, get_enumerant_name returns uri first, but get_enumerant_value returns localName first.
+        Ok(match index {
+            1 => "uri".into(),
+            2 => "localName".into(),
+            _ => Value::Undefined,
+        })
+    }
 }
