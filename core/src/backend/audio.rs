@@ -1,8 +1,16 @@
-use std::any::Any;
+use std::{
+    any::Any,
+    collections::VecDeque,
+    sync::{Arc, RwLock},
+};
 
 use crate::{
     avm1::{NativeObject, Object as Avm1Object},
-    avm2::{Avm2, EventObject as Avm2EventObject, SoundChannelObject},
+    avm2::{
+        globals::slots::flash_events_sample_data_event as sample_data_event_slots, Activation,
+        Avm2, EventObject as Avm2EventObject, SoundChannelObject, SoundObject as Avm2SoundObject,
+        TObject,
+    },
     buffer::Substream,
     context::UpdateContext,
     display_object::{self, DisplayObject, MovieClip, TDisplayObject},
@@ -109,6 +117,8 @@ pub trait AudioBackend: Any {
         clip_data: crate::tag_utils::SwfSlice,
         handle: &swf::SoundStreamHead,
     ) -> Result<SoundInstanceHandle, DecodeError>;
+
+    fn start_generated_sound(&mut self, deque: Arc<RwLock<VecDeque<f32>>>) -> SoundInstanceHandle;
 
     /// Starts playing a "stream" sound, which is an audio stream that is
     /// distributed among multiple chunks of a larger data stream such as a
@@ -274,6 +284,10 @@ impl AudioBackend for NullAudioBackend {
         Ok(SoundInstanceHandle::null())
     }
 
+    fn start_generated_sound(&mut self, _deque: Arc<RwLock<VecDeque<f32>>>) -> SoundInstanceHandle {
+        SoundInstanceHandle::null()
+    }
+
     fn start_substream(
         &mut self,
         _stream_data: Substream,
@@ -399,29 +413,31 @@ impl<'gc> AudioManager<'gc> {
                 }
                 true
             } else {
-                // Sound ended.
-                let duration = sound
-                    .sound
-                    .and_then(|sound| context.audio.get_sound_duration(sound))
-                    .unwrap_or_default();
-                if let Some(object) = sound.avm1_object {
-                    if let NativeObject::Sound(sound) = object.native() {
-                        sound.set_position(duration.round() as u32);
-                    }
+                if let SoundInstanceSourceData::Event(sound_handle) = sound.source_data.clone() {
+                    // Sound ended.
+                    let duration = context
+                        .audio
+                        .get_sound_duration(sound_handle)
+                        .unwrap_or_default();
+                    if let Some(object) = sound.avm1_object {
+                        if let NativeObject::Sound(sound) = object.native() {
+                            sound.set_position(duration.round() as u32);
+                        }
 
-                    // Fire soundComplete event.
-                    if let Some(root) = context.stage.root_clip() {
-                        let method_name = AvmString::new_ascii_static(mc, b"onSoundComplete");
+                        // Fire soundComplete event.
+                        if let Some(root) = context.stage.root_clip() {
+                            let method_name = AvmString::new_ascii_static(mc, b"onSoundComplete");
 
-                        context.action_queue.queue_action(
-                            root,
-                            crate::context::ActionType::Method {
-                                object,
-                                name: method_name,
-                                args: vec![],
-                            },
-                            false,
-                        );
+                            context.action_queue.queue_action(
+                                root,
+                                crate::context::ActionType::Method {
+                                    object,
+                                    name: method_name,
+                                    args: vec![],
+                                },
+                                false,
+                            );
+                        }
                     }
                 }
 
@@ -438,8 +454,57 @@ impl<'gc> AudioManager<'gc> {
             Avm2::dispatch_event(context, event, target.into());
         }
 
+        let domain = context.avm2.stage_domain();
+        let mut activation = Activation::from_domain(context, domain);
+        Self::update_generated_sounds(&mut activation);
+
         // Update sound transforms, if dirty.
         context.audio_manager.update_sound_transforms(context.audio);
+    }
+
+    fn update_generated_sounds(activation: &mut Activation<'_, 'gc>) {
+        let mut states = Vec::new();
+        {
+            // Update the position of sounds, and remove any completed sounds.
+            for sound in &mut activation.context.audio_manager.sounds {
+                if let SoundInstanceSourceData::Generated(sound_state) = &mut sound.source_data {
+                    states.push(sound_state.clone());
+                }
+            }
+        }
+
+        for sound_state in &mut states {
+            let fps = activation.caller_movie_or_root().frame_rate().to_f32();
+
+            let mut ns = sound_state.next_samples.write().unwrap();
+            let mut pos = sound_state.position.write().unwrap();
+            // generating 3 frames worth of audio ahead to reduce hiccups
+            while ns.len() <= ((44100.0 * 2.0 * 3.0 / fps).ceil() as usize) {
+                let sample_data_evt = Avm2EventObject::sample_data_event(activation, *pos);
+                Avm2::dispatch_event(
+                    &mut activation.context,
+                    sample_data_evt,
+                    sound_state.sound_object.into(),
+                );
+
+                let data = sample_data_evt
+                    .get_slot(sample_data_event_slots::_DATA)
+                    .as_object()
+                    .unwrap();
+                let ba = data.as_bytearray().unwrap();
+
+                ba.set_position(0);
+                for _ in 0..ba.len() / 4 {
+                    ns.push_back(ba.read_float().expect("float can be read"));
+                }
+
+                *pos += ba.len() as u32 / 8;
+
+                if ba.len() < 2048 * 8 {
+                    break;
+                }
+            }
+        }
     }
 
     /// Starts a sound and optionally associates it with a Display Object.
@@ -455,7 +520,7 @@ impl<'gc> AudioManager<'gc> {
         if self.sounds.len() < Self::MAX_SOUNDS {
             let handle = audio.start_sound(sound, settings).ok()?;
             let instance = SoundInstance {
-                sound: Some(sound),
+                source_data: SoundInstanceSourceData::Event(sound),
                 instance: handle,
                 display_object,
                 transform: display_object::SoundTransform::default(),
@@ -500,12 +565,13 @@ impl<'gc> AudioManager<'gc> {
 
     pub fn stop_sounds_with_handle(&mut self, audio: &mut dyn AudioBackend, sound: SoundHandle) {
         self.sounds.retain(move |other| {
-            if other.sound == Some(sound) {
-                audio.stop_sound(other.instance);
-                false
-            } else {
-                true
+            if let SoundInstanceSourceData::Event(other_sound) = other.source_data.clone() {
+                if other_sound == sound {
+                    audio.stop_sound(other.instance);
+                    return false;
+                }
             }
+            true
         });
     }
 
@@ -566,7 +632,13 @@ impl<'gc> AudioManager<'gc> {
     }
 
     pub fn is_sound_playing_with_handle(&self, sound: SoundHandle) -> bool {
-        self.sounds.iter().any(|other| other.sound == Some(sound))
+        self.sounds.iter().any(|other| {
+            if let SoundInstanceSourceData::Event(other_sound) = other.source_data.clone() {
+                other_sound == sound
+            } else {
+                false
+            }
+        })
     }
 
     pub fn start_stream(
@@ -580,7 +652,7 @@ impl<'gc> AudioManager<'gc> {
         if self.sounds.len() < Self::MAX_SOUNDS {
             let handle = audio.start_stream(data, stream_info).ok()?;
             let instance = SoundInstance {
-                sound: None,
+                source_data: SoundInstanceSourceData::Stream(),
                 instance: handle,
                 display_object: Some(movie_clip.into()),
                 transform: display_object::SoundTransform::default(),
@@ -606,9 +678,39 @@ impl<'gc> AudioManager<'gc> {
         if self.sounds.len() < Self::MAX_SOUNDS {
             let handle = audio.start_substream(stream_data, stream_info)?;
             let instance = SoundInstance {
-                sound: None,
+                source_data: SoundInstanceSourceData::Stream(),
                 instance: handle,
                 display_object: Some(movie_clip.into()),
+                transform: display_object::SoundTransform::default(),
+                avm1_object: None,
+                avm2_object: None,
+                stream_start_frame: None,
+            };
+            audio.set_sound_transform(handle, self.transform_for_sound(&instance));
+            self.sounds.push(instance);
+            Ok(handle)
+        } else {
+            Err(DecodeError::TooManySounds)
+        }
+    }
+
+    /// Starts a generated sound stream.
+    pub fn start_generated_sound(
+        &mut self,
+        audio: &mut dyn AudioBackend,
+        sound_object: Avm2SoundObject<'gc>,
+    ) -> Result<SoundInstanceHandle, DecodeError> {
+        if self.sounds.len() < Self::MAX_SOUNDS {
+            let sample_queue = Arc::new(RwLock::new(VecDeque::new()));
+
+            let handle = audio.start_generated_sound(sample_queue.clone());
+            let instance = SoundInstance {
+                source_data: SoundInstanceSourceData::Generated(GeneratedSoundState::new(
+                    sound_object,
+                    sample_queue.clone(),
+                )),
+                instance: handle,
+                display_object: None, // TODO:
                 transform: display_object::SoundTransform::default(),
                 avm1_object: None,
                 avm2_object: None,
@@ -798,15 +900,45 @@ impl Default for AudioManager<'_> {
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
+pub struct GeneratedSoundState<'gc> {
+    sound_object: Avm2SoundObject<'gc>,
+    #[collect(require_static)]
+    next_samples: Arc<RwLock<VecDeque<f32>>>,
+    #[collect(require_static)]
+    position: Arc<RwLock<u32>>,
+}
+
+impl<'gc> GeneratedSoundState<'gc> {
+    pub fn new(
+        sound_object: Avm2SoundObject<'gc>,
+        sample_queue: Arc<RwLock<VecDeque<f32>>>,
+    ) -> Self {
+        Self {
+            sound_object,
+            next_samples: sample_queue,
+            position: Arc::new(RwLock::new(0)),
+        }
+    }
+}
+
+#[derive(Clone, Collect)]
+#[collect(no_drop)]
+pub enum SoundInstanceSourceData<'gc> {
+    Event(#[collect(require_static)] SoundHandle),
+    Stream(),
+    Generated(GeneratedSoundState<'gc>),
+}
+
+#[derive(Clone, Collect)]
+#[collect(no_drop)]
 pub struct SoundInstance<'gc> {
+    /// The handle to the sound definition in the audio backend.
+    /// This will be `None` for stream sounds.
+    source_data: SoundInstanceSourceData<'gc>,
+
     /// The handle to the sound instance in the audio backend.
     #[collect(require_static)]
     instance: SoundInstanceHandle,
-
-    /// The handle to the sound definition in the audio backend.
-    /// This will be `None` for stream sounds.
-    #[collect(require_static)]
-    sound: Option<SoundHandle>,
 
     /// The display object that this sound is playing in, if any.
     /// Used for volume mixing and `Sound.stop()`.
