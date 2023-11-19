@@ -1902,6 +1902,7 @@ pub trait TDisplayObject<'gc>:
             if !obj.is_of_type(movieclip_class, context) && !movie.is_root() {
                 movie.stop(context);
             }
+            movie.set_initialized(context.gc_context);
         }
     }
 

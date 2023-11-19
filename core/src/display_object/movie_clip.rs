@@ -435,6 +435,10 @@ impl<'gc> MovieClip<'gc> {
         drop(mc);
     }
 
+    pub fn set_initialized(self, gc_context: &Mutation<'gc>) {
+        self.0.write(gc_context).set_initialized(true);
+    }
+
     /// Preload a chunk of the movie.
     ///
     /// A "chunk" is an implementor-chosen number of tags that are parsed
@@ -2658,10 +2662,6 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                     }
                     child.construct_frame(context);
                 }
-            }
-
-            if is_load_frame {
-                self.0.write(context.gc_context).set_initialized(true);
             }
         }
     }
