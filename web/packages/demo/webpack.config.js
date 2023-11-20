@@ -35,6 +35,11 @@ module.exports = (_env, _argv) => {
             assetFilter: (assetFilename) =>
                 !/\.(map|wasm)$/i.test(assetFilename),
         },
+        devServer: {
+            client: {
+                overlay: false,
+            },
+        },
         devtool: "source-map",
         plugins: [
             new CopyPlugin({
