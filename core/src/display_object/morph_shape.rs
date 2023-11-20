@@ -343,16 +343,14 @@ impl MorphShapeStatic {
                     continue;
                 }
                 _ => {
-                    shape.push(
-                        lerp_edges(
-                            Point::new(start_x, start_y),
-                            Point::new(end_x, end_y),
-                            s,
-                            e,
-                            a,
-                            b
-                        )
-                    );
+                    shape.push(lerp_edges(
+                        Point::new(start_x, start_y),
+                        Point::new(end_x, end_y),
+                        s,
+                        e,
+                        a,
+                        b,
+                    ));
                     Self::update_pos(&mut start_x, &mut start_y, s);
                     Self::update_pos(&mut end_x, &mut end_y, e);
                     start = start_iter.next();
@@ -509,15 +507,17 @@ fn lerp_edges(
     use swf::ShapeRecord;
     let pen = lerp_point_twips(start_pen, end_pen, a, b);
     match (start, end) {
-        (ShapeRecord::StraightEdge { delta: start_delta }, ShapeRecord::StraightEdge { delta: end_delta }) => {
-
+        (
+            ShapeRecord::StraightEdge { delta: start_delta },
+            ShapeRecord::StraightEdge { delta: end_delta },
+        ) => {
             let start_anchor = start_pen + *start_delta;
             let end_anchor = end_pen + *end_delta;
 
             let anchor = lerp_point_twips(start_anchor, end_anchor, a, b);
 
             ShapeRecord::StraightEdge {
-                delta: anchor - pen
+                delta: anchor - pen,
             }
         }
 
@@ -531,7 +531,6 @@ fn lerp_edges(
                 anchor_delta: end_anchor_delta,
             },
         ) => {
-
             let start_control = start_pen + *start_control_delta;
             let start_anchor = start_pen + *start_anchor_delta;
 
@@ -540,10 +539,10 @@ fn lerp_edges(
 
             let control = lerp_point_twips(start_control, end_control, a, b);
             let anchor = lerp_point_twips(start_anchor, end_anchor, a, b);
-            
+
             ShapeRecord::CurvedEdge {
                 control_delta: control - pen,
-                anchor_delta: anchor - pen
+                anchor_delta: anchor - pen,
             }
         }
 
@@ -565,7 +564,7 @@ fn lerp_edges(
 
             ShapeRecord::CurvedEdge {
                 control_delta: control - pen,
-                anchor_delta: anchor - pen
+                anchor_delta: anchor - pen,
             }
         }
 
@@ -576,7 +575,6 @@ fn lerp_edges(
             },
             ShapeRecord::StraightEdge { delta: end_delta },
         ) => {
-
             let start_control = start_pen + *start_control_delta;
             let start_anchor = start_pen + *start_anchor_delta;
 
@@ -588,7 +586,7 @@ fn lerp_edges(
 
             ShapeRecord::CurvedEdge {
                 control_delta: control - pen,
-                anchor_delta: anchor - pen
+                anchor_delta: anchor - pen,
             }
         }
         _ => unreachable!("{:?} {:?}", start, end),
