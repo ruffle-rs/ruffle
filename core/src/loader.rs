@@ -1434,11 +1434,33 @@ impl<'gc> Loader<'gc> {
                             tracing::error!("Encountered AVM2 error when setting sound: {}", e);
                         }
 
+                        let total_len = response.body.len();
+
                         // FIXME - the "open" event should be fired earlier, and not fired in case of ioerror.
                         let mut activation = Avm2Activation::from_nothing(uc.reborrow());
                         let open_evt =
                             Avm2EventObject::bare_default_event(&mut activation.context, "open");
                         Avm2::dispatch_event(&mut activation.context, open_evt, sound_object);
+
+                        // FIXME - As in load_url_loader, we should fire "progress" events as we receive data,
+                        // not just at the end
+                        let progress_evt = activation
+                            .avm2()
+                            .classes()
+                            .progressevent
+                            .construct(
+                                &mut activation,
+                                &[
+                                    "progress".into(),
+                                    false.into(),
+                                    false.into(),
+                                    total_len.into(),
+                                    total_len.into(),
+                                ],
+                            )
+                            .map_err(|e| Error::Avm2Error(e.to_string()))?;
+
+                        Avm2::dispatch_event(&mut activation.context, progress_evt, sound_object);
 
                         let complete_evt = Avm2EventObject::bare_default_event(
                             &mut activation.context,
