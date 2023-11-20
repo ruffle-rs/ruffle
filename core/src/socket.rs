@@ -155,7 +155,11 @@ impl<'gc> Sockets<'gc> {
 
     pub fn send(&mut self, handle: SocketHandle, data: Vec<u8>) {
         if let Some(Socket { sender, .. }) = self.sockets.get_mut(handle) {
-            let _ = sender.borrow().send_blocking(data);
+            // We use an unbounded socket, so this should only ever error if the channel is closed
+            // (the receiver was dropped)
+            if let Err(e) = sender.borrow().try_send(data) {
+                tracing::error!("Failed to send data to socket: {:?}", e);
+            }
         }
     }
 
