@@ -65,7 +65,7 @@ export class PublicAPI implements PublicAPILike {
      * This is used to upgrade from a prior version of the public API, or from
      * a user-defined configuration object placed in the public API slot.
      */
-    protected constructor(prev: PublicAPILike | null) {
+    protected constructor(prev?: PublicAPILike | null) {
         this.sources = prev?.sources || {};
         this.config = prev?.config || {};
         this.invoked = prev?.invoked || false;
@@ -256,8 +256,8 @@ export class PublicAPI implements PublicAPILike {
      * @returns The Ruffle Public API.
      */
     static negotiate(
-        prevRuffle: PublicAPILike,
-        sourceName: string | undefined,
+        prevRuffle?: PublicAPILike | null,
+        sourceName?: string,
     ): PublicAPI {
         let publicAPI: PublicAPI;
         if (prevRuffle instanceof PublicAPI) {
