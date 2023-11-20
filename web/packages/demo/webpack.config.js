@@ -41,6 +41,10 @@ module.exports = (_env, _argv) => {
                 patterns: [
                     { from: path.resolve(__dirname, "www/index.html") },
                     { from: path.resolve(__dirname, "www/logo-anim.swf") },
+                    { from: path.resolve(__dirname, "www/icon32.png") },
+                    { from: path.resolve(__dirname, "www/icon48.png") },
+                    { from: path.resolve(__dirname, "www/icon180.png") },
+                    { from: path.resolve(__dirname, "www/logo.svg") },
                     { from: "swfs.json", noErrorOnMissing: true },
                     { from: "LICENSE*" },
                     { from: "README.md" },

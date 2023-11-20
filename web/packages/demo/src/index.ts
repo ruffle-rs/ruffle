@@ -1,3 +1,5 @@
+import "./lato.css";
+import "./common.css";
 import "./index.css";
 
 declare global {
@@ -25,7 +27,7 @@ const ruffle = (window.RufflePlayer as PublicAPI).newest()!;
 
 let player: RufflePlayer | null;
 
-const main = document.getElementById("main")!;
+const main = document.getElementById("player-container")!;
 const overlay = document.getElementById("overlay")!;
 const authorContainer = document.getElementById("author-container")!;
 const author = <HTMLLinkElement>document.getElementById("author");
@@ -37,14 +39,13 @@ const sampleFileInput = <HTMLSelectElement>(
     document.getElementById("sample-swfs")
 );
 const localFileName = document.getElementById("local-file-name")!;
-const closeModal = document.getElementById("close-modal")!;
-const openModal = document.getElementById("open-modal")!;
+const toggleInfo = document.getElementById("toggle-info")!;
 const reloadSwf = document.getElementById("reload-swf")!;
-const metadataModal = document.getElementById("metadata-modal")!;
+const infoContainer = document.getElementById("info-container")!;
 // prettier-ignore
 const optionGroups = {
-  "Animation": document.getElementById("anim-optgroup")!,
-  "Game": document.getElementById("games-optgroup")!,
+    "Animation": document.getElementById("anim-optgroup")!,
+    "Game": document.getElementById("games-optgroup")!,
 };
 
 // This is the base config used by the demo player (except for specific SWF files
@@ -57,7 +58,7 @@ const baseDemoConfig = {
     forceAlign: true,
 };
 
-const swfToFlashVersion: Record<number, string> = {
+const swfToFlashVersion: { [key: number]: string } = {
     1: "1",
     2: "2",
     3: "3",
@@ -122,37 +123,36 @@ function unload() {
         document.querySelectorAll("span.metadata").forEach((el) => {
             el.textContent = "Loading";
         });
-        (<HTMLInputElement>document.getElementById("backgroundColor")).value =
-            "#FFFFFF";
+        document.getElementById("backgroundColor")!.style.backgroundColor =
+            "white";
     }
 }
 
-function load(options: DataLoadOptions | URLLoadOptions) {
+function load(options: string | DataLoadOptions | URLLoadOptions) {
     unload();
     player = ruffle.createPlayer();
     player.id = "player";
     main.append(player);
     player.load(options, false);
-    player.addEventListener("loadedmetadata", function () {
+    player.addEventListener("loadedmetadata", () => {
         if (player?.metadata) {
             for (const [key, value] of Object.entries(player.metadata)) {
                 const metadataElement = document.getElementById(key);
                 if (metadataElement) {
                     switch (key) {
                         case "backgroundColor":
-                            (<HTMLInputElement>metadataElement).value =
-                                value ?? "#FFFFFF";
+                            metadataElement.style.backgroundColor =
+                                value ?? "white";
                             break;
                         case "uncompressedLength":
                             metadataElement.textContent = `${value >> 10}Kb`;
                             break;
+                        // @ts-expect-error This intentionally falls through to the default case
                         case "swfVersion":
                             document.getElementById(
                                 "flashVersion",
-                            )!.textContent =
-                                swfToFlashVersion[value] ?? "Unknown";
-                            metadataElement.textContent = value;
-                            break;
+                            )!.textContent = swfToFlashVersion[value] ?? null;
+                        // falls through and executes the default case as well
                         default:
                             metadataElement.textContent = value;
                             break;
@@ -177,7 +177,7 @@ function hideSample() {
     author.href = "";
 }
 
-async function loadFile(file: File) {
+async function loadFile(file: File | undefined) {
     if (!file) {
         return;
     }
@@ -204,9 +204,14 @@ function loadSample() {
     }
 }
 
-localFileInput.addEventListener("change", (_event) => {
-    if (localFileInput.files && localFileInput.files[0]) {
-        loadFile(localFileInput.files[0]);
+localFileInput.addEventListener("change", (event) => {
+    const eventTarget = event.target as HTMLInputElement;
+    if (
+        eventTarget?.files &&
+        eventTarget?.files.length > 0 &&
+        eventTarget.files[0]
+    ) {
+        loadFile(eventTarget.files[0]);
     }
 });
 
@@ -230,8 +235,8 @@ main.addEventListener("drop", (event) => {
     event.stopPropagation();
     event.preventDefault();
     overlay.classList.remove("drag");
-    localFileInput.files = event.dataTransfer?.files ?? null;
-    if (event.dataTransfer?.files[0]) {
+    if (event.dataTransfer) {
+        localFileInput.files = event.dataTransfer.files;
         loadFile(event.dataTransfer.files[0]);
     }
 });
@@ -249,18 +254,18 @@ localFileInput.addEventListener("drop", (event) => {
     event.stopPropagation();
     event.preventDefault();
     overlay.classList.remove("drag");
-    localFileInput.files = event.dataTransfer?.files ?? null;
-    if (event.dataTransfer?.files[0]) {
+    if (event.dataTransfer) {
+        localFileInput.files = event.dataTransfer.files;
         loadFile(event.dataTransfer.files[0]);
     }
 });
 
-closeModal.addEventListener("click", () => {
-    metadataModal.style.display = "none";
-});
-
-openModal.addEventListener("click", () => {
-    metadataModal.style.display = "block";
+toggleInfo.addEventListener("click", () => {
+    if (infoContainer.style.display === "none") {
+        infoContainer.style.display = "flex";
+    } else {
+        infoContainer.style.display = "none";
+    }
 });
 
 reloadSwf.addEventListener("click", () => {
@@ -281,14 +286,8 @@ window.addEventListener("load", () => {
     ) {
         localFileInput.removeAttribute("accept");
     }
-    overlay.classList.remove("hidden");
+    overlay.removeAttribute("hidden");
 });
-
-window.onclick = (event) => {
-    if (event.target === metadataModal) {
-        metadataModal.style.display = "none";
-    }
-};
 
 (async () => {
     const response = await fetch("swfs.json");
