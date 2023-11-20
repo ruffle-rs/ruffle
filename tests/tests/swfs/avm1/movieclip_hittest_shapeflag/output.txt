@@ -287,3 +287,53 @@ false
 // _level0.clip.hitTest(400, 400, true)
 false
 
+// morph complex shape
+// _level0.clip.hitTest(360, 300, true)
+false
+// _level0.clip.hitTest(380, 300, true)
+false
+// _level0.clip.hitTest(400, 300, true)
+false
+// _level0.clip.hitTest(420, 300, true)
+true
+// _level0.clip.hitTest(440, 300, true)
+true
+// _level0.clip.hitTest(460, 300, true)
+true
+// _level0.clip.hitTest(360, 320, true)
+false
+// _level0.clip.hitTest(380, 320, true)
+true
+// _level0.clip.hitTest(400, 320, true)
+true
+// _level0.clip.hitTest(420, 320, true)
+true
+// _level0.clip.hitTest(440, 320, true)
+true
+// _level0.clip.hitTest(460, 320, true)
+true
+// _level0.clip.hitTest(360, 340, true)
+true
+// _level0.clip.hitTest(380, 340, true)
+true
+// _level0.clip.hitTest(400, 340, true)
+true
+// _level0.clip.hitTest(420, 340, true)
+true
+// _level0.clip.hitTest(440, 340, true)
+true
+// _level0.clip.hitTest(460, 340, true)
+true
+// _level0.clip.hitTest(360, 360, true)
+true
+// _level0.clip.hitTest(380, 360, true)
+true
+// _level0.clip.hitTest(400, 360, true)
+true
+// _level0.clip.hitTest(420, 360, true)
+true
+// _level0.clip.hitTest(440, 360, true)
+true
+// _level0.clip.hitTest(460, 360, true)
+true
+
