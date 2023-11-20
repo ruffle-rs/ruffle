@@ -1,0 +1,3 @@
+A ctor begins
+A ctor ends
+B ctor called
