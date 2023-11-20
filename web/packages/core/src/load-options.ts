@@ -1,7 +1,7 @@
 /**
  * Represents the various types of auto-play behaviours that are supported.
  */
-export const enum AutoPlay {
+export enum AutoPlay {
     /**
      * The player should automatically play the movie as soon as it is loaded.
      *
@@ -35,7 +35,7 @@ export const enum AutoPlay {
  * When letterboxed, black bars will be rendered around the exterior
  * margins of the content.
  */
-export const enum Letterbox {
+export enum Letterbox {
     /**
      * The content will never be letterboxed.
      */
@@ -56,7 +56,7 @@ export const enum Letterbox {
  * When the player is muted, this controls whether or not Ruffle will show a
  * "click to unmute" overlay on top of the movie.
  */
-export const enum UnmuteOverlay {
+export enum UnmuteOverlay {
     /**
      * Show an overlay explaining that the movie is muted.
      */
@@ -71,7 +71,7 @@ export const enum UnmuteOverlay {
 /**
  * Console logging level.
  */
-export const enum LogLevel {
+export enum LogLevel {
     Error = "error",
     Warn = "warn",
     Info = "info",
@@ -82,7 +82,7 @@ export const enum LogLevel {
 /**
  * The window mode of a Ruffle player.
  */
-export const enum WindowMode {
+export enum WindowMode {
     /**
      * The Flash content is rendered in its own window and layering is done with the browser's
      * default behavior.
@@ -122,7 +122,7 @@ export const enum WindowMode {
  *
  * The available backends may change in future releases.
  */
-export const enum RenderBackend {
+export enum RenderBackend {
     /**
      * An [in-development API](https://caniuse.com/webgpu) that will be preferred if available in the future.
      * Should behave the same as wgpu-webgl, except with lower overhead and thus better performance.
@@ -155,7 +155,7 @@ export const enum RenderBackend {
 /**
  * Represents the various context menu options that are supported.
  */
-export const enum ContextMenu {
+export enum ContextMenu {
     /**
      * The context menu should appear when right-clicking or long-pressing
      * the Ruffle instance.
@@ -198,7 +198,7 @@ export type Duration = SecsDuration | ObsoleteDuration;
 /**
  * The handling mode of links opening a new website.
  */
-export const enum OpenURLMode {
+export enum OpenURLMode {
     /**
      * Allow all links to open a new website.
      */
@@ -218,7 +218,7 @@ export const enum OpenURLMode {
 /**
  * The networking API access mode of the Ruffle player.
  */
-export const enum NetworkingAccessMode {
+export enum NetworkingAccessMode {
     /**
      * All networking APIs are permitted in the SWF file.
      */

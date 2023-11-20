@@ -36,9 +36,9 @@ overrides:
       '@typescript-eslint/no-unused-vars':
         - error
         - argsIgnorePattern: ^_
-      # Disallow non-const enums, as they generate unnecessary code.
-      # Taken from https://github.com/typescript-eslint/typescript-eslint/issues/561#issuecomment-593059472.
+      # Disallow const enums, as they can't be used by consumers.
+      # See https://www.typescriptlang.org/docs/handbook/enums.html#const-enum-pitfalls
       no-restricted-syntax:
         - error
-        - selector: 'TSEnumDeclaration:not([const=true])'
-          message: Don't declare non-const enums
+        - selector: 'TSEnumDeclaration[const=true]'
+          message: Don't declare const enums

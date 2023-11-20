@@ -23,7 +23,7 @@ const DIMENSION_REGEX = /^\s*(\d+(\.\d+)?(%)?)/;
 
 let isAudioContextUnmuted = false;
 
-const enum PanicError {
+enum PanicError {
     Unknown,
     CSPConflict,
     FileProtocol,
@@ -2365,7 +2365,7 @@ export class RufflePlayer extends HTMLElement {
 /**
  * Describes the loading state of an SWF movie.
  */
-export const enum ReadyState {
+export enum ReadyState {
     /**
      * No movie is loaded, or no information is yet available about the movie.
      */
