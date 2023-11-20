@@ -110,7 +110,14 @@ impl UiBackend for TestUiBackend {
 
     fn display_unsupported_video(&self, _url: Url) {}
 
-    fn load_device_font(&self, _name: &str, _register: &dyn FnMut(FontDefinition)) {}
+    fn load_device_font(
+        &self,
+        _name: &str,
+        _is_bold: bool,
+        _is_italic: bool,
+        _register: &dyn FnMut(FontDefinition),
+    ) {
+    }
 
     fn display_file_open_dialog(&mut self, filters: Vec<FileFilter>) -> Option<DialogResultFuture> {
         Some(Box::pin(async move {

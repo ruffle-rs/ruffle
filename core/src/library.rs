@@ -373,7 +373,7 @@ pub struct Library<'gc> {
 
     /// A cache of seen device fonts.
     // TODO: Descriptors shouldn't be stored in fonts. Fonts should be a list that we iterate and ask "do you match". A font can have zero or many names.
-    device_fonts: FnvHashMap<String, Font<'gc>>,
+    device_fonts: FontMap<'gc>,
 
     /// "Global" embedded fonts, registered through AVM2 `Font.registerFont`.
     /// These should be checked before any Movie-specific library's own fonts.
@@ -381,7 +381,7 @@ pub struct Library<'gc> {
 
     /// A set of which fonts we've asked from the backend already, to help with negative caching.
     /// If we've asked for a specific font, record it here and don't ask again.
-    font_lookup_cache: FnvHashSet<String>,
+    font_lookup_cache: FnvHashSet<(String, bool, bool)>,
 
     /// The implementation names of each default font.
     default_font_names: FnvHashMap<DefaultFont, Vec<String>>,
@@ -454,7 +454,9 @@ impl<'gc> Library<'gc> {
 
         let mut result = vec![];
         for name in self.default_font_names.entry(name).or_default().clone() {
-            if let Some(font) = self.get_or_load_device_font(&name, ui, renderer, gc_context) {
+            if let Some(font) =
+                self.get_or_load_device_font(&name, false, false, ui, renderer, gc_context)
+            {
                 result.push(font);
             }
         }
@@ -467,35 +469,39 @@ impl<'gc> Library<'gc> {
     pub fn get_or_load_device_font(
         &mut self,
         name: &str,
+        is_bold: bool,
+        is_italic: bool,
         ui: &dyn UiBackend,
         renderer: &mut dyn RenderBackend,
         gc_context: &Mutation<'gc>,
     ) -> Option<Font<'gc>> {
         // If we have the font already, use that
         // TODO: We should instead ask each font if it matches a given name. Partial matches are allowed, and fonts may have any amount of names.
-        if let Some(font) = self.device_fonts.get(name) {
-            return Some(*font);
+        if let Some(font) = self.device_fonts.find(name, is_bold, is_italic) {
+            return Some(font);
         }
 
         // We don't have this font already. Did we ask for it before?
-        let new_request = self.font_lookup_cache.insert(name.to_string());
+        let new_request = self
+            .font_lookup_cache
+            .insert((name.to_string(), is_bold, is_italic));
         if new_request {
             // First time asking for this font, see if our backend can provide anything relevant
-            ui.load_device_font(name, &|definition| {
+            ui.load_device_font(name, is_bold, is_italic, &|definition| {
                 self.register_device_font(gc_context, renderer, definition)
             });
         }
 
         // Check again. A backend may or may not have provided some new fonts,
         // and they may or may not be relevant to the one we're asking for.
-        match self.device_fonts.get(name) {
+        match self.device_fonts.find(name, is_bold, is_italic) {
             None => {
                 if new_request {
                     warn!("Unknown device font \"{name}\"");
                 }
                 None
             }
-            Some(font) => Some(*font),
+            Some(font) => Some(font),
         }
     }
 
@@ -516,7 +522,7 @@ impl<'gc> Library<'gc> {
                     Font::from_swf_tag(gc_context, renderer, tag, encoding, FontType::Device);
                 let name = font.descriptor().name().to_owned();
                 info!("Loaded new device font \"{name}\" from swf tag");
-                self.device_fonts.insert(name, font);
+                self.device_fonts.register(font);
             }
         }
         self.default_font_cache.clear();

@@ -247,7 +247,14 @@ impl UiBackend for DesktopUiBackend {
         };
     }
 
-    fn load_device_font(&self, _name: &str, _register: &dyn FnMut(FontDefinition)) {}
+    fn load_device_font(
+        &self,
+        _name: &str,
+        _is_bold: bool,
+        _is_italic: bool,
+        _register: &dyn FnMut(FontDefinition),
+    ) {
+    }
 
     // Unused on desktop
     fn open_virtual_keyboard(&self) {}
