@@ -31,6 +31,7 @@ const main = document.getElementById("player-container")!;
 const overlay = document.getElementById("overlay")!;
 const authorContainer = document.getElementById("author-container")!;
 const author = <HTMLLinkElement>document.getElementById("author");
+const webUrlInputContainer = document.getElementById("web-url-container")!;
 const sampleFileInputContainer = document.getElementById(
     "sample-swfs-container",
 )!;
@@ -57,6 +58,13 @@ const baseDemoConfig = {
     forceScale: true,
     forceAlign: true,
 };
+
+// [NA] For when we consolidate the extension player, and the web demo
+const enableUrlInput = false;
+
+if (!enableUrlInput) {
+    webUrlInputContainer.classList.add("hidden");
+}
 
 const swfToFlashVersion: { [key: number]: string } = {
     1: "1",
