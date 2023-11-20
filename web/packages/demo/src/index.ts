@@ -1,43 +1,63 @@
 import "./index.css";
 
-import { PublicAPI } from "ruffle-core";
+declare global {
+    interface Navigator {
+        /**
+         * iPadOS sends a User-Agent string that appears to be from macOS.
+         * navigator.standalone is not defined on macOS, so we use it for iPad detection.
+         */
+        standalone?: boolean;
+    }
+}
+
+import {
+    BaseLoadOptions,
+    DataLoadOptions,
+    Letterbox,
+    LogLevel,
+    PublicAPI,
+    RufflePlayer,
+    URLLoadOptions,
+} from "ruffle-core";
 
 window.RufflePlayer = PublicAPI.negotiate(window.RufflePlayer, "local");
-const ruffle = window.RufflePlayer.newest();
+const ruffle = (window.RufflePlayer as PublicAPI).newest()!;
 
-let player;
+let player: RufflePlayer | null;
 
-const main = document.getElementById("main");
-const overlay = document.getElementById("overlay");
-const authorContainer = document.getElementById("author-container");
-const author = document.getElementById("author");
+const main = document.getElementById("main")!;
+const overlay = document.getElementById("overlay")!;
+const authorContainer = document.getElementById("author-container")!;
+const author = <HTMLLinkElement>document.getElementById("author");
 const sampleFileInputContainer = document.getElementById(
     "sample-swfs-container",
+)!;
+const localFileInput = <HTMLInputElement>document.getElementById("local-file");
+const sampleFileInput = <HTMLSelectElement>(
+    document.getElementById("sample-swfs")
 );
-const localFileInput = document.getElementById("local-file");
-const sampleFileInput = document.getElementById("sample-swfs");
-const localFileName = document.getElementById("local-file-name");
-const closeModal = document.getElementById("close-modal");
-const openModal = document.getElementById("open-modal");
-const reloadSwf = document.getElementById("reload-swf");
-const metadataModal = document.getElementById("metadata-modal");
+const localFileName = document.getElementById("local-file-name")!;
+const closeModal = document.getElementById("close-modal")!;
+const openModal = document.getElementById("open-modal")!;
+const reloadSwf = document.getElementById("reload-swf")!;
+const metadataModal = document.getElementById("metadata-modal")!;
 // prettier-ignore
 const optionGroups = {
-    "Animation": document.getElementById("anim-optgroup"),
-    "Game": document.getElementById("games-optgroup"),
+  "Animation": document.getElementById("anim-optgroup")!,
+  "Game": document.getElementById("games-optgroup")!,
 };
 
 // This is the base config used by the demo player (except for specific SWF files
 // with their own base config).
 // It has the highest priority and its options cannot be overwritten.
 const baseDemoConfig = {
-    letterbox: "on",
-    logLevel: "warn",
+    letterbox: Letterbox.On,
+    logLevel: LogLevel.Warn,
     forceScale: true,
     forceAlign: true,
 };
 
-const swfToFlashVersion = {
+const swfToFlashVersion: Record<number, string> = {
     1: "1",
     2: "2",
     3: "3",
@@ -83,30 +103,45 @@ const swfToFlashVersion = {
     43: "32",
 };
 
+interface DemoSwf {
+    location: string;
+    title?: string;
+    author?: string;
+    authorLink?: string;
+    config?: BaseLoadOptions;
+    type: "Animation" | "Game";
+}
+
+interface HTMLOptionElementWithSwf extends HTMLOptionElement {
+    swfData: DemoSwf;
+}
+
 function unload() {
     if (player) {
         player.remove();
         document.querySelectorAll("span.metadata").forEach((el) => {
             el.textContent = "Loading";
         });
-        document.getElementById("backgroundColor").value = "#FFFFFF";
+        (<HTMLInputElement>document.getElementById("backgroundColor")).value =
+            "#FFFFFF";
     }
 }
 
-function load(options) {
+function load(options: DataLoadOptions | URLLoadOptions) {
     unload();
     player = ruffle.createPlayer();
     player.id = "player";
     main.append(player);
     player.load(options, false);
     player.addEventListener("loadedmetadata", function () {
-        if (this.metadata) {
-            for (const [key, value] of Object.entries(this.metadata)) {
+        if (player?.metadata) {
+            for (const [key, value] of Object.entries(player.metadata)) {
                 const metadataElement = document.getElementById(key);
                 if (metadataElement) {
                     switch (key) {
                         case "backgroundColor":
-                            metadataElement.value = value ?? "#FFFFFF";
+                            (<HTMLInputElement>metadataElement).value =
+                                value ?? "#FFFFFF";
                             break;
                         case "uncompressedLength":
                             metadataElement.textContent = `${value >> 10}Kb`;
@@ -114,8 +149,10 @@ function load(options) {
                         case "swfVersion":
                             document.getElementById(
                                 "flashVersion",
-                            ).textContent = swfToFlashVersion[value];
-                        // falls through and executes the default case as well
+                            )!.textContent =
+                                swfToFlashVersion[value] ?? "Unknown";
+                            metadataElement.textContent = value;
+                            break;
                         default:
                             metadataElement.textContent = value;
                             break;
@@ -126,11 +163,11 @@ function load(options) {
     });
 }
 
-function showSample(swfData) {
+function showSample(swfData: DemoSwf) {
     authorContainer.classList.remove("hidden");
-    author.textContent = swfData.author;
-    author.href = swfData.authorLink;
-    localFileInput.value = null;
+    author.textContent = swfData.author ?? "Unknown";
+    author.href = swfData.authorLink ?? "#";
+    localFileInput.value = "";
 }
 
 function hideSample() {
@@ -140,7 +177,7 @@ function hideSample() {
     author.href = "";
 }
 
-async function loadFile(file) {
+async function loadFile(file: File) {
     if (!file) {
         return;
     }
@@ -153,7 +190,9 @@ async function loadFile(file) {
 }
 
 function loadSample() {
-    const swfData = sampleFileInput[sampleFileInput.selectedIndex].swfData;
+    const swfData = (<HTMLOptionElementWithSwf>(
+        sampleFileInput[sampleFileInput.selectedIndex]
+    )).swfData;
     localFileName.textContent = "No file selected.";
     if (swfData) {
         showSample(swfData);
@@ -165,8 +204,10 @@ function loadSample() {
     }
 }
 
-localFileInput.addEventListener("change", (event) => {
-    loadFile(event.target.files[0]);
+localFileInput.addEventListener("change", (_event) => {
+    if (localFileInput.files && localFileInput.files[0]) {
+        loadFile(localFileInput.files[0]);
+    }
 });
 
 sampleFileInput.addEventListener("change", () => loadSample());
@@ -189,8 +230,10 @@ main.addEventListener("drop", (event) => {
     event.stopPropagation();
     event.preventDefault();
     overlay.classList.remove("drag");
-    localFileInput.files = event.dataTransfer.files;
-    loadFile(event.dataTransfer.files[0]);
+    localFileInput.files = event.dataTransfer?.files ?? null;
+    if (event.dataTransfer?.files[0]) {
+        loadFile(event.dataTransfer.files[0]);
+    }
 });
 localFileInput.addEventListener("dragleave", (event) => {
     event.stopPropagation();
@@ -206,8 +249,10 @@ localFileInput.addEventListener("drop", (event) => {
     event.stopPropagation();
     event.preventDefault();
     overlay.classList.remove("drag");
-    localFileInput.files = event.dataTransfer.files;
-    loadFile(event.dataTransfer.files[0]);
+    localFileInput.files = event.dataTransfer?.files ?? null;
+    if (event.dataTransfer?.files[0]) {
+        loadFile(event.dataTransfer.files[0]);
+    }
 });
 
 closeModal.addEventListener("click", () => {
@@ -249,10 +294,12 @@ window.onclick = (event) => {
     const response = await fetch("swfs.json");
 
     if (response.ok) {
-        const data = await response.json();
+        const data: { swfs: [DemoSwf] } = await response.json();
         for (const swfData of data.swfs) {
-            const option = document.createElement("option");
-            option.textContent = swfData.title;
+            const option = <HTMLOptionElementWithSwf>(
+                document.createElement("option")
+            );
+            option.textContent = swfData.title ?? "Unknown";
             option.value = swfData.location;
             option.swfData = swfData;
             if (swfData.type) {
@@ -268,7 +315,7 @@ window.onclick = (event) => {
     }
 
     sampleFileInput.selectedIndex = 0;
-    const initialFile = new URL(window.location).searchParams.get("file");
+    const initialFile = new URL(window.location.href).searchParams.get("file");
     if (initialFile) {
         const options = Array.from(sampleFileInput.options);
         sampleFileInput.selectedIndex = Math.max(
