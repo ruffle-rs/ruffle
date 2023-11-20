@@ -91,7 +91,13 @@ pub trait UiBackend: Downcast {
     /// You may call `register` any amount of times with any amount of found device fonts.
     /// If you do not call `register` with any fonts that match the request,
     /// then the font will simply be marked as not found - this may or may not fall back to another font.  
-    fn load_device_font(&self, name: &str, register: &dyn FnMut(FontDefinition));
+    fn load_device_font(
+        &self,
+        name: &str,
+        is_bold: bool,
+        is_italic: bool,
+        register: &dyn FnMut(FontDefinition),
+    );
 
     /// Displays a file selection dialog, returning None if the dialog cannot be displayed
     /// (e.g because it is already open)
@@ -267,7 +273,14 @@ impl UiBackend for NullUiBackend {
 
     fn display_unsupported_video(&self, _url: Url) {}
 
-    fn load_device_font(&self, _name: &str, _register: &dyn FnMut(FontDefinition)) {}
+    fn load_device_font(
+        &self,
+        _name: &str,
+        _is_bold: bool,
+        _is_italic: bool,
+        _register: &dyn FnMut(FontDefinition),
+    ) {
+    }
 
     fn open_virtual_keyboard(&self) {}
 

@@ -488,6 +488,8 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
         if let Some(font) = context.library.get_or_load_device_font(
             &font_name,
+            span.bold,
+            span.italic,
             context.ui,
             context.renderer,
             context.gc_context,
