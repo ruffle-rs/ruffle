@@ -44,9 +44,9 @@ version = "0.1.0"
 # gc-arena = { git = "https://github.com/kyren/gc-arena", rev = "efd89fc683c6bb456af3e226c33763cb822645e9" }
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
-naga = { version = "0.13.0", features = ["validate", "wgsl-out"] }
-naga_oil = "0.9.0"
-wgpu = "0.17.1"
+naga = { version = "0.14.1", features = ["validate", "wgsl-out"] }
+naga_oil = "0.11.0"
+wgpu = "0.18.0"
 egui = "0.23.0"
 
 # Don't optimize build scripts and macros.
