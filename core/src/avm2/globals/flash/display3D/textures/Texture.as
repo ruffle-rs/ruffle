@@ -10,8 +10,10 @@ package flash.display3D.textures {
         public function uploadCompressedTextureFromByteArray(data:ByteArray, byteArrayOffset:uint, async:Boolean = false):void {
             if (async) {
                 var self = this;
+                // FIXME - actually run this in the background, with a copy of 'data'
+                self.uploadCompressedTextureFromByteArrayInternal(data, byteArrayOffset);
+
                 setTimeout(function() {
-                    self.uploadCompressedTextureFromByteArrayInternal(data, byteArrayOffset);
                     self.dispatchEvent(new Event("textureReady"));
                 }, 0);
             } else {
