@@ -532,17 +532,17 @@ fn lerp_edges(
             },
         ) => {
             let start_control = start_pen + *start_control_delta;
-            let start_anchor = start_pen + *start_anchor_delta;
+            let start_anchor = start_control + *start_anchor_delta;
 
             let end_control = end_pen + *end_control_delta;
-            let end_anchor = end_pen + *end_anchor_delta;
+            let end_anchor = end_control + *end_anchor_delta;
 
             let control = lerp_point_twips(start_control, end_control, a, b);
             let anchor = lerp_point_twips(start_anchor, end_anchor, a, b);
 
             ShapeRecord::CurvedEdge {
                 control_delta: control - pen,
-                anchor_delta: anchor - pen,
+                anchor_delta: anchor - control,
             }
         }
 
@@ -554,17 +554,17 @@ fn lerp_edges(
             },
         ) => {
             let start_control = start_pen + *start_delta / 2;
-            let start_anchor = start_control;
+            let start_anchor = start_pen + *start_delta;
 
             let end_control = end_pen + *end_control_delta;
-            let end_anchor = end_pen + *end_anchor_delta;
+            let end_anchor = end_control + *end_anchor_delta;
 
             let control = lerp_point_twips(start_control, end_control, a, b);
             let anchor = lerp_point_twips(start_anchor, end_anchor, a, b);
 
             ShapeRecord::CurvedEdge {
                 control_delta: control - pen,
-                anchor_delta: anchor - pen,
+                anchor_delta: anchor - control,
             }
         }
 
@@ -576,17 +576,17 @@ fn lerp_edges(
             ShapeRecord::StraightEdge { delta: end_delta },
         ) => {
             let start_control = start_pen + *start_control_delta;
-            let start_anchor = start_pen + *start_anchor_delta;
+            let start_anchor = start_control + *start_anchor_delta;
 
             let end_control = end_pen + *end_delta / 2;
-            let end_anchor = end_control;
+            let end_anchor = end_pen + *end_delta;
 
             let control = lerp_point_twips(start_control, end_control, a, b);
             let anchor = lerp_point_twips(start_anchor, end_anchor, a, b);
 
             ShapeRecord::CurvedEdge {
                 control_delta: control - pen,
-                anchor_delta: anchor - pen,
+                anchor_delta: anchor - control,
             }
         }
         _ => unreachable!("{:?} {:?}", start, end),
