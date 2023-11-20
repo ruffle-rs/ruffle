@@ -32,7 +32,7 @@ console_error_panic_hook = { version = "0.1.7", optional = true }
 generational-arena = "0.2.9"
 js-sys = "0.3.65"
 tracing = { workspace = true, features = ["log"] }
-tracing-subscriber = { version = "0.3.17", default-features = false, features = ["registry"] }
+tracing-subscriber = { version = "0.3.18", default-features = false, features = ["registry"] }
 tracing-log = "0.2.0"
 tracing-wasm = "0.2.1"
 ruffle_render_canvas = { path = "../render/canvas", optional = true }
