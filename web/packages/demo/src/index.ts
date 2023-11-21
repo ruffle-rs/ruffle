@@ -30,15 +30,17 @@ let player: RufflePlayer | null;
 const playerContainer = document.getElementById("player-container")!;
 const overlay = document.getElementById("overlay")!;
 const authorContainer = document.getElementById("author-container")!;
-const author = <HTMLLinkElement>document.getElementById("author");
+const author = document.getElementById("author") as HTMLLinkElement;
 const webUrlInputContainer = document.getElementById("web-url-container")!;
 const sampleFileInputContainer = document.getElementById(
     "sample-swfs-container",
 )!;
-const localFileInput = <HTMLInputElement>document.getElementById("local-file");
-const sampleFileInput = <HTMLSelectElement>(
-    document.getElementById("sample-swfs")
-);
+const localFileInput = document.getElementById(
+    "local-file",
+) as HTMLInputElement;
+const sampleFileInput = document.getElementById(
+    "sample-swfs",
+) as HTMLSelectElement;
 const localFileName = document.getElementById("local-file-name")!;
 const toggleInfo = document.getElementById("toggle-info")!;
 const reloadSwf = document.getElementById("reload-swf")!;
@@ -198,9 +200,11 @@ async function loadFile(file: File | undefined) {
 }
 
 function loadSample() {
-    const swfData = (<HTMLOptionElementWithSwf>(
-        sampleFileInput[sampleFileInput.selectedIndex]
-    )).swfData;
+    const swfData = (
+        sampleFileInput[
+            sampleFileInput.selectedIndex
+        ] as HTMLOptionElementWithSwf
+    ).swfData;
     localFileName.textContent = "No file selected.";
     if (swfData) {
         showSample(swfData);
@@ -303,9 +307,9 @@ window.addEventListener("load", () => {
     if (response.ok) {
         const data: { swfs: [DemoSwf] } = await response.json();
         for (const swfData of data.swfs) {
-            const option = <HTMLOptionElementWithSwf>(
-                document.createElement("option")
-            );
+            const option = document.createElement(
+                "option",
+            ) as HTMLOptionElementWithSwf;
             option.textContent = swfData.title ?? "Unknown";
             option.value = swfData.location;
             option.swfData = swfData;
