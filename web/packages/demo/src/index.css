@@ -146,3 +146,9 @@ body {
         flex-flow: column;
     }
 }
+
+@media only screen and (width <= 600px) {
+    #logo-container {
+        display: none;
+    }
+}
