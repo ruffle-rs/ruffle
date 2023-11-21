@@ -63,6 +63,10 @@ pub struct SwfMovie {
 
     /// The compressed length of the entire datastream
     compressed_len: usize,
+
+    /// Whether this SwfMovie actually represents a loaded movie or fills in for
+    /// something else, like an loaded image, filler movie, or error state.
+    is_movie: bool,
 }
 
 impl SwfMovie {
@@ -76,6 +80,7 @@ impl SwfMovie {
             parameters: Vec::new(),
             encoding: swf::UTF_8,
             compressed_len: 0,
+            is_movie: false,
         }
     }
 
@@ -92,6 +97,7 @@ impl SwfMovie {
             parameters: Vec::new(),
             encoding: swf::UTF_8,
             compressed_len,
+            is_movie: false,
         }
     }
 
@@ -109,6 +115,7 @@ impl SwfMovie {
             parameters: Vec::new(),
             encoding: swf::UTF_8,
             compressed_len: 0,
+            is_movie: false,
         }
     }
 
@@ -143,6 +150,7 @@ impl SwfMovie {
             parameters: Vec::new(),
             encoding,
             compressed_len,
+            is_movie: true,
         };
         movie.append_parameters_from_url();
         Ok(movie)
@@ -158,6 +166,7 @@ impl SwfMovie {
             parameters: Vec::new(),
             encoding: swf::UTF_8,
             compressed_len: length,
+            is_movie: false,
         };
         movie.append_parameters_from_url();
         movie
@@ -254,6 +263,10 @@ impl SwfMovie {
 
     pub fn frame_rate(&self) -> Fixed8 {
         self.header.frame_rate()
+    }
+
+    pub fn is_movie(&self) -> bool {
+        self.is_movie
     }
 }
 

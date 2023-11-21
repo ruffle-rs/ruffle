@@ -145,13 +145,7 @@ pub fn get_child_at<'gc>(
     {
         let index = args.get_i32(activation, 0)?;
         return if let Some(child) = dobj.child_by_index(index as usize) {
-            // This is a hack to make AVM1Movie work- in Ruffle, Loader.content calls getChildAt.
-
-            if let Some(mc) = child.as_movie_clip() {
-                Ok(mc.object2_possibly_avm1(&mut activation.context))
-            } else {
-                Ok(child.object2())
-            }
+            Ok(child.object2())
         } else {
             // Flash error message: The supplied index is out of bounds.
             Err(Error::AvmError(range_error(

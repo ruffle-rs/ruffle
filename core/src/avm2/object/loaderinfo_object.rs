@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error::argument_error;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
+use crate::avm2::object::{ClassObject, Object, ObjectPtr, StageObject, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Avm2;
 use crate::avm2::Error;
@@ -97,6 +97,8 @@ pub struct LoaderInfoObjectData<'gc> {
     shared_events: Object<'gc>,
 
     uncaught_error_events: Object<'gc>,
+
+    cached_avm1movie: Option<Object<'gc>>,
 }
 
 impl<'gc> LoaderInfoObject<'gc> {
@@ -131,6 +133,7 @@ impl<'gc> LoaderInfoObject<'gc> {
                     .classes()
                     .uncaughterrorevents
                     .construct(activation, &[])?,
+                cached_avm1movie: None,
             },
         ))
         .into();
@@ -175,6 +178,7 @@ impl<'gc> LoaderInfoObject<'gc> {
                     .classes()
                     .uncaughterrorevents
                     .construct(activation, &[])?,
+                cached_avm1movie: None,
             },
         ))
         .into();
@@ -263,6 +267,29 @@ impl<'gc> LoaderInfoObject<'gc> {
 
     pub fn set_loader_stream(&self, stream: LoaderStream<'gc>, mc: &Mutation<'gc>) {
         self.0.write(mc).loaded_stream = Some(stream);
+    }
+
+    /// Returns the AVM1Movie corresponding to the loaded movie- if
+    /// it doesn't exist yet, creates it.
+    pub fn get_or_init_avm1movie(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        obj: DisplayObject<'gc>,
+    ) -> Object<'gc> {
+        let cached_avm1movie = self.0.read().cached_avm1movie;
+        if cached_avm1movie.is_none() {
+            let class_object = activation.avm2().classes().avm1movie;
+            let object = StageObject::for_display_object(activation, obj, class_object)
+                .expect("for_display_object cannot return Err");
+
+            class_object
+                .call_native_init(object.into(), &[], activation)
+                .expect("Native init should succeed");
+
+            self.0.write(activation.context.gc_context).cached_avm1movie = Some(object.into());
+        }
+
+        return self.0.read().cached_avm1movie.unwrap();
     }
 
     pub fn unload(&self, activation: &mut Activation<'_, 'gc>) {

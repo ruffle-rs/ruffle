@@ -476,7 +476,7 @@ impl<'gc> NetStream<'gc> {
 
         drop(write);
 
-        if context.is_action_script_3() {
+        if let Some(AvmObject::Avm2(_)) = self.0.read().avm_object {
             self.trigger_status_event(
                 context,
                 vec![
