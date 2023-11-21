@@ -336,3 +336,7 @@ window.addEventListener("load", () => {
     }
     loadSample();
 })();
+
+document.getElementById("local-file-label")!.addEventListener("click", () => {
+    document.getElementById("local-file")!.click();
+});
