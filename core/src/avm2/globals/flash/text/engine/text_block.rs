@@ -61,7 +61,7 @@ pub fn create_text_line<'gc>(
     };
 
     let class = activation.avm2().classes().textline;
-    let movie = activation.context.swf.clone();
+    let movie = activation.caller_movie_or_root();
 
     // FIXME: TextLine should be its own DisplayObject
     let display_object: EditText =

@@ -138,7 +138,7 @@ pub fn get_bytes_loaded<'gc>(
 
 /// `content` getter
 pub fn get_content<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -148,7 +148,17 @@ pub fn get_content<'gc>(
     {
         match &*loader_stream {
             LoaderStream::Swf(_, root) | LoaderStream::NotYetLoaded(_, Some(root), _) => {
-                return Ok(root.object2());
+                if root.movie().is_action_script_3() || !root.movie().is_movie() {
+                    return Ok(root.object2());
+                } else {
+                    let root_obj = *root;
+                    drop(loader_stream);
+
+                    let loader_info = this.as_loader_info_object().unwrap();
+                    return Ok(loader_info
+                        .get_or_init_avm1movie(activation, root_obj)
+                        .into());
+                }
             }
             _ => {
                 return Ok(Value::Null);

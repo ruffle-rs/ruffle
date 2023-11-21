@@ -12,7 +12,7 @@ pub fn video_allocator<'gc>(
     let mut target_class = Some(class);
     while let Some(target) = target_class {
         if target == video_class {
-            let movie = activation.context.swf.clone();
+            let movie = activation.caller_movie_or_root();
             let new_do = Video::new(activation.context.gc_context, movie, 0, 0, None);
             return initialize_for_allocator(activation, new_do.into(), class);
         }

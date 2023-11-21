@@ -32,7 +32,7 @@ pub fn bitmap_allocator<'gc>(
                 0,
                 bitmap_data,
                 false,
-                activation.context.swf, // TODO: Use the current movie here
+                &activation.caller_movie_or_root(),
             )
             .into();
             return initialize_for_allocator(activation, display_object, orig_class);

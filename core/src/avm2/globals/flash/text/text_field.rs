@@ -23,7 +23,7 @@ pub fn text_field_allocator<'gc>(
     let orig_class = class;
     while let Some(class) = class_object {
         if class == textfield_cls {
-            let movie = activation.context.swf.clone();
+            let movie = activation.caller_movie_or_root();
             let display_object =
                 EditText::new(&mut activation.context, movie, 0.0, 0.0, 100.0, 100.0).into();
             return initialize_for_allocator(activation, display_object, orig_class);
