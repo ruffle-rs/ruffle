@@ -27,7 +27,7 @@ const ruffle = (window.RufflePlayer as PublicAPI).newest()!;
 
 let player: RufflePlayer | null;
 
-const main = document.getElementById("player-container")!;
+const playerContainer = document.getElementById("player-container")!;
 const overlay = document.getElementById("overlay")!;
 const authorContainer = document.getElementById("author-container")!;
 const author = <HTMLLinkElement>document.getElementById("author");
@@ -140,7 +140,7 @@ function load(options: string | DataLoadOptions | URLLoadOptions) {
     unload();
     player = ruffle.createPlayer();
     player.id = "player";
-    main.append(player);
+    playerContainer.append(player);
     player.load(options, false);
     player.addEventListener("loadedmetadata", () => {
         if (player?.metadata) {
@@ -225,21 +225,21 @@ localFileInput.addEventListener("change", (event) => {
 
 sampleFileInput.addEventListener("change", () => loadSample());
 
-main.addEventListener("dragenter", (event) => {
+playerContainer.addEventListener("dragenter", (event) => {
     event.stopPropagation();
     event.preventDefault();
 });
-main.addEventListener("dragleave", (event) => {
+playerContainer.addEventListener("dragleave", (event) => {
     event.stopPropagation();
     event.preventDefault();
     overlay.classList.remove("drag");
 });
-main.addEventListener("dragover", (event) => {
+playerContainer.addEventListener("dragover", (event) => {
     event.stopPropagation();
     event.preventDefault();
     overlay.classList.add("drag");
 });
-main.addEventListener("drop", (event) => {
+playerContainer.addEventListener("drop", (event) => {
     event.stopPropagation();
     event.preventDefault();
     overlay.classList.remove("drag");
