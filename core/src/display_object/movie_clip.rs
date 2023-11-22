@@ -2885,6 +2885,20 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         instantiated_by: Instantiator,
         run_frame: bool,
     ) {
+        if self
+            .0
+            .write(context.gc_context)
+            .flags
+            .contains(MovieClipFlags::POST_INSTANTIATED)
+        {
+            // Ensure that the same clip doesn't get post-instantiated twice.
+            return;
+        }
+        self.0
+            .write(context.gc_context)
+            .flags
+            .insert(MovieClipFlags::POST_INSTANTIATED);
+
         self.set_default_instance_name(context);
 
         if !self.movie().is_action_script_3() {
@@ -4834,6 +4848,9 @@ bitflags! {
         const LOOP_QUEUED = 1 << 4;
 
         const RUNNING_CONSTRUCT_FRAME = 1 << 5;
+
+        /// Whether this `MovieClip` has been post-instantiated yet.
+        const POST_INSTANTIATED = 1 << 5;
     }
 }
 
