@@ -1217,6 +1217,7 @@ impl<'gc> Loader<'gc> {
             let fetch = player.lock().unwrap().navigator().fetch(request);
 
             let response = fetch.await.map_err(|e| e.error)?;
+            let response_encoding = response.text_encoding();
             let body = response.body().await?;
 
             // Fire the load handler.
@@ -1235,9 +1236,16 @@ impl<'gc> Loader<'gc> {
 
                 let utf8_string;
                 let utf8_body = if activation.context.system.use_codepage {
-                    let mut encoding_detector = EncodingDetector::new();
-                    encoding_detector.feed(&body, true);
-                    let encoding = encoding_detector.guess(None, true);
+                    // Determine the encoding
+                    let encoding = if let Some(encoding) = response_encoding {
+                        encoding
+                    } else {
+                        let mut encoding_detector = EncodingDetector::new();
+                        encoding_detector.feed(&body, true);
+                        encoding_detector.guess(None, true)
+                    };
+
+                    // Convert the text into UTF-8
                     utf8_string = encoding.decode(&body).0;
                     utf8_string.as_bytes()
                 } else {

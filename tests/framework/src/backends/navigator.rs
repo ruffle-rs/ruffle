@@ -10,6 +10,7 @@ use ruffle_core::backend::navigator::{
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
 use ruffle_core::socket::{ConnectionState, SocketAction, SocketHandle};
+use ruffle_core::swf::Encoding;
 use ruffle_socket_format::SocketEvent;
 use std::borrow::Cow;
 use std::time::Duration;
@@ -53,6 +54,10 @@ impl SuccessResponse for TestResponse {
 
     fn expected_length(&self) -> Result<Option<u64>, Error> {
         Ok(Some(self.body.len() as u64))
+    }
+
+    fn text_encoding(&self) -> Option<&'static Encoding> {
+        None
     }
 }
 
