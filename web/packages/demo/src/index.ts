@@ -273,10 +273,12 @@ localFileInput.addEventListener("drop", (event) => {
 });
 
 toggleInfo.addEventListener("click", () => {
-    if (infoContainer.style.display === "none") {
-        infoContainer.style.display = "flex";
+    if (infoContainer.classList.contains("hidden")) {
+        infoContainer.classList.remove("hidden");
+        player?.classList.add("info-container-shown");
     } else {
-        infoContainer.style.display = "none";
+        infoContainer.classList.add("hidden");
+        player?.classList.remove("info-container-shown");
     }
 });
 
