@@ -1,6 +1,7 @@
 use reqwest::Response as ReqwestResponse;
 use ruffle_core::backend::navigator::{OwnedFuture, SuccessResponse};
 use ruffle_core::loader::Error;
+use ruffle_core::swf::Encoding;
 use std::sync::{Arc, Mutex};
 
 pub enum ResponseBody {
@@ -18,6 +19,7 @@ pub enum ResponseBody {
 pub struct Response {
     pub url: String,
     pub response_body: ResponseBody,
+    pub text_encoding: Option<&'static Encoding>,
     pub status: u16,
     pub redirected: bool,
 }
@@ -45,6 +47,10 @@ impl SuccessResponse for Response {
                     .to_vec())
             }),
         }
+    }
+
+    fn text_encoding(&self) -> Option<&'static Encoding> {
+        self.text_encoding
     }
 
     fn status(&self) -> u16 {

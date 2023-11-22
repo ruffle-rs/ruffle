@@ -6,13 +6,14 @@ use futures_util::{future, SinkExt, StreamExt};
 use gloo_net::websocket::{futures::WebSocket, Message};
 use js_sys::{Array, Uint8Array};
 use ruffle_core::backend::navigator::{
-    async_return, create_fetch_error, create_specific_fetch_error, ErrorResponse, NavigationMethod,
-    NavigatorBackend, OpenURLMode, OwnedFuture, Request, SuccessResponse,
+    async_return, create_fetch_error, create_specific_fetch_error, get_encoding, ErrorResponse,
+    NavigationMethod, NavigatorBackend, OpenURLMode, OwnedFuture, Request, SuccessResponse,
 };
 use ruffle_core::config::NetworkingAccessMode;
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
 use ruffle_core::socket::{ConnectionState, SocketAction, SocketHandle};
+use ruffle_core::swf::Encoding;
 use std::borrow::Cow;
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -479,6 +480,14 @@ impl SuccessResponse for WebResponseWrapper {
 
             Ok(body)
         })
+    }
+
+    fn text_encoding(&self) -> Option<&'static Encoding> {
+        if let Ok(Some(content_type)) = self.response.headers().get("Content-Type") {
+            get_encoding(&content_type)
+        } else {
+            None
+        }
     }
 
     fn status(&self) -> u16 {

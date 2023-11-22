@@ -4,6 +4,7 @@ use crate::loader::Error;
 use crate::socket::{ConnectionState, SocketAction, SocketHandle};
 use crate::string::WStr;
 use async_channel::{Receiver, Sender};
+use encoding_rs::Encoding;
 use indexmap::IndexMap;
 use std::borrow::Cow;
 use std::fmt;
@@ -196,6 +197,9 @@ pub trait SuccessResponse {
     ///
     /// This method consumes the response.
     fn body(self: Box<Self>) -> OwnedFuture<Vec<u8>, Error>;
+
+    /// The text encoding listed in the HTTP response header if existing.
+    fn text_encoding(&self) -> Option<&'static Encoding>;
 
     /// The status code of the response.
     fn status(&self) -> u16;
@@ -589,6 +593,10 @@ pub fn fetch_path<NavigatorType: NavigatorBackend>(
             })
         }
 
+        fn text_encoding(&self) -> Option<&'static Encoding> {
+            None
+        }
+
         fn status(&self) -> u16 {
             self.status
         }
@@ -681,4 +689,14 @@ pub fn fetch_path<NavigatorType: NavigatorBackend>(
 
         Ok(response)
     })
+}
+
+/// Parses and returns the encoding out of an HTTP header content type string
+/// if existing.
+pub fn get_encoding(content_type: &str) -> Option<&'static Encoding> {
+    if let Some((_, encoding_string)) = content_type.split_once("charset=") {
+        Encoding::for_label(encoding_string.as_bytes())
+    } else {
+        None
+    }
 }

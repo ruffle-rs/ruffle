@@ -8,8 +8,8 @@ use async_io::Timer;
 use futures_lite::FutureExt;
 use reqwest::{cookie, header, Proxy};
 use ruffle_core::backend::navigator::{
-    async_return, create_fetch_error, ErrorResponse, NavigationMethod, NavigatorBackend,
-    OpenURLMode, OwnedFuture, Request, SocketMode, SuccessResponse,
+    async_return, create_fetch_error, get_encoding, ErrorResponse, NavigationMethod,
+    NavigatorBackend, OpenURLMode, OwnedFuture, Request, SocketMode, SuccessResponse,
 };
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
@@ -232,6 +232,7 @@ impl<F: FutureSpawner, I: NavigatorInterface> NavigatorBackend for ExternalNavig
                     let response: Box<dyn SuccessResponse> = Box::new(Response {
                         url: response_url.to_string(),
                         response_body: ResponseBody::File(contents),
+                        text_encoding: None,
                         status: 0,
                         redirected: false,
                     });
@@ -270,7 +271,11 @@ impl<F: FutureSpawner, I: NavigatorInterface> NavigatorBackend for ExternalNavig
                 })?;
 
                 let url = response.url().to_string();
-
+                let text_encoding = response
+                    .headers()
+                    .get("Content-Type")
+                    .and_then(|content_type| content_type.to_str().ok())
+                    .and_then(get_encoding);
                 let status = response.status().as_u16();
                 let redirected = *response.url() != processed_url;
                 if !response.status().is_success() {
@@ -286,6 +291,7 @@ impl<F: FutureSpawner, I: NavigatorInterface> NavigatorBackend for ExternalNavig
                 let response: Box<dyn SuccessResponse> = Box::new(Response {
                     url,
                     response_body: ResponseBody::Network(Arc::new(Mutex::new(Some(response)))),
+                    text_encoding,
                     status,
                     redirected,
                 });
