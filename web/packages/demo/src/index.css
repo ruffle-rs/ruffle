@@ -82,7 +82,8 @@ body {
 }
 
 #player-container > * {
-    position: relative;
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
 }
@@ -137,7 +138,7 @@ body {
     background-color: white;
 }
 
-@media only screen and (width <= 1120px) {
+@media only screen and (max-width: 1120px) {
     #local-file-static-label {
         display: block;
     }
@@ -147,7 +148,7 @@ body {
     }
 }
 
-@media only screen and (width <= 600px) {
+@media only screen and (max-width: 600px) {
     #logo-container {
         display: none;
     }
