@@ -32,6 +32,7 @@ export function App({
         player.current?.reload();
     };
 
+    // useCallback because this will be called from useEffect, we need this function to not change
     const onSelectUrl = useCallback((url: string, options: BaseLoadOptions) => {
         player.current?.loadUrl(url, options);
     }, []);

@@ -6,10 +6,9 @@ import {
     useRef,
     useState,
     DragEvent,
-    Fragment,
-    useCallback,
 } from "react";
 import { BaseLoadOptions } from "ruffle-core";
+import { DemoSwf, SampleSelection } from "./navbar/samples.tsx";
 
 declare global {
     interface Navigator {
@@ -35,15 +34,6 @@ interface NavbarProps {
     onFileDragDrop: (event: DragEvent<HTMLElement>) => void;
 }
 
-interface DemoSwf {
-    location: string;
-    title?: string;
-    author?: string;
-    authorLink?: string;
-    config?: BaseLoadOptions;
-    type: "Animation" | "Game";
-}
-
 export function Navbar({
     allowUrlLoading,
     allowSampleSwfs,
@@ -60,7 +50,6 @@ export function Navbar({
     const localFileInput = useRef<HTMLInputElement>(null);
     const urlInput = useRef<HTMLInputElement>(null);
     const sampleSelectionInput = useRef<HTMLSelectElement>(null);
-    const [availableSamples, setAvailableSamples] = useState<DemoSwf[]>([]);
     const [selectedSample, setSelectedSample] = useState<DemoSwf | null>(null);
 
     const openFileBrowser = () => {
@@ -71,24 +60,19 @@ export function Navbar({
         onSelectUrl(url, {});
         setSelectedFilename(null);
         setSelectedSample(null);
-        sampleSelectionInput.current!.selectedIndex = -1;
+        if (sampleSelectionInput.current) {
+            sampleSelectionInput.current.selectedIndex = -1;
+        }
     };
 
     const loadFile = (file: File) => {
         onSelectFile(file);
         setSelectedSample(null);
         setSelectedFilename(file.name);
-        sampleSelectionInput.current!.selectedIndex = -1;
+        if (sampleSelectionInput.current) {
+            sampleSelectionInput.current.selectedIndex = -1;
+        }
     };
-
-    const loadSample = useCallback(
-        (swf: DemoSwf) => {
-            onSelectUrl(swf.location, swf.config ?? {});
-            setSelectedSample(swf);
-            setSelectedFilename(null);
-        },
-        [onSelectUrl, setSelectedFilename],
-    );
 
     const submitUrlForm = (e: FormEvent) => {
         e.preventDefault();
@@ -108,14 +92,6 @@ export function Navbar({
         }
     };
 
-    const loadSelectedSample = (e: ChangeEvent) => {
-        const eventTarget = e.target as HTMLSelectElement;
-        const index = parseInt(eventTarget.value, 10);
-        if (availableSamples[index]) {
-            loadSample(availableSamples[index]);
-        }
-    };
-
     const confirmAndReload = () => {
         const confirmReload = confirm("Reload the current SWF?");
         if (confirmReload) {
@@ -130,25 +106,11 @@ export function Navbar({
             typeof navigator.standalone !== "undefined");
 
     useEffect(() => {
-        if (!allowSampleSwfs) return;
-        (async () => {
-            const response = await fetch("swfs.json");
-
-            if (response.ok) {
-                const data: { swfs: [DemoSwf] } = await response.json();
-                setAvailableSamples(data.swfs);
-
-                if (data.swfs.length > 0) {
-                    loadSample(data.swfs[0]);
-                }
-            }
-        })();
-    }, [allowSampleSwfs, loadSample]);
-
-    useEffect(() => {
         if (selectedFilename != null) {
             setSelectedSample(null);
-            sampleSelectionInput.current!.selectedIndex = -1;
+            if (sampleSelectionInput.current) {
+                sampleSelectionInput.current.selectedIndex = -1;
+            }
         }
     }, [selectedFilename]);
 
@@ -201,63 +163,15 @@ export function Navbar({
                         {selectedFilename ?? "No file selected."}
                     </label>
                 </div>
-                <div
-                    id="sample-swfs-container"
-                    className={availableSamples.length == 0 ? "hidden" : ""}
-                >
-                    <span id="sample-swfs-label">Sample SWF:</span>
-                    <select
-                        id="sample-swfs"
-                        aria-describedby="sample-swfs-label"
-                        onChange={loadSelectedSample}
-                        ref={sampleSelectionInput}
-                    >
-                        {availableSamples.map((sample, i) => (
-                            <Fragment key={i}>
-                                {sample.type == null && (
-                                    <option key={i} value={i}>
-                                        {sample.title}
-                                    </option>
-                                )}
-                            </Fragment>
-                        ))}
-                        <optgroup id="anim-optgroup" label="Animations">
-                            {availableSamples.map((sample, i) => (
-                                <Fragment key={i}>
-                                    {sample.type == "Animation" && (
-                                        <option key={i} value={i}>
-                                            {sample.title}
-                                        </option>
-                                    )}
-                                </Fragment>
-                            ))}
-                        </optgroup>
-                        <optgroup id="games-optgroup" label="Games">
-                            {availableSamples.map((sample, i) => (
-                                <Fragment key={i}>
-                                    {sample.type == "Game" && (
-                                        <option key={i} value={i}>
-                                            {sample.title}
-                                        </option>
-                                    )}
-                                </Fragment>
-                            ))}
-                        </optgroup>
-                    </select>
-                    <div
-                        id="author-container"
-                        className={selectedSample?.author ? "" : "hidden"}
-                    >
-                        <span>Author: </span>
-                        <a
-                            href={selectedSample?.authorLink}
-                            target="_blank"
-                            id="author"
-                        >
-                            {selectedSample?.author}
-                        </a>
-                    </div>
-                </div>
+                {allowSampleSwfs && (
+                    <SampleSelection
+                        onSelectUrl={onSelectUrl}
+                        selectedSample={selectedSample}
+                        setSelectedFilename={setSelectedFilename}
+                        setSelectedSample={setSelectedSample}
+                        sampleSelectionInput={sampleSelectionInput}
+                    />
+                )}
             </div>
             <div>
                 <svg
