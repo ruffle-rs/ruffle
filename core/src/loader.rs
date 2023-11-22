@@ -1707,7 +1707,6 @@ impl<'gc> Loader<'gc> {
                         library.set_avm2_domain(domain);
                     } else {
                         // This is in case the MovieLoaderData is AVM1, but loaded an AVM2 SWF (mixed AVM).
-                        // TODO: What if AVM2 loads AVM1, and that loads AVM2? What happens to the innermost SWF's domain?
                         let stage_domain = activation.context.avm2.stage_domain();
                         library.set_avm2_domain(stage_domain);
                     }
@@ -1725,10 +1724,17 @@ impl<'gc> Loader<'gc> {
 
                         mc.replace_with_movie(
                             &mut activation.context,
-                            Some(movie),
+                            Some(movie.clone()),
                             true,
                             loader_info,
                         );
+
+                        if matches!(vm_data, MovieLoaderVMData::Avm2 { .. })
+                            && !movie.is_action_script_3()
+                        {
+                            // When an AVM2 movie loads an AVM1 movie, we need to call `post_instantiation` here.
+                            mc.post_instantiation(uc, None, Instantiator::Movie, false);
+                        }
                     }
 
                     // NOTE: Certain tests specifically expect small files to preload immediately
@@ -1954,6 +1960,7 @@ impl<'gc> Loader<'gc> {
                 // We call these methods after we initialize the `LoaderInfo`, but before
                 // we add the loaded clip as a child. The frame constructor should see
                 // 'this.parent == null' and 'this.stage == null'
+
                 dobj.post_instantiation(uc, None, Instantiator::Movie, false);
                 catchup_display_object_to_frame(uc, dobj);
                 // Movie clips created from ActionScript (including from a Loader) skip the next enterFrame,
