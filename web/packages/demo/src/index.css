@@ -1,4 +1,4 @@
-body {
+#root {
     position: absolute;
     inset: 0;
     padding: 0;
@@ -103,6 +103,10 @@ body {
     transition-timing-function: ease-out;
 }
 
+.info-container-shown #player {
+    width: calc(100% - 300px);
+}
+
 #overlay:not([hidden]) ~ #player {
     bottom: 100%;
 }
@@ -117,10 +121,6 @@ body {
     flex-direction: column;
     gap: 8px;
     box-sizing: border-box;
-}
-
-#player.info-container-shown {
-    width: calc(100% - 300px);
 }
 
 #info-container span:first-child {
