@@ -17,12 +17,16 @@ window.RufflePlayer = PublicAPI.negotiate(window.RufflePlayer, "local");
 ReactDOM.createRoot(document.getElementById("root")!).render(
     <React.StrictMode>
         <App
-            autoplay={AutoPlay.On}
-            unmuteOverlay={UnmuteOverlay.Hidden}
-            logLevel={LogLevel.Warn}
-            letterbox={Letterbox.On}
-            forceScale
-            forceAlign
+            ruffleBaseConfig={{
+                autoplay: AutoPlay.On,
+                unmuteOverlay: UnmuteOverlay.Hidden,
+                logLevel: LogLevel.Warn,
+                letterbox: Letterbox.On,
+                forceScale: true,
+                forceAlign: true,
+            }}
+            allowSampleSwfs={true}
+            allowUrlLoading={false}
         />
     </React.StrictMode>,
 );

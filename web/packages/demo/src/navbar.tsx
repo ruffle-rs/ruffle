@@ -22,6 +22,8 @@ declare global {
 }
 
 interface NavbarProps {
+    allowUrlLoading: boolean;
+    allowSampleSwfs: boolean;
     onToggleMetadata: () => void;
     onReloadMovie: () => void;
     onSelectUrl: (url: string, options: BaseLoadOptions) => void;
@@ -43,6 +45,8 @@ interface DemoSwf {
 }
 
 export function Navbar({
+    allowUrlLoading,
+    allowSampleSwfs,
     onToggleMetadata,
     onReloadMovie,
     onSelectUrl,
@@ -126,6 +130,7 @@ export function Navbar({
             typeof navigator.standalone !== "undefined");
 
     useEffect(() => {
+        if (!allowSampleSwfs) return;
         (async () => {
             const response = await fetch("swfs.json");
 
@@ -138,7 +143,7 @@ export function Navbar({
                 }
             }
         })();
-    }, [loadSample]);
+    }, [allowSampleSwfs, loadSample]);
 
     useEffect(() => {
         if (selectedFilename != null) {
@@ -153,7 +158,11 @@ export function Navbar({
                 <img className="logo" src={ruffleLogo} alt="Ruffle" />
             </a>
             <div className="select-container">
-                <form id="web-url-container" onSubmit={submitUrlForm}>
+                <form
+                    id="web-url-container"
+                    onSubmit={submitUrlForm}
+                    hidden={!allowUrlLoading}
+                >
                     <input
                         id="web-url"
                         name="web-url"
