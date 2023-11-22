@@ -58,7 +58,11 @@ async function fetchRuffle(
         );
     }
 
-    __webpack_public_path__ = publicPath(config);
+    try {
+        __webpack_public_path__ = publicPath(config);
+    } catch (_) {
+        // Must not be using webpack... ignore this option, it's not applicable
+    }
 
     // Note: The argument passed to import() has to be a simple string literal,
     // otherwise some bundler will get confused and won't include the module?
