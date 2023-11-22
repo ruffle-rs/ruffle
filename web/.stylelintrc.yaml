@@ -1,3 +1,7 @@
 extends:
   - stylelint-config-standard
   - stylelint-prettier/recommended
+rules:
+  # Range syntax from media queries level 4 has only been supported since Safari 16.4.
+  # We still want to support older Safari versions.
+  media-feature-range-notation: "prefix"
