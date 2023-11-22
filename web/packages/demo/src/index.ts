@@ -273,13 +273,8 @@ localFileInput.addEventListener("drop", (event) => {
 });
 
 toggleInfo.addEventListener("click", () => {
-    if (infoContainer.classList.contains("hidden")) {
-        infoContainer.classList.remove("hidden");
-        player?.classList.add("info-container-shown");
-    } else {
-        infoContainer.classList.add("hidden");
-        player?.classList.remove("info-container-shown");
-    }
+    infoContainer.classList.toggle("hidden");
+    player?.classList.toggle("info-container-shown");
 });
 
 reloadSwf.addEventListener("click", () => {
