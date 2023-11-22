@@ -801,8 +801,8 @@ impl<'gc> MovieClip<'gc> {
         context: &mut UpdateContext<'_, 'gc>,
         reader: &mut SwfStream<'_>,
     ) -> Result<(), Error> {
-        if !self.movie().is_action_script_3() {
-            tracing::warn!("DoABC tag in AVM1 movie");
+        if !context.swf.is_action_script_3() {
+            tracing::warn!("DoABC tag with non-AVM2 root");
             return Ok(());
         }
 
@@ -833,8 +833,8 @@ impl<'gc> MovieClip<'gc> {
         context: &mut UpdateContext<'_, 'gc>,
         reader: &mut SwfStream<'_>,
     ) -> Result<(), Error> {
-        if !self.movie().is_action_script_3() {
-            tracing::warn!("DoABC2 tag in AVM1 movie");
+        if !context.swf.is_action_script_3() {
+            tracing::warn!("DoABC2 tag with non-AVM2 root");
             return Ok(());
         }
 
