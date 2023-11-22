@@ -1552,10 +1552,13 @@ pub trait TDisplayObject<'gc>:
     /// Retrieve the parent of this display object.
     ///
     /// This version of the function implements the concept of parenthood as
-    /// seen in AVM1. Notably, it disallows access to the `Stage`; for an
-    /// unfiltered concept of parent, use the `parent` method.
+    /// seen in AVM1. Notably, it disallows access to the `Stage` and to
+    /// non-AVM1 DisplayObjects; for an unfiltered concept of parent,
+    /// use the `parent` method.
     fn avm1_parent(&self) -> Option<DisplayObject<'gc>> {
-        self.parent().filter(|p| p.as_stage().is_none())
+        self.parent()
+            .filter(|p| p.as_stage().is_none())
+            .filter(|p| !p.movie().is_action_script_3())
     }
 
     /// Retrieve the parent of this display object.
