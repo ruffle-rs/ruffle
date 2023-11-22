@@ -4,7 +4,17 @@ import { BaseLoadOptions, MovieMetadata } from "ruffle-core";
 import { Navbar } from "./navbar.tsx";
 import { MetadataPanel } from "./metadata.tsx";
 
-export function App(baseConfig: BaseLoadOptions) {
+interface AppProperties {
+    ruffleBaseConfig: BaseLoadOptions;
+    allowUrlLoading: boolean;
+    allowSampleSwfs: boolean;
+}
+
+export function App({
+    ruffleBaseConfig,
+    allowUrlLoading,
+    allowSampleSwfs,
+}: AppProperties) {
     const [metadata, setMetadata] = useState<MovieMetadata | null>(null);
     const [metadataVisible, setMetadataVisible] = useState<boolean>(false);
     const [selectedFilename, setSelectedFilename] = useState<string | null>(
@@ -60,6 +70,8 @@ export function App(baseConfig: BaseLoadOptions) {
     return (
         <>
             <Navbar
+                allowUrlLoading={allowUrlLoading}
+                allowSampleSwfs={allowSampleSwfs}
                 onToggleMetadata={toggleMetadataVisible}
                 onReloadMovie={reloadMovie}
                 onSelectUrl={onSelectUrl}
@@ -84,7 +96,7 @@ export function App(baseConfig: BaseLoadOptions) {
                     onDragLeave={onFileDragLeave}
                     onDragOver={onFileDragOver}
                     onDragDrop={onFileDragDrop}
-                    baseConfig={baseConfig}
+                    baseConfig={ruffleBaseConfig}
                 >
                     <div
                         id="overlay"
