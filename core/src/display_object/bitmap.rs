@@ -127,8 +127,8 @@ impl<'gc> Bitmap<'gc> {
         smoothing: bool,
         movie: &Arc<SwfMovie>,
     ) -> Self {
-        //NOTE: We do *not* solicit a handle from the `bitmap_data` at this
-        //time due to mutable borrowing issues.
+        // NOTE: We do *not* solicit a handle from the `bitmap_data` at this
+        // time due to mutable borrowing issues.
 
         let width = bitmap_data.width();
         let height = bitmap_data.height();
@@ -159,6 +159,7 @@ impl<'gc> Bitmap<'gc> {
         context: &mut UpdateContext<'_, 'gc>,
         id: CharacterId,
         bitmap: ruffle_render::bitmap::Bitmap,
+        movie: Arc<SwfMovie>,
     ) -> Result<Self, ruffle_render::error::Error> {
         let width = bitmap.width();
         let height = bitmap.height();
@@ -181,7 +182,7 @@ impl<'gc> Bitmap<'gc> {
             id,
             BitmapDataWrapper::new(GcCell::new(context.gc_context, bitmap_data)),
             smoothing,
-            context.swf, // TODO: Use the local movie instead of the root movie
+            &movie,
         ))
     }
 
