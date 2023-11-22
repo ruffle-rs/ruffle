@@ -8,7 +8,9 @@ use crate::avm1::scope::{Scope, ScopeClass};
 use crate::avm1::{fscommand, globals, scope, ArrayObject, ScriptObject, Value};
 use crate::backend::navigator::{NavigationMethod, Request};
 use crate::context::UpdateContext;
-use crate::display_object::{DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer};
+use crate::display_object::{
+    DisplayObject, DisplayObjectContainer, MovieClip, TDisplayObject, TDisplayObjectContainer,
+};
 use crate::ecma_conversions::{f64_to_wrapping_i32, f64_to_wrapping_u32};
 use crate::loader::MovieLoaderVMData;
 use crate::string::{AvmString, SwfStrExt as _, WStr, WString};
@@ -2910,18 +2912,26 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
             level.set_depth(self.context.gc_context, level_id);
             level.set_default_root_name(&mut self.context);
-            self.context
-                .stage
-                .replace_at_depth(&mut self.context, level, level_id);
+            self.get_root_parent_container()
+                .and_then(|c| c.replace_at_depth(&mut self.context, level, level_id));
             level.post_instantiation(&mut self.context, None, Instantiator::Movie, false);
 
             level
         }
     }
 
+    /// Returns a reference to the DisplayObject that is the parent of the root.
+    pub fn get_root_parent_container(&self) -> Option<DisplayObjectContainer<'gc>> {
+        self.base_clip()
+            .avm1_root()
+            .parent()
+            .and_then(|p| p.as_container())
+    }
+
     /// Tries to resolve a level by ID. Returns None if it does not exist.
     pub fn get_level(&mut self, level_id: i32) -> Option<DisplayObject<'gc>> {
-        self.context.stage.child_by_depth(level_id)
+        self.get_root_parent_container()
+            .and_then(|c| c.child_by_depth(level_id))
     }
 
     /// The current target clip of the executing code.
