@@ -77,6 +77,7 @@ impl NavigatorBackend for TestNavigatorBackend {
                 Ok(SuccessResponse {
                     url: request.url().to_string(),
                     body: b"Hello, World!".to_vec(),
+                    text_encoding: None,
                     status: 200,
                     redirected: false,
                 })
@@ -187,6 +188,7 @@ impl NavigatorBackend for TestNavigatorBackend {
             Ok(SuccessResponse {
                 url: url.to_string(),
                 body,
+                text_encoding: None,
                 status: 0,
                 redirected: false,
             })

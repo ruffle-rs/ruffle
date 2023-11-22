@@ -1023,10 +1023,16 @@ impl<'gc> Loader<'gc> {
                     ActivationIdentifier::root("[Form Loader]"),
                 );
 
-                let mut encoding_detector = EncodingDetector::new();
-                encoding_detector.feed(&response.body, true);
-                let encoding = encoding_detector.guess(None, true);
+                // Determine the encoding
+                let encoding = if let Some(encoding) = response.text_encoding {
+                    encoding
+                } else {
+                    let mut encoding_detector = EncodingDetector::new();
+                    encoding_detector.feed(&response.body, true);
+                    encoding_detector.guess(None, true)
+                };
 
+                // Convert the text into UTF-8
                 let utf8_string;
                 let utf8_body = if encoding == UTF_8 {
                     &response.body

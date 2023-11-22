@@ -5,8 +5,8 @@ use futures_util::{SinkExt, StreamExt};
 use gloo_net::websocket::{futures::WebSocket, Message};
 use js_sys::{Array, ArrayBuffer, Uint8Array};
 use ruffle_core::backend::navigator::{
-    async_return, create_fetch_error, create_specific_fetch_error, ErrorResponse, NavigationMethod,
-    NavigatorBackend, OpenURLMode, OwnedFuture, Request, SuccessResponse,
+    async_return, create_fetch_error, create_specific_fetch_error, get_encoding, ErrorResponse,
+    NavigationMethod, NavigatorBackend, OpenURLMode, OwnedFuture, Request, SuccessResponse,
 };
 use ruffle_core::config::NetworkingAccessMode;
 use ruffle_core::indexmap::IndexMap;
@@ -326,6 +326,13 @@ impl NavigatorBackend for WebNavigatorBackend {
                 return Err(ErrorResponse { url, error });
             }
 
+            let text_encoding =
+                if let Ok(Some(content_type)) = response.headers().get("Content-Type") {
+                    get_encoding(content_type)
+                } else {
+                    None
+                };
+
             let body: ArrayBuffer = JsFuture::from(response.array_buffer().map_err(|_| {
                 ErrorResponse {
                     url: url.clone(),
@@ -348,6 +355,7 @@ impl NavigatorBackend for WebNavigatorBackend {
 
             Ok(SuccessResponse {
                 url,
+                text_encoding,
                 body,
                 status,
                 redirected,
