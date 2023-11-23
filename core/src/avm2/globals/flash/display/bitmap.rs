@@ -65,7 +65,7 @@ pub fn bitmap_allocator<'gc>(
                     0,
                     new_bitmap_data,
                     false,
-                    activation.context.swf, // TODO: Use the current movie here
+                    &activation.caller_movie_or_root(),
                 )
                 .into();
 
