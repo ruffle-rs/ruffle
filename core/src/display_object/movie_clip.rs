@@ -2635,10 +2635,6 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             self.0.write(context.gc_context).unset_loop_queued();
 
             if needs_construction {
-                self.0
-                    .write(context.gc_context)
-                    .flags
-                    .insert(MovieClipFlags::RUNNING_CONSTRUCT_FRAME);
                 self.construct_as_avm2_object(context);
                 self.on_construction_complete(context);
                 // If we're in the load frame and we were constructed by ActionScript,
@@ -4427,11 +4423,11 @@ impl<'gc, 'a> MovieClip<'gc> {
         Ok(())
     }
 
-    pub fn remove_flag_constructing_frame(&self, mc: &Mutation<'gc>) {
+    pub fn set_constructing_frame(&self, val: bool, mc: &Mutation<'gc>) {
         self.0
             .write(mc)
             .flags
-            .remove(MovieClipFlags::RUNNING_CONSTRUCT_FRAME);
+            .set(MovieClipFlags::RUNNING_CONSTRUCT_FRAME, val);
     }
 }
 

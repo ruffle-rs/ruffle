@@ -72,6 +72,10 @@ pub fn native_instance_init<'gc>(
     activation.super_init(this, &[])?;
 
     if let Some(dobj) = this.as_display_object() {
+        if let Some(clip) = dobj.as_movie_clip() {
+            clip.set_constructing_frame(true, activation.context.gc_context);
+        }
+
         if let Some(container) = dobj.as_container() {
             for child in container.iter_render_list() {
                 child.construct_frame(&mut activation.context);
@@ -79,7 +83,7 @@ pub fn native_instance_init<'gc>(
         }
 
         if let Some(clip) = dobj.as_movie_clip() {
-            clip.remove_flag_constructing_frame(activation.context.gc_context);
+            clip.set_constructing_frame(false, activation.context.gc_context);
         }
     }
 
