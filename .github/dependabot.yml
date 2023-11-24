@@ -1,0 +1,38 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      nodejs-dependencies:
+        patterns:
+        - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "rust"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      winit-wgpu-dependencies:
+        patterns:
+        - "winit"
+        - "wgpu"
+        - "naga"
+        - "naga_oil"
+        - "egui-winit"
+        - "egui-wgpu"
+        - "raw-window-handle"
+      wasm-bindgen-dependencies:
+        patterns:
+        - "wasm-bindgen"
+        - "js-sys"
+        - "web-sys"
+        - "wasm-bindgen-futures"
+    ignore:
+      - dependency-name: "tracing-tracy"
