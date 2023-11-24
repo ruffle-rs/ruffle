@@ -1236,13 +1236,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         None
     }
 
-    /// Associate this object with a display object, if it can support such an
-    /// association.
-    ///
-    /// If not, then this function does nothing.
-    fn init_display_object(&self, _context: &mut UpdateContext<'_, 'gc>, _obj: DisplayObject<'gc>) {
-    }
-
     fn init_application_domain(&self, _mc: &Mutation<'gc>, _domain: Domain<'gc>) {
         panic!("Tried to init an application domain on a non-ApplicationDomain object!")
     }
