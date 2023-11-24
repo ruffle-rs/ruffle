@@ -164,9 +164,6 @@ pub struct MovieClipData<'gc> {
     has_focus: bool,
     avm2_enabled: bool,
 
-    /// The cached AVM2 class AVM1Movie corresponding to this MovieClip.
-    avm2_avm1movie: Option<Avm2Object<'gc>>,
-
     /// Show a hand cursor when the clip is in button mode.
     avm2_use_hand_cursor: bool,
 
@@ -216,7 +213,6 @@ impl<'gc> MovieClip<'gc> {
                 drawing: Drawing::new(),
                 has_focus: false,
                 avm2_enabled: true,
-                avm2_avm1movie: None,
                 avm2_use_hand_cursor: true,
                 button_mode: false,
                 last_queued_script_frame: None,
@@ -260,7 +256,6 @@ impl<'gc> MovieClip<'gc> {
                 drawing: Drawing::new(),
                 has_focus: false,
                 avm2_enabled: true,
-                avm2_avm1movie: None,
                 avm2_use_hand_cursor: true,
                 button_mode: false,
                 last_queued_script_frame: None,
@@ -305,7 +300,6 @@ impl<'gc> MovieClip<'gc> {
                 drawing: Drawing::new(),
                 has_focus: false,
                 avm2_enabled: true,
-                avm2_avm1movie: None,
                 avm2_use_hand_cursor: true,
                 button_mode: false,
                 last_queued_script_frame: None,
@@ -372,7 +366,6 @@ impl<'gc> MovieClip<'gc> {
                 drawing: Drawing::new(),
                 has_focus: false,
                 avm2_enabled: true,
-                avm2_avm1movie: None,
                 avm2_use_hand_cursor: true,
                 button_mode: false,
                 last_queued_script_frame: None,
