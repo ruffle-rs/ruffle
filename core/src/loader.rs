@@ -1637,9 +1637,11 @@ impl<'gc> Loader<'gc> {
                         let parent_domain = default_domain;
                         Avm2Domain::movie_domain(&mut activation, parent_domain)
                     });
-                Some(domain)
+                domain
             } else {
-                None
+                // This is necessary when the MovieLoaderData is AVM1,
+                // but loaded an AVM2 SWF (mixed AVM).
+                activation.context.avm2.stage_domain()
             };
 
             let movie = match sniffed_type {
@@ -1703,13 +1705,7 @@ impl<'gc> Loader<'gc> {
                         .library
                         .library_for_movie_mut(movie.clone());
 
-                    if let Some(domain) = domain {
-                        library.set_avm2_domain(domain);
-                    } else {
-                        // This is in case the MovieLoaderData is AVM1, but loaded an AVM2 SWF (mixed AVM).
-                        let stage_domain = activation.context.avm2.stage_domain();
-                        library.set_avm2_domain(stage_domain);
-                    }
+                    library.set_avm2_domain(domain);
 
                     if let Some(mc) = clip.as_movie_clip() {
                         let loader_info =
@@ -1751,12 +1747,7 @@ impl<'gc> Loader<'gc> {
                 ContentType::Gif | ContentType::Jpeg | ContentType::Png => {
                     let library = activation.context.library.library_for_movie_mut(movie);
 
-                    if let Some(domain) = domain {
-                        library.set_avm2_domain(domain);
-                    } else {
-                        let stage_domain = activation.context.avm2.stage_domain();
-                        library.set_avm2_domain(stage_domain);
-                    }
+                    library.set_avm2_domain(domain);
 
                     // This will construct AVM2-side objects even under AVM1, but it doesn't matter,
                     // since Bitmap and BitmapData never have AVM1-side objects.
@@ -1960,7 +1951,6 @@ impl<'gc> Loader<'gc> {
                 // We call these methods after we initialize the `LoaderInfo`, but before
                 // we add the loaded clip as a child. The frame constructor should see
                 // 'this.parent == null' and 'this.stage == null'
-
                 dobj.post_instantiation(uc, None, Instantiator::Movie, false);
                 catchup_display_object_to_frame(uc, dobj);
                 // Movie clips created from ActionScript (including from a Loader) skip the next enterFrame,
