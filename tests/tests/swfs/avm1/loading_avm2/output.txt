@@ -1,0 +1,7 @@
+Created clip
+Loaded AVM2 movie into non-root
+Loaded AVM2 movie into root
+[object Stage]
+[object LoaderInfo]
+true
+AVM2 load success!
