@@ -1373,11 +1373,12 @@ impl<'a> NagaBuilder<'a> {
                 self.emit_dest_store(dest, sqt)?;
             }
             Opcode::Crs => {
+                // Zero-extend if necessary, so that we have two three-component input vectors for a cross product.
                 let source1 =
-                    self.emit_source_field_load_with_swizzle_out(source1, false, VectorSize::Tri)?;
+                    self.emit_source_field_load_with_swizzle_out(source1, true, VectorSize::Tri)?;
                 let source2 = self.emit_source_field_load_with_swizzle_out(
                     source2.assert_source_field(),
-                    false,
+                    true,
                     VectorSize::Tri,
                 )?;
                 let crs = self.evaluate_expr(Expression::Math {
