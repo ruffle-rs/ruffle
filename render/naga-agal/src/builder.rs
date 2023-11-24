@@ -1061,7 +1061,7 @@ impl<'a> NagaBuilder<'a> {
 
                 let (num_rows, ty, vec_size, out_size) = match opcode {
                     Opcode::M33 => (
-                        3,
+                        3u8,
                         self.matrix3x3f,
                         VectorSize::Tri,
                         VertexAttributeFormat::Float3,
@@ -1084,11 +1084,18 @@ impl<'a> NagaBuilder<'a> {
                 // Read each row of the matrix
                 let mut components = Vec::with_capacity(num_rows.into());
                 for i in 0..num_rows {
-                    let source2_row = self.emit_source_field_load_with_swizzle_out(
-                        &SourceField {
-                            reg_num: source2.reg_num + i,
+                    let modified_source_field = match source2.direct_mode {
+                        DirectMode::Direct => SourceField {
+                            reg_num: source2.reg_num + (i as u16),
                             ..source2.clone()
                         },
+                        DirectMode::Indirect => SourceField {
+                            indirect_offset: source2.indirect_offset + i,
+                            ..source2.clone()
+                        },
+                    };
+                    let source2_row = self.emit_source_field_load_with_swizzle_out(
+                        &modified_source_field,
                         false,
                         vec_size,
                     )?;
