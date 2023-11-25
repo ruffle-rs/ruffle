@@ -3,7 +3,7 @@ use anyhow::Error;
 use clap::Parser;
 use ruffle_core::backend::navigator::{OpenURLMode, SocketMode};
 use ruffle_core::config::Letterbox;
-use ruffle_core::{LoadBehavior, StageAlign, StageScaleMode};
+use ruffle_core::{LoadBehavior, PlayerRuntime, StageAlign, StageScaleMode};
 use ruffle_render::quality::StageQuality;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use std::path::Path;
@@ -118,6 +118,10 @@ pub struct Opt {
     /// The version of the player to emulate
     #[clap(long)]
     pub player_version: Option<u8>,
+
+    /// The runtime to emulate (Flash Player or Adobe AIR)
+    #[clap(long, default_value = "flash-player")]
+    pub player_runtime: PlayerRuntime,
 
     /// Set and lock the player's frame rate, overriding the movie's frame rate.
     #[clap(long)]

@@ -250,6 +250,11 @@ pub struct Player {
     ///   Player can be enabled by setting a particular player version.
     player_version: u8,
 
+    /// The runtime we're emulating (Flash Player or Adobe AIR).
+    /// In Adobe AIR mode, additional classes are available
+    #[allow(unused)]
+    player_runtime: PlayerRuntime,
+
     swf: Arc<SwfMovie>,
 
     is_playing: bool,
@@ -2185,6 +2190,7 @@ pub struct PlayerBuilder {
     spoofed_url: Option<String>,
     compatibility_rules: CompatibilityRules,
     player_version: Option<u8>,
+    player_runtime: PlayerRuntime,
     quality: StageQuality,
     sandbox_type: SandboxType,
     page_url: Option<String>,
@@ -2231,6 +2237,7 @@ impl PlayerBuilder {
             spoofed_url: None,
             compatibility_rules: CompatibilityRules::default(),
             player_version: None,
+            player_runtime: PlayerRuntime::default(),
             quality: StageQuality::High,
             sandbox_type: SandboxType::LocalTrusted,
             page_url: None,
@@ -2387,6 +2394,12 @@ impl PlayerBuilder {
     /// Configures the target player version.
     pub fn with_player_version(mut self, version: Option<u8>) -> Self {
         self.player_version = version;
+        self
+    }
+
+    /// Configures the player runtime (default is `PlayerRuntime::FlashPlayer`)
+    pub fn with_player_runtime(mut self, runtime: PlayerRuntime) -> Self {
+        self.player_runtime = runtime;
         self
     }
 
@@ -2547,6 +2560,7 @@ impl PlayerBuilder {
                 transform_stack: TransformStack::new(),
                 instance_counter: 0,
                 player_version,
+                player_runtime: self.player_runtime,
                 is_playing: self.autoplay,
                 needs_render: true,
                 self_reference: self_ref.clone(),
@@ -2668,4 +2682,12 @@ fn run_mouse_pick<'gc>(
             }
         })
     })
+}
+
+#[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
+#[derive(Default, Clone, Copy, Debug, Eq, PartialEq)]
+pub enum PlayerRuntime {
+    #[default]
+    FlashPlayer,
+    AIR,
 }
