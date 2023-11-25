@@ -2,6 +2,7 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::{Activation, Error};
+use crate::backend::ui::FileDialogResult;
 use gc_arena::barrier::unlock;
 use gc_arena::{lock::RefLock, Collect, Gc};
 use gc_arena::{GcWeak, Mutation};
@@ -18,11 +19,12 @@ pub fn file_reference_allocator<'gc>(
         activation.context.gc(),
         FileReferenceObjectData {
             base,
+            reference: RefCell::new(FileReference::None),
+            loaded: Cell::new(false),
         },
     ))
     .into())
 }
-
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
@@ -54,11 +56,40 @@ impl<'gc> TObject<'gc> for FileReferenceObject<'gc> {
     }
 }
 
+impl<'gc> FileReferenceObject<'gc> {
+    pub fn init_from_dialog_result(&self, result: Box<dyn FileDialogResult>) -> FileReference {
+        self.0
+            .reference
+            .replace(FileReference::FileDialogResult(result))
+    }
+
+    pub fn file_reference(&self) -> Ref<'_, FileReference> {
+        self.0.reference.borrow()
+    }
+
+    pub fn set_loaded(&self, value: bool) {
+        self.0.loaded.set(value)
+    }
+
+    pub fn loaded(&self) -> bool {
+        self.0.loaded.get()
+    }
+}
+
+pub enum FileReference {
+    None,
+    FileDialogResult(Box<dyn FileDialogResult>),
+}
+
 #[derive(Collect)]
 #[collect(no_drop)]
 pub struct FileReferenceObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,
+
+    reference: RefCell<FileReference>,
+
+    loaded: Cell<bool>,
 }
 
 impl fmt::Debug for FileReferenceObject<'_> {
