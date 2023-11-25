@@ -88,7 +88,9 @@ pub use crate::avm2::object::domain_object::{
 };
 pub use crate::avm2::object::error_object::{error_allocator, ErrorObject, ErrorObjectWeak};
 pub use crate::avm2::object::event_object::{event_allocator, EventObject, EventObjectWeak};
-pub use crate::avm2::object::file_reference_object::{file_reference_allocator, FileReferenceObject, FileReferenceObjectWeak};
+pub use crate::avm2::object::file_reference_object::{
+    file_reference_allocator, FileReference, FileReferenceObject, FileReferenceObjectWeak,
+};
 pub use crate::avm2::object::font_object::{font_allocator, FontObject, FontObjectWeak};
 pub use crate::avm2::object::function_object::{
     function_allocator, FunctionObject, FunctionObjectWeak,

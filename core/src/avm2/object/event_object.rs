@@ -211,6 +211,38 @@ impl<'gc> EventObject<'gc> {
             )
             .unwrap() // we don't expect to break here
     }
+
+    pub fn progress_event<S>(
+        activation: &mut Activation<'_, 'gc>,
+        event_type: S,
+        bytes_loaded: u64,
+        bytes_total: u64,
+        bubbles: bool,
+        cancelable: bool,
+    ) -> Object<'gc>
+    where
+        S: Into<AvmString<'gc>>,
+    {
+        let event_type: AvmString<'gc> = event_type.into();
+
+        let progress_event_cls = activation.avm2().classes().progressevent;
+        progress_event_cls
+            .construct(
+                activation,
+                &[
+                    event_type.into(),
+                    // bubbles
+                    bubbles.into(),
+                    // cancelable
+                    cancelable.into(),
+                    // bytesLoaded
+                    (bytes_loaded as f64).into(),
+                    // bytesToal
+                    (bytes_total as f64).into(),
+                ],
+            )
+            .unwrap() // we don't expect to break here
+    }
 }
 
 impl<'gc> TObject<'gc> for EventObject<'gc> {

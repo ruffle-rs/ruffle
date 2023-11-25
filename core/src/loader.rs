@@ -6,7 +6,8 @@ use crate::avm1::{ExecutionReason, NativeObject};
 use crate::avm1::{Object, SoundObject, TObject, Value};
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::object::{
-    ByteArrayObject, EventObject as Avm2EventObject, LoaderStream, TObject as _,
+    ByteArrayObject, EventObject as Avm2EventObject, FileReferenceObject, LoaderStream,
+    TObject as _,
 };
 use crate::avm2::{
     Activation as Avm2Activation, Avm2, Domain as Avm2Domain, Object as Avm2Object,
@@ -248,6 +249,7 @@ impl<'gc> LoadManager<'gc> {
             | Loader::SoundAvm2 { self_handle, .. }
             | Loader::NetStream { self_handle, .. }
             | Loader::FileDialog { self_handle, .. }
+            | Loader::FileDialogAvm2 { self_handle, .. }
             | Loader::DownloadFileDialog { self_handle, .. }
             | Loader::UploadFile { self_handle, .. }
             | Loader::MovieUnloader { self_handle, .. } => *self_handle = Some(handle),
@@ -504,6 +506,22 @@ impl<'gc> LoadManager<'gc> {
         loader.file_dialog_loader(player, dialog)
     }
 
+    #[must_use]
+    pub fn select_file_dialog_avm2(
+        &mut self,
+        player: Weak<Mutex<Player>>,
+        target_object: FileReferenceObject<'gc>,
+        dialog: DialogResultFuture,
+    ) -> OwnedFuture<(), Error> {
+        let loader = Loader::FileDialogAvm2 {
+            self_handle: None,
+            target_object,
+        };
+        let handle = self.add_loader(loader);
+        let loader = self.get_loader_mut(handle).unwrap();
+        loader.file_dialog_loader(player, dialog)
+    }
+
     /// Display a dialog allowing a user to download a file
     ///
     /// Returns a future that will be resolved when a file is selected and the download has completed
@@ -706,6 +724,16 @@ pub enum Loader<'gc> {
 
         /// The target AVM1 object to select a file path from.
         target_object: Object<'gc>,
+    },
+
+    /// Loader that is choosing a file from an AVM2 scope.
+    FileDialogAvm2 {
+        /// The handle to refer to this loader instance.
+        #[collect(require_static)]
+        self_handle: Option<Handle>,
+
+        /// The target AVM2 object to set to the selected file path.
+        target_object: FileReferenceObject<'gc>,
     },
 
     /// Loader that is downloading a file from an AVM1 object scope.
@@ -2399,7 +2427,7 @@ impl<'gc> Loader<'gc> {
         dialog: DialogResultFuture,
     ) -> OwnedFuture<(), Error> {
         let handle = match self {
-            Loader::FileDialog { self_handle, .. } => {
+            Loader::FileDialog { self_handle, .. } | Loader::FileDialogAvm2 { self_handle, .. } => {
                 self_handle.expect("Loader not self-introduced")
             }
             _ => return Box::pin(async { Err(Error::NotFileDialogLoader) }),
@@ -2418,50 +2446,89 @@ impl<'gc> Loader<'gc> {
             // Fire the load handler.
             player.lock().unwrap().update(|uc| -> Result<(), Error> {
                 let loader = uc.load_manager.get_loader(handle);
-                let target_object = match loader {
-                    Some(&Loader::FileDialog { target_object, .. }) => target_object,
-                    None => return Err(Error::Cancelled),
-                    _ => return Err(Error::NotFileDialogLoader),
-                };
+                match loader {
+                    Some(&Loader::FileDialog { target_object, .. }) => {
+                        let file_ref = match target_object.native() {
+                            NativeObject::FileReference(fr) => fr,
+                            _ => panic!("NativeObject must be FileReference"),
+                        };
 
-                let file_ref = match target_object.native() {
-                    NativeObject::FileReference(fr) => fr,
-                    _ => panic!("NativeObject must be FileReference"),
-                };
+                        let mut activation = Activation::from_stub(
+                            uc.reborrow(),
+                            ActivationIdentifier::root("[File Dialog]"),
+                        );
 
-                let mut activation = Activation::from_stub(
-                    uc.reborrow(),
-                    ActivationIdentifier::root("[File Dialog]"),
-                );
+                        match dialog_result {
+                            Ok(dialog_result) => {
+                                use crate::avm1::globals::as_broadcaster;
 
-                match dialog_result {
-                    Ok(dialog_result) => {
-                        use crate::avm1::globals::as_broadcaster;
-
-                        if !dialog_result.is_cancelled() {
-                            file_ref
-                                .init_from_dialog_result(&mut activation, dialog_result.borrow());
-                            as_broadcaster::broadcast_internal(
-                                &mut activation,
-                                target_object,
-                                &[target_object.into()],
-                                "onSelect".into(),
-                            )?;
-                        } else {
-                            as_broadcaster::broadcast_internal(
-                                &mut activation,
-                                target_object,
-                                &[target_object.into()],
-                                "onCancel".into(),
-                            )?;
+                                if !dialog_result.is_cancelled() {
+                                    file_ref.init_from_dialog_result(
+                                        &mut activation,
+                                        dialog_result.borrow(),
+                                    );
+                                    as_broadcaster::broadcast_internal(
+                                        &mut activation,
+                                        target_object,
+                                        &[target_object.into()],
+                                        "onSelect".into(),
+                                    )?;
+                                } else {
+                                    as_broadcaster::broadcast_internal(
+                                        &mut activation,
+                                        target_object,
+                                        &[target_object.into()],
+                                        "onCancel".into(),
+                                    )?;
+                                }
+                            }
+                            Err(err) => {
+                                tracing::warn!("Error on file dialog: {:?}", err);
+                            }
                         }
+                        Ok(())
                     }
-                    Err(err) => {
-                        tracing::warn!("Error on file dialog: {:?}", err);
-                    }
-                }
+                    Some(&Loader::FileDialogAvm2 { target_object, .. }) => {
+                        match dialog_result {
+                            Ok(dialog_result) => {
+                                if !dialog_result.is_cancelled() {
+                                    target_object.init_from_dialog_result(dialog_result);
 
-                Ok(())
+                                    let mut activation =
+                                        Avm2Activation::from_nothing(uc.reborrow());
+                                    let select_event = Avm2EventObject::bare_default_event(
+                                        &mut activation.context,
+                                        "select",
+                                    );
+                                    Avm2::dispatch_event(
+                                        &mut activation.context,
+                                        select_event,
+                                        target_object.into(),
+                                    );
+                                } else {
+                                    let mut activation =
+                                        Avm2Activation::from_nothing(uc.reborrow());
+                                    let cancel_event = Avm2EventObject::bare_default_event(
+                                        &mut activation.context,
+                                        "cancel",
+                                    );
+                                    Avm2::dispatch_event(
+                                        &mut activation.context,
+                                        cancel_event,
+                                        target_object.into(),
+                                    );
+                                }
+                            }
+                            Err(err) => {
+                                tracing::warn!("Error on file dialog: {:?}", err);
+                            }
+                        }
+
+                        Ok(())
+                    }
+                    None => Err(Error::Cancelled),
+                    _ => Err(Error::NotFileDialogLoader),
+                }
             })
         })
     }

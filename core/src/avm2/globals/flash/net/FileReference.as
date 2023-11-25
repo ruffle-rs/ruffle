@@ -9,7 +9,6 @@ package flash.net
     {
         private var _creationDate: Date;
         private var _creator: String;
-        private var _data: ByteArray;
         private var _extension: String;
         private var _modificationDate: Date;
         private var _name: String;
@@ -29,9 +28,7 @@ package flash.net
             return this._creator;
         }   
 
-        public function get data(): ByteArray {
-            return this._data;
-        }   
+        public native function get data(): ByteArray;
 
         public function get extension(): String {
             return this._extension;
@@ -57,9 +54,7 @@ package flash.net
             return this._type;
         }   
 
-        public function browse(typeFilter:Array = null):Boolean {
-            return false;
-        }   
+        public native function browse(typeFilter:Array = null): Boolean;
 
         public function cancel():void {
             stub_method("flash.net.FileReference", "cancel");
@@ -69,9 +64,7 @@ package flash.net
             stub_method("flash.net.FileReference", "download");
         }   
 
-        public function load():void {
-            stub_method("flash.net.FileReference", "load");
-        }   
+        public native function load():void;
 
         public function requestPermission():void {
             stub_method("flash.net.FileReference", "requestPermission");
