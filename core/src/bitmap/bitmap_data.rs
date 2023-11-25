@@ -141,10 +141,10 @@ impl Color {
     pub fn blend_over(&self, source: &Self) -> Self {
         let sa = source.alpha();
 
-        let r = source.red() + ((self.red() as u16 * (255 - sa as u16)) >> 8) as u8;
-        let g = source.green() + ((self.green() as u16 * (255 - sa as u16)) >> 8) as u8;
-        let b = source.blue() + ((self.blue() as u16 * (255 - sa as u16)) >> 8) as u8;
-        let a = source.alpha() + ((self.alpha() as u16 * (255 - sa as u16)) >> 8) as u8;
+        let r = source.red() + ((self.red() as u16 * (255 - sa as u16)) / 255) as u8;
+        let g = source.green() + ((self.green() as u16 * (255 - sa as u16)) / 255) as u8;
+        let b = source.blue() + ((self.blue() as u16 * (255 - sa as u16)) / 255) as u8;
+        let a = source.alpha() + ((self.alpha() as u16 * (255 - sa as u16)) / 255) as u8;
         Self::argb(a, r, g, b)
     }
 }
