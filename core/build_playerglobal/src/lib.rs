@@ -30,6 +30,9 @@ const METADATA_NATIVE_INSTANCE_INIT: &str = "NativeInstanceInit";
 /// Indicates that we should generate a reference to a class call handler
 /// method (used as a metadata key with `Ruffle` metadata)
 const METADATA_CALL_HANDLER: &str = "CallHandler";
+// The name for metadata for namespace versioning- the Flex SDK doesn't
+// strip versioning metadata, so we have to allow this metadata name
+const API_METADATA_NAME: &str = "API";
 
 /// If successful, returns a list of paths that were used. If this is run
 /// from a build script, these paths should be printed with
@@ -377,10 +380,12 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
         for metadata_idx in &trait_.metadata {
             let metadata = &abc.metadata[metadata_idx.0 as usize];
             let name = &abc.constant_pool.strings[metadata.name.0 as usize - 1];
-            match name.as_str() {
-                RUFFLE_METADATA_NAME => {}
+
+            let is_versioning = match name.as_str() {
+                RUFFLE_METADATA_NAME => false,
+                API_METADATA_NAME => true,
                 _ => panic!("Unexpected class metadata {name:?}"),
-            }
+            };
 
             for item in &metadata.items {
                 let key = if item.key.0 != 0 {
@@ -391,7 +396,7 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
                 let value = &abc.constant_pool.strings[item.value.0 as usize - 1];
                 match (key, value.as_str()) {
                     // Match `[Ruffle(InstanceAllocator)]`
-                    (None, METADATA_INSTANCE_ALLOCATOR) => {
+                    (None, METADATA_INSTANCE_ALLOCATOR) if !is_versioning => {
                         // This results in a path of the form
                         // `crate::avm2::globals::<path::to::class>::<class_allocator>`
                         rust_instance_allocators[class_id as usize] = rust_method_name_and_path(
@@ -402,7 +407,7 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
                             &instance_allocator_method_name,
                         );
                     }
-                    (None, METADATA_NATIVE_INSTANCE_INIT) => {
+                    (None, METADATA_NATIVE_INSTANCE_INIT) if !is_versioning => {
                         rust_native_instance_initializers[class_id as usize] =
                             rust_method_name_and_path(
                                 &abc,
@@ -412,7 +417,7 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
                                 &native_instance_init_method_name,
                             )
                     }
-                    (None, METADATA_CALL_HANDLER) => {
+                    (None, METADATA_CALL_HANDLER) if !is_versioning => {
                         rust_call_handlers[class_id as usize] = rust_method_name_and_path(
                             &abc,
                             trait_,
@@ -421,6 +426,7 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
                             &call_handler_method_name,
                         )
                     }
+                    (None, _) if is_versioning => {}
                     _ => panic!("Unexpected metadata pair ({key:?}, {value})"),
                 }
             }
