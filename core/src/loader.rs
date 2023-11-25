@@ -185,6 +185,9 @@ pub enum Error {
     #[error("Non-file dialog loader spawned as file dialog loader")]
     NotFileDialogLoader,
 
+    #[error("Non-file save dialog loader spawned as file save dialog loader")]
+    NotFileSaveDialogLoader,
+
     #[error("Non-file download dialog loader spawned as file download dialog loader")]
     NotFileDownloadDialogLoader,
 
@@ -250,6 +253,7 @@ impl<'gc> LoadManager<'gc> {
             | Loader::NetStream { self_handle, .. }
             | Loader::FileDialog { self_handle, .. }
             | Loader::FileDialogAvm2 { self_handle, .. }
+            | Loader::SaveFileDialog { self_handle, .. }
             | Loader::DownloadFileDialog { self_handle, .. }
             | Loader::UploadFile { self_handle, .. }
             | Loader::MovieUnloader { self_handle, .. } => *self_handle = Some(handle),
@@ -522,6 +526,24 @@ impl<'gc> LoadManager<'gc> {
         loader.file_dialog_loader(player, dialog)
     }
 
+    /// Display a dialog allowing a user to save a file
+    #[must_use]
+    pub fn save_file_dialog(
+        &mut self,
+        player: Weak<Mutex<Player>>,
+        target_object: FileReferenceObject<'gc>,
+        dialog: DialogResultFuture,
+        data: Vec<u8>,
+    ) -> OwnedFuture<(), Error> {
+        let loader = Loader::SaveFileDialog {
+            self_handle: None,
+            target_object,
+        };
+        let handle = self.add_loader(loader);
+        let loader = self.get_loader_mut(handle).unwrap();
+        loader.file_save_dialog_loader(player, dialog, data)
+    }
+
     /// Display a dialog allowing a user to download a file
     ///
     /// Returns a future that will be resolved when a file is selected and the download has completed
@@ -733,6 +755,16 @@ pub enum Loader<'gc> {
         self_handle: Option<Handle>,
 
         /// The target AVM2 object to set to the selected file path.
+        target_object: FileReferenceObject<'gc>,
+    },
+
+    /// Loader that is saving a file to disk from an AVM2 scope.
+    SaveFileDialog {
+        /// The handle to refer to this loader instance.
+        #[collect(require_static)]
+        self_handle: Option<Handle>,
+
+        /// The target AVM2 object to select a save location for.
         target_object: FileReferenceObject<'gc>,
     },
 
@@ -2529,6 +2561,115 @@ impl<'gc> Loader<'gc> {
                     None => Err(Error::Cancelled),
                     _ => Err(Error::NotFileDialogLoader),
                 }
+            })
+        })
+    }
+
+    /// Loader to handle saving a file to disk.
+    pub fn file_save_dialog_loader(
+        &mut self,
+        player: Weak<Mutex<Player>>,
+        dialog: DialogResultFuture,
+        data: Vec<u8>,
+    ) -> OwnedFuture<(), Error> {
+        let handle = match self {
+            Loader::SaveFileDialog { self_handle, .. } => {
+                self_handle.expect("Loader not self-introduced")
+            }
+            _ => return Box::pin(async { Err(Error::NotFileSaveDialogLoader) }),
+        };
+
+        let player = player
+            .upgrade()
+            .expect("Could not upgrade weak reference to player");
+
+        Box::pin(async move {
+            let dialog_result = dialog.await;
+
+            // Dialog is done, allow opening new dialogs
+            player.lock().unwrap().ui_mut().close_file_dialog();
+
+            // Fire the load handler.
+            player.lock().unwrap().update(|uc| -> Result<(), Error> {
+                let loader = uc.load_manager.get_loader(handle);
+                let target_object = match loader {
+                    Some(&Loader::SaveFileDialog { target_object, .. }) => target_object,
+                    None => return Err(Error::Cancelled),
+                    _ => return Err(Error::NotFileSaveDialogLoader),
+                };
+
+                match dialog_result {
+                    Ok(mut dialog_result) => {
+                        if !dialog_result.is_cancelled() {
+                            dialog_result.write(&data);
+                            dialog_result.refresh();
+                            target_object.init_from_dialog_result(dialog_result);
+
+                            let mut activation = Avm2Activation::from_nothing(uc.reborrow());
+
+                            let select_event = Avm2EventObject::bare_default_event(
+                                &mut activation.context,
+                                "select",
+                            );
+                            Avm2::dispatch_event(
+                                &mut activation.context,
+                                select_event,
+                                target_object.into(),
+                            );
+
+                            let open_event = Avm2EventObject::bare_default_event(
+                                &mut activation.context,
+                                "open",
+                            );
+                            Avm2::dispatch_event(
+                                &mut activation.context,
+                                open_event,
+                                target_object.into(),
+                            );
+
+                            let size = data.len() as u64;
+                            let progress_evt = Avm2EventObject::progress_event(
+                                &mut activation,
+                                "progress",
+                                size,
+                                size,
+                                false,
+                                false,
+                            );
+                            Avm2::dispatch_event(
+                                &mut activation.context,
+                                progress_evt,
+                                target_object.into(),
+                            );
+
+                            let complete_event = Avm2EventObject::bare_default_event(
+                                &mut activation.context,
+                                "complete",
+                            );
+                            Avm2::dispatch_event(
+                                &mut activation.context,
+                                complete_event,
+                                target_object.into(),
+                            );
+                        } else {
+                            let mut activation = Avm2Activation::from_nothing(uc.reborrow());
+                            let cancel_event = Avm2EventObject::bare_default_event(
+                                &mut activation.context,
+                                "cancel",
+                            );
+                            Avm2::dispatch_event(
+                                &mut activation.context,
+                                cancel_event,
+                                target_object.into(),
+                            );
+                        }
+                    }
+                    Err(err) => {
+                        tracing::warn!("Save dialog had an error {:?}", err);
+                    }
+                }
+
+                Ok(())
             })
         })
     }

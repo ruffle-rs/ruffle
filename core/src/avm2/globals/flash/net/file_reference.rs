@@ -1,5 +1,5 @@
 use crate::avm2::bytearray::ByteArrayStorage;
-use crate::avm2::error::{make_error_2037, make_error_2097};
+use crate::avm2::error::{argument_error, error, make_error_2037, make_error_2097};
 pub use crate::avm2::object::file_reference_allocator;
 use crate::avm2::object::{ByteArrayObject, FileReference};
 use crate::avm2::{Activation, Avm2, Error, EventObject, Object, TObject, Value};
@@ -161,6 +161,60 @@ pub fn load<'gc>(
 
     let complete_evt = EventObject::bare_default_event(&mut activation.context, "complete");
     Avm2::dispatch_event(&mut activation.context, complete_evt, this.into());
+
+    Ok(Value::Undefined)
+}
+
+pub fn save<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_file_reference().unwrap();
+    let data = args[0];
+
+    let data = match data {
+        Value::Null | Value::Undefined => {
+            // For some reason this isn't a proper error.
+            return Err(Error::AvmError(argument_error(activation, "data", 0)?));
+        }
+        Value::Object(obj) => {
+            if let Some(bytearray) = obj.as_bytearray() {
+                bytearray.bytes().to_vec()
+            } else if let Some(xml) = obj.as_xml_object() {
+                xml.as_xml_string(activation).to_string().into_bytes()
+            } else {
+                data.coerce_to_string(activation)?.to_string().into_bytes()
+            }
+        }
+        _ => data.coerce_to_string(activation)?.to_string().into_bytes(),
+    };
+
+    let file_name = if let Value::String(name) = args[1] {
+        name.to_string()
+    } else {
+        "".into()
+    };
+
+    // Create and spawn dialog
+    let dialog = activation.context.ui.display_file_save_dialog(
+        file_name.to_owned(),
+        format!("Select location to save the file {}", file_name),
+    );
+
+    match dialog {
+        Some(dialog) => {
+            let process = activation.context.load_manager.save_file_dialog(
+                activation.context.player.clone(),
+                this,
+                dialog,
+                data,
+            );
+
+            activation.context.navigator.spawn_future(process);
+        }
+        None => return Err(Error::AvmError(error(activation, "Error #2174: Only one download, upload, load or save operation can be active at a time on each FileReference.", 2174)?)),
+    }
 
     Ok(Value::Undefined)
 }
