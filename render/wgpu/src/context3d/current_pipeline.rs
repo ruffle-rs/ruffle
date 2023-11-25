@@ -1,5 +1,5 @@
 use naga::valid::{Capabilities, ValidationFlags, Validator};
-use naga_agal::{Filter, SamplerOverride, Wrapping};
+use naga_agal::{Filter, SamplerConfig, Wrapping};
 use ruffle_render::backend::{
     Context3DTextureFilter, Context3DTriangleFace, Context3DVertexBufferFormat, Context3DWrapMode,
     Texture,
@@ -84,7 +84,13 @@ pub struct CurrentPipeline {
 
     dirty: Cell<bool>,
 
-    sampler_override: [Option<SamplerOverride>; 8],
+    // Sampler configuration information for each texture slot.
+    // This is updated by `Context3D.setSamplerStateAt`, as well
+    // as in `Context3D.setProgram` (based on the sampling opcodes
+    // in the program). All texture slots have a sampler set by default
+    // (which allows rendering with an 'ignoresampler' tex opcode,
+    // and no calls to Context3D.setSamplerStateAt)
+    sampler_configs: [SamplerConfig; 8],
 }
 
 #[derive(Clone)]
@@ -159,12 +165,20 @@ impl CurrentPipeline {
 
             target_format: TextureFormat::Rgba8Unorm,
 
-            sampler_override: [None; 8],
+            sampler_configs: [SamplerConfig::default(); 8],
         }
     }
     pub fn set_shaders(&mut self, shaders: Option<Rc<ShaderPairAgal>>) {
         self.dirty.set(true);
         self.shaders = shaders;
+        if let Some(shaders) = &self.shaders {
+            for (i, sampler_config) in shaders.fragment_sampler_configs().iter().enumerate() {
+                // When we call `Context3D.setProgram`, sampler configs from the fragment shader override
+                // any previously set sampler configs (if 'ignoresampler' was set in the program, then the corresponding
+                // array entry will be `None`).
+                self.sampler_configs[i] = sampler_config.unwrap_or(self.sampler_configs[i]);
+            }
+        }
     }
 
     pub fn update_texture_at(&mut self, index: usize, texture: Option<BoundTextureData>) {
@@ -325,7 +339,7 @@ impl CurrentPipeline {
             descriptors,
             ShaderCompileData {
                 vertex_attributes: agal_attributes,
-                sampler_overrides: self.sampler_override,
+                sampler_configs: self.sampler_configs,
                 bound_textures: self.bound_textures.clone(),
             },
         );
@@ -538,7 +552,7 @@ impl CurrentPipeline {
         wrap: ruffle_render::backend::Context3DWrapMode,
         filter: ruffle_render::backend::Context3DTextureFilter,
     ) {
-        let sampler_override = SamplerOverride {
+        let sampler_config = SamplerConfig {
             wrapping: match wrap {
                 Context3DWrapMode::Clamp => Wrapping::Clamp,
                 Context3DWrapMode::Repeat => Wrapping::Repeat,
@@ -553,10 +567,8 @@ impl CurrentPipeline {
             // FIXME - implement this
             mipmap: naga_agal::Mipmap::Disable,
         };
-        if self.sampler_override[sampler] != Some(sampler_override) {
-            self.dirty.set(true);
-            self.sampler_override[sampler] = Some(sampler_override);
-        }
+        self.dirty.set(true);
+        self.sampler_configs[sampler] = sampler_config;
     }
 }
 

@@ -15,7 +15,8 @@ use num_traits::FromPrimitive;
 
 use crate::varying::VaryingRegisters;
 use crate::{
-    types::*, Error, ShaderType, VertexAttributeFormat, MAX_VERTEX_ATTRIBUTES, SHADER_ENTRY_POINT,
+    types::*, Error, ShaderType, VertexAttributeFormat, MAX_TEXTURES, MAX_VERTEX_ATTRIBUTES,
+    SHADER_ENTRY_POINT,
 };
 
 const VERTEX_PROGRAM_CONTANTS: u64 = 128;
@@ -52,6 +53,15 @@ struct TextureSamplers {
     repeat_u_clamp_v_nearest: Handle<Expression>,
 }
 
+#[derive(Copy, Clone)]
+struct TextureBindingData {
+    // The `Expression::GlobalVariable` corresponding to the texture that we loaded.
+    expr: Handle<Expression>,
+    // The sample config values extracted from the opcode
+    // (which may override or be overridden by values set by Context3D.setSamplerStateAt)
+    sampler_config: SamplerConfig,
+}
+
 pub(crate) struct NagaBuilder<'a> {
     pub(crate) module: Module,
     pub(crate) func: Function,
@@ -74,9 +84,9 @@ pub(crate) struct NagaBuilder<'a> {
     pub(crate) varying_registers: VaryingRegisters,
 
     // Whenever we encounter a texture load at a particular index
-    // for the first time, we store an `Expression::GlobalVariable`
-    // here corresponding to the texture that we loaded.
-    texture_bindings: [Option<Handle<Expression>>; 8],
+    // for the first time, we store the expression we generate,
+    // as well as the sampler parameters used.
+    texture_bindings: [Option<TextureBindingData>; MAX_TEXTURES],
 
     // Whenever we read from a particular temporary register
     // for the first time, we create a new local variable
@@ -263,7 +273,7 @@ impl VertexAttributeFormat {
 pub struct ShaderConfig<'a> {
     pub shader_type: ShaderType,
     pub vertex_attributes: &'a [Option<VertexAttributeFormat>; 8],
-    pub sampler_overrides: &'a [Option<SamplerOverride>; 8],
+    pub sampler_configs: &'a [SamplerConfig; 8],
     pub version: AgalVersion,
 }
 
@@ -273,12 +283,14 @@ pub enum AgalVersion {
     Agal2,
 }
 
+struct ParsedBytecode {
+    version: AgalVersion,
+    shader_type: ShaderType,
+    operations: Vec<(Opcode, DestField, SourceField, Source2)>,
+}
+
 impl<'a> NagaBuilder<'a> {
-    pub fn process_agal(
-        mut agal: &[u8],
-        vertex_attributes: &[Option<VertexAttributeFormat>; MAX_VERTEX_ATTRIBUTES],
-        sampler_overrides: &[Option<SamplerOverride>; 8],
-    ) -> Result<Module> {
+    fn parse_bytecode(mut agal: &[u8]) -> Result<ParsedBytecode> {
         let data = &mut agal;
 
         let mut header = [0; 7];
@@ -305,12 +317,7 @@ impl<'a> NagaBuilder<'a> {
             _ => return Err(Error::InvalidShaderType(header[6])),
         };
 
-        let mut builder = NagaBuilder::new(ShaderConfig {
-            shader_type,
-            vertex_attributes,
-            sampler_overrides,
-            version,
-        });
+        let mut operations = Vec::new();
 
         while !data.is_empty() {
             let mut token = [0; 24];
@@ -331,7 +338,63 @@ impl<'a> NagaBuilder<'a> {
                     token[16..24].try_into().unwrap(),
                 ))?)
             };
+            operations.push((opcode, dest, source1, source2))
+        }
+        Ok(ParsedBytecode {
+            version,
+            shader_type,
+            operations,
+        })
+    }
 
+    pub fn extract_sampler_configs(agal: &[u8]) -> Result<[Option<SamplerConfig>; MAX_TEXTURES]> {
+        let parsed = Self::parse_bytecode(agal)?;
+        let mut sampler_configs = [None; MAX_TEXTURES];
+        for (_opcode, _dest, _source1, source2) in parsed.operations {
+            if let Source2::Sampler(sampler_field) = source2 {
+                // When the 'ignore_sampler' field is set, we do not update the sampler config.
+                // The existing sampler value will end up getting used
+                // (which comes from a previous Context3D.setSamplerStateAt
+                // or Context3D.setProgram call)
+                if sampler_field.special.ignore_sampler {
+                    continue;
+                }
+
+                let sampler_config = SamplerConfig {
+                    wrapping: sampler_field.wrapping,
+                    filter: sampler_field.filter,
+                    mipmap: sampler_field.mipmap,
+                };
+                let index = sampler_field.reg_num as usize;
+                if sampler_configs[index].is_none() {
+                    sampler_configs[index] = Some(sampler_config);
+                } else if sampler_configs[index] != Some(sampler_config) {
+                    return Err(Error::SamplerConfigMismatch {
+                        texture: index,
+                        old: sampler_configs[index].unwrap(),
+                        new: sampler_config,
+                    });
+                }
+            }
+        }
+
+        Ok(sampler_configs)
+    }
+
+    pub fn build_module(
+        agal: &[u8],
+        vertex_attributes: &[Option<VertexAttributeFormat>; MAX_VERTEX_ATTRIBUTES],
+        sampler_configs: &[SamplerConfig; 8],
+    ) -> Result<Module> {
+        let parsed = Self::parse_bytecode(agal)?;
+        let mut builder = NagaBuilder::new(ShaderConfig {
+            shader_type: parsed.shader_type,
+            vertex_attributes,
+            sampler_configs,
+            version: parsed.version,
+        });
+
+        for (opcode, dest, source1, source2) in parsed.operations {
             builder.process_opcode(&opcode, &dest, &source1, &source2)?;
         }
         builder.finish()
@@ -737,8 +800,13 @@ impl<'a> NagaBuilder<'a> {
     fn emit_texture_load(
         &mut self,
         index: usize,
-        dimension: Dimension,
+        sampler_field: &SamplerField,
     ) -> Result<Handle<Expression>> {
+        let sampler_config = SamplerConfig {
+            wrapping: sampler_field.wrapping,
+            filter: sampler_field.filter,
+            mipmap: sampler_field.mipmap,
+        };
         if self.texture_bindings[index].is_none() {
             let global_var = self.module.global_variables.append(
                 GlobalVariable {
@@ -750,7 +818,7 @@ impl<'a> NagaBuilder<'a> {
                     }),
                     // Note - we assume that a given texture is always sampled with the same dimension
                     // (2d or cube)
-                    ty: match dimension {
+                    ty: match sampler_field.dimension {
                         Dimension::TwoD => self.image2d,
                         Dimension::Cube => self.imagecube,
                     },
@@ -758,13 +826,25 @@ impl<'a> NagaBuilder<'a> {
                 },
                 Span::UNDEFINED,
             );
-            self.texture_bindings[index] = Some(
-                self.func
+            self.texture_bindings[index] = Some(TextureBindingData {
+                expr: self
+                    .func
                     .expressions
                     .append(Expression::GlobalVariable(global_var), Span::UNDEFINED),
-            );
+                sampler_config,
+            });
         }
-        Ok(self.texture_bindings[index].unwrap())
+        let data = self.texture_bindings[index].as_ref().unwrap();
+        // AGAL requires that a given texture ID always be sampled with the same settings
+        // within a program
+        if data.sampler_config != sampler_config {
+            return Err(Error::SamplerConfigMismatch {
+                texture: index,
+                old: data.sampler_config,
+                new: sampler_config,
+            });
+        }
+        Ok(self.texture_bindings[index].unwrap().expr)
     }
 
     fn emit_source_field_load(
@@ -1145,25 +1225,12 @@ impl<'a> NagaBuilder<'a> {
                     panic!("Invalid sample register type {:?}", sampler_field);
                 }
 
-                let mut filter = sampler_field.filter;
-                let mut wrapping = sampler_field.wrapping;
-
-                // See https://github.com/openfl/openfl/issues/1332
-
-                // FIXME - Flash Player seems to unconditionally use sampler overrides,
-                // regardless of whether or not `ignore_sampler` is set. I haven't
-                // found any real SWFs that use it, so let's panic so that get
-                // get a bug report if it ever happens.
-                if sampler_field.special.ignore_sampler {
-                    panic!("Found ignore_sampler in {:?}", sampler_field);
-                }
-
-                if let Some(sampler_override) =
-                    &self.shader_config.sampler_overrides[texture_id as usize]
-                {
-                    filter = sampler_override.filter;
-                    wrapping = sampler_override.wrapping;
-                }
+                // Always take filter/wrapping from the shader config, which takes into account both the values
+                // from the opcode and any Context3D.setSamplerStateAt calls.
+                // FIXME - refactor this to just bind the correct sampler at the proper index from the wgpu side.
+                let sampler_config = self.shader_config.sampler_configs[texture_id as usize];
+                let filter = sampler_config.filter;
+                let wrapping = sampler_config.wrapping;
 
                 let sampler_binding = match (filter, wrapping) {
                     (Filter::Linear, Wrapping::Clamp) => texture_samplers.clamp_linear,
@@ -1229,7 +1296,7 @@ impl<'a> NagaBuilder<'a> {
                     }
                 };
 
-                let image = self.emit_texture_load(texture_id as usize, sampler_field.dimension)?;
+                let image = self.emit_texture_load(texture_id as usize, sampler_field)?;
                 let tex = self.evaluate_expr(Expression::ImageSample {
                     image,
                     sampler: sampler_binding,

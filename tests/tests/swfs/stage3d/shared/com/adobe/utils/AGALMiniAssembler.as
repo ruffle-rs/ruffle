@@ -372,7 +372,7 @@ package com.adobe.utils
 								if ( optfound == null )
 								{
 									// todo check that it's a number...
-									//trace( "Warning, unknown sampler option: "+opts[k] );
+									trace( "Warning, unknown sampler option: "+opts[k] );
 									bias = Number(opts[k]); 
 									if ( verbose )
 										trace( "    bias: " + bias );																	

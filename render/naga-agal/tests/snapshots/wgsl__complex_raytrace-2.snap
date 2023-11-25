@@ -1,6 +1,5 @@
 ---
 source: render/naga-agal/tests/wgsl.rs
-assertion_line: 105
 expression: output
 ---
 struct FragmentOutput {
@@ -2675,7 +2674,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
         }
     }
     let _e5727: vec4<f32> = temporary9_;
-    let _e5731: vec4<f32> = textureSample(texture0_, sampler2_, _e5727.xyzz.xyz);
+    let _e5731: vec4<f32> = textureSample(texture0_, sampler3_, _e5727.xyzz.xyz);
     temporary1_ = _e5731;
     let _e5732: vec4<f32> = temporary11_;
     let _e5736: vec4<f32> = constant_registers[16u];
