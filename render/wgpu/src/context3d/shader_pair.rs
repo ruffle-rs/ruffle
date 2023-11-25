@@ -1,5 +1,5 @@
 use lru::LruCache;
-use naga_agal::{SamplerOverride, VertexAttributeFormat};
+use naga_agal::{SamplerConfig, VertexAttributeFormat};
 use ruffle_render::backend::ShaderModule;
 use std::{
     borrow::Cow,
@@ -22,7 +22,9 @@ use crate::descriptors::Descriptors;
 
 pub struct ShaderPairAgal {
     vertex_bytecode: Vec<u8>,
+
     fragment_bytecode: Vec<u8>,
+    fragment_sampler_configs: [Option<SamplerConfig>; 8],
     // Caches compiled wgpu shader modules. The cache key represents all of the data
     // that we need to pass to `naga_agal::agal_to_naga` to compile a shader.
     compiled: RefCell<LruCache<ShaderCompileData, CompiledShaderProgram>>,
@@ -38,12 +40,20 @@ pub struct CompiledShaderProgram {
 
 impl ShaderPairAgal {
     pub fn new(vertex_bytecode: Vec<u8>, fragment_bytecode: Vec<u8>) -> Self {
+        let fragment_sampler_configs =
+            naga_agal::extract_sampler_configs(&fragment_bytecode).unwrap();
+
         Self {
             vertex_bytecode,
             fragment_bytecode,
+            fragment_sampler_configs,
             // TODO - figure out a good size for this cache.
             compiled: RefCell::new(LruCache::new(NonZeroUsize::new(2).unwrap())),
         }
+    }
+
+    pub fn fragment_sampler_configs(&self) -> &[Option<SamplerConfig>; 8] {
+        &self.fragment_sampler_configs
     }
 
     pub fn compile(
@@ -58,7 +68,7 @@ impl ShaderPairAgal {
                 let vertex_naga_module = naga_agal::agal_to_naga(
                     &self.vertex_bytecode,
                     &data.vertex_attributes,
-                    &data.sampler_overrides,
+                    &data.sampler_configs,
                 )
                 .unwrap();
                 let vertex_module =
@@ -72,7 +82,7 @@ impl ShaderPairAgal {
                 let fragment_naga_module = naga_agal::agal_to_naga(
                     &self.fragment_bytecode,
                     &data.vertex_attributes,
-                    &data.sampler_overrides,
+                    &data.sampler_configs,
                 )
                 .unwrap();
                 let fragment_module =
@@ -200,7 +210,7 @@ impl ShaderPairAgal {
 
 #[derive(Hash, Eq, PartialEq, Clone)]
 pub struct ShaderCompileData {
-    pub sampler_overrides: [Option<SamplerOverride>; 8],
+    pub sampler_configs: [SamplerConfig; 8],
     pub vertex_attributes: [Option<VertexAttributeFormat>; MAX_VERTEX_ATTRIBUTES],
     pub bound_textures: [Option<BoundTextureData>; 8],
 }
