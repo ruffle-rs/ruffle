@@ -11,7 +11,6 @@ package flash.net
         private var _creator: String;
         private var _extension: String;
         private var _modificationDate: Date;
-        private var _name: String;
         private static var _permissionStatus: String;
         private var _size: Number;
         private var _type: String;
@@ -38,9 +37,7 @@ package flash.net
             return this._modificationDate;
         }   
 
-        public function get name(): String {
-            return this._name;
-        }   
+        public native function get name(): String;
 
         public static function get permissionStatus(): String {
             return FileReference._permissionStatus;

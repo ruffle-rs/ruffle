@@ -4,6 +4,7 @@ pub use crate::avm2::object::file_reference_allocator;
 use crate::avm2::object::{ByteArrayObject, FileReference};
 use crate::avm2::{Activation, Avm2, Error, EventObject, Object, TObject, Value};
 use crate::backend::ui::FileFilter;
+use crate::string::AvmString;
 
 pub fn get_data<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -23,6 +24,24 @@ pub fn get_data<'gc>(
     };
 
     Ok(bytearray.into())
+}
+
+pub fn get_name<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_file_reference().unwrap();
+
+    let name = match *this.file_reference() {
+        FileReference::None => return Err(make_error_2037(activation)),
+        FileReference::FileDialogResult(ref dialog_result) => {
+            let name = dialog_result.file_name().unwrap_or_default();
+            AvmString::new_utf8(activation.context.gc_context, name).into()
+        }
+    };
+
+    Ok(name)
 }
 
 pub fn browse<'gc>(
