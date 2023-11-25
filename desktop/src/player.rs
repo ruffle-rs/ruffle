@@ -1,6 +1,6 @@
 use crate::backends::{
-    CpalAudioBackend, DesktopExternalInterfaceProvider, DesktopUiBackend, DiskStorageBackend,
-    ExternalNavigatorBackend,
+    CpalAudioBackend, DesktopExternalInterfaceProvider, DesktopFSCommandProvider, DesktopUiBackend,
+    DiskStorageBackend, ExternalNavigatorBackend,
 };
 use crate::cli::Opt;
 use crate::custom_event::RuffleEvent;
@@ -143,6 +143,10 @@ impl ActivePlayer {
             .with_navigator(navigator)
             .with_renderer(renderer)
             .with_storage(DiskStorageBackend::new().expect("Couldn't create storage backend"))
+            .with_fs_commands(Box::new(DesktopFSCommandProvider {
+                event_loop: event_loop.clone(),
+                window: window.clone(),
+            }))
             .with_ui(
                 DesktopUiBackend::new(window.clone(), opt.open_url_mode)
                     .expect("Couldn't create ui backend"),
