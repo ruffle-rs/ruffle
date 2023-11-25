@@ -5,6 +5,7 @@ use crate::avm2::object::TObject;
 use crate::avm2::{Activation, Error, Object, Value};
 
 pub mod local_connection;
+pub mod file_reference;
 pub mod net_connection;
 pub mod net_stream;
 pub mod object_encoding;
