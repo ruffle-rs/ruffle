@@ -205,6 +205,39 @@ pub fn copy<'gc>(
     Ok(list.deep_copy(activation).into())
 }
 
+pub fn contains<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let child = args[0];
+
+    let matching_node = if let Some(xml) = child.as_object().and_then(|o| o.as_xml_object()) {
+        *xml.node()
+    } else if let Some(xml) = child.as_object().and_then(|o| o.as_xml_list_object()) {
+        if xml.length() == 1 {
+            *xml.children()[0].node()
+        } else {
+            return Ok(false.into());
+        }
+    } else {
+        let string_coerced = child.coerce_to_string(activation)?;
+
+        E4XNode::text(activation.context.gc_context, string_coerced, None)
+    };
+
+    let list = this.as_xml_list_object().unwrap();
+    let children = list.children();
+
+    for child in &*children {
+        if child.node().equals(&matching_node) {
+            return Ok(true.into());
+        }
+    }
+
+    Ok(false.into())
+}
+
 pub fn attribute<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
