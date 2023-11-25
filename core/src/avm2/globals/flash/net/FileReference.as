@@ -64,9 +64,7 @@ package flash.net
             stub_method("flash.net.FileReference", "requestPermission");
         }   
 
-        public function save(data:*, defaultFileName:String = null):void {
-            stub_method("flash.net.FileReference", "save");
-        }   
+        public native function save(data:*, defaultFileName:String = null):void;
 
         public function upload(request:URLRequest, uploadDataFieldName:String = "Filedata", testUpload:Boolean = false):void {
             stub_method("flash.net.FileReference", "upload");
