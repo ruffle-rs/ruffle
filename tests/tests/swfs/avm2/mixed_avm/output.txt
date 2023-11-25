@@ -3,4 +3,6 @@ hello from avm1!
 [object AVM1Movie]
 [object ApplicationDomain]
 Load complete!
+2180
+ArgumentError
 onmousedown at 10, 10!
