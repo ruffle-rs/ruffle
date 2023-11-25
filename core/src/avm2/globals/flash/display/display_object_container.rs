@@ -50,6 +50,14 @@ fn validate_add_operation<'gc>(
         )?));
     }
 
+    if !proposed_child.movie().is_action_script_3() {
+        return Err(Error::AvmError(argument_error(
+            activation,
+            "Error #2180: It is illegal to move AVM1 content (AS1 or AS2) to a different part of the displayList when it has been loaded into AVM2 (AS3) content.",
+            2180,
+        )?));
+    }
+
     if DisplayObject::ptr_eq(proposed_child, new_parent) {
         return Err(Error::AvmError(argument_error(
             activation,
