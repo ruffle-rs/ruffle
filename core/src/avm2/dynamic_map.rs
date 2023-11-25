@@ -91,15 +91,28 @@ impl<K: Eq + PartialEq + Hash, V> DynamicMap<K, V> {
     }
 
     pub fn next(&self, index: usize) -> Option<usize> {
+        // Start iteration from the beginning
+        if index == 0 {
+            if let Some(real) = self.public_to_real_index(1) {
+                self.real_index.set(real);
+                self.public_index.set(1);
+                return Some(1);
+            } else {
+                self.public_index.set(0);
+                self.real_index.set(0);
+                return None;
+            }
+        }
         // If the public index is zero than this is the first time this is being enumerated,
         // if index != self.public_index, then we are enumerating twice OR we mutated while enumerating.
         //
         // Regardless of the reason, we just need to sync the supplied index to the real index.
         if self.public_index.get() == 0 || index != self.public_index.get() {
             if let Some(real) = self.public_to_real_index(index) {
+                // Pick up where we left off in the iteration
+                // See https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/avmplusHashtable.cpp#L395
                 self.real_index.set(real);
-                self.public_index.set(index + 1);
-                return Some(self.public_index.get());
+                self.public_index.set(index);
             } else {
                 self.public_index.set(0);
                 self.real_index.set(0);
