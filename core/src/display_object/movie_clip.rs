@@ -4364,13 +4364,8 @@ impl<'gc, 'a> MovieClip<'gc> {
                     .static_data
                     .swf
                     .to_start_and_end(mc.tag_stream_pos as usize, mc.tag_stream_len());
-                let audio_stream = context.start_stream(
-                    mc.static_data.audio_stream_handle,
-                    self,
-                    mc.current_frame(),
-                    slice,
-                    stream_info,
-                );
+                let audio_stream =
+                    context.start_stream(self, mc.current_frame(), slice, stream_info);
                 drop(mc);
                 self.0.write(context.gc_context).audio_stream = audio_stream;
             }
