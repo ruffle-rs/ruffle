@@ -98,11 +98,8 @@ pub trait AudioBackend: Downcast {
 
     /// Starts playing a "stream" sound, which is an audio stream that is distributed
     /// among the frames of a Flash MovieClip.
-    ///
-    /// NOTE: `clip_frame` is no longer used on any backend.
     fn start_stream(
         &mut self,
-        clip_frame: u16,
         clip_data: crate::tag_utils::SwfSlice,
         handle: &swf::SoundStreamHead,
     ) -> Result<SoundInstanceHandle, DecodeError>;
@@ -267,7 +264,6 @@ impl AudioBackend for NullAudioBackend {
 
     fn start_stream(
         &mut self,
-        _clip_frame: u16,
         _clip_data: crate::tag_utils::SwfSlice,
         _handle: &swf::SoundStreamHead,
     ) -> Result<SoundInstanceHandle, DecodeError> {
@@ -536,7 +532,7 @@ impl<'gc> AudioManager<'gc> {
         stream_info: &swf::SoundStreamHead,
     ) -> Option<SoundInstanceHandle> {
         if self.sounds.len() < Self::MAX_SOUNDS {
-            let handle = audio.start_stream(clip_frame, data, stream_info).ok()?;
+            let handle = audio.start_stream(data, stream_info).ok()?;
             let instance = SoundInstance {
                 sound: None,
                 instance: handle,
