@@ -440,10 +440,13 @@ jobs:
         if: matrix.demo
         run: |
           # Delete the old build.
-          rm -f *.js *.wasm *.html
+          rm -fr *
 
           # Copy the fresh build into this folder.
-          cp -f ../web/packages/demo/dist/* .
+          cp -fr ../web/packages/demo/dist/* .
+          
+          # Restore our custom swfs
+          git restore swfs swfs.json
 
           # Create git commit. Amend previous commit to avoid daily commit spam.
           git config user.name "RuffleBuild"
