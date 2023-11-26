@@ -159,11 +159,6 @@ pub trait AudioBackend: Downcast {
 
     fn get_sound_peak(&mut self, instance: SoundInstanceHandle) -> Option<[f32; 2]>;
 
-    // TODO: Eventually remove this/move it to library.
-    fn is_loading_complete(&self) -> bool {
-        true
-    }
-
     /// Allows the audio backend to update.
     ///
     /// Runs once per event loop iteration.
