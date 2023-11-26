@@ -702,7 +702,7 @@ fn load_playerglobal<'gc>(
                 // Lookup with the highest version, so we we see all defined classes here
                 let ns = Namespace::package($package, ApiVersion::VM_INTERNAL, &mut activation.borrow_gc());
                 let name = QName::new(ns, $class_name);
-                let class_object = activation.domain().get_defined_value(activation, name)?;
+                let class_object = activation.domain().get_defined_value(activation, name).unwrap_or_else(|e| panic!("Failed to lookup {name:?}: {e:?}"));
                 let class_object = class_object.as_object().unwrap().as_class_object().unwrap();
                 let sc = activation.avm2().system_classes.as_mut().unwrap();
                 sc.$field = class_object;

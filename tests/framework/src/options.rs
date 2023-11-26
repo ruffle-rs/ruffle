@@ -7,7 +7,7 @@ use approx::assert_relative_eq;
 use image::ImageOutputFormat;
 use regex::Regex;
 use ruffle_core::tag_utils::SwfMovie;
-use ruffle_core::{PlayerBuilder, ViewportDimensions};
+use ruffle_core::{PlayerBuilder, PlayerRuntime, ViewportDimensions};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::quality::StageQuality;
 use serde::Deserialize;
@@ -135,6 +135,7 @@ pub struct PlayerOptions {
     with_renderer: Option<RenderOptions>,
     with_audio: bool,
     with_video: bool,
+    runtime: PlayerRuntime,
 }
 
 impl PlayerOptions {
@@ -156,6 +157,8 @@ impl PlayerOptions {
         if self.with_audio {
             player_builder = player_builder.with_audio(TestAudioBackend::default());
         }
+
+        player_builder = player_builder.with_player_runtime(self.runtime);
 
         #[cfg(feature = "ruffle_video_software")]
         if self.with_video {
