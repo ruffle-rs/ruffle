@@ -3,7 +3,7 @@ instance2:[Event type="added" bubbles=true cancelable=false eventPhase=3] target
 target.stage: [object Stage] target.name: instance3 target.parent: [object UpButtonShape] target.parent.parent: null
 root1:[Event type="added" bubbles=true cancelable=false eventPhase=3] target: [object Shape]
 target.stage: [object Stage] target.name: instance3 target.parent: [object UpButtonShape] target.parent.parent: null
-//Constructed UpButtonShape ( instance2 ): this.parent = null this.stage [object Stage]
+//Constructed UpButtonShape ( instance2 ): this.parent = null this.stage [object Stage] Main.INSTANCE.my_button = [object MyButton]
 instance4:[Event type="added" bubbles=true cancelable=false eventPhase=3] target: [object Shape]
 target.stage: [object Stage] target.name: instance5 target.parent: [object OverButtonShape] target.parent.parent: null
 root1:[Event type="added" bubbles=true cancelable=false eventPhase=3] target: [object Shape]
@@ -38,7 +38,9 @@ instance4:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2] t
 target.stage: null target.name: instance4 target.parent: null target.parent.parent: <missing>
 instance6:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2] target: [object DownButtonShape]
 target.stage: null target.name: instance6 target.parent: null target.parent.parent: <missing>
-root1:[Event type="added" bubbles=true cancelable=false eventPhase=3] target: [object SimpleButton]
+Calling MyButton super()
+Called MyButton super()
+root1:[Event type="added" bubbles=true cancelable=false eventPhase=3] target: [object MyButton]
 target.stage: [object Stage] target.name: my_button target.parent: [object Main] target.parent.parent: [object Stage]
 root1:[Event type="added" bubbles=true cancelable=false eventPhase=2] target: [object Main]
 target.stage: [object Stage] target.name: root1 target.parent: [object Stage] target.parent.parent: null

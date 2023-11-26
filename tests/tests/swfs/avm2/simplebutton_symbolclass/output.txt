@@ -1,6 +1,8 @@
+Calling Main super()
+Called Main super()
 //var my_button = new MyButton();
 //Constructed UpButtonShape ( instance3 )!
-//Constructed OverButtonShape ( instance5 )!
+//Constructed OverButtonShape ( instance5 ): Main.INSTANCE.my_button = undefined
 //Constructed DownButtonShape ( instance7 )!
 ///MyButton constructor!
 //this.addChild(my_button);
@@ -24,7 +26,7 @@
 //my_button.upState = new UpButtonShape();
 //Constructed UpButtonShape ( instance11 )!
 //my_button.overState = new OverButtonShape();
-//Constructed OverButtonShape ( instance13 )!
+//Constructed OverButtonShape ( instance13 ): Main.INSTANCE.my_button = [object MyButton]
 //my_button.downState = new DownButtonShape();
 //Constructed DownButtonShape ( instance15 )!
 //my_button.hitTestState = new HitButtonShape();
@@ -46,7 +48,7 @@
 // numChildren:  1
 [object Shape]
 //Constructed UpButtonShape ( instance20 )!
-//Constructed OverButtonShape ( instance22 )!
+//Constructed OverButtonShape ( instance22 ): Main.INSTANCE.my_button = [object MyButton]
 //Constructed DownButtonShape ( instance24 )!
 //this.timeline_symbol.upState
 [object Sprite]
