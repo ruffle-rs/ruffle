@@ -13,9 +13,12 @@
        
       
       public var my_button:SimpleButton;
+	   
+	  public static var INSTANCE: Main;
       
       public function Main()
       {
+		 INSTANCE = this;
          var self:*;
          
          addFrameScript(0,this.frame1,1,this.frame2);

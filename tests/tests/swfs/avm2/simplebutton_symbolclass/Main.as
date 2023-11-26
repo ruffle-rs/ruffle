@@ -17,6 +17,8 @@
    
    public dynamic class Main extends MovieClip
    {
+	   
+	 public static var INSTANCE: Main;
        
       
       public var timeline_symbol:MyButton;
@@ -25,7 +27,10 @@
       
       public function Main()
       {
+		 INSTANCE = this;
+		 trace("Calling Main super()");
          super();
+		 trace("Called Main super()");
          addFrameScript(0,this.frame1,1,this.frame2);
       }
       
