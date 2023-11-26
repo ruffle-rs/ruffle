@@ -554,7 +554,6 @@ impl AudioMixer {
     /// Starts a timeline audio stream.
     pub fn start_stream(
         &mut self,
-        _stream_handle: Option<SoundHandle>,
         _clip_frame: u16,
         clip_data: SwfSlice,
         stream_info: &swf::SoundStreamHead,
@@ -1090,13 +1089,11 @@ macro_rules! impl_audio_mixer_backend {
         #[inline]
         fn start_stream(
             &mut self,
-            stream_handle: Option<SoundHandle>,
             clip_frame: u16,
             clip_data: $crate::tag_utils::SwfSlice,
             stream_info: &swf::SoundStreamHead,
         ) -> Result<SoundInstanceHandle, DecodeError> {
-            self.$mixer
-                .start_stream(stream_handle, clip_frame, clip_data, stream_info)
+            self.$mixer.start_stream(clip_frame, clip_data, stream_info)
         }
 
         #[inline]

@@ -311,20 +311,13 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
 
     pub fn start_stream(
         &mut self,
-        stream_handle: Option<SoundHandle>,
         movie_clip: MovieClip<'gc>,
         frame: u16,
         data: crate::tag_utils::SwfSlice,
         stream_info: &swf::SoundStreamHead,
     ) -> Option<SoundInstanceHandle> {
-        self.audio_manager.start_stream(
-            self.audio,
-            stream_handle,
-            movie_clip,
-            frame,
-            data,
-            stream_info,
-        )
+        self.audio_manager
+            .start_stream(self.audio, movie_clip, frame, data, stream_info)
     }
 
     pub fn set_sound_transforms_dirty(&mut self) {
