@@ -1,0 +1,1 @@
+flash.net.DatagramSocket is inaccessible from Flash Player

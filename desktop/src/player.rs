@@ -166,6 +166,7 @@ impl ActivePlayer {
             .with_spoofed_url(opt.spoof_url.clone().map(|url| url.to_string()))
             .with_page_url(opt.spoof_url.clone().map(|url| url.to_string()))
             .with_player_version(Some(opt.player_version))
+            .with_player_runtime(opt.player_runtime)
             .with_frame_rate(opt.frame_rate);
         let player = builder.build();
 

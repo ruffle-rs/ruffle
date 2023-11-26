@@ -254,6 +254,7 @@ include "flash/media/VideoStreamSettings.as"
 include "flash/external/ExternalInterface.as"
 
 include "flash/net.as"
+include "flash/net/DatagramSocket.as"
 include "flash/net/FileFilter.as"
 include "flash/net/FileReference.as"
 include "flash/net/FileReferenceList.as"

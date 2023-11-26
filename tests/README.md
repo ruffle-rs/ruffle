@@ -40,6 +40,7 @@ viewport_dimensions = { width = 100, height = 100, scale_factor = 1 } # The size
 with_renderer = { optional = false, sample_count = 4, exclude_warp = false } # If this test requires a renderer to run. Optional will enable the renderer where available.
 with_audio = false # If this test requires an audio backend to run.
 with_video = false # If this test requires a video decoder backend to run.
+runtime = "AIR" # The runtime to emulate ("FlashPlayer" or "AIR"). Defaults to "FlashPlayer"
 
 # A list of image comparisons to perform during the test. This block is repeatable infinitely, as long as each name is unique.
 # The comparison part of a test is optional and only runs when `imgtests` feature is enabled

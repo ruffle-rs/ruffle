@@ -57,6 +57,7 @@ use ruffle_render::commands::CommandList;
 use ruffle_render::quality::StageQuality;
 use ruffle_render::transform::TransformStack;
 use ruffle_video::backend::VideoBackend;
+use serde::Deserialize;
 use std::cell::RefCell;
 use std::collections::{HashMap, VecDeque};
 use std::ops::DerefMut;
@@ -392,8 +393,11 @@ impl Player {
 
         self.mutate_with_update_context(|context| {
             if context.swf.is_action_script_3() {
-                context.avm2.root_api_version = ApiVersion::from_swf_version(context.swf.version())
-                    .unwrap_or_else(|| panic!("Unknown SWF version {}", context.swf.version()));
+                context.avm2.root_api_version = ApiVersion::from_swf_version(
+                    context.swf.version(),
+                    context.avm2.player_runtime,
+                )
+                .unwrap_or_else(|| panic!("Unknown SWF version {}", context.swf.version()));
             }
 
             context.stage.set_movie_size(
@@ -2432,6 +2436,7 @@ impl PlayerBuilder {
     fn create_gc_root<'gc>(
         gc_context: &'gc gc_arena::Mutation<'gc>,
         player_version: u8,
+        player_runtime: PlayerRuntime,
         fullscreen: bool,
         fake_movie: Arc<SwfMovie>,
         external_interface_providers: Vec<Box<dyn ExternalInterfaceProvider>>,
@@ -2452,7 +2457,7 @@ impl PlayerBuilder {
                     audio_manager: AudioManager::new(),
                     action_queue: ActionQueue::new(),
                     avm1: Avm1::new(&mut init, player_version),
-                    avm2: Avm2::new(&mut init, player_version),
+                    avm2: Avm2::new(&mut init, player_version, player_runtime),
                     interner,
                     current_context_menu: None,
                     drag_object: None,
@@ -2572,6 +2577,7 @@ impl PlayerBuilder {
                     Self::create_gc_root(
                         gc_context,
                         player_version,
+                        self.player_runtime,
                         self.fullscreen,
                         fake_movie.clone(),
                         self.external_interface_providers,
@@ -2682,7 +2688,7 @@ fn run_mouse_pick<'gc>(
 }
 
 #[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
-#[derive(Default, Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Default, Clone, Copy, Debug, Eq, PartialEq, Deserialize)]
 pub enum PlayerRuntime {
     #[default]
     FlashPlayer,

@@ -1,0 +1,4 @@
+num_ticks = 1
+
+[player_options]
+runtime = "AIR"

@@ -11,6 +11,7 @@ use crate::context::{GcContext, UpdateContext};
 use crate::display_object::{DisplayObject, DisplayObjectWeak, TDisplayObject};
 use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
+use crate::PlayerRuntime;
 
 use fnv::FnvHashMap;
 use gc_arena::{Collect, GcCell, Mutation};
@@ -91,6 +92,10 @@ const BROADCAST_WHITELIST: [&str; 4] = ["enterFrame", "exitFrame", "frameConstru
 pub struct Avm2<'gc> {
     /// The Flash Player version we're emulating.
     player_version: u8,
+
+    /// The player runtime we're emulating
+    #[collect(require_static)]
+    pub player_runtime: PlayerRuntime,
 
     /// Values currently present on the operand stack.
     stack: Vec<Value<'gc>>,
@@ -180,7 +185,11 @@ pub struct Avm2<'gc> {
 
 impl<'gc> Avm2<'gc> {
     /// Construct a new AVM interpreter.
-    pub fn new(context: &mut GcContext<'_, 'gc>, player_version: u8) -> Self {
+    pub fn new(
+        context: &mut GcContext<'_, 'gc>,
+        player_version: u8,
+        player_runtime: PlayerRuntime,
+    ) -> Self {
         let playerglobals_domain = Domain::uninitialized_domain(context.gc_context, None);
         let stage_domain =
             Domain::uninitialized_domain(context.gc_context, Some(playerglobals_domain));
@@ -191,6 +200,7 @@ impl<'gc> Avm2<'gc> {
 
         Self {
             player_version,
+            player_runtime,
             stack: Vec::new(),
             scope_stack: Vec::new(),
             call_stack: GcCell::new(context.gc_context, CallStack::new()),

@@ -16,6 +16,7 @@ use crate::avm2::{Avm2, Error};
 use crate::context::{GcContext, UpdateContext};
 use crate::string::{AvmAtom, AvmString};
 use crate::tag_utils::SwfMovie;
+use crate::PlayerRuntime;
 use gc_arena::{Collect, Gc, GcCell, Mutation};
 use std::cell::Ref;
 use std::mem::drop;
@@ -135,7 +136,10 @@ impl<'gc> TranslationUnit<'gc> {
     pub fn api_version(self, avm2: &Avm2<'gc>) -> ApiVersion {
         if self.domain().is_playerglobals_domain(avm2) {
             // FIXME: get this from the player version we're emulating
-            ApiVersion::SWF_31
+            match avm2.player_runtime {
+                PlayerRuntime::FlashPlayer => ApiVersion::SWF_31,
+                PlayerRuntime::AIR => ApiVersion::AIR_20_0,
+            }
         } else {
             avm2.root_api_version
         }
