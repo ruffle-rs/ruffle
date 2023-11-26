@@ -483,6 +483,21 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
 
         let needs_frame_construction = self.0.read().needs_frame_construction;
         if needs_frame_construction {
+            if needs_avm2_construction {
+                let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                match Avm2StageObject::for_display_object(&mut activation, (*self).into(), class) {
+                    Ok(object) => {
+                        self.0.write(activation.context.gc_context).object = Some(object.into())
+                    }
+                    Err(e) => tracing::error!("Got {} when constructing AVM2 side of button", e),
+                };
+                if !self.placed_by_script() {
+                    // This is run before we actually call the constructor - the un-constructed object
+                    // is exposed to ActionScript via `parent.<childName>`.
+                    self.set_on_parent_field(&mut activation.context);
+                }
+            }
+
             // Prevent re-entrantly constructing this button (since we may run a nested frame here)
             self.0.write(context.gc_context).needs_frame_construction = false;
             let (up_state, up_should_fire) = self.create_state(context, swf::ButtonState::UP);
@@ -548,36 +563,20 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
             if needs_avm2_construction {
                 self.set_state(context, ButtonState::Up);
 
-                let mut activation = Avm2Activation::from_nothing(context.reborrow());
-                match Avm2StageObject::for_display_object(&mut activation, (*self).into(), class) {
-                    Ok(object) => {
-                        self.0.write(activation.context.gc_context).object = Some(object.into())
-                    }
-                    Err(e) => tracing::error!("Got {} when constructing AVM2 side of button", e),
-                };
-
-                if !self.placed_by_script() {
-                    // This is run before we actually call the constructor - the un-constructed object
-                    // is exposed to ActionScript via `parent.<childName>`.
-                    self.set_on_parent_field(&mut activation.context);
-                }
-
                 if has_movie_clip_state && self.movie().version() > 9 {
-                    self.0
-                        .write(activation.context.gc_context)
-                        .weird_framescript_order = true;
+                    self.0.write(context.gc_context).weird_framescript_order = true;
 
-                    let stage = activation.context.stage;
-
-                    stage.construct_frame(&mut activation.context);
-                    stage.frame_constructed(&mut activation.context);
-                    self.set_state(&mut activation.context, ButtonState::Up);
-                    stage.run_frame_scripts(&mut activation.context);
-                    stage.exit_frame(&mut activation.context);
+                    let stage = context.stage;
+                    stage.construct_frame(context);
+                    stage.frame_constructed(context);
+                    self.set_state(context, ButtonState::Up);
+                    stage.run_frame_scripts(context);
+                    stage.exit_frame(context);
                 }
 
                 let avm2_object = self.0.read().object;
                 if let Some(avm2_object) = avm2_object {
+                    let mut activation = Avm2Activation::from_nothing(context.reborrow());
                     if let Err(e) = class.call_native_init(avm2_object.into(), &[], &mut activation)
                     {
                         tracing::error!("Got {} when constructing AVM2 side of button", e);
@@ -586,7 +585,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
 
                 // Note - we do *not* call `on_construction_complete` here, since we already
                 // set the button object on a parent field (and we don't want to re-run a setter)
-                self.fire_added_events(&mut activation.context);
+                self.fire_added_events(context);
             }
         }
     }
