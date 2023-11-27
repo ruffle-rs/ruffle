@@ -52,7 +52,9 @@ pub trait FlvValueAvm2Ext<'gc> {
 impl<'gc> FlvValueAvm2Ext<'gc> for FlvValue<'_> {
     fn to_avm2_value(self, activation: &mut Activation<'_, 'gc>) -> Avm2Value<'gc> {
         match self {
-            FlvValue::EcmaArray(variables) => avm2_object_from_flv_variables(activation, variables),
+            FlvValue::Object(variables) | FlvValue::EcmaArray(variables) => {
+                avm2_object_from_flv_variables(activation, variables)
+            }
             FlvValue::StrictArray(values) => avm2_array_from_flv_values(activation, values),
             FlvValue::String(string_data) | FlvValue::LongString(string_data) => {
                 AvmString::new_utf8_bytes(activation.context.gc_context, string_data).into()
