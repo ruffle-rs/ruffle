@@ -32,6 +32,8 @@ impl TestFileDialogResult {
     }
 }
 
+const FILE_CONTENTS: &[u8; 13] = b"Hello, World!";
+
 impl FileDialogResult for TestFileDialogResult {
     fn is_cancelled(&self) -> bool {
         self.canceled
@@ -50,7 +52,7 @@ impl FileDialogResult for TestFileDialogResult {
     }
 
     fn size(&self) -> Option<u64> {
-        None
+        Some(FILE_CONTENTS.len() as u64)
     }
 
     fn file_type(&self) -> Option<String> {
@@ -62,7 +64,7 @@ impl FileDialogResult for TestFileDialogResult {
     }
 
     fn contents(&self) -> &[u8] {
-        b"Hello, World!".as_bytes()
+        FILE_CONTENTS.as_bytes()
     }
 
     fn write(&self, _data: &[u8]) {}
