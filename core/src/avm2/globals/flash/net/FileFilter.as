@@ -11,7 +11,7 @@ package flash.net {
         }
 
         public function get description(): String {
-            return this._description + " (" + this._extension + ")";
+            return this._description;
         }
 
         public function set description(val: String): void {
