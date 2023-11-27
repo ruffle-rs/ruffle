@@ -24,7 +24,7 @@ pub enum Value<'a> {
     Undefined = 6,
     Reference(u16) = 7,
     EcmaArray(Vec<Variable<'a>>) = 8,
-    StrictArray(Vec<Variable<'a>>) = 10,
+    StrictArray(Vec<Value<'a>>) = 10,
     Date {
         /// The number of milliseconds since January 1st, 1970.
         unix_time: f64,
@@ -82,13 +82,13 @@ impl<'a> Value<'a> {
             }
             10 => {
                 let length = reader.read_u32()?;
-                let mut variables = Vec::with_capacity(length as usize);
+                let mut values = Vec::with_capacity(length as usize);
 
                 for _ in 0..length {
-                    variables.push(Variable::parse(reader)?);
+                    values.push(Value::parse(reader)?);
                 }
 
-                Ok(Self::StrictArray(variables))
+                Ok(Self::StrictArray(values))
             }
             11 => Ok(Self::Date {
                 unix_time: reader.read_f64()?,
@@ -355,24 +355,12 @@ mod tests {
 
     #[test]
     fn read_value_strictarray() {
-        let data = [
-            0x0A, 0x00, 0x00, 0x00, 0x02, 0x00, 0x03, 0x01, 0x02, 0x03, 0x06, 0x00, 0x03, 0x01,
-            0x02, 0x03, 0x05,
-        ];
+        let data = [0x0A, 0x00, 0x00, 0x00, 0x02, 0x06, 0x05];
         let mut reader = FlvReader::from_source(&data);
 
         assert_eq!(
             Value::parse(&mut reader),
-            Ok(Value::StrictArray(vec![
-                Variable {
-                    name: &[0x01, 0x02, 0x03],
-                    data: Value::Undefined
-                },
-                Variable {
-                    name: &[0x01, 0x02, 0x03],
-                    data: Value::Null
-                }
-            ]))
+            Ok(Value::StrictArray(vec![Value::Undefined, Value::Null]))
         );
     }
 
