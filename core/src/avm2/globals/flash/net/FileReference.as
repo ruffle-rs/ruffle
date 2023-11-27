@@ -12,7 +12,6 @@ package flash.net
         private var _extension: String;
         private var _modificationDate: Date;
         private static var _permissionStatus: String;
-        private var _size: Number;
         private var _type: String;
 
         public function FileReference() {
@@ -43,9 +42,7 @@ package flash.net
             return FileReference._permissionStatus;
         }   
 
-        public function get size(): Number {
-            return this._size;
-        }   
+        public native function get size(): Number;
 
         public function get type(): String {
             return this._type;

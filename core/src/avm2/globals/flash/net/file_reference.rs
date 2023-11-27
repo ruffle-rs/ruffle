@@ -44,6 +44,21 @@ pub fn get_name<'gc>(
     Ok(name)
 }
 
+pub fn get_size<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_file_reference().unwrap();
+
+    let size = match *this.file_reference() {
+        FileReference::None => return Err(make_error_2037(activation)),
+        FileReference::FileDialogResult(ref dialog_result) => dialog_result.size().unwrap_or(0),
+    };
+
+    Ok(Value::Number(size as f64))
+}
+
 pub fn browse<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
