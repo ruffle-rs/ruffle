@@ -982,9 +982,7 @@ impl<'gc> NetStream<'gc> {
         for var in script_data.0 {
             if var.name == b"onMetaData" && !has_stream_already {
                 match var.data.clone() {
-                    FlvValue::Object(subvars)
-                    | FlvValue::EcmaArray(subvars)
-                    | FlvValue::StrictArray(subvars) => {
+                    FlvValue::Object(subvars) | FlvValue::EcmaArray(subvars) => {
                         for subvar in subvars {
                             match (subvar.name, subvar.data) {
                                 (b"width", FlvValue::Number(val)) => width = Some(val),
