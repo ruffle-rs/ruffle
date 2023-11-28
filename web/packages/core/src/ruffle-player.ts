@@ -2356,9 +2356,9 @@ export class RufflePlayer extends HTMLElement {
         // TODO: Switch this to ReadyState.Loading when we have streaming support.
         this._readyState = ReadyState.Loaded;
         this.hideSplashScreen();
-        this.dispatchEvent(new Event(RufflePlayer.LOADED_METADATA));
+        this.dispatchEvent(new CustomEvent(RufflePlayer.LOADED_METADATA));
         // TODO: Move this to whatever function changes the ReadyState to Loaded when we have streaming support.
-        this.dispatchEvent(new Event(RufflePlayer.LOADED_DATA));
+        this.dispatchEvent(new CustomEvent(RufflePlayer.LOADED_DATA));
     }
 }
 
