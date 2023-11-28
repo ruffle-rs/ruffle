@@ -60,6 +60,7 @@ impl<'a> NagaBuilder<'a> {
                                     location: index as u32,
                                     interpolation: Some(naga::Interpolation::Perspective),
                                     sampling: None,
+                                    second_blend_source: false,
                                 }),
                                 offset: 0,
                             });
@@ -85,6 +86,7 @@ impl<'a> NagaBuilder<'a> {
                             location: index as u32,
                             interpolation: Some(Interpolation::Perspective),
                             sampling: None,
+                            second_blend_source: false,
                         }),
                     });
                     let arg_index = self.func.arguments.len() - 1;

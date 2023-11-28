@@ -265,11 +265,11 @@ impl WgpuContext3D {
                 view: depth_view,
                 depth_ops: Some(wgpu::Operations {
                     load: depth_load,
-                    store: true,
+                    store: wgpu::StoreOp::Store,
                 }),
                 stencil_ops: Some(wgpu::Operations {
                     load: stencil_load,
-                    store: true,
+                    store: wgpu::StoreOp::Store,
                 }),
             })
         } else {
@@ -283,10 +283,11 @@ impl WgpuContext3D {
                 resolve_target: self.current_texture_resolve_view.as_deref(),
                 ops: wgpu::Operations {
                     load: color_load,
-                    store: true,
+                    store: wgpu::StoreOp::Store,
                 },
             })],
             depth_stencil_attachment,
+            ..Default::default()
         });
         pass.set_bind_group(0, self.bind_group.as_ref().unwrap(), &[]);
         pass.set_pipeline(

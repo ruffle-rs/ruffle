@@ -248,13 +248,16 @@ pub fn run_copy_pipeline(
     let load = wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT);
 
     let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+        label: create_debug_label!("Copy back to render target").as_deref(),
         color_attachments: &[Some(wgpu::RenderPassColorAttachment {
             view: frame_view,
-            ops: wgpu::Operations { load, store: true },
+            ops: wgpu::Operations {
+                load,
+                store: wgpu::StoreOp::Store,
+            },
             resolve_target: None,
         })],
-        depth_stencil_attachment: None,
-        label: create_debug_label!("Copy back to render target").as_deref(),
+        ..Default::default()
     });
 
     render_pass.set_pipeline(&pipeline);

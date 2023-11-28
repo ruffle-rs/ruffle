@@ -16,7 +16,7 @@ use ruffle_render::{
 use wgpu::util::StagingBelt;
 use wgpu::{
     BindGroupEntry, BindingResource, BlendComponent, BufferDescriptor, BufferUsages,
-    ColorTargetState, ColorWrites, CommandEncoder, FrontFace, ImageCopyTexture, PipelineLayout,
+    ColorTargetState, ColorWrites, CommandEncoder, ImageCopyTexture, PipelineLayout,
     RenderPipeline, RenderPipelineDescriptor, SamplerBindingType, ShaderModuleDescriptor,
     TextureDescriptor, TextureFormat, TextureView, VertexState,
 };
@@ -71,11 +71,7 @@ impl PixelBenderWgpuShader {
                             write_mask: ColorWrites::all(),
                         })],
                     }),
-                    primitive: wgpu::PrimitiveState {
-                        front_face: FrontFace::Ccw,
-                        cull_mode: None,
-                        ..Default::default()
-                    },
+                    primitive: Default::default(),
                     depth_stencil: None,
                     multisample: wgpu::MultisampleState {
                         count: samples,
@@ -558,6 +554,7 @@ pub(super) fn run_pixelbender_shader_impl(
         label: Some("PixelBender render pass"),
         color_attachments: &[color_attachment],
         depth_stencil_attachment: None,
+        ..Default::default()
     });
     render_pass.set_bind_group(0, &bind_group, &[]);
     render_pass.set_pipeline(pipeline);
