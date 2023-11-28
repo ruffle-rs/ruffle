@@ -28,6 +28,20 @@ pub fn round_down_to_pixel(t: Twips) -> Twips {
     Twips::from_pixels(t.to_pixels().floor())
 }
 
+pub fn round_to_pixel(t: Twips) -> Twips {
+    Twips::from_pixels(t.to_pixels().round())
+}
+
+pub fn round_to_pixel_half_even(t: Twips) -> Twips {
+    let mod2 = t.to_pixels() % 2.0;
+    let mod2 = if mod2 < 0.0 { mod2 + 2.0 } else { mod2 };
+    if mod2 <= 0.5 || (mod2 >= 1.0 && mod2 < 1.5) {
+        Twips::from_pixels(t.to_pixels().floor())
+    } else {
+        Twips::from_pixels(t.to_pixels().ceil())
+    }
+}
+
 /// Parameters necessary to evaluate a font.
 #[derive(Copy, Clone, Debug)]
 pub struct EvalParameters {
@@ -356,8 +370,19 @@ impl<'gc> Font<'gc> {
                     let next_char = next_char.unwrap_or(char::REPLACEMENT_CHARACTER);
                     advance += self.get_kerning_offset(c, next_char);
                 }
-                let twips_advance =
-                    Twips::new((advance.get() as f32 * scale) as i32) + params.letter_spacing;
+                let twips_advance = if self.font_type() == FontType::Device {
+                    let unspaced_advance =
+                        round_to_pixel(Twips::new((advance.get() as f32 * scale) as i32));
+                    let spaced_advance =
+                        unspaced_advance + round_to_pixel_half_even(params.letter_spacing);
+                    if spaced_advance > Twips::ZERO {
+                        spaced_advance
+                    } else {
+                        unspaced_advance
+                    }
+                } else {
+                    Twips::new((advance.get() as f32 * scale) as i32) + params.letter_spacing
+                };
 
                 glyph_func(pos, &transform, glyph, twips_advance, x);
 
