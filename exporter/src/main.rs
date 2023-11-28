@@ -403,7 +403,7 @@ fn main() -> Result<()> {
     let opt: Opt = Opt::parse();
     let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
         backends: opt.graphics.into(),
-        dx12_shader_compiler: wgpu::Dx12Compiler::default(),
+        ..Default::default()
     });
     let (adapter, device, queue) = futures::executor::block_on(request_adapter_and_device(
         opt.graphics.into(),

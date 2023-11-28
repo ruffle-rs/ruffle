@@ -5,7 +5,7 @@ use crate::gui::movie::{MovieView, MovieViewRenderer};
 use crate::gui::{RuffleGui, MENU_HEIGHT};
 use crate::player::{PlayerController, PlayerOptions};
 use anyhow::anyhow;
-use egui::Context;
+use egui::{Context, ViewportId};
 use fontdb::{Database, Family, Query, Source};
 use ruffle_core::Player;
 use ruffle_render_wgpu::backend::{request_adapter_and_device, WgpuRenderBackend};
@@ -55,7 +55,7 @@ impl GuiController {
         }
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: backend,
-            dx12_shader_compiler: wgpu::Dx12Compiler::default(),
+            ..Default::default()
         });
         let surface = unsafe { instance.create_surface(window.as_ref()) }?;
         let (adapter, device, queue) = futures::executor::block_on(request_adapter_and_device(
@@ -90,9 +90,9 @@ impl GuiController {
         if let Some(Theme::Light) = window.theme() {
             egui_ctx.set_visuals(egui::Visuals::light());
         }
+        egui_ctx.set_pixels_per_point(window.scale_factor() as f32);
 
-        let mut egui_winit = egui_winit::State::new(event_loop);
-        egui_winit.set_pixels_per_point(window.scale_factor() as f32);
+        let mut egui_winit = egui_winit::State::new(ViewportId::ROOT, window.as_ref(), None, None);
         egui_winit.set_max_texture_side(descriptors.limits.max_texture_dimension_2d as usize);
 
         let movie_view_renderer = Arc::new(MovieViewRenderer::new(
@@ -165,7 +165,7 @@ impl GuiController {
             self.egui_ctx.set_visuals(visuals);
         }
 
-        let response = self.egui_winit.on_event(&self.egui_ctx, event);
+        let response = self.egui_winit.on_window_event(&self.egui_ctx, event);
         if response.repaint {
             self.window.request_redraw();
         }
@@ -214,7 +214,11 @@ impl GuiController {
                 },
             );
         });
-        self.repaint_after = full_output.repaint_after;
+        self.repaint_after = full_output
+            .viewport_output
+            .get(&ViewportId::ROOT)
+            .expect("Root viewport must exist")
+            .repaint_delay;
 
         // If we're not in a UI, tell egui which cursor we prefer to use instead
         if !self.egui_ctx.wants_pointer_input() {
@@ -232,7 +236,9 @@ impl GuiController {
             full_output.platform_output,
         );
 
-        let clipped_primitives = self.egui_ctx.tessellate(full_output.shapes);
+        let clipped_primitives = self
+            .egui_ctx
+            .tessellate(full_output.shapes, full_output.pixels_per_point);
 
         let scale_factor = self.window.scale_factor() as f32;
         let screen_descriptor = egui_wgpu::renderer::ScreenDescriptor {
@@ -283,11 +289,11 @@ impl GuiController {
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                        store: true,
+                        store: wgpu::StoreOp::Store,
                     },
                 })],
-                depth_stencil_attachment: None,
                 label: Some("egui_render"),
+                ..Default::default()
             });
 
             if let Some(movie_view) = movie_view {

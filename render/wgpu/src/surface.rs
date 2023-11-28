@@ -169,6 +169,7 @@ impl Surface {
                             } else {
                                 None
                             },
+                            ..Default::default()
                         });
                     render_pass.set_bind_group(0, target.globals().bind_group(), &[]);
                     let mut renderer = CommandRenderer::new(
@@ -298,6 +299,7 @@ impl Surface {
                             } else {
                                 None
                             },
+                            ..Default::default()
                         });
                     render_pass.set_bind_group(0, target.globals().bind_group(), &[]);
 

@@ -62,7 +62,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
     pub async fn for_canvas(canvas: web_sys::HtmlCanvasElement) -> Result<Self, Error> {
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::BROWSER_WEBGPU | wgpu::Backends::GL,
-            dx12_shader_compiler: wgpu::Dx12Compiler::default(),
+            ..Default::default()
         });
         let surface = instance.create_surface_from_canvas(canvas)?;
         let (adapter, device, queue) = request_adapter_and_device(
@@ -97,7 +97,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
         }
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: backend,
-            dx12_shader_compiler: wgpu::Dx12Compiler::default(),
+            ..Default::default()
         });
         let surface = unsafe { instance.create_surface(window) }?;
         let (adapter, device, queue) = futures::executor::block_on(request_adapter_and_device(
@@ -144,7 +144,7 @@ impl WgpuRenderBackend<crate::target::TextureTarget> {
         }
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: backend,
-            dx12_shader_compiler: wgpu::Dx12Compiler::default(),
+            ..Default::default()
         });
         let (adapter, device, queue) = futures::executor::block_on(request_adapter_and_device(
             backend,
@@ -981,7 +981,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
-                    store: true,
+                    store: wgpu::StoreOp::Store,
                 },
             }),
             1,

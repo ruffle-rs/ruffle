@@ -44,10 +44,10 @@ version = "0.1.0"
 # gc-arena = { git = "https://github.com/kyren/gc-arena", rev = "efd89fc683c6bb456af3e226c33763cb822645e9" }
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
-naga = { version = "0.13.0", features = ["validate", "wgsl-out"] }
-naga_oil = "0.9.0"
-wgpu = "0.17.1"
-egui = "0.23.0"
+naga = { version = "0.14.1", features = ["validate", "wgsl-out"] }
+naga_oil = "0.11.0"
+wgpu = "0.18.0"
+egui = "0.24.1"
 
 # Don't optimize build scripts and macros.
 [profile.release.build-override]
@@ -84,10 +84,8 @@ inherits = "release"
 [profile.web-wasm-extensions]
 inherits = "release"
 
-# The `v0.17` branch is a single backport commit ahead of the `v0.17.2` release,
-# which we need. FIXME: Remove when wgpu `v0.18` is released and we can switch to it.
 [patch.crates-io]
-wgpu = { git = "https://github.com/gfx-rs/wgpu", branch = "v0.17" }
-
-[patch.'https://github.com/gfx-rs/naga']
-naga = "0.13.0"
+# These are needed because https://github.com/gfx-rs/wgpu/pull/4778
+# is not yet in the latest wgpu release. TODO: Remove when it is.
+wgpu = { git = "https://github.com/gfx-rs/wgpu", branch = "v0.18" }
+naga = { git = "https://github.com/gfx-rs/wgpu", branch = "v0.18" }
