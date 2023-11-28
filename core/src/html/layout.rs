@@ -510,6 +510,8 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             .library
             .default_font(
                 default_font,
+                span.bold,
+                span.italic,
                 context.ui,
                 context.renderer,
                 context.gc_context,
