@@ -387,7 +387,7 @@ pub struct Library<'gc> {
     default_font_names: FnvHashMap<DefaultFont, Vec<String>>,
 
     /// The cached list of implementations per default font.
-    default_font_cache: FnvHashMap<DefaultFont, Vec<Font<'gc>>>,
+    default_font_cache: FnvHashMap<(DefaultFont, bool, bool), Vec<Font<'gc>>>,
 
     /// A list of the symbols associated with specific AVM2 constructor
     /// prototypes.
@@ -442,26 +442,29 @@ impl<'gc> Library<'gc> {
     pub fn default_font(
         &mut self,
         name: DefaultFont,
+        is_bold: bool,
+        is_italic: bool,
         ui: &dyn UiBackend,
         renderer: &mut dyn RenderBackend,
         gc_context: &Mutation<'gc>,
     ) -> Vec<Font<'gc>> {
         // Can't use entry api here as we want to use self for `load_device_font`.
         // Cache the value as this will be looked up a lot, and font lookup by name can be expensive if lots of fonts exist.
-        if let Some(cache) = self.default_font_cache.get(&name) {
+        if let Some(cache) = self.default_font_cache.get(&(name, is_bold, is_italic)) {
             return cache.clone();
         }
 
         let mut result = vec![];
         for name in self.default_font_names.entry(name).or_default().clone() {
             if let Some(font) =
-                self.get_or_load_device_font(&name, false, false, ui, renderer, gc_context)
+                self.get_or_load_device_font(&name, is_bold, is_italic, ui, renderer, gc_context)
             {
                 result.push(font);
             }
         }
 
-        self.default_font_cache.insert(name, result.clone());
+        self.default_font_cache
+            .insert((name, is_bold, is_italic), result.clone());
         result
     }
 
