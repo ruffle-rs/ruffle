@@ -25,8 +25,8 @@ tracing-subscriber = { workspace = true }
 generational-arena = "0.2.9"
 winit = "0.28.7"
 webbrowser = "0.8.12"
-url = "2.4.1"
-arboard = "3.2.1"
+url = "2.5.0"
+arboard = "3.3.0"
 dirs = "5.0"
 isahc = { version = "1.7.2", features = ["cookies"] }
 rfd = "0.12.1"
@@ -40,9 +40,9 @@ futures = "0.3.29"
 chrono = { version = "0.4", default-features = false, features = [] }
 fluent-templates = "0.8.0"
 futures-lite = "2.0.1"
-async-io = "2.2.0"
+async-io = "2.2.1"
 async-net = "2.0.0"
-async-channel = "2.1.0"
+async-channel = "2.1.1"
 
 # Deliberately held back to match tracy client used by profiling crate
 tracing-tracy = { version = "=0.10.2", optional = true }

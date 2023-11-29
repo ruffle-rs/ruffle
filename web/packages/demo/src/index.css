@@ -36,6 +36,7 @@
     display: flex;
     align-items: center;
     gap: 4px;
+    flex-wrap: wrap;
 }
 
 #web-url {
