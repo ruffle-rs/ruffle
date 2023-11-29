@@ -55,6 +55,10 @@ license-files = []
 # Lint level for when multiple versions of the same crate are detected
 multiple-versions = "warn"
 
+# We are manually pinning `tracing-tracy` to match the version used by
+# `profiling`, but this can get stale easily.
+deny = [{ name = "tracy-client", deny-multiple-versions = true }]
+
 [sources]
 # Lint level for what to happen when a crate from a crate registry that is not
 # in the allow list is encountered
