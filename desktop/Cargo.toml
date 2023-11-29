@@ -45,7 +45,7 @@ async-net = "2.0.0"
 async-channel = "2.1.1"
 
 # Deliberately held back to match tracy client used by profiling crate
-tracing-tracy = { version = "=0.10.2", optional = true }
+tracing-tracy = { version = "=0.10.4", optional = true }
 
 [target.'cfg(windows)'.dependencies]
 winapi = "0.3.9"
