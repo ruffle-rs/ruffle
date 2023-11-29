@@ -8,7 +8,7 @@ It automatically negotiates with websites that do have Ruffle installed, to ensu
 
 ## Using ruffle-extension
 
-The browser extension works in Chrome, Firefox, and Safari 14+. It can be installed directly from the [Chrome Web Store](https://chrome.google.com/webstore/detail/ruffle/donbcfbmhbcapadipfkeojnmajbakjdc) or [Firefox Add-ons site](https://addons.mozilla.org/firefox/addon/ruffle_rs). 
+The browser extension works in Chrome, Firefox, and Safari 14+. It can be installed directly from the [Chrome Web Store](https://chromewebstore.google.com/detail/ruffle-flash-emulator/donbcfbmhbcapadipfkeojnmajbakjdc) or [Firefox Add-ons site](https://addons.mozilla.org/firefox/addon/ruffle_rs). 
 Or to install it manually, you can either download the [latest release](https://github.com/ruffle-rs/ruffle/releases) or [build it yourself](../../README.md), then follow the instructions below.
 
 ### Chrome
