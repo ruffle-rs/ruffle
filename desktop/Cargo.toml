@@ -43,12 +43,17 @@ futures-lite = "2.1.0"
 async-io = "2.2.1"
 async-net = "2.0.0"
 async-channel = "2.1.1"
+font-kit = "0.12"
+pathfinder_geometry = "0.5"
 
 # Deliberately held back to match tracy client used by profiling crate
 tracing-tracy = { version = "=0.10.4", optional = true }
 
 [target.'cfg(windows)'.dependencies]
 winapi = "0.3.9"
+
+[target.'cfg(not(any(target_family = "windows", target_os = "macos", target_os = "ios")))'.dependencies]
+fontconfig = "0.7.0"
 
 [build-dependencies]
 embed-resource = "2"

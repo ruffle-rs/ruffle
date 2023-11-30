@@ -1,3 +1,4 @@
+use crate::font;
 use anyhow::{Context, Error};
 use arboard::Clipboard;
 use chrono::{DateTime, Utc};
@@ -249,11 +250,14 @@ impl UiBackend for DesktopUiBackend {
 
     fn load_device_font(
         &self,
-        _name: &str,
-        _is_bold: bool,
-        _is_italic: bool,
-        _register: &dyn FnMut(FontDefinition),
+        name: &str,
+        is_bold: bool,
+        is_italic: bool,
+        register: &mut dyn FnMut(FontDefinition),
     ) {
+        if let Some(definition) = font::load(name, is_bold, is_italic) {
+            register(definition);
+        }
     }
 
     // Unused on desktop

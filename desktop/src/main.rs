@@ -11,6 +11,7 @@ mod backends;
 mod cli;
 mod custom_event;
 mod executor;
+mod font;
 mod gui;
 mod player;
 mod task;
