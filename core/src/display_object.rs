@@ -1251,14 +1251,16 @@ pub trait TDisplayObject<'gc>:
     /// Converts a mouse position on the stage to a local position on this display object.
     /// If the object has zero scale, then the stage `TWIPS_TO_PIXELS` matrix will be used.
     /// This matches Flash's behavior for `mouseX`/`mouseY` on an object with zero scale.
-    fn mouse_to_local(&self, global: Point<Twips>) -> Point<Twips> {
-        let global_pixels: Point<Twips> = Matrix::TWIPS_TO_PIXELS * global;
+    fn mouse_to_local(&self, global_virtual_twips: Point<Twips>) -> Point<Twips> {
+        let global_virtual_pixels: Point<Twips> = Matrix::TWIPS_TO_PIXELS * global_virtual_twips;
 
         let m = Matrix::TWIPS_TO_PIXELS * self.local_to_global_matrix();
 
         let inverted_matrix = m.inverse().unwrap_or(Matrix::IDENTITY);
 
-        inverted_matrix * global_pixels
+        let local_virtual_pixels = inverted_matrix * global_virtual_pixels;
+
+        local_virtual_pixels
     }
 
     /// The `x` position in pixels of this display object in local space.
