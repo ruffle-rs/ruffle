@@ -394,6 +394,11 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
             padding-top: 20px;
         }`,
 
+        `#video-holder video {
+            max-width: 100%;
+            height: calc(100% - 58px);
+        }`,
+
         `.slider-container {
             margin-top: 10px;
             display: flex;
