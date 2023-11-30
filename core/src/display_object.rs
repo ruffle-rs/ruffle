@@ -1252,11 +1252,13 @@ pub trait TDisplayObject<'gc>:
     /// If the object has zero scale, then the stage `TWIPS_TO_PIXELS` matrix will be used.
     /// This matches Flash's behavior for `mouseX`/`mouseY` on an object with zero scale.
     fn mouse_to_local(&self, global: Point<Twips>) -> Point<Twips> {
-        // MIKE: I suspect the `TWIPS_TO_PIXELS` scale should always be involved in the
-        // calculation somehow, not just in the non-invertible case.
-        self.global_to_local_matrix()
-            .unwrap_or(Matrix::TWIPS_TO_PIXELS)
-            * global
+        let global_pixels: Point<Twips> = Matrix::TWIPS_TO_PIXELS * global;
+
+        let m = Matrix::TWIPS_TO_PIXELS * self.local_to_global_matrix();
+
+        let inverted_matrix = m.inverse().unwrap_or(Matrix::IDENTITY);
+
+        inverted_matrix * global_pixels
     }
 
     /// The `x` position in pixels of this display object in local space.
