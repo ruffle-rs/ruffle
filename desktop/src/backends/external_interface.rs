@@ -19,7 +19,7 @@ impl ExternalInterfaceMethod for FakeWindowLocationHrefToString {
 impl ExternalInterfaceProvider for DesktopExternalInterfaceProvider {
     fn get_method(&self, name: &str) -> Option<Box<dyn ExternalInterfaceMethod>> {
         if let Some(ref url) = self.spoof_url {
-            if name == "window.location.href.toString" {
+            if name == "window.location.href.toString" || name == "top.location.href.toString" {
                 return Some(Box::new(FakeWindowLocationHrefToString(url.clone())));
             }
         }
