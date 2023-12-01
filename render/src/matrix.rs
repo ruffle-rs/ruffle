@@ -1,4 +1,3 @@
-use std::fmt;
 use swf::{Fixed16, Point, PointDelta, Rectangle, Twips};
 
 /// The transformation matrix used by Flash display objects.
@@ -21,13 +20,6 @@ pub struct Matrix {
 
     /// Serialized as `transform_y` in SWF files
     pub ty: Twips,
-}
-
-impl fmt::Display for Matrix {
-    #[inline]
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "({}, {}, {}, {}; {}, {})", self.a, self.b, self.c, self.d, self.tx.get(), self.ty.get())
-    }
 }
 
 impl Matrix {
