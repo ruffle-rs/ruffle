@@ -1254,16 +1254,16 @@ pub trait TDisplayObject<'gc>:
     fn local_mouse_position(&self, context: &UpdateContext<'_, 'gc>) -> Point<Twips> {
         let stage = context.stage;
         let pixel_ratio = stage.view_matrix().a;
+        let virtual_to_device = Matrix::scale(pixel_ratio, pixel_ratio);
 
         // Get mouse pos in global device pixels
         let global_twips = *context.mouse_position;
-        let virtual_to_device = Matrix::scale(pixel_ratio, pixel_ratio);
         let global_device_twips = virtual_to_device * global_twips;
         let global_device_pixels = Matrix::TWIPS_TO_PIXELS * global_device_twips;
 
         // Make transformation matrix
         let local_twips_to_global_twips = self.local_to_global_matrix();
-        let twips_to_device_pixels = Matrix::scale(pixel_ratio / 20.0, pixel_ratio / 20.0);
+        let twips_to_device_pixels = virtual_to_device * Matrix::TWIPS_TO_PIXELS;
         let local_twips_to_global_device_pixels =
             twips_to_device_pixels * local_twips_to_global_twips;
         let global_device_pixels_to_local_twips = local_twips_to_global_device_pixels
