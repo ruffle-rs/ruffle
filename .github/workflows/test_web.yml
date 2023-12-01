@@ -67,7 +67,7 @@ jobs:
         run: cargo install wasm-bindgen-cli --version 0.2.89
 
       - name: Setup conda
-        uses: conda-incubator/setup-miniconda@v2
+        uses: conda-incubator/setup-miniconda@v3
         with:
           activate-environment: binaryen
 
