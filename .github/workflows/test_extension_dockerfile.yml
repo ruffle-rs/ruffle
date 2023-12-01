@@ -13,8 +13,6 @@ jobs:
     name: Test the Dockerfile
     runs-on: ubuntu-22.04
 
-    if: github.repository == 'ruffle-rs/ruffle'
-
     steps:
       - uses: actions/checkout@v4
 
@@ -37,7 +35,7 @@ jobs:
 
       - name: Notify Discord
         uses: th0th/notify-discord@v0.4.1
-        if: ${{ always() }}
+        if: ${{ always() && github.repository == 'ruffle-rs/ruffle' }}
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_UPDATES }}
           GITHUB_ACTOR: ${{ github.actor }}
