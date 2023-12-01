@@ -30,5 +30,5 @@ RUN cargo install wasm-bindgen-cli --version 0.2.89
 COPY . ruffle
 WORKDIR ruffle/web
 ENV CARGO_FEATURES=jpegxr
-RUN npm install --omit=optional
+RUN npm install
 RUN npm run build:repro
