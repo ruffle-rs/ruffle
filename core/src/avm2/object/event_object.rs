@@ -104,7 +104,7 @@ impl<'gc> EventObject<'gc> {
     where
         S: Into<AvmString<'gc>>,
     {
-        let local = target.mouse_to_local(*activation.context.mouse_position);
+        let local = target.local_mouse_position(&activation.context);
 
         let event_type: AvmString<'gc> = event_type.into();
 

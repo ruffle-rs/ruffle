@@ -1248,23 +1248,25 @@ pub trait TDisplayObject<'gc>:
         self.global_to_local_matrix().map(|matrix| matrix * global)
     }
 
-    /// Converts a mouse position on the stage to a local position on this display object.
+    /// Converts the mouse position on the stage to a local position on this display object.
     /// If the object has zero scale, then the stage `TWIPS_TO_PIXELS` matrix will be used.
     /// This matches Flash's behavior for `mouseX`/`mouseY` on an object with zero scale.
-    fn mouse_to_local(&self, global_twips: Point<Twips>) -> Point<Twips> {
+    fn local_mouse_position(&self, context: &UpdateContext<'_, 'gc>) -> Point<Twips> {
+
+        let stage = context.stage;
+        let pixel_ratio = stage.view_matrix().a;
 
         // Get mouse pos in global device pixels
-        let virtual_to_device = Matrix::scale(2.0, 2.0);
+        let global_twips = *context.mouse_position;
+        let virtual_to_device = Matrix::scale(pixel_ratio, pixel_ratio);
         let global_device_twips = virtual_to_device * global_twips;
         let global_device_pixels = Matrix::TWIPS_TO_PIXELS * global_device_twips;
 
         // Make transformation matrix
         let local_twips_to_global_twips = self.local_to_global_matrix();
-        let twips_to_device_pixels = Matrix::scale(0.1, 0.1);
+        let twips_to_device_pixels = Matrix::scale(pixel_ratio / 20.0, pixel_ratio / 20.0);
         let local_twips_to_global_device_pixels = twips_to_device_pixels * local_twips_to_global_twips;
         let global_device_pixels_to_local_twips = local_twips_to_global_device_pixels.inverse().unwrap_or(Matrix::IDENTITY);
-        println!("lt-gdp {}", local_twips_to_global_device_pixels);
-        println!("gdp-lt {}", global_device_pixels_to_local_twips);
 
         // Transform mouse position
         let local_twips = global_device_pixels_to_local_twips * global_device_pixels;
