@@ -1270,9 +1270,8 @@ pub trait TDisplayObject<'gc>:
             .inverse()
             .unwrap_or(Matrix::IDENTITY);
 
-        // Transform mouse position
-        let local_twips = global_device_pixels_to_local_twips * global_device_pixels;
-        local_twips
+        // Get local mouse position in twips
+        global_device_pixels_to_local_twips * global_device_pixels
     }
 
     /// The `x` position in pixels of this display object in local space.
