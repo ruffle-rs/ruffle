@@ -1251,29 +1251,24 @@ pub trait TDisplayObject<'gc>:
     /// Converts a mouse position on the stage to a local position on this display object.
     /// If the object has zero scale, then the stage `TWIPS_TO_PIXELS` matrix will be used.
     /// This matches Flash's behavior for `mouseX`/`mouseY` on an object with zero scale.
-    fn mouse_to_local(&self, global_vtwips: Point<Twips>) -> Point<Twips> {
+    fn mouse_to_local(&self, global_twips: Point<Twips>) -> Point<Twips> {
 
-        let device_to_virtual = Matrix::scale(0.5, 0.5);
+        // Get mouse pos in global device pixels
         let virtual_to_device = Matrix::scale(2.0, 2.0);
-        
-        let global_dtwips = virtual_to_device * global_vtwips;
-        let global_dpixels = Matrix::TWIPS_TO_PIXELS * global_dtwips;
+        let global_device_twips = virtual_to_device * global_twips;
+        let global_device_pixels = Matrix::TWIPS_TO_PIXELS * global_device_twips;
 
-        let local_twips_to_global_vpixels = Matrix::TWIPS_TO_PIXELS * self.local_to_global_matrix();
-        let local_twips_to_global_dpixels = virtual_to_device * local_twips_to_global_vpixels;
+        // Make transformation matrix
+        let local_twips_to_global_twips = self.local_to_global_matrix();
+        let twips_to_device_pixels = Matrix::scale(0.1, 0.1);
+        let local_twips_to_global_device_pixels = twips_to_device_pixels * local_twips_to_global_twips;
+        let global_device_pixels_to_local_twips = local_twips_to_global_device_pixels.inverse().unwrap_or(Matrix::IDENTITY);
+        println!("lt-gdp {}", local_twips_to_global_device_pixels);
+        println!("gdp-lt {}", global_device_pixels_to_local_twips);
 
-        let global_vpixels_to_local_vtwips =
-            local_twips_to_global_vpixels.inverse().unwrap_or(Matrix::IDENTITY);
-
-        let global_dpixels_to_local_vtwips =
-            local_twips_to_global_dpixels.inverse().unwrap_or(Matrix::IDENTITY);
-
-        //let global_dpixels_to_local_vtwips =
-        //    global_vpixels_to_local_vtwips * device_to_virtual;
-
-        let local_vtwips = global_dpixels_to_local_vtwips * global_dpixels;
-
-        local_vtwips
+        // Transform mouse position
+        let local_twips = global_device_pixels_to_local_twips * global_device_pixels;
+        local_twips
     }
 
     /// The `x` position in pixels of this display object in local space.
