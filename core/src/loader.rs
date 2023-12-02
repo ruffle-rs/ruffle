@@ -1982,7 +1982,7 @@ impl<'gc> Loader<'gc> {
         if let MovieLoaderVMData::Avm2 { loader_info, .. } = vm_data {
             let domain = uc
                 .library
-                .library_for_movie(movie.unwrap())
+                .library_for_movie(movie.clone().unwrap())
                 .unwrap()
                 .avm2_domain();
             let mut activation = Avm2Activation::from_domain(uc.reborrow(), domain);
@@ -2004,6 +2004,14 @@ impl<'gc> Loader<'gc> {
             // an 'addedToStage' event *after* the constructor finishes
             // when we add the movie as a child of the loader.
             loader.insert_at_index(&mut activation.context, dobj.unwrap(), 0);
+
+            if !movie.unwrap().is_action_script_3() {
+                loader.insert_child_into_depth_list(
+                    activation.context.gc_context,
+                    0,
+                    dobj.unwrap(),
+                );
+            }
         } else if let Some(dobj) = dobj {
             // This is a load of an image into AVM1 - add it as a child of the target clip.
             if dobj.as_movie_clip().is_none() {
