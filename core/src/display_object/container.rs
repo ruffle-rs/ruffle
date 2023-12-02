@@ -378,6 +378,20 @@ pub trait TDisplayObjectContainer<'gc>:
         }
     }
 
+    /// Insert a child directly into this container's depth list.
+    fn insert_child_into_depth_list(
+        &mut self,
+        gc_context: &Mutation<'gc>,
+        depth: Depth,
+        child: DisplayObject<'gc>,
+    ) {
+        self.raw_container_mut(gc_context)
+            .insert_child_into_depth_list(depth, child);
+
+        let this: DisplayObject<'_> = (*self).into();
+        this.invalidate_cached_bitmap(gc_context);
+    }
+
     /// Removes (without unloading) a child display object from this container's depth list.
     fn remove_child_from_depth_list(
         &mut self,

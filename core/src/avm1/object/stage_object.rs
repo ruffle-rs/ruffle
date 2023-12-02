@@ -129,9 +129,7 @@ impl<'gc> StageObject<'gc> {
             {
                 let level_id = Self::parse_level_id(&name[6..]);
                 let level = activation
-                    .context
-                    .stage
-                    .child_by_depth(level_id)
+                    .get_level(level_id)
                     .map(|o| o.object())
                     .unwrap_or(Value::Undefined);
                 return Some(level);
