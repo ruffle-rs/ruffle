@@ -9,3 +9,4 @@ context-menu-about-ruffle =
 context-menu-hide = Bu menüyü gizle
 context-menu-exit-fullscreen = Tam ekrandan çık
 context-menu-enter-fullscreen = Tam ekran yap
+context-menu-volume-controls = Ses kontrolleri
