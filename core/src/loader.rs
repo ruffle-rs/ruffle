@@ -42,6 +42,9 @@ use url::{form_urlencoded, ParseError, Url};
 
 pub type Handle = Index;
 
+/// The depth of AVM1 movies that AVM2 loads.
+const LOADER_INSERTED_AVM1_DEPTH: i32 = -0xF000;
+
 /// How Ruffle should load movies.
 #[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -1730,6 +1733,8 @@ impl<'gc> Loader<'gc> {
                         {
                             // When an AVM2 movie loads an AVM1 movie, we need to call `post_instantiation` here.
                             mc.post_instantiation(uc, None, Instantiator::Movie, false);
+
+                            mc.set_depth(uc.gc_context, LOADER_INSERTED_AVM1_DEPTH);
                         }
                     }
 
@@ -2007,8 +2012,8 @@ impl<'gc> Loader<'gc> {
 
             if !movie.unwrap().is_action_script_3() {
                 loader.insert_child_into_depth_list(
-                    activation.context.gc_context,
-                    0,
+                    &mut activation.context,
+                    LOADER_INSERTED_AVM1_DEPTH,
                     dobj.unwrap(),
                 );
             }
