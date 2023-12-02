@@ -199,14 +199,14 @@ impl TextureTarget {
             )
             .into());
         }
-        let buffer_dimensions = BufferDimensions::new(size.0 as usize, size.1 as usize);
+        let format = wgpu::TextureFormat::Rgba8Unorm;
+        let buffer_dimensions = BufferDimensions::new(size.0 as usize, size.1 as usize, format);
         let size = wgpu::Extent3d {
             width: size.0,
             height: size.1,
             depth_or_array_layers: 1,
         };
         let texture_label = create_debug_label!("Render target texture");
-        let format = wgpu::TextureFormat::Rgba8Unorm;
         let texture = device.create_texture(&wgpu::TextureDescriptor {
             label: texture_label.as_deref(),
             size,

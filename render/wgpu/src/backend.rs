@@ -14,7 +14,9 @@ use crate::{
     QueueSyncHandle, RenderTarget, SwapChainTarget, Texture, Transforms,
 };
 use image::imageops::FilterType;
-use ruffle_render::backend::{BitmapCacheEntry, Context3D, Context3DProfile};
+use ruffle_render::backend::{
+    BitmapCacheEntry, Context3D, Context3DProfile, PixelBenderOutput, PixelBenderTarget,
+};
 use ruffle_render::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
 use ruffle_render::bitmap::{
     Bitmap, BitmapFormat, BitmapHandle, BitmapSource, PixelRegion, SyncHandle,
@@ -23,7 +25,8 @@ use ruffle_render::commands::CommandList;
 use ruffle_render::error::Error as BitmapError;
 use ruffle_render::filters::Filter;
 use ruffle_render::pixel_bender::{
-    PixelBenderShader, PixelBenderShaderArgument, PixelBenderShaderHandle,
+    PixelBenderParam, PixelBenderParamQualifier, PixelBenderShader, PixelBenderShaderArgument,
+    PixelBenderShaderHandle,
 };
 use ruffle_render::quality::StageQuality;
 use ruffle_render::shape_utils::DistilledShape;
@@ -374,6 +377,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             let copy_dimensions = BufferDimensions::new(
                 texture.texture.width() as usize,
                 texture.texture.height() as usize,
+                texture.texture.format(),
             );
             let buffer = self
                 .offscreen_buffer_pool
@@ -948,25 +952,87 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         &mut self,
         shader: PixelBenderShaderHandle,
         arguments: &[PixelBenderShaderArgument],
-        target_handle: BitmapHandle,
-    ) -> Result<Box<dyn SyncHandle>, BitmapError> {
-        let target = as_texture(&target_handle);
+        target: &PixelBenderTarget,
+    ) -> Result<PixelBenderOutput, BitmapError> {
+        let mut output_channels = None;
+
+        for param in &shader.0.parsed_shader().params {
+            if let PixelBenderParam::Normal {
+                qualifier: PixelBenderParamQualifier::Output,
+                reg,
+                ..
+            } = param
+            {
+                if output_channels.is_some() {
+                    panic!("Multiple output parameters");
+                }
+                output_channels = Some(reg.channels.len());
+                break;
+            }
+        }
+
+        let output_channels = output_channels.expect("No output parameter");
+        let has_padding = output_channels == 3;
+
+        let texture_format =
+            crate::pixel_bender::temporary_texture_format_for_channels(output_channels as u32);
+
+        let target_handle = match target {
+            PixelBenderTarget::Bitmap(handle) => handle.clone(),
+            PixelBenderTarget::Bytes { width, height } => {
+                let extent = wgpu::Extent3d {
+                    width: *width,
+                    height: *height,
+                    depth_or_array_layers: 1,
+                };
+                // FIXME - cache this texture somehow. We might also want to consider using
+                // a compute shader
+                let texture_label = create_debug_label!("Temporary pixelbender output texture");
+                let texture = self
+                    .descriptors
+                    .device
+                    .create_texture(&wgpu::TextureDescriptor {
+                        label: texture_label.as_deref(),
+                        size: extent,
+                        mip_level_count: 1,
+                        sample_count: 1,
+                        dimension: wgpu::TextureDimension::D2,
+                        format: texture_format,
+                        view_formats: &[texture_format],
+                        usage: wgpu::TextureUsages::TEXTURE_BINDING
+                            | wgpu::TextureUsages::COPY_DST
+                            | wgpu::TextureUsages::RENDER_ATTACHMENT
+                            | wgpu::TextureUsages::COPY_SRC,
+                    });
+                BitmapHandle(Arc::new(Texture {
+                    texture: Arc::new(texture),
+                    bind_linear: Default::default(),
+                    bind_nearest: Default::default(),
+                    copy_count: Cell::new(0),
+                }))
+            }
+        };
+
+        let target_texture = as_texture(&target_handle);
 
         let extent = wgpu::Extent3d {
-            width: target.texture.width(),
-            height: target.texture.height(),
+            width: target_texture.texture.width(),
+            height: target_texture.texture.height(),
             depth_or_array_layers: 1,
         };
 
         let buffer_info = self.get_texture_buffer_info(
-            target,
-            PixelRegion::for_whole_size(target.texture.width(), target.texture.height()),
+            target_texture,
+            PixelRegion::for_whole_size(
+                target_texture.texture.width(),
+                target_texture.texture.height(),
+            ),
         );
 
         let mut texture_target = TextureTarget {
             size: extent,
-            texture: target.texture.clone(),
-            format: wgpu::TextureFormat::Rgba8Unorm,
+            texture: target_texture.texture.clone(),
+            format: target_texture.texture.format(),
             buffer: buffer_info,
         };
 
@@ -986,7 +1052,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             shader,
             ShaderMode::ShaderJob,
             arguments,
-            &target.texture,
+            &target_texture.texture,
             &mut render_command_encoder,
             Some(wgpu::RenderPassColorAttachment {
                 view: frame_output.view(),
@@ -998,7 +1064,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             }),
             1,
             // When running a standalone shader, we always process the entire image
-            &FilterSource::for_entire_texture(&target.texture),
+            &FilterSource::for_entire_texture(&target_texture.texture),
         )?;
 
         let index = self
@@ -1006,12 +1072,53 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             .queue
             .submit(Some(render_command_encoder.finish()));
 
-        Ok(self.make_queue_sync_handle(
+        let sync_handle = self.make_queue_sync_handle(
             texture_target,
             index,
             target_handle,
             PixelRegion::for_whole_size(extent.width, extent.height),
-        ))
+        );
+
+        match target {
+            PixelBenderTarget::Bitmap(_) => Ok(PixelBenderOutput::Bitmap(sync_handle)),
+            PixelBenderTarget::Bytes { width, .. } => {
+                let mut output = None;
+                sync_handle.retrieve_offscreen_texture(Box::new(|raw_pixels, buffer_width| {
+                    if buffer_width as usize
+                        != *width as usize * output_channels * std::mem::size_of::<f32>()
+                    {
+                        let channels_in_raw_pixels = if has_padding { 4usize } else { 3usize };
+
+                        let mut new_pixels = Vec::new();
+                        for row in raw_pixels.chunks(buffer_width as usize) {
+                            // Ignore any wgpu-added padding (this is distinct from the alpha-channel padding
+                            // that we add for pixelbender)
+                            let actual_row = &row[0..(*width as usize
+                                * channels_in_raw_pixels
+                                * std::mem::size_of::<f32>())];
+
+                            for pixel in actual_row
+                                .chunks_exact(channels_in_raw_pixels * std::mem::size_of::<f32>())
+                            {
+                                if has_padding {
+                                    // Take the first three channels
+                                    new_pixels.extend_from_slice(
+                                        &pixel[0..(3 * std::mem::size_of::<f32>())],
+                                    );
+                                } else {
+                                    // Copy the pixel as-is
+                                    new_pixels.extend_from_slice(pixel);
+                                }
+                            }
+                        }
+                        output = Some(new_pixels);
+                    } else {
+                        output = Some(raw_pixels.to_vec());
+                    };
+                }))?;
+                Ok(PixelBenderOutput::Bytes(output.unwrap()))
+            }
+        }
     }
 
     fn create_empty_texture(
@@ -1113,6 +1220,7 @@ async fn request_device(
         wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES,
         wgpu::Features::SHADER_UNUSED_VERTEX_OUTPUT,
         wgpu::Features::TEXTURE_COMPRESSION_BC,
+        wgpu::Features::FLOAT32_FILTERABLE,
     ];
 
     for feature in try_features {

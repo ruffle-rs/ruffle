@@ -222,8 +222,12 @@ impl QueueSyncHandle {
             } => {
                 let texture = as_texture(&handle);
 
-                let buffer_dimensions =
-                    BufferDimensions::new(copy_area.width() as usize, copy_area.height() as usize);
+                let buffer_dimensions = BufferDimensions::new(
+                    copy_area.width() as usize,
+                    copy_area.height() as usize,
+                    texture.texture.format(),
+                );
+
                 let buffer = pool.take(&descriptors, buffer_dimensions.clone());
                 let label = create_debug_label!("Render target transfer encoder");
                 let mut encoder =

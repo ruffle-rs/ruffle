@@ -4,8 +4,8 @@
 
 use bytemuck::{Pod, Zeroable};
 use ruffle_render::backend::{
-    BitmapCacheEntry, Context3D, Context3DProfile, RenderBackend, ShapeHandle, ShapeHandleImpl,
-    ViewportDimensions,
+    BitmapCacheEntry, Context3D, Context3DProfile, PixelBenderOutput, PixelBenderTarget,
+    RenderBackend, ShapeHandle, ShapeHandleImpl, ViewportDimensions,
 };
 use ruffle_render::bitmap::{
     Bitmap, BitmapFormat, BitmapHandle, BitmapHandleImpl, BitmapSource, PixelRegion, PixelSnapping,
@@ -1139,8 +1139,8 @@ impl RenderBackend for WebGlRenderBackend {
         &mut self,
         _handle: ruffle_render::pixel_bender::PixelBenderShaderHandle,
         _arguments: &[ruffle_render::pixel_bender::PixelBenderShaderArgument],
-        _target: BitmapHandle,
-    ) -> Result<Box<dyn SyncHandle>, BitmapError> {
+        _target: &PixelBenderTarget,
+    ) -> Result<PixelBenderOutput, BitmapError> {
         Err(BitmapError::Unimplemented("run_pixelbender_shader".into()))
     }
 
