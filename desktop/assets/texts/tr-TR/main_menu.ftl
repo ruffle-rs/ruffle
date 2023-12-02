@@ -17,6 +17,7 @@ file-menu-exit = Çıkış Yap
 controls-menu = Denetim
 controls-menu-suspend = Duraklat
 controls-menu-resume = Devam Ettir
+controls-menu-volume = Ses kontrolleri
 help-menu = Yardım
 help-menu-join-discord = Discord'a Katıl
 help-menu-report-a-bug = Bir Hata Bildir...

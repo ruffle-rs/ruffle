@@ -60,16 +60,16 @@
         "message": "RuffleでFlashを実行する準備が整いました。"
     },
     "status_result_running_protected": {
-        "message": "RuffleはリクエストされたFlashコンテンツをロードし、実行しています。"
+        "message": "RuffleはリクエストされたFlashコンテンツを実行する準備ができています。"
     },
     "status_result_optout": {
-        "message": "Ruffleは現在のページと互換性がないため、読み込まれません。"
+        "message": "現在のサイトは互換性がないため、Ruffleをロードできません。"
     },
     "status_result_disabled": {
         "message": "Ruffleは無効化されています。"
     },
     "status_result_error": {
-        "message": "現在のタブでRuffleのインスタンスを照会する際にエラーが発生しました。"
+        "message": "現在のページでRuffleインスタンスの照会中にエラーが発生しました。"
     },
     "status_result_protected": {
         "message": "Ruffleはブラウザの保護されたページのため、読み込まれません。"
