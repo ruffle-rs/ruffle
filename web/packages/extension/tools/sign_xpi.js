@@ -60,12 +60,11 @@ async function sign(
         )}/versions/${encodeURIComponent(version)}/`,
         json: {
             compatibility: {
-                android: {
-                    min: "84",
-                    // "max" is undefined, so the manifest max or default will be used.
-                },
                 firefox: {
                     min: "84",
+                },
+                android: {
+                    min: "121",
                 },
             },
             approval_notes: `This version was derived from the source code available at https://github.com/ruffle-rs/ruffle/releases/tag/${sourceTag} - a ZIP file from this Git tag has been attached. If you download it yourself instead of using the ZIP file provided, make sure to grab the reproducible version of the ZIP, as it contains versioning information that will not be present on the main source download.\n\
