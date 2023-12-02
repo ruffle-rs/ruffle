@@ -3,8 +3,8 @@
 #![allow(clippy::arc_with_non_send_sync)]
 
 use ruffle_render::backend::{
-    BitmapCacheEntry, Context3D, Context3DProfile, RenderBackend, ShapeHandle, ShapeHandleImpl,
-    ViewportDimensions,
+    BitmapCacheEntry, Context3D, Context3DProfile, PixelBenderOutput, PixelBenderTarget,
+    RenderBackend, ShapeHandle, ShapeHandleImpl, ViewportDimensions,
 };
 use ruffle_render::bitmap::{
     Bitmap, BitmapHandle, BitmapHandleImpl, BitmapSource, PixelRegion, PixelSnapping, SyncHandle,
@@ -523,8 +523,8 @@ impl RenderBackend for WebCanvasRenderBackend {
         &mut self,
         _handle: ruffle_render::pixel_bender::PixelBenderShaderHandle,
         _arguments: &[ruffle_render::pixel_bender::PixelBenderShaderArgument],
-        _target: BitmapHandle,
-    ) -> Result<Box<dyn SyncHandle>, Error> {
+        _target: &PixelBenderTarget,
+    ) -> Result<PixelBenderOutput, Error> {
         Err(Error::Unimplemented("run_pixelbender_shader".into()))
     }
 

@@ -14,7 +14,7 @@ use crate::quality::StageQuality;
 use crate::shape_utils::DistilledShape;
 use swf::Color;
 
-use super::{Context3D, Context3DProfile};
+use super::{Context3D, Context3DProfile, PixelBenderOutput, PixelBenderTarget};
 
 pub struct NullBitmapSource;
 
@@ -115,8 +115,8 @@ impl RenderBackend for NullRenderer {
         &mut self,
         _shader: PixelBenderShaderHandle,
         _arguments: &[PixelBenderShaderArgument],
-        _target: BitmapHandle,
-    ) -> Result<Box<dyn SyncHandle>, Error> {
+        _target: &PixelBenderTarget,
+    ) -> Result<PixelBenderOutput, Error> {
         Err(Error::Unimplemented("Pixel bender shader".into()))
     }
 

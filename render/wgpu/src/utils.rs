@@ -3,9 +3,8 @@ use crate::descriptors::Descriptors;
 use crate::globals::Globals;
 use crate::Transforms;
 use std::borrow::Cow;
-use std::mem::size_of;
 use wgpu::util::DeviceExt;
-use wgpu::CommandEncoder;
+use wgpu::{CommandEncoder, TextureFormat};
 
 macro_rules! create_debug_label {
     ($($arg:tt)*) => (
@@ -99,8 +98,8 @@ pub struct BufferDimensions {
 
 impl BufferDimensions {
     #[allow(dead_code)]
-    pub fn new(width: usize, height: usize) -> Self {
-        let bytes_per_pixel = size_of::<u32>();
+    pub fn new(width: usize, height: usize, format: TextureFormat) -> Self {
+        let bytes_per_pixel = format.block_copy_size(None).unwrap() as usize;
         let unpadded_bytes_per_row = width * bytes_per_pixel;
         let align = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT as usize;
         let padded_bytes_per_row_padding = (align - unpadded_bytes_per_row % align) % align;

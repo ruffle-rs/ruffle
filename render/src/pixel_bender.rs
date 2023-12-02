@@ -280,6 +280,12 @@ pub enum PixelBenderShaderArgument<'a> {
 pub enum ImageInputTexture<'a> {
     Bitmap(BitmapHandle),
     TextureRef(&'a dyn RawTexture),
+    Bytes {
+        width: u32,
+        height: u32,
+        channels: u32,
+        bytes: Vec<u8>,
+    },
 }
 
 impl PartialEq for ImageInputTexture<'_> {

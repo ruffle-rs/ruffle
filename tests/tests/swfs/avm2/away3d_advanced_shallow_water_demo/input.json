@@ -1,0 +1,47 @@
+[
+    {
+        "type": "Wait"
+    },
+    {
+        "type": "Wait"
+    },
+    {
+        "type": "Wait"
+    },
+    {
+        "type": "Wait"
+    },
+    {
+        "type": "Wait"
+    },
+    {
+        "type": "Wait"
+    },
+    {
+        "type": "Wait"
+    },
+    {
+        "type": "Wait"
+    },
+    {
+        "type": "Wait"
+    },
+    {
+        "type": "Wait"
+    },
+    {
+        "type": "MouseMove",
+        "pos": [
+            450.0,
+            450.0
+        ]
+    },
+    {
+        "type": "MouseDown",
+        "pos": [
+            450.0,
+            450.0
+        ],
+        "btn": "Left"
+    }
+]

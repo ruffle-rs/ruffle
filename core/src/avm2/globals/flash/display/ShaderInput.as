@@ -14,12 +14,20 @@ package flash.display {
             return _height;
         }
 
+        public function set height(value:int):void {
+            _height = value;
+        }
+
         public function get index():int {
             return _index;
         }
 
         public function get width():int {
             return _width;
+        }
+
+        public function set width(value:int):void {
+            _width = value;
         }
 
         public function get input():Object {
