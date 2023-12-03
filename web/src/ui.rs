@@ -1,6 +1,5 @@
 use super::JavascriptPlayer;
 use chrono::{DateTime, Utc};
-use chrono::{NaiveDateTime, TimeZone};
 use rfd::{AsyncFileDialog, FileHandle};
 use ruffle_core::backend::ui::{
     DialogResultFuture, FileDialogResult, FileFilter, FileSelection, FileSelectionGroup,
@@ -58,8 +57,15 @@ impl FileSelection for WebFileSelection {
     }
 
     fn modification_time(&self) -> Option<DateTime<Utc>> {
-        NaiveDateTime::from_timestamp_opt(self.handle.inner().last_modified() as i64, 0)
-            .map(|ts| Utc.from_utc_datetime(&ts))
+        #[cfg(target_arch = "wasm32")]
+        return {
+            use chrono::{NaiveDateTime, TimeZone};
+
+            NaiveDateTime::from_timestamp_opt(self.handle.inner().last_modified() as i64, 0)
+                .map(|ts| Utc.from_utc_datetime(&ts))
+        };
+        #[cfg(not(target_arch = "wasm32"))]
+        return None;
     }
 
     fn file_name(&self) -> Option<String> {
@@ -67,7 +73,11 @@ impl FileSelection for WebFileSelection {
     }
 
     fn size(&self) -> Option<u64> {
-        Some(self.handle.inner().size() as u64)
+        #[cfg(target_arch = "wasm32")]
+        return Some(self.handle.inner().size() as u64);
+
+        #[cfg(not(target_arch = "wasm32"))]
+        return None;
     }
 
     fn file_type(&self) -> Option<String> {
