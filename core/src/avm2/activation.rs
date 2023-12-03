@@ -2186,7 +2186,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let value2 = self.pop_stack().coerce_to_i32(self)?;
         let value1 = self.pop_stack().coerce_to_i32(self)?;
 
-        self.push_stack(value1 + value2);
+        self.push_stack(value1.wrapping_add(value2));
 
         Ok(FrameControl::Continue)
     }
@@ -2237,7 +2237,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_declocal_i(&mut self, index: u32) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value = self.local_register(index)?.coerce_to_i32(self)?;
 
-        self.set_local_register(index, value - 1)?;
+        self.set_local_register(index, value.wrapping_sub(1))?;
 
         Ok(FrameControl::Continue)
     }
@@ -2253,7 +2253,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_decrement_i(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value = self.pop_stack().coerce_to_i32(self)?;
 
-        self.push_stack(value - 1);
+        self.push_stack(value.wrapping_sub(1));
 
         Ok(FrameControl::Continue)
     }
@@ -2278,7 +2278,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_inclocal_i(&mut self, index: u32) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value = self.local_register(index)?.coerce_to_i32(self)?;
 
-        self.set_local_register(index, value + 1)?;
+        self.set_local_register(index, value.wrapping_add(1))?;
 
         Ok(FrameControl::Continue)
     }
@@ -2294,7 +2294,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_increment_i(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value = self.pop_stack().coerce_to_i32(self)?;
 
-        self.push_stack(value + 1);
+        self.push_stack(value.wrapping_add(1));
 
         Ok(FrameControl::Continue)
     }
@@ -2330,7 +2330,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let value2 = self.pop_stack().coerce_to_i32(self)?;
         let value1 = self.pop_stack().coerce_to_i32(self)?;
 
-        self.push_stack(value1 * value2);
+        self.push_stack(value1.wrapping_mul(value2));
 
         Ok(FrameControl::Continue)
     }
@@ -2346,7 +2346,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_negate_i(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value1 = self.pop_stack().coerce_to_i32(self)?;
 
-        self.push_stack(-value1);
+        self.push_stack(value1.wrapping_neg());
 
         Ok(FrameControl::Continue)
     }
@@ -2384,7 +2384,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let value2 = self.pop_stack().coerce_to_i32(self)?;
         let value1 = self.pop_stack().coerce_to_i32(self)?;
 
-        self.push_stack(value1 - value2);
+        self.push_stack(value1.wrapping_sub(value2));
 
         Ok(FrameControl::Continue)
     }
