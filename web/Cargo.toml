@@ -30,7 +30,7 @@ profiling = []
 [dependencies]
 console_error_panic_hook = { version = "0.1.7", optional = true }
 generational-arena = "0.2.9"
-js-sys = "0.3.65"
+js-sys = "0.3.66"
 tracing = { workspace = true, features = ["log"] }
 tracing-subscriber = { version = "0.3.18", default-features = false, features = ["registry"] }
 tracing-log = "0.2.0"
@@ -43,7 +43,7 @@ ruffle_render_wgpu = { path = "../render/wgpu", optional = true }
 ruffle_video_software = { path = "../video/software" }
 url = "2.5.0"
 wasm-bindgen = "=0.2.89"
-wasm-bindgen-futures = "0.4.38"
+wasm-bindgen-futures = "0.4.39"
 serde-wasm-bindgen = "0.6.1"
 chrono = { version = "0.4", default-features = false, features = ["wasmbind", "clock"] }
 getrandom = { version = "0.2", features = ["js"] }
@@ -61,7 +61,7 @@ path = "../core"
 features = ["audio", "mp3", "nellymoser", "default_compatibility_rules", "default_font"]
 
 [dependencies.web-sys]
-version = "0.3.65"
+version = "0.3.66"
 features = [
     "AddEventListenerOptions", "AudioBuffer", "AudioBufferSourceNode", "AudioContext",
     "AudioDestinationNode", "AudioNode", "AudioParam", "Blob", "BlobPropertyBag",
