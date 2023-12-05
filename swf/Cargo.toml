@@ -10,7 +10,7 @@ repository.workspace = true
 
 [dependencies]
 bitflags = "2.4.1"
-bitstream-io = "1.8.0"
+bitstream-io = "1.10.0"
 byteorder = "1.5"
 encoding_rs = "0.8.33"
 num-derive = "0.4"
