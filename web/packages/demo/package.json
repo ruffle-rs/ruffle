@@ -17,14 +17,14 @@
         "ruffle-core": "^0.1.0"
     },
     "devDependencies": {
-        "@types/react": "^18.2.37",
-        "@types/react-dom": "^18.2.15",
-        "@typescript-eslint/eslint-plugin": "^6.10.0",
-        "@typescript-eslint/parser": "^6.10.0",
-        "@vitejs/plugin-react": "^4.2.0",
-        "eslint": "^8.53.0",
+        "@types/react": "^18.2.42",
+        "@types/react-dom": "^18.2.17",
+        "@typescript-eslint/eslint-plugin": "^6.13.2",
+        "@typescript-eslint/parser": "^6.13.2",
+        "@vitejs/plugin-react": "^4.2.1",
+        "eslint": "^8.55.0",
         "eslint-plugin-react-hooks": "^4.6.0",
-        "eslint-plugin-react-refresh": "^0.4.4",
+        "eslint-plugin-react-refresh": "^0.4.5",
         "typescript": "^5.2.2",
         "vite": "^5.0.5"
     }
