@@ -482,7 +482,7 @@ impl<'gc> AudioManager<'gc> {
             while ns.len() <= ((44100.0 * 2.0 * 3.0 / fps).ceil() as usize) {
                 let sample_data_evt = Avm2EventObject::sample_data_event(activation, *pos);
                 Avm2::dispatch_event(
-                    &mut activation.context,
+                    activation.context,
                     sample_data_evt,
                     sound_state.sound_object.into(),
                 );
