@@ -1,5 +1,5 @@
 use crate::{
-    avm1::SoundObject,
+    avm1::SoundObject as Avm1SoundObject,
     avm2::{Avm2, EventObject as Avm2EventObject, SoundChannelObject},
     buffer::Substream,
     context::UpdateContext,
@@ -438,7 +438,7 @@ impl<'gc> AudioManager<'gc> {
         sound: SoundHandle,
         settings: &swf::SoundInfo,
         display_object: Option<DisplayObject<'gc>>,
-        avm1_object: Option<SoundObject<'gc>>,
+        avm1_object: Option<Avm1SoundObject<'gc>>,
     ) -> Option<SoundInstanceHandle> {
         if self.sounds.len() < Self::MAX_SOUNDS {
             let handle = audio.start_sound(sound, settings).ok()?;
@@ -747,7 +747,7 @@ pub struct SoundInstance<'gc> {
     transform: display_object::SoundTransform,
 
     /// The AVM1 `Sound` object associated with this sound, if any.
-    avm1_object: Option<SoundObject<'gc>>,
+    avm1_object: Option<Avm1SoundObject<'gc>>,
 
     /// The AVM2 `SoundChannel` object associated with this sound, if any.
     avm2_object: Option<SoundChannelObject<'gc>>,
