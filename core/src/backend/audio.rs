@@ -484,7 +484,7 @@ impl<'gc> AudioManager<'gc> {
                 let sample_data_evt =
                     Avm2EventObject::sample_data_event(activation, "sampleData", *pos);
                 Avm2::dispatch_event(
-                    &mut activation.context,
+                    activation.context,
                     sample_data_evt,
                     sound_state.sound_object.into(),
                 );
