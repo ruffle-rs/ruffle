@@ -91,6 +91,7 @@ pub enum SoundData<'gc> {
         #[collect(require_static)]
         sound: SoundHandle,
     },
+    Generated,
 }
 
 #[derive(Clone, Collect)]
@@ -143,7 +144,7 @@ impl<'gc> SoundObject<'gc> {
         match &mut *sound_data {
             SoundData::Empty { .. } => {
                 // We don't know the length yet, so return the `SoundChannel`
-                sound_data = SoundData::Generated;
+                *sound_data = SoundData::Generated;
                 Ok(true)
             }
             SoundData::Loading { queued_plays } => {
@@ -157,6 +158,10 @@ impl<'gc> SoundObject<'gc> {
                 Ok(true)
             }
             SoundData::Loaded { sound } => play_queued(queued, *sound, activation),
+            SoundData::Generated { .. } => {
+                // We don't know the length yet, so return the `SoundChannel`
+                Ok(true)
+            }
         }
     }
 
@@ -199,6 +204,9 @@ impl<'gc> SoundObject<'gc> {
             }
             SoundData::Loaded { sound: old_sound } => {
                 panic!("Tried to replace sound {old_sound:?} with {sound:?}")
+            }
+            SoundData::Generated { .. } => {
+                panic!("Tried to replace generated sound with {sound:?}")
             }
         }
         self.set_loading_state(SoundLoadingState::Loaded);
