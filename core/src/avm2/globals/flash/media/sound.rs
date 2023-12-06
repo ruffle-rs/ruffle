@@ -174,6 +174,12 @@ pub fn play<'gc>(
             None
         };
 
+        let _handle = activation
+            .context
+            .audio_manager
+            .start_generated_sound(activation.context.audio, sound_object)
+            .expect("not too many sounds");
+
         let sound_channel = SoundChannelObject::empty(activation)?;
 
         let queued_play = QueuedPlay {
