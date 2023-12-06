@@ -1,4 +1,6 @@
 package flash.text.engine {
+    import __ruffle__.stub_method;
+
     public final class FontDescription {
         private var _fontName:String;
 
@@ -71,5 +73,11 @@ package flash.text.engine {
         public function set cffHinting(value:String):void {
             this._cffHinting = value;
         }
+
+        public static function isFontCompatible(fontName: String, fontWeight: String, fontPosture: String): Boolean {
+            stub_method("flash.text.engine.FontDescription", "isFontCompatible");
+            return false;
+        }
+
     }
 }
