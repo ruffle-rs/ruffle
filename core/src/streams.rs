@@ -467,6 +467,12 @@ impl<'gc> NetStream<'gc> {
                         frame_type: FlvFrameType::Keyframe,
                         ..
                     }) => {
+                        // If we don't backseek when we find the keyframe,
+                        // we will miss the keyframe.
+                        reader
+                            .seek(SeekFrom::Start(old_position))
+                            .expect("valid backseek position");
+
                         break;
                     }
                     _ => continue,
