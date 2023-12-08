@@ -398,6 +398,10 @@ impl<'gc> NetStream<'gc> {
         }
 
         let mut write = self.0.write(context.gc_context);
+        if write.stream_time == offset {
+            //Don't do anything for no-op seeks.
+            return;
+        }
 
         if let Some(sound) = write.sound_instance {
             context.stop_sounds_with_handle(sound);
