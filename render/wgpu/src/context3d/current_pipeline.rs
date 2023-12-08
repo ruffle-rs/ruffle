@@ -399,11 +399,25 @@ impl CurrentPipeline {
                     index_per_buffer.last_mut().unwrap()
                 };
 
-                // FIXME - assert that this matches up with the AS3-supplied offset
-                buffer_data.total_size += entry_size_bytes;
+                let offset_bytes = attr.offset_in_32bit_units * 4;
+
+                // ActionScript may call setVertexBufferAt with overlapping offsets, e.g.:
+
+                // ```
+                // setVertexBufferAt(0, buffer, 0, "float3"]
+                // setVertexBufferAt(1, buffer, 2, "float4"]
+                // setVertexBufferAt(2, buffer, 6, "float2"]
+                // ```
+                //
+                // To correctly compute the total size, we look at the furthest extent of any buffer
+                // (its offset plus its length), rather than simply adding up all of the lengths.
+                buffer_data.total_size = std::cmp::max(
+                    buffer_data.total_size,
+                    entry_size_bytes + offset_bytes as usize,
+                );
                 buffer_data.attrs.push(wgpu::VertexAttribute {
                     format,
-                    offset: attr.offset_in_32bit_units * 4,
+                    offset: offset_bytes,
                     shader_location: i as u32,
                 })
             }
