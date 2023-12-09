@@ -145,6 +145,7 @@ impl<'gc> BytecodeMethod<'gc> {
     ) -> Result<Self, Error<'gc>> {
         let abc = txunit.abc();
         let mut signature = Vec::new();
+        let mut return_type = Multiname::any(activation.gc());
 
         if abc.methods.get(abc_method.0 as usize).is_some() {
             let method = &abc.methods[abc_method.0 as usize];
@@ -152,7 +153,7 @@ impl<'gc> BytecodeMethod<'gc> {
                 signature.push(ParamConfig::from_abc_param(param, txunit, activation)?);
             }
 
-            let return_type = txunit
+            return_type = txunit
                 .pool_multiname_static_any(method.return_type, &mut activation.context)?
                 .deref()
                 .clone();
@@ -179,7 +180,7 @@ impl<'gc> BytecodeMethod<'gc> {
             abc_method: abc_method.0,
             abc_method_body: None,
             signature,
-            return_type: Multiname::any(activation.gc()),
+            return_type,
             is_function,
             activation_class: Lock::new(None),
         })
