@@ -1,0 +1,23 @@
+<type name="flash.events::Event" base="Object" isDynamic="false" isFinal="false" isStatic="false">
+  <accessor name="bubbles" access="readonly" type="Boolean" declaredBy="flash.events::Event"/>
+  <accessor name="cancelable" access="readonly" type="Boolean" declaredBy="flash.events::Event"/>
+  <accessor name="currentTarget" access="readonly" type="Object" declaredBy="flash.events::Event"/>
+  <accessor name="eventPhase" access="readonly" type="uint" declaredBy="flash.events::Event"/>
+  <accessor name="target" access="readonly" type="Object" declaredBy="flash.events::Event"/>
+  <accessor name="type" access="readonly" type="String" declaredBy="flash.events::Event"/>
+  <constructor>
+      <parameter index="1" type="String" optional="false"/>
+      <parameter index="2" type="Boolean" optional="true"/>
+      <parameter index="3" type="Boolean" optional="true"/>
+  </constructor>
+  <extendsClass type="Object"/>
+  <method name="clone" declaredBy="flash.events::Event" returnType="flash.events::Event"/>
+  <method name="formatToString" declaredBy="flash.events::Event" returnType="String">
+      <parameter index="1" type="String" optional="false"/>
+  </method>
+  <method name="isDefaultPrevented" declaredBy="flash.events::Event" returnType="Boolean"/>
+  <method name="preventDefault" declaredBy="flash.events::Event" returnType="void"/>
+  <method name="stopImmediatePropagation" declaredBy="flash.events::Event" returnType="void"/>
+  <method name="stopPropagation" declaredBy="flash.events::Event" returnType="void"/>
+  <method name="toString" declaredBy="flash.events::Event" returnType="String"/>
+</type>

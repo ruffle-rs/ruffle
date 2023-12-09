@@ -8,12 +8,12 @@
         "./packages/*"
     ],
     "engines": {
-        "npm": ">=10.2.4"
+        "npm": ">=10.2.5"
     },
     "devDependencies": {
         "@typescript-eslint/eslint-plugin": "^6.13.2",
         "@typescript-eslint/parser": "^6.13.2",
-        "@wdio/cli": "^8.24.13",
+        "@wdio/cli": "^8.24.16",
         "@wdio/local-runner": "^8.24.12",
         "@wdio/mocha-framework": "^8.24.12",
         "@wdio/spec-reporter": "^8.24.12",
@@ -31,7 +31,7 @@
         "stylelint-config-standard": "^34.0.0",
         "stylelint-prettier": "^4.1.0",
         "ts-loader": "^9.5.1",
-        "typescript": "^5.2.2",
+        "typescript": "^5.3.3",
         "wdio-chromedriver-service": "^8.1.1",
         "webpack": "^5.89.0",
         "webpack-cli": "^5.1.4"
