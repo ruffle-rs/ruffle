@@ -24,6 +24,17 @@ fn avm1_object_from_flv_variables<'gc>(
     info_object.into()
 }
 
+fn avm1_date_from_flv_date<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    unix_time: f64,
+    _local_offset: i16,
+) -> Avm1Value<'gc> {
+    let constructor = activation.context.avm1.prototypes().date_constructor;
+    let result = constructor.construct(activation, &[unix_time.into()]);
+
+    result.expect("AVM1 date constructed from FLV date")
+}
+
 fn avm1_array_from_flv_values<'gc>(
     activation: &mut Activation<'_, 'gc>,
     values: Vec<FlvValue>,
@@ -50,6 +61,10 @@ impl<'gc> FlvValueAvm1Ext<'gc> for FlvValue<'_> {
             FlvValue::String(string_data) | FlvValue::LongString(string_data) => {
                 AvmString::new_utf8_bytes(activation.context.gc_context, string_data).into()
             }
+            FlvValue::Date {
+                unix_time,
+                local_offset,
+            } => avm1_date_from_flv_date(activation, unix_time, local_offset),
             FlvValue::Number(value) => value.into(),
             FlvValue::Boolean(value) => value.into(),
             FlvValue::Null => Avm1Value::Null,
