@@ -42,6 +42,7 @@ mod matrix;
 pub(crate) mod mouse;
 pub(crate) mod movie_clip;
 mod movie_clip_loader;
+pub(crate) mod netconnection;
 pub(crate) mod netstream;
 pub(crate) mod number;
 mod object;
@@ -581,6 +582,7 @@ pub fn create_globals<'gc>(
 
     let video_proto = video::create_proto(context, object_proto, function_proto);
     let netstream_proto = netstream::create_proto(context, object_proto, function_proto);
+    let netconnection_proto = netconnection::create_proto(context, object_proto, function_proto);
     let xml_socket_proto = xml_socket::create_proto(context, object_proto, function_proto);
 
     //TODO: These need to be constructors and should also set `.prototype` on each one
@@ -675,6 +677,7 @@ pub fn create_globals<'gc>(
     let boolean = boolean::create_boolean_object(context, boolean_proto, function_proto);
     let date = date::create_constructor(context, object_proto, function_proto);
     let netstream = netstream::create_class(context, netstream_proto, function_proto);
+    let netconnection = netconnection::create_class(context, netconnection_proto, function_proto);
     let xml_socket = xml_socket::create_class(context, xml_socket_proto, function_proto);
 
     let flash = ScriptObject::new(gc_context, Some(object_proto));
@@ -1074,6 +1077,12 @@ pub fn create_globals<'gc>(
         gc_context,
         "NetStream",
         netstream.into(),
+        Attribute::DONT_ENUM,
+    );
+    globals.define_value(
+        gc_context,
+        "NetConnection",
+        netconnection.into(),
         Attribute::DONT_ENUM,
     );
     globals.define_value(
