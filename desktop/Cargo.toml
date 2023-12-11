@@ -26,7 +26,7 @@ generational-arena = "0.2.9"
 winit = "0.28.7"
 webbrowser = "0.8.12"
 url = "2.5.0"
-arboard = "3.3.0"
+arboard = { version = "3.3.0", features = ["wayland-data-control"] }
 dirs = "5.0"
 isahc = { version = "1.7.2", features = ["cookies"] }
 rfd = "0.12.1"
