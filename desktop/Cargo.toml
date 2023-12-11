@@ -11,7 +11,7 @@ version.workspace = true
 clap = { version = "4.4.11", features = ["derive"] }
 cpal = "0.15.2"
 egui = { workspace = true }
-egui_extras = { version = "0.23.0", features = ["image"] }
+egui_extras = { version = "0.24.2", features = ["image"] }
 egui-wgpu = { version = "0.23.0", features = ["winit"] }
 image = { version = "0.24", features = ["png"] }
 egui-winit = "0.23.0"
