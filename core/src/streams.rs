@@ -398,6 +398,10 @@ impl<'gc> NetStream<'gc> {
         }
 
         let mut write = self.0.write(context.gc_context);
+        if write.stream_time == offset {
+            //Don't do anything for no-op seeks.
+            return;
+        }
 
         if let Some(sound) = write.sound_instance {
             context.stop_sounds_with_handle(sound);
@@ -463,6 +467,12 @@ impl<'gc> NetStream<'gc> {
                         frame_type: FlvFrameType::Keyframe,
                         ..
                     }) => {
+                        // If we don't backseek when we find the keyframe,
+                        // we will miss the keyframe.
+                        reader
+                            .seek(SeekFrom::Start(old_position))
+                            .expect("valid backseek position");
+
                         break;
                     }
                     _ => continue,
