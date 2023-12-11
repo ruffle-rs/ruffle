@@ -459,6 +459,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e445576659fd04a57b44cbd00aa37aaa815ebefa0aa3cb677a6b5e63d883074f"
 
 [[package]]
+name = "bitstream-io"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a5eb760accf8501314918dc0ccfbb163d3cf767527cd4e7682c8af4dc0d274bb"
+
+[[package]]
 name = "block"
 version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3226,7 +3232,7 @@ name = "nellymoser-rs"
 version = "0.1.2"
 source = "git+https://github.com/ruffle-rs/nellymoser?rev=4a33521c29a918950df8ae9fe07e527ac65553f5#4a33521c29a918950df8ae9fe07e527ac65553f5"
 dependencies = [
- "bitstream-io",
+ "bitstream-io 1.10.0",
  "once_cell",
  "rustdct",
 ]
@@ -4212,7 +4218,7 @@ version = "0.1.0"
 dependencies = [
  "async-channel 2.1.1",
  "bitflags 2.4.1",
- "bitstream-io",
+ "bitstream-io 2.0.0",
  "build_playerglobal",
  "bytemuck",
  "byteorder",
@@ -4973,7 +4979,7 @@ name = "swf"
 version = "0.2.0"
 dependencies = [
  "bitflags 2.4.1",
- "bitstream-io",
+ "bitstream-io 2.0.0",
  "byteorder",
  "encoding_rs",
  "enum-map",
