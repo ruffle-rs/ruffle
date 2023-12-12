@@ -91,6 +91,8 @@ _Note: because it is HEAD-only, you'll need to run `brew upgrade --fetch-HEAD ru
 Follow [the instructions in the web directory](web/README.md#building-from-source) for building
 either the web or browser extension version of Ruffle.
 
+This project is tested with BrowserStack.
+
 ### Scanner
 
 If you have a collection of "real world" SWFs to test against, the scanner may be used to benchmark
