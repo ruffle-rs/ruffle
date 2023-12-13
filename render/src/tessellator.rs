@@ -1,18 +1,18 @@
 use crate::bitmap::BitmapSource;
 use crate::shape_utils::{DistilledShape, DrawCommand, DrawPath, GradientType};
-use lyon::path::Path;
+use lyon::path::Path as LyonPath;
+use lyon::tessellation::FillOptions;
 use lyon::tessellation::{
-    self,
     geometry_builder::{BuffersBuilder, FillVertexConstructor, VertexBuffers},
-    FillTessellator, FillVertex, StrokeTessellator, StrokeVertex, StrokeVertexConstructor,
+    FillTessellator, FillVertex,
 };
-use lyon::tessellation::{FillOptions, StrokeOptions};
 use swf::GradientRecord;
+use tiny_skia_path::{LineCap, LineJoin, Path as TinySkiaPath, PathBuilder, PathStroker, Stroke};
 use tracing::instrument;
 
 pub struct ShapeTessellator {
-    fill_tess: FillTessellator,
-    stroke_tess: StrokeTessellator,
+    tess: FillTessellator,
+    stroker: PathStroker,
     mesh: Vec<Draw>,
     lyon_mesh: VertexBuffers<Vertex, u32>,
     mask_index_count: Option<u32>,
@@ -22,8 +22,8 @@ pub struct ShapeTessellator {
 impl ShapeTessellator {
     pub fn new() -> Self {
         Self {
-            fill_tess: FillTessellator::new(),
-            stroke_tess: StrokeTessellator::new(),
+            tess: FillTessellator::new(),
+            stroker: PathStroker::new(),
             mesh: Vec::new(),
             lyon_mesh: VertexBuffers::new(),
             mask_index_count: None,
@@ -50,11 +50,36 @@ impl ShapeTessellator {
                     style,
                     commands,
                     is_closed,
-                } => (
-                    style.fill_style(),
-                    ruffle_path_to_lyon_path(commands, *is_closed),
-                    true,
-                ),
+                } => {
+                    let mut stroke_options = Stroke::default();
+                    stroke_options.width = (style.width().to_pixels() as f32).max(1.0);
+                    stroke_options.line_cap = match style.start_cap() {
+                        swf::LineCapStyle::None => LineCap::Butt,
+                        swf::LineCapStyle::Round => LineCap::Round,
+                        swf::LineCapStyle::Square => LineCap::Square,
+                    }; // no separate start and end cap styles :/
+
+                    stroke_options.line_join = match style.join_style() {
+                        swf::LineJoinStyle::Round => LineJoin::Round,
+                        swf::LineJoinStyle::Bevel => LineJoin::Bevel,
+                        swf::LineJoinStyle::Miter(limit) => {
+                            stroke_options.miter_limit = limit.to_f32();
+                            LineJoin::MiterClip
+                        }
+                    };
+
+                    let skia_path = &ruffle_path_to_skia_path(commands, *is_closed);
+
+                    let lyon_path = if let Some(skia_path) = skia_path {
+                        self.stroker
+                            .stroke(skia_path, &stroke_options, 1.0)
+                            .map_or_else(LyonPath::new, |stroked| skia_path_to_lyon_path(&stroked))
+                    } else {
+                        LyonPath::new()
+                    };
+
+                    (style.fill_style(), lyon_path, true)
+                }
             };
 
             let (draw, color, needs_flush) = match fill_style {
@@ -134,48 +159,16 @@ impl ShapeTessellator {
             let mut buffers_builder =
                 BuffersBuilder::new(&mut self.lyon_mesh, RuffleVertexCtor { color });
             let result = match path {
-                DrawPath::Fill { winding_rule, .. } => self.fill_tess.tessellate_path(
+                DrawPath::Fill { winding_rule, .. } => self.tess.tessellate_path(
                     &lyon_path,
                     &FillOptions::default().with_fill_rule(winding_rule.into()),
                     &mut buffers_builder,
                 ),
-                DrawPath::Stroke { style, .. } => {
-                    // TODO(Herschel): 0 width indicates "hairline".
-                    let width = (style.width().to_pixels() as f32).max(1.0);
-                    let mut stroke_options = StrokeOptions::default()
-                        .with_line_width(width)
-                        .with_start_cap(match style.start_cap() {
-                            swf::LineCapStyle::None => tessellation::LineCap::Butt,
-                            swf::LineCapStyle::Round => tessellation::LineCap::Round,
-                            swf::LineCapStyle::Square => tessellation::LineCap::Square,
-                        })
-                        .with_end_cap(match style.end_cap() {
-                            swf::LineCapStyle::None => tessellation::LineCap::Butt,
-                            swf::LineCapStyle::Round => tessellation::LineCap::Round,
-                            swf::LineCapStyle::Square => tessellation::LineCap::Square,
-                        });
-
-                    let line_join = match style.join_style() {
-                        swf::LineJoinStyle::Round => tessellation::LineJoin::Round,
-                        swf::LineJoinStyle::Bevel => tessellation::LineJoin::Bevel,
-                        swf::LineJoinStyle::Miter(limit) => {
-                            // Avoid lyon assert with small miter limits.
-                            let limit = limit.to_f32();
-                            if limit >= StrokeOptions::MINIMUM_MITER_LIMIT {
-                                stroke_options = stroke_options.with_miter_limit(limit);
-                                tessellation::LineJoin::MiterClip
-                            } else {
-                                tessellation::LineJoin::Bevel
-                            }
-                        }
-                    };
-                    stroke_options = stroke_options.with_line_join(line_join);
-                    self.stroke_tess.tessellate_path(
-                        &lyon_path,
-                        &stroke_options,
-                        &mut buffers_builder,
-                    )
-                }
+                DrawPath::Stroke { .. } => self.tess.tessellate_path(
+                    &lyon_path,
+                    &FillOptions::default().with_fill_rule(lyon::path::FillRule::NonZero),
+                    &mut buffers_builder,
+                ),
             };
             match result {
                 Ok(_) => {
@@ -328,12 +321,12 @@ fn swf_bitmap_to_gl_matrix(
     [[a, d, 0.0], [b, e, 0.0], [c, f, 1.0]]
 }
 
-fn ruffle_path_to_lyon_path(commands: &[DrawCommand], is_closed: bool) -> Path {
+fn ruffle_path_to_lyon_path(commands: &[DrawCommand], is_closed: bool) -> LyonPath {
     fn point(point: swf::Point<swf::Twips>) -> lyon::math::Point {
         lyon::math::Point::new(point.x.to_pixels() as f32, point.y.to_pixels() as f32)
     }
 
-    let mut builder = Path::builder();
+    let mut builder = LyonPath::builder();
     let mut cursor = Some(swf::Point::ZERO);
     for command in commands {
         match command {
@@ -379,6 +372,81 @@ fn ruffle_path_to_lyon_path(commands: &[DrawCommand], is_closed: bool) -> Path {
     builder.build()
 }
 
+fn ruffle_path_to_skia_path(commands: &[DrawCommand], is_closed: bool) -> Option<TinySkiaPath> {
+    let mut builder = PathBuilder::new();
+    let mut only_a_move = true;
+    for command in commands {
+        match command {
+            DrawCommand::MoveTo(move_to) => {
+                builder.move_to(move_to.x.to_pixels() as f32, move_to.y.to_pixels() as f32);
+            }
+            DrawCommand::LineTo(line_to) => {
+                only_a_move = false;
+                builder.line_to(line_to.x.to_pixels() as f32, line_to.y.to_pixels() as f32);
+            }
+            DrawCommand::QuadraticCurveTo { control, anchor } => {
+                only_a_move = false;
+                builder.quad_to(
+                    control.x.to_pixels() as f32,
+                    control.y.to_pixels() as f32,
+                    anchor.x.to_pixels() as f32,
+                    anchor.y.to_pixels() as f32,
+                );
+            }
+            DrawCommand::CubicCurveTo {
+                control_a,
+                control_b,
+                anchor,
+            } => {
+                only_a_move = false;
+                builder.cubic_to(
+                    control_a.x.to_pixels() as f32,
+                    control_a.y.to_pixels() as f32,
+                    control_b.x.to_pixels() as f32,
+                    control_b.y.to_pixels() as f32,
+                    anchor.x.to_pixels() as f32,
+                    anchor.y.to_pixels() as f32,
+                );
+            }
+        }
+    }
+
+    if !only_a_move && is_closed {
+        builder.close();
+    }
+
+    builder.finish()
+}
+
+fn skia_path_to_lyon_path(path: &TinySkiaPath) -> LyonPath {
+    fn p(point: tiny_skia_path::Point) -> lyon::math::Point {
+        lyon::math::Point::new(point.x, point.y)
+    }
+
+    let mut builder = LyonPath::builder();
+    for segment in path.segments() {
+        match segment {
+            tiny_skia_path::PathSegment::MoveTo(point) => {
+                builder.begin(p(point));
+            }
+            tiny_skia_path::PathSegment::LineTo(point) => {
+                builder.line_to(p(point));
+            }
+            tiny_skia_path::PathSegment::QuadTo(control, anchor) => {
+                builder.quadratic_bezier_to(p(control), p(anchor));
+            }
+            tiny_skia_path::PathSegment::CubicTo(control1, control2, anchor) => {
+                builder.cubic_bezier_to(p(control1), p(control2), p(anchor));
+            }
+            tiny_skia_path::PathSegment::Close => {
+                builder.close();
+            }
+        }
+    }
+
+    builder.build()
+}
+
 /// Converts a gradient to the uniforms used by the shader.
 fn swf_gradient_to_uniforms(
     gradient_type: GradientType,
@@ -401,16 +469,6 @@ struct RuffleVertexCtor {
 
 impl FillVertexConstructor<Vertex> for RuffleVertexCtor {
     fn new_vertex(&mut self, vertex: FillVertex) -> Vertex {
-        Vertex {
-            x: vertex.position().x,
-            y: vertex.position().y,
-            color: self.color,
-        }
-    }
-}
-
-impl StrokeVertexConstructor<Vertex> for RuffleVertexCtor {
-    fn new_vertex(&mut self, vertex: StrokeVertex) -> Vertex {
         Vertex {
             x: vertex.position().x,
             y: vertex.position().y,
