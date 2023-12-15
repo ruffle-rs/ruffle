@@ -589,8 +589,7 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    #[allow(dead_code)]
-    fn write_op(&mut self, op: &Op) -> Result<()> {
+    pub fn write_op(&mut self, op: &Op) -> Result<()> {
         match *op {
             Op::Add => self.write_opcode(OpCode::Add)?,
             Op::AddI => self.write_opcode(OpCode::AddI)?,
