@@ -68,6 +68,14 @@ macro_rules! avm_error {
 
 #[macro_export]
 macro_rules! avm1_stub {
+    ($activation: ident, $class: literal) => {
+        #[cfg_attr(
+            feature = "known_stubs",
+            linkme::distributed_slice($crate::stub::KNOWN_STUBS)
+        )]
+        static STUB: $crate::stub::Stub = $crate::stub::Stub::Avm1Constructor { class: $class };
+        $activation.context.stub_tracker.encounter(&STUB);
+    };
     ($activation: ident, $class: literal, $method: literal) => {
         #[cfg_attr(
             feature = "known_stubs",

@@ -17,6 +17,7 @@ use crate::avm1::{Activation as Avm1Activation, ActivationIdentifier};
 use crate::binary_data::BinaryData;
 use crate::character::Character;
 use crate::context::{ActionType, RenderContext, UpdateContext};
+use crate::context_stub;
 use crate::display_object::container::{
     dispatch_removed_event, ChildContainer, TDisplayObjectContainer,
 };
@@ -698,6 +699,14 @@ impl<'gc> MovieClip<'gc> {
                     .0
                     .write(context.gc_context)
                     .define_binary_data(context, reader),
+                TagCode::ImportAssets => self
+                    .0
+                    .write(context.gc_context)
+                    .import_assets(context, reader),
+                TagCode::ImportAssets2 => self
+                    .0
+                    .write(context.gc_context)
+                    .import_assets_2(context, reader),
                 TagCode::End => {
                     end_tag_found = true;
                     return Ok(ControlFlow::Exit);
@@ -4080,6 +4089,28 @@ impl<'gc, 'a> MovieClipData<'gc> {
             .library
             .library_for_movie_mut(self.movie())
             .register_character(tag_data.id, Character::BinaryData(binary_data));
+        Ok(())
+    }
+
+    #[inline]
+    fn import_assets(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc>,
+        _reader: &mut SwfStream<'a>,
+    ) -> Result<(), Error> {
+        context_stub!(context, "ImportAssets tag");
+
+        Ok(())
+    }
+
+    #[inline]
+    fn import_assets_2(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc>,
+        _reader: &mut SwfStream<'a>,
+    ) -> Result<(), Error> {
+        context_stub!(context, "ImportAssets2 tag");
+
         Ok(())
     }
 
