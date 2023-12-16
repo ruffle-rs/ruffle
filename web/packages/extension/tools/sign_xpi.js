@@ -61,10 +61,10 @@ async function sign(
         json: {
             compatibility: {
                 firefox: {
-                    min: "84",
+                    min: "84.0",
                 },
                 android: {
-                    min: "120",
+                    min: "120.0",
                 },
             },
             approval_notes: `This version was derived from the source code available at https://github.com/ruffle-rs/ruffle/releases/tag/${sourceTag} - a ZIP file from this Git tag has been attached. If you download it yourself instead of using the ZIP file provided, make sure to grab the reproducible version of the ZIP, as it contains versioning information that will not be present on the main source download.\n\
