@@ -236,33 +236,37 @@ impl<'gc> LoaderInfoObject<'gc> {
         if !self.0.read().complete_event_fired {
             // NOTE: We have to check load progress here because this function
             // is called unconditionally at the end of every frame.
-            let should_complete = match self.0.read().loaded_stream {
-                Some(LoaderStream::Swf(_, root)) => root
-                    .as_movie_clip()
-                    .map(|mc| mc.loaded_bytes() as i32 >= mc.total_bytes())
-                    .unwrap_or(true),
-                _ => false,
+            let (should_complete, from_url) = match self.0.read().loaded_stream {
+                Some(LoaderStream::Swf(ref movie, root)) => (
+                    root.as_movie_clip()
+                        .map(|mc| mc.loaded_bytes() as i32 >= mc.total_bytes())
+                        .unwrap_or(true),
+                    movie.loader_url().is_some(),
+                ),
+                _ => (false, false),
             };
 
             if should_complete {
                 let mut activation = Activation::from_nothing(context.reborrow());
-                let http_status_evt = activation
-                    .avm2()
-                    .classes()
-                    .httpstatusevent
-                    .construct(
-                        &mut activation,
-                        &[
-                            "httpStatus".into(),
-                            false.into(),
-                            false.into(),
-                            status.into(),
-                            redirected.into(),
-                        ],
-                    )
-                    .unwrap();
+                if from_url {
+                    let http_status_evt = activation
+                        .avm2()
+                        .classes()
+                        .httpstatusevent
+                        .construct(
+                            &mut activation,
+                            &[
+                                "httpStatus".into(),
+                                false.into(),
+                                false.into(),
+                                status.into(),
+                                redirected.into(),
+                            ],
+                        )
+                        .unwrap();
 
-                Avm2::dispatch_event(context, http_status_evt, (*self).into());
+                    Avm2::dispatch_event(context, http_status_evt, (*self).into());
+                }
 
                 self.0.write(context.gc_context).complete_event_fired = true;
                 let complete_evt = EventObject::bare_default_event(context, "complete");
