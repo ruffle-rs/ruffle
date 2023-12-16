@@ -17,6 +17,8 @@ package flash.net {
         public static native function getLocal(name:String, localPath:String = null, secure:Boolean = false): SharedObject;
 
         public native function get size() : uint;
+        public native function get objectEncoding() : uint;
+        public native function set objectEncoding(value:uint) : void;
 
         public native function flush(minDiskSpace:int = 0) : String;
         public native function close() : void;
