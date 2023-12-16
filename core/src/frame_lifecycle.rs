@@ -124,7 +124,7 @@ pub fn run_inner_goto_frame<'gc>(
     removed_frame_scripts: &[DisplayObject<'gc>],
     initial_clip: MovieClip<'gc>,
 ) {
-    if initial_clip.swf_version() <= 9 {
+    if initial_clip.swf_version() <= 9 && initial_clip.movie().is_action_script_3() {
         avm2_stub_method_context!(
             context,
             "flash.display.MovieClip",

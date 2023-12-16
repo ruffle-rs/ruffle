@@ -10,7 +10,7 @@ pub fn constructor<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "NetConnection", "constructor");
+    avm1_stub!(activation, "NetConnection");
     Ok(this.into())
 }
 
