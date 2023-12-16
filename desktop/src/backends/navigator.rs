@@ -13,8 +13,9 @@ use isahc::{
 };
 use rfd::{AsyncMessageDialog, MessageButtons, MessageDialog, MessageDialogResult, MessageLevel};
 use ruffle_core::backend::navigator::{
-    async_return, create_fetch_error, create_specific_fetch_error, ErrorResponse, NavigationMethod,
-    NavigatorBackend, OpenURLMode, OwnedFuture, Request, SocketMode, SuccessResponse,
+    async_return, create_fetch_error, create_specific_fetch_error, get_encoding, ErrorResponse,
+    NavigationMethod, NavigatorBackend, OpenURLMode, OwnedFuture, Request, SocketMode,
+    SuccessResponse,
 };
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
@@ -231,6 +232,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                 Ok(SuccessResponse {
                     url: response_url.to_string(),
                     body,
+                    text_encoding: None,
                     status: 0,
                     redirected: false,
                 })
@@ -304,6 +306,17 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                     return Err(ErrorResponse { url, error });
                 }
 
+                let text_encoding =
+                    if let Some(content_type) = response.headers().get("Content-Type") {
+                        if let Ok(content_type_str) = content_type.to_str() {
+                            get_encoding(content_type_str.to_string())
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    };
+
                 let mut body = vec![];
                 response
                     .copy_to(&mut body)
@@ -316,6 +329,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                 Ok(SuccessResponse {
                     url,
                     body,
+                    text_encoding,
                     status,
                     redirected,
                 })

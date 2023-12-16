@@ -4,6 +4,7 @@ use crate::loader::Error;
 use crate::socket::{ConnectionState, SocketAction, SocketHandle};
 use crate::string::WStr;
 use async_channel::Receiver;
+use encoding_rs::Encoding;
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -192,6 +193,10 @@ pub struct SuccessResponse {
 
     /// The contents of the response body.
     pub body: Vec<u8>,
+
+    /// The text encoding listed in the HTTP response header if existing.
+    /// This is used by the form loader when loading text files.
+    pub text_encoding: Option<&'static Encoding>,
 
     /// The status code of the response.
     pub status: u16,
@@ -591,8 +596,20 @@ pub fn fetch_path<NavigatorType: NavigatorBackend>(
         Ok(SuccessResponse {
             url: url.to_string(),
             body,
+            text_encoding: None,
             status: 0,
             redirected: false,
         })
     })
+}
+
+/// Parses and returns the encoding out of an HTTP header content type string
+/// if existing.
+pub fn get_encoding(content_type: String) -> Option<&'static Encoding> {
+    let content_vector = content_type.split("charset=").collect::<Vec<&str>>();
+    if let Some(encoding_string) = content_vector.get(1) {
+        Encoding::for_label((*encoding_string).as_bytes())
+    } else {
+        None
+    }
 }
