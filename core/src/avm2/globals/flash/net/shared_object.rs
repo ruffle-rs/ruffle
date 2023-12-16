@@ -6,8 +6,8 @@ use crate::avm2::object::TObject;
 use crate::avm2::Error::AvmError;
 use crate::avm2::Multiname;
 use crate::avm2::{Activation, Error, Namespace, Object, Value};
-use crate::avm2_stub_method;
 use crate::string::AvmString;
+use crate::{avm2_stub_getter, avm2_stub_method, avm2_stub_setter};
 use flash_lso::types::{AMFVersion, Lso};
 use std::borrow::Cow;
 
@@ -307,5 +307,23 @@ pub fn clear<'gc>(
     let name = name.to_utf8_lossy();
     activation.context.storage.remove_key(&name);
 
+    Ok(Value::Undefined)
+}
+
+pub fn get_object_encoding<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_getter!(activation, "flash.net.SharedObject", "objectEncoding");
+    Ok(0.into())
+}
+
+pub fn set_object_encoding<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_setter!(activation, "flash.net.SharedObject", "objectEncoding");
     Ok(Value::Undefined)
 }
