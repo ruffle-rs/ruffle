@@ -408,7 +408,9 @@ impl Ruffle {
         self.on_metadata(movie.header());
 
         let _ = self.with_core_mut(move |core| {
-            core.set_root_movie(movie);
+            core.update(|uc| {
+                uc.set_root_movie(movie);
+            });
         });
 
         Ok(())
