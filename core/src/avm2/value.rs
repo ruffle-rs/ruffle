@@ -11,6 +11,8 @@ use crate::avm2::Namespace;
 use crate::ecma_conversions::{f64_to_wrapping_i32, f64_to_wrapping_u32};
 use crate::string::{AvmAtom, AvmString, WStr};
 use gc_arena::{Collect, GcCell, Mutation};
+use num_bigint::BigInt;
+use num_traits::{ToPrimitive, Zero};
 use std::cell::Ref;
 use std::mem::size_of;
 use swf::avm2::types::{DefaultValue as AbcDefaultValue, Index};
@@ -383,7 +385,7 @@ pub fn string_to_f64(mut s: &WStr, swf_version: u8, strict: bool) -> Option<f64>
     // Finally, calculate the result.
     let mut result = if total_digits > 15 {
         // With more than 15 digits, avmplus uses integer arithmetic to avoid rounding errors.
-        let mut result: i64 = 0;
+        let mut result: BigInt = Zero::zero();
         let mut decimal_digits = -1;
         for c in s {
             if let Some(digit) = to_decimal_digit(c) {
@@ -408,7 +410,7 @@ pub fn string_to_f64(mut s: &WStr, swf_version: u8, strict: bool) -> Option<f64>
             result *= i64::pow(10, exponent as u32);
         }
 
-        result as f64
+        result.to_f64().unwrap_or(f64::NAN)
     } else {
         let mut result = 0.0;
         let mut decimal_digits = -1;
@@ -1328,5 +1330,18 @@ impl<'gc> Value<'gc> {
         }
 
         Ok(Some(num_self < num_other))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_string_to_f64() {
+        assert_eq!(
+            string_to_f64(WStr::from_units(b"350000000000000000000"), 0, true),
+            Some(3.5e20)
+        );
     }
 }
