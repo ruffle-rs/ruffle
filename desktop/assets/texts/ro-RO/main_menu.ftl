@@ -8,3 +8,11 @@
 # Some items may be also be duplicated here, like "About Ruffle" in the menu and "About Ruffle" elsewhere as the header of the about menu.
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
+file-menu = Fişier
+file-menu-open-quick = Deschis...
+file-menu-open-advanced = Deschideți Avansat...
+file-menu-close = Închide
+file-menu-reload = Reîncărcați
+file-menu-exit = Ieșire
+controls-menu = Controale
+controls-menu-suspend = Suspenda

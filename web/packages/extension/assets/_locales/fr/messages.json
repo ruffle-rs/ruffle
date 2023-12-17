@@ -77,6 +77,9 @@
     "action_reload": {
         "message": "Recharger l'onglet pour appliquer les modifications"
     },
+    "open_player_page": {
+        "message": "Ouvrir le lecteur SWF"
+    },
     "open_settings_page": {
         "message": "Ouvrir la page des paramètres"
     },

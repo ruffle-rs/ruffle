@@ -10,6 +10,7 @@ update-ruffle = Perbarui Ruffle
 ruffle-demo = Demo Web
 ruffle-desktop = Aplikasi Desktop
 ruffle-wiki = Kunjungi Wiki Ruffle
+enable-hardware-acceleration = Sepertinya akselerasi perangkat keras tidak diaktifkan. Meskipun Ruffle mungkin berfungsi, namun bisa jadi sangat lambat. Anda dapat mengetahui cara mengaktifkan akselerasi perangkat keras dengan mengikuti tautan ini.
 view-error-details = Tunjukan Detail Error
 open-in-new-tab = Buka di Tab Baru
 click-to-unmute = Tekan untuk menyalakan suara

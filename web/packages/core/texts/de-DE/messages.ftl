@@ -10,6 +10,7 @@ update-ruffle = Ruffle aktuallisieren
 ruffle-demo = Web-Demo
 ruffle-desktop = Desktop-Anwendung
 ruffle-wiki = Ruffle-Wiki anzeigen
+enable-hardware-acceleration = Es sieht so aus, als ob die Hardwarebeschleunigung nicht aktiviert ist. Obwohl Ruffle möglicherweise funktioniert, kann es unverhältnismäßig langsam sein. Unter diesem Link erfahren Sie, wie Sie die Hardwarebeschleunigung aktivieren.
 view-error-details = Fehlerdetails anzeigen
 open-in-new-tab = In einem neuen Tab öffnen
 click-to-unmute = Klicke zum Entmuten

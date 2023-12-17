@@ -1,0 +1,11 @@
+about-ruffle = Despre Ruffle
+about-ruffle-version = Versiune
+about-ruffle-channel = Canal
+about-ruffle-build-time = Construiți Timp
+about-ruffle-build-features = Construiți caracteristici
+about-ruffle-commit-ref = Angajare Ref
+about-ruffle-commit-time = Timp de angajare
+about-ruffle-visit-website = Site-ul web
+about-ruffle-visit-github = GitHub
+about-ruffle-visit-discord = Discordie
+about-ruffle-visit-sponsor = Sponsor

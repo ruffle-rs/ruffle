@@ -38,6 +38,12 @@
     "settings_advanced_options": {
         "message": "Opțiuni avansate"
     },
+    "settings_reset": {
+        "message": "Reseteaza setarile"
+    },
+    "settings_reset_confirm": {
+        "message": "Sigur doriți să restaurați setările Volanelor la valorile implicite inițiale?"
+    },
     "status_init": {
         "message": "Se citește fila actuală…"
     },
@@ -53,6 +59,9 @@
     "status_result_running": {
         "message": "Ruffle este încărcat şi gata să ruleze conţinutul Flash din fila curentă."
     },
+    "status_result_running_protected": {
+        "message": "Ruffle este gata să ruleze conținutul Flash pe care îl solicitați."
+    },
     "status_result_optout": {
         "message": "Ruffle nu este încărcat, deoarece pagina actuală s-a marcat ca fiind incompatibilă."
     },
@@ -67,6 +76,9 @@
     },
     "action_reload": {
         "message": "Reîncarcă fila pentru a aplica modificările"
+    },
+    "open_player_page": {
+        "message": "Deschideți SWF Player"
     },
     "open_settings_page": {
         "message": "Deschide pagina cu setări"
