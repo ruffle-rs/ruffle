@@ -44,6 +44,7 @@ mod font_object;
 mod function_object;
 mod index_buffer_3d_object;
 mod loaderinfo_object;
+mod local_connection_object;
 mod namespace_object;
 mod net_connection_object;
 mod netstream_object;
@@ -95,6 +96,9 @@ pub use crate::avm2::object::index_buffer_3d_object::{
 };
 pub use crate::avm2::object::loaderinfo_object::{
     loader_info_allocator, LoaderInfoObject, LoaderInfoObjectWeak, LoaderStream,
+};
+pub use crate::avm2::object::local_connection_object::{
+    local_connection_allocator, LocalConnectionObject, LocalConnectionObjectWeak,
 };
 pub use crate::avm2::object::namespace_object::{
     namespace_allocator, NamespaceObject, NamespaceObjectWeak,
@@ -187,7 +191,8 @@ use crate::font::Font;
         ResponderObject(ResponderObject<'gc>),
         ShaderDataObject(ShaderDataObject<'gc>),
         SocketObject(SocketObject<'gc>),
-        FontObject(FontObject<'gc>)
+        FontObject(FontObject<'gc>),
+        LocalConnectionObject(LocalConnectionObject<'gc>)
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -1405,6 +1410,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn as_socket(&self) -> Option<SocketObject<'gc>> {
         None
     }
+
+    fn as_local_connection_object(&self) -> Option<LocalConnectionObject<'gc>> {
+        None
+    }
 }
 
 pub enum ObjectPtr {}
@@ -1454,6 +1463,7 @@ impl<'gc> Object<'gc> {
             Self::ShaderDataObject(o) => WeakObject::ShaderDataObject(ShaderDataObjectWeak(Gc::downgrade(o.0))),
             Self::SocketObject(o) => WeakObject::SocketObject(SocketObjectWeak(Gc::downgrade(o.0))),
             Self::FontObject(o) => WeakObject::FontObject(FontObjectWeak(GcCell::downgrade(o.0))),
+            Self::LocalConnectionObject(o) => WeakObject::LocalConnectionObject(LocalConnectionObjectWeak(GcCell::downgrade(o.0))),
         }
     }
 }
@@ -1513,6 +1523,7 @@ pub enum WeakObject<'gc> {
     ShaderDataObject(ShaderDataObjectWeak<'gc>),
     SocketObject(SocketObjectWeak<'gc>),
     FontObject(FontObjectWeak<'gc>),
+    LocalConnectionObject(LocalConnectionObjectWeak<'gc>),
 }
 
 impl<'gc> WeakObject<'gc> {
@@ -1555,6 +1566,7 @@ impl<'gc> WeakObject<'gc> {
             Self::ShaderDataObject(o) => ShaderDataObject(o.0.upgrade(mc)?).into(),
             Self::SocketObject(o) => SocketObject(o.0.upgrade(mc)?).into(),
             Self::FontObject(o) => FontObject(o.0.upgrade(mc)?).into(),
+            Self::LocalConnectionObject(o) => LocalConnectionObject(o.0.upgrade(mc)?).into(),
         })
     }
 }

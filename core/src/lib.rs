@@ -40,6 +40,7 @@ mod html;
 mod library;
 pub mod limits;
 pub mod loader;
+mod local_connection;
 mod locale;
 mod net_connection;
 pub mod pixel_bender;

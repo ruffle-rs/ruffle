@@ -1,10 +1,12 @@
-use crate::avm2::error::type_error;
+use crate::avm2::error::{argument_error, type_error};
 use crate::avm2::object::TObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Avm2, Error, Object, Value};
 use crate::string::AvmString;
 
 use crate::avm2_stub_method;
+
+pub use crate::avm2::object::local_connection_allocator;
 
 /// Implements `domain` getter
 pub fn get_domain<'gc>(
@@ -32,28 +34,28 @@ pub fn get_domain<'gc>(
 }
 
 /// Implements `LocalConnection.send`
-pub fn send<'gc>(
+pub fn send_internal<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if matches!(args.get_value(0), Value::Null) {
-        return Err(Error::AvmError(type_error(
-            activation,
-            "Error #2007: Parameter connectionName must be non-null.",
-            2007,
-        )?));
-    }
+    // Already null-checked by the AS wrapper `LocalConnection.send`
+    let connection_name = args.get_value(0);
 
-    if matches!(args.get_value(1), Value::Null) {
-        return Err(Error::AvmError(type_error(
-            activation,
-            "Error #2007: Parameter methodName must be non-null.",
-            2007,
-        )?));
-    }
+    let connection_name = connection_name.coerce_to_string(activation)?;
 
-    avm2_stub_method!(activation, "flash.net.LocalConnection", "send");
+    let event_name = if activation
+        .context
+        .local_connections
+        .all_by_name(connection_name)
+        .is_empty()
+    {
+        "error"
+    } else {
+        avm2_stub_method!(activation, "flash.net.LocalConnection", "send");
+
+        "status"
+    };
 
     let event = activation.avm2().classes().statusevent.construct(
         activation,
@@ -62,12 +64,63 @@ pub fn send<'gc>(
             false.into(),
             false.into(),
             Value::Null,
-            "error".into(),
+            event_name.into(),
         ],
     )?;
 
-    // FIXME: Adding the event listener after calling `send` works in FP.
     Avm2::dispatch_event(&mut activation.context, event, this);
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `LocalConnection.connect`
+pub fn connect<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let connection_name = args.get_value(0);
+    if matches!(connection_name, Value::Null) {
+        return Err(Error::AvmError(type_error(
+            activation,
+            "Error #2007: Parameter connectionName must be non-null.",
+            2007,
+        )?));
+    };
+
+    if let Some(local_connection) = this.as_local_connection_object() {
+        if local_connection.is_connected() {
+            return Err(Error::AvmError(argument_error(
+                activation,
+                "Error #2082: Connect failed because the object is already connected.",
+                2082,
+            )?));
+        }
+
+        let connection_name = connection_name.coerce_to_string(activation)?;
+        local_connection.connect(activation, connection_name);
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `LocalConnection.close`
+pub fn close<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(local_connection) = this.as_local_connection_object() {
+        if !local_connection.is_connected() {
+            return Err(Error::AvmError(argument_error(
+                activation,
+                "Error #2083: Close failed because the object is not connected.",
+                2083,
+            )?));
+        }
+
+        local_connection.disconnect(activation);
+    }
 
     Ok(Value::Undefined)
 }
