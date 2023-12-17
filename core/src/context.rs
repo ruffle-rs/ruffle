@@ -18,6 +18,7 @@ use crate::focus_tracker::FocusTracker;
 use crate::frame_lifecycle::FramePhase;
 use crate::library::Library;
 use crate::loader::LoadManager;
+use crate::local_connection::LocalConnections;
 use crate::net_connection::NetConnections;
 use crate::player::Player;
 use crate::prelude::*;
@@ -233,6 +234,8 @@ pub struct UpdateContext<'a, 'gc> {
     /// List of active NetConnection instances.
     pub net_connections: &'a mut NetConnections<'gc>,
 
+    pub local_connections: &'a mut LocalConnections<'gc>,
+
     /// Dynamic root for allowing handles to GC objects to exist outside of the GC.
     pub dynamic_root: gc_arena::DynamicRootSet<'gc>,
 }
@@ -395,6 +398,7 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
             stream_manager: self.stream_manager,
             sockets: self.sockets,
             net_connections: self.net_connections,
+            local_connections: self.local_connections,
             dynamic_root: self.dynamic_root,
         }
     }

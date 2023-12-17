@@ -39,6 +39,7 @@ use crate::frame_lifecycle::{run_all_phases_avm2, FramePhase};
 use crate::library::Library;
 use crate::limits::ExecutionLimit;
 use crate::loader::{LoadBehavior, LoadManager};
+use crate::local_connection::LocalConnections;
 use crate::locale::get_current_date_time;
 use crate::net_connection::NetConnections;
 use crate::prelude::*;
@@ -173,6 +174,8 @@ struct GcRootData<'gc> {
     /// List of active NetConnection objects.
     net_connections: NetConnections<'gc>,
 
+    local_connections: LocalConnections<'gc>,
+
     /// Dynamic root for allowing handles to GC objects to exist outside of the GC.
     dynamic_root: DynamicRootSet<'gc>,
 }
@@ -202,6 +205,7 @@ impl<'gc> GcRootData<'gc> {
         &mut StreamManager<'gc>,
         &mut Sockets<'gc>,
         &mut NetConnections<'gc>,
+        &mut LocalConnections<'gc>,
         DynamicRootSet<'gc>,
     ) {
         (
@@ -223,6 +227,7 @@ impl<'gc> GcRootData<'gc> {
             &mut self.stream_manager,
             &mut self.sockets,
             &mut self.net_connections,
+            &mut self.local_connections,
             self.dynamic_root,
         )
     }
@@ -1910,6 +1915,7 @@ impl Player {
                 stream_manager,
                 sockets,
                 net_connections,
+                local_connections,
                 dynamic_root,
             ) = root_data.update_context_params();
 
@@ -1963,6 +1969,7 @@ impl Player {
                 stream_manager,
                 sockets,
                 net_connections,
+                local_connections,
                 dynamic_root,
             };
 
@@ -2478,6 +2485,7 @@ impl PlayerBuilder {
                     stream_manager: StreamManager::new(),
                     sockets: Sockets::empty(),
                     net_connections: NetConnections::default(),
+                    local_connections: LocalConnections::empty(),
                     dynamic_root,
                 },
             ),
