@@ -2342,9 +2342,9 @@ impl<'gc> Loader<'gc> {
 
                 match dialog_result {
                     Ok(dialog_result) => {
-                        if let FileDialogResult::Selection(dialog_result) = dialog_result {
+                        if let FileDialogResult::Selection(file_selection_group) = dialog_result {
                             // File selections *must* have at least one file
-                            let file_selection = dialog_result.first_file();
+                            let file_selection = file_selection_group.first_file();
 
                             file_ref.init_from_dialog_result(&mut activation, file_selection);
                             as_broadcaster::broadcast_internal(
@@ -2425,9 +2425,10 @@ impl<'gc> Loader<'gc> {
 
                 match dialog_result {
                     Ok(dialog_result) => {
-                        if let FileDialogResult::Selection(mut dialog_result) = dialog_result {
+                        if let FileDialogResult::Selection(mut file_selection_group) = dialog_result
+                        {
                             // File selections *must* have at least one file
-                            let file_selection = dialog_result.first_file_mut();
+                            let file_selection = file_selection_group.first_file_mut();
 
                             // onSelect and onOpen should be called before the download begins
                             // We simulate this by using the initial dialog result
@@ -2786,9 +2787,10 @@ impl<'gc> Loader<'gc> {
                     Ok(dialog_result) => match dialog_result {
                         FileDialogResult::Selection(selection) => {
                             let mut values = Vec::with_capacity(selection.file_count().into());
-                            for ii in 0..(selection.file_count().into()) {
-                                let file = selection.file(ii).unwrap();
 
+                            for file in
+                                (0..selection.file_count().into()).filter_map(|i| selection.file(i))
+                            {
                                 let proto = activation.context.avm1.prototypes().file_reference;
                                 let fr = proto
                                     .construct(&mut activation, &[])?

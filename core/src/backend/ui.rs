@@ -380,21 +380,21 @@ impl Default for NullUiBackend {
     }
 }
 
-pub struct NullFileDialogResult {}
+pub struct NullFileSelection {}
 
-impl NullFileDialogResult {
+impl NullFileSelection {
     pub fn new() -> Self {
         Self {}
     }
 }
 
-impl Default for NullFileDialogResult {
+impl Default for NullFileSelection {
     fn default() -> Self {
-        NullFileDialogResult::new()
+        NullFileSelection::new()
     }
 }
 
-impl FileSelection for NullFileDialogResult {
+impl FileSelection for NullFileSelection {
     fn creation_time(&self) -> Option<DateTime<Utc>> {
         None
     }

@@ -109,7 +109,7 @@ impl UiBackend for TestUiBackend {
     fn display_file_open_dialog(
         &mut self,
         filters: Vec<FileFilter>,
-        multiples_files: bool,
+        multiple_files: bool,
     ) -> Option<DialogResultFuture> {
         Some(Box::pin(async move {
             // If filters has the magic debug-select-success filter, then return a fake file for testing
@@ -118,7 +118,7 @@ impl UiBackend for TestUiBackend {
                 .iter()
                 .any(|f| f.description == "debug-select-success")
             {
-                let files: Vec<Box<dyn FileSelection>> = if multiples_files {
+                let files: Vec<Box<dyn FileSelection>> = if multiple_files {
                     vec![
                         Box::new(TestFile::new_success("test.txt".to_string())),
                         Box::new(TestFile::new_success("test2.txt".to_string())),
