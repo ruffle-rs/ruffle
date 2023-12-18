@@ -163,7 +163,20 @@ impl<'gc> Namespace<'gc> {
             }
 
             if is_playerglobals {
-                if !has_version_mark && is_public && is_versioned_url(namespace_name) {
+                if !has_version_mark
+                // NOTE - we deviate from avmplus by only appling VM_INTERNAL to unmarked playerglobal namespaces
+                // that use 'Package', instead of both 'Namespace' and 'Package'. This is because our version
+                // of asc.jar does *not* apply version markers to method definitions in interfaces (unlike
+                // method definitions in normal classes). Interface method definitions in playerglobals always
+                // seem to be emitted with a 'Namespace' namespace, so we can avoid marking them as 'VM_INTERNAL'
+                // by only applying this check to 'Package' namespaces.
+                // If playerglobals ever ends up with initialization code that uses a 'Namespace' namespace,
+                // (e.g. `initproperty QName(Namespace("flash.net"),"DatagramSocket")`), then this would break.
+                // However, it would do immediately during playerglobals loading, so it would be guaranteed
+                // to be caught by our test suite.
+                    && matches!(abc_namespace, AbcNamespace::Package(_))
+                    && is_versioned_url(namespace_name)
+                {
                     api_version = ApiVersion::VM_INTERNAL;
                 }
                 // In avmplus, this conversion is done later in in 'getValidApiVersion'
