@@ -68,6 +68,7 @@ jobs:
           save-if: ${{ github.ref == 'refs/heads/master' }}
 
       - name: Check formatting
+        if: runner.os == 'Linux'
         run: cargo fmt --all -- --check
 
       - name: Check clippy
@@ -81,6 +82,7 @@ jobs:
         uses: EmbarkStudios/cargo-deny-action@v1
 
       - name: Check documentation
+        if: runner.os == 'Linux'
         run: cargo doc --no-deps --all-features
         env:
           RUSTDOCFLAGS: -D warnings
