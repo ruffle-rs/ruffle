@@ -77,6 +77,9 @@
     "action_reload": {
         "message": "Muat ulang untuk menerapkan perubahan"
     },
+    "open_player_page": {
+        "message": "Buka Player SWF"
+    },
     "open_settings_page": {
         "message": "Buka Halaman Pengaturan"
     },
