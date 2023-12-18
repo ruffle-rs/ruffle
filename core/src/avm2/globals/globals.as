@@ -36,6 +36,7 @@ include "flash/utils/ByteArray.as"
 include "flash/utils/Dictionary.as"
 include "flash/desktop/ClipboardFormats.as"
 include "flash/desktop/ClipboardTransferMode.as"
+include "flash/desktop/IFilePromise.as"
 
 include "flash/events/IEventDispatcher.as"
 include "flash/events/EventDispatcher.as"

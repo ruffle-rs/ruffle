@@ -14,7 +14,7 @@
 
 import flash.utils.getDefinitionByName;
 
-const HIDDEN_CLASSES: Array = ["flash.net.DatagramSocket"];
+const HIDDEN_CLASSES: Array = ["flash.net.DatagramSocket", "flash.desktop.IFilePromise"];
 
 for each (var klass in HIDDEN_CLASSES) {
 	try {
