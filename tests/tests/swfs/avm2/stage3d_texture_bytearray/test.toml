@@ -4,7 +4,7 @@ num_frames = 1
 tolerance = 2
 
 [player_options]
-with_renderer = { optional = true, sample_count = 1, exclude_warp = true }
+with_renderer = { optional = true, sample_count = 1 }
 
 [required_features]
 jpegxr = true

@@ -5,4 +5,4 @@ tolerance = 1
 max_outliers = 782
 
 [player_options]
-with_renderer = { optional = true, sample_count = 1, exclude_warp = true }
+with_renderer = { optional = true, sample_count = 1 }
