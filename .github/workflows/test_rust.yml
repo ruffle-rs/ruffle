@@ -85,15 +85,20 @@ jobs:
         env:
           RUSTDOCFLAGS: -D warnings
 
+      - name: Install cargo nextest
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-nextest
+
       - name: Run tests with image tests
         if: runner.os != 'macOS'
-        run: cargo test --all --locked --features imgtests,lzma,jpegxr
+        run: cargo nextest run --workspace --locked --no-fail-fast -j 4 --features imgtests,lzma,jpegxr
         env:
           XDG_RUNTIME_DIR: '' # dummy value, just to silence warnings about it missing
 
       - name: Run tests without image tests
         if: runner.os == 'macOS'
-        run: cargo test --all --locked --features lzma,jpegxr
+        run: cargo nextest run --workspace --locked --no-fail-fast -j 4 --features lzma,jpegxr
         env:
           XDG_RUNTIME_DIR: '' # dummy value, just to silence warnings about it missing
 
