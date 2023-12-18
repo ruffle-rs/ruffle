@@ -5,7 +5,7 @@ tolerance = 2
 max_outliers = 66
 
 [player_options]
-with_renderer = { optional = false, sample_count = 1, exclude_warp = true }
+with_renderer = { optional = false, sample_count = 1 }
 
 [required_features]
 jpegxr = true
