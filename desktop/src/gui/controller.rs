@@ -90,7 +90,6 @@ impl GuiController {
         if let Some(Theme::Light) = window.theme() {
             egui_ctx.set_visuals(egui::Visuals::light());
         }
-        egui_ctx.set_pixels_per_point(window.scale_factor() as f32);
 
         let mut egui_winit = egui_winit::State::new(ViewportId::ROOT, window.as_ref(), None, None);
         egui_winit.set_max_texture_side(descriptors.limits.max_texture_dimension_2d as usize);
