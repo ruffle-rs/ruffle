@@ -177,11 +177,11 @@ struct FontData {
 
     /// The distance from the top of each glyph to the baseline of the font, in
     /// EM-square coordinates.
-    ascent: i16,
+    ascent: i32,
 
     /// The distance from the baseline of the font to the bottom of each glyph,
     /// in EM-square coordinates.
-    descent: i16,
+    descent: i32,
 
     /// The distance between the bottom of any one glyph and the top of
     /// another, in EM-square coordinates.
@@ -206,7 +206,7 @@ impl<'gc> Font<'gc> {
 
         let descriptor = FontDescriptor::from_swf_tag(&tag, encoding);
         let (ascent, descent, leading) = if let Some(layout) = &tag.layout {
-            (layout.ascent as i16, layout.descent as i16, layout.leading)
+            (layout.ascent as i32, layout.descent as i32, layout.leading)
         } else {
             (0, 0, 0)
         };
