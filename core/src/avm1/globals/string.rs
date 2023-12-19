@@ -258,33 +258,42 @@ fn split<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = Value::from(this).coerce_to_string(activation)?;
-    let delimiter = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_string(activation)?;
     let limit = match args.get(1).unwrap_or(&Value::Undefined) {
         Value::Undefined => usize::MAX,
         limit => limit.coerce_to_i32(activation)?.max(0) as usize,
     };
-    if delimiter.is_empty() {
-        // When using an empty delimiter, Str::split adds an extra beginning and trailing item, but Flash does not.
-        // e.g., split("foo", "") returns ["", "f", "o", "o", ""] in Rust but ["f, "o", "o"] in Flash.
-        // Special case this to match Flash's behavior.
-        Ok(ArrayObject::new(
-            activation.context.gc_context,
-            activation.context.avm1.prototypes().array,
-            this.iter().take(limit).map(|c| {
-                AvmString::new(activation.context.gc_context, WString::from_unit(c)).into()
-            }),
-        )
-        .into())
+    if let Some(delimiter) = match args.get(0).unwrap_or(&Value::Undefined) {
+        &Value::Undefined => None,
+        v => Some(v.coerce_to_string(activation)?),
+    } {
+        if delimiter.is_empty() {
+            // When using an empty delimiter, Str::split adds an extra beginning and trailing item,
+            // but Flash does not.
+            // e.g., split("foo", "") returns ["", "f", "o", "o", ""] in Rust but ["f, "o", "o"] in Flash.
+            // Special case this to match Flash's behavior.
+            Ok(ArrayObject::new(
+                activation.context.gc_context,
+                activation.context.avm1.prototypes().array,
+                this.iter().take(limit).map(|c| {
+                    AvmString::new(activation.context.gc_context, WString::from_unit(c)).into()
+                }),
+            )
+            .into())
+        } else {
+            Ok(ArrayObject::new(
+                activation.context.gc_context,
+                activation.context.avm1.prototypes().array,
+                this.split(&delimiter)
+                    .take(limit)
+                    .map(|c| AvmString::new(activation.context.gc_context, c).into()),
+            )
+            .into())
+        }
     } else {
         Ok(ArrayObject::new(
             activation.context.gc_context,
             activation.context.avm1.prototypes().array,
-            this.split(&delimiter)
-                .take(limit)
-                .map(|c| AvmString::new(activation.context.gc_context, c).into()),
+            [this.into()]
         )
         .into())
     }

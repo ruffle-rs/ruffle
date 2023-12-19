@@ -242,8 +242,8 @@ HELLO𝔄hello
 
 // split
 // s.split(",")
-5
-A,,b,c,
+6
+A,,b,undefined0,c,
 // s.split(",", 2)
 2
 A,
@@ -254,20 +254,23 @@ A,
 0
 
 // s.split(",", undefined)
-5
-A,,b,c,
+6
+A,,b,undefined0,c,
 // s.split(",", null)
 0
 
 // s.split("")
-7
-A,,,,,b,,,c,,
+18
+A,,,,,b,,,u,n,d,e,f,i,n,e,d,0,,,c,,
 // s.split(undefined)
 1
-A,,b,c,
+A,,b,undefined0,c,
+// s.split(undefined, 0)
+1
+A,,b,undefined0,c,
 // s.split()
 1
-A,,b,c,
+A,,b,undefined0,c,
 
 // toLowerCase
 // "teST😋".toLowerCase()
