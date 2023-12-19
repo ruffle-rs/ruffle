@@ -139,9 +139,40 @@ fn apply_format<'gc>(
             .get_public_property("fontSize", activation)?
             .coerce_to_number(activation)?;
 
+        let (font, bold, italic) = if let Value::Object(font_description) =
+            element_format.get_public_property("fontDescription", activation)?
+        {
+            (
+                Some(
+                    font_description
+                        .get_public_property("fontName", activation)?
+                        .coerce_to_string(activation)?
+                        .as_wstr()
+                        .into(),
+                ),
+                Some(
+                    &font_description
+                        .get_public_property("fontWeight", activation)?
+                        .coerce_to_string(activation)?
+                        == b"bold",
+                ),
+                Some(
+                    &font_description
+                        .get_public_property("fontPosture", activation)?
+                        .coerce_to_string(activation)?
+                        == b"italic",
+                ),
+            )
+        } else {
+            (None, None, None)
+        };
+
         let format = TextFormat {
             color: Some(swf::Color::from_rgb(color, 0xFF)),
             size: Some(size),
+            font,
+            bold,
+            italic,
             ..TextFormat::default()
         };
 
