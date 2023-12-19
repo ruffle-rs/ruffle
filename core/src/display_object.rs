@@ -1498,6 +1498,9 @@ pub trait TDisplayObject<'gc>:
     fn name(&self) -> AvmString<'gc> {
         self.base().name().unwrap_or_default()
     }
+    fn name_optional(&self) -> Option<AvmString<'gc>> {
+        self.base().name()
+    }
     fn set_name(&self, gc_context: &Mutation<'gc>, name: AvmString<'gc>) {
         self.base_mut(gc_context).set_name(name)
     }
