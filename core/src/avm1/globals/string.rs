@@ -133,8 +133,11 @@ fn char_code_at<'gc>(
         .get(0)
         .unwrap_or(&Value::Undefined)
         .coerce_to_i32(activation)?;
+    let is_swf5 = activation.swf_version() == 5;
     let ret = if i >= 0 {
-        this.get(i as usize).map(f64::from).unwrap_or(f64::NAN)
+        this.get(i as usize)
+            .map(f64::from)
+            .unwrap_or(if is_swf5 { 0.into() } else { f64::NAN })
     } else {
         f64::NAN
     };
