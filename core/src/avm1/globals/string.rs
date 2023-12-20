@@ -262,9 +262,12 @@ fn split<'gc>(
         Value::Undefined => usize::MAX,
         limit => limit.coerce_to_i32(activation)?.max(0) as usize,
     };
+    // Contrary to the docs, in SWFv5 the default delimiter is comma (,)
+    // and the empty string behaves the same as undefined does in later SWF versions.
+    let is_swf5 = activation.swf_version() == 5;
     if let Some(delimiter) = match args.get(0).unwrap_or(&Value::Undefined) {
-        &Value::Undefined => None,
-        v => Some(v.coerce_to_string(activation)?),
+        &Value::Undefined => is_swf5.then_some(",".into()),
+        v => Some(v.coerce_to_string(activation)?).filter(|s| !(is_swf5 && s.is_empty())),
     } {
         if delimiter.is_empty() {
             // When using an empty delimiter, Str::split adds an extra beginning and trailing item,
@@ -293,7 +296,7 @@ fn split<'gc>(
         Ok(ArrayObject::new(
             activation.context.gc_context,
             activation.context.avm1.prototypes().array,
-            [this.into()]
+            [this.into()],
         )
         .into())
     }
