@@ -265,7 +265,7 @@ impl UiBackend for WebUiBackend {
         _name: &str,
         _is_bold: bool,
         _is_italic: bool,
-        _register: &dyn FnMut(FontDefinition),
+        _register: &mut dyn FnMut(FontDefinition),
     ) {
         // Because fonts must be loaded instantly (no async),
         // we actually just provide them all upfront at time of Player creation.
