@@ -96,7 +96,7 @@ pub trait UiBackend: Downcast {
         name: &str,
         is_bold: bool,
         is_italic: bool,
-        register: &dyn FnMut(FontDefinition),
+        register: &mut dyn FnMut(FontDefinition),
     );
 
     /// Displays a file selection dialog, returning None if the dialog cannot be displayed
@@ -278,7 +278,7 @@ impl UiBackend for NullUiBackend {
         _name: &str,
         _is_bold: bool,
         _is_italic: bool,
-        _register: &dyn FnMut(FontDefinition),
+        _register: &mut dyn FnMut(FontDefinition),
     ) {
     }
 

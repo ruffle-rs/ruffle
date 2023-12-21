@@ -490,7 +490,7 @@ impl<'gc> Library<'gc> {
             .insert((name.to_string(), is_bold, is_italic));
         if new_request {
             // First time asking for this font, see if our backend can provide anything relevant
-            ui.load_device_font(name, is_bold, is_italic, &|definition| {
+            ui.load_device_font(name, is_bold, is_italic, &mut |definition| {
                 self.register_device_font(gc_context, renderer, definition)
             });
         }

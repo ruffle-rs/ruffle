@@ -252,7 +252,7 @@ impl UiBackend for DesktopUiBackend {
         _name: &str,
         _is_bold: bool,
         _is_italic: bool,
-        _register: &dyn FnMut(FontDefinition),
+        _register: &mut dyn FnMut(FontDefinition),
     ) {
     }
 
