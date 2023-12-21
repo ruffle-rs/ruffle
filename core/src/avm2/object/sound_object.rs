@@ -37,9 +37,7 @@ pub fn sound_allocator<'gc>(
         SoundObjectData {
             base,
             loading_state: Cell::new(SoundLoadingState::New),
-            sound_data: RefLock::new(SoundData::Loading {
-                queued_plays: Vec::new(),
-            }),
+            sound_data: RefLock::new(SoundData::Empty),
             id3: Lock::new(None),
         },
     ))
@@ -82,6 +80,7 @@ pub struct SoundObjectData<'gc> {
 #[derive(Collect)]
 #[collect(no_drop)]
 pub enum SoundData<'gc> {
+    Empty,
     Loading {
         queued_plays: Vec<QueuedPlay<'gc>>,
     },
@@ -113,8 +112,8 @@ impl<'gc> SoundObject<'gc> {
     pub fn sound_handle(self) -> Option<SoundHandle> {
         let sound_data = self.0.sound_data.borrow();
         match &*sound_data {
-            SoundData::Loading { .. } => None,
             SoundData::Loaded { sound } => Some(*sound),
+            _ => None,
         }
     }
 
@@ -139,6 +138,11 @@ impl<'gc> SoundObject<'gc> {
         )
         .borrow_mut();
         match &mut *sound_data {
+            SoundData::Empty { .. } => {
+                // We don't know the length yet, so return the `SoundChannel`
+                sound_data = SoundData::Generated;
+                Ok(true)
+            }
             SoundData::Loading { queued_plays } => {
                 // Avoid to enqueue more unloaded sounds than the maximum allowed to be played
                 if queued_plays.len() >= AudioManager::MAX_SOUNDS {
@@ -153,6 +157,25 @@ impl<'gc> SoundObject<'gc> {
         }
     }
 
+    pub fn load_called(self, context: &mut UpdateContext<'gc>) {
+        let mut sound_data = unlock!(
+            Gc::write(context.gc_context, self.0),
+            SoundObjectData,
+            sound_data
+        )
+        .borrow_mut();
+        match &*sound_data {
+            SoundData::Empty => {
+                *sound_data = SoundData::Loading {
+                    queued_plays: Vec::new(),
+                };
+            }
+            _ => {
+                panic!("Tried to load sound into non-empty sound");
+            }
+        }
+    }
+
     pub fn set_sound(
         self,
         context: &mut UpdateContext<'gc>,
@@ -162,6 +185,9 @@ impl<'gc> SoundObject<'gc> {
             unlock!(Gc::write(context.gc(), self.0), SoundObjectData, sound_data).borrow_mut();
         let mut activation = Activation::from_nothing(context);
         match &mut *sound_data {
+            SoundData::Empty => {
+                *sound_data = SoundData::Loaded { sound };
+            }
             SoundData::Loading { queued_plays } => {
                 for queued in std::mem::take(queued_plays) {
                     play_queued(queued, sound, &mut activation)?;
