@@ -4538,6 +4538,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "ruffle_video_external"
+version = "0.1.0"
+dependencies = [
+ "ruffle_render",
+ "ruffle_video",
+ "ruffle_video_software",
+ "slotmap",
+ "swf",
+]
+
+[[package]]
 name = "ruffle_video_software"
 version = "0.1.0"
 dependencies = [
