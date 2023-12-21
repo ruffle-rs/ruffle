@@ -259,6 +259,9 @@ pub fn load<'gc>(
         avm2_stub_method!(activation, "flash.media.Sound", "load", "with context");
     }
 
+    let s = this.as_sound_object().expect("Not a sound object");
+    s.load_called(activation.context);
+
     let future = activation.context.load_manager.load_sound_avm2(
         activation.context.player.clone(),
         this_object,
