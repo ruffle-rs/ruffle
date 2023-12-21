@@ -26,6 +26,7 @@ members = [
 
     "video",
     "video/software",
+    "video/external",
 
     "tests",
     "tests/input-format",
