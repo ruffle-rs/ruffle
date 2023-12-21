@@ -478,10 +478,10 @@ impl<'gc> Library<'gc> {
         renderer: &mut dyn RenderBackend,
         gc_context: &Mutation<'gc>,
     ) -> Option<Font<'gc>> {
-        // If we have the font already, use that
+        // If we have the exact matching font already, use that
         // TODO: We should instead ask each font if it matches a given name. Partial matches are allowed, and fonts may have any amount of names.
-        if let Some(font) = self.device_fonts.find(name, is_bold, is_italic) {
-            return Some(font);
+        if let Some(font) = self.device_fonts.get(name, is_bold, is_italic) {
+            return Some(*font);
         }
 
         // We don't have this font already. Did we ask for it before?
@@ -497,14 +497,21 @@ impl<'gc> Library<'gc> {
 
         // Check again. A backend may or may not have provided some new fonts,
         // and they may or may not be relevant to the one we're asking for.
-        match self.device_fonts.find(name, is_bold, is_italic) {
+        match self.device_fonts.get(name, is_bold, is_italic) {
             None => {
                 if new_request {
-                    warn!("Unknown device font \"{name}\"");
+                    warn!("Unknown device font \"{name}\" (bold: {is_bold} italic: {is_italic})");
                 }
+
+                // The default fallback:
+                // Try to find an existing font to re-use instead of giving up.
+                if let Some(font) = self.device_fonts.find(name, is_bold, is_italic) {
+                    return Some(font);
+                }
+
                 None
             }
-            Some(font) => Some(font),
+            Some(font) => Some(*font),
         }
     }
 
@@ -583,33 +590,32 @@ impl<'gc> FontMap<'gc> {
         }
     }
 
+    pub fn get(&self, name: &str, is_bold: bool, is_italic: bool) -> Option<&Font<'gc>> {
+        self.0
+            .get(&FontDescriptor::from_parts(name, is_bold, is_italic))
+    }
+
     pub fn find(&self, name: &str, is_bold: bool, is_italic: bool) -> Option<Font<'gc>> {
         // The order here is specific, and tested in `tests/swfs/fonts/embed_matching/fallback_preferences`
 
         // Exact match
-        if let Some(font) = self
-            .0
-            .get(&FontDescriptor::from_parts(name, is_bold, is_italic))
-        {
+        if let Some(font) = self.get(name, is_bold, is_italic) {
             return Some(*font);
         }
 
         if is_italic ^ is_bold {
             // If one is set (but not both), then try upgrading to bold italic...
-            if let Some(font) = self.0.get(&FontDescriptor::from_parts(name, true, true)) {
+            if let Some(font) = self.get(name, true, true) {
                 return Some(*font);
             }
 
             // and then downgrading to regular
-            if let Some(font) = self.0.get(&FontDescriptor::from_parts(name, false, false)) {
+            if let Some(font) = self.get(name, false, false) {
                 return Some(*font);
             }
 
             // and then finally whichever one we don't have set
-            if let Some(font) = self
-                .0
-                .get(&FontDescriptor::from_parts(name, !is_bold, !is_italic))
-            {
+            if let Some(font) = self.get(name, !is_bold, !is_italic) {
                 return Some(*font);
             }
         } else {
@@ -617,24 +623,24 @@ impl<'gc> FontMap<'gc> {
 
             if is_italic && is_bold {
                 // Do we have regular? (unless we already looked for it)
-                if let Some(font) = self.0.get(&FontDescriptor::from_parts(name, false, false)) {
+                if let Some(font) = self.get(name, false, false) {
                     return Some(*font);
                 }
             }
 
             // Do we have bold?
-            if let Some(font) = self.0.get(&FontDescriptor::from_parts(name, true, false)) {
+            if let Some(font) = self.get(name, true, false) {
                 return Some(*font);
             }
 
             // Do we have italic?
-            if let Some(font) = self.0.get(&FontDescriptor::from_parts(name, false, true)) {
+            if let Some(font) = self.get(name, false, true) {
                 return Some(*font);
             }
 
             if !is_bold && !is_italic {
                 // Do we have bold italic? (unless we already looked for it)
-                if let Some(font) = self.0.get(&FontDescriptor::from_parts(name, true, true)) {
+                if let Some(font) = self.get(name, true, true) {
                     return Some(*font);
                 }
             }
