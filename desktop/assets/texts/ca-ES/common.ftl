@@ -1,0 +1,2 @@
+start = Inicia
+browse = Navega

@@ -9,10 +9,10 @@ report-bug = Rapportera Bugg
 update-ruffle = Uppdatera Ruffle
 ruffle-demo = Webbdemo
 ruffle-desktop = Skrivbordsprogram
-ruffle-wiki = Se Rufflewiki
+ruffle-wiki = Se Ruffle-wiki
 enable-hardware-acceleration = Det verkar som att hårdvaruacceleration inte är på. Ruffle kan fortfarande fungera men kan vara orimligt långsam. Du kan ta reda på hur man sätter på hårdvaruacceleration genom att följa denna länk.
 view-error-details = Visa Felinformation
-open-in-new-tab = Öppna i ny flik
+open-in-new-tab = Öppna i en ny flik
 click-to-unmute = Klicka för ljud
 error-file-protocol =
     Det verkar som att du kör Ruffle på "fil:"-protokollet.
@@ -58,7 +58,7 @@ error-wasm-disabled-on-edge =
 error-javascript-conflict =
     Ruffle har stött på ett stort fel under initialiseringen.
     Det verkar som att den här sidan använder JavaScript-kod som stör Ruffle.
-    Om du är serveradministratören bjuder vi in dig att försöka ladda filen på en blank sida.
+    Om du är serveradministratören bjuder vi in dig att försöka köra filen på en blank sida.
 error-javascript-conflict-outdated = Du kan också försöka ladda upp en nyare version av Ruffle, vilket kan kringgå problemet (nuvarande version är utdaterad: { $buildDate }).
 error-csp-conflict =
     Ruffle har stött på ett stort fel under initialiseringen.
