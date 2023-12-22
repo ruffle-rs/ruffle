@@ -63,7 +63,7 @@
         "message": "Ruffle är redo att köra Flashinnehållen du begär."
     },
     "status_result_optout": {
-        "message": "Ruffle kan ej laddas för att den nuvarande hemsidan har markerat sig själv som inkompatibel."
+        "message": "Ruffle kan ej köras för att den nuvarande hemsidan har markerat sig själv som inkompatibel."
     },
     "status_result_disabled": {
         "message": "Ruffle är inaktiverad."
@@ -72,7 +72,7 @@
         "message": "Ett fel inträffade medan sidans Ruffle-instans efterfrågades."
     },
     "status_result_protected": {
-        "message": "Ruffle kan ej laddas i skyddade webbläsarsidor."
+        "message": "Ruffle kan ej köras i skyddade webbläsarsidor."
     },
     "action_reload": {
         "message": "Ladda om Fliken för att Applicera Ändringar"
