@@ -44,7 +44,7 @@ impl<'gc, T: ?Sized + 'gc> GcWeakCell<'gc, T> {
 
     #[inline]
     pub fn ptr_eq(this: GcWeakCell<'gc, T>, other: GcWeakCell<'gc, T>) -> bool {
-        this.as_ptr() == other.as_ptr()
+        GcWeak::ptr_eq(this.0, other.0)
     }
 
     #[inline]

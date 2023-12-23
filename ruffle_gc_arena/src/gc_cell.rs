@@ -50,7 +50,7 @@ impl<'gc, T: ?Sized + 'gc> GcCell<'gc, T> {
 
     #[inline]
     pub fn ptr_eq(this: GcCell<'gc, T>, other: GcCell<'gc, T>) -> bool {
-        this.as_ptr() == other.as_ptr()
+        Gc::ptr_eq(this.0, other.0)
     }
 
     #[inline]
