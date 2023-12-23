@@ -28,7 +28,7 @@ impl<'gc> Metadata<'gc> {
     pub fn from_abc_index(
         activation: &mut Activation<'_, 'gc>,
         translation_unit: TranslationUnit<'gc>,
-        metadata: &Vec<AbcIndex<AbcMetadata>>,
+        metadata: &[AbcIndex<AbcMetadata>],
     ) -> Result<Option<Box<[Metadata<'gc>]>>, Error<'gc>> {
         if metadata.is_empty() {
             return Ok(None);
