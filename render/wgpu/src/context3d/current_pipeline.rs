@@ -16,6 +16,7 @@ use std::hash::{Hash, Hasher};
 use std::num::NonZeroU64;
 use std::rc::Rc;
 
+use crate::bitmaps::WgpuSamplerConfig;
 use crate::context3d::shader_pair::ShaderCompileData;
 use crate::context3d::VertexBufferWrapper;
 use crate::descriptors::Descriptors;
@@ -30,17 +31,6 @@ const VERTEX_SHADER_UNIFORMS_BUFFER_SIZE: u64 =
     AGAL_NUM_VERTEX_CONSTANTS * AGAL_FLOATS_PER_REGISTER * std::mem::size_of::<f32>() as u64;
 const FRAGMENT_SHADER_UNIFORMS_BUFFER_SIZE: u64 =
     AGAL_NUM_FRAGMENT_CONSTANTS * AGAL_FLOATS_PER_REGISTER * std::mem::size_of::<f32>() as u64;
-
-pub(super) const SAMPLER_REPEAT_LINEAR: u32 = 2;
-pub(super) const SAMPLER_REPEAT_NEAREST: u32 = 3;
-pub(super) const SAMPLER_CLAMP_LINEAR: u32 = 4;
-pub(super) const SAMPLER_CLAMP_NEAREST: u32 = 5;
-pub(super) const SAMPLER_CLAMP_U_REPEAT_V_LINEAR: u32 = 6;
-pub(super) const SAMPLER_CLAMP_U_REPEAT_V_NEAREST: u32 = 7;
-pub(super) const SAMPLER_REPEAT_U_CLAMP_V_LINEAR: u32 = 8;
-pub(super) const SAMPLER_REPEAT_U_CLAMP_V_NEAREST: u32 = 9;
-
-pub(super) const TEXTURE_START_BIND_INDEX: u32 = 10;
 
 // The flash Context3D API is similar to OpenGL - it has many methods
 // which modify the current state (`setVertexBufferAt`, `setCulling`, etc.)
@@ -257,6 +247,62 @@ impl CurrentPipeline {
 
         let bind_group_label = create_debug_label!("Bind group");
 
+        let wgpu_samplers =
+            self.sampler_configs
+                .map(|sampler| match (sampler.wrapping, sampler.filter) {
+                    (Wrapping::Clamp, Filter::Linear) => &descriptors.bitmap_samplers.clamp_linear,
+                    (Wrapping::Clamp, Filter::Nearest) => {
+                        &descriptors.bitmap_samplers.clamp_nearest
+                    }
+                    (Wrapping::Repeat, Filter::Linear) => {
+                        &descriptors.bitmap_samplers.repeat_linear
+                    }
+                    (Wrapping::Repeat, Filter::Nearest) => {
+                        &descriptors.bitmap_samplers.repeat_nearest
+                    }
+                    (Wrapping::ClampURepeatV, Filter::Linear) => {
+                        &descriptors.bitmap_samplers.clamp_u_repeat_v_linear
+                    }
+                    (Wrapping::ClampURepeatV, Filter::Nearest) => {
+                        &descriptors.bitmap_samplers.clamp_u_repeat_v_nearest
+                    }
+                    (Wrapping::RepeatUClampV, Filter::Linear) => {
+                        &descriptors.bitmap_samplers.repeat_u_clamp_v_linear
+                    }
+                    (Wrapping::RepeatUClampV, Filter::Nearest) => {
+                        &descriptors.bitmap_samplers.repeat_u_clamp_v_nearest
+                    }
+                    (
+                        wrapping,
+                        Filter::Anisotropic2x
+                        | Filter::Anisotropic4x
+                        | Filter::Anisotropic8x
+                        | Filter::Anisotropic16x,
+                    ) => {
+                        &descriptors.bitmap_samplers.anisotropic[&WgpuSamplerConfig {
+                            anisotropy_clamp: match sampler.filter {
+                                Filter::Anisotropic2x => 2,
+                                Filter::Anisotropic4x => 4,
+                                Filter::Anisotropic8x => 8,
+                                Filter::Anisotropic16x => 16,
+                                _ => unreachable!(),
+                            },
+                            address_mode_u: match wrapping {
+                                Wrapping::Clamp => wgpu::AddressMode::ClampToEdge,
+                                Wrapping::Repeat => wgpu::AddressMode::Repeat,
+                                Wrapping::ClampURepeatV => wgpu::AddressMode::ClampToEdge,
+                                Wrapping::RepeatUClampV => wgpu::AddressMode::Repeat,
+                            },
+                            address_mode_v: match wrapping {
+                                Wrapping::Clamp => wgpu::AddressMode::ClampToEdge,
+                                Wrapping::Repeat => wgpu::AddressMode::Repeat,
+                                Wrapping::ClampURepeatV => wgpu::AddressMode::Repeat,
+                                Wrapping::RepeatUClampV => wgpu::AddressMode::ClampToEdge,
+                            },
+                        }]
+                    }
+                });
+
         let mut bind_group_entries = vec![
             BindGroupEntry {
                 binding: 0,
@@ -274,53 +320,17 @@ impl CurrentPipeline {
                     size: Some(NonZeroU64::new(FRAGMENT_SHADER_UNIFORMS_BUFFER_SIZE).unwrap()),
                 }),
             },
-            BindGroupEntry {
-                binding: SAMPLER_REPEAT_LINEAR,
-                resource: BindingResource::Sampler(&descriptors.bitmap_samplers.repeat_linear),
-            },
-            BindGroupEntry {
-                binding: SAMPLER_REPEAT_NEAREST,
-                resource: BindingResource::Sampler(&descriptors.bitmap_samplers.repeat_nearest),
-            },
-            BindGroupEntry {
-                binding: SAMPLER_CLAMP_LINEAR,
-                resource: BindingResource::Sampler(&descriptors.bitmap_samplers.clamp_linear),
-            },
-            BindGroupEntry {
-                binding: SAMPLER_CLAMP_NEAREST,
-                resource: BindingResource::Sampler(&descriptors.bitmap_samplers.clamp_nearest),
-            },
-            BindGroupEntry {
-                binding: SAMPLER_CLAMP_U_REPEAT_V_LINEAR,
-                resource: BindingResource::Sampler(
-                    &descriptors.bitmap_samplers.clamp_u_repeat_v_linear,
-                ),
-            },
-            BindGroupEntry {
-                binding: SAMPLER_CLAMP_U_REPEAT_V_NEAREST,
-                resource: BindingResource::Sampler(
-                    &descriptors.bitmap_samplers.clamp_u_repeat_v_nearest,
-                ),
-            },
-            BindGroupEntry {
-                binding: SAMPLER_REPEAT_U_CLAMP_V_LINEAR,
-                resource: BindingResource::Sampler(
-                    &descriptors.bitmap_samplers.repeat_u_clamp_v_linear,
-                ),
-            },
-            BindGroupEntry {
-                binding: SAMPLER_REPEAT_U_CLAMP_V_NEAREST,
-                resource: BindingResource::Sampler(
-                    &descriptors.bitmap_samplers.repeat_u_clamp_v_nearest,
-                ),
-            },
         ];
 
         for (i, bound_texture) in self.bound_textures.iter().enumerate() {
             if let Some(bound_texture) = bound_texture {
                 bind_group_entries.push(BindGroupEntry {
-                    binding: TEXTURE_START_BIND_INDEX + i as u32,
+                    binding: naga_agal::TEXTURE_START_BIND_INDEX + i as u32,
                     resource: BindingResource::TextureView(&bound_texture.view),
+                });
+                bind_group_entries.push(BindGroupEntry {
+                    binding: naga_agal::TEXTURE_SAMPLER_START_BIND_INDEX + i as u32,
+                    resource: BindingResource::Sampler(wgpu_samplers[i]),
                 });
             }
         }
@@ -562,7 +572,10 @@ impl CurrentPipeline {
             filter: match filter {
                 Context3DTextureFilter::Linear => Filter::Linear,
                 Context3DTextureFilter::Nearest => Filter::Nearest,
-                _ => unimplemented!(),
+                Context3DTextureFilter::Anisotropic2X => Filter::Anisotropic2x,
+                Context3DTextureFilter::Anisotropic4X => Filter::Anisotropic4x,
+                Context3DTextureFilter::Anisotropic8X => Filter::Anisotropic8x,
+                Context3DTextureFilter::Anisotropic16X => Filter::Anisotropic16x,
             },
             // FIXME - implement this
             mipmap: naga_agal::Mipmap::Disable,

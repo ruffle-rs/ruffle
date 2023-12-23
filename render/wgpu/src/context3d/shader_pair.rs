@@ -8,15 +8,7 @@ use std::{
 };
 use wgpu::SamplerBindingType;
 
-use super::{
-    current_pipeline::{
-        BoundTextureData, SAMPLER_CLAMP_LINEAR, SAMPLER_CLAMP_NEAREST,
-        SAMPLER_CLAMP_U_REPEAT_V_LINEAR, SAMPLER_CLAMP_U_REPEAT_V_NEAREST, SAMPLER_REPEAT_LINEAR,
-        SAMPLER_REPEAT_NEAREST, SAMPLER_REPEAT_U_CLAMP_V_LINEAR, SAMPLER_REPEAT_U_CLAMP_V_NEAREST,
-        TEXTURE_START_BIND_INDEX,
-    },
-    MAX_VERTEX_ATTRIBUTES,
-};
+use super::{current_pipeline::BoundTextureData, MAX_VERTEX_ATTRIBUTES};
 
 use crate::descriptors::Descriptors;
 
@@ -116,57 +108,6 @@ impl ShaderPairAgal {
                         },
                         count: None,
                     },
-                    // One sampler per filter/wrapping combination - see BitmapFilters
-                    // An AGAL shader can use any of these samplers, so
-                    // we need to bind them all.
-                    wgpu::BindGroupLayoutEntry {
-                        binding: SAMPLER_REPEAT_LINEAR,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: SAMPLER_REPEAT_NEAREST,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: SAMPLER_CLAMP_LINEAR,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: SAMPLER_CLAMP_NEAREST,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: SAMPLER_CLAMP_U_REPEAT_V_LINEAR,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: SAMPLER_CLAMP_U_REPEAT_V_NEAREST,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: SAMPLER_REPEAT_U_CLAMP_V_LINEAR,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: SAMPLER_REPEAT_U_CLAMP_V_NEAREST,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
-                        count: None,
-                    },
                 ];
 
                 for (i, bound_texture) in data.bound_textures.iter().enumerate() {
@@ -177,13 +118,19 @@ impl ShaderPairAgal {
                             wgpu::TextureViewDimension::D2
                         };
                         layout_entries.push(wgpu::BindGroupLayoutEntry {
-                            binding: TEXTURE_START_BIND_INDEX + i as u32,
+                            binding: naga_agal::TEXTURE_START_BIND_INDEX + i as u32,
                             visibility: wgpu::ShaderStages::FRAGMENT,
                             ty: wgpu::BindingType::Texture {
                                 sample_type: wgpu::TextureSampleType::Float { filterable: true },
                                 view_dimension: dimension,
                                 multisampled: false,
                             },
+                            count: None,
+                        });
+                        layout_entries.push(wgpu::BindGroupLayoutEntry {
+                            binding: naga_agal::TEXTURE_SAMPLER_START_BIND_INDEX + i as u32,
+                            visibility: wgpu::ShaderStages::FRAGMENT,
+                            ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
                             count: None,
                         });
                     }

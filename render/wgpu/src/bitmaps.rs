@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 #[derive(Debug)]
 pub struct BitmapSamplers {
     pub repeat_linear: wgpu::Sampler,
@@ -8,6 +10,14 @@ pub struct BitmapSamplers {
     pub clamp_u_repeat_v_nearest: wgpu::Sampler,
     pub repeat_u_clamp_v_linear: wgpu::Sampler,
     pub repeat_u_clamp_v_nearest: wgpu::Sampler,
+    pub anisotropic: HashMap<WgpuSamplerConfig, wgpu::Sampler>,
+}
+
+#[derive(Debug, Hash, PartialEq, Eq)]
+pub struct WgpuSamplerConfig {
+    pub anisotropy_clamp: u8,
+    pub address_mode_u: wgpu::AddressMode,
+    pub address_mode_v: wgpu::AddressMode,
 }
 
 fn create_sampler(
@@ -98,6 +108,34 @@ impl BitmapSamplers {
             create_debug_label!("Repeat U, Clamp V & Nearest sampler"),
         );
 
+        let mut anisotropic = HashMap::new();
+        for anisotropy in [2, 4, 8, 16] {
+            for u_mode in [wgpu::AddressMode::ClampToEdge, wgpu::AddressMode::Repeat] {
+                for v_mode in [wgpu::AddressMode::ClampToEdge, wgpu::AddressMode::Repeat] {
+                    let sampler = create_sampler(
+                        device,
+                        u_mode,
+                        v_mode,
+                        wgpu::FilterMode::Linear,
+                        create_debug_label!(
+                            "Anisotropic {}x, u_mode={:?}, v_mode={:?} sampler",
+                            anisotropy,
+                            u_mode,
+                            v_mode
+                        ),
+                    );
+                    anisotropic.insert(
+                        WgpuSamplerConfig {
+                            anisotropy_clamp: anisotropy,
+                            address_mode_u: u_mode,
+                            address_mode_v: v_mode,
+                        },
+                        sampler,
+                    );
+                }
+            }
+        }
+
         Self {
             repeat_linear,
             repeat_nearest,
@@ -107,6 +145,7 @@ impl BitmapSamplers {
             clamp_u_repeat_v_nearest,
             repeat_u_clamp_v_linear,
             repeat_u_clamp_v_nearest,
+            anisotropic,
         }
     }
 
