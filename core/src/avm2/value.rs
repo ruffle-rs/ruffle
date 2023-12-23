@@ -755,7 +755,15 @@ impl<'gc> Value<'gc> {
     /// Numerical conversions occur according to ECMA-262 3rd Edition's
     /// ToUint32 algorithm which appears to match AVM2.
     pub fn coerce_to_u32(&self, activation: &mut Activation<'_, 'gc>) -> Result<u32, Error<'gc>> {
-        Ok(f64_to_wrapping_u32(self.coerce_to_number(activation)?))
+        Ok(match self {
+            Value::Integer(i) => *i as u32,
+            Value::Number(n) => f64_to_wrapping_u32(*n),
+            Value::Bool(b) => *b as u32,
+            Value::Undefined | Value::Null => 0,
+            Value::String(_) | Value::Object(_) => {
+                f64_to_wrapping_u32(self.coerce_to_number(activation)?)
+            }
+        })
     }
 
     /// Coerce the value to a 32-bit signed integer.
@@ -766,7 +774,15 @@ impl<'gc> Value<'gc> {
     /// Numerical conversions occur according to ECMA-262 3rd Edition's
     /// ToInt32 algorithm which appears to match AVM2.
     pub fn coerce_to_i32(&self, activation: &mut Activation<'_, 'gc>) -> Result<i32, Error<'gc>> {
-        Ok(f64_to_wrapping_i32(self.coerce_to_number(activation)?))
+        Ok(match self {
+            Value::Integer(i) => *i,
+            Value::Number(n) => f64_to_wrapping_i32(*n),
+            Value::Bool(b) => *b as i32,
+            Value::Undefined | Value::Null => 0,
+            Value::String(_) | Value::Object(_) => {
+                f64_to_wrapping_i32(self.coerce_to_number(activation)?)
+            }
+        })
     }
 
     /// Minimum number of digits after which numbers are formatted as
