@@ -353,12 +353,27 @@ impl<'gc> Context3DObject<'gc> {
     ) {
         let source = source.read();
 
-        assert_eq!(source.width(), dest.width(), "Mismatched width");
-        assert_eq!(source.height(), dest.height(), "Mismatched height");
+        // Note - Flash appears to allow a source that's larger than the destination.
+        // Let's leave in this assertion to see if there any real SWFS relying on this
+        // behavior.
+        assert!(
+            source.width() <= dest.width(),
+            "Source width {:?} larger than dest width {:?}",
+            source.width(),
+            dest.width()
+        );
+        assert!(
+            source.height() <= dest.height(),
+            "Source height {:?} larger than dest height {:?}",
+            source.height(),
+            dest.height()
+        );
 
         self.with_context_3d(|ctx| {
             ctx.process_command(Context3DCommand::CopyBitmapToTexture {
                 source: source.pixels_rgba(),
+                source_width: source.width(),
+                source_height: source.height(),
                 dest,
                 layer,
             })
@@ -375,6 +390,8 @@ impl<'gc> Context3DObject<'gc> {
         self.with_context_3d(|ctx| {
             ctx.process_command(Context3DCommand::CopyBitmapToTexture {
                 source,
+                source_width: dest.width(),
+                source_height: dest.height(),
                 dest,
                 layer,
             })

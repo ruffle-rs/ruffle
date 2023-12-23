@@ -1,7 +1,6 @@
 use ruffle_render::backend::{
     Context3D, Context3DBlendFactor, Context3DCommand, Context3DCompareMode, Context3DProfile,
-    Context3DTextureFormat, Context3DVertexBufferFormat, IndexBuffer, ProgramType, Texture as _,
-    VertexBuffer,
+    Context3DTextureFormat, Context3DVertexBufferFormat, IndexBuffer, ProgramType, VertexBuffer,
 };
 use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::error::Error;
@@ -1006,6 +1005,8 @@ impl Context3D for WgpuContext3D {
             }
             Context3DCommand::CopyBitmapToTexture {
                 mut source,
+                source_width,
+                source_height,
                 dest,
                 layer,
             } => {
@@ -1018,16 +1019,16 @@ impl Context3D for WgpuContext3D {
                 // `buffer_command_encoder` to the device.
                 let dest_format = dest.texture.format();
                 let mut bytes_per_row = dest_format.block_copy_size(None).unwrap()
-                    * (dest.width() / dest_format.block_dimensions().0);
+                    * (source_width / dest_format.block_dimensions().0);
 
-                let rows_per_image = dest.height() / dest_format.block_dimensions().1;
+                let rows_per_image = source_height / dest_format.block_dimensions().1;
 
                 // Wgpu requires us to pad the image rows to a multiple of COPY_BYTES_PER_ROW_ALIGNMENT
-                if (dest.width() * 4) % COPY_BYTES_PER_ROW_ALIGNMENT != 0
+                if (source_width * 4) % COPY_BYTES_PER_ROW_ALIGNMENT != 0
                     && matches!(dest.texture.format(), wgpu::TextureFormat::Rgba8Unorm)
                 {
                     source = source
-                        .chunks_exact(dest.width() as usize * 4)
+                        .chunks_exact(source_width as usize * 4)
                         .flat_map(|row| {
                             let padding_len = COPY_BYTES_PER_ROW_ALIGNMENT as usize
                                 - (row.len() % COPY_BYTES_PER_ROW_ALIGNMENT as usize);
@@ -1036,7 +1037,7 @@ impl Context3D for WgpuContext3D {
                         })
                         .collect();
 
-                    bytes_per_row = source.len() as u32 / dest.height();
+                    bytes_per_row = source.len() as u32 / source_height;
                 }
 
                 let texture_buffer = self.descriptors.device.create_buffer(&BufferDescriptor {
@@ -1073,8 +1074,8 @@ impl Context3D for WgpuContext3D {
                     },
                     // The copy size uses the original image, with the original row size
                     wgpu::Extent3d {
-                        width: dest.width(),
-                        height: dest.height(),
+                        width: source_width,
+                        height: source_height,
                         depth_or_array_layers: 1,
                     },
                 );
