@@ -137,7 +137,7 @@ fn take_screenshot(
 
         player.lock().unwrap().run_frame();
         if i >= skipframes {
-            match catch_unwind(|| {
+            let image = || {
                 player.lock().unwrap().render();
                 let mut player = player.lock().unwrap();
                 let renderer = player
@@ -145,7 +145,8 @@ fn take_screenshot(
                     .downcast_mut::<WgpuRenderBackend<TextureTarget>>()
                     .unwrap();
                 renderer.capture_frame()
-            }) {
+            };
+            match catch_unwind(image) {
                 Ok(Some(image)) => result.push(image),
                 Ok(None) => return Err(anyhow!("Unable to capture frame {} of {:?}", i, swf_path)),
                 Err(e) => {
