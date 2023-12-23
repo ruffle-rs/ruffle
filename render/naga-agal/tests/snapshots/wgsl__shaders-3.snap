@@ -1,6 +1,5 @@
 ---
 source: render/naga-agal/tests/wgsl.rs
-assertion_line: 74
 expression: output
 ---
 struct FragmentOutput {
@@ -9,29 +8,13 @@ struct FragmentOutput {
 
 @group(0) @binding(1) 
 var<uniform> constant_registers: array<vec4<f32>, 28>;
-@group(0) @binding(2) 
-var sampler0_: sampler;
-@group(0) @binding(3) 
-var sampler1_: sampler;
-@group(0) @binding(4) 
-var sampler2_: sampler;
-@group(0) @binding(5) 
-var sampler3_: sampler;
-@group(0) @binding(6) 
-var sampler4_: sampler;
-@group(0) @binding(7) 
-var sampler5_: sampler;
-@group(0) @binding(8) 
-var sampler6_: sampler;
-@group(0) @binding(9) 
-var sampler7_: sampler;
 
 @fragment 
 fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     var dest_temp: vec4<f32>;
 
     dest_temp = param;
-    let _e11: vec4<f32> = dest_temp;
-    return FragmentOutput(_e11);
+    let _e3: vec4<f32> = dest_temp;
+    return FragmentOutput(_e3);
 }
 
