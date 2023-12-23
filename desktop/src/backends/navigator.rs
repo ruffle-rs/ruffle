@@ -203,7 +203,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                     }
                 };
 
-                let body = match std::fs::read(&path).or_else(|e| {
+                let contents = std::fs::read(&path).or_else(|e| {
                     if cfg!(feature = "sandbox") {
                         use rfd::FileDialog;
 
@@ -223,9 +223,17 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                     }
 
                     Err(e)
-                }) {
+                });
+
+                let body = match contents {
                     Ok(body) => body,
-                    Err(e) => return create_specific_fetch_error("Can't open file", response_url.as_str(), e)
+                    Err(e) => {
+                        return create_specific_fetch_error(
+                            "Can't open file",
+                            response_url.as_str(),
+                            e,
+                        )
+                    }
                 };
 
                 Ok(SuccessResponse {
@@ -393,13 +401,12 @@ impl NavigatorBackend for ExternalNavigatorBackend {
 
             let host2 = host.clone();
 
-            let stream = match TcpStream::connect((host, port))
-                .or(async {
-                    Timer::after(timeout).await;
-                    Result::<TcpStream, io::Error>::Err(io::Error::new(ErrorKind::TimedOut, ""))
-                })
-                .await
-            {
+            let timeout = async {
+                Timer::after(timeout).await;
+                Result::<TcpStream, io::Error>::Err(io::Error::new(ErrorKind::TimedOut, ""))
+            };
+
+            let stream = match TcpStream::connect((host, port)).or(timeout).await {
                 Err(e) if e.kind() == ErrorKind::TimedOut => {
                     warn!("Connection to {}:{} timed out", host2, port);
                     sender
