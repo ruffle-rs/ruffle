@@ -14,7 +14,7 @@ use crate::{
     QueueSyncHandle, RenderTarget, SwapChainTarget, Texture, Transforms,
 };
 use image::imageops::FilterType;
-use ruffle_render::backend::{BitmapCacheEntry, Context3D};
+use ruffle_render::backend::{BitmapCacheEntry, Context3D, Context3DProfile};
 use ruffle_render::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
 use ruffle_render::bitmap::{
     Bitmap, BitmapFormat, BitmapHandle, BitmapSource, PixelRegion, SyncHandle,
@@ -414,8 +414,12 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
     fn create_context3d(
         &mut self,
+        profile: Context3DProfile,
     ) -> Result<Box<dyn ruffle_render::backend::Context3D>, BitmapError> {
-        Ok(Box::new(WgpuContext3D::new(self.descriptors.clone())))
+        Ok(Box::new(WgpuContext3D::new(
+            self.descriptors.clone(),
+            profile,
+        )))
     }
 
     #[instrument(level = "debug", skip_all)]

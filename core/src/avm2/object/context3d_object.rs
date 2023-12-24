@@ -23,7 +23,7 @@ use swf::{Rectangle, Twips};
 
 use super::program_3d_object::Program3DObject;
 use super::texture_object::TextureObject;
-use super::{ClassObject, IndexBuffer3DObject, VertexBuffer3DObject};
+use super::{ClassObject, IndexBuffer3DObject, Stage3DObject, VertexBuffer3DObject};
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
@@ -37,6 +37,7 @@ impl<'gc> Context3DObject<'gc> {
     pub fn from_context(
         activation: &mut Activation<'_, 'gc>,
         context: Box<dyn Context3D>,
+        stage3d: Stage3DObject<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let class = activation.avm2().classes().context3d;
 
@@ -45,6 +46,7 @@ impl<'gc> Context3DObject<'gc> {
             Context3DData {
                 base: RefLock::new(ScriptObjectData::new(class)),
                 render_context: Cell::new(Some(context)),
+                stage3d,
             },
         ))
         .into();
@@ -55,7 +57,11 @@ impl<'gc> Context3DObject<'gc> {
         Ok(this)
     }
 
-    fn with_context_3d<R>(&self, f: impl FnOnce(&mut dyn Context3D) -> R) -> R {
+    pub fn stage3d(self) -> Stage3DObject<'gc> {
+        self.0.stage3d
+    }
+
+    pub fn with_context_3d<R>(&self, f: impl FnOnce(&mut dyn Context3D) -> R) -> R {
         // Temporarily take ownership of the Context3D instance.
         let cell = &self.0.render_context;
         let mut guard = scopeguard::guard(cell.take(), |stolen| cell.set(stolen));
@@ -465,6 +471,8 @@ pub struct Context3DData<'gc> {
 
     #[collect(require_static)]
     render_context: Cell<Option<Box<dyn Context3D>>>,
+
+    stage3d: Stage3DObject<'gc>,
 }
 
 impl<'gc> TObject<'gc> for Context3DObject<'gc> {

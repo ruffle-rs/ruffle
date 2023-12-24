@@ -14,7 +14,7 @@ use crate::quality::StageQuality;
 use crate::shape_utils::DistilledShape;
 use swf::Color;
 
-use super::Context3D;
+use super::{Context3D, Context3DProfile};
 
 pub struct NullBitmapSource;
 
@@ -90,7 +90,10 @@ impl RenderBackend for NullRenderer {
         Ok(())
     }
 
-    fn create_context3d(&mut self) -> Result<Box<dyn super::Context3D>, Error> {
+    fn create_context3d(
+        &mut self,
+        _profile: Context3DProfile,
+    ) -> Result<Box<dyn super::Context3D>, Error> {
         Err(Error::Unimplemented("createContext3D".into()))
     }
 
