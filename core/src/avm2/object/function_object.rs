@@ -65,6 +65,7 @@ impl fmt::Debug for FunctionObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("FunctionObject")
             .field("ptr", &self.0.as_ptr())
+            .field("name", &self.0.try_read().map(|r| r.exec.debug_full_name()))
             .finish()
     }
 }
