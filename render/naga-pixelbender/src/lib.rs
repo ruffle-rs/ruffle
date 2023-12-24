@@ -1388,8 +1388,84 @@ impl<'a> ShaderBuilder<'a> {
                         }
                     }
                 }
-                Operation::Loop { unknown } => {
-                    tracing::warn!("Unimplemented Loop opcode with data: {unknown:?}")
+                Operation::TernaryIf {
+                    src1,
+                    src2,
+                    dst,
+                    condition,
+                } => {
+                    let src1_expr = self.load_src_register(src1)?;
+                    let src2_expr = self.load_src_register(src2)?;
+
+                    let expr_zero: Handle<Expression> = match condition.kind {
+                        PixelBenderRegKind::Float => self.zerof32,
+                        PixelBenderRegKind::Int => self.zeroi32,
+                    };
+                    if condition.channels.len() != 1 {
+                        panic!("Ternary if condition must be a scalar: {condition:?}");
+                    }
+
+                    // FIXME - `load_src_register` always gives us a vec4 - ideally, we would
+                    // have a flag to avoid this pointless splat-and-extract.
+                    let cond_expr = self.load_src_register(condition)?;
+                    let first_component = self.evaluate_expr(Expression::AccessIndex {
+                        base: cond_expr,
+                        index: 0,
+                    });
+
+                    let is_true = self.evaluate_expr(Expression::Binary {
+                        op: BinaryOperator::NotEqual,
+                        left: first_component,
+                        right: expr_zero,
+                    });
+
+                    self.blocks.push(BlockStackEntry::IfElse {
+                        after_if: Block::new(),
+                        after_else: Block::new(),
+                        in_after_if: true,
+                        condition: is_true,
+                    });
+
+                    self.emit_dest_store(src1_expr, dst)?;
+
+                    if let BlockStackEntry::IfElse {
+                        after_if: _,
+                        after_else: _,
+                        in_after_if,
+                        condition: _,
+                    } = self.blocks.last_mut().unwrap()
+                    {
+                        assert!(*in_after_if);
+                        *in_after_if = false;
+                    } else {
+                        unreachable!()
+                    }
+
+                    self.emit_dest_store(src2_expr, dst)?;
+
+                    let block = self.blocks.pop().unwrap();
+
+                    match block {
+                        BlockStackEntry::IfElse {
+                            after_if,
+                            after_else,
+                            in_after_if: _,
+                            condition,
+                        } => {
+                            self.push_statement(Statement::If {
+                                condition,
+                                // The opcodes occuring directly after the 'if' opcode
+                                // get run if the condition is true
+                                accept: after_if,
+                                // The opcodes occurring directly after the 'els' opcode
+                                // get run if the condition is false
+                                reject: after_else,
+                            });
+                        }
+                        BlockStackEntry::Normal(block) => {
+                            panic!("Unexpected non-IfElse block {block:?}")
+                        }
+                    }
                 }
                 Operation::Nop => {}
             }
