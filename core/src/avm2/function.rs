@@ -219,8 +219,10 @@ impl<'gc> Executable<'gc> {
         }
     }
 
-    pub fn write_full_name(&self, output: &mut WString) {
-        display_function(output, &self.as_method(), self.bound_superclass());
+    pub fn debug_full_name(&self) -> WString {
+        let mut output = WString::new();
+        display_function(&mut output, &self.as_method(), self.bound_superclass());
+        output
     }
 
     pub fn num_parameters(&self) -> usize {
