@@ -1438,27 +1438,31 @@ fn handle_graphics_triangle_path<'gc>(
         culling_to_triangle_culling(activation, culling)?
     };
 
-    let vertices = obj
-        .get_public_property("vertices", activation)?
-        .coerce_to_object(activation)?;
+    let vertices = obj.get_public_property("vertices", activation)?.as_object();
 
-    let indices = obj
-        .get_public_property("indices", activation)?
-        .coerce_to_object(activation)?;
+    let indices = obj.get_public_property("indices", activation)?.as_object();
 
-    let _uvt_data = obj
-        .get_public_property("uvtData", activation)?
-        .coerce_to_object(activation)?;
+    let _uvt_data = obj.get_public_property("uvtData", activation)?.as_object();
 
-    avm2_stub_method!(
-        activation,
-        "flash.display.Graphics",
-        "drawGraphicsData",
-        "with uvt data"
-    );
+    if _uvt_data.is_some() {
+        avm2_stub_method!(
+            activation,
+            "flash.display.Graphics",
+            "drawGraphicsData",
+            "with uvt data"
+        );
+    }
 
-    if let Some(vertices) = vertices.as_vector_storage() {
-        if let Some(indices) = indices.as_vector_storage() {
+    if let Some(vertices) = vertices {
+        if let Some(indices) = indices {
+            let vertices = vertices
+                .as_vector_storage()
+                .expect("vertices is not a Vector");
+
+            let indices = indices
+                .as_vector_storage()
+                .expect("indices is not a Vector");
+
             fn read_point<'gc>(
                 vertices: &VectorStorage<'gc>,
                 index: usize,
@@ -1507,7 +1511,12 @@ fn handle_graphics_triangle_path<'gc>(
                 draw_triangle_internal(activation, triangle, drawing, culling);
             }
         } else {
-            panic!("Indices is not a vector");
+            avm2_stub_method!(
+                activation,
+                "flash.display.Graphics",
+                "drawGraphicsData",
+                "with null indices"
+            );
         };
     }
 
