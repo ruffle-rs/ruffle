@@ -10,6 +10,7 @@ use crate::avm2::Error;
 use crate::avm2::EventObject;
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, TDisplayObject};
+use crate::loader::ContentType;
 use crate::tag_utils::SwfMovie;
 use core::fmt;
 use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
@@ -99,6 +100,9 @@ pub struct LoaderInfoObjectData<'gc> {
     uncaught_error_events: Object<'gc>,
 
     cached_avm1movie: Option<Object<'gc>>,
+
+    #[collect(require_static)]
+    content_type: ContentType,
 }
 
 impl<'gc> LoaderInfoObject<'gc> {
@@ -134,6 +138,7 @@ impl<'gc> LoaderInfoObject<'gc> {
                     .uncaughterrorevents
                     .construct(activation, &[])?,
                 cached_avm1movie: None,
+                content_type: ContentType::Swf,
             },
         ))
         .into();
@@ -179,6 +184,7 @@ impl<'gc> LoaderInfoObject<'gc> {
                     .uncaughterrorevents
                     .construct(activation, &[])?,
                 cached_avm1movie: None,
+                content_type: ContentType::Unknown,
             },
         ))
         .into();
@@ -199,6 +205,17 @@ impl<'gc> LoaderInfoObject<'gc> {
 
     pub fn uncaught_error_events(&self) -> Object<'gc> {
         return self.0.read().uncaught_error_events;
+    }
+
+    /// Gets the `ContentType`, 'hiding' it by returning `ContentType::Unknown`
+    /// if we haven't yet fired the 'init' event. The real ContentType first becomes
+    /// visible to ActionScript in the 'init' event.
+    pub fn content_type_hide_before_init(&self) -> ContentType {
+        if self.0.read().init_event_fired {
+            self.0.read().content_type
+        } else {
+            ContentType::Unknown
+        }
     }
 
     pub fn fire_init_and_complete_events(
@@ -267,6 +284,10 @@ impl<'gc> LoaderInfoObject<'gc> {
 
     pub fn set_loader_stream(&self, stream: LoaderStream<'gc>, mc: &Mutation<'gc>) {
         self.0.write(mc).loaded_stream = Some(stream);
+    }
+
+    pub fn set_content_type(&self, content_type: ContentType, mc: &Mutation<'gc>) {
+        self.0.write(mc).content_type = content_type;
     }
 
     /// Returns the AVM1Movie corresponding to the loaded movie- if

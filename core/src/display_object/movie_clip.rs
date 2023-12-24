@@ -32,8 +32,8 @@ use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
 use crate::font::{Font, FontType};
 use crate::limits::ExecutionLimit;
-use crate::loader;
 use crate::loader::Loader;
+use crate::loader::{self, ContentType};
 use crate::prelude::*;
 use crate::streams::NetStream;
 use crate::string::{AvmString, SwfStrExt as _, WStr, WString};
@@ -332,10 +332,14 @@ impl<'gc> MovieClip<'gc> {
         let loader_info = if movie.is_action_script_3() {
             // The root movie doesn't have a `Loader`
             // We will replace this with a `LoaderStream::Swf` later in this function
-            Some(
+            let loader_info =
                 LoaderInfoObject::not_yet_loaded(activation, movie.clone(), None, None, false)
-                    .expect("Failed to construct LoaderInfoObject"),
-            )
+                    .expect("Failed to construct LoaderInfoObject");
+            loader_info
+                .as_loader_info_object()
+                .unwrap()
+                .set_content_type(ContentType::Swf, activation.context.gc_context);
+            Some(loader_info)
         } else {
             None
         };
