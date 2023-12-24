@@ -1,5 +1,5 @@
 use ruffle_render::backend::{
-    Context3D, Context3DBlendFactor, Context3DCommand, Context3DCompareMode,
+    Context3D, Context3DBlendFactor, Context3DCommand, Context3DCompareMode, Context3DProfile,
     Context3DTextureFormat, Context3DVertexBufferFormat, IndexBuffer, ProgramType, Texture as _,
     VertexBuffer,
 };
@@ -52,6 +52,7 @@ pub struct WgpuContext3D {
     // store an entire `Arc<Descriptors>` rather than wrapping the fields
     // we need in individual `Arc`s.
     descriptors: Arc<Descriptors>,
+    profile: Context3DProfile,
 
     buffer_staging_belt: StagingBelt,
 
@@ -98,7 +99,7 @@ pub struct WgpuContext3D {
 }
 
 impl WgpuContext3D {
-    pub fn new(descriptors: Arc<Descriptors>) -> Self {
+    pub fn new(descriptors: Arc<Descriptors>, profile: Context3DProfile) -> Self {
         let make_dummy_handle = || {
             let texture_label = create_debug_label!("Render target texture");
             let format = wgpu::TextureFormat::Rgba8Unorm;
@@ -140,6 +141,7 @@ impl WgpuContext3D {
                 });
 
         Self {
+            profile,
             descriptors,
             buffer_staging_belt,
             back_buffer_raw_texture_handle,
@@ -378,6 +380,9 @@ pub struct VertexAttributeInfo {
 }
 
 impl Context3D for WgpuContext3D {
+    fn profile(&self) -> Context3DProfile {
+        self.profile
+    }
     fn bitmap_handle(&self) -> BitmapHandle {
         self.front_buffer_raw_texture_handle.clone()
     }

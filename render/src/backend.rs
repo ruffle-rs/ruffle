@@ -86,7 +86,7 @@ pub trait RenderBackend: Downcast {
         region: PixelRegion,
     ) -> Result<(), Error>;
 
-    fn create_context3d(&mut self) -> Result<Box<dyn Context3D>, Error>;
+    fn create_context3d(&mut self, profile: Context3DProfile) -> Result<Box<dyn Context3D>, Error>;
     fn context3d_present(&mut self, context: &mut dyn Context3D) -> Result<(), Error>;
 
     fn debug_info(&self) -> Cow<'static, str>;
@@ -222,6 +222,7 @@ pub enum ProgramType {
 }
 
 pub trait Context3D: Downcast {
+    fn profile(&self) -> Context3DProfile;
     // The BitmapHandle for the texture we're rendering to
     fn bitmap_handle(&self) -> BitmapHandle;
     // Whether or not we should actually render the texture
@@ -280,6 +281,36 @@ pub enum Context3DTriangleFace {
     Back,
     Front,
     FrontAndBack,
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum Context3DProfile {
+    Baseline,
+    BaselineConstrained,
+    BaselineExtended,
+    Standard,
+    StandardConstrained,
+    StandardExtended,
+}
+
+impl Context3DProfile {
+    pub fn from_wstr(s: &WStr) -> Option<Self> {
+        if s == b"baseline" {
+            Some(Context3DProfile::Baseline)
+        } else if s == b"baselineConstrained" {
+            Some(Context3DProfile::BaselineConstrained)
+        } else if s == b"baselineExtended" {
+            Some(Context3DProfile::BaselineExtended)
+        } else if s == b"standard" {
+            Some(Context3DProfile::Standard)
+        } else if s == b"standardConstrained" {
+            Some(Context3DProfile::StandardConstrained)
+        } else if s == b"standardExtended" {
+            Some(Context3DProfile::StandardExtended)
+        } else {
+            None
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug)]

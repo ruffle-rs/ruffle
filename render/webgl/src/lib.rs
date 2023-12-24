@@ -4,7 +4,8 @@
 
 use bytemuck::{Pod, Zeroable};
 use ruffle_render::backend::{
-    BitmapCacheEntry, Context3D, RenderBackend, ShapeHandle, ShapeHandleImpl, ViewportDimensions,
+    BitmapCacheEntry, Context3D, Context3DProfile, RenderBackend, ShapeHandle, ShapeHandleImpl,
+    ViewportDimensions,
 };
 use ruffle_render::bitmap::{
     Bitmap, BitmapFormat, BitmapHandle, BitmapHandleImpl, BitmapSource, PixelRegion, PixelSnapping,
@@ -1078,7 +1079,10 @@ impl RenderBackend for WebGlRenderBackend {
         Ok(())
     }
 
-    fn create_context3d(&mut self) -> Result<Box<dyn Context3D>, BitmapError> {
+    fn create_context3d(
+        &mut self,
+        _profile: Context3DProfile,
+    ) -> Result<Box<dyn Context3D>, BitmapError> {
         Err(BitmapError::Unimplemented("createContext3D".into()))
     }
     fn context3d_present(&mut self, _context: &mut dyn Context3D) -> Result<(), BitmapError> {

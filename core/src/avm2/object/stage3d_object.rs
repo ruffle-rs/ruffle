@@ -48,8 +48,8 @@ impl<'gc> Stage3DObject<'gc> {
         self.0.context3d.get()
     }
 
-    pub fn set_context3d(self, context3d: Object<'gc>, mc: &Mutation<'gc>) {
-        unlock!(Gc::write(mc, self.0), Stage3DObjectData, context3d).set(Some(context3d))
+    pub fn set_context3d(self, context3d: Option<Object<'gc>>, mc: &Mutation<'gc>) {
+        unlock!(Gc::write(mc, self.0), Stage3DObjectData, context3d).set(context3d)
     }
 
     pub fn visible(self) -> bool {

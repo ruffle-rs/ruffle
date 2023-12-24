@@ -47,10 +47,7 @@ package flash.display3D {
 
         public native function setTextureAt(sampler:int, texture:TextureBase):void;
 
-        public function get profile():String {
-            stub_getter("flash.display3D.Context3D", "profile");
-            return "baseline";
-        }
+        public native function get profile():String;
 
         public function get maxBackBufferWidth():int {
             stub_getter("flash.display3D.Context3D", "maxBackBufferWidth");
@@ -79,5 +76,7 @@ package flash.display3D {
         ):void {
             stub_method("flash.display3D.Context3D", "setStencilActions");
         }
+
+        public native function dispose(recreate:Boolean = true):void;
     }
 }
