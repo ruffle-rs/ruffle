@@ -8,6 +8,7 @@ use crate::avm2::value::Value;
 use crate::avm2::{AvmString, Error};
 use crate::avm2_stub_getter;
 use crate::display_object::TDisplayObject;
+use crate::loader::ContentType;
 use swf::{write_swf, Compression};
 
 pub use crate::avm2::object::loader_info_allocator;
@@ -175,16 +176,14 @@ pub fn get_content_type<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(loader_stream) = this
-        .as_loader_info_object()
-        .and_then(|o| o.as_loader_stream())
-    {
-        match &*loader_stream {
-            LoaderStream::NotYetLoaded(_, _, _) => return Ok(Value::Null),
-            LoaderStream::Swf(_, _) => {
-                return Ok("application/x-shockwave-flash".into());
-            }
-        }
+    if let Some(loader_info) = this.as_loader_info_object() {
+        return match loader_info.content_type_hide_before_init() {
+            ContentType::Swf => Ok("application/x-shockwave-flash".into()),
+            ContentType::Jpeg => Ok("image/jpeg".into()),
+            ContentType::Png => Ok("image/png".into()),
+            ContentType::Gif => Ok("image/gif".into()),
+            ContentType::Unknown => Ok(Value::Null),
+        };
     }
 
     Ok(Value::Undefined)

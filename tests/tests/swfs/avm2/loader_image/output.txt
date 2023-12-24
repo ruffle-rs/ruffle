@@ -1,4 +1,8 @@
 Progress event: [ProgressEvent type="progress" bubbles=false cancelable=false eventPhase=2 bytesLoaded=0 bytesTotal=334]
+loader.contentLoaderInfo.contentType: null
 Progress event: [ProgressEvent type="progress" bubbles=false cancelable=false eventPhase=2 bytesLoaded=334 bytesTotal=334]
+loader.contentLoaderInfo.contentType: null
 Init event: [Event type="init" bubbles=false cancelable=false eventPhase=2]
+loader.contentLoaderInfo.contentType: image/png
 Complete event: [Event type="complete" bubbles=false cancelable=false eventPhase=2]
+loader.contentLoaderInfo.contentType: image/png

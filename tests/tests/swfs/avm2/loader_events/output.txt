@@ -5,6 +5,7 @@ loader.contentLoaderInfo.bytesTotal = 0
 loader.contentLoaderInfo.bytes = null
 loader.contentLoaderInfo.url = null
 loader.contentLoaderInfo.parameters = [object Object]
+loader.contentLoaderInfo.contentType = null
 Parameters: (len=0)
 
 Directly after load:
@@ -15,15 +16,16 @@ loader.contentLoaderInfo.bytesTotal = 0
 loader.contentLoaderInfo.bytes = 
 loader.contentLoaderInfo.url = null
 loader.contentLoaderInfo.parameters = [object Object]
+loader.contentLoaderInfo.contentType = null
 Parameters: (len=0)
 
-Event [Event type="open" bubbles=false cancelable=false eventPhase=2]: loader.numChildren = 0, loader.content = null, loader.contentLoaderInfo.bytesLoaded = 0, loader.contentLoaderInfo.bytesTotal = 0, loader.contentLoaderInfo.bytes.length = 0, loader.contentLoaderInfo.url = null
+Event [Event type="open" bubbles=false cancelable=false eventPhase=2]: loader.numChildren = 0, loader.content = null, loader.contentLoaderInfo.bytesLoaded = 0, loader.contentLoaderInfo.bytesTotal = 0, loader.contentLoaderInfo.bytes.length = 0, loader.contentLoaderInfo.url = null, loader.contentLoaderInfo.contentType = null
 Parameters: (len=0)
 
-Event [ProgressEvent type="progress" bubbles=false cancelable=false eventPhase=2 bytesLoaded=0 bytesTotal=893]: loader.numChildren = 0, loader.content = null, loader.contentLoaderInfo.bytesLoaded = 0, loader.contentLoaderInfo.bytesTotal = 893, loader.contentLoaderInfo.bytes.length = 0, loader.contentLoaderInfo.url = null
+Event [ProgressEvent type="progress" bubbles=false cancelable=false eventPhase=2 bytesLoaded=0 bytesTotal=893]: loader.numChildren = 0, loader.content = null, loader.contentLoaderInfo.bytesLoaded = 0, loader.contentLoaderInfo.bytesTotal = 893, loader.contentLoaderInfo.bytes.length = 0, loader.contentLoaderInfo.url = null, loader.contentLoaderInfo.contentType = null
 Parameters: (len=0)
 
-Event [ProgressEvent type="progress" bubbles=false cancelable=false eventPhase=2 bytesLoaded=893 bytesTotal=893]: loader.numChildren = 0, loader.content = null, loader.contentLoaderInfo.bytesLoaded = 893, loader.contentLoaderInfo.bytesTotal = 893, loader.contentLoaderInfo.bytes.length = 1490, loader.contentLoaderInfo.url = null
+Event [ProgressEvent type="progress" bubbles=false cancelable=false eventPhase=2 bytesLoaded=893 bytesTotal=893]: loader.numChildren = 0, loader.content = null, loader.contentLoaderInfo.bytesLoaded = 893, loader.contentLoaderInfo.bytesTotal = 893, loader.contentLoaderInfo.bytes.length = 1490, loader.contentLoaderInfo.url = null, loader.contentLoaderInfo.contentType = null
 Parameters: (len=2)
 paramOne = ValOne,paramTwo = ValTwo
 Hello from loaded SWF main timeline: this.stage=null this.parent=null
@@ -33,13 +35,13 @@ Added circle
 Event.ADDED_TO_STAGE: circle.parent =[object LoadableMainTimeline] circle.stage=[object Stage] main.parent=[object Loader] main.stage=[object Stage]
 loader.contentLoaderInfo === loader.content.loaderInfo : true
 loader.contentLoaderInfo.content === loader.content : true
-Event [Event type="init" bubbles=false cancelable=false eventPhase=2]: loader.numChildren = 1, loader.content = [object LoadableMainTimeline], loader.contentLoaderInfo.bytesLoaded = 893, loader.contentLoaderInfo.bytesTotal = 893, loader.contentLoaderInfo.bytes.length = 1490, loader.contentLoaderInfo.url = file:///
+Event [Event type="init" bubbles=false cancelable=false eventPhase=2]: loader.numChildren = 1, loader.content = [object LoadableMainTimeline], loader.contentLoaderInfo.bytesLoaded = 893, loader.contentLoaderInfo.bytesTotal = 893, loader.contentLoaderInfo.bytes.length = 1490, loader.contentLoaderInfo.url = file:///, loader.contentLoaderInfo.contentType = application/x-shockwave-flash
 Parameters: (len=2)
 paramOne = ValOne,paramTwo = ValTwo
-Event [HTTPStatusEvent type="httpStatus" bubbles=false cancelable=false eventPhase=2 status=0 redirected=false responseURL=null]: loader.numChildren = 1, loader.content = [object LoadableMainTimeline], loader.contentLoaderInfo.bytesLoaded = 893, loader.contentLoaderInfo.bytesTotal = 893, loader.contentLoaderInfo.bytes.length = 1490, loader.contentLoaderInfo.url = file:///
+Event [HTTPStatusEvent type="httpStatus" bubbles=false cancelable=false eventPhase=2 status=0 redirected=false responseURL=null]: loader.numChildren = 1, loader.content = [object LoadableMainTimeline], loader.contentLoaderInfo.bytesLoaded = 893, loader.contentLoaderInfo.bytesTotal = 893, loader.contentLoaderInfo.bytes.length = 1490, loader.contentLoaderInfo.url = file:///, loader.contentLoaderInfo.contentType = application/x-shockwave-flash
 Parameters: (len=2)
 paramOne = ValOne,paramTwo = ValTwo
-Event [Event type="complete" bubbles=false cancelable=false eventPhase=2]: loader.numChildren = 1, loader.content = [object LoadableMainTimeline], loader.contentLoaderInfo.bytesLoaded = 893, loader.contentLoaderInfo.bytesTotal = 893, loader.contentLoaderInfo.bytes.length = 1490, loader.contentLoaderInfo.url = file:///
+Event [Event type="complete" bubbles=false cancelable=false eventPhase=2]: loader.numChildren = 1, loader.content = [object LoadableMainTimeline], loader.contentLoaderInfo.bytesLoaded = 893, loader.contentLoaderInfo.bytesTotal = 893, loader.contentLoaderInfo.bytes.length = 1490, loader.contentLoaderInfo.url = file:///, loader.contentLoaderInfo.contentType = application/x-shockwave-flash
 Parameters: (len=2)
 paramOne = ValOne,paramTwo = ValTwo
 Starting orphan Loader
@@ -50,6 +52,7 @@ loader.contentLoaderInfo.bytesTotal = 0
 loader.contentLoaderInfo.bytes = null
 loader.contentLoaderInfo.url = null
 loader.contentLoaderInfo.parameters = [object Object]
+loader.contentLoaderInfo.contentType = null
 Parameters: (len=0)
 
 Directly after load:
@@ -60,15 +63,16 @@ loader.contentLoaderInfo.bytesTotal = 0
 loader.contentLoaderInfo.bytes = 
 loader.contentLoaderInfo.url = null
 loader.contentLoaderInfo.parameters = [object Object]
+loader.contentLoaderInfo.contentType = null
 Parameters: (len=0)
 
-Event [Event type="open" bubbles=false cancelable=false eventPhase=2]: loader.numChildren = 0, loader.content = null, loader.contentLoaderInfo.bytesLoaded = 0, loader.contentLoaderInfo.bytesTotal = 0, loader.contentLoaderInfo.bytes.length = 0, loader.contentLoaderInfo.url = null
+Event [Event type="open" bubbles=false cancelable=false eventPhase=2]: loader.numChildren = 0, loader.content = null, loader.contentLoaderInfo.bytesLoaded = 0, loader.contentLoaderInfo.bytesTotal = 0, loader.contentLoaderInfo.bytes.length = 0, loader.contentLoaderInfo.url = null, loader.contentLoaderInfo.contentType = null
 Parameters: (len=0)
 
-Event [ProgressEvent type="progress" bubbles=false cancelable=false eventPhase=2 bytesLoaded=0 bytesTotal=893]: loader.numChildren = 0, loader.content = null, loader.contentLoaderInfo.bytesLoaded = 0, loader.contentLoaderInfo.bytesTotal = 893, loader.contentLoaderInfo.bytes.length = 0, loader.contentLoaderInfo.url = null
+Event [ProgressEvent type="progress" bubbles=false cancelable=false eventPhase=2 bytesLoaded=0 bytesTotal=893]: loader.numChildren = 0, loader.content = null, loader.contentLoaderInfo.bytesLoaded = 0, loader.contentLoaderInfo.bytesTotal = 893, loader.contentLoaderInfo.bytes.length = 0, loader.contentLoaderInfo.url = null, loader.contentLoaderInfo.contentType = null
 Parameters: (len=0)
 
-Event [ProgressEvent type="progress" bubbles=false cancelable=false eventPhase=2 bytesLoaded=893 bytesTotal=893]: loader.numChildren = 0, loader.content = null, loader.contentLoaderInfo.bytesLoaded = 893, loader.contentLoaderInfo.bytesTotal = 893, loader.contentLoaderInfo.bytes.length = 1490, loader.contentLoaderInfo.url = null
+Event [ProgressEvent type="progress" bubbles=false cancelable=false eventPhase=2 bytesLoaded=893 bytesTotal=893]: loader.numChildren = 0, loader.content = null, loader.contentLoaderInfo.bytesLoaded = 893, loader.contentLoaderInfo.bytesTotal = 893, loader.contentLoaderInfo.bytes.length = 1490, loader.contentLoaderInfo.url = null, loader.contentLoaderInfo.contentType = null
 Parameters: (len=2)
 paramOne = ValOne,paramTwo = ValTwo
 Hello from loaded SWF main timeline: this.stage=null this.parent=null
@@ -77,12 +81,12 @@ Event.ADDED: circle.parent =[object LoadableMainTimeline] circle.stage=null main
 Added circle
 loader.contentLoaderInfo === loader.content.loaderInfo : true
 loader.contentLoaderInfo.content === loader.content : true
-Event [Event type="init" bubbles=false cancelable=false eventPhase=2]: loader.numChildren = 1, loader.content = [object LoadableMainTimeline], loader.contentLoaderInfo.bytesLoaded = 893, loader.contentLoaderInfo.bytesTotal = 893, loader.contentLoaderInfo.bytes.length = 1490, loader.contentLoaderInfo.url = file:///
+Event [Event type="init" bubbles=false cancelable=false eventPhase=2]: loader.numChildren = 1, loader.content = [object LoadableMainTimeline], loader.contentLoaderInfo.bytesLoaded = 893, loader.contentLoaderInfo.bytesTotal = 893, loader.contentLoaderInfo.bytes.length = 1490, loader.contentLoaderInfo.url = file:///, loader.contentLoaderInfo.contentType = application/x-shockwave-flash
 Parameters: (len=2)
 paramOne = ValOne,paramTwo = ValTwo
-Event [HTTPStatusEvent type="httpStatus" bubbles=false cancelable=false eventPhase=2 status=0 redirected=false responseURL=null]: loader.numChildren = 1, loader.content = [object LoadableMainTimeline], loader.contentLoaderInfo.bytesLoaded = 893, loader.contentLoaderInfo.bytesTotal = 893, loader.contentLoaderInfo.bytes.length = 1490, loader.contentLoaderInfo.url = file:///
+Event [HTTPStatusEvent type="httpStatus" bubbles=false cancelable=false eventPhase=2 status=0 redirected=false responseURL=null]: loader.numChildren = 1, loader.content = [object LoadableMainTimeline], loader.contentLoaderInfo.bytesLoaded = 893, loader.contentLoaderInfo.bytesTotal = 893, loader.contentLoaderInfo.bytes.length = 1490, loader.contentLoaderInfo.url = file:///, loader.contentLoaderInfo.contentType = application/x-shockwave-flash
 Parameters: (len=2)
 paramOne = ValOne,paramTwo = ValTwo
-Event [Event type="complete" bubbles=false cancelable=false eventPhase=2]: loader.numChildren = 1, loader.content = [object LoadableMainTimeline], loader.contentLoaderInfo.bytesLoaded = 893, loader.contentLoaderInfo.bytesTotal = 893, loader.contentLoaderInfo.bytes.length = 1490, loader.contentLoaderInfo.url = file:///
+Event [Event type="complete" bubbles=false cancelable=false eventPhase=2]: loader.numChildren = 1, loader.content = [object LoadableMainTimeline], loader.contentLoaderInfo.bytesLoaded = 893, loader.contentLoaderInfo.bytesTotal = 893, loader.contentLoaderInfo.bytes.length = 1490, loader.contentLoaderInfo.url = file:///, loader.contentLoaderInfo.contentType = application/x-shockwave-flash
 Parameters: (len=2)
 paramOne = ValOne,paramTwo = ValTwo

@@ -1668,6 +1668,10 @@ impl<'gc> Loader<'gc> {
             };
 
             if let MovieLoaderVMData::Avm2 { loader_info, .. } = vm_data {
+                loader_info
+                    .as_loader_info_object()
+                    .unwrap()
+                    .set_content_type(sniffed_type, activation.context.gc_context);
                 let fake_movie = Arc::new(SwfMovie::empty_fake_compressed_len(
                     activation.context.swf.version(),
                     length,
