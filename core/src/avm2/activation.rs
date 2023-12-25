@@ -921,6 +921,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     /// Run a single action from a given action reader.
+    #[inline(always)]
     fn do_next_opcode<'b>(
         &mut self,
         method: Gc<'gc, BytecodeMethod<'gc>>,
