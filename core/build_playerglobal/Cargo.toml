@@ -9,7 +9,7 @@ version.workspace = true
 
 [dependencies]
 convert_case = "0.6.0"
-proc-macro2 = "1.0.70"
+proc-macro2 = "1.0.71"
 quote = "1.0.33"
 swf = { path = "../../swf" }
 clap = {version = "4.4.11", features = ["derive"]}
