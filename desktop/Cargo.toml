@@ -36,7 +36,7 @@ os_info = { version = "3", default-features = false }
 unic-langid = "0.9.4"
 sys-locale = "0.3.1"
 wgpu = { workspace = true }
-futures = "0.3.29"
+futures = "0.3.30"
 chrono = { version = "0.4", default-features = false, features = [] }
 fluent-templates = "0.8.0"
 futures-lite = "2.1.0"
