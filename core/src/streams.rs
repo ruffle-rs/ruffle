@@ -385,8 +385,6 @@ impl<'gc> NetStream<'gc> {
     /// This function should be run during stream ticks and *not* called by AVM
     /// code to service seek requests.
     pub fn execute_seek(self, context: &mut UpdateContext<'_, 'gc>, offset: f64) {
-        #![allow(clippy::explicit_auto_deref)] //Erroneous lint
-
         self.trigger_status_event(
             context,
             vec![("code", "NetStream.Seek.Notify"), ("level", "status")],
@@ -414,7 +412,7 @@ impl<'gc> NetStream<'gc> {
         if matches!(write.stream_type, Some(NetStreamType::Flv { .. })) {
             let slice = write.buffer.to_full_slice();
             let buffer = slice.data();
-            let mut reader = FlvReader::from_parts(&*buffer, write.offset);
+            let mut reader = FlvReader::from_parts(&buffer, write.offset);
             let skipping_back = write.stream_time > offset;
 
             loop {
@@ -757,7 +755,6 @@ impl<'gc> NetStream<'gc> {
     /// data is of an unrecognized format. This should be used as a signal to
     /// stop stream processing until new data has been retrieved.
     pub fn sniff_stream_type(self, context: &mut UpdateContext<'_, 'gc>) -> bool {
-        #![allow(clippy::explicit_auto_deref)] //Erroneous lint
         let mut write = self.0.write(context.gc_context);
         let slice = write.buffer.to_full_slice();
         let buffer = slice.data();
@@ -771,7 +768,7 @@ impl<'gc> NetStream<'gc> {
 
         match buffer.get(0..3) {
             Some([0x46, 0x4C, 0x56]) => {
-                let mut reader = FlvReader::from_parts(&*buffer, write.offset);
+                let mut reader = FlvReader::from_parts(&buffer, write.offset);
                 match FlvHeader::parse(&mut reader) {
                     Ok(header) => {
                         write.offset = reader.into_parts().1;
@@ -1056,8 +1053,6 @@ impl<'gc> NetStream<'gc> {
     ///
     /// `dt` is in milliseconds.
     pub fn tick(self, context: &mut UpdateContext<'_, 'gc>, dt: f64) {
-        #![allow(clippy::explicit_auto_deref)] //Erroneous lint
-
         let seek_offset = self.0.write(context.gc_context).queued_seek_time.take();
         if let Some(offset) = seek_offset {
             self.execute_seek(context, offset);
@@ -1088,7 +1083,7 @@ impl<'gc> NetStream<'gc> {
 
         //At this point we should know our stream type.
         if matches!(write.stream_type, Some(NetStreamType::Flv { .. })) {
-            let mut reader = FlvReader::from_parts(&*buffer, write.offset);
+            let mut reader = FlvReader::from_parts(&buffer, write.offset);
 
             loop {
                 let tag = FlvTag::parse(&mut reader);
