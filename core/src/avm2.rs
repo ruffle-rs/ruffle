@@ -590,10 +590,16 @@ impl<'gc> Avm2<'gc> {
         self.call_stack
     }
 
+    #[cold]
+    fn stack_overflow(&self) {
+        tracing::warn!("Avm2::push: Stack overflow");
+    }
+
     /// Push a value onto the operand stack.
+    #[inline(always)]
     fn push(&mut self, value: impl Into<Value<'gc>>, depth: usize, max: usize) {
         if self.stack.len() - depth > max {
-            tracing::warn!("Avm2::push: Stack overflow");
+            self.stack_overflow();
             return;
         }
         let mut value = value.into();
@@ -610,11 +616,17 @@ impl<'gc> Avm2<'gc> {
         self.stack.push(value);
     }
 
+    #[cold]
+    fn stack_underflow(&self) {
+        tracing::warn!("Avm2::pop: Stack underflow");
+    }
+
     /// Retrieve the top-most value on the operand stack.
     #[allow(clippy::let_and_return)]
+    #[inline(always)]
     fn pop(&mut self, depth: usize) -> Value<'gc> {
         let value = if self.stack.len() <= depth {
-            tracing::warn!("Avm2::pop: Stack underflow");
+            self.stack_underflow();
             Value::Undefined
         } else {
             self.stack.pop().unwrap_or(Value::Undefined)
