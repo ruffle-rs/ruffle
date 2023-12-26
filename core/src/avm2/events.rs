@@ -399,15 +399,19 @@ pub fn dispatch_event_to_target<'gc>(
     let name = evtmut.event_type();
     let use_capture = evtmut.phase() == EventPhase::Capturing;
 
-    evtmut.set_current_target(target);
-
-    drop(evtmut);
-
     let handlers: Vec<Object<'gc>> = dispatch_list
         .as_dispatch_mut(activation.context.gc_context)
         .ok_or_else(|| Error::from("Internal dispatch list is missing during dispatch!"))?
         .iter_event_handlers(name, use_capture)
         .collect();
+
+    evtmut.set_current_target(target);
+
+    if !handlers.is_empty() {
+        evtmut.dispatched = true;
+    }
+
+    drop(evtmut);
 
     for handler in handlers.iter() {
         if event
@@ -485,7 +489,6 @@ pub fn dispatch_event<'gc>(
 
     evtmut.set_phase(EventPhase::Capturing);
     evtmut.set_target(target);
-    evtmut.dispatched = true;
 
     drop(evtmut);
 

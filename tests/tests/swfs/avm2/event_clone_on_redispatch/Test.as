@@ -43,3 +43,17 @@ var event: CustomEvent = new CustomEvent("custom", false, false);
 
 dispatcher3.dispatchEvent(event);
 dispatcher4.dispatchEvent(event);
+
+// Event dispatched flag should not be set if the dispatcher did not have an event listener.
+trace("dispatcher without handler should not cause a clone");
+var dispatcherWithoutHandler:EventDispatcher = new EventDispatcher();
+var dispatcherWithHandler:EventDispatcher = new EventDispatcher();
+
+dispatcherWithHandler.addEventListener("custom", function(e:CustomEvent) {
+    trace("handler called");
+});
+
+var event: CustomEvent = new CustomEvent("custom", false, false);
+
+dispatcherWithoutHandler.dispatchEvent(event);
+dispatcherWithHandler.dispatchEvent(event);
