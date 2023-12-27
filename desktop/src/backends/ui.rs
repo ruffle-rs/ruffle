@@ -1,6 +1,7 @@
 use anyhow::{Context, Error};
 use arboard::Clipboard;
 use chrono::{DateTime, Utc};
+use fontdb::Family;
 use rfd::{
     AsyncFileDialog, FileHandle, MessageButtons, MessageDialog, MessageDialogResult, MessageLevel,
 };
@@ -120,12 +121,17 @@ pub struct DesktopUiBackend {
     language: LanguageIdentifier,
     preferred_cursor: MouseCursor,
     open_url_mode: OpenURLMode,
+    font_database: Rc<fontdb::Database>,
     /// Is a dialog currently open
     dialog_open: bool,
 }
 
 impl DesktopUiBackend {
-    pub fn new(window: Rc<Window>, open_url_mode: OpenURLMode) -> Result<Self, Error> {
+    pub fn new(
+        window: Rc<Window>,
+        open_url_mode: OpenURLMode,
+        font_database: Rc<fontdb::Database>,
+    ) -> Result<Self, Error> {
         let preferred_language = get_locale();
         let language = preferred_language
             .and_then(|l| l.parse().ok())
@@ -138,6 +144,7 @@ impl DesktopUiBackend {
             preferred_cursor: MouseCursor::Arrow,
             open_url_mode,
             dialog_open: false,
+            font_database,
         })
     }
 
@@ -249,11 +256,52 @@ impl UiBackend for DesktopUiBackend {
 
     fn load_device_font(
         &self,
-        _name: &str,
-        _is_bold: bool,
-        _is_italic: bool,
-        _register: &mut dyn FnMut(FontDefinition),
+        name: &str,
+        is_bold: bool,
+        is_italic: bool,
+        register: &mut dyn FnMut(FontDefinition),
     ) {
+        let query = fontdb::Query {
+            families: &[Family::Name(name)],
+            weight: if is_bold {
+                fontdb::Weight::BOLD
+            } else {
+                fontdb::Weight::NORMAL
+            },
+            style: if is_italic {
+                fontdb::Style::Italic
+            } else {
+                fontdb::Style::Normal
+            },
+            ..Default::default()
+        };
+
+        // It'd be nice if we can get the full list of candidates... Feature request?
+        if let Some(id) = self.font_database.query(&query) {
+            if let Some(face) = self.font_database.face(id) {
+                tracing::info!("Loading device font \"{}\" for \"{name}\" (italic: {is_italic}, bold: {is_bold})", face.post_script_name);
+
+                match &face.source {
+                    fontdb::Source::File(path) => match std::fs::read(path) {
+                        Ok(bytes) => register(FontDefinition::FontFile {
+                            name: name.to_owned(),
+                            is_bold,
+                            is_italic,
+                            data: bytes,
+                        }),
+                        Err(e) => error!("Couldn't read font file at {path:?}: {e}"),
+                    },
+                    fontdb::Source::Binary(bin) | fontdb::Source::SharedFile(_, bin) => {
+                        register(FontDefinition::FontFile {
+                            name: name.to_owned(),
+                            is_bold,
+                            is_italic,
+                            data: bin.as_ref().as_ref().to_vec(),
+                        })
+                    }
+                };
+            }
+        }
     }
 
     // Unused on desktop

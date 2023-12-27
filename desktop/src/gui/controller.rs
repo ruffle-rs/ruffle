@@ -45,6 +45,7 @@ impl GuiController {
         window: Rc<Window>,
         event_loop: &EventLoop<RuffleEvent>,
         opt: &Opt,
+        font_database: &Database,
     ) -> anyhow::Result<Self> {
         let backend: wgpu::Backends = opt.graphics.into();
         if wgpu::Backends::SECONDARY.contains(backend) {
@@ -104,7 +105,8 @@ impl GuiController {
         let egui_renderer = egui_wgpu::Renderer::new(&descriptors.device, surface_format, None, 1);
         let event_loop = event_loop.create_proxy();
         let gui = RuffleGui::new(event_loop, opt.movie_url.clone(), PlayerOptions::from(opt));
-        let system_fonts = load_system_fonts(gui.locale.to_owned()).unwrap_or_default();
+        let system_fonts =
+            load_system_fonts(font_database, gui.locale.to_owned()).unwrap_or_default();
         egui_ctx.set_fonts(system_fonts);
 
         egui_extras::install_image_loaders(&egui_ctx);
@@ -330,10 +332,10 @@ impl GuiController {
 }
 
 // try to load known unicode supporting fonts to draw cjk characters in egui
-fn load_system_fonts(locale: LanguageIdentifier) -> anyhow::Result<egui::FontDefinitions> {
-    let mut font_database = Database::default();
-    font_database.load_system_fonts();
-
+fn load_system_fonts(
+    font_database: &Database,
+    locale: LanguageIdentifier,
+) -> anyhow::Result<egui::FontDefinitions> {
     let mut families = Vec::new();
     if let Some(windows_font) = match locale.language.as_str() {
         "ja" => Some(Family::Name("MS UI Gothic")),
