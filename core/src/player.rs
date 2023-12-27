@@ -61,6 +61,7 @@ use ruffle_video::backend::VideoBackend;
 use serde::Deserialize;
 use std::cell::RefCell;
 use std::collections::{HashMap, VecDeque};
+use std::fmt::{self, Display, Formatter};
 use std::ops::DerefMut;
 use std::rc::{Rc, Weak as RcWeak};
 use std::str::FromStr;
@@ -2701,4 +2702,25 @@ pub enum PlayerRuntime {
     #[default]
     FlashPlayer,
     AIR,
+}
+
+pub struct ParseEnumError;
+
+impl Display for ParseEnumError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "Cannot parse enum.")
+    }
+}
+
+impl FromStr for PlayerRuntime {
+    type Err = ParseEnumError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let player_runtime = match s {
+            "air" => PlayerRuntime::AIR,
+            "flashPlayer" => PlayerRuntime::FlashPlayer,
+            _ => return Err(ParseEnumError),
+        };
+        Ok(player_runtime)
+    }
 }

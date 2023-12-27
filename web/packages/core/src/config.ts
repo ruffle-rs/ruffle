@@ -6,6 +6,7 @@ import {
     LogLevel,
     OpenURLMode,
     NetworkingAccessMode,
+    PlayerRuntime,
     UnmuteOverlay,
     WindowMode,
 } from "./load-options";
@@ -48,4 +49,5 @@ export const DEFAULT_CONFIG: Required<BaseLoadOptions> = {
     fontSources: [],
     defaultFonts: {},
     credentialAllowList: [],
+    playerRuntime: PlayerRuntime.FlashPlayer,
 };
