@@ -199,7 +199,7 @@ pub enum Opcode {
     SampleNearest = 0x30,
     SampleLinear = 0x31,
     LoadIntOrFloat = 0x32,
-    TernaryIf = 0x33,
+    Switch = 0x33,
     If = 0x34,
     Else = 0x35,
     EndIf = 0x36,
@@ -250,7 +250,7 @@ pub enum Operation {
     },
     Else,
     EndIf,
-    TernaryIf {
+    Switch {
         src1: PixelBenderReg,
         src2: PixelBenderReg,
         condition: PixelBenderReg,
@@ -588,7 +588,7 @@ fn read_op<R: Read>(
                 _ => unreachable!(),
             }
         }
-        Opcode::TernaryIf => {
+        Opcode::Switch => {
             let dst = data.read_u16::<LittleEndian>()?;
             let mask = data.read_u8()?;
             assert_eq!(mask & 0xF, 0);
@@ -606,7 +606,7 @@ fn read_op<R: Read>(
             assert_eq!(data.read_u8()?, 0);
             let src_reg2 = read_src_reg(src2, 1)?;
 
-            shader.operations.push(Operation::TernaryIf {
+            shader.operations.push(Operation::Switch {
                 condition: condition_reg,
                 src1: src_reg1,
                 src2: src_reg2,

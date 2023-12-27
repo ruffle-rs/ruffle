@@ -1388,7 +1388,7 @@ impl<'a> ShaderBuilder<'a> {
                         }
                     }
                 }
-                Operation::TernaryIf {
+                Operation::Switch {
                     src1,
                     src2,
                     dst,
