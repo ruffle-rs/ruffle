@@ -49,12 +49,16 @@ impl App {
             .build(&event_loop)?;
         let window = Rc::new(window);
 
-        let mut gui = GuiController::new(window.clone(), &event_loop, &opt)?;
+        let mut font_database = fontdb::Database::default();
+        font_database.load_system_fonts();
+
+        let mut gui = GuiController::new(window.clone(), &event_loop, &opt, &font_database)?;
 
         let mut player = PlayerController::new(
             event_loop.create_proxy(),
             window.clone(),
             gui.descriptors().clone(),
+            font_database,
         );
 
         if let Some(movie_url) = movie_url {

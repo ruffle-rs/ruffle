@@ -97,6 +97,7 @@ impl ActivePlayer {
         window: Rc<Window>,
         descriptors: Arc<Descriptors>,
         movie_view: MovieView,
+        font_database: Rc<fontdb::Database>,
     ) -> Self {
         let mut builder = PlayerBuilder::new();
 
@@ -152,7 +153,7 @@ impl ActivePlayer {
                 window: window.clone(),
             }))
             .with_ui(
-                DesktopUiBackend::new(window.clone(), opt.open_url_mode)
+                DesktopUiBackend::new(window.clone(), opt.open_url_mode, font_database)
                     .expect("Couldn't create ui backend"),
             )
             .with_autoplay(true)
@@ -207,6 +208,7 @@ pub struct PlayerController {
     event_loop: EventLoopProxy<RuffleEvent>,
     window: Rc<Window>,
     descriptors: Arc<Descriptors>,
+    font_database: Rc<fontdb::Database>,
 }
 
 impl PlayerController {
@@ -214,12 +216,14 @@ impl PlayerController {
         event_loop: EventLoopProxy<RuffleEvent>,
         window: Rc<Window>,
         descriptors: Arc<Descriptors>,
+        font_database: fontdb::Database,
     ) -> Self {
         Self {
             player: None,
             event_loop,
             window,
             descriptors,
+            font_database: Rc::new(font_database),
         }
     }
 
@@ -231,6 +235,7 @@ impl PlayerController {
             self.window.clone(),
             self.descriptors.clone(),
             movie_view,
+            self.font_database.clone(),
         ));
     }
 
