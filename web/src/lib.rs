@@ -22,8 +22,8 @@ use ruffle_core::external::{
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{swf, DefaultFont};
 use ruffle_core::{
-    Color, Player, PlayerBuilder, PlayerEvent, SandboxType, StageAlign, StageScaleMode,
-    StaticCallstack, ViewportDimensions,
+    Color, Player, PlayerBuilder, PlayerEvent, PlayerRuntime, SandboxType, StageAlign,
+    StageScaleMode, StaticCallstack, ViewportDimensions,
 };
 use ruffle_render::quality::StageQuality;
 use ruffle_video_software::backend::SoftwareVideoBackend;
@@ -171,6 +171,15 @@ where
     tracing::Level::from_str(&value).map_err(Error::custom)
 }
 
+fn deserialize_player_runtime<'de, D>(deserializer: D) -> Result<PlayerRuntime, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    use serde::de::Error;
+    let value: String = serde::Deserialize::deserialize(deserializer)?;
+    PlayerRuntime::from_str(&value).map_err(Error::custom)
+}
+
 fn deserialize_duration<'de, D>(deserializer: D) -> Result<Duration, D::Error>
 where
     D: serde::Deserializer<'de>,
@@ -304,6 +313,9 @@ struct Config {
     socket_proxy: Vec<SocketProxy>,
 
     credential_allow_list: Vec<String>,
+
+    #[serde(deserialize_with = "deserialize_player_runtime")]
+    player_runtime: PlayerRuntime,
 }
 
 /// Metadata about the playing SWF file to be passed back to JavaScript.
@@ -646,6 +658,7 @@ impl Ruffle {
             .with_letterbox(config.letterbox)
             .with_max_execution_duration(config.max_execution_duration)
             .with_player_version(config.player_version)
+            .with_player_runtime(config.player_runtime)
             .with_compatibility_rules(if config.compatibility_rules {
                 CompatibilityRules::default()
             } else {

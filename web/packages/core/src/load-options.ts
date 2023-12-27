@@ -176,6 +176,21 @@ export enum ContextMenu {
 }
 
 /**
+ * Represents the player runtime to emulate.
+ */
+export enum PlayerRuntime {
+    /**
+     * Emulate Adobe AIR.
+     */
+    AIR = "air",
+
+    /**
+     * Emulate Adobe Flash Player.
+     */
+    FlashPlayer = "flashPlayer",
+}
+
+/**
  * Non-negative duration in seconds.
  */
 export type SecsDuration = number;
@@ -623,6 +638,13 @@ export interface BaseLoadOptions {
      * @default []
      */
     credentialAllowList?: Array<string>;
+
+    /**
+     * The player runtime to emulate
+     *
+     * This allows you to emulate Adobe AIR or Adobe Flash Player.
+     */
+    playerRuntime?: PlayerRuntime;
 }
 
 /**
