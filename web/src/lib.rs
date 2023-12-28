@@ -175,9 +175,8 @@ fn deserialize_player_runtime<'de, D>(deserializer: D) -> Result<PlayerRuntime, 
 where
     D: serde::Deserializer<'de>,
 {
-    use serde::de::Error;
     let value: String = serde::Deserialize::deserialize(deserializer)?;
-    PlayerRuntime::from_str(&value).map_err(Error::custom)
+    Ok(PlayerRuntime::from_str(&value).unwrap_or_default())
 }
 
 fn deserialize_duration<'de, D>(deserializer: D) -> Result<Duration, D::Error>
