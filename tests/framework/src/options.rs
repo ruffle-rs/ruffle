@@ -30,6 +30,7 @@ pub struct TestOptions {
     pub player_options: PlayerOptions,
     pub log_fetch: bool,
     pub required_features: RequiredFeatures,
+    pub fonts: HashMap<String, FontOptions>,
 }
 
 impl Default for TestOptions {
@@ -47,6 +48,7 @@ impl Default for TestOptions {
             player_options: PlayerOptions::default(),
             log_fetch: false,
             required_features: RequiredFeatures::default(),
+            fonts: Default::default(),
         }
     }
 }
@@ -370,4 +372,13 @@ impl Default for RenderOptions {
             exclude_warp: false,
         }
     }
+}
+
+#[derive(Deserialize, Default, Clone)]
+#[serde(default, deny_unknown_fields)]
+pub struct FontOptions {
+    pub family: String,
+    pub path: String,
+    pub bold: bool,
+    pub italic: bool,
 }

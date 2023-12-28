@@ -1,3 +1,4 @@
+use crate::test::Font;
 use chrono::{DateTime, Utc};
 use image::EncodableLayout;
 use ruffle_core::backend::ui::{
@@ -76,8 +77,15 @@ impl FileDialogResult for TestFileDialogResult {
 ///   otherwise a user cancellation will be simulated
 /// * Attempting to display a file save dialog with a file name hint of "debug-success.txt" will simulate successfully selecting a destination
 ///   otherwise a user cancellation will be simulated
-#[derive(Default)]
-pub struct TestUiBackend;
+pub struct TestUiBackend {
+    fonts: Vec<Font>,
+}
+
+impl TestUiBackend {
+    pub fn new(fonts: Vec<Font>) -> Self {
+        Self { fonts }
+    }
+}
 
 impl UiBackend for TestUiBackend {
     fn mouse_visible(&self) -> bool {
@@ -112,11 +120,24 @@ impl UiBackend for TestUiBackend {
 
     fn load_device_font(
         &self,
-        _name: &str,
-        _is_bold: bool,
-        _is_italic: bool,
-        _register: &mut dyn FnMut(FontDefinition),
+        name: &str,
+        is_bold: bool,
+        is_italic: bool,
+        register: &mut dyn FnMut(FontDefinition),
     ) {
+        for font in &self.fonts {
+            if font.family != name || font.bold != is_bold || font.italic != is_italic {
+                continue;
+            }
+
+            register(FontDefinition::FontFile {
+                name: name.to_owned(),
+                is_bold,
+                is_italic,
+                data: font.bytes.clone(),
+            });
+            break;
+        }
     }
 
     fn display_file_open_dialog(&mut self, filters: Vec<FileFilter>) -> Option<DialogResultFuture> {
