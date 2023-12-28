@@ -1388,7 +1388,7 @@ impl<'a> ShaderBuilder<'a> {
                         }
                     }
                 }
-                Operation::Switch {
+                Operation::Select {
                     src1,
                     src2,
                     dst,
