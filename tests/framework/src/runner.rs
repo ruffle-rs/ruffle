@@ -58,7 +58,7 @@ pub fn run_swf(
         .with_navigator(navigator)
         .with_max_execution_duration(Duration::from_secs(300))
         .with_fs_commands(Box::new(fs_command_provider))
-        .with_ui(TestUiBackend)
+        .with_ui(TestUiBackend::new(test.fonts()?))
         .with_viewport_dimensions(
             viewport_dimensions.width,
             viewport_dimensions.height,

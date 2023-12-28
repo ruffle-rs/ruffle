@@ -12,6 +12,13 @@ use ruffle_socket_format::SocketEvent;
 use std::sync::{Arc, Mutex};
 use vfs::VfsPath;
 
+pub struct Font {
+    pub bytes: Vec<u8>,
+    pub family: String,
+    pub bold: bool,
+    pub italic: bool,
+}
+
 pub struct Test {
     pub options: TestOptions,
     pub swf_path: VfsPath,
@@ -104,6 +111,21 @@ impl Test {
         } else {
             InputInjector::empty()
         })
+    }
+
+    pub fn fonts(&self) -> Result<Vec<Font>> {
+        self.options
+            .fonts
+            .values()
+            .map(|font| {
+                Ok(Font {
+                    bytes: read_bytes(&self.root_path.join(&font.path)?)?.to_vec(),
+                    family: font.family.to_owned(),
+                    bold: font.bold,
+                    italic: font.italic,
+                })
+            })
+            .collect()
     }
 
     pub fn should_run(&self, check_renderer: bool, environment: &impl Environment) -> bool {
