@@ -1235,11 +1235,14 @@ impl Player {
                         || !over_object.as_displayobject().avm1_removed()
                     {
                         over_object.handle_clip_event(context, ClipEvent::MouseWheel { delta });
+
+                        over_object
+                            .event_dispatch_to_avm2(context, ClipEvent::MouseWheel { delta });
                     }
                 } else {
                     context
                         .stage
-                        .handle_clip_event(context, ClipEvent::MouseWheel { delta });
+                        .event_dispatch_to_avm2(context, ClipEvent::MouseWheel { delta });
                 }
             });
         }
