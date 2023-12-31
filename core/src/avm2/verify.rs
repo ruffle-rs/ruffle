@@ -597,7 +597,7 @@ fn verify_block<'gc>(
 
                 let multiname = method
                     .translation_unit()
-                    .pool_maybe_uninitialized_multiname(*index, &mut activation.borrow_gc())?;
+                    .pool_maybe_uninitialized_multiname(*index, &mut activation.context)?;
 
                 if multiname.has_lazy_component() {
                     return Err(Error::AvmError(verify_error(
