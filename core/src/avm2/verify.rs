@@ -483,19 +483,6 @@ fn verify_block<'gc>(
                 }
             }
 
-            Op::Debug {
-                is_local_register,
-                register,
-                ..
-            } => {
-                if *is_local_register {
-                    let max = body.num_locals;
-                    if *register as u32 >= max {
-                        return Err(make_error_1025(activation, *register as u32));
-                    }
-                }
-            }
-
             // Scope stack-related verifications
             Op::PushWith => {
                 scope_stack.push(StateScope::new_any_with());
