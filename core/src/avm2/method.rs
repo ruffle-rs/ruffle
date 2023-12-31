@@ -59,7 +59,7 @@ impl<'gc> ParamConfig<'gc> {
     ) -> Result<Self, Error<'gc>> {
         let param_name = if let Some(name) = &config.name {
             txunit
-                .pool_string(name.0, &mut &mut activation.borrow_gc())?
+                .pool_string(name.0, &mut activation.borrow_gc())?
                 .into()
         } else {
             AvmString::from("<Unnamed Parameter>")

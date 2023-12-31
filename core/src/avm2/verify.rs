@@ -85,7 +85,7 @@ pub fn verify_method<'gc>(
 
     use swf::extensions::ReadSwfExt;
 
-    if body.code.len() == 0 {
+    if body.code.is_empty() {
         return Err(Error::AvmError(verify_error(
             activation,
             "Error #1043: Invalid code_length=0.",
@@ -520,7 +520,7 @@ fn verify_block<'gc>(
             }
 
             Op::PopScope => {
-                if scope_stack.len() == 0 {
+                if scope_stack.is_empty() {
                     return Err(Error::AvmError(verify_error(
                         activation,
                         "Error #1018: Scope stack underflow occurred.",
@@ -545,14 +545,12 @@ fn verify_block<'gc>(
                 // FP checks the scope that the function was defined in
                 // for freestanding functions. We can't do that easily,
                 // so just avoid this verification step for them.
-                if !method.is_function {
-                    if body.init_scope_depth as usize + scope_stack.len() == 0 {
-                        return Err(Error::AvmError(verify_error(
-                            activation,
-                            "Error #1013: Cannot call OP_findproperty when scopeDepth is 0.",
-                            1013,
-                        )?));
-                    }
+                if !method.is_function && body.init_scope_depth as usize + scope_stack.len() == 0 {
+                    return Err(Error::AvmError(verify_error(
+                        activation,
+                        "Error #1013: Cannot call OP_findproperty when scopeDepth is 0.",
+                        1013,
+                    )?));
                 }
             }
 
@@ -585,14 +583,12 @@ fn verify_block<'gc>(
 
             Op::GetLex { index } => {
                 // See comment for FindProperty/FindPropStrict.
-                if !method.is_function {
-                    if body.init_scope_depth as usize + scope_stack.len() == 0 {
-                        return Err(Error::AvmError(verify_error(
-                            activation,
-                            "Error #1013: Cannot call OP_findproperty when scopeDepth is 0.",
-                            1013,
-                        )?));
-                    }
+                if !method.is_function && body.init_scope_depth as usize + scope_stack.len() == 0 {
+                    return Err(Error::AvmError(verify_error(
+                        activation,
+                        "Error #1013: Cannot call OP_findproperty when scopeDepth is 0.",
+                        1013,
+                    )?));
                 }
 
                 let multiname = method

@@ -854,7 +854,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.ip = 0;
 
         let val = loop {
-            let result = self.do_next_opcode(method, &parsed_code);
+            let result = self.do_next_opcode(method, parsed_code);
             match result {
                 Ok(FrameControl::Return(value)) => break Ok(value),
                 Ok(FrameControl::Continue) => {}
@@ -869,7 +869,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     /// If a local exception handler exists for the error, use it to handle
     /// the error. Otherwise pass the error down the stack.
-    fn handle_err<'b>(
+    fn handle_err(
         &mut self,
         method: Gc<'gc, BytecodeMethod<'gc>>,
         error: Error<'gc>,
@@ -914,7 +914,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     /// Run a single action from a given action reader.
-    fn do_next_opcode<'b>(
+    fn do_next_opcode(
         &mut self,
         method: Gc<'gc, BytecodeMethod<'gc>>,
         opcodes: &[Op],
@@ -2388,13 +2388,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn op_jump<'b>(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn op_jump(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
         self.ip += offset;
 
         Ok(FrameControl::Continue)
     }
 
-    fn op_if_true<'b>(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn op_if_true(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value = self.pop_stack().coerce_to_boolean();
 
         if value {
@@ -2404,7 +2404,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn op_if_false<'b>(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn op_if_false(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value = self.pop_stack().coerce_to_boolean();
 
         if !value {
@@ -2414,7 +2414,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn op_if_strict_eq<'b>(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn op_if_strict_eq(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value2 = self.pop_stack();
         let value1 = self.pop_stack();
 
@@ -2425,7 +2425,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn op_if_strict_ne<'b>(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn op_if_strict_ne(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value2 = self.pop_stack();
         let value1 = self.pop_stack();
 
@@ -2436,7 +2436,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn op_if_eq<'b>(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn op_if_eq(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value2 = self.pop_stack();
         let value1 = self.pop_stack();
 
@@ -2447,7 +2447,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn op_if_ne<'b>(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn op_if_ne(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value2 = self.pop_stack();
         let value1 = self.pop_stack();
 
@@ -2458,7 +2458,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn op_if_ge<'b>(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn op_if_ge(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value2 = self.pop_stack();
         let value1 = self.pop_stack();
 
@@ -2469,7 +2469,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn op_if_gt<'b>(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn op_if_gt(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value2 = self.pop_stack();
         let value1 = self.pop_stack();
 
@@ -2480,7 +2480,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn op_if_le<'b>(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn op_if_le(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value2 = self.pop_stack();
         let value1 = self.pop_stack();
 
@@ -2491,7 +2491,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn op_if_lt<'b>(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn op_if_lt(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value2 = self.pop_stack();
         let value1 = self.pop_stack();
 
@@ -2502,7 +2502,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn op_if_nge<'b>(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn op_if_nge(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value2 = self.pop_stack();
         let value1 = self.pop_stack();
 
@@ -2513,7 +2513,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn op_if_ngt<'b>(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn op_if_ngt(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value2 = self.pop_stack();
         let value1 = self.pop_stack();
 
@@ -2524,7 +2524,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn op_if_nle<'b>(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn op_if_nle(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value2 = self.pop_stack();
         let value1 = self.pop_stack();
 
@@ -2535,7 +2535,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn op_if_nlt<'b>(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn op_if_nlt(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value2 = self.pop_stack();
         let value1 = self.pop_stack();
 
@@ -2886,7 +2886,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     /// Implements `Op::LookupSwitch`
-    fn op_lookup_switch<'b>(
+    fn op_lookup_switch(
         &mut self,
         default_offset: i32,
         case_offsets: &[i32],
