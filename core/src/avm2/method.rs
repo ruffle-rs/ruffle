@@ -19,7 +19,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 use swf::avm2::types::{
     AbcFile, Index, Method as AbcMethod, MethodBody as AbcMethodBody,
-    MethodFlags as AbcMethodFlags, MethodParam as AbcMethodParam,
+    MethodFlags as AbcMethodFlags, MethodParam as AbcMethodParam, Op,
 };
 
 /// Represents a function defined in Ruffle's code.
@@ -120,8 +120,11 @@ pub struct BytecodeMethod<'gc> {
     /// The ABC method body this function uses.
     pub abc_method_body: Option<u32>,
 
-    pub try_verify: Cell<bool>,
+    pub needs_verify: Cell<bool>,
     pub verified_method_body: RefCell<Option<AbcMethodBody>>,
+
+    #[collect(require_static)]
+    pub parsed_code: RefCell<Option<Vec<Op>>>,
 
     /// The parameter signature of this method.
     pub signature: Vec<ParamConfig<'gc>>,
@@ -170,8 +173,9 @@ impl<'gc> BytecodeMethod<'gc> {
                         abc: txunit.abc(),
                         abc_method: abc_method.0,
                         abc_method_body: Some(index as u32),
-                        try_verify: Cell::new(true),
+                        needs_verify: Cell::new(true),
                         verified_method_body: RefCell::new(None),
+                        parsed_code: RefCell::new(None),
                         signature,
                         return_type,
                         is_function,
@@ -186,8 +190,9 @@ impl<'gc> BytecodeMethod<'gc> {
             abc: txunit.abc(),
             abc_method: abc_method.0,
             abc_method_body: None,
-            try_verify: Cell::new(true),
+            needs_verify: Cell::new(true),
             verified_method_body: RefCell::new(None),
+            parsed_code: RefCell::new(None),
             signature,
             return_type,
             is_function,

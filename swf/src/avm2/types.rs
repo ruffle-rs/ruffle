@@ -129,7 +129,6 @@ pub struct MethodBody {
     pub init_scope_depth: u32,
     pub max_scope_depth: u32,
     pub code: Vec<u8>,
-    pub parsed_code: Vec<Op>,
     pub exceptions: Vec<Exception>,
     pub traits: Vec<Trait>,
 }

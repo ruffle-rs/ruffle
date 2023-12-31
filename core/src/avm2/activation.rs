@@ -837,24 +837,22 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         &mut self,
         method: Gc<'gc, BytecodeMethod<'gc>>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        if method.try_verify.get() {
+        if method.needs_verify.get() {
             method.verify(self)?;
-            method.try_verify.set(false);
+            method.needs_verify.set(false);
         }
 
-        let verified = method.verified_method_body.borrow();
-        let verified = verified.as_ref().unwrap();
+        let verified_code = method.parsed_code.borrow();
+        let verified_code = verified_code.as_ref().unwrap().as_slice();
 
-        let parsed_code = &verified.parsed_code;
-
-        if parsed_code.len() == 0 {
+        if verified_code.len() == 0 {
             return Ok(Value::Undefined);
         }
 
         self.ip = 0;
 
         let val = loop {
-            let result = self.do_next_opcode(method, parsed_code);
+            let result = self.do_next_opcode(method, verified_code);
             match result {
                 Ok(FrameControl::Return(value)) => break Ok(value),
                 Ok(FrameControl::Continue) => {}

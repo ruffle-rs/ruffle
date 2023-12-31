@@ -72,12 +72,11 @@ pub fn verify_method<'gc>(
         init_scope_depth: body.init_scope_depth,
         max_scope_depth: body.max_scope_depth,
         code: vec![],
-        parsed_code: vec![],
         exceptions: body.exceptions.clone(),
         traits: body.traits.clone(),
     };
 
-    let new_code = &mut new_body.parsed_code;
+    let mut new_code = Vec::new();
 
     let mut byte_offset_to_idx = HashMap::new();
     let mut idx_to_byte_offset = vec![0];
@@ -264,6 +263,8 @@ pub fn verify_method<'gc>(
             _ => {}
         }
     }
+
+    *method.parsed_code.borrow_mut() = Some(new_code);
 
     Ok(new_body)
 }
