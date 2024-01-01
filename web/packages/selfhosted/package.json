@@ -20,8 +20,8 @@
         "ruffle-core": "^0.1.0"
     },
     "devDependencies": {
-        "webdriverio": "^8.24.12",
-        "@wdio/cli": "^8.24.16",
+        "webdriverio": "^8.27.0",
+        "@wdio/cli": "^8.27.1",
         "json5": "^2.2.3",
         "webpack": "^5.89.0",
         "webpack-cli": "^5.1.4",
