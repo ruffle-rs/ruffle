@@ -1,7 +1,8 @@
 use crate::custom_event::RuffleEvent;
 use anyhow::{anyhow, Error};
+use gilrs::Button;
 use rfd::FileDialog;
-use ruffle_core::events::{KeyCode, TextControlCode};
+use ruffle_core::events::{GamepadButton, KeyCode, TextControlCode};
 use std::path::{Path, PathBuf};
 use url::Url;
 use winit::dpi::PhysicalSize;
@@ -168,6 +169,28 @@ pub fn winit_to_ruffle_key_code(event: &KeyEvent) -> KeyCode {
         Key::Named(NamedKey::F23) => KeyCode::F23,
         Key::Named(NamedKey::F24) => KeyCode::F24,
         _ => KeyCode::Unknown,
+    }
+}
+
+pub fn gilrs_button_to_gamepad_button(button: Button) -> Option<GamepadButton> {
+    match button {
+        Button::South => Some(GamepadButton::South),
+        Button::East => Some(GamepadButton::East),
+        Button::North => Some(GamepadButton::North),
+        Button::West => Some(GamepadButton::West),
+        Button::LeftTrigger => Some(GamepadButton::LeftTrigger),
+        Button::LeftTrigger2 => Some(GamepadButton::LeftTrigger2),
+        Button::RightTrigger => Some(GamepadButton::RightTrigger),
+        Button::RightTrigger2 => Some(GamepadButton::RightTrigger2),
+        Button::Select => Some(GamepadButton::Select),
+        Button::Start => Some(GamepadButton::Start),
+        Button::DPadUp => Some(GamepadButton::DPadUp),
+        Button::DPadDown => Some(GamepadButton::DPadDown),
+        Button::DPadLeft => Some(GamepadButton::DPadLeft),
+        Button::DPadRight => Some(GamepadButton::DPadRight),
+        // GilRs has some more buttons that are seemingly not supported anywhere
+        // like C or Z.
+        _ => None,
     }
 }
 

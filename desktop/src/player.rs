@@ -10,6 +10,7 @@ use crate::{CALLSTACK, RENDER_INFO, SWF_INFO};
 use anyhow::anyhow;
 use ruffle_core::backend::navigator::{OpenURLMode, SocketMode};
 use ruffle_core::config::Letterbox;
+use ruffle_core::events::{GamepadButton, KeyCode};
 use ruffle_core::{
     DefaultFont, LoadBehavior, Player, PlayerBuilder, PlayerEvent, PlayerRuntime, StageAlign,
     StageScaleMode,
@@ -18,7 +19,7 @@ use ruffle_render::backend::RenderBackend;
 use ruffle_render::quality::StageQuality;
 use ruffle_render_wgpu::backend::WgpuRenderBackend;
 use ruffle_render_wgpu::descriptors::Descriptors;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::Duration;
@@ -52,6 +53,7 @@ pub struct PlayerOptions {
     pub frame_rate: Option<f64>,
     pub open_url_mode: OpenURLMode,
     pub dummy_external_interface: bool,
+    pub gamepad_button_mapping: HashMap<GamepadButton, KeyCode>,
 }
 
 impl From<&Opt> for PlayerOptions {
@@ -79,6 +81,7 @@ impl From<&Opt> for PlayerOptions {
             dummy_external_interface: value.dummy_external_interface,
             socket_allowed: HashSet::from_iter(value.socket_allow.iter().cloned()),
             tcp_connections: value.tcp_connections,
+            gamepad_button_mapping: HashMap::from_iter(value.gamepad_button.iter().cloned()),
         }
     }
 }
@@ -143,6 +146,10 @@ impl ActivePlayer {
         } else {
             Duration::from_secs_f64(opt.max_execution_duration)
         };
+
+        if !opt.gamepad_button_mapping.is_empty() {
+            builder = builder.with_gamepad_button_mapping(opt.gamepad_button_mapping.clone());
+        }
 
         builder = builder
             .with_navigator(navigator)
