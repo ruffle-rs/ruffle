@@ -1402,7 +1402,7 @@ impl<'a> ShaderBuilder<'a> {
                         PixelBenderRegKind::Int => self.zeroi32,
                     };
                     if condition.channels.len() != 1 {
-                        panic!("Ternary if condition must be a scalar: {condition:?}");
+                        panic!("'Select' condition must be a scalar: {condition:?}");
                     }
 
                     // FIXME - `load_src_register` always gives us a vec4 - ideally, we would
