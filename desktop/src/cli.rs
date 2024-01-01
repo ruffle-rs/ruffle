@@ -1,8 +1,9 @@
 use crate::RUFFLE_VERSION;
-use anyhow::Error;
-use clap::Parser;
+use anyhow::{anyhow, Error};
+use clap::{Parser, ValueEnum};
 use ruffle_core::backend::navigator::{OpenURLMode, SocketMode};
 use ruffle_core::config::Letterbox;
+use ruffle_core::events::{GamepadButton, KeyCode};
 use ruffle_core::{LoadBehavior, PlayerRuntime, StageAlign, StageScaleMode};
 use ruffle_render::quality::StageQuality;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
@@ -140,10 +141,74 @@ pub struct Opt {
     /// Hides the menu bar (the bar at the top of the window).
     #[clap(long)]
     pub no_gui: bool,
+
+    /// Remaps a specific button on a gamepad to a keyboard key.
+    /// This can be used to add new gamepad support to existing games, for example mapping
+    /// the D-pad to the arrow keys with -B d-pad-up=up -B d-pad-down=down etc.
+    ///
+    /// A case-insensitive list of supported gamepad-buttons is:
+    /// - north, east, south, west
+    /// - d-pad-up, d-pad-down, d-pad-left, d-pad-right
+    /// - left-trigger, left-trigger2
+    /// - right-trigger, right-trigger2
+    /// - select, start
+    ///
+    /// A case-insensitive (non-exhaustive) list of common key-names is:
+    /// - a, b, c, ..., z
+    /// - up, down, left, right
+    /// - return
+    /// - space
+    /// - comma, semicolon
+    /// - key0, key1, ..., key9
+    /// The complete list of supported key-names can be found by using -B start=nonexistent.
+    #[clap(
+        long,
+        short = 'B',
+        value_parser(parse_gamepad_button),
+        verbatim_doc_comment,
+        value_name = "GAMEPAD BUTTON>=<KEY NAME"
+    )]
+    pub gamepad_button: Vec<(GamepadButton, KeyCode)>,
 }
 
 fn parse_movie_file_or_url(path: &str) -> Result<Url, Error> {
     crate::util::parse_url(Path::new(path))
+}
+
+fn parse_gamepad_button(mapping: &str) -> Result<(GamepadButton, KeyCode), Error> {
+    let pos = mapping.find('=').ok_or_else(|| {
+        anyhow!("invalid <gamepad button>=<key name>: no `=` found in `{mapping}`")
+    })?;
+
+    fn to_aliases<T: ValueEnum>(variants: &[T]) -> String {
+        let aliases: Vec<String> = variants
+            .iter()
+            .map(|variant| {
+                variant
+                    .to_possible_value()
+                    .expect("Must have a PossibleValue")
+                    .get_name_and_aliases()
+                    .next()
+                    .expect("Must have one alias")
+                    .to_owned()
+            })
+            .collect();
+        aliases.join(", ")
+    }
+
+    let button = GamepadButton::from_str(&mapping[..pos], true).map_err(|err| {
+        anyhow!(
+            "Could not parse <gamepad button>: {err}\n  The possible values are: {}",
+            to_aliases(GamepadButton::value_variants())
+        )
+    })?;
+    let key_code = KeyCode::from_str(&mapping[pos + 1..], true).map_err(|err| {
+        anyhow!(
+            "Could not parse <key name>: {err}\n  The possible values are: {}",
+            to_aliases(KeyCode::value_variants())
+        )
+    })?;
+    Ok((button, key_code))
 }
 
 impl Opt {

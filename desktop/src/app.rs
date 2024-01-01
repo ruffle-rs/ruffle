@@ -3,10 +3,11 @@ use crate::custom_event::RuffleEvent;
 use crate::gui::{GuiController, MENU_HEIGHT};
 use crate::player::{PlayerController, PlayerOptions};
 use crate::util::{
-    get_screen_size, parse_url, pick_file, plot_stats_in_tracy, winit_to_ruffle_key_code,
-    winit_to_ruffle_text_control,
+    get_screen_size, gilrs_button_to_gamepad_button, parse_url, pick_file, plot_stats_in_tracy,
+    winit_to_ruffle_key_code, winit_to_ruffle_text_control,
 };
 use anyhow::{Context, Error};
+use gilrs::{Event, EventType, Gilrs};
 use ruffle_core::{PlayerEvent, StageDisplayState};
 use ruffle_render::backend::ViewportDimensions;
 use std::cell::RefCell;
@@ -98,6 +99,12 @@ impl App {
             self.window.set_visible(true);
             loaded = LoadingState::Loaded;
         }
+
+        let mut gilrs = Gilrs::new()
+            .inspect_err(|err| {
+                tracing::warn!("Gamepad support could not be initialized: {err}");
+            })
+            .ok();
 
         // Poll UI events.
         let event_loop = self.event_loop.take().expect("App already running");
@@ -447,6 +454,26 @@ impl App {
                 }
 
                 _ => (),
+            }
+
+            if let Some(Event { event, .. }) = gilrs.as_mut().and_then(|gilrs| gilrs.next_event()) {
+                match event {
+                    EventType::ButtonPressed(button, _) => {
+                        if let Some(button) = gilrs_button_to_gamepad_button(button) {
+                            self.player
+                                .handle_event(PlayerEvent::GamepadButtonDown { button });
+                            check_redraw = true;
+                        }
+                    }
+                    EventType::ButtonReleased(button, _) => {
+                        if let Some(button) = gilrs_button_to_gamepad_button(button) {
+                            self.player
+                                .handle_event(PlayerEvent::GamepadButtonUp { button });
+                            check_redraw = true;
+                        }
+                    }
+                    _ => {}
+                }
             }
 
             // Check for a redraw request.
