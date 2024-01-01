@@ -12,6 +12,6 @@ ruffle_render = { path = "../" }
 naga = { workspace = true }
 naga_oil = { workspace = true }
 tracing = { workspace = true }
-anyhow = "1.0.76"
+anyhow = "1.0.78"
 bitflags = "2.4.1"
 
