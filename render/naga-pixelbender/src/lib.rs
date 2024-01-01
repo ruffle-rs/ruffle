@@ -1419,53 +1419,13 @@ impl<'a> ShaderBuilder<'a> {
                         right: expr_zero,
                     });
 
-                    self.blocks.push(BlockStackEntry::IfElse {
-                        after_if: Block::new(),
-                        after_else: Block::new(),
-                        in_after_if: true,
+                    let select_expr = self.evaluate_expr(Expression::Select {
                         condition: is_true,
+                        accept: src1_expr,
+                        reject: src2_expr,
                     });
 
-                    self.emit_dest_store(src1_expr, dst)?;
-
-                    if let BlockStackEntry::IfElse {
-                        after_if: _,
-                        after_else: _,
-                        in_after_if,
-                        condition: _,
-                    } = self.blocks.last_mut().unwrap()
-                    {
-                        assert!(*in_after_if);
-                        *in_after_if = false;
-                    } else {
-                        unreachable!()
-                    }
-
-                    self.emit_dest_store(src2_expr, dst)?;
-
-                    let block = self.blocks.pop().unwrap();
-
-                    match block {
-                        BlockStackEntry::IfElse {
-                            after_if,
-                            after_else,
-                            in_after_if: _,
-                            condition,
-                        } => {
-                            self.push_statement(Statement::If {
-                                condition,
-                                // The opcodes occuring directly after the 'if' opcode
-                                // get run if the condition is true
-                                accept: after_if,
-                                // The opcodes occurring directly after the 'els' opcode
-                                // get run if the condition is false
-                                reject: after_else,
-                            });
-                        }
-                        BlockStackEntry::Normal(block) => {
-                            panic!("Unexpected non-IfElse block {block:?}")
-                        }
-                    }
+                    self.emit_dest_store(select_expr, dst)?;
                 }
                 Operation::Nop => {}
             }
