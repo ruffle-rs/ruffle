@@ -60,6 +60,7 @@ If you are building for a Linux platform, the following are typical dependencies
 * libxcb-xfixes0-dev
 * libgtk-3-dev
 * libssl-dev
+* libudev-dev
 * libxcb-xinput-dev
 * libxcb-xkb-dev
 * libxcb-cursor-dev
