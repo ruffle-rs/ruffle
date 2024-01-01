@@ -9,5 +9,5 @@ version.workspace = true
 
 [dependencies]
 serde = { version = "1.0.193", features = ["derive"] }
-serde_json = "1.0.108"
+serde_json = "1.0.109"
 bitflags = "2.4.1"
