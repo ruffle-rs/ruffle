@@ -1,0 +1,56 @@
+err: TypeError: Error #1088: The markup in the document following the root element must be well-formed.
+err: TypeError: Error #1088: The markup in the document following the root element must be well-formed.
+err: TypeError: Error #1088: The markup in the document following the root element must be well-formed.
+err: TypeError: Error #1088: The markup in the document following the root element must be well-formed.
+err: TypeError: Error #1088: The markup in the document following the root element must be well-formed.
+err: TypeError: Error #1088: The markup in the document following the root element must be well-formed.
+err: TypeError: Error #1088: The markup in the document following the root element must be well-formed.
+err: TypeError: Error #1088: The markup in the document following the root element must be well-formed.
+<elem><?pi PI?><!-- inner --> innerText </elem>
+<elem><?pi PI?><!-- inner -->innerText</elem>
+<elem><!-- inner --> innerText </elem>
+<elem><!-- inner -->innerText</elem>
+<elem><?pi PI?> innerText </elem>
+<elem><?pi PI?>innerText</elem>
+<elem> innerText </elem>
+<elem>innerText</elem>
+<body/>
+<body/>
+<body/>
+<body/>
+<body/>
+<body/>
+<body/>
+<body/>
+err: TypeError: Error #1088: The markup in the document following the root element must be well-formed.
+err: TypeError: Error #1088: The markup in the document following the root element must be well-formed.
+err: TypeError: Error #1088: The markup in the document following the root element must be well-formed.
+err: TypeError: Error #1088: The markup in the document following the root element must be well-formed.
+err: TypeError: Error #1088: The markup in the document following the root element must be well-formed.
+err: TypeError: Error #1088: The markup in the document following the root element must be well-formed.
+err: TypeError: Error #1088: The markup in the document following the root element must be well-formed.
+err: TypeError: Error #1088: The markup in the document following the root element must be well-formed.
+<elem><?pi innerPI?></elem>
+<elem><?pi innerPI?></elem>
+<elem/>
+<elem/>
+<elem><?pi innerPI?></elem>
+<elem><?pi innerPI?></elem>
+<elem/>
+<elem/>
+<body/>
+<body/>
+<body/>
+<body/>
+<body/>
+<body/>
+<body/>
+<body/>
+err: TypeError: Error #1088: The markup in the document following the root element must be well-formed.
+err: TypeError: Error #1088: The markup in the document following the root element must be well-formed.
+<!-- comment -->
+<!-- comment -->
+<?pi PI?>
+<?pi PI?>
+
+
