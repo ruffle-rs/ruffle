@@ -10,9 +10,13 @@ package flash.net {
     public native function navigateToURL(request:URLRequest, window:String = null):void;
 
     public function registerClassAlias(name:String, object:Class):void {
-        if (name == null || object == null) {
-            throw new TypeError("FIXME - what error should I use");
+        if (name == null) {
+            throw new TypeError("Error #2007: Parameter aliasName must be non-null.", 2007);
         }
+        if (object == null) {
+            throw new TypeError("Error #2007: Parameter classObject must be non-null.", 2007);
+        }
+
         this._aliasToClass[name] = object;
         this._classToAlias[object] = name;
     }
