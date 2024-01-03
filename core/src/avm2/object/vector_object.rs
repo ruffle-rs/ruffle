@@ -116,6 +116,10 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         read.base.get_property_local(name, activation)
     }
 
+    fn get_index_property(self, index: usize) -> Option<Value<'gc>> {
+        self.0.read().vector.get_optional(index)
+    }
+
     fn set_property_local(
         self,
         name: &Multiname<'gc>,

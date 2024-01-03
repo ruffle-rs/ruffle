@@ -281,6 +281,12 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         )
     }
 
+    /// Purely an optimization for "array-like" access. This should return
+    /// `None` when the lookup needs to be forwarded to the base or throw.
+    fn get_index_property(self, _index: usize) -> Option<Value<'gc>> {
+        None
+    }
+
     /// Set a local property of the object. The Multiname should always be public.
     ///
     /// This skips class field lookups and looks at:

@@ -170,7 +170,7 @@ impl<'gc> VectorStorage<'gc> {
         pos: usize,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        if let Some(val) = self.storage.get(pos).cloned() {
+        if let Some(val) = self.get_optional(pos) {
             Ok(val)
         } else {
             Err(Error::AvmError(range_error(
@@ -182,6 +182,11 @@ impl<'gc> VectorStorage<'gc> {
                 1125,
             )?))
         }
+    }
+
+    /// Retrieve a value from the vector or `None` for out-of-bounds.
+    pub fn get_optional(&self, index: usize) -> Option<Value<'gc>> {
+        self.storage.get(index).cloned()
     }
 
     /// Store a value into the vector.

@@ -108,7 +108,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         if name.contains_public_namespace() {
             if let Some(name) = name.local_name() {
                 if let Ok(index) = name.parse::<usize>() {
-                    if let Some(result) = read.array.get(index) {
+                    if let Some(result) = self.get_index_property(index) {
                         return Ok(result);
                     }
                 }
@@ -116,6 +116,10 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         }
 
         read.base.get_property_local(name, activation)
+    }
+
+    fn get_index_property(self, index: usize) -> Option<Value<'gc>> {
+        self.0.read().array.get(index)
     }
 
     fn set_property_local(

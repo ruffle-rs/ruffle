@@ -123,16 +123,23 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
         if name.contains_public_namespace() {
             if let Some(name) = name.local_name() {
                 if let Ok(index) = name.parse::<usize>() {
-                    return Ok(if let Some(val) = read.storage.get(index) {
-                        Value::Integer(val as i32)
-                    } else {
-                        Value::Undefined
-                    });
+                    return Ok(self.get_index_property(index).unwrap());
                 }
             }
         }
 
         read.base.get_property_local(name, activation)
+    }
+
+    fn get_index_property(self, index: usize) -> Option<Value<'gc>> {
+        let read = self.0.read();
+
+        // ByteArrays never forward to base even for out-of-bounds access.
+        Some(
+            read.storage
+                .get(index)
+                .map_or(Value::Undefined, |val| Value::Integer(val as i32)),
+        )
     }
 
     fn set_property_local(

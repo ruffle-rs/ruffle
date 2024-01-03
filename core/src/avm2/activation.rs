@@ -1457,23 +1457,37 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             return Ok(FrameControl::Continue);
         }
 
-        // side path for dictionary/arrays (TODO)
+        // (fast) side path for dictionary/array-likes
         if multiname.has_lazy_name() && !multiname.has_lazy_ns() {
             // `MultinameL` is the only form of multiname that allows fast-path
             // or alternate-path lookups based on the local name *value*,
             // rather than it's string representation.
 
             let name_value = self.context.avm2.peek(0);
-            let object = self.context.avm2.peek(1);
-            if !name_value.is_primitive() {
-                let object = object.coerce_to_object_or_typeerror(self, None)?;
-                if let Some(dictionary) = object.as_dictionary_object() {
-                    let _ = self.pop_stack();
-                    let _ = self.pop_stack();
-                    let value = dictionary.get_property_by_object(name_value.as_object().unwrap());
-                    self.push_stack(value);
+            let object_value = self.context.avm2.peek(1);
 
-                    return Ok(FrameControl::Continue);
+            if let Value::Object(object) = object_value {
+                match name_value {
+                    Value::Integer(name_int) if name_int >= 0 => {
+                        if let Some(value) = object.get_index_property(name_int as usize) {
+                            let _ = self.pop_stack();
+                            let _ = self.pop_stack();
+                            self.push_stack(value);
+
+                            return Ok(FrameControl::Continue);
+                        }
+                    }
+                    Value::Object(name_object) => {
+                        if let Some(dictionary) = object.as_dictionary_object() {
+                            let _ = self.pop_stack();
+                            let _ = self.pop_stack();
+                            let value = dictionary.get_property_by_object(name_object);
+                            self.push_stack(value);
+
+                            return Ok(FrameControl::Continue);
+                        }
+                    }
+                    _ => {}
                 }
             }
         }
