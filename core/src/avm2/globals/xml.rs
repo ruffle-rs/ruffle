@@ -58,8 +58,45 @@ pub fn init<'gc>(
         // XML defaults to an empty text node when nothing was parsed
         [] => E4XNode::text(activation.context.gc_context, AvmString::default(), None),
         [node] => *node,
-        _ => {
-            return Err(Error::AvmError(ill_formed_markup_err(activation)?));
+        nodes => {
+            let mut single_element_node = None;
+            for node in nodes {
+                match &*node.kind() {
+                    E4XNodeKind::CData(_)
+                    | E4XNodeKind::Comment(_)
+                    | E4XNodeKind::ProcessingInstruction(_) => {}
+                    E4XNodeKind::Text(text) => {
+                        let mut chars = text.chars();
+                        let is_whitespace_text = chars.all(|c| {
+                            if let Ok(c) = c {
+                                matches!(c, '\t' | '\n' | '\r' | ' ')
+                            } else {
+                                false
+                            }
+                        });
+
+                        if !is_whitespace_text {
+                            single_element_node = None;
+                            break;
+                        }
+                    }
+                    E4XNodeKind::Element { .. } => {
+                        if single_element_node.is_none() {
+                            single_element_node = Some(node);
+                        } else {
+                            single_element_node = None;
+                            break;
+                        }
+                    }
+                    E4XNodeKind::Attribute(_) => unreachable!(),
+                }
+            }
+
+            if let Some(element) = single_element_node {
+                *element
+            } else {
+                return Err(Error::AvmError(ill_formed_markup_err(activation)?));
+            }
         }
     };
     this.set_node(activation.context.gc_context, node);
