@@ -754,7 +754,7 @@ impl<'a> Reader<'a> {
             OpCode::Li16 => Op::Li16,
             OpCode::Li32 => Op::Li32,
             OpCode::Li8 => Op::Li8,
-            OpCode::LookupSwitch => Op::LookupSwitch {
+            OpCode::LookupSwitch => Op::LookupSwitch(Box::new(LookupSwitch {
                 default_offset: self.read_i24()?,
                 case_offsets: {
                     let num_cases = self.read_u30()? + 1;
@@ -764,7 +764,7 @@ impl<'a> Reader<'a> {
                     }
                     case_offsets.into()
                 },
-            },
+            })),
             OpCode::LShift => Op::LShift,
             OpCode::Modulo => Op::Modulo,
             OpCode::Multiply => Op::Multiply,

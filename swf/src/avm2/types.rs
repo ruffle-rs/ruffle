@@ -1,5 +1,7 @@
 use bitflags::bitflags;
 use std::marker::PhantomData;
+#[cfg(target_pointer_width = "64")]
+use std::mem::size_of;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct AbcFile {
@@ -247,6 +249,12 @@ pub struct Script {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct LookupSwitch {
+    pub default_offset: i32,
+    pub case_offsets: Box<[i32]>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub enum Op {
     Add,
     AddI,
@@ -471,10 +479,7 @@ pub enum Op {
     Li16,
     Li32,
     Li8,
-    LookupSwitch {
-        default_offset: i32,
-        case_offsets: Box<[i32]>,
-    },
+    LookupSwitch(Box<LookupSwitch>),
     LShift,
     Modulo,
     Multiply,
@@ -569,3 +574,6 @@ pub enum Op {
     Timestamp,
     URShift,
 }
+
+#[cfg(target_pointer_width = "64")]
+const _: () = assert!(size_of::<Op>() == 16);

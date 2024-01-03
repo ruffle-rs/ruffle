@@ -907,14 +907,11 @@ impl<W: Write> Writer<W> {
             Op::Li16 => self.write_opcode(OpCode::Li16)?,
             Op::Li32 => self.write_opcode(OpCode::Li32)?,
             Op::Li8 => self.write_opcode(OpCode::Li8)?,
-            Op::LookupSwitch {
-                default_offset,
-                ref case_offsets,
-            } => {
+            Op::LookupSwitch(ref lookup_switch) => {
                 self.write_opcode(OpCode::LookupSwitch)?;
-                self.write_i24(default_offset)?;
-                self.write_u30(case_offsets.len() as u32 - 1)?;
-                for offset in case_offsets.iter() {
+                self.write_i24(lookup_switch.default_offset)?;
+                self.write_u30(lookup_switch.case_offsets.len() as u32 - 1)?;
+                for offset in lookup_switch.case_offsets.iter() {
                     self.write_i24(*offset)?;
                 }
             }
@@ -1439,10 +1436,10 @@ pub mod tests {
         assert_eq!(write(Op::Li8), b"\x35");
 
         assert_eq!(
-            write(Op::LookupSwitch {
+            write(Op::LookupSwitch(Box::new(LookupSwitch {
                 default_offset: 1,
                 case_offsets: Box::new([3, 4, 5])
-            }),
+            }))),
             b"\x1B\x01\x00\x00\x02\x03\x00\x00\x04\x00\x00\x05\x00\x00"
         );
 

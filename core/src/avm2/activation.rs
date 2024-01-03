@@ -1102,12 +1102,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::TypeOf => self.op_type_of(),
                 Op::EscXAttr => self.op_esc_xattr(),
                 Op::EscXElem => self.op_esc_elem(),
-                Op::LookupSwitch {
-                    default_offset,
-                    case_offsets,
-                } => self.op_lookup_switch(
-                    default_offset,
-                    &case_offsets,
+                Op::LookupSwitch(ref lookup_switch) => self.op_lookup_switch(
+                    lookup_switch.default_offset,
+                    &lookup_switch.case_offsets,
                     instruction_start,
                     reader,
                     full_data,
