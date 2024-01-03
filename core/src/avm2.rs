@@ -616,17 +616,17 @@ impl<'gc> Avm2<'gc> {
         self.stack.push(value);
     }
 
-    #[cold]
-    fn stack_underflow(&self) {
-        tracing::warn!("Avm2::pop: Stack underflow");
-    }
-
     /// Retrieve the top-most value on the operand stack.
     #[allow(clippy::let_and_return)]
     #[inline(always)]
     fn pop(&mut self, depth: usize) -> Value<'gc> {
+        #[cold]
+        fn stack_underflow() {
+            tracing::warn!("Avm2::pop: Stack underflow");
+        }
+
         let value = if self.stack.len() <= depth {
-            self.stack_underflow();
+            stack_underflow();
             Value::Undefined
         } else {
             self.stack.pop().unwrap_or(Value::Undefined)
@@ -639,13 +639,19 @@ impl<'gc> Avm2<'gc> {
 
     /// Peek the n-th value from the end of the operand stack.
     #[allow(clippy::let_and_return)]
+    #[inline(always)]
     fn peek(&mut self, index: usize) -> Value<'gc> {
+        #[cold]
+        fn stack_underflow() {
+            tracing::warn!("Avm2::peek: Stack underflow");
+        }
+
         let value = self
             .stack
             .get(self.stack.len() - index - 1)
             .copied()
             .unwrap_or_else(|| {
-                tracing::warn!("Avm2::peek: Stack underflow");
+                stack_underflow();
                 Value::Undefined
             });
 
