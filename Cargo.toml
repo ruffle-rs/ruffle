@@ -49,6 +49,17 @@ naga_oil = "0.11.0"
 wgpu = "0.18.0"
 egui = "0.24.1"
 
+[workspace.lints.rust]
+# Clippy nightly often adds new/buggy lints that we want to ignore.
+# Don't warn about these new lints on stable.
+renamed_and_removed_lints = "allow"
+unknown_lints = "allow"
+
+[workspace.lints.clippy]
+# LONG-TERM: These lints are unhelpful.
+manual_map = "allow"             # Less readable: Suggests `opt.map(..)` instsead of `if let Some(opt) { .. }`
+manual_range_contains = "allow"  # Less readable: Suggests `(a..b).contains(n)` instead of `n >= a && n < b`
+
 # Don't optimize build scripts and macros.
 [profile.release.build-override]
 opt-level = 0
