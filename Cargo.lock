@@ -2007,8 +2007,9 @@ dependencies = [
 
 [[package]]
 name = "gc-arena"
-version = "0.3.3"
-source = "git+https://github.com/kyren/gc-arena?rev=efd89fc683c6bb456af3e226c33763cb822645e9#efd89fc683c6bb456af3e226c33763cb822645e9"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "57b2e43b3fc51b9900cc9ced1c4630dcbfae1859573102a84d2231ac744c1208"
 dependencies = [
  "gc-arena-derive",
  "hashbrown 0.14.3",
@@ -2017,8 +2018,9 @@ dependencies = [
 
 [[package]]
 name = "gc-arena-derive"
-version = "0.3.3"
-source = "git+https://github.com/kyren/gc-arena?rev=efd89fc683c6bb456af3e226c33763cb822645e9#efd89fc683c6bb456af3e226c33763cb822645e9"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "96f3c487d429eaa928334f7f2ca7b14734f1c2f4020d2b08c1f0b4d9c70e4f17"
 dependencies = [
  "proc-macro2",
  "quote",

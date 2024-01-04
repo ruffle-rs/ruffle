@@ -218,7 +218,7 @@ unsafe impl<'gc, T> Collect for WeakSet<'gc, T> {
         // Safe, as we never pick up new GC pointers from outside this allocation.
         let mut guard = unsafe { self.table.steal_for_trace() };
         guard.retain(|weak| {
-            let keep = !weak.is_dropped();
+            let keep = !weak.is_dropped(cc);
             if keep {
                 // NOTE: The explicit dereference is necessary to not
                 // use the no-op `Collect` impl on references.
