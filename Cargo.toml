@@ -41,7 +41,6 @@ repository = "https://github.com/ruffle-rs/ruffle"
 version = "0.1.0"
 
 [workspace.dependencies]
-# gc-arena = { git = "https://github.com/kyren/gc-arena", rev = "efd89fc683c6bb456af3e226c33763cb822645e9" }
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 naga = { version = "0.14.2", features = ["validate", "wgsl-out"] }
