@@ -7,6 +7,9 @@ license.workspace = true
 repository.workspace = true
 version.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
 futures = "0.3.30"
 ruffle_core = { path = "../../core", features = ["deterministic", "timeline_debug", "avm_debug", "audio", "mp3", "default_font"] }

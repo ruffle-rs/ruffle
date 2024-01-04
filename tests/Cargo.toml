@@ -7,6 +7,9 @@ license.workspace = true
 repository.workspace = true
 version.workspace = true
 
+[lints]
+workspace = true
+
 [features]
 # Enable running image comparison tests. This is off by default,
 # since the images we compare against are generated on CI, and may

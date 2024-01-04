@@ -7,6 +7,9 @@ license.workspace = true
 repository.workspace = true
 version.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
 js-sys = "0.3.66"
 log = "0.4"

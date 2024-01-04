@@ -8,6 +8,9 @@ homepage.workspace = true
 license.workspace = true
 repository.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
 bitflags = "2.4.1"
 bitstream-io = "2.2.0"

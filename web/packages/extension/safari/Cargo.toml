@@ -9,5 +9,8 @@ repository.workspace = true
 version.workspace = true
 publish = false # This crate is useless unless packaged into an appex bundle
 
+[lints]
+workspace = true
+
 [dependencies]
 objc = "0.2.7"

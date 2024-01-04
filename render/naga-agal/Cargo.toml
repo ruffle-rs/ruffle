@@ -7,6 +7,9 @@ license.workspace = true
 repository.workspace = true
 version.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
 bitflags = "2.4.1"
 naga = { workspace = true }
