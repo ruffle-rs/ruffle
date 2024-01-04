@@ -5,6 +5,9 @@ authors = ["Ruffle LLC <ruffle@ruffle.rs>"]
 edition.workspace = true
 license = "MIT OR Apache-2.0"
 
+[lints]
+workspace = true
+
 [dependencies]
 js-sys = "0.3.66"
 tracing = { workspace = true }

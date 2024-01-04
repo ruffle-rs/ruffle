@@ -9,6 +9,9 @@ repository.workspace = true
 version.workspace = true
 publish = false # This crate is useless alone, people should use the npm package
 
+[lints]
+workspace = true
+
 [lib]
 crate-type = ["cdylib", "rlib"]
 

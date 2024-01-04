@@ -7,6 +7,9 @@ license.workspace = true
 repository.workspace = true
 version.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
 clap = { version = "4.4.12", features = ["derive"] }
 futures = "0.3"

@@ -7,6 +7,9 @@ license.workspace = true
 repository.workspace = true
 version.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
 ruffle_wstr = { path = "../wstr" }
 swf = { path = "../swf"}
