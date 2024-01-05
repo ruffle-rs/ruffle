@@ -9,7 +9,7 @@
         "message": "Permettre le téléchargement des SWFs depuis le menu contextuel"
     },
     "settings_autostart": {
-        "message": "Lire automatiquement sans écran de démarrage (requiert un clic pour activer le son)"
+        "message": "Lire automatiquement, sans écran de démarrage (requiert un clic pour activer le son)"
     },
     "settings_log_level": {
         "message": "Niveau des logs"
@@ -60,13 +60,13 @@
         "message": "Ruffle est chargé et prêt à lire du contenu Flash dans l'onglet actuel."
     },
     "status_result_running_protected": {
-        "message": "Ruffle est chargé et exécute le contenu Flash que vous avez demandé."
+        "message": "Ruffle est prêt à exécuter le contenu Flash de votre choix."
     },
     "status_result_optout": {
         "message": "Ruffle n'est pas chargé car la page actuelle s'est signalée comme incompatible."
     },
     "status_result_disabled": {
-        "message": "Ruffle n'est pas chargé car il a été désactivé."
+        "message": "Ruffle est désactivé."
     },
     "status_result_error": {
         "message": "Une erreur s'est produite lors d'une requête vers l'instance Ruffle de l'onglet actuel."
@@ -76,6 +76,9 @@
     },
     "action_reload": {
         "message": "Recharger l'onglet pour appliquer les modifications"
+    },
+    "open_player_page": {
+        "message": "Ouvrir le lecteur Flash"
     },
     "open_settings_page": {
         "message": "Ouvrir la page des paramètres"
