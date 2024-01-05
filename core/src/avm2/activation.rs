@@ -14,13 +14,14 @@ use crate::avm2::object::{
     XmlListObject,
 };
 use crate::avm2::object::{Object, TObject};
+use crate::avm2::op::Op;
 use crate::avm2::scope::{search_scope_stack, Scope, ScopeChain};
 use crate::avm2::script::Script;
 use crate::avm2::value::Value;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
-use crate::avm2::{value, Avm2, Error};
+use crate::avm2::{Avm2, Error};
 use crate::context::{GcContext, UpdateContext};
 use crate::string::{AvmAtom, AvmString};
 use crate::tag_utils::SwfMovie;
@@ -31,7 +32,7 @@ use std::cmp::{min, Ordering};
 use std::sync::Arc;
 use swf::avm2::types::{
     Class as AbcClass, Exception, Index, Method as AbcMethod, MethodFlags as AbcMethodFlags,
-    Multiname as AbcMultiname, Namespace as AbcNamespace, Op,
+    Multiname as AbcMultiname, Namespace as AbcNamespace,
 };
 
 use super::error::make_mismatch_error;
@@ -710,33 +711,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             })
     }
 
-    /// Retrieve a int from the current constant pool.
-    fn pool_int(
-        &self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<i32>,
-    ) -> Result<i32, Error<'gc>> {
-        value::abc_int(method.translation_unit(), index)
-    }
-
-    /// Retrieve a int from the current constant pool.
-    fn pool_uint(
-        &self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<u32>,
-    ) -> Result<u32, Error<'gc>> {
-        value::abc_uint(method.translation_unit(), index)
-    }
-
-    /// Retrieve a double from the current constant pool.
-    fn pool_double(
-        &self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<f64>,
-    ) -> Result<f64, Error<'gc>> {
-        value::abc_double(method.translation_unit(), index)
-    }
-
     /// Retrieve a string from the current constant pool.
     fn pool_string<'b>(
         &mut self,
@@ -939,16 +913,16 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         {
             let result = match op {
                 Op::PushByte { value } => self.op_push_byte(*value),
-                Op::PushDouble { value } => self.op_push_double(method, *value),
+                Op::PushDouble { value } => self.op_push_double(*value),
                 Op::PushFalse => self.op_push_false(),
-                Op::PushInt { value } => self.op_push_int(method, *value),
+                Op::PushInt { value } => self.op_push_int(*value),
                 Op::PushNamespace { value } => self.op_push_namespace(method, *value),
                 Op::PushNaN => self.op_push_nan(),
                 Op::PushNull => self.op_push_null(),
                 Op::PushShort { value } => self.op_push_short(*value),
                 Op::PushString { value } => self.op_push_string(method, *value),
                 Op::PushTrue => self.op_push_true(),
-                Op::PushUint { value } => self.op_push_uint(method, *value),
+                Op::PushUint { value } => self.op_push_uint(*value),
                 Op::PushUndefined => self.op_push_undefined(),
                 Op::Pop => self.op_pop(),
                 Op::Dup => self.op_dup(),
@@ -1116,7 +1090,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::Sxi8 => self.op_sxi8(),
                 Op::Sxi16 => self.op_sxi16(),
                 Op::Throw => self.op_throw(),
-                _ => self.unknown_op(op),
             };
 
             if let Err(error) = result {
@@ -1126,11 +1099,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
     }
 
-    fn unknown_op(&mut self, op: &swf::avm2::types::Op) -> Result<FrameControl<'gc>, Error<'gc>> {
-        tracing::error!("Unknown AVM2 opcode: {:?}", op);
-        Err("Unknown op".into())
-    }
-
     fn op_push_byte(&mut self, value: u8) -> Result<FrameControl<'gc>, Error<'gc>> {
         //TODO: Adobe Animate CC appears to generate signed byte values, and
         //JPEXS appears to take them.
@@ -1138,12 +1106,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn op_push_double(
-        &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        value: Index<f64>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        self.push_stack(self.pool_double(method, value)?);
+    fn op_push_double(&mut self, value: f64) -> Result<FrameControl<'gc>, Error<'gc>> {
+        self.push_stack(value);
         Ok(FrameControl::Continue)
     }
 
@@ -1152,12 +1116,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn op_push_int(
-        &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        value: Index<i32>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        self.push_stack(self.pool_int(method, value)?);
+    fn op_push_int(&mut self, value: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
+        self.push_stack(value);
         Ok(FrameControl::Continue)
     }
 
@@ -1203,12 +1163,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn op_push_uint(
-        &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        value: Index<u32>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        self.push_stack(self.pool_uint(method, value)?);
+    fn op_push_uint(&mut self, value: u32) -> Result<FrameControl<'gc>, Error<'gc>> {
+        self.push_stack(value);
         Ok(FrameControl::Continue)
     }
 

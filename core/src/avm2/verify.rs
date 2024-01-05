@@ -1,9 +1,11 @@
 use crate::avm2::error::{make_error_1025, make_error_1054, make_error_1107, verify_error};
 use crate::avm2::method::BytecodeMethod;
+use crate::avm2::op::Op;
+use crate::avm2::script::TranslationUnit;
 use crate::avm2::{Activation, Error};
 use std::collections::HashMap;
 use swf::avm2::read::Reader;
-use swf::avm2::types::{Index, MethodFlags as AbcMethodFlags, Multiname, Op};
+use swf::avm2::types::{Index, MethodFlags as AbcMethodFlags, Multiname, Op as AbcOp};
 use swf::error::Error as AbcReadError;
 
 pub struct VerifiedMethodInfo {
@@ -27,6 +29,7 @@ pub fn verify_method<'gc>(
     let body = method
         .body()
         .expect("Cannot verify non-native method without body!");
+    let translation_unit = method.translation_unit();
 
     let param_count = method.method().params.len();
     let locals_count = body.num_locals;
@@ -53,8 +56,9 @@ pub fn verify_method<'gc>(
         )?));
     }
 
-    // FIXME: This is wrong, verification should happen at the same time as reading.
-    // A side effect of this is that avmplus allows for holes in bytecode.
+    // FIXME: This is wrong, verification/control flow handling should happen at the same
+    // time as reading. A side effect of this is that avmplus allows for holes in bytecode,
+    // while this implementation throws errors #1011 or #1021 in those cases.
     let mut reader = Reader::new(&body.code);
     loop {
         let op = match reader.read_op() {
@@ -193,24 +197,24 @@ pub fn verify_method<'gc>(
             new_idx - i - 1
         };
         match op {
-            Op::IfEq { offset }
-            | Op::IfFalse { offset }
-            | Op::IfGe { offset }
-            | Op::IfGt { offset }
-            | Op::IfLe { offset }
-            | Op::IfLt { offset }
-            | Op::IfNe { offset }
-            | Op::IfNge { offset }
-            | Op::IfNgt { offset }
-            | Op::IfNle { offset }
-            | Op::IfNlt { offset }
-            | Op::IfStrictEq { offset }
-            | Op::IfStrictNe { offset }
-            | Op::IfTrue { offset }
-            | Op::Jump { offset } => {
+            AbcOp::IfEq { offset }
+            | AbcOp::IfFalse { offset }
+            | AbcOp::IfGe { offset }
+            | AbcOp::IfGt { offset }
+            | AbcOp::IfLe { offset }
+            | AbcOp::IfLt { offset }
+            | AbcOp::IfNe { offset }
+            | AbcOp::IfNge { offset }
+            | AbcOp::IfNgt { offset }
+            | AbcOp::IfNle { offset }
+            | AbcOp::IfNlt { offset }
+            | AbcOp::IfStrictEq { offset }
+            | AbcOp::IfStrictNe { offset }
+            | AbcOp::IfTrue { offset }
+            | AbcOp::Jump { offset } => {
                 *offset = adjusted(i, *offset, true);
             }
-            Op::LookupSwitch(ref mut lookup_switch) => {
+            AbcOp::LookupSwitch(ref mut lookup_switch) => {
                 lookup_switch.default_offset = adjusted(i, lookup_switch.default_offset, false);
                 for case in lookup_switch.case_offsets.iter_mut() {
                     *case = adjusted(i, *case, false);
@@ -220,8 +224,15 @@ pub fn verify_method<'gc>(
         }
     }
 
+    let mut verified_code = Vec::new();
+    for abc_op in new_code {
+        let resolved_op = resolve_op(activation, translation_unit, abc_op)?;
+
+        verified_code.push(resolved_op);
+    }
+
     Ok(VerifiedMethodInfo {
-        parsed_code: new_code,
+        parsed_code: verified_code,
         exceptions: new_exceptions,
     })
 }
@@ -258,7 +269,7 @@ fn verify_code_starting_from<'gc>(
     idx_to_byte_offset: &[i32],
     byte_offset_to_idx: &HashMap<i32, i32>,
     verified_blocks: &mut Vec<i32>,
-    ops: &[Op],
+    ops: &[AbcOp],
     start_idx: i32,
 ) -> Result<(), Error<'gc>> {
     if verified_blocks.iter().any(|o| *o == start_idx) {
@@ -279,21 +290,21 @@ fn verify_code_starting_from<'gc>(
 
         // Special control flow ops
         match op {
-            Op::IfEq { offset }
-            | Op::IfFalse { offset }
-            | Op::IfGe { offset }
-            | Op::IfGt { offset }
-            | Op::IfLe { offset }
-            | Op::IfLt { offset }
-            | Op::IfNe { offset }
-            | Op::IfNge { offset }
-            | Op::IfNgt { offset }
-            | Op::IfNle { offset }
-            | Op::IfNlt { offset }
-            | Op::IfStrictEq { offset }
-            | Op::IfStrictNe { offset }
-            | Op::IfTrue { offset }
-            | Op::Jump { offset } => {
+            AbcOp::IfEq { offset }
+            | AbcOp::IfFalse { offset }
+            | AbcOp::IfGe { offset }
+            | AbcOp::IfGt { offset }
+            | AbcOp::IfLe { offset }
+            | AbcOp::IfLt { offset }
+            | AbcOp::IfNe { offset }
+            | AbcOp::IfNge { offset }
+            | AbcOp::IfNgt { offset }
+            | AbcOp::IfNle { offset }
+            | AbcOp::IfNlt { offset }
+            | AbcOp::IfStrictEq { offset }
+            | AbcOp::IfStrictNe { offset }
+            | AbcOp::IfTrue { offset }
+            | AbcOp::Jump { offset } => {
                 let op_idx = adjust_jump_offset(
                     activation,
                     i,
@@ -315,7 +326,7 @@ fn verify_code_starting_from<'gc>(
                         position + 1,
                     )?;
 
-                    if matches!(op, Op::Jump { .. }) {
+                    if matches!(op, AbcOp::Jump { .. }) {
                         // A Jump is terminal, the code
                         // after it won't be executed
                         return Ok(());
@@ -324,11 +335,11 @@ fn verify_code_starting_from<'gc>(
             }
 
             // Terminal opcodes
-            Op::Throw => return Ok(()),
-            Op::ReturnValue => return Ok(()),
-            Op::ReturnVoid => return Ok(()),
+            AbcOp::Throw => return Ok(()),
+            AbcOp::ReturnValue => return Ok(()),
+            AbcOp::ReturnVoid => return Ok(()),
 
-            Op::LookupSwitch(ref lookup_switch) => {
+            AbcOp::LookupSwitch(ref lookup_switch) => {
                 let default_idx = adjust_jump_offset(
                     activation,
                     i,
@@ -376,19 +387,19 @@ fn verify_code_starting_from<'gc>(
             // Verifications
 
             // Local register verifications
-            Op::GetLocal { index }
-            | Op::SetLocal { index }
-            | Op::Kill { index }
-            | Op::DecLocal { index }
-            | Op::DecLocalI { index }
-            | Op::IncLocal { index }
-            | Op::IncLocalI { index } => {
+            AbcOp::GetLocal { index }
+            | AbcOp::SetLocal { index }
+            | AbcOp::Kill { index }
+            | AbcOp::DecLocal { index }
+            | AbcOp::DecLocalI { index }
+            | AbcOp::IncLocal { index }
+            | AbcOp::IncLocalI { index } => {
                 if *index >= max_locals {
                     return Err(make_error_1025(activation, *index));
                 }
             }
 
-            Op::HasNext2 {
+            AbcOp::HasNext2 {
                 object_register,
                 index_register,
             } => {
@@ -401,7 +412,7 @@ fn verify_code_starting_from<'gc>(
             }
 
             // Misc opcode verification
-            Op::CallMethod { index, .. } => {
+            AbcOp::CallMethod { index, .. } => {
                 return Err(Error::AvmError(if index.as_u30() == 0 {
                     verify_error(activation, "Error #1072: Disp_id 0 is illegal.", 1072)?
                 } else {
@@ -413,7 +424,7 @@ fn verify_code_starting_from<'gc>(
                 }));
             }
 
-            Op::NewActivation => {
+            AbcOp::NewActivation => {
                 if !method
                     .method()
                     .flags
@@ -427,7 +438,7 @@ fn verify_code_starting_from<'gc>(
                 }
             }
 
-            Op::GetLex { index } => {
+            AbcOp::GetLex { index } => {
                 let multiname = method
                     .translation_unit()
                     .pool_maybe_uninitialized_multiname(*index, &mut activation.context)?;
@@ -454,34 +465,323 @@ fn verify_code_starting_from<'gc>(
     )?))
 }
 
-fn ops_can_throw_error(ops: &[Op], start_idx: u32, end_idx: u32) -> bool {
+fn ops_can_throw_error(ops: &[AbcOp], start_idx: u32, end_idx: u32) -> bool {
     for i in start_idx..end_idx {
         let op = &ops[i as usize];
         match op {
-            Op::PushByte { .. }
-            | Op::PushDouble { .. }
-            | Op::PushFalse
-            | Op::PushInt { .. }
-            | Op::PushNamespace { .. }
-            | Op::PushNaN
-            | Op::PushNull
-            | Op::PushShort { .. }
-            | Op::PushString { .. }
-            | Op::PushTrue
-            | Op::PushUint { .. }
-            | Op::PushUndefined
-            | Op::Dup
-            | Op::Pop
-            | Op::GetLocal { .. }
-            | Op::SetLocal { .. }
-            | Op::Kill { .. }
-            | Op::Nop
-            | Op::Not
-            | Op::PopScope
-            | Op::ReturnVoid => {}
+            AbcOp::PushByte { .. }
+            | AbcOp::PushDouble { .. }
+            | AbcOp::PushFalse
+            | AbcOp::PushInt { .. }
+            | AbcOp::PushNamespace { .. }
+            | AbcOp::PushNaN
+            | AbcOp::PushNull
+            | AbcOp::PushShort { .. }
+            | AbcOp::PushString { .. }
+            | AbcOp::PushTrue
+            | AbcOp::PushUint { .. }
+            | AbcOp::PushUndefined
+            | AbcOp::Dup
+            | AbcOp::Pop
+            | AbcOp::GetLocal { .. }
+            | AbcOp::SetLocal { .. }
+            | AbcOp::Kill { .. }
+            | AbcOp::Nop
+            | AbcOp::Not
+            | AbcOp::PopScope
+            | AbcOp::ReturnVoid => {}
             _ => return true,
         }
     }
 
     false
+}
+
+fn pool_int<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    translation_unit: TranslationUnit<'gc>,
+    index: Index<i32>,
+) -> Result<i32, Error<'gc>> {
+    if index.0 == 0 {
+        return Ok(0);
+    }
+
+    translation_unit
+        .abc()
+        .constant_pool
+        .ints
+        .get(index.0 as usize - 1)
+        .cloned()
+        .ok_or_else(|| {
+            Error::AvmError(
+                verify_error(
+                    activation,
+                    &format!("Error #1032: Cpool index {} is out of range.", index.0),
+                    1032,
+                )
+                .expect("Error should construct"),
+            )
+        })
+}
+
+fn pool_uint<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    translation_unit: TranslationUnit<'gc>,
+    index: Index<u32>,
+) -> Result<u32, Error<'gc>> {
+    if index.0 == 0 {
+        return Ok(0);
+    }
+
+    translation_unit
+        .abc()
+        .constant_pool
+        .uints
+        .get(index.0 as usize - 1)
+        .cloned()
+        .ok_or_else(|| {
+            Error::AvmError(
+                verify_error(
+                    activation,
+                    &format!("Error #1032: Cpool index {} is out of range.", index.0),
+                    1032,
+                )
+                .expect("Error should construct"),
+            )
+        })
+}
+
+fn pool_double<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    translation_unit: TranslationUnit<'gc>,
+    index: Index<f64>,
+) -> Result<f64, Error<'gc>> {
+    if index.0 == 0 {
+        return Err(Error::AvmError(
+            verify_error(
+                activation,
+                "Error #1032: Cpool index 0 is out of range.",
+                1032,
+            )
+            .expect("Error should construct"),
+        ));
+    }
+
+    translation_unit
+        .abc()
+        .constant_pool
+        .doubles
+        .get(index.0 as usize - 1)
+        .cloned()
+        .ok_or_else(|| {
+            Error::AvmError(
+                verify_error(
+                    activation,
+                    &format!("Error #1032: Cpool index {} is out of range.", index.0),
+                    1032,
+                )
+                .expect("Error should construct"),
+            )
+        })
+}
+
+fn resolve_op<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    translation_unit: TranslationUnit<'gc>,
+    op: AbcOp,
+) -> Result<Op, Error<'gc>> {
+    Ok(match op {
+        AbcOp::PushByte { value } => Op::PushByte { value },
+        AbcOp::PushDouble { value } => {
+            let value = pool_double(activation, translation_unit, value)?;
+
+            Op::PushDouble { value }
+        }
+        AbcOp::PushFalse => Op::PushFalse,
+        AbcOp::PushInt { value } => {
+            let value = pool_int(activation, translation_unit, value)?;
+
+            Op::PushInt { value }
+        }
+        AbcOp::PushNamespace { value } => Op::PushNamespace { value },
+        AbcOp::PushNaN => Op::PushNaN,
+        AbcOp::PushNull => Op::PushNull,
+        AbcOp::PushShort { value } => Op::PushShort { value },
+        AbcOp::PushString { value } => Op::PushString { value },
+        AbcOp::PushTrue => Op::PushTrue,
+        AbcOp::PushUint { value } => {
+            let value = pool_uint(activation, translation_unit, value)?;
+
+            Op::PushUint { value }
+        }
+        AbcOp::PushUndefined => Op::PushUndefined,
+        AbcOp::Pop => Op::Pop,
+        AbcOp::Dup => Op::Dup,
+        AbcOp::GetLocal { index } => Op::GetLocal { index },
+        AbcOp::SetLocal { index } => Op::SetLocal { index },
+        AbcOp::Kill { index } => Op::Kill { index },
+        AbcOp::Call { num_args } => Op::Call { num_args },
+        AbcOp::CallMethod { index, num_args } => Op::CallMethod { index, num_args },
+        AbcOp::CallProperty { index, num_args } => Op::CallProperty { index, num_args },
+        AbcOp::CallPropLex { index, num_args } => Op::CallPropLex { index, num_args },
+        AbcOp::CallPropVoid { index, num_args } => Op::CallPropVoid { index, num_args },
+        AbcOp::CallStatic { index, num_args } => Op::CallStatic { index, num_args },
+        AbcOp::CallSuper { index, num_args } => Op::CallSuper { index, num_args },
+        AbcOp::CallSuperVoid { index, num_args } => Op::CallSuperVoid { index, num_args },
+        AbcOp::ReturnValue => Op::ReturnValue,
+        AbcOp::ReturnVoid => Op::ReturnVoid,
+        AbcOp::GetProperty { index } => Op::GetProperty { index },
+        AbcOp::SetProperty { index } => Op::SetProperty { index },
+        AbcOp::InitProperty { index } => Op::InitProperty { index },
+        AbcOp::DeleteProperty { index } => Op::DeleteProperty { index },
+        AbcOp::GetSuper { index } => Op::GetSuper { index },
+        AbcOp::SetSuper { index } => Op::SetSuper { index },
+        AbcOp::In => Op::In,
+        AbcOp::PushScope => Op::PushScope,
+        AbcOp::NewCatch { index } => Op::NewCatch { index },
+        AbcOp::PushWith => Op::PushWith,
+        AbcOp::PopScope => Op::PopScope,
+        AbcOp::GetOuterScope { index } => Op::GetOuterScope { index },
+        AbcOp::GetScopeObject { index } => Op::GetScopeObject { index },
+        AbcOp::GetGlobalScope => Op::GetGlobalScope,
+        AbcOp::FindDef { index } => Op::FindDef { index },
+        AbcOp::FindProperty { index } => Op::FindProperty { index },
+        AbcOp::FindPropStrict { index } => Op::FindPropStrict { index },
+        AbcOp::GetLex { index } => Op::GetLex { index },
+        AbcOp::GetDescendants { index } => Op::GetDescendants { index },
+        AbcOp::GetSlot { index } => Op::GetSlot { index },
+        AbcOp::SetSlot { index } => Op::SetSlot { index },
+        AbcOp::GetGlobalSlot { index } => Op::GetGlobalSlot { index },
+        AbcOp::SetGlobalSlot { index } => Op::SetGlobalSlot { index },
+        AbcOp::Construct { num_args } => Op::Construct { num_args },
+        AbcOp::ConstructProp { index, num_args } => Op::ConstructProp { index, num_args },
+        AbcOp::ConstructSuper { num_args } => Op::ConstructSuper { num_args },
+        AbcOp::NewActivation => Op::NewActivation,
+        AbcOp::NewObject { num_args } => Op::NewObject { num_args },
+        AbcOp::NewFunction { index } => Op::NewFunction { index },
+        AbcOp::NewClass { index } => Op::NewClass { index },
+        AbcOp::ApplyType { num_types } => Op::ApplyType { num_types },
+        AbcOp::NewArray { num_args } => Op::NewArray { num_args },
+        AbcOp::CoerceA => Op::CoerceA,
+        AbcOp::CoerceB => Op::CoerceB,
+        AbcOp::CoerceD => Op::CoerceD,
+        AbcOp::CoerceI => Op::CoerceI,
+        AbcOp::CoerceO => Op::CoerceO,
+        AbcOp::CoerceS => Op::CoerceS,
+        AbcOp::CoerceU => Op::CoerceU,
+        AbcOp::ConvertB => Op::ConvertB,
+        AbcOp::ConvertI => Op::ConvertI,
+        AbcOp::ConvertD => Op::ConvertD,
+        AbcOp::ConvertO => Op::ConvertO,
+        AbcOp::ConvertU => Op::ConvertU,
+        AbcOp::ConvertS => Op::ConvertS,
+        AbcOp::Add => Op::Add,
+        AbcOp::AddI => Op::AddI,
+        AbcOp::BitAnd => Op::BitAnd,
+        AbcOp::BitNot => Op::BitNot,
+        AbcOp::BitOr => Op::BitOr,
+        AbcOp::BitXor => Op::BitXor,
+        AbcOp::DecLocal { index } => Op::DecLocal { index },
+        AbcOp::DecLocalI { index } => Op::DecLocalI { index },
+        AbcOp::Decrement => Op::Decrement,
+        AbcOp::DecrementI => Op::DecrementI,
+        AbcOp::Divide => Op::Divide,
+        AbcOp::IncLocal { index } => Op::IncLocal { index },
+        AbcOp::IncLocalI { index } => Op::IncLocalI { index },
+        AbcOp::Increment => Op::Increment,
+        AbcOp::IncrementI => Op::IncrementI,
+        AbcOp::LShift => Op::LShift,
+        AbcOp::Modulo => Op::Modulo,
+        AbcOp::Multiply => Op::Multiply,
+        AbcOp::MultiplyI => Op::MultiplyI,
+        AbcOp::Negate => Op::Negate,
+        AbcOp::NegateI => Op::NegateI,
+        AbcOp::RShift => Op::RShift,
+        AbcOp::Subtract => Op::Subtract,
+        AbcOp::SubtractI => Op::SubtractI,
+        AbcOp::Swap => Op::Swap,
+        AbcOp::URShift => Op::URShift,
+        AbcOp::Jump { offset } => Op::Jump { offset },
+        AbcOp::IfTrue { offset } => Op::IfTrue { offset },
+        AbcOp::IfFalse { offset } => Op::IfFalse { offset },
+        AbcOp::IfStrictEq { offset } => Op::IfStrictEq { offset },
+        AbcOp::IfStrictNe { offset } => Op::IfStrictNe { offset },
+        AbcOp::IfEq { offset } => Op::IfEq { offset },
+        AbcOp::IfNe { offset } => Op::IfNe { offset },
+        AbcOp::IfGe { offset } => Op::IfGe { offset },
+        AbcOp::IfGt { offset } => Op::IfGt { offset },
+        AbcOp::IfLe { offset } => Op::IfLe { offset },
+        AbcOp::IfLt { offset } => Op::IfLt { offset },
+        AbcOp::IfNge { offset } => Op::IfNge { offset },
+        AbcOp::IfNgt { offset } => Op::IfNgt { offset },
+        AbcOp::IfNle { offset } => Op::IfNle { offset },
+        AbcOp::IfNlt { offset } => Op::IfNlt { offset },
+        AbcOp::StrictEquals => Op::StrictEquals,
+        AbcOp::Equals => Op::Equals,
+        AbcOp::GreaterEquals => Op::GreaterEquals,
+        AbcOp::GreaterThan => Op::GreaterThan,
+        AbcOp::LessEquals => Op::LessEquals,
+        AbcOp::LessThan => Op::LessThan,
+        AbcOp::Nop => Op::Nop,
+        AbcOp::Not => Op::Not,
+        AbcOp::HasNext => Op::HasNext,
+        AbcOp::HasNext2 {
+            object_register,
+            index_register,
+        } => Op::HasNext2 {
+            object_register,
+            index_register,
+        },
+        AbcOp::NextName => Op::NextName,
+        AbcOp::NextValue => Op::NextValue,
+        AbcOp::IsType { index } => Op::IsType { index },
+        AbcOp::IsTypeLate => Op::IsTypeLate,
+        AbcOp::AsType { type_name } => Op::AsType { type_name },
+        AbcOp::AsTypeLate => Op::AsTypeLate,
+        AbcOp::InstanceOf => Op::InstanceOf,
+        AbcOp::Label => Op::Label,
+        AbcOp::Debug {
+            is_local_register,
+            register_name,
+            register,
+        } => Op::Debug {
+            is_local_register,
+            register_name,
+            register,
+        },
+        AbcOp::DebugFile { file_name } => Op::DebugFile { file_name },
+        AbcOp::DebugLine { line_num } => Op::DebugLine { line_num },
+        AbcOp::Bkpt => Op::Bkpt,
+        AbcOp::BkptLine { line_num } => Op::BkptLine { line_num },
+        AbcOp::Timestamp => Op::Timestamp,
+        AbcOp::TypeOf => Op::TypeOf,
+        AbcOp::EscXAttr => Op::EscXAttr,
+        AbcOp::EscXElem => Op::EscXElem,
+        AbcOp::LookupSwitch(lookup_switch) => Op::LookupSwitch(lookup_switch),
+        AbcOp::Coerce { index } => Op::Coerce { index },
+        AbcOp::CheckFilter => Op::CheckFilter,
+        AbcOp::Si8 => Op::Si8,
+        AbcOp::Si16 => Op::Si16,
+        AbcOp::Si32 => Op::Si32,
+        AbcOp::Sf32 => Op::Sf32,
+        AbcOp::Sf64 => Op::Sf64,
+        AbcOp::Li8 => Op::Li8,
+        AbcOp::Li16 => Op::Li16,
+        AbcOp::Li32 => Op::Li32,
+        AbcOp::Lf32 => Op::Lf32,
+        AbcOp::Lf64 => Op::Lf64,
+        AbcOp::Sxi1 => Op::Sxi1,
+        AbcOp::Sxi8 => Op::Sxi8,
+        AbcOp::Sxi16 => Op::Sxi16,
+        AbcOp::Throw => Op::Throw,
+        _ => {
+            tracing::error!("Unimplemented AVM2 op {:?} found during verification", op);
+
+            return Err(Error::AvmError(verify_error(
+                activation,
+                "Error #1011: Method contained illegal opcode.",
+                1011,
+            )?));
+        }
+    })
 }
