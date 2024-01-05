@@ -275,7 +275,8 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         }
 
         // Special case to handle code like: xml["@attr"]
-        let multiname = if !name.has_nonempty_namespace()
+        // FIXME: Figure out the exact semantics.
+        let multiname = if !name.has_explicit_namespace()
             && !name.is_attribute()
             && !name.is_any_name()
             && !name.is_any_namespace()
