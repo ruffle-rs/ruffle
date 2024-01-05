@@ -3,6 +3,7 @@
 use std::rc::Rc;
 
 use crate::avm2::class::AllocatorFn;
+use crate::avm2::error::make_error_1107;
 use crate::avm2::function::Executable;
 use crate::avm2::globals::SystemClasses;
 use crate::avm2::method::{Method, NativeMethodImpl};
@@ -61,6 +62,7 @@ mod stubs;
 mod traits;
 mod value;
 pub mod vector;
+mod verify;
 mod vtable;
 
 pub use crate::avm2::activation::Activation;
@@ -548,11 +550,7 @@ impl<'gc> Avm2<'gc> {
             Ok(abc) => abc,
             Err(_) => {
                 let mut activation = Activation::from_nothing(context.reborrow());
-                return Err(Error::AvmError(crate::avm2::error::verify_error(
-                    &mut activation,
-                    "Error #1107: The ABC data is corrupt, attempt to read out of bounds.",
-                    1107,
-                )?));
+                return Err(make_error_1107(&mut activation));
             }
         };
 
@@ -675,20 +673,20 @@ impl<'gc> Avm2<'gc> {
 
     fn push_scope(&mut self, scope: Scope<'gc>, depth: usize, max: usize) {
         if self.scope_stack.len() - depth > max {
-            tracing::warn!("Avm2::push_scope: Scope Stack overflow");
+            tracing::warn!("Avm2::push_scope: Scope stack overflow");
             return;
         }
 
         self.scope_stack.push(scope);
     }
 
-    fn pop_scope(&mut self, depth: usize) -> Option<Scope<'gc>> {
+    fn pop_scope(&mut self, depth: usize) {
         if self.scope_stack.len() <= depth {
-            tracing::warn!("Avm2::pop_scope: Scope Stack underflow");
-            None
-        } else {
-            self.scope_stack.pop()
+            tracing::warn!("Avm2::pop_scope: Scope stack underflow");
+            return;
         }
+
+        self.scope_stack.pop();
     }
 
     #[cfg(feature = "avm_debug")]
