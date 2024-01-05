@@ -3,7 +3,7 @@ use crate::avm2::method::BytecodeMethod;
 use crate::avm2::op::Op;
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::{Activation, Error};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use swf::avm2::read::Reader;
 use swf::avm2::types::{Index, MethodFlags as AbcMethodFlags, Multiname, Op as AbcOp};
 use swf::error::Error as AbcReadError;
@@ -100,6 +100,10 @@ pub fn verify_method<'gc>(
         0,
     )?;
 
+    // Record a list of possible places the code could
+    // jump to- this will be used for optimization.
+    let mut potential_jump_targets = HashSet::new();
+
     // Handle exceptions
     let mut new_exceptions = Vec::new();
     for exception in body.exceptions.iter() {
@@ -150,7 +154,7 @@ pub fn verify_method<'gc>(
         let new_target_offset = byte_offset_to_idx
             .get(&(exception.target_offset as i32))
             .copied()
-            .unwrap() as u32;
+            .unwrap();
 
         if exception.target_offset < exception.to_offset {
             return Err(make_error_1054(activation));
@@ -159,7 +163,7 @@ pub fn verify_method<'gc>(
         new_exceptions.push(Exception {
             from_offset: new_from_offset,
             to_offset: new_to_offset,
-            target_offset: new_target_offset,
+            target_offset: new_target_offset as u32,
             variable_name: exception.variable_name,
             type_name: exception.type_name,
         });
@@ -172,8 +176,10 @@ pub fn verify_method<'gc>(
                 &byte_offset_to_idx,
                 &mut verified_blocks,
                 new_code.as_slice(),
-                new_target_offset as i32,
+                new_target_offset,
             )?;
+
+            potential_jump_targets.insert(new_target_offset);
         }
     }
 
@@ -212,12 +218,19 @@ pub fn verify_method<'gc>(
             | AbcOp::IfStrictNe { offset }
             | AbcOp::IfTrue { offset }
             | AbcOp::Jump { offset } => {
-                *offset = adjusted(i, *offset, true);
+                let adjusted_result = adjusted(i, *offset, true);
+                *offset = adjusted_result;
+                potential_jump_targets.insert(adjusted_result);
             }
             AbcOp::LookupSwitch(ref mut lookup_switch) => {
-                lookup_switch.default_offset = adjusted(i, lookup_switch.default_offset, false);
+                let adjusted_default = adjusted(i, lookup_switch.default_offset, false);
+                lookup_switch.default_offset = adjusted_default;
+                potential_jump_targets.insert(adjusted_default);
+
                 for case in lookup_switch.case_offsets.iter_mut() {
-                    *case = adjusted(i, *case, false);
+                    let adjusted_case = adjusted(i, *case, false);
+                    *case = adjusted_case;
+                    potential_jump_targets.insert(adjusted_case);
                 }
             }
             _ => {}
@@ -663,17 +676,13 @@ fn resolve_op<'gc>(
         AbcOp::ApplyType { num_types } => Op::ApplyType { num_types },
         AbcOp::NewArray { num_args } => Op::NewArray { num_args },
         AbcOp::CoerceA => Op::CoerceA,
-        AbcOp::CoerceB => Op::CoerceB,
-        AbcOp::CoerceD => Op::CoerceD,
-        AbcOp::CoerceI => Op::CoerceI,
         AbcOp::CoerceO => Op::CoerceO,
         AbcOp::CoerceS => Op::CoerceS,
-        AbcOp::CoerceU => Op::CoerceU,
-        AbcOp::ConvertB => Op::ConvertB,
-        AbcOp::ConvertI => Op::ConvertI,
-        AbcOp::ConvertD => Op::ConvertD,
+        AbcOp::CoerceB | AbcOp::ConvertB => Op::CoerceB,
+        AbcOp::CoerceD | AbcOp::ConvertD => Op::CoerceD,
+        AbcOp::CoerceI | AbcOp::ConvertI => Op::CoerceI,
+        AbcOp::CoerceU | AbcOp::ConvertU => Op::CoerceU,
         AbcOp::ConvertO => Op::ConvertO,
-        AbcOp::ConvertU => Op::ConvertU,
         AbcOp::ConvertS => Op::ConvertS,
         AbcOp::Add => Op::Add,
         AbcOp::AddI => Op::AddI,

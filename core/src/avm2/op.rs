@@ -71,12 +71,8 @@ pub enum Op {
     ConstructSuper {
         num_args: u32,
     },
-    ConvertB,
-    ConvertD,
-    ConvertI,
     ConvertO,
     ConvertS,
-    ConvertU,
     Debug {
         is_local_register: bool,
         register_name: Index<String>,
