@@ -1,7 +1,5 @@
 use bitflags::bitflags;
 use std::marker::PhantomData;
-#[cfg(target_pointer_width = "64")]
-use std::mem::size_of;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct AbcFile {
@@ -574,6 +572,3 @@ pub enum Op {
     Timestamp,
     URShift,
 }
-
-#[cfg(target_pointer_width = "64")]
-const _: () = assert!(size_of::<Op>() == 16);

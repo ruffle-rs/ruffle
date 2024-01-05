@@ -50,6 +50,7 @@ mod method;
 mod multiname;
 mod namespace;
 pub mod object;
+mod op;
 mod parameters;
 pub mod property;
 mod property_map;
