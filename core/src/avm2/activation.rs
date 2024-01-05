@@ -990,11 +990,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::CoerceO => self.op_coerce_o(),
                 Op::CoerceS => self.op_coerce_s(),
                 Op::CoerceU => self.op_coerce_u(),
-                Op::ConvertB => self.op_convert_b(),
-                Op::ConvertI => self.op_convert_i(),
-                Op::ConvertD => self.op_convert_d(),
                 Op::ConvertO => self.op_convert_o(),
-                Op::ConvertU => self.op_convert_u(),
                 Op::ConvertS => self.op_convert_s(),
                 Op::Add => self.op_add(),
                 Op::AddI => self.op_add_i(),
@@ -2024,18 +2020,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn op_convert_b(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        self.op_coerce_b()
-    }
-
-    fn op_convert_i(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        self.op_coerce_i()
-    }
-
-    fn op_convert_d(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        self.op_coerce_d()
-    }
-
     fn op_convert_o(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value = self.pop_stack();
         if matches!(value, Value::Null | Value::Undefined) {
@@ -2044,10 +2028,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.push_stack(value);
 
         Ok(FrameControl::Continue)
-    }
-
-    fn op_convert_u(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        self.op_coerce_u()
     }
 
     fn op_convert_s(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
