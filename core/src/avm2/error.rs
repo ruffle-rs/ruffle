@@ -205,6 +205,34 @@ pub fn make_error_1010<'gc>(
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1025<'gc>(activation: &mut Activation<'_, 'gc>, index: u32) -> Error<'gc> {
+    let err = verify_error(
+        activation,
+        &format!("Error #1025: An invalid register {} was accessed.", index),
+        1025,
+    );
+    match err {
+        Ok(err) => Error::AvmError(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1054<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = verify_error(
+        activation,
+        "Error #1054: Illegal range or target offsets in exception handler.",
+        1054,
+    );
+    match err {
+        Ok(err) => Error::AvmError(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1087<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     let err = type_error(
         activation,
@@ -224,6 +252,20 @@ pub fn make_error_1089<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
         activation,
         "Error #1089: Assignment to lists with more than one item is not supported.",
         1089,
+    );
+    match err {
+        Ok(err) => Error::AvmError(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1107<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = verify_error(
+        activation,
+        "Error #1107: The ABC data is corrupt, attempt to read out of bounds.",
+        1107,
     );
     match err {
         Ok(err) => Error::AvmError(err),
