@@ -1,0 +1,10 @@
+name = xml.@bar.name: bar
+xml[name]: attribute
+xml[name]: new attribute
+xml["bar"]: element
+xml["@bar"]: new attribute
+name2 = xml.bar.name(): bar
+xml[name2]: element
+xml[name2]: new element
+xml["bar"]: new element
+xml["@bar"]: new attribute
