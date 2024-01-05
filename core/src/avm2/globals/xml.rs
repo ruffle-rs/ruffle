@@ -109,10 +109,13 @@ pub fn name<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let node = this.as_xml_object().unwrap();
-    if let Some(local_name) = node.local_name() {
-        let namespace = node.namespace(activation);
-        Ok(QNameObject::from_name(activation, Multiname::new(namespace, local_name))?.into())
+    let xml = this.as_xml_object().unwrap();
+
+    if let Some(local_name) = xml.local_name() {
+        let namespace = xml.namespace(activation);
+        let mut multiname = Multiname::new(namespace, local_name);
+        multiname.set_is_attribute(xml.node().is_attribute());
+        Ok(QNameObject::from_name(activation, multiname)?.into())
     } else {
         Ok(Value::Null)
     }
