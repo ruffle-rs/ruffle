@@ -1475,43 +1475,38 @@ impl<'gc> EditText<'gc> {
         if let Some(selection) = self.selection() {
             let mut changed = false;
             let mut cancelled = false;
-            match character as u8 {
-                code if !(code as char).is_control() => {
-                    if self.available_chars() > 0 {
-                        if let Avm2Value::Object(target) = self.object2() {
-                            let character_string =
-                                AvmString::new_utf8(context.gc_context, character.to_string());
+            if !character.is_control() && self.available_chars() > 0 {
+                if let Avm2Value::Object(target) = self.object2() {
+                    let character_string =
+                        AvmString::new_utf8(context.gc_context, character.to_string());
 
-                            let mut activation = Avm2Activation::from_nothing(context.reborrow());
-                            let text_evt = Avm2EventObject::text_event(
-                                &mut activation,
-                                "textInput",
-                                character_string,
-                                true,
-                                true,
-                            );
-                            Avm2::dispatch_event(&mut activation.context, text_evt, target);
+                    let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                    let text_evt = Avm2EventObject::text_event(
+                        &mut activation,
+                        "textInput",
+                        character_string,
+                        true,
+                        true,
+                    );
+                    Avm2::dispatch_event(&mut activation.context, text_evt, target);
 
-                            cancelled = text_evt.as_event().unwrap().is_cancelled();
-                        }
-
-                        if !cancelled {
-                            self.replace_text(
-                                selection.start(),
-                                selection.end(),
-                                &WString::from_char(character),
-                                context,
-                            );
-                            let new_pos = selection.start() + character.len_utf8();
-                            self.set_selection(
-                                Some(TextSelection::for_position(new_pos)),
-                                context.gc_context,
-                            );
-                            changed = true;
-                        }
-                    }
+                    cancelled = text_evt.as_event().unwrap().is_cancelled();
                 }
-                _ => {}
+
+                if !cancelled {
+                    self.replace_text(
+                        selection.start(),
+                        selection.end(),
+                        &WString::from_char(character),
+                        context,
+                    );
+                    let new_pos = selection.start() + character.len_utf8();
+                    self.set_selection(
+                        Some(TextSelection::for_position(new_pos)),
+                        context.gc_context,
+                    );
+                    changed = true;
+                }
             }
 
             if changed {
