@@ -847,6 +847,8 @@ fn resolve_op<'gc>(
         AbcOp::TypeOf => Op::TypeOf,
         AbcOp::EscXAttr => Op::EscXAttr,
         AbcOp::EscXElem => Op::EscXElem,
+        AbcOp::Dxns { index } => Op::Dxns { index },
+        AbcOp::DxnsLate => Op::DxnsLate,
         AbcOp::LookupSwitch(lookup_switch) => Op::LookupSwitch(lookup_switch),
         AbcOp::Coerce { index } => Op::Coerce { index },
         AbcOp::CheckFilter => Op::CheckFilter,

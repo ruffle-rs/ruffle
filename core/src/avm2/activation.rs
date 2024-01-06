@@ -1086,6 +1086,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::Sxi8 => self.op_sxi8(),
                 Op::Sxi16 => self.op_sxi16(),
                 Op::Throw => self.op_throw(),
+                _ => unimplemented!("Encountered unimplemented AVM2 opcode {:?}", op),
             };
 
             if let Err(error) = result {
@@ -1096,8 +1097,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_push_byte(&mut self, value: u8) -> Result<FrameControl<'gc>, Error<'gc>> {
-        //TODO: Adobe Animate CC appears to generate signed byte values, and
-        //JPEXS appears to take them.
         self.push_stack(value as i8 as i32);
         Ok(FrameControl::Continue)
     }
