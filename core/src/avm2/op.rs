@@ -213,7 +213,6 @@ pub enum Op {
     Kill {
         index: u32,
     },
-    Label,
     LessEquals,
     LessThan,
     Lf32,
