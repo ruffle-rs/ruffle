@@ -4,6 +4,7 @@ use crate::avm2::op::Op;
 use crate::avm2::property::Property;
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::{Activation, Error};
+use gc_arena::GcCell;
 use std::collections::{HashMap, HashSet};
 use swf::avm2::read::Reader;
 use swf::avm2::types::{Index, MethodFlags as AbcMethodFlags, Multiname, Op as AbcOp};
@@ -473,6 +474,33 @@ fn verify_code_starting_from<'gc>(
                 }
             }
 
+            AbcOp::AsType {
+                type_name: name_index,
+            }
+            | AbcOp::Coerce { index: name_index } => {
+                let multiname = method
+                    .translation_unit()
+                    .pool_maybe_uninitialized_multiname(*name_index, &mut activation.context)
+                    .unwrap();
+
+                activation
+                    .domain()
+                    .get_class(&multiname, activation.context.gc_context)
+                    .ok_or_else(|| {
+                        Error::AvmError(
+                            verify_error(
+                                activation,
+                                &format!(
+                                    "Error #1014: Class {} could not be found.",
+                                    multiname.to_qualified_name(activation.context.gc_context)
+                                ),
+                                1014,
+                            )
+                            .expect("Error should construct"),
+                        )
+                    })?;
+            }
+
             _ => {}
         }
 
@@ -523,7 +551,7 @@ fn optimize<'gc>(
             | Op::IncLocalI { index }
             | Op::DecLocal { index }
             | Op::DecLocalI { index } => {
-                if local_types[*index as usize].is_some() {
+                if (*index as usize) < local_types.len() {
                     local_types[*index as usize] = None;
                 }
             }
@@ -531,10 +559,10 @@ fn optimize<'gc>(
                 object_register,
                 index_register,
             } => {
-                if local_types[*object_register as usize].is_some() {
+                if (*object_register as usize) < local_types.len() {
                     local_types[*object_register as usize] = None;
                 }
-                if local_types[*index_register as usize].is_some() {
+                if (*index_register as usize) < local_types.len() {
                     local_types[*index_register as usize] = None;
                 }
             }
@@ -632,6 +660,80 @@ fn optimize<'gc>(
                         }
                         _ => {}
                     },
+                    Op::AsType {
+                        type_name: name_index,
+                    } => {
+                        let multiname = method
+                            .translation_unit()
+                            .pool_maybe_uninitialized_multiname(
+                                *name_index,
+                                &mut activation.context,
+                            )
+                            .unwrap();
+
+                        let resolved_type = activation
+                            .domain()
+                            .get_class(&multiname, activation.context.gc_context);
+
+                        if resolved_type.is_some() {
+                            match previous_op_some {
+                                Op::PushNull => {
+                                    previous_op = Some(op.clone());
+                                    *op = Op::Nop;
+                                    continue;
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
+                    Op::Coerce { index: name_index } => {
+                        let multiname = method
+                            .translation_unit()
+                            .pool_maybe_uninitialized_multiname(
+                                *name_index,
+                                &mut activation.context,
+                            )
+                            .unwrap();
+
+                        let resolved_type = activation
+                            .domain()
+                            .get_class(&multiname, activation.context.gc_context);
+
+                        if let Some(class) = resolved_type {
+                            match previous_op_some {
+                                Op::PushNull => {
+                                    if !GcCell::ptr_eq(
+                                        class,
+                                        activation.avm2().classes().int.inner_class_definition(),
+                                    ) && !GcCell::ptr_eq(
+                                        class,
+                                        activation.avm2().classes().uint.inner_class_definition(),
+                                    ) && !GcCell::ptr_eq(
+                                        class,
+                                        activation.avm2().classes().number.inner_class_definition(),
+                                    ) && !GcCell::ptr_eq(
+                                        class,
+                                        activation
+                                            .avm2()
+                                            .classes()
+                                            .boolean
+                                            .inner_class_definition(),
+                                    ) && !GcCell::ptr_eq(
+                                        class,
+                                        activation.avm2().classes().void.inner_class_definition(),
+                                    ) && !GcCell::ptr_eq(
+                                        class,
+                                        activation.avm2().classes().string.inner_class_definition(),
+                                    ) {
+                                        previous_op = Some(op.clone());
+                                        *op = Op::Nop;
+                                        continue;
+                                    }
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
                     _ => {}
                 }
             }
