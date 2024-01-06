@@ -1,6 +1,7 @@
 use crate::avm2::error::{make_error_1025, make_error_1054, make_error_1107, verify_error};
 use crate::avm2::method::BytecodeMethod;
 use crate::avm2::op::Op;
+use crate::avm2::property::Property;
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::{Activation, Error};
 use std::collections::{HashMap, HashSet};
@@ -244,7 +245,12 @@ pub fn verify_method<'gc>(
         verified_code.push(resolved_op);
     }
 
-    optimize(&mut verified_code, potential_jump_targets);
+    optimize(
+        activation,
+        method,
+        &mut verified_code,
+        potential_jump_targets,
+    );
 
     Ok(VerifiedMethodInfo {
         parsed_code: verified_code,
@@ -480,7 +486,62 @@ fn verify_code_starting_from<'gc>(
     )?))
 }
 
-fn optimize(code: &mut Vec<Op>, jump_targets: HashSet<i32>) {
+fn optimize<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    method: &BytecodeMethod<'gc>,
+    code: &mut Vec<Op>,
+    jump_targets: HashSet<i32>,
+) {
+    // These make the code less readable
+    #![allow(clippy::manual_filter)]
+    #![allow(clippy::single_match)]
+
+    // This can probably be done better by recording the receiver in `Activation`,
+    // but this works since it's guaranteed to be set in `Activation::from_method`.
+    let this_value = activation.local_register(0);
+
+    let this_class = if let Some(this_class) = activation.subclass_object() {
+        if this_value.is_of_type(activation, this_class.inner_class_definition()) {
+            Some(this_class)
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
+    // Initial set of local types
+    let mut local_types = vec![None; method.body().unwrap().num_locals as usize];
+    local_types[0] = this_class;
+
+    // Invalidate local types if they should be invalidated
+    for op in &*code {
+        match op {
+            Op::SetLocal { index }
+            | Op::Kill { index }
+            | Op::IncLocal { index }
+            | Op::IncLocalI { index }
+            | Op::DecLocal { index }
+            | Op::DecLocalI { index } => {
+                if local_types[*index as usize].is_some() {
+                    local_types[*index as usize] = None;
+                }
+            }
+            Op::HasNext2 {
+                object_register,
+                index_register,
+            } => {
+                if local_types[*object_register as usize].is_some() {
+                    local_types[*object_register as usize] = None;
+                }
+                if local_types[*index_register as usize].is_some() {
+                    local_types[*index_register as usize] = None;
+                }
+            }
+            _ => {}
+        }
+    }
+
     let mut previous_op = None;
     for (i, op) in code.iter_mut().enumerate() {
         if let Some(previous_op_some) = previous_op {
@@ -532,6 +593,41 @@ fn optimize(code: &mut Vec<Op>, jump_targets: HashSet<i32>) {
                                 previous_op = Some(op.clone());
                                 *op = Op::Nop;
                                 continue;
+                            }
+                        }
+                        _ => {}
+                    },
+                    Op::GetProperty { index: name_index } => match previous_op_some {
+                        Op::GetLocal { index: local_index } => {
+                            let class = local_types[local_index as usize];
+                            if let Some(class) = class {
+                                let multiname = method
+                                    .translation_unit()
+                                    .pool_maybe_uninitialized_multiname(
+                                        *name_index,
+                                        &mut activation.context,
+                                    )
+                                    .unwrap();
+
+                                if !multiname.has_lazy_component() {
+                                    match class.instance_vtable().get_trait(&multiname) {
+                                        Some(Property::Slot { slot_id })
+                                        | Some(Property::ConstSlot { slot_id }) => {
+                                            previous_op = Some(op.clone());
+                                            *op = Op::GetSlot { index: slot_id };
+                                            continue;
+                                        }
+                                        Some(Property::Virtual { get: Some(get), .. }) => {
+                                            previous_op = Some(op.clone());
+                                            *op = Op::CallMethod {
+                                                num_args: 0,
+                                                index: Index::new(get),
+                                            };
+                                            continue;
+                                        }
+                                        _ => {}
+                                    }
+                                }
                             }
                         }
                         _ => {}
