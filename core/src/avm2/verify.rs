@@ -625,6 +625,35 @@ fn optimize<'gc>(
                         }
                         _ => {}
                     },
+                    Op::CoerceU => match previous_op_some {
+                        Op::CoerceU => {
+                            previous_op = Some(op.clone());
+                            *op = Op::Nop;
+                            continue;
+                        }
+                        Op::PushByte { value } => {
+                            if (value as i8) >= 0 {
+                                previous_op = Some(op.clone());
+                                *op = Op::Nop;
+                                continue;
+                            }
+                        }
+                        Op::PushShort { value } => {
+                            if value >= 0 {
+                                previous_op = Some(op.clone());
+                                *op = Op::Nop;
+                                continue;
+                            }
+                        }
+                        Op::PushInt { value } => {
+                            if value >= 0 && value < (1 << 28) {
+                                previous_op = Some(op.clone());
+                                *op = Op::Nop;
+                                continue;
+                            }
+                        }
+                        _ => {}
+                    },
                     Op::GetProperty { index: name_index } => match previous_op_some {
                         Op::GetLocal { index: local_index } => {
                             let class = local_types[local_index as usize];
