@@ -131,8 +131,8 @@ if (typeof chrome !== "undefined") {
             chrome.tabs.create({ url: "/options.html" }, cb),
         );
     openPlayerPage = () =>
-        promisify((_cb: () => void) =>
-            chrome.tabs.create({ url: "/player.html" }),
+        promisify((cb: () => void) =>
+            chrome.tabs.create({ url: "/player.html" }, cb),
         );
 } else if (typeof browser !== "undefined") {
     i18n = browser.i18n;
@@ -141,8 +141,8 @@ if (typeof chrome !== "undefined") {
     runtime = browser.runtime;
     openOptionsPage = () => browser.runtime.openOptionsPage();
     openPlayerPage = () =>
-        promisify((_cb: () => void) =>
-            browser.tabs.create({ url: "/player.html" }),
+        promisify((cb: () => void) =>
+            browser.tabs.create({ url: "/player.html" }).then(cb),
         );
 } else {
     throw new Error("Extension API not found.");
