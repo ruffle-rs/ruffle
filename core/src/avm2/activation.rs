@@ -1219,31 +1219,26 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    #[allow(unused_variables)]
     fn op_call_method(
         &mut self,
         index: Index<AbcMethod>,
         arg_count: u32,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         // The entire implementation of VTable assumes that
-        // call_method is never encountered. (see the long comment there)
+        // call_method is never encountered in user code. (see the long comment there)
         // This was also the conlusion from analysing avmplus behavior - they
         // unconditionally VerifyError upon noticing it.
-        // If we ever reach here, let's immediately panic instead of erroring,
-        // so we get an issue report ASAP.
-        panic!("Call_method is not supported");
 
-        #[allow(unreachable_code)]
-        {
-            let args = self.pop_stack_args(arg_count);
-            let receiver = self.pop_stack().as_callable(self, None, None, false)?;
+        // However, the optimizer can still generate it.
 
-            let value = receiver.call_method(index.0, &args, self)?;
+        let args = self.pop_stack_args(arg_count);
+        let receiver = self.pop_stack().coerce_to_object_or_typeerror(self, None)?;
 
-            self.push_stack(value);
+        let value = receiver.call_method(index.0, &args, self)?;
 
-            Ok(FrameControl::Continue)
-        }
+        self.push_stack(value);
+
+        Ok(FrameControl::Continue)
     }
 
     fn op_call_property(
