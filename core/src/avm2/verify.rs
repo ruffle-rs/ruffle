@@ -200,7 +200,7 @@ pub fn verify_method<'gc>(
             // Verification should have confirmed that this `unwrap_or` is from an unreachable instruction;
             // if it were reachable, then verification would have thrown a VerifyError
 
-            new_idx - i - 1
+            (new_idx, new_idx - i - 1)
         };
         match op {
             AbcOp::IfEq { offset }
@@ -219,18 +219,18 @@ pub fn verify_method<'gc>(
             | AbcOp::IfTrue { offset }
             | AbcOp::Jump { offset } => {
                 let adjusted_result = adjusted(i, *offset, true);
-                *offset = adjusted_result;
-                potential_jump_targets.insert(adjusted_result);
+                *offset = adjusted_result.1;
+                potential_jump_targets.insert(adjusted_result.0);
             }
             AbcOp::LookupSwitch(ref mut lookup_switch) => {
                 let adjusted_default = adjusted(i, lookup_switch.default_offset, false);
-                lookup_switch.default_offset = adjusted_default;
-                potential_jump_targets.insert(adjusted_default);
+                lookup_switch.default_offset = adjusted_default.1;
+                potential_jump_targets.insert(adjusted_default.0);
 
                 for case in lookup_switch.case_offsets.iter_mut() {
                     let adjusted_case = adjusted(i, *case, false);
-                    *case = adjusted_case;
-                    potential_jump_targets.insert(adjusted_case);
+                    *case = adjusted_case.1;
+                    potential_jump_targets.insert(adjusted_case.0);
                 }
             }
             _ => {}
@@ -243,6 +243,8 @@ pub fn verify_method<'gc>(
 
         verified_code.push(resolved_op);
     }
+
+    optimize(&mut verified_code, potential_jump_targets);
 
     Ok(VerifiedMethodInfo {
         parsed_code: verified_code,
@@ -478,6 +480,71 @@ fn verify_code_starting_from<'gc>(
     )?))
 }
 
+fn optimize(code: &mut Vec<Op>, jump_targets: HashSet<i32>) {
+    let mut previous_op = None;
+    for (i, op) in code.iter_mut().enumerate() {
+        if let Some(previous_op_some) = previous_op {
+            if !jump_targets.contains(&(i as i32)) {
+                match op {
+                    Op::CoerceB => match previous_op_some {
+                        Op::CoerceB
+                        | Op::Equals
+                        | Op::GreaterEquals
+                        | Op::GreaterThan
+                        | Op::LessEquals
+                        | Op::LessThan
+                        | Op::PushTrue
+                        | Op::PushFalse
+                        | Op::Not
+                        | Op::IsType { .. }
+                        | Op::IsTypeLate => {
+                            previous_op = Some(op.clone());
+                            *op = Op::Nop;
+                            continue;
+                        }
+                        _ => {}
+                    },
+                    Op::CoerceD => match previous_op_some {
+                        Op::CoerceD
+                        | Op::PushDouble { .. }
+                        | Op::Multiply
+                        | Op::Divide
+                        | Op::Modulo
+                        | Op::Increment
+                        | Op::IncLocal { .. }
+                        | Op::Decrement
+                        | Op::DecLocal { .. }
+                        | Op::Negate => {
+                            previous_op = Some(op.clone());
+                            *op = Op::Nop;
+                            continue;
+                        }
+                        _ => {}
+                    },
+                    Op::CoerceI => match previous_op_some {
+                        Op::CoerceI | Op::PushByte { .. } | Op::PushShort { .. } => {
+                            previous_op = Some(op.clone());
+                            *op = Op::Nop;
+                            continue;
+                        }
+                        Op::PushInt { value } => {
+                            if value >= -(1 << 28) && value < (1 << 28) {
+                                previous_op = Some(op.clone());
+                                *op = Op::Nop;
+                                continue;
+                            }
+                        }
+                        _ => {}
+                    },
+                    _ => {}
+                }
+            }
+        }
+
+        previous_op = Some(op.clone());
+    }
+}
+
 fn ops_can_throw_error(ops: &[AbcOp], start_idx: u32, end_idx: u32) -> bool {
     for i in start_idx..end_idx {
         let op = &ops[i as usize];
@@ -516,7 +583,14 @@ fn pool_int<'gc>(
     index: Index<i32>,
 ) -> Result<i32, Error<'gc>> {
     if index.0 == 0 {
-        return Ok(0);
+        return Err(Error::AvmError(
+            verify_error(
+                activation,
+                "Error #1032: Cpool index 0 is out of range.",
+                1032,
+            )
+            .expect("Error should construct"),
+        ));
     }
 
     translation_unit
@@ -543,7 +617,14 @@ fn pool_uint<'gc>(
     index: Index<u32>,
 ) -> Result<u32, Error<'gc>> {
     if index.0 == 0 {
-        return Ok(0);
+        return Err(Error::AvmError(
+            verify_error(
+                activation,
+                "Error #1032: Cpool index 0 is out of range.",
+                1032,
+            )
+            .expect("Error should construct"),
+        ));
     }
 
     translation_unit
