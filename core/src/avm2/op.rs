@@ -97,6 +97,10 @@ pub enum Op {
     },
     Divide,
     Dup,
+    Dxns {
+        index: Index<String>,
+    },
+    DxnsLate,
     Equals,
     EscXAttr,
     EscXElem,
