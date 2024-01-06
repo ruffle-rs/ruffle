@@ -1,4 +1,4 @@
-package {
+﻿package {
     import flash.display.Sprite;
 
     public class Test extends Sprite {
@@ -22,6 +22,27 @@ package {
             trace("xml[name2]: " + xml[name2]);
             trace('xml["bar"]: ' + xml["bar"]);
             trace('xml["@bar"]: ' + xml["@bar"]);
+
+            // Test creating attribute
+            xml["@foo"] = "My new attr";
+            trace('xml["@foo"]: ' + xml["@foo"]);
+            trace(xml.toXMLString());
+
+            trace("Has property: " + xml.hasOwnProperty("@foo"));
+
+            delete xml["@foo"];
+            trace('After delete: xml["@foo"] = ' + xml["@foo"]);
+            trace(xml.toXMLString());
+
+            var list = new XMLList(xml + xml);
+            trace("List: " + list);
+            trace('list["@bar"] = ' + list["@bar"]);
+            trace(list);
+            delete list["@bar"];
+            trace("After delete:");
+            trace('list["@bar"] = ' + list["@bar"]);
+            trace(list);
+
         }
     }
 }
