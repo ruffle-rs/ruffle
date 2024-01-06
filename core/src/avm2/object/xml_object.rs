@@ -274,19 +274,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
             }
         }
 
-        // Special case to handle code like: xml["@attr"]
-        // FIXME: Figure out the exact semantics.
-        let multiname = if !name.has_explicit_namespace()
-            && !name.is_attribute()
-            && !name.is_any_name()
-            && !name.is_any_namespace()
-        {
-            name.local_name()
-                .map(|name| string_to_multiname(activation, name))
-        } else {
-            None
-        };
-        let name = multiname.as_ref().unwrap_or(name);
+        let name = handle_input_multiname(name.clone(), activation);
 
         let matched_children = if let E4XNodeKind::Element {
             children,
@@ -302,7 +290,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
             search_children
                 .iter()
                 .filter_map(|child| {
-                    if child.matches_name(name) {
+                    if child.matches_name(&name) {
                         Some(E4XOrXml::E4X(*child))
                     } else {
                         None
@@ -392,6 +380,8 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
+        let name = handle_input_multiname(name.clone(), activation);
+
         // 1. If ToString(ToUint32(P)) == P, throw a TypeError exception
         if let Some(local_name) = name.local_name() {
             if local_name.parse::<usize>().is_ok() {
@@ -472,7 +462,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
             };
 
             let mc = activation.context.gc_context;
-            self.delete_property_local(activation, name)?;
+            self.delete_property_local(activation, &name)?;
             let Some(local_name) = name.local_name() else {
                 return Err(format!("Cannot set attribute {:?} without a local name", name).into());
             };
@@ -507,7 +497,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
 
         // 9. Let i = undefined
         // 11.
-        let index = self_node.remove_matching_children(activation.gc(), name);
+        let index = self_node.remove_matching_children(activation.gc(), &name);
 
         let index = if let Some((index, node)) = index {
             self_node.insert_at(activation.gc(), index, node);
@@ -606,6 +596,8 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         name: &Multiname<'gc>,
     ) -> Result<bool, Error<'gc>> {
+        let name = handle_input_multiname(name.clone(), activation);
+
         if name.has_explicit_namespace() {
             return Err(format!(
                 "Can not set property {:?} with an explicit namespace yet",
@@ -627,7 +619,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         };
 
         let retain_non_matching = |node: &E4XNode<'gc>| {
-            if node.matches_name(name) {
+            if node.matches_name(&name) {
                 node.set_parent(None, mc);
                 false
             } else {
@@ -641,5 +633,24 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
             children.retain(retain_non_matching);
         }
         Ok(true)
+    }
+}
+
+fn handle_input_multiname<'gc>(
+    name: Multiname<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+) -> Multiname<'gc> {
+    // Special case to handle code like: xml["@attr"]
+    // FIXME: Figure out the exact semantics.
+    if !name.has_explicit_namespace()
+        && !name.is_attribute()
+        && !name.is_any_name()
+        && !name.is_any_namespace()
+    {
+        name.local_name()
+            .map(|name| string_to_multiname(activation, name))
+            .unwrap_or(name)
+    } else {
+        name
     }
 }
