@@ -983,7 +983,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::NewClass { index } => self.op_new_class(method, *index),
                 Op::ApplyType { num_types } => self.op_apply_type(*num_types),
                 Op::NewArray { num_args } => self.op_new_array(*num_args),
-                Op::CoerceA => self.op_coerce_a(),
+                Op::CoerceA => Ok(FrameControl::Continue),
                 Op::CoerceB => self.op_coerce_b(),
                 Op::CoerceD => self.op_coerce_d(),
                 Op::CoerceI => self.op_coerce_i(),
@@ -1039,7 +1039,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::GreaterThan => self.op_greater_than(),
                 Op::LessEquals => self.op_less_equals(),
                 Op::LessThan => self.op_less_than(),
-                Op::Nop => self.op_nop(),
+                Op::Nop => Ok(FrameControl::Continue),
                 Op::Not => self.op_not(),
                 Op::HasNext => self.op_has_next(),
                 Op::HasNext2 {
@@ -1053,7 +1053,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::AsType { type_name } => self.op_as_type(method, *type_name),
                 Op::AsTypeLate => self.op_as_type_late(),
                 Op::InstanceOf => self.op_instance_of(),
-                Op::Label => Ok(FrameControl::Continue),
                 Op::Debug {
                     is_local_register,
                     register_name,
@@ -1952,10 +1951,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn op_coerce_a(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        Ok(FrameControl::Continue)
-    }
-
     fn op_coerce_b(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value = self.pop_stack().coerce_to_boolean();
 
@@ -2554,10 +2549,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         self.push_stack(result);
 
-        Ok(FrameControl::Continue)
-    }
-
-    fn op_nop(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         Ok(FrameControl::Continue)
     }
 

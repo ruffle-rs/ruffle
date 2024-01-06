@@ -925,7 +925,7 @@ fn resolve_op<'gc>(
         AbcOp::AsType { type_name } => Op::AsType { type_name },
         AbcOp::AsTypeLate => Op::AsTypeLate,
         AbcOp::InstanceOf => Op::InstanceOf,
-        AbcOp::Label => Op::Label,
+        AbcOp::Label => Op::Nop,
         AbcOp::Debug {
             is_local_register,
             register_name,
