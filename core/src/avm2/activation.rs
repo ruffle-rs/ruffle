@@ -1085,7 +1085,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::Sxi8 => self.op_sxi8(),
                 Op::Sxi16 => self.op_sxi16(),
                 Op::Throw => self.op_throw(),
-                _ => unimplemented!("Encountered unimplemented AVM2 opcode {:?}", op),
+                _ => {
+                    tracing::info!("Encountered unimplemented AVM2 opcode {:?}", op);
+
+                    return Err("Unknown op".into());
+                }
             };
 
             if let Err(error) = result {
