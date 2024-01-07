@@ -170,7 +170,7 @@ pub fn verify_method<'gc>(
             type_name: exception.type_name,
         });
 
-        if ops_can_throw_error(new_code.as_slice(), new_from_offset, new_to_offset) {
+        if ops_can_throw_error(&new_code[new_from_offset as usize..new_to_offset as usize]) {
             verify_code_starting_from(
                 activation,
                 method,
@@ -739,6 +739,8 @@ fn optimize<'gc>(
                         if let Some(class) = resolved_type {
                             match previous_op_some {
                                 Op::PushNull => {
+                                    // As long as this Coerce isn't coercing to one
+                                    // of these special classes, we can remove it.
                                     if !GcCell::ptr_eq(
                                         class,
                                         activation.avm2().classes().int.inner_class_definition(),
@@ -789,9 +791,8 @@ fn optimize<'gc>(
     }
 }
 
-fn ops_can_throw_error(ops: &[AbcOp], start_idx: u32, end_idx: u32) -> bool {
-    for i in start_idx..end_idx {
-        let op = &ops[i as usize];
+fn ops_can_throw_error(ops: &[AbcOp]) -> bool {
+    for op in ops {
         match op {
             AbcOp::PushByte { .. }
             | AbcOp::PushDouble { .. }
@@ -1110,14 +1111,5 @@ fn resolve_op<'gc>(
         AbcOp::Sxi8 => Op::Sxi8,
         AbcOp::Sxi16 => Op::Sxi16,
         AbcOp::Throw => Op::Throw,
-        _ => {
-            tracing::error!("Unimplemented AVM2 op {:?} found during verification", op);
-
-            return Err(Error::AvmError(verify_error(
-                activation,
-                "Error #1011: Method contained illegal opcode.",
-                1011,
-            )?));
-        }
     })
 }
