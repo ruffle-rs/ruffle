@@ -509,9 +509,6 @@ pub enum Op {
     PushByte {
         value: u8,
     },
-    PushConstant {
-        value: u32,
-    },
     PushDouble {
         value: Index<f64>,
     },
