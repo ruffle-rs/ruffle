@@ -427,6 +427,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "bitreader"
+version = "0.3.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "886559b1e163d56c765bc3a985febb4eee8009f625244511d8ee3c432e08c066"
+dependencies = [
+ "cfg-if",
+]
+
+[[package]]
 name = "bitstream-io"
 version = "4.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1640,6 +1649,15 @@ dependencies = [
  "ruffle_core",
  "ruffle_render_wgpu",
  "walkdir",
+]
+
+[[package]]
+name = "fallible_collections"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8b3e85d14d419ba3e1db925519461c0d17a49bdd2d67ea6316fa965ca7acdf74"
+dependencies = [
+ "hashbrown 0.14.5",
 ]
 
 [[package]]
@@ -3113,6 +3131,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "mp4parse"
+version = "0.17.0"
+source = "git+https://github.com/mozilla/mp4parse-rust.git?branch=master#13b8873d46214ec079c178bb288b1d183e80bc80"
+dependencies = [
+ "bitreader",
+ "byteorder",
+ "fallible_collections",
+ "log",
+ "num-traits",
+ "static_assertions",
+]
+
+[[package]]
 name = "naga"
 version = "25.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4399,6 +4430,7 @@ dependencies = [
  "jpegxr",
  "linkme",
  "lzma-rs",
+ "mp4parse",
  "nellymoser-rs",
  "num-bigint",
  "num-derive",
