@@ -552,6 +552,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "bitreader"
+version = "0.3.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bdd859c9d97f7c468252795b35aeccc412bdbb1e90ee6969c4fa6328272eaeff"
+dependencies = [
+ "cfg-if",
+]
+
+[[package]]
 name = "bitstream-io"
 version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1850,6 +1859,15 @@ dependencies = [
  "rayon-core",
  "smallvec",
  "zune-inflate",
+]
+
+[[package]]
+name = "fallible_collections"
+version = "0.4.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a88c69768c0a15262df21899142bc6df9b9b823546d4b4b9a7bc2d6c448ec6fd"
+dependencies = [
+ "hashbrown 0.13.2",
 ]
 
 [[package]]
@@ -3313,6 +3331,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "mp4parse"
+version = "0.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "63a35203d3c6ce92d5251c77520acb2e57108c88728695aa883f70023624c570"
+dependencies = [
+ "bitreader",
+ "byteorder",
+ "fallible_collections",
+ "log",
+ "num-traits",
+ "static_assertions",
+]
+
+[[package]]
 name = "naga"
 version = "0.19.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4329,6 +4361,7 @@ dependencies = [
  "jpegxr",
  "linkme",
  "lzma-rs",
+ "mp4parse",
  "nellymoser-rs",
  "num-bigint",
  "num-derive",
