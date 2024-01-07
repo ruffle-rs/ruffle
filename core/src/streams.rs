@@ -187,6 +187,12 @@ pub struct NetStreamData<'gc> {
     /// The buffer position that we are currently seeking to.
     offset: usize,
 
+    /// The expected length of the buffer once downloading is complete.
+    ///
+    /// `None` indicates that downloading is already complete and that the
+    /// length of the associated `Buffer` is the final length.
+    expected_length: Option<usize>,
+
     /// The buffer position for processing incoming data.
     ///
     /// This points to the first byte that the stream has *never* processed
@@ -264,6 +270,7 @@ impl<'gc> NetStream<'gc> {
                 sound_instance: None,
                 attached_to: None,
                 playing: false,
+                expected_length: Some(0),
             },
         ))
     }
@@ -308,6 +315,20 @@ impl<'gc> NetStream<'gc> {
         write.queued_seek_time = None;
         write.audio_stream = None;
         write.sound_instance = None;
+        write.expected_length = Some(0);
+    }
+
+    /// Set the total number of bytes expected to be downloaded.
+    pub fn set_expected_length(self, context: &mut UpdateContext<'_, 'gc>, expected: usize) {
+        let mut write = self.0.write(context.gc_context);
+        let len = write.buffer.len();
+
+        // The subtract is to avoid reserving space for already-downloaded data.
+        if expected > len {
+            write.buffer.reserve(expected - len);
+        }
+
+        write.expected_length = Some(expected);
     }
 
     /// Append data to the `NetStream`'s current internal buffer.
@@ -329,6 +350,12 @@ impl<'gc> NetStream<'gc> {
         );
     }
 
+    /// Indicate that the buffer has finished loading and that no further data
+    /// is expected to be downloaded to it.
+    pub fn finish_buffer(self, context: &mut UpdateContext<'_, 'gc>) {
+        self.0.write(context.gc_context).expected_length = None;
+    }
+
     pub fn report_error(self, _error: Error) {
         //TODO: Report an `asyncError` to AVM1 or 2.
     }
@@ -338,7 +365,10 @@ impl<'gc> NetStream<'gc> {
     }
 
     pub fn bytes_total(self) -> usize {
-        self.0.read().buffer.len()
+        let read = self.0.read();
+        let buflen = read.buffer.len();
+
+        std::cmp::max(read.expected_length.unwrap_or(buflen), buflen)
     }
 
     pub fn time(self) -> f64 {

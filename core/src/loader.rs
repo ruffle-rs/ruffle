@@ -1632,6 +1632,8 @@ impl<'gc> Loader<'gc> {
             let fetch = player.lock().unwrap().navigator().fetch(request);
             match fetch.await {
                 Ok(mut response) => {
+                    let expected_length = response.expected_length();
+
                     player.lock().unwrap().update(|uc| {
                         let loader = uc.load_manager.get_loader(handle);
                         let stream = match loader {
@@ -1641,6 +1643,10 @@ impl<'gc> Loader<'gc> {
                         };
 
                         stream.reset_buffer(uc);
+                        if let Ok(Some(len)) = expected_length {
+                            stream.set_expected_length(uc, len as usize);
+                        }
+
                         Ok(())
                     })?;
 
@@ -1657,7 +1663,7 @@ impl<'gc> Loader<'gc> {
 
                             match chunk {
                                 Ok(Some(mut data)) => stream.load_buffer(uc, &mut data),
-                                Ok(None) => {}
+                                Ok(None) => stream.finish_buffer(uc),
                                 Err(err) => stream.report_error(err),
                             }
                             Ok(())
