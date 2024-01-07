@@ -1,0 +1,5 @@
+Successfully called drawPath with empty coords and invalid commands
+Caught error: ArgumentError: Error #2004: One of the parameters is invalid.
+Successful weird drawing with drawGraphicsData
+Caught error in drawGraphicsData: ArgumentError: Error #2004: One of the parameters is invalid.
+Done

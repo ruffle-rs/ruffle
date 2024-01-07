@@ -1,7 +1,7 @@
 //! `flash.display.Graphics` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::error::make_error_2008;
+use crate::avm2::error::{argument_error, make_error_2008};
 use crate::avm2::globals::flash::geom::transform::object_to_matrix;
 use crate::avm2::object::{Object, TObject, VectorObject};
 use crate::avm2::parameters::ParametersExt;
@@ -883,7 +883,7 @@ pub fn draw_path<'gc>(
         .expect("commands is not a Vector");
     let data = data.as_vector_storage().expect("data is not a Vector");
 
-    process_commands(activation, &mut drawing, &commands, &data);
+    process_commands(activation, &mut drawing, &commands, &data)?;
 
     Ok(Value::Undefined)
 }
@@ -1171,13 +1171,52 @@ pub fn read_graphics_data<'gc>(
     Ok(VectorObject::from_vector(new_storage, activation)?.into())
 }
 
+fn read_point<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    data: &VectorStorage<'gc>,
+    data_index: &mut usize,
+) -> Result<Point<Twips>, Error<'gc>> {
+    if *data_index + 1 >= data.length() {
+        return Err(Error::AvmError(argument_error(
+            activation,
+            "Error #2004: One of the parameters is invalid.",
+            2004,
+        )?));
+    }
+    let x = data
+        .get(*data_index, activation)
+        .expect("missing data")
+        .as_number(activation.context.gc_context)
+        .expect("data is not a Vec.<Number>");
+
+    let y = data
+        .get(*data_index + 1, activation)
+        .expect("missing data")
+        .as_number(activation.context.gc_context)
+        .expect("data is not a Vec.<Number>");
+
+    *data_index += 2;
+
+    Ok(Point {
+        x: Twips::from_pixels(x),
+        y: Twips::from_pixels(y),
+    })
+}
+
 fn process_commands<'gc>(
     activation: &mut Activation<'_, 'gc>,
     drawing: &mut Drawing,
     commands: &VectorStorage<'gc>,
     data: &VectorStorage<'gc>,
-) {
+) -> Result<(), Error<'gc>> {
     let mut data_index = 0;
+    let mut parsed_commands = vec![];
+
+    // Flash special cases this, and doesn't throw an error, even if there are
+    // commands that try to use points from 'data'
+    if data.length() == 0 {
+        return Ok(());
+    }
 
     for i in 0..commands.length() {
         let command = commands
@@ -1185,27 +1224,6 @@ fn process_commands<'gc>(
             .expect("missing command")
             .as_integer(activation.context.gc_context)
             .expect("commands is not a Vec.<int>");
-
-        let mut read_point = || {
-            let x = data
-                .get(data_index, activation)
-                .expect("missing data")
-                .as_number(activation.context.gc_context)
-                .expect("data is not a Vec.<Number>");
-
-            let y = data
-                .get(data_index + 1, activation)
-                .expect("missing data")
-                .as_number(activation.context.gc_context)
-                .expect("data is not a Vec.<Number>");
-
-            data_index += 2;
-
-            Point {
-                x: Twips::from_pixels(x),
-                y: Twips::from_pixels(y),
-            }
-        };
 
         // FIXME - determine correct behavior when data is missing or invalid commands
         // are used. Flash doesn't throw an error, and it's unclear what the correct
@@ -1215,37 +1233,64 @@ fn process_commands<'gc>(
             // NO_OP
             0 => None,
             // MOVE_TO
-            1 => Some(DrawCommand::MoveTo(read_point())),
+            1 => Some(DrawCommand::MoveTo(read_point(
+                activation,
+                data,
+                &mut data_index,
+            )?)),
             // LINE_TO
-            2 => Some(DrawCommand::LineTo(read_point())),
+            2 => Some(DrawCommand::LineTo(read_point(
+                activation,
+                data,
+                &mut data_index,
+            )?)),
             // CURVE_TO
-            3 => Some(DrawCommand::QuadraticCurveTo {
-                control: read_point(),
-                anchor: read_point(),
-            }),
+            3 => {
+                let control = read_point(activation, data, &mut data_index)?;
+                let anchor = read_point(activation, data, &mut data_index)?;
+                Some(DrawCommand::QuadraticCurveTo { control, anchor })
+            }
             // WIDE_MOVE_TO
             4 => {
-                let _dummy = read_point();
-                Some(DrawCommand::MoveTo(read_point()))
+                let _dummy = read_point(activation, data, &mut data_index)?;
+                Some(DrawCommand::MoveTo(read_point(
+                    activation,
+                    data,
+                    &mut data_index,
+                )?))
             }
             // WIDE_LINE_TO
             5 => {
-                let _dummy = read_point();
-                Some(DrawCommand::LineTo(read_point()))
+                let _dummy = read_point(activation, data, &mut data_index)?;
+                Some(DrawCommand::LineTo(read_point(
+                    activation,
+                    data,
+                    &mut data_index,
+                )?))
             }
             // CUBIC_CURVE_TO
-            6 => Some(DrawCommand::CubicCurveTo {
-                control_a: read_point(),
-                control_b: read_point(),
-                anchor: read_point(),
-            }),
+            6 => {
+                let control_a = read_point(activation, data, &mut data_index)?;
+                let control_b = read_point(activation, data, &mut data_index)?;
+                let anchor = read_point(activation, data, &mut data_index)?;
+                Some(DrawCommand::CubicCurveTo {
+                    control_a,
+                    control_b,
+                    anchor,
+                })
+            }
             _ => panic!("Unexpected command value {command}"),
         };
 
         if let Some(draw_command) = draw_command {
-            drawing.draw_command(draw_command);
+            parsed_commands.push(draw_command);
         }
     }
+    // Once validation is done, draw everything
+    for command in parsed_commands {
+        drawing.draw_command(command);
+    }
+    Ok(())
 }
 
 fn handle_igraphics_data<'gc>(
@@ -1284,7 +1329,7 @@ fn handle_igraphics_data<'gc>(
                 .as_vector_storage()
                 .expect("commands is not a Vector"),
             &data.as_vector_storage().expect("data is not a Vector"),
-        );
+        )?;
     } else if class == activation.avm2().classes().graphicssolidfill {
         let style = handle_solid_fill(activation, obj)?;
         drawing.set_fill_style(Some(style));
