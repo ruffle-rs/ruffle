@@ -1621,28 +1621,58 @@ impl<'gc> Loader<'gc> {
 
         Box::pin(async move {
             let fetch = player.lock().unwrap().navigator().fetch(request);
-            let response = Self::wait_for_full_response(fetch).await;
+            match fetch.await {
+                Ok(mut response) => {
+                    player.lock().unwrap().update(|uc| {
+                        let loader = uc.load_manager.get_loader(handle);
+                        let stream = match loader {
+                            Some(&Loader::NetStream { target_stream, .. }) => target_stream,
+                            None => return Err(Error::Cancelled),
+                            _ => return Err(Error::NotNetStreamLoader),
+                        };
 
-            player.lock().unwrap().update(|uc| {
-                let loader = uc.load_manager.get_loader(handle);
-                let stream = match loader {
-                    Some(&Loader::NetStream { target_stream, .. }) => target_stream,
-                    None => return Err(Error::Cancelled),
-                    _ => return Err(Error::NotNetStreamLoader),
-                };
-
-                match response {
-                    Ok((mut body, _, _, _)) => {
                         stream.reset_buffer(uc);
-                        stream.load_buffer(uc, &mut body);
-                    }
-                    Err(response) => {
-                        stream.report_error(response.error);
-                    }
-                }
+                        Ok(())
+                    })?;
 
-                Ok(())
-            })
+                    loop {
+                        let chunk = response.next_chunk().await;
+                        let is_end = matches!(chunk, Ok(None));
+                        player.lock().unwrap().update(|uc| {
+                            let loader = uc.load_manager.get_loader(handle);
+                            let stream = match loader {
+                                Some(&Loader::NetStream { target_stream, .. }) => target_stream,
+                                None => return Err(Error::Cancelled),
+                                _ => return Err(Error::NotNetStreamLoader),
+                            };
+
+                            match chunk {
+                                Ok(Some(mut data)) => stream.load_buffer(uc, &mut data),
+                                Ok(None) => {}
+                                Err(err) => stream.report_error(err),
+                            }
+                            Ok(())
+                        })?;
+
+                        if is_end {
+                            break;
+                        }
+                    }
+
+                    Ok(())
+                }
+                Err(response) => player.lock().unwrap().update(|uc| {
+                    let loader = uc.load_manager.get_loader(handle);
+                    let stream = match loader {
+                        Some(&Loader::NetStream { target_stream, .. }) => target_stream,
+                        None => return Err(Error::Cancelled),
+                        _ => return Err(Error::NotNetStreamLoader),
+                    };
+
+                    stream.report_error(response.error);
+                    Ok(())
+                }),
+            }
         })
     }
 
