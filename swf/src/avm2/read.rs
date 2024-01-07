@@ -796,9 +796,6 @@ impl<'a> Reader<'a> {
             OpCode::PushByte => Op::PushByte {
                 value: self.read_u8()?,
             },
-            OpCode::PushConstant => Op::PushConstant {
-                value: self.read_u30()?,
-            },
             OpCode::PushDouble => Op::PushDouble {
                 value: self.read_index()?,
             },
