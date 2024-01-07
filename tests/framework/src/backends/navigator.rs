@@ -51,6 +51,10 @@ impl SuccessResponse for TestResponse {
     fn redirected(&self) -> bool {
         self.redirected
     }
+
+    fn expected_length(&self) -> Result<Option<u64>, Error> {
+        Ok(Some(self.body.len() as u64))
+    }
 }
 
 /// A `NavigatorBackend` used by tests that supports logging fetch requests.

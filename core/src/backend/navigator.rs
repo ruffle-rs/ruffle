@@ -215,6 +215,16 @@ pub trait SuccessResponse {
     /// Mixing `next_chunk` and `body` is not supported and may yield errors.
     /// Use one or the other.
     fn next_chunk(&mut self) -> OwnedFuture<Option<Vec<u8>>, Error>;
+
+    /// Estimate the expected length of the response body.
+    ///
+    /// Returned length may not correspond to the actual length of data
+    /// returned from `next_chunk` or `body`. A `None` indicates that the data
+    /// is of indefinite length as reported by the source of the response.
+    ///
+    /// An error may be returned if the source reported corrupted or invalid
+    /// length information.
+    fn expected_length(&self) -> Result<Option<u64>, Error>;
 }
 
 /// A response to a non-successful fetch request.
@@ -613,6 +623,12 @@ pub fn fetch_path<NavigatorType: NavigatorBackend>(
                     Err(e) => Err(Error::FetchError(e.to_string())),
                 }
             })
+        }
+
+        fn expected_length(&self) -> Result<Option<u64>, Error> {
+            Ok(Some(
+                std::fs::File::open(self.path.clone())?.metadata()?.len(),
+            ))
         }
     }
 

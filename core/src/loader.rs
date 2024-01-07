@@ -206,6 +206,15 @@ pub enum Error {
     // the GC arena). We're losing info here. How do we fix that?
     #[error("Error running avm2 script: {0}")]
     Avm2Error(String),
+
+    #[error("System I/O error: {0}")]
+    IoError(#[from] std::io::Error),
+
+    #[error("Cannot parse integer value: {0}")]
+    ParseIntError(#[from] std::num::ParseIntError),
+
+    #[error("Header value is not a valid UTF-8 string.")]
+    InvalidHeaderValue,
 }
 
 impl From<crate::avm1::Error<'_>> for Error {
