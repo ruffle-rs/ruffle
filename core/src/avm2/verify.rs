@@ -767,6 +767,15 @@ fn optimize<'gc>(
                                         continue;
                                     }
                                 }
+                                Op::Coerce {
+                                    index: previous_name_index,
+                                } => {
+                                    if name_index.as_u30() == previous_name_index.as_u30() {
+                                        previous_op = Some(op.clone());
+                                        *op = Op::Nop;
+                                        continue;
+                                    }
+                                }
                                 _ => {}
                             }
                         }
