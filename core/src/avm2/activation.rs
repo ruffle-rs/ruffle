@@ -2834,7 +2834,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         default_offset: i32,
         case_offsets: &[i32],
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let index = self.pop_stack().coerce_to_i32(self)?;
+        let index = self.pop_stack().coerce_to_i32(self).map_err(|_| {
+            Error::from(
+                "VerifyError: Invalid value type on stack (should have been int) for LookupSwitch!",
+            )
+        })?;
 
         let offset = case_offsets
             .get(index as usize)

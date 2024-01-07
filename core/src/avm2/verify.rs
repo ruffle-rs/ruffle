@@ -794,7 +794,10 @@ fn optimize<'gc>(
 fn ops_can_throw_error(ops: &[AbcOp]) -> bool {
     for op in ops {
         match op {
-            AbcOp::PushByte { .. }
+            AbcOp::Bkpt
+            | AbcOp::BkptLine { .. }
+            | AbcOp::Timestamp
+            | AbcOp::PushByte { .. }
             | AbcOp::PushDouble { .. }
             | AbcOp::PushFalse
             | AbcOp::PushInt { .. }
@@ -807,10 +810,23 @@ fn ops_can_throw_error(ops: &[AbcOp]) -> bool {
             | AbcOp::PushUint { .. }
             | AbcOp::PushUndefined
             | AbcOp::Dup
+            | AbcOp::Swap
             | AbcOp::Pop
+            | AbcOp::TypeOf
+            | AbcOp::GetGlobalScope
+            | AbcOp::GetScopeObject { .. }
+            | AbcOp::GetOuterScope { .. }
+            | AbcOp::GetGlobalSlot { .. }
             | AbcOp::GetLocal { .. }
             | AbcOp::SetLocal { .. }
             | AbcOp::Kill { .. }
+            | AbcOp::Label
+            | AbcOp::Jump { .. }
+            | AbcOp::IfTrue { .. }
+            | AbcOp::IfFalse { .. }
+            | AbcOp::IfStrictEq { .. }
+            | AbcOp::IfStrictNe { .. }
+            | AbcOp::LookupSwitch { .. }
             | AbcOp::Nop
             | AbcOp::Not
             | AbcOp::PopScope
