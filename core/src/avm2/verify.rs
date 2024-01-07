@@ -276,11 +276,13 @@ fn adjust_jump_offset<'gc>(
     let new_idx = byte_offset_to_idx
         .get(&new_byte_offset)
         .copied()
-        .ok_or(Error::AvmError(verify_error(
-            activation,
-            "Error #1021: At least one branch target was not on a valid instruction in the method.",
-            1021,
-        )?))?;
+        .ok_or_else(|| {
+            Error::AvmError(verify_error(
+                activation,
+                "Error #1021: At least one branch target was not on a valid instruction in the method.",
+                1021,
+            ).expect("Error should construct"))
+        })?;
 
     Ok(new_idx - 1)
 }
@@ -294,224 +296,230 @@ fn verify_code_starting_from<'gc>(
     ops: &[AbcOp],
     start_idx: i32,
 ) -> Result<(), Error<'gc>> {
-    if verified_blocks.iter().any(|o| *o == start_idx) {
-        // Already verified
-        return Ok(());
-    }
-
-    verified_blocks.push(start_idx);
-
     let body = method
         .body()
         .expect("Cannot verify non-native method without body!");
     let max_locals = body.num_locals;
 
-    let mut i = start_idx;
-    while (i as usize) < ops.len() {
-        let op = &ops[i as usize];
+    let mut worklist = Vec::new();
+    worklist.push(start_idx);
 
-        // Special control flow ops
-        match op {
-            AbcOp::IfEq { offset }
-            | AbcOp::IfFalse { offset }
-            | AbcOp::IfGe { offset }
-            | AbcOp::IfGt { offset }
-            | AbcOp::IfLe { offset }
-            | AbcOp::IfLt { offset }
-            | AbcOp::IfNe { offset }
-            | AbcOp::IfNge { offset }
-            | AbcOp::IfNgt { offset }
-            | AbcOp::IfNle { offset }
-            | AbcOp::IfNlt { offset }
-            | AbcOp::IfStrictEq { offset }
-            | AbcOp::IfStrictNe { offset }
-            | AbcOp::IfTrue { offset }
-            | AbcOp::Jump { offset } => {
-                let op_idx = adjust_jump_offset(
+    while !worklist.is_empty() {
+        let mut save_current_work = false;
+        let mut i = *worklist.last().unwrap();
+        loop {
+            if (i as usize) >= ops.len() {
+                return Err(Error::AvmError(verify_error(
                     activation,
-                    i,
-                    *offset,
-                    true,
-                    idx_to_byte_offset,
-                    byte_offset_to_idx,
-                )?;
-                if op_idx != i {
-                    let position = op_idx;
-
-                    verify_code_starting_from(
-                        activation,
-                        method,
-                        idx_to_byte_offset,
-                        byte_offset_to_idx,
-                        verified_blocks,
-                        ops,
-                        position + 1,
-                    )?;
-
-                    if matches!(op, AbcOp::Jump { .. }) {
-                        // A Jump is terminal, the code
-                        // after it won't be executed
-                        return Ok(());
-                    }
-                }
+                    "Error #1020: Code cannot fall off the end of a method.",
+                    1020,
+                )?));
             }
 
-            // Terminal opcodes
-            AbcOp::Throw => return Ok(()),
-            AbcOp::ReturnValue => return Ok(()),
-            AbcOp::ReturnVoid => return Ok(()),
+            let op = &ops[i as usize];
 
-            AbcOp::LookupSwitch(ref lookup_switch) => {
-                let default_idx = adjust_jump_offset(
-                    activation,
-                    i,
-                    lookup_switch.default_offset,
-                    false,
-                    idx_to_byte_offset,
-                    byte_offset_to_idx,
-                )?;
-
-                verify_code_starting_from(
-                    activation,
-                    method,
-                    idx_to_byte_offset,
-                    byte_offset_to_idx,
-                    verified_blocks,
-                    ops,
-                    default_idx,
-                )?;
-
-                for case in lookup_switch.case_offsets.iter() {
-                    let case_idx = adjust_jump_offset(
+            // Special control flow ops
+            match op {
+                AbcOp::IfEq { offset }
+                | AbcOp::IfFalse { offset }
+                | AbcOp::IfGe { offset }
+                | AbcOp::IfGt { offset }
+                | AbcOp::IfLe { offset }
+                | AbcOp::IfLt { offset }
+                | AbcOp::IfNe { offset }
+                | AbcOp::IfNge { offset }
+                | AbcOp::IfNgt { offset }
+                | AbcOp::IfNle { offset }
+                | AbcOp::IfNlt { offset }
+                | AbcOp::IfStrictEq { offset }
+                | AbcOp::IfStrictNe { offset }
+                | AbcOp::IfTrue { offset }
+                | AbcOp::Jump { offset } => {
+                    let op_idx = adjust_jump_offset(
                         activation,
                         i,
-                        *case,
+                        *offset,
+                        true,
+                        idx_to_byte_offset,
+                        byte_offset_to_idx,
+                    )?;
+
+                    if op_idx != i {
+                        // Replace last entry on worklist with current i (update i)
+                        worklist.pop();
+                        worklist.push(i + 1);
+
+                        if !verified_blocks.iter().any(|o| *o == op_idx + 1) {
+                            if matches!(op, AbcOp::Jump { .. }) {
+                                // If this is a Jump, there's no path that just ignores
+                                // the jump, since it's an unconditional jump.
+                                worklist.pop();
+                            }
+                            worklist.push(op_idx + 1);
+
+                            verified_blocks.push(op_idx + 1);
+
+                            save_current_work = true;
+                            break;
+                        } else if matches!(op, AbcOp::Jump { .. }) {
+                            // The target of the jump has already been verified, and
+                            // we need to avoid the ops that the Jump will jump over.
+                            break;
+                        }
+                    }
+                }
+
+                // Terminal opcodes
+                AbcOp::Throw | AbcOp::ReturnValue | AbcOp::ReturnVoid => {
+                    break;
+                }
+
+                AbcOp::LookupSwitch(ref lookup_switch) => {
+                    // A LookupSwitch is terminal
+
+                    let default_idx = adjust_jump_offset(
+                        activation,
+                        i,
+                        lookup_switch.default_offset,
                         false,
                         idx_to_byte_offset,
                         byte_offset_to_idx,
                     )?;
 
-                    verify_code_starting_from(
-                        activation,
-                        method,
-                        idx_to_byte_offset,
-                        byte_offset_to_idx,
-                        verified_blocks,
-                        ops,
-                        case_idx,
-                    )?;
+                    if !verified_blocks.iter().any(|o| *o == default_idx) {
+                        verified_blocks.push(default_idx);
+
+                        worklist.push(default_idx);
+                    }
+
+                    for case in lookup_switch.case_offsets.iter() {
+                        let case_idx = adjust_jump_offset(
+                            activation,
+                            i,
+                            *case,
+                            false,
+                            idx_to_byte_offset,
+                            byte_offset_to_idx,
+                        )?;
+
+                        if !verified_blocks.iter().any(|o| *o == case_idx) {
+                            verified_blocks.push(case_idx);
+
+                            worklist.push(case_idx);
+                        }
+                    }
+
+                    // A LookupSwitch is terminal
+                    break;
                 }
 
-                // A LookupSwitch is terminal
-                return Ok(());
-            }
+                // Verifications
 
-            // Verifications
-
-            // Local register verifications
-            AbcOp::GetLocal { index }
-            | AbcOp::SetLocal { index }
-            | AbcOp::Kill { index }
-            | AbcOp::DecLocal { index }
-            | AbcOp::DecLocalI { index }
-            | AbcOp::IncLocal { index }
-            | AbcOp::IncLocalI { index } => {
-                if *index >= max_locals {
-                    return Err(make_error_1025(activation, *index));
+                // Local register verifications
+                AbcOp::GetLocal { index }
+                | AbcOp::SetLocal { index }
+                | AbcOp::Kill { index }
+                | AbcOp::DecLocal { index }
+                | AbcOp::DecLocalI { index }
+                | AbcOp::IncLocal { index }
+                | AbcOp::IncLocalI { index } => {
+                    if *index >= max_locals {
+                        return Err(make_error_1025(activation, *index));
+                    }
                 }
-            }
 
-            AbcOp::HasNext2 {
-                object_register,
-                index_register,
-            } => {
-                // NOTE: This is the correct order (first check object register, then check index register)
-                if *object_register >= max_locals {
-                    return Err(make_error_1025(activation, *object_register));
-                } else if *index_register >= max_locals {
-                    return Err(make_error_1025(activation, *index_register));
+                AbcOp::HasNext2 {
+                    object_register,
+                    index_register,
+                } => {
+                    // NOTE: This is the correct order (first check object register, then check index register)
+                    if *object_register >= max_locals {
+                        return Err(make_error_1025(activation, *object_register));
+                    } else if *index_register >= max_locals {
+                        return Err(make_error_1025(activation, *index_register));
+                    }
                 }
-            }
 
-            // Misc opcode verification
-            AbcOp::CallMethod { index, .. } => {
-                return Err(Error::AvmError(if index.as_u30() == 0 {
-                    verify_error(activation, "Error #1072: Disp_id 0 is illegal.", 1072)?
-                } else {
-                    verify_error(
-                        activation,
-                        "Error #1051: Illegal early binding access.",
-                        1051,
-                    )?
-                }));
-            }
-
-            AbcOp::NewActivation => {
-                if !method
-                    .method()
-                    .flags
-                    .contains(AbcMethodFlags::NEED_ACTIVATION)
-                {
-                    return Err(Error::AvmError(verify_error(
-                        activation,
-                        "Error #1113: OP_newactivation used in method without NEED_ACTIVATION flag.",
-                        1113,
-                    )?));
+                // Misc opcode verification
+                AbcOp::CallMethod { index, .. } => {
+                    return Err(Error::AvmError(if index.as_u30() == 0 {
+                        verify_error(activation, "Error #1072: Disp_id 0 is illegal.", 1072)?
+                    } else {
+                        verify_error(
+                            activation,
+                            "Error #1051: Illegal early binding access.",
+                            1051,
+                        )?
+                    }));
                 }
-            }
 
-            AbcOp::GetLex { index } => {
-                let multiname = method
-                    .translation_unit()
-                    .pool_maybe_uninitialized_multiname(*index, &mut activation.context)?;
-
-                if multiname.has_lazy_component() {
-                    return Err(Error::AvmError(verify_error(
-                        activation,
-                        "Error #1078: Illegal opcode/multiname combination.",
-                        1078,
-                    )?));
+                AbcOp::NewActivation => {
+                    if !method
+                        .method()
+                        .flags
+                        .contains(AbcMethodFlags::NEED_ACTIVATION)
+                    {
+                        return Err(Error::AvmError(verify_error(
+                            activation,
+                            "Error #1113: OP_newactivation used in method without NEED_ACTIVATION flag.",
+                            1113,
+                        )?));
+                    }
                 }
-            }
 
-            AbcOp::AsType {
-                type_name: name_index,
-            }
-            | AbcOp::Coerce { index: name_index } => {
-                let multiname = method
-                    .translation_unit()
-                    .pool_maybe_uninitialized_multiname(*name_index, &mut activation.context)
-                    .unwrap();
+                AbcOp::GetLex { index } => {
+                    let multiname = method
+                        .translation_unit()
+                        .pool_maybe_uninitialized_multiname(*index, &mut activation.context)?;
 
-                activation
-                    .domain()
-                    .get_class(&multiname, activation.context.gc_context)
-                    .ok_or_else(|| {
-                        Error::AvmError(
-                            verify_error(
-                                activation,
-                                &format!(
-                                    "Error #1014: Class {} could not be found.",
-                                    multiname.to_qualified_name(activation.context.gc_context)
-                                ),
-                                1014,
+                    if multiname.has_lazy_component() {
+                        return Err(Error::AvmError(verify_error(
+                            activation,
+                            "Error #1078: Illegal opcode/multiname combination.",
+                            1078,
+                        )?));
+                    }
+                }
+
+                AbcOp::AsType {
+                    type_name: name_index,
+                }
+                | AbcOp::Coerce { index: name_index } => {
+                    let multiname = method
+                        .translation_unit()
+                        .pool_maybe_uninitialized_multiname(*name_index, &mut activation.context)
+                        .unwrap();
+
+                    activation
+                        .domain()
+                        .get_class(&multiname, activation.context.gc_context)
+                        .ok_or_else(|| {
+                            Error::AvmError(
+                                verify_error(
+                                    activation,
+                                    &format!(
+                                        "Error #1014: Class {} could not be found.",
+                                        multiname.to_qualified_name(activation.context.gc_context)
+                                    ),
+                                    1014,
+                                )
+                                .expect("Error should construct"),
                             )
-                            .expect("Error should construct"),
-                        )
-                    })?;
+                        })?;
+                }
+
+                _ => {}
             }
 
-            _ => {}
+            i += 1;
         }
 
-        i += 1;
+        if !save_current_work {
+            worklist.pop();
+        }
     }
 
-    Err(Error::AvmError(verify_error(
-        activation,
-        "Error #1020: Code cannot fall off the end of a method.",
-        1020,
-    )?))
+    Ok(())
 }
 
 fn optimize<'gc>(
