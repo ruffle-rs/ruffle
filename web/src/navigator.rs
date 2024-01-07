@@ -20,7 +20,7 @@ use tracing_subscriber::layer::Layered;
 use tracing_subscriber::Registry;
 use tracing_wasm::WASMLayer;
 use url::{ParseError, Url};
-use wasm_bindgen::JsCast;
+use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_futures::{spawn_local, JsFuture};
 use wasm_streams::readable::ReadableStream;
 use web_sys::{
@@ -516,5 +516,25 @@ impl SuccessResponse for WebResponseWrapper {
                 Err(_) => Err(Error::FetchError("Cannot read next chunk".to_string())), //TODO: JsValue to string?!
             }
         })
+    }
+
+    fn expected_length(&self) -> Result<Option<u64>, Error> {
+        let length = self
+            .response
+            .headers()
+            .get("Content-Length")
+            .map_err(|js_err| {
+                Error::FetchError(
+                    (js_err + JsValue::from(""))
+                        .as_string()
+                        .expect("JavaScript String addition to yield String"),
+                )
+            })?;
+
+        if let Some(length) = length {
+            Ok(Some(length.parse::<u64>()?))
+        } else {
+            Ok(None)
+        }
     }
 }

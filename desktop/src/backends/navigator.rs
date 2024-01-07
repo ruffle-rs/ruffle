@@ -280,6 +280,26 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                     }
                 }
             }
+
+            fn expected_length(&self) -> Result<Option<u64>, Error> {
+                match &self.response_body {
+                    DesktopResponseBody::File(file) => Ok(Some(file.metadata()?.len())),
+                    DesktopResponseBody::Network(response) => {
+                        let response = response.lock().expect("no recursive locks");
+                        let content_length = response.headers().get("Content-Length");
+
+                        if let Some(len) = content_length {
+                            Ok(Some(
+                                len.to_str()
+                                    .map_err(|_| Error::InvalidHeaderValue)?
+                                    .parse::<u64>()?,
+                            ))
+                        } else {
+                            Ok(None)
+                        }
+                    }
+                }
+            }
         }
 
         // TODO: honor sandbox type (local-with-filesystem, local-with-network, remote, ...)
