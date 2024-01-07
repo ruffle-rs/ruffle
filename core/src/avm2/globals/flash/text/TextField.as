@@ -133,5 +133,10 @@ package flash.text {
         public function insertXMLText(beginIndex:int, endIndex:int, text:String, paste:Boolean = false):void {
             stub_method("flash.text.TextField", "insertXMLText");
         }
+
+        public function getCharIndexAtPoint(x:Number, y:Number):int {
+            stub_method("flash.text.TextField", "getCharIndexAtPoint");
+            return 0;
+        }
     }
 }
