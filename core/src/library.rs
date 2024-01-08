@@ -456,11 +456,21 @@ impl<'gc> Library<'gc> {
         }
 
         let mut result = vec![];
+        // First try to find any exactly matching fonts.
         for name in self.default_font_names.entry(name).or_default().clone() {
-            if let Some(font) =
-                self.get_or_load_device_font(&name, is_bold, is_italic, ui, renderer, gc_context)
+            if let Some(font) = self
+                .get_or_load_exact_device_font(&name, is_bold, is_italic, ui, renderer, gc_context)
             {
                 result.push(font);
+            }
+        }
+
+        // Nothing found, try a compatible font.
+        if result.is_empty() {
+            for name in self.default_font_names.entry(name).or_default().clone() {
+                if let Some(font) = self.device_fonts.find(&name, is_bold, is_italic) {
+                    result.push(font);
+                }
             }
         }
 
@@ -469,8 +479,8 @@ impl<'gc> Library<'gc> {
         result
     }
 
-    /// Returns the device font for use when a font is unavailable.
-    pub fn get_or_load_device_font(
+    /// Returns the device font exactly matching the requested options.
+    fn get_or_load_exact_device_font(
         &mut self,
         name: &str,
         is_bold: bool,
@@ -494,26 +504,38 @@ impl<'gc> Library<'gc> {
             ui.load_device_font(name, is_bold, is_italic, &mut |definition| {
                 self.register_device_font(gc_context, renderer, definition)
             });
-        }
 
-        // Check again. A backend may or may not have provided some new fonts,
-        // and they may or may not be relevant to the one we're asking for.
-        match self.device_fonts.get(name, is_bold, is_italic) {
-            None => {
-                if new_request {
-                    warn!("Unknown device font \"{name}\" (bold: {is_bold} italic: {is_italic})");
-                }
-
-                // The default fallback:
-                // Try to find an existing font to re-use instead of giving up.
-                if let Some(font) = self.device_fonts.find(name, is_bold, is_italic) {
-                    return Some(font);
-                }
-
-                None
+            // Check again. A backend may or may not have provided some new fonts,
+            // and they may or may not be relevant to the one we're asking for.
+            if let Some(font) = self.device_fonts.get(name, is_bold, is_italic) {
+                return Some(*font);
             }
-            Some(font) => Some(*font),
+
+            warn!("Unknown device font \"{name}\" (bold: {is_bold}, italic: {is_italic})");
         }
+
+        None
+    }
+
+    /// Returns the device font compatible with the requested options.
+    pub fn get_or_load_device_font(
+        &mut self,
+        name: &str,
+        is_bold: bool,
+        is_italic: bool,
+        ui: &dyn UiBackend,
+        renderer: &mut dyn RenderBackend,
+        gc_context: &Mutation<'gc>,
+    ) -> Option<Font<'gc>> {
+        // Try to find an exactly matching font.
+        if let Some(font) =
+            self.get_or_load_exact_device_font(name, is_bold, is_italic, ui, renderer, gc_context)
+        {
+            return Some(font);
+        }
+
+        // Fallback: Try to find an existing font to re-use instead of giving up.
+        self.device_fonts.find(name, is_bold, is_italic)
     }
 
     pub fn set_default_font(&mut self, font: DefaultFont, names: Vec<String>) {
