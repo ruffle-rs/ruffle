@@ -66,7 +66,7 @@
         "message": "Ruffle nie jest załadowany, ponieważ bieżąca strona oznaczyła się jako niekompatybilna."
     },
     "status_result_disabled": {
-        "message": "Ruffle nie jest załadowany, ponieważ jest wyłączony."
+        "message": "Ruffle jest wyłączony."
     },
     "status_result_error": {
         "message": "Wystąpił błąd podczas zapytania bieżącej karty o Ruffle."
@@ -87,7 +87,7 @@
         "message": "Strona ustawień"
     },
     "description": {
-        "message": "Wrzuć Flash z powrotem na stronę, na której się znajduje."
+        "message": "Przywraca Flasha do Sieci, gdzie jest jego miejsce."
     },
     "save_settings": {
         "message": "Zapisz ustawienia"
