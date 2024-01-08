@@ -2472,7 +2472,14 @@ export function getPolyfillOptions(
     }
     const base = getOptionString("base");
     if (base !== null) {
-        options.base = base;
+        // "." tells Flash Player to load relative URLs from the SWF's directory
+        // All other base values are evaluated relative to the page URL
+        if (base === ".") {
+            const swfUrl = new URL(url, document.baseURI);
+            options.base = new URL(base, swfUrl).href;
+        } else {
+            options.base = base;
+        }
     }
     const menu = parseBoolean(getOptionString("menu"));
     if (menu !== null) {
