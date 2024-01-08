@@ -2650,7 +2650,9 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc>) {
         // AVM1 code expects to execute in line with timeline instructions, so
         // it's exempted from frame construction.
-        if self.movie().is_action_script_3() && self.frames_loaded() >= 1 {
+        if self.movie().is_action_script_3()
+            && (self.frames_loaded() >= 1 || self.total_frames() == 0)
+        {
             let is_load_frame = !self.0.read().initialized();
             let needs_construction = if matches!(self.object2(), Avm2Value::Null) {
                 self.allocate_as_avm2_object(context, (*self).into());
