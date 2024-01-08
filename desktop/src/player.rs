@@ -11,7 +11,8 @@ use anyhow::anyhow;
 use ruffle_core::backend::navigator::{OpenURLMode, SocketMode};
 use ruffle_core::config::Letterbox;
 use ruffle_core::{
-    LoadBehavior, Player, PlayerBuilder, PlayerEvent, PlayerRuntime, StageAlign, StageScaleMode,
+    DefaultFont, LoadBehavior, Player, PlayerBuilder, PlayerEvent, PlayerRuntime, StageAlign,
+    StageScaleMode,
 };
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::quality::StageQuality;
@@ -194,6 +195,34 @@ impl ActivePlayer {
                 movie_url.to_string(),
                 opt.parameters.to_owned(),
                 Box::new(on_metadata),
+            );
+
+            player_lock.set_default_font(
+                DefaultFont::Serif,
+                vec![
+                    "Times New Roman".into(),
+                    "Tinos".into(),
+                    "Liberation Serif".into(),
+                    "DejaVu Serif".into(),
+                ],
+            );
+            player_lock.set_default_font(
+                DefaultFont::Sans,
+                vec![
+                    "Arial".into(),
+                    "Arimo".into(),
+                    "Liberation Sans".into(),
+                    "DejaVu Sans".into(),
+                ],
+            );
+            player_lock.set_default_font(
+                DefaultFont::Typewriter,
+                vec![
+                    "Courier New".into(),
+                    "Cousine".into(),
+                    "Liberation Mono".into(),
+                    "DejaVu Sans Mono".into(),
+                ],
             );
         }
 
