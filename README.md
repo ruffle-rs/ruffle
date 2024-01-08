@@ -125,52 +125,52 @@ Sincere thanks to the diamond level sponsors of Ruffle:
 
 <p align="center">
   <a href="https://www.newgrounds.com">
-    <img src="https://ruffle.rs/assets/sponsors/newgrounds.png" alt="Newgrounds.com">
+    <img src="https://ruffle.rs/sponsors/newgrounds.png" alt="Newgrounds.com">
   </a>
   <a href="https://www.cpmstar.com">
-    <img src="https://ruffle.rs/assets/sponsors/cpmstar.png" alt="CPMStar">
+    <img src="https://ruffle.rs/sponsors/cpmstar.png" alt="CPMStar">
   </a>
   <a href="https://deepnight.net">
-    <img src="https://ruffle.rs/assets/sponsors/deepnight.png" alt="Sébastien Bénard">
+    <img src="https://ruffle.rs/sponsors/deepnight.png" alt="Sébastien Bénard">
   </a>
   <a href="https://www.crazygames.com">
-    <img src="https://ruffle.rs/assets/sponsors/crazygames.png" alt="Crazy Games">
+    <img src="https://ruffle.rs/sponsors/crazygames.png" alt="Crazy Games">
   </a>
   <a href="https://www.coolmathgames.com">
-    <img src="https://ruffle.rs/assets/sponsors/coolmathgames.png" alt="Cool Math Games">
+    <img src="https://ruffle.rs/sponsors/coolmathgames.png" alt="Cool Math Games">
   </a>
   <a href="https://www.nytimes.com/">
-    <img src="https://ruffle.rs/assets/sponsors/nyt.png" alt="The New York Times">
+    <img src="https://ruffle.rs/sponsors/nyt.png" alt="The New York Times">
   </a>
   <a href="https://www.armorgames.com/">
-    <img src="https://ruffle.rs/assets/sponsors/armorgames.png" alt="Armor Games">
+    <img src="https://ruffle.rs/sponsors/armorgames.png" alt="Armor Games">
   </a>
   <a href="https://www.ondaeduca.com/">
-    <img src="https://ruffle.rs/assets/sponsors/ondaeduca.png" alt="Onda Educa">
+    <img src="https://ruffle.rs/sponsors/ondaeduca.png" alt="Onda Educa">
   </a>
   <a href="https://www.twoplayergames.org/">
-    <img src="https://ruffle.rs/assets/sponsors/twoplayergames.png" alt="TwoPlayerGames.org">
+    <img src="https://ruffle.rs/sponsors/twoplayergames.png" alt="TwoPlayerGames.org">
   </a>
   <a href="https://www.wowgame.jp/">
-    <img src="https://ruffle.rs/assets/sponsors/wowgame.png" alt="wowgame.jp">
+    <img src="https://ruffle.rs/sponsors/wowgame.png" alt="wowgame.jp">
   </a>
   <a href="http://kupogames.com/">
-    <img src="https://ruffle.rs/assets/sponsors/mattroszak.png" alt="Matt Roszak">
+    <img src="https://ruffle.rs/sponsors/mattroszak.png" alt="Matt Roszak">
   </a>
   <a href="https://www.dolldivine.com/">
-    <img src="https://ruffle.rs/assets/sponsors/dolldivine.png" alt="Doll Divine">
+    <img src="https://ruffle.rs/sponsors/dolldivine.png" alt="Doll Divine">
   </a>
   <a href="https://movavi.com/">
-    <img src="https://ruffle.rs/assets/sponsors/movavi.svg" alt="Movavi">
+    <img src="https://ruffle.rs/sponsors/movavi.svg" alt="Movavi">
   </a>
   <a href="https://www.kongregate.com/">
-    <img src="https://ruffle.rs/assets/sponsors/kongregate.svg" alt="Kongregate">
+    <img src="https://ruffle.rs/sponsors/kongregate.svg" alt="Kongregate">
   </a>
   <a href="https://www.bubbleshooter.net/">
-    <img src="https://ruffle.rs/assets/sponsors/bubble-shooter.png" alt="Bubble Shooter">
+    <img src="https://ruffle.rs/sponsors/bubble-shooter.png" alt="Bubble Shooter">
   </a>
   <a href="https://www.neopets.com/">
-    <img src="https://ruffle.rs/assets/sponsors/neopets.png" alt="Neopets">
+    <img src="https://ruffle.rs/sponsors/neopets.png" alt="Neopets">
   </a>
 </p>
 
