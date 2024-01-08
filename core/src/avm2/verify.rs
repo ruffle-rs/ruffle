@@ -760,9 +760,40 @@ fn optimize<'gc>(
                                     ) && !GcCell::ptr_eq(
                                         class,
                                         activation.avm2().classes().void.inner_class_definition(),
-                                    ) && !GcCell::ptr_eq(
+                                    ) {
+                                        previous_op = Some(op.clone());
+                                        *op = Op::Nop;
+                                        continue;
+                                    }
+                                }
+                                Op::PushString { .. } => {
+                                    if GcCell::ptr_eq(
                                         class,
                                         activation.avm2().classes().string.inner_class_definition(),
+                                    ) {
+                                        previous_op = Some(op.clone());
+                                        *op = Op::Nop;
+                                        continue;
+                                    }
+                                }
+                                Op::NewArray { .. } => {
+                                    if GcCell::ptr_eq(
+                                        class,
+                                        activation.avm2().classes().array.inner_class_definition(),
+                                    ) {
+                                        previous_op = Some(op.clone());
+                                        *op = Op::Nop;
+                                        continue;
+                                    }
+                                }
+                                Op::NewFunction { .. } => {
+                                    if GcCell::ptr_eq(
+                                        class,
+                                        activation
+                                            .avm2()
+                                            .classes()
+                                            .function
+                                            .inner_class_definition(),
                                     ) {
                                         previous_op = Some(op.clone());
                                         *op = Op::Nop;
