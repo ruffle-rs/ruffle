@@ -486,6 +486,30 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             // return None;
         }
 
+        // For better compatibility we also match the font-family name usually
+        // used for that specific default font.
+        if let Some(default_font) = match font_name.deref() {
+            "_serif" | "Times New Roman" | "" => Some(DefaultFont::Serif),
+            "_sans" | "Arial" => Some(DefaultFont::Sans),
+            "_typewriter" | "Courier New" => Some(DefaultFont::Typewriter),
+            // [NA] I suspect that there might be undocumented more aliases.
+            // I think I've seen translated versions of these used in the wild...
+            _ => None,
+        } {
+            return context
+                .library
+                .default_font(
+                    default_font,
+                    span.bold,
+                    span.italic,
+                    context.ui,
+                    context.renderer,
+                    context.gc_context,
+                )
+                .first()
+                .copied();
+        }
+
         if let Some(font) = context.library.get_or_load_device_font(
             &font_name,
             span.bold,
@@ -497,19 +521,13 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             return Some(font);
         }
 
-        // [NA] I suspect that there might be undocumented more aliases.
-        // I think I've seen translated versions of these used in the wild...
-        let default_font = match font_name.deref() {
-            "_serif" => DefaultFont::Serif,
-            "_typewriter" => DefaultFont::Typewriter,
-            _ => DefaultFont::Sans,
-        };
-
         // TODO: handle multiple fonts for a definition, each covering different sets of glyphs
+
+        // Use the default serif font, when no other matching font was found.
         context
             .library
             .default_font(
-                default_font,
+                DefaultFont::Serif,
                 span.bold,
                 span.italic,
                 context.ui,
