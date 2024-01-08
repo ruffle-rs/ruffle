@@ -50,7 +50,7 @@ wasm-bindgen-futures = "0.4.39"
 serde-wasm-bindgen = "0.6.3"
 chrono = { version = "0.4", default-features = false, features = ["wasmbind", "clock"] }
 getrandom = { version = "0.2", features = ["js"] }
-serde = { version = "1.0.193", features = ["derive"] }
+serde = { version = "1.0.195", features = ["derive"] }
 thiserror = "1.0"
 base64 = "0.21.5"
 async-channel = "2.1.1"

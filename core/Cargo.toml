@@ -39,7 +39,7 @@ chrono = { version = "0.4", default-features = false, features = ["clock"] }
 web-time = "0.2.4"
 encoding_rs = "0.8.33"
 rand = { version = "0.8.5", features = ["std", "small_rng"], default-features = false }
-serde = { version = "1.0.193", features = ["derive"] }
+serde = { version = "1.0.195", features = ["derive"] }
 serde_json = { version = "1.0", features = ["preserve_order"] }
 nellymoser-rs = { git = "https://github.com/ruffle-rs/nellymoser", rev = "4a33521c29a918950df8ae9fe07e527ac65553f5", optional = true }
 regress = "0.7"
@@ -49,7 +49,7 @@ dasp = { version = "0.11.0", features = ["interpolate", "interpolate-linear", "s
 symphonia = { version = "0.5.3", default-features = false, features = ["mp3"], optional = true }
 enumset = "1.1.3"
 bytemuck = "1.14.0"
-clap = { version = "4.4.12", features = ["derive"], optional=true }
+clap = { version = "4.4.13", features = ["derive"], optional=true }
 realfft = "3.3.0"
 hashbrown = { version = "0.14.3", features = ["raw"] }
 scopeguard = "1.2.0"
