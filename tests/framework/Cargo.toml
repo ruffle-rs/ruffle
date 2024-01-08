@@ -26,9 +26,9 @@ pretty_assertions = "1.4.0"
 env_logger = "0.10.1"
 tracing = { workspace = true}
 tracing-subscriber = { workspace = true }
-serde = "1.0.193"
+serde = "1.0.195"
 toml = "0.8.8"
-anyhow = "1.0.78"
+anyhow = "1.0.79"
 async-channel = "2.1.1"
 vfs = "0.10.0"
 percent-encoding = "2.3.1"
