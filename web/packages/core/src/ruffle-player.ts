@@ -2056,7 +2056,7 @@ export class RufflePlayer extends HTMLElement {
             actionLink = new PanicLinkInfo(issueLink, text("report-bug"));
         } else {
             actionLink = new PanicLinkInfo(
-                RUFFLE_ORIGIN + "#downloads",
+                RUFFLE_ORIGIN + "/downloads#desktop-app",
                 text("update-ruffle"),
             );
         }
@@ -2073,7 +2073,7 @@ export class RufflePlayer extends HTMLElement {
                         text("ruffle-demo"),
                     ),
                     new PanicLinkInfo(
-                        RUFFLE_ORIGIN + "#downloads",
+                        RUFFLE_ORIGIN + "/downloads#desktop-app",
                         text("ruffle-desktop"),
                     ),
                 ]);
