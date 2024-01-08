@@ -1,0 +1,3 @@
+Child: [object ZeroFrames] totalFrames: 0
+Constructed TraceConstructor with name: child1
+Constructed TraceConstructor with name: child2
