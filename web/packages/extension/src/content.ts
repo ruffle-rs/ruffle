@@ -158,7 +158,7 @@ function isXMLDocument(): boolean {
 
     window.addEventListener("message", (event) => {
         // We only accept messages from ourselves.
-        if (event.source !== window) {
+        if (event.source !== window || !event.data) {
             return;
         }
 
