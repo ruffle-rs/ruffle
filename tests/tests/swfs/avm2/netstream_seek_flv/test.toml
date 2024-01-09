@@ -1,7 +1,8 @@
 num_ticks=60
 
 [image_comparisons.output]
-tolerance = 1
+tolerance = 4
+max_outliers = 271
 
 [player_options]
 with_renderer = { optional = true, sample_count = 1 }

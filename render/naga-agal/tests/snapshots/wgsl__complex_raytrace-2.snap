@@ -97,7 +97,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     let _e149: vec4<f32> = constant_registers[16u];
     let _e151: vec4<f32> = temporary3_;
     let _e153: vec3<f32> = cross(_e149.xyx, _e151.xyz);
-    let _e158: vec4<f32> = vec4<f32>(_e153.x, _e153.y, _e153.z, 1.0);
+    let _e158: vec4<f32> = vec4<f32>(_e153.x, _e153.y, _e153.z, 1f);
     temporary5_.x = _e158.x;
     temporary5_.y = _e158.y;
     temporary5_.z = _e158.z;
@@ -109,7 +109,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     let _e176: vec4<f32> = temporary3_;
     let _e178: vec4<f32> = temporary6_;
     let _e180: vec3<f32> = cross(_e176.xyz, _e178.xyz);
-    let _e185: vec4<f32> = vec4<f32>(_e180.x, _e180.y, _e180.z, 1.0);
+    let _e185: vec4<f32> = vec4<f32>(_e180.x, _e180.y, _e180.z, 1f);
     temporary5_.x = _e185.x;
     temporary5_.y = _e185.y;
     temporary5_.z = _e185.z;

@@ -62,9 +62,6 @@ pub fn get_backend_names(backends: wgpu::Backends) -> Vec<&'static str> {
     if backends.contains(wgpu::Backends::DX12) {
         names.push("DirectX 12");
     }
-    if backends.contains(wgpu::Backends::DX11) {
-        names.push("DirectX 11");
-    }
     if backends.contains(wgpu::Backends::METAL) {
         names.push("Metal");
     }

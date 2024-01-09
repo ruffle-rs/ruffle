@@ -248,7 +248,9 @@ pub fn plot_stats_in_tracy(instance: &wgpu::Instance) {
     const TEXTURE_VIEWS: PlotName = plot_name!("Texture Views");
 
     let tracy = Client::running().expect("tracy client must be running");
-    let report = instance.generate_report();
+    let report = instance
+        .generate_report()
+        .expect("reports should be available on desktop");
 
     #[allow(unused_mut)]
     let mut backend = None;
@@ -258,7 +260,7 @@ pub fn plot_stats_in_tracy(instance: &wgpu::Instance) {
     }
     #[cfg(windows)]
     {
-        backend = backend.or(report.dx12).or(report.dx11);
+        backend = backend.or(report.dx12);
     }
     #[cfg(any(target_os = "macos", target_os = "ios"))]
     {
@@ -266,10 +268,10 @@ pub fn plot_stats_in_tracy(instance: &wgpu::Instance) {
     }
 
     if let Some(stats) = backend {
-        tracy.plot(BIND_GROUPS, stats.bind_groups.num_occupied as f64);
-        tracy.plot(BUFFERS, stats.buffers.num_occupied as f64);
-        tracy.plot(TEXTURES, stats.textures.num_occupied as f64);
-        tracy.plot(TEXTURE_VIEWS, stats.texture_views.num_occupied as f64);
+        tracy.plot(BIND_GROUPS, stats.bind_groups.num_allocated as f64);
+        tracy.plot(BUFFERS, stats.buffers.num_allocated as f64);
+        tracy.plot(TEXTURES, stats.textures.num_allocated as f64);
+        tracy.plot(TEXTURE_VIEWS, stats.texture_views.num_allocated as f64);
     }
 
     tracy.frame_mark();
