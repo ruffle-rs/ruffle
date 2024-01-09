@@ -934,7 +934,7 @@ impl<'gc> EditText<'gc> {
                     && visible_selection.end() <= *end
                     && Utc::now().timestamp_subsec_millis() / 500 == 0
                 {
-                    Some((visible_selection.start() - start, end - start))
+                    Some(visible_selection.start() - start)
                 } else {
                     None
                 }
@@ -958,8 +958,11 @@ impl<'gc> EditText<'gc> {
         if let Some((text, _tf, font, params, color)) =
             lbox.as_renderable_text(edit_text.text_spans.displayed_text())
         {
-            let baseline_adjustment =
-                font.get_baseline_for_height(params.height()) - params.height();
+            let baseline = font.get_baseline_for_height(params.height());
+            let descent = font.get_descent_for_height(params.height());
+            let baseline_adjustment = baseline - params.height();
+            let caret_height = baseline + descent;
+            let mut caret_x = Twips::ZERO;
             font.evaluate(
                 text,
                 self.text_transform(color, baseline_adjustment),
@@ -967,28 +970,17 @@ impl<'gc> EditText<'gc> {
                 |pos, transform, glyph: &Glyph, advance, x| {
                     if let Some(glyph_shape_handle) = glyph.shape_handle(context.renderer) {
                         // If it's highlighted, override the color.
-                        match visible_selection {
-                            Some(visible_selection) if visible_selection.contains(start + pos) => {
-                                // Draw black selection rect
-                                let selection_box = context.transform_stack.transform().matrix
-                                    * Matrix::create_box(
-                                        advance.to_pixels() as f32,
-                                        params.height().to_pixels() as f32,
-                                        0.0,
-                                        x + Twips::from_pixels(-1.0),
-                                        Twips::from_pixels(2.0),
-                                    );
-                                context.commands.draw_rect(Color::BLACK, selection_box);
+                        if matches!(visible_selection, Some(visible_selection) if visible_selection.contains(start + pos)) {
+                            // Draw black selection rect
+                            self.render_selection(context, x, advance, caret_height);
 
-                                // Set text color to white
-                                context.transform_stack.push(&Transform {
-                                    matrix: transform.matrix,
-                                    color_transform: ColorTransform::IDENTITY,
-                                });
-                            }
-                            _ => {
-                                context.transform_stack.push(transform);
-                            }
+                            // Set text color to white
+                            context.transform_stack.push(&Transform {
+                                matrix: transform.matrix,
+                                color_transform: ColorTransform::IDENTITY,
+                            });
+                        } else {
+                            context.transform_stack.push(transform);
                         }
 
                         // Render glyph.
@@ -998,31 +990,21 @@ impl<'gc> EditText<'gc> {
                         context.transform_stack.pop();
                     }
 
-                    if let Some((caret_pos, length)) = caret {
-                        if caret_pos == pos {
-                            let caret = context.transform_stack.transform().matrix
-                                * Matrix::create_box(
-                                    1.0,
-                                    params.height().to_pixels() as f32,
-                                    0.0,
-                                    x + Twips::from_pixels(-1.0),
-                                    Twips::from_pixels(2.0),
-                                );
-                            context.commands.draw_rect(color, caret);
-                        } else if pos == length - 1 && caret_pos == length {
-                            let caret = context.transform_stack.transform().matrix
-                                * Matrix::create_box(
-                                    1.0,
-                                    params.height().to_pixels() as f32,
-                                    0.0,
-                                    x + advance,
-                                    Twips::from_pixels(2.0),
-                                );
-                            context.commands.draw_rect(color, caret);
+                    // Update caret position
+                    if let Some(caret) = caret {
+                        if pos == caret {
+                            caret_x = x;
+                        } else if caret > 0 && pos == caret - 1 {
+                            // The caret may be rendered at the end, after all glyphs.
+                            caret_x = x + advance;
                         }
                     }
                 },
             );
+
+            if caret.is_some() {
+                self.render_caret(context, caret_x, caret_height, color);
+            }
         }
 
         if let Some(drawing) = lbox.as_renderable_drawing() {
@@ -1030,6 +1012,43 @@ impl<'gc> EditText<'gc> {
         }
 
         context.transform_stack.pop();
+    }
+
+    fn render_selection(
+        self,
+        context: &mut RenderContext<'_, 'gc>,
+        x: Twips,
+        width: Twips,
+        height: Twips,
+    ) {
+        let selection_box = context.transform_stack.transform().matrix
+            * Matrix::create_box(
+                width.to_pixels() as f32,
+                height.to_pixels() as f32,
+                0.0,
+                x,
+                Twips::ZERO,
+            );
+        context.commands.draw_rect(Color::BLACK, selection_box);
+    }
+
+    fn render_caret(
+        self,
+        context: &mut RenderContext<'_, 'gc>,
+        x: Twips,
+        height: Twips,
+        color: Color,
+    ) {
+        let cursor_width = Twips::from_pixels(1.0);
+        let caret = context.transform_stack.transform().matrix
+            * Matrix::create_box(
+                cursor_width.to_pixels() as f32,
+                height.to_pixels() as f32,
+                0.0,
+                x - cursor_width,
+                Twips::ZERO,
+            );
+        context.commands.draw_rect(color, caret);
     }
 
     /// Attempts to bind this text field to a property of a display object.
@@ -1977,19 +1996,9 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
                     && visible_selection.start() == 0
                     && Utc::now().timestamp_subsec_millis() / 500 == 0
                 {
-                    let caret = context.transform_stack.transform().matrix
-                        * Matrix::create_box(
-                            1.0,
-                            edit_text
-                                .text_spans
-                                .default_format()
-                                .size
-                                .unwrap_or_default() as f32,
-                            0.0,
-                            Twips::from_pixels(-1.0),
-                            Twips::from_pixels(2.0),
-                        );
-                    context.commands.draw_rect(Color::BLACK, caret);
+                    let format = edit_text.text_spans.default_format();
+                    let caret_height = format.size.map(Twips::from_pixels).unwrap_or_default();
+                    self.render_caret(context, Twips::ZERO, caret_height, Color::BLACK);
                 }
             }
         } else {
