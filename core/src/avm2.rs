@@ -66,7 +66,8 @@ mod vtable;
 pub use crate::avm2::activation::Activation;
 pub use crate::avm2::array::ArrayStorage;
 pub use crate::avm2::call_stack::{CallNode, CallStack};
-pub use crate::avm2::domain::Domain;
+#[allow(unused)] // For debug_ui
+pub use crate::avm2::domain::{Domain, DomainPtr};
 pub use crate::avm2::error::Error;
 pub use crate::avm2::flv::FlvValueAvm2Ext;
 pub use crate::avm2::globals::flash::ui::context_menu::make_context_menu_state;
@@ -257,6 +258,10 @@ impl<'gc> Avm2<'gc> {
         let globals = context.avm2.playerglobals_domain;
         let mut activation = Activation::from_domain(context.reborrow(), globals);
         globals::load_player_globals(&mut activation, globals)
+    }
+
+    pub fn playerglobals_domain(&self) -> Domain<'gc> {
+        self.playerglobals_domain
     }
 
     /// Return the current set of system classes.

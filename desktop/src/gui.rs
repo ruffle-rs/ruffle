@@ -295,6 +295,12 @@ impl RuffleGui {
                                 player.debug_ui().queue_message(DebugMessage::ShowKnownMovies);
                             }
                         }
+                        if Button::new(text(&self.locale, "debug-menu-open-domain-list")).ui(ui).clicked() {
+                            ui.close_menu();
+                            if let Some(player) = &mut player {
+                                player.debug_ui().queue_message(DebugMessage::ShowDomains);
+                            }
+                        }
                         if Button::new(text(&self.locale, "debug-menu-search-display-objects")).ui(ui).clicked() {
                             ui.close_menu();
                             if let Some(player) = &mut player {
