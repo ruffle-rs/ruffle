@@ -486,12 +486,11 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             // return None;
         }
 
-        // For better compatibility we also match the font-family name usually
-        // used for that specific default font.
+        // Check if the font name is one of the known default fonts.
         if let Some(default_font) = match font_name.deref() {
-            "_serif" | "Times New Roman" | "" => Some(DefaultFont::Serif),
-            "_sans" | "Arial" => Some(DefaultFont::Sans),
-            "_typewriter" | "Courier New" => Some(DefaultFont::Typewriter),
+            "_serif" => Some(DefaultFont::Serif),
+            "_sans" => Some(DefaultFont::Sans),
+            "_typewriter" => Some(DefaultFont::Typewriter),
             // [NA] I suspect that there might be undocumented more aliases.
             // I think I've seen translated versions of these used in the wild...
             _ => None,
@@ -523,11 +522,21 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
         // TODO: handle multiple fonts for a definition, each covering different sets of glyphs
 
-        // Use the default serif font, when no other matching font was found.
+        // At this point, the font name was neither one of the three default
+        // fonts nor matched any device font. We explicitly handle some of the
+        // well-known aliases for the default fonts for better compatibility
+        // with devices that don't have those fonts installed. As a last resort
+        // we fall back to using serif.
+        let default_font = match font_name.deref() {
+            "Times New Roman" => DefaultFont::Serif,
+            "Arial" => DefaultFont::Sans,
+            "Courier New" => DefaultFont::Typewriter,
+            _ => DefaultFont::Serif,
+        };
         context
             .library
             .default_font(
-                DefaultFont::Serif,
+                default_font,
                 span.bold,
                 span.italic,
                 context.ui,
