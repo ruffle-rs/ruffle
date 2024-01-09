@@ -135,7 +135,7 @@ pub fn verify_method<'gc>(
             .copied();
 
         let mut offs = 0;
-        while from_offset.is_none() {
+        while to_offset.is_none() {
             to_offset = byte_offset_to_idx
                 .get(&((exception.to_offset + offs) as i32))
                 .copied();
@@ -145,12 +145,12 @@ pub fn verify_method<'gc>(
             offs -= 1;
         }
 
-        if to_offset.unwrap() < from_offset.unwrap() {
-            return Err(make_error_1054(activation));
-        }
-
         let new_from_offset = from_offset.unwrap() as u32;
         let new_to_offset = to_offset.unwrap() as u32;
+
+        if new_to_offset < new_from_offset {
+            return Err(make_error_1054(activation));
+        }
 
         // FIXME: Use correct error instead of `.unwrap()`
         let new_target_offset = byte_offset_to_idx
@@ -541,6 +541,10 @@ fn optimize<'gc>(
     #![allow(clippy::manual_filter)]
     #![allow(clippy::single_match)]
 
+    let method_body = method
+        .body()
+        .expect("Cannot verify non-native method without body!");
+
     // This can probably be done better by recording the receiver in `Activation`,
     // but this works since it's guaranteed to be set in `Activation::from_method`.
     let this_value = activation.local_register(0);
@@ -556,7 +560,7 @@ fn optimize<'gc>(
     };
 
     // Initial set of local types
-    let mut local_types = vec![None; method.body().unwrap().num_locals as usize];
+    let mut local_types = vec![None; method_body.num_locals as usize];
     local_types[0] = this_class;
 
     // Logic to only allow for type-based optimizations on types that
@@ -683,26 +687,27 @@ fn optimize<'gc>(
                                     .pool_maybe_uninitialized_multiname(
                                         *name_index,
                                         &mut activation.context,
-                                    )
-                                    .unwrap();
+                                    );
 
-                                if !multiname.has_lazy_component() {
-                                    match class.instance_vtable().get_trait(&multiname) {
-                                        Some(Property::Slot { slot_id })
-                                        | Some(Property::ConstSlot { slot_id }) => {
-                                            previous_op = Some(op.clone());
-                                            *op = Op::GetSlot { index: slot_id };
-                                            continue;
+                                if let Ok(multiname) = multiname {
+                                    if !multiname.has_lazy_component() {
+                                        match class.instance_vtable().get_trait(&multiname) {
+                                            Some(Property::Slot { slot_id })
+                                            | Some(Property::ConstSlot { slot_id }) => {
+                                                previous_op = Some(op.clone());
+                                                *op = Op::GetSlot { index: slot_id };
+                                                continue;
+                                            }
+                                            Some(Property::Virtual { get: Some(get), .. }) => {
+                                                previous_op = Some(op.clone());
+                                                *op = Op::CallMethod {
+                                                    num_args: 0,
+                                                    index: Index::new(get),
+                                                };
+                                                continue;
+                                            }
+                                            _ => {}
                                         }
-                                        Some(Property::Virtual { get: Some(get), .. }) => {
-                                            previous_op = Some(op.clone());
-                                            *op = Op::CallMethod {
-                                                num_args: 0,
-                                                index: Index::new(get),
-                                            };
-                                            continue;
-                                        }
-                                        _ => {}
                                     }
                                 }
                             }
@@ -717,12 +722,15 @@ fn optimize<'gc>(
                             .pool_maybe_uninitialized_multiname(
                                 *name_index,
                                 &mut activation.context,
-                            )
-                            .unwrap();
+                            );
 
-                        let resolved_type = activation
-                            .domain()
-                            .get_class(&multiname, activation.context.gc_context);
+                        let resolved_type = if let Ok(multiname) = multiname {
+                            activation
+                                .domain()
+                                .get_class(&multiname, activation.context.gc_context)
+                        } else {
+                            None
+                        };
 
                         if resolved_type.is_some() {
                             match previous_op_some {
@@ -741,12 +749,15 @@ fn optimize<'gc>(
                             .pool_maybe_uninitialized_multiname(
                                 *name_index,
                                 &mut activation.context,
-                            )
-                            .unwrap();
+                            );
 
-                        let resolved_type = activation
-                            .domain()
-                            .get_class(&multiname, activation.context.gc_context);
+                        let resolved_type = if let Ok(multiname) = multiname {
+                            activation
+                                .domain()
+                                .get_class(&multiname, activation.context.gc_context)
+                        } else {
+                            None
+                        };
 
                         if let Some(class) = resolved_type {
                             match previous_op_some {
