@@ -11,11 +11,11 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-wgpu = { workspace = true, features = ["naga"] }
+wgpu = { workspace = true, features = ["naga-ir"] }
 tracing = { workspace = true }
 ruffle_render = { path = "..", features = ["tessellator", "wgpu"] }
 bytemuck = { version = "1.14.0", features = ["derive"] }
-raw-window-handle = "0.5.2"
+raw-window-handle = "0.6.0"
 clap = { version = "4.4.17", features = ["derive"], optional = true }
 enum-map = "2.7.3"
 fnv = "1.0.7"

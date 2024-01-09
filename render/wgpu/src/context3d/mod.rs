@@ -1017,7 +1017,7 @@ impl Context3D for WgpuContext3D {
                 // BitmapData's gpu texture might be modified before we actually submit
                 // `buffer_command_encoder` to the device.
                 let dest_format = dest.texture.format();
-                let mut bytes_per_row = dest_format.block_size(None).unwrap()
+                let mut bytes_per_row = dest_format.block_copy_size(None).unwrap()
                     * (dest.width() / dest_format.block_dimensions().0);
 
                 let rows_per_image = dest.height() / dest_format.block_dimensions().1;

@@ -43,9 +43,9 @@ version = "0.1.0"
 [workspace.dependencies]
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
-naga = { version = "0.14.2", features = ["validate", "wgsl-out"] }
-naga_oil = "0.11.0"
-wgpu = "0.18.0"
+naga = { version = "0.19.0", features = ["wgsl-out"] }
+naga_oil = "0.12.0"
+wgpu = "0.19.0"
 egui = "0.25.0"
 
 [workspace.lints.rust]
@@ -95,13 +95,8 @@ inherits = "release"
 inherits = "release"
 
 [patch.crates-io]
-# These are needed because https://github.com/gfx-rs/wgpu/pull/4778
-# is not yet in the latest wgpu release. TODO: Remove when it is.
-wgpu = { git = "https://github.com/gfx-rs/wgpu", branch = "v0.18" }
-naga = { git = "https://github.com/gfx-rs/wgpu", branch = "v0.18" }
-
-# https://github.com/emilk/egui/pull/3812
-egui = { git = "https://github.com/ruffle-rs/egui", branch = "consume_keys"}
-egui_extras = { git = "https://github.com/ruffle-rs/egui", branch = "consume_keys"}
-egui-winit = { git = "https://github.com/ruffle-rs/egui", branch = "consume_keys"}
-egui-wgpu = { git = "https://github.com/ruffle-rs/egui", branch = "consume_keys"}
+# TODO: Replace on new egui update
+egui = { git = "https://github.com/emilk/egui", rev = "d319489479c371b15e6419d470551dae5d647396"}
+egui_extras = { git = "https://github.com/emilk/egui", rev = "d319489479c371b15e6419d470551dae5d647396"}
+egui-winit = { git = "https://github.com/emilk/egui", rev = "d319489479c371b15e6419d470551dae5d647396"}
+egui-wgpu = { git = "https://github.com/emilk/egui", rev = "d319489479c371b15e6419d470551dae5d647396"}

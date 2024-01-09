@@ -29,7 +29,7 @@ pub struct GuiController {
     window: Rc<Window>,
     last_update: Instant,
     repaint_after: Duration,
-    surface: wgpu::Surface,
+    surface: wgpu::Surface<'static>,
     surface_format: wgpu::TextureFormat,
     movie_view_renderer: Arc<MovieViewRenderer>,
     // Note that `window.get_inner_size` can change at any point on x11, even between two lines of code.
@@ -57,7 +57,9 @@ impl GuiController {
             backends: backend,
             ..Default::default()
         });
-        let surface = unsafe { instance.create_surface(window.as_ref()) }?;
+        let surface = unsafe {
+            instance.create_surface_unsafe(wgpu::SurfaceTargetUnsafe::from_window(window.as_ref())?)
+        }?;
         let (adapter, device, queue) = futures::executor::block_on(request_adapter_and_device(
             backend,
             &instance,
@@ -81,6 +83,7 @@ impl GuiController {
                 width: size.width,
                 height: size.height,
                 present_mode: Default::default(),
+                desired_maximum_frame_latency: 2,
                 alpha_mode: Default::default(),
                 view_formats: Default::default(),
             },
@@ -143,6 +146,7 @@ impl GuiController {
                         width: size.width,
                         height: size.height,
                         present_mode: Default::default(),
+                        desired_maximum_frame_latency: 2,
                         alpha_mode: Default::default(),
                         view_formats: Default::default(),
                     },

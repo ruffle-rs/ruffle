@@ -4,7 +4,7 @@ use std::num::NonZeroU32;
 use naga::{
     AddressSpace, ArraySize, Block, BuiltIn, Constant, DerivativeControl, EntryPoint,
     FunctionArgument, FunctionResult, GlobalVariable, ImageClass, ImageDimension, Literal,
-    Override, ResourceBinding, ShaderStage, StructMember, SwizzleComponent, UnaryOperator,
+    Override, ResourceBinding, Scalar, ShaderStage, StructMember, SwizzleComponent, UnaryOperator,
 };
 use naga::{BinaryOperator, MathFunction};
 use naga::{
@@ -129,28 +129,25 @@ impl VertexAttributeFormat {
             return module.types.insert(
                 Type {
                     name: None,
-                    inner: TypeInner::Scalar {
-                        kind: ScalarKind::Float,
-                        width: 4,
-                    },
+                    inner: TypeInner::Scalar(Scalar::F32),
                 },
                 Span::UNDEFINED,
             );
         }
-        let (size, width, kind) = match self {
+        let (size, scalar) = match self {
             VertexAttributeFormat::Float1 => unreachable!(),
-            VertexAttributeFormat::Float2 => (VectorSize::Bi, 4, ScalarKind::Float),
-            VertexAttributeFormat::Float3 => (VectorSize::Tri, 4, ScalarKind::Float),
-            VertexAttributeFormat::Float4 => (VectorSize::Quad, 4, ScalarKind::Float),
+            VertexAttributeFormat::Float2 => (VectorSize::Bi, Scalar::F32),
+            VertexAttributeFormat::Float3 => (VectorSize::Tri, Scalar::F32),
+            VertexAttributeFormat::Float4 => (VectorSize::Quad, Scalar::F32),
             // The conversion is done by wgpu, since we specify
             // `wgpu::VertexFormat::Unorm8x4` in `CurrentPipeline::rebuild_pipeline`
-            VertexAttributeFormat::Bytes4 => (VectorSize::Quad, 4, ScalarKind::Float),
+            VertexAttributeFormat::Bytes4 => (VectorSize::Quad, Scalar::F32),
         };
 
         module.types.insert(
             Type {
                 name: None,
-                inner: TypeInner::Vector { size, kind, width },
+                inner: TypeInner::Vector { size, scalar },
             },
             Span::UNDEFINED,
         )
@@ -412,7 +409,7 @@ impl<'a> NagaBuilder<'a> {
                 inner: TypeInner::Matrix {
                     columns: VectorSize::Tri,
                     rows: VectorSize::Tri,
-                    width: 4,
+                    scalar: Scalar::F32,
                 },
             },
             Span::UNDEFINED,
@@ -424,7 +421,7 @@ impl<'a> NagaBuilder<'a> {
                 inner: TypeInner::Matrix {
                     columns: VectorSize::Tri,
                     rows: VectorSize::Quad,
-                    width: 4,
+                    scalar: Scalar::F32,
                 },
             },
             Span::UNDEFINED,
@@ -436,7 +433,7 @@ impl<'a> NagaBuilder<'a> {
                 inner: TypeInner::Matrix {
                     columns: VectorSize::Quad,
                     rows: VectorSize::Quad,
-                    width: 4,
+                    scalar: Scalar::F32,
                 },
             },
             Span::UNDEFINED,
@@ -475,10 +472,7 @@ impl<'a> NagaBuilder<'a> {
         let f32_type = module.types.insert(
             Type {
                 name: None,
-                inner: TypeInner::Scalar {
-                    kind: ScalarKind::Float,
-                    width: 4,
-                },
+                inner: TypeInner::Scalar(Scalar::F32),
             },
             Span::UNDEFINED,
         );
@@ -486,10 +480,7 @@ impl<'a> NagaBuilder<'a> {
         let u32_type = module.types.insert(
             Type {
                 name: None,
-                inner: TypeInner::Scalar {
-                    kind: ScalarKind::Uint,
-                    width: 4,
-                },
+                inner: TypeInner::Scalar(Scalar::U32),
             },
             Span::UNDEFINED,
         );
@@ -1651,10 +1642,7 @@ impl<'a> NagaBuilder<'a> {
             &mut self.return_type,
             Type {
                 name: None,
-                inner: TypeInner::Scalar {
-                    kind: ScalarKind::Float,
-                    width: 0,
-                },
+                inner: TypeInner::Scalar(Scalar::F32),
             },
         );
 

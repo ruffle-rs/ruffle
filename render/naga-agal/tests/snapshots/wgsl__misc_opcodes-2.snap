@@ -21,7 +21,7 @@ fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     let _e6: vec4<f32> = dpdy(_e5);
     temporary1_ = _e6;
     let _e8: vec4<f32> = temporary1_;
-    if (_e8.xxxx.x < 0.0) {
+    if (_e8.xxxx.x < 0f) {
         discard;
     }
     let _e13: vec4<f32> = temporary0_;
