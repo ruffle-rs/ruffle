@@ -32,10 +32,10 @@ impl<'gc> FocusTracker<'gc> {
             self.0.set(context.gc(), focused_element);
 
             if let Some(old) = old {
-                old.on_focus_changed(context.gc(), false);
+                old.on_focus_changed(context, false, focused_element);
             }
             if let Some(new) = focused_element {
-                new.on_focus_changed(context.gc(), true);
+                new.on_focus_changed(context, true, old);
             }
 
             tracing::info!("Focus is now on {:?}", focused_element);

@@ -3011,8 +3011,14 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
     }
 
-    fn on_focus_changed(&self, gc_context: &Mutation<'gc>, focused: bool) {
-        self.0.write(gc_context).has_focus = focused;
+    fn on_focus_changed(
+        &self,
+        context: &mut UpdateContext<'_, 'gc>,
+        focused: bool,
+        other: Option<DisplayObject<'gc>>,
+    ) {
+        self.0.write(context.gc_context).has_focus = focused;
+        self.call_focus_handler(context, focused, other);
     }
 }
 
