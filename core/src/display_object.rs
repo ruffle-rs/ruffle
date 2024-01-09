@@ -1,4 +1,7 @@
-use crate::avm1::{Object as Avm1Object, TObject as Avm1TObject, Value as Avm1Value};
+use crate::avm1::{
+    ActivationIdentifier as Avm1ActivationIdentifier, ExecutionReason as Avm1ExecutionReason,
+    Object as Avm1Object, TObject as Avm1TObject, Value as Avm1Value,
+};
 use crate::avm2::{
     Activation as Avm2Activation, Avm2, Error as Avm2Error, EventObject as Avm2EventObject,
     Multiname as Avm2Multiname, Object as Avm2Object, TObject as Avm2TObject, Value as Avm2Value,
@@ -1825,7 +1828,40 @@ pub trait TDisplayObject<'gc>:
     /// Called whenever the focus tracker has deemed this display object worthy, or no longer worthy,
     /// of being the currently focused object.
     /// This should only be called by the focus manager. To change a focus, go through that.
-    fn on_focus_changed(&self, _gc_context: &Mutation<'gc>, _focused: bool) {}
+    fn on_focus_changed(
+        &self,
+        _context: &mut UpdateContext<'_, 'gc>,
+        _focused: bool,
+        _other: Option<DisplayObject<'gc>>,
+    ) {
+    }
+
+    fn call_focus_handler(
+        &self,
+        context: &mut UpdateContext<'_, 'gc>,
+        focused: bool,
+        other: Option<DisplayObject<'gc>>,
+    ) {
+        if let Avm1Value::Object(object) = self.object() {
+            let other = other.map(|d| d.object()).unwrap_or(Avm1Value::Null);
+            let mut activation = Activation::from_nothing(
+                context.reborrow(),
+                Avm1ActivationIdentifier::root("[Handle Changed Focus]"),
+                (*self).into(),
+            );
+            let method_name = if focused {
+                "onSetFocus".into()
+            } else {
+                "onKillFocus".into()
+            };
+            let _ = object.call_method(
+                method_name,
+                &[other],
+                &mut activation,
+                Avm1ExecutionReason::Special,
+            );
+        }
+    }
 
     /// Whether or not this clip may be focusable for keyboard input.
     fn is_focusable(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {

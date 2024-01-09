@@ -399,8 +399,14 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         true
     }
 
-    fn on_focus_changed(&self, gc_context: &Mutation<'gc>, focused: bool) {
-        self.0.write(gc_context).has_focus = focused;
+    fn on_focus_changed(
+        &self,
+        context: &mut UpdateContext<'_, 'gc>,
+        focused: bool,
+        other: Option<DisplayObject<'gc>>,
+    ) {
+        self.0.write(context.gc_context).has_focus = focused;
+        self.call_focus_handler(context, focused, other);
     }
 
     fn avm1_unload(&self, context: &mut UpdateContext<'_, 'gc>) {

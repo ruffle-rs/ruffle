@@ -2047,13 +2047,21 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.set_avm1_removed(context.gc_context, true);
     }
 
-    fn on_focus_changed(&self, gc_context: &Mutation<'gc>, focused: bool) {
+    fn on_focus_changed(
+        &self,
+        context: &mut UpdateContext<'_, 'gc>,
+        focused: bool,
+        other: Option<DisplayObject<'gc>>,
+    ) {
         let is_action_script_3 = self.movie().is_action_script_3();
-        let mut text = self.0.write(gc_context);
+        let mut text = self.0.write(context.gc_context);
         text.flags.set(EditTextFlag::HAS_FOCUS, focused);
         if !focused && !is_action_script_3 {
             text.selection = None;
         }
+        drop(text);
+
+        self.call_focus_handler(context, focused, other);
     }
 
     fn is_focusable(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
