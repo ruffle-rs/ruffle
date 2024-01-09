@@ -1,6 +1,7 @@
 mod avm1;
 mod avm2;
 mod display_object;
+mod domain;
 mod handle;
 mod movie;
 
@@ -8,7 +9,10 @@ use crate::context::{RenderContext, UpdateContext};
 use crate::debug_ui::avm1::Avm1ObjectWindow;
 use crate::debug_ui::avm2::Avm2ObjectWindow;
 use crate::debug_ui::display_object::{DisplayObjectSearchWindow, DisplayObjectWindow};
-use crate::debug_ui::handle::{AVM1ObjectHandle, AVM2ObjectHandle, DisplayObjectHandle};
+use crate::debug_ui::domain::DomainListWindow;
+use crate::debug_ui::handle::{
+    AVM1ObjectHandle, AVM2ObjectHandle, DisplayObjectHandle, DomainHandle,
+};
 use crate::debug_ui::movie::{MovieListWindow, MovieWindow};
 use crate::display_object::TDisplayObject;
 use crate::tag_utils::SwfMovie;
@@ -27,21 +31,25 @@ pub struct DebugUi {
     movies: PtrWeakKeyHashMap<Weak<SwfMovie>, MovieWindow>,
     avm1_objects: HashMap<AVM1ObjectHandle, Avm1ObjectWindow>,
     avm2_objects: HashMap<AVM2ObjectHandle, Avm2ObjectWindow>,
+    domains: HashMap<DomainHandle, DomainListWindow>,
     queued_messages: Vec<Message>,
     items_to_save: Vec<ItemToSave>,
     movie_list: Option<MovieListWindow>,
+    domain_list: Option<DomainListWindow>,
     display_object_search: Option<DisplayObjectSearchWindow>,
 }
 
 #[derive(Debug)]
 pub enum Message {
     TrackDisplayObject(DisplayObjectHandle),
+    TrackDomain(DomainHandle),
     TrackMovie(Arc<SwfMovie>),
     TrackAVM1Object(AVM1ObjectHandle),
     TrackAVM2Object(AVM2ObjectHandle),
     TrackStage,
     TrackTopLevelMovie,
     ShowKnownMovies,
+    ShowDomains,
     SaveFile(ItemToSave),
     SearchForDisplayObject,
 }
@@ -79,6 +87,12 @@ impl DebugUi {
             }
         }
 
+        if let Some(mut domain_list) = self.domain_list.take() {
+            if domain_list.show(egui_ctx, context, &mut messages) {
+                self.domain_list = Some(domain_list);
+            }
+        }
+
         if let Some(mut search) = self.display_object_search.take() {
             if search.show(egui_ctx, context, &mut messages, movie_offset) {
                 self.display_object_search = Some(search);
@@ -89,6 +103,9 @@ impl DebugUi {
             match message {
                 Message::TrackDisplayObject(object) => {
                     self.track_display_object(object);
+                }
+                Message::TrackDomain(domain) => {
+                    self.domains.insert(domain, Default::default());
                 }
                 Message::TrackStage => {
                     self.track_display_object(DisplayObjectHandle::new(context, context.stage));
@@ -110,6 +127,9 @@ impl DebugUi {
                 }
                 Message::ShowKnownMovies => {
                     self.movie_list = Some(Default::default());
+                }
+                Message::ShowDomains => {
+                    self.domain_list = Some(Default::default());
                 }
                 Message::SearchForDisplayObject => {
                     self.display_object_search = Some(Default::default());
