@@ -559,7 +559,10 @@ fn optimize<'gc>(
     let mut local_types = vec![None; method.body().unwrap().num_locals as usize];
     local_types[0] = this_class;
 
-    // Invalidate local types if they should be invalidated
+    // Logic to only allow for type-based optimizations on types that
+    // we're absolutely sure about- invalidate the local register's
+    // known type if any other register-modifying opcodes mention them
+    // anywhere else in the function.
     for op in &*code {
         match op {
             Op::SetLocal { index }
