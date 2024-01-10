@@ -607,6 +607,82 @@ impl<'gc> E4XNode<'gc> {
         false
     }
 
+    // ECMA-357 13.4.4.26 XML.prototype.normalize ()
+    pub fn normalize(&self, mc: &Mutation<'gc>) {
+        if let E4XNodeKind::Element { children, .. } = &mut *self.kind_mut(mc) {
+            // 1. Let i = 0
+            let mut index = 0;
+
+            // 2. While i < x.[[Length]]
+            while index < children.len() {
+                let child = children[index];
+
+                // 2.a. If x[i].[[Class]] == "element"
+                if child.is_element() {
+                    // 2.a.i. Call the normalize method of x[i]
+                    child.normalize(mc);
+                    // 2.a.ii. Let i = i + 1
+                    index += 1;
+                // 2.b. Else if x[i].[[Class]] == "text"
+                } else if child.is_text() {
+                    let is_whitespace_text = {
+                        let (E4XNodeKind::Text(text) | E4XNodeKind::CData(text)) =
+                            &mut *child.kind_mut(mc)
+                        else {
+                            unreachable!()
+                        };
+
+                        // 2.b.i. While ((i+1) < x.[[Length]]) and (x[i + 1].[[Class]] == "text")
+                        while index + 1 < children.len() && children[index + 1].is_text() {
+                            {
+                                let (E4XNodeKind::Text(other) | E4XNodeKind::CData(other)) =
+                                    &*children[index + 1].kind()
+                                else {
+                                    unreachable!()
+                                };
+
+                                // 2.b.i.1. Let x[i].[[Value]] be the result of concatenating x[i].[[Value]] and x[i + 1].[[Value]]
+                                *text = AvmString::concat(mc, *text, *other);
+                            }
+
+                            // 2.b.i.2. Call the [[DeleteByIndex]] method of x with argument ToString(i + 1)
+                            // NOTE: We cannot call [[DeleteByIndex]] directly because of borrow errors, so we do it manually.
+                            let child = children.remove(index + 1);
+                            child.set_parent(None, mc);
+                        }
+
+                        // NOTE: Non-standard avmplus behavior, spec says to check if length is 0, but avmplus
+                        //       checks if the string is made out of whitespace characters.
+                        let mut chars = text.chars();
+                        chars.all(|c| {
+                            if let Ok(c) = c {
+                                matches!(c, '\t' | '\n' | '\r' | ' ')
+                            } else {
+                                false
+                            }
+                        })
+                    };
+
+                    // 2.b.ii. If x[i].[[Value]].length == 0
+                    if is_whitespace_text {
+                        // 2.b.ii.1. Call the [[DeleteByIndex]] method of x with argument ToString(i)
+                        // NOTE: We cannot call [[DeleteByIndex]] directly because of borrow errors, so we do it manually.
+                        let child = children.remove(index);
+                        child.set_parent(None, mc);
+                    // 2.b.iii. Else
+                    } else {
+                        // 2.b.iii.1. Let i = i + 1
+                        index += 1
+                    }
+                // 2.c. Else
+                } else {
+                    // 2.c.i. Let i = i + 1
+                    index += 1;
+                }
+            }
+        }
+    }
+
     /// Parses a value provided to `XML`/`XMLList` into a list of nodes.
     /// The caller is responsible for validating that the number of top-level nodes
     /// is correct (for XML, there should be exactly one.)
