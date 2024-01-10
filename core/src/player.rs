@@ -2609,6 +2609,14 @@ impl PlayerBuilder {
             player_lock.set_default_font(DefaultFont::Sans, vec!["Noto Sans".to_string()]);
             player_lock.set_default_font(DefaultFont::Serif, vec!["Noto Sans".to_string()]);
             player_lock.set_default_font(DefaultFont::Typewriter, vec!["Noto Sans".to_string()]);
+            player_lock.set_default_font(
+                DefaultFont::JapaneseGothicMono,
+                vec!["Noto Sans".to_string()],
+            );
+            player_lock
+                .set_default_font(DefaultFont::JapaneseGothic, vec!["Noto Sans".to_string()]);
+            player_lock
+                .set_default_font(DefaultFont::JapaneseMincho, vec!["Noto Sans".to_string()]);
         }
 
         player_lock.mutate_with_update_context(|context| {

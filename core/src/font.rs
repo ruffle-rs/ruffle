@@ -25,6 +25,15 @@ pub enum DefaultFont {
 
     /// `_typewriter`, a Monospace font (similar to Courier)
     Typewriter,
+
+    /// `_ゴシック`, a Japanese Gothic font
+    JapaneseGothic,
+
+    /// `_等幅`, a Japanese Gothic Mono font
+    JapaneseGothicMono,
+
+    /// `_明朝`, a Japanese Mincho font
+    JapaneseMincho,
 }
 
 /// Certain Flash routines measure text by rounding down to the nearest whole pixel.
