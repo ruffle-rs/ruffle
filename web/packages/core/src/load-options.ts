@@ -304,6 +304,21 @@ export interface DefaultFonts {
      * `_typewriter`, a Monospace font (similar to Courier)
      */
     typewriter?: Array<string>;
+
+    /**
+     * `_ゴシック`, a Japanese Gothic font
+     */
+    JapaneseGothic?: Array<string>;
+
+    /**
+     * `_等幅`, a Japanese Gothic Mono font
+     */
+    JapaneseGothicMono?: Array<string>;
+
+    /**
+     * `_明朝`, a Japanese Mincho font
+     */
+    JapaneseMincho?: Array<string>;
 }
 
 /**

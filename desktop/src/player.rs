@@ -224,6 +224,33 @@ impl ActivePlayer {
                     "DejaVu Sans Mono".into(),
                 ],
             );
+            player_lock.set_default_font(
+                DefaultFont::JapaneseGothic,
+                vec![
+                    "ヒラギノ角ゴ Pro W3".into(), // Mac with Japanese environment
+                    "MS UI Gothic".into(),        // Windows
+                    "Noto Sans CJK JP".into(),    // Linux
+                    "Arial Unicode MS".into(),    // Mac fallback
+                ],
+            );
+            player_lock.set_default_font(
+                DefaultFont::JapaneseGothicMono,
+                vec![
+                    "Osaka－等幅".into(),      // Mac with Japanese environment
+                    "MS UI Gothic".into(),     // Windows
+                    "Noto Sans CJK JP".into(), // Linux
+                    "Arial Unicode MS".into(), // Mac fallback
+                ],
+            );
+            player_lock.set_default_font(
+                DefaultFont::JapaneseMincho,
+                vec![
+                    "ヒラギノ明朝 Pro W3".into(), // Mac with Japanese environment
+                    "MS UI Gothic".into(),        // Windows
+                    "Noto Sans CJK JP".into(),    // Linux
+                    "Arial Unicode MS".into(),    // Mac fallback
+                ],
+            );
         }
 
         Self { player, executor }

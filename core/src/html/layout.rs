@@ -491,8 +491,9 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             "_serif" => Some(DefaultFont::Serif),
             "_sans" => Some(DefaultFont::Sans),
             "_typewriter" => Some(DefaultFont::Typewriter),
-            // [NA] I suspect that there might be undocumented more aliases.
-            // I think I've seen translated versions of these used in the wild...
+            "_ゴシック" => Some(DefaultFont::JapaneseGothic),
+            "_等幅" => Some(DefaultFont::JapaneseGothicMono),
+            "_明朝" => Some(DefaultFont::JapaneseMincho),
             _ => None,
         } {
             return context
@@ -522,7 +523,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
         // TODO: handle multiple fonts for a definition, each covering different sets of glyphs
 
-        // At this point, the font name was neither one of the three default
+        // At this point, the font name was neither one of the default
         // fonts nor matched any device font. We explicitly handle some of the
         // well-known aliases for the default fonts for better compatibility
         // with devices that don't have those fonts installed. As a last resort
