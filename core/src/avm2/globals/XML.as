@@ -4,10 +4,7 @@ package {
     public final dynamic class XML {
         import __ruffle__.stub_method;
 
-        AS3 function normalize(): XML {
-            stub_method("XML", "normalize");
-            return this;
-        }
+        AS3 native function normalize(): XML;
 
         AS3 static function setSettings(settings:Object = null): void {
             if (settings == null) {

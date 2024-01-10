@@ -104,6 +104,16 @@ pub fn init<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn normalize<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let xml = this.as_xml_object().unwrap();
+    xml.node().normalize(activation.gc());
+    Ok(xml.into())
+}
+
 pub fn name<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
