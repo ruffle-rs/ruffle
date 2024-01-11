@@ -527,12 +527,12 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         // fonts nor matched any device font. We explicitly handle some of the
         // well-known aliases for the default fonts for better compatibility
         // with devices that don't have those fonts installed. As a last resort
-        // we fall back to using serif.
+        // we fall back to using sans (like Flash).
         let default_font = match font_name.deref() {
             "Times New Roman" => DefaultFont::Serif,
             "Arial" => DefaultFont::Sans,
             "Courier New" => DefaultFont::Typewriter,
-            _ => DefaultFont::Serif,
+            _ => DefaultFont::Sans,
         };
         context
             .library
