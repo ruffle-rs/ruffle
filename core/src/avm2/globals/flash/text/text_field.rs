@@ -1325,18 +1325,35 @@ pub fn set_mouse_wheel_enabled<'gc>(
 
 pub fn get_restrict<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.text.TextField", "restrict");
-    Ok(Value::Null)
+    if let Some(this) = this
+        .as_display_object()
+        .and_then(|this| this.as_edit_text())
+    {
+        return match this.restrict() {
+            Some(value) => Ok(AvmString::new(activation.context.gc_context, value).into()),
+            None => Ok(Value::Null),
+        };
+    }
+
+    Ok(Value::Undefined)
 }
 
 pub fn set_restrict<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    this: Object<'gc>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_setter!(activation, "flash.text.TextField", "restrict");
+    if let Some(this) = this
+        .as_display_object()
+        .and_then(|this| this.as_edit_text())
+    {
+        this.set_restrict(
+            args.try_get_string(activation, 0)?.as_deref(),
+            &mut activation.context,
+        );
+    }
     Ok(Value::Undefined)
 }
