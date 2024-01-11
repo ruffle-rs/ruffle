@@ -1388,8 +1388,44 @@ impl<'a> ShaderBuilder<'a> {
                         }
                     }
                 }
-                Operation::Loop { unknown } => {
-                    tracing::warn!("Unimplemented Loop opcode with data: {unknown:?}")
+                Operation::Select {
+                    src1,
+                    src2,
+                    dst,
+                    condition,
+                } => {
+                    let src1_expr = self.load_src_register(src1)?;
+                    let src2_expr = self.load_src_register(src2)?;
+
+                    let expr_zero: Handle<Expression> = match condition.kind {
+                        PixelBenderRegKind::Float => self.zerof32,
+                        PixelBenderRegKind::Int => self.zeroi32,
+                    };
+                    if condition.channels.len() != 1 {
+                        panic!("'Select' condition must be a scalar: {condition:?}");
+                    }
+
+                    // FIXME - `load_src_register` always gives us a vec4 - ideally, we would
+                    // have a flag to avoid this pointless splat-and-extract.
+                    let cond_expr = self.load_src_register(condition)?;
+                    let first_component = self.evaluate_expr(Expression::AccessIndex {
+                        base: cond_expr,
+                        index: 0,
+                    });
+
+                    let is_true = self.evaluate_expr(Expression::Binary {
+                        op: BinaryOperator::NotEqual,
+                        left: first_component,
+                        right: expr_zero,
+                    });
+
+                    let select_expr = self.evaluate_expr(Expression::Select {
+                        condition: is_true,
+                        accept: src1_expr,
+                        reject: src2_expr,
+                    });
+
+                    self.emit_dest_store(select_expr, dst)?;
                 }
                 Operation::Nop => {}
             }
