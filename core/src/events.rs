@@ -457,6 +457,15 @@ pub enum KeyCode {
     F13 = 124,
     F14 = 125,
     F15 = 126,
+    F16 = 127, // undocumented
+    F17 = 128, // undocumented
+    F18 = 129, // undocumented
+    F19 = 130, // undocumented
+    F20 = 131, // undocumented
+    F21 = 132, // undocumented
+    F22 = 133, // undocumented
+    F23 = 134, // undocumented
+    F24 = 135, // undocumented
     ScrollLock = 145,
     Semicolon = 186,
     Equals = 187,
