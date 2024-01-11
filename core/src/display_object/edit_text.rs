@@ -34,6 +34,7 @@ use gc_arena::{Collect, Gc, GcCell, Mutation};
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::shape_utils::DrawCommand;
 use ruffle_render::transform::Transform;
+use std::collections::VecDeque;
 use std::{cell::Ref, cell::RefMut, sync::Arc};
 use swf::{Color, ColorTransform, Twips};
 
@@ -168,6 +169,10 @@ pub struct EditTextData<'gc> {
 
     /// Whether this EditText represents an AVM2 TextLine.
     is_tlf: bool,
+
+    /// Restrict what characters the user may input.
+    #[collect(require_static)]
+    restrict: EditTextRestrict,
 }
 
 impl<'gc> EditTextData<'gc> {
@@ -334,6 +339,7 @@ impl<'gc> EditText<'gc> {
                 scroll: 1,
                 max_chars: swf_tag.max_length().unwrap_or_default() as i32,
                 is_tlf: false,
+                restrict: EditTextRestrict::allow_all(),
             },
         ));
 
@@ -500,6 +506,14 @@ impl<'gc> EditText<'gc> {
             .flags
             .set(EditTextFlag::PASSWORD, is_password);
         self.relayout(context);
+    }
+
+    pub fn restrict(self) -> Option<WString> {
+        return self.0.read().restrict.value().map(Into::into);
+    }
+
+    pub fn set_restrict(self, text: Option<&WStr>, context: &mut UpdateContext<'_, 'gc>) {
+        self.0.write(context.gc_context).restrict = EditTextRestrict::from(text);
     }
 
     pub fn set_multiline(self, is_multiline: bool, context: &mut UpdateContext<'_, 'gc>) {
@@ -1487,57 +1501,58 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn text_input(self, character: char, context: &mut UpdateContext<'_, 'gc>) {
-        if self.0.read().flags.contains(EditTextFlag::READ_ONLY) {
+        if self.0.read().flags.contains(EditTextFlag::READ_ONLY)
+            || character.is_control()
+            || self.available_chars() == 0
+        {
             return;
         }
 
-        if let Some(selection) = self.selection() {
-            let mut changed = false;
-            let mut cancelled = false;
-            if !character.is_control() && self.available_chars() > 0 {
-                if let Avm2Value::Object(target) = self.object2() {
-                    let character_string =
-                        AvmString::new_utf8(context.gc_context, character.to_string());
+        let Some(selection) = self.selection() else {
+            return;
+        };
 
-                    let mut activation = Avm2Activation::from_nothing(context.reborrow());
-                    let text_evt = Avm2EventObject::text_event(
-                        &mut activation,
-                        "textInput",
-                        character_string,
-                        true,
-                        true,
-                    );
-                    Avm2::dispatch_event(&mut activation.context, text_evt, target);
+        let Some(character) = self.0.read().restrict.to_allowed(character) else {
+            return;
+        };
 
-                    cancelled = text_evt.as_event().unwrap().is_cancelled();
-                }
+        if let Avm2Value::Object(target) = self.object2() {
+            let character_string = AvmString::new_utf8(context.gc_context, character.to_string());
 
-                if !cancelled {
-                    self.replace_text(
-                        selection.start(),
-                        selection.end(),
-                        &WString::from_char(character),
-                        context,
-                    );
-                    let new_pos = selection.start() + character.len_utf8();
-                    self.set_selection(
-                        Some(TextSelection::for_position(new_pos)),
-                        context.gc_context,
-                    );
-                    changed = true;
-                }
-            }
+            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+            let text_evt = Avm2EventObject::text_event(
+                &mut activation,
+                "textInput",
+                character_string,
+                true,
+                true,
+            );
+            Avm2::dispatch_event(&mut activation.context, text_evt, target);
 
-            if changed {
-                let mut activation = Avm1Activation::from_nothing(
-                    context.reborrow(),
-                    ActivationIdentifier::root("[Propagate Text Binding]"),
-                    self.into(),
-                );
-                self.propagate_text_binding(&mut activation);
-                self.on_changed(&mut activation);
+            if text_evt.as_event().unwrap().is_cancelled() {
+                return;
             }
         }
+
+        self.replace_text(
+            selection.start(),
+            selection.end(),
+            &WString::from_char(character),
+            context,
+        );
+        let new_pos = selection.start() + character.len_utf8();
+        self.set_selection(
+            Some(TextSelection::for_position(new_pos)),
+            context.gc_context,
+        );
+
+        let mut activation = Avm1Activation::from_nothing(
+            context.reborrow(),
+            ActivationIdentifier::root("[Propagate Text Binding]"),
+            self.into(),
+        );
+        self.propagate_text_binding(&mut activation);
+        self.on_changed(&mut activation);
     }
 
     fn initialize_as_broadcaster(&self, activation: &mut Avm1Activation<'_, 'gc>) {
@@ -2319,5 +2334,202 @@ impl TextSelection {
     /// If this is false, text is replaced at the positions.
     pub fn is_caret(&self) -> bool {
         self.to == self.from
+    }
+}
+
+#[derive(Clone, Debug)]
+struct EditTextRestrict {
+    /// Original string value.
+    value: Option<WString>,
+
+    /// List of intervals (inclusive, inclusive) with allowed characters.
+    allowed: Vec<(char, char)>,
+
+    /// List of intervals (inclusive, inclusive) with disallowed characters.
+    disallowed: Vec<(char, char)>,
+}
+
+enum EditTextRestrictToken {
+    Char(char),
+    Range,
+    Caret,
+}
+
+impl EditTextRestrict {
+    const INTERVAL_ALL: (char, char) = ('\0', char::MAX);
+
+    pub fn allow_all() -> Self {
+        Self {
+            value: None,
+            allowed: vec![Self::INTERVAL_ALL],
+            disallowed: vec![],
+        }
+    }
+
+    pub fn allow_none() -> Self {
+        Self {
+            value: Some(WString::new()),
+            allowed: vec![],
+            disallowed: vec![],
+        }
+    }
+
+    pub fn from(value: Option<&WStr>) -> Self {
+        match value {
+            None => Self::allow_all(),
+            Some(string) => Self::from_string(string),
+        }
+    }
+
+    pub fn from_string(string: &WStr) -> Self {
+        if string.is_empty() {
+            return Self::allow_none();
+        }
+
+        let mut tokens = Self::tokenize_restrict(string);
+        let mut allowed: Vec<(char, char)> = vec![];
+        let mut disallowed: Vec<(char, char)> = vec![];
+
+        Self::parse_restrict(&mut tokens, &mut allowed, &mut disallowed);
+
+        Self {
+            value: Some(string.into()),
+            allowed,
+            disallowed,
+        }
+    }
+
+    fn tokenize_restrict(string: &WStr) -> VecDeque<EditTextRestrictToken> {
+        let mut characters: VecDeque<char> = string
+            .chars()
+            .map(|c| c.unwrap_or(char::REPLACEMENT_CHARACTER))
+            .collect::<VecDeque<char>>();
+        let mut tokens: VecDeque<EditTextRestrictToken> = VecDeque::with_capacity(characters.len());
+
+        while !characters.is_empty() {
+            match characters.pop_front().unwrap() {
+                // Handle escapes: \\, \-, \^.
+                // In fact, other escapes also work, so that \a is equivalent to a, not to \\a.
+                '\\' => {
+                    if let Some(escaped) = characters.pop_front() {
+                        tokens.push_back(EditTextRestrictToken::Char(escaped));
+                    } else {
+                        // Ignore truncated escapes (when the string ends with \).
+                    }
+                }
+                '^' => {
+                    tokens.push_back(EditTextRestrictToken::Caret);
+                }
+                '-' => {
+                    tokens.push_back(EditTextRestrictToken::Range);
+                }
+                c => {
+                    tokens.push_back(EditTextRestrictToken::Char(c));
+                }
+            }
+        }
+
+        tokens
+    }
+
+    fn parse_restrict(
+        tokens: &mut VecDeque<EditTextRestrictToken>,
+        allowed: &mut Vec<(char, char)>,
+        disallowed: &mut Vec<(char, char)>,
+    ) {
+        let mut current_intervals: Vec<(char, char)> = vec![];
+        let mut last_char: Option<char> = None;
+        let mut now_allowing = true;
+        while !tokens.is_empty() {
+            last_char = match tokens.pop_front().unwrap() {
+                EditTextRestrictToken::Char(c) => {
+                    current_intervals.push((c, c));
+                    Some(c)
+                }
+                EditTextRestrictToken::Caret => {
+                    if now_allowing {
+                        if current_intervals.is_empty() && allowed.is_empty() {
+                            // If restrict starts with ^, we are assuming that
+                            // all characters are allowed and disallowing from that.
+                            allowed.append(&mut vec![Self::INTERVAL_ALL]);
+                        } else {
+                            allowed.append(&mut current_intervals);
+                        }
+                    } else {
+                        disallowed.append(&mut current_intervals);
+                    }
+
+                    // Caret according to the documentation indicates
+                    // that we are now disallowing characters.
+                    // In reality it just switches allowing/disallowing.
+                    now_allowing = !now_allowing;
+                    None
+                }
+                EditTextRestrictToken::Range => {
+                    let range_start = if let Some(last_char) = last_char {
+                        current_intervals.pop();
+                        last_char
+                    } else {
+                        // When the range is truncated from the left side (-z),
+                        // it is equivalent to \0-z.
+                        '\0'
+                    };
+                    let range_end;
+                    if let Some(EditTextRestrictToken::Char(c)) = tokens.front() {
+                        range_end = *c;
+                        tokens.pop_front();
+                    } else {
+                        // When the range is truncated from the right side (a-),
+                        // it is equivalent to the first character (a).
+                        range_end = range_start;
+                    }
+                    // If the range a-z is inverted (z-a), it is equivalent to
+                    // the first character only (z).
+                    current_intervals.push((range_start, range_end.max(range_start)));
+                    None
+                }
+            }
+        }
+
+        if now_allowing {
+            allowed.append(&mut current_intervals);
+        } else {
+            disallowed.append(&mut current_intervals);
+        }
+    }
+
+    pub fn value(&self) -> Option<&WStr> {
+        self.value.as_deref()
+    }
+
+    pub fn is_allowed(&self, character: char) -> bool {
+        self.intervals_contain(character, &self.allowed)
+            && !self.intervals_contain(character, &self.disallowed)
+    }
+
+    fn intervals_contain(&self, character: char, intervals: &Vec<(char, char)>) -> bool {
+        for interval in intervals {
+            if self.interval_contains(character, interval) {
+                return true;
+            }
+        }
+        false
+    }
+
+    #[inline]
+    fn interval_contains(&self, character: char, interval: &(char, char)) -> bool {
+        character >= interval.0 && character <= interval.1
+    }
+
+    pub fn to_allowed(&self, character: char) -> Option<char> {
+        if self.is_allowed(character) {
+            Some(character)
+        } else if self.is_allowed(character.to_ascii_uppercase()) {
+            Some(character.to_ascii_uppercase())
+        } else if self.is_allowed(character.to_ascii_lowercase()) {
+            Some(character.to_ascii_lowercase())
+        } else {
+            None
+        }
     }
 }
