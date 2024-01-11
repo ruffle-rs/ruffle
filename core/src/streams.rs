@@ -343,6 +343,8 @@ impl<'gc> NetStream<'gc> {
     pub fn load_buffer(self, context: &mut UpdateContext<'_, 'gc>, data: &mut Vec<u8>) {
         self.0.write(context.gc_context).buffer.append(data);
 
+        StreamManager::activate(context, self);
+
         // NOTE: The onMetaData event triggers before this event in Flash due to its streaming behavior.
         self.trigger_status_event(
             context,
