@@ -252,7 +252,7 @@ impl FontFace {
                 for subtable in kern.subtables {
                     if subtable.horizontal {
                         if let Some(value) = subtable.glyphs_kerning(left_glyph, right_glyph) {
-                            return Twips::from_pixels_i32(value as i32);
+                            return Twips::new(value as i32);
                         }
                     }
                 }
