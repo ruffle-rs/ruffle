@@ -46,7 +46,7 @@ fn get_bytes_total<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let NativeObject::NetStream(ns) = this.native() {
-        return Ok(ns.bytes_loaded().into());
+        return Ok(ns.bytes_total().into());
     }
 
     Ok(Value::Undefined)
