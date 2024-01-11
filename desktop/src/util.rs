@@ -148,6 +148,18 @@ pub fn winit_to_ruffle_key_code(key_code: VirtualKeyCode) -> KeyCode {
         VirtualKeyCode::F10 => KeyCode::F10,
         VirtualKeyCode::F11 => KeyCode::F11,
         VirtualKeyCode::F12 => KeyCode::F12,
+        VirtualKeyCode::F13 => KeyCode::F13,
+        VirtualKeyCode::F14 => KeyCode::F14,
+        VirtualKeyCode::F15 => KeyCode::F15,
+        VirtualKeyCode::F16 => KeyCode::F16,
+        VirtualKeyCode::F17 => KeyCode::F17,
+        VirtualKeyCode::F18 => KeyCode::F18,
+        VirtualKeyCode::F19 => KeyCode::F19,
+        VirtualKeyCode::F20 => KeyCode::F20,
+        VirtualKeyCode::F21 => KeyCode::F21,
+        VirtualKeyCode::F22 => KeyCode::F22,
+        VirtualKeyCode::F23 => KeyCode::F23,
+        VirtualKeyCode::F24 => KeyCode::F24,
         _ => KeyCode::Unknown,
     }
 }
