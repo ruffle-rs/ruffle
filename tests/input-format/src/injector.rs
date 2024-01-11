@@ -97,7 +97,8 @@ impl InputInjector {
                     AutomatedEvent::MouseMove { .. }
                     | AutomatedEvent::KeyDown { .. }
                     | AutomatedEvent::TextInput { .. }
-                    | AutomatedEvent::TextControl { .. } => {}
+                    | AutomatedEvent::TextControl { .. }
+                    | AutomatedEvent::SetClipboardText { .. } => {}
                     AutomatedEvent::MouseDown { btn, .. } => {
                         self.buttons |= (*btn).into();
                     }
