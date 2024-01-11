@@ -78,6 +78,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "maxChars" => property(tf_getter!(max_chars), tf_setter!(set_max_chars));
     "multiline" => property(tf_getter!(multiline), tf_setter!(set_multiline));
     "password" => property(tf_getter!(password), tf_setter!(set_password));
+    "restrict" => property(tf_getter!(restrict), tf_setter!(set_restrict));
     "scroll" => property(tf_getter!(scroll), tf_setter!(set_scroll));
     "selectable" => property(tf_getter!(selectable), tf_setter!(set_selectable));
     "text" => property(tf_getter!(text), tf_setter!(set_text));
@@ -857,5 +858,38 @@ fn set_filters<'gc>(
         }
     }
     this.set_filters(activation.context.gc_context, filters);
+    Ok(())
+}
+
+fn restrict<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    match this.restrict() {
+        Some(value) => Ok(AvmString::new(activation.context.gc_context, value).into()),
+        None => Ok(Value::Null),
+    }
+}
+
+fn set_restrict<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    match value {
+        Value::Undefined | Value::Null => {
+            this.set_restrict(None, &mut activation.context);
+        }
+        _ => {
+            let text = value.coerce_to_string(activation)?;
+            if text.is_empty() {
+                // According to docs, an empty string means that you cannot enter any character,
+                // but according to reality, an empty string is equivalent to null in AVM1.
+                this.set_restrict(None, &mut activation.context);
+            } else {
+                this.set_restrict(Some(&text), &mut activation.context);
+            }
+        }
+    };
     Ok(())
 }
