@@ -70,4 +70,7 @@ pub enum AutomatedEvent {
 
     /// Input a control character code
     TextControl { code: TextControlCode },
+
+    /// Populate clipboard with the given text
+    SetClipboardText { text: String },
 }

@@ -77,13 +77,18 @@ impl FileDialogResult for TestFileDialogResult {
 ///   otherwise a user cancellation will be simulated
 /// * Attempting to display a file save dialog with a file name hint of "debug-success.txt" will simulate successfully selecting a destination
 ///   otherwise a user cancellation will be simulated
+/// * Simulated in-memory clipboard
 pub struct TestUiBackend {
     fonts: Vec<Font>,
+    clipboard: String,
 }
 
 impl TestUiBackend {
     pub fn new(fonts: Vec<Font>) -> Self {
-        Self { fonts }
+        Self {
+            fonts,
+            clipboard: "".to_string(),
+        }
     }
 }
 
@@ -97,10 +102,12 @@ impl UiBackend for TestUiBackend {
     fn set_mouse_cursor(&mut self, _cursor: MouseCursor) {}
 
     fn clipboard_content(&mut self) -> String {
-        "".to_string()
+        self.clipboard.clone()
     }
 
-    fn set_clipboard_content(&mut self, _content: String) {}
+    fn set_clipboard_content(&mut self, content: String) {
+        self.clipboard = content;
+    }
 
     fn set_fullscreen(&mut self, _is_full: bool) -> Result<(), FullscreenError> {
         Ok(())

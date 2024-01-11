@@ -160,6 +160,15 @@ pub fn run_swf(
         }
 
         injector.next(|evt, _btns_down| {
+            if let AutomatedEvent::SetClipboardText { text } = evt {
+                player
+                    .lock()
+                    .unwrap()
+                    .ui_mut()
+                    .set_clipboard_content(text.to_owned());
+                return;
+            }
+
             player.lock().unwrap().handle_event(match evt {
                 AutomatedEvent::MouseDown { pos, btn } => PlayerEvent::MouseDown {
                     x: pos.0,
@@ -202,7 +211,7 @@ pub fn run_swf(
                         InputTextControlCode::Delete => RuffleTextControlCode::Delete,
                     },
                 },
-                AutomatedEvent::Wait => unreachable!(),
+                AutomatedEvent::Wait | AutomatedEvent::SetClipboardText { .. } => unreachable!(),
             });
         });
         // Rendering has side-effects (such as processing 'DisplayObject.scrollRect' updates)
