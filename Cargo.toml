@@ -46,7 +46,7 @@ tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 naga = { version = "0.14.2", features = ["validate", "wgsl-out"] }
 naga_oil = "0.11.0"
 wgpu = "0.18.0"
-egui = "0.24.1"
+egui = "0.25.0"
 
 [workspace.lints.rust]
 # Clippy nightly often adds new/buggy lints that we want to ignore.
@@ -99,3 +99,9 @@ inherits = "release"
 # is not yet in the latest wgpu release. TODO: Remove when it is.
 wgpu = { git = "https://github.com/gfx-rs/wgpu", branch = "v0.18" }
 naga = { git = "https://github.com/gfx-rs/wgpu", branch = "v0.18" }
+
+# https://github.com/emilk/egui/pull/3812
+egui = { git = "https://github.com/ruffle-rs/egui", branch = "consume_keys"}
+egui_extras = { git = "https://github.com/ruffle-rs/egui", branch = "consume_keys"}
+egui-winit = { git = "https://github.com/ruffle-rs/egui", branch = "consume_keys"}
+egui-wgpu = { git = "https://github.com/ruffle-rs/egui", branch = "consume_keys"}
