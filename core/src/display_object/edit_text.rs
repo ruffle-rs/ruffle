@@ -1399,7 +1399,8 @@ impl<'gc> EditText<'gc> {
                     }
                 }
                 TextControlCode::Paste => {
-                    let mut text = context.ui.clipboard_content();
+                    let text = context.ui.clipboard_content();
+                    let mut text = self.0.read().restrict.filter_allowed(&text);
 
                     if text.len() > self.available_chars() && self.available_chars() > 0 {
                         text = text[0..self.available_chars()].to_owned();
@@ -2531,5 +2532,15 @@ impl EditTextRestrict {
         } else {
             None
         }
+    }
+
+    pub fn filter_allowed(&self, text: &str) -> String {
+        let mut filtered = String::with_capacity(text.len());
+        for c in text.chars() {
+            if let Some(c) = self.to_allowed(c) {
+                filtered.push(c);
+            }
+        }
+        filtered
     }
 }
