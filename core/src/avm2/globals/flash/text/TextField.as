@@ -1,5 +1,6 @@
 package flash.text {
     import flash.display.InteractiveObject;
+    import flash.geom.Rectangle;
     import __ruffle__.stub_setter;
     import __ruffle__.stub_method;
 
@@ -147,6 +148,11 @@ package flash.text {
         public function getLineText(lineIndex:int):String {
             stub_method("flash.text.TextField", "getLineText");
             return "";
+        }
+
+        public function getCharBoundaries(charIndex:int):Rectangle {
+            stub_method("flash.text.TextField", "getCharBoundaries");
+            return new Rectangle(0, 0, 1, 1);
         }
     }
 }
