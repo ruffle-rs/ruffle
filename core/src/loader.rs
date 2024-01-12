@@ -838,7 +838,15 @@ impl<'gc> Loader<'gc> {
                 .map(|u| u.to_string())
                 .unwrap_or(swf_url);
 
-            let mut movie = SwfMovie::from_data(&response.body, spoofed_or_swf_url, None)?;
+            let mut movie =
+                SwfMovie::from_data(&response.body, spoofed_or_swf_url, None).map_err(|error| {
+                    player
+                        .lock()
+                        .unwrap()
+                        .ui()
+                        .display_root_movie_download_failed_message();
+                    error
+                })?;
             on_metadata(movie.header());
             movie.append_parameters(parameters);
             player.lock().unwrap().mutate_with_update_context(|uc| {
