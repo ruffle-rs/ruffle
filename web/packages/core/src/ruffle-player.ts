@@ -2026,8 +2026,11 @@ export class RufflePlayer extends HTMLElement {
         let actionLink: PanicLinkInfo;
         if (!isBuildOutdated) {
             let url;
-            if (document.location.protocol.includes("extension")) {
-                url = this.swfUrl!.href;
+            if (
+                document.location.protocol.includes("extension") &&
+                this.swfUrl
+            ) {
+                url = this.swfUrl.href;
             } else {
                 url = document.location.href;
             }
