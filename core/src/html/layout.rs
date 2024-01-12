@@ -532,7 +532,13 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             "Times New Roman" => DefaultFont::Serif,
             "Arial" => DefaultFont::Sans,
             "Courier New" => DefaultFont::Typewriter,
-            _ => DefaultFont::Sans,
+            _ => {
+                if font_name.contains("Ming") || font_name.contains('明') {
+                    DefaultFont::JapaneseMincho
+                } else {
+                    DefaultFont::Sans
+                }
+            }
         };
         context
             .library
