@@ -2713,7 +2713,7 @@ dependencies = [
 [[package]]
 name = "jpegxr"
 version = "0.3.0"
-source = "git+https://github.com/ruffle-rs/jpegxr?branch=ruffle#0251753f3ea4b7e301cb89e92c5707055b1db501"
+source = "git+https://github.com/ruffle-rs/jpegxr?branch=ruffle#d49988f40f220e3e9c90d9f3df1d4e3bc41f6ce2"
 dependencies = [
  "bindgen 0.68.1",
  "cc",
