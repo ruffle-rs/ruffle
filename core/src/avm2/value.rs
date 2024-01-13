@@ -1001,7 +1001,7 @@ impl<'gc> Value<'gc> {
         }
         let param_type = activation
             .domain()
-            .get_class(type_name, activation.context.gc_context)?
+            .get_class(type_name, activation.context.gc_context)
             .ok_or_else(|| {
                 Error::RustError(
                     format!("Failed to lookup class {:?} during coercion", type_name).into(),
