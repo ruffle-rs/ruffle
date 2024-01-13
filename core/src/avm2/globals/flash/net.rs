@@ -1,5 +1,6 @@
 //! `flash.net` namespace
 
+use crate::avm2::error::type_error;
 use crate::avm2::object::TObject;
 use crate::avm2::{Activation, Error, Object, Value};
 
@@ -29,15 +30,20 @@ pub fn navigate_to_url<'gc>(
         .ok_or("navigateToURL: not enough arguments")?
         .coerce_to_string(activation)?;
 
-    let url = request
-        .get_public_property("url", activation)?
-        .coerce_to_string(activation)?;
-
-    activation.context.navigator.navigate_to_url(
-        &url.to_utf8_lossy(),
-        &target.to_utf8_lossy(),
-        None,
-    );
-
-    Ok(Value::Undefined)
+    match request.get_public_property("url", activation)? {
+        Value::Null => Err(Error::AvmError(type_error(
+            activation,
+            "Error #2007: Parameter url must be non-null.",
+            2007,
+        )?)),
+        url => {
+            let url = url.coerce_to_string(activation)?;
+            activation.context.navigator.navigate_to_url(
+                &url.to_utf8_lossy(),
+                &target.to_utf8_lossy(),
+                None,
+            );
+            Ok(Value::Undefined)
+        }
+    }
 }
