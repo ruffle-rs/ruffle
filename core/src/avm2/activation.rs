@@ -298,7 +298,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         name: &Multiname<'gc>,
     ) -> Result<GcCell<'gc, Class<'gc>>, Error<'gc>> {
         self.domain()
-            .get_class(name, self.context.gc_context)?
+            .get_class(name, self.context.gc_context)
             .ok_or_else(|| format!("Attempted to resolve nonexistent type {name:?}").into())
     }
 

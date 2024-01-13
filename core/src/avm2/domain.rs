@@ -154,46 +154,39 @@ impl<'gc> Domain<'gc> {
         Ok(None)
     }
 
-    fn get_class_inner(
-        self,
-        multiname: &Multiname<'gc>,
-    ) -> Result<Option<GcCell<'gc, Class<'gc>>>, Error<'gc>> {
+    fn get_class_inner(self, multiname: &Multiname<'gc>) -> Option<GcCell<'gc, Class<'gc>>> {
         let read = self.0.read();
         if let Some(class) = read.classes.get_for_multiname(multiname).copied() {
-            return Ok(Some(class));
+            return Some(class);
         }
 
         if let Some(parent) = read.parent {
             return parent.get_class_inner(multiname);
         }
 
-        Ok(None)
+        None
     }
 
     pub fn get_class(
         self,
         multiname: &Multiname<'gc>,
         mc: &Mutation<'gc>,
-    ) -> Result<Option<GcCell<'gc, Class<'gc>>>, Error<'gc>> {
-        let class = self.get_class_inner(multiname)?;
+    ) -> Option<GcCell<'gc, Class<'gc>>> {
+        let class = self.get_class_inner(multiname);
 
         if let Some(class) = class {
             if let Some(param) = multiname.param() {
                 if !param.is_any_name() {
-                    if let Some(resolved_param) = self.get_class(&param, mc)? {
-                        return Ok(Some(Class::with_type_param(
-                            class,
-                            Some(resolved_param),
-                            mc,
-                        )));
+                    if let Some(resolved_param) = self.get_class(&param, mc) {
+                        return Some(Class::with_type_param(class, Some(resolved_param), mc));
                     }
-                    return Ok(None);
+                    return None;
                 } else {
-                    return Ok(Some(Class::with_type_param(class, None, mc)));
+                    return Some(Class::with_type_param(class, None, mc));
                 }
             }
         }
-        Ok(class)
+        class
     }
 
     /// Resolve a Multiname and return the script that provided it.
