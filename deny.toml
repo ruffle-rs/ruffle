@@ -62,10 +62,10 @@ deny = [{ name = "tracy-client", deny-multiple-versions = true }]
 [sources]
 # Lint level for what to happen when a crate from a crate registry that is not
 # in the allow list is encountered
-unknown-registry = "warn"
+unknown-registry = "deny"
 # Lint level for what to happen when a crate from a git repository that is not
 # in the allow list is encountered
-unknown-git = "warn"
+unknown-git = "deny"
 
 [sources.allow-org]
 #  github.com organizations to allow git sources for
