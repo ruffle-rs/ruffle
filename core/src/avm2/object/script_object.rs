@@ -1,7 +1,7 @@
 //! Default AVM2 object impl
 
 use crate::avm2::activation::Activation;
-use crate::avm2::dynamic_map::{DynamicMap, StringOrObject};
+use crate::avm2::dynamic_map::{DynamicKey, DynamicMap};
 use crate::avm2::error;
 use crate::avm2::object::{ClassObject, FunctionObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
@@ -41,7 +41,7 @@ pub struct ScriptObjectWeak<'gc>(pub GcWeakCell<'gc, ScriptObjectData<'gc>>);
 #[collect(no_drop)]
 pub struct ScriptObjectData<'gc> {
     /// Values stored on this object.
-    pub values: DynamicMap<StringOrObject<'gc>, Value<'gc>>,
+    pub values: DynamicMap<DynamicKey<'gc>, Value<'gc>>,
 
     /// Slots stored on this object.
     slots: Vec<Value<'gc>>,
@@ -75,6 +75,14 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
 
     fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Value::Object(Object::from(*self)))
+    }
+}
+
+fn maybe_int_property(name: AvmString<'_>) -> DynamicKey<'_> {
+    if let Ok(val) = name.parse::<u32>() {
+        DynamicKey::Uint(val)
+    } else {
+        DynamicKey::String(name)
     }
 }
 
@@ -161,10 +169,10 @@ impl<'gc> ScriptObjectData<'gc> {
             ));
         };
 
-        let value = self
-            .values
-            .as_hashmap()
-            .get(&StringOrObject::String(local_name));
+        // Unbelievably cursed special case in avmplus:
+        // https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/ScriptObject.cpp#L195-L199
+        let key = maybe_int_property(local_name);
+        let value = self.values.as_hashmap().get(&key);
         if let Some(value) = value {
             return Ok(value.value);
         }
@@ -173,10 +181,7 @@ impl<'gc> ScriptObjectData<'gc> {
         let mut proto = self.proto();
         while let Some(obj) = proto {
             let obj = obj.base();
-            let value = obj
-                .values
-                .as_hashmap()
-                .get(&StringOrObject::String(local_name));
+            let value = obj.values.as_hashmap().get(&key);
             if let Some(value) = value {
                 return Ok(value.value);
             }
@@ -222,8 +227,11 @@ impl<'gc> ScriptObjectData<'gc> {
             ));
         };
 
-        self.values
-            .insert(StringOrObject::String(local_name), value);
+        // Unbelievably cursed special case in avmplus:
+        // https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/ScriptObject.cpp#L311-L315
+        let key = maybe_int_property(local_name);
+
+        self.values.insert(key, value);
         Ok(())
     }
 
@@ -241,7 +249,8 @@ impl<'gc> ScriptObjectData<'gc> {
             return false;
         }
         if let Some(name) = multiname.local_name() {
-            self.values.remove(&StringOrObject::String(name));
+            let key = maybe_int_property(name);
+            self.values.remove(&key);
             true
         } else {
             false
@@ -330,11 +339,8 @@ impl<'gc> ScriptObjectData<'gc> {
     pub fn has_own_dynamic_property(&self, name: &Multiname<'gc>) -> bool {
         if name.contains_public_namespace() {
             if let Some(name) = name.local_name() {
-                return self
-                    .values
-                    .as_hashmap()
-                    .get(&StringOrObject::String(name))
-                    .is_some();
+                let key = maybe_int_property(name);
+                return self.values.as_hashmap().get(&key).is_some();
             }
         }
         false
@@ -358,30 +364,27 @@ impl<'gc> ScriptObjectData<'gc> {
 
     pub fn get_enumerant_name(&self, index: u32) -> Option<Value<'gc>> {
         self.values.key_at(index as usize).map(|key| match key {
-            StringOrObject::String(name) => Value::String(*name),
-            StringOrObject::Object(obj) => Value::Object(*obj),
+            DynamicKey::String(name) => Value::String(*name),
+            DynamicKey::Object(obj) => Value::Object(*obj),
+            DynamicKey::Uint(val) => Value::Number(*val as f64),
         })
     }
 
     pub fn property_is_enumerable(&self, name: AvmString<'gc>) -> bool {
+        let key = maybe_int_property(name);
         self.values
             .as_hashmap()
-            .get(&StringOrObject::String(name))
+            .get(&key)
             .map_or(false, |prop| prop.enumerable)
     }
 
     pub fn set_local_property_is_enumerable(&mut self, name: AvmString<'gc>, is_enumerable: bool) {
-        if let Some(val) = self
-            .values
-            .as_hashmap()
-            .get(&StringOrObject::String(name))
-            .copied()
-        {
+        let key = maybe_int_property(name);
+        if let Some(val) = self.values.as_hashmap().get(&key).copied() {
             if is_enumerable {
-                self.values.insert(StringOrObject::String(name), val.value)
+                self.values.insert(key, val.value)
             } else {
-                self.values
-                    .insert_no_enum(StringOrObject::String(name), val.value)
+                self.values.insert_no_enum(key, val.value)
             }
         }
     }
