@@ -85,6 +85,7 @@ package {
         // NOTE: Docs lie, value can be anything not just XML.
         AS3 native function replace(propertyName:Object, value:*):XML;
         AS3 native function setChildren(value:Object):XML;
+        AS3 native function setLocalName(name:*):void;
 
         AS3 function valueOf():XML {
             return this;
@@ -253,6 +254,11 @@ package {
         prototype.setChildren = function(value:Object):XML {
             var self:XML = this;
             return self.AS3::setChildren(value);
+        }
+
+        prototype.setLocalName = function(name:*):void {
+            var self:XML = this;
+            self.AS3::setLocalName(name);
         }
 
         public static const length:int = 1;
