@@ -565,9 +565,13 @@ impl<'gc> Library<'gc> {
                 index,
             } => {
                 let descriptor = FontDescriptor::from_parts(&name, is_bold, is_italic);
-                if let Ok(font) =
-                    Font::from_font_file(gc_context, descriptor, Cow::Owned(data), index)
-                {
+                if let Ok(font) = Font::from_font_file(
+                    gc_context,
+                    descriptor,
+                    Cow::Owned(data),
+                    index,
+                    FontType::Device,
+                ) {
                     let name = font.descriptor().name().to_owned();
                     info!("Loaded new device font \"{name}\" from file");
                     self.device_fonts.register(font);

@@ -12,6 +12,9 @@ pub enum Error {
     #[error("Couldn't register bitmap: {0}")]
     InvalidBitmap(#[from] ruffle_render::error::Error),
 
+    #[error("Couldn't register font: {0}")]
+    InvalidFont(#[from] ttf_parser::FaceParsingError),
+
     #[error("Attempted to set symbol classes on movie without any")]
     NoSymbolClasses,
 

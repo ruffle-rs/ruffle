@@ -47,7 +47,7 @@ use std::cmp::max;
 use std::collections::HashMap;
 use std::sync::Arc;
 use swf::extensions::ReadSwfExt;
-use swf::{ClipEventFlag, FontFlag, FrameLabelData, SwfStr, TagCode};
+use swf::{ClipEventFlag, FrameLabelData, TagCode};
 
 use super::interactive::Avm2MousePick;
 
@@ -3962,29 +3962,13 @@ impl<'gc, 'a> MovieClipData<'gc> {
         context: &mut UpdateContext<'_, 'gc>,
         reader: &mut SwfStream<'a>,
     ) -> Result<(), Error> {
-        tracing::warn!("DefineFont4 tag (TLF text) is not implemented");
         let font = reader.read_define_font_4()?;
         let font_id = font.id;
-        let font_object = Font::from_swf_tag(
-            context.gc_context,
-            context.renderer,
-            swf::Font {
-                version: 4,
-                id: font.id,
-                name: SwfStr::from_bytes(b"<Unknown Font4>"),
-                language: swf::Language::Unknown,
-                layout: None,
-                glyphs: Vec::new(),
-                flags: FontFlag::empty(),
-            },
-            reader.encoding(),
-            FontType::EmbeddedCFF,
-        );
+        let font_object = Font::from_font4_tag(context.gc_context, font, reader.encoding())?;
         context
             .library
             .library_for_movie_mut(self.movie())
             .register_character(font_id, Character::Font(font_object));
-
         Ok(())
     }
 

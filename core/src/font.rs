@@ -381,6 +381,7 @@ impl<'gc> Font<'gc> {
         descriptor: FontDescriptor,
         bytes: Cow<'static, [u8]>,
         font_index: u32,
+        font_type: FontType,
     ) -> Result<Font<'gc>, ttf_parser::FaceParsingError> {
         let face = FontFace::new(bytes, font_index)?;
 
@@ -393,7 +394,7 @@ impl<'gc> Font<'gc> {
                 leading: face.leading,
                 glyphs: GlyphSource::FontFace(face),
                 descriptor,
-                font_type: FontType::Device,
+                font_type,
             },
         )))
     }
@@ -470,6 +471,38 @@ impl<'gc> Font<'gc> {
                 font_type,
             },
         ))
+    }
+
+    pub fn from_font4_tag(
+        gc_context: &Mutation<'gc>,
+        tag: swf::Font4,
+        encoding: &'static swf::Encoding,
+    ) -> Result<Font<'gc>, ttf_parser::FaceParsingError> {
+        let name = tag.name.to_str_lossy(encoding);
+        let descriptor = FontDescriptor::from_parts(&name, tag.is_bold, tag.is_italic);
+
+        if let Some(bytes) = tag.data {
+            Font::from_font_file(
+                gc_context,
+                descriptor,
+                Cow::Owned(bytes.to_vec()),
+                0,
+                FontType::EmbeddedCFF,
+            )
+        } else {
+            Ok(Font(Gc::new(
+                gc_context,
+                FontData {
+                    scale: 1.0,
+                    ascent: 0,
+                    descent: 0,
+                    leading: 0,
+                    glyphs: GlyphSource::Empty,
+                    descriptor,
+                    font_type: FontType::EmbeddedCFF,
+                },
+            )))
+        }
     }
 
     /// Returns whether this font contains glyph shapes.
