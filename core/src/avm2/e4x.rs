@@ -200,6 +200,11 @@ impl<'gc> E4XNode<'gc> {
         )
     }
 
+    /// Returns true when the node is a comment (E4XNodeKind::Comment)
+    pub fn is_comment(&self) -> bool {
+        matches!(self.0.read().kind, E4XNodeKind::Comment(_))
+    }
+
     /// Returns an iterator that yields ancestor nodes (including itself).
     pub fn ancestors(self) -> impl Iterator<Item = E4XNode<'gc>> {
         iterators::AnscIter::for_node(self)

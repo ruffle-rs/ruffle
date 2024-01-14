@@ -233,6 +233,24 @@ pub fn make_error_1089<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1117<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    name: AvmString<'gc>,
+) -> Error<'gc> {
+    let err = type_error(
+        activation,
+        &format!("Error #1117: Invalid XML name: {}.", name.as_wstr()),
+        1117,
+    );
+
+    match err {
+        Ok(err) => Error::AvmError(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1118<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     let err = type_error(
         activation,
