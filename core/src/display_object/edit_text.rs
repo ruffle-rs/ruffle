@@ -28,6 +28,7 @@ use crate::prelude::*;
 use crate::string::{utils as string_utils, AvmString, SwfStrExt as _, WStr, WString};
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::{AvmObject, Instantiator};
+use chrono::DateTime;
 use chrono::Utc;
 use core::fmt;
 use gc_arena::{Collect, Gc, GcCell, Mutation};
@@ -946,7 +947,7 @@ impl<'gc> EditText<'gc> {
                     && !edit_text.flags.contains(EditTextFlag::READ_ONLY)
                     && visible_selection.start() >= *start
                     && visible_selection.end() <= *end
-                    && Utc::now().timestamp_subsec_millis() / 500 == 0
+                    && !visible_selection.blinks_now()
                 {
                     Some(visible_selection.start() - start)
                 } else {
@@ -1208,6 +1209,12 @@ impl<'gc> EditText<'gc> {
             text.selection = Some(selection);
         } else {
             text.selection = None;
+        }
+    }
+
+    pub fn reset_selection_blinking(self, gc_context: &Mutation<'gc>) {
+        if let Some(selection) = self.0.write(gc_context).selection.as_mut() {
+            selection.reset_blinking();
         }
     }
 
@@ -1483,7 +1490,8 @@ impl<'gc> EditText<'gc> {
                         let text = self.text();
                         let end = string_utils::next_char_boundary(&text, selection.start());
                         self.replace_text(selection.start(), end, WStr::empty(), context);
-                        // No need to change selection
+                        // No need to change selection, reset it to prevent caret from blinking
+                        self.reset_selection_blinking(context.gc_context);
                         changed = true;
                     }
                 }
@@ -2010,7 +2018,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             if let Some(visible_selection) = visible_selection {
                 if visible_selection.is_caret()
                     && visible_selection.start() == 0
-                    && Utc::now().timestamp_subsec_millis() / 500 == 0
+                    && !visible_selection.blinks_now()
                 {
                     let format = edit_text.text_spans.default_format();
                     let caret_height = format.size.map(Twips::from_pixels).unwrap_or_default();
@@ -2263,6 +2271,9 @@ struct EditTextStatic {
 pub struct TextSelection {
     from: usize,
     to: usize,
+
+    /// The time the caret should begin blinking
+    blink_epoch: DateTime<Utc>,
 }
 
 /// Information about the start and end y-coordinates of a given line of text
@@ -2276,15 +2287,22 @@ pub struct LineData {
 }
 
 impl TextSelection {
+    const BLINK_CYCLE_DURATION_MS: u32 = 1000;
+
     pub fn for_position(position: usize) -> Self {
         Self {
             from: position,
             to: position,
+            blink_epoch: Utc::now(),
         }
     }
 
     pub fn for_range(from: usize, to: usize) -> Self {
-        Self { from, to }
+        Self {
+            from,
+            to,
+            blink_epoch: Utc::now(),
+        }
     }
 
     /// The "from" part of the range is where the user started the selection.
@@ -2335,6 +2353,16 @@ impl TextSelection {
     /// If this is false, text is replaced at the positions.
     pub fn is_caret(&self) -> bool {
         self.to == self.from
+    }
+
+    pub fn reset_blinking(&mut self) {
+        self.blink_epoch = Utc::now();
+    }
+
+    /// Returns true if the caret should not be visible now due to blinking.
+    pub fn blinks_now(&self) -> bool {
+        let millis = (Utc::now() - self.blink_epoch).num_milliseconds() as u32;
+        2 * (millis % Self::BLINK_CYCLE_DURATION_MS) >= Self::BLINK_CYCLE_DURATION_MS
     }
 }
 
