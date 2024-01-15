@@ -46,7 +46,7 @@ tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 naga = { version = "0.14.2", features = ["validate", "wgsl-out"] }
 naga_oil = "0.11.0"
 wgpu = "0.18.0"
-egui = "0.24.1"
+egui = "0.25.0"
 
 [workspace.lints.rust]
 # Clippy nightly often adds new/buggy lints that we want to ignore.
