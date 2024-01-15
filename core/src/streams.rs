@@ -1108,7 +1108,7 @@ impl<'gc> NetStream<'gc> {
         let buffer = slice.data();
 
         let end_time = write.stream_time + dt;
-        let mut end_of_video = false;
+        let mut buffer_underrun = false;
         let mut error = false;
         let mut max_lookahead_audio_tags = 5;
         let mut is_lookahead_tag = false;
@@ -1126,7 +1126,7 @@ impl<'gc> NetStream<'gc> {
                     // those tags "for realsies"
                     if !is_lookahead_tag && matches!(e, FlvError::EndOfData) {
                         //TODO: Check expected total length for streaming / progressive download
-                        end_of_video = true;
+                        buffer_underrun = true;
                     } else if !is_lookahead_tag {
                         //Corrupt tag or out of data
                         tracing::error!("FLV tag parsing failed: {}", e);
@@ -1192,20 +1192,29 @@ impl<'gc> NetStream<'gc> {
         }
         drop(write);
 
-        if end_of_video {
+        if buffer_underrun {
+            let is_end_of_video = self.0.read().expected_length.is_none();
+
             self.trigger_status_event(
                 context,
                 vec![("code", "NetStream.Buffer.Flush"), ("level", "status")],
             );
-            self.trigger_status_event(
-                context,
-                vec![("code", "NetStream.Play.Stop"), ("level", "status")],
-            );
+
+            if is_end_of_video {
+                self.trigger_status_event(
+                    context,
+                    vec![("code", "NetStream.Play.Stop"), ("level", "status")],
+                );
+            }
+
             self.trigger_status_event(
                 context,
                 vec![("code", "NetStream.Buffer.Empty"), ("level", "status")],
             );
-            self.pause(context, false);
+
+            if is_end_of_video {
+                self.pause(context, false);
+            }
         }
 
         if error {
