@@ -24,10 +24,10 @@ ruffle_render_wgpu = { path = "../render/wgpu", optional = true }
 [dev-dependencies]
 ruffle_core = { path = "../core", features = ["deterministic", "timeline_debug", "avm_debug", "audio", "mp3", "default_font"] }
 ruffle_test_framework = { path = "framework" }
-libtest-mimic = "0.6.1"
+libtest-mimic = "0.7.0"
 walkdir = "2.4.0"
 anyhow = "1.0.79"
-image = { version = "0.24.7", default-features = false, features  = ["png"] }
+image = { version = "0.24.8", default-features = false, features  = ["png"] }
 futures = "0.3.30"
 
 [[test]]

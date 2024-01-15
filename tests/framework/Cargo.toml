@@ -17,7 +17,7 @@ ruffle_render = { path = "../../render" }
 ruffle_input_format = { path = "../input-format" }
 ruffle_socket_format = { path = "../socket-format" }
 ruffle_video_software = { path = "../../video/software", optional = true }
-image = { version = "0.24.7", default-features = false, features  = ["png"] }
+image = { version = "0.24.8", default-features = false, features  = ["png"] }
 regex = "1.10.2"
 url = "2.5.0"
 chrono = "0.4.31"
