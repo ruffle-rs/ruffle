@@ -291,7 +291,7 @@ jobs:
       # wasm-bindgen-cli version must match wasm-bindgen crate version.
       # Be sure to update in test_web.yml, web/Cargo.toml and web/README.md.
       - name: Install wasm-bindgen
-        run: cargo install wasm-bindgen-cli --version 0.2.89
+        run: cargo install wasm-bindgen-cli --version 0.2.90
 
       - name: Setup conda
         uses: conda-incubator/setup-miniconda@v3
@@ -394,7 +394,7 @@ jobs:
           package_file="${{ needs.create-nightly-release.outputs.package_prefix }}-web-extension-firefox-unsigned.xpi"
           cp "./web/packages/extension/dist/firefox_unsigned.xpi" "$package_file"
           gh release upload "$tag_name" "$package_file"
-          rm "$package_file" 
+          rm "$package_file"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -444,7 +444,7 @@ jobs:
 
           # Copy the fresh build into this folder.
           cp -fr ../web/packages/demo/dist/* .
-          
+
           # Restore our custom swfs
           git restore swfs swfs.json
 
