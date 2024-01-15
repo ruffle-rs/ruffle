@@ -14,4 +14,4 @@ jobs:
       - uses: actions/add-to-project@v0.5.0
         with:
           project-url: https://github.com/orgs/ruffle-rs/projects/7
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.RUFFLE_BUILD_TOKEN }}
