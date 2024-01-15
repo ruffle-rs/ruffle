@@ -1,5 +1,5 @@
 network-settings = Configuración de red
-player-settings = Ajustes de jugador
+player-settings = Configuración de reproducción
 movie-parameters = Parámetros de película
 custom-base-url = URL Base personalizada
 spoof-swf-url = Falsificar URL de SWF
@@ -50,7 +50,7 @@ scale-mode-noborder = Sin fronteras
 scale-mode-noscale = Sin escala
 scale-mode-showall = Mostrar todo
 scale-mode-force = Forzar el modo de escala
-player-version = Versión del Jugador
+player-version = Versión del reproductor
 custom-framerate = Velocidad personalizada de rendimiento
 custom-framerate-suffix = { " " } fps
 dummy-external-interface = Interfaz Externa Falsa
