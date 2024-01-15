@@ -725,9 +725,13 @@ fn optimize<'gc>(
                             );
 
                         let resolved_type = if let Ok(multiname) = multiname {
-                            activation
-                                .domain()
-                                .get_class(&multiname, activation.context.gc_context)
+                            if !multiname.has_lazy_component() {
+                                activation
+                                    .domain()
+                                    .get_class(&multiname, activation.context.gc_context)
+                            } else {
+                                None
+                            }
                         } else {
                             None
                         };
@@ -752,9 +756,13 @@ fn optimize<'gc>(
                             );
 
                         let resolved_type = if let Ok(multiname) = multiname {
-                            activation
-                                .domain()
-                                .get_class(&multiname, activation.context.gc_context)
+                            if !multiname.has_lazy_component() {
+                                activation
+                                    .domain()
+                                    .get_class(&multiname, activation.context.gc_context)
+                            } else {
+                                None
+                            }
                         } else {
                             None
                         };
