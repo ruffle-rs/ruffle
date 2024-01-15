@@ -11,11 +11,11 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-clap = { version = "4.4.13", features = ["derive"] }
+clap = { version = "4.4.17", features = ["derive"] }
 futures = "0.3"
 ruffle_core = { path = "../core", features = ["deterministic", "default_font"] }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
-image = { version = "0.24.7", default-features = false, features = ["png"] }
+image = { version = "0.24.8", default-features = false, features = ["png"] }
 log = "0.4"
 walkdir = "2.4.0"
 indicatif = "0.17"
