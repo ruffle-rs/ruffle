@@ -2326,6 +2326,24 @@ pub trait TDisplayObject<'gc>:
         root
     }
 
+    /// Obtain the top-most Stage or LoaderDisplay object of the display tree hierarchy, for use in mixed AVM.
+    fn avm1_stage(&self) -> DisplayObject<'gc> {
+        let mut root = (*self).into();
+        loop {
+            if let Some(parent) = root.parent() {
+                if matches!(
+                    parent,
+                    DisplayObject::LoaderDisplay(_) | DisplayObject::Stage(_)
+                ) {
+                    return parent;
+                }
+                root = parent;
+            } else {
+                return root;
+            }
+        }
+    }
+
     /// Obtain the top-most non-Stage parent of the display tree hierarchy, if
     /// a suitable object exists.
     ///

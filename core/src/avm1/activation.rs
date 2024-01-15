@@ -2922,10 +2922,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     /// Returns a reference to the DisplayObject that is the parent of the root.
     pub fn get_root_parent_container(&self) -> Option<DisplayObjectContainer<'gc>> {
-        self.base_clip()
-            .avm1_root()
-            .parent()
-            .and_then(|p| p.as_container())
+        self.base_clip().avm1_stage().as_container()
     }
 
     /// Tries to resolve a level by ID. Returns None if it does not exist.
