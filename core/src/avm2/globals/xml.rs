@@ -9,8 +9,7 @@ use crate::avm2::object::{
 };
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::string::AvmString;
-use crate::avm2::Namespace;
-use crate::avm2::{Activation, Error, Multiname, Object, Value};
+use crate::avm2::{Activation, ArrayObject, Error, Multiname, Namespace, Object, Value};
 use crate::avm2_stub_method;
 
 fn ill_formed_markup_err<'gc>(
@@ -229,6 +228,27 @@ pub fn namespace_internal_impl<'gc>(
             _ => Value::Undefined,
         })
     }
+}
+
+pub fn namespace_declarations<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let xml = this.as_xml_object().unwrap();
+    let node = xml.node();
+
+    // 1. Let a be a new Array created as if by calling the constructor, new Array()
+    // 2. If x.[[Class]] ∈ {"text", "comment", "processing-instruction", "attribute"}, return a
+    if !node.is_element() {
+        return Ok(ArrayObject::empty(activation)?.into());
+    }
+
+    // TODO: (We are missing [[InScopeNamespaces]])
+    // Step 3. Let y = x.[[Parent]
+    // ....
+    avm2_stub_method!(activation, "XML", "namespaceDeclarations");
+    Ok(ArrayObject::empty(activation)?.into())
 }
 
 pub fn local_name<'gc>(
