@@ -1107,7 +1107,8 @@ impl<'gc> NetStream<'gc> {
         let slice = write.buffer.to_full_slice();
         let buffer = slice.data();
 
-        let end_time = write.stream_time + dt;
+        let max_time = write.stream_time + dt;
+        let mut last_tag_time = write.stream_time;
         let mut buffer_underrun = false;
         let mut error = false;
         let mut max_lookahead_audio_tags = 5;
@@ -1125,7 +1126,6 @@ impl<'gc> NetStream<'gc> {
                     // error states or playback ending to trip until we run
                     // those tags "for realsies"
                     if !is_lookahead_tag && matches!(e, FlvError::EndOfData) {
-                        //TODO: Check expected total length for streaming / progressive download
                         buffer_underrun = true;
                     } else if !is_lookahead_tag {
                         //Corrupt tag or out of data
@@ -1137,9 +1137,13 @@ impl<'gc> NetStream<'gc> {
                 }
 
                 let tag = tag.expect("valid tag");
-                is_lookahead_tag = tag.timestamp as f64 >= end_time; //FLV timestamps are also ms
+                is_lookahead_tag = tag.timestamp as f64 >= max_time; //FLV timestamps are also ms
                 if is_lookahead_tag && max_lookahead_audio_tags == 0 {
                     break;
+                }
+
+                if !is_lookahead_tag {
+                    last_tag_time = tag.timestamp as f64;
                 }
 
                 let tag_needs_preloading = reader.stream_position().expect("valid position")
@@ -1185,7 +1189,7 @@ impl<'gc> NetStream<'gc> {
             }
         }
 
-        write.stream_time = end_time;
+        write.stream_time = last_tag_time;
         if let Err(e) = self.commit_sound_stream(context, &mut write) {
             //TODO: Fire an error event at AS.
             tracing::error!("Error committing sound stream: {}", e);
