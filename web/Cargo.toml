@@ -16,7 +16,7 @@ workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [features]
-default = ["canvas", "console_error_panic_hook", "webgl", "wgpu-webgl"]
+default = ["canvas", "console_error_panic_hook", "webgl", "wgpu-webgl", "webgpu"]
 
 # core features
 avm_debug = ["ruffle_core/avm_debug"]

@@ -59,14 +59,22 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
 
 impl WgpuRenderBackend<SwapChainTarget> {
     #[cfg(target_family = "wasm")]
-    pub async fn for_canvas(canvas: web_sys::HtmlCanvasElement) -> Result<Self, Error> {
+    pub async fn for_canvas(
+        canvas: web_sys::HtmlCanvasElement,
+        webgpu: bool,
+    ) -> Result<Self, Error> {
+        let backends = if webgpu {
+            wgpu::Backends::BROWSER_WEBGPU
+        } else {
+            wgpu::Backends::GL
+        };
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-            backends: wgpu::Backends::BROWSER_WEBGPU | wgpu::Backends::GL,
+            backends,
             ..Default::default()
         });
         let surface = instance.create_surface(wgpu::SurfaceTarget::Canvas(canvas))?;
         let (adapter, device, queue) = request_adapter_and_device(
-            wgpu::Backends::BROWSER_WEBGPU | wgpu::Backends::GL,
+            backends,
             &instance,
             Some(&surface),
             wgpu::PowerPreference::HighPerformance,
