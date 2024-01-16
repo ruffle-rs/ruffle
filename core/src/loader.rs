@@ -821,7 +821,7 @@ impl<'gc> Loader<'gc> {
                     .lock()
                     .unwrap()
                     .ui()
-                    .display_root_movie_download_failed_message();
+                    .display_root_movie_download_failed_message(false);
                 error.error
             })?;
 
@@ -844,7 +844,7 @@ impl<'gc> Loader<'gc> {
                         .lock()
                         .unwrap()
                         .ui()
-                        .display_root_movie_download_failed_message();
+                        .display_root_movie_download_failed_message(true);
                     error
                 })?;
             on_metadata(movie.header());

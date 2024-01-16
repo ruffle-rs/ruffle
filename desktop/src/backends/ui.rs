@@ -196,7 +196,7 @@ impl UiBackend for DesktopUiBackend {
         Ok(())
     }
 
-    fn display_root_movie_download_failed_message(&self) {
+    fn display_root_movie_download_failed_message(&self, _invalid_swf: bool) {
         let dialog = MessageDialog::new()
             .set_level(MessageLevel::Warning)
             .set_title("Ruffle - Load failed")

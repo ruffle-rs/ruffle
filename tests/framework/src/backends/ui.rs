@@ -113,7 +113,7 @@ impl UiBackend for TestUiBackend {
         Ok(())
     }
 
-    fn display_root_movie_download_failed_message(&self) {}
+    fn display_root_movie_download_failed_message(&self, _invalid_swf: bool) {}
 
     fn message(&self, _message: &str) {}
 

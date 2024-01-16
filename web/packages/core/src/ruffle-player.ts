@@ -35,6 +35,7 @@ enum PanicError {
     WasmMimeType,
     WasmNotFound,
     WasmDisabledMicrosoftEdge,
+    InvalidSwf,
     SwfFetchError,
     SwfCors,
 }
@@ -2114,6 +2115,10 @@ export class RufflePlayer extends HTMLElement {
                     new PanicLinkInfo(),
                 ]);
                 break;
+            case PanicError.InvalidSwf:
+                errorBody = textAsParagraphs("error-invalid-swf");
+                errorFooter = this.createErrorFooter([new PanicLinkInfo()]);
+                break;
             case PanicError.SwfFetchError:
                 errorBody = textAsParagraphs("error-swf-fetch");
                 errorFooter = this.createErrorFooter([new PanicLinkInfo()]);
@@ -2244,10 +2249,14 @@ export class RufflePlayer extends HTMLElement {
         this.destroy();
     }
 
-    protected displayRootMovieDownloadFailedMessage(): void {
+    protected displayRootMovieDownloadFailedMessage(invalidSwf: boolean): void {
         const openInNewTab = this.loadedConfig?.openInNewTab;
-        if (openInNewTab && window.location.origin !== this.swfUrl!.origin) {
-            const url = new URL(this.swfUrl!);
+        if (
+            openInNewTab &&
+            this.swfUrl &&
+            window.location.origin !== this.swfUrl.origin
+        ) {
+            const url = new URL(this.swfUrl);
             if (this.loadedConfig?.parameters) {
                 const parameters = sanitizeParameters(
                     this.loadedConfig?.parameters,
@@ -2275,10 +2284,12 @@ export class RufflePlayer extends HTMLElement {
             this.container.prepend(div);
         } else {
             const error = new Error("Failed to fetch: " + this.swfUrl);
-            if (!this.swfUrl!.protocol.includes("http")) {
+            if (this.swfUrl && !this.swfUrl.protocol.includes("http")) {
                 error.ruffleIndexError = PanicError.FileProtocol;
+            } else if (invalidSwf) {
+                error.ruffleIndexError = PanicError.InvalidSwf;
             } else if (
-                window.location.origin === this.swfUrl!.origin ||
+                window.location.origin === this.swfUrl?.origin ||
                 // The extension's internal player page is not restricted by CORS
                 window.location.protocol.includes("extension")
             ) {

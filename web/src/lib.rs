@@ -105,7 +105,7 @@ extern "C" {
     fn panic(this: &JavascriptPlayer, error: &JsError);
 
     #[wasm_bindgen(method, js_name = "displayRootMovieDownloadFailedMessage")]
-    fn display_root_movie_download_failed_message(this: &JavascriptPlayer);
+    fn display_root_movie_download_failed_message(this: &JavascriptPlayer, invalid_swf: bool);
 
     #[wasm_bindgen(method, js_name = "displayMessage")]
     fn display_message(this: &JavascriptPlayer, message: &str);
@@ -401,8 +401,14 @@ impl Ruffle {
             segments.push(&swf_name);
         }
 
-        let mut movie = SwfMovie::from_data(&swf_data.to_vec(), url.to_string(), None)
-            .map_err(|e| format!("Error loading movie: {e}"))?;
+        let mut movie =
+            SwfMovie::from_data(&swf_data.to_vec(), url.to_string(), None).map_err(|e| {
+                let _ = self.with_core_mut(|core| {
+                    core.ui_mut()
+                        .display_root_movie_download_failed_message(true);
+                });
+                format!("Error loading movie: {e}")
+            })?;
         movie.append_parameters(parse_movie_parameters(&parameters));
 
         self.on_metadata(movie.header());
