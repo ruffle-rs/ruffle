@@ -72,4 +72,7 @@ unknown-git = "deny"
 github = [
     "ruffle-rs",
     "gfx-rs",
+
+    # TODO: Remove when egui update is released
+    "emilk",
 ]
