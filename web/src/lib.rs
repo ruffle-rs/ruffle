@@ -1628,7 +1628,7 @@ async fn create_renderer(
 
     let _is_transparent = config.wmode.as_deref() == Some("transparent");
 
-    let mut renderer_list = vec!["webgpu", "wgpu-webgl", "webgl", "canvas"];
+    let mut renderer_list = vec!["wgpu-webgl", "webgpu", "webgl", "canvas"];
     if let Some(preferred_renderer) = &config.preferred_renderer {
         if let Some(pos) = renderer_list.iter().position(|&r| r == preferred_renderer) {
             renderer_list.remove(pos);
@@ -1660,8 +1660,11 @@ async fn create_renderer(
                         .dyn_into()
                         .map_err(|_| "Expected HtmlCanvasElement")?;
 
-                    match ruffle_render_wgpu::backend::WgpuRenderBackend::for_canvas(canvas.clone())
-                        .await
+                    match ruffle_render_wgpu::backend::WgpuRenderBackend::for_canvas(
+                        canvas.clone(),
+                        true,
+                    )
+                    .await
                     {
                         Ok(renderer) => {
                             return Ok((builder.with_renderer(renderer), canvas));
@@ -1681,8 +1684,11 @@ async fn create_renderer(
                     .dyn_into()
                     .map_err(|_| "Expected HtmlCanvasElement")?;
 
-                match ruffle_render_wgpu::backend::WgpuRenderBackend::for_canvas(canvas.clone())
-                    .await
+                match ruffle_render_wgpu::backend::WgpuRenderBackend::for_canvas(
+                    canvas.clone(),
+                    false,
+                )
+                .await
                 {
                     Ok(renderer) => {
                         return Ok((builder.with_renderer(renderer), canvas));
