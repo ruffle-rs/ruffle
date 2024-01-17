@@ -155,7 +155,6 @@ pub fn capture_image<R, F: FnOnce(&[u8], u32) -> R>(
     result
 }
 
-#[cfg(not(target_family = "wasm"))]
 pub fn buffer_to_image(
     device: &wgpu::Device,
     buffer: &wgpu::Buffer,

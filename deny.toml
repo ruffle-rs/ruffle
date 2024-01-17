@@ -86,6 +86,7 @@ github = [
     "ruffle-rs",
     "kyren", # for `gc-arena`
     "emilk", # for `egui`
+    "manuel-woelker", # https://github.com/manuel-woelker/rust-vfs
 ]
 
 [advisories]

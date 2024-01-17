@@ -90,6 +90,35 @@ impl WgpuRenderBackend<SwapChainTarget> {
         Self::new(Arc::new(descriptors), target)
     }
 
+    #[cfg(target_family = "wasm")]
+    pub async fn descriptors_for_offscreen_canvas(
+        backends: wgpu::Backends,
+        canvas: web_sys::OffscreenCanvas,
+    ) -> Result<Arc<Descriptors>, Error> {
+        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
+            backends,
+            backend_options: wgpu::BackendOptions {
+                gl: wgpu::GlBackendOptions {
+                    // See <https://github.com/gfx-rs/wgpu/releases/tag/v25.0.0>
+                    fence_behavior: wgpu::GlFenceBehavior::AutoFinish,
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+            ..Default::default()
+        });
+        let surface = instance.create_surface(wgpu::SurfaceTarget::OffscreenCanvas(canvas))?;
+        let (adapter, device, queue) = request_adapter_and_device(
+            backends,
+            &instance,
+            Some(&surface),
+            wgpu::PowerPreference::HighPerformance,
+        )
+        .await?;
+        let descriptors = Descriptors::new(instance, adapter, device, queue);
+        Ok(Arc::new(descriptors))
+    }
+
     /// # Safety
     ///  See [`wgpu::SurfaceTargetUnsafe`] variants for safety requirements.
     #[cfg(not(target_family = "wasm"))]
@@ -137,8 +166,8 @@ impl WgpuRenderBackend<SwapChainTarget> {
     }
 }
 
-#[cfg(not(target_family = "wasm"))]
 impl WgpuRenderBackend<crate::target::TextureTarget> {
+    #[cfg(not(target_family = "wasm"))]
     pub fn for_offscreen(
         size: (u32, u32),
         backend: wgpu::Backends,
