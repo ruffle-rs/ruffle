@@ -45,7 +45,7 @@ const STENCIL_MASK: u32 = 1 << 2;
 /// lifetime management - we can store an `Rc<dyn VertexBuffer>` or `Rc<dyn IndexBuffer>`
 /// in the `VertexBuffer3DObject` or `IndexBuffer3DObject`. If we delayed creating them,
 /// we would need to store a `GcCell<Option<Rc<dyn VertexBuffer>>>`, which prevents
-/// us from obtaining a long-lived reference to the `wgpu:Bufer` (it would instead be
+/// us from obtaining a long-lived reference to the `wgpu:Buffer` (it would instead be
 /// tied to the `Ref` returned by `GcCell::read`).
 pub struct WgpuContext3D {
     // We only use some of the fields from `Descriptors`, but we
@@ -373,7 +373,7 @@ const MAX_VERTEX_ATTRIBUTES: usize = 8;
 
 #[derive(Clone, Debug)]
 pub struct VertexAttributeInfo {
-    // An offset in units of buffer entires (f32 or u8)
+    // An offset in units of buffer entries (f32 or u8)
     offset_in_32bit_units: u64,
     format: Context3DVertexBufferFormat,
     buffer: Rc<VertexBufferWrapper>,
@@ -717,7 +717,7 @@ impl Context3D for WgpuContext3D {
                 // to keep a copy of the data on the CPU side. We round *down* the offset to
                 // the closest multiple of 4 bytes, and round *up* the length to the closest
                 // multiple of 4 bytes. We then perform a copy from our CPU-side buffer, which
-                // which uses the existing data (at the beiginning or end) to fill out the copy
+                // which uses the existing data (at the beginning or end) to fill out the copy
                 // to the required length and offset. Without this, we would lose data in the CPU
                 // buffer whenever we performed a copy with an unalignd offset or length.
                 let offset_bytes = start_offset * std::mem::size_of::<u16>();
@@ -1067,7 +1067,7 @@ impl Context3D for WgpuContext3D {
                         },
                         aspect: wgpu::TextureAspect::All,
                     },
-                    // The copy size uses the orignal image, with the original row size
+                    // The copy size uses the original image, with the original row size
                     wgpu::Extent3d {
                         width: dest.width(),
                         height: dest.height(),

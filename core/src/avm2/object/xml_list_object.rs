@@ -339,7 +339,7 @@ pub struct XmlListObjectData<'gc> {
 }
 
 /// Holds either an `E4XNode` or an `XmlObject`. This can be converted
-/// in-palce to an `XmlObject` via `get_or_create_xml`.
+/// in-place to an `XmlObject` via `get_or_create_xml`.
 /// This deliberately does not implement `Copy`, since `get_or_create_xml`
 /// takes `&mut self`
 #[derive(Clone, Collect, Debug)]
@@ -585,7 +585,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
         // * If we're calling a method that *doesn't* exist on the prototype, it must not be an XML-related
         //   method. In that case, the method will only be callable on our XML child if the child has simple
         //   content (as we'll automatically convert it to a String, and call the method on that String).
-        // * However, in order for a child to have a property matching the meethod name, it must be
+        // * However, in order for a child to have a property matching the method name, it must be
         //   a non-simple XML object (simple XML objects have no properties to match).
         //
         // Nevertheless, there may be some weird edge case where this actually matters.

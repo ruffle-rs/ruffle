@@ -306,7 +306,7 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
         }
     }
 
-    /// Retrive a getter defined on this object.
+    /// Retrieve a getter defined on this object.
     fn getter(
         &self,
         name: AvmString<'gc>,
@@ -315,7 +315,7 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
         self.raw_script_object().getter(name, activation)
     }
 
-    /// Retrive a setter defined on this object.
+    /// Retrieve a setter defined on this object.
     fn setter(
         &self,
         name: AvmString<'gc>,

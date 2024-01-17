@@ -64,7 +64,7 @@ pub fn start<'gc>(
             .coerce_to_object(activation)?;
         // Note - we deliberately do *not* check if currentCount is less than repeatCount.
         // Calling 'start' on a timer that has currentCount >= repeatCount will tick exactly
-        // once, and then stop immediately. This is handeld by Timer.onUpdate
+        // once, and then stop immediately. This is handled by Timer.onUpdate
         let id = activation.context.timers.add_timer(
             TimerCallback::Avm2Callback {
                 closure: on_update,

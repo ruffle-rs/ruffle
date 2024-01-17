@@ -255,7 +255,7 @@ pub struct DisplayObjectBase<'gc> {
     #[collect(require_static)]
     next_scroll_rect: Rectangle<Twips>,
 
-    /// Rectangle used for 9-slice scaling (`DislayObject.scale9grid`).
+    /// Rectangle used for 9-slice scaling (`DisplayObject.scale9grid`).
     #[collect(require_static)]
     scaling_grid: Rectangle<Twips>,
 
@@ -1020,12 +1020,12 @@ pub fn apply_standard_mask_and_scroll<'gc, F>(
 
     // There are two parts to 'DisplayObject.scrollRect':
     // a scroll effect (translation), and a crop effect.
-    // This scroll is implementing by appling a translation matrix
+    // This scroll is implementing by applying a translation matrix
     // when we defined 'scroll_rect_matrix'.
     // The crop is implemented as a rectangular mask using the height
     // and width provided by 'scrollRect'.
 
-    // Note that this mask is applied *in additon to* a mask defined
+    // Note that this mask is applied *in addition to* a mask defined
     // with 'DisplayObject.mask'. We will end up rendering content that
     // lies in the intersection of the scroll rect and DisplayObject.mask,
     // which is exactly the behavior that we want.
@@ -1797,7 +1797,7 @@ pub trait TDisplayObject<'gc>:
     }
 
     /// Whether this display object prefers to be cached into a bitmap rendering.
-    /// This is the PlaceObject `cacheAsBitmap` flag - and may be overriden if filters are applied.
+    /// This is the PlaceObject `cacheAsBitmap` flag - and may be overridden if filters are applied.
     /// Consider `is_bitmap_cached` for if a bitmap cache is actually in use.
     fn is_bitmap_cached_preference(&self) -> bool {
         self.base().is_bitmap_cached_preference()
@@ -2599,7 +2599,7 @@ impl SoundTransform {
     /// This matches the behavior of AVM1 `Sound.getPan()`
     pub fn pan(&self) -> i32 {
         // It's not clear why Flash has the weird `abs` behavior, but this
-        // mathes the values that Flash returns (see `sound` regression test).
+        // matches the values that Flash returns (see `sound` regression test).
         if self.left_to_left != Self::MAX_VOLUME {
             Self::MAX_VOLUME - self.left_to_left.abs()
         } else {

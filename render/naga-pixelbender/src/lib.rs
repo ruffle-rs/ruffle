@@ -81,7 +81,7 @@ pub struct ShaderBuilder<'a> {
 /// Any subsequent opcodes will be added to the `after_if` block.
 /// When we encounter an 'OpElse' opcode, we switch to adding opcodes to the `after_else` block
 /// by setting `in_after_if` to false.
-/// When we encouter an `OpEndIf` opcode, we pop our `IfElse` entry from the stack, and emit
+/// When we encounter an `OpEndIf` opcode, we pop our `IfElse` entry from the stack, and emit
 /// a `Statement::If` with the `after_if` and `after_else` blocks.
 #[derive(Debug)]
 enum BlockStackEntry {
@@ -900,7 +900,7 @@ impl<'a> ShaderBuilder<'a> {
                             })
                         }
                         Opcode::Sub | Opcode::Add | Opcode::Mul => {
-                            // The destiation is also used as the first operand: 'dst = dst <op> src'
+                            // The destination is also used as the first operand: 'dst = dst <op> src'
                             let left = self.load_src_register(&dst)?;
 
                             let op = match opcode {
@@ -1671,7 +1671,7 @@ impl<'a> ShaderBuilder<'a> {
             ) {
                 panic!("Unexpected to matrix channel for dst {dst:?}");
             }
-            // Write each channel of the source to the channel specified by the destiation mask
+            // Write each channel of the source to the channel specified by the destination mask
             let src_component_index = *src_channel as u32;
             let dst_component_index = *dst_channel as u32;
             let src_component = self.evaluate_expr(Expression::AccessIndex {

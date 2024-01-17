@@ -215,7 +215,7 @@ impl MorphShapeStatic {
     }
 
     /// Retrieves the `Frame` for the given ratio.
-    /// Lazily intializes the frame if it does not yet exist.
+    /// Lazily initializes the frame if it does not yet exist.
     fn get_frame(&self, ratio: u16) -> RefMut<'_, Frame> {
         let frames = self.frames.borrow_mut();
         RefMut::map(frames, |frames| {
@@ -226,7 +226,7 @@ impl MorphShapeStatic {
     }
 
     /// Retrieves the `ShapeHandle` for the given ratio.
-    /// Lazily intializes and tessellates the shape if it does not yet exist.
+    /// Lazily initializes and tessellates the shape if it does not yet exist.
     fn get_shape<'gc>(
         &self,
         context: &mut RenderContext<'_, 'gc>,

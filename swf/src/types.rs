@@ -87,7 +87,7 @@ impl Header {
 
 /// The extended metadata of an SWF file.
 ///
-/// This includes the SWF header data as well as metdata from the FileAttributes and
+/// This includes the SWF header data as well as metadata from the FileAttributes and
 /// SetBackgroundColor tags.
 ///
 /// This metadata may not reflect the actual data inside a malformed SWF; for example,
@@ -163,7 +163,7 @@ impl HeaderExt {
 
     /// Whether this SWF contains XMP metadata in a Metadata tag.
     #[inline]
-    pub fn has_metdata(&self) -> bool {
+    pub fn has_metadata(&self) -> bool {
         self.file_attributes.contains(FileAttributes::HAS_METADATA)
     }
 

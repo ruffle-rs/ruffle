@@ -297,7 +297,7 @@ fn strip_metadata(abc: &mut AbcFile) {
     }
 }
 
-/// Handles native functons defined in our `playerglobal`
+/// Handles native functions defined in our `playerglobal`
 ///
 /// The high-level idea is to generate code (specifically, a `TokenStream`)
 /// which builds a table - mapping from the method ids of native functions,
@@ -524,7 +524,7 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
 fn collect_stubs(root: &Path, out_dir: &Path) -> Result<(), Box<dyn std::error::Error>> {
     let pattern = RegexBuilder::new(
         r#"
-            \b (?P<type> stub_method | stub_getter | stub_setter | stub_constructor) \s* 
+            \b (?P<type> stub_method | stub_getter | stub_setter | stub_constructor) \s*
             \( \s*
                 "(?P<class> .+)" \s*
                 , \s*

@@ -411,7 +411,7 @@ impl<'gc> Avm1<'gc> {
         self.registers.get_mut(id)
     }
 
-    /// Find all display objects with negative depth recurisvely
+    /// Find all display objects with negative depth recursively
     ///
     /// If an object is pending removal due to being removed by a removeObject tag on the previous frame,
     /// while it had an unload event listener attached, avm1 requires that the object is kept around for one extra frame.

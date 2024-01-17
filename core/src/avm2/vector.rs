@@ -153,8 +153,8 @@ impl<'gc> VectorStorage<'gc> {
 
     /// Change an arbitrary i32 into a positive parameter index.
     ///
-    /// This converts negative indicies into positive indicies indexed from the
-    /// end of the array. Negative indicies that point before the start of the
+    /// This converts negative indices into positive indices indexed from the
+    /// end of the array. Negative indices that point before the start of the
     /// array are clamped to zero.
     pub fn clamp_parameter_index(&self, pos: i32) -> usize {
         if pos < 0 {

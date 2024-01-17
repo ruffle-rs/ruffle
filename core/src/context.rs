@@ -71,7 +71,7 @@ impl<'a, 'gc> GcContext<'a, 'gc> {
         }
     }
 
-    /// Convenience method to retrieve the current GC context. Note that explicitely writing
+    /// Convenience method to retrieve the current GC context. Note that explicitly writing
     /// `self.gc_context` can be sometimes necessary to satisfy the borrow checker.
     #[inline(always)]
     pub fn gc(&self) -> &'gc Mutation<'gc> {
@@ -450,7 +450,7 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
 }
 
 impl<'a, 'gc> UpdateContext<'a, 'gc> {
-    /// Convenience method to retrieve the current GC context. Note that explicitely writing
+    /// Convenience method to retrieve the current GC context. Note that explicitly writing
     /// `self.gc_context` can be sometimes necessary to satisfy the borrow checker.
     #[inline(always)]
     pub fn gc(&self) -> &'gc Mutation<'gc> {
@@ -611,7 +611,7 @@ impl<'gc> Default for ActionQueue<'gc> {
 /// Shared data used during rendering.
 /// `Player` creates this when it renders a frame and passes it down to display objects.
 ///
-/// As a convenience, this type can be deref-coerced to `Mutation<'gc>`, but note that explicitely
+/// As a convenience, this type can be deref-coerced to `Mutation<'gc>`, but note that explicitly
 /// writing `context.gc_context` can be sometimes necessary to satisfy the borrow checker.
 pub struct RenderContext<'a, 'gc> {
     /// The renderer, used by the display objects to register themselves.
@@ -643,7 +643,7 @@ pub struct RenderContext<'a, 'gc> {
 }
 
 impl<'a, 'gc> RenderContext<'a, 'gc> {
-    /// Convenience method to retrieve the current GC context. Note that explicitely writing
+    /// Convenience method to retrieve the current GC context. Note that explicitly writing
     /// `self.gc_context` can be sometimes necessary to satisfy the borrow checker.
     #[inline(always)]
     pub fn gc(&self) -> &'gc Mutation<'gc> {

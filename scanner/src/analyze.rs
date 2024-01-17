@@ -58,7 +58,7 @@ pub fn analyze_main(opt: AnalyzeOpt) -> Result<(), std::io::Error> {
         match r {
             Ok(fr) => fr,
             Err(e) => {
-                // Treat unparseable CSV rows as a scanner panic
+                // Treat unparsable CSV rows as a scanner panic
                 FileResults {
                     error: Some(format!("{e}")),
                     ..FileResults::default()

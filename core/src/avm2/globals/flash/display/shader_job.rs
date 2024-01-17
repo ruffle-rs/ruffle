@@ -108,7 +108,7 @@ pub fn get_shader_args<'gc>(
                             .expect("ShaderInput.input is not an object");
 
                         let bitmap = input.as_bitmap_data().expect(
-                            "ShaderInput.input is not a BitmapData (FIXE - support other types)",
+                            "ShaderInput.input is not a BitmapData (FIXME - support other types)",
                         );
 
                         Some(bitmap.bitmap_handle(
