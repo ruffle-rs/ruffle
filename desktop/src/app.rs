@@ -312,7 +312,6 @@ impl App {
                             // [NA] TODO: This event used to give a single char. `last()` is functionally the same,
                             // but we may want to be better at this in the future.
                             let key_char = event.text.clone().and_then(|text| text.chars().last());
-                            let mut allow_text = true;
 
                             match &event.state {
                                 ElementState::Pressed => {
@@ -324,7 +323,11 @@ impl App {
                                         self.player.handle_event(PlayerEvent::TextControl {
                                             code: control_code,
                                         });
-                                        allow_text = false;
+                                    } else if let Some(text) = event.text {
+                                        for codepoint in text.chars() {
+                                            self.player
+                                                .handle_event(PlayerEvent::TextInput { codepoint });
+                                        }
                                     }
                                 }
                                 ElementState::Released => {
@@ -333,16 +336,6 @@ impl App {
                                 }
                             };
                             check_redraw = true;
-
-                            if allow_text {
-                                if let Some(text) = event.text {
-                                    for codepoint in text.chars() {
-                                        self.player
-                                            .handle_event(PlayerEvent::TextInput { codepoint });
-                                    }
-                                    check_redraw = true;
-                                }
-                            }
                         }
                         _ => (),
                     }
