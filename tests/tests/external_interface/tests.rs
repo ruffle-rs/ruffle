@@ -2,7 +2,6 @@ use crate::external_interface::ExternalInterfaceTestProvider;
 use ruffle_core::external::Value as ExternalValue;
 use ruffle_test_framework::environment::Environment;
 use ruffle_test_framework::options::TestOptions;
-use ruffle_test_framework::set_logger;
 use ruffle_test_framework::test::Test;
 use ruffle_test_framework::vfs::{PhysicalFS, VfsPath};
 use std::collections::BTreeMap;
@@ -10,7 +9,6 @@ use std::collections::BTreeMap;
 pub fn external_interface_avm1(
     environment: &impl Environment,
 ) -> Result<(), libtest_mimic::Failed> {
-    set_logger();
     Ok(Test::from_options(
         TestOptions {
             num_frames: Some(1),
@@ -69,7 +67,6 @@ pub fn external_interface_avm1(
 pub fn external_interface_avm2(
     environment: &impl Environment,
 ) -> Result<(), libtest_mimic::Failed> {
-    set_logger();
     Ok(Test::from_options(
         TestOptions {
             num_frames: Some(1),

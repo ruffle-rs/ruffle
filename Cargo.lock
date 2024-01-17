@@ -4558,7 +4558,6 @@ dependencies = [
  "approx",
  "async-channel 2.1.1",
  "chrono",
- "env_logger",
  "futures",
  "image",
  "percent-encoding",
@@ -4571,8 +4570,6 @@ dependencies = [
  "ruffle_video_software",
  "serde",
  "toml",
- "tracing",
- "tracing-subscriber",
  "url",
  "vfs",
 ]
@@ -5244,12 +5241,15 @@ name = "tests"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "env_logger",
  "futures",
  "image",
  "libtest-mimic",
  "ruffle_core",
  "ruffle_render_wgpu",
  "ruffle_test_framework",
+ "tracing",
+ "tracing-subscriber",
  "walkdir",
 ]
 

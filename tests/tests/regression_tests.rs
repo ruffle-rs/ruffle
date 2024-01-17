@@ -42,6 +42,19 @@ fn is_candidate(args: &Arguments, test_name: &str) -> bool {
 fn main() {
     let args = Arguments::from_args();
 
+    let _ = env_logger::Builder::from_env(
+        env_logger::Env::default().default_filter_or("info,wgpu_core=warn,wgpu_hal=warn"),
+    )
+    .format_timestamp(None)
+    .is_test(true)
+    .try_init();
+
+    let subscriber = tracing_subscriber::fmt::Subscriber::builder()
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .finish();
+    // Ignore error if it's already been set
+    let _ = tracing::subscriber::set_global_default(subscriber);
+
     let root = Path::new("tests/swfs");
     let mut tests: Vec<Trial> = walkdir::WalkDir::new(root)
         .into_iter()

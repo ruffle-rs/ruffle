@@ -23,9 +23,6 @@ url = "2.5.0"
 chrono = "0.4.31"
 approx = "0.5.1"
 pretty_assertions = "1.4.0"
-env_logger = "0.10.1"
-tracing = { workspace = true}
-tracing-subscriber = { workspace = true }
 serde = "1.0.195"
 toml = "0.8.8"
 anyhow = "1.0.79"
