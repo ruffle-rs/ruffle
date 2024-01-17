@@ -7,6 +7,9 @@
 	import flash.display.MovieClip;
 
 	public class Test {
+		[Embed(source = "data.txt", mimeType="application/octet-stream")]
+		public static var DATA: Class;
+		
 		public function Test(main: MovieClip) {
 			var loader = new Loader();
 			loader.contentLoaderInfo.addEventListener(Event.OPEN, function(e) {
@@ -25,26 +28,20 @@
 				printEvent(Event.COMPLETE, e, loader);
 			});
 			main.addChild(loader);
-			loader.load(new URLRequest("data.txt"));
+			trace("Calling loadBytes");
+			loader.loadBytes(new DATA());
+			trace("Immediately after loadBytes:");
+			trace("loader.contentLoaderInfo.bytesLoaded = " + loader.contentLoaderInfo.bytesLoaded);
+			trace("loader.contentLoaderInfo.bytesTotal = " + loader.contentLoaderInfo.bytesTotal);
+			trace("loader.contentLoaderInfo.bytes.length = " + loader.contentLoaderInfo.bytes.length);
 		}
 	
 		private function printEvent(name: String, event: Event, loader: Loader) {
 			var eventString = event.toString();
-			// Replace the platform-specific path in the test output
-			var index = eventString.indexOf("file:///");
-			if (index != -1) {
-				eventString = eventString.substr(0, index) + "file:///[[RUFFLE PATH]]";
-			}
 			trace("Event: " + name + " event: " + eventString);
+			// FIXME - print 'bytesLoaded' and 'bytesTotal' when Ruffle properly matches Flash Player
 			trace("Content: " + loader.content);
 			trace("Bytes length: " + loader.contentLoaderInfo.bytes.length);
-			trace("loader.contentLoaderInfo.bytesLoaded = " + loader.contentLoaderInfo.bytesLoaded);
-			trace("loader.contentLoaderInfo.bytesTotal = " + loader.contentLoaderInfo.bytesTotal);
-			try {
-				trace("loader.contentLoaderInfo.frameRate = " + loader.contentLoaderInfo.frameRate);
-			} catch (e) {
-				trace("Caught error: " + e);
-			}
 		}
 	}
 }

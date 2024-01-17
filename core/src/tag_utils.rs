@@ -91,15 +91,30 @@ impl SwfMovie {
     /// This is used by `Loader` when firing an initial `progress` event:
     /// `LoaderInfo.bytesTotal` is set to the actual value, but no data is available,
     /// and `LoaderInfo.parameters` is empty.
-    pub fn empty_fake_compressed_len(swf_version: u8, compressed_len: usize) -> Self {
+    pub fn fake_with_compressed_len(swf_version: u8, compressed_len: usize) -> Self {
         Self {
             header: HeaderExt::default_with_swf_version(swf_version),
-            data: vec![],
+            compressed_len,
+            data: Vec::new(),
             url: "file:///".into(),
             loader_url: None,
             parameters: Vec::new(),
             encoding: swf::UTF_8,
-            compressed_len,
+            is_movie: false,
+        }
+    }
+
+    /// Like `fake_with_compressed_len`, but uses actual data.
+    /// This is used when loading a Bitmap to expose the underlying content
+    pub fn fake_with_compressed_data(swf_version: u8, compressed_data: Vec<u8>) -> Self {
+        Self {
+            header: HeaderExt::default_with_swf_version(swf_version),
+            compressed_len: compressed_data.len(),
+            data: compressed_data,
+            url: "file:///".into(),
+            loader_url: None,
+            parameters: Vec::new(),
+            encoding: swf::UTF_8,
             is_movie: false,
         }
     }

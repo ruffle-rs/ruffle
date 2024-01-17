@@ -6,7 +6,7 @@ use crate::avm1::{ExecutionReason, NativeObject};
 use crate::avm1::{Object, SoundObject, TObject, Value};
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::object::{
-    BitmapDataObject, ByteArrayObject, EventObject as Avm2EventObject, LoaderStream, TObject as _,
+    ByteArrayObject, EventObject as Avm2EventObject, LoaderStream, TObject as _,
 };
 use crate::avm2::{
     Activation as Avm2Activation, Avm2, Domain as Avm2Domain, Object as Avm2Object,
@@ -18,12 +18,12 @@ use crate::bitmap::bitmap_data::Color;
 use crate::bitmap::bitmap_data::{BitmapData, BitmapDataWrapper};
 use crate::context::{ActionQueue, ActionType, UpdateContext};
 use crate::display_object::{
-    DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
+    Bitmap, DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
 };
 use crate::events::ClipEvent;
 use crate::frame_lifecycle::catchup_display_object_to_frame;
 use crate::limits::ExecutionLimit;
-use crate::player::Player;
+use crate::player::{Player, PostFrameCallback};
 use crate::streams::NetStream;
 use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
@@ -1688,9 +1688,9 @@ impl<'gc> Loader<'gc> {
                 .as_loader_info_object()
                 .unwrap()
                 .set_content_type(sniffed_type, activation.context.gc_context);
-            let fake_movie = Arc::new(SwfMovie::empty_fake_compressed_len(
+            let fake_movie = Arc::new(SwfMovie::fake_with_compressed_len(
                 activation.context.swf.version(),
-                length,
+                data.len(),
             ));
 
             // Expose 'bytesTotal' (via the fake movie) during the first 'progress' event,
@@ -1764,23 +1764,16 @@ impl<'gc> Loader<'gc> {
                             mc.compressed_loaded_bytes() as usize,
                             mc.compressed_total_bytes() as usize,
                         )?;
-                        let cb: Box<dyn FnOnce(&mut UpdateContext<'_, '_>)> = Box::new(move |uc| {
-                            let target_clip = match uc.load_manager.get_loader(handle) {
-                                Some(Loader::Movie { target_clip, .. }) => *target_clip,
-                                None => return,
-                                _ => unreachable!(),
-                            };
-                            if let Err(e) = Loader::movie_loader_complete(
-                                handle,
-                                uc,
-                                Some(target_clip),
-                                0,
-                                false,
-                            ) {
-                                tracing::error!("Error finishing loading of Loader.loadBytes movie {target_clip:?}: {e:?}");
-                            }
+                        uc.post_frame_callbacks.push(PostFrameCallback {
+                            callback: Box::new(move |uc, dobj: DisplayObject<'_>| {
+                                if let Err(e) =
+                                    Loader::movie_loader_complete(handle, uc, Some(dobj), 0, false)
+                                {
+                                    tracing::error!("Error finishing loading of Loader.loadBytes movie {dobj:?}: {e:?}");
+                                }
+                            }),
+                            data: clip,
                         });
-                        uc.post_frame_callbacks.push(cb);
                     }
                 }
 
@@ -1798,7 +1791,10 @@ impl<'gc> Loader<'gc> {
                 return Ok(());
             }
             ContentType::Gif | ContentType::Jpeg | ContentType::Png => {
-                let library = activation.context.library.library_for_movie_mut(movie);
+                let library = activation
+                    .context
+                    .library
+                    .library_for_movie_mut(movie.clone());
 
                 library.set_avm2_domain(domain);
 
@@ -1807,38 +1803,92 @@ impl<'gc> Loader<'gc> {
                 let bitmap = ruffle_render::utils::decode_define_bits_jpeg(data, None)?;
 
                 let transparency = true;
-                let bitmap_data = BitmapData::new_with_pixels(
-                    bitmap.width(),
-                    bitmap.height(),
-                    transparency,
-                    bitmap.as_colors().map(Color::from).collect(),
+                let bitmap_data = BitmapDataWrapper::new(GcCell::new(
+                    activation.context.gc_context,
+                    BitmapData::new_with_pixels(
+                        bitmap.width(),
+                        bitmap.height(),
+                        transparency,
+                        bitmap.as_colors().map(Color::from).collect(),
+                    ),
+                ));
+                let bitmap_dobj = Bitmap::new_with_bitmap_data(
+                    activation.context.gc_context,
+                    0,
+                    bitmap_data,
+                    false,
+                    &activation.caller_movie_or_root(),
                 );
-                let bitmapdata_wrapper =
-                    BitmapDataWrapper::new(GcCell::new(activation.context.gc_context, bitmap_data));
-                let bitmapdata_class = activation.context.avm2.classes().bitmapdata;
-                let bitmapdata_avm2 = BitmapDataObject::from_bitmap_data_internal(
-                    &mut activation,
-                    bitmapdata_wrapper,
-                    bitmapdata_class,
-                )
-                .unwrap();
 
-                let bitmap_avm2 = activation
-                    .avm2()
-                    .classes()
-                    .bitmap
-                    .construct(&mut activation, &[bitmapdata_avm2.into()])
-                    .unwrap();
-                let bitmap_obj = bitmap_avm2.as_display_object().unwrap();
+                if let MovieLoaderVMData::Avm2 { loader_info, .. } = vm_data {
+                    let fake_movie = Arc::new(SwfMovie::fake_with_compressed_len(
+                        activation.context.swf.version(),
+                        data.len(),
+                    ));
+
+                    loader_info
+                        .as_loader_info_object()
+                        .unwrap()
+                        .set_loader_stream(
+                            LoaderStream::NotYetLoaded(fake_movie, Some(bitmap_dobj.into()), false),
+                            activation.context.gc_context,
+                        );
+                }
 
                 Loader::movie_loader_progress(handle, &mut activation.context, length, length)?;
-                Loader::movie_loader_complete(
-                    handle,
-                    &mut activation.context,
-                    Some(bitmap_obj),
-                    status,
-                    redirected,
-                )?;
+
+                if let MovieLoaderVMData::Avm2 { loader_info, .. } = vm_data {
+                    let fake_movie = Arc::new(SwfMovie::fake_with_compressed_data(
+                        activation.context.swf.version(),
+                        data.to_vec(),
+                    ));
+
+                    loader_info
+                        .as_loader_info_object()
+                        .unwrap()
+                        .set_loader_stream(
+                            LoaderStream::NotYetLoaded(fake_movie, Some(bitmap_dobj.into()), false),
+                            activation.context.gc_context,
+                        );
+                }
+
+                if from_bytes {
+                    // Note - flash player seems to delay this for *two* frames for some reason
+                    uc.post_frame_callbacks.push(PostFrameCallback {
+                        callback: Box::new(move |uc, bitmap_obj| {
+                            uc.post_frame_callbacks.push(PostFrameCallback {
+                                callback: Box::new(move |uc, bitmap_obj| {
+                                    bitmap_obj.post_instantiation(uc, None, Instantiator::Movie, true);
+                                    if let Err(e) = Loader::movie_loader_complete(
+                                        handle,
+                                        uc,
+                                        Some(bitmap_obj),
+                                        status,
+                                        redirected,
+                                    ) {
+                                        tracing::error!("Error finishing loading of Loader.loadBytes image {bitmap_obj:?}: {e:?}");
+                                    }
+                                }),
+                                data: bitmap_obj,
+                            })
+                        }),
+                        data: bitmap_dobj.into(),
+                    });
+                } else {
+                    bitmap_dobj.post_instantiation(
+                        &mut activation.context,
+                        None,
+                        Instantiator::Movie,
+                        true,
+                    );
+                    Loader::movie_loader_complete(
+                        handle,
+                        &mut activation.context,
+                        Some(bitmap_dobj.into()),
+                        status,
+                        redirected,
+                    )?;
+                }
             }
             ContentType::Unknown => {
                 match vm_data {
@@ -1858,20 +1908,35 @@ impl<'gc> Loader<'gc> {
                             redirected,
                         )?;
                     }
-                    MovieLoaderVMData::Avm2 { .. } => {
+                    MovieLoaderVMData::Avm2 { loader_info, .. } => {
+                        let fake_movie = Arc::new(SwfMovie::fake_with_compressed_len(
+                            activation.context.swf.version(),
+                            data.len(),
+                        ));
+
+                        let loader_info = loader_info.as_loader_info_object().unwrap();
+                        loader_info.set_errored(true, activation.context.gc_context);
+
+                        loader_info.set_loader_stream(
+                            LoaderStream::NotYetLoaded(fake_movie, None, false),
+                            activation.context.gc_context,
+                        );
+
                         Loader::movie_loader_progress(
                             handle,
                             &mut activation.context,
                             length,
                             length,
                         )?;
+                        let mut error = "Error #2124: Loaded file is an unknown type.".to_string();
+                        if !from_bytes {
+                            error += &format!(" URL: {url}");
+                        }
+
                         Loader::movie_loader_error(
                             handle,
                             uc,
-                            AvmString::new_utf8(
-                                uc.gc_context,
-                                &format!("Error #2124: Loaded file is an unknown type. URL: {url}"),
-                            ),
+                            AvmString::new_utf8(uc.gc_context, error),
                             status,
                             redirected,
                             url,
@@ -2097,8 +2162,9 @@ impl<'gc> Loader<'gc> {
             // in `MovieClip.on_exit_frame`
             MovieLoaderVMData::Avm2 { loader_info, .. } => {
                 let loader_info_obj = loader_info.as_loader_info_object().unwrap();
+                let current_movie = { loader_info_obj.as_loader_stream().unwrap().movie().clone() };
                 loader_info_obj.set_loader_stream(
-                    LoaderStream::Swf(target_clip.as_movie_clip().unwrap().movie(), dobj.unwrap()),
+                    LoaderStream::Swf(current_movie, dobj.unwrap()),
                     uc.gc_context,
                 );
 

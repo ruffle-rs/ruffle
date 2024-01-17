@@ -177,9 +177,16 @@ struct GcRootData<'gc> {
     /// Dynamic root for allowing handles to GC objects to exist outside of the GC.
     dynamic_root: DynamicRootSet<'gc>,
 
+    post_frame_callbacks: Vec<PostFrameCallback<'gc>>,
+}
+
+#[derive(Collect)]
+#[collect(no_drop)]
+pub struct PostFrameCallback<'gc> {
     #[collect(require_static)]
     #[allow(clippy::type_complexity)]
-    post_frame_callbacks: Vec<Box<dyn FnOnce(&mut UpdateContext<'_, '_>) + 'static>>,
+    pub callback: Box<dyn for<'b> FnOnce(&mut UpdateContext<'_, 'b>, DisplayObject<'b>) + 'static>,
+    pub data: DisplayObject<'gc>,
 }
 
 impl<'gc> GcRootData<'gc> {
@@ -208,7 +215,7 @@ impl<'gc> GcRootData<'gc> {
         &mut Sockets<'gc>,
         &mut NetConnections<'gc>,
         &mut LocalConnections<'gc>,
-        &mut Vec<Box<dyn FnOnce(&mut UpdateContext<'_, '_>) + 'static>>,
+        &mut Vec<PostFrameCallback<'gc>>,
         DynamicRootSet<'gc>,
     ) {
         (
@@ -1569,8 +1576,8 @@ impl Player {
 
             // Only run the current list of callbacks - any callbacks added during callback execution
             // will be run at the end of the *next* frame.
-            for callback in std::mem::take(context.post_frame_callbacks) {
-                callback(context);
+            for cb in std::mem::take(context.post_frame_callbacks) {
+                (cb.callback)(context, cb.data);
             }
         });
 

@@ -348,6 +348,9 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
                 .expect("can't throw from post_instantiation -_-");
                 self.0.write(mc).avm2_object = Some(bitmap.into());
 
+                // Use a dummy BitmapData when calling the constructor on the user subclass
+                // - the constructor should see an invalid BitmapData before calling 'super',
+                // even if it's linked to an image.
                 let bitmap_data_obj = Avm2BitmapDataObject::from_bitmap_data_internal(
                     &mut activation,
                     BitmapDataWrapper::dummy(mc),
@@ -355,6 +358,14 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
                 )
                 .expect("can't throw from post_instantiation -_-");
 
+                if bitmap_data_obj.as_bitmap_data().unwrap().disposed() {
+                    // Set the real bitmapdata, in case this Bitmap was constructed from a Loader
+                    // (it will have real data that doesn't come from a linked class)
+                    bitmap_data_obj.init_bitmap_data(
+                        activation.context.gc_context,
+                        self.bitmap_data_wrapper(),
+                    );
+                }
                 self.set_bitmap_data(
                     &mut activation.context,
                     bitmap_data_obj.as_bitmap_data().unwrap(),

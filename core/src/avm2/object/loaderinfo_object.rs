@@ -57,6 +57,15 @@ pub enum LoaderStream<'gc> {
     Swf(Arc<SwfMovie>, DisplayObject<'gc>),
 }
 
+impl<'gc> LoaderStream<'gc> {
+    pub fn movie(&self) -> &Arc<SwfMovie> {
+        match self {
+            LoaderStream::NotYetLoaded(movie, _, _) => movie,
+            LoaderStream::Swf(movie, _) => movie,
+        }
+    }
+}
+
 /// An Object which represents a loadable object, such as a SWF movie or image
 /// resource.
 #[derive(Collect, Clone, Copy)]
@@ -103,6 +112,8 @@ pub struct LoaderInfoObjectData<'gc> {
 
     #[collect(require_static)]
     content_type: ContentType,
+
+    errored: bool,
 }
 
 impl<'gc> LoaderInfoObject<'gc> {
@@ -139,6 +150,7 @@ impl<'gc> LoaderInfoObject<'gc> {
                     .construct(activation, &[])?,
                 cached_avm1movie: None,
                 content_type: ContentType::Swf,
+                errored: false,
             },
         ))
         .into();
@@ -185,6 +197,7 @@ impl<'gc> LoaderInfoObject<'gc> {
                     .construct(activation, &[])?,
                 cached_avm1movie: None,
                 content_type: ContentType::Unknown,
+                errored: false,
             },
         ))
         .into();
@@ -216,6 +229,14 @@ impl<'gc> LoaderInfoObject<'gc> {
         } else {
             ContentType::Unknown
         }
+    }
+
+    pub fn set_errored(&self, val: bool, mc: &Mutation<'gc>) {
+        self.0.write(mc).errored = val;
+    }
+
+    pub fn errored(&self) -> bool {
+        self.0.read().errored
     }
 
     pub fn fire_init_and_complete_events(
@@ -321,6 +342,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         let empty_swf = Arc::new(SwfMovie::empty(activation.context.swf.version()));
         let loader_stream = LoaderStream::NotYetLoaded(empty_swf, None, false);
         self.set_loader_stream(loader_stream, activation.context.gc_context);
+        self.set_errored(false, activation.context.gc_context);
     }
 }
 
