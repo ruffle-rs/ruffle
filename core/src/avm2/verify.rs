@@ -624,9 +624,7 @@ fn optimize<'gc>(
                         | Op::Divide
                         | Op::Modulo
                         | Op::Increment
-                        | Op::IncLocal { .. }
                         | Op::Decrement
-                        | Op::DecLocal { .. }
                         | Op::Negate => {
                             previous_op = Some(op.clone());
                             *op = Op::Nop;
