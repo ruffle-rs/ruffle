@@ -1,7 +1,6 @@
 use crate::environment::Environment;
 use crate::options::TestOptions;
 use crate::runner::run_swf;
-use crate::set_logger;
 use crate::util::read_bytes;
 use anyhow::{anyhow, Result};
 use pretty_assertions::Comparison;
@@ -53,8 +52,6 @@ impl Test {
         mut before_end: impl FnMut(Arc<Mutex<Player>>) -> Result<()>,
         environment: &impl Environment,
     ) -> Result<()> {
-        set_logger();
-
         let data = read_bytes(&self.swf_path)?;
         let movie = SwfMovie::from_data(&data, format!("file:///{}", self.swf_path.as_str()), None)
             .map_err(|e| anyhow!(e.to_string()))?;
