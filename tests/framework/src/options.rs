@@ -146,7 +146,7 @@ impl RequiredFeatures {
 pub struct PlayerOptions {
     max_execution_duration: Option<Duration>,
     viewport_dimensions: Option<ViewportDimensions>,
-    with_renderer: Option<RenderOptions>,
+    pub with_renderer: Option<RenderOptions>,
     with_audio: bool,
     with_video: bool,
     runtime: PlayerRuntime,
@@ -371,7 +371,7 @@ impl ImageComparison {
 #[derive(Clone, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct RenderOptions {
-    optional: bool,
+    pub optional: bool,
     pub sample_count: u32,
     pub exclude_warp: bool,
 }

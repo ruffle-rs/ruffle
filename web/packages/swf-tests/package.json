@@ -1,0 +1,42 @@
+{
+    "name": "ruffle-swf-tests",
+    "version": "0.1.0",
+    "description": "Ruffle Flash emulator tests",
+    "license": "(MIT OR Apache-2.0)",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "prebuild": "node tools/build_wasm.js",
+        "build": "tsc && vite build",
+        "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+        "preview": "vite preview"
+    },
+    "dependencies": {
+        "@cocalc/ansi-to-react": "^7.0.0",
+        "@mantine/core": "^7.4.1",
+        "@mantine/hooks": "^7.4.1",
+        "@tabler/icons-react": "^2.46.0",
+        "react": "^18.2.0",
+        "react-dom": "^18.2.0",
+        "react-virtuoso": "^4.6.3"
+    },
+    "devDependencies": {
+        "@types/css-modules": "^1.0.5",
+        "@types/react": "^18.2.46",
+        "@types/react-dom": "^18.2.18",
+        "@typescript-eslint/eslint-plugin": "^6.16.0",
+        "@typescript-eslint/parser": "^6.16.0",
+        "@vitejs/plugin-react": "^4.2.1",
+        "eslint": "^8.56.0",
+        "eslint-plugin-react-hooks": "^4.6.0",
+        "eslint-plugin-react-refresh": "^0.4.5",
+        "postcss": "^8.4.33",
+        "postcss-preset-mantine": "^1.12.3",
+        "postcss-simple-vars": "^7.0.1",
+        "typescript": "^5.3.3",
+        "vite": "^5.0.10",
+        "vite-plugin-top-level-await": "^1.4.1",
+        "vite-plugin-wasm": "^3.3.0"
+    }
+}

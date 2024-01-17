@@ -71,4 +71,5 @@ unknown-git = "deny"
 #  github.com organizations to allow git sources for
 github = [
     "ruffle-rs",
+    "manuel-woelker", # https://github.com/manuel-woelker/rust-vfs
 ]
