@@ -25,7 +25,8 @@ pub fn shared_object_avm1(environment: &impl Environment) -> Result<(), libtest_
     let mut runner = test1.create_test_runner(environment)?;
 
     loop {
-        match runner.tick()? {
+        runner.tick();
+        match runner.test()? {
             TestStatus::Continue => {}
             TestStatus::Sleep(duration) => sleep(duration),
             TestStatus::Finished => break,
@@ -66,7 +67,8 @@ pub fn shared_object_avm1(environment: &impl Environment) -> Result<(), libtest_
     }
 
     loop {
-        match runner.tick()? {
+        runner.tick();
+        match runner.test()? {
             TestStatus::Continue => {}
             TestStatus::Sleep(duration) => sleep(duration),
             TestStatus::Finished => break,
@@ -97,7 +99,8 @@ pub fn shared_object_self_ref_avm1(
     let mut runner = test1.create_test_runner(environment)?;
 
     loop {
-        match runner.tick()? {
+        runner.tick();
+        match runner.test()? {
             TestStatus::Continue => {}
             TestStatus::Sleep(duration) => sleep(duration),
             TestStatus::Finished => break,
@@ -137,7 +140,8 @@ pub fn shared_object_self_ref_avm1(
     }
 
     loop {
-        match runner.tick()? {
+        runner.tick();
+        match runner.test()? {
             TestStatus::Continue => {}
             TestStatus::Sleep(duration) => sleep(duration),
             TestStatus::Finished => break,
@@ -166,7 +170,8 @@ pub fn shared_object_avm2(environment: &impl Environment) -> Result<(), libtest_
     let mut runner = test1.create_test_runner(environment)?;
 
     loop {
-        match runner.tick()? {
+        runner.tick();
+        match runner.test()? {
             TestStatus::Continue => {}
             TestStatus::Sleep(duration) => sleep(duration),
             TestStatus::Finished => break,
@@ -206,7 +211,8 @@ pub fn shared_object_avm2(environment: &impl Environment) -> Result<(), libtest_
     }
 
     loop {
-        match runner.tick()? {
+        runner.tick();
+        match runner.test()? {
             TestStatus::Continue => {}
             TestStatus::Sleep(duration) => sleep(duration),
             TestStatus::Finished => break,

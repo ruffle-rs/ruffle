@@ -30,7 +30,8 @@ pub fn external_interface_avm1(
     let mut first = true;
 
     loop {
-        match runner.tick()? {
+        runner.tick();
+        match runner.test()? {
             TestStatus::Continue => {}
             TestStatus::Sleep(duration) => sleep(duration),
             TestStatus::Finished => break,
@@ -97,7 +98,8 @@ pub fn external_interface_avm2(
     let mut first = true;
 
     loop {
-        match runner.tick()? {
+        runner.tick();
+        match runner.test()? {
             TestStatus::Continue => {}
             TestStatus::Sleep(duration) => sleep(duration),
             TestStatus::Finished => break,
