@@ -23,6 +23,14 @@ pub enum NamespaceSet<'gc> {
 }
 
 impl<'gc> NamespaceSet<'gc> {
+    pub fn new(set: Vec<Namespace<'gc>>, mc: &Mutation<'gc>) -> Self {
+        if set.len() == 1 {
+            NamespaceSet::single(set[0])
+        } else {
+            NamespaceSet::multiple(set, mc)
+        }
+    }
+
     pub fn multiple(set: Vec<Namespace<'gc>>, mc: &Mutation<'gc>) -> Self {
         Self::Multiple(Gc::new(mc, set))
     }
@@ -467,6 +475,10 @@ impl<'gc> Multiname<'gc> {
         }
 
         AvmString::new(mc, uri)
+    }
+
+    pub fn set_ns(&mut self, ns: NamespaceSet<'gc>) {
+        self.ns = ns;
     }
 
     pub fn set_single_namespace(&mut self, namespace: Namespace<'gc>) {

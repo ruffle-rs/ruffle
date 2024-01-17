@@ -4,6 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::api_version::ApiVersion;
 use crate::avm2::e4x::{string_to_multiname, E4XNode, E4XNodeKind};
 use crate::avm2::error::make_error_1087;
+use crate::avm2::multiname::NamespaceSet;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject, XmlListObject};
 use crate::avm2::string::AvmString;
@@ -647,10 +648,24 @@ fn handle_input_multiname<'gc>(
         && !name.is_any_name()
         && !name.is_any_namespace()
     {
-        name.local_name()
+        if let Some(mut new_name) = name
+            .local_name()
             .map(|name| string_to_multiname(activation, name))
-            .unwrap_or(name)
-    } else {
-        name
+        {
+            // Copy the namespaces from the previous name,
+            // but make sure to definitely include the public namespace.
+            if !new_name.is_any_namespace() {
+                let mut ns = Vec::new();
+                ns.extend(name.namespace_set());
+                if !name.contains_public_namespace() {
+                    ns.push(activation.avm2().public_namespace_base_version);
+                }
+                new_name.set_ns(NamespaceSet::new(ns, activation.gc()));
+            }
+
+            return new_name;
+        }
     }
+
+    name
 }
