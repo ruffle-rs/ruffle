@@ -1070,10 +1070,13 @@ impl<'gc> E4XNode<'gc> {
         }
 
         let self_ns = self.namespace().unwrap_or_default();
+        // FIXME: For cases where we don't have *any* explicit namespace
+        // we just give up and assume we should match the default public namespace.
+        if !name.namespace_set().iter().any(|ns| ns.is_namespace()) {
+            return self_ns.is_empty();
+        }
 
-        name.namespace_set()
-            .iter()
-            .any(|ns| ns.is_any() || ns.as_uri() == self_ns)
+        name.namespace_set().iter().any(|ns| ns.as_uri() == self_ns)
     }
 
     pub fn descendants(&self, name: &Multiname<'gc>, out: &mut Vec<E4XOrXml<'gc>>) {
