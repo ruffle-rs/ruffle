@@ -29,6 +29,7 @@ use crate::loader::LoadManager;
 use crate::local_connection::LocalConnections;
 use crate::net_connection::NetConnections;
 use crate::player::Player;
+use crate::player::PostFrameCallback;
 use crate::prelude::*;
 use crate::socket::Sockets;
 use crate::streams::StreamManager;
@@ -252,7 +253,7 @@ pub struct UpdateContext<'a, 'gc> {
     /// These functions are run at the end of each frame execution.
     /// Currently, this is just used for handling `Loader.loadBytes`
     #[allow(clippy::type_complexity)]
-    pub post_frame_callbacks: &'a mut Vec<Box<dyn FnOnce(&mut UpdateContext<'_, '_>)>>,
+    pub post_frame_callbacks: &'a mut Vec<PostFrameCallback<'gc>>,
 }
 
 /// Convenience methods for controlling audio.
