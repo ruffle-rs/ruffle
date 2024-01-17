@@ -534,7 +534,7 @@ impl<'gc> Avm2MousePick<'gc> {
                     // If the parent has `mouseChildren=false` and `mouseEnabled=true`,
                     // we have a weird case. The event can propagate through this 'fully disabled'
                     // parent - if it reaches an ancestor with `mouseEnabled=true`, it will get
-                    // 'abosrbed' by that ancestor. Otherwise, no event will be fired.
+                    // 'absorbed' by that ancestor. Otherwise, no event will be fired.
                     } else {
                         Avm2MousePick::PropagateToParent
                     }

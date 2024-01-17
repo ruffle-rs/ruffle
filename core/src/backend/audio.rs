@@ -134,11 +134,11 @@ pub trait AudioBackend: Downcast {
     fn stop_all_sounds(&mut self);
 
     /// Get the position of a sound instance in milliseconds.
-    /// Returns `None` if ther sound is not/no longer playing
+    /// Returns `None` if the sound is not/no longer playing
     fn get_sound_position(&self, instance: SoundInstanceHandle) -> Option<f64>;
 
     /// Get the duration of a sound in milliseconds.
-    /// Returns `None` if sound is not registered.
+    /// Returns `None` if the sound is not registered.
     fn get_sound_duration(&self, sound: SoundHandle) -> Option<f64>;
 
     /// Get the size of the data stored within a given sound.
@@ -359,7 +359,7 @@ impl<'gc> AudioManager<'gc> {
     /// The threshold in seconds where an audio stream is considered too out-of-sync and will be stopped.
     pub const STREAM_RESTART_THRESHOLD: f64 = 1.0;
 
-    /// The minimum audio sycning threshold in seconds.
+    /// The minimum audio syncing threshold in seconds.
     ///
     /// The player will adjust animation speed to stay within this many seconds of the audio track.
     pub const STREAM_DEFAULT_SYNC_THRESHOLD: f64 = 0.2;

@@ -25,7 +25,7 @@ package flash.net
         }   
 
         public function get creator(): String {
-            retunr this._creator;
+            return this._creator;
         }   
 
         public function get data(): ByteArray {
@@ -41,7 +41,7 @@ package flash.net
         }   
 
         public function get name(): String {
-            retunr this._name;
+            return this._name;
         }   
 
         public static function get permissionStatus(): String {

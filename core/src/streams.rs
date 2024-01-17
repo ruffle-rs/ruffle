@@ -878,7 +878,7 @@ impl<'gc> NetStream<'gc> {
                             }
                             Err(e) => {
                                 tracing::error!(
-                                    "Got error when registring FLV video stream: {}",
+                                    "Got error when registering FLV video stream: {}",
                                     e
                                 );
                                 return; //TODO: This originally breaks and halts tag processing
@@ -1039,7 +1039,7 @@ impl<'gc> NetStream<'gc> {
                             _ => unreachable!(),
                         },
                         Err(e) => {
-                            tracing::error!("Got error when registring FLV video stream: {}", e)
+                            tracing::error!("Got error when registering FLV video stream: {}", e)
                         }
                     }
                 } else {

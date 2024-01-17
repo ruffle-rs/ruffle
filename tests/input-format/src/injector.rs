@@ -10,7 +10,7 @@ use std::path::Path;
 bitflags! {
     /// A set of currently held-down mouse buttons.
     ///
-    /// Convertable from `MouseButton`, which is intended to represent ONE
+    /// Convertible from `MouseButton`, which is intended to represent ONE
     /// button being held or released.
     #[derive(Clone, Copy)]
     pub struct MouseButtons: u8 {

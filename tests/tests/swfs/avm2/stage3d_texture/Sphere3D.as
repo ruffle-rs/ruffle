@@ -48,7 +48,7 @@ package
 				stacks = MIN_STACKS;
 			}
 			
-			// Pre-compute many constants used in tesselation
+			// Pre-compute many constants used in tessellation
 			const stepTheta:Number = (2.0*Math.PI) / slices;
 			const stepPhi:Number = Math.PI / stacks;
 			const stepU:Number = 1.0 / slices;
@@ -56,7 +56,7 @@ package
 			const verticesPerStack:uint = slices + 1;
 			const numVertices:uint = verticesPerStack * (stacks+1);
 			
-			// Allocate the vectors of data to tesselate into
+			// Allocate the vectors of data to tessellate into
 			var positions:Vector.<Number> = new Vector.<Number>(numVertices*3);
 			var texCoords:Vector.<Number> = new Vector.<Number>(numVertices*2);
 			var tris:Vector.<uint> = new Vector.<uint>(slices*stacks*6);

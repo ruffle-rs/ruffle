@@ -39,7 +39,7 @@ const FRAGMENT_SHADER_UNIFORMS_BUFFER_SIZE: u64 =
 // In WGPU, this state is associated by a `RenderPipeline` object,
 // which needs to be rebuilt whenever the state changes.
 //
-// To match up these APIs, we store the current state in `CurentPipeline`.
+// To match up these APIs, we store the current state in `CurrentPipeline`.
 // Whenever a state-changing `Context3DCommand` is executed, we mark the `CurrentPipeline`
 // as dirty. When a `wgpu::RenderPipeline` is actually needed by `drawTriangles`,
 // we build a new `wgpu::RenderPipeline` from the `CurrentPipeline` state (if it's dirty).

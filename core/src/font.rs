@@ -274,7 +274,7 @@ pub enum GlyphSource {
         /// Used by `DefineEditText` tags.
         code_point_to_glyph: fnv::FnvHashMap<u16, usize>,
 
-        /// Kerning infomration.
+        /// Kerning information.
         /// Maps from a pair of unicode code points to horizontal offset value.
         kerning_pairs: fnv::FnvHashMap<(u16, u16), Twips>,
     },
@@ -887,7 +887,7 @@ impl FontDescriptor {
 
 /// The text rendering engine that a text field should use.
 /// This is controlled by the "Anti-alias" setting in the Flash IDE.
-/// Using "Anti-alias for readibility" switches to the "Advanced" text
+/// Using "Anti-alias for readability" switches to the "Advanced" text
 /// rendering engine.
 #[derive(Debug, PartialEq, Clone)]
 pub enum TextRenderSettings {
@@ -904,7 +904,7 @@ pub enum TextRenderSettings {
     },
 
     /// This text should render with the advanced rendering engine.
-    /// Set via "Anti-alias for readibility" in the Flash IDE.
+    /// Set via "Anti-alias for readability" in the Flash IDE.
     /// The parameters are set via the CSMTextSettings SWF tag.
     /// Ruffle does not support this currently, but this also affects
     /// hit-testing behavior.

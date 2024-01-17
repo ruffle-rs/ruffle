@@ -37,7 +37,7 @@ pub struct WebCanvasRenderBackend {
     mask_state: MaskState,
     blend_modes: Vec<RenderBlendMode>,
 
-    // This is currnetly unused - we just store it to report
+    // This is currently unused - we just store it to report
     // in `get_viewport_dimensions`
     viewport_scale_factor: f64,
 }
@@ -1099,7 +1099,7 @@ fn swf_to_canvas_gradient(
 ) -> Result<Gradient, JsError> {
     let matrix = if transformed {
         // When we are rendering a complex gradient, the gradient transform is handled later by
-        // transforming the path before rendering; so use the indentity matrix here.
+        // transforming the path before rendering; so use the identity matrix here.
         swf::Matrix::scale(swf::Fixed16::from_f64(20.0), swf::Fixed16::from_f64(20.0))
     } else {
         swf_gradient.matrix

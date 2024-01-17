@@ -147,7 +147,7 @@ pub struct Activation<'a, 'gc: 'a> {
 }
 
 impl<'a, 'gc> Activation<'a, 'gc> {
-    /// Convenience method to retrieve the current GC context. Note that explicitely writing
+    /// Convenience method to retrieve the current GC context. Note that explicitly writing
     /// `self.context.gc_context` can be sometimes necessary to satisfy the borrow checker.
     #[inline(always)]
     pub fn gc(&self) -> &'gc gc_arena::Mutation<'gc> {

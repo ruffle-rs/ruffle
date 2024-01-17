@@ -137,7 +137,7 @@ impl<'gc> Debug for StageObject<'gc> {
             Ok(obj) => f
                 .debug_struct("StageObject")
                 .field("name", &obj.base.debug_class_name())
-                // .field("display_object", &obj.display_object) TOOO(moulins)
+                // .field("display_object", &obj.display_object) TODO(moulins)
                 .field("ptr", &self.0.as_ptr())
                 .finish(),
             Err(err) => f

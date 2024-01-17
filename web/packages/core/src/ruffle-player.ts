@@ -2174,7 +2174,7 @@ export class RufflePlayer extends HTMLElement {
                 ]);
                 break;
             case PanicError.JavascriptConflict:
-                // Self hosted: Cannot load `.wasm` file - a native object / function is overriden
+                // Self hosted: Cannot load `.wasm` file - a native object / function is overridden
                 errorBody = textAsParagraphs("error-javascript-conflict");
                 if (isBuildOutdated) {
                     errorBody.appendChild(
@@ -2189,7 +2189,7 @@ export class RufflePlayer extends HTMLElement {
                 ]);
                 break;
             case PanicError.CSPConflict:
-                // General error: Cannot load `.wasm` file - a native object / function is overriden
+                // General error: Cannot load `.wasm` file - a native object / function is overridden
                 errorBody = textAsParagraphs("error-csp-conflict");
                 errorFooter = this.createErrorFooter([
                     new PanicLinkInfo(

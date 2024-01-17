@@ -19,7 +19,7 @@ use crate::{
     SHADER_ENTRY_POINT,
 };
 
-const VERTEX_PROGRAM_CONTANTS: u64 = 128;
+const VERTEX_PROGRAM_CONSTANTS: u64 = 128;
 const FRAGMENT_PROGRAM_CONSTANTS: u64 = 28;
 
 pub const TEXTURE_SAMPLER_START_BIND_INDEX: u32 = 2;
@@ -46,7 +46,7 @@ pub(crate) struct NagaBuilder<'a> {
     pub(crate) module: Module,
     pub(crate) func: Function,
 
-    // This evaluate to a Pointer to the temporary 'main' destiation location
+    // This evaluate to a Pointer to the temporary 'main' destination location
     // (the output position for a vertex shader, or the output color for a fragment shader)
     // which can be used with Expression::Load and Expression::Store
     // This is needed because an AGAL shader can write to the output register
@@ -110,7 +110,7 @@ pub(crate) struct NagaBuilder<'a> {
 /// Any subsequent opcodes will be added to the `after_if` block.
 /// When we encounter an 'else' opcode, we switch to adding opcodes to the `after_else` block
 /// by setting `in_after_if` to false.
-/// When we encouter an `eif` opcode, we pop our `IfElse` entry from the stack, and emit
+/// When we encounter an `eif` opcode, we pop our `IfElse` entry from the stack, and emit
 /// a `Statement::If` with the `after_if` and `after_else` blocks.
 #[derive(Debug)]
 enum BlockStackEntry {
@@ -245,7 +245,7 @@ impl VertexAttributeFormat {
 
 /// Combines information extracted from the AGAL bytecode itself
 /// with information provided from the AVM side of ruffle
-/// (based on the Context3D methods that ActionSCript called)
+/// (based on the Context3D methods that ActionScript called)
 #[derive(Debug)]
 pub struct ShaderConfig<'a> {
     pub shader_type: ShaderType,
@@ -583,7 +583,7 @@ impl<'a> NagaBuilder<'a> {
                             base: vec4f,
                             size: ArraySize::Constant(
                                 NonZeroU32::new(match shader_config.shader_type {
-                                    ShaderType::Vertex => VERTEX_PROGRAM_CONTANTS as u32,
+                                    ShaderType::Vertex => VERTEX_PROGRAM_CONSTANTS as u32,
                                     ShaderType::Fragment => FRAGMENT_PROGRAM_CONSTANTS as u32,
                                 })
                                 .unwrap(),

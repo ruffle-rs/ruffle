@@ -153,7 +153,7 @@ pub struct Avm2<'gc> {
     #[collect(require_static)]
     native_call_handler_table: &'static [Option<(&'static str, NativeMethodImpl)>],
 
-    /// A list of objects which are capable of recieving broadcasts.
+    /// A list of objects which are capable of receiving broadcasts.
     ///
     /// Certain types of events are "broadcast events" that are emitted on all
     /// constructed objects in order of their creation, whether or not they are
@@ -245,7 +245,7 @@ impl<'gc> Avm2<'gc> {
 
             orphan_objects: Default::default(),
 
-            // Set the lowest version for now - this be overriden when we set our movie
+            // Set the lowest version for now - this will be overridden when we set our movie
             root_api_version: ApiVersion::AllVersions,
 
             #[cfg(feature = "avm_debug")]
@@ -322,7 +322,7 @@ impl<'gc> Avm2<'gc> {
 
     /// Adds a `MovieClip` to the orphan list. In AVM2, movies advance their
     /// frames even when they are not on a display list. Unfortunately,
-    /// mutliple SWFS rely on this behavior, so we need to match Flash's
+    /// multiple SWFS rely on this behavior, so we need to match Flash's
     /// behavior. This should not be called manually - `movie_clip` will
     /// call it when necessary.
     pub fn add_orphan_obj(&mut self, dobj: DisplayObject<'gc>) {

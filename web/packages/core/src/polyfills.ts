@@ -30,7 +30,7 @@ function isFlashEnabledBrowser(): boolean {
     if ("favorFlash" in globalConfig && globalConfig["favorFlash"] === false) {
         return false;
     }
-    // Otherwise, check for pre-exisiting Flash support.
+    // Otherwise, check for pre-existing Flash support.
     return (
         (navigator.plugins.namedItem("Shockwave Flash")?.filename ??
             "ruffle.js") !== "ruffle.js"

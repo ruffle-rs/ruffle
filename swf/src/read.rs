@@ -214,7 +214,7 @@ fn make_lzma_reader<'a, R: Read + 'a>(
     // Bytes 0..5: LZMA properties
     // Bytes 5..13: Uncompressed length
     //
-    // To deal with the mangled header, use lzma_rs options to anually provide uncompressed length.
+    // To deal with the mangled header, use lzma_rs options to manually provide uncompressed length.
 
     // Read compressed length (ignored)
     let _ = input.read_u32::<LittleEndian>()?;

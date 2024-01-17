@@ -328,7 +328,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
 
         let method = self
             .proto()
-            .expect("XMLList misisng prototype")
+            .expect("XMLList missing prototype")
             .get_property(multiname, activation)?;
 
         // If the method doesn't exist on the prototype, and we have simple content,
@@ -336,7 +336,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         // This lets things like `new XML("<p>Hello world</p>").split(" ")` work.
         if matches!(method, Value::Undefined) {
             // Checking if we have a child with the same name as the method is probably
-            // unecessary - if we had such a child, then we wouldn't have simple content,
+            // unnecessary - if we had such a child, then we wouldn't have simple content,
             // so we already would bail out before calling the method. Nevertheless,
             // avmplus has this check, so we do it out of an abundance of caution.
             // Compare to the very similar case in XMLListObject::call_property_local

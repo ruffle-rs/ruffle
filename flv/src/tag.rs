@@ -16,7 +16,7 @@ pub enum TagData<'a> {
     /// The tag data was recognized but could not be parsed due to an error.
     ///
     /// The error contained will never be EndOfData; this should only be used
-    /// to flag unparseable data within an otherwise complete tag.
+    /// to flag unparsable data within an otherwise complete tag.
     Invalid(Error),
 }
 

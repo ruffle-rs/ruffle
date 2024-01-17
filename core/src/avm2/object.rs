@@ -197,7 +197,7 @@ use crate::font::Font;
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
     /// Get the base of this object.
-    /// Any trait method implementations that were not overrided will forward the call to this instead.
+    /// Any trait method implementations that were not overridden will forward the call to this instead.
     fn base(&self) -> Ref<ScriptObjectData<'gc>>;
     fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>>;
 

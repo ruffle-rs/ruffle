@@ -36,7 +36,7 @@ pub struct Pipelines {
     pub color: ShapePipeline,
     /// Renders a bitmap without any blending, and does
     /// not write to the alpha channel. This is used for
-    /// drawing a finished Stage3D buffer onto the backgroud.
+    /// drawing a finished Stage3D buffer onto the background.
     pub bitmap_opaque: wgpu::RenderPipeline,
     /// Like `bitmap_opaque`, but with a no-op `DepthStencilState`.
     /// This is used when we're inside a `RenderPass` that is

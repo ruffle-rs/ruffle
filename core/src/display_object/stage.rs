@@ -54,7 +54,7 @@ pub struct StageData<'gc> {
     /// Base properties for interactive display objects.
     ///
     /// This particular base has additional constraints currently not
-    /// expressable by the type system. Notably, this should never have a
+    /// expressible by the type system. Notably, this should never have a
     /// parent, as the stage does not respect it.
     base: InteractiveObjectBase<'gc>,
 
@@ -108,7 +108,7 @@ pub struct StageData<'gc> {
 
     /// Whether to use high quality downsampling for bitmaps.
     ///
-    /// This is usally implied by `quality` being `Best` or higher, but the AVM1
+    /// This is usually implied by `quality` being `Best` or higher, but the AVM1
     /// `ToggleHighQuality` op can adjust stage quality independently of this flag.
     /// This setting is currently ignored in Ruffle.
     use_bitmap_downsampling: bool,

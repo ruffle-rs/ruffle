@@ -1158,7 +1158,7 @@ fn parse_date(item: &WStr) -> Option<(u32, u32, u32)> {
     Some(parsed)
 }
 
-/// Convert a month abbrevation to a number.
+/// Convert a month abbreviation to a number.
 fn parse_mon(item: &WStr) -> Option<usize> {
     const MONTHS: [&[u8]; 12] = [
         b"Jan", b"Feb", b"Mar", b"Apr", b"May", b"Jun", b"Jul", b"Aug", b"Sep", b"Oct", b"Nov",

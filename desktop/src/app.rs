@@ -164,7 +164,7 @@ impl App {
                             return;
                         }
                         WindowEvent::Resized(size) => {
-                            // TODO: Change this when winit adds a `Window::minimzed` or `WindowEvent::Minimize`.
+                            // TODO: Change this when winit adds a `Window::minimized` or `WindowEvent::Minimize`.
                             minimized = size.width == 0 && size.height == 0;
 
                             if let Some(mut player) = self.player.get() {

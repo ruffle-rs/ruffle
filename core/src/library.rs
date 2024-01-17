@@ -97,7 +97,7 @@ impl<'gc> Avm2ClassRegistry<'gc> {
         if let Some(old) = self.class_map.get(&class_object) {
             if Arc::ptr_eq(&movie, &old.0) && symbol != old.1 {
                 // Flash player actually allows using the same class in multiple SymbolClass
-                // entires in the same swf, with *different* symbol ids. Whichever one
+                // entries in the same swf, with *different* symbol ids. Whichever one
                 // is processed first will *win*, and the second one will be ignored.
                 // We still log a warning, since we wouldn't expect this to happen outside
                 // of deliberately crafted SWFs.
