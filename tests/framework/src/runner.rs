@@ -140,11 +140,16 @@ impl TestRunner {
         &self.player
     }
 
+    pub fn options(&self) -> &TestOptions {
+        &self.options
+    }
+
     pub fn next_tick_may_be_last(&self) -> bool {
         self.remaining_iterations == 1
     }
 
-    pub fn tick(&mut self) -> Result<TestStatus> {
+    /// Tick this test forward, running any actionscript and progressing the timeline by one.
+    pub fn tick(&mut self) {
         while !self
             .player
             .lock()
@@ -162,7 +167,10 @@ impl TestRunner {
         self.remaining_iterations -= 1;
         self.current_iteration += 1;
         self.executor.run();
+    }
 
+    /// After a tick, run any custom fdcommands that were queued up and perform any scheduled tests.  
+    pub fn test(&mut self) -> Result<TestStatus> {
         for command in self.fs_commands.try_iter() {
             match command {
                 FsCommand::Quit => {

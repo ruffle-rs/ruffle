@@ -121,7 +121,8 @@ fn run_test(args: &Arguments, file: DirEntry, name: String) -> Trial {
             let mut runner = test.create_test_runner(&NativeEnvironment)?;
 
             loop {
-                match runner.tick()? {
+                runner.tick();
+                match runner.test()? {
                     TestStatus::Continue => {}
                     TestStatus::Sleep(duration) => sleep(duration),
                     TestStatus::Finished => break,
