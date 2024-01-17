@@ -208,7 +208,7 @@ pub fn load_bytes<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let arg0 = args.get_object(activation, 0, "data")?;
-    let bytearray = arg0.as_bytearray().unwrap();
+    let bytes = arg0.as_bytearray().unwrap().bytes().to_vec();
     let context = args.try_get_object(activation, 1);
 
     // This is a dummy MovieClip, which will get overwritten in `Loader`
@@ -235,7 +235,7 @@ pub fn load_bytes<'gc>(
     if let Err(e) = LoadManager::load_movie_into_clip_bytes(
         &mut activation.context,
         content.into(),
-        bytearray.bytes().to_vec(),
+        bytes,
         MovieLoaderVMData::Avm2 {
             loader_info,
             context,
