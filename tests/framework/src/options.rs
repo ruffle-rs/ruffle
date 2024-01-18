@@ -195,11 +195,11 @@ impl PlayerOptions {
         &self,
         environment: &impl Environment,
         dimensions: ViewportDimensions,
-    ) -> Vec<(Box<dyn RenderInterface>, Box<dyn RenderBackend>)> {
+    ) -> Option<(Box<dyn RenderInterface>, Box<dyn RenderBackend>)> {
         if self.with_renderer.is_some() {
-            environment.create_renderers(dimensions.width, dimensions.height)
+            environment.create_renderer(dimensions.width, dimensions.height)
         } else {
-            vec![]
+            None
         }
     }
 }
