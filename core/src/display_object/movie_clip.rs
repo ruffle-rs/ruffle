@@ -3835,7 +3835,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
                 button.set_sounds(button_sounds);
             }
             Some(Character::Avm2Button(button)) => {
-                button.set_sounds(context.gc_context, button_sounds);
+                button.set_sounds(button_sounds);
             }
             Some(_) => {
                 tracing::warn!(
