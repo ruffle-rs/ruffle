@@ -5,11 +5,29 @@
 package flash.events
 {
     
+    // According to the AS3 docs, this class is only available starting with Flash Player 10.2,
+    // and some members of it are AIR-only. This is yet another case of misdocumentation.
+    [API("667")]
     public class StageVideoEvent extends Event
     {
-        public const codecInfo:String; 
-        public static const RENDER_STATE:String = "renderState"; // The StageVideoEvent.RENDER_STATE constant defines the value of the type property of a renderState event object.
-        
+        // The StageVideoEvent.RENDER_STATE constant defines the value of the type property of a renderState event object.
+        public static const RENDER_STATE:String = "renderState";
+
+        // Indicates that hardware is decoding and displaying the video.
+        // Deprecated since Flash Player 10.2, AIR 3: Please Use flash.media.VideoStatus.ACCELERATED
+        public static const RENDER_STATUS_ACCELERATED : String = "accelerated";
+
+        // Indicates that software is decoding and displaying the video.
+        // Deprecated since Flash Player 10.2, AIR 3: Please Use flash.media.VideoStatus.SOFTWARE
+        public static const RENDER_STATUS_SOFTWARE : String = "software";
+
+        // Indicates that displaying the video using the StageVideo object is not possible.
+        // Deprecated since Flash Player 10.2, AIR 3: Please Use flash.media.VideoStatus.UNAVAILABLE
+        public static const RENDER_STATUS_UNAVAILABLE : String = "unavailable";
+
+
+        public const codecInfo:String;
+
         private var _status: String; // The status of the StageVideo object.
         private var _colorSpace: String; // The color space used by the video being displayed in the StageVideo object.
 
