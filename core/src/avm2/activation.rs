@@ -3073,7 +3073,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let Ok(address) = usize::try_from(address) else {
             return Err(make_error_1506(self));
         };
-        if address + 2 > dm.len() {
+        if address > dm.len() - 2 {
             return Err(make_error_1506(self));
         }
         dm.write_at_nongrowing(&val.to_le_bytes(), address)
@@ -3095,7 +3095,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let Ok(address) = usize::try_from(address) else {
             return Err(make_error_1506(self));
         };
-        if address + 4 > dm.len() {
+        if address > dm.len() - 4 {
             return Err(make_error_1506(self));
         }
         dm.write_at_nongrowing(&val.to_le_bytes(), address)
@@ -3117,7 +3117,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let Ok(address) = usize::try_from(address) else {
             return Err(make_error_1506(self));
         };
-        if address + 4 > dm.len() {
+        if address > dm.len() - 4 {
             return Err(make_error_1506(self));
         }
         dm.write_at_nongrowing(&val.to_le_bytes(), address)
@@ -3139,7 +3139,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let Ok(address) = usize::try_from(address) else {
             return Err(make_error_1506(self));
         };
-        if address + 8 > dm.len() {
+        if address > dm.len() - 8 {
             return Err(make_error_1506(self));
         }
         dm.write_at_nongrowing(&val.to_le_bytes(), address)
@@ -3176,7 +3176,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .as_bytearray()
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
 
-        if dm.len() < address + 2 {
+        if address > dm.len() - 2 {
             return Err(make_error_1506(self));
         }
 
@@ -3195,7 +3195,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .as_bytearray()
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
 
-        if dm.len() < address + 4 {
+        if address > dm.len() - 4 {
             return Err(make_error_1506(self));
         }
 
@@ -3213,7 +3213,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .as_bytearray()
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
 
-        if dm.len() < address + 4 {
+        if address > dm.len() - 4 {
             return Err(make_error_1506(self));
         }
 
@@ -3232,7 +3232,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .as_bytearray()
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
 
-        if dm.len() < address + 8 {
+        if address > dm.len() - 8 {
             return Err(make_error_1506(self));
         }
 
