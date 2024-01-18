@@ -30,6 +30,9 @@ error-wasm-mime-type =
     Ruffle a rencontré un problème majeur durant sa phase d'initialisation.
     Ce serveur web ne renvoie pas le bon type MIME pour les fichiers ".wasm".
     Si vous êtes l'administrateur du serveur, veuillez consulter le wiki de Ruffle pour obtenir de l'aide.
+error-invalid-swf =
+    Ruffle n'a pas été en mesure de lire le fichier demandé.
+    La raison la plus probable est que ce fichier n'est pas un SWF valide.
 error-swf-fetch =
     Ruffle n'a pas réussi à charger le fichier Flash.
     La raison la plus probable est que le fichier n'existe pas ou plus.
