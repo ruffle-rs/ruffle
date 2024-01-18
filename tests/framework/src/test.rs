@@ -1,13 +1,11 @@
 use crate::environment::Environment;
 use crate::options::TestOptions;
-use crate::runner::run_swf;
+use crate::runner::TestRunner;
 use crate::util::read_bytes;
 use anyhow::{anyhow, Result};
 use ruffle_core::tag_utils::SwfMovie;
-use ruffle_core::Player;
 use ruffle_input_format::InputInjector;
 use ruffle_socket_format::SocketEvent;
-use std::sync::{Arc, Mutex};
 use vfs::VfsPath;
 
 pub struct Font {
@@ -45,12 +43,7 @@ impl Test {
         })
     }
 
-    pub fn run(
-        &self,
-        mut before_start: impl FnMut(Arc<Mutex<Player>>) -> Result<()>,
-        mut before_end: impl FnMut(Arc<Mutex<Player>>) -> Result<()>,
-        environment: &impl Environment,
-    ) -> Result<()> {
+    pub fn create_test_runner(&self, environment: &impl Environment) -> Result<TestRunner> {
         let movie = self.movie()?;
         let viewport_dimensions = self.options.player_options.viewport_dimensions(&movie);
         let renderer = self
@@ -58,18 +51,17 @@ impl Test {
             .player_options
             .create_renderer(environment, viewport_dimensions);
 
-        run_swf(
+        let injector = self.input_injector()?;
+        let socket_events = self.socket_events()?;
+        let runner = TestRunner::new(
             self,
             movie,
-            self.input_injector()?,
-            self.socket_events()?,
-            &mut before_start,
-            &mut before_end,
+            injector,
+            socket_events,
             renderer,
             viewport_dimensions,
         )?;
-
-        Ok(())
+        Ok(runner)
     }
 
     pub fn movie(&self) -> Result<SwfMovie> {
