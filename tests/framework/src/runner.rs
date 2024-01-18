@@ -22,7 +22,6 @@ use ruffle_render::backend::{RenderBackend, ViewportDimensions};
 use ruffle_socket_format::SocketEvent;
 use std::collections::HashMap;
 use std::sync::{mpsc, Arc, Mutex};
-use std::thread::sleep;
 use std::time::Duration;
 use vfs::VfsPath;
 
@@ -135,6 +134,14 @@ impl TestRunner {
             current_iteration: 0,
             options: test.options.clone(),
         })
+    }
+
+    pub fn player(&self) -> &Arc<Mutex<Player>> {
+        &self.player
+    }
+
+    pub fn next_tick_may_be_last(&self) -> bool {
+        self.remaining_iterations == 1
     }
 
     pub fn tick(&mut self) -> Result<TestStatus> {
@@ -402,42 +409,6 @@ impl TestRunner {
 
         Ok(())
     }
-}
-
-/// Loads an SWF and runs it through the Ruffle core for a number of frames.
-/// Tests that the trace output matches the given expected output.
-#[allow(clippy::too_many_arguments)]
-pub fn run_swf(
-    test: &Test,
-    movie: SwfMovie,
-    injector: InputInjector,
-    socket_events: Option<Vec<SocketEvent>>,
-    before_start: &mut impl FnMut(Arc<Mutex<Player>>) -> Result<()>,
-    before_end: &mut impl FnMut(Arc<Mutex<Player>>) -> Result<()>,
-    renderer: Option<(Box<dyn RenderInterface>, Box<dyn RenderBackend>)>,
-    viewport_dimensions: ViewportDimensions,
-) -> Result<()> {
-    let mut runner = TestRunner::new(
-        test,
-        movie,
-        injector,
-        socket_events,
-        renderer,
-        viewport_dimensions,
-    )?;
-    before_start(runner.player.clone())?;
-
-    loop {
-        match runner.tick()? {
-            TestStatus::Continue => {}
-            TestStatus::Sleep(duration) => sleep(duration),
-            TestStatus::Finished => break,
-        }
-    }
-
-    before_end(runner.player)?;
-
-    Ok(())
 }
 
 fn capture_and_compare_image(

@@ -9,10 +9,12 @@ use anyhow::Context;
 use anyhow::Result;
 use libtest_mimic::{Arguments, Trial};
 use ruffle_test_framework::options::TestOptions;
+use ruffle_test_framework::runner::TestStatus;
 use ruffle_test_framework::test::Test;
 use ruffle_test_framework::vfs::{PhysicalFS, VfsPath};
 use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
 use std::path::Path;
+use std::thread::sleep;
 use walkdir::DirEntry;
 
 mod environment;
@@ -115,7 +117,19 @@ fn run_test(args: &Arguments, file: DirEntry, name: String) -> Trial {
 
     let mut trial = Trial::test(test.name.to_string(), move || {
         let test = AssertUnwindSafe(test);
-        let unwind_result = catch_unwind(|| test.run(|_| Ok(()), |_| Ok(()), &NativeEnvironment));
+        let unwind_result = catch_unwind(|| {
+            let mut runner = test.create_test_runner(&NativeEnvironment)?;
+
+            loop {
+                match runner.tick()? {
+                    TestStatus::Continue => {}
+                    TestStatus::Sleep(duration) => sleep(duration),
+                    TestStatus::Finished => break,
+                }
+            }
+
+            Result::<_>::Ok(())
+        });
         if test.options.known_failure {
             match unwind_result {
                 Ok(Ok(())) => Err(
