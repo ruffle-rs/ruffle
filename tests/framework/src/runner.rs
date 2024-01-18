@@ -7,6 +7,7 @@ use crate::test::Test;
 use crate::util::{read_bytes, write_image};
 use anyhow::{anyhow, Result};
 use image::ImageOutputFormat;
+use pretty_assertions::Comparison;
 use ruffle_core::backend::navigator::NullExecutor;
 use ruffle_core::events::MouseButton as RuffleMouseButton;
 use ruffle_core::events::{KeyCode, TextControlCode as RuffleTextControlCode};
@@ -34,6 +35,7 @@ pub enum TestStatus {
 
 pub struct TestRunner {
     root_path: VfsPath,
+    output_path: VfsPath,
     options: TestOptions,
     player: Arc<Mutex<Player>>,
     injector: InputInjector,
@@ -119,6 +121,7 @@ impl TestRunner {
 
         Ok(Self {
             root_path: test.root_path.clone(),
+            output_path: test.output_path.clone(),
             player,
             injector,
             render_interface,
@@ -286,6 +289,15 @@ impl TestRunner {
                     self.images.keys()
                 ));
             }
+
+            self.executor.run();
+
+            let trace = self.log.trace_output();
+            // Null bytes are invisible, and interfere with constructing
+            // the expected output.txt file. Any tests dealing with null
+            // bytes should explicitly test for them in ActionScript.
+            let normalized_trace = trace.replace('\0', "");
+            self.compare_output(&normalized_trace)?;
         }
 
         Ok(match self.remaining_iterations {
@@ -309,6 +321,87 @@ impl TestRunner {
             _ => TestStatus::Continue,
         })
     }
+
+    pub fn compare_output(&self, actual_output: &str) -> Result<()> {
+        let expected_output = self.output_path.read_to_string()?.replace("\r\n", "\n");
+
+        if let Some(approximations) = &self.options.approximations {
+            if actual_output.lines().count() != expected_output.lines().count() {
+                return Err(anyhow!(
+                    "# of lines of output didn't match (expected {} from Flash, got {} from Ruffle",
+                    expected_output.lines().count(),
+                    actual_output.lines().count()
+                ));
+            }
+
+            for (actual, expected) in actual_output.lines().zip(expected_output.lines()) {
+                // If these are numbers, compare using approx_eq.
+                if let (Ok(actual), Ok(expected)) = (actual.parse::<f64>(), expected.parse::<f64>())
+                {
+                    // NaNs should be able to pass in an approx test.
+                    if actual.is_nan() && expected.is_nan() {
+                        continue;
+                    }
+
+                    approximations.compare(actual, expected);
+                } else {
+                    let mut found = false;
+
+                    // Check each of the user-provided regexes for a match
+                    for pattern in approximations.number_patterns() {
+                        if let (Some(actual_captures), Some(expected_captures)) =
+                            (pattern.captures(actual), pattern.captures(expected))
+                        {
+                            found = true;
+                            if expected_captures.len() != actual_captures.len() {
+                                return Err(anyhow!(
+                                    "Differing numbers of regex captures (expected {}, actually {})",
+                                    expected_captures.len(),
+                                    actual_captures.len(),
+                                ));
+                            }
+
+                            // Each capture group (other than group 0, which is always the entire regex
+                            // match) represents a floating-point value
+                            for (actual_val, expected_val) in actual_captures
+                                .iter()
+                                .skip(1)
+                                .zip(expected_captures.iter().skip(1))
+                            {
+                                let actual_num = actual_val
+                                    .expect("Missing capture group value for 'actual'")
+                                    .as_str()
+                                    .parse::<f64>()
+                                    .expect("Failed to parse 'actual' capture group as float");
+                                let expected_num = expected_val
+                                    .expect("Missing capture group value for 'expected'")
+                                    .as_str()
+                                    .parse::<f64>()
+                                    .expect("Failed to parse 'expected' capture group as float");
+                                approximations.compare(actual_num, expected_num);
+                            }
+                            let modified_actual = pattern.replace_all(actual, "");
+                            let modified_expected = pattern.replace_all(expected, "");
+
+                            assert_text_matches(
+                                modified_actual.as_ref(),
+                                modified_expected.as_ref(),
+                            )?;
+                            break;
+                        }
+                    }
+
+                    if !found {
+                        assert_text_matches(actual, expected)?;
+                    }
+                }
+            }
+        } else {
+            assert_text_matches(actual_output, &expected_output)?;
+        }
+
+        Ok(())
+    }
 }
 
 /// Loads an SWF and runs it through the Ruffle core for a number of frames.
@@ -323,7 +416,7 @@ pub fn run_swf(
     before_end: &mut impl FnMut(Arc<Mutex<Player>>) -> Result<()>,
     renderer: Option<(Box<dyn RenderInterface>, Box<dyn RenderBackend>)>,
     viewport_dimensions: ViewportDimensions,
-) -> Result<String> {
+) -> Result<()> {
     let mut runner = TestRunner::new(
         test,
         movie,
@@ -344,14 +437,7 @@ pub fn run_swf(
 
     before_end(runner.player)?;
 
-    runner.executor.run();
-
-    let trace = runner.log.trace_output();
-    // Null bytes are invisible, and interfere with constructing
-    // the expected output.txt file. Any tests dealing with null
-    // bytes should explicitly test for them in ActionScript.
-    let normalized_trace = trace.replace('\0', "");
-    Ok(normalized_trace)
+    Ok(())
 }
 
 fn capture_and_compare_image(
@@ -397,4 +483,37 @@ fn capture_and_compare_image(
     }
 
     Ok(())
+}
+
+/// Wrapper around string slice that makes debug output `{:?}` to print string same way as `{}`.
+/// Used in different `assert*!` macros in combination with `pretty_assertions` crate to make
+/// test failures to show nice diffs.
+/// Courtesy of https://github.com/colin-kiegel/rust-pretty-assertions/issues/24
+#[derive(PartialEq, Eq)]
+#[doc(hidden)]
+struct PrettyString<'a>(pub &'a str);
+
+/// Make diff to display string as multi-line string
+impl<'a> std::fmt::Debug for PrettyString<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.write_str(self.0)
+    }
+}
+
+fn assert_text_matches(ruffle: &str, flash: &str) -> Result<()> {
+    if flash != ruffle {
+        let left_pretty = PrettyString(ruffle);
+        let right_pretty = PrettyString(flash);
+        let comparison = Comparison::new(&left_pretty, &right_pretty);
+
+        Err(anyhow!(
+            "assertion failed: `(flash_expected == ruffle_actual)`\
+                       \n\
+                       \n{}\
+                       \n",
+            comparison
+        ))
+    } else {
+        Ok(())
+    }
 }
