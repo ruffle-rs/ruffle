@@ -283,21 +283,35 @@ impl<'gc> Avm2Button<'gc> {
     pub fn set_state(self, context: &mut UpdateContext<'_, 'gc>, state: ButtonState) {
         self.invalidate_cached_bitmap(context.gc());
 
-        if let Some(state) = self.0.up_state.get() {
-            state.set_parent(context, None);
-        }
-        if let Some(state) = self.0.over_state.get() {
-            state.set_parent(context, None);
-        }
-        if let Some(state) = self.0.down_state.get() {
-            state.set_parent(context, None);
-        }
-        if let Some(state) = self.0.hit_area.get() {
+        for state in self.all_state_children(false) {
             state.set_parent(context, None);
         }
         if let Some(state) = self.get_state_child(state.into()) {
             state.set_parent(context, Some(self.into()));
         }
+    }
+
+    /// Get all the display objects representing button states.
+    fn all_state_children(
+        &self,
+        weird_order: bool,
+    ) -> impl Iterator<Item = DisplayObject<'gc>> + '_ {
+        let children = if weird_order {
+            [
+                &self.0.up_state,
+                &self.0.over_state,
+                &self.0.down_state,
+                &self.0.hit_area,
+            ]
+        } else {
+            [
+                &self.0.hit_area,
+                &self.0.up_state,
+                &self.0.down_state,
+                &self.0.over_state,
+            ]
+        };
+        children.into_iter().filter_map(Lock::get)
     }
 
     /// Get the display object that represents a particular button state.
@@ -436,38 +450,14 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
     }
 
     fn enter_frame(&self, context: &mut UpdateContext<'_, 'gc>) {
-        if let Some(hit_area) = self.0.hit_area.get() {
-            hit_area.enter_frame(context);
-        }
-
-        if let Some(up_state) = self.0.up_state.get() {
-            up_state.enter_frame(context);
-        }
-
-        if let Some(down_state) = self.0.down_state.get() {
-            down_state.enter_frame(context);
-        }
-
-        if let Some(over_state) = self.0.over_state.get() {
-            over_state.enter_frame(context);
+        for state in self.all_state_children(false) {
+            state.enter_frame(context);
         }
     }
 
     fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc>) {
-        if let Some(hit_area) = self.0.hit_area.get() {
-            hit_area.construct_frame(context);
-        }
-
-        if let Some(up_state) = self.0.up_state.get() {
-            up_state.construct_frame(context);
-        }
-
-        if let Some(down_state) = self.0.down_state.get() {
-            down_state.construct_frame(context);
-        }
-
-        if let Some(over_state) = self.0.over_state.get() {
-            over_state.construct_frame(context);
+        for state in self.all_state_children(false) {
+            state.construct_frame(context);
         }
 
         let needs_avm2_construction = self.0.object.get().is_none();
@@ -579,32 +569,8 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
     }
 
     fn run_frame_scripts(self, context: &mut UpdateContext<'_, 'gc>) {
-        if self.0.weird_framescript_order.take() {
-            if let Some(up_state) = self.0.up_state.get() {
-                up_state.run_frame_scripts(context);
-            }
-            if let Some(over_state) = self.0.over_state.get() {
-                over_state.run_frame_scripts(context);
-            }
-            if let Some(down_state) = self.0.down_state.get() {
-                down_state.run_frame_scripts(context);
-            }
-            if let Some(hit_area) = self.0.hit_area.get() {
-                hit_area.run_frame_scripts(context);
-            }
-        } else {
-            if let Some(hit_area) = self.0.hit_area.get() {
-                hit_area.run_frame_scripts(context);
-            }
-            if let Some(up_state) = self.0.up_state.get() {
-                up_state.run_frame_scripts(context);
-            }
-            if let Some(down_state) = self.0.down_state.get() {
-                down_state.run_frame_scripts(context);
-            }
-            if let Some(over_state) = self.0.over_state.get() {
-                over_state.run_frame_scripts(context);
-            }
+        for state in self.all_state_children(self.0.weird_framescript_order.take()) {
+            state.run_frame_scripts(context);
         }
     }
 
