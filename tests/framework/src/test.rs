@@ -54,38 +54,22 @@ impl Test {
     ) -> Result<()> {
         let movie = self.movie()?;
         let viewport_dimensions = self.options.player_options.viewport_dimensions(&movie);
-        let renderers = self
+        let renderer = self
             .options
             .player_options
             .create_renderer(environment, viewport_dimensions);
 
-        if renderers.is_empty() {
-            let output = run_swf(
-                self,
-                movie,
-                self.input_injector()?,
-                self.socket_events()?,
-                &mut before_start,
-                &mut before_end,
-                None,
-                viewport_dimensions,
-            )?;
-            self.compare_output(&output)?;
-        } else {
-            for renderer in renderers {
-                let output = run_swf(
-                    self,
-                    movie.clone(),
-                    self.input_injector()?,
-                    self.socket_events()?,
-                    &mut before_start,
-                    &mut before_end,
-                    Some(renderer),
-                    viewport_dimensions,
-                )?;
-                self.compare_output(&output)?;
-            }
-        }
+        let output = run_swf(
+            self,
+            movie,
+            self.input_injector()?,
+            self.socket_events()?,
+            &mut before_start,
+            &mut before_end,
+            renderer,
+            viewport_dimensions,
+        )?;
+        self.compare_output(&output)?;
 
         Ok(())
     }
