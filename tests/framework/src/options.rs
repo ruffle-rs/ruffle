@@ -15,7 +15,7 @@ use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 use vfs::VfsPath;
 
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct TestOptions {
     pub num_frames: Option<u32>,
@@ -83,7 +83,7 @@ impl TestOptions {
     }
 }
 
-#[derive(Deserialize, Default)]
+#[derive(Clone, Deserialize, Default)]
 #[serde(default, deny_unknown_fields)]
 pub struct Approximations {
     number_patterns: Vec<String>,
@@ -116,7 +116,7 @@ impl Approximations {
     }
 }
 
-#[derive(Deserialize, Default)]
+#[derive(Clone, Deserialize, Default)]
 #[serde(default, deny_unknown_fields)]
 pub struct RequiredFeatures {
     lzma: bool,
@@ -129,7 +129,7 @@ impl RequiredFeatures {
     }
 }
 
-#[derive(Deserialize, Default)]
+#[derive(Clone, Deserialize, Default)]
 #[serde(default, deny_unknown_fields)]
 pub struct PlayerOptions {
     max_execution_duration: Option<Duration>,
@@ -356,7 +356,7 @@ impl ImageComparison {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct RenderOptions {
     optional: bool,
