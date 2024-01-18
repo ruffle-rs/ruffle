@@ -52,9 +52,7 @@ impl Test {
         mut before_end: impl FnMut(Arc<Mutex<Player>>) -> Result<()>,
         environment: &impl Environment,
     ) -> Result<()> {
-        let data = read_bytes(&self.swf_path)?;
-        let movie = SwfMovie::from_data(&data, format!("file:///{}", self.swf_path.as_str()), None)
-            .map_err(|e| anyhow!(e.to_string()))?;
+        let movie = self.movie()?;
         let viewport_dimensions = self.options.player_options.viewport_dimensions(&movie);
         let renderers = self
             .options
@@ -90,6 +88,13 @@ impl Test {
         }
 
         Ok(())
+    }
+
+    pub fn movie(&self) -> Result<SwfMovie> {
+        let data = read_bytes(&self.swf_path)?;
+        let movie = SwfMovie::from_data(&data, format!("file:///{}", self.swf_path.as_str()), None)
+            .map_err(|e| anyhow!(e.to_string()))?;
+        Ok(movie)
     }
 
     fn socket_events(&self) -> Result<Option<Vec<SocketEvent>>> {
