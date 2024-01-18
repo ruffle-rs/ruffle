@@ -399,7 +399,6 @@ impl<'gc> EditText<'gc> {
         let text = Self::new(context, swf_movie, x, y, width, height);
         text.set_is_tlf(context.gc_context, true);
         text.set_selectable(false, context);
-        text.set_is_device_font(context, true);
 
         text
     }

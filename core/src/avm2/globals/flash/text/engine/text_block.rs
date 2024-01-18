@@ -139,7 +139,7 @@ fn apply_format<'gc>(
             .get_public_property("fontSize", activation)?
             .coerce_to_number(activation)?;
 
-        let (font, bold, italic) = if let Value::Object(font_description) =
+        let (font, bold, italic, is_device_font) = if let Value::Object(font_description) =
             element_format.get_public_property("fontDescription", activation)?
         {
             (
@@ -162,9 +162,13 @@ fn apply_format<'gc>(
                         .coerce_to_string(activation)?
                         == b"italic",
                 ),
+                &font_description
+                    .get_public_property("fontLookup", activation)?
+                    .coerce_to_string(activation)?
+                    == b"device",
             )
         } else {
-            (None, None, None)
+            (None, None, None, true)
         };
 
         let format = TextFormat {
@@ -176,8 +180,11 @@ fn apply_format<'gc>(
             ..TextFormat::default()
         };
 
+        display_object.set_is_device_font(&mut activation.context, is_device_font);
         display_object.set_text_format(0, text.len(), format.clone(), &mut activation.context);
         display_object.set_new_text_format(format, &mut activation.context);
+    } else {
+        display_object.set_is_device_font(&mut activation.context, true);
     }
 
     display_object.set_word_wrap(true, &mut activation.context);
