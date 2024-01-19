@@ -1,5 +1,5 @@
 use crate::avm2::bytearray::{ByteArrayError, ByteArrayStorage};
-use crate::avm2::error::range_error;
+use crate::avm2::error::make_error_2006;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::{Activation, Error, Value as Avm2Value};
 use crate::bitmap::bitmap_data::{
@@ -1639,11 +1639,7 @@ pub fn set_vector<'gc>(
     let width = (x_max - x_min) as usize;
     let height = (y_max - y_min) as usize;
     if vector.length() < width * height {
-        return Err(Error::AvmError(range_error(
-            activation,
-            "Error #2006: The supplied index is out of bounds.",
-            2006,
-        )?));
+        return Err(make_error_2006(activation));
     }
 
     let region = PixelRegion::for_region(x_min, y_min, width as u32, height as u32);

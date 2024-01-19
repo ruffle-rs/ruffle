@@ -1875,6 +1875,28 @@ impl<'gc> EditText<'gc> {
         })
     }
 
+    pub fn line_text(self, line: usize) -> Option<WString> {
+        let read = self.0.read();
+        let line = read.line_data.get(line).copied()?;
+
+        let mut text = WString::new();
+        for layout_box in read.layout.iter() {
+            if layout_box.bounds().offset_y() < line.offset
+                || layout_box.bounds().extent_y() > line.extent
+            {
+                continue;
+            }
+
+            if let LayoutContent::Text { start, end, .. } = layout_box.content() {
+                if let Some(box_tex) = read.text_spans.text().slice(*start..*end) {
+                    text.push_str(box_tex);
+                }
+            }
+        }
+
+        Some(text)
+    }
+
     fn execute_avm1_asfunction(
         self,
         context: &mut UpdateContext<'_, 'gc>,

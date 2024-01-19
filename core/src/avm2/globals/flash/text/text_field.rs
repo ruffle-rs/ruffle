@@ -1,7 +1,7 @@
 //! `flash.text.TextField` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::error::make_error_2008;
+use crate::avm2::error::{make_error_2006, make_error_2008};
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
 use crate::avm2::object::{ClassObject, Object, TObject, TextFormatObject};
 use crate::avm2::parameters::ParametersExt;
@@ -889,7 +889,7 @@ pub fn set_text_format<'gc>(
                 }
 
                 if begin_index as usize > this.text_length() {
-                    return Err("RangeError: The supplied index is out of bounds.".into());
+                    return Err(make_error_2006(activation));
                 }
 
                 if end_index < 0 {
@@ -897,7 +897,7 @@ pub fn set_text_format<'gc>(
                 }
 
                 if end_index as usize > this.text_length() {
-                    return Err("RangeError: The supplied index is out of bounds.".into());
+                    return Err(make_error_2006(activation));
                 }
 
                 this.set_text_format(
@@ -1121,11 +1121,7 @@ pub fn get_line_metrics<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let line_num = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_i32(activation)?;
+        let line_num = args.get_i32(activation, 0)?;
         let metrics = this.layout_metrics(Some(line_num as usize));
 
         if let Some(metrics) = metrics {
@@ -1146,6 +1142,26 @@ pub fn get_line_metrics<'gc>(
         } else {
             return Err("RangeError".into());
         }
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn get_line_text<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this
+        .as_display_object()
+        .and_then(|this| this.as_edit_text())
+    {
+        let line_num = args.get_i32(activation, 0)?;
+        return if let Some(text) = this.line_text(line_num as usize) {
+            Ok(AvmString::new(activation.gc(), text).into())
+        } else {
+            Err(make_error_2006(activation))
+        };
     }
 
     Ok(Value::Undefined)
