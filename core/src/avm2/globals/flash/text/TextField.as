@@ -147,10 +147,7 @@ package flash.text {
             return 0;
         }
 
-        public function getLineText(lineIndex:int):String {
-            stub_method("flash.text.TextField", "getLineText");
-            return "";
-        }
+        public native function getLineText(lineIndex:int):String;
 
         public function getCharBoundaries(charIndex:int):Rectangle {
             stub_method("flash.text.TextField", "getCharBoundaries");

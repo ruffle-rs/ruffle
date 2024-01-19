@@ -1,4 +1,4 @@
-use crate::avm2::error::{eof_error, range_error};
+use crate::avm2::error::{eof_error, make_error_2006};
 use crate::avm2::Activation;
 use crate::avm2::Error;
 use crate::string::{FromWStr, WStr};
@@ -43,14 +43,7 @@ impl ByteArrayError {
                 Ok(e) => Error::AvmError(e),
                 Err(e) => e,
             },
-            ByteArrayError::IndexOutOfBounds => match range_error(
-                activation,
-                "Error #2006: The supplied index is out of bounds.",
-                2006,
-            ) {
-                Ok(e) => Error::AvmError(e),
-                Err(e) => e,
-            },
+            ByteArrayError::IndexOutOfBounds => make_error_2006(activation),
         }
     }
 }
