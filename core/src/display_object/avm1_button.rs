@@ -76,7 +76,7 @@ impl<'gc> Avm1Button<'gc> {
             over_to_up_sound: None,
         };
 
-        Avm1Button(GcCell::new(
+        let result = Avm1Button(GcCell::new(
             gc_context,
             Avm1ButtonData {
                 base: Default::default(),
@@ -93,7 +93,11 @@ impl<'gc> Avm1Button<'gc> {
                 },
                 has_focus: false,
             },
-        ))
+        ));
+        result
+            .base_mut(gc_context)
+            .add_button_actions_to_clip_events(button.clone());
+        result
     }
 
     pub fn set_sounds(self, gc_context: &Mutation<'gc>, sounds: swf::ButtonSounds) {

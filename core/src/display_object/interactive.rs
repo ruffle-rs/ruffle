@@ -458,7 +458,14 @@ pub trait TInteractiveObject<'gc>:
             return ClipEventResult::Handled;
         }
 
-        self.event_dispatch(context, event)
+        if event.flag().is_none()
+            || self.as_displayobject().has_clip_event(event)
+            || context.is_action_script_3()
+        {
+            self.event_dispatch(context, event)
+        } else {
+            ClipEventResult::NotHandled
+        }
     }
 
     /// Determine the bottom-most interactive display object under the given

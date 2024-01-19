@@ -440,6 +440,35 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
     }
 
+    fn update_clip_events(&mut self, func_name: Option<AvmString<'gc>>) {
+        let mut obj_offset = 0;
+        let name = if let Some(name) = func_name {
+            Some(name.to_string())
+        } else if let Value::String(name) = self.context.avm1.peek(0) {
+            obj_offset += 1;
+            Some(name.to_string())
+        } else {
+            None
+        };
+
+        if let Some(name) = name {
+            if let Some(event) = crate::events::method_name_to_clip_event(name.as_str()) {
+                let mut clip = match self.context.avm1.peek(obj_offset) {
+                    Value::MovieClip(movie_clip) => {
+                        if let Some((_, _, clip)) = movie_clip.resolve_reference(self) {
+                            clip
+                        } else {
+                            self.base_clip()
+                        }
+                    }
+                    Value::Object(object) => object.as_display_object().unwrap_or(self.base_clip()),
+                    _ => self.base_clip(),
+                };
+                clip.update_clip_events(self.context.gc_context, event);
+            }
+        }
+    }
+
     /// Run a single action from a given action reader.
     fn do_action<'b>(
         &mut self,
@@ -921,6 +950,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             self.context.avm1.prototypes().function,
             prototype,
         );
+
+        self.update_clip_events(name);
         if let Some(name) = name {
             self.define_local(name, func_obj.into())?;
         } else {
@@ -1189,6 +1220,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn action_get_variable(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let var_path = self.context.avm1.pop();
         let path = var_path.coerce_to_string(self)?;
+        self.update_clip_events(None);
 
         let value: Value<'gc> = self.get_variable(path)?.into();
 

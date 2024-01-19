@@ -3504,6 +3504,7 @@ impl<'gc> MovieClipData<'gc> {
         for handler in &event_handlers {
             all_event_flags |= handler.events;
         }
+        self.base.base.set_clip_events_inplace(all_event_flags);
         self.clip_event_flags = all_event_flags;
         self.clip_event_handlers = event_handlers;
     }

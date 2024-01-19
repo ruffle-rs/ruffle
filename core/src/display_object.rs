@@ -8,6 +8,7 @@ use crate::avm2::{
 };
 use crate::context::{RenderContext, UpdateContext};
 use crate::drawing::Drawing;
+use crate::events::ClipEvent;
 use crate::prelude::*;
 use crate::string::{AvmString, WString};
 use crate::tag_utils::SwfMovie;
@@ -240,6 +241,10 @@ pub struct DisplayObjectBase<'gc> {
     #[collect(require_static)]
     opaque_background: Option<Color>,
 
+    #[collect(require_static)]
+    /// `ClipEvent`s this display object handles.
+    clip_events: swf::ClipEventFlag,
+
     /// Bit flags for various display object properties.
     #[collect(require_static)]
     flags: DisplayObjectFlags,
@@ -286,6 +291,7 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
             blend_mode: Default::default(),
             blend_shader: None,
             opaque_background: Default::default(),
+            clip_events: swf::ClipEventFlag::empty(),
             flags: DisplayObjectFlags::VISIBLE,
             scroll_rect: None,
             next_scroll_rect: Default::default(),
@@ -650,6 +656,39 @@ impl<'gc> DisplayObjectBase<'gc> {
         let changed = self.opaque_background != value;
         self.opaque_background = value;
         changed
+    }
+
+    pub fn clip_events(&self) -> swf::ClipEventFlag {
+        self.clip_events
+    }
+
+    pub fn set_clip_events(&mut self, value: swf::ClipEventFlag) {
+        self.clip_events = value;
+    }
+
+    pub fn set_clip_events_inplace(&mut self, value: swf::ClipEventFlag) {
+        self.clip_events |= value;
+    }
+
+    fn has_clip_event(&self, event: crate::events::ClipEvent<'gc>) -> bool {
+        if let Some(flag) = event.flag() {
+            return self.clip_events().contains(flag);
+        }
+        false
+    }
+
+    fn add_button_actions_to_clip_events(&mut self, button: swf::Button<'_>) {
+        let mut all_button_actions = swf::ButtonActionCondition::empty();
+        for action in &button.actions {
+            all_button_actions |= action.conditions;
+        }
+        self.set_clip_events_inplace(crate::events::button_action_conditions_to_clip_events(
+            all_button_actions,
+        ));
+    }
+
+    fn update_clip_events(&mut self, event: ClipEvent<'_>) {
+        self.set_clip_events_inplace(event.flag().unwrap_or(swf::ClipEventFlag::empty()));
     }
 
     fn is_root(&self) -> bool {
@@ -1751,6 +1790,39 @@ pub trait TDisplayObject<'gc>:
         }
     }
 
+    fn clip_events(&self) -> swf::ClipEventFlag {
+        self.base().clip_events()
+    }
+
+    fn set_clip_events(&mut self, gc_context: MutationContext<'gc, '_>, value: swf::ClipEventFlag) {
+        self.base_mut(gc_context).set_clip_events(value);
+    }
+
+    fn set_clip_events_inplace(
+        &mut self,
+        gc_context: MutationContext<'gc, '_>,
+        value: swf::ClipEventFlag,
+    ) {
+        self.base_mut(gc_context).set_clip_events_inplace(value);
+    }
+
+    fn has_clip_event(&self, event: crate::events::ClipEvent<'gc>) -> bool {
+        self.base().has_clip_event(event)
+    }
+
+    fn add_button_actions_to_clip_events<'a>(
+        &mut self,
+        gc_context: MutationContext<'gc, '_>,
+        button: swf::Button<'a>,
+    ) {
+        self.base_mut(gc_context)
+            .add_button_actions_to_clip_events(button);
+    }
+
+    fn update_clip_events(&mut self, gc_context: MutationContext<'gc, '_>, event: ClipEvent<'_>) {
+        self.base_mut(gc_context).update_clip_events(event);
+    }
+
     /// Whether this display object represents the root of loaded content.
     fn is_root(&self) -> bool {
         self.base().is_root()
@@ -2166,6 +2238,10 @@ pub trait TDisplayObject<'gc>:
     }
     fn as_interactive(self) -> Option<InteractiveObject<'gc>> {
         None
+    }
+
+    fn is_button(self) -> bool {
+        self.as_avm1_button().is_some() || self.as_avm2_button().is_some()
     }
 
     fn apply_place_object(
