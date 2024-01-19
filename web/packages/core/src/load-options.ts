@@ -525,7 +525,7 @@ export interface BaseLoadOptions {
      *
      * @default false
      */
-    allowFullScreen?: boolean;
+    allowFullscreen?: boolean;
 
     /**
      * Sets and locks the player's frame rate, overriding the movie's frame rate.

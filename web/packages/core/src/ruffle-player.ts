@@ -2500,9 +2500,9 @@ export function getPolyfillOptions(
     if (menu !== null) {
         options.menu = menu;
     }
-    const allowFullScreen = parseBoolean(getOptionString("allowFullScreen"));
-    if (allowFullScreen !== null) {
-        options.allowFullScreen = allowFullScreen;
+    const allowFullscreen = parseBoolean(getOptionString("allowFullScreen"));
+    if (allowFullscreen !== null) {
+        options.allowFullscreen = allowFullscreen;
     }
     const parameters = getOptionString("flashvars");
     if (parameters !== null) {

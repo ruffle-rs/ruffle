@@ -281,7 +281,7 @@ struct Config {
     #[serde(rename = "menu")]
     show_menu: bool,
 
-    allow_full_screen: bool,
+    allow_fullscreen: bool,
 
     salign: Option<String>,
 
@@ -710,7 +710,7 @@ impl Ruffle {
             // Set config parameters.
             core.set_background_color(config.background_color);
             core.set_show_menu(config.show_menu);
-            core.set_allow_full_screen(config.allow_full_screen);
+            core.set_allow_fullscreen(config.allow_fullscreen);
             core.set_window_mode(config.wmode.as_deref().unwrap_or("window"));
             callstack = Some(core.callstack());
         }

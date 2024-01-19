@@ -104,7 +104,7 @@ pub struct StageData<'gc> {
     forced_align: bool,
 
     /// Whether to allow the stage's displayState to be changed.
-    allow_full_screen: bool,
+    allow_fullscreen: bool,
 
     /// Whether or not a RENDER event should be dispatched on the next render
     invalidated: bool,
@@ -177,7 +177,7 @@ impl<'gc> Stage<'gc> {
                 invalidated: false,
                 align: Default::default(),
                 forced_align: false,
-                allow_full_screen: true,
+                allow_fullscreen: true,
                 use_bitmap_downsampling: false,
                 view_bounds: Default::default(),
                 window_mode: Default::default(),
@@ -336,13 +336,13 @@ impl<'gc> Stage<'gc> {
     }
 
     /// Get whether the Stage's display state can be changed.
-    pub fn allow_full_screen(self) -> bool {
-        self.0.read().allow_full_screen
+    pub fn allow_fullscreen(self) -> bool {
+        self.0.read().allow_fullscreen
     }
 
     /// Set whether the Stage's display state can be changed.
-    pub fn set_allow_full_screen(self, context: &mut UpdateContext<'_, 'gc>, allow: bool) {
-        self.0.write(context.gc_context).allow_full_screen = allow;
+    pub fn set_allow_fullscreen(self, context: &mut UpdateContext<'_, 'gc>, allow: bool) {
+        self.0.write(context.gc_context).allow_fullscreen = allow;
     }
 
     fn is_fullscreen_state(display_state: StageDisplayState) -> bool {
@@ -379,7 +379,7 @@ impl<'gc> Stage<'gc> {
     ) {
         if display_state == self.display_state()
             || (Self::is_fullscreen_state(display_state) && self.is_fullscreen())
-            || !self.allow_full_screen()
+            || !self.allow_fullscreen()
         {
             return;
         }
