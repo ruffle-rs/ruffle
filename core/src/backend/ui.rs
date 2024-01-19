@@ -22,6 +22,7 @@ pub enum FontDefinition<'a> {
         is_bold: bool,
         is_italic: bool,
         data: Vec<u8>,
+        index: u32,
     },
 }
 
