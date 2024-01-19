@@ -288,6 +288,7 @@ impl UiBackend for DesktopUiBackend {
                             is_bold,
                             is_italic,
                             data: bytes,
+                            index: face.index,
                         }),
                         Err(e) => error!("Couldn't read font file at {path:?}: {e}"),
                     },
@@ -297,6 +298,7 @@ impl UiBackend for DesktopUiBackend {
                             is_bold,
                             is_italic,
                             data: bin.as_ref().as_ref().to_vec(),
+                            index: face.index,
                         })
                     }
                 };

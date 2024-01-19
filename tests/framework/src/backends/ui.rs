@@ -142,6 +142,7 @@ impl UiBackend for TestUiBackend {
                 is_bold,
                 is_italic,
                 data: font.bytes.clone(),
+                index: 0,
             });
             break;
         }
