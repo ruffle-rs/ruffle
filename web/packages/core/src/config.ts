@@ -31,6 +31,7 @@ export const DEFAULT_CONFIG: Required<BaseLoadOptions> = {
     maxExecutionDuration: 15,
     base: null,
     menu: true,
+    allowFullScreen: false,
     salign: "",
     forceAlign: false,
     quality: "high",

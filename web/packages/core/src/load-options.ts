@@ -521,6 +521,13 @@ export interface BaseLoadOptions {
     forceScale?: boolean;
 
     /**
+     * If set to true, the Stage's displayState can be changed
+     *
+     * @default false
+     */
+    allowFullScreen?: boolean;
+
+    /**
      * Sets and locks the player's frame rate, overriding the movie's frame rate.
      *
      * @default null

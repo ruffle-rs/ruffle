@@ -813,6 +813,14 @@ impl Player {
         })
     }
 
+    /// Set whether the Stage's display state can be changed.
+    pub fn set_allow_full_screen(&mut self, allow_full_screen: bool) {
+        self.mutate_with_update_context(|context| {
+            let stage = context.stage;
+            stage.set_allow_full_screen(context, allow_full_screen);
+        })
+    }
+
     pub fn set_quality(&mut self, quality: StageQuality) {
         self.mutate_with_update_context(|context| {
             context.stage.set_quality(context, quality);
@@ -2095,6 +2103,7 @@ pub struct PlayerBuilder {
     forced_align: bool,
     scale_mode: StageScaleMode,
     forced_scale_mode: bool,
+    allow_full_screen: bool,
     fullscreen: bool,
     letterbox: Letterbox,
     max_execution_duration: Duration,
@@ -2137,6 +2146,7 @@ impl PlayerBuilder {
             forced_align: false,
             scale_mode: StageScaleMode::default(),
             forced_scale_mode: false,
+            allow_full_screen: true,
             fullscreen: false,
             // Disable script timeout in debug builds by default.
             letterbox: Letterbox::Fullscreen,
@@ -2535,6 +2545,7 @@ impl PlayerBuilder {
             stage.set_forced_align(context, self.forced_align);
             stage.set_scale_mode(context, self.scale_mode);
             stage.set_forced_scale_mode(context, self.forced_scale_mode);
+            stage.set_allow_full_screen(context, self.allow_full_screen);
             stage.post_instantiation(context, None, Instantiator::Movie, false);
             stage.build_matrices(context);
         });
