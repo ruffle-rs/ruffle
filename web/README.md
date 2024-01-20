@@ -87,6 +87,8 @@ In this project, you may run the following commands to build all packages:
 -   `npm install`
     -   This will install every dependency for every package.
     -   Run this every time you pull in new changes, otherwise you may be missing a package and the build will fail.
+    `rustup target add wasm32-unknown-unknown`
+    -    This will install the wasm target.
 -   `npm run build`
     -   This will build the wasm binary and every node package (notably selfhosted and extension).
     -   Output will be available in the `dist/` folder of each package (for example, `./packages/selfhosted/dist`).
