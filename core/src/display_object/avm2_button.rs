@@ -279,6 +279,7 @@ impl<'gc> Avm2Button<'gc> {
 
     /// Change the rendered state of the button.
     pub fn set_state(self, context: &mut UpdateContext<'_, 'gc>, state: ButtonState) {
+        self.invalidate_cached_bitmap(context.gc_context);
         self.0.write(context.gc_context).state = state;
         let button = self.0.read();
         if let Some(state) = button.up_state {
