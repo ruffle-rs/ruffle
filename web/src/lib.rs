@@ -501,8 +501,14 @@ impl Ruffle {
                                 );
                                 core.register_device_font(FontDefinition::SwfTag(*font, encoding));
                             }
-                            swf::Tag::DefineFont4(_font) => {
-                                tracing::warn!("DefineFont4 tag is not yet supported by Ruffle, inside font swf {font_name}");
+                            swf::Tag::DefineFont4(font) => {
+                                let name = font.name.to_str_lossy(encoding);
+                                if let Some(data) = font.data {
+                                    tracing::debug!("Loaded font {name} from font swf {font_name}");
+                                    core.register_device_font(FontDefinition::FontFile { name: name.to_string(), is_bold: font.is_bold, is_italic: font.is_bold, data: data.to_vec(), index: 0 })
+                                } else {
+                                    tracing::warn!("Font {name} from font swf {font_name} contains no data");
+                                }
                             }
                             _ => {}
                         }
