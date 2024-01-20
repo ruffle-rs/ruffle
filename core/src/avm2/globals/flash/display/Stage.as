@@ -1,5 +1,9 @@
 package flash.display {
+    import __ruffle__.stub_getter;
+    import __ruffle__.stub_setter;
     import flash.accessibility.AccessibilityProperties;
+    import flash.display.ColorCorrection;
+    import flash.display.ColorCorrectionSupport;
     import flash.errors.IllegalOperationError;
     import flash.filters.BitmapFilter;
     import flash.geom.Rectangle;
@@ -8,6 +12,7 @@ package flash.display {
 
     [Ruffle(NativeInstanceInit)]
     public class Stage extends DisplayObjectContainer {
+        private var _colorCorrection:String = ColorCorrection.DEFAULT;
 
         public function Stage() {
             throw new Error("You cannot construct new instances of the Stage.")
@@ -162,5 +167,19 @@ package flash.display {
         public native function get stage3Ds():Vector.<Stage3D>;
 
         public native function invalidate():void;
+
+        public function get colorCorrection():String {
+            return this._colorCorrection;
+        }
+        public function set colorCorrection(value:String):void {
+            stub_setter("flash.display.Stage", "colorCorrection");
+            if (value == null) throw new TypeError("Error #2007: Parameter colorCorrection must be non-null.", 2007);
+            this._colorCorrection = value;
+        }
+
+        public function get colorCorrectionSupport():String {
+            stub_getter("flash.display.Stage", "colorCorrectionSupport");
+            return ColorCorrectionSupport.UNSUPPORTED;
+        }
     }
 }
