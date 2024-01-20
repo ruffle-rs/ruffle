@@ -30,6 +30,9 @@ error-wasm-mime-type =
     Ruffle, başlatmaya çalışırken önemli bir sorunla karşılaştı.
     Bu web sunucusu, doğru MIME tipinde ".wasm" dosyaları sunmuyor.
     Sunucu yöneticisiyseniz, yardım için lütfen Ruffle wiki'sine başvurun.
+error-invalid-swf =
+    Ruffle istenen dosyayı ayrıştıramıyor.
+    Bunun en olası nedeni, istenen dosyanın geçerli bir SWF olmamasıdır.
 error-swf-fetch =
     Ruffle, Flash SWF dosyasını yükleyemedi.
     Bunun en olası nedeni, dosyanın artık mevcut olmaması ve bu nedenle Ruffle'ın yükleyeceği hiçbir şeyin olmamasıdır.
