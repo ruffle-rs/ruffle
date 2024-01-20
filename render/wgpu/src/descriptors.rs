@@ -23,7 +23,7 @@ pub struct Descriptors {
     copy_pipeline: Mutex<FnvHashMap<(u32, wgpu::TextureFormat), Arc<wgpu::RenderPipeline>>>,
     copy_srgb_pipeline: Mutex<FnvHashMap<(u32, wgpu::TextureFormat), Arc<wgpu::RenderPipeline>>>,
     pub shaders: Shaders,
-    pipelines: Mutex<FnvHashMap<(u32, wgpu::TextureFormat), Arc<Pipelines>>>,
+    pipelines: Mutex<FnvHashMap<(u32, wgpu::PolygonMode, wgpu::TextureFormat), Arc<Pipelines>>>,
     pub default_color_bind_group: wgpu::BindGroup,
     pub filters: Filters,
 }
@@ -238,19 +238,25 @@ impl Descriptors {
             .clone()
     }
 
-    pub fn pipelines(&self, msaa_sample_count: u32, format: wgpu::TextureFormat) -> Arc<Pipelines> {
+    pub fn pipelines(
+        &self,
+        msaa_sample_count: u32,
+        polygon_mode: wgpu::PolygonMode,
+        format: wgpu::TextureFormat,
+    ) -> Arc<Pipelines> {
         let mut pipelines = self
             .pipelines
             .lock()
             .expect("Pipelines should not be already locked");
         pipelines
-            .entry((msaa_sample_count, format))
+            .entry((msaa_sample_count, polygon_mode, format))
             .or_insert_with(|| {
                 Arc::new(Pipelines::new(
                     &self.device,
                     &self.shaders,
                     format,
                     msaa_sample_count,
+                    polygon_mode,
                     &self.bind_layouts,
                 ))
             })

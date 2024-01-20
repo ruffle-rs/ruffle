@@ -4,6 +4,7 @@ mod open_dialog;
 
 pub use controller::GuiController;
 pub use movie::MovieView;
+use ruffle_render_wgpu::backend::WgpuRenderBackend;
 use std::borrow::Cow;
 use url::Url;
 
@@ -300,6 +301,29 @@ impl RuffleGui {
                             if let Some(player) = &mut player {
                                 player.debug_ui().queue_message(DebugMessage::SearchForDisplayObject);
                             }
+                        }
+
+                        // The rest is for the backend-specific "Wireframe Mode" toggle.
+                        let mut renderer: Option<&mut WgpuRenderBackend<MovieView>> =
+                            player
+                                .map(|p| p.renderer_mut().downcast_mut()
+                                    .expect("The renderer should be a WgpuRenderBackend<MovieView>"));
+
+                        if let Some(ref mut renderer) = renderer {
+                            let wireframe_available = renderer.is_wireframe_available();
+
+                            let mut wireframe_enabled = renderer.get_wireframe();
+                            if ui.add_enabled(wireframe_available, Checkbox::new(&mut wireframe_enabled, text(&self.locale, "debug-menu-wireframe-mode")))
+                                .on_disabled_hover_text("Not supported by graphics device")
+                                .changed()
+                            {
+                                    ui.close_menu();
+                                    renderer.set_wireframe(wireframe_enabled);
+                            }
+                        }
+                        else {
+                            let mut wireframe_enabled: bool = false;
+                            ui.add_enabled(false, Checkbox::new(&mut wireframe_enabled, text(&self.locale, "debug-menu-wireframe-mode")));
                         }
                     });
                 });
