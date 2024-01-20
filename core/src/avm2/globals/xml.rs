@@ -230,6 +230,15 @@ pub fn namespace_internal_impl<'gc>(
     }
 }
 
+pub fn in_scope_namespaces<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_method!(activation, "XML", "inScopeNamespaces");
+    Ok(ArrayObject::empty(activation)?.into())
+}
+
 pub fn namespace_declarations<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
