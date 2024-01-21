@@ -237,7 +237,7 @@ impl ActivePlayer {
                 DefaultFont::JapaneseGothicMono,
                 vec![
                     "Osaka－等幅".into(),      // Mac with Japanese environment
-                    "MS UI Gothic".into(),     // Windows
+                    "MS Gothic".into(),        // Windows
                     "Noto Sans CJK JP".into(), // Linux
                     "Arial Unicode MS".into(), // Mac fallback
                 ],
@@ -246,7 +246,7 @@ impl ActivePlayer {
                 DefaultFont::JapaneseMincho,
                 vec![
                     "ヒラギノ明朝 Pro W3".into(), // Mac with Japanese environment
-                    "MS UI Gothic".into(),        // Windows
+                    "MS PMincho".into(),          // Windows
                     "Noto Sans CJK JP".into(),    // Linux
                     "Arial Unicode MS".into(),    // Mac fallback
                 ],
