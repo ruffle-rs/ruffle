@@ -30,6 +30,9 @@ error-wasm-mime-type =
     Ruffle 在试图初始化时遇到了一个重大问题。
     该网站服务器没有提供 ".asm” 文件正确的 MIME 类型。
     如果您是服务器管理员，请查阅 Ruffle Wiki 获取帮助。
+error-invalid-swf =
+    Ruffle无法解析请求的文件。
+    最有可能的原因是该请求文件不是一个合法的SWF文件。
 error-swf-fetch =
     Ruffle 无法加载 Flash SWF 文件。
     最可能的原因是文件不再存在所以 Ruffle 没有要加载的内容。
