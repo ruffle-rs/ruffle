@@ -100,3 +100,7 @@ egui = { git = "https://github.com/emilk/egui", rev = "d319489479c371b15e6419d47
 egui_extras = { git = "https://github.com/emilk/egui", rev = "d319489479c371b15e6419d470551dae5d647396"}
 egui-winit = { git = "https://github.com/emilk/egui", rev = "d319489479c371b15e6419d470551dae5d647396"}
 egui-wgpu = { git = "https://github.com/emilk/egui", rev = "d319489479c371b15e6419d470551dae5d647396"}
+
+# TODO: Replace on new wgpu update
+wgpu = { git = "https://github.com/gfx-rs/wgpu", rev = "e128d6c2613c7f8aecd25539c6fbc914bfda04f7"}
+naga = { git = "https://github.com/gfx-rs/wgpu", rev = "e128d6c2613c7f8aecd25539c6fbc914bfda04f7"}
