@@ -5,10 +5,7 @@ use crate::avm1::Object;
 use crate::avm1::SystemProperties;
 use crate::avm1::VariableDumper;
 use crate::avm1::{Activation, ActivationIdentifier};
-use crate::avm1::{ScriptObject, TObject, Value};
 use crate::avm1::{TObject, Value};
-use crate::avm2::api_version::ApiVersion;
-use crate::avm2::specification::capture_specification;
 use crate::avm2::{
     object::TObject as _, Activation as Avm2Activation, Avm2, CallStack, Object as Avm2Object,
 };
@@ -2124,6 +2121,8 @@ pub struct PlayerBuilder {
     frame_rate: Option<f64>,
     external_interface_providers: Vec<Box<dyn ExternalInterfaceProvider>>,
     fs_command_provider: Box<dyn FsCommandProvider>,
+    #[cfg(feature = "known_stubs")]
+    stub_report_output: Option<std::path::PathBuf>,
 }
 
 impl PlayerBuilder {
@@ -2172,6 +2171,8 @@ impl PlayerBuilder {
             frame_rate: None,
             external_interface_providers: vec![],
             fs_command_provider: Box::new(NullFsCommandProvider),
+            #[cfg(feature = "known_stubs")]
+            stub_report_output: None,
         }
     }
 
@@ -2358,6 +2359,14 @@ impl PlayerBuilder {
     /// Adds an FSCommand implementation for movies to communicate with
     pub fn with_fs_commands(mut self, provider: Box<dyn FsCommandProvider>) -> Self {
         self.fs_command_provider = provider;
+        self
+    }
+
+    #[cfg(feature = "known_stubs")]
+    /// Sets the output path for the stub report. When set, the player
+    /// will write the report to this path and exit the process.
+    pub fn with_stub_report_output(mut self, output: std::path::PathBuf) -> Self {
+        self.stub_report_output = Some(output);
         self
     }
 
@@ -2551,7 +2560,10 @@ impl PlayerBuilder {
             stage.set_allow_fullscreen(context, self.allow_fullscreen);
             stage.post_instantiation(context, None, Instantiator::Movie, false);
             stage.build_matrices(context);
-            capture_specification(context);
+            #[cfg(feature = "known_stubs")]
+            if let Some(stub_path) = self.stub_report_output {
+                crate::avm2::specification::capture_specification(context, &stub_path);
+            }
         });
         player_lock.gc_arena.borrow().mutate(|context, root| {
             let call_stack = root.data.read().avm2.call_stack();
