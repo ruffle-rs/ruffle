@@ -1,4 +1,4 @@
-use crate::avm2::dynamic_map::{DynamicMap, StringOrObject};
+use crate::avm2::dynamic_map::DynamicKey;
 use crate::avm2::function::Executable;
 use crate::avm2::method::{Method, ParamConfig};
 use crate::avm2::object::TObject;
@@ -11,6 +11,7 @@ use fnv::{FnvHashMap, FnvHashSet};
 use serde::Serialize;
 use std::borrow::Cow;
 use std::fs::File;
+use std::path::Path;
 use std::process::exit;
 
 fn is_false(b: &bool) -> bool {
@@ -298,12 +299,14 @@ impl Definition {
 
         let prototype = class_object.prototype();
         let prototype_base = prototype.base();
-        let prototype_values: &DynamicMap<StringOrObject<'gc>, Value<'gc>> =
-            prototype_base.values();
+        let prototype_values = prototype_base.values();
         for (key, value) in prototype_values.as_hashmap().iter() {
             let name = match key {
-                StringOrObject::String(name) => *name,
-                StringOrObject::Object(object) => {
+                DynamicKey::String(name) => *name,
+                DynamicKey::Uint(key) => {
+                    AvmString::new_utf8(activation.context.gc_context, key.to_string())
+                }
+                DynamicKey::Object(object) => {
                     Value::Object(*object).coerce_to_string(activation).unwrap()
                 }
             };
@@ -321,13 +324,13 @@ impl Definition {
             activation.avm2(),
             class.read().class_traits(),
             &mut definition.static_traits,
-            &stubs,
+            stubs,
         );
         Self::fill_traits(
             activation.avm2(),
             class.read().instance_traits(),
             &mut definition.instance_traits,
-            &stubs,
+            stubs,
         );
 
         definition
@@ -454,9 +457,11 @@ impl Definition {
     }
 }
 
-pub fn capture_specification(context: &mut UpdateContext) {
-    let mut definitions = FnvHashMap::<String, Definition>::default();
+#[allow(unreachable_code, unused_variables, clippy::diverging_sub_expression)]
+pub fn capture_specification(context: &mut UpdateContext, output: &Path) {
     let stubs = crate::stub::get_known_stubs();
+
+    let mut definitions = FnvHashMap::<String, Definition>::default();
 
     let defs = context.avm2.playerglobals_domain.defs().clone();
     let mut activation = Activation::from_nothing(context.reborrow());
@@ -510,7 +515,7 @@ pub fn capture_specification(context: &mut UpdateContext) {
             );
         }
     }
-    serde_json::to_writer_pretty(&File::create("implementation.json").unwrap(), &definitions)
-        .unwrap();
+    serde_json::to_writer_pretty(&File::create(output).unwrap(), &definitions).unwrap();
+    tracing::info!("Wrote stub report to {output:?}");
     exit(0);
 }

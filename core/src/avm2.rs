@@ -58,6 +58,7 @@ mod qname;
 mod regexp;
 mod scope;
 mod script;
+#[cfg(feature = "known_stubs")]
 pub mod specification;
 mod string;
 mod stubs;
