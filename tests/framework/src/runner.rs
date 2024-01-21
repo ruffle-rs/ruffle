@@ -358,7 +358,7 @@ impl TestRunner {
                         continue;
                     }
 
-                    approximations.compare(actual, expected);
+                    approximations.compare(actual, expected)?;
                 } else {
                     let mut found = false;
 
@@ -393,7 +393,7 @@ impl TestRunner {
                                     .as_str()
                                     .parse::<f64>()
                                     .expect("Failed to parse 'expected' capture group as float");
-                                approximations.compare(actual_num, expected_num);
+                                approximations.compare(actual_num, expected_num)?;
                             }
                             let modified_actual = pattern.replace_all(actual, "");
                             let modified_expected = pattern.replace_all(expected, "");
