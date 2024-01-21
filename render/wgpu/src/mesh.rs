@@ -224,6 +224,7 @@ impl PendingDrawType {
                 usage: wgpu::TextureUsages::TEXTURE_BINDING,
                 view_formats: &[],
             },
+            wgpu::util::TextureDataOrder::LayerMajor,
             &colors[..],
         );
         let view = texture.create_view(&Default::default());

@@ -17,6 +17,7 @@ use wgpu::{CommandEncoder, Extent3d, RenderPass};
 
 use crate::context3d::current_pipeline::{BoundTextureData, AGAL_FLOATS_PER_REGISTER};
 use crate::descriptors::Descriptors;
+use crate::utils::supported_sample_count;
 use crate::Texture;
 
 use std::num::NonZeroU64;
@@ -547,6 +548,8 @@ impl Context3D for WgpuContext3D {
                 wants_best_resolution: _,
                 wants_best_resolution_on_browser_zoom: _,
             } => {
+                let format = wgpu::TextureFormat::Rgba8Unorm;
+
                 let mut sample_count = anti_alias;
                 if sample_count == 0 {
                     sample_count = 1;
@@ -556,9 +559,10 @@ impl Context3D for WgpuContext3D {
                     // Round down to nearest power of 2
                     sample_count = next_pot / 2;
                 }
+                sample_count =
+                    supported_sample_count(&self.descriptors.adapter, sample_count, format);
 
                 let texture_label = create_debug_label!("Render target texture");
-                let format = wgpu::TextureFormat::Rgba8Unorm;
 
                 let make_it = || {
                     // TODO - see if we can deduplicate this with the code in `CommandTarget`
@@ -1013,7 +1017,7 @@ impl Context3D for WgpuContext3D {
                 // BitmapData's gpu texture might be modified before we actually submit
                 // `buffer_command_encoder` to the device.
                 let dest_format = dest.texture.format();
-                let mut bytes_per_row = dest_format.block_size(None).unwrap()
+                let mut bytes_per_row = dest_format.block_copy_size(None).unwrap()
                     * (dest.width() / dest_format.block_dimensions().0);
 
                 let rows_per_image = dest.height() / dest_format.block_dimensions().1;

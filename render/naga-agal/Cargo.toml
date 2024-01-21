@@ -18,4 +18,4 @@ num-traits = "0.2.17"
 
 [dev-dependencies]
 insta = "1.34.0"
-naga = { workspace = true, features = ["wgsl-out", "validate"] }
+naga = { workspace = true, features = ["wgsl-out"] }

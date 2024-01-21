@@ -2,7 +2,6 @@ use crate::buffer_pool::BufferDescription;
 use crate::descriptors::Descriptors;
 use crate::globals::Globals;
 use crate::Transforms;
-use ruffle_render::quality::StageQuality;
 use std::borrow::Cow;
 use std::mem::size_of;
 use wgpu::util::DeviceExt;
@@ -62,9 +61,6 @@ pub fn get_backend_names(backends: wgpu::Backends) -> Vec<&'static str> {
     }
     if backends.contains(wgpu::Backends::DX12) {
         names.push("DirectX 12");
-    }
-    if backends.contains(wgpu::Backends::DX11) {
-        names.push("DirectX 11");
     }
     if backends.contains(wgpu::Backends::METAL) {
         names.push("Metal");
@@ -186,10 +182,9 @@ pub fn buffer_to_image(
 
 pub fn supported_sample_count(
     adapter: &wgpu::Adapter,
-    quality: StageQuality,
+    mut sample_count: u32,
     format: wgpu::TextureFormat,
 ) -> u32 {
-    let mut sample_count = quality.sample_count();
     let features = adapter.get_texture_format_features(format).flags;
 
     // Keep halving the sample count until we get one that's supported - or 1 (no multisampling)

@@ -154,8 +154,7 @@ impl<'a> ShaderBuilder<'a> {
                 name: None,
                 inner: TypeInner::Vector {
                     size: naga::VectorSize::Bi,
-                    kind: ScalarKind::Float,
-                    width: 4,
+                    scalar: naga::Scalar::F32,
                 },
             },
             Span::UNDEFINED,
@@ -166,8 +165,8 @@ impl<'a> ShaderBuilder<'a> {
                 name: None,
                 inner: TypeInner::Vector {
                     size: naga::VectorSize::Quad,
-                    kind: ScalarKind::Float,
-                    width: 4,
+
+                    scalar: naga::Scalar::F32,
                 },
             },
             Span::UNDEFINED,
@@ -178,8 +177,7 @@ impl<'a> ShaderBuilder<'a> {
                 name: None,
                 inner: TypeInner::Vector {
                     size: naga::VectorSize::Quad,
-                    kind: ScalarKind::Sint,
-                    width: 4,
+                    scalar: naga::Scalar::I32,
                 },
             },
             Span::UNDEFINED,
@@ -191,7 +189,7 @@ impl<'a> ShaderBuilder<'a> {
                 inner: TypeInner::Matrix {
                     columns: naga::VectorSize::Bi,
                     rows: naga::VectorSize::Bi,
-                    width: 4,
+                    scalar: naga::Scalar::F32,
                 },
             },
             Span::UNDEFINED,
@@ -203,7 +201,7 @@ impl<'a> ShaderBuilder<'a> {
                 inner: TypeInner::Matrix {
                     columns: naga::VectorSize::Tri,
                     rows: naga::VectorSize::Tri,
-                    width: 4,
+                    scalar: naga::Scalar::F32,
                 },
             },
             Span::UNDEFINED,
@@ -215,7 +213,7 @@ impl<'a> ShaderBuilder<'a> {
                 inner: TypeInner::Matrix {
                     columns: naga::VectorSize::Quad,
                     rows: naga::VectorSize::Quad,
-                    width: 4,
+                    scalar: naga::Scalar::F32,
                 },
             },
             Span::UNDEFINED,

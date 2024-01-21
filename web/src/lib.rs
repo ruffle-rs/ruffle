@@ -501,8 +501,14 @@ impl Ruffle {
                                 );
                                 core.register_device_font(FontDefinition::SwfTag(*font, encoding));
                             }
-                            swf::Tag::DefineFont4(_font) => {
-                                tracing::warn!("DefineFont4 tag is not yet supported by Ruffle, inside font swf {font_name}");
+                            swf::Tag::DefineFont4(font) => {
+                                let name = font.name.to_str_lossy(encoding);
+                                if let Some(data) = font.data {
+                                    tracing::debug!("Loaded font {name} from font swf {font_name}");
+                                    core.register_device_font(FontDefinition::FontFile { name: name.to_string(), is_bold: font.is_bold, is_italic: font.is_bold, data: data.to_vec(), index: 0 })
+                                } else {
+                                    tracing::warn!("Font {name} from font swf {font_name} contains no data");
+                                }
                             }
                             _ => {}
                         }
@@ -1622,7 +1628,7 @@ async fn create_renderer(
 
     let _is_transparent = config.wmode.as_deref() == Some("transparent");
 
-    let mut renderer_list = vec!["webgpu", "wgpu-webgl", "webgl", "canvas"];
+    let mut renderer_list = vec!["wgpu-webgl", "webgpu", "webgl", "canvas"];
     if let Some(preferred_renderer) = &config.preferred_renderer {
         if let Some(pos) = renderer_list.iter().position(|&r| r == preferred_renderer) {
             renderer_list.remove(pos);
@@ -1654,8 +1660,11 @@ async fn create_renderer(
                         .dyn_into()
                         .map_err(|_| "Expected HtmlCanvasElement")?;
 
-                    match ruffle_render_wgpu::backend::WgpuRenderBackend::for_canvas(canvas.clone())
-                        .await
+                    match ruffle_render_wgpu::backend::WgpuRenderBackend::for_canvas(
+                        canvas.clone(),
+                        true,
+                    )
+                    .await
                     {
                         Ok(renderer) => {
                             return Ok((builder.with_renderer(renderer), canvas));
@@ -1675,8 +1684,11 @@ async fn create_renderer(
                     .dyn_into()
                     .map_err(|_| "Expected HtmlCanvasElement")?;
 
-                match ruffle_render_wgpu::backend::WgpuRenderBackend::for_canvas(canvas.clone())
-                    .await
+                match ruffle_render_wgpu::backend::WgpuRenderBackend::for_canvas(
+                    canvas.clone(),
+                    false,
+                )
+                .await
                 {
                     Ok(renderer) => {
                         return Ok((builder.with_renderer(renderer), canvas));

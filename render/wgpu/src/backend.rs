@@ -59,14 +59,22 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
 
 impl WgpuRenderBackend<SwapChainTarget> {
     #[cfg(target_family = "wasm")]
-    pub async fn for_canvas(canvas: web_sys::HtmlCanvasElement) -> Result<Self, Error> {
+    pub async fn for_canvas(
+        canvas: web_sys::HtmlCanvasElement,
+        webgpu: bool,
+    ) -> Result<Self, Error> {
+        let backends = if webgpu {
+            wgpu::Backends::BROWSER_WEBGPU
+        } else {
+            wgpu::Backends::GL
+        };
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-            backends: wgpu::Backends::BROWSER_WEBGPU | wgpu::Backends::GL,
+            backends,
             ..Default::default()
         });
-        let surface = instance.create_surface_from_canvas(canvas)?;
+        let surface = instance.create_surface(wgpu::SurfaceTarget::Canvas(canvas))?;
         let (adapter, device, queue) = request_adapter_and_device(
-            wgpu::Backends::BROWSER_WEBGPU | wgpu::Backends::GL,
+            backends,
             &instance,
             Some(&surface),
             wgpu::PowerPreference::HighPerformance,
@@ -79,11 +87,11 @@ impl WgpuRenderBackend<SwapChainTarget> {
         Self::new(Arc::new(descriptors), target)
     }
 
+    /// # Safety
+    ///  See [`wgpu::SurfaceTargetUnsafe`] variants for safety requirements.
     #[cfg(not(target_family = "wasm"))]
-    pub fn for_window<
-        W: raw_window_handle::HasRawWindowHandle + raw_window_handle::HasRawDisplayHandle,
-    >(
-        window: &W,
+    pub unsafe fn for_window_unsafe(
+        window: wgpu::SurfaceTargetUnsafe,
         size: (u32, u32),
         backend: wgpu::Backends,
         power_preference: wgpu::PowerPreference,
@@ -99,7 +107,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
             backends: backend,
             ..Default::default()
         });
-        let surface = unsafe { instance.create_surface(window) }?;
+        let surface = instance.create_surface_unsafe(window)?;
         let (adapter, device, queue) = futures::executor::block_on(request_adapter_and_device(
             backend,
             &instance,
@@ -112,16 +120,16 @@ impl WgpuRenderBackend<SwapChainTarget> {
         Self::new(Arc::new(descriptors), target)
     }
 
+    /// # Safety
+    ///  See [`wgpu::SurfaceTargetUnsafe`] variants for safety requirements.
     #[cfg(not(target_family = "wasm"))]
-    pub fn recreate_surface<
-        W: raw_window_handle::HasRawWindowHandle + raw_window_handle::HasRawDisplayHandle,
-    >(
+    pub unsafe fn recreate_surface_unsafe(
         &mut self,
-        window: &W,
+        window: wgpu::SurfaceTargetUnsafe,
         size: (u32, u32),
     ) -> Result<(), Error> {
         let descriptors = &self.descriptors;
-        let surface = unsafe { descriptors.wgpu_instance.create_surface(window) }?;
+        let surface = descriptors.wgpu_instance.create_surface_unsafe(window)?;
         self.target =
             SwapChainTarget::new(surface, &descriptors.adapter, size, &descriptors.device);
         Ok(())
@@ -1055,7 +1063,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 pub async fn request_adapter_and_device(
     backend: wgpu::Backends,
     instance: &wgpu::Instance,
-    surface: Option<&wgpu::Surface>,
+    surface: Option<&wgpu::Surface<'static>>,
     power_preference: wgpu::PowerPreference,
     trace_path: Option<&Path>,
 ) -> Result<(wgpu::Adapter, wgpu::Device, wgpu::Queue), Error> {
@@ -1117,8 +1125,8 @@ async fn request_device(
         .request_device(
             &wgpu::DeviceDescriptor {
                 label: None,
-                features,
-                limits,
+                required_features: features,
+                required_limits: limits,
             },
             trace_path,
         )
