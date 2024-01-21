@@ -776,20 +776,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .pool_multiname_static(index, &mut self.context)
     }
 
-    /// Retrieve a static, or non-runtime, multiname from the current constant
-    /// pool.
-    ///
-    /// This version of the function treats index 0 as the any-type `*`.
-    fn pool_multiname_static_any(
-        &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcMultiname>,
-    ) -> Result<Gc<'gc, Multiname<'gc>>, Error<'gc>> {
-        method
-            .translation_unit()
-            .pool_multiname_static_any(index, &mut self.context)
-    }
-
     /// Retrieve a method entry from the current ABC file's method table.
     fn table_method(
         &mut self,
@@ -2856,7 +2842,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         index: Index<AbcMultiname>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let val = self.pop_stack();
-        let type_name = self.pool_multiname_static_any(method, index)?;
+        let type_name = self.pool_multiname_static(method, index)?;
         let x = val.coerce_to_type_name(self, &type_name)?;
 
         self.push_stack(x);
