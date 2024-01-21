@@ -3,7 +3,7 @@ use crate::environment::{Environment, RenderInterface};
 use crate::image_trigger::ImageTrigger;
 use crate::util::write_image;
 use anyhow::{anyhow, Result};
-use approx::assert_relative_eq;
+use approx::relative_eq;
 use image::ImageOutputFormat;
 use regex::Regex;
 use ruffle_core::tag_utils::SwfMovie;
@@ -92,19 +92,31 @@ pub struct Approximations {
 }
 
 impl Approximations {
-    pub fn compare(&self, actual: f64, expected: f64) {
-        match (self.epsilon, self.max_relative) {
-            (Some(epsilon), Some(max_relative)) => assert_relative_eq!(
+    pub fn compare(&self, actual: f64, expected: f64) -> Result<()> {
+        let result = match (self.epsilon, self.max_relative) {
+            (Some(epsilon), Some(max_relative)) => relative_eq!(
                 actual,
                 expected,
                 epsilon = epsilon,
                 max_relative = max_relative
             ),
-            (Some(epsilon), None) => assert_relative_eq!(actual, expected, epsilon = epsilon),
+            (Some(epsilon), None) => relative_eq!(actual, expected, epsilon = epsilon),
             (None, Some(max_relative)) => {
-                assert_relative_eq!(actual, expected, max_relative = max_relative)
+                relative_eq!(actual, expected, max_relative = max_relative)
             }
-            (None, None) => assert_relative_eq!(actual, expected),
+            (None, None) => relative_eq!(actual, expected),
+        };
+
+        if result {
+            Ok(())
+        } else {
+            Err(anyhow!(
+                "Approximation failed: expected {}, found {}. Episilon = {:?}, Max Relative = {:?}",
+                expected,
+                actual,
+                self.epsilon,
+                self.max_relative
+            ))
         }
     }
 
