@@ -487,34 +487,42 @@ fn verify_code_starting_from<'gc>(
                 | AbcOp::Coerce { index: name_index } => {
                     let multiname = method
                         .translation_unit()
-                        .pool_maybe_uninitialized_multiname(*name_index, &mut activation.context)
-                        .unwrap();
+                        .pool_maybe_uninitialized_multiname(*name_index, &mut activation.context);
 
-                    if multiname.has_lazy_component() {
-                        // This matches FP's error message
+                    if let Ok(multiname) = multiname {
+                        if multiname.has_lazy_component() {
+                            // This matches FP's error message
+                            return Err(Error::AvmError(verify_error(
+                                activation,
+                                "Error #1014: Class [] could not be found.",
+                                1014,
+                            )?));
+                        }
+
+                        activation
+                            .domain()
+                            .get_class(&multiname, activation.context.gc_context)
+                            .ok_or_else(|| {
+                                Error::AvmError(
+                                    verify_error(
+                                        activation,
+                                        &format!(
+                                            "Error #1014: Class {} could not be found.",
+                                            multiname
+                                                .to_qualified_name(activation.context.gc_context)
+                                        ),
+                                        1014,
+                                    )
+                                    .expect("Error should construct"),
+                                )
+                            })?;
+                    } else {
                         return Err(Error::AvmError(verify_error(
                             activation,
-                            "Error #1014: Class [] could not be found.",
-                            1014,
+                            &format!("Error #1032: Cpool index {} is out of range.", name_index.0),
+                            1032,
                         )?));
                     }
-
-                    activation
-                        .domain()
-                        .get_class(&multiname, activation.context.gc_context)
-                        .ok_or_else(|| {
-                            Error::AvmError(
-                                verify_error(
-                                    activation,
-                                    &format!(
-                                        "Error #1014: Class {} could not be found.",
-                                        multiname.to_qualified_name(activation.context.gc_context)
-                                    ),
-                                    1014,
-                                )
-                                .expect("Error should construct"),
-                            )
-                        })?;
                 }
 
                 _ => {}
