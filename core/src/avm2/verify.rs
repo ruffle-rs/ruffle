@@ -1,4 +1,6 @@
-use crate::avm2::error::{make_error_1025, make_error_1054, make_error_1107, verify_error};
+use crate::avm2::error::{
+    make_error_1025, make_error_1032, make_error_1054, make_error_1107, verify_error,
+};
 use crate::avm2::method::BytecodeMethod;
 use crate::avm2::op::Op;
 use crate::avm2::property::Property;
@@ -517,11 +519,7 @@ fn verify_code_starting_from<'gc>(
                                 )
                             })?;
                     } else {
-                        return Err(Error::AvmError(verify_error(
-                            activation,
-                            &format!("Error #1032: Cpool index {} is out of range.", name_index.0),
-                            1032,
-                        )?));
+                        return Err(make_error_1032(activation, name_index.0));
                     }
                 }
 
@@ -912,14 +910,7 @@ fn pool_int<'gc>(
     index: Index<i32>,
 ) -> Result<i32, Error<'gc>> {
     if index.0 == 0 {
-        return Err(Error::AvmError(
-            verify_error(
-                activation,
-                "Error #1032: Cpool index 0 is out of range.",
-                1032,
-            )
-            .expect("Error should construct"),
-        ));
+        return Err(make_error_1032(activation, 0));
     }
 
     translation_unit
@@ -928,16 +919,7 @@ fn pool_int<'gc>(
         .ints
         .get(index.0 as usize - 1)
         .cloned()
-        .ok_or_else(|| {
-            Error::AvmError(
-                verify_error(
-                    activation,
-                    &format!("Error #1032: Cpool index {} is out of range.", index.0),
-                    1032,
-                )
-                .expect("Error should construct"),
-            )
-        })
+        .ok_or_else(|| make_error_1032(activation, index.0))
 }
 
 fn pool_uint<'gc>(
@@ -946,14 +928,7 @@ fn pool_uint<'gc>(
     index: Index<u32>,
 ) -> Result<u32, Error<'gc>> {
     if index.0 == 0 {
-        return Err(Error::AvmError(
-            verify_error(
-                activation,
-                "Error #1032: Cpool index 0 is out of range.",
-                1032,
-            )
-            .expect("Error should construct"),
-        ));
+        return Err(make_error_1032(activation, 0));
     }
 
     translation_unit
@@ -962,16 +937,7 @@ fn pool_uint<'gc>(
         .uints
         .get(index.0 as usize - 1)
         .cloned()
-        .ok_or_else(|| {
-            Error::AvmError(
-                verify_error(
-                    activation,
-                    &format!("Error #1032: Cpool index {} is out of range.", index.0),
-                    1032,
-                )
-                .expect("Error should construct"),
-            )
-        })
+        .ok_or_else(|| make_error_1032(activation, index.0))
 }
 
 fn pool_double<'gc>(
@@ -980,14 +946,7 @@ fn pool_double<'gc>(
     index: Index<f64>,
 ) -> Result<f64, Error<'gc>> {
     if index.0 == 0 {
-        return Err(Error::AvmError(
-            verify_error(
-                activation,
-                "Error #1032: Cpool index 0 is out of range.",
-                1032,
-            )
-            .expect("Error should construct"),
-        ));
+        return Err(make_error_1032(activation, 0));
     }
 
     translation_unit
@@ -996,16 +955,7 @@ fn pool_double<'gc>(
         .doubles
         .get(index.0 as usize - 1)
         .cloned()
-        .ok_or_else(|| {
-            Error::AvmError(
-                verify_error(
-                    activation,
-                    &format!("Error #1032: Cpool index {} is out of range.", index.0),
-                    1032,
-                )
-                .expect("Error should construct"),
-            )
-        })
+        .ok_or_else(|| make_error_1032(activation, index.0))
 }
 
 fn resolve_op<'gc>(

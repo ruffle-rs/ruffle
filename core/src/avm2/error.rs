@@ -219,6 +219,20 @@ pub fn make_error_1025<'gc>(activation: &mut Activation<'_, 'gc>, index: u32) ->
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1032<'gc>(activation: &mut Activation<'_, 'gc>, index: u32) -> Error<'gc> {
+    let err = verify_error(
+        activation,
+        &format!("Error #1032: Cpool index {} is out of range.", index),
+        1032,
+    );
+    match err {
+        Ok(err) => Error::AvmError(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1054<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     let err = verify_error(
         activation,
@@ -397,11 +411,11 @@ pub fn make_error_2097<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
-pub fn make_error_2126<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+pub fn make_error_2025<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     let err = argument_error(
         activation,
-        "Error #2126: NetConnection object must be connected.",
-        2126,
+        "Error #2025: The supplied DisplayObject must be a child of the caller.",
+        2025,
     );
     match err {
         Ok(err) => Error::AvmError(err),
@@ -411,11 +425,11 @@ pub fn make_error_2126<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
-pub fn make_error_2025<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+pub fn make_error_2126<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     let err = argument_error(
         activation,
-        "Error #2025: The supplied DisplayObject must be a child of the caller.",
-        2025,
+        "Error #2126: NetConnection object must be connected.",
+        2126,
     );
     match err {
         Ok(err) => Error::AvmError(err),
