@@ -23,7 +23,7 @@ package {
 
 		prototype.toString = function():String {
 			var self:Error = this;
-			return self.message.length == 0 ? self.name : self.name + ": " + self.message;
+			return self.message !== "" ? self.name + ": " + self.message : self.name;
 		};
 	}
 }
