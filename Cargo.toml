@@ -45,7 +45,7 @@ tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 naga = { version = "0.19.0", features = ["wgsl-out"] }
 naga_oil = "0.12.0"
-wgpu = "0.19.0"
+wgpu = "0.19.1"
 egui = "0.25.0"
 
 [workspace.lints.rust]
@@ -100,7 +100,3 @@ egui = { git = "https://github.com/emilk/egui", rev = "d319489479c371b15e6419d47
 egui_extras = { git = "https://github.com/emilk/egui", rev = "d319489479c371b15e6419d470551dae5d647396"}
 egui-winit = { git = "https://github.com/emilk/egui", rev = "d319489479c371b15e6419d470551dae5d647396"}
 egui-wgpu = { git = "https://github.com/emilk/egui", rev = "d319489479c371b15e6419d470551dae5d647396"}
-
-# TODO: Replace on new wgpu update
-wgpu = { git = "https://github.com/gfx-rs/wgpu", rev = "e128d6c2613c7f8aecd25539c6fbc914bfda04f7"}
-naga = { git = "https://github.com/gfx-rs/wgpu", rev = "e128d6c2613c7f8aecd25539c6fbc914bfda04f7"}

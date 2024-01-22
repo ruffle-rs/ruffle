@@ -71,7 +71,6 @@ unknown-git = "deny"
 #  github.com organizations to allow git sources for
 github = [
     "ruffle-rs",
-    "gfx-rs",
 
     # TODO: Remove when egui update is released
     "emilk",
