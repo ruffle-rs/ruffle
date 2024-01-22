@@ -1,6 +1,0 @@
-// new BitmapFilter
-[object Object]
-// x.clone()
-undefined
-// x.clone() == x
-false
