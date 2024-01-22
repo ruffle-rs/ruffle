@@ -39,11 +39,11 @@ impl FromWStr for Mode {
     type Err = Infallible;
 
     fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
-        if s.eq_ignore_case(WStr::from_units(b"clamp")) {
+        if s == WStr::from_units(b"clamp") {
             Ok(Self::Clamp)
-        } else if s.eq_ignore_case(WStr::from_units(b"ignore")) {
+        } else if s == WStr::from_units(b"ignore") {
             Ok(Self::Ignore)
-        } else if s.eq_ignore_case(WStr::from_units(b"color")) {
+        } else if s == WStr::from_units(b"color") {
             Ok(Self::Color)
         } else {
             Ok(Self::Wrap)
@@ -176,15 +176,20 @@ impl<'gc> DisplacementMapFilter<'gc> {
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
-        if let Some(Value::Object(object)) = value {
+        let Some(value) = value else { return Ok(()) };
+
+        if let Value::Object(object) = value {
             if let Some(x) = object.get_local_stored("x", activation, false) {
                 let x = x.coerce_to_f64(activation)?.clamp_to_i32();
                 if let Some(y) = object.get_local_stored("y", activation, false) {
                     let y = y.coerce_to_f64(activation)?.clamp_to_i32();
                     self.0.write(activation.context.gc_context).map_point = Point::new(x, y);
+                    return Ok(());
                 }
             }
         }
+
+        self.0.write(activation.context.gc_context).map_point = Point::default();
         Ok(())
     }
 
