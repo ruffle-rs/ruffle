@@ -111,40 +111,39 @@ pub fn verify_method<'gc>(
     // Handle exceptions
     let mut new_exceptions = Vec::new();
     for exception in body.exceptions.iter() {
-        // FIXME: This is actually wrong, we should be using the byte offsets, not the opcode offsets.
-        // avmplus allows for from/to (but not targets) that aren't on a opcode, and some obfuscated
-        // SWFs have them. FFDEC handles them correctly, stepping forward byte-by-byte until it
-        // reaches the next opcode. This does the same (stepping byte-by-byte), but it would be better
-        // to directly use the byte offsets when handling exceptions.
-        let mut from_offset = byte_offset_to_idx
-            .get(&(exception.from_offset as i32))
-            .copied();
+        // FIXME: This is actually wrong, we should be using the byte offsets in
+        // `Activation::handle_err`, not the opcode offsets. avmplus allows for from/to
+        // (but not targets) that aren't on a opcode, and some obfuscated SWFs have them.
+        // FFDEC handles them correctly, stepping forward byte-by-byte until it reaches
+        // the next opcode. This does the same (stepping byte-by-byte), but it would
+        // be better to directly use the byte offsets when handling exceptions.
+        let mut from_offset = None;
 
         let mut offs = 0;
         while from_offset.is_none() {
             from_offset = byte_offset_to_idx
                 .get(&((exception.from_offset + offs) as i32))
                 .copied();
+
             offs += 1;
-            if offs as usize >= new_code.len() {
+            if (exception.from_offset + offs) as usize >= body.code.len() {
                 return Err(make_error_1054(activation));
             }
         }
 
         // Now for the `to_offset`.
-        let mut to_offset = byte_offset_to_idx
-            .get(&(exception.to_offset as i32))
-            .copied();
+        let mut to_offset = None;
 
         let mut offs = 0;
         while to_offset.is_none() {
             to_offset = byte_offset_to_idx
                 .get(&((exception.to_offset + offs) as i32))
                 .copied();
-            if offs == 0 {
+
+            offs += 1;
+            if (exception.to_offset + offs) as usize >= body.code.len() {
                 return Err(make_error_1054(activation));
             }
-            offs -= 1;
         }
 
         let new_from_offset = from_offset.unwrap() as u32;
@@ -161,6 +160,10 @@ pub fn verify_method<'gc>(
             .unwrap();
 
         if exception.target_offset < exception.to_offset {
+            return Err(make_error_1054(activation));
+        }
+
+        if new_target_offset as usize >= new_code.len() {
             return Err(make_error_1054(activation));
         }
 
@@ -261,7 +264,7 @@ pub fn verify_method<'gc>(
     })
 }
 
-fn adjust_jump_offset<'gc>(
+fn resolve_jump_target<'gc>(
     activation: &mut Activation<'_, 'gc>,
     i: i32,
     offset: i32,
@@ -286,7 +289,7 @@ fn adjust_jump_offset<'gc>(
             ).expect("Error should construct"))
         })?;
 
-    Ok(new_idx - 1)
+    Ok(new_idx)
 }
 
 fn verify_code_starting_from<'gc>(
@@ -306,9 +309,7 @@ fn verify_code_starting_from<'gc>(
     let mut worklist = Vec::new();
     worklist.push(start_idx);
 
-    while !worklist.is_empty() {
-        let mut save_current_work = false;
-        let mut i = *worklist.last().unwrap();
+    while let Some(mut i) = worklist.pop() {
         loop {
             if (i as usize) >= ops.len() {
                 return Err(Error::AvmError(verify_error(
@@ -337,7 +338,7 @@ fn verify_code_starting_from<'gc>(
                 | AbcOp::IfStrictNe { offset }
                 | AbcOp::IfTrue { offset }
                 | AbcOp::Jump { offset } => {
-                    let op_idx = adjust_jump_offset(
+                    let op_idx = resolve_jump_target(
                         activation,
                         i,
                         *offset,
@@ -346,28 +347,12 @@ fn verify_code_starting_from<'gc>(
                         byte_offset_to_idx,
                     )?;
 
-                    if op_idx != i {
-                        // Replace last entry on worklist with current i (update i)
-                        worklist.pop();
-                        worklist.push(i + 1);
-
-                        if !verified_blocks.iter().any(|o| *o == op_idx + 1) {
-                            if matches!(op, AbcOp::Jump { .. }) {
-                                // If this is a Jump, there's no path that just ignores
-                                // the jump, since it's an unconditional jump.
-                                worklist.pop();
-                            }
-                            worklist.push(op_idx + 1);
-
-                            verified_blocks.push(op_idx + 1);
-
-                            save_current_work = true;
-                            break;
-                        } else if matches!(op, AbcOp::Jump { .. }) {
-                            // The target of the jump has already been verified, and
-                            // we need to avoid the ops that the Jump will jump over.
-                            break;
-                        }
+                    if !verified_blocks.iter().any(|o| *o == op_idx) {
+                        worklist.push(op_idx);
+                        verified_blocks.push(op_idx);
+                    }
+                    if matches!(op, AbcOp::Jump { .. }) {
+                        break;
                     }
                 }
 
@@ -378,8 +363,7 @@ fn verify_code_starting_from<'gc>(
 
                 AbcOp::LookupSwitch(ref lookup_switch) => {
                     // A LookupSwitch is terminal
-
-                    let default_idx = adjust_jump_offset(
+                    let default_idx = resolve_jump_target(
                         activation,
                         i,
                         lookup_switch.default_offset,
@@ -395,7 +379,7 @@ fn verify_code_starting_from<'gc>(
                     }
 
                     for case in lookup_switch.case_offsets.iter() {
-                        let case_idx = adjust_jump_offset(
+                        let case_idx = resolve_jump_target(
                             activation,
                             i,
                             *case,
@@ -527,10 +511,6 @@ fn verify_code_starting_from<'gc>(
             }
 
             i += 1;
-        }
-
-        if !save_current_work {
-            worklist.pop();
         }
     }
 
