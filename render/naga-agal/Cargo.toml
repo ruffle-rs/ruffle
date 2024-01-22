@@ -11,7 +11,7 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-bitflags = "2.4.1"
+bitflags = "2.4.2"
 naga = { workspace = true }
 num-derive = "0.4.1"
 num-traits = "0.2.17"

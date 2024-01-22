@@ -11,7 +11,7 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-clap = { version = "4.4.17", features = ["derive"] }
+clap = { version = "4.4.18", features = ["derive"] }
 futures = "0.3"
 ruffle_core = { path = "../core", features = ["deterministic", "default_font"] }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
@@ -20,7 +20,7 @@ log = "0.4"
 walkdir = "2.4.0"
 indicatif = "0.17"
 anyhow = "1.0"
-rayon = "1.8.0"
+rayon = "1.8.1"
 
 [features]
 avm_debug = ["ruffle_core/avm_debug"]
