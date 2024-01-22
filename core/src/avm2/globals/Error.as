@@ -20,5 +20,10 @@ package {
 		public native function getStackTrace():String;
 
 		public static const length:int = 1;
+
+		prototype.toString = function():String {
+			var self:Error = this;
+			return self.message.length == 0 ? self.name : self.name + ": " + self.message;
+		};
 	}
 }
