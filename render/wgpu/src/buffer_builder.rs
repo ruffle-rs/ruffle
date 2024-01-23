@@ -56,7 +56,7 @@ impl BufferBuilder {
         };
 
         let slice = bytemuck::cast_slice(value);
-        if (start_pos + slice.len()) as u64 >= self.limit {
+        if (start_pos + slice.len()) as u64 > self.limit {
             return Err(BufferFull);
         }
 
