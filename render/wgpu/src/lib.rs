@@ -10,7 +10,6 @@ use crate::descriptors::Quad;
 use crate::mesh::BitmapBinds;
 use crate::pipelines::Pipelines;
 use crate::target::{RenderTarget, SwapChainTarget};
-use crate::uniform_buffer::UniformBuffer;
 use crate::utils::{
     capture_image, create_buffer_with_data, format_list, get_backend_names, BufferDimensions,
 };
@@ -37,7 +36,6 @@ mod globals;
 mod pipelines;
 mod pixel_bender;
 pub mod target;
-mod uniform_buffer;
 
 pub mod backend;
 mod blend;
@@ -46,6 +44,7 @@ mod buffer_pool;
 #[cfg(feature = "clap")]
 pub mod clap;
 pub mod descriptors;
+mod dynamic_transforms;
 mod filters;
 mod layouts;
 mod mesh;
