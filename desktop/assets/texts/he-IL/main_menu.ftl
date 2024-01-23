@@ -28,4 +28,5 @@ debug-menu = כלי ניפוי באגים
 debug-menu-open-stage = הצג פרטי שלב
 debug-menu-open-movie = הצג סרט
 debug-menu-open-movie-list = הצג סרטים ידועים
+debug-menu-open-domain-list = הצג דומיינים
 debug-menu-search-display-objects = חפש אובייקטי תצוגה...
