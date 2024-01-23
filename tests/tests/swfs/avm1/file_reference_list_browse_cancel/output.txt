@@ -1,0 +1,17 @@
+// f.fileList
+object
+// f.fileList.length
+0
+// f.fileList (after set to not list)
+1234
+// browse cancel
+true
+// onCancel
+// filelist.fileList
+object
+// filelist.fileList.length
+0
+C:undefined
+N:undefined
+T:undefined
+-----

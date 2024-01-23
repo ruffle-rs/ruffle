@@ -31,6 +31,7 @@ pub(crate) mod drop_shadow_filter;
 pub(crate) mod error;
 mod external_interface;
 pub(crate) mod file_reference;
+pub(crate) mod file_reference_list;
 mod function;
 pub(crate) mod glow_filter;
 pub(crate) mod gradient_filter;
@@ -513,6 +514,7 @@ pub struct SystemPrototypes<'gc> {
     pub convolution_filter: Object<'gc>,
     pub gradient_bevel_filter: Object<'gc>,
     pub gradient_glow_filter: Object<'gc>,
+    pub file_reference: Object<'gc>,
 }
 
 /// Initialize default global scope and builtins for an AVM1 instance.
@@ -873,7 +875,15 @@ pub fn create_globals<'gc>(
 
     flash.define_value(gc_context, "net", net.into(), Attribute::empty());
 
-    let file_reference_obj = file_reference::create_constructor(
+    let file_reference = file_reference::create_constructor(
+        context,
+        object_proto,
+        function_proto,
+        array_proto,
+        broadcaster_functions,
+    );
+
+    let file_reference_list_obj = file_reference_list::create_constructor(
         context,
         object_proto,
         function_proto,
@@ -884,7 +894,14 @@ pub fn create_globals<'gc>(
     net.define_value(
         gc_context,
         "FileReference",
-        file_reference_obj.into(),
+        file_reference.into(),
+        Attribute::empty(),
+    );
+
+    net.define_value(
+        gc_context,
+        "FileReferenceList",
+        file_reference_list_obj.into(),
         Attribute::empty(),
     );
 
@@ -1138,6 +1155,7 @@ pub fn create_globals<'gc>(
             convolution_filter,
             gradient_bevel_filter,
             gradient_glow_filter,
+            file_reference,
         },
         globals.into(),
         broadcaster_functions,

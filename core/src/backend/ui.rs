@@ -7,6 +7,7 @@ use fluent_templates::loader::langid;
 pub use fluent_templates::LanguageIdentifier;
 use std::borrow::Cow;
 use std::collections::HashSet;
+use std::num::NonZeroUsize;
 use url::Url;
 
 pub type FullscreenError = Cow<'static, str>;
@@ -39,10 +40,67 @@ pub struct FileFilter {
     pub mac_type: Option<String>,
 }
 
+/// A result for a file selection
+pub enum FileDialogResult {
+    /// The selection was successful
+    Selection(FileSelectionGroup),
+
+    /// The selection was canceled
+    Canceled,
+}
+
+/// Defines a group of selected files, which must contain at least one file
+pub struct FileSelectionGroup {
+    files: Vec<Box<dyn FileSelection>>,
+}
+
+impl FileSelectionGroup {
+    pub fn new(files: Vec<Box<dyn FileSelection>>) -> Self {
+        assert!(
+            !files.is_empty(),
+            "FileSelectionGroups must have at least one element"
+        );
+        Self { files }
+    }
+
+    /// Refresh any internal metadata, any future calls to other functions (such as [FileSelection::size]) will reflect
+    /// the state at the time of the last refresh
+    pub fn refresh(&mut self) {
+        self.files.iter_mut().for_each(|f| f.refresh());
+    }
+
+    pub fn file_count(&self) -> NonZeroUsize {
+        self.files
+            .len()
+            .try_into()
+            .expect("Files must have at least one entry")
+    }
+
+    pub fn file(&self, id: usize) -> Option<&dyn FileSelection> {
+        let x: &dyn FileSelection = self.files.get(id)?.as_ref();
+        Some(x)
+    }
+
+    pub fn file_mut(&mut self, id: usize) -> Option<&mut dyn FileSelection> {
+        let x: &mut dyn FileSelection = self.files.get_mut(id)?.as_mut();
+        Some(x)
+    }
+
+    /// Get the first file in the selection, as it always exists
+    pub fn first_file(&self) -> &dyn FileSelection {
+        self.file(0)
+            .expect("File selection must have at least one file")
+    }
+
+    /// Get a mutable reference to the first file in the selection, as it always exists
+    pub fn first_file_mut(&mut self) -> &mut dyn FileSelection {
+        self.file_mut(0)
+            .expect("File selection must have at least one file")
+    }
+}
+
 /// A result of a file selection
-pub trait FileDialogResult: Downcast {
-    /// Was the file selection canceled by the user
-    fn is_cancelled(&self) -> bool;
+pub trait FileSelection: Downcast {
     fn creation_time(&self) -> Option<DateTime<Utc>>;
     fn modification_time(&self) -> Option<DateTime<Utc>>;
     fn file_name(&self) -> Option<String>;
@@ -58,10 +116,10 @@ pub trait FileDialogResult: Downcast {
     /// the state at the time of the last refresh
     fn refresh(&mut self);
 }
-impl_downcast!(FileDialogResult);
+impl_downcast!(FileSelection);
 
 /// Future representing a file selection in process
-pub type DialogResultFuture = OwnedFuture<Box<dyn FileDialogResult>, DialogLoaderError>;
+pub type DialogResultFuture = OwnedFuture<FileDialogResult, DialogLoaderError>;
 
 pub trait UiBackend: Downcast {
     fn mouse_visible(&self) -> bool;
@@ -111,7 +169,16 @@ pub trait UiBackend: Downcast {
     /// Displays a file selection dialog, returning None if the dialog cannot be displayed
     /// (e.g because it is already open)
     /// * `filters` represents a list of filters to the possible file types that can be selected
-    fn display_file_open_dialog(&mut self, filters: Vec<FileFilter>) -> Option<DialogResultFuture>;
+    /// * `multiple_files` is true if the selection should allow selecting multiple files
+    ///
+    /// # Returns
+    /// * `None` If the dialog cannot be displayed
+    /// * If the dialog is displayed, then the returned [`Vec`], should contain at least one item
+    fn display_file_open_dialog(
+        &mut self,
+        filters: Vec<FileFilter>,
+        multiple_files: bool,
+    ) -> Option<DialogResultFuture>;
 
     /// Display a dialog allowing a user to select a destination to save a file to
     ///
@@ -300,12 +367,9 @@ impl UiBackend for NullUiBackend {
     fn display_file_open_dialog(
         &mut self,
         _filters: Vec<FileFilter>,
+        _multiple_files: bool,
     ) -> Option<DialogResultFuture> {
-        Some(Box::pin(async move {
-            let result: Result<Box<dyn FileDialogResult>, DialogLoaderError> =
-                Ok(Box::new(NullFileDialogResult::new()));
-            result
-        }))
+        Some(Box::pin(async move { Ok(FileDialogResult::Canceled) }))
     }
 
     fn close_file_dialog(&mut self) {}
@@ -325,25 +389,21 @@ impl Default for NullUiBackend {
     }
 }
 
-pub struct NullFileDialogResult {}
+pub struct NullFileSelection {}
 
-impl NullFileDialogResult {
+impl NullFileSelection {
     pub fn new() -> Self {
         Self {}
     }
 }
 
-impl Default for NullFileDialogResult {
+impl Default for NullFileSelection {
     fn default() -> Self {
-        NullFileDialogResult::new()
+        NullFileSelection::new()
     }
 }
 
-impl FileDialogResult for NullFileDialogResult {
-    fn is_cancelled(&self) -> bool {
-        true
-    }
-
+impl FileSelection for NullFileSelection {
     fn creation_time(&self) -> Option<DateTime<Utc>> {
         None
     }
