@@ -40,35 +40,31 @@ impl<'a> FilterSource<'a> {
         }
     }
 
-    pub fn vertices(&self, device: &wgpu::Device) -> wgpu::Buffer {
+    pub fn vertices(&self) -> [FilterVertex; 4] {
         let source_width = self.texture.width() as f32;
         let source_height = self.texture.height() as f32;
         let left = self.point.0;
         let top = self.point.1;
         let right = left + self.size.0;
         let bottom = top + self.size.1;
-        device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: create_debug_label!("Filter vertices").as_deref(),
-            contents: bytemuck::cast_slice(&[
-                FilterVertex {
-                    position: [0.0, 0.0],
-                    uv: [left as f32 / source_width, top as f32 / source_height],
-                },
-                FilterVertex {
-                    position: [1.0, 0.0],
-                    uv: [right as f32 / source_width, top as f32 / source_height],
-                },
-                FilterVertex {
-                    position: [1.0, 1.0],
-                    uv: [right as f32 / source_width, bottom as f32 / source_height],
-                },
-                FilterVertex {
-                    position: [0.0, 1.0],
-                    uv: [left as f32 / source_width, bottom as f32 / source_height],
-                },
-            ]),
-            usage: wgpu::BufferUsages::VERTEX,
-        })
+        [
+            FilterVertex {
+                position: [0.0, 0.0],
+                uv: [left as f32 / source_width, top as f32 / source_height],
+            },
+            FilterVertex {
+                position: [1.0, 0.0],
+                uv: [right as f32 / source_width, top as f32 / source_height],
+            },
+            FilterVertex {
+                position: [1.0, 1.0],
+                uv: [right as f32 / source_width, bottom as f32 / source_height],
+            },
+            FilterVertex {
+                position: [0.0, 1.0],
+                uv: [left as f32 / source_width, bottom as f32 / source_height],
+            },
+        ]
     }
 
     pub fn vertices_with_blur_offset(

@@ -13,7 +13,7 @@ use ruffle_render::{
     bitmap::BitmapHandle,
     pixel_bender::{PixelBenderParam, PixelBenderShader, PixelBenderShaderArgument},
 };
-use wgpu::util::StagingBelt;
+use wgpu::util::{DeviceExt, StagingBelt};
 use wgpu::{
     BindGroupEntry, BindingResource, BlendComponent, BufferDescriptor, BufferUsages,
     ColorTargetState, ColorWrites, CommandEncoder, ImageCopyTexture, PipelineLayout,
@@ -657,7 +657,13 @@ pub(super) fn run_pixelbender_shader_impl(
 
     staging_belt.finish();
 
-    let vertices = source.vertices(&descriptors.device);
+    let vertices = descriptors
+        .device
+        .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: create_debug_label!("Filter vertices").as_deref(),
+            contents: bytemuck::cast_slice(&[source.vertices()]),
+            usage: BufferUsages::VERTEX,
+        });
 
     let pipeline = compiled_shader.get_pipeline(descriptors, sample_count, target.format());
 
