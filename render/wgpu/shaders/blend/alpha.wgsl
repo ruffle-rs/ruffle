@@ -5,17 +5,10 @@ struct VertexOutput {
     @location(0) uv: vec2<f32>,
 };
 
-#if use_push_constants == true
-    var<push_constant> transforms: common::Transforms;
-    @group(1) @binding(0) var parent_texture: texture_2d<f32>;
-    @group(1) @binding(1) var current_texture: texture_2d<f32>;
-    @group(1) @binding(2) var texture_sampler: sampler;
-#else
-    @group(1) @binding(0) var<uniform> transforms: common::Transforms;
-    @group(2) @binding(0) var parent_texture: texture_2d<f32>;
-    @group(2) @binding(1) var current_texture: texture_2d<f32>;
-    @group(2) @binding(2) var texture_sampler: sampler;
-#endif
+@group(1) @binding(0) var<uniform> transforms: common::Transforms;
+@group(2) @binding(0) var parent_texture: texture_2d<f32>;
+@group(2) @binding(1) var current_texture: texture_2d<f32>;
+@group(2) @binding(2) var texture_sampler: sampler;
 
 @vertex
 fn main_vertex(in: common::VertexInput) -> VertexOutput {

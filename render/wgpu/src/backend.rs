@@ -10,8 +10,8 @@ use crate::target::{MaybeOwnedBuffer, TextureTarget};
 use crate::target::{RenderTargetFrame, TextureBufferInfo};
 use crate::utils::{run_copy_pipeline, BufferDimensions};
 use crate::{
-    as_texture, format_list, get_backend_names, ColorAdjustments, Descriptors, Error,
-    QueueSyncHandle, RenderTarget, SwapChainTarget, Texture, Transforms,
+    as_texture, format_list, get_backend_names, Descriptors, Error, QueueSyncHandle, RenderTarget,
+    SwapChainTarget, Texture,
 };
 use image::imageops::FilterType;
 use ruffle_render::backend::{
@@ -33,7 +33,6 @@ use ruffle_render::shape_utils::DistilledShape;
 use ruffle_render::tessellator::ShapeTessellator;
 use std::borrow::Cow;
 use std::cell::Cell;
-use std::mem;
 use std::path::Path;
 use std::sync::Arc;
 use swf::Color;
@@ -608,7 +607,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     &self.descriptors,
                     target.color_texture().format(),
                     texture.texture.format(),
-                    target.color_texture().size(),
                     &texture.texture.create_view(&Default::default()),
                     target.color_view(),
                     target.whole_frame_bind_group(&self.descriptors),
@@ -1193,14 +1191,6 @@ async fn request_device(
     limits = limits.using_alignment(adapter.limits());
 
     let mut features = Default::default();
-
-    let needed_size = (mem::size_of::<Transforms>() + mem::size_of::<ColorAdjustments>()) as u32;
-    if adapter.features().contains(wgpu::Features::PUSH_CONSTANTS)
-        && adapter.limits().max_push_constant_size >= needed_size
-    {
-        // limits.max_push_constant_size = needed_size;
-        // features |= wgpu::Features::PUSH_CONSTANTS;
-    }
 
     let try_features = [
         wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES,

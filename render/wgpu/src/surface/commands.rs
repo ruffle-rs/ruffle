@@ -125,15 +125,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                 .set_pipeline(self.pipelines.gradients.stencilless_pipeline());
         }
 
-        self.render_pass.set_bind_group(
-            if self.descriptors.limits.max_push_constant_size > 0 {
-                1
-            } else {
-                3
-            },
-            bind_group,
-            &[],
-        );
+        self.render_pass.set_bind_group(3, bind_group, &[]);
     }
 
     pub fn prep_bitmap(
@@ -160,15 +152,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
             }
         }
 
-        self.render_pass.set_bind_group(
-            if self.descriptors.limits.max_push_constant_size > 0 {
-                1
-            } else {
-                3
-            },
-            bind_group,
-            &[],
-        );
+        self.render_pass.set_bind_group(3, bind_group, &[]);
     }
 
     pub fn draw(
