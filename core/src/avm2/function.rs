@@ -329,14 +329,14 @@ pub fn display_function<'gc>(
                         // SWF's with debug information will provide a method name attached
                         // to the method definition, so we can use that.
                         output.push_char('/');
-                        output.push_utf8(method.method_name());
+                        output.push_utf8(&method.method_name());
                     }
                     // TODO: What happens if we can't find the trait?
                 }
                 // We purposely do nothing for instance initializers
             } else if method.is_function && !method.method_name().is_empty() {
                 output.push_utf8("Function/");
-                output.push_utf8(method.method_name());
+                output.push_utf8(&method.method_name());
             } else {
                 output.push_utf8("MethodInfo-");
                 output.push_utf8(&method.abc_method.to_string());

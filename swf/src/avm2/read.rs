@@ -99,11 +99,11 @@ impl<'a> Reader<'a> {
         Ok(self.read_encoded_u32()? as i32)
     }
 
-    fn read_string(&mut self) -> Result<String> {
+    fn read_string(&mut self) -> Result<Vec<u8>> {
         let len = self.read_u30()?;
         // TODO: Avoid allocating a String.
-        let mut s = String::with_capacity(len as usize);
-        self.read_slice(len as usize)?.read_to_string(&mut s)?;
+        let mut s = Vec::with_capacity(len as usize);
+        self.read_slice(len as usize)?.read_to_end(&mut s)?;
         Ok(s)
     }
 
