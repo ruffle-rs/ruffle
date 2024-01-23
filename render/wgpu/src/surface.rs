@@ -4,12 +4,13 @@ pub mod target;
 use crate::backend::RenderTargetMode;
 use crate::blend::ComplexBlend;
 use crate::buffer_pool::TexturePool;
+use crate::dynamic_transforms::DynamicTransforms;
 use crate::filters::FilterSource;
 use crate::mesh::Mesh;
 use crate::pixel_bender::{run_pixelbender_shader_impl, ShaderMode};
 use crate::surface::commands::{chunk_blends, Chunk, CommandRenderer};
 use crate::utils::{remove_srgb, supported_sample_count};
-use crate::{ColorAdjustments, Descriptors, MaskState, Pipelines, Transforms, UniformBuffer};
+use crate::{Descriptors, MaskState, Pipelines, Transforms};
 use ruffle_render::commands::CommandList;
 use ruffle_render::pixel_bender::{ImageInputTexture, PixelBenderShaderArgument};
 use ruffle_render::quality::StageQuality;
@@ -71,9 +72,9 @@ impl Surface {
         frame_view: &wgpu::TextureView,
         render_target_mode: RenderTargetMode,
         descriptors: &'global Descriptors,
-        uniform_buffers: &'frame mut UniformBuffer<'global, Transforms>,
-        color_buffers: &'frame mut UniformBuffer<'global, ColorAdjustments>,
-        uniform_encoder: &'frame mut wgpu::CommandEncoder,
+        staging_belt: &'frame mut wgpu::util::StagingBelt,
+        dynamic_transforms: &'global DynamicTransforms,
+        uniform_encoder: &'global mut wgpu::CommandEncoder,
         draw_encoder: &'frame mut wgpu::CommandEncoder,
         meshes: &'global Vec<Mesh>,
         commands: CommandList,
@@ -85,8 +86,8 @@ impl Surface {
             descriptors,
             meshes,
             commands,
-            uniform_buffers,
-            color_buffers,
+            staging_belt,
+            dynamic_transforms,
             uniform_encoder,
             draw_encoder,
             layer,
@@ -115,8 +116,8 @@ impl Surface {
         descriptors: &'global Descriptors,
         meshes: &'global Vec<Mesh>,
         commands: CommandList,
-        uniform_buffers: &'frame mut UniformBuffer<'global, Transforms>,
-        color_buffers: &'frame mut UniformBuffer<'global, ColorAdjustments>,
+        staging_belt: &'global mut wgpu::util::StagingBelt,
+        dynamic_transforms: &'global DynamicTransforms,
         uniform_encoder: &'frame mut wgpu::CommandEncoder,
         draw_encoder: &'frame mut wgpu::CommandEncoder,
         nearest_layer: LayerRef<'frame>,
@@ -137,8 +138,8 @@ impl Surface {
         let chunks = chunk_blends(
             commands.commands,
             descriptors,
-            uniform_buffers,
-            color_buffers,
+            staging_belt,
+            dynamic_transforms,
             uniform_encoder,
             draw_encoder,
             meshes,
@@ -154,7 +155,19 @@ impl Surface {
 
         for chunk in chunks {
             match chunk {
-                Chunk::Draw(chunk, needs_stencil) => {
+                Chunk::Draw(chunk, needs_stencil, transform_buffers, color_buffers) => {
+                    transform_buffers.copy_to(
+                        staging_belt,
+                        &descriptors.device,
+                        draw_encoder,
+                        &dynamic_transforms.transform.buffer,
+                    );
+                    color_buffers.copy_to(
+                        staging_belt,
+                        &descriptors.device,
+                        draw_encoder,
+                        &dynamic_transforms.color.buffer,
+                    );
                     let mut render_pass =
                         draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                             label: create_debug_label!(
@@ -178,9 +191,7 @@ impl Surface {
                     let mut renderer = CommandRenderer::new(
                         &self.pipelines,
                         descriptors,
-                        uniform_buffers,
-                        color_buffers,
-                        uniform_encoder,
+                        dynamic_transforms,
                         render_pass,
                         num_masks,
                         mask_state,

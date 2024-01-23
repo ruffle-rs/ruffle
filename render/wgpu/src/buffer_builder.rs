@@ -1,6 +1,7 @@
 use bytemuck::{AnyBitPattern, NoUninit};
 use std::ops::Range;
 use wgpu::util::DeviceExt;
+use wgpu::BufferAddress;
 
 pub struct BufferBuilder {
     inner: Vec<u8>,
@@ -34,6 +35,10 @@ impl BufferBuilder {
         }
     }
 
+    pub fn set_buffer_limit(&mut self, limit: u64) {
+        self.limit = limit;
+    }
+
     pub fn add<T: NoUninit + AnyBitPattern>(
         &mut self,
         value: &[T],
@@ -50,7 +55,8 @@ impl BufferBuilder {
             0
         };
 
-        if (start_pos + value.len()) as u64 > self.limit {
+        let slice = bytemuck::cast_slice(value);
+        if (start_pos + slice.len()) as u64 >= self.limit {
             return Err(BufferFull);
         }
 
@@ -58,7 +64,7 @@ impl BufferBuilder {
             self.inner.resize(start_pos, 0);
         }
 
-        self.inner.extend_from_slice(bytemuck::cast_slice(value));
+        self.inner.extend_from_slice(slice);
         Ok((start_pos as wgpu::BufferAddress)..(self.inner.len() as wgpu::BufferAddress))
     }
 
@@ -73,5 +79,24 @@ impl BufferBuilder {
             contents: &self.inner,
             usage,
         })
+    }
+
+    pub fn copy_to(
+        self,
+        staging_belt: &mut wgpu::util::StagingBelt,
+        device: &wgpu::Device,
+        encoder: &mut wgpu::CommandEncoder,
+        buffer: &wgpu::Buffer,
+    ) {
+        if let Some(length) = wgpu::BufferSize::new(self.inner.len() as u64) {
+            let mut view = staging_belt.write_buffer(
+                encoder,
+                buffer,
+                BufferAddress::default(),
+                length,
+                device,
+            );
+            view.copy_from_slice(&self.inner);
+        }
     }
 }
