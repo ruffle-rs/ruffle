@@ -154,18 +154,12 @@ impl Surface {
 
         for chunk in chunks {
             match chunk {
-                Chunk::Draw(chunk, needs_stencil, transform_buffers, color_buffers) => {
+                Chunk::Draw(chunk, needs_stencil, transform_buffers) => {
                     transform_buffers.copy_to(
                         staging_belt,
                         &descriptors.device,
                         draw_encoder,
                         &dynamic_transforms.transform.buffer,
-                    );
-                    color_buffers.copy_to(
-                        staging_belt,
-                        &descriptors.device,
-                        draw_encoder,
-                        &dynamic_transforms.color.buffer,
                     );
                     let mut render_pass =
                         draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {

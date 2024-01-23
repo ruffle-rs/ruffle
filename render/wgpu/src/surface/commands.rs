@@ -7,7 +7,7 @@ use crate::dynamic_transforms::DynamicTransforms;
 use crate::mesh::{as_mesh, DrawType, Mesh};
 use crate::surface::target::CommandTarget;
 use crate::surface::Surface;
-use crate::{as_texture, ColorAdjustments, Descriptors, MaskState, Pipelines, Transforms};
+use crate::{as_texture, Descriptors, MaskState, Pipelines, Transforms};
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::commands::{Command, RenderBlendMode};
@@ -71,14 +71,12 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
             DrawCommand::RenderBitmap {
                 bitmap,
                 transform_buffer,
-                color_buffer,
                 smoothing,
                 blend_mode,
                 render_stage3d,
             } => self.render_bitmap(
                 bitmap,
                 *transform_buffer,
-                *color_buffer,
                 *smoothing,
                 *blend_mode,
                 *render_stage3d,
@@ -87,18 +85,13 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                 _texture,
                 binds,
                 transform_buffer,
-                color_buffer,
                 blend_mode,
-            } => self.render_texture(*transform_buffer, *color_buffer, binds, *blend_mode),
+            } => self.render_texture(*transform_buffer, binds, *blend_mode),
             DrawCommand::RenderShape {
                 shape,
                 transform_buffer,
-                color_buffer,
-            } => self.render_shape(shape, *transform_buffer, *color_buffer),
-            DrawCommand::DrawRect {
-                transform_buffer,
-                color_buffer,
-            } => self.draw_rect(*transform_buffer, *color_buffer),
+            } => self.render_shape(shape, *transform_buffer),
+            DrawCommand::DrawRect { transform_buffer } => self.draw_rect(*transform_buffer),
             DrawCommand::PushMask => self.push_mask(),
             DrawCommand::ActivateMask => self.activate_mask(),
             DrawCommand::DeactivateMask => self.deactivate_mask(),
@@ -125,7 +118,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                 .set_pipeline(self.pipelines.gradients.stencilless_pipeline());
         }
 
-        self.render_pass.set_bind_group(3, bind_group, &[]);
+        self.render_pass.set_bind_group(2, bind_group, &[]);
     }
 
     pub fn prep_bitmap(
@@ -152,7 +145,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
             }
         }
 
-        self.render_pass.set_bind_group(3, bind_group, &[]);
+        self.render_pass.set_bind_group(2, bind_group, &[]);
     }
 
     pub fn draw(
@@ -172,7 +165,6 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         &mut self,
         bitmap: &'frame BitmapHandle,
         transform_buffer: wgpu::DynamicOffset,
-        color_buffer: wgpu::DynamicOffset,
         smoothing: bool,
         blend_mode: TrivialBlend,
         render_stage3d: bool,
@@ -198,11 +190,6 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
             &self.dynamic_transforms.transform.bind_group,
             &[transform_buffer],
         );
-        self.render_pass.set_bind_group(
-            2,
-            &self.dynamic_transforms.color.bind_group,
-            &[color_buffer],
-        );
 
         self.draw(
             self.descriptors.quad.vertices_pos.slice(..),
@@ -217,7 +204,6 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
     pub fn render_texture(
         &mut self,
         transform_buffer: wgpu::DynamicOffset,
-        color_buffer: wgpu::DynamicOffset,
         bind_group: &'frame wgpu::BindGroup,
         blend_mode: TrivialBlend,
     ) {
@@ -230,11 +216,6 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
             1,
             &self.dynamic_transforms.transform.bind_group,
             &[transform_buffer],
-        );
-        self.render_pass.set_bind_group(
-            2,
-            &self.dynamic_transforms.color.bind_group,
-            &[color_buffer],
         );
 
         self.draw(
@@ -251,7 +232,6 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         &mut self,
         shape: &'frame ShapeHandle,
         transform_buffer: wgpu::DynamicOffset,
-        color_buffer: wgpu::DynamicOffset,
     ) {
         if cfg!(feature = "render_debug_labels") {
             self.render_pass.push_debug_group("render_shape");
@@ -287,11 +267,6 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                 &self.dynamic_transforms.transform.bind_group,
                 &[transform_buffer],
             );
-            self.render_pass.set_bind_group(
-                2,
-                &self.dynamic_transforms.color.bind_group,
-                &[color_buffer],
-            );
 
             self.draw(
                 mesh.vertex_buffer.slice(draw.vertices.clone()),
@@ -304,11 +279,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         }
     }
 
-    pub fn draw_rect(
-        &mut self,
-        transform_buffer: wgpu::DynamicOffset,
-        color_buffer: wgpu::DynamicOffset,
-    ) {
+    pub fn draw_rect(&mut self, transform_buffer: wgpu::DynamicOffset) {
         if cfg!(feature = "render_debug_labels") {
             self.render_pass.push_debug_group("draw_rect");
         }
@@ -318,11 +289,6 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
             1,
             &self.dynamic_transforms.transform.bind_group,
             &[transform_buffer],
-        );
-        self.render_pass.set_bind_group(
-            2,
-            &self.dynamic_transforms.color.bind_group,
-            &[color_buffer],
         );
 
         self.draw(
@@ -377,7 +343,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
 }
 
 pub enum Chunk {
-    Draw(Vec<DrawCommand>, bool, BufferBuilder, BufferBuilder),
+    Draw(Vec<DrawCommand>, bool, BufferBuilder),
     Blend(PoolOrArcTexture, ChunkBlendMode, bool),
 }
 
@@ -392,7 +358,6 @@ pub enum DrawCommand {
     RenderBitmap {
         bitmap: BitmapHandle,
         transform_buffer: wgpu::DynamicOffset,
-        color_buffer: wgpu::DynamicOffset,
         smoothing: bool,
         blend_mode: TrivialBlend,
         render_stage3d: bool,
@@ -401,17 +366,14 @@ pub enum DrawCommand {
         _texture: PoolOrArcTexture,
         binds: wgpu::BindGroup,
         transform_buffer: wgpu::DynamicOffset,
-        color_buffer: wgpu::DynamicOffset,
         blend_mode: TrivialBlend,
     },
     RenderShape {
         shape: ShapeHandle,
         transform_buffer: wgpu::DynamicOffset,
-        color_buffer: wgpu::DynamicOffset,
     },
     DrawRect {
         transform_buffer: wgpu::DynamicOffset,
-        color_buffer: wgpu::DynamicOffset,
     },
     PushMask,
     ActivateMask,
@@ -448,22 +410,19 @@ pub fn chunk_blends<'a>(
     let mut needs_stencil = false;
     let mut num_masks = 0;
     let mut transforms = BufferBuilder::new_for_uniform(&descriptors.limits);
-    let mut color_adjustments = BufferBuilder::new_for_uniform(&descriptors.limits);
 
     transforms.set_buffer_limit(dynamic_transforms.transform.buffer.size());
-    color_adjustments.set_buffer_limit(dynamic_transforms.color.buffer.size());
 
     fn add_to_current(
         result: &mut Vec<Chunk>,
         current: &mut Vec<DrawCommand>,
         transforms: &mut BufferBuilder,
-        color_adjustments: &mut BufferBuilder,
         dynamic_transforms: &DynamicTransforms,
         needs_stencil: bool,
         descriptors: &Descriptors,
         matrix: Matrix,
         color_transform: ColorTransform,
-        command_builder: impl FnOnce(wgpu::DynamicOffset, wgpu::DynamicOffset) -> DrawCommand,
+        command_builder: impl FnOnce(wgpu::DynamicOffset) -> DrawCommand,
     ) {
         let transform = Transforms {
             world_matrix: [
@@ -477,15 +436,12 @@ pub fn chunk_blends<'a>(
                     1.0,
                 ],
             ],
+            mult_color: color_transform.mult_rgba_normalized(),
+            add_color: color_transform.add_rgba_normalized(),
         };
-        let color = ColorAdjustments::from(&color_transform);
-        if let (Ok(transform_range), Ok(color_range)) = (
-            transforms.add(&[transform]),
-            color_adjustments.add(&[color]),
-        ) {
+        if let Ok(transform_range) = transforms.add(&[transform]) {
             current.push(command_builder(
                 transform_range.start as wgpu::DynamicOffset,
-                color_range.start as wgpu::DynamicOffset,
             ));
         } else {
             result.push(Chunk::Draw(
@@ -495,22 +451,13 @@ pub fn chunk_blends<'a>(
                     transforms,
                     BufferBuilder::new_for_uniform(&descriptors.limits),
                 ),
-                std::mem::replace(
-                    color_adjustments,
-                    BufferBuilder::new_for_uniform(&descriptors.limits),
-                ),
             ));
             transforms.set_buffer_limit(dynamic_transforms.transform.buffer.size());
-            color_adjustments.set_buffer_limit(dynamic_transforms.color.buffer.size());
             let transform_range = transforms
                 .add(&[transform])
                 .expect("Buffer must be able to fit a new thing, it was just emptied");
-            let color_range = color_adjustments
-                .add(&[color])
-                .expect("Buffer must be able to fit a new thing, it was just emptied");
             current.push(command_builder(
                 transform_range.start as wgpu::DynamicOffset,
-                color_range.start as wgpu::DynamicOffset,
             ));
         }
     }
@@ -587,17 +534,15 @@ pub fn chunk_blends<'a>(
                             &mut result,
                             &mut current,
                             &mut transforms,
-                            &mut color_adjustments,
                             dynamic_transforms,
                             needs_stencil,
                             descriptors,
                             transform.matrix,
                             transform.color_transform,
-                            |transform_buffer, color_buffer| DrawCommand::RenderTexture {
+                            |transform_buffer| DrawCommand::RenderTexture {
                                 _texture: texture,
                                 binds: bind_group,
                                 transform_buffer,
-                                color_buffer,
                                 blend_mode,
                             },
                         );
@@ -611,14 +556,9 @@ pub fn chunk_blends<'a>(
                                     &mut transforms,
                                     BufferBuilder::new_for_uniform(&descriptors.limits),
                                 ),
-                                std::mem::replace(
-                                    &mut color_adjustments,
-                                    BufferBuilder::new_for_uniform(&descriptors.limits),
-                                ),
                             ));
                         }
                         transforms.set_buffer_limit(dynamic_transforms.transform.buffer.size());
-                        color_adjustments.set_buffer_limit(dynamic_transforms.color.buffer.size());
                         let chunk_blend_mode = match blend_type {
                             BlendType::Complex(complex) => ChunkBlendMode::Complex(complex),
                             BlendType::Shader(shader) => ChunkBlendMode::Shader(shader),
@@ -652,16 +592,14 @@ pub fn chunk_blends<'a>(
                     &mut result,
                     &mut current,
                     &mut transforms,
-                    &mut color_adjustments,
                     dynamic_transforms,
                     needs_stencil,
                     descriptors,
                     matrix,
                     transform.color_transform,
-                    |transform_buffer, color_buffer| DrawCommand::RenderBitmap {
+                    |transform_buffer| DrawCommand::RenderBitmap {
                         bitmap,
                         transform_buffer,
-                        color_buffer,
                         smoothing,
                         blend_mode: TrivialBlend::Normal,
                         render_stage3d: false,
@@ -681,16 +619,14 @@ pub fn chunk_blends<'a>(
                     &mut result,
                     &mut current,
                     &mut transforms,
-                    &mut color_adjustments,
                     dynamic_transforms,
                     needs_stencil,
                     descriptors,
                     matrix,
                     transform.color_transform,
-                    |transform_buffer, color_buffer| DrawCommand::RenderBitmap {
+                    |transform_buffer| DrawCommand::RenderBitmap {
                         bitmap,
                         transform_buffer,
-                        color_buffer,
                         smoothing: false,
                         blend_mode: TrivialBlend::Normal,
                         render_stage3d: true,
@@ -701,23 +637,20 @@ pub fn chunk_blends<'a>(
                 &mut result,
                 &mut current,
                 &mut transforms,
-                &mut color_adjustments,
                 dynamic_transforms,
                 needs_stencil,
                 descriptors,
                 transform.matrix,
                 transform.color_transform,
-                |transform_buffer, color_buffer| DrawCommand::RenderShape {
+                |transform_buffer| DrawCommand::RenderShape {
                     shape,
                     transform_buffer,
-                    color_buffer,
                 },
             ),
             Command::DrawRect { color, matrix } => add_to_current(
                 &mut result,
                 &mut current,
                 &mut transforms,
-                &mut color_adjustments,
                 dynamic_transforms,
                 needs_stencil,
                 descriptors,
@@ -729,10 +662,7 @@ pub fn chunk_blends<'a>(
                     a_multiply: Fixed8::from_f32(f32::from(color.a) / 255.0),
                     ..Default::default()
                 },
-                |transform_buffer, color_buffer| DrawCommand::DrawRect {
-                    transform_buffer,
-                    color_buffer,
-                },
+                |transform_buffer| DrawCommand::DrawRect { transform_buffer },
             ),
             Command::PushMask => {
                 needs_stencil = true;
@@ -756,12 +686,7 @@ pub fn chunk_blends<'a>(
     }
 
     if !current.is_empty() {
-        result.push(Chunk::Draw(
-            current,
-            needs_stencil,
-            transforms,
-            color_adjustments,
-        ));
+        result.push(Chunk::Draw(current, needs_stencil, transforms));
     }
 
     result

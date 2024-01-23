@@ -13,12 +13,11 @@ struct VertexOutput {
 };
 
 @group(1) @binding(0) var<uniform> transforms: common::Transforms;
-@group(2) @binding(0) var<uniform> colorTransforms: common::ColorTransforms;
 
 @vertex
 fn main_vertex(in: VertexInput) -> VertexOutput {
     let pos = common::globals.view_matrix * transforms.world_matrix * vec4<f32>(in.position.x, in.position.y, 0.0, 1.0);
-    let color = saturate(in.color * colorTransforms.mult_color + colorTransforms.add_color);
+    let color = saturate(in.color * transforms.mult_color + transforms.add_color);
     return VertexOutput(pos, vec4<f32>(color.rgb * color.a, color.a));
 }
 

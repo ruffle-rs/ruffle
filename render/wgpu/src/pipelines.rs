@@ -86,11 +86,7 @@ impl Pipelines {
         msaa_sample_count: u32,
         bind_layouts: &BindLayouts,
     ) -> Self {
-        let colort_bindings = vec![
-            &bind_layouts.globals,
-            &bind_layouts.transforms,
-            &bind_layouts.color_transforms,
-        ];
+        let colort_bindings = vec![&bind_layouts.globals, &bind_layouts.transforms];
 
         let color_pipelines = create_shape_pipeline(
             "Color",
@@ -107,7 +103,6 @@ impl Pipelines {
         let gradient_bindings = vec![
             &bind_layouts.globals,
             &bind_layouts.transforms,
-            &bind_layouts.color_transforms,
             &bind_layouts.gradient,
         ];
 
@@ -146,7 +141,6 @@ impl Pipelines {
         let bitmap_blend_bindings = vec![
             &bind_layouts.globals,
             &bind_layouts.transforms,
-            &bind_layouts.color_transforms,
             &bind_layouts.bitmap,
         ];
 

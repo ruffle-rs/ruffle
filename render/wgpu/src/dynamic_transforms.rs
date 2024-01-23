@@ -1,5 +1,5 @@
 use crate::descriptors::Descriptors;
-use crate::{ColorAdjustments, Transforms};
+use crate::Transforms;
 use std::marker::PhantomData;
 use std::mem;
 
@@ -7,17 +7,12 @@ const ESTIMATED_OBJECTS_PER_CHUNK: u64 = 200;
 
 pub struct DynamicTransforms {
     pub transform: Inner<Transforms>,
-    pub color: Inner<ColorAdjustments>,
 }
 
 impl DynamicTransforms {
     pub fn new(descriptors: &Descriptors) -> Self {
         Self {
             transform: Inner::new(&descriptors.device, &descriptors.bind_layouts.transforms),
-            color: Inner::new(
-                &descriptors.device,
-                &descriptors.bind_layouts.color_transforms,
-            ),
         }
     }
 }
