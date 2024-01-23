@@ -57,10 +57,10 @@
         "message": "Sprawdzanie statusu Ruffle na bieżącej karcie…"
     },
     "status_result_running": {
-        "message": "Ruffle jest załadowany i gotowy do uruchomienia zawartości Flash na bieżącej karcie."
+        "message": "Ruffle jest gotowy do uruchomienia zawartości Flash w bieżącej karcie."
     },
     "status_result_running_protected": {
-        "message": "Ruffle jest załadowany i uruchamia zawartość Flasha, której żądałeś."
+        "message": "Ruffle jest gotowy do uruchomienia żądanej zawartości Flash."
     },
     "status_result_optout": {
         "message": "Ruffle nie jest załadowany, ponieważ bieżąca strona oznaczyła się jako niekompatybilna."
