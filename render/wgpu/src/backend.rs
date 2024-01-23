@@ -590,6 +590,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                         &self.descriptors,
                         &mut draw_encoder,
                         &mut self.offscreen_texture_pool,
+                        &mut self.staging_belt,
                         FilterSource::for_entire_texture(target.color_texture()),
                         filter,
                     );
@@ -867,6 +868,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             &self.descriptors,
             &mut draw_encoder,
             &mut self.offscreen_texture_pool,
+            &mut self.staging_belt,
             FilterSource {
                 texture: &source_texture.texture,
                 point: source_point,
@@ -897,12 +899,14 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 depth_or_array_layers: 1,
             },
         );
+        self.staging_belt.finish();
         let index = target.submit(
             &self.descriptors.device,
             &self.descriptors.queue,
             Some(draw_encoder.finish()),
             frame_output,
         );
+        self.staging_belt.recall();
 
         Some(self.make_queue_sync_handle(target, Some(index), destination, copy_area))
     }

@@ -6,16 +6,20 @@ use crate::surface::target::CommandTarget;
 use crate::utils::SampleCountMap;
 use std::sync::OnceLock;
 use swf::ColorMatrixFilter as ColorMatrixFilterArgs;
-use wgpu::util::DeviceExt;
+use wgpu::util::StagingBelt;
 
 pub struct ColorMatrixFilter {
     bind_group_layout: wgpu::BindGroupLayout,
     pipeline_layout: wgpu::PipelineLayout,
+    buffer: wgpu::Buffer,
+    buffer_size: wgpu::BufferSize,
     pipelines: SampleCountMap<OnceLock<wgpu::RenderPipeline>>,
 }
 
 impl ColorMatrixFilter {
     pub fn new(device: &wgpu::Device) -> Self {
+        let buffer_size = std::mem::size_of::<[f32; 20]>() as u64;
+
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &[
                 wgpu::BindGroupLayoutEntry {
@@ -40,9 +44,7 @@ impl ColorMatrixFilter {
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Uniform,
                         has_dynamic_offset: false,
-                        min_binding_size: wgpu::BufferSize::new(
-                            std::mem::size_of::<[f32; 20]>() as u64
-                        ),
+                        min_binding_size: wgpu::BufferSize::new(buffer_size),
                     },
                     count: None,
                 },
@@ -56,10 +58,19 @@ impl ColorMatrixFilter {
             push_constant_ranges: &[],
         });
 
+        let buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: None,
+            size: buffer_size,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
         Self {
             pipelines: Default::default(),
             pipeline_layout,
+            buffer,
             bind_group_layout,
+            buffer_size: wgpu::BufferSize::new(buffer_size).expect("Definitely not zero."),
         }
     }
 
@@ -106,6 +117,7 @@ impl ColorMatrixFilter {
         descriptors: &Descriptors,
         texture_pool: &mut TexturePool,
         draw_encoder: &mut wgpu::CommandEncoder,
+        staging_belt: &mut StagingBelt,
         source: &FilterSource,
         filter: &ColorMatrixFilterArgs,
     ) -> CommandTarget {
@@ -127,13 +139,15 @@ impl ColorMatrixFilter {
             draw_encoder,
         );
         let source_view = source.texture.create_view(&Default::default());
-        let buffer = descriptors
-            .device
-            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: create_debug_label!("Filter arguments").as_deref(),
-                contents: bytemuck::cast_slice(&filter.matrix),
-                usage: wgpu::BufferUsages::UNIFORM,
-            });
+        staging_belt
+            .write_buffer(
+                draw_encoder,
+                &self.buffer,
+                0,
+                self.buffer_size,
+                &descriptors.device,
+            )
+            .copy_from_slice(bytemuck::cast_slice(&filter.matrix));
         let vertices = source.vertices(&descriptors.device);
         let filter_group = descriptors
             .device
@@ -153,7 +167,7 @@ impl ColorMatrixFilter {
                     },
                     wgpu::BindGroupEntry {
                         binding: 2,
-                        resource: buffer.as_entire_binding(),
+                        resource: self.buffer.as_entire_binding(),
                     },
                 ],
             });
