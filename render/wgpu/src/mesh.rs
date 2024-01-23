@@ -76,13 +76,19 @@ impl PendingDraw {
                 .into_iter()
                 .map(PosColorVertex::from)
                 .collect();
-            vertex_buffer.add(&vertices)
+            vertex_buffer
+                .add(&vertices)
+                .expect("Mesh vertex buffer was too large!")
         } else {
             let vertices: Vec<_> = draw.vertices.into_iter().map(PosVertex::from).collect();
-            vertex_buffer.add(&vertices)
+            vertex_buffer
+                .add(&vertices)
+                .expect("Mesh vertex buffer was too large!")
         };
 
-        let indices = index_buffer.add(&draw.indices);
+        let indices = index_buffer
+            .add(&draw.indices)
+            .expect("Mesh index buffer was too large!");
 
         let index_count = draw.indices.len() as u32;
         let draw_type = match draw.draw_type {
@@ -231,6 +237,7 @@ impl PendingDrawType {
 
         let gradient = uniform_buffers
             .add(&[GradientUniforms::from(gradient)])
+            .expect("Mesh uniform buffer was too large!")
             .start;
 
         let bind_group_label =
@@ -401,5 +408,8 @@ fn create_texture_transforms(
     texture_transform[0][..3].copy_from_slice(&matrix[0]);
     texture_transform[1][..3].copy_from_slice(&matrix[1]);
     texture_transform[2][..3].copy_from_slice(&matrix[2]);
-    buffer.add(&[texture_transform]).start
+    buffer
+        .add(&[texture_transform])
+        .expect("Mesh uniform buffer was too large!")
+        .start
 }
