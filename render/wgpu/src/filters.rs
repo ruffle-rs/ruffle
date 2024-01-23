@@ -21,7 +21,7 @@ use crate::filters::shader::ShaderFilter;
 use crate::surface::target::CommandTarget;
 use bytemuck::{Pod, Zeroable};
 use ruffle_render::filters::Filter;
-use wgpu::util::{DeviceExt, StagingBelt};
+use wgpu::util::StagingBelt;
 use wgpu::vertex_attr_array;
 
 #[derive(Debug)]
@@ -124,69 +124,64 @@ impl<'a> FilterSource<'a> {
 
     pub fn vertices_with_highlight_and_shadow(
         &self,
-        device: &wgpu::Device,
         blur_offset: (f32, f32),
-    ) -> wgpu::Buffer {
+    ) -> [FilterVertexWithDoubleBlur; 4] {
         let source_width = self.texture.width() as f32;
         let source_height = self.texture.height() as f32;
         let source_left = self.point.0 as f32;
         let source_top = self.point.1 as f32;
         let source_right = (self.point.0 + self.size.0) as f32;
         let source_bottom = (self.point.1 + self.size.1) as f32;
-        device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: create_debug_label!("Filter vertices").as_deref(),
-            contents: bytemuck::cast_slice(&[
-                FilterVertexWithDoubleBlur {
-                    position: [0.0, 0.0],
-                    source_uv: [source_left / source_width, source_top / source_height],
-                    blur_uv_left: [
-                        (source_left + blur_offset.0) / source_width,
-                        (source_top + blur_offset.1) / source_height,
-                    ],
-                    blur_uv_right: [
-                        (source_left - blur_offset.0) / source_width,
-                        (source_top - blur_offset.1) / source_height,
-                    ],
-                },
-                FilterVertexWithDoubleBlur {
-                    position: [1.0, 0.0],
-                    source_uv: [source_right / source_width, source_top / source_height],
-                    blur_uv_left: [
-                        (source_right + blur_offset.0) / source_width,
-                        (source_top + blur_offset.1) / source_height,
-                    ],
-                    blur_uv_right: [
-                        (source_right - blur_offset.0) / source_width,
-                        (source_top - blur_offset.1) / source_height,
-                    ],
-                },
-                FilterVertexWithDoubleBlur {
-                    position: [1.0, 1.0],
-                    source_uv: [source_right / source_width, source_bottom / source_height],
-                    blur_uv_left: [
-                        (source_right + blur_offset.0) / source_width,
-                        (source_bottom + blur_offset.1) / source_height,
-                    ],
-                    blur_uv_right: [
-                        (source_right - blur_offset.0) / source_width,
-                        (source_bottom - blur_offset.1) / source_height,
-                    ],
-                },
-                FilterVertexWithDoubleBlur {
-                    position: [0.0, 1.0],
-                    source_uv: [source_left / source_width, source_bottom / source_height],
-                    blur_uv_left: [
-                        (source_left + blur_offset.0) / source_width,
-                        (source_bottom + blur_offset.1) / source_height,
-                    ],
-                    blur_uv_right: [
-                        (source_left - blur_offset.0) / source_width,
-                        (source_bottom - blur_offset.1) / source_height,
-                    ],
-                },
-            ]),
-            usage: wgpu::BufferUsages::VERTEX,
-        })
+        [
+            FilterVertexWithDoubleBlur {
+                position: [0.0, 0.0],
+                source_uv: [source_left / source_width, source_top / source_height],
+                blur_uv_left: [
+                    (source_left + blur_offset.0) / source_width,
+                    (source_top + blur_offset.1) / source_height,
+                ],
+                blur_uv_right: [
+                    (source_left - blur_offset.0) / source_width,
+                    (source_top - blur_offset.1) / source_height,
+                ],
+            },
+            FilterVertexWithDoubleBlur {
+                position: [1.0, 0.0],
+                source_uv: [source_right / source_width, source_top / source_height],
+                blur_uv_left: [
+                    (source_right + blur_offset.0) / source_width,
+                    (source_top + blur_offset.1) / source_height,
+                ],
+                blur_uv_right: [
+                    (source_right - blur_offset.0) / source_width,
+                    (source_top - blur_offset.1) / source_height,
+                ],
+            },
+            FilterVertexWithDoubleBlur {
+                position: [1.0, 1.0],
+                source_uv: [source_right / source_width, source_bottom / source_height],
+                blur_uv_left: [
+                    (source_right + blur_offset.0) / source_width,
+                    (source_bottom + blur_offset.1) / source_height,
+                ],
+                blur_uv_right: [
+                    (source_right - blur_offset.0) / source_width,
+                    (source_bottom - blur_offset.1) / source_height,
+                ],
+            },
+            FilterVertexWithDoubleBlur {
+                position: [0.0, 1.0],
+                source_uv: [source_left / source_width, source_bottom / source_height],
+                blur_uv_left: [
+                    (source_left + blur_offset.0) / source_width,
+                    (source_bottom + blur_offset.1) / source_height,
+                ],
+                blur_uv_right: [
+                    (source_left - blur_offset.0) / source_width,
+                    (source_bottom - blur_offset.1) / source_height,
+                ],
+            },
+        ]
     }
 }
 
