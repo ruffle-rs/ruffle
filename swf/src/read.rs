@@ -2155,12 +2155,12 @@ impl<'a> Reader<'a> {
     fn read_convolution_filter(&mut self) -> Result<ConvolutionFilter> {
         let num_matrix_cols = self.read_u8()?;
         let num_matrix_rows = self.read_u8()?;
-        let divisor = self.read_fixed16()?;
-        let bias = self.read_fixed16()?;
+        let divisor = self.read_f32()?;
+        let bias = self.read_f32()?;
         let num_entries = num_matrix_cols * num_matrix_rows;
         let mut matrix = Vec::with_capacity(num_entries as usize);
         for _ in 0..num_entries {
-            matrix.push(self.read_fixed16()?);
+            matrix.push(self.read_f32()?);
         }
         Ok(ConvolutionFilter {
             num_matrix_cols,

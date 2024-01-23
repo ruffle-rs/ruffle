@@ -8,7 +8,7 @@ use crate::avm1::{Activation, ArrayObject, Error, Object, ScriptObject, TObject,
 use crate::context::{GcContext, UpdateContext};
 use gc_arena::{Collect, GcCell, Mutation};
 use std::ops::Deref;
-use swf::{Color, ConvolutionFilterFlags, Fixed16};
+use swf::{Color, ConvolutionFilterFlags};
 
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
@@ -58,14 +58,9 @@ impl From<&ConvolutionFilterData> for swf::ConvolutionFilter {
         swf::ConvolutionFilter {
             num_matrix_rows: filter.matrix_y,
             num_matrix_cols: filter.matrix_x,
-            matrix: filter
-                .matrix
-                .iter()
-                .copied()
-                .map(Fixed16::from_f32)
-                .collect(),
-            divisor: Fixed16::from_f32(filter.divisor),
-            bias: Fixed16::from_f32(filter.bias),
+            matrix: filter.matrix.clone(),
+            divisor: filter.divisor,
+            bias: filter.bias,
             default_color: filter.color,
             flags,
         }
@@ -79,9 +74,9 @@ impl From<swf::ConvolutionFilter> for ConvolutionFilterData {
         Self {
             matrix_x: filter.num_matrix_cols,
             matrix_y: filter.num_matrix_rows,
-            matrix: filter.matrix.into_iter().map(Fixed16::to_f32).collect(),
-            divisor: filter.divisor.to_f32(),
-            bias: filter.bias.to_f32(),
+            matrix: filter.matrix,
+            divisor: filter.divisor,
+            bias: filter.bias,
             preserve_alpha,
             clamp,
             color: filter.default_color,
