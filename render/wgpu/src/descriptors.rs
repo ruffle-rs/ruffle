@@ -4,11 +4,10 @@ use crate::pipelines::VERTEX_BUFFERS_DESCRIPTION_POS;
 use crate::shaders::Shaders;
 use crate::{
     create_buffer_with_data, BitmapSamplers, Pipelines, PosColorVertex, PosVertex,
-    TextureTransforms, Transforms, DEFAULT_COLOR_ADJUSTMENTS,
+    TextureTransforms, DEFAULT_COLOR_ADJUSTMENTS,
 };
 use fnv::FnvHashMap;
 use std::fmt::Debug;
-use std::mem;
 use std::sync::{Arc, Mutex};
 
 pub struct Descriptors {
@@ -97,24 +96,12 @@ impl Descriptors {
                         .device
                         .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                             label: create_debug_label!("Copy sRGB pipeline layout").as_deref(),
-                            bind_group_layouts: &if self.limits.max_push_constant_size > 0 {
-                                vec![&self.bind_layouts.globals, &self.bind_layouts.bitmap]
-                            } else {
-                                vec![
-                                    &self.bind_layouts.globals,
-                                    &self.bind_layouts.transforms,
-                                    &self.bind_layouts.bitmap,
-                                ]
-                            },
-                            push_constant_ranges: if self.device.limits().max_push_constant_size > 0
-                            {
-                                &[wgpu::PushConstantRange {
-                                    stages: wgpu::ShaderStages::VERTEX,
-                                    range: 0..(mem::size_of::<Transforms>() as u32),
-                                }]
-                            } else {
-                                &[]
-                            },
+                            bind_group_layouts: &[
+                                &self.bind_layouts.globals,
+                                &self.bind_layouts.transforms,
+                                &self.bind_layouts.bitmap,
+                            ],
+                            push_constant_ranges: &[],
                         });
                 Arc::new(
                     self.device
@@ -176,24 +163,12 @@ impl Descriptors {
                         .device
                         .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                             label: create_debug_label!("Copy pipeline layout").as_deref(),
-                            bind_group_layouts: &if self.limits.max_push_constant_size > 0 {
-                                vec![&self.bind_layouts.globals, &self.bind_layouts.bitmap]
-                            } else {
-                                vec![
-                                    &self.bind_layouts.globals,
-                                    &self.bind_layouts.transforms,
-                                    &self.bind_layouts.bitmap,
-                                ]
-                            },
-                            push_constant_ranges: if self.device.limits().max_push_constant_size > 0
-                            {
-                                &[wgpu::PushConstantRange {
-                                    stages: wgpu::ShaderStages::VERTEX,
-                                    range: 0..(mem::size_of::<Transforms>() as u32),
-                                }]
-                            } else {
-                                &[]
-                            },
+                            bind_group_layouts: &[
+                                &self.bind_layouts.globals,
+                                &self.bind_layouts.transforms,
+                                &self.bind_layouts.bitmap,
+                            ],
+                            push_constant_ranges: &[],
                         });
                 Arc::new(
                     self.device

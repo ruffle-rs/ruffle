@@ -10,7 +10,7 @@ use crate::mesh::Mesh;
 use crate::pixel_bender::{run_pixelbender_shader_impl, ShaderMode};
 use crate::surface::commands::{chunk_blends, Chunk, CommandRenderer};
 use crate::utils::{remove_srgb, supported_sample_count};
-use crate::{Descriptors, MaskState, Pipelines, Transforms};
+use crate::{Descriptors, MaskState, Pipelines};
 use ruffle_render::commands::CommandList;
 use ruffle_render::pixel_bender::{ImageInputTexture, PixelBenderShaderArgument};
 use ruffle_render::quality::StageQuality;
@@ -98,7 +98,6 @@ impl Surface {
             descriptors,
             self.format,
             self.actual_surface_format,
-            self.size,
             frame_view,
             target.color_view(),
             target.whole_frame_bind_group(descriptors),
@@ -339,28 +338,8 @@ impl Surface {
                         );
                     }
 
-                    if descriptors.limits.max_push_constant_size > 0 {
-                        render_pass.set_push_constants(
-                            wgpu::ShaderStages::VERTEX,
-                            0,
-                            bytemuck::cast_slice(&[Transforms {
-                                world_matrix: [
-                                    [self.size.width as f32, 0.0, 0.0, 0.0],
-                                    [0.0, self.size.height as f32, 0.0, 0.0],
-                                    [0.0, 0.0, 1.0, 0.0],
-                                    [0.0, 0.0, 0.0, 1.0],
-                                ],
-                            }]),
-                        );
-                        render_pass.set_bind_group(1, &blend_bind_group, &[]);
-                    } else {
-                        render_pass.set_bind_group(
-                            1,
-                            target.whole_frame_bind_group(descriptors),
-                            &[0],
-                        );
-                        render_pass.set_bind_group(2, &blend_bind_group, &[]);
-                    }
+                    render_pass.set_bind_group(1, target.whole_frame_bind_group(descriptors), &[0]);
+                    render_pass.set_bind_group(2, &blend_bind_group, &[]);
 
                     render_pass.set_vertex_buffer(0, descriptors.quad.vertices_pos.slice(..));
                     render_pass.set_index_buffer(

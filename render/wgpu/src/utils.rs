@@ -1,7 +1,6 @@
 use crate::buffer_pool::BufferDescription;
 use crate::descriptors::Descriptors;
 use crate::globals::Globals;
-use crate::Transforms;
 use std::borrow::Cow;
 use wgpu::util::DeviceExt;
 use wgpu::{CommandEncoder, TextureFormat};
@@ -200,7 +199,6 @@ pub fn run_copy_pipeline(
     descriptors: &Descriptors,
     format: wgpu::TextureFormat,
     actual_surface_format: wgpu::TextureFormat,
-    size: wgpu::Extent3d,
     frame_view: &wgpu::TextureView,
     input: &wgpu::TextureView,
     whole_frame_bind_group: &wgpu::BindGroup,
@@ -257,24 +255,8 @@ pub fn run_copy_pipeline(
     render_pass.set_pipeline(&pipeline);
     render_pass.set_bind_group(0, globals.bind_group(), &[]);
 
-    if descriptors.limits.max_push_constant_size > 0 {
-        render_pass.set_push_constants(
-            wgpu::ShaderStages::VERTEX,
-            0,
-            bytemuck::cast_slice(&[Transforms {
-                world_matrix: [
-                    [size.width as f32, 0.0, 0.0, 0.0],
-                    [0.0, size.height as f32, 0.0, 0.0],
-                    [0.0, 0.0, 1.0, 0.0],
-                    [0.0, 0.0, 0.0, 1.0],
-                ],
-            }]),
-        );
-        render_pass.set_bind_group(1, &copy_bind_group, &[]);
-    } else {
-        render_pass.set_bind_group(1, whole_frame_bind_group, &[0]);
-        render_pass.set_bind_group(2, &copy_bind_group, &[]);
-    }
+    render_pass.set_bind_group(1, whole_frame_bind_group, &[0]);
+    render_pass.set_bind_group(2, &copy_bind_group, &[]);
 
     render_pass.set_vertex_buffer(0, descriptors.quad.vertices_pos.slice(..));
     render_pass.set_index_buffer(
