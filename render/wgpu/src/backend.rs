@@ -334,7 +334,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
     pub fn make_queue_sync_handle(
         &self,
         target: TextureTarget,
-        index: SubmissionIndex,
+        index: Option<SubmissionIndex>,
         destination: BitmapHandle,
         copy_area: PixelRegion,
     ) -> Box<QueueSyncHandle> {
@@ -803,7 +803,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         );
         self.staging_belt.recall();
 
-        Some(self.make_queue_sync_handle(target, index, handle, bounds))
+        Some(self.make_queue_sync_handle(target, Some(index), handle, bounds))
     }
 
     fn is_filter_supported(&self, filter: &Filter) -> bool {
@@ -904,7 +904,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             frame_output,
         );
 
-        Some(self.make_queue_sync_handle(target, index, destination, copy_area))
+        Some(self.make_queue_sync_handle(target, Some(index), destination, copy_area))
     }
 
     fn compile_pixelbender_shader(
@@ -1040,7 +1040,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
         let sync_handle = self.make_queue_sync_handle(
             texture_target,
-            index,
+            Some(index),
             target_handle,
             PixelRegion::for_whole_size(extent.width, extent.height),
         );
