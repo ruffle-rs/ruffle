@@ -1,7 +1,7 @@
 use crate::backend::RenderTargetMode;
 use crate::buffer_pool::TexturePool;
 use crate::descriptors::Descriptors;
-use crate::filters::{FilterSource, VERTEX_BUFFERS_DESCRIPTION_FILTERS};
+use crate::filters::{FilterSource, FilterVertex, VERTEX_BUFFERS_DESCRIPTION_FILTERS};
 use crate::surface::target::CommandTarget;
 use crate::utils::SampleCountMap;
 use std::sync::OnceLock;
@@ -11,14 +11,16 @@ use wgpu::util::StagingBelt;
 pub struct ColorMatrixFilter {
     bind_group_layout: wgpu::BindGroupLayout,
     pipeline_layout: wgpu::PipelineLayout,
-    buffer: wgpu::Buffer,
-    buffer_size: wgpu::BufferSize,
+    vertex_buffer: wgpu::Buffer,
+    uniform_buffer: wgpu::Buffer,
+    vertices_size: wgpu::BufferSize,
+    uniform_size: wgpu::BufferSize,
     pipelines: SampleCountMap<OnceLock<wgpu::RenderPipeline>>,
 }
 
 impl ColorMatrixFilter {
     pub fn new(device: &wgpu::Device) -> Self {
-        let buffer_size = std::mem::size_of::<[f32; 20]>() as u64;
+        let uniform_size = std::mem::size_of::<[f32; 20]>() as u64;
 
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &[
@@ -44,12 +46,20 @@ impl ColorMatrixFilter {
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Uniform,
                         has_dynamic_offset: false,
-                        min_binding_size: wgpu::BufferSize::new(buffer_size),
+                        min_binding_size: wgpu::BufferSize::new(uniform_size),
                     },
                     count: None,
                 },
             ],
             label: create_debug_label!("Color matrix filter binds").as_deref(),
+        });
+
+        let vertices_size = std::mem::size_of::<[FilterVertex; 4]>() as u64;
+        let vertex_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: None,
+            size: vertices_size,
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
         });
 
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -58,9 +68,9 @@ impl ColorMatrixFilter {
             push_constant_ranges: &[],
         });
 
-        let buffer = device.create_buffer(&wgpu::BufferDescriptor {
+        let uniform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
-            size: buffer_size,
+            size: uniform_size,
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
@@ -68,9 +78,11 @@ impl ColorMatrixFilter {
         Self {
             pipelines: Default::default(),
             pipeline_layout,
-            buffer,
+            vertex_buffer,
+            uniform_buffer,
             bind_group_layout,
-            buffer_size: wgpu::BufferSize::new(buffer_size).expect("Definitely not zero."),
+            vertices_size: wgpu::BufferSize::new(vertices_size).expect("Definitely not zero."),
+            uniform_size: wgpu::BufferSize::new(uniform_size).expect("Definitely not zero."),
         }
     }
 
@@ -142,13 +154,21 @@ impl ColorMatrixFilter {
         staging_belt
             .write_buffer(
                 draw_encoder,
-                &self.buffer,
+                &self.uniform_buffer,
                 0,
-                self.buffer_size,
+                self.uniform_size,
                 &descriptors.device,
             )
             .copy_from_slice(bytemuck::cast_slice(&filter.matrix));
-        let vertices = source.vertices(&descriptors.device);
+        staging_belt
+            .write_buffer(
+                draw_encoder,
+                &self.vertex_buffer,
+                0,
+                self.vertices_size,
+                &descriptors.device,
+            )
+            .copy_from_slice(bytemuck::cast_slice(&[source.vertices()]));
         let filter_group = descriptors
             .device
             .create_bind_group(&wgpu::BindGroupDescriptor {
@@ -167,7 +187,7 @@ impl ColorMatrixFilter {
                     },
                     wgpu::BindGroupEntry {
                         binding: 2,
-                        resource: self.buffer.as_entire_binding(),
+                        resource: self.uniform_buffer.as_entire_binding(),
                     },
                 ],
             });
@@ -180,7 +200,7 @@ impl ColorMatrixFilter {
 
         render_pass.set_bind_group(0, &filter_group, &[]);
 
-        render_pass.set_vertex_buffer(0, vertices.slice(..));
+        render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         render_pass.set_index_buffer(
             descriptors.quad.indices.slice(..),
             wgpu::IndexFormat::Uint32,

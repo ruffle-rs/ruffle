@@ -1,7 +1,7 @@
 use crate::backend::RenderTargetMode;
 use crate::buffer_pool::TexturePool;
 use crate::descriptors::Descriptors;
-use crate::filters::{FilterSource, VERTEX_BUFFERS_DESCRIPTION_FILTERS};
+use crate::filters::{FilterSource, FilterVertex, VERTEX_BUFFERS_DESCRIPTION_FILTERS};
 use crate::surface::target::CommandTarget;
 use crate::utils::SampleCountMap;
 use bytemuck::{Pod, Zeroable};
@@ -29,8 +29,10 @@ struct BlurUniform {
 pub struct BlurFilter {
     bind_group_layout: wgpu::BindGroupLayout,
     pipeline_layout: wgpu::PipelineLayout,
-    buffer: wgpu::Buffer,
-    buffer_size: wgpu::BufferSize,
+    vertex_buffer: wgpu::Buffer,
+    uniform_buffer: wgpu::Buffer,
+    vertices_size: wgpu::BufferSize,
+    uniform_size: wgpu::BufferSize,
     pipelines: SampleCountMap<OnceLock<wgpu::RenderPipeline>>,
 }
 
@@ -52,7 +54,7 @@ impl BlurFilter {
             ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
             count: None,
         };
-        let buffer_size = std::mem::size_of::<BlurUniform>() as u64;
+        let uniform_size = std::mem::size_of::<BlurUniform>() as u64;
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &[
                 texture,
@@ -63,7 +65,7 @@ impl BlurFilter {
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Uniform,
                         has_dynamic_offset: false,
-                        min_binding_size: wgpu::BufferSize::new(buffer_size),
+                        min_binding_size: wgpu::BufferSize::new(uniform_size),
                     },
                     count: None,
                 },
@@ -71,9 +73,17 @@ impl BlurFilter {
             label: create_debug_label!("Blur filter binds (with buffer)").as_deref(),
         });
 
-        let buffer = device.create_buffer(&wgpu::BufferDescriptor {
+        let vertices_size = std::mem::size_of::<[FilterVertex; 4]>() as u64;
+        let vertex_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
-            size: buffer_size,
+            size: vertices_size,
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
+        let uniform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: None,
+            size: uniform_size,
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
@@ -87,9 +97,11 @@ impl BlurFilter {
         Self {
             pipelines: Default::default(),
             pipeline_layout,
-            buffer,
+            vertex_buffer,
+            uniform_buffer,
             bind_group_layout,
-            buffer_size: wgpu::BufferSize::new(buffer_size).expect("Definitely not zero."),
+            vertices_size: wgpu::BufferSize::new(vertices_size).expect("Definitely not zero."),
+            uniform_size: wgpu::BufferSize::new(uniform_size).expect("Definitely not zero."),
         }
     }
 
@@ -171,7 +183,15 @@ impl BlurFilter {
             draw_encoder,
         );
 
-        let vertices = source.vertices(&descriptors.device);
+        staging_belt
+            .write_buffer(
+                draw_encoder,
+                &self.vertex_buffer,
+                0,
+                self.vertices_size,
+                &descriptors.device,
+            )
+            .copy_from_slice(bytemuck::cast_slice(&[source.vertices()]));
 
         let source_view = source.texture.create_view(&Default::default());
         let mut first = true;
@@ -194,7 +214,7 @@ impl BlurFilter {
                     first = false;
                     (
                         &source_view,
-                        vertices.slice(..),
+                        self.vertex_buffer.slice(..),
                         source.texture.width() as f32,
                         source.texture.height() as f32,
                     )
@@ -249,9 +269,9 @@ impl BlurFilter {
                 staging_belt
                     .write_buffer(
                         draw_encoder,
-                        &self.buffer,
+                        &self.uniform_buffer,
                         0,
-                        self.buffer_size,
+                        self.uniform_size,
                         &descriptors.device,
                     )
                     .copy_from_slice(bytemuck::cast_slice(&[uniform]));
@@ -305,7 +325,7 @@ impl BlurFilter {
                     },
                     wgpu::BindGroupEntry {
                         binding: 2,
-                        resource: self.buffer.as_entire_binding(),
+                        resource: self.uniform_buffer.as_entire_binding(),
                     },
                 ],
             });
