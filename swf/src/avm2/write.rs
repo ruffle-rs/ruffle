@@ -139,9 +139,9 @@ impl<W: Write> Writer<W> {
         self.write_u30(i.0)
     }
 
-    fn write_string(&mut self, s: &str) -> Result<()> {
+    fn write_string(&mut self, s: &[u8]) -> Result<()> {
         self.write_u30(s.len() as u32)?;
-        self.output.write_all(s.as_bytes())?;
+        self.output.write_all(s)?;
         Ok(())
     }
 

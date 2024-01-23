@@ -11,6 +11,7 @@ use crate::tag_utils::SwfMovie;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
+use std::borrow::Cow;
 use std::fmt;
 use std::ops::Deref;
 use std::rc::Rc;
@@ -223,18 +224,18 @@ impl<'gc> BytecodeMethod<'gc> {
     }
 
     /// Get the name of this method.
-    pub fn method_name(&self) -> &str {
+    pub fn method_name(&self) -> Cow<'_, str> {
         let name_index = self.method().name.0 as usize;
         if name_index == 0 {
-            return "";
+            return Cow::Borrowed("");
         }
 
         self.abc
             .constant_pool
             .strings
             .get(name_index - 1)
-            .map(|s| s.as_str())
-            .unwrap_or("")
+            .map(|s| String::from_utf8_lossy(s))
+            .unwrap_or(Cow::Borrowed(""))
     }
 
     /// Determine if a given method is variadic.

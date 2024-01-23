@@ -21,7 +21,7 @@ pub struct ConstantPool {
     pub ints: Vec<i32>,
     pub uints: Vec<u32>,
     pub doubles: Vec<f64>,
-    pub strings: Vec<String>,
+    pub strings: Vec<Vec<u8>>,
     pub namespaces: Vec<Namespace>,
     pub namespace_sets: Vec<NamespaceSet>,
     pub multinames: Vec<Multiname>,
