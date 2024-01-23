@@ -187,7 +187,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         self.prep_bitmap(&bind.bind_group, blend_mode, render_stage3d);
         self.render_pass.set_bind_group(
             1,
-            &self.dynamic_transforms.transform.bind_group,
+            &self.dynamic_transforms.bind_group,
             &[transform_buffer],
         );
 
@@ -214,7 +214,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
 
         self.render_pass.set_bind_group(
             1,
-            &self.dynamic_transforms.transform.bind_group,
+            &self.dynamic_transforms.bind_group,
             &[transform_buffer],
         );
 
@@ -264,7 +264,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
             }
             self.render_pass.set_bind_group(
                 1,
-                &self.dynamic_transforms.transform.bind_group,
+                &self.dynamic_transforms.bind_group,
                 &[transform_buffer],
             );
 
@@ -287,7 +287,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
 
         self.render_pass.set_bind_group(
             1,
-            &self.dynamic_transforms.transform.bind_group,
+            &self.dynamic_transforms.bind_group,
             &[transform_buffer],
         );
 
@@ -410,7 +410,7 @@ pub fn chunk_blends<'a>(
     let mut num_masks = 0;
     let mut transforms = BufferBuilder::new_for_uniform(&descriptors.limits);
 
-    transforms.set_buffer_limit(dynamic_transforms.transform.buffer.size());
+    transforms.set_buffer_limit(dynamic_transforms.buffer.size());
 
     fn add_to_current(
         result: &mut Vec<Chunk>,
@@ -451,7 +451,7 @@ pub fn chunk_blends<'a>(
                     BufferBuilder::new_for_uniform(&descriptors.limits),
                 ),
             ));
-            transforms.set_buffer_limit(dynamic_transforms.transform.buffer.size());
+            transforms.set_buffer_limit(dynamic_transforms.buffer.size());
             let transform_range = transforms
                 .add(&[transform])
                 .expect("Buffer must be able to fit a new thing, it was just emptied");
@@ -556,7 +556,7 @@ pub fn chunk_blends<'a>(
                                 ),
                             ));
                         }
-                        transforms.set_buffer_limit(dynamic_transforms.transform.buffer.size());
+                        transforms.set_buffer_limit(dynamic_transforms.buffer.size());
                         let chunk_blend_mode = match blend_type {
                             BlendType::Complex(complex) => ChunkBlendMode::Complex(complex),
                             BlendType::Shader(shader) => ChunkBlendMode::Shader(shader),
