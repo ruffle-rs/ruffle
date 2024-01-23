@@ -805,7 +805,7 @@ impl GradientInterpolation {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, Eq, PartialEq)]
 pub struct GradientRecord {
     pub ratio: u8,
     pub color: Color,
