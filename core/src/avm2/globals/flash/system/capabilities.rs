@@ -1,6 +1,7 @@
 //! `flash.display.Capabilities` native methods
 
 use crate::avm2::{Activation, AvmString, Error, Object, Value};
+use crate::player::PlayerRuntime;
 
 /// Implements `flash.system.Capabilities.version`
 pub fn get_version<'gc>(
@@ -26,7 +27,10 @@ pub fn get_player_type<'gc>(
     let player_type = if cfg!(target_family = "wasm") {
         "PlugIn"
     } else {
-        "StandAlone"
+        match activation.context.avm2.player_runtime {
+            PlayerRuntime::FlashPlayer => "StandAlone",
+            PlayerRuntime::AIR => "Desktop",
+        }
     };
 
     Ok(AvmString::new_utf8(activation.context.gc_context, player_type).into())
