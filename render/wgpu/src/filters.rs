@@ -67,67 +67,59 @@ impl<'a> FilterSource<'a> {
         ]
     }
 
-    pub fn vertices_with_blur_offset(
-        &self,
-        device: &wgpu::Device,
-        blur_offset: (f32, f32),
-    ) -> wgpu::Buffer {
+    pub fn vertices_with_blur_offset(&self, blur_offset: (f32, f32)) -> [FilterVertexWithBlur; 4] {
         let source_width = self.texture.width() as f32;
         let source_height = self.texture.height() as f32;
         let source_left = self.point.0;
         let source_top = self.point.1;
         let source_right = source_left + self.size.0;
         let source_bottom = source_top + self.size.1;
-        device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: create_debug_label!("Filter vertices").as_deref(),
-            contents: bytemuck::cast_slice(&[
-                FilterVertexWithBlur {
-                    position: [0.0, 0.0],
-                    source_uv: [
-                        source_left as f32 / source_width,
-                        source_top as f32 / source_height,
-                    ],
-                    blur_uv: [
-                        (source_left as f32 + blur_offset.0) / source_width,
-                        (source_top as f32 + blur_offset.1) / source_height,
-                    ],
-                },
-                FilterVertexWithBlur {
-                    position: [1.0, 0.0],
-                    source_uv: [
-                        source_right as f32 / source_width,
-                        source_top as f32 / source_height,
-                    ],
-                    blur_uv: [
-                        (source_right as f32 + blur_offset.0) / source_width,
-                        (source_top as f32 + blur_offset.1) / source_height,
-                    ],
-                },
-                FilterVertexWithBlur {
-                    position: [1.0, 1.0],
-                    source_uv: [
-                        source_right as f32 / source_width,
-                        source_bottom as f32 / source_height,
-                    ],
-                    blur_uv: [
-                        (source_right as f32 + blur_offset.0) / source_width,
-                        (source_bottom as f32 + blur_offset.1) / source_height,
-                    ],
-                },
-                FilterVertexWithBlur {
-                    position: [0.0, 1.0],
-                    source_uv: [
-                        source_left as f32 / source_width,
-                        source_bottom as f32 / source_height,
-                    ],
-                    blur_uv: [
-                        (source_left as f32 + blur_offset.0) / source_width,
-                        (source_bottom as f32 + blur_offset.1) / source_height,
-                    ],
-                },
-            ]),
-            usage: wgpu::BufferUsages::VERTEX,
-        })
+        [
+            FilterVertexWithBlur {
+                position: [0.0, 0.0],
+                source_uv: [
+                    source_left as f32 / source_width,
+                    source_top as f32 / source_height,
+                ],
+                blur_uv: [
+                    (source_left as f32 + blur_offset.0) / source_width,
+                    (source_top as f32 + blur_offset.1) / source_height,
+                ],
+            },
+            FilterVertexWithBlur {
+                position: [1.0, 0.0],
+                source_uv: [
+                    source_right as f32 / source_width,
+                    source_top as f32 / source_height,
+                ],
+                blur_uv: [
+                    (source_right as f32 + blur_offset.0) / source_width,
+                    (source_top as f32 + blur_offset.1) / source_height,
+                ],
+            },
+            FilterVertexWithBlur {
+                position: [1.0, 1.0],
+                source_uv: [
+                    source_right as f32 / source_width,
+                    source_bottom as f32 / source_height,
+                ],
+                blur_uv: [
+                    (source_right as f32 + blur_offset.0) / source_width,
+                    (source_bottom as f32 + blur_offset.1) / source_height,
+                ],
+            },
+            FilterVertexWithBlur {
+                position: [0.0, 1.0],
+                source_uv: [
+                    source_left as f32 / source_width,
+                    source_bottom as f32 / source_height,
+                ],
+                blur_uv: [
+                    (source_left as f32 + blur_offset.0) / source_width,
+                    (source_bottom as f32 + blur_offset.1) / source_height,
+                ],
+            },
+        ]
     }
 
     pub fn vertices_with_highlight_and_shadow(
