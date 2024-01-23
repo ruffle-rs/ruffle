@@ -24,11 +24,6 @@ struct ConvolutionFilterData {
 }
 
 impl ConvolutionFilterData {
-    fn reset_matrix(&mut self) {
-        let len = (self.matrix_x * self.matrix_y) as usize;
-        self.matrix = vec![0.0; len];
-    }
-
     fn resize_matrix(&mut self) {
         let new_len = (self.matrix_x * self.matrix_y) as usize;
         if new_len > self.matrix.len() {
@@ -112,9 +107,7 @@ impl<'gc> ConvolutionFilter<'gc> {
         ));
         convolution_filter.set_matrix_x(activation, args.get(0))?;
         convolution_filter.set_matrix_y(activation, args.get(1))?;
-        if let Some(Value::Object(object)) = args.get(2) {
-            convolution_filter.fill_matrix(activation, object)?;
-        }
+        convolution_filter.set_matrix(activation, args.get(2))?;
         if let Some(value) = args.get(3) {
             convolution_filter.set_divisor(activation, Some(value))?;
         } else if !args.is_empty() {
@@ -184,41 +177,27 @@ impl<'gc> ConvolutionFilter<'gc> {
         )
     }
 
-    fn fill_matrix(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        object: &Object<'gc>,
-    ) -> Result<(), Error<'gc>> {
-        let matrix_len = self.0.read().matrix.len();
-        for i in 0..matrix_len {
-            let length = object.length(activation)? as usize;
-            let item = if i < length {
-                object
-                    .get_element(activation, i as i32)
-                    .coerce_to_f64(activation)? as f32
-            } else {
-                0.0
-            };
-            self.0.write(activation.context.gc_context).matrix[i] = item;
-        }
-        Ok(())
-    }
-
     fn set_matrix(
         &self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
-        if let Some(value) = value {
-            if let Value::Object(object) = value {
-                let length = object.length(activation)?;
-                self.0.write(activation.context.gc_context).matrix = vec![0.0; length as usize];
-                self.fill_matrix(activation, object)?;
-                self.0.write(activation.context.gc_context).resize_matrix();
-            } else {
-                self.0.write(activation.context.gc_context).reset_matrix();
-            }
+        let Some(value) = value else { return Ok(()) };
+
+        // FP 11 and FP 32 behave differently here: in FP 11, only "true" objects resize
+        // the matrix, but in FP 32 strings will too (and so fill the matrix with `NaN`
+        // values, as they have a `length` but no actual elements).
+        let object = value.coerce_to_object(activation);
+        let length = usize::try_from(object.length(activation)?).unwrap_or_default();
+
+        self.0.write(activation.gc()).matrix = vec![0.0; length];
+        for i in 0..length {
+            let elem = object
+                .get_element(activation, i as i32)
+                .coerce_to_f64(activation)? as f32;
+            self.0.write(activation.gc()).matrix[i] = elem;
         }
+        self.0.write(activation.gc()).resize_matrix();
         Ok(())
     }
 
