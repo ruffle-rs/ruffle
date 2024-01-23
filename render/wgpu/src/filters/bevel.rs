@@ -8,7 +8,7 @@ use crate::utils::SampleCountMap;
 use bytemuck::{Pod, Zeroable};
 use std::sync::OnceLock;
 use swf::BevelFilter as BevelFilterArgs;
-use wgpu::util::DeviceExt;
+use wgpu::util::StagingBelt;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable, PartialEq)]
@@ -24,11 +24,14 @@ struct BevelUniform {
 pub struct BevelFilter {
     bind_group_layout: wgpu::BindGroupLayout,
     pipeline_layout: wgpu::PipelineLayout,
+    buffer: wgpu::Buffer,
+    buffer_size: wgpu::BufferSize,
     pipeline: SampleCountMap<OnceLock<wgpu::RenderPipeline>>,
 }
 
 impl BevelFilter {
     pub fn new(device: &wgpu::Device) -> Self {
+        let buffer_size = std::mem::size_of::<BevelUniform>() as u64;
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &[
                 wgpu::BindGroupLayoutEntry {
@@ -53,9 +56,7 @@ impl BevelFilter {
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Uniform,
                         has_dynamic_offset: false,
-                        min_binding_size: wgpu::BufferSize::new(
-                            std::mem::size_of::<BevelUniform>() as u64,
-                        ),
+                        min_binding_size: wgpu::BufferSize::new(buffer_size),
                     },
                     count: None,
                 },
@@ -73,6 +74,13 @@ impl BevelFilter {
             label: create_debug_label!("Bevel filter binds").as_deref(),
         });
 
+        let buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: None,
+            size: buffer_size,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: None,
             bind_group_layouts: &[&bind_group_layout],
@@ -82,7 +90,9 @@ impl BevelFilter {
         Self {
             pipeline: Default::default(),
             pipeline_layout,
+            buffer,
             bind_group_layout,
+            buffer_size: wgpu::BufferSize::new(buffer_size).expect("Definitely not zero."),
         }
     }
 
@@ -130,6 +140,7 @@ impl BevelFilter {
         descriptors: &Descriptors,
         texture_pool: &mut TexturePool,
         draw_encoder: &mut wgpu::CommandEncoder,
+        staging_belt: &mut StagingBelt,
         source: &FilterSource,
         filter: &BevelFilterArgs,
         blur_filter: &BlurFilter,
@@ -141,6 +152,7 @@ impl BevelFilter {
             descriptors,
             texture_pool,
             draw_encoder,
+            staging_belt,
             source,
             &filter.inner_blur_filter(),
         );
@@ -187,26 +199,28 @@ impl BevelFilter {
         shadow_color[0] *= shadow_color[3];
         shadow_color[1] *= shadow_color[3];
         shadow_color[2] *= shadow_color[3];
-        let buffer = descriptors
-            .device
-            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: create_debug_label!("Filter arguments").as_deref(),
-                contents: bytemuck::cast_slice(&[BevelUniform {
-                    highlight_color,
-                    shadow_color,
-                    strength: filter.strength.to_f32(),
-                    bevel_type: if filter.is_on_top() {
-                        2
-                    } else if filter.is_inner() {
-                        1
-                    } else {
-                        0
-                    },
-                    knockout: if filter.is_knockout() { 1 } else { 0 },
-                    composite_source: 1,
-                }]),
-                usage: wgpu::BufferUsages::UNIFORM,
-            });
+        staging_belt
+            .write_buffer(
+                draw_encoder,
+                &self.buffer,
+                0,
+                self.buffer_size,
+                &descriptors.device,
+            )
+            .copy_from_slice(bytemuck::cast_slice(&[BevelUniform {
+                highlight_color,
+                shadow_color,
+                strength: filter.strength.to_f32(),
+                bevel_type: if filter.is_on_top() {
+                    2
+                } else if filter.is_inner() {
+                    1
+                } else {
+                    0
+                },
+                knockout: if filter.is_knockout() { 1 } else { 0 },
+                composite_source: 1,
+            }]));
         let vertices = source.vertices_with_highlight_and_shadow(&descriptors.device, blur_offset);
         let filter_group = descriptors
             .device
@@ -226,7 +240,7 @@ impl BevelFilter {
                     },
                     wgpu::BindGroupEntry {
                         binding: 2,
-                        resource: buffer.as_entire_binding(),
+                        resource: self.buffer.as_entire_binding(),
                     },
                     wgpu::BindGroupEntry {
                         binding: 3,
