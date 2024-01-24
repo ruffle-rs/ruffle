@@ -762,7 +762,7 @@ pub enum FillStyle {
     },
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Gradient {
     pub matrix: Matrix,
     pub spread: GradientSpread,
@@ -770,7 +770,7 @@ pub struct Gradient {
     pub records: Vec<GradientRecord>,
 }
 
-#[derive(Clone, Copy, Debug, Eq, FromPrimitive, PartialEq, Enum)]
+#[derive(Clone, Copy, Debug, Eq, FromPrimitive, PartialEq, Enum, Hash)]
 pub enum GradientSpread {
     Pad = 0,
     Reflect = 1,
@@ -788,7 +788,7 @@ impl GradientSpread {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, FromPrimitive, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, FromPrimitive, PartialEq, Hash)]
 pub enum GradientInterpolation {
     Rgb = 0,
     LinearRgb = 1,
@@ -805,7 +805,7 @@ impl GradientInterpolation {
     }
 }
 
-#[derive(Copy, Clone, Debug, Default, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, Eq, PartialEq, Hash)]
 pub struct GradientRecord {
     pub ratio: u8,
     pub color: Color,

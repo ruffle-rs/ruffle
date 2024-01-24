@@ -19,7 +19,7 @@ macro_rules! define_fixed {
         into_float($($into_type:path),*)
     ) => {
         /// A signed fixed-point value with $frac_bits bits.
-        #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+        #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
         pub struct $type_name($underlying_type);
 
         /// A signed fixed-point type.
