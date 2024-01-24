@@ -32,7 +32,7 @@ error-wasm-mime-type =
     Om du är serveradministratören konsultera vänligen Ruffle-wikin för hjälp.
 error-invalid-swf =
     Ruffle kan ej läsa den begärda filen.
-    Det mest sannolika anledningen är att den begärda filen inte är en giltig SWF.
+    Det mest sannolika skälet är att den begärda filen inte är en giltig SWF.
 error-swf-fetch =
     Ruffle misslyckades ladda SWF-filen.
     Det mest sannolika skälet är att filen inte längre existerar, så det finns inget för Ruffle att köra.
