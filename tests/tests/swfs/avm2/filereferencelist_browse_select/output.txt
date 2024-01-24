@@ -1,0 +1,7 @@
+list.fileList: null
+// browse
+list.fileList: 
+// select event
+event.target: [object FileReferenceList]
+list.fileList: [object FileReference]
+list.fileList[0].name: test.txt
