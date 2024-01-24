@@ -574,8 +574,8 @@ impl WebGlRenderBackend {
             .shape_tessellator
             .tessellate_shape(shape, bitmap_source);
 
-        let mut draws = Vec::with_capacity(lyon_mesh.len());
-        for draw in lyon_mesh {
+        let mut draws = Vec::with_capacity(lyon_mesh.draws.len());
+        for draw in lyon_mesh.draws {
             let num_indices = draw.indices.len() as i32;
             let num_mask_indices = draw.mask_index_count as i32;
 
