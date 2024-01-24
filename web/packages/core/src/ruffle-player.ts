@@ -998,6 +998,7 @@ export class RufflePlayer extends HTMLElement {
                 );
             } else if ("data" in options) {
                 console.log("Loading SWF data");
+                delete this.swfUrl;
                 this.instance!.load_data(
                     new Uint8Array(options.data),
                     sanitizeParameters(options.parameters),
