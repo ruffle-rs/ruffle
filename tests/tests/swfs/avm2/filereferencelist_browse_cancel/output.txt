@@ -1,0 +1,6 @@
+list.fileList: null
+// browse
+list.fileList: 
+// cancel event
+event.target: [object FileReferenceList]
+list.fileList: 
