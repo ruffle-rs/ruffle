@@ -245,11 +245,11 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             .shape_tessellator
             .tessellate_shape(shape, bitmap_source);
 
-        let mut draws = Vec::with_capacity(lyon_mesh.len());
+        let mut draws = Vec::with_capacity(lyon_mesh.draws.len());
         let mut uniform_buffer = BufferBuilder::new_for_uniform(&self.descriptors.limits);
         let mut vertex_buffer = BufferBuilder::new_for_vertices(&self.descriptors.limits);
         let mut index_buffer = BufferBuilder::new_for_vertices(&self.descriptors.limits);
-        for draw in lyon_mesh {
+        for draw in lyon_mesh.draws {
             let draw_id = draws.len();
             if let Some(draw) = PendingDraw::new(
                 self,
