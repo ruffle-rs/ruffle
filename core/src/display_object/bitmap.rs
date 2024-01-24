@@ -358,14 +358,6 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
                 )
                 .expect("can't throw from post_instantiation -_-");
 
-                if bitmap_data_obj.as_bitmap_data().unwrap().disposed() {
-                    // Set the real bitmapdata, in case this Bitmap was constructed from a Loader
-                    // (it will have real data that doesn't come from a linked class)
-                    bitmap_data_obj.init_bitmap_data(
-                        activation.context.gc_context,
-                        self.bitmap_data_wrapper(),
-                    );
-                }
                 self.set_bitmap_data(
                     &mut activation.context,
                     bitmap_data_obj.as_bitmap_data().unwrap(),

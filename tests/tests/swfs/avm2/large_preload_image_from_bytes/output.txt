@@ -18,6 +18,8 @@ Called super() in Main()
 exitFrame in Test
 exitFrame in Test
 Event [Event type="init" bubbles=false cancelable=false eventPhase=2]: loader.numChildren = 1, loader.content = [object Bitmap], loader.contentLoaderInfo.bytesLoaded = 28417, loader.contentLoaderInfo.bytesTotal = 28417, loader.contentLoaderInfo.url = file:///
+Init: loader.content = [object Bitmap]
+Init: loader.content.bitmapData = [object BitmapData]
 Event [Event type="complete" bubbles=false cancelable=false eventPhase=2]: loader.numChildren = 1, loader.content = [object Bitmap], loader.contentLoaderInfo.bytesLoaded = 28417, loader.contentLoaderInfo.bytesTotal = 28417, loader.contentLoaderInfo.url = file:///
 exitFrame in Test
 exitFrame in Test

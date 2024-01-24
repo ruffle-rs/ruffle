@@ -335,10 +335,9 @@ impl<'gc> MovieClip<'gc> {
             let loader_info =
                 LoaderInfoObject::not_yet_loaded(activation, movie.clone(), None, None, false)
                     .expect("Failed to construct LoaderInfoObject");
-            loader_info
-                .as_loader_info_object()
-                .unwrap()
-                .set_content_type(ContentType::Swf, activation.context.gc_context);
+            let loader_info_obj = loader_info.as_loader_info_object().unwrap();
+            loader_info_obj.set_expose_content(activation.context.gc_context);
+            loader_info_obj.set_content_type(ContentType::Swf, activation.context.gc_context);
             Some(loader_info)
         } else {
             None
@@ -387,17 +386,18 @@ impl<'gc> MovieClip<'gc> {
         ));
 
         if movie.is_action_script_3() {
-            mc.0.read()
+            let mc_data = mc.0.read();
+            let loader_info = mc_data
                 .static_data
                 .loader_info
                 .as_ref()
                 .unwrap()
                 .as_loader_info_object()
-                .unwrap()
-                .set_loader_stream(
-                    LoaderStream::Swf(movie, mc.into()),
-                    activation.context.gc_context,
-                );
+                .unwrap();
+            loader_info.set_loader_stream(
+                LoaderStream::Swf(movie, mc.into()),
+                activation.context.gc_context,
+            );
         }
         mc.set_is_root(activation.context.gc_context, true);
         mc

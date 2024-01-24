@@ -211,10 +211,7 @@ pub fn copy_pixels<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.as_bitmap_data() {
         bitmap_data.check_valid(activation)?;
-        let source_bitmap = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_object(activation)?;
+        let source_bitmap = args.get_object(activation, 0, "sourceBitmapData")?;
 
         let source_rect = args.get_object(activation, 1, "sourceRect")?;
 
