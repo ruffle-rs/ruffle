@@ -164,8 +164,16 @@ impl TextFormat {
                 .color()
                 .map(|color| swf::Color::from_rgb(color.to_rgb(), 0)),
             align,
-            bold: Some(font.map(|font| font.descriptor().bold()).unwrap_or(false)),
-            italic: Some(font.map(|font| font.descriptor().italic()).unwrap_or(false)),
+            bold: if et.is_html() {
+                Some(false)
+            } else {
+                Some(font.map(|font| font.descriptor().bold()).unwrap_or(false))
+            },
+            italic: if et.is_html() {
+                Some(false)
+            } else {
+                Some(font.map(|font| font.descriptor().italic()).unwrap_or(false))
+            },
             underline: Some(false),
             left_margin,
             right_margin,
@@ -351,7 +359,7 @@ impl Default for TextSpan {
                 r: 0,
                 g: 0,
                 b: 0,
-                a: 255,
+                a: 0,
             },
             align: swf::TextAlign::Left,
             bold: false,
@@ -716,9 +724,6 @@ impl FormatSpans {
                                     format.kerning = Some(false);
                                 }
                             }
-
-                            format.bold = Some(false);
-                            format.italic = Some(false);
                         }
                         b"b" => {
                             format.bold = Some(true);
