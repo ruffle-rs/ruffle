@@ -10,8 +10,8 @@ use crate::avm2::object::{
     TObject as _,
 };
 use crate::avm2::{
-    Activation as Avm2Activation, Avm2, Domain as Avm2Domain, Object as Avm2Object,
-    Value as Avm2Value,
+    Activation as Avm2Activation, Avm2, BitmapDataObject, Domain as Avm2Domain,
+    Object as Avm2Object, Value as Avm2Value,
 };
 use crate::backend::navigator::{OwnedFuture, Request};
 use crate::backend::ui::DialogResultFuture;
@@ -19,7 +19,7 @@ use crate::bitmap::bitmap_data::Color;
 use crate::bitmap::bitmap_data::{BitmapData, BitmapDataWrapper};
 use crate::context::{ActionQueue, ActionType, UpdateContext};
 use crate::display_object::{
-    Bitmap, DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
+    DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
 };
 use crate::events::ClipEvent;
 use crate::frame_lifecycle::catchup_display_object_to_frame;
@@ -1863,22 +1863,29 @@ impl<'gc> Loader<'gc> {
                 let bitmap = ruffle_render::utils::decode_define_bits_jpeg(data, None)?;
 
                 let transparency = true;
-                let bitmap_data = BitmapDataWrapper::new(GcCell::new(
-                    activation.context.gc_context,
-                    BitmapData::new_with_pixels(
-                        bitmap.width(),
-                        bitmap.height(),
-                        transparency,
-                        bitmap.as_colors().map(Color::from).collect(),
-                    ),
-                ));
-                let bitmap_dobj = Bitmap::new_with_bitmap_data(
-                    activation.context.gc_context,
-                    0,
-                    bitmap_data,
-                    false,
-                    &activation.caller_movie_or_root(),
+                let bitmap_data = BitmapData::new_with_pixels(
+                    bitmap.width(),
+                    bitmap.height(),
+                    transparency,
+                    bitmap.as_colors().map(Color::from).collect(),
                 );
+                let bitmapdata_wrapper =
+                    BitmapDataWrapper::new(GcCell::new(activation.context.gc_context, bitmap_data));
+                let bitmapdata_class = activation.context.avm2.classes().bitmapdata;
+                let bitmapdata_avm2 = BitmapDataObject::from_bitmap_data_internal(
+                    &mut activation,
+                    bitmapdata_wrapper,
+                    bitmapdata_class,
+                )
+                .unwrap();
+
+                let bitmap_avm2 = activation
+                    .avm2()
+                    .classes()
+                    .bitmap
+                    .construct(&mut activation, &[bitmapdata_avm2.into()])
+                    .unwrap();
+                let bitmap_dobj = bitmap_avm2.as_display_object().unwrap();
 
                 if let MovieLoaderVMData::Avm2 { loader_info, .. } = vm_data {
                     let fake_movie = Arc::new(SwfMovie::fake_with_compressed_len(
@@ -1890,7 +1897,7 @@ impl<'gc> Loader<'gc> {
                         .as_loader_info_object()
                         .unwrap()
                         .set_loader_stream(
-                            LoaderStream::NotYetLoaded(fake_movie, Some(bitmap_dobj.into()), false),
+                            LoaderStream::NotYetLoaded(fake_movie, Some(bitmap_dobj), false),
                             activation.context.gc_context,
                         );
                 }
@@ -1902,14 +1909,12 @@ impl<'gc> Loader<'gc> {
                         activation.context.swf.version(),
                         data.to_vec(),
                     ));
+                    let loader_info_obj = loader_info.as_loader_info_object().unwrap();
 
-                    loader_info
-                        .as_loader_info_object()
-                        .unwrap()
-                        .set_loader_stream(
-                            LoaderStream::NotYetLoaded(fake_movie, Some(bitmap_dobj.into()), false),
-                            activation.context.gc_context,
-                        );
+                    loader_info_obj.set_loader_stream(
+                        LoaderStream::NotYetLoaded(fake_movie, Some(bitmap_dobj), false),
+                        activation.context.gc_context,
+                    );
                 }
 
                 if from_bytes {
@@ -1918,7 +1923,6 @@ impl<'gc> Loader<'gc> {
                         callback: Box::new(move |uc, bitmap_obj| {
                             uc.post_frame_callbacks.push(PostFrameCallback {
                                 callback: Box::new(move |uc, bitmap_obj| {
-                                    bitmap_obj.post_instantiation(uc, None, Instantiator::Movie, true);
                                     if let Err(e) = Loader::movie_loader_complete(
                                         handle,
                                         uc,
@@ -1932,19 +1936,13 @@ impl<'gc> Loader<'gc> {
                                 data: bitmap_obj,
                             })
                         }),
-                        data: bitmap_dobj.into(),
+                        data: bitmap_dobj,
                     });
                 } else {
-                    bitmap_dobj.post_instantiation(
-                        &mut activation.context,
-                        None,
-                        Instantiator::Movie,
-                        true,
-                    );
                     Loader::movie_loader_complete(
                         handle,
                         &mut activation.context,
-                        Some(bitmap_dobj.into()),
+                        Some(bitmap_dobj),
                         status,
                         redirected,
                     )?;

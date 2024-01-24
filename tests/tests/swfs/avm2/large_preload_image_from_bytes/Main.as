@@ -10,6 +10,7 @@
 	import flash.events.HTTPStatusEvent;
 	import flash.display.MovieClip;
 	import flash.utils.ByteArray;
+	import flash.display.Bitmap;
 			
 	public class Main extends MovieClip {
 
@@ -92,6 +93,8 @@
 
 			loader.contentLoaderInfo.addEventListener(Event.INIT, function(e) {
 				dump(e);
+				trace("Init: loader.content = " + loader.content);
+				trace("Init: loader.content.bitmapData = " + Bitmap(loader.content).bitmapData);
 			});
 
 			loader.contentLoaderInfo.addEventListener(HTTPStatusEvent.HTTP_STATUS, function(e) {

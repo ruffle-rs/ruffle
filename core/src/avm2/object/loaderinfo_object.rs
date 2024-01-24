@@ -113,6 +113,8 @@ pub struct LoaderInfoObjectData<'gc> {
     #[collect(require_static)]
     content_type: ContentType,
 
+    expose_content: bool,
+
     errored: bool,
 }
 
@@ -150,6 +152,7 @@ impl<'gc> LoaderInfoObject<'gc> {
                     .construct(activation, &[])?,
                 cached_avm1movie: None,
                 content_type: ContentType::Swf,
+                expose_content: false,
                 errored: false,
             },
         ))
@@ -197,6 +200,7 @@ impl<'gc> LoaderInfoObject<'gc> {
                     .construct(activation, &[])?,
                 cached_avm1movie: None,
                 content_type: ContentType::Unknown,
+                expose_content: false,
                 errored: false,
             },
         ))
@@ -239,12 +243,17 @@ impl<'gc> LoaderInfoObject<'gc> {
         self.0.read().errored
     }
 
+    pub fn init_event_fired(&self) -> bool {
+        self.0.read().init_event_fired
+    }
+
     pub fn fire_init_and_complete_events(
         &self,
         context: &mut UpdateContext<'_, 'gc>,
         status: u16,
         redirected: bool,
     ) {
+        self.0.write(context.gc_context).expose_content = true;
         if !self.0.read().init_event_fired {
             self.0.write(context.gc_context).init_event_fired = true;
 
@@ -305,6 +314,17 @@ impl<'gc> LoaderInfoObject<'gc> {
         } else {
             None
         }
+    }
+
+    pub fn expose_content(&self) -> bool {
+        self.0.read().expose_content
+    }
+
+    /// Makes the 'content' visible to ActionScript.
+    /// This is used by certain special loaders (the stage and root movie),
+    /// which expose the loaded content before the 'init' event is fired.
+    pub fn set_expose_content(&self, mc: &Mutation<'gc>) {
+        self.0.write(mc).expose_content = true;
     }
 
     pub fn set_loader_stream(&self, stream: LoaderStream<'gc>, mc: &Mutation<'gc>) {

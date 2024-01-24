@@ -146,10 +146,12 @@ pub fn get_content<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(loader_stream) = this
-        .as_loader_info_object()
-        .and_then(|o| o.as_loader_stream())
-    {
+    let loader_info = this.as_loader_info_object().unwrap();
+    if !loader_info.expose_content() {
+        return Ok(Value::Null);
+    }
+
+    if let Some(loader_stream) = loader_info.as_loader_stream() {
         match &*loader_stream {
             LoaderStream::Swf(_, root) | LoaderStream::NotYetLoaded(_, Some(root), _) => {
                 if root.movie().is_action_script_3() || !root.movie().is_movie() {
