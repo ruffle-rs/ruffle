@@ -973,11 +973,43 @@ impl<'gc> NetStream<'gc> {
             (_, _, FlvVideoPacket::CommandFrame(_command)) => {
                 tracing::warn!("Stub: FLV command frame processing")
             }
-            (_, _, FlvVideoPacket::AvcSequenceHeader(_data)) => {
-                tracing::warn!("Stub: FLV AVC/H.264 Sequence Header processing")
+            (Some(video_handle), _, FlvVideoPacket::AvcSequenceHeader(data)) => {
+                match context
+                    .video
+                    .configure_video_stream_decoder(video_handle, data)
+                {
+                    Ok(_) => {}
+                    Err(e) => {
+                        tracing::error!("Configuring video decoder {} failed: {}", frame_id, e);
+                    }
+                }
             }
-            (_, _, FlvVideoPacket::AvcNalu { .. }) => {
-                tracing::warn!("Stub: FLV AVC/H.264 NALU processing")
+            (
+                Some(video_handle),
+                Some(codec),
+                FlvVideoPacket::AvcNalu {
+                    composition_time_offset: _,
+                    data,
+                },
+            ) => {
+                let encoded_frame = EncodedFrame {
+                    codec,
+                    data,
+                    frame_id,
+                };
+
+                match context.video.decode_video_stream_frame(
+                    video_handle,
+                    encoded_frame,
+                    context.renderer,
+                ) {
+                    Ok(bitmap_info) => {
+                        write.last_decoded_bitmap = Some(bitmap_info);
+                    }
+                    Err(e) => {
+                        tracing::error!("Decoding video frame {} failed: {}", frame_id, e);
+                    }
+                }
             }
             (_, _, FlvVideoPacket::AvcEndOfSequence) => {
                 tracing::warn!("Stub: FLV AVC/H.264 End of Sequence processing")
@@ -987,6 +1019,9 @@ impl<'gc> NetStream<'gc> {
                     "FLV video tag has invalid codec id {}",
                     video_data.codec_id as u8
                 )
+            }
+            (None, _, _) => {
+                tracing::error!("No video handle")
             }
         }
 
