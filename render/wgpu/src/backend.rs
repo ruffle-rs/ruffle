@@ -3,7 +3,7 @@ use crate::buffer_pool::{BufferPool, TexturePool};
 use crate::context3d::WgpuContext3D;
 use crate::dynamic_transforms::DynamicTransforms;
 use crate::filters::FilterSource;
-use crate::mesh::{Mesh, PendingDraw};
+use crate::mesh::{CommonGradient, Mesh, PendingDraw};
 use crate::pixel_bender::{run_pixelbender_shader_impl, ShaderMode};
 use crate::surface::{LayerRef, Surface};
 use crate::target::{MaybeOwnedBuffer, TextureTarget};
@@ -249,6 +249,16 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         let mut uniform_buffer = BufferBuilder::new_for_uniform(&self.descriptors.limits);
         let mut vertex_buffer = BufferBuilder::new_for_vertices(&self.descriptors.limits);
         let mut index_buffer = BufferBuilder::new_for_vertices(&self.descriptors.limits);
+        let mut gradients = Vec::with_capacity(lyon_mesh.gradients.len());
+
+        for gradient in lyon_mesh.gradients {
+            gradients.push(CommonGradient::new(
+                &self.descriptors,
+                gradient,
+                &mut uniform_buffer,
+            ));
+        }
+
         for draw in lyon_mesh.draws {
             let draw_id = draws.len();
             if let Some(draw) = PendingDraw::new(
@@ -283,7 +293,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
 
         let draws = draws
             .into_iter()
-            .map(|d| d.finish(&self.descriptors, &uniform_buffer))
+            .map(|d| d.finish(&self.descriptors, &uniform_buffer, &gradients))
             .collect();
 
         Mesh {
