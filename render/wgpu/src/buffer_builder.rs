@@ -29,9 +29,7 @@ impl BufferBuilder {
             } else {
                 0
             },
-            limit: limits
-                .max_buffer_size
-                .min(limits.max_uniform_buffer_binding_size as u64),
+            limit: limits.max_buffer_size,
         }
     }
 
