@@ -12,7 +12,7 @@ pub enum FillRule {
     NonZero,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Enum)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Enum, Hash)]
 pub enum GradientType {
     Linear,
     Radial,
