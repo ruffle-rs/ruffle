@@ -15,7 +15,7 @@ use std::ops;
 /// This means that objects in Flash can only move in units of twips, or 1/20 pixels.
 ///
 /// [SWF19 pp.22-24](https://web.archive.org/web/20220205011833if_/https://www.adobe.com/content/dam/acom/en/devnet/pdf/swf-file-format-spec.pdf#page=22)
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub struct Matrix {
     /// The matrix element at `[0, 0]`. Labeled `ScaleX` in SWF19.
     pub a: Fixed16,
