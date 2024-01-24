@@ -63,6 +63,24 @@ impl VideoBackend for ExternalVideoBackend {
         Ok(self.streams.insert(proxy_or_stream))
     }
 
+    fn configure_video_stream_decoder(
+        &mut self,
+        stream: VideoStreamHandle,
+        configuration_data: &[u8],
+    ) -> Result<(), Error> {
+        let stream = self
+            .streams
+            .get_mut(stream)
+            .ok_or(Error::VideoStreamIsNotRegistered)?;
+
+        match stream {
+            ProxyOrStream::Proxied(handle) => self
+                .software
+                .configure_video_stream_decoder(*handle, configuration_data),
+            ProxyOrStream::Owned(stream) => stream.decoder.configure_decoder(configuration_data),
+        }
+    }
+
     fn preload_video_stream_frame(
         &mut self,
         stream: VideoStreamHandle,

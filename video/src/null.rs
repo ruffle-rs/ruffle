@@ -44,6 +44,14 @@ impl VideoBackend for NullVideoBackend {
         Ok(self.streams.insert(()))
     }
 
+    fn configure_video_stream_decoder(
+        &mut self,
+        _stream: VideoStreamHandle,
+        _configuration_data: &[u8],
+    ) -> Result<(), Error> {
+        Ok(())
+    }
+
     fn preload_video_stream_frame(
         &mut self,
         _stream: VideoStreamHandle,

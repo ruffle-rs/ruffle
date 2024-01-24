@@ -13,6 +13,11 @@ pub mod screen;
 /// Trait for video decoders.
 /// This should be implemented for each video codec.
 pub trait VideoDecoder {
+    /// Configure the decoder.
+    fn configure_decoder(&mut self, _configuration_data: &[u8]) -> Result<(), Error> {
+        Ok(())
+    }
+
     /// Preload a frame.
     ///
     /// No decoding is intended to happen at this point in time. Instead, the

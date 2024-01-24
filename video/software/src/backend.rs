@@ -66,6 +66,15 @@ impl VideoBackend for SoftwareVideoBackend {
         stream.decoder.preload_frame(encoded_frame)
     }
 
+    fn configure_video_stream_decoder(
+        &mut self,
+        _stream: VideoStreamHandle,
+        _configuration_data: &[u8],
+    ) -> Result<(), Error> {
+        // None of the software decoders require configuration.
+        Ok(())
+    }
+
     fn decode_video_stream_frame(
         &mut self,
         stream: VideoStreamHandle,
