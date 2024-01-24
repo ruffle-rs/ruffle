@@ -28,4 +28,5 @@ debug-menu = Felsökningsverktyg
 debug-menu-open-stage = Visa Sceninfo
 debug-menu-open-movie = Visa Film
 debug-menu-open-movie-list = Visa Kända Filmer
+debug-menu-open-domain-list = Visa Domäner
 debug-menu-search-display-objects = Sök Visningsobjekt...
