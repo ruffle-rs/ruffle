@@ -13,7 +13,7 @@ use crate::string::{AvmString, AvmStringRepr, WStr};
 // An interned `AvmString`, with fast by-pointer equality and hashing.
 #[derive(Copy, Clone, Collect)]
 #[collect(no_drop)]
-pub struct AvmAtom<'gc>(pub(super) Gc<'gc, AvmStringRepr>);
+pub struct AvmAtom<'gc>(pub(super) Gc<'gc, AvmStringRepr<'gc>>);
 
 impl<'gc> PartialEq for AvmAtom<'gc> {
     fn eq(&self, other: &Self) -> bool {
@@ -50,7 +50,7 @@ impl<'gc> AvmAtom<'gc> {
 #[derive(Collect, Default)]
 #[collect(no_drop)]
 pub struct AvmStringInterner<'gc> {
-    interned: WeakSet<'gc, AvmStringRepr>,
+    interned: WeakSet<'gc, AvmStringRepr<'gc>>,
 }
 
 impl<'gc> AvmStringInterner<'gc> {
@@ -58,7 +58,7 @@ impl<'gc> AvmStringInterner<'gc> {
         Self::default()
     }
 
-    fn alloc(mc: &Mutation<'gc>, s: Cow<'_, WStr>) -> Gc<'gc, AvmStringRepr> {
+    fn alloc(mc: &Mutation<'gc>, s: Cow<'_, WStr>) -> Gc<'gc, AvmStringRepr<'gc>> {
         let repr = AvmStringRepr::from_raw(s.into_owned(), true);
         Gc::new(mc, repr)
     }
@@ -91,7 +91,7 @@ impl<'gc> AvmStringInterner<'gc> {
         let atom = match self.interned.entry(mc, s.as_wstr()) {
             (Some(atom), _) => atom,
             (None, h) => {
-                let repr = s.to_owned(mc);
+                let repr = s.to_fully_owned(mc);
                 repr.mark_interned();
                 self.interned.insert_fresh(mc, h, repr)
             }

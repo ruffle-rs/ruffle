@@ -9,7 +9,7 @@ use crate::string::{AvmAtom, AvmStringRepr};
 #[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
 enum Source<'gc> {
-    Owned(Gc<'gc, AvmStringRepr>),
+    Owned(Gc<'gc, AvmStringRepr<'gc>>),
     Static(&'static WStr),
 }
 
@@ -20,9 +20,17 @@ pub struct AvmString<'gc> {
 }
 
 impl<'gc> AvmString<'gc> {
-    pub(super) fn to_owned(self, gc_context: &Mutation<'gc>) -> Gc<'gc, AvmStringRepr> {
+    /// Turns a string to a fully owned (non-dependent) managed string.
+    pub(super) fn to_fully_owned(self, gc_context: &Mutation<'gc>) -> Gc<'gc, AvmStringRepr<'gc>> {
         match self.source {
-            Source::Owned(s) => s,
+            Source::Owned(s) => {
+                if s.is_dependent() {
+                    let repr = AvmStringRepr::from_raw(WString::from(self.as_wstr()), false);
+                    Gc::new(gc_context, repr)
+                } else {
+                    s
+                }
+            }
             Source::Static(s) => {
                 let repr = AvmStringRepr::from_raw(s.into(), false);
                 Gc::new(gc_context, repr)
@@ -48,6 +56,26 @@ impl<'gc> AvmString<'gc> {
 
     pub fn new<S: Into<WString>>(gc_context: &Mutation<'gc>, string: S) -> Self {
         let repr = AvmStringRepr::from_raw(string.into(), false);
+        Self {
+            source: Source::Owned(Gc::new(gc_context, repr)),
+        }
+    }
+
+    pub fn new_dependent(
+        gc_context: &Mutation<'gc>,
+        string: AvmString<'gc>,
+        start: usize,
+        end: usize,
+    ) -> Self {
+        // TODO: somewhere (note sure if here) we need to
+        // 1. store and return an interned "" singleton
+        // 2. store and return a cache of interned 1-ascii-letter singletons
+        // we don't want a random "a" to keep the entire source alive.
+        // also whatever we call this layer, maybe call it new_substring.
+        //
+        // also optional 3.
+        // moulins suggested that a substring of a static string maybe also should be a static string
+        let repr = AvmStringRepr::new_dependent(string, start, end);
         Self {
             source: Source::Owned(Gc::new(gc_context, repr)),
         }
