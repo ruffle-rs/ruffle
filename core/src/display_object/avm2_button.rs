@@ -282,6 +282,7 @@ impl<'gc> Avm2Button<'gc> {
     /// Change the rendered state of the button.
     pub fn set_state(self, context: &mut UpdateContext<'_, 'gc>, state: ButtonState) {
         self.invalidate_cached_bitmap(context.gc());
+        self.0.state.set(state);
 
         for state in self.all_state_children(false) {
             state.set_parent(context, None);
@@ -505,7 +506,6 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
             unlock!(write, Avm2ButtonData, down_state).set(Some(down_state));
             unlock!(write, Avm2ButtonData, hit_area).set(Some(hit_area));
             write.skip_current_frame.set(true);
-            write.needs_frame_construction.set(false);
 
             let mut fire_state_events = |should_fire, state: DisplayObject<'gc>| {
                 if should_fire {
