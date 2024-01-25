@@ -2367,7 +2367,7 @@ impl PlayerBuilder {
         external_interface_providers: Vec<Box<dyn ExternalInterfaceProvider>>,
         fs_command_provider: Box<dyn FsCommandProvider>,
     ) -> GcRoot<'gc> {
-        let mut interner = AvmStringInterner::new();
+        let mut interner = AvmStringInterner::new(gc_context);
         let mut init = GcContext {
             gc_context,
             interner: &mut interner,

@@ -23,6 +23,7 @@ pub struct AvmStringRepr<'gc> {
     #[collect(require_static)]
     capacity: Cell<wptr::WStrMetadata>,
 
+    // If Some, the string is dependent.
     owner: Option<AvmString<'gc>>,
 }
 
@@ -43,6 +44,7 @@ impl<'gc> AvmStringRepr<'gc> {
         let wstr_ptr = wstr as *const WStr;
 
         let meta = unsafe { wptr::WStrMetadata::of(wstr_ptr) };
+        // Dependent strings are never interned
         let capacity = Cell::new(wptr::WStrMetadata::new32(meta.len32(), false));
         let ptr = wstr_ptr as *mut WStr as *mut ();
 
