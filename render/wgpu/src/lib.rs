@@ -4,6 +4,7 @@
 // TODO: Remove this once all instances are fixed.
 #![allow(clippy::needless_pass_by_ref_mut)]
 
+use crate::backend::ActiveFrame;
 use crate::bitmaps::BitmapSamplers;
 use crate::buffer_pool::{BufferPool, PoolEntry};
 use crate::descriptors::Quad;
@@ -17,7 +18,7 @@ use bytemuck::{Pod, Zeroable};
 use descriptors::Descriptors;
 use enum_map::Enum;
 use ruffle_render::backend::RawTexture;
-use ruffle_render::bitmap::{BitmapHandle, BitmapHandleImpl, PixelRegion, RgbaBufRead, SyncHandle};
+use ruffle_render::bitmap::{BitmapHandle, BitmapHandleImpl, PixelRegion, SyncHandle};
 use ruffle_render::shape_utils::GradientType;
 use ruffle_render::tessellator::{Gradient as TessGradient, Vertex as TessVertex};
 use std::cell::{Cell, OnceCell};
@@ -162,18 +163,14 @@ pub enum QueueSyncHandle {
     },
 }
 
-impl SyncHandle for QueueSyncHandle {
-    fn retrieve_offscreen_texture(
-        self: Box<Self>,
-        with_rgba: RgbaBufRead,
-    ) -> Result<(), ruffle_render::error::Error> {
-        self.capture(with_rgba);
-        Ok(())
-    }
-}
+impl SyncHandle for QueueSyncHandle {}
 
 impl QueueSyncHandle {
-    pub fn capture<R, F: FnOnce(&[u8], u32) -> R>(self, with_rgba: F) -> R {
+    pub fn capture<R, F: FnOnce(&[u8], u32) -> R>(
+        self,
+        with_rgba: F,
+        frame: &mut ActiveFrame,
+    ) -> R {
         match self {
             QueueSyncHandle::AlreadyCopied {
                 index,
@@ -202,14 +199,7 @@ impl QueueSyncHandle {
                 );
 
                 let buffer = pool.take(&descriptors, buffer_dimensions.clone());
-                let label = create_debug_label!("Render target transfer encoder");
-                let mut encoder =
-                    descriptors
-                        .device
-                        .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                            label: label.as_deref(),
-                        });
-                encoder.copy_texture_to_buffer(
+                frame.command_encoder.copy_texture_to_buffer(
                     wgpu::ImageCopyTexture {
                         texture: &texture.texture,
                         mip_level: 0,
@@ -234,7 +224,7 @@ impl QueueSyncHandle {
                         depth_or_array_layers: 1,
                     },
                 );
-                let index = descriptors.queue.submit(Some(encoder.finish()));
+                let index = frame.submit_direct(&descriptors);
 
                 let image = capture_image(
                     &descriptors.device,

@@ -19,7 +19,7 @@ use ruffle_render::backend::{
 };
 use ruffle_render::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
 use ruffle_render::bitmap::{
-    Bitmap, BitmapFormat, BitmapHandle, BitmapSource, PixelRegion, SyncHandle,
+    Bitmap, BitmapFormat, BitmapHandle, BitmapSource, PixelRegion, RgbaBufRead, SyncHandle,
 };
 use ruffle_render::commands::CommandList;
 use ruffle_render::error::Error as BitmapError;
@@ -632,7 +632,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         self.active_frame.staging_belt.finish();
 
         self.active_frame
-            .submit(&self.descriptors, &self.target, frame_output);
+            .submit_for_target(&self.descriptors, &self.target, frame_output);
         self.offscreen_texture_pool = TexturePool::new();
     }
 
@@ -789,7 +789,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
         let index = self
             .active_frame
-            .submit(&self.descriptors, &target, frame_output);
+            .submit_for_target(&self.descriptors, &target, frame_output);
 
         Some(self.make_queue_sync_handle(target, Some(index), handle, bounds))
     }
@@ -1040,39 +1040,42 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             PixelBenderTarget::Bitmap(_) => Ok(PixelBenderOutput::Bitmap(sync_handle)),
             PixelBenderTarget::Bytes { width, .. } => {
                 let mut output = None;
-                sync_handle.retrieve_offscreen_texture(Box::new(|raw_pixels, buffer_width| {
-                    if buffer_width as usize
-                        != *width as usize * output_channels * std::mem::size_of::<f32>()
-                    {
-                        let channels_in_raw_pixels = if has_padding { 4usize } else { 3usize };
+                self.resolve_sync_handle(
+                    sync_handle,
+                    Box::new(|raw_pixels, buffer_width| {
+                        if buffer_width as usize
+                            != *width as usize * output_channels * std::mem::size_of::<f32>()
+                        {
+                            let channels_in_raw_pixels = if has_padding { 4usize } else { 3usize };
 
-                        let mut new_pixels = Vec::new();
-                        for row in raw_pixels.chunks(buffer_width as usize) {
-                            // Ignore any wgpu-added padding (this is distinct from the alpha-channel padding
-                            // that we add for pixelbender)
-                            let actual_row = &row[0..(*width as usize
-                                * channels_in_raw_pixels
-                                * std::mem::size_of::<f32>())];
+                            let mut new_pixels = Vec::new();
+                            for row in raw_pixels.chunks(buffer_width as usize) {
+                                // Ignore any wgpu-added padding (this is distinct from the alpha-channel padding
+                                // that we add for pixelbender)
+                                let actual_row = &row[0..(*width as usize
+                                    * channels_in_raw_pixels
+                                    * std::mem::size_of::<f32>())];
 
-                            for pixel in actual_row
-                                .chunks_exact(channels_in_raw_pixels * std::mem::size_of::<f32>())
-                            {
-                                if has_padding {
-                                    // Take the first three channels
-                                    new_pixels.extend_from_slice(
-                                        &pixel[0..(3 * std::mem::size_of::<f32>())],
-                                    );
-                                } else {
-                                    // Copy the pixel as-is
-                                    new_pixels.extend_from_slice(pixel);
+                                for pixel in actual_row.chunks_exact(
+                                    channels_in_raw_pixels * std::mem::size_of::<f32>(),
+                                ) {
+                                    if has_padding {
+                                        // Take the first three channels
+                                        new_pixels.extend_from_slice(
+                                            &pixel[0..(3 * std::mem::size_of::<f32>())],
+                                        );
+                                    } else {
+                                        // Copy the pixel as-is
+                                        new_pixels.extend_from_slice(pixel);
+                                    }
                                 }
                             }
-                        }
-                        output = Some(new_pixels);
-                    } else {
-                        output = Some(raw_pixels.to_vec());
-                    };
-                }))?;
+                            output = Some(new_pixels);
+                        } else {
+                            output = Some(raw_pixels.to_vec());
+                        };
+                    }),
+                )?;
                 Ok(PixelBenderOutput::Bytes(output.unwrap()))
             }
         }
@@ -1121,6 +1124,16 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             bind_nearest: Default::default(),
             copy_count: Cell::new(0),
         })))
+    }
+
+    fn resolve_sync_handle(
+        &mut self,
+        handle: Box<dyn SyncHandle>,
+        with_rgba: RgbaBufRead,
+    ) -> Result<(), ruffle_render::error::Error> {
+        let handle = handle.downcast::<QueueSyncHandle>().unwrap();
+        handle.capture(with_rgba, &mut self.active_frame);
+        Ok(())
     }
 }
 
@@ -1219,8 +1232,8 @@ impl RenderTargetMode {
 }
 
 pub struct ActiveFrame {
-    staging_belt: wgpu::util::StagingBelt,
-    command_encoder: wgpu::CommandEncoder,
+    pub staging_belt: wgpu::util::StagingBelt,
+    pub command_encoder: wgpu::CommandEncoder,
 }
 
 impl ActiveFrame {
@@ -1233,7 +1246,7 @@ impl ActiveFrame {
         }
     }
 
-    pub fn submit<T: RenderTarget>(
+    pub fn submit_for_target<T: RenderTarget>(
         &mut self,
         descriptors: &Descriptors,
         target: &T,
@@ -1252,6 +1265,19 @@ impl ActiveFrame {
             Some(draw_encoder.finish()),
             frame,
         );
+        self.staging_belt.recall();
+        index
+    }
+
+    pub fn submit_direct(&mut self, descriptors: &Descriptors) -> SubmissionIndex {
+        self.staging_belt.finish();
+        let draw_encoder = std::mem::replace(
+            &mut self.command_encoder,
+            descriptors
+                .device
+                .create_command_encoder(&Default::default()),
+        );
+        let index = descriptors.queue.submit(Some(draw_encoder.finish()));
         self.staging_belt.recall();
         index
     }

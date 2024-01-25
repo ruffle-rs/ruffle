@@ -1,6 +1,6 @@
 pub mod null;
 
-use crate::bitmap::{Bitmap, BitmapHandle, BitmapSource, PixelRegion, SyncHandle};
+use crate::bitmap::{Bitmap, BitmapHandle, BitmapSource, PixelRegion, RgbaBufRead, SyncHandle};
 use crate::commands::CommandList;
 use crate::error::Error;
 use crate::filters::Filter;
@@ -106,6 +106,12 @@ pub trait RenderBackend: Downcast {
         arguments: &[PixelBenderShaderArgument],
         target: &PixelBenderTarget,
     ) -> Result<PixelBenderOutput, Error>;
+
+    fn resolve_sync_handle(
+        &mut self,
+        handle: Box<dyn SyncHandle>,
+        with_rgba: RgbaBufRead,
+    ) -> Result<(), Error>;
 }
 impl_downcast!(RenderBackend);
 
