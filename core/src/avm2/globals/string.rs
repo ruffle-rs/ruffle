@@ -548,8 +548,15 @@ fn substr<'gc>(
         this.len().min(start_index + len as usize)
     };
 
-    let ret = WString::from(&this[start_index..end_index]);
-    return Ok(AvmString::new(activation.context.gc_context, ret).into());
+    //let ret = WString::from(&this[start_index..end_index]);
+    //return Ok(AvmString::new(activation.context.gc_context, ret).into());
+    return Ok(AvmString::new_dependent(
+        activation.context.gc_context,
+        this,
+        start_index,
+        end_index,
+    )
+    .into());
 }
 
 /// Implements `String.substring`
