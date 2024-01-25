@@ -23,7 +23,7 @@ pub struct AvmStringRepr<'gc> {
     #[collect(require_static)]
     capacity: Cell<wptr::WStrMetadata>,
 
-    // If Some, the string is dependent.
+    // If Some, the string is dependent. The owner is assumed to be non-dynamic.
     owner: Option<AvmString<'gc>>,
 }
 
@@ -48,8 +48,14 @@ impl<'gc> AvmStringRepr<'gc> {
         let capacity = Cell::new(wptr::WStrMetadata::new32(meta.len32(), false));
         let ptr = wstr_ptr as *mut WStr as *mut ();
 
+        let owner = if let Some(owner) = s.owner() {
+            owner
+        } else {
+            s
+        };
+
         Self {
-            owner: Some(s),
+            owner: Some(owner),
             ptr,
             meta,
             capacity,
@@ -59,6 +65,11 @@ impl<'gc> AvmStringRepr<'gc> {
     #[inline]
     pub fn is_dependent(&self) -> bool {
         self.owner.is_some()
+    }
+
+    #[inline]
+    pub fn owner(&self) -> Option<AvmString<'gc>> {
+        self.owner
     }
 
     #[inline]
