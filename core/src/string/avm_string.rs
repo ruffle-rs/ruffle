@@ -67,14 +67,8 @@ impl<'gc> AvmString<'gc> {
         start: usize,
         end: usize,
     ) -> Self {
-        // TODO: somewhere (note sure if here) we need to
-        // 1. store and return an interned "" singleton
-        // 2. store and return a cache of interned 1-ascii-letter singletons
-        // we don't want a random "a" to keep the entire source alive.
-        // also whatever we call this layer, maybe call it new_substring.
-        //
-        // also optional 3.
-        // moulins suggested that a substring of a static string maybe also should be a static string
+        // TODO: if source is dependent too, attach to the owner instead
+        // TODO?: if string is static, just make a new static AvmString
         let repr = AvmStringRepr::new_dependent(string, start, end);
         Self {
             source: Source::Owned(Gc::new(gc_context, repr)),
@@ -122,6 +116,15 @@ impl<'gc> From<AvmAtom<'gc>> for AvmString<'gc> {
     fn from(atom: AvmAtom<'gc>) -> Self {
         Self {
             source: Source::Owned(atom.0),
+        }
+    }
+}
+
+impl<'gc> From<Gc<'gc, AvmStringRepr<'gc>>> for AvmString<'gc> {
+    #[inline]
+    fn from(repr: Gc<'gc, AvmStringRepr<'gc>>) -> Self {
+        Self {
+            source: Source::Owned(repr),
         }
     }
 }

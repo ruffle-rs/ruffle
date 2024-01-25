@@ -8,7 +8,7 @@ use std::ops::DerefMut;
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use hashbrown::HashSet;
 
-use crate::string::{AvmString, AvmStringRepr, WStr};
+use crate::string::{AvmString, AvmStringRepr, WStr, WString};
 
 // An interned `AvmString`, with fast by-pointer equality and hashing.
 #[derive(Copy, Clone, Collect)]
@@ -47,18 +47,40 @@ impl<'gc> AvmAtom<'gc> {
     }
 }
 
-#[derive(Collect, Default)]
+#[derive(Collect)]
 #[collect(no_drop)]
 pub struct AvmStringInterner<'gc> {
     interned: WeakSet<'gc, AvmStringRepr<'gc>>,
+
+    empty: Gc<'gc, AvmStringRepr<'gc>>,
+    chars: [Gc<'gc, AvmStringRepr<'gc>>; 128],
 }
 
 impl<'gc> AvmStringInterner<'gc> {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(mc: &Mutation<'gc>) -> Self {
+        let mut interned = WeakSet::default();
+
+        let mut intern_from_static = |s: &[u8]| {
+            let ch = Self::alloc(mc, Cow::Borrowed(WStr::from_units(s)));
+            interned.insert_fresh_no_hash(mc, ch)
+        };
+
+        let empty = intern_from_static(b"");
+
+        let mut chars = [empty; 128];
+        for (i, elem) in chars.iter_mut().enumerate() {
+            *elem = intern_from_static(&[i as u8]);
+        }
+
+        Self {
+            interned,
+            empty,
+            chars,
+        }
     }
 
     fn alloc(mc: &Mutation<'gc>, s: Cow<'_, WStr>) -> Gc<'gc, AvmStringRepr<'gc>> {
+        // note: the string is already marked as interned
         let repr = AvmStringRepr::from_raw(s.into_owned(), true);
         Gc::new(mc, repr)
     }
@@ -98,6 +120,42 @@ impl<'gc> AvmStringInterner<'gc> {
         };
 
         AvmAtom(atom)
+    }
+
+    #[must_use]
+    pub fn empty(&self) -> AvmString<'gc> {
+        self.empty.into()
+    }
+
+    #[must_use]
+    pub fn get_char(&self, mc: &Mutation<'gc>, c: u16) -> AvmString<'gc> {
+        if let Some(s) = self.chars.get(c as usize) {
+            (*s).into()
+        } else {
+            AvmString::new(mc, WString::from_unit(c))
+        }
+    }
+
+    #[must_use]
+    pub fn substring(
+        &self,
+        mc: &Mutation<'gc>,
+        s: AvmString<'gc>,
+        start_index: usize,
+        end_index: usize,
+    ) -> AvmString<'gc> {
+        // It's assumed that start<=end. This is tested later via a range check.
+        if start_index == end_index {
+            return self.empty.into();
+        }
+        if end_index == start_index + 1 {
+            if let Some(c) = s.get(start_index) {
+                if let Some(s) = self.chars.get(c as usize) {
+                    return (*s).into();
+                }
+            }
+        }
+        AvmString::new_dependent(mc, s, start_index, end_index)
     }
 }
 
@@ -169,6 +227,14 @@ impl<'gc, T: Hash + 'gc> WeakSet<'gc, T> {
         }
 
         (None, hash)
+    }
+
+    /// Inserts a new key in the set.
+    /// The key must not already exist
+    /// TODO: add proper entry API?
+    fn insert_fresh_no_hash(&mut self, mc: &Mutation<'gc>, key: Gc<'gc, T>) -> Gc<'gc, T> {
+        let hash = Self::hash(&self.hasher, &key);
+        self.insert_fresh(mc, hash, key)
     }
 
     /// Inserts a new key in the set.
