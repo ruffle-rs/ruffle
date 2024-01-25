@@ -67,11 +67,17 @@ impl<'gc> AvmString<'gc> {
         start: usize,
         end: usize,
     ) -> Self {
-        // TODO: if source is dependent too, attach to the owner instead
         // TODO?: if string is static, just make a new static AvmString
         let repr = AvmStringRepr::new_dependent(string, start, end);
         Self {
             source: Source::Owned(Gc::new(gc_context, repr)),
+        }
+    }
+
+    pub fn owner(&self) -> Option<AvmString<'gc>> {
+        match &self.source {
+            Source::Owned(s) => s.owner(),
+            Source::Static(_) => None,
         }
     }
 
