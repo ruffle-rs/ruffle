@@ -787,11 +787,17 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             &mut self.offscreen_texture_pool,
         );
 
-        let index = self
-            .active_frame
-            .submit_for_target(&self.descriptors, &target, frame_output);
+        let index = if target.buffer.is_some() {
+            // If it has a buffer, let's prioritise submitting it right away because we'll likely want to read it back
+            Some(
+                self.active_frame
+                    .submit_for_target(&self.descriptors, &target, frame_output),
+            )
+        } else {
+            None
+        };
 
-        Some(self.make_queue_sync_handle(target, Some(index), handle, bounds))
+        Some(self.make_queue_sync_handle(target, index, handle, bounds))
     }
 
     fn is_filter_supported(&self, filter: &Filter) -> bool {
@@ -843,17 +849,10 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         let frame_output = target
             .get_next_texture()
             .expect("TextureTargetFrame.get_next_texture is infallible");
-        let label = create_debug_label!("Draw encoder");
-        let mut draw_encoder =
-            self.descriptors
-                .device
-                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                    label: label.as_deref(),
-                });
 
         let applied_filter = self.descriptors.filters.apply(
             &self.descriptors,
-            &mut draw_encoder,
+            &mut self.active_frame.command_encoder,
             &mut self.offscreen_texture_pool,
             &mut self.active_frame.staging_belt,
             FilterSource {
@@ -863,7 +862,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             },
             filter,
         );
-        draw_encoder.copy_texture_to_texture(
+        self.active_frame.command_encoder.copy_texture_to_texture(
             wgpu::ImageCopyTexture {
                 texture: applied_filter.color_texture(),
                 mip_level: 0,
@@ -886,16 +885,18 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 depth_or_array_layers: 1,
             },
         );
-        self.active_frame.staging_belt.finish();
-        let index = target.submit(
-            &self.descriptors.device,
-            &self.descriptors.queue,
-            Some(draw_encoder.finish()),
-            frame_output,
-        );
-        self.active_frame.staging_belt.recall();
 
-        Some(self.make_queue_sync_handle(target, Some(index), destination, copy_area))
+        let index = if target.buffer.is_some() {
+            // If it has a buffer, let's prioritise submitting it right away because we'll likely want to read it back
+            Some(
+                self.active_frame
+                    .submit_for_target(&self.descriptors, &target, frame_output),
+            )
+        } else {
+            None
+        };
+
+        Some(self.make_queue_sync_handle(target, index, destination, copy_area))
     }
 
     fn compile_pixelbender_shader(
@@ -997,20 +998,13 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             .get_next_texture()
             .expect("TextureTargetFrame.get_next_texture is infallible");
 
-        let mut render_command_encoder =
-            self.descriptors
-                .device
-                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                    label: create_debug_label!("Render command encoder").as_deref(),
-                });
-
         run_pixelbender_shader_impl(
             &self.descriptors,
             shader,
             ShaderMode::ShaderJob,
             arguments,
             &target_texture.texture,
-            &mut render_command_encoder,
+            &mut self.active_frame.command_encoder,
             Some(wgpu::RenderPassColorAttachment {
                 view: frame_output.view(),
                 resolve_target: None,
@@ -1024,14 +1018,20 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             &FilterSource::for_entire_texture(&target_texture.texture),
         )?;
 
-        let index = self
-            .descriptors
-            .queue
-            .submit(Some(render_command_encoder.finish()));
+        let index = if texture_target.buffer.is_some() {
+            // If it has a buffer, let's prioritise submitting it right away because we'll likely want to read it back
+            Some(self.active_frame.submit_for_target(
+                &self.descriptors,
+                &texture_target,
+                frame_output,
+            ))
+        } else {
+            None
+        };
 
         let sync_handle = self.make_queue_sync_handle(
             texture_target,
-            Some(index),
+            index,
             target_handle,
             PixelRegion::for_whole_size(extent.width, extent.height),
         );
