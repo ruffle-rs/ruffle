@@ -311,10 +311,10 @@ mod wrapper {
 
         /// Clones the underlying data, producing a new `BitmapData`
         /// that has no GPU texture or associated display objects
-        pub fn clone_data(&self) -> BitmapData<'gc> {
+        pub fn clone_data(&self, renderer: &mut dyn RenderBackend) -> BitmapData<'gc> {
             // Sync from the GPU to CPU, since our new BitmapData starts out
             // with no GPU texture
-            let data = self.sync();
+            let data = self.sync(renderer);
             let data = data.read();
             BitmapData {
                 pixels: data.pixels.clone(),
@@ -332,7 +332,7 @@ mod wrapper {
 
         // Provides access to the underlying `BitmapData`. If a GPU -> CPU sync
         // is in progress, waits for it to complete
-        pub fn sync(&self) -> GcCell<'gc, BitmapData<'gc>> {
+        pub fn sync(&self, renderer: &mut dyn RenderBackend) -> GcCell<'gc, BitmapData<'gc>> {
             // SAFETY: The only fields that can store gc pointers are `avm2_object` and `dirty_callbacks`,
             // which we don't update here. Ideally, we would refactor this so that
             // `BitmapData` doesn't contain any gc pointers, allowing us to use a normal
@@ -340,10 +340,13 @@ mod wrapper {
             let mut write = unsafe { self.0.borrow_mut() };
             match std::mem::replace(&mut write.dirty_state, DirtyState::Clean) {
                 DirtyState::GpuModified(sync_handle, bounds) => {
-                    sync_handle
-                        .retrieve_offscreen_texture(Box::new(|buffer, buffer_width| {
-                            copy_pixels_to_bitmapdata(&mut write, buffer, buffer_width, bounds)
-                        }))
+                    renderer
+                        .resolve_sync_handle(
+                            sync_handle,
+                            Box::new(|buffer, buffer_width| {
+                                copy_pixels_to_bitmapdata(&mut write, buffer, buffer_width, bounds)
+                            }),
+                        )
                         .expect("Failed to sync BitmapData");
                     write.dirty_state = DirtyState::Clean
                 }
@@ -391,14 +394,18 @@ mod wrapper {
         /// Provides read access to the BitmapData pixels.
         /// Only the provided region is guaranteed to be up-to-date.
         /// It is an error to access any other pixels outside of that region.
-        pub fn read_area(&self, read_area: PixelRegion) -> Ref<'_, BitmapData<'gc>> {
+        pub fn read_area(
+            &self,
+            read_area: PixelRegion,
+            renderer: &mut dyn RenderBackend,
+        ) -> Ref<'_, BitmapData<'gc>> {
             let needs_update = if let DirtyState::GpuModified(_, area) = self.0.read().dirty_state {
                 area.intersects(read_area)
             } else {
                 false
             };
             if needs_update {
-                self.sync();
+                self.sync(renderer);
             }
             self.0.read()
         }

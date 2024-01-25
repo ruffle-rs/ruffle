@@ -9,7 +9,7 @@ use ruffle_render::backend::{
 };
 use ruffle_render::bitmap::{
     Bitmap, BitmapFormat, BitmapHandle, BitmapHandleImpl, BitmapSource, PixelRegion, PixelSnapping,
-    SyncHandle,
+    RgbaBufRead, SyncHandle,
 };
 use ruffle_render::commands::{CommandHandler, CommandList, RenderBlendMode};
 use ruffle_render::error::Error as BitmapError;
@@ -1135,6 +1135,16 @@ impl RenderBackend for WebGlRenderBackend {
     ) -> Result<ruffle_render::pixel_bender::PixelBenderShaderHandle, BitmapError> {
         Err(BitmapError::Unimplemented(
             "compile_pixelbender_shader".into(),
+        ))
+    }
+
+    fn resolve_sync_handle(
+        &mut self,
+        _handle: Box<dyn SyncHandle>,
+        _with_rgba: RgbaBufRead,
+    ) -> Result<(), ruffle_render::error::Error> {
+        Err(ruffle_render::error::Error::Unimplemented(
+            "Sync handle resolution".into(),
         ))
     }
 

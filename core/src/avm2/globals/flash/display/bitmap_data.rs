@@ -75,7 +75,10 @@ pub fn fill_bitmap_data_from_symbol<'gc>(
             Bitmap::width(*bd).into(),
             Bitmap::height(*bd).into(),
             true,
-            bd.bitmap_data().read().pixels().to_vec(),
+            bd.bitmap_data(activation.context.renderer)
+                .read()
+                .pixels()
+                .to_vec(),
         ),
     );
     BitmapDataWrapper::new(new_bitmap_data)
@@ -197,7 +200,13 @@ pub fn scroll<'gc>(
         let x = args.get_i32(activation, 0)?;
         let y = args.get_i32(activation, 1)?;
 
-        operations::scroll(activation.context.gc_context, bitmap_data, x, y);
+        operations::scroll(
+            activation.context.gc_context,
+            activation.context.renderer,
+            bitmap_data,
+            x,
+            y,
+        );
     }
 
     Ok(Value::Undefined)
@@ -351,7 +360,14 @@ pub fn get_vector<'gc>(
         let rectangle = args.get_object(activation, 0, "rect")?;
         let (x, y, width, height) = get_rectangle_x_y_width_height(activation, rectangle)?;
 
-        let pixels = operations::get_vector(bitmap_data, x, y, width, height);
+        let pixels = operations::get_vector(
+            bitmap_data,
+            activation.context.renderer,
+            x,
+            y,
+            width,
+            height,
+        );
 
         let value_type = activation.avm2().classes().uint;
         let new_storage = VectorStorage::from_values(pixels, false, Some(value_type));
@@ -372,7 +388,7 @@ pub fn get_pixel<'gc>(
         bitmap_data.check_valid(activation)?;
         let x = args.get_u32(activation, 0)?;
         let y = args.get_u32(activation, 1)?;
-        let col = operations::get_pixel(bitmap_data, x, y);
+        let col = operations::get_pixel(bitmap_data, activation.context.renderer, x, y);
         return Ok(col.into());
     }
 
@@ -389,7 +405,7 @@ pub fn get_pixel32<'gc>(
         bitmap_data.check_valid(activation)?;
         let x = args.get_u32(activation, 0)?;
         let y = args.get_u32(activation, 1)?;
-        let pixel = operations::get_pixel32(bitmap_data, x, y);
+        let pixel = operations::get_pixel32(bitmap_data, activation.context.renderer, x, y);
         return Ok(pixel.into());
     }
 
@@ -408,6 +424,7 @@ pub fn set_pixel<'gc>(
         let color = args.get_u32(activation, 2)?;
         operations::set_pixel(
             activation.context.gc_context,
+            activation.context.renderer,
             bitmap_data,
             x,
             y,
@@ -431,7 +448,14 @@ pub fn set_pixel32<'gc>(
         let y = args.get_u32(activation, 1)?;
         let color = args.get_u32(activation, 2)?;
 
-        operations::set_pixel32(activation.context.gc_context, bitmap_data, x, y, color);
+        operations::set_pixel32(
+            activation.context.gc_context,
+            activation.context.renderer,
+            bitmap_data,
+            x,
+            y,
+            color,
+        );
     }
 
     Ok(Value::Undefined)
@@ -458,6 +482,7 @@ pub fn set_pixels<'gc>(
 
         operations::set_pixels_from_byte_array(
             activation.context.gc_context,
+            activation.context.renderer,
             bitmap_data,
             x,
             y,
@@ -561,6 +586,7 @@ pub fn copy_channel<'gc>(
 
             operations::copy_channel(
                 activation.context.gc_context,
+                activation.context.renderer,
                 bitmap_data,
                 (dest_x, dest_y),
                 (src_min_x, src_min_y, src_width, src_height),
@@ -584,7 +610,14 @@ pub fn flood_fill<'gc>(
             let y = args.get_u32(activation, 1)?;
             let color = args.get_u32(activation, 2)?;
 
-            operations::flood_fill(activation.context.gc_context, bitmap_data, x, y, color);
+            operations::flood_fill(
+                activation.context.gc_context,
+                activation.context.renderer,
+                bitmap_data,
+                x,
+                y,
+                color,
+            );
         }
     }
 
@@ -645,6 +678,7 @@ pub fn color_transform<'gc>(
 
             operations::color_transform(
                 activation.context.gc_context,
+                activation.context.renderer,
                 bitmap_data,
                 x_min,
                 y_min,
@@ -670,7 +704,13 @@ pub fn get_color_bounds_rect<'gc>(
             let mask = args.get_u32(activation, 0)?;
             let color = args.get_u32(activation, 1)?;
 
-            let (x, y, w, h) = operations::color_bounds_rect(bitmap_data, find_color, mask, color);
+            let (x, y, w, h) = operations::color_bounds_rect(
+                activation.context.renderer,
+                bitmap_data,
+                find_color,
+                mask,
+                color,
+            );
 
             let rect = activation
                 .avm2()
@@ -750,6 +790,7 @@ pub fn hit_test<'gc>(
                         - top_left.1,
                 );
                 return Ok(Value::Bool(operations::hit_test_point(
+                    activation.context.renderer,
                     bitmap_data,
                     source_threshold,
                     test_point,
@@ -774,6 +815,7 @@ pub fn hit_test<'gc>(
                         .coerce_to_i32(activation)?,
                 );
                 return Ok(Value::Bool(operations::hit_test_rectangle(
+                    activation.context.renderer,
                     bitmap_data,
                     source_threshold,
                     test_point,
@@ -793,6 +835,7 @@ pub fn hit_test<'gc>(
                 let second_threshold = args.get_u32(activation, 4)?.clamp(0, u8::MAX.into()) as u8;
 
                 let result = operations::hit_test_bitmapdata(
+                    activation.context.renderer,
                     bitmap_data,
                     top_left,
                     source_threshold,
@@ -819,6 +862,7 @@ pub fn hit_test<'gc>(
                 let second_threshold = args.get_u32(activation, 4)?.clamp(0, u8::MAX.into()) as u8;
 
                 return Ok(Value::Bool(operations::hit_test_bitmapdata(
+                    activation.context.renderer,
                     bitmap_data,
                     top_left,
                     source_threshold,
@@ -1023,6 +1067,7 @@ pub fn fill_rect<'gc>(
 
         operations::fill_rect(
             activation.context.gc_context,
+            activation.context.renderer,
             bitmap_data,
             x,
             y,
@@ -1159,7 +1204,7 @@ pub fn clone<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.as_bitmap_data() {
         if !bitmap_data.disposed() {
-            let new_bitmap_data = bitmap_data.clone_data();
+            let new_bitmap_data = bitmap_data.clone_data(activation.context.renderer);
 
             let class = activation.avm2().classes().bitmapdata;
             let new_bitmap_data_object = BitmapDataObject::from_bitmap_data_internal(
@@ -1230,6 +1275,7 @@ pub fn palette_map<'gc>(
 
         operations::palette_map(
             activation.context.gc_context,
+            activation.context.renderer,
             bitmap_data,
             source_bitmap,
             (source_point.0, source_point.1, source_size.0, source_size.1),
@@ -1351,6 +1397,7 @@ pub fn threshold<'gc>(
 
                 return Ok(operations::threshold(
                     activation.context.gc_context,
+                    activation.context.renderer,
                     bitmap_data,
                     src_bitmap,
                     (src_min_x, src_min_y, src_width, src_height),
@@ -1421,7 +1468,11 @@ pub fn compare<'gc>(
         return Ok(DIFFERENT_HEIGHTS.into());
     }
 
-    match operations::compare(this_bitmap_data, other_bitmap_data) {
+    match operations::compare(
+        activation.context.renderer,
+        this_bitmap_data,
+        other_bitmap_data,
+    ) {
         Some(bitmap_data) => {
             let class = activation.avm2().classes().bitmapdata;
             Ok(BitmapDataObject::from_bitmap_data_internal(
@@ -1480,6 +1531,7 @@ pub fn pixel_dissolve<'gc>(
 
             return Ok(operations::pixel_dissolve(
                 activation.context.gc_context,
+                activation.context.renderer,
                 bitmap_data,
                 src_bitmap_data,
                 (src_min_x, src_min_y, src_width, src_height),
@@ -1533,6 +1585,7 @@ pub fn merge<'gc>(
                 if !src_bitmap.disposed() {
                     operations::merge(
                         activation.context.gc_context,
+                        activation.context.renderer,
                         bitmap_data,
                         src_bitmap,
                         (src_min_x, src_min_y, src_width, src_height),

@@ -219,7 +219,7 @@ pub fn start<'gc>(
         .expect("ShaderJob.height is not a number");
 
     let pixel_bender_target = if let Some(bitmap) = target.as_bitmap_data() {
-        let target_bitmap = bitmap.sync();
+        let target_bitmap = bitmap.sync(activation.context.renderer);
         // Perform both a GPU->CPU and CPU->GPU sync before writing to it.
         // FIXME - are both necessary?
         let mut target_bitmap_data = target_bitmap.write(activation.context.gc_context);
@@ -245,7 +245,10 @@ pub fn start<'gc>(
 
     match output {
         PixelBenderOutput::Bitmap(sync_handle) => {
-            let target_bitmap = target.as_bitmap_data().unwrap().sync();
+            let target_bitmap = target
+                .as_bitmap_data()
+                .unwrap()
+                .sync(activation.context.renderer);
             let mut target_bitmap_data = target_bitmap.write(activation.context.gc_context);
             let width = target_bitmap_data.width();
             let height = target_bitmap_data.height();

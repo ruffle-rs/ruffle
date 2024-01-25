@@ -16,6 +16,7 @@ use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
+use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::{BitmapFormat, PixelSnapping};
 use std::cell::{Ref, RefMut};
 use std::sync::Arc;
@@ -210,8 +211,8 @@ impl<'gc> Bitmap<'gc> {
     }
 
     /// Retrieve the bitmap data associated with this `Bitmap`.
-    pub fn bitmap_data(self) -> GcCell<'gc, BitmapData<'gc>> {
-        self.0.read().bitmap_data.sync()
+    pub fn bitmap_data(self, renderer: &mut dyn RenderBackend) -> GcCell<'gc, BitmapData<'gc>> {
+        self.0.read().bitmap_data.sync(renderer)
     }
 
     /// Associate this `Bitmap` with new `BitmapData`.
