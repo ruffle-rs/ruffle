@@ -1482,12 +1482,12 @@ export class RufflePlayer extends HTMLElement {
             if (this.isFullscreen) {
                 items.push({
                     text: text("context-menu-exit-fullscreen"),
-                    onClick: () => this.instance?.set_fullscreen(false),
+                    onClick: () => this.setFullscreen(false),
                 });
             } else {
                 items.push({
                     text: text("context-menu-enter-fullscreen"),
-                    onClick: () => this.instance?.set_fullscreen(true),
+                    onClick: () => this.setFullscreen(true),
                 });
             }
         }
@@ -2499,6 +2499,10 @@ export function getPolyfillOptions(
     const menu = parseBoolean(getOptionString("menu"));
     if (menu !== null) {
         options.menu = menu;
+    }
+    const allowFullscreen = parseBoolean(getOptionString("allowFullScreen"));
+    if (allowFullscreen !== null) {
+        options.allowFullscreen = allowFullscreen;
     }
     const parameters = getOptionString("flashvars");
     if (parameters !== null) {
