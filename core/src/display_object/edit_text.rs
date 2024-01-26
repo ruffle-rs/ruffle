@@ -252,7 +252,12 @@ impl<'gc> EditText<'gc> {
         let text = swf_tag.initial_text().unwrap_or_default().decode(encoding);
 
         let mut text_spans = if swf_tag.is_html() {
-            FormatSpans::from_html(&text, default_format, swf_tag.is_multiline())
+            FormatSpans::from_html(
+                &text,
+                default_format,
+                swf_tag.is_multiline(),
+                swf_movie.version(),
+            )
         } else {
             FormatSpans::from_text(text.into_owned(), default_format)
         };
@@ -433,6 +438,7 @@ impl<'gc> EditText<'gc> {
                 text,
                 default_format,
                 write.flags.contains(EditTextFlag::MULTILINE),
+                write.static_data.swf.version(),
             );
             drop(write);
 
