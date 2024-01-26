@@ -28,4 +28,5 @@ debug-menu = Herramientas de depuración
 debug-menu-open-stage = Ver información de la página
 debug-menu-open-movie = Ver película
 debug-menu-open-movie-list = Mostrar películas conocidas
+debug-menu-open-domain-list = Mostrar dominios
 debug-menu-search-display-objects = Buscar los objetos de rendimiento...
