@@ -55,6 +55,7 @@ impl GuiController {
         }
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: backend,
+            flags: wgpu::InstanceFlags::default().with_env(),
             ..Default::default()
         });
         let surface = unsafe {
