@@ -628,7 +628,7 @@ impl DisplayObjectWindow {
         if !matches_search(object, search) {
             return;
         }
-        if let Some(ctr) = object.as_container() {
+        if let Some(ctr) = object.as_container().filter(|x| x.num_children() > 0) {
             CollapsingState::load_with_default_open(ui.ctx(), ui.id().with(object.as_ptr()), false)
                 .show_header(ui, |ui| {
                     open_display_object_button(
