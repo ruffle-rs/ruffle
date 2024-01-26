@@ -329,49 +329,48 @@ pub struct TextSpan {
     /// length of the underlying source string.
     pub span_length: usize,
 
-    pub font: WString,
-    pub size: f64,
-    pub color: swf::Color,
+    pub font: TextSpanFont,
+    pub style: TextSpanStyle,
     pub align: swf::TextAlign,
-    pub bold: bool,
-    pub italic: bool,
-    pub underline: bool,
     pub left_margin: f64,
     pub right_margin: f64,
     pub indent: f64,
     pub block_indent: f64,
-    pub kerning: bool,
     pub leading: f64,
-    pub letter_spacing: f64,
     pub tab_stops: Vec<f64>,
     pub bullet: bool,
     pub url: WString,
     pub target: WString,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct TextSpanFont {
+    pub face: WString,
+    pub size: f64,
+    pub color: swf::Color,
+    pub letter_spacing: f64,
+    pub kerning: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Default)]
+pub struct TextSpanStyle {
+    pub bold: bool,
+    pub italic: bool,
+    pub underline: bool,
+}
+
 impl Default for TextSpan {
     fn default() -> Self {
         Self {
             span_length: 0,
-            font: WString::new(),
-            size: 12.0,
-            color: swf::Color {
-                r: 0,
-                g: 0,
-                b: 0,
-                a: 0,
-            },
+            font: TextSpanFont::default(),
+            style: TextSpanStyle::default(),
             align: swf::TextAlign::Left,
-            bold: false,
-            italic: false,
-            underline: false,
             left_margin: 0.0,
             right_margin: 0.0,
             indent: 0.0,
             block_indent: 0.0,
-            kerning: false,
             leading: 0.0,
-            letter_spacing: 0.0,
             tab_stops: vec![],
             bullet: false,
             url: WString::new(),
@@ -380,50 +379,27 @@ impl Default for TextSpan {
     }
 }
 
-impl TextSpan {
-    pub fn with_length_and_format(length: usize, tf: TextFormat) -> Self {
-        let mut data = Self {
-            span_length: length,
-            ..Default::default()
-        };
-
-        data.set_text_format(&tf);
-
-        data
+impl Default for TextSpanFont {
+    fn default() -> Self {
+        Self {
+            face: WString::new(),
+            size: 12.0,
+            color: swf::Color {
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 0,
+            },
+            kerning: false,
+            letter_spacing: 0.0,
+        }
     }
+}
 
-    /// Determine if this and another span have identical text formats.
-    ///
-    /// It is assumed that the two text spans being considered are adjacent;
-    /// and we have no way of checking, so this function doesn't check that.
-    #[allow(clippy::float_cmp)]
-    fn can_merge(&self, rhs: &Self) -> bool {
-        self.font == rhs.font
-            && self.size == rhs.size
-            && self.color == rhs.color
-            && self.align == rhs.align
-            && self.bold == rhs.bold
-            && self.italic == rhs.italic
-            && self.underline == rhs.underline
-            && self.left_margin == rhs.left_margin
-            && self.right_margin == rhs.right_margin
-            && self.indent == rhs.indent
-            && self.block_indent == rhs.block_indent
-            && self.kerning == rhs.kerning
-            && self.leading == rhs.leading
-            && self.letter_spacing == rhs.letter_spacing
-            && self.tab_stops == rhs.tab_stops
-            && self.bullet == rhs.bullet
-            && self.url == rhs.url
-            && self.target == rhs.target
-    }
-
-    /// Apply a text format to this text span.
-    ///
-    /// Properties marked `None` on the `TextFormat` will remain unchanged.
+impl TextSpanFont {
     fn set_text_format(&mut self, tf: &TextFormat) {
         if let Some(font) = &tf.font {
-            self.font = font.clone();
+            self.face = font.clone();
         }
 
         if let Some(size) = &tf.size {
@@ -434,20 +410,65 @@ impl TextSpan {
             self.color = color;
         }
 
+        if let Some(kerning) = &tf.kerning {
+            self.kerning = *kerning;
+        }
+
+        if let Some(letter_spacing) = &tf.letter_spacing {
+            self.letter_spacing = *letter_spacing;
+        }
+    }
+}
+
+impl TextSpan {
+    pub fn with_length_and_format(length: usize, tf: &TextFormat) -> Self {
+        let mut data = Self {
+            span_length: length,
+            ..Default::default()
+        };
+
+        data.set_text_format(tf);
+
+        data
+    }
+
+    /// Determine if this and another span have identical text formats.
+    ///
+    /// It is assumed that the two text spans being considered are adjacent;
+    /// and we have no way of checking, so this function doesn't check that.
+    fn can_merge(&self, rhs: &Self) -> bool {
+        self.font == rhs.font
+            && self.style == rhs.style
+            && self.align == rhs.align
+            && self.left_margin == rhs.left_margin
+            && self.right_margin == rhs.right_margin
+            && self.indent == rhs.indent
+            && self.block_indent == rhs.block_indent
+            && self.leading == rhs.leading
+            && self.tab_stops == rhs.tab_stops
+            && self.bullet == rhs.bullet
+            && self.url == rhs.url
+            && self.target == rhs.target
+    }
+
+    /// Apply a text format to this text span.
+    ///
+    /// Properties marked `None` on the `TextFormat` will remain unchanged.
+    fn set_text_format(&mut self, tf: &TextFormat) {
         if let Some(align) = &tf.align {
             self.align = *align;
         }
 
         if let Some(bold) = &tf.bold {
-            self.bold = *bold;
+            self.style.bold = *bold;
         }
 
         if let Some(italic) = &tf.italic {
-            self.italic = *italic;
+            self.style.italic = *italic;
         }
 
         if let Some(underline) = &tf.underline {
-            self.underline = *underline;
+            self.style.underline = *underline;
         }
 
         if let Some(left_margin) = &tf.left_margin {
@@ -466,16 +487,8 @@ impl TextSpan {
             self.block_indent = *block_indent;
         }
 
-        if let Some(kerning) = &tf.kerning {
-            self.kerning = *kerning;
-        }
-
         if let Some(leading) = &tf.leading {
             self.leading = *leading;
-        }
-
-        if let Some(letter_spacing) = &tf.letter_spacing {
-            self.letter_spacing = *letter_spacing;
         }
 
         if let Some(tab_stops) = &tf.tab_stops {
@@ -493,6 +506,8 @@ impl TextSpan {
         if let Some(target) = &tf.target {
             self.target = target.clone();
         }
+
+        self.font.set_text_format(tf);
     }
 
     /// Convert the text span into a format.
@@ -500,20 +515,20 @@ impl TextSpan {
     /// The text format returned will have all properties defined.
     pub fn get_text_format(&self) -> TextFormat {
         TextFormat {
-            font: Some(self.font.clone()),
-            size: Some(self.size),
-            color: Some(self.color),
+            font: Some(self.font.face.clone()),
+            size: Some(self.font.size),
+            color: Some(self.font.color),
             align: Some(self.align),
-            bold: Some(self.bold),
-            italic: Some(self.italic),
-            underline: Some(self.underline),
+            bold: Some(self.style.bold),
+            italic: Some(self.style.italic),
+            underline: Some(self.style.underline),
             left_margin: Some(self.left_margin),
             right_margin: Some(self.right_margin),
             indent: Some(self.indent),
             block_indent: Some(self.block_indent),
-            kerning: Some(self.kerning),
+            kerning: Some(self.font.kerning),
             leading: Some(self.leading),
-            letter_spacing: Some(self.letter_spacing),
+            letter_spacing: Some(self.font.letter_spacing),
             tab_stops: Some(self.tab_stops.clone()),
             bullet: Some(self.bullet),
             url: Some(self.url.clone()),
@@ -563,7 +578,7 @@ impl FormatSpans {
         Self {
             text,
             displayed_text: WString::new(),
-            spans: vec![TextSpan::with_length_and_format(len, format.clone())],
+            spans: vec![TextSpan::with_length_and_format(len, &format)],
             default_format: format,
         }
     }
@@ -644,7 +659,7 @@ impl FormatSpans {
                                     span.span_length += 1;
                                 } else {
                                     // This must be at the start; make an empty span so our total length is correct
-                                    spans.push(TextSpan::with_length_and_format(1, format));
+                                    spans.push(TextSpan::with_length_and_format(1, &format));
                                 }
                             }
 
@@ -659,7 +674,7 @@ impl FormatSpans {
                                 span.span_length += 1;
                             } else {
                                 // This must be at the start; make an empty span so our total length is correct
-                                spans.push(TextSpan::with_length_and_format(1, format));
+                                spans.push(TextSpan::with_length_and_format(1, &format));
                             }
 
                             // Skip push to `format_stack`.
@@ -776,7 +791,7 @@ impl FormatSpans {
                 Ok(Event::Text(e)) if !e.is_empty() => {
                     let e = decode_to_wstr(&e.into_inner());
                     let e = process_html_entity(&e).unwrap_or(e);
-                    let format = format_stack.last().unwrap().clone();
+                    let format = format_stack.last().unwrap();
                     text.push_str(&e);
                     spans.push(TextSpan::with_length_and_format(e.len(), format));
                 }
@@ -807,7 +822,7 @@ impl FormatSpans {
                                 // This must be at the start; make an empty span so our total length is correct
                                 spans.push(TextSpan::with_length_and_format(
                                     1,
-                                    format_stack.last().unwrap().clone(),
+                                    format_stack.last().unwrap(),
                                 ));
                             }
                         }
@@ -988,7 +1003,7 @@ impl FormatSpans {
         match span_length.cmp(&self.text.len()) {
             Ordering::Less => self.spans.push(TextSpan::with_length_and_format(
                 self.text.len() - span_length,
-                self.default_format.clone(),
+                &self.default_format,
             )),
             Ordering::Greater => {
                 let mut deficiency = span_length - self.text.len();
@@ -1049,7 +1064,7 @@ impl FormatSpans {
         if self.spans.is_empty() {
             self.spans.push(TextSpan::with_length_and_format(
                 self.text.len(),
-                self.default_format.clone(),
+                &self.default_format,
             ));
         }
     }
@@ -1129,14 +1144,12 @@ impl FormatSpans {
             self.spans.drain(start_pos..end_pos);
             self.spans.insert(
                 start_pos,
-                TextSpan::with_length_and_format(with.len(), new_tf),
+                TextSpan::with_length_and_format(with.len(), &new_tf),
             );
         } else {
             self.spans.push(TextSpan::with_length_and_format(
                 with.len(),
-                new_tf
-                    .cloned()
-                    .unwrap_or_else(|| self.default_format.clone()),
+                new_tf.unwrap_or(&self.default_format),
             ));
         }
 
@@ -1269,13 +1282,13 @@ impl<'a> FormatState<'a> {
         let _ = write!(
             self.result,
             "<FONT FACE=\"{}\" SIZE=\"{}\" COLOR=\"#{:0>2X}{:0>2X}{:0>2X}\" LETTERSPACING=\"{}\" KERNING=\"{}\">",
-            self.span.font,
-            self.span.size,
-            self.span.color.r,
-            self.span.color.g,
-            self.span.color.b,
-            self.span.letter_spacing,
-            if self.span.kerning { "1" } else { "0" },
+            self.span.font.face,
+            self.span.font.size,
+            self.span.font.color.r,
+            self.span.font.color.g,
+            self.span.font.color.b,
+            self.span.font.letter_spacing,
+            if self.span.font.kerning { "1" } else { "0" },
         );
         self.font_stack.push_front(self.span);
 
@@ -1287,15 +1300,15 @@ impl<'a> FormatState<'a> {
             );
         }
 
-        if self.span.bold {
+        if self.span.style.bold {
             self.result.push_str(WStr::from_units(b"<B>"));
         }
 
-        if self.span.italic {
+        if self.span.style.italic {
             self.result.push_str(WStr::from_units(b"<I>"));
         }
 
-        if self.span.underline {
+        if self.span.style.underline {
             self.result.push_str(WStr::from_units(b"<U>"));
         }
 
@@ -1307,15 +1320,15 @@ impl<'a> FormatState<'a> {
             return;
         }
 
-        if self.span.underline {
+        if self.span.style.underline {
             self.result.push_str(WStr::from_units(b"</U>"));
         }
 
-        if self.span.italic {
+        if self.span.style.italic {
             self.result.push_str(WStr::from_units(b"</I>"));
         }
 
-        if self.span.bold {
+        if self.span.style.bold {
             self.result.push_str(WStr::from_units(b"</B>"));
         }
 
@@ -1347,15 +1360,15 @@ impl<'a> FormatState<'a> {
     }
 
     fn set_span(&mut self, span: &'a TextSpan) {
-        if !span.underline && self.span.underline {
+        if !span.style.underline && self.span.style.underline {
             self.result.push_str(WStr::from_units(b"</U>"));
         }
 
-        if !span.italic && self.span.italic {
+        if !span.style.italic && self.span.style.italic {
             self.result.push_str(WStr::from_units(b"</I>"));
         }
 
-        if !span.bold && self.span.bold {
+        if !span.style.bold && self.span.style.bold {
             self.result.push_str(WStr::from_units(b"</B>"));
         }
 
@@ -1363,18 +1376,9 @@ impl<'a> FormatState<'a> {
             self.result.push_str(WStr::from_units(b"</A>"));
         }
 
-        if span.font != self.span.font
-            || span.size != self.span.size
-            || span.color != self.span.color
-            || span.letter_spacing != self.span.letter_spacing
-            || span.kerning != self.span.kerning
-        {
+        if span.font != self.span.font {
             let pos = self.font_stack.iter().position(|font| {
                 span.font == font.font
-                    && span.size == font.size
-                    && span.color == font.color
-                    && span.letter_spacing == font.letter_spacing
-                    && span.kerning == font.kerning
             });
             if let Some(pos) = pos {
                 self.result
@@ -1382,27 +1386,27 @@ impl<'a> FormatState<'a> {
                 self.font_stack.drain(0..pos);
             } else {
                 self.result.push_str(WStr::from_units(b"<FONT"));
-                if span.font != self.span.font {
-                    let _ = write!(self.result, " FACE=\"{}\"", span.font);
+                if span.font.face != self.span.font.face {
+                    let _ = write!(self.result, " FACE=\"{}\"", span.font.face);
                 }
-                if span.size != self.span.size {
-                    let _ = write!(self.result, " SIZE=\"{}\"", span.size);
+                if span.font.size != self.span.font.size {
+                    let _ = write!(self.result, " SIZE=\"{}\"", span.font.size);
                 }
-                if span.color != self.span.color {
+                if span.font.color != self.span.font.color {
                     let _ = write!(
                         self.result,
                         " COLOR=\"#{:0>2X}{:0>2X}{:0>2X}\"",
-                        span.color.r, span.color.g, span.color.b
+                        span.font.color.r, span.font.color.g, span.font.color.b
                     );
                 }
-                if span.letter_spacing != self.span.letter_spacing {
-                    let _ = write!(self.result, " LETTERSPACING=\"{}\"", span.letter_spacing);
+                if span.font.letter_spacing != self.span.font.letter_spacing {
+                    let _ = write!(self.result, " LETTERSPACING=\"{}\"", span.font.letter_spacing);
                 }
-                if span.kerning != self.span.kerning {
+                if span.font.kerning != self.span.font.kerning {
                     let _ = write!(
                         self.result,
                         " KERNING=\"{}\"",
-                        if span.kerning { "1" } else { "0" }
+                        if span.font.kerning { "1" } else { "0" }
                     );
                 }
                 self.result.push_byte(b'>');
@@ -1418,15 +1422,15 @@ impl<'a> FormatState<'a> {
             );
         }
 
-        if span.bold && !self.span.bold {
+        if span.style.bold && !self.span.style.bold {
             self.result.push_str(WStr::from_units(b"<B>"));
         }
 
-        if span.italic && !self.span.italic {
+        if span.style.italic && !self.span.style.italic {
             self.result.push_str(WStr::from_units(b"<I>"));
         }
 
-        if span.underline && !self.span.underline {
+        if span.style.underline && !self.span.style.underline {
             self.result.push_str(WStr::from_units(b"<U>"));
         }
 
