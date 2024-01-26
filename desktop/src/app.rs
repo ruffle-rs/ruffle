@@ -221,7 +221,7 @@ impl App {
                                 ElementState::Pressed => PlayerEvent::MouseDown { x, y, button },
                                 ElementState::Released => PlayerEvent::MouseUp { x, y, button },
                             };
-                            if state == ElementState::Pressed && button == RuffleMouseButton::Right
+                            if state == ElementState::Released && button == RuffleMouseButton::Right
                             {
                                 // Show context menu.
                                 // TODO: Should be squelched if player consumes the right click event.
