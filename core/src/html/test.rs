@@ -336,14 +336,15 @@ fn formatspans_set_default() {
 
 #[test]
 fn formatspans_resolve_position() {
+    let tf = Default::default();
     let fs = FormatSpans::from_str_and_spans(
         WStr::from_units(b"abcdefghi"),
         &[
-            TextSpan::with_length_and_format(2, Default::default()),
-            TextSpan::with_length_and_format(3, Default::default()),
-            TextSpan::with_length_and_format(1, Default::default()),
-            TextSpan::with_length_and_format(1, Default::default()),
-            TextSpan::with_length_and_format(2, Default::default()),
+            TextSpan::with_length_and_format(2, &tf),
+            TextSpan::with_length_and_format(3, &tf),
+            TextSpan::with_length_and_format(1, &tf),
+            TextSpan::with_length_and_format(1, &tf),
+            TextSpan::with_length_and_format(2, &tf),
         ],
     );
 
@@ -361,14 +362,15 @@ fn formatspans_resolve_position() {
 
 #[test]
 fn formatspans_ensure_span_break() {
+    let tf = Default::default();
     let mut fs = FormatSpans::from_str_and_spans(
         WStr::from_units(b"abcdefghi"),
         &[
-            TextSpan::with_length_and_format(2, Default::default()),
-            TextSpan::with_length_and_format(3, Default::default()),
-            TextSpan::with_length_and_format(1, Default::default()),
-            TextSpan::with_length_and_format(1, Default::default()),
-            TextSpan::with_length_and_format(2, Default::default()),
+            TextSpan::with_length_and_format(2, &tf),
+            TextSpan::with_length_and_format(3, &tf),
+            TextSpan::with_length_and_format(1, &tf),
+            TextSpan::with_length_and_format(1, &tf),
+            TextSpan::with_length_and_format(2, &tf),
         ],
     );
 
@@ -389,14 +391,15 @@ fn formatspans_ensure_span_break() {
 
 #[test]
 fn formatspans_ensure_span_break_redundant() {
+    let tf = &Default::default();
     let mut fs = FormatSpans::from_str_and_spans(
         WStr::from_units(b"abcdefghi"),
         &[
-            TextSpan::with_length_and_format(2, Default::default()),
-            TextSpan::with_length_and_format(3, Default::default()),
-            TextSpan::with_length_and_format(1, Default::default()),
-            TextSpan::with_length_and_format(1, Default::default()),
-            TextSpan::with_length_and_format(2, Default::default()),
+            TextSpan::with_length_and_format(2, tf),
+            TextSpan::with_length_and_format(3, tf),
+            TextSpan::with_length_and_format(1, tf),
+            TextSpan::with_length_and_format(1, tf),
+            TextSpan::with_length_and_format(2, tf),
         ],
     );
 
@@ -417,14 +420,15 @@ fn formatspans_ensure_span_break_redundant() {
 
 #[test]
 fn formatspans_span_boundaries() {
+    let tf = &Default::default();
     let fs = FormatSpans::from_str_and_spans(
         WStr::from_units(b"abcdefghi"),
         &[
-            TextSpan::with_length_and_format(2, Default::default()),
-            TextSpan::with_length_and_format(3, Default::default()),
-            TextSpan::with_length_and_format(1, Default::default()),
-            TextSpan::with_length_and_format(1, Default::default()),
-            TextSpan::with_length_and_format(2, Default::default()),
+            TextSpan::with_length_and_format(2, tf),
+            TextSpan::with_length_and_format(3, tf),
+            TextSpan::with_length_and_format(1, tf),
+            TextSpan::with_length_and_format(1, tf),
+            TextSpan::with_length_and_format(2, tf),
         ],
     );
 
@@ -453,11 +457,11 @@ fn formatspans_get_text_format() {
     let fs = FormatSpans::from_str_and_spans(
         WStr::from_units(b"abcdefghi"),
         &[
-            TextSpan::with_length_and_format(2, tf1.clone()),
-            TextSpan::with_length_and_format(3, tf1.clone()),
-            TextSpan::with_length_and_format(1, tf2),
-            TextSpan::with_length_and_format(1, tf1.clone()),
-            TextSpan::with_length_and_format(2, tf1.clone()),
+            TextSpan::with_length_and_format(2, &tf1),
+            TextSpan::with_length_and_format(3, &tf1),
+            TextSpan::with_length_and_format(1, &tf2),
+            TextSpan::with_length_and_format(1, &tf1),
+            TextSpan::with_length_and_format(2, &tf1),
         ],
     );
 
@@ -510,8 +514,8 @@ fn formatspans_normalize_short_spans() {
     let mut fs = FormatSpans::from_str_and_spans(
         WStr::from_units(b"abcdefghi"),
         &[
-            TextSpan::with_length_and_format(5, tf1),
-            TextSpan::with_length_and_format(1, tf2),
+            TextSpan::with_length_and_format(5, &tf1),
+            TextSpan::with_length_and_format(1, &tf2),
         ],
     );
 
@@ -539,8 +543,8 @@ fn formatspans_normalize_exact_spans() {
     let mut fs = FormatSpans::from_str_and_spans(
         WStr::from_units(b"abcdefghi"),
         &[
-            TextSpan::with_length_and_format(5, tf1),
-            TextSpan::with_length_and_format(4, tf2),
+            TextSpan::with_length_and_format(5, &tf1),
+            TextSpan::with_length_and_format(4, &tf2),
         ],
     );
 
@@ -568,9 +572,9 @@ fn formatspans_normalize_long_spans() {
     let mut fs = FormatSpans::from_str_and_spans(
         WStr::from_units(b"abcdefghi"),
         &[
-            TextSpan::with_length_and_format(5, tf1.clone()),
-            TextSpan::with_length_and_format(2000, tf2),
-            TextSpan::with_length_and_format(5, tf1),
+            TextSpan::with_length_and_format(5, &tf1),
+            TextSpan::with_length_and_format(2000, &tf2),
+            TextSpan::with_length_and_format(5, &tf1),
         ],
     );
 
@@ -592,8 +596,8 @@ fn formatspans_normalize_merge_spans() {
     let mut fs = FormatSpans::from_str_and_spans(
         WStr::from_units(b"abcdefghi"),
         &[
-            TextSpan::with_length_and_format(5, tf1.clone()),
-            TextSpan::with_length_and_format(4, tf1),
+            TextSpan::with_length_and_format(5, &tf1),
+            TextSpan::with_length_and_format(4, &tf1),
         ],
     );
 
@@ -613,12 +617,12 @@ fn formatspans_normalize_merge_many_spans() {
     let mut fs = FormatSpans::from_str_and_spans(
         WStr::from_units(b"abcdefghi"),
         &[
-            TextSpan::with_length_and_format(1, tf1.clone()),
-            TextSpan::with_length_and_format(1, tf1.clone()),
-            TextSpan::with_length_and_format(2, tf1.clone()),
-            TextSpan::with_length_and_format(1, tf1.clone()),
-            TextSpan::with_length_and_format(1, tf1.clone()),
-            TextSpan::with_length_and_format(3, tf1),
+            TextSpan::with_length_and_format(1, &tf1),
+            TextSpan::with_length_and_format(1, &tf1),
+            TextSpan::with_length_and_format(2, &tf1),
+            TextSpan::with_length_and_format(1, &tf1),
+            TextSpan::with_length_and_format(1, &tf1),
+            TextSpan::with_length_and_format(3, &tf1),
         ],
     );
 
@@ -644,9 +648,9 @@ fn formatspans_normalize_long_spans_with_merge() {
     let mut fs = FormatSpans::from_str_and_spans(
         WStr::from_units(b"abcdefghi"),
         &[
-            TextSpan::with_length_and_format(5, tf1.clone()),
-            TextSpan::with_length_and_format(5, tf1),
-            TextSpan::with_length_and_format(2000, tf2),
+            TextSpan::with_length_and_format(5, &tf1),
+            TextSpan::with_length_and_format(5, &tf1),
+            TextSpan::with_length_and_format(2000, &tf2),
         ],
     );
 
@@ -671,8 +675,8 @@ fn formatspans_normalize_set_text_format_double_cut() {
     let mut fs = FormatSpans::from_str_and_spans(
         WStr::from_units(b"abcdefghi"),
         &[
-            TextSpan::with_length_and_format(5, tf1),
-            TextSpan::with_length_and_format(4, tf2),
+            TextSpan::with_length_and_format(5, &tf1),
+            TextSpan::with_length_and_format(4, &tf2),
         ],
     );
 
@@ -703,8 +707,8 @@ fn formatspans_normalize_set_text_format_single_cut() {
     let mut fs = FormatSpans::from_str_and_spans(
         WStr::from_units(b"abcdefghi"),
         &[
-            TextSpan::with_length_and_format(5, tf1),
-            TextSpan::with_length_and_format(4, tf2),
+            TextSpan::with_length_and_format(5, &tf1),
+            TextSpan::with_length_and_format(4, &tf2),
         ],
     );
 
@@ -735,8 +739,8 @@ fn formatspans_normalize_set_text_format_no_cut() {
     let mut fs = FormatSpans::from_str_and_spans(
         WStr::from_units(b"abcdefghi"),
         &[
-            TextSpan::with_length_and_format(5, tf1),
-            TextSpan::with_length_and_format(4, tf2),
+            TextSpan::with_length_and_format(5, &tf1),
+            TextSpan::with_length_and_format(4, &tf2),
         ],
     );
 
@@ -766,8 +770,8 @@ fn formatspans_replace_text_inbounds() {
     let mut fs = FormatSpans::from_str_and_spans(
         WStr::from_units(b"abcdefghi"),
         &[
-            TextSpan::with_length_and_format(5, tf1),
-            TextSpan::with_length_and_format(4, tf2),
+            TextSpan::with_length_and_format(5, &tf1),
+            TextSpan::with_length_and_format(4, &tf2),
         ],
     );
 
@@ -794,8 +798,8 @@ fn formatspans_replace_text_edgebounds() {
     let mut fs = FormatSpans::from_str_and_spans(
         WStr::from_units(b"abcdefghi"),
         &[
-            TextSpan::with_length_and_format(5, tf1),
-            TextSpan::with_length_and_format(4, tf2),
+            TextSpan::with_length_and_format(5, &tf1),
+            TextSpan::with_length_and_format(4, &tf2),
         ],
     );
 
@@ -823,8 +827,8 @@ fn formatspans_replace_text_oob() {
     let mut fs = FormatSpans::from_str_and_spans(
         WStr::from_units(b"abcdefghi"),
         &[
-            TextSpan::with_length_and_format(5, tf1),
-            TextSpan::with_length_and_format(4, tf2),
+            TextSpan::with_length_and_format(5, &tf1),
+            TextSpan::with_length_and_format(4, &tf2),
         ],
     );
 
@@ -852,8 +856,8 @@ fn formatspans_replace_text_degenerate() {
     let mut fs = FormatSpans::from_str_and_spans(
         WStr::from_units(b"abcdefghi"),
         &[
-            TextSpan::with_length_and_format(5, tf1),
-            TextSpan::with_length_and_format(4, tf2),
+            TextSpan::with_length_and_format(5, &tf1),
+            TextSpan::with_length_and_format(4, &tf2),
         ],
     );
 

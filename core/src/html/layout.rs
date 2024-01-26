@@ -432,7 +432,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     /// tab index.
     fn tab(&mut self) {
         if self.current_line_span.tab_stops.is_empty() {
-            let modulo_factor = Twips::from_pixels(self.current_line_span.size * 2.7);
+            let modulo_factor = Twips::from_pixels(self.current_line_span.font.size * 2.7);
             let stop_modulo_tab =
                 ((self.cursor.x().get() / modulo_factor.get()) + 1) * modulo_factor.get();
             self.cursor.set_x(Twips::new(stop_modulo_tab));
@@ -451,9 +451,9 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     fn newspan(&mut self, first_span: &TextSpan) {
         if self.is_start_of_line() {
             self.current_line_span = first_span.clone();
-            self.max_font_size = Twips::from_pixels(first_span.size);
+            self.max_font_size = Twips::from_pixels(first_span.font.size);
         } else {
-            self.max_font_size = max(self.max_font_size, Twips::from_pixels(first_span.size));
+            self.max_font_size = max(self.max_font_size, Twips::from_pixels(first_span.font.size));
         }
     }
 
@@ -463,7 +463,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         span: &TextSpan,
         is_device_font: bool,
     ) -> Option<Font<'gc>> {
-        let font_name = span.font.to_utf8_lossy();
+        let font_name = span.font.face.to_utf8_lossy();
 
         // Note that the SWF can still contain a DefineFont tag with no glyphs/layout info in this case (see #451).
         // In an ideal world, device fonts would search for a matching font on the system and render it in some way.
@@ -472,8 +472,8 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
                 .library
                 .get_embedded_font_by_name(
                     &font_name,
-                    span.bold,
-                    span.italic,
+                    span.style.bold,
+                    span.style.italic,
                     Some(self.movie.clone()),
                 )
                 .filter(|f| f.has_glyphs())
@@ -500,8 +500,8 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
                 .library
                 .default_font(
                     default_font,
-                    span.bold,
-                    span.italic,
+                    span.style.bold,
+                    span.style.italic,
                     context.ui,
                     context.renderer,
                     context.gc_context,
@@ -512,8 +512,8 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
         if let Some(font) = context.library.get_or_load_device_font(
             &font_name,
-            span.bold,
-            span.italic,
+            span.style.bold,
+            span.style.italic,
             context.ui,
             context.renderer,
             context.gc_context,
@@ -544,8 +544,8 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             .library
             .default_font(
                 default_font,
-                span.bold,
-                span.italic,
+                span.style.bold,
+                span.style.italic,
                 context.ui,
                 context.renderer,
                 context.gc_context,
@@ -794,7 +794,7 @@ impl<'gc> LayoutBox<'gc> {
                 text_format: span.get_text_format(),
                 font,
                 params,
-                color: span.color,
+                color: span.font.color,
             },
         }
     }
@@ -809,7 +809,7 @@ impl<'gc> LayoutBox<'gc> {
                 text_format: span.get_text_format(),
                 font,
                 params,
-                color: span.color,
+                color: span.font.color,
             },
         }
     }

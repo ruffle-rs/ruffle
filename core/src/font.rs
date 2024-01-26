@@ -88,9 +88,9 @@ impl EvalParameters {
     /// parameters.
     pub fn from_span(span: &TextSpan) -> Self {
         Self {
-            height: Twips::from_pixels(span.size),
-            letter_spacing: Twips::from_pixels(span.letter_spacing),
-            kerning: span.kerning,
+            height: Twips::from_pixels(span.font.size),
+            letter_spacing: Twips::from_pixels(span.font.letter_spacing),
+            kerning: span.font.kerning,
         }
     }
 
