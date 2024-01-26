@@ -20,7 +20,7 @@ use crate::display_object::interactive::{
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
 use crate::drawing::Drawing;
 use crate::events::{ClipEvent, ClipEventResult, TextControlCode};
-use crate::font::{round_down_to_pixel, Glyph, TextRenderSettings};
+use crate::font::{round_down_to_pixel, FontType, Glyph, TextRenderSettings};
 use crate::html::{
     BoxBounds, FormatSpans, LayoutBox, LayoutContent, LayoutMetrics, Position, TextFormat,
 };
@@ -272,13 +272,19 @@ impl<'gc> EditText<'gc> {
             AutoSizeMode::None
         };
 
+        let font_type = if swf_tag.use_outlines() {
+            FontType::Embedded
+        } else {
+            FontType::Device
+        };
+
         let (layout, intrinsic_bounds) = LayoutBox::lower_from_text_spans(
             &text_spans,
             context,
             swf_movie.clone(),
             swf_tag.bounds().width() - Twips::from_pixels(Self::INTERNAL_PADDING * 2.0),
             swf_tag.is_word_wrap(),
-            !swf_tag.use_outlines(),
+            font_type,
         );
         let line_data = get_line_data(&layout);
 
@@ -802,13 +808,21 @@ impl<'gc> EditText<'gc> {
             edit_text.bounds.width() - padding
         };
 
+        let font_type = if !edit_text.flags.contains(EditTextFlag::USE_OUTLINES) {
+            FontType::Device
+        } else if edit_text.is_tlf {
+            FontType::EmbeddedCFF
+        } else {
+            FontType::Embedded
+        };
+
         let (new_layout, intrinsic_bounds) = LayoutBox::lower_from_text_spans(
             &edit_text.text_spans,
             context,
             movie,
             content_width,
             is_word_wrap,
-            !edit_text.flags.contains(EditTextFlag::USE_OUTLINES),
+            font_type,
         );
 
         edit_text.line_data = get_line_data(&new_layout);

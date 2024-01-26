@@ -336,7 +336,8 @@ impl GlyphSource {
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Collect, Hash)]
+#[collect(require_static)]
 pub enum FontType {
     Embedded,
     EmbeddedCFF,
@@ -905,6 +906,11 @@ impl FontDescriptor {
     /// Get the name of the font this descriptor identifies.
     pub fn name(&self) -> &str {
         &self.name
+    }
+
+    // Get the lowercase name.
+    pub fn lowercase_name(&self) -> &str {
+        &self.lowercase_name
     }
 
     /// Get the boldness of the described font.
