@@ -380,13 +380,9 @@ impl<'gc> ScriptObjectData<'gc> {
 
     pub fn set_local_property_is_enumerable(&mut self, name: AvmString<'gc>, is_enumerable: bool) {
         let key = maybe_int_property(name);
-        if let Some(val) = self.values.as_hashmap().get(&key).copied() {
-            if is_enumerable {
-                self.values.insert(key, val.value)
-            } else {
-                self.values.insert_no_enum(key, val.value)
-            }
-        }
+        self.values.entry(key).and_modify(|v| {
+            v.enumerable = is_enumerable;
+        });
     }
 
     /// Install a method into the object.
