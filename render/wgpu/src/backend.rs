@@ -794,6 +794,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     .submit_for_target(&self.descriptors, &target, frame_output),
             )
         } else {
+            self.active_frame.maybe_flush(&self.descriptors);
             None
         };
 
@@ -893,6 +894,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     .submit_for_target(&self.descriptors, &target, frame_output),
             )
         } else {
+            self.active_frame.maybe_flush(&self.descriptors);
             None
         };
 
@@ -1026,6 +1028,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 frame_output,
             ))
         } else {
+            self.active_frame.maybe_flush(&self.descriptors);
             None
         };
 
@@ -1234,15 +1237,19 @@ impl RenderTargetMode {
 pub struct ActiveFrame {
     pub staging_belt: wgpu::util::StagingBelt,
     pub command_encoder: wgpu::CommandEncoder,
+    draws_since_flush: u32,
 }
 
 impl ActiveFrame {
+    const MAX_DRAWS_PER_FLUSH: u32 = 100;
+
     pub fn new(descriptors: &Descriptors) -> Self {
         Self {
             command_encoder: descriptors
                 .device
                 .create_command_encoder(&Default::default()),
             staging_belt: wgpu::util::StagingBelt::new(65536),
+            draws_since_flush: 0,
         }
     }
 
@@ -1252,6 +1259,7 @@ impl ActiveFrame {
         target: &T,
         frame: T::Frame,
     ) -> SubmissionIndex {
+        self.draws_since_flush = 0;
         self.staging_belt.finish();
         let draw_encoder = std::mem::replace(
             &mut self.command_encoder,
@@ -1270,6 +1278,7 @@ impl ActiveFrame {
     }
 
     pub fn submit_direct(&mut self, descriptors: &Descriptors) -> SubmissionIndex {
+        self.draws_since_flush = 0;
         self.staging_belt.finish();
         let draw_encoder = std::mem::replace(
             &mut self.command_encoder,
@@ -1280,5 +1289,17 @@ impl ActiveFrame {
         let index = descriptors.queue.submit(Some(draw_encoder.finish()));
         self.staging_belt.recall();
         index
+    }
+
+    pub fn maybe_flush(&mut self, descriptors: &Descriptors) {
+        // [NA] This is kind of a hack.
+        // If we do "too much" during one frame, the submission ends up being way too large and goes OutOfMemory.
+        // What it is that we're OOMing on is likely buffers and temporary textures and such from render_offscreen
+        // Hard to track that though... so let's just flush it out if we do more than X draws per frame
+        self.draws_since_flush += 1;
+
+        if self.draws_since_flush > Self::MAX_DRAWS_PER_FLUSH {
+            self.submit_direct(descriptors);
+        }
     }
 }
