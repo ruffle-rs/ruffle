@@ -1,10 +1,31 @@
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::error::{argument_error, error, make_error_2037, make_error_2097};
 pub use crate::avm2::object::file_reference_allocator;
-use crate::avm2::object::{ByteArrayObject, FileReference};
+use crate::avm2::object::{ByteArrayObject, DateObject, FileReference};
 use crate::avm2::{Activation, Avm2, Error, EventObject, Object, TObject, Value};
 use crate::backend::ui::FileFilter;
 use crate::string::AvmString;
+
+pub fn get_creation_date<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_file_reference().unwrap();
+
+    let creation_date = match *this.file_reference() {
+        FileReference::None => return Err(make_error_2037(activation)),
+        FileReference::FileDialogResult(ref dialog_result) => {
+            if let Some(time) = dialog_result.creation_time() {
+                DateObject::from_date_time(activation, time)?.into()
+            } else {
+                Value::Null
+            }
+        }
+    };
+
+    Ok(creation_date)
+}
 
 pub fn get_data<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -24,6 +45,27 @@ pub fn get_data<'gc>(
     };
 
     Ok(bytearray.into())
+}
+
+pub fn get_modification_date<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_file_reference().unwrap();
+
+    let modification_date = match *this.file_reference() {
+        FileReference::None => return Err(make_error_2037(activation)),
+        FileReference::FileDialogResult(ref dialog_result) => {
+            if let Some(time) = dialog_result.modification_time() {
+                DateObject::from_date_time(activation, time)?.into()
+            } else {
+                Value::Null
+            }
+        }
+    };
+
+    Ok(modification_date)
 }
 
 pub fn get_name<'gc>(
@@ -57,6 +99,24 @@ pub fn get_size<'gc>(
     };
 
     Ok(Value::Number(size as f64))
+}
+
+pub fn get_type<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_file_reference().unwrap();
+
+    let type_ = match *this.file_reference() {
+        FileReference::None => return Err(make_error_2037(activation)),
+        FileReference::FileDialogResult(ref dialog_result) => {
+            let type_ = dialog_result.file_type().unwrap_or_default();
+            AvmString::new_utf8(activation.context.gc_context, type_).into()
+        }
+    };
+
+    Ok(type_)
 }
 
 pub fn browse<'gc>(
