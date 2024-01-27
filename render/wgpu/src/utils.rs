@@ -199,7 +199,6 @@ pub fn supported_sample_count(
 pub fn run_copy_pipeline(
     descriptors: &Descriptors,
     format: wgpu::TextureFormat,
-    actual_surface_format: wgpu::TextureFormat,
     size: wgpu::Extent3d,
     frame_view: &wgpu::TextureView,
     input: &wgpu::TextureView,
@@ -231,11 +230,7 @@ pub fn run_copy_pipeline(
             label: create_debug_label!("Copy sRGB bind group").as_deref(),
         });
 
-    let pipeline = if actual_surface_format == format {
-        descriptors.copy_pipeline(format, sample_count)
-    } else {
-        descriptors.copy_srgb_pipeline(actual_surface_format, sample_count)
-    };
+    let pipeline = descriptors.copy_pipeline(format, sample_count);
 
     // We overwrite the pixels in the target texture (no blending at all),
     // so this doesn't matter.

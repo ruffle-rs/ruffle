@@ -21,7 +21,6 @@ pub struct Descriptors {
     pub bind_layouts: BindLayouts,
     pub quad: Quad,
     copy_pipeline: Mutex<FnvHashMap<(u32, wgpu::TextureFormat), Arc<wgpu::RenderPipeline>>>,
-    copy_srgb_pipeline: Mutex<FnvHashMap<(u32, wgpu::TextureFormat), Arc<wgpu::RenderPipeline>>>,
     pub shaders: Shaders,
     pipelines: Mutex<FnvHashMap<(u32, wgpu::TextureFormat), Arc<Pipelines>>>,
     pub default_color_bind_group: wgpu::BindGroup,
@@ -72,91 +71,11 @@ impl Descriptors {
             bind_layouts,
             quad,
             copy_pipeline: Default::default(),
-            copy_srgb_pipeline: Default::default(),
             shaders,
             pipelines: Default::default(),
             default_color_bind_group,
             filters,
         }
-    }
-
-    pub fn copy_srgb_pipeline(
-        &self,
-        format: wgpu::TextureFormat,
-        msaa_sample_count: u32,
-    ) -> Arc<wgpu::RenderPipeline> {
-        let mut pipelines = self
-            .copy_srgb_pipeline
-            .lock()
-            .expect("Pipelines should not be already locked");
-        pipelines
-            .entry((msaa_sample_count, format))
-            .or_insert_with(|| {
-                let copy_texture_pipeline_layout =
-                    &self
-                        .device
-                        .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                            label: create_debug_label!("Copy sRGB pipeline layout").as_deref(),
-                            bind_group_layouts: &if self.limits.max_push_constant_size > 0 {
-                                vec![&self.bind_layouts.globals, &self.bind_layouts.bitmap]
-                            } else {
-                                vec![
-                                    &self.bind_layouts.globals,
-                                    &self.bind_layouts.transforms,
-                                    &self.bind_layouts.bitmap,
-                                ]
-                            },
-                            push_constant_ranges: if self.device.limits().max_push_constant_size > 0
-                            {
-                                &[wgpu::PushConstantRange {
-                                    stages: wgpu::ShaderStages::VERTEX,
-                                    range: 0..(mem::size_of::<Transforms>() as u32),
-                                }]
-                            } else {
-                                &[]
-                            },
-                        });
-                Arc::new(
-                    self.device
-                        .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-                            label: create_debug_label!("Copy sRGB pipeline").as_deref(),
-                            layout: Some(copy_texture_pipeline_layout),
-                            vertex: wgpu::VertexState {
-                                module: &self.shaders.copy_srgb_shader,
-                                entry_point: "main_vertex",
-                                buffers: &VERTEX_BUFFERS_DESCRIPTION_POS,
-                            },
-                            fragment: Some(wgpu::FragmentState {
-                                module: &self.shaders.copy_srgb_shader,
-                                entry_point: "main_fragment",
-                                targets: &[Some(wgpu::ColorTargetState {
-                                    format,
-                                    // All of our blending has been done by now, so we want
-                                    // to overwrite the target pixels without any blending
-                                    blend: Some(wgpu::BlendState::REPLACE),
-                                    write_mask: Default::default(),
-                                })],
-                            }),
-                            primitive: wgpu::PrimitiveState {
-                                topology: wgpu::PrimitiveTopology::TriangleList,
-                                strip_index_format: None,
-                                front_face: wgpu::FrontFace::Ccw,
-                                cull_mode: None,
-                                polygon_mode: wgpu::PolygonMode::default(),
-                                unclipped_depth: false,
-                                conservative: false,
-                            },
-                            depth_stencil: None,
-                            multisample: wgpu::MultisampleState {
-                                count: msaa_sample_count,
-                                mask: !0,
-                                alpha_to_coverage_enabled: false,
-                            },
-                            multiview: None,
-                        }),
-                )
-            })
-            .clone()
     }
 
     pub fn copy_pipeline(

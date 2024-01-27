@@ -287,7 +287,6 @@ impl CommandTarget {
                 run_copy_pipeline(
                     descriptors,
                     format,
-                    format,
                     size,
                     frame_buffer.texture.view(),
                     &texture.create_view(&Default::default()),

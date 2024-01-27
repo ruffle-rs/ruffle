@@ -18,7 +18,6 @@ pub struct Shaders {
     /// an out-of-range value).
     pub bitmap_late_saturate_shader: wgpu::ShaderModule,
     pub gradient_shader: wgpu::ShaderModule,
-    pub copy_srgb_shader: wgpu::ShaderModule,
     pub copy_shader: wgpu::ShaderModule,
     pub blend_shaders: EnumMap<ComplexBlend, wgpu::ShaderModule>,
     pub color_matrix_filter: wgpu::ShaderModule,
@@ -61,13 +60,6 @@ impl Shaders {
             &late_saturate_shader_defs,
             "bitmap.wgsl",
             include_str!("../shaders/bitmap.wgsl"),
-        );
-        let copy_srgb_shader = make_shader(
-            device,
-            &mut composer,
-            &shader_defs,
-            "copy_srgb.wgsl",
-            include_str!("../shaders/copy_srgb.wgsl"),
         );
         let copy_shader = make_shader(
             device,
@@ -136,7 +128,6 @@ impl Shaders {
             bitmap_shader,
             bitmap_late_saturate_shader,
             gradient_shader,
-            copy_srgb_shader,
             copy_shader,
             blend_shaders,
             color_matrix_filter,

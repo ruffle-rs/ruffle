@@ -30,7 +30,6 @@ pub struct Surface {
     sample_count: u32,
     pipelines: Arc<Pipelines>,
     format: wgpu::TextureFormat,
-    actual_surface_format: wgpu::TextureFormat,
 }
 
 impl Surface {
@@ -60,7 +59,6 @@ impl Surface {
             sample_count,
             pipelines,
             format: frame_buffer_format,
-            actual_surface_format: surface_format,
         }
     }
 
@@ -96,7 +94,6 @@ impl Surface {
         run_copy_pipeline(
             descriptors,
             self.format,
-            self.actual_surface_format,
             self.size,
             frame_view,
             target.color_view(),
