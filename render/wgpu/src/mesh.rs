@@ -1,16 +1,16 @@
 use crate::backend::WgpuRenderBackend;
+use crate::buffer_builder::BufferBuilder;
 use crate::target::RenderTarget;
 use crate::{
     as_texture, Descriptors, GradientUniforms, PosColorVertex, PosVertex, TextureTransforms,
 };
-use std::ops::Range;
-use wgpu::util::DeviceExt;
-
-use crate::buffer_builder::BufferBuilder;
 use ruffle_render::backend::{RenderBackend, ShapeHandle, ShapeHandleImpl};
 use ruffle_render::bitmap::BitmapSource;
 use ruffle_render::tessellator::{Bitmap, Draw as LyonDraw, DrawType as TessDrawType, Gradient};
+use std::convert::identity;
+use std::ops::Range;
 use swf::{CharacterId, GradientInterpolation};
+use wgpu::util::DeviceExt;
 
 /// How big to make gradient textures. Larger will keep more detail, but be slower and use more memory.
 const GRADIENT_SIZE: usize = 256;
@@ -136,10 +136,6 @@ fn srgb_to_linear(color: f32) -> f32 {
     }
 }
 
-fn lerp(a: f32, b: f32, t: f32) -> f32 {
-    a + (b - a) * t
-}
-
 impl PendingDrawType {
     pub fn color() -> Self {
         PendingDrawType::Color
@@ -154,56 +150,59 @@ impl PendingDrawType {
     ) -> Self {
         let tex_transforms_index = create_texture_transforms(&gradient.matrix, uniform_buffers);
         let colors = if gradient.records.is_empty() {
-            [0; GRADIENT_SIZE * 4]
+            [0; GRADIENT_SIZE * 4 * 2]
         } else {
-            let mut colors = [0; GRADIENT_SIZE * 4];
+            let mut colors = [0; GRADIENT_SIZE * 4 * 2];
 
-            let convert = if gradient.interpolation == GradientInterpolation::LinearRgb {
-                |c| srgb_to_linear(c / 255.0) * 255.0
-            } else {
-                |c| c
+            let convert = match gradient.interpolation {
+                GradientInterpolation::Rgb => identity,
+                GradientInterpolation::LinearRgb => |c| srgb_to_linear(c / 255.0) * 255.0,
             };
 
+            // Store gradient colors in the upper half of the texture (y = 1).
+            for (i, record) in gradient.records.iter().enumerate() {
+                colors[GRADIENT_SIZE * 4 + i * 4] = convert(record.color.r as f32) as u8;
+                colors[GRADIENT_SIZE * 4 + i * 4 + 1] = convert(record.color.g as f32) as u8;
+                colors[GRADIENT_SIZE * 4 + i * 4 + 2] = convert(record.color.b as f32) as u8;
+                colors[GRADIENT_SIZE * 4 + i * 4 + 3] = record.color.a;
+            }
+
+            // Duplicate last record.
+            let record = gradient.records.last().unwrap();
+            colors[GRADIENT_SIZE * 4 + gradient.records.len() * 4] =
+                convert(record.color.r as f32) as u8;
+            colors[GRADIENT_SIZE * 4 + gradient.records.len() * 4 + 1] =
+                convert(record.color.g as f32) as u8;
+            colors[GRADIENT_SIZE * 4 + gradient.records.len() * 4 + 2] =
+                convert(record.color.b as f32) as u8;
+            colors[GRADIENT_SIZE * 4 + gradient.records.len() * 4 + 3] = record.color.a;
+
+            // Store `t` values in the lower half of the texture (y = 0).
+            let mut records = gradient.records.iter().enumerate().peekable();
+            let mut last = None;
             for t in 0..GRADIENT_SIZE {
-                let mut last = 0;
-                let mut next = 0;
-
-                for (i, record) in gradient.records.iter().enumerate().rev() {
-                    if (record.ratio as usize) < t {
-                        last = i;
-                        next = (i + 1).min(gradient.records.len() - 1);
-                        break;
-                    }
+                // Find the two gradient records bordering our position.
+                while let Some(next) = records.next_if(|(_, r)| t as u8 > r.ratio) {
+                    last = Some(next);
                 }
-                assert!(last == next || last + 1 == next);
+                let next = records.peek();
 
-                let last_record = &gradient.records[last];
-                let next_record = &gradient.records[next];
-
-                let a = if next == last {
-                    // this can happen if we are before the first gradient record, or after the last one
-                    0.0
-                } else {
-                    (t as f32 - last_record.ratio as f32)
-                        / (next_record.ratio as f32 - last_record.ratio as f32)
+                colors[t * 4] = match (last, next) {
+                    (None, _) => {
+                        // We are before the first gradient record.
+                        0
+                    }
+                    (Some((i, _)), None) => {
+                        // We are after the last gradient record.
+                        (u16::from(u8::MAX) * i as u16 / (gradient.records.len() - 1) as u16) as u8
+                    }
+                    (Some((i, last)), Some((_, next))) => {
+                        let a = u16::from(u8::MAX) * u16::from(t as u8 - last.ratio)
+                            / u16::from(next.ratio - last.ratio);
+                        ((u16::from(u8::MAX) * i as u16 + a) / (gradient.records.len() - 1) as u16)
+                            as u8
+                    }
                 };
-                colors[t * 4] = lerp(
-                    convert(last_record.color.r as f32),
-                    convert(next_record.color.r as f32),
-                    a,
-                ) as u8;
-                colors[(t * 4) + 1] = lerp(
-                    convert(last_record.color.g as f32),
-                    convert(next_record.color.g as f32),
-                    a,
-                ) as u8;
-                colors[(t * 4) + 2] = lerp(
-                    convert(last_record.color.b as f32),
-                    convert(next_record.color.b as f32),
-                    a,
-                ) as u8;
-                colors[(t * 4) + 3] =
-                    lerp(last_record.color.a as f32, next_record.color.a as f32, a) as u8;
             }
 
             colors
@@ -214,7 +213,7 @@ impl PendingDrawType {
                 label: None,
                 size: wgpu::Extent3d {
                     width: GRADIENT_SIZE as u32,
-                    height: 1,
+                    height: 2,
                     depth_or_array_layers: 1,
                 },
                 mip_level_count: 1,
