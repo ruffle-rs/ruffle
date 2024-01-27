@@ -10,15 +10,14 @@ import flash.events.Event;
 var file = new FileReference();
 
 function dump(file) {
-    try {
-        trace("file.name: " + file.name);
-    } catch (e) {
-        trace("file.name threw: " + e);
-    }
-    try {
-        trace("file.size: " + file.size);
-    } catch (e) {
-        trace("file.size threw: " + e);
+    var properties = ["creationDate", "creator", "data", /* AIR */ "extension", "modificationDate", "name", "size", "type"];
+
+    for each (var property in properties) {
+        try {
+            trace("file['" + property + "']: " + file[property]);
+        } catch (e) {
+            trace("file['" + property + "'] throw: " + e);
+        }
     }
 }
 
