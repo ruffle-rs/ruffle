@@ -12,7 +12,7 @@ pub fn get_version<'gc>(
     // TODO: Report the correct OS instead of always reporting Linux
     Ok(AvmString::new_utf8(
         activation.context.gc_context,
-        format!("LNX {},0,0,0", activation.avm2().player_version),
+        format!("WIN {},0,0,0", activation.avm2().player_version),
     )
     .into())
 }
