@@ -54,7 +54,7 @@ thread_local! {
     /// issues with lifetimes and type parameters (which cannot be exported with wasm-bindgen).
     static INSTANCES: RefCell<Arena<RefCell<RuffleInstance>>> = RefCell::new(Arena::new());
 
-    static CURRENT_CONTEXT: RefCell<Option<*mut UpdateContext<'static, 'static>>> = RefCell::new(None);
+    static CURRENT_CONTEXT: RefCell<Option<*mut UpdateContext<'static, 'static>>> = const { RefCell::new(None) };
 }
 
 type AnimationHandler = Closure<dyn FnMut(f64)>;
