@@ -65,6 +65,13 @@ impl<T: Coordinate> Rectangle<T> {
         y_max: T::INVALID,
     };
 
+    pub const ZERO: Self = Self {
+        x_min: T::ZERO,
+        x_max: T::ZERO,
+        y_min: T::ZERO,
+        y_max: T::ZERO,
+    };
+
     #[inline]
     #[must_use]
     pub fn is_valid(&self) -> bool {
