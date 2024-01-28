@@ -3,7 +3,7 @@ package flash.system {
     public final class Capabilities {
         public static function get os(): String {
             stub_getter("flash.system.Capabilities", "os");
-            return "Linux 5.10.49"
+            return "Windows 8"
         }
     
         public native static function get playerType(): String;
@@ -20,7 +20,7 @@ package flash.system {
         
         public static function get manufacturer(): String {
             stub_getter("flash.system.Capabilities", "manufacturer");
-            return "Adobe Linux"
+            return "Adobe Windows"
         }
         public static function get language(): String {
             stub_getter("flash.system.Capabilities", "language");
