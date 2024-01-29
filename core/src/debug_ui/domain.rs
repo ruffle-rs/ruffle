@@ -1,8 +1,11 @@
-use egui::{collapsing_header::CollapsingState, TextEdit, Ui, Window};
+use egui::{collapsing_header::CollapsingState, CollapsingHeader, TextEdit, Ui, Window};
 
 use crate::{avm2::Domain, context::UpdateContext};
 
-use super::{handle::DomainHandle, Message};
+use super::{
+    handle::{AVM2ObjectHandle, DomainHandle},
+    Message,
+};
 
 #[derive(Debug, Default)]
 pub struct DomainListWindow {
@@ -58,10 +61,20 @@ impl DomainListWindow {
                     if !class_name.to_string().to_ascii_lowercase().contains(search) {
                         continue;
                     }
-                    let response = ui.button(format!("Class {class_name}"));
-                    if response.clicked() {
-                        // TODO - display some kind of class info window
-                    }
+
+                    CollapsingHeader::new(format!("Class {class_name}"))
+                        .id_source(ui.id().with(class.as_ptr()))
+                        .show(ui, |ui| {
+                            for class_obj in class.read().class_objects() {
+                                let button = ui.button(format!("{class_obj:?}"));
+                                if button.clicked() {
+                                    messages.push(Message::TrackAVM2Object(AVM2ObjectHandle::new(
+                                        context,
+                                        (*class_obj).into(),
+                                    )));
+                                }
+                            }
+                        });
                 }
                 drop(class_props);
 
