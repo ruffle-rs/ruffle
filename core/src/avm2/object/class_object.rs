@@ -232,6 +232,10 @@ impl<'gc> ClassObject<'gc> {
             .write(activation.context.gc_context)
             .instance_scope = instance_scope;
 
+        class
+            .write(activation.context.gc_context)
+            .add_class_object(class_object);
+
         Ok(class_object)
     }
 

@@ -158,6 +158,12 @@ pub struct Class<'gc> {
     /// System defined classes are allowed to have illegal trait configurations
     /// without throwing a VerifyError.
     is_system: bool,
+
+    /// The ClassObjects for this class.
+    /// In almost all cases, this will either be empty or have a single object.
+    /// However, a swf can run `newclass` multiple times on the same class
+    /// to create multiple `ClassObjects`.
+    class_objects: Vec<ClassObject<'gc>>,
 }
 
 /// Allows using a `GcCell<'gc, Class<'gc>>` as a HashMap key,
@@ -218,6 +224,7 @@ impl<'gc> Class<'gc> {
                 traits_loaded: true,
                 is_system: true,
                 applications: FnvHashMap::default(),
+                class_objects: Vec::new(),
             },
         )
     }
@@ -278,6 +285,14 @@ impl<'gc> Class<'gc> {
     /// Set the attributes of the class (sealed/final/interface status).
     pub fn set_attributes(&mut self, attributes: ClassAttributes) {
         self.attributes = attributes;
+    }
+
+    pub fn add_class_object(&mut self, class_object: ClassObject<'gc>) {
+        self.class_objects.push(class_object);
+    }
+
+    pub fn class_objects(&self) -> &[ClassObject<'gc>] {
+        &self.class_objects
     }
 
     /// Construct a class from a `TranslationUnit` and its class index.
@@ -399,6 +414,7 @@ impl<'gc> Class<'gc> {
                 traits_loaded: false,
                 is_system: false,
                 applications: Default::default(),
+                class_objects: Vec::new(),
             },
         ))
     }
@@ -569,6 +585,7 @@ impl<'gc> Class<'gc> {
                 traits_loaded: true,
                 is_system: false,
                 applications: Default::default(),
+                class_objects: Vec::new(),
             },
         ))
     }
