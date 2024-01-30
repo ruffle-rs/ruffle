@@ -337,18 +337,31 @@ impl<'gc> ClipEvent<'gc> {
 /// Control inputs to a text field
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Deserialize)]
 pub enum TextControlCode {
-    // TODO: Add control codes for Ctrl+Arrows and Home/End keys
     MoveLeft,
+    MoveLeftWord,
+    MoveLeftLine,
+    MoveLeftDocument,
     MoveRight,
+    MoveRightWord,
+    MoveRightLine,
+    MoveRightDocument,
     SelectLeft,
+    SelectLeftWord,
+    SelectLeftLine,
+    SelectLeftDocument,
     SelectRight,
+    SelectRightWord,
+    SelectRightLine,
+    SelectRightDocument,
     SelectAll,
     Copy,
     Paste,
     Cut,
     Backspace,
+    BackspaceWord,
     Enter,
     Delete,
+    DeleteWord,
 }
 
 impl TextControlCode {
@@ -356,7 +369,13 @@ impl TextControlCode {
     pub fn is_edit_input(self) -> bool {
         matches!(
             self,
-            Self::Paste | Self::Cut | Self::Backspace | Self::Enter | Self::Delete
+            Self::Paste
+                | Self::Cut
+                | Self::Enter
+                | Self::Backspace
+                | Self::BackspaceWord
+                | Self::Delete
+                | Self::DeleteWord
         )
     }
 }

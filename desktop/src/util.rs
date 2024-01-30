@@ -11,7 +11,6 @@ use winit::keyboard::{Key, KeyLocation, NamedKey};
 
 /// Converts a winit event to a Ruffle `TextControlCode`.
 /// Returns `None` if there is no match.
-/// TODO: Handle Ctrl+Arrows and Home/End keys
 pub fn winit_to_ruffle_text_control(
     event: &KeyEvent,
     modifiers: &Modifiers,
@@ -19,34 +18,40 @@ pub fn winit_to_ruffle_text_control(
     let shift = modifiers.state().shift_key();
     let ctrl_cmd = modifiers.state().control_key()
         || (modifiers.state().super_key() && cfg!(target_os = "macos"));
-    if ctrl_cmd {
-        match event.logical_key.as_ref() {
-            Key::Character("a") => Some(TextControlCode::SelectAll),
-            Key::Character("c") => Some(TextControlCode::Copy),
-            Key::Character("v") => Some(TextControlCode::Paste),
-            Key::Character("x") => Some(TextControlCode::Cut),
-            _ => None,
+    match event.logical_key.as_ref() {
+        Key::Character("a") if ctrl_cmd => Some(TextControlCode::SelectAll),
+        Key::Character("c") if ctrl_cmd => Some(TextControlCode::Copy),
+        Key::Character("v") if ctrl_cmd => Some(TextControlCode::Paste),
+        Key::Character("x") if ctrl_cmd => Some(TextControlCode::Cut),
+        Key::Named(NamedKey::Backspace) if ctrl_cmd => Some(TextControlCode::BackspaceWord),
+        Key::Named(NamedKey::Backspace) => Some(TextControlCode::Backspace),
+        Key::Named(NamedKey::Delete) if ctrl_cmd => Some(TextControlCode::DeleteWord),
+        Key::Named(NamedKey::Delete) => Some(TextControlCode::Delete),
+        Key::Named(NamedKey::ArrowLeft) if ctrl_cmd && shift => {
+            Some(TextControlCode::SelectLeftWord)
         }
-    } else {
-        match event.logical_key.as_ref() {
-            Key::Named(NamedKey::Backspace) => Some(TextControlCode::Backspace),
-            Key::Named(NamedKey::Delete) => Some(TextControlCode::Delete),
-            Key::Named(NamedKey::ArrowLeft) => {
-                if shift {
-                    Some(TextControlCode::SelectLeft)
-                } else {
-                    Some(TextControlCode::MoveLeft)
-                }
-            }
-            Key::Named(NamedKey::ArrowRight) => {
-                if shift {
-                    Some(TextControlCode::SelectRight)
-                } else {
-                    Some(TextControlCode::MoveRight)
-                }
-            }
-            _ => None,
+        Key::Named(NamedKey::ArrowLeft) if ctrl_cmd => Some(TextControlCode::MoveLeftWord),
+        Key::Named(NamedKey::ArrowLeft) if shift => Some(TextControlCode::SelectLeft),
+        Key::Named(NamedKey::ArrowLeft) => Some(TextControlCode::MoveLeft),
+        Key::Named(NamedKey::ArrowRight) if ctrl_cmd && shift => {
+            Some(TextControlCode::SelectRightWord)
         }
+        Key::Named(NamedKey::ArrowRight) if ctrl_cmd => Some(TextControlCode::MoveRightWord),
+        Key::Named(NamedKey::ArrowRight) if shift => Some(TextControlCode::SelectRight),
+        Key::Named(NamedKey::ArrowRight) => Some(TextControlCode::MoveRight),
+        Key::Named(NamedKey::Home) if ctrl_cmd && shift => {
+            Some(TextControlCode::SelectLeftDocument)
+        }
+        Key::Named(NamedKey::Home) if ctrl_cmd => Some(TextControlCode::MoveLeftDocument),
+        Key::Named(NamedKey::Home) if shift => Some(TextControlCode::SelectLeftLine),
+        Key::Named(NamedKey::Home) => Some(TextControlCode::MoveLeftLine),
+        Key::Named(NamedKey::End) if ctrl_cmd && shift => {
+            Some(TextControlCode::SelectRightDocument)
+        }
+        Key::Named(NamedKey::End) if ctrl_cmd => Some(TextControlCode::MoveRightDocument),
+        Key::Named(NamedKey::End) if shift => Some(TextControlCode::SelectRightLine),
+        Key::Named(NamedKey::End) => Some(TextControlCode::MoveRightLine),
+        _ => None,
     }
 }
 
