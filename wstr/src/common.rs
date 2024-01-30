@@ -320,7 +320,7 @@ impl WStr {
 
     /// Returns `true` is the string contains only LATIN1 characters.
     ///
-    /// Note that this doesn't necessarily means that `self.is_wide()` is `false`.
+    /// Note that this doesn't necessarily mean that `self.is_wide()` is `false`.
     #[inline]
     pub fn is_latin1(&self) -> bool {
         super::ops::str_is_latin1(self)
