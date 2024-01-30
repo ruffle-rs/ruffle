@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: AurorNZ/paths-filter@v3
+      - uses: AurorNZ/paths-filter@v4
         id: filter
         with:
           filters: |
