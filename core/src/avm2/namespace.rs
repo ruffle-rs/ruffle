@@ -46,8 +46,10 @@ fn strip_version_mark(url: &WStr) -> Option<(&WStr, ApiVersion)> {
             // We treat this as `AllVersions`
             let version = if chr >= WEIRD_START_MARK {
                 // Note that is an index into the ApiVersion enum, *not* an SWF version
-                ApiVersion::from_usize(chr - WEIRD_START_MARK)
-                    .unwrap_or_else(|| panic!("Bad version mark {chr}"))
+                // If it is out of range, we treat it as `AllVersions` as
+                // https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/AvmCore.cpp#L5850
+                // because some SWFs have invalid version marks for obfuscation purposes
+                ApiVersion::from_usize(chr - WEIRD_START_MARK).unwrap_or(ApiVersion::AllVersions)
             } else {
                 ApiVersion::AllVersions
             };
@@ -153,10 +155,8 @@ impl<'gc> Namespace<'gc> {
             let stripped = strip_version_mark(namespace_name.as_wstr());
             let has_version_mark = stripped.is_some();
             if let Some((stripped, version)) = stripped {
-                assert!(
-                    is_playerglobals,
-                    "Found versioned url {namespace_name:?} in non-playerglobals domain"
-                );
+                // Ignore if versioned url is in non-playerglobals domain as avmplus does
+                // https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/AbcParser.cpp#L1510
                 let stripped_string = AvmString::new(context.gc_context, stripped);
                 namespace_name = context.interner.intern(context.gc_context, stripped_string);
                 api_version = version;
