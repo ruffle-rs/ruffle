@@ -1934,7 +1934,6 @@ fn web_key_to_codepoint(key: &str) -> Option<char> {
 
 /// Convert a web `KeyboardEvent.key` value to a Ruffle `TextControlCode`,
 /// given the states of the modifier keys. Return `None` if there is no match.
-/// TODO: Handle Ctrl+Arrows and Home/End keys
 pub fn web_to_ruffle_text_control(
     key: &str,
     ctrl_key: bool,
@@ -1957,22 +1956,26 @@ pub fn web_to_ruffle_text_control(
         }
     } else {
         match key {
+            "Delete" if ctrl_key => Some(TextControlCode::DeleteWord),
             "Delete" => Some(TextControlCode::Delete),
+            "Backspace" if ctrl_key => Some(TextControlCode::BackspaceWord),
             "Backspace" => Some(TextControlCode::Backspace),
-            "ArrowLeft" => {
-                if shift_key {
-                    Some(TextControlCode::SelectLeft)
-                } else {
-                    Some(TextControlCode::MoveLeft)
-                }
-            }
-            "ArrowRight" => {
-                if shift_key {
-                    Some(TextControlCode::SelectRight)
-                } else {
-                    Some(TextControlCode::MoveRight)
-                }
-            }
+            "ArrowLeft" if ctrl_key && shift_key => Some(TextControlCode::SelectLeftWord),
+            "ArrowLeft" if ctrl_key => Some(TextControlCode::MoveLeftWord),
+            "ArrowLeft" if shift_key => Some(TextControlCode::SelectLeft),
+            "ArrowLeft" => Some(TextControlCode::MoveLeft),
+            "ArrowRight" if ctrl_key && shift_key => Some(TextControlCode::SelectRightWord),
+            "ArrowRight" if ctrl_key => Some(TextControlCode::MoveRightWord),
+            "ArrowRight" if shift_key => Some(TextControlCode::SelectRight),
+            "ArrowRight" => Some(TextControlCode::MoveRight),
+            "Home" if ctrl_key && shift_key => Some(TextControlCode::SelectLeftDocument),
+            "Home" if ctrl_key => Some(TextControlCode::MoveLeftDocument),
+            "Home" if shift_key => Some(TextControlCode::SelectLeftLine),
+            "Home" => Some(TextControlCode::MoveLeftLine),
+            "End" if ctrl_key && shift_key => Some(TextControlCode::SelectRightDocument),
+            "End" if ctrl_key => Some(TextControlCode::MoveRightDocument),
+            "End" if shift_key => Some(TextControlCode::SelectRightLine),
+            "End" => Some(TextControlCode::MoveRightLine),
             _ => None,
         }
     }
