@@ -35,9 +35,11 @@ use gc_arena::{Collect, Gc, GcCell, Mutation};
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::shape_utils::DrawCommand;
 use ruffle_render::transform::Transform;
+use ruffle_wstr::WStrToUtf8;
 use std::collections::VecDeque;
 use std::{cell::Ref, cell::RefMut, sync::Arc};
 use swf::{Color, ColorTransform, Twips};
+use unic_segment::WordBoundIndices;
 
 use super::interactive::Avm2MousePick;
 
@@ -1368,9 +1370,12 @@ impl<'gc> EditText<'gc> {
             let mut changed = false;
             let is_selectable = self.is_selectable();
             match control_code {
-                TextControlCode::MoveLeft => {
-                    let new_pos = if selection.is_caret() && selection.to > 0 {
-                        string_utils::prev_char_boundary(&self.text(), selection.to)
+                TextControlCode::MoveLeft
+                | TextControlCode::MoveLeftWord
+                | TextControlCode::MoveLeftLine
+                | TextControlCode::MoveLeftDocument => {
+                    let new_pos = if selection.is_caret() {
+                        self.find_new_position(control_code, selection.to)
                     } else {
                         selection.start()
                     };
@@ -1379,9 +1384,12 @@ impl<'gc> EditText<'gc> {
                         context.gc_context,
                     );
                 }
-                TextControlCode::MoveRight => {
+                TextControlCode::MoveRight
+                | TextControlCode::MoveRightWord
+                | TextControlCode::MoveRightLine
+                | TextControlCode::MoveRightDocument => {
                     let new_pos = if selection.is_caret() && selection.to < self.text().len() {
-                        string_utils::next_char_boundary(&self.text(), selection.to)
+                        self.find_new_position(control_code, selection.to)
                     } else {
                         selection.end()
                     };
@@ -1390,18 +1398,24 @@ impl<'gc> EditText<'gc> {
                         context.gc_context,
                     );
                 }
-                TextControlCode::SelectLeft => {
+                TextControlCode::SelectLeft
+                | TextControlCode::SelectLeftWord
+                | TextControlCode::SelectLeftLine
+                | TextControlCode::SelectLeftDocument => {
                     if is_selectable && selection.to > 0 {
-                        let new_pos = string_utils::prev_char_boundary(&self.text(), selection.to);
+                        let new_pos = self.find_new_position(control_code, selection.to);
                         self.set_selection(
                             Some(TextSelection::for_range(selection.from, new_pos)),
                             context.gc_context,
                         );
                     }
                 }
-                TextControlCode::SelectRight => {
+                TextControlCode::SelectRight
+                | TextControlCode::SelectRightWord
+                | TextControlCode::SelectRightLine
+                | TextControlCode::SelectRightDocument => {
                     if is_selectable && selection.to < self.text().len() {
-                        let new_pos = string_utils::next_char_boundary(&self.text(), selection.to);
+                        let new_pos = self.find_new_position(control_code, selection.to);
                         self.set_selection(
                             Some(TextSelection::for_range(selection.from, new_pos)),
                             context.gc_context,
@@ -1477,7 +1491,12 @@ impl<'gc> EditText<'gc> {
                         changed = true;
                     }
                 }
-                TextControlCode::Backspace | TextControlCode::Delete if !selection.is_caret() => {
+                TextControlCode::Backspace
+                | TextControlCode::BackspaceWord
+                | TextControlCode::Delete
+                | TextControlCode::DeleteWord
+                    if !selection.is_caret() =>
+                {
                     // Backspace or delete with multiple characters selected
                     self.replace_text(selection.start(), selection.end(), WStr::empty(), context);
                     self.set_selection(
@@ -1486,12 +1505,11 @@ impl<'gc> EditText<'gc> {
                     );
                     changed = true;
                 }
-                TextControlCode::Backspace => {
+                TextControlCode::Backspace | TextControlCode::BackspaceWord => {
                     // Backspace with caret
                     if selection.start() > 0 {
-                        // Delete previous character
-                        let text = self.text();
-                        let start = string_utils::prev_char_boundary(&text, selection.start());
+                        // Delete previous character(s)
+                        let start = self.find_new_position(control_code, selection.start());
                         self.replace_text(start, selection.start(), WStr::empty(), context);
                         self.set_selection(
                             Some(TextSelection::for_position(start)),
@@ -1500,12 +1518,11 @@ impl<'gc> EditText<'gc> {
                         changed = true;
                     }
                 }
-                TextControlCode::Delete => {
+                TextControlCode::Delete | TextControlCode::DeleteWord => {
                     // Delete with caret
                     if selection.end() < self.text_length() {
-                        // Delete next character
-                        let text = self.text();
-                        let end = string_utils::next_char_boundary(&text, selection.start());
+                        // Delete next character(s)
+                        let end = self.find_new_position(control_code, selection.start());
                         self.replace_text(selection.start(), end, WStr::empty(), context);
                         // No need to change selection, reset it to prevent caret from blinking
                         self.reset_selection_blinking(context.gc_context);
@@ -1524,6 +1541,106 @@ impl<'gc> EditText<'gc> {
                 self.on_changed(&mut activation);
             }
         }
+    }
+
+    /// Find the new position in the text for the given control code.
+    ///
+    /// * For selection codes it will represent the "to" part of the selection.
+    /// * For left/right moves it will represent the final caret position.
+    /// * For backspace/delete it will represent the position to which the text should be deleted.
+    fn find_new_position(self, control_code: TextControlCode, current_pos: usize) -> usize {
+        match control_code {
+            TextControlCode::SelectRight | TextControlCode::MoveRight | TextControlCode::Delete => {
+                string_utils::next_char_boundary(&self.text(), current_pos)
+            }
+            TextControlCode::SelectLeft
+            | TextControlCode::MoveLeft
+            | TextControlCode::Backspace => {
+                string_utils::prev_char_boundary(&self.text(), current_pos)
+            }
+            TextControlCode::SelectRightWord
+            | TextControlCode::MoveRightWord
+            | TextControlCode::DeleteWord => self.find_next_word_boundary(current_pos),
+            TextControlCode::SelectLeftWord
+            | TextControlCode::MoveLeftWord
+            | TextControlCode::BackspaceWord => self.find_prev_word_boundary(current_pos),
+            TextControlCode::SelectRightLine | TextControlCode::MoveRightLine => {
+                self.find_next_line_boundary(current_pos)
+            }
+            TextControlCode::SelectLeftLine | TextControlCode::MoveLeftLine => {
+                self.find_prev_line_boundary(current_pos)
+            }
+            TextControlCode::SelectRightDocument | TextControlCode::MoveRightDocument => {
+                self.text().len()
+            }
+            TextControlCode::SelectLeftDocument | TextControlCode::MoveLeftDocument => 0,
+            _ => unreachable!(),
+        }
+    }
+
+    /// Find the nearest word boundary before `pos`,
+    /// which is applicable for selection.
+    ///
+    /// This algorithm is based on [UAX #29](https://unicode.org/reports/tr29/).
+    fn find_prev_word_boundary(self, pos: usize) -> usize {
+        let head = &self.text()[..pos];
+        let to_utf8 = WStrToUtf8::new(head);
+        WordBoundIndices::new(&to_utf8.to_utf8_lossy())
+            .rev()
+            .find(|(_, span)| !span.trim().is_empty())
+            .map(|(position, _)| position)
+            .and_then(|utf8_index| to_utf8.utf16_index(utf8_index))
+            .unwrap_or(0)
+    }
+
+    /// Find the nearest word boundary after `pos`,
+    /// which is applicable for selection.
+    ///
+    /// This algorithm is based on [UAX #29](https://unicode.org/reports/tr29/).
+    fn find_next_word_boundary(self, pos: usize) -> usize {
+        let tail = &self.text()[pos..];
+        let to_utf8 = WStrToUtf8::new(tail);
+        WordBoundIndices::new(&to_utf8.to_utf8_lossy())
+            .skip_while(|(_, span)| span.trim().is_empty())
+            .nth(1)
+            .map(|p| p.0)
+            .and_then(|utf8_index| to_utf8.utf16_index(utf8_index))
+            .map(|utf16_index| pos + utf16_index)
+            .unwrap_or_else(|| self.text().len())
+    }
+
+    /// Find the nearest line boundary before or at `pos`.
+    fn find_prev_line_boundary(self, pos: usize) -> usize {
+        // TODO take into account the text layout instead of relying on newlines only
+        if pos == 0 {
+            return 0;
+        }
+
+        let mut line_break_pos = pos;
+        while line_break_pos > 0 && !self.is_newline_at(line_break_pos - 1) {
+            line_break_pos -= 1;
+        }
+
+        line_break_pos
+    }
+
+    /// Find the nearest line boundary after or at `pos`.
+    fn find_next_line_boundary(self, pos: usize) -> usize {
+        // TODO take into account the text layout instead of relying on newlines only
+        let len = self.text().len();
+        if pos >= len {
+            return len;
+        }
+
+        let mut line_break_pos = pos;
+        while line_break_pos < len && !self.is_newline_at(line_break_pos) {
+            line_break_pos += 1;
+        }
+        line_break_pos
+    }
+
+    fn is_newline_at(self, pos: usize) -> bool {
+        self.text().get(pos).unwrap_or(0) == '\n' as u16
     }
 
     pub fn text_input(self, character: char, context: &mut UpdateContext<'_, 'gc>) {
