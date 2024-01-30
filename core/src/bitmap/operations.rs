@@ -1450,7 +1450,7 @@ pub fn draw<'gc>(
             let tx = transform.matrix.tx.to_pixels().floor() as i32;
             let ty = transform.matrix.ty.to_pixels().floor() as i32;
 
-            let (cx, cy, cw, ch) = if let Some(clip_rect) = clip_rect {
+            let (cx, cy, cw, ch) = if let Some(clip_rect) = &clip_rect {
                 (
                     clip_rect.x_min.to_pixels().floor() as i32,
                     clip_rect.y_min.to_pixels().floor() as i32,
@@ -1468,27 +1468,34 @@ pub fn draw<'gc>(
                 &mut source_region,
             );
 
-            if transform.color_transform != ColorTransform::default() {
-                blend_and_transform(
-                    context,
-                    *source,
-                    target,
-                    source_region,
-                    dest_region,
-                    &transform.color_transform,
-                );
-            } else {
-                copy_on_cpu(
-                    context.gc_context,
-                    context.renderer,
-                    *source,
-                    target,
-                    source_region,
-                    dest_region,
-                    source.transparency(), // If transparent source, blend the pixels. Otherwise they'll be 0xFF alpha and nothing to blend.
-                );
+            let source_is_cpu = source.can_read(source_region);
+            let dest_is_cpu =
+                target.can_read(PixelRegion::for_whole_size(target.width(), target.height()));
+
+            // If it's on the gpu, fall through and let normal gpu rendering do its thing
+            if source_is_cpu && dest_is_cpu {
+                if transform.color_transform != ColorTransform::default() {
+                    blend_and_transform(
+                        context,
+                        *source,
+                        target,
+                        source_region,
+                        dest_region,
+                        &transform.color_transform,
+                    );
+                } else {
+                    copy_on_cpu(
+                        context.gc_context,
+                        context.renderer,
+                        *source,
+                        target,
+                        source_region,
+                        dest_region,
+                        source.transparency(), // If transparent source, blend the pixels. Otherwise they'll be 0xFF alpha and nothing to blend.
+                    );
+                }
+                return Ok(());
             }
-            return Ok(());
         }
     }
 
