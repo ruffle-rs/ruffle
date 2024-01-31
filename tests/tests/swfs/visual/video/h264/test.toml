@@ -1,0 +1,10 @@
+num_frames = 2
+num_ticks = 1
+
+[image_comparisons.output]
+tolerance = 0
+max_outliers = 1500
+
+[player_options]
+with_renderer = { optional = false, sample_count = 1 }
+with_video = true
