@@ -154,7 +154,11 @@ pub fn random<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(activation.context.rng.gen_range(0.0f64..1.0f64).into())
+    // See https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/MathUtils.cpp#L1731C24-L1731C44
+    // This generated a restricted set of 'f64' values, which some SWFs implicitly rely on.
+    const MAX_VAL: u32 = 0x7FFFFFFF;
+    let rand = activation.context.rng.gen_range(0..MAX_VAL);
+    Ok(((rand as f64) / (MAX_VAL as f64 + 1f64)).into())
 }
 
 pub fn create<'gc>(
