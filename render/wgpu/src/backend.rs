@@ -39,10 +39,6 @@ use swf::Color;
 use tracing::instrument;
 use wgpu::SubmissionIndex;
 
-/// How many times a texture must be written to & read back from,
-/// before it's automatically allocated a buffer on each write.
-const TEXTURE_READS_BEFORE_PROMOTION: u8 = 5;
-
 pub struct WgpuRenderBackend<T: RenderTarget> {
     pub(crate) descriptors: Arc<Descriptors>,
     target: T,
@@ -369,29 +365,6 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                 buffer: MaybeOwnedBuffer::Owned(..),
                 ..
             }) => unreachable!("Buffer must be Borrowed as it was set to be Borrowed earlier"),
-        }
-    }
-
-    fn get_texture_buffer_info(
-        &self,
-        texture: &Texture,
-        copy_area: PixelRegion,
-    ) -> Option<TextureBufferInfo> {
-        if texture.copy_count.get() >= TEXTURE_READS_BEFORE_PROMOTION {
-            let copy_dimensions = BufferDimensions::new(
-                texture.texture.width() as usize,
-                texture.texture.height() as usize,
-                texture.texture.format(),
-            );
-            let buffer = self
-                .offscreen_buffer_pool
-                .take(&self.descriptors, copy_dimensions.clone());
-            Some(TextureBufferInfo {
-                buffer: MaybeOwnedBuffer::Borrowed(buffer, copy_dimensions),
-                copy_area,
-            })
-        } else {
-            None
         }
     }
 }
@@ -754,13 +727,11 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             depth_or_array_layers: 1,
         };
 
-        let buffer_info = self.get_texture_buffer_info(texture, bounds);
-
         let mut target = TextureTarget {
             size: extent,
             texture: texture.texture.clone(),
             format: wgpu::TextureFormat::Rgba8Unorm,
-            buffer: buffer_info,
+            buffer: None,
         };
 
         let frame_output = target
@@ -787,18 +758,8 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             &mut self.offscreen_texture_pool,
         );
 
-        let index = if target.buffer.is_some() {
-            // If it has a buffer, let's prioritise submitting it right away because we'll likely want to read it back
-            Some(
-                self.active_frame
-                    .submit_for_target(&self.descriptors, &target, frame_output),
-            )
-        } else {
-            self.active_frame.maybe_flush(&self.descriptors);
-            None
-        };
-
-        Some(self.make_queue_sync_handle(target, index, handle, bounds))
+        self.active_frame.maybe_flush(&self.descriptors);
+        Some(self.make_queue_sync_handle(target, None, handle, bounds))
     }
 
     fn is_filter_supported(&self, filter: &Filter) -> bool {
@@ -835,9 +796,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             dest_texture.texture.height(),
         );
 
-        let buffer_info = self.get_texture_buffer_info(dest_texture, copy_area);
-
-        let mut target = TextureTarget {
+        let target = TextureTarget {
             size: wgpu::Extent3d {
                 width: dest_texture.texture.width(),
                 height: dest_texture.texture.height(),
@@ -845,11 +804,8 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             },
             texture: dest_texture.texture.clone(),
             format: wgpu::TextureFormat::Rgba8Unorm,
-            buffer: buffer_info,
+            buffer: None,
         };
-        let frame_output = target
-            .get_next_texture()
-            .expect("TextureTargetFrame.get_next_texture is infallible");
 
         let applied_filter = self.descriptors.filters.apply(
             &self.descriptors,
@@ -887,18 +843,8 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             },
         );
 
-        let index = if target.buffer.is_some() {
-            // If it has a buffer, let's prioritise submitting it right away because we'll likely want to read it back
-            Some(
-                self.active_frame
-                    .submit_for_target(&self.descriptors, &target, frame_output),
-            )
-        } else {
-            self.active_frame.maybe_flush(&self.descriptors);
-            None
-        };
-
-        Some(self.make_queue_sync_handle(target, index, destination, copy_area))
+        self.active_frame.maybe_flush(&self.descriptors);
+        Some(self.make_queue_sync_handle(target, None, destination, copy_area))
     }
 
     fn compile_pixelbender_shader(
@@ -981,13 +927,22 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             depth_or_array_layers: 1,
         };
 
-        let buffer_info = self.get_texture_buffer_info(
-            target_texture,
-            PixelRegion::for_whole_size(
+        let copy_dimensions = BufferDimensions::new(
+            target_texture.texture.width() as usize,
+            target_texture.texture.height() as usize,
+            target_texture.texture.format(),
+        );
+        let buffer_info = Some(TextureBufferInfo {
+            buffer: MaybeOwnedBuffer::Borrowed(
+                self.offscreen_buffer_pool
+                    .take(&self.descriptors, copy_dimensions.clone()),
+                copy_dimensions,
+            ),
+            copy_area: PixelRegion::for_whole_size(
                 target_texture.texture.width(),
                 target_texture.texture.height(),
             ),
-        );
+        });
 
         let mut texture_target = TextureTarget {
             size: extent,
@@ -1020,17 +975,11 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             &FilterSource::for_entire_texture(&target_texture.texture),
         )?;
 
-        let index = if texture_target.buffer.is_some() {
-            // If it has a buffer, let's prioritise submitting it right away because we'll likely want to read it back
-            Some(self.active_frame.submit_for_target(
-                &self.descriptors,
-                &texture_target,
-                frame_output,
-            ))
-        } else {
-            self.active_frame.maybe_flush(&self.descriptors);
-            None
-        };
+        let index = Some(self.active_frame.submit_for_target(
+            &self.descriptors,
+            &texture_target,
+            frame_output,
+        ));
 
         let sync_handle = self.make_queue_sync_handle(
             texture_target,
