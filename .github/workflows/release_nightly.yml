@@ -382,6 +382,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Safari build artifact
+        if: ${{ !matrix.demo }}
         uses: actions/upload-artifact@v4
         with:
           name: macos-safari
