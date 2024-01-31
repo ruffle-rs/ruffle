@@ -1,0 +1,74 @@
+num_ticks = 120
+
+# Because H.264 has B-frames (bidirectional prediction),
+# the order in which frames are decoded (contained in the
+# stream), and should be put on screen, is not the same.
+#
+# In the case of this 2 FPS video:
+#
+#  decode_time + presentation_offset = presentation_time
+#     0 + 2500 = 2500 <- no frame to show yet
+#   500 + 1000 = 1500 <- no frame to show yet
+#  1000 +    0 = 1000 <- catching up point!
+#  1500 +  500 = 2000
+#  2000 + 2500 = 4500
+#  2500 + 1000 = 3500
+#
+# So, there is a constant 2-frame delay between the decoded
+# and presented frames.
+#
+# And, since the SWF is 20 FPS, it means that for the first
+# 20 frames, we're not guaranteed a video frame to show.
+# Anyway, keeping them here for reference:
+
+#[image_comparisons.frame0]
+#tolerance = 2
+#trigger = 5
+
+#[image_comparisons.frame1]
+#tolerance = 2
+#trigger = 15
+
+[image_comparisons.frame2]
+tolerance = 2
+trigger = 25
+
+[image_comparisons.frame3]
+tolerance = 2
+trigger = 35
+
+[image_comparisons.frame4]
+tolerance = 2
+trigger = 45
+
+[image_comparisons.frame5]
+tolerance = 2
+trigger = 55
+
+[image_comparisons.frame6]
+tolerance = 2
+trigger = 65
+
+[image_comparisons.frame7]
+tolerance = 2
+trigger = 75
+
+[image_comparisons.frame8]
+tolerance = 2
+trigger = 85
+
+[image_comparisons.frame9]
+tolerance = 2
+trigger = 95
+
+[image_comparisons.frame10]
+tolerance = 2
+trigger = 105
+
+[image_comparisons.frame11]
+tolerance = 2
+trigger = 115
+
+[player_options]
+with_renderer = { optional = false, sample_count = 1 }
+with_video = true
