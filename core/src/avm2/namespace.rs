@@ -32,7 +32,7 @@ enum NamespaceData<'gc> {
     Any,
 }
 
-fn strip_version_mark(url: &WStr) -> Option<(&WStr, ApiVersion)> {
+fn strip_version_mark(url: &WStr, is_playerglobals: bool) -> Option<(&WStr, ApiVersion)> {
     // See https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/AvmCore.h#L485
     const MIN_API_MARK: usize = 0xE000;
     const MAX_API_MARK: usize = 0xF8FF;
@@ -42,6 +42,16 @@ fn strip_version_mark(url: &WStr) -> Option<(&WStr, ApiVersion)> {
     if let Some(Ok(chr)) = url.chars().last() {
         let chr = chr as usize;
         if chr >= MIN_API_MARK && chr <= MAX_API_MARK {
+            if !is_playerglobals {
+                // Always return None for non-playerglobals to fall back to root api version as avmplus does
+                // https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/AbcParser.cpp#L1510
+                // Warn just for non-playerglobals with version marks
+                tracing::warn!(
+                    "Ignoring url {url:?} with version mark in non-playerglobals domain"
+                );
+                return None;
+            }
+
             // Note - sometimes asc.jar emits a version mark of 0xE000.
             // We treat this as `AllVersions`
             let version = if chr >= WEIRD_START_MARK {
@@ -150,13 +160,9 @@ impl<'gc> Namespace<'gc> {
                 .is_playerglobals_domain(context.avm2);
 
             let mut api_version = ApiVersion::AllVersions;
-            let stripped = strip_version_mark(namespace_name.as_wstr());
+            let stripped = strip_version_mark(namespace_name.as_wstr(), is_playerglobals);
             let has_version_mark = stripped.is_some();
             if let Some((stripped, version)) = stripped {
-                assert!(
-                    is_playerglobals,
-                    "Found versioned url {namespace_name:?} in non-playerglobals domain"
-                );
                 let stripped_string = AvmString::new(context.gc_context, stripped);
                 namespace_name = context.interner.intern(context.gc_context, stripped_string);
                 api_version = version;
