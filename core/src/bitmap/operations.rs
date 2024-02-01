@@ -1472,7 +1472,10 @@ pub fn draw<'gc>(
             let dest_is_cpu =
                 target.can_read(PixelRegion::for_whole_size(target.width(), target.height()));
 
-            // If it's on the gpu, fall through and let normal gpu rendering do its thing
+            // Now that we know which area of pixels is going to change...
+            // If that area exists on the CPU, perform the equivalent operation locally to avoid potential future readbacks
+            // Otherwise, continue as normal and do a full GPU draw
+            // (blend_and_transform and copy_on_cpu are 100% identical to a GPU draw under the conditions checked above)
             if source_is_cpu && dest_is_cpu {
                 if transform.color_transform != ColorTransform::default() {
                     blend_and_transform(
