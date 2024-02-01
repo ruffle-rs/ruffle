@@ -717,7 +717,34 @@ impl FormatSpans {
                             }
 
                             if let Some(size) = attribute(b"size") {
-                                format.size = size.parse().ok();
+                                // if the number starts with + or -, the size is relative
+                                let (prefix, size) = if size.starts_with(&[b'+', b'-'][..]) {
+                                    (Some(size.at(0) as u8), &size[1..])
+                                } else {
+                                    (None, &size[..])
+                                };
+
+                                // text is ignored from the first non-numeric character
+                                // (including the decimal separator)
+                                let first_foreign_char = size
+                                    .find(|c| c < '0' as u16 || c > '9' as u16)
+                                    .unwrap_or(size.len());
+                                let size = &size[0..first_foreign_char];
+
+                                let size: Option<f64> = size.parse().ok();
+
+                                if let Some(size) = size
+                                    .and_then(|size| match prefix {
+                                        Some(b'+') => format.size.map(|last_size| last_size + size),
+                                        Some(b'-') => format.size.map(|last_size| last_size - size),
+                                        _ => Some(size),
+                                    })
+                                    .map(|size| size.clamp(1.0, 127.0))
+                                {
+                                    format.size = Some(size);
+                                } else {
+                                    // malformed sizes are ignored
+                                }
                             }
 
                             if let Some(color) = attribute(b"color") {
