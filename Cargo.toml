@@ -48,7 +48,7 @@ tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 naga = { version = "0.19.0", features = ["wgsl-out"] }
 naga_oil = "0.13.0"
 wgpu = "0.19.1"
-egui = "0.25.0"
+egui = "0.26.0"
 clap = { version = "4.4.18", features = ["derive"] }
 anyhow = "1.0"
 
@@ -97,10 +97,3 @@ inherits = "release"
 
 [profile.web-wasm-extensions]
 inherits = "release"
-
-[patch.crates-io]
-# TODO: Replace on new egui update
-egui = { git = "https://github.com/emilk/egui", rev = "d319489479c371b15e6419d470551dae5d647396"}
-egui_extras = { git = "https://github.com/emilk/egui", rev = "d319489479c371b15e6419d470551dae5d647396"}
-egui-winit = { git = "https://github.com/emilk/egui", rev = "d319489479c371b15e6419d470551dae5d647396"}
-egui-wgpu = { git = "https://github.com/emilk/egui", rev = "d319489479c371b15e6419d470551dae5d647396"}

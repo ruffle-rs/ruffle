@@ -24,7 +24,7 @@ use winit::window::{Theme, Window};
 pub struct GuiController {
     descriptors: Arc<Descriptors>,
     egui_winit: egui_winit::State,
-    egui_renderer: egui_wgpu::renderer::Renderer,
+    egui_renderer: egui_wgpu::Renderer,
     gui: RuffleGui,
     window: Rc<Window>,
     last_update: Instant,
@@ -244,7 +244,7 @@ impl GuiController {
             .tessellate(full_output.shapes, full_output.pixels_per_point);
 
         let scale_factor = self.window.scale_factor() as f32;
-        let screen_descriptor = egui_wgpu::renderer::ScreenDescriptor {
+        let screen_descriptor = egui_wgpu::ScreenDescriptor {
             size_in_pixels: [self.size.width, self.size.height],
             pixels_per_point: scale_factor,
         };
