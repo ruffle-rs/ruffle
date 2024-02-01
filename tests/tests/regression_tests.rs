@@ -9,10 +9,12 @@ use anyhow::Context;
 use anyhow::Result;
 use libtest_mimic::{Arguments, Trial};
 use ruffle_test_framework::options::TestOptions;
+use ruffle_test_framework::runner::TestStatus;
 use ruffle_test_framework::test::Test;
 use ruffle_test_framework::vfs::{PhysicalFS, VfsPath};
 use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
 use std::path::Path;
+use std::thread::sleep;
 use walkdir::DirEntry;
 
 mod environment;
@@ -41,6 +43,19 @@ fn is_candidate(args: &Arguments, test_name: &str) -> bool {
 
 fn main() {
     let args = Arguments::from_args();
+
+    let _ = env_logger::Builder::from_env(
+        env_logger::Env::default().default_filter_or("info,wgpu_core=warn,wgpu_hal=warn"),
+    )
+    .format_timestamp(None)
+    .is_test(true)
+    .try_init();
+
+    let subscriber = tracing_subscriber::fmt::Subscriber::builder()
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .finish();
+    // Ignore error if it's already been set
+    let _ = tracing::subscriber::set_global_default(subscriber);
 
     let root = Path::new("tests/swfs");
     let mut tests: Vec<Trial> = walkdir::WalkDir::new(root)
@@ -102,7 +117,20 @@ fn run_test(args: &Arguments, file: DirEntry, name: String) -> Trial {
 
     let mut trial = Trial::test(test.name.to_string(), move || {
         let test = AssertUnwindSafe(test);
-        let unwind_result = catch_unwind(|| test.run(|_| Ok(()), |_| Ok(()), &NativeEnvironment));
+        let unwind_result = catch_unwind(|| {
+            let mut runner = test.create_test_runner(&NativeEnvironment)?;
+
+            loop {
+                runner.tick();
+                match runner.test()? {
+                    TestStatus::Continue => {}
+                    TestStatus::Sleep(duration) => sleep(duration),
+                    TestStatus::Finished => break,
+                }
+            }
+
+            Result::<_>::Ok(())
+        });
         if test.options.known_failure {
             match unwind_result {
                 Ok(Ok(())) => Err(

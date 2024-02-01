@@ -1,3 +1,4 @@
+mod context_menu;
 mod controller;
 mod movie;
 mod open_dialog;
@@ -8,6 +9,7 @@ use std::borrow::Cow;
 use url::Url;
 
 use crate::custom_event::RuffleEvent;
+use crate::gui::context_menu::ContextMenu;
 use crate::gui::open_dialog::OpenDialog;
 use crate::player::PlayerOptions;
 use chrono::DateTime;
@@ -68,7 +70,7 @@ pub struct RuffleGui {
     is_volume_visible: bool,
     volume_controls: VolumeControls,
     is_open_dialog_visible: bool,
-    context_menu: Vec<ruffle_core::ContextMenuItem>,
+    context_menu: Option<ContextMenu>,
     open_dialog: OpenDialog,
     locale: LanguageIdentifier,
     default_player_options: PlayerOptions,
@@ -97,7 +99,7 @@ impl RuffleGui {
             is_open_dialog_visible: false,
             was_suspended_before_debug: false,
 
-            context_menu: vec![],
+            context_menu: None,
             open_dialog: OpenDialog::new(
                 default_player_options.clone(),
                 default_path,
@@ -159,17 +161,21 @@ impl RuffleGui {
             self.volume_window(egui_ctx, None);
         }
 
-        if !self.context_menu.is_empty() {
-            self.context_menu(egui_ctx);
+        if let Some(context_menu) = &mut self.context_menu {
+            if !context_menu.show(egui_ctx, &self.event_loop) {
+                self.context_menu = None;
+            }
         }
     }
 
     pub fn show_context_menu(&mut self, menu: Vec<ruffle_core::ContextMenuItem>) {
-        self.context_menu = menu;
+        if !menu.is_empty() {
+            self.context_menu = Some(ContextMenu::new(menu));
+        }
     }
 
     pub fn is_context_menu_visible(&self) -> bool {
-        !self.context_menu.is_empty()
+        self.context_menu.is_some()
     }
 
     /// Notifies the GUI that a new player was created.
@@ -293,6 +299,12 @@ impl RuffleGui {
                             ui.close_menu();
                             if let Some(player) = &mut player {
                                 player.debug_ui().queue_message(DebugMessage::ShowKnownMovies);
+                            }
+                        }
+                        if Button::new(text(&self.locale, "debug-menu-open-domain-list")).ui(ui).clicked() {
+                            ui.close_menu();
+                            if let Some(player) = &mut player {
+                                player.debug_ui().queue_message(DebugMessage::ShowDomains);
                             }
                         }
                         if Button::new(text(&self.locale, "debug-menu-search-display-objects")).ui(ui).clicked() {
@@ -443,46 +455,6 @@ impl RuffleGui {
                     }
                 }
             });
-    }
-
-    /// Renders the right-click context menu.
-    fn context_menu(&mut self, egui_ctx: &egui::Context) {
-        let mut item_clicked = false;
-        let mut menu_visible = false;
-        // TODO: What is the proper way in egui to spawn a random context menu?
-        egui::CentralPanel::default()
-            .frame(Frame::none())
-            .show(egui_ctx, |_| {})
-            .response
-            .context_menu(|ui| {
-                menu_visible = true;
-                for (i, item) in self.context_menu.iter().enumerate() {
-                    if i != 0 && item.separator_before {
-                        ui.separator();
-                    }
-                    let clicked = if item.checked {
-                        Checkbox::new(&mut true, &item.caption).ui(ui).clicked()
-                    } else {
-                        let button = Button::new(&item.caption).wrap(false);
-
-                        ui.add_enabled(item.enabled, button).clicked()
-                    };
-                    if clicked {
-                        let _ = self
-                            .event_loop
-                            .send_event(RuffleEvent::ContextMenuItemClicked(i));
-                        item_clicked = true;
-                    }
-                }
-            });
-
-        if item_clicked
-            || !menu_visible
-            || egui_ctx.input_mut(|input| input.consume_key(Modifiers::NONE, Key::Escape))
-        {
-            // Hide menu.
-            self.context_menu.clear();
-        }
     }
 
     fn open_file(&mut self, ui: &mut egui::Ui) {

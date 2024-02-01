@@ -1,12 +1,12 @@
 //! AVM2 executables.
 
 use crate::avm2::activation::Activation;
-use crate::avm2::method::{BytecodeMethod, Method, NativeMethod};
+use crate::avm2::method::{BytecodeMethod, Method, NativeMethod, ParamConfig};
 use crate::avm2::object::{ClassObject, Object};
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::traits::TraitKind;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
+use crate::avm2::{Error, Multiname};
 use crate::string::WString;
 use gc_arena::{Collect, Gc};
 use std::fmt;
@@ -231,6 +231,27 @@ impl<'gc> Executable<'gc> {
             Executable::Action(BytecodeExecutable { method, .. }) => method.signature.len(),
         }
     }
+
+    pub fn signature(&self) -> &[ParamConfig<'gc>] {
+        match self {
+            Executable::Native(NativeExecutable { method, .. }) => &method.signature,
+            Executable::Action(BytecodeExecutable { method, .. }) => method.signature(),
+        }
+    }
+
+    pub fn is_variadic(&self) -> bool {
+        match self {
+            Executable::Native(NativeExecutable { method, .. }) => method.is_variadic,
+            Executable::Action(BytecodeExecutable { method, .. }) => method.is_variadic(),
+        }
+    }
+
+    pub fn return_type(&self) -> &Multiname<'gc> {
+        match self {
+            Executable::Native(NativeExecutable { method, .. }) => &method.return_type,
+            Executable::Action(BytecodeExecutable { method, .. }) => &method.return_type,
+        }
+    }
 }
 
 impl<'gc> fmt::Debug for Executable<'gc> {
@@ -329,14 +350,14 @@ pub fn display_function<'gc>(
                         // SWF's with debug information will provide a method name attached
                         // to the method definition, so we can use that.
                         output.push_char('/');
-                        output.push_utf8(method.method_name());
+                        output.push_utf8(&method.method_name());
                     }
                     // TODO: What happens if we can't find the trait?
                 }
                 // We purposely do nothing for instance initializers
             } else if method.is_function && !method.method_name().is_empty() {
                 output.push_utf8("Function/");
-                output.push_utf8(method.method_name());
+                output.push_utf8(&method.method_name());
             } else {
                 output.push_utf8("MethodInfo-");
                 output.push_utf8(&method.abc_method.to_string());

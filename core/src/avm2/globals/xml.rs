@@ -2,15 +2,14 @@
 
 use crate::avm2::api_version::ApiVersion;
 use crate::avm2::e4x::{name_to_multiname, E4XNode, E4XNodeKind};
-use crate::avm2::error::type_error;
+use crate::avm2::error::{make_error_1117, type_error};
 pub use crate::avm2::object::xml_allocator;
 use crate::avm2::object::{
     E4XOrXml, NamespaceObject, QNameObject, TObject, XmlListObject, XmlObject,
 };
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::string::AvmString;
-use crate::avm2::Namespace;
-use crate::avm2::{Activation, Error, Multiname, Object, Value};
+use crate::avm2::{Activation, ArrayObject, Error, Multiname, Namespace, Object, Value};
 use crate::avm2_stub_method;
 
 fn ill_formed_markup_err<'gc>(
@@ -166,11 +165,7 @@ pub fn set_name<'gc>(
 
     let is_name_valid = crate::avm2::e4x::is_xml_name(new_name);
     if !is_name_valid {
-        return Err(Error::AvmError(type_error(
-            activation,
-            &format!("Error #1117: Invalid XML name: {}.", new_name),
-            1117,
-        )?));
+        return Err(make_error_1117(activation, new_name));
     }
 
     node.set_local_name(new_name, activation.context.gc_context);
@@ -233,6 +228,36 @@ pub fn namespace_internal_impl<'gc>(
             _ => Value::Undefined,
         })
     }
+}
+
+pub fn in_scope_namespaces<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_method!(activation, "XML", "inScopeNamespaces");
+    Ok(ArrayObject::empty(activation)?.into())
+}
+
+pub fn namespace_declarations<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let xml = this.as_xml_object().unwrap();
+    let node = xml.node();
+
+    // 1. Let a be a new Array created as if by calling the constructor, new Array()
+    // 2. If x.[[Class]] ∈ {"text", "comment", "processing-instruction", "attribute"}, return a
+    if !node.is_element() {
+        return Ok(ArrayObject::empty(activation)?.into());
+    }
+
+    // TODO: (We are missing [[InScopeNamespaces]])
+    // Step 3. Let y = x.[[Parent]
+    // ....
+    avm2_stub_method!(activation, "XML", "namespaceDeclarations");
+    Ok(ArrayObject::empty(activation)?.into())
 }
 
 pub fn local_name<'gc>(
@@ -828,6 +853,42 @@ pub fn set_children<'gc>(
 
     // 2. Return x
     Ok(xml.into())
+}
+
+// ECMA-357 13.4.4.34 XML.prototype.setLocalName ( name )
+pub fn set_local_name<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let xml = this.as_xml_object().unwrap();
+    let node = xml.node();
+    let name = args.get_value(0);
+
+    // 1. If x.[[Class]] ∈ {"text", "comment"}, return
+    if node.is_text() || node.is_comment() {
+        return Ok(Value::Undefined);
+    }
+
+    // 2. If (Type(name) is Object) and (name.[[Class]] == "QName")
+    let name = if let Some(qname) = name.as_object().and_then(|x| x.as_qname_object()) {
+        // 2.a. Let name = name.localName
+        qname.local_name()
+    // 3. Else
+    } else {
+        // 3.a. Let name = ToString(name)
+        name.coerce_to_string(activation)?
+    };
+
+    // NOTE: avmplus check, not in spec.
+    if !crate::avm2::e4x::is_xml_name(name) {
+        return Err(make_error_1117(activation, name));
+    }
+
+    // 4. Let x.[[Name]].localName = name
+    node.set_local_name(name, activation.gc());
+
+    Ok(Value::Undefined)
 }
 
 pub fn set_notification<'gc>(

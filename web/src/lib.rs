@@ -54,7 +54,7 @@ thread_local! {
     /// issues with lifetimes and type parameters (which cannot be exported with wasm-bindgen).
     static INSTANCES: RefCell<Arena<RefCell<RuffleInstance>>> = RefCell::new(Arena::new());
 
-    static CURRENT_CONTEXT: RefCell<Option<*mut UpdateContext<'static, 'static>>> = RefCell::new(None);
+    static CURRENT_CONTEXT: RefCell<Option<*mut UpdateContext<'static, 'static>>> = const { RefCell::new(None) };
 }
 
 type AnimationHandler = Closure<dyn FnMut(f64)>;
@@ -105,7 +105,7 @@ extern "C" {
     fn panic(this: &JavascriptPlayer, error: &JsError);
 
     #[wasm_bindgen(method, js_name = "displayRootMovieDownloadFailedMessage")]
-    fn display_root_movie_download_failed_message(this: &JavascriptPlayer);
+    fn display_root_movie_download_failed_message(this: &JavascriptPlayer, invalid_swf: bool);
 
     #[wasm_bindgen(method, js_name = "displayMessage")]
     fn display_message(this: &JavascriptPlayer, message: &str);
@@ -281,6 +281,8 @@ struct Config {
     #[serde(rename = "menu")]
     show_menu: bool,
 
+    allow_fullscreen: bool,
+
     salign: Option<String>,
 
     force_align: bool,
@@ -401,14 +403,22 @@ impl Ruffle {
             segments.push(&swf_name);
         }
 
-        let mut movie = SwfMovie::from_data(&swf_data.to_vec(), url.to_string(), None)
-            .map_err(|e| format!("Error loading movie: {e}"))?;
+        let mut movie =
+            SwfMovie::from_data(&swf_data.to_vec(), url.to_string(), None).map_err(|e| {
+                let _ = self.with_core_mut(|core| {
+                    core.ui_mut()
+                        .display_root_movie_download_failed_message(true);
+                });
+                format!("Error loading movie: {e}")
+            })?;
         movie.append_parameters(parse_movie_parameters(&parameters));
 
         self.on_metadata(movie.header());
 
         let _ = self.with_core_mut(move |core| {
-            core.set_root_movie(movie);
+            core.update(|uc| {
+                uc.set_root_movie(movie);
+            });
         });
 
         Ok(())
@@ -493,8 +503,14 @@ impl Ruffle {
                                 );
                                 core.register_device_font(FontDefinition::SwfTag(*font, encoding));
                             }
-                            swf::Tag::DefineFont4(_font) => {
-                                tracing::warn!("DefineFont4 tag is not yet supported by Ruffle, inside font swf {font_name}");
+                            swf::Tag::DefineFont4(font) => {
+                                let name = font.name.to_str_lossy(encoding);
+                                if let Some(data) = font.data {
+                                    tracing::debug!("Loaded font {name} from font swf {font_name}");
+                                    core.register_device_font(FontDefinition::FontFile { name: name.to_string(), is_bold: font.is_bold, is_italic: font.is_bold, data: data.to_vec(), index: 0 })
+                                } else {
+                                    tracing::warn!("Font {name} from font swf {font_name} contains no data");
+                                }
                             }
                             _ => {}
                         }
@@ -694,6 +710,7 @@ impl Ruffle {
             // Set config parameters.
             core.set_background_color(config.background_color);
             core.set_show_menu(config.show_menu);
+            core.set_allow_fullscreen(config.allow_fullscreen);
             core.set_window_mode(config.wmode.as_deref().unwrap_or("window"));
             callstack = Some(core.callstack());
         }
@@ -1614,7 +1631,7 @@ async fn create_renderer(
 
     let _is_transparent = config.wmode.as_deref() == Some("transparent");
 
-    let mut renderer_list = vec!["webgpu", "wgpu-webgl", "webgl", "canvas"];
+    let mut renderer_list = vec!["wgpu-webgl", "webgpu", "webgl", "canvas"];
     if let Some(preferred_renderer) = &config.preferred_renderer {
         if let Some(pos) = renderer_list.iter().position(|&r| r == preferred_renderer) {
             renderer_list.remove(pos);
@@ -1646,8 +1663,11 @@ async fn create_renderer(
                         .dyn_into()
                         .map_err(|_| "Expected HtmlCanvasElement")?;
 
-                    match ruffle_render_wgpu::backend::WgpuRenderBackend::for_canvas(canvas.clone())
-                        .await
+                    match ruffle_render_wgpu::backend::WgpuRenderBackend::for_canvas(
+                        canvas.clone(),
+                        true,
+                    )
+                    .await
                     {
                         Ok(renderer) => {
                             return Ok((builder.with_renderer(renderer), canvas));
@@ -1667,8 +1687,11 @@ async fn create_renderer(
                     .dyn_into()
                     .map_err(|_| "Expected HtmlCanvasElement")?;
 
-                match ruffle_render_wgpu::backend::WgpuRenderBackend::for_canvas(canvas.clone())
-                    .await
+                match ruffle_render_wgpu::backend::WgpuRenderBackend::for_canvas(
+                    canvas.clone(),
+                    false,
+                )
+                .await
                 {
                     Ok(renderer) => {
                         return Ok((builder.with_renderer(renderer), canvas));

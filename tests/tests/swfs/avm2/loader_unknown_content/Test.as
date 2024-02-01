@@ -36,9 +36,15 @@
 				eventString = eventString.substr(0, index) + "file:///[[RUFFLE PATH]]";
 			}
 			trace("Event: " + name + " event: " + eventString);
-			// FIXME - print 'bytesLoaded' and 'bytesTotal' when Ruffle properly matches Flash Player
 			trace("Content: " + loader.content);
 			trace("Bytes length: " + loader.contentLoaderInfo.bytes.length);
+			trace("loader.contentLoaderInfo.bytesLoaded = " + loader.contentLoaderInfo.bytesLoaded);
+			trace("loader.contentLoaderInfo.bytesTotal = " + loader.contentLoaderInfo.bytesTotal);
+			try {
+				trace("loader.contentLoaderInfo.frameRate = " + loader.contentLoaderInfo.frameRate);
+			} catch (e) {
+				trace("Caught error: " + e);
+			}
 		}
 	}
 }

@@ -29,6 +29,9 @@ error-wasm-mime-type =
     Ruffle napotkał poważny problem podczas próby zainicjowania.
     Ten serwer internetowy nie obsługuje ". asm" pliki z poprawnym typem MIME.
     Jeśli jesteś administratorem serwera, zapoznaj się z wiki Ruffle aby uzyskać pomoc.
+error-invalid-swf =
+    Ruffle nie może przetworzyć żądanego pliku.
+    Prawdopodobnie to nie jest poprawny plik SWF.
 error-swf-fetch =
     Ruffle nie udało się załadować pliku Flash SWF.
     Najbardziej prawdopodobnym powodem jest to, że plik już nie istnieje, więc Ruffle nie ma nic do załadowania.

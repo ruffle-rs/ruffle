@@ -10,7 +10,7 @@ use swf::avm2::types::{Index, Namespace as AbcNamespace};
 
 use super::api_version::ApiVersion;
 
-#[derive(Clone, Copy, Collect, Debug)]
+#[derive(Clone, Copy, Collect, Debug, PartialEq)]
 #[collect(no_drop)]
 pub struct Namespace<'gc>(Gc<'gc, NamespaceData<'gc>>);
 
@@ -164,7 +164,7 @@ impl<'gc> Namespace<'gc> {
 
             if is_playerglobals {
                 if !has_version_mark
-                // NOTE - we deviate from avmplus by only appling VM_INTERNAL to unmarked playerglobal namespaces
+                // NOTE - we deviate from avmplus by only applying VM_INTERNAL to unmarked playerglobal namespaces
                 // that use 'Package', instead of both 'Namespace' and 'Package'. This is because our version
                 // of asc.jar does *not* apply version markers to method definitions in interfaces (unlike
                 // method definitions in normal classes). Interface method definitions in playerglobals always
@@ -299,7 +299,7 @@ impl<'gc> Namespace<'gc> {
 
     /// Compares this namespace to another, considering them equal if this namespace's version
     /// is less than or equal to the other (definitions in this namespace version can be
-    /// seen by the other). This is used to implement `ProperyMap`, where we want to
+    /// seen by the other). This is used to implement `PropertyMap`, where we want to
     /// a definition with `ApiVersion::SWF_16` to be visible when queried from
     /// a SWF with `ApiVersion::SWF_16` or any higher version.
     pub fn matches_ns(&self, other: Self) -> bool {

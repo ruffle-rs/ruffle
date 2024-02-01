@@ -240,8 +240,9 @@ impl UiBackend for WebUiBackend {
         }
     }
 
-    fn display_root_movie_download_failed_message(&self) {
-        self.js_player.display_root_movie_download_failed_message()
+    fn display_root_movie_download_failed_message(&self, invalid_swf: bool) {
+        self.js_player
+            .display_root_movie_download_failed_message(invalid_swf)
     }
 
     fn message(&self, message: &str) {
@@ -314,9 +315,12 @@ impl UiBackend for WebUiBackend {
 
     fn display_file_save_dialog(
         &mut self,
-        file_name: String,
-        title: String,
+        _file_name: String,
+        _title: String,
     ) -> Option<DialogResultFuture> {
+        None
+        /* Temporary disabled while #14949 is being fixed
+
         // Prevent opening multiple dialogs at the same time
         if self.dialog_open {
             return None;
@@ -335,5 +339,6 @@ impl UiBackend for WebUiBackend {
             ));
             result
         }))
+        */
     }
 }

@@ -23,14 +23,13 @@ use winit::window::{Theme, Window};
 /// Integration layer connecting wgpu+winit to egui.
 pub struct GuiController {
     descriptors: Arc<Descriptors>,
-    egui_ctx: egui::Context,
     egui_winit: egui_winit::State,
     egui_renderer: egui_wgpu::renderer::Renderer,
     gui: RuffleGui,
     window: Rc<Window>,
     last_update: Instant,
     repaint_after: Duration,
-    surface: wgpu::Surface,
+    surface: wgpu::Surface<'static>,
     surface_format: wgpu::TextureFormat,
     movie_view_renderer: Arc<MovieViewRenderer>,
     // Note that `window.get_inner_size` can change at any point on x11, even between two lines of code.
@@ -56,9 +55,12 @@ impl GuiController {
         }
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: backend,
+            flags: wgpu::InstanceFlags::default().with_env(),
             ..Default::default()
         });
-        let surface = unsafe { instance.create_surface(window.as_ref()) }?;
+        let surface = unsafe {
+            instance.create_surface_unsafe(wgpu::SurfaceTargetUnsafe::from_window(window.as_ref())?)
+        }?;
         let (adapter, device, queue) = futures::executor::block_on(request_adapter_and_device(
             backend,
             &instance,
@@ -82,6 +84,7 @@ impl GuiController {
                 width: size.width,
                 height: size.height,
                 present_mode: Default::default(),
+                desired_maximum_frame_latency: 2,
                 alpha_mode: Default::default(),
                 view_formats: Default::default(),
             },
@@ -92,7 +95,8 @@ impl GuiController {
             egui_ctx.set_visuals(egui::Visuals::light());
         }
 
-        let mut egui_winit = egui_winit::State::new(ViewportId::ROOT, window.as_ref(), None, None);
+        let mut egui_winit =
+            egui_winit::State::new(egui_ctx, ViewportId::ROOT, window.as_ref(), None, None);
         egui_winit.set_max_texture_side(descriptors.limits.max_texture_dimension_2d as usize);
 
         let movie_view_renderer = Arc::new(MovieViewRenderer::new(
@@ -107,13 +111,12 @@ impl GuiController {
         let gui = RuffleGui::new(event_loop, opt.movie_url.clone(), PlayerOptions::from(opt));
         let system_fonts =
             load_system_fonts(font_database, gui.locale.to_owned()).unwrap_or_default();
-        egui_ctx.set_fonts(system_fonts);
+        egui_winit.egui_ctx().set_fonts(system_fonts);
 
-        egui_extras::install_image_loaders(&egui_ctx);
+        egui_extras::install_image_loaders(egui_winit.egui_ctx());
 
         Ok(Self {
             descriptors: Arc::new(descriptors),
-            egui_ctx,
             egui_winit,
             egui_renderer,
             gui,
@@ -144,6 +147,7 @@ impl GuiController {
                         width: size.width,
                         height: size.height,
                         present_mode: Default::default(),
+                        desired_maximum_frame_latency: 2,
                         alpha_mode: Default::default(),
                         view_formats: Default::default(),
                     },
@@ -163,10 +167,10 @@ impl GuiController {
                 Theme::Dark => egui::Visuals::dark(),
                 Theme::Light => egui::Visuals::light(),
             };
-            self.egui_ctx.set_visuals(visuals);
+            self.egui_winit.egui_ctx().set_visuals(visuals);
         }
 
-        let response = self.egui_winit.on_window_event(&self.egui_ctx, event);
+        let response = self.egui_winit.on_window_event(&self.window, event);
         if response.repaint {
             self.window.request_redraw();
         }
@@ -203,7 +207,7 @@ impl GuiController {
 
         let raw_input = self.egui_winit.take_egui_input(&self.window);
         let show_menu = self.window.fullscreen().is_none() && !self.no_gui;
-        let mut full_output = self.egui_ctx.run(raw_input, |context| {
+        let mut full_output = self.egui_winit.egui_ctx().run(raw_input, |context| {
             self.gui.update(
                 context,
                 show_menu,
@@ -222,7 +226,7 @@ impl GuiController {
             .repaint_delay;
 
         // If we're not in a UI, tell egui which cursor we prefer to use instead
-        if !self.egui_ctx.wants_pointer_input() {
+        if !self.egui_winit.egui_ctx().wants_pointer_input() {
             if let Some(player) = player.as_deref() {
                 full_output.platform_output.cursor_icon = player
                     .ui()
@@ -231,14 +235,12 @@ impl GuiController {
                     .cursor();
             }
         }
-        self.egui_winit.handle_platform_output(
-            &self.window,
-            &self.egui_ctx,
-            full_output.platform_output,
-        );
+        self.egui_winit
+            .handle_platform_output(&self.window, full_output.platform_output);
 
         let clipped_primitives = self
-            .egui_ctx
+            .egui_winit
+            .egui_ctx()
             .tessellate(full_output.shapes, full_output.pixels_per_point);
 
         let scale_factor = self.window.scale_factor() as f32;

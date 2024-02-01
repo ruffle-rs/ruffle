@@ -1,13 +1,13 @@
-use crate::{Color, Fixed16};
+use crate::Color;
 use bitflags::bitflags;
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ConvolutionFilter {
     pub num_matrix_rows: u8,
     pub num_matrix_cols: u8,
-    pub matrix: Vec<Fixed16>,
-    pub divisor: Fixed16,
-    pub bias: Fixed16,
+    pub matrix: Vec<f32>,
+    pub divisor: f32,
+    pub bias: f32,
     pub default_color: Color,
     pub flags: ConvolutionFilterFlags,
 }

@@ -19,7 +19,7 @@ macro_rules! define_fixed {
         into_float($($into_type:path),*)
     ) => {
         /// A signed fixed-point value with $frac_bits bits.
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+        #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
         pub struct $type_name($underlying_type);
 
         /// A signed fixed-point type.
@@ -185,7 +185,13 @@ macro_rules! define_fixed {
 
         impl std::fmt::Display for $type_name {
             fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-                write!(f, "{}", self.to_f64())
+                std::fmt::Display::fmt(&self.to_f64(), f)
+            }
+        }
+
+        impl std::fmt::Debug for $type_name {
+            fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                std::fmt::Debug::fmt(&self.to_f64(), f)
             }
         }
 

@@ -16,6 +16,7 @@ use crate::avm2_stub_method;
 use crate::backend::navigator::{NavigationMethod, Request};
 use crate::display_object::LoaderDisplay;
 use crate::display_object::MovieClip;
+use crate::loader::LoadManager;
 use crate::loader::MovieLoaderVMData;
 use crate::tag_utils::SwfMovie;
 use std::sync::Arc;
@@ -207,7 +208,7 @@ pub fn load_bytes<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let arg0 = args.get_object(activation, 0, "data")?;
-    let bytearray = arg0.as_bytearray().unwrap();
+    let bytes = arg0.as_bytearray().unwrap().bytes().to_vec();
     let context = args.try_get_object(activation, 1);
 
     // This is a dummy MovieClip, which will get overwritten in `Loader`
@@ -227,19 +228,24 @@ pub fn load_bytes<'gc>(
         .as_object()
         .unwrap();
 
-    let future = activation.context.load_manager.load_movie_into_clip_bytes(
-        activation.context.player.clone(),
+    let default_domain = activation
+        .caller_domain()
+        .expect("Missing caller domain in Loader.loadBytes");
+
+    if let Err(e) = LoadManager::load_movie_into_clip_bytes(
+        &mut activation.context,
         content.into(),
-        bytearray.bytes().to_vec(),
+        bytes,
         MovieLoaderVMData::Avm2 {
             loader_info,
             context,
-            default_domain: activation
-                .caller_domain()
-                .expect("Missing caller domain in Loader.loadBytes"),
+            default_domain,
         },
-    );
-    activation.context.navigator.spawn_future(future);
+    ) {
+        return Err(Error::RustError(
+            format!("Error in Loader.loadBytes: {e:?}").into(),
+        ));
+    }
 
     Ok(Value::Undefined)
 }

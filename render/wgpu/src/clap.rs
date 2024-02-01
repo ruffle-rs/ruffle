@@ -10,7 +10,7 @@ pub enum GraphicsBackend {
 impl From<GraphicsBackend> for wgpu::Backends {
     fn from(backend: GraphicsBackend) -> Self {
         match backend {
-            GraphicsBackend::Default => wgpu::Backends::PRIMARY | wgpu::Backends::DX11,
+            GraphicsBackend::Default => wgpu::Backends::PRIMARY,
             GraphicsBackend::Vulkan => wgpu::Backends::VULKAN,
             GraphicsBackend::Metal => wgpu::Backends::METAL,
             GraphicsBackend::Dx12 => wgpu::Backends::DX12,

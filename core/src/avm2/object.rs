@@ -40,6 +40,7 @@ mod dispatch_object;
 mod domain_object;
 mod error_object;
 mod event_object;
+mod file_reference_object;
 mod font_object;
 mod function_object;
 mod index_buffer_3d_object;
@@ -87,6 +88,9 @@ pub use crate::avm2::object::domain_object::{
 };
 pub use crate::avm2::object::error_object::{error_allocator, ErrorObject, ErrorObjectWeak};
 pub use crate::avm2::object::event_object::{event_allocator, EventObject, EventObjectWeak};
+pub use crate::avm2::object::file_reference_object::{
+    file_reference_allocator, FileReference, FileReferenceObject, FileReferenceObjectWeak,
+};
 pub use crate::avm2::object::font_object::{font_allocator, FontObject, FontObjectWeak};
 pub use crate::avm2::object::function_object::{
     function_allocator, FunctionObject, FunctionObjectWeak,
@@ -191,13 +195,14 @@ use crate::font::Font;
         ResponderObject(ResponderObject<'gc>),
         ShaderDataObject(ShaderDataObject<'gc>),
         SocketObject(SocketObject<'gc>),
+        FileReferenceObject(FileReferenceObject<'gc>),
         FontObject(FontObject<'gc>),
-        LocalConnectionObject(LocalConnectionObject<'gc>)
+        LocalConnectionObject(LocalConnectionObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
     /// Get the base of this object.
-    /// Any trait method implementations that were not overrided will forward the call to this instead.
+    /// Any trait method implementations that were not overridden will forward the call to this instead.
     fn base(&self) -> Ref<ScriptObjectData<'gc>>;
     fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>>;
 
@@ -1420,6 +1425,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn as_local_connection_object(&self) -> Option<LocalConnectionObject<'gc>> {
         None
     }
+
+    fn as_file_reference(&self) -> Option<FileReferenceObject<'gc>> {
+        None
+    }
 }
 
 pub enum ObjectPtr {}
@@ -1468,6 +1477,7 @@ impl<'gc> Object<'gc> {
             Self::ResponderObject(o) => WeakObject::ResponderObject(ResponderObjectWeak(GcCell::downgrade(o.0))),
             Self::ShaderDataObject(o) => WeakObject::ShaderDataObject(ShaderDataObjectWeak(Gc::downgrade(o.0))),
             Self::SocketObject(o) => WeakObject::SocketObject(SocketObjectWeak(Gc::downgrade(o.0))),
+            Self::FileReferenceObject(o) => WeakObject::FileReferenceObject(FileReferenceObjectWeak(Gc::downgrade(o.0))),
             Self::FontObject(o) => WeakObject::FontObject(FontObjectWeak(GcCell::downgrade(o.0))),
             Self::LocalConnectionObject(o) => WeakObject::LocalConnectionObject(LocalConnectionObjectWeak(GcCell::downgrade(o.0))),
         }
@@ -1528,6 +1538,7 @@ pub enum WeakObject<'gc> {
     ResponderObject(ResponderObjectWeak<'gc>),
     ShaderDataObject(ShaderDataObjectWeak<'gc>),
     SocketObject(SocketObjectWeak<'gc>),
+    FileReferenceObject(FileReferenceObjectWeak<'gc>),
     FontObject(FontObjectWeak<'gc>),
     LocalConnectionObject(LocalConnectionObjectWeak<'gc>),
 }
@@ -1571,6 +1582,7 @@ impl<'gc> WeakObject<'gc> {
             Self::ResponderObject(o) => ResponderObject(o.0.upgrade(mc)?).into(),
             Self::ShaderDataObject(o) => ShaderDataObject(o.0.upgrade(mc)?).into(),
             Self::SocketObject(o) => SocketObject(o.0.upgrade(mc)?).into(),
+            Self::FileReferenceObject(o) => FileReferenceObject(o.0.upgrade(mc)?).into(),
             Self::FontObject(o) => FontObject(o.0.upgrade(mc)?).into(),
             Self::LocalConnectionObject(o) => LocalConnectionObject(o.0.upgrade(mc)?).into(),
         })

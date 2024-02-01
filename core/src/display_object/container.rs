@@ -84,8 +84,8 @@ pub fn dispatch_added_to_stage_event<'gc>(
     }
 }
 
-/// Dispatch an `added` event to one object, and log an errors encounted whilst
-/// doing so.
+/// Dispatch an `added` event to one object, and log any errors encountered
+/// whilst doing so.
 pub fn dispatch_added_event_only<'gc>(
     child: DisplayObject<'gc>,
     context: &mut UpdateContext<'_, 'gc>,
@@ -413,7 +413,7 @@ pub trait TDisplayObjectContainer<'gc>:
         this.invalidate_cached_bitmap(context.gc_context);
     }
 
-    /// Remove a set of children identified by their render list indicies from
+    /// Remove a set of children identified by their render list indices from
     /// this container's render and depth lists.
     fn remove_range<R>(&mut self, context: &mut UpdateContext<'_, 'gc>, range: R)
     where

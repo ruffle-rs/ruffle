@@ -14,24 +14,25 @@ workspace = true
 ruffle_wstr = { path = "../wstr" }
 swf = { path = "../swf"}
 tracing = { workspace = true }
-gif = "0.12.0"
-png = "0.17.10"
+gif = "0.13.1"
+png = "0.17.11"
 flate2 = "1.0.28"
-smallvec = { version = "1.11.2", features = ["union"] }
+smallvec = { version = "1.13.1", features = ["union"] }
 downcast-rs = "1.2.0"
 lyon = { version = "1.0.1", optional = true }
 lyon_geom = "1.0.5"
 thiserror = "1.0"
-wasm-bindgen = { version = "=0.2.89", optional = true }
+wasm-bindgen = { version = "=0.2.90", optional = true }
 enum-map = "2.7.3"
-serde = { version = "1.0.195", features = ["derive"] }
-clap = { version = "4.4.13", features = ["derive"], optional = true }
+serde = { version = "1.0.196", features = ["derive"] }
+clap = { version = "4.4.18", features = ["derive"], optional = true }
 h263-rs-yuv = { git = "https://github.com/ruffle-rs/h263-rs", rev = "16700664e2b3334f0a930f99af86011aebee14cc"}
-lru = "0.12.1"
+lru = "0.12.2"
 num-traits = "0.2"
 num-derive = "0.4"
 byteorder = "1.5"
 wgpu = { workspace = true, optional = true }
+indexmap = "2.2.1"
 
 # This crate has a `compile_error!` on apple platforms
 [target.'cfg(not(target_vendor = "apple"))'.dependencies.renderdoc]
@@ -39,7 +40,7 @@ version = "0.11.0"
 optional = true
 
 [dependencies.jpeg-decoder]
-version = "0.3.0"
+version = "0.3.1"
 default-features = false # can't use rayon on web
 
 [dev-dependencies]

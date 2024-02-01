@@ -37,7 +37,7 @@ pub trait RenderTarget: Debug + 'static {
 
 #[derive(Debug)]
 pub struct SwapChainTarget {
-    window_surface: wgpu::Surface,
+    window_surface: wgpu::Surface<'static>,
     surface_config: wgpu::SurfaceConfiguration,
 }
 
@@ -59,7 +59,7 @@ impl RenderTargetFrame for SwapChainTargetFrame {
 
 impl SwapChainTarget {
     pub fn new(
-        surface: wgpu::Surface,
+        surface: wgpu::Surface<'static>,
         adapter: &wgpu::Adapter,
         (width, height): (u32, u32),
         device: &wgpu::Device,
@@ -89,6 +89,7 @@ impl SwapChainTarget {
             width,
             height,
             present_mode: wgpu::PresentMode::Fifo,
+            desired_maximum_frame_latency: 2,
             alpha_mode: capabilities.alpha_modes[0],
             view_formats: vec![format],
         };
@@ -198,14 +199,14 @@ impl TextureTarget {
             )
             .into());
         }
-        let buffer_dimensions = BufferDimensions::new(size.0 as usize, size.1 as usize);
+        let format = wgpu::TextureFormat::Rgba8Unorm;
+        let buffer_dimensions = BufferDimensions::new(size.0 as usize, size.1 as usize, format);
         let size = wgpu::Extent3d {
             width: size.0,
             height: size.1,
             depth_or_array_layers: 1,
         };
         let texture_label = create_debug_label!("Render target texture");
-        let format = wgpu::TextureFormat::Rgba8Unorm;
         let texture = device.create_texture(&wgpu::TextureDescriptor {
             label: texture_label.as_deref(),
             size,

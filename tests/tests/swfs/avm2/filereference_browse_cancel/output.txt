@@ -1,0 +1,3 @@
+cancel event
+file.name threw: Error: Error #2037: Functions called in incorrect sequence, or earlier call was unsuccessful.
+file.size threw: Error: Error #2037: Functions called in incorrect sequence, or earlier call was unsuccessful.

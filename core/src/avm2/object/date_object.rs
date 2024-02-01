@@ -41,6 +41,28 @@ impl fmt::Debug for DateObject<'_> {
 }
 
 impl<'gc> DateObject<'gc> {
+    pub fn from_date_time(
+        activation: &mut Activation<'_, 'gc>,
+        date_time: DateTime<Utc>,
+    ) -> Result<Object<'gc>, Error<'gc>> {
+        let class = activation.avm2().classes().date;
+        let base = RefLock::new(ScriptObjectData::new(class));
+
+        let instance: Object<'gc> = DateObject(Gc::new(
+            activation.context.gc_context,
+            DateObjectData {
+                base,
+                date_time: Cell::new(Some(date_time)),
+            },
+        ))
+        .into();
+        instance.install_instance_slots(activation.context.gc_context);
+
+        class.call_native_init(instance.into(), &[], activation)?;
+
+        Ok(instance)
+    }
+
     pub fn date_time(self) -> Option<DateTime<Utc>> {
         self.0.date_time.get()
     }

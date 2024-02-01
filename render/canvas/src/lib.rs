@@ -3,8 +3,8 @@
 #![allow(clippy::arc_with_non_send_sync)]
 
 use ruffle_render::backend::{
-    BitmapCacheEntry, Context3D, Context3DProfile, RenderBackend, ShapeHandle, ShapeHandleImpl,
-    ViewportDimensions,
+    BitmapCacheEntry, Context3D, Context3DProfile, PixelBenderOutput, PixelBenderTarget,
+    RenderBackend, ShapeHandle, ShapeHandleImpl, ViewportDimensions,
 };
 use ruffle_render::bitmap::{
     Bitmap, BitmapHandle, BitmapHandleImpl, BitmapSource, PixelRegion, PixelSnapping, SyncHandle,
@@ -37,7 +37,7 @@ pub struct WebCanvasRenderBackend {
     mask_state: MaskState,
     blend_modes: Vec<RenderBlendMode>,
 
-    // This is currnetly unused - we just store it to report
+    // This is currently unused - we just store it to report
     // in `get_viewport_dimensions`
     viewport_scale_factor: f64,
 }
@@ -523,8 +523,8 @@ impl RenderBackend for WebCanvasRenderBackend {
         &mut self,
         _handle: ruffle_render::pixel_bender::PixelBenderShaderHandle,
         _arguments: &[ruffle_render::pixel_bender::PixelBenderShaderArgument],
-        _target: BitmapHandle,
-    ) -> Result<Box<dyn SyncHandle>, Error> {
+        _target: &PixelBenderTarget,
+    ) -> Result<PixelBenderOutput, Error> {
         Err(Error::Unimplemented("run_pixelbender_shader".into()))
     }
 
@@ -1099,7 +1099,7 @@ fn swf_to_canvas_gradient(
 ) -> Result<Gradient, JsError> {
     let matrix = if transformed {
         // When we are rendering a complex gradient, the gradient transform is handled later by
-        // transforming the path before rendering; so use the indentity matrix here.
+        // transforming the path before rendering; so use the identity matrix here.
         swf::Matrix::scale(swf::Fixed16::from_f64(20.0), swf::Fixed16::from_f64(20.0))
     } else {
         swf_gradient.matrix

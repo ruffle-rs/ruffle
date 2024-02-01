@@ -288,7 +288,6 @@ impl CommandTarget {
                     descriptors,
                     format,
                     format,
-                    size,
                     frame_buffer.texture.view(),
                     &texture.create_view(&Default::default()),
                     get_whole_frame_bind_group(&whole_frame_bind_group, descriptors, size),
@@ -470,6 +469,8 @@ fn get_whole_frame_bind_group<'a>(
                     [0.0, 0.0, 1.0, 0.0],
                     [0.0, 0.0, 0.0, 1.0],
                 ],
+                mult_color: [1.0, 1.0, 1.0, 1.0],
+                add_color: [0.0, 0.0, 0.0, 0.0],
             };
             let transforms_buffer = create_buffer_with_data(
                 &descriptors.device,

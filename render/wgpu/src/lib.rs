@@ -10,7 +10,6 @@ use crate::descriptors::Quad;
 use crate::mesh::BitmapBinds;
 use crate::pipelines::Pipelines;
 use crate::target::{RenderTarget, SwapChainTarget};
-use crate::uniform_buffer::UniformBuffer;
 use crate::utils::{
     capture_image, create_buffer_with_data, format_list, get_backend_names, BufferDimensions,
 };
@@ -37,7 +36,6 @@ mod globals;
 mod pipelines;
 mod pixel_bender;
 pub mod target;
-mod uniform_buffer;
 
 pub mod backend;
 mod blend;
@@ -46,6 +44,7 @@ mod buffer_pool;
 #[cfg(feature = "clap")]
 pub mod clap;
 pub mod descriptors;
+mod dynamic_transforms;
 mod filters;
 mod layouts;
 mod mesh;
@@ -72,42 +71,16 @@ pub enum MaskState {
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
-pub struct PushConstants {
-    transforms: Transforms,
-    colors: ColorAdjustments,
-}
-
-#[repr(C)]
-#[derive(Copy, Clone, Debug, Pod, Zeroable)]
 pub struct Transforms {
     world_matrix: [[f32; 4]; 4],
+    mult_color: [f32; 4],
+    add_color: [f32; 4],
 }
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
 struct TextureTransforms {
     u_matrix: [[f32; 4]; 4],
-}
-
-#[repr(C)]
-#[derive(Copy, Clone, Debug, Pod, Zeroable, PartialEq)]
-pub struct ColorAdjustments {
-    mult_color: [f32; 4],
-    add_color: [f32; 4],
-}
-
-pub const DEFAULT_COLOR_ADJUSTMENTS: ColorAdjustments = ColorAdjustments {
-    mult_color: [1.0, 1.0, 1.0, 1.0],
-    add_color: [0.0, 0.0, 0.0, 0.0],
-};
-
-impl From<&swf::ColorTransform> for ColorAdjustments {
-    fn from(transform: &swf::ColorTransform) -> Self {
-        Self {
-            mult_color: transform.mult_rgba_normalized(),
-            add_color: transform.add_rgba_normalized(),
-        }
-    }
 }
 
 #[repr(C)]
@@ -176,7 +149,7 @@ impl From<TessGradient> for GradientUniforms {
 #[derive(Debug)]
 pub enum QueueSyncHandle {
     AlreadyCopied {
-        index: wgpu::SubmissionIndex,
+        index: Option<wgpu::SubmissionIndex>,
         buffer: PoolEntry<wgpu::Buffer, BufferDimensions>,
         copy_dimensions: BufferDimensions,
         descriptors: Arc<Descriptors>,
@@ -211,7 +184,7 @@ impl QueueSyncHandle {
                 &descriptors.device,
                 &buffer,
                 &copy_dimensions,
-                Some(index),
+                index,
                 with_rgba,
             ),
             QueueSyncHandle::NotCopied {
@@ -222,8 +195,12 @@ impl QueueSyncHandle {
             } => {
                 let texture = as_texture(&handle);
 
-                let buffer_dimensions =
-                    BufferDimensions::new(copy_area.width() as usize, copy_area.height() as usize);
+                let buffer_dimensions = BufferDimensions::new(
+                    copy_area.width() as usize,
+                    copy_area.height() as usize,
+                    texture.texture.format(),
+                );
+
                 let buffer = pool.take(&descriptors, buffer_dimensions.clone());
                 let label = create_debug_label!("Render target transfer encoder");
                 let mut encoder =

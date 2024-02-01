@@ -104,10 +104,25 @@ pub trait RenderBackend: Downcast {
         &mut self,
         handle: PixelBenderShaderHandle,
         arguments: &[PixelBenderShaderArgument],
-        target: BitmapHandle,
-    ) -> Result<Box<dyn SyncHandle>, Error>;
+        target: &PixelBenderTarget,
+    ) -> Result<PixelBenderOutput, Error>;
 }
 impl_downcast!(RenderBackend);
+
+pub enum PixelBenderTarget {
+    // The shader will write to the provided bitmap texture,
+    // producing a `PixelBenderOutput::Bitmap` with the corresponding
+    // `SyncHandle`
+    Bitmap(BitmapHandle),
+    // The shader will write to a temporary texture, which will then
+    // be immediately read back as bytes (in `PixelBenderOutput::Bytes`)
+    Bytes { width: u32, height: u32 },
+}
+
+pub enum PixelBenderOutput {
+    Bitmap(Box<dyn SyncHandle>),
+    Bytes(Vec<u8>),
+}
 
 pub trait IndexBuffer: Downcast {}
 impl_downcast!(IndexBuffer);
@@ -472,6 +487,8 @@ pub enum Context3DCommand<'a> {
     },
     CopyBitmapToTexture {
         source: Vec<u8>,
+        source_width: u32,
+        source_height: u32,
         dest: Rc<dyn Texture>,
         layer: u32,
     },

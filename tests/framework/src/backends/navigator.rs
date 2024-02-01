@@ -11,10 +11,51 @@ use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
 use ruffle_core::socket::{ConnectionState, SocketAction, SocketHandle};
 use ruffle_socket_format::SocketEvent;
+use std::borrow::Cow;
 use std::sync::mpsc::Sender;
 use std::time::Duration;
 use url::{ParseError, Url};
 use vfs::VfsPath;
+
+struct TestResponse {
+    url: String,
+    body: Vec<u8>,
+    chunk_gotten: bool,
+    status: u16,
+    redirected: bool,
+}
+
+impl SuccessResponse for TestResponse {
+    fn url(&self) -> Cow<str> {
+        Cow::Borrowed(&self.url)
+    }
+
+    fn body(self: Box<Self>) -> OwnedFuture<Vec<u8>, Error> {
+        Box::pin(async move { Ok(self.body) })
+    }
+
+    fn next_chunk(&mut self) -> OwnedFuture<Option<Vec<u8>>, Error> {
+        if !self.chunk_gotten {
+            self.chunk_gotten = true;
+            let body = self.body.clone();
+            Box::pin(async move { Ok(Some(body)) })
+        } else {
+            Box::pin(async move { Ok(None) })
+        }
+    }
+
+    fn status(&self) -> u16 {
+        self.status
+    }
+
+    fn redirected(&self) -> bool {
+        self.redirected
+    }
+
+    fn expected_length(&self) -> Result<Option<u64>, Error> {
+        Ok(Some(self.body.len() as u64))
+    }
+}
 
 /// A `NavigatorBackend` used by tests that supports logging fetch requests.
 ///
@@ -71,15 +112,18 @@ impl NavigatorBackend for TestNavigatorBackend {
         }
     }
 
-    fn fetch(&self, request: Request) -> OwnedFuture<SuccessResponse, ErrorResponse> {
+    fn fetch(&self, request: Request) -> OwnedFuture<Box<dyn SuccessResponse>, ErrorResponse> {
         if request.url().contains("?debug-success") {
             return Box::pin(async move {
-                Ok(SuccessResponse {
+                let response: Box<dyn SuccessResponse> = Box::new(TestResponse {
                     url: request.url().to_string(),
                     body: b"Hello, World!".to_vec(),
+                    chunk_gotten: false,
                     status: 200,
                     redirected: false,
-                })
+                });
+
+                Ok(response)
             });
         }
 
@@ -184,12 +228,16 @@ impl NavigatorBackend for TestNavigatorBackend {
                 url: url.to_string(),
                 error: Error::FetchError(error.to_string()),
             })?;
-            Ok(SuccessResponse {
+
+            let response: Box<dyn SuccessResponse> = Box::new(TestResponse {
                 url: url.to_string(),
                 body,
+                chunk_gotten: false,
                 status: 0,
                 redirected: false,
-            })
+            });
+
+            Ok(response)
         })
     }
 

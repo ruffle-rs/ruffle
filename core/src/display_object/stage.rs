@@ -54,7 +54,7 @@ pub struct StageData<'gc> {
     /// Base properties for interactive display objects.
     ///
     /// This particular base has additional constraints currently not
-    /// expressable by the type system. Notably, this should never have a
+    /// expressible by the type system. Notably, this should never have a
     /// parent, as the stage does not respect it.
     base: InteractiveObjectBase<'gc>,
 
@@ -103,12 +103,15 @@ pub struct StageData<'gc> {
     /// Whether to prevent movies from the changing the stage alignment
     forced_align: bool,
 
+    /// Whether to allow the stage's displayState to be changed.
+    allow_fullscreen: bool,
+
     /// Whether or not a RENDER event should be dispatched on the next render
     invalidated: bool,
 
     /// Whether to use high quality downsampling for bitmaps.
     ///
-    /// This is usally implied by `quality` being `Best` or higher, but the AVM1
+    /// This is usually implied by `quality` being `Best` or higher, but the AVM1
     /// `ToggleHighQuality` op can adjust stage quality independently of this flag.
     /// This setting is currently ignored in Ruffle.
     use_bitmap_downsampling: bool,
@@ -174,6 +177,7 @@ impl<'gc> Stage<'gc> {
                 invalidated: false,
                 align: Default::default(),
                 forced_align: false,
+                allow_fullscreen: true,
                 use_bitmap_downsampling: false,
                 view_bounds: Default::default(),
                 window_mode: Default::default(),
@@ -331,6 +335,16 @@ impl<'gc> Stage<'gc> {
         self.0.write(context.gc_context).forced_scale_mode = force;
     }
 
+    /// Get whether the Stage's display state can be changed.
+    pub fn allow_fullscreen(self) -> bool {
+        self.0.read().allow_fullscreen
+    }
+
+    /// Set whether the Stage's display state can be changed.
+    pub fn set_allow_fullscreen(self, context: &mut UpdateContext<'_, 'gc>, allow: bool) {
+        self.0.write(context.gc_context).allow_fullscreen = allow;
+    }
+
     fn is_fullscreen_state(display_state: StageDisplayState) -> bool {
         display_state == StageDisplayState::FullScreen
             || display_state == StageDisplayState::FullScreenInteractive
@@ -365,6 +379,7 @@ impl<'gc> Stage<'gc> {
     ) {
         if display_state == self.display_state()
             || (Self::is_fullscreen_state(display_state) && self.is_fullscreen())
+            || !self.allow_fullscreen()
         {
             return;
         }

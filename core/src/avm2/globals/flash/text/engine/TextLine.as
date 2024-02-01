@@ -103,6 +103,11 @@ package flash.text.engine {
             return -1;
         }
 
+        public function getAtomIndexAtCharIndex(charIndex:int):int {
+            stub_method("flash.text.engine.TextLine", "getAtomIndexAtCharIndex");
+            return -1;
+        }
+
         public function getAtomBounds(index:int):Rectangle {
             stub_method("flash.text.engine.TextLine", "getAtomBounds");
             return new Rectangle(0, 0, 0, 0);

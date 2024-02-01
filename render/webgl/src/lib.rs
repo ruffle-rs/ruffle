@@ -4,8 +4,8 @@
 
 use bytemuck::{Pod, Zeroable};
 use ruffle_render::backend::{
-    BitmapCacheEntry, Context3D, Context3DProfile, RenderBackend, ShapeHandle, ShapeHandleImpl,
-    ViewportDimensions,
+    BitmapCacheEntry, Context3D, Context3DProfile, PixelBenderOutput, PixelBenderTarget,
+    RenderBackend, ShapeHandle, ShapeHandleImpl, ViewportDimensions,
 };
 use ruffle_render::bitmap::{
     Bitmap, BitmapFormat, BitmapHandle, BitmapHandleImpl, BitmapSource, PixelRegion, PixelSnapping,
@@ -574,8 +574,8 @@ impl WebGlRenderBackend {
             .shape_tessellator
             .tessellate_shape(shape, bitmap_source);
 
-        let mut draws = Vec::with_capacity(lyon_mesh.len());
-        for draw in lyon_mesh {
+        let mut draws = Vec::with_capacity(lyon_mesh.draws.len());
+        for draw in lyon_mesh.draws {
             let num_indices = draw.indices.len() as i32;
             let num_mask_indices = draw.mask_index_count as i32;
 
@@ -601,7 +601,7 @@ impl WebGlRenderBackend {
 
             let program = match draw.draw_type {
                 TessDrawType::Color => &self.color_program,
-                TessDrawType::Gradient(_) => &self.gradient_program,
+                TessDrawType::Gradient { .. } => &self.gradient_program,
                 TessDrawType::Bitmap(_) => &self.bitmap_program,
             };
 
@@ -652,8 +652,11 @@ impl WebGlRenderBackend {
                     num_indices,
                     num_mask_indices,
                 },
-                TessDrawType::Gradient(gradient) => Draw {
-                    draw_type: DrawType::Gradient(Box::new(Gradient::from(gradient))),
+                TessDrawType::Gradient { matrix, gradient } => Draw {
+                    draw_type: DrawType::Gradient(Box::new(Gradient::new(
+                        lyon_mesh.gradients[gradient].clone(), // TODO: Gradient deduplication
+                        matrix,
+                    ))),
                     vao,
                     vertex_buffer: Buffer {
                         gl: self.gl.clone(),
@@ -1139,8 +1142,8 @@ impl RenderBackend for WebGlRenderBackend {
         &mut self,
         _handle: ruffle_render::pixel_bender::PixelBenderShaderHandle,
         _arguments: &[ruffle_render::pixel_bender::PixelBenderShaderArgument],
-        _target: BitmapHandle,
-    ) -> Result<Box<dyn SyncHandle>, BitmapError> {
+        _target: &PixelBenderTarget,
+    ) -> Result<PixelBenderOutput, BitmapError> {
         Err(BitmapError::Unimplemented("run_pixelbender_shader".into()))
     }
 
@@ -1529,8 +1532,8 @@ struct Gradient {
     interpolation: swf::GradientInterpolation,
 }
 
-impl From<TessGradient> for Gradient {
-    fn from(gradient: TessGradient) -> Self {
+impl Gradient {
+    fn new(gradient: TessGradient, matrix: [[f32; 3]; 3]) -> Self {
         // TODO: Support more than MAX_GRADIENT_COLORS.
         let num_colors = gradient.records.len().min(MAX_GRADIENT_COLORS);
         let mut ratios = [0.0; MAX_GRADIENT_COLORS];
@@ -1559,7 +1562,7 @@ impl From<TessGradient> for Gradient {
         }
 
         Self {
-            matrix: gradient.matrix,
+            matrix,
             gradient_type: match gradient.gradient_type {
                 GradientType::Linear => 0,
                 GradientType::Radial => 1,

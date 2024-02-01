@@ -1,6 +1,8 @@
 package flash.text {
     import flash.display.InteractiveObject;
+    import flash.display.DisplayObject;
     import flash.geom.Rectangle;
+    import __ruffle__.stub_getter;
     import __ruffle__.stub_setter;
     import __ruffle__.stub_method;
 
@@ -153,6 +155,46 @@ package flash.text {
         public function getCharBoundaries(charIndex:int):Rectangle {
             stub_method("flash.text.TextField", "getCharBoundaries");
             return new Rectangle(0, 0, 1, 1);
+        }
+
+        public function getFirstCharInParagraph(charIndex:int):int {
+            stub_method("flash.text.TextField", "getFirstCharInParagraph");
+            return 0;
+        }
+
+        public function getImageReference(id:String):DisplayObject {
+            stub_method("flash.text.TextField", "getImageReference");
+            return null;
+        }
+
+        public function getLineIndexAtPoint(x:Number, y:Number):int {
+            stub_method("flash.text.TextField", "getLineIndexAtPoint");
+            return 0;
+        }
+
+        public function getLineIndexOfChar(charIndex:int):int {
+            stub_method("flash.text.TextField", "getLineIndexOfChar");
+            return 0;
+        }
+
+        public function getLineOffset(lineIndex:int):int {
+            stub_method("flash.text.TextField", "getLineOffset");
+            return 0;
+        }
+
+        public function getParagraphLength(charIndex:int):int {
+            stub_method("flash.text.TextField", "getParagraphLength");
+            return 0;
+        }
+
+        public static function isFontCompatible(fontName:String, fontStyle:String):Boolean {
+            stub_method("flash.text.TextField", "isFontCompatible");
+            return true;
+        }
+
+        public function get textInteractionMode():String {
+            stub_getter("flash.text.TextField", "textInteractionMode");
+            return TextInteractionMode.NORMAL;
         }
     }
 }

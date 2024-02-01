@@ -12,17 +12,15 @@ impl Environment for NativeEnvironment {
     }
 
     #[cfg(feature = "imgtests")]
-    fn create_renderers(
+    fn create_renderer(
         &self,
         width: u32,
         height: u32,
-    ) -> Vec<(
+    ) -> Option<(
         Box<dyn ruffle_test_framework::environment::RenderInterface>,
         Box<dyn ruffle_test_framework::environment::RenderBackend>,
     )> {
         renderer::NativeRenderInterface::create_pair(width, height)
-            .into_iter()
-            .collect()
     }
 }
 

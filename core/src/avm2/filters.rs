@@ -362,11 +362,11 @@ fn avm2_to_convolution_filter<'gc>(
     {
         if let Some(array) = matrix_object.as_array_storage() {
             for value in array.iter() {
-                matrix.push(Fixed16::from_f64(
+                matrix.push(
                     value
                         .unwrap_or(Value::Undefined)
-                        .coerce_to_number(activation)?,
-                ));
+                        .coerce_to_number(activation)? as f32,
+                );
             }
         }
     }
@@ -399,11 +399,11 @@ fn avm2_to_convolution_filter<'gc>(
     if preserve_alpha {
         flags |= ConvolutionFilterFlags::PRESERVE_ALPHA;
     }
-    matrix.resize((matrix_x * matrix_y) as usize, Fixed16::ZERO);
+    matrix.resize((matrix_x * matrix_y) as usize, 0.0f32);
     Ok(Filter::ConvolutionFilter(ConvolutionFilter {
-        bias: Fixed16::from_f64(bias),
+        bias: bias as f32,
         default_color: Color::from_rgb(color, (alpha * 255.0) as u8),
-        divisor: Fixed16::from_f64(divisor),
+        divisor: divisor as f32,
         matrix,
         num_matrix_cols: matrix_x.clamp(0, 255) as u8,
         num_matrix_rows: matrix_y.clamp(0, 255) as u8,
@@ -420,7 +420,7 @@ fn convolution_filter_to_avm2<'gc>(
         filter
             .matrix
             .iter()
-            .map(|v| Value::from(v.to_f64()))
+            .map(|v| Value::from(f64::from(*v)))
             .collect(),
     )?;
     activation.avm2().classes().convolutionfilter.construct(
@@ -429,8 +429,8 @@ fn convolution_filter_to_avm2<'gc>(
             filter.num_matrix_cols.into(),
             filter.num_matrix_rows.into(),
             matrix.into(),
-            filter.divisor.to_f64().into(),
-            filter.bias.to_f64().into(),
+            filter.divisor.into(),
+            filter.bias.into(),
             filter.is_preserve_alpha().into(),
             filter.is_clamped().into(),
             filter.default_color.to_rgb().into(),

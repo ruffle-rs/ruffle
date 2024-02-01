@@ -210,7 +210,7 @@ impl MovieWindow {
                         if movie.header().is_action_script_3() {
                             ui.label("Uses Actionscript 3");
                         }
-                        if movie.header().has_metdata() {
+                        if movie.header().has_metadata() {
                             ui.label("Has XMP Metadata");
                         }
                         if movie.header().use_direct_blit() {

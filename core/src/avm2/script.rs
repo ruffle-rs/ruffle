@@ -286,7 +286,7 @@ impl<'gc> TranslationUnit<'gc> {
         }
 
         let raw = if string_index == 0 {
-            ""
+            &[]
         } else {
             write
                 .abc
@@ -294,11 +294,12 @@ impl<'gc> TranslationUnit<'gc> {
                 .strings
                 .get(string_index as usize - 1)
                 .ok_or_else(|| format!("Unknown string constant {string_index}"))?
+                .as_slice()
         };
 
         let atom = context
             .interner
-            .intern_wstr(context.gc_context, ruffle_wstr::from_utf8(raw));
+            .intern_wstr(context.gc_context, ruffle_wstr::from_utf8_bytes(raw));
 
         write.strings[string_index as usize] = Some(atom);
         Ok(atom)

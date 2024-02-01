@@ -1,0 +1,7 @@
+# This file tests that our Math.random() implementation works
+# correctly for some weird memory-obfuscation logic.
+# Flash Player's `Math.random()` implementation generates
+# a limited range of `Number`s in the range [0.0, 1.0), which
+# allows this swf to correctly compute the original value
+# (instead of a very close value due to rounding).
+num_ticks = 1

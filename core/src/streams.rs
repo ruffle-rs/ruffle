@@ -187,6 +187,12 @@ pub struct NetStreamData<'gc> {
     /// The buffer position that we are currently seeking to.
     offset: usize,
 
+    /// The expected length of the buffer once downloading is complete.
+    ///
+    /// `None` indicates that downloading is already complete and that the
+    /// length of the associated `Buffer` is the final length.
+    expected_length: Option<usize>,
+
     /// The buffer position for processing incoming data.
     ///
     /// This points to the first byte that the stream has *never* processed
@@ -264,6 +270,7 @@ impl<'gc> NetStream<'gc> {
                 sound_instance: None,
                 attached_to: None,
                 playing: false,
+                expected_length: Some(0),
             },
         ))
     }
@@ -308,6 +315,20 @@ impl<'gc> NetStream<'gc> {
         write.queued_seek_time = None;
         write.audio_stream = None;
         write.sound_instance = None;
+        write.expected_length = Some(0);
+    }
+
+    /// Set the total number of bytes expected to be downloaded.
+    pub fn set_expected_length(self, context: &mut UpdateContext<'_, 'gc>, expected: usize) {
+        let mut write = self.0.write(context.gc_context);
+        let len = write.buffer.len();
+
+        // The subtract is to avoid reserving space for already-downloaded data.
+        if expected > len {
+            write.buffer.reserve(expected - len);
+        }
+
+        write.expected_length = Some(expected);
     }
 
     /// Append data to the `NetStream`'s current internal buffer.
@@ -322,11 +343,19 @@ impl<'gc> NetStream<'gc> {
     pub fn load_buffer(self, context: &mut UpdateContext<'_, 'gc>, data: &mut Vec<u8>) {
         self.0.write(context.gc_context).buffer.append(data);
 
+        StreamManager::activate(context, self);
+
         // NOTE: The onMetaData event triggers before this event in Flash due to its streaming behavior.
         self.trigger_status_event(
             context,
             vec![("code", "NetStream.Buffer.Full"), ("level", "status")],
         );
+    }
+
+    /// Indicate that the buffer has finished loading and that no further data
+    /// is expected to be downloaded to it.
+    pub fn finish_buffer(self, context: &mut UpdateContext<'_, 'gc>) {
+        self.0.write(context.gc_context).expected_length = None;
     }
 
     pub fn report_error(self, _error: Error) {
@@ -338,7 +367,10 @@ impl<'gc> NetStream<'gc> {
     }
 
     pub fn bytes_total(self) -> usize {
-        self.0.read().buffer.len()
+        let read = self.0.read();
+        let buflen = read.buffer.len();
+
+        std::cmp::max(read.expected_length.unwrap_or(buflen), buflen)
     }
 
     pub fn time(self) -> f64 {
@@ -878,7 +910,7 @@ impl<'gc> NetStream<'gc> {
                             }
                             Err(e) => {
                                 tracing::error!(
-                                    "Got error when registring FLV video stream: {}",
+                                    "Got error when registering FLV video stream: {}",
                                     e
                                 );
                                 return; //TODO: This originally breaks and halts tag processing
@@ -1039,7 +1071,7 @@ impl<'gc> NetStream<'gc> {
                             _ => unreachable!(),
                         },
                         Err(e) => {
-                            tracing::error!("Got error when registring FLV video stream: {}", e)
+                            tracing::error!("Got error when registering FLV video stream: {}", e)
                         }
                     }
                 } else {
@@ -1075,8 +1107,9 @@ impl<'gc> NetStream<'gc> {
         let slice = write.buffer.to_full_slice();
         let buffer = slice.data();
 
-        let end_time = write.stream_time + dt;
-        let mut end_of_video = false;
+        let max_time = write.stream_time + dt;
+        let mut last_tag_time = write.stream_time;
+        let mut buffer_underrun = false;
         let mut error = false;
         let mut max_lookahead_audio_tags = 5;
         let mut is_lookahead_tag = false;
@@ -1093,8 +1126,7 @@ impl<'gc> NetStream<'gc> {
                     // error states or playback ending to trip until we run
                     // those tags "for realsies"
                     if !is_lookahead_tag && matches!(e, FlvError::EndOfData) {
-                        //TODO: Check expected total length for streaming / progressive download
-                        end_of_video = true;
+                        buffer_underrun = true;
                     } else if !is_lookahead_tag {
                         //Corrupt tag or out of data
                         tracing::error!("FLV tag parsing failed: {}", e);
@@ -1105,9 +1137,13 @@ impl<'gc> NetStream<'gc> {
                 }
 
                 let tag = tag.expect("valid tag");
-                is_lookahead_tag = tag.timestamp as f64 >= end_time; //FLV timestamps are also ms
+                is_lookahead_tag = tag.timestamp as f64 >= max_time; //FLV timestamps are also ms
                 if is_lookahead_tag && max_lookahead_audio_tags == 0 {
                     break;
+                }
+
+                if !is_lookahead_tag {
+                    last_tag_time = tag.timestamp as f64;
                 }
 
                 let tag_needs_preloading = reader.stream_position().expect("valid position")
@@ -1153,27 +1189,36 @@ impl<'gc> NetStream<'gc> {
             }
         }
 
-        write.stream_time = end_time;
+        write.stream_time = last_tag_time;
         if let Err(e) = self.commit_sound_stream(context, &mut write) {
             //TODO: Fire an error event at AS.
             tracing::error!("Error committing sound stream: {}", e);
         }
         drop(write);
 
-        if end_of_video {
+        if buffer_underrun {
+            let is_end_of_video = self.0.read().expected_length.is_none();
+
             self.trigger_status_event(
                 context,
                 vec![("code", "NetStream.Buffer.Flush"), ("level", "status")],
             );
-            self.trigger_status_event(
-                context,
-                vec![("code", "NetStream.Play.Stop"), ("level", "status")],
-            );
+
+            if is_end_of_video {
+                self.trigger_status_event(
+                    context,
+                    vec![("code", "NetStream.Play.Stop"), ("level", "status")],
+                );
+            }
+
             self.trigger_status_event(
                 context,
                 vec![("code", "NetStream.Buffer.Empty"), ("level", "status")],
             );
-            self.pause(context, false);
+
+            if is_end_of_video {
+                self.pause(context, false);
+            }
         }
 
         if error {

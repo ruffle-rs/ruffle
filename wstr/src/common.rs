@@ -3,7 +3,7 @@ use core::ops::{Bound, Index, IndexMut, Range, RangeBounds};
 
 use super::{ptr, FromWStr, Pattern, WString};
 
-/// A UCS2 string slice, analoguous to `&'a str`.
+/// A UCS2 string slice, analogous to `&'a str`.
 #[repr(transparent)]
 pub struct WStr {
     /// See the `ptr` module for more details.

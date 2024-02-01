@@ -1,0 +1,336 @@
+==== regular
+  ==== text
+    regular non-html
+  ==== html
+    regular non-html
+  ==== default text format
+    tf.bold:
+      false
+    tf.italic:
+      false
+    tf.underline:
+      false
+    tf.align
+      left
+    tf.blockIndent
+      0
+    tf.bullet
+      false
+    tf.color
+      0
+    tf.font
+      font regular
+    tf.indent
+      0
+    tf.kerning
+      false
+    tf.leading
+      0
+    tf.leftMargin
+      0
+    tf.letterSpacing
+      0
+    tf.rightMargin
+      0
+    tf.size
+      12
+    tf.tabStops.join(',')
+      
+    tf.target
+      
+    tf.url
+      
+==== bold
+  ==== text
+    bold non-html
+  ==== html
+    bold non-html
+  ==== default text format
+    tf.bold:
+      true
+    tf.italic:
+      false
+    tf.underline:
+      false
+    tf.align
+      left
+    tf.blockIndent
+      0
+    tf.bullet
+      false
+    tf.color
+      0
+    tf.font
+      font bold
+    tf.indent
+      0
+    tf.kerning
+      false
+    tf.leading
+      0
+    tf.leftMargin
+      0
+    tf.letterSpacing
+      0
+    tf.rightMargin
+      0
+    tf.size
+      12
+    tf.tabStops.join(',')
+      
+    tf.target
+      
+    tf.url
+      
+==== italic
+  ==== text
+    italic non-html
+  ==== html
+    italic non-html
+  ==== default text format
+    tf.bold:
+      false
+    tf.italic:
+      true
+    tf.underline:
+      false
+    tf.align
+      left
+    tf.blockIndent
+      0
+    tf.bullet
+      false
+    tf.color
+      0
+    tf.font
+      font italic
+    tf.indent
+      0
+    tf.kerning
+      false
+    tf.leading
+      0
+    tf.leftMargin
+      0
+    tf.letterSpacing
+      0
+    tf.rightMargin
+      0
+    tf.size
+      12
+    tf.tabStops.join(',')
+      
+    tf.target
+      
+    tf.url
+      
+==== bold italic
+  ==== text
+    bold italic non-html
+  ==== html
+    bold italic non-html
+  ==== default text format
+    tf.bold:
+      true
+    tf.italic:
+      true
+    tf.underline:
+      false
+    tf.align
+      left
+    tf.blockIndent
+      0
+    tf.bullet
+      false
+    tf.color
+      0
+    tf.font
+      font bold italic
+    tf.indent
+      0
+    tf.kerning
+      false
+    tf.leading
+      0
+    tf.leftMargin
+      0
+    tf.letterSpacing
+      0
+    tf.rightMargin
+      0
+    tf.size
+      12
+    tf.tabStops.join(',')
+      
+    tf.target
+      
+    tf.url
+      
+==== regular html
+  ==== text
+    regular html
+  ==== html
+    <P ALIGN="LEFT"><FONT FACE="font regular" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">regular <B>html</B></FONT></P>
+  ==== default text format
+    tf.bold:
+      null
+    tf.italic:
+      false
+    tf.underline:
+      false
+    tf.align
+      left
+    tf.blockIndent
+      0
+    tf.bullet
+      false
+    tf.color
+      0
+    tf.font
+      font regular
+    tf.indent
+      0
+    tf.kerning
+      false
+    tf.leading
+      0
+    tf.leftMargin
+      0
+    tf.letterSpacing
+      0
+    tf.rightMargin
+      0
+    tf.size
+      12
+    tf.tabStops.join(',')
+      
+    tf.target
+      
+    tf.url
+      
+==== bold html
+  ==== text
+    bold html
+  ==== html
+    <P ALIGN="LEFT"><FONT FACE="font bold" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">bold <I>html</I></FONT></P>
+  ==== default text format
+    tf.bold:
+      false
+    tf.italic:
+      null
+    tf.underline:
+      false
+    tf.align
+      left
+    tf.blockIndent
+      0
+    tf.bullet
+      false
+    tf.color
+      0
+    tf.font
+      font bold
+    tf.indent
+      0
+    tf.kerning
+      false
+    tf.leading
+      0
+    tf.leftMargin
+      0
+    tf.letterSpacing
+      0
+    tf.rightMargin
+      0
+    tf.size
+      12
+    tf.tabStops.join(',')
+      
+    tf.target
+      
+    tf.url
+      
+==== italic html
+  ==== text
+    italic html
+  ==== html
+    <P ALIGN="LEFT"><FONT FACE="font italic" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">italic <B>html</B></FONT></P>
+  ==== default text format
+    tf.bold:
+      null
+    tf.italic:
+      false
+    tf.underline:
+      false
+    tf.align
+      left
+    tf.blockIndent
+      0
+    tf.bullet
+      false
+    tf.color
+      0
+    tf.font
+      font italic
+    tf.indent
+      0
+    tf.kerning
+      false
+    tf.leading
+      0
+    tf.leftMargin
+      0
+    tf.letterSpacing
+      0
+    tf.rightMargin
+      0
+    tf.size
+      12
+    tf.tabStops.join(',')
+      
+    tf.target
+      
+    tf.url
+      
+==== bold italic html
+  ==== text
+    bold italic html
+  ==== html
+    <P ALIGN="LEFT"><FONT FACE="font bold italic" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">bold italic <B>html</B></FONT></P>
+  ==== default text format
+    tf.bold:
+      null
+    tf.italic:
+      false
+    tf.underline:
+      false
+    tf.align
+      left
+    tf.blockIndent
+      0
+    tf.bullet
+      false
+    tf.color
+      0
+    tf.font
+      font bold italic
+    tf.indent
+      0
+    tf.kerning
+      false
+    tf.leading
+      0
+    tf.leftMargin
+      0
+    tf.letterSpacing
+      0
+    tf.rightMargin
+      0
+    tf.size
+      12
+    tf.tabStops.join(',')
+      
+    tf.target
+      
+    tf.url
+      

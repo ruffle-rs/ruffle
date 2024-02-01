@@ -47,7 +47,7 @@ use std::cmp::max;
 use std::collections::HashMap;
 use std::sync::Arc;
 use swf::extensions::ReadSwfExt;
-use swf::{ClipEventFlag, FontFlag, FrameLabelData, SwfStr, TagCode};
+use swf::{ClipEventFlag, FrameLabelData, TagCode};
 
 use super::interactive::Avm2MousePick;
 
@@ -335,10 +335,9 @@ impl<'gc> MovieClip<'gc> {
             let loader_info =
                 LoaderInfoObject::not_yet_loaded(activation, movie.clone(), None, None, false)
                     .expect("Failed to construct LoaderInfoObject");
-            loader_info
-                .as_loader_info_object()
-                .unwrap()
-                .set_content_type(ContentType::Swf, activation.context.gc_context);
+            let loader_info_obj = loader_info.as_loader_info_object().unwrap();
+            loader_info_obj.set_expose_content(activation.context.gc_context);
+            loader_info_obj.set_content_type(ContentType::Swf, activation.context.gc_context);
             Some(loader_info)
         } else {
             None
@@ -387,17 +386,18 @@ impl<'gc> MovieClip<'gc> {
         ));
 
         if movie.is_action_script_3() {
-            mc.0.read()
+            let mc_data = mc.0.read();
+            let loader_info = mc_data
                 .static_data
                 .loader_info
                 .as_ref()
                 .unwrap()
                 .as_loader_info_object()
-                .unwrap()
-                .set_loader_stream(
-                    LoaderStream::Swf(movie, mc.into()),
-                    activation.context.gc_context,
-                );
+                .unwrap();
+            loader_info.set_loader_stream(
+                LoaderStream::Swf(movie, mc.into()),
+                activation.context.gc_context,
+            );
         }
         mc.set_is_root(activation.context.gc_context, true);
         mc
@@ -3153,9 +3153,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
 
         if self.visible() {
             let this: InteractiveObject<'gc> = (*self).into();
-            let Some(local_matrix) = self.global_to_local_matrix() else {
-                return None;
-            };
+            let local_matrix = self.global_to_local_matrix()?;
 
             if let Some(masker) = self.masker() {
                 // FIXME - should this really use `SKIP_INVISIBLE`? Avm2 doesn't.
@@ -3801,7 +3799,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
             .character_by_id(button_colors.id)
         {
             Some(Character::Avm1Button(button)) => {
-                button.set_colors(context.gc_context, &button_colors.color_transforms[..]);
+                button.set_colors(&button_colors.color_transforms);
             }
             Some(_) => {
                 tracing::warn!(
@@ -3832,10 +3830,10 @@ impl<'gc, 'a> MovieClipData<'gc> {
             .character_by_id(button_sounds.id)
         {
             Some(Character::Avm1Button(button)) => {
-                button.set_sounds(context.gc_context, button_sounds);
+                button.set_sounds(button_sounds);
             }
             Some(Character::Avm2Button(button)) => {
-                button.set_sounds(context.gc_context, button_sounds);
+                button.set_sounds(button_sounds);
             }
             Some(_) => {
                 tracing::warn!(
@@ -3962,29 +3960,13 @@ impl<'gc, 'a> MovieClipData<'gc> {
         context: &mut UpdateContext<'_, 'gc>,
         reader: &mut SwfStream<'a>,
     ) -> Result<(), Error> {
-        tracing::warn!("DefineFont4 tag (TLF text) is not implemented");
         let font = reader.read_define_font_4()?;
         let font_id = font.id;
-        let font_object = Font::from_swf_tag(
-            context.gc_context,
-            context.renderer,
-            swf::Font {
-                version: 4,
-                id: font.id,
-                name: SwfStr::from_bytes(b"<Unknown Font4>"),
-                language: swf::Language::Unknown,
-                layout: None,
-                glyphs: Vec::new(),
-                flags: FontFlag::empty(),
-            },
-            reader.encoding(),
-            FontType::EmbeddedCFF,
-        );
+        let font_object = Font::from_font4_tag(context.gc_context, font, reader.encoding())?;
         context
             .library
             .library_for_movie_mut(self.movie())
             .register_character(font_id, Character::Font(font_object));
-
         Ok(())
     }
 

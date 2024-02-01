@@ -960,7 +960,7 @@ pub fn get_bounds<'gc>(
             .and_then(|o| o.as_display_object())
             .unwrap_or(dobj);
         let bounds = dobj.bounds();
-        let out_bounds = if DisplayObject::ptr_eq(dobj, target) {
+        let mut out_bounds = if DisplayObject::ptr_eq(dobj, target) {
             // Getting the clips bounds in its own coordinate space; no AABB transform needed.
             bounds
         } else {
@@ -972,6 +972,9 @@ pub fn get_bounds<'gc>(
             let to_target_matrix = target.global_to_local_matrix().unwrap_or_default();
             to_target_matrix * to_global_matrix * bounds
         };
+        if !out_bounds.is_valid() {
+            out_bounds = Rectangle::ZERO;
+        }
 
         return Ok(new_rectangle(activation, out_bounds)?.into());
     }

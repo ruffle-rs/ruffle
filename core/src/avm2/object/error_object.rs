@@ -4,7 +4,6 @@ use crate::avm2::activation::Activation;
 use crate::avm2::call_stack::CallStack;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
-use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::string::WString;
@@ -137,10 +136,6 @@ impl<'gc> TObject<'gc> for ErrorObject<'gc> {
 
     fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Value::Object(Object::from(*self)))
-    }
-
-    fn to_string(&self, activation: &mut Activation<'_, 'gc>) -> Result<Value<'gc>, Error<'gc>> {
-        Ok(AvmString::new(activation.context.gc_context, self.display()?).into())
     }
 
     fn as_error_object(&self) -> Option<ErrorObject<'gc>> {

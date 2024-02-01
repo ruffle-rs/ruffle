@@ -39,7 +39,7 @@ in ActionScript classes in playerglobal. During the build process, we automatica
 generate a reference to a Rust function at the corresponding path in Ruffle.
 
 For example, the native method function `flash.system.Security.allowDomain`
-expects a Rust function to be defined at `crate::avm2::globals::flash::system::security::allowDomain`.
+expects a Rust function to be defined at `crate::avm2::globals::flash::system::security::allow_domain`.
 
 This function is cast to a `NativeMethodImpl` function pointer, exactly like
 functions defined on a pure-Rust class definition.
@@ -65,7 +65,7 @@ See `flash/events/Event.as` for an example
 
 ## API Versioning
 
-Ruffle supports Flash's Api versioning, which hides newer playerglobal definitions
+Ruffle supports Flash's API versioning, which hides newer playerglobal definitions
 (including methods/properties) from SWFs compiled with older API versions.
 For example, see `Event.WORKER_STATE`
 
@@ -74,7 +74,7 @@ To add versioning to an API:
 1. Determine the first version where it was added. This can be seen in the Flash Documentation (e.g. "Runtime Versions: Flash Player 11.4, AIR 3.4")
 2. Convert the Flash Player version to an SWF version number using [this chart](https://github.com/ruffle-rs/ruffle/wiki/SWF-version-chart)
 2. Determine the corresponding asc.jar version code for the SWF version. This can be found in avmplus in https://github.com/adobe/avmplus/blob/master/core/api-versions.as
-3. Add an `[API("VersionCode")]` metadata to the defintion. In the `Event.WORKER_STATE` example,
+3. Add an `[API("VersionCode")]` metadata to the definition. In the `Event.WORKER_STATE` example,
    this looks like:
 
    ```actionscript

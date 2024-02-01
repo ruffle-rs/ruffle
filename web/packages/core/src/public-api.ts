@@ -19,7 +19,7 @@ declare global {
  * Represents a potential installation of a Ruffle public API.
  *
  * Unlike [[PublicAPI]], this may come from any source, past or future.
- * It needs to be forwards compatible and convertable into a modern day [[PublicAPI]].
+ * It needs to be forwards compatible and convertible into a modern day [[PublicAPI]].
  */
 interface PublicAPILike {
     config?: DataLoadOptions | URLLoadOptions | object;

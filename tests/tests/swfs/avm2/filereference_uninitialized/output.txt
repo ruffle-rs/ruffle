@@ -1,0 +1,8 @@
+file['creationDate'] throw: Error: Error #2037: Functions called in incorrect sequence, or earlier call was unsuccessful.
+file['creator']: null
+file['data']: null
+file['extension'] throw: ReferenceError: Error #1069: Property extension not found on flash.net.FileReference and there is no default value.
+file['modificationDate'] throw: Error: Error #2037: Functions called in incorrect sequence, or earlier call was unsuccessful.
+file['name'] throw: Error: Error #2037: Functions called in incorrect sequence, or earlier call was unsuccessful.
+file['size'] throw: Error: Error #2037: Functions called in incorrect sequence, or earlier call was unsuccessful.
+file['type'] throw: Error: Error #2037: Functions called in incorrect sequence, or earlier call was unsuccessful.

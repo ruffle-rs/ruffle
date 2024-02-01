@@ -13,10 +13,7 @@ struct Globals {
 struct Transforms {
     /// The world matrix that transforms this object into stage space.
     world_matrix: mat4x4<f32>,
-};
 
-/// Transform uniforms that are changed per object.
-struct ColorTransforms {
     /// The multiplicative color transform of this object.
     mult_color: vec4<f32>,
 
@@ -30,11 +27,6 @@ struct TextureTransforms {
     /// Transforms from object space to UV space.
     texture_matrix: mat4x4<f32>,
 };
-
-struct PushConstants {
-    transforms: Transforms,
-    colorTransforms: ColorTransforms,
-}
 
 /// The vertex format shared among most shaders.
 struct VertexInput {

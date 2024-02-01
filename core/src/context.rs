@@ -1,8 +1,17 @@
 //! Contexts and helper types passed between functions.
 
+use crate::avm1::Activation;
+use crate::avm1::ActivationIdentifier;
+use crate::avm1::Attribute;
 use crate::avm1::Avm1;
+use crate::avm1::ScriptObject;
 use crate::avm1::SystemProperties;
+use crate::avm1::TObject;
 use crate::avm1::{Object as Avm1Object, Value as Avm1Value};
+use crate::avm2::api_version::ApiVersion;
+use crate::avm2::object::LoaderInfoObject;
+use crate::avm2::Activation as Avm2Activation;
+use crate::avm2::TObject as _;
 use crate::avm2::{Avm2, Object as Avm2Object, SoundChannelObject};
 use crate::backend::{
     audio::{AudioBackend, AudioManager, SoundHandle, SoundInstanceHandle},
@@ -21,13 +30,16 @@ use crate::loader::LoadManager;
 use crate::local_connection::LocalConnections;
 use crate::net_connection::NetConnections;
 use crate::player::Player;
+use crate::player::PostFrameCallback;
 use crate::prelude::*;
 use crate::socket::Sockets;
 use crate::streams::StreamManager;
+use crate::string::AvmString;
 use crate::string::AvmStringInterner;
 use crate::stub::StubCollection;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::timer::Timers;
+use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::{Collect, Mutation};
 use rand::rngs::SmallRng;
@@ -61,7 +73,7 @@ impl<'a, 'gc> GcContext<'a, 'gc> {
         }
     }
 
-    /// Convenience method to retrieve the current GC context. Note that explicitely writing
+    /// Convenience method to retrieve the current GC context. Note that explicitly writing
     /// `self.gc_context` can be sometimes necessary to satisfy the borrow checker.
     #[inline(always)]
     pub fn gc(&self) -> &'gc Mutation<'gc> {
@@ -101,7 +113,7 @@ pub struct UpdateContext<'a, 'gc> {
     pub needs_render: &'a mut bool,
 
     /// The root SWF file.
-    pub swf: &'a Arc<SwfMovie>,
+    pub swf: &'a mut Arc<SwfMovie>,
 
     /// The audio backend, used by display objects and AVM to play audio.
     pub audio: &'a mut dyn AudioBackend,
@@ -238,6 +250,11 @@ pub struct UpdateContext<'a, 'gc> {
 
     /// Dynamic root for allowing handles to GC objects to exist outside of the GC.
     pub dynamic_root: gc_arena::DynamicRootSet<'gc>,
+
+    /// These functions are run at the end of each frame execution.
+    /// Currently, this is just used for handling `Loader.loadBytes`
+    #[allow(clippy::type_complexity)]
+    pub post_frame_callbacks: &'a mut Vec<PostFrameCallback<'gc>>,
 }
 
 /// Convenience methods for controlling audio.
@@ -326,10 +343,120 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
     pub fn set_sound_transforms_dirty(&mut self) {
         self.audio_manager.set_sound_transforms_dirty()
     }
+
+    /// Change the root movie.
+    ///
+    /// This should only be called once, as it makes no attempt at removing
+    /// previous stage contents. If you need to load a new root movie, you
+    /// should destroy and recreate the player instance.
+    pub fn set_root_movie(&mut self, movie: SwfMovie) {
+        if !self.forced_frame_rate {
+            *self.frame_rate = movie.frame_rate().into();
+        }
+
+        info!(
+            "Loaded SWF version {}, resolution {}x{} @ {} FPS",
+            movie.version(),
+            movie.width(),
+            movie.height(),
+            self.frame_rate,
+        );
+
+        *self.swf = Arc::new(movie);
+        *self.instance_counter = 0;
+
+        if self.swf.is_action_script_3() {
+            self.avm2.root_api_version =
+                ApiVersion::from_swf_version(self.swf.version(), self.avm2.player_runtime)
+                    .unwrap_or_else(|| panic!("Unknown SWF version {}", self.swf.version()));
+        }
+
+        self.stage.set_movie_size(
+            self.gc_context,
+            self.swf.width().to_pixels() as u32,
+            self.swf.height().to_pixels() as u32,
+        );
+        self.stage.set_movie(self.gc_context, self.swf.clone());
+
+        let stage_domain = self.avm2.stage_domain();
+        let mut activation = Avm2Activation::from_domain(self.reborrow(), stage_domain);
+
+        activation
+            .context
+            .library
+            .library_for_movie_mut(activation.context.swf.clone())
+            .set_avm2_domain(stage_domain);
+        activation.context.ui.set_mouse_visible(true);
+
+        let swf = activation.context.swf.clone();
+        let root: DisplayObject = MovieClip::player_root_movie(&mut activation, swf.clone()).into();
+
+        // The Stage `LoaderInfo` is permanently in the 'not yet loaded' state,
+        // and has no associated `Loader` instance.
+        // However, some properties are always accessible, and take their values
+        // from the root SWF.
+        let stage_loader_info =
+            LoaderInfoObject::not_yet_loaded(&mut activation, swf, None, Some(root), true)
+                .expect("Failed to construct Stage LoaderInfo");
+        stage_loader_info
+            .as_loader_info_object()
+            .unwrap()
+            .set_expose_content(activation.context.gc_context);
+        activation
+            .context
+            .stage
+            .set_loader_info(activation.context.gc_context, stage_loader_info);
+
+        drop(activation);
+
+        root.set_depth(self.gc_context, 0);
+        let flashvars = if !self.swf.parameters().is_empty() {
+            let object = ScriptObject::new(self.gc_context, None);
+            for (key, value) in self.swf.parameters().iter() {
+                object.define_value(
+                    self.gc_context,
+                    AvmString::new_utf8(self.gc_context, key),
+                    AvmString::new_utf8(self.gc_context, value).into(),
+                    Attribute::empty(),
+                );
+            }
+            Some(object.into())
+        } else {
+            None
+        };
+
+        root.post_instantiation(self, flashvars, Instantiator::Movie, false);
+        root.set_default_root_name(self);
+        self.stage.replace_at_depth(self, root, 0);
+
+        // Set the version parameter on the root.
+        let mut activation = Activation::from_stub(
+            self.reborrow(),
+            ActivationIdentifier::root("[Version Setter]"),
+        );
+        let object = root.object().coerce_to_object(&mut activation);
+        let version_string = activation
+            .context
+            .system
+            .get_version_string(activation.context.avm1);
+        object.define_value(
+            activation.context.gc_context,
+            "$version",
+            AvmString::new_utf8(activation.context.gc_context, version_string).into(),
+            Attribute::empty(),
+        );
+
+        let stage = activation.context.stage;
+        stage.build_matrices(&mut activation.context);
+
+        drop(activation);
+
+        self.audio.set_frame_rate(*self.frame_rate);
+    }
 }
 
 impl<'a, 'gc> UpdateContext<'a, 'gc> {
-    /// Convenience method to retrieve the current GC context. Note that explicitely writing
+    /// Convenience method to retrieve the current GC context. Note that explicitly writing
     /// `self.gc_context` can be sometimes necessary to satisfy the borrow checker.
     #[inline(always)]
     pub fn gc(&self) -> &'gc Mutation<'gc> {
@@ -400,6 +527,7 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
             net_connections: self.net_connections,
             local_connections: self.local_connections,
             dynamic_root: self.dynamic_root,
+            post_frame_callbacks: self.post_frame_callbacks,
         }
     }
 
@@ -489,7 +617,7 @@ impl<'gc> Default for ActionQueue<'gc> {
 /// Shared data used during rendering.
 /// `Player` creates this when it renders a frame and passes it down to display objects.
 ///
-/// As a convenience, this type can be deref-coerced to `Mutation<'gc>`, but note that explicitely
+/// As a convenience, this type can be deref-coerced to `Mutation<'gc>`, but note that explicitly
 /// writing `context.gc_context` can be sometimes necessary to satisfy the borrow checker.
 pub struct RenderContext<'a, 'gc> {
     /// The renderer, used by the display objects to register themselves.
@@ -521,7 +649,7 @@ pub struct RenderContext<'a, 'gc> {
 }
 
 impl<'a, 'gc> RenderContext<'a, 'gc> {
-    /// Convenience method to retrieve the current GC context. Note that explicitely writing
+    /// Convenience method to retrieve the current GC context. Note that explicitly writing
     /// `self.gc_context` can be sometimes necessary to satisfy the borrow checker.
     #[inline(always)]
     pub fn gc(&self) -> &'gc Mutation<'gc> {

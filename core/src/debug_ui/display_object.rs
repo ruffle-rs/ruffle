@@ -194,13 +194,13 @@ impl DisplayObjectWindow {
 
                             ui.label(format.span_length.to_string());
                             ui.label(format.url.to_string());
-                            ui.label(format.font.to_string());
+                            ui.label(format.font.face.to_string());
 
-                            if format.bold && format.italic {
+                            if format.style.bold && format.style.italic {
                                 ui.label("Bold Italic");
-                            } else if format.bold {
+                            } else if format.style.bold {
                                 ui.label("Bold");
-                            } else if format.italic {
+                            } else if format.style.italic {
                                 ui.label("Italic");
                             } else {
                                 ui.label("Regular");
@@ -628,7 +628,7 @@ impl DisplayObjectWindow {
         if !matches_search(object, search) {
             return;
         }
-        if let Some(ctr) = object.as_container() {
+        if let Some(ctr) = object.as_container().filter(|x| x.num_children() > 0) {
             CollapsingState::load_with_default_open(ui.ctx(), ui.id().with(object.as_ptr()), false)
                 .show_header(ui, |ui| {
                     open_display_object_button(

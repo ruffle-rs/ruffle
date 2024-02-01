@@ -205,6 +205,48 @@ pub fn make_error_1010<'gc>(
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1025<'gc>(activation: &mut Activation<'_, 'gc>, index: u32) -> Error<'gc> {
+    let err = verify_error(
+        activation,
+        &format!("Error #1025: An invalid register {} was accessed.", index),
+        1025,
+    );
+    match err {
+        Ok(err) => Error::AvmError(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1032<'gc>(activation: &mut Activation<'_, 'gc>, index: u32) -> Error<'gc> {
+    let err = verify_error(
+        activation,
+        &format!("Error #1032: Cpool index {} is out of range.", index),
+        1032,
+    );
+    match err {
+        Ok(err) => Error::AvmError(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1054<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = verify_error(
+        activation,
+        "Error #1054: Illegal range or target offsets in exception handler.",
+        1054,
+    );
+    match err {
+        Ok(err) => Error::AvmError(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1087<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     let err = type_error(
         activation,
@@ -225,6 +267,38 @@ pub fn make_error_1089<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
         "Error #1089: Assignment to lists with more than one item is not supported.",
         1089,
     );
+    match err {
+        Ok(err) => Error::AvmError(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1107<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = verify_error(
+        activation,
+        "Error #1107: The ABC data is corrupt, attempt to read out of bounds.",
+        1107,
+    );
+    match err {
+        Ok(err) => Error::AvmError(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1117<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    name: AvmString<'gc>,
+) -> Error<'gc> {
+    let err = type_error(
+        activation,
+        &format!("Error #1117: Invalid XML name: {}.", name.as_wstr()),
+        1117,
+    );
+
     match err {
         Ok(err) => Error::AvmError(err),
         Err(err) => err,
@@ -309,11 +383,25 @@ pub fn make_error_2008<'gc>(activation: &mut Activation<'_, 'gc>, param_name: &s
 
 #[inline(never)]
 #[cold]
-pub fn make_error_2126<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+pub fn make_error_2037<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = error(
+        activation,
+        "Error #2037: Functions called in incorrect sequence, or earlier call was unsuccessful.",
+        2037,
+    );
+    match err {
+        Ok(err) => Error::AvmError(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_2097<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     let err = argument_error(
         activation,
-        "Error #2126: NetConnection object must be connected.",
-        2126,
+        "Error #2097: The FileFilter Array is not in the correct format.",
+        2097,
     );
     match err {
         Ok(err) => Error::AvmError(err),
@@ -328,6 +416,20 @@ pub fn make_error_2025<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
         activation,
         "Error #2025: The supplied DisplayObject must be a child of the caller.",
         2025,
+    );
+    match err {
+        Ok(err) => Error::AvmError(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_2126<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = argument_error(
+        activation,
+        "Error #2126: NetConnection object must be connected.",
+        2126,
     );
     match err {
         Ok(err) => Error::AvmError(err),

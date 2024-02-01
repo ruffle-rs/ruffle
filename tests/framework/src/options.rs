@@ -3,7 +3,7 @@ use crate::environment::{Environment, RenderInterface};
 use crate::image_trigger::ImageTrigger;
 use crate::util::write_image;
 use anyhow::{anyhow, Result};
-use approx::assert_relative_eq;
+use approx::relative_eq;
 use image::ImageOutputFormat;
 use regex::Regex;
 use ruffle_core::tag_utils::SwfMovie;
@@ -15,7 +15,7 @@ use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 use vfs::VfsPath;
 
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct TestOptions {
     pub num_frames: Option<u32>,
@@ -83,7 +83,7 @@ impl TestOptions {
     }
 }
 
-#[derive(Deserialize, Default)]
+#[derive(Clone, Deserialize, Default)]
 #[serde(default, deny_unknown_fields)]
 pub struct Approximations {
     number_patterns: Vec<String>,
@@ -92,19 +92,31 @@ pub struct Approximations {
 }
 
 impl Approximations {
-    pub fn compare(&self, actual: f64, expected: f64) {
-        match (self.epsilon, self.max_relative) {
-            (Some(epsilon), Some(max_relative)) => assert_relative_eq!(
+    pub fn compare(&self, actual: f64, expected: f64) -> Result<()> {
+        let result = match (self.epsilon, self.max_relative) {
+            (Some(epsilon), Some(max_relative)) => relative_eq!(
                 actual,
                 expected,
                 epsilon = epsilon,
                 max_relative = max_relative
             ),
-            (Some(epsilon), None) => assert_relative_eq!(actual, expected, epsilon = epsilon),
+            (Some(epsilon), None) => relative_eq!(actual, expected, epsilon = epsilon),
             (None, Some(max_relative)) => {
-                assert_relative_eq!(actual, expected, max_relative = max_relative)
+                relative_eq!(actual, expected, max_relative = max_relative)
             }
-            (None, None) => assert_relative_eq!(actual, expected),
+            (None, None) => relative_eq!(actual, expected),
+        };
+
+        if result {
+            Ok(())
+        } else {
+            Err(anyhow!(
+                "Approximation failed: expected {}, found {}. Episilon = {:?}, Max Relative = {:?}",
+                expected,
+                actual,
+                self.epsilon,
+                self.max_relative
+            ))
         }
     }
 
@@ -116,7 +128,7 @@ impl Approximations {
     }
 }
 
-#[derive(Deserialize, Default)]
+#[derive(Clone, Deserialize, Default)]
 #[serde(default, deny_unknown_fields)]
 pub struct RequiredFeatures {
     lzma: bool,
@@ -129,7 +141,7 @@ impl RequiredFeatures {
     }
 }
 
-#[derive(Deserialize, Default)]
+#[derive(Clone, Deserialize, Default)]
 #[serde(default, deny_unknown_fields)]
 pub struct PlayerOptions {
     max_execution_duration: Option<Duration>,
@@ -195,11 +207,11 @@ impl PlayerOptions {
         &self,
         environment: &impl Environment,
         dimensions: ViewportDimensions,
-    ) -> Vec<(Box<dyn RenderInterface>, Box<dyn RenderBackend>)> {
+    ) -> Option<(Box<dyn RenderInterface>, Box<dyn RenderBackend>)> {
         if self.with_renderer.is_some() {
-            environment.create_renderers(dimensions.width, dimensions.height)
+            environment.create_renderer(dimensions.width, dimensions.height)
         } else {
-            vec![]
+            None
         }
     }
 }
@@ -356,7 +368,7 @@ impl ImageComparison {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct RenderOptions {
     optional: bool,

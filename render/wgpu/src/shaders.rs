@@ -32,10 +32,6 @@ impl Shaders {
     pub fn new(device: &wgpu::Device) -> Self {
         let mut composer = composer().expect("Couldn't create shader composer");
         let mut shader_defs = HashMap::new();
-        shader_defs.insert(
-            "use_push_constants".to_owned(),
-            ShaderDefValue::Bool(device.limits().max_push_constant_size > 0),
-        );
         shader_defs.insert("early_saturate".to_owned(), ShaderDefValue::Bool(true));
 
         let mut late_saturate_shader_defs = shader_defs.clone();

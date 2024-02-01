@@ -8,6 +8,11 @@ package flash.ui
 
     public final class KeyLocation
     {
+        // Indicates the key activation originated on a directional pad of input device.
+        // Example: The trackball on a mobile device or the left arrow on a remote control.
+        [API("669")]
+        public static const D_PAD:uint = 4;
+
         // Indicates the key activated is in the left key location (there is more than one possible location for this key).
         public static const LEFT:uint = 1;
 

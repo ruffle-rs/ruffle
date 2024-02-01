@@ -159,7 +159,7 @@ fn main() -> Result<(), Error> {
     let result = if opt.timedemo {
         time_demo::run_timedemo(opt)
     } else {
-        App::new(opt).map(|app| app.run())
+        App::new(opt).and_then(|app| app.run())
     };
     #[cfg(windows)]
     if let Err(error) = &result {

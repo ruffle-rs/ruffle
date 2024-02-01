@@ -139,9 +139,9 @@ impl<W: Write> Writer<W> {
         self.write_u30(i.0)
     }
 
-    fn write_string(&mut self, s: &str) -> Result<()> {
+    fn write_string(&mut self, s: &[u8]) -> Result<()> {
         self.write_u30(s.len() as u32)?;
-        self.output.write_all(s.as_bytes())?;
+        self.output.write_all(s)?;
         Ok(())
     }
 
@@ -952,10 +952,6 @@ impl<W: Write> Writer<W> {
                 self.write_opcode(OpCode::PushByte)?;
                 self.write_u8(value)?;
             }
-            Op::PushConstant { value } => {
-                self.write_opcode(OpCode::PushConstant)?;
-                self.write_u30(value)?;
-            }
             Op::PushDouble { ref value } => {
                 self.write_opcode(OpCode::PushDouble)?;
                 self.write_index(value)?;
@@ -1495,8 +1491,6 @@ pub mod tests {
         assert_eq!(write(Op::PopScope), b"\x1D");
 
         assert_eq!(write(Op::PushByte { value: 1 }), b"\x24\x01");
-
-        assert_eq!(write(Op::PushConstant { value: 1 }), b"\x22\x01");
 
         assert_eq!(
             write(Op::PushDouble {

@@ -1,9 +1,8 @@
 use crate::blend::{ComplexBlend, TrivialBlend};
 use crate::layouts::BindLayouts;
 use crate::shaders::Shaders;
-use crate::{MaskState, PosColorVertex, PosVertex, PushConstants, Transforms};
+use crate::{MaskState, PosColorVertex, PosVertex};
 use enum_map::{enum_map, Enum, EnumMap};
-use std::mem;
 use wgpu::{vertex_attr_array, BlendState};
 
 pub const VERTEX_BUFFERS_DESCRIPTION_POS: [wgpu::VertexBufferLayout; 1] =
@@ -36,7 +35,7 @@ pub struct Pipelines {
     pub color: ShapePipeline,
     /// Renders a bitmap without any blending, and does
     /// not write to the alpha channel. This is used for
-    /// drawing a finished Stage3D buffer onto the backgroud.
+    /// drawing a finished Stage3D buffer onto the background.
     pub bitmap_opaque: wgpu::RenderPipeline,
     /// Like `bitmap_opaque`, but with a no-op `DepthStencilState`.
     /// This is used when we're inside a `RenderPass` that is
@@ -87,33 +86,7 @@ impl Pipelines {
         msaa_sample_count: u32,
         bind_layouts: &BindLayouts,
     ) -> Self {
-        let colort_bindings = if device.limits().max_push_constant_size > 0 {
-            vec![&bind_layouts.globals]
-        } else {
-            vec![
-                &bind_layouts.globals,
-                &bind_layouts.transforms,
-                &bind_layouts.color_transforms,
-            ]
-        };
-
-        let full_push_constants = &if device.limits().max_push_constant_size > 0 {
-            vec![wgpu::PushConstantRange {
-                stages: wgpu::ShaderStages::VERTEX_FRAGMENT,
-                range: 0..mem::size_of::<PushConstants>() as u32,
-            }]
-        } else {
-            vec![]
-        };
-
-        let partial_push_constants = &if device.limits().max_push_constant_size > 0 {
-            vec![wgpu::PushConstantRange {
-                stages: wgpu::ShaderStages::VERTEX,
-                range: 0..(mem::size_of::<Transforms>() as u32),
-            }]
-        } else {
-            vec![]
-        };
+        let colort_bindings = vec![&bind_layouts.globals, &bind_layouts.transforms];
 
         let color_pipelines = create_shape_pipeline(
             "Color",
@@ -124,19 +97,14 @@ impl Pipelines {
             &VERTEX_BUFFERS_DESCRIPTION_COLOR,
             &colort_bindings,
             wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING,
-            full_push_constants,
+            &[],
         );
 
-        let gradient_bindings = if device.limits().max_push_constant_size > 0 {
-            vec![&bind_layouts.globals, &bind_layouts.gradient]
-        } else {
-            vec![
-                &bind_layouts.globals,
-                &bind_layouts.transforms,
-                &bind_layouts.color_transforms,
-                &bind_layouts.gradient,
-            ]
-        };
+        let gradient_bindings = vec![
+            &bind_layouts.globals,
+            &bind_layouts.transforms,
+            &bind_layouts.gradient,
+        ];
 
         let gradient_pipeline = create_shape_pipeline(
             "Gradient",
@@ -147,18 +115,14 @@ impl Pipelines {
             &VERTEX_BUFFERS_DESCRIPTION_POS,
             &gradient_bindings,
             wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING,
-            full_push_constants,
+            &[],
         );
 
-        let complex_blend_bindings = if device.limits().max_push_constant_size > 0 {
-            vec![&bind_layouts.globals, &bind_layouts.blend]
-        } else {
-            vec![
-                &bind_layouts.globals,
-                &bind_layouts.transforms,
-                &bind_layouts.blend,
-            ]
-        };
+        let complex_blend_bindings = vec![
+            &bind_layouts.globals,
+            &bind_layouts.transforms,
+            &bind_layouts.blend,
+        ];
 
         let complex_blend_pipelines = enum_map! {
             blend => create_shape_pipeline(
@@ -170,20 +134,15 @@ impl Pipelines {
                 &VERTEX_BUFFERS_DESCRIPTION_POS,
                 &complex_blend_bindings,
                 wgpu::BlendState::REPLACE,
-                partial_push_constants,
+                &[],
             )
         };
 
-        let bitmap_blend_bindings = if device.limits().max_push_constant_size > 0 {
-            vec![&bind_layouts.globals, &bind_layouts.bitmap]
-        } else {
-            vec![
-                &bind_layouts.globals,
-                &bind_layouts.transforms,
-                &bind_layouts.color_transforms,
-                &bind_layouts.bitmap,
-            ]
-        };
+        let bitmap_blend_bindings = vec![
+            &bind_layouts.globals,
+            &bind_layouts.transforms,
+            &bind_layouts.bitmap,
+        ];
 
         let bitmap_pipelines: [ShapePipeline; TrivialBlend::LENGTH] = (0..TrivialBlend::LENGTH)
             .map(|blend| {
@@ -198,7 +157,7 @@ impl Pipelines {
                     &VERTEX_BUFFERS_DESCRIPTION_POS,
                     &bitmap_blend_bindings,
                     blend.blend_state(),
-                    full_push_constants,
+                    &[],
                 )
             })
             .collect::<Vec<_>>()
@@ -211,7 +170,7 @@ impl Pipelines {
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: bitmap_opaque_pipeline_layout_label.as_deref(),
                 bind_group_layouts: &bitmap_blend_bindings,
-                push_constant_ranges: full_push_constants,
+                push_constant_ranges: &[],
             });
 
         let bitmap_opaque = device.create_render_pipeline(&create_pipeline_descriptor(

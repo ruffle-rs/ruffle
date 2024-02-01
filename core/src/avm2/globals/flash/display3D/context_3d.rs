@@ -356,7 +356,7 @@ pub fn set_program_constants_from_vector<'gc>(
         let num_registers = args.get_i32(activation, 3)?;
 
         let to_take = if num_registers != -1 {
-            // Each register requries 4 floating-point values
+            // Each register requires 4 floating-point values
             // FIXME - throw an error if 'vector' is too small
             num_registers as usize * 4
         } else {

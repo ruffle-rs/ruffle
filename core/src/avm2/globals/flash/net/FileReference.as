@@ -4,85 +4,58 @@ package flash.net
     import flash.utils.ByteArray;
     import __ruffle__.stub_method;
 
+    [Ruffle(InstanceAllocator)]
     public class FileReference extends EventDispatcher
     {
-        private var _creationDate: Date;
-        private var _creator: String;
-        private var _data: ByteArray;
-        private var _extension: String;
-        private var _modificationDate: Date;
-        private var _name: String;
-        private static var _permissionStatus: String;
-        private var _size: Number;
-        private var _type: String;
-
         public function FileReference() {
-            
         }
 
-        public function get creationDate(): Date {
-            return this._creationDate;
-        }   
+        public native function get creationDate(): Date;
 
         public function get creator(): String {
-            retunr this._creator;
-        }   
+            // This was macOS (pre OS X) only. (Deprecated)
+            return null;
+        }
 
-        public function get data(): ByteArray {
-            return this._data;
-        }   
+        public native function get data(): ByteArray;
 
+        // AIR 1.0
+        [API("661")]
         public function get extension(): String {
-            return this._extension;
-        }   
+            // The file extension, excluding the dot.
+            return this.type ? this.type.slice(1) : null;
+        }
 
-        public function get modificationDate(): Date {
-            return this._modificationDate;
-        }   
+        public native function get modificationDate(): Date;
 
-        public function get name(): String {
-            retunr this._name;
-        }   
+        public native function get name(): String;
 
-        public static function get permissionStatus(): String {
-            return FileReference._permissionStatus;
-        }   
+        public native function get size(): Number;
 
-        public function get size(): Number {
-            return this._size;
-        }   
+        // File extension, including the dot. (Deprecated)
+        public native function get type(): String;
 
-        public function get type(): String {
-            return this._type;
-        }   
-
-        public function browse(typeFilter:Array = null):Boolean {
-            return false;
-        }   
+        public native function browse(typeFilter:Array = null): Boolean;
 
         public function cancel():void {
             stub_method("flash.net.FileReference", "cancel");
-        }   
+        }
 
         public function download(request:URLRequest, defaultFileName:String = null):void {
             stub_method("flash.net.FileReference", "download");
-        }   
+        }
 
-        public function load():void {
-            stub_method("flash.net.FileReference", "load");
-        }   
+        public native function load():void;
 
         public function requestPermission():void {
             stub_method("flash.net.FileReference", "requestPermission");
-        }   
+        }
 
-        public function save(data:*, defaultFileName:String = null):void {
-            stub_method("flash.net.FileReference", "save");
-        }   
+        public native function save(data:*, defaultFileName:String = null):void;
 
         public function upload(request:URLRequest, uploadDataFieldName:String = "Filedata", testUpload:Boolean = false):void {
             stub_method("flash.net.FileReference", "upload");
-        }   
+        }
 
         public function uploadUnencoded(request:URLRequest):void {
             stub_method("flash.net.FileReference", "uploadUnencoded");

@@ -11,16 +11,16 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-clap = { version = "4.4.13", features = ["derive"] }
+clap = { workspace = true }
 futures = "0.3"
 ruffle_core = { path = "../core", features = ["deterministic", "default_font"] }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
-image = { version = "0.24.7", default-features = false, features = ["png"] }
+image = { version = "0.24.8", default-features = false, features = ["png"] }
 log = "0.4"
 walkdir = "2.4.0"
 indicatif = "0.17"
-anyhow = "1.0"
-rayon = "1.8.0"
+rayon = "1.8.1"
+anyhow = { workspace = true }
 
 [features]
 avm_debug = ["ruffle_core/avm_debug"]

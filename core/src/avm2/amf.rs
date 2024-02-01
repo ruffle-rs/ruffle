@@ -1,6 +1,5 @@
 use std::rc::Rc;
 
-use crate::avm2::api_version::ApiVersion;
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::object::{ByteArrayObject, TObject, VectorObject};
 use crate::avm2::vector::VectorStorage;
@@ -15,7 +14,7 @@ use flash_lso::types::{Attribute, ClassDefinition, Value as AmfValue};
 use fnv::FnvHashMap;
 
 use super::property::Property;
-use super::{ClassObject, Namespace, QName};
+use super::{ClassObject, QName};
 
 pub type ObjectTable<'gc> = FnvHashMap<Object<'gc>, Rc<AmfValue>>;
 
@@ -173,15 +172,12 @@ fn alias_to_class<'gc>(
     alias: AvmString<'gc>,
 ) -> Result<ClassObject<'gc>, Error<'gc>> {
     let mut target_class = activation.avm2().classes().object;
-    let ns = Namespace::package(
-        "flash.net",
-        ApiVersion::AllVersions,
-        &mut activation.context.borrow_gc(),
-    );
+
+    let qname = QName::new(activation.avm2().flash_net_internal, "_getClassByAlias");
     let method = activation
         .avm2()
         .playerglobals_domain
-        .get_defined_value(activation, QName::new(ns, "getClassByAlias"))?;
+        .get_defined_value(activation, qname)?;
 
     let class = method
         .as_object()

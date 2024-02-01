@@ -9,7 +9,7 @@
         "message": "Mostrar descarga de SWF en el menú contextual"
     },
     "settings_autostart": {
-        "message": "Juegue automáticamente sin la pantalla de presentación (y luego, haga un clic para habilitar el audio)"
+        "message": "Reproduzca contenido automáticamente (y haga clic para restaurar el sonido)"
     },
     "settings_log_level": {
         "message": "Nivel de log"

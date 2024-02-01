@@ -35,6 +35,7 @@ enum PanicError {
     WasmMimeType,
     WasmNotFound,
     WasmDisabledMicrosoftEdge,
+    InvalidSwf,
     SwfFetchError,
     SwfCors,
 }
@@ -997,6 +998,7 @@ export class RufflePlayer extends HTMLElement {
                 );
             } else if ("data" in options) {
                 console.log("Loading SWF data");
+                delete this.swfUrl;
                 this.instance!.load_data(
                     new Uint8Array(options.data),
                     sanitizeParameters(options.parameters),
@@ -1480,12 +1482,12 @@ export class RufflePlayer extends HTMLElement {
             if (this.isFullscreen) {
                 items.push({
                     text: text("context-menu-exit-fullscreen"),
-                    onClick: () => this.instance?.set_fullscreen(false),
+                    onClick: () => this.setFullscreen(false),
                 });
             } else {
                 items.push({
                     text: text("context-menu-enter-fullscreen"),
-                    onClick: () => this.instance?.set_fullscreen(true),
+                    onClick: () => this.setFullscreen(true),
                 });
             }
         }
@@ -2026,8 +2028,11 @@ export class RufflePlayer extends HTMLElement {
         let actionLink: PanicLinkInfo;
         if (!isBuildOutdated) {
             let url;
-            if (document.location.protocol.includes("extension")) {
-                url = this.swfUrl!.href;
+            if (
+                document.location.protocol.includes("extension") &&
+                this.swfUrl
+            ) {
+                url = this.swfUrl.href;
             } else {
                 url = document.location.href;
             }
@@ -2111,6 +2116,10 @@ export class RufflePlayer extends HTMLElement {
                     new PanicLinkInfo(),
                 ]);
                 break;
+            case PanicError.InvalidSwf:
+                errorBody = textAsParagraphs("error-invalid-swf");
+                errorFooter = this.createErrorFooter([new PanicLinkInfo()]);
+                break;
             case PanicError.SwfFetchError:
                 errorBody = textAsParagraphs("error-swf-fetch");
                 errorFooter = this.createErrorFooter([new PanicLinkInfo()]);
@@ -2166,7 +2175,7 @@ export class RufflePlayer extends HTMLElement {
                 ]);
                 break;
             case PanicError.JavascriptConflict:
-                // Self hosted: Cannot load `.wasm` file - a native object / function is overriden
+                // Self hosted: Cannot load `.wasm` file - a native object / function is overridden
                 errorBody = textAsParagraphs("error-javascript-conflict");
                 if (isBuildOutdated) {
                     errorBody.appendChild(
@@ -2181,7 +2190,7 @@ export class RufflePlayer extends HTMLElement {
                 ]);
                 break;
             case PanicError.CSPConflict:
-                // General error: Cannot load `.wasm` file - a native object / function is overriden
+                // General error: Cannot load `.wasm` file - a native object / function is overridden
                 errorBody = textAsParagraphs("error-csp-conflict");
                 errorFooter = this.createErrorFooter([
                     new PanicLinkInfo(
@@ -2241,10 +2250,14 @@ export class RufflePlayer extends HTMLElement {
         this.destroy();
     }
 
-    protected displayRootMovieDownloadFailedMessage(): void {
+    protected displayRootMovieDownloadFailedMessage(invalidSwf: boolean): void {
         const openInNewTab = this.loadedConfig?.openInNewTab;
-        if (openInNewTab && window.location.origin !== this.swfUrl!.origin) {
-            const url = new URL(this.swfUrl!);
+        if (
+            openInNewTab &&
+            this.swfUrl &&
+            window.location.origin !== this.swfUrl.origin
+        ) {
+            const url = new URL(this.swfUrl);
             if (this.loadedConfig?.parameters) {
                 const parameters = sanitizeParameters(
                     this.loadedConfig?.parameters,
@@ -2272,10 +2285,12 @@ export class RufflePlayer extends HTMLElement {
             this.container.prepend(div);
         } else {
             const error = new Error("Failed to fetch: " + this.swfUrl);
-            if (!this.swfUrl!.protocol.includes("http")) {
+            if (this.swfUrl && !this.swfUrl.protocol.includes("http")) {
                 error.ruffleIndexError = PanicError.FileProtocol;
+            } else if (invalidSwf) {
+                error.ruffleIndexError = PanicError.InvalidSwf;
             } else if (
-                window.location.origin === this.swfUrl!.origin ||
+                window.location.origin === this.swfUrl?.origin ||
                 // The extension's internal player page is not restricted by CORS
                 window.location.protocol.includes("extension")
             ) {
@@ -2484,6 +2499,10 @@ export function getPolyfillOptions(
     const menu = parseBoolean(getOptionString("menu"));
     if (menu !== null) {
         options.menu = menu;
+    }
+    const allowFullscreen = parseBoolean(getOptionString("allowFullScreen"));
+    if (allowFullscreen !== null) {
+        options.allowFullscreen = allowFullscreen;
     }
     const parameters = getOptionString("flashvars");
     if (parameters !== null) {

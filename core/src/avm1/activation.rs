@@ -236,7 +236,7 @@ impl Drop for Activation<'_, '_> {
 }
 
 impl<'a, 'gc> Activation<'a, 'gc> {
-    /// Convenience method to retrieve the current GC context. Note that explicitely writing
+    /// Convenience method to retrieve the current GC context. Note that explicitly writing
     /// `self.context.gc_context` can be sometimes necessary to satisfy the borrow checker.
     #[inline(always)]
     pub fn gc(&self) -> &'gc gc_arena::Mutation<'gc> {
@@ -2922,10 +2922,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     /// Returns a reference to the DisplayObject that is the parent of the root.
     pub fn get_root_parent_container(&self) -> Option<DisplayObjectContainer<'gc>> {
-        self.base_clip()
-            .avm1_root()
-            .parent()
-            .and_then(|p| p.as_container())
+        self.base_clip().avm1_stage().as_container()
     }
 
     /// Tries to resolve a level by ID. Returns None if it does not exist.
@@ -3116,7 +3113,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     /// Checks that the clip executing a script still exists.
-    /// If the clip executing a script is removed during exectuion, return from this activation.
+    /// If the clip executing a script is removed during execution, return from this activation.
     /// Should be called after any action that could potentially destroy a clip (gotos, etc.)
     fn continue_if_base_clip_exists(&self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // The exception is `unload` clip event handlers, which currently are called when the clip

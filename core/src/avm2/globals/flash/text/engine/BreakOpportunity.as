@@ -9,7 +9,7 @@ package flash.text.engine
     
     public final class BreakOpportunity
     {
-        // Treats all characters in the ContentElement object as line break opportunities, meaning that a line break will occur afer each character.
+        // Treats all characters in the ContentElement object as line break opportunities, meaning that a line break will occur after each character.
         public static const ALL:String = "all";
         
         // Treats any character in the ContentElement object as a line break opportunity.

@@ -1,7 +1,5 @@
 use bitflags::bitflags;
 use std::marker::PhantomData;
-#[cfg(target_pointer_width = "64")]
-use std::mem::size_of;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct AbcFile {
@@ -21,7 +19,7 @@ pub struct ConstantPool {
     pub ints: Vec<i32>,
     pub uints: Vec<u32>,
     pub doubles: Vec<f64>,
-    pub strings: Vec<String>,
+    pub strings: Vec<Vec<u8>>,
     pub namespaces: Vec<Namespace>,
     pub namespace_sets: Vec<NamespaceSet>,
     pub multinames: Vec<Multiname>,
@@ -511,9 +509,6 @@ pub enum Op {
     PushByte {
         value: u8,
     },
-    PushConstant {
-        value: u32,
-    },
     PushDouble {
         value: Index<f64>,
     },
@@ -574,6 +569,3 @@ pub enum Op {
     Timestamp,
     URShift,
 }
-
-#[cfg(target_pointer_width = "64")]
-const _: () = assert!(size_of::<Op>() == 16);

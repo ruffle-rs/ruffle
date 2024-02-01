@@ -1,7 +1,7 @@
 //! Object representation for `flash.utils.Dictionary`
 
 use crate::avm2::activation::Activation;
-use crate::avm2::dynamic_map::StringOrObject;
+use crate::avm2::dynamic_map::DynamicKey;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
@@ -61,7 +61,7 @@ impl<'gc> DictionaryObject<'gc> {
             .base
             .values
             .as_hashmap()
-            .get(&StringOrObject::Object(name))
+            .get(&DynamicKey::Object(name))
             .cloned()
             .map(|v| v.value)
             .unwrap_or(Value::Undefined)
@@ -73,7 +73,7 @@ impl<'gc> DictionaryObject<'gc> {
             .write(mc)
             .base
             .values
-            .insert(StringOrObject::Object(name), value);
+            .insert(DynamicKey::Object(name), value);
     }
 
     /// Delete a value from the dictionary's object space.
@@ -82,7 +82,7 @@ impl<'gc> DictionaryObject<'gc> {
             .write(mc)
             .base
             .values
-            .remove(&StringOrObject::Object(name));
+            .remove(&DynamicKey::Object(name));
     }
 
     pub fn has_property_by_object(self, name: Object<'gc>) -> bool {
@@ -91,7 +91,7 @@ impl<'gc> DictionaryObject<'gc> {
             .base
             .values
             .as_hashmap()
-            .get(&StringOrObject::Object(name))
+            .get(&DynamicKey::Object(name))
             .is_some()
     }
 }

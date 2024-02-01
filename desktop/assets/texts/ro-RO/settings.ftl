@@ -1,3 +1,4 @@
+network-settings = Setări de rețea
 proxy = Proxy
 tcp-connections = Conexiuni TCP
 tcp-connections-allow = Permite

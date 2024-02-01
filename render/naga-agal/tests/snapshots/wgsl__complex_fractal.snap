@@ -16,12 +16,12 @@ fn main(@location(0) param: vec2<f32>, @location(1) param_1: vec2<f32>) -> Verte
     var dest_temp: vec4<f32>;
     var varying_0_: vec4<f32>;
 
-    dest_temp = vec4<f32>(param.x, param.y, 0.0, 1.0);
+    dest_temp = vec4<f32>(param.x, param.y, 0f, 1f);
     let _e10: vec4<f32> = constant_registers[1u];
     let _e13: vec4<f32> = constant_registers[2u];
     let _e16: vec4<f32> = constant_registers[3u];
     let _e19: vec4<f32> = constant_registers[4u];
-    varying_0_ = (transpose(mat4x4<f32>(_e10, _e13, _e16, _e19)) * vec4<f32>(param_1.x, param_1.y, 0.0, 1.0));
+    varying_0_ = (transpose(mat4x4<f32>(_e10, _e13, _e16, _e19)) * vec4<f32>(param_1.x, param_1.y, 0f, 1f));
     let _e32: vec4<f32> = constant_registers[0u];
     let _e33: vec4<f32> = _e32.zwww;
     varying_0_.z = _e33.z;

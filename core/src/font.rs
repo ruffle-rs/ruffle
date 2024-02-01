@@ -88,9 +88,9 @@ impl EvalParameters {
     /// parameters.
     pub fn from_span(span: &TextSpan) -> Self {
         Self {
-            height: Twips::from_pixels(span.size),
-            letter_spacing: Twips::from_pixels(span.letter_spacing),
-            kerning: span.kerning,
+            height: Twips::from_pixels(span.font.size),
+            letter_spacing: Twips::from_pixels(span.font.letter_spacing),
+            kerning: span.font.kerning,
         }
     }
 
@@ -274,7 +274,7 @@ pub enum GlyphSource {
         /// Used by `DefineEditText` tags.
         code_point_to_glyph: fnv::FnvHashMap<u16, usize>,
 
-        /// Kerning infomration.
+        /// Kerning information.
         /// Maps from a pair of unicode code points to horizontal offset value.
         kerning_pairs: fnv::FnvHashMap<(u16, u16), Twips>,
     },
@@ -336,7 +336,8 @@ impl GlyphSource {
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Collect, Hash)]
+#[collect(require_static)]
 pub enum FontType {
     Embedded,
     EmbeddedCFF,
@@ -381,6 +382,7 @@ impl<'gc> Font<'gc> {
         descriptor: FontDescriptor,
         bytes: Cow<'static, [u8]>,
         font_index: u32,
+        font_type: FontType,
     ) -> Result<Font<'gc>, ttf_parser::FaceParsingError> {
         let face = FontFace::new(bytes, font_index)?;
 
@@ -393,7 +395,7 @@ impl<'gc> Font<'gc> {
                 leading: face.leading,
                 glyphs: GlyphSource::FontFace(face),
                 descriptor,
-                font_type: FontType::Device,
+                font_type,
             },
         )))
     }
@@ -470,6 +472,38 @@ impl<'gc> Font<'gc> {
                 font_type,
             },
         ))
+    }
+
+    pub fn from_font4_tag(
+        gc_context: &Mutation<'gc>,
+        tag: swf::Font4,
+        encoding: &'static swf::Encoding,
+    ) -> Result<Font<'gc>, ttf_parser::FaceParsingError> {
+        let name = tag.name.to_str_lossy(encoding);
+        let descriptor = FontDescriptor::from_parts(&name, tag.is_bold, tag.is_italic);
+
+        if let Some(bytes) = tag.data {
+            Font::from_font_file(
+                gc_context,
+                descriptor,
+                Cow::Owned(bytes.to_vec()),
+                0,
+                FontType::EmbeddedCFF,
+            )
+        } else {
+            Ok(Font(Gc::new(
+                gc_context,
+                FontData {
+                    scale: 1.0,
+                    ascent: 0,
+                    descent: 0,
+                    leading: 0,
+                    glyphs: GlyphSource::Empty,
+                    descriptor,
+                    font_type: FontType::EmbeddedCFF,
+                },
+            )))
+        }
     }
 
     /// Returns whether this font contains glyph shapes.
@@ -874,6 +908,11 @@ impl FontDescriptor {
         &self.name
     }
 
+    // Get the lowercase name.
+    pub fn lowercase_name(&self) -> &str {
+        &self.lowercase_name
+    }
+
     /// Get the boldness of the described font.
     pub fn bold(&self) -> bool {
         self.is_bold
@@ -887,7 +926,7 @@ impl FontDescriptor {
 
 /// The text rendering engine that a text field should use.
 /// This is controlled by the "Anti-alias" setting in the Flash IDE.
-/// Using "Anti-alias for readibility" switches to the "Advanced" text
+/// Using "Anti-alias for readability" switches to the "Advanced" text
 /// rendering engine.
 #[derive(Debug, PartialEq, Clone)]
 pub enum TextRenderSettings {
@@ -904,7 +943,7 @@ pub enum TextRenderSettings {
     },
 
     /// This text should render with the advanced rendering engine.
-    /// Set via "Anti-alias for readibility" in the Flash IDE.
+    /// Set via "Anti-alias for readability" in the Flash IDE.
     /// The parameters are set via the CSMTextSettings SWF tag.
     /// Ruffle does not support this currently, but this also affects
     /// hit-testing behavior.

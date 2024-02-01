@@ -15,7 +15,7 @@
 /// 40,000 twips, or `4*10^4` . If you then have two such numbers,
 /// multiplying them as part of calculations yields `16*10^8`, which is
 /// relatively close to the upper limit of `i32` at about `2*10^9`.
-#[derive(Clone, Copy, Debug, Default, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Default, Eq, Ord, PartialEq, PartialOrd, Hash)]
 pub struct Twips(i32);
 
 impl Twips {

@@ -3,6 +3,7 @@
 use std::rc::Rc;
 
 use crate::avm2::class::AllocatorFn;
+use crate::avm2::error::make_error_1107;
 use crate::avm2::function::Executable;
 use crate::avm2::globals::SystemClasses;
 use crate::avm2::method::{Method, NativeMethodImpl};
@@ -49,6 +50,7 @@ mod method;
 mod multiname;
 mod namespace;
 pub mod object;
+mod op;
 mod parameters;
 pub mod property;
 mod property_map;
@@ -56,17 +58,21 @@ mod qname;
 mod regexp;
 mod scope;
 mod script;
+#[cfg(feature = "known_stubs")]
+pub mod specification;
 mod string;
 mod stubs;
 mod traits;
 mod value;
 pub mod vector;
+mod verify;
 mod vtable;
 
 pub use crate::avm2::activation::Activation;
 pub use crate::avm2::array::ArrayStorage;
 pub use crate::avm2::call_stack::{CallNode, CallStack};
-pub use crate::avm2::domain::Domain;
+#[allow(unused)] // For debug_ui
+pub use crate::avm2::domain::{Domain, DomainPtr};
 pub use crate::avm2::error::Error;
 pub use crate::avm2::flv::FlvValueAvm2Ext;
 pub use crate::avm2::globals::flash::ui::context_menu::make_context_menu_state;
@@ -153,7 +159,7 @@ pub struct Avm2<'gc> {
     #[collect(require_static)]
     native_call_handler_table: &'static [Option<(&'static str, NativeMethodImpl)>],
 
-    /// A list of objects which are capable of recieving broadcasts.
+    /// A list of objects which are capable of receiving broadcasts.
     ///
     /// Certain types of events are "broadcast events" that are emitted on all
     /// constructed objects in order of their creation, whether or not they are
@@ -245,7 +251,7 @@ impl<'gc> Avm2<'gc> {
 
             orphan_objects: Default::default(),
 
-            // Set the lowest version for now - this be overriden when we set our movie
+            // Set the lowest version for now - this will be overridden when we set our movie
             root_api_version: ApiVersion::AllVersions,
 
             #[cfg(feature = "avm_debug")]
@@ -257,6 +263,10 @@ impl<'gc> Avm2<'gc> {
         let globals = context.avm2.playerglobals_domain;
         let mut activation = Activation::from_domain(context.reborrow(), globals);
         globals::load_player_globals(&mut activation, globals)
+    }
+
+    pub fn playerglobals_domain(&self) -> Domain<'gc> {
+        self.playerglobals_domain
     }
 
     /// Return the current set of system classes.
@@ -322,7 +332,7 @@ impl<'gc> Avm2<'gc> {
 
     /// Adds a `MovieClip` to the orphan list. In AVM2, movies advance their
     /// frames even when they are not on a display list. Unfortunately,
-    /// mutliple SWFS rely on this behavior, so we need to match Flash's
+    /// multiple SWFS rely on this behavior, so we need to match Flash's
     /// behavior. This should not be called manually - `movie_clip` will
     /// call it when necessary.
     pub fn add_orphan_obj(&mut self, dobj: DisplayObject<'gc>) {
@@ -543,11 +553,7 @@ impl<'gc> Avm2<'gc> {
             Ok(abc) => abc,
             Err(_) => {
                 let mut activation = Activation::from_nothing(context.reborrow());
-                return Err(Error::AvmError(crate::avm2::error::verify_error(
-                    &mut activation,
-                    "Error #1107: The ABC data is corrupt, attempt to read out of bounds.",
-                    1107,
-                )?));
+                return Err(make_error_1107(&mut activation));
             }
         };
 
@@ -670,20 +676,20 @@ impl<'gc> Avm2<'gc> {
 
     fn push_scope(&mut self, scope: Scope<'gc>, depth: usize, max: usize) {
         if self.scope_stack.len() - depth > max {
-            tracing::warn!("Avm2::push_scope: Scope Stack overflow");
+            tracing::warn!("Avm2::push_scope: Scope stack overflow");
             return;
         }
 
         self.scope_stack.push(scope);
     }
 
-    fn pop_scope(&mut self, depth: usize) -> Option<Scope<'gc>> {
+    fn pop_scope(&mut self, depth: usize) {
         if self.scope_stack.len() <= depth {
-            tracing::warn!("Avm2::pop_scope: Scope Stack underflow");
-            None
-        } else {
-            self.scope_stack.pop()
+            tracing::warn!("Avm2::pop_scope: Scope stack underflow");
+            return;
         }
+
+        self.scope_stack.pop();
     }
 
     #[cfg(feature = "avm_debug")]

@@ -32,6 +32,8 @@ impl TestFileDialogResult {
     }
 }
 
+const FILE_CONTENTS: &[u8; 13] = b"Hello, World!";
+
 impl FileDialogResult for TestFileDialogResult {
     fn is_cancelled(&self) -> bool {
         self.canceled
@@ -50,7 +52,7 @@ impl FileDialogResult for TestFileDialogResult {
     }
 
     fn size(&self) -> Option<u64> {
-        None
+        Some(FILE_CONTENTS.len() as u64)
     }
 
     fn file_type(&self) -> Option<String> {
@@ -62,7 +64,7 @@ impl FileDialogResult for TestFileDialogResult {
     }
 
     fn contents(&self) -> &[u8] {
-        b"Hello, World!".as_bytes()
+        FILE_CONTENTS.as_bytes()
     }
 
     fn write(&self, _data: &[u8]) {}
@@ -113,7 +115,7 @@ impl UiBackend for TestUiBackend {
         Ok(())
     }
 
-    fn display_root_movie_download_failed_message(&self) {}
+    fn display_root_movie_download_failed_message(&self, _invalid_swf: bool) {}
 
     fn message(&self, _message: &str) {}
 
@@ -142,6 +144,7 @@ impl UiBackend for TestUiBackend {
                 is_bold,
                 is_italic,
                 data: font.bytes.clone(),
+                index: 0,
             });
             break;
         }

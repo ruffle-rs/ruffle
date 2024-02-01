@@ -61,6 +61,8 @@ package {
         AS3 function namespace(prefix:String = null):* {
             return namespace_internal_impl(arguments.length > 0, prefix);
         }
+        AS3 native function inScopeNamespaces():Array;
+        AS3 native function namespaceDeclarations():Array;
         AS3 native function localName():Object;
         AS3 native function toXMLString():String;
         AS3 native function child(name:Object):XMLList;
@@ -85,6 +87,7 @@ package {
         // NOTE: Docs lie, value can be anything not just XML.
         AS3 native function replace(propertyName:Object, value:*):XML;
         AS3 native function setChildren(value:Object):XML;
+        AS3 native function setLocalName(name:*):void;
 
         AS3 function valueOf():XML {
             return this;
@@ -123,10 +126,25 @@ package {
             return self.AS3::name();
         };
 
+        prototype.setName = function(name:*):void {
+            var self:XML = this;
+            self.AS3::setName(name);
+        };
+
         prototype.namespace = function(prefix:String = null):* {
             var self:XML = this;
             return self.AS3::namespace.apply(self, arguments);
-        }
+        };
+
+        prototype.namespaceDeclarations = function():Array {
+            var self:XML = this;
+            return self.AS3::namespaceDeclarations();
+        };
+
+        prototype.inScopeNamespaces = function():Array {
+            var self:XML = this;
+            return self.AS3::inScopeNamespaces();
+        };
 
         prototype.localName = function():Object {
             var self:XML = this;
@@ -253,6 +271,11 @@ package {
         prototype.setChildren = function(value:Object):XML {
             var self:XML = this;
             return self.AS3::setChildren(value);
+        }
+
+        prototype.setLocalName = function(name:*):void {
+            var self:XML = this;
+            self.AS3::setLocalName(name);
         }
 
         public static const length:int = 1;

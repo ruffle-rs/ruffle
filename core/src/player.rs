@@ -5,11 +5,9 @@ use crate::avm1::Object;
 use crate::avm1::SystemProperties;
 use crate::avm1::VariableDumper;
 use crate::avm1::{Activation, ActivationIdentifier};
-use crate::avm1::{ScriptObject, TObject, Value};
-use crate::avm2::api_version::ApiVersion;
+use crate::avm1::{TObject, Value};
 use crate::avm2::{
-    object::LoaderInfoObject, object::TObject as _, Activation as Avm2Activation, Avm2, CallStack,
-    Object as Avm2Object,
+    object::TObject as _, Activation as Avm2Activation, Avm2, CallStack, Object as Avm2Object,
 };
 use crate::backend::ui::FontDefinition;
 use crate::backend::{
@@ -28,7 +26,7 @@ use crate::context_menu::{
 };
 use crate::display_object::Avm2MousePick;
 use crate::display_object::{
-    EditText, InteractiveObject, MovieClip, Stage, StageAlign, StageDisplayState, StageScaleMode,
+    EditText, InteractiveObject, Stage, StageAlign, StageDisplayState, StageScaleMode,
     TInteractiveObject, WindowMode,
 };
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, MouseButton, PlayerEvent};
@@ -66,7 +64,7 @@ use std::rc::{Rc, Weak as RcWeak};
 use std::str::FromStr;
 use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
-use tracing::{info, instrument};
+use tracing::instrument;
 use web_time::Instant;
 
 /// The newest known Flash Player version, serves as a default to
@@ -178,6 +176,17 @@ struct GcRootData<'gc> {
 
     /// Dynamic root for allowing handles to GC objects to exist outside of the GC.
     dynamic_root: DynamicRootSet<'gc>,
+
+    post_frame_callbacks: Vec<PostFrameCallback<'gc>>,
+}
+
+#[derive(Collect)]
+#[collect(no_drop)]
+pub struct PostFrameCallback<'gc> {
+    #[collect(require_static)]
+    #[allow(clippy::type_complexity)]
+    pub callback: Box<dyn for<'b> FnOnce(&mut UpdateContext<'_, 'b>, DisplayObject<'b>) + 'static>,
+    pub data: DisplayObject<'gc>,
 }
 
 impl<'gc> GcRootData<'gc> {
@@ -206,6 +215,7 @@ impl<'gc> GcRootData<'gc> {
         &mut Sockets<'gc>,
         &mut NetConnections<'gc>,
         &mut LocalConnections<'gc>,
+        &mut Vec<PostFrameCallback<'gc>>,
         DynamicRootSet<'gc>,
     ) {
         (
@@ -228,6 +238,7 @@ impl<'gc> GcRootData<'gc> {
             &mut self.sockets,
             &mut self.net_connections,
             &mut self.local_connections,
+            &mut self.post_frame_callbacks,
             self.dynamic_root,
         )
     }
@@ -373,117 +384,6 @@ impl Player {
             );
             context.navigator.spawn_future(future);
         });
-    }
-
-    /// Change the root movie.
-    ///
-    /// This should only be called once, as it makes no attempt at removing
-    /// previous stage contents. If you need to load a new root movie, you
-    /// should destroy and recreate the player instance.
-    pub fn set_root_movie(&mut self, movie: SwfMovie) {
-        if !self.forced_frame_rate {
-            self.frame_rate = movie.frame_rate().into();
-        }
-
-        info!(
-            "Loaded SWF version {}, resolution {}x{} @ {} FPS",
-            movie.version(),
-            movie.width(),
-            movie.height(),
-            self.frame_rate(),
-        );
-
-        self.swf = Arc::new(movie);
-        self.instance_counter = 0;
-
-        self.mutate_with_update_context(|context| {
-            if context.swf.is_action_script_3() {
-                context.avm2.root_api_version = ApiVersion::from_swf_version(
-                    context.swf.version(),
-                    context.avm2.player_runtime,
-                )
-                .unwrap_or_else(|| panic!("Unknown SWF version {}", context.swf.version()));
-            }
-
-            context.stage.set_movie_size(
-                context.gc_context,
-                context.swf.width().to_pixels() as u32,
-                context.swf.height().to_pixels() as u32,
-            );
-            context
-                .stage
-                .set_movie(context.gc_context, context.swf.clone());
-
-            let stage_domain = context.avm2.stage_domain();
-            let mut activation = Avm2Activation::from_domain(context.reborrow(), stage_domain);
-
-            activation
-                .context
-                .library
-                .library_for_movie_mut(activation.context.swf.clone())
-                .set_avm2_domain(stage_domain);
-            activation.context.ui.set_mouse_visible(true);
-
-            let swf = activation.context.swf.clone();
-            let root: DisplayObject =
-                MovieClip::player_root_movie(&mut activation, swf.clone()).into();
-
-            // The Stage `LoaderInfo` is permanently in the 'not yet loaded' state,
-            // and has no associated `Loader` instance.
-            // However, some properties are always accessible, and take their values
-            // from the root SWF.
-            let stage_loader_info =
-                LoaderInfoObject::not_yet_loaded(&mut activation, swf, None, Some(root), true)
-                    .expect("Failed to construct Stage LoaderInfo");
-            activation
-                .context
-                .stage
-                .set_loader_info(activation.context.gc_context, stage_loader_info);
-
-            drop(activation);
-
-            root.set_depth(context.gc_context, 0);
-            let flashvars = if !context.swf.parameters().is_empty() {
-                let object = ScriptObject::new(context.gc_context, None);
-                for (key, value) in context.swf.parameters().iter() {
-                    object.define_value(
-                        context.gc_context,
-                        AvmString::new_utf8(context.gc_context, key),
-                        AvmString::new_utf8(context.gc_context, value).into(),
-                        Attribute::empty(),
-                    );
-                }
-                Some(object.into())
-            } else {
-                None
-            };
-
-            root.post_instantiation(context, flashvars, Instantiator::Movie, false);
-            root.set_default_root_name(context);
-            context.stage.replace_at_depth(context, root, 0);
-
-            // Set the version parameter on the root.
-            let mut activation = Activation::from_stub(
-                context.reborrow(),
-                ActivationIdentifier::root("[Version Setter]"),
-            );
-            let object = root.object().coerce_to_object(&mut activation);
-            let version_string = activation
-                .context
-                .system
-                .get_version_string(activation.context.avm1);
-            object.define_value(
-                activation.context.gc_context,
-                "$version",
-                AvmString::new_utf8(activation.context.gc_context, version_string).into(),
-                Attribute::empty(),
-            );
-
-            let stage = activation.context.stage;
-            stage.build_matrices(&mut activation.context);
-        });
-
-        self.audio.set_frame_rate(self.frame_rate);
     }
 
     /// Get rough estimate of the max # of times we can update the frame.
@@ -910,6 +810,14 @@ impl Player {
         self.mutate_with_update_context(|context| {
             let stage = context.stage;
             stage.set_show_menu(context, show_menu);
+        })
+    }
+
+    /// Set whether the Stage's display state can be changed.
+    pub fn set_allow_fullscreen(&mut self, allow_fullscreen: bool) {
+        self.mutate_with_update_context(|context| {
+            let stage = context.stage;
+            stage.set_allow_fullscreen(context, allow_fullscreen);
         })
     }
 
@@ -1673,6 +1581,12 @@ impl Player {
             run_all_phases_avm2(context);
             Avm1::run_frame(context);
             AudioManager::update_sounds(context);
+
+            // Only run the current list of callbacks - any callbacks added during callback execution
+            // will be run at the end of the *next* frame.
+            for cb in std::mem::take(context.post_frame_callbacks) {
+                (cb.callback)(context, cb.data);
+            }
         });
 
         self.needs_render = true;
@@ -1885,7 +1799,7 @@ impl Player {
 
     /// Runs the closure `f` with an `UpdateContext`.
     /// This takes cares of populating the `UpdateContext` struct, avoiding borrow issues.
-    pub(crate) fn mutate_with_update_context<F, R>(&mut self, f: F) -> R
+    pub fn mutate_with_update_context<F, R>(&mut self, f: F) -> R
     where
         F: for<'a, 'gc> FnOnce(&mut UpdateContext<'a, 'gc>) -> R,
     {
@@ -1916,12 +1830,13 @@ impl Player {
                 sockets,
                 net_connections,
                 local_connections,
+                post_frame_callbacks,
                 dynamic_root,
             ) = root_data.update_context_params();
 
             let mut update_context = UpdateContext {
                 player_version: self.player_version,
-                swf: &self.swf,
+                swf: &mut self.swf,
                 library,
                 rng: &mut self.rng,
                 renderer: self.renderer.deref_mut(),
@@ -1971,6 +1886,7 @@ impl Player {
                 net_connections,
                 local_connections,
                 dynamic_root,
+                post_frame_callbacks,
             };
 
             let prev_frame_rate = *update_context.frame_rate;
@@ -2187,6 +2103,7 @@ pub struct PlayerBuilder {
     forced_align: bool,
     scale_mode: StageScaleMode,
     forced_scale_mode: bool,
+    allow_fullscreen: bool,
     fullscreen: bool,
     letterbox: Letterbox,
     max_execution_duration: Duration,
@@ -2204,6 +2121,8 @@ pub struct PlayerBuilder {
     frame_rate: Option<f64>,
     external_interface_providers: Vec<Box<dyn ExternalInterfaceProvider>>,
     fs_command_provider: Box<dyn FsCommandProvider>,
+    #[cfg(feature = "known_stubs")]
+    stub_report_output: Option<std::path::PathBuf>,
 }
 
 impl PlayerBuilder {
@@ -2229,6 +2148,7 @@ impl PlayerBuilder {
             forced_align: false,
             scale_mode: StageScaleMode::default(),
             forced_scale_mode: false,
+            allow_fullscreen: true,
             fullscreen: false,
             // Disable script timeout in debug builds by default.
             letterbox: Letterbox::Fullscreen,
@@ -2251,6 +2171,8 @@ impl PlayerBuilder {
             frame_rate: None,
             external_interface_providers: vec![],
             fs_command_provider: Box::new(NullFsCommandProvider),
+            #[cfg(feature = "known_stubs")]
+            stub_report_output: None,
         }
     }
 
@@ -2440,6 +2362,14 @@ impl PlayerBuilder {
         self
     }
 
+    #[cfg(feature = "known_stubs")]
+    /// Sets the output path for the stub report. When set, the player
+    /// will write the report to this path and exit the process.
+    pub fn with_stub_report_output(mut self, output: std::path::PathBuf) -> Self {
+        self.stub_report_output = Some(output);
+        self
+    }
+
     fn create_gc_root<'gc>(
         gc_context: &'gc gc_arena::Mutation<'gc>,
         player_version: u8,
@@ -2449,7 +2379,7 @@ impl PlayerBuilder {
         external_interface_providers: Vec<Box<dyn ExternalInterfaceProvider>>,
         fs_command_provider: Box<dyn FsCommandProvider>,
     ) -> GcRoot<'gc> {
-        let mut interner = AvmStringInterner::new();
+        let mut interner = AvmStringInterner::new(gc_context);
         let mut init = GcContext {
             gc_context,
             interner: &mut interner,
@@ -2487,6 +2417,7 @@ impl PlayerBuilder {
                     net_connections: NetConnections::default(),
                     local_connections: LocalConnections::empty(),
                     dynamic_root,
+                    post_frame_callbacks: Vec::new(),
                 },
             ),
         }
@@ -2626,8 +2557,13 @@ impl PlayerBuilder {
             stage.set_forced_align(context, self.forced_align);
             stage.set_scale_mode(context, self.scale_mode);
             stage.set_forced_scale_mode(context, self.forced_scale_mode);
+            stage.set_allow_fullscreen(context, self.allow_fullscreen);
             stage.post_instantiation(context, None, Instantiator::Movie, false);
             stage.build_matrices(context);
+            #[cfg(feature = "known_stubs")]
+            if let Some(stub_path) = self.stub_report_output {
+                crate::avm2::specification::capture_specification(context, &stub_path);
+            }
         });
         player_lock.gc_arena.borrow().mutate(|context, root| {
             let call_stack = root.data.read().avm2.call_stack();
@@ -2645,7 +2581,9 @@ impl PlayerBuilder {
             if let Some(url) = self.spoofed_url.clone() {
                 movie.set_url(url);
             }
-            player_lock.set_root_movie(movie);
+            player_lock.mutate_with_update_context(|context| {
+                context.set_root_movie(movie);
+            });
         }
         drop(player_lock);
         player

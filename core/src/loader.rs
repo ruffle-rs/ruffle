@@ -6,13 +6,14 @@ use crate::avm1::{ExecutionReason, NativeObject};
 use crate::avm1::{Object, SoundObject, TObject, Value};
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::object::{
-    BitmapDataObject, ByteArrayObject, EventObject as Avm2EventObject, LoaderStream, TObject as _,
+    ByteArrayObject, EventObject as Avm2EventObject, FileReferenceObject, LoaderStream,
+    TObject as _,
 };
 use crate::avm2::{
-    Activation as Avm2Activation, Avm2, Domain as Avm2Domain, Object as Avm2Object,
-    Value as Avm2Value,
+    Activation as Avm2Activation, Avm2, BitmapDataObject, Domain as Avm2Domain,
+    Object as Avm2Object, Value as Avm2Value,
 };
-use crate::backend::navigator::{OwnedFuture, Request};
+use crate::backend::navigator::{ErrorResponse, OwnedFuture, Request, SuccessResponse};
 use crate::backend::ui::DialogResultFuture;
 use crate::bitmap::bitmap_data::Color;
 use crate::bitmap::bitmap_data::{BitmapData, BitmapDataWrapper};
@@ -23,11 +24,12 @@ use crate::display_object::{
 use crate::events::ClipEvent;
 use crate::frame_lifecycle::catchup_display_object_to_frame;
 use crate::limits::ExecutionLimit;
-use crate::player::Player;
+use crate::player::{Player, PostFrameCallback};
 use crate::streams::NetStream;
 use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
+use crate::{avm2_stub_method, avm2_stub_method_context};
 use encoding_rs::UTF_8;
 use gc_arena::{Collect, GcCell};
 use generational_arena::{Arena, Index};
@@ -183,6 +185,9 @@ pub enum Error {
     #[error("Non-file dialog loader spawned as file dialog loader")]
     NotFileDialogLoader,
 
+    #[error("Non-file save dialog loader spawned as file save dialog loader")]
+    NotFileSaveDialogLoader,
+
     #[error("Non-file download dialog loader spawned as file download dialog loader")]
     NotFileDownloadDialogLoader,
 
@@ -201,6 +206,15 @@ pub enum Error {
     // the GC arena). We're losing info here. How do we fix that?
     #[error("Error running avm2 script: {0}")]
     Avm2Error(String),
+
+    #[error("System I/O error: {0}")]
+    IoError(#[from] std::io::Error),
+
+    #[error("Cannot parse integer value: {0}")]
+    ParseIntError(#[from] std::num::ParseIntError),
+
+    #[error("Header value is not a valid UTF-8 string.")]
+    InvalidHeaderValue,
 }
 
 impl From<crate::avm1::Error<'_>> for Error {
@@ -247,6 +261,8 @@ impl<'gc> LoadManager<'gc> {
             | Loader::SoundAvm2 { self_handle, .. }
             | Loader::NetStream { self_handle, .. }
             | Loader::FileDialog { self_handle, .. }
+            | Loader::FileDialogAvm2 { self_handle, .. }
+            | Loader::SaveFileDialog { self_handle, .. }
             | Loader::DownloadFileDialog { self_handle, .. }
             | Loader::UploadFile { self_handle, .. }
             | Loader::MovieUnloader { self_handle, .. } => *self_handle = Some(handle),
@@ -305,6 +321,7 @@ impl<'gc> LoadManager<'gc> {
             target_clip,
             vm_data,
             loader_status: LoaderStatus::Pending,
+            from_bytes: false,
             movie: None,
         };
         let handle = self.add_loader(loader);
@@ -316,22 +333,21 @@ impl<'gc> LoadManager<'gc> {
     ///
     /// Returns the loader's async process, which you will need to spawn.
     pub fn load_movie_into_clip_bytes(
-        &mut self,
-        player: Weak<Mutex<Player>>,
+        context: &mut UpdateContext<'_, 'gc>,
         target_clip: DisplayObject<'gc>,
         bytes: Vec<u8>,
         vm_data: MovieLoaderVMData<'gc>,
-    ) -> OwnedFuture<(), Error> {
+    ) -> Result<(), Error> {
         let loader = Loader::Movie {
             self_handle: None,
             target_clip,
             vm_data,
             loader_status: LoaderStatus::Pending,
             movie: None,
+            from_bytes: true,
         };
-        let handle = self.add_loader(loader);
-        let loader = self.get_loader_mut(handle).unwrap();
-        loader.movie_loader_bytes(player, bytes)
+        let handle = context.load_manager.add_loader(loader);
+        Loader::movie_loader_bytes(handle, context, bytes)
     }
 
     /// Fires the `onLoad` listener event for every MovieClip that has been
@@ -503,6 +519,40 @@ impl<'gc> LoadManager<'gc> {
         loader.file_dialog_loader(player, dialog)
     }
 
+    #[must_use]
+    pub fn select_file_dialog_avm2(
+        &mut self,
+        player: Weak<Mutex<Player>>,
+        target_object: FileReferenceObject<'gc>,
+        dialog: DialogResultFuture,
+    ) -> OwnedFuture<(), Error> {
+        let loader = Loader::FileDialogAvm2 {
+            self_handle: None,
+            target_object,
+        };
+        let handle = self.add_loader(loader);
+        let loader = self.get_loader_mut(handle).unwrap();
+        loader.file_dialog_loader(player, dialog)
+    }
+
+    /// Display a dialog allowing a user to save a file
+    #[must_use]
+    pub fn save_file_dialog(
+        &mut self,
+        player: Weak<Mutex<Player>>,
+        target_object: FileReferenceObject<'gc>,
+        dialog: DialogResultFuture,
+        data: Vec<u8>,
+    ) -> OwnedFuture<(), Error> {
+        let loader = Loader::SaveFileDialog {
+            self_handle: None,
+            target_object,
+        };
+        let handle = self.add_loader(loader);
+        let loader = self.get_loader_mut(handle).unwrap();
+        loader.file_save_dialog_loader(player, dialog, data)
+    }
+
     /// Display a dialog allowing a user to download a file
     ///
     /// Returns a future that will be resolved when a file is selected and the download has completed
@@ -621,6 +671,9 @@ pub enum Loader<'gc> {
         /// completed and we expect the Player to periodically tick preload
         /// until loading completes.
         movie: Option<Arc<SwfMovie>>,
+
+        /// Whether or not this was loaded as a result of a `Loader.loadBytes` call
+        from_bytes: bool,
     },
 
     /// Loader that is loading form data into an AVM1 object scope.
@@ -704,6 +757,26 @@ pub enum Loader<'gc> {
         target_object: Object<'gc>,
     },
 
+    /// Loader that is choosing a file from an AVM2 scope.
+    FileDialogAvm2 {
+        /// The handle to refer to this loader instance.
+        #[collect(require_static)]
+        self_handle: Option<Handle>,
+
+        /// The target AVM2 object to set to the selected file path.
+        target_object: FileReferenceObject<'gc>,
+    },
+
+    /// Loader that is saving a file to disk from an AVM2 scope.
+    SaveFileDialog {
+        /// The handle to refer to this loader instance.
+        #[collect(require_static)]
+        self_handle: Option<Handle>,
+
+        /// The target AVM2 object to select a save location for.
+        target_object: FileReferenceObject<'gc>,
+    },
+
     /// Loader that is downloading a file from an AVM1 object scope.
     DownloadFileDialog {
         /// The handle to refer to this loader instance.
@@ -745,11 +818,19 @@ impl<'gc> Loader<'gc> {
     ) -> Result<bool, Error> {
         let mc = match context.load_manager.get_loader_mut(handle) {
             Some(Self::Movie {
-                target_clip, movie, ..
+                target_clip,
+                movie,
+                from_bytes,
+                ..
             }) => {
                 if movie.is_none() {
                     //Non-SWF load or file not loaded yet
                     return Ok(false);
+                }
+
+                // Loader.loadBytes movies never participate in preloading
+                if *from_bytes {
+                    return Ok(true);
                 }
 
                 if target_clip.as_movie_clip().is_none() {
@@ -782,6 +863,21 @@ impl<'gc> Loader<'gc> {
         Ok(did_finish)
     }
 
+    async fn wait_for_full_response(
+        response: OwnedFuture<Box<dyn SuccessResponse>, ErrorResponse>,
+    ) -> Result<(Vec<u8>, String, u16, bool), ErrorResponse> {
+        let response = response.await?;
+        let url = response.url().to_string();
+        let status = response.status();
+        let redirected = response.redirected();
+        let body = response.body().await;
+
+        match body {
+            Ok(body) => Ok((body, url, status, redirected)),
+            Err(error) => Err(ErrorResponse { url, error }),
+        }
+    }
+
     /// Construct a future for the root movie loader.
     fn root_movie_loader(
         &mut self,
@@ -803,14 +899,22 @@ impl<'gc> Loader<'gc> {
 
         Box::pin(async move {
             let fetch = player.lock().unwrap().navigator().fetch(request);
-
             let response = fetch.await.map_err(|error| {
                 player
                     .lock()
                     .unwrap()
                     .ui()
-                    .display_root_movie_download_failed_message();
+                    .display_root_movie_download_failed_message(false);
                 error.error
+            })?;
+            let url = response.url().into_owned();
+            let body = response.body().await.map_err(|error| {
+                player
+                    .lock()
+                    .unwrap()
+                    .ui()
+                    .display_root_movie_download_failed_message(true);
+                error
             })?;
 
             // The spoofed root movie URL takes precedence over the actual URL.
@@ -818,7 +922,7 @@ impl<'gc> Loader<'gc> {
                 .lock()
                 .unwrap()
                 .compatibility_rules()
-                .rewrite_swf_url(response.url);
+                .rewrite_swf_url(url);
             let spoofed_or_swf_url = player
                 .lock()
                 .unwrap()
@@ -826,10 +930,20 @@ impl<'gc> Loader<'gc> {
                 .map(|u| u.to_string())
                 .unwrap_or(swf_url);
 
-            let mut movie = SwfMovie::from_data(&response.body, spoofed_or_swf_url, None)?;
+            let mut movie =
+                SwfMovie::from_data(&body, spoofed_or_swf_url, None).map_err(|error| {
+                    player
+                        .lock()
+                        .unwrap()
+                        .ui()
+                        .display_root_movie_download_failed_message(true);
+                    error
+                })?;
             on_metadata(movie.header());
             movie.append_parameters(parameters);
-            player.lock().unwrap().set_root_movie(movie);
+            player.lock().unwrap().mutate_with_update_context(|uc| {
+                uc.set_root_movie(movie);
+            });
             Ok(())
         })
     }
@@ -888,24 +1002,28 @@ impl<'gc> Loader<'gc> {
                 Loader::movie_loader_start(handle, uc)
             })?;
 
-            match fetch.await {
-                Ok(response) if replacing_root_movie => {
-                    ContentType::sniff(&response.body).expect(ContentType::Swf)?;
+            match Self::wait_for_full_response(fetch).await {
+                Ok((body, url, _status, _redirected)) if replacing_root_movie => {
+                    ContentType::sniff(&body).expect(ContentType::Swf)?;
 
-                    let movie = SwfMovie::from_data(&response.body, response.url, loader_url)?;
-                    player.lock().unwrap().set_root_movie(movie);
+                    let movie = SwfMovie::from_data(&body, url.to_string(), loader_url)?;
+                    player.lock().unwrap().mutate_with_update_context(|uc| {
+                        uc.set_root_movie(movie);
+                    });
                     return Ok(());
                 }
-                Ok(response) => {
-                    Loader::movie_loader_data(
-                        handle,
-                        player,
-                        &response.body,
-                        response.url,
-                        response.status,
-                        response.redirected,
-                        loader_url,
-                    )?;
+                Ok((body, url, status, redirected)) => {
+                    player.lock().unwrap().mutate_with_update_context(|uc| {
+                        Loader::movie_loader_data(
+                            handle,
+                            uc,
+                            &body,
+                            url.to_string(),
+                            status,
+                            redirected,
+                            loader_url,
+                        )
+                    })?;
                 }
                 Err(response) => {
                     tracing::error!(
@@ -939,57 +1057,45 @@ impl<'gc> Loader<'gc> {
         })
     }
 
-    fn movie_loader_bytes(
-        &mut self,
-        player: Weak<Mutex<Player>>,
+    pub fn movie_loader_bytes(
+        handle: Handle,
+        uc: &mut UpdateContext<'_, 'gc>,
         bytes: Vec<u8>,
-    ) -> OwnedFuture<(), Error> {
-        let handle = match self {
-            Loader::Movie { self_handle, .. } => self_handle.expect("Loader not self-introduced"),
-            _ => return Box::pin(async { Err(Error::NotMovieLoader) }),
+    ) -> Result<(), Error> {
+        let clip = match uc.load_manager.get_loader(handle) {
+            Some(Loader::Movie { target_clip, .. }) => *target_clip,
+            None => return Err(Error::Cancelled),
+            _ => unreachable!(),
         };
 
-        let player = player
-            .upgrade()
-            .expect("Could not upgrade weak reference to player");
+        let replacing_root_movie = uc
+            .stage
+            .root_clip()
+            .map(|root| DisplayObject::ptr_eq(clip, root))
+            .unwrap_or(false);
 
-        Box::pin(async move {
-            let mut replacing_root_movie = false;
-            player.lock().unwrap().update(|uc| -> Result<(), Error> {
-                let clip = match uc.load_manager.get_loader(handle) {
-                    Some(Loader::Movie { target_clip, .. }) => *target_clip,
-                    None => return Err(Error::Cancelled),
-                    _ => unreachable!(),
-                };
-
-                replacing_root_movie = uc
-                    .stage
-                    .root_clip()
-                    .map(|root| DisplayObject::ptr_eq(clip, root))
-                    .unwrap_or(false);
-
-                if let Some(mc) = clip.as_movie_clip() {
-                    if !mc.movie().is_action_script_3() {
-                        mc.avm1_unload(uc);
-                    }
-                    mc.replace_with_movie(uc, None, false, None);
-                }
-
-                // NOTE: We do NOT call `movie_loader_start` as `loadBytes` does
-                // not emit `open`
-                Ok(())
-            })?;
-
-            if replacing_root_movie {
-                ContentType::sniff(&bytes).expect(ContentType::Swf)?;
-
-                let movie = SwfMovie::from_data(&bytes, "file:///".into(), None)?;
-                player.lock().unwrap().set_root_movie(movie);
-                return Ok(());
+        if let Some(mc) = clip.as_movie_clip() {
+            if !mc.movie().is_action_script_3() {
+                mc.avm1_unload(uc);
             }
+            mc.replace_with_movie(uc, None, false, None);
+        }
 
-            Loader::movie_loader_data(handle, player, &bytes, "file:///".into(), 0, false, None)
-        })
+        if replacing_root_movie {
+            ContentType::sniff(&bytes).expect(ContentType::Swf)?;
+
+            let movie = SwfMovie::from_data(&bytes, "file:///".into(), None)?;
+            avm2_stub_method_context!(
+                uc,
+                "flash.display.Loader",
+                "loadBytes",
+                "replacing root movie"
+            );
+            uc.set_root_movie(movie);
+            return Ok(());
+        }
+
+        Loader::movie_loader_data(handle, uc, &bytes, "file:///".into(), 0, false, None)
     }
 
     fn form_loader(
@@ -1010,6 +1116,7 @@ impl<'gc> Loader<'gc> {
             let fetch = player.lock().unwrap().navigator().fetch(request);
 
             let response = fetch.await.map_err(|e| e.error)?;
+            let body = response.body().await?;
 
             // Fire the load handler.
             player.lock().unwrap().update(|uc| {
@@ -1025,7 +1132,7 @@ impl<'gc> Loader<'gc> {
                     ActivationIdentifier::root("[Form Loader]"),
                 );
 
-                for (k, v) in form_urlencoded::parse(&response.body) {
+                for (k, v) in form_urlencoded::parse(&body) {
                     let k = AvmString::new_utf8(activation.context.gc_context, k);
                     let v = AvmString::new_utf8(activation.context.gc_context, v);
                     that.set(k, v.into(), &mut activation)?;
@@ -1071,8 +1178,7 @@ impl<'gc> Loader<'gc> {
 
         Box::pin(async move {
             let fetch = player.lock().unwrap().navigator().fetch(request);
-
-            let data = fetch.await;
+            let response = Self::wait_for_full_response(fetch).await;
 
             // Fire the load handler.
             player.lock().unwrap().update(|uc| {
@@ -1086,9 +1192,9 @@ impl<'gc> Loader<'gc> {
                 let mut activation =
                     Activation::from_stub(uc.reborrow(), ActivationIdentifier::root("[Loader]"));
 
-                match data {
-                    Ok(response) => {
-                        let length = response.body.len();
+                match response {
+                    Ok((body, _, status, _)) => {
+                        let length = body.len();
 
                         // Set the properties used by the getBytesTotal and getBytesLoaded methods.
                         that.set("_bytesTotal", length.into(), &mut activation)?;
@@ -1098,7 +1204,7 @@ impl<'gc> Loader<'gc> {
 
                         let _ = that.call_method(
                             "onHTTPStatus".into(),
-                            &[response.status.into()],
+                            &[status.into()],
                             &mut activation,
                             ExecutionReason::Special,
                         );
@@ -1110,7 +1216,7 @@ impl<'gc> Loader<'gc> {
                         } else {
                             AvmString::new_utf8(
                                 activation.context.gc_context,
-                                UTF_8.decode(&response.body).0,
+                                UTF_8.decode(&body).0,
                             )
                             .into()
                         };
@@ -1173,7 +1279,7 @@ impl<'gc> Loader<'gc> {
 
         Box::pin(async move {
             let fetch = player.lock().unwrap().navigator().fetch(request);
-            let response = fetch.await;
+            let response = Self::wait_for_full_response(fetch).await;
 
             player.lock().unwrap().update(|uc| {
                 let loader = uc.load_manager.get_loader(handle);
@@ -1225,8 +1331,8 @@ impl<'gc> Loader<'gc> {
                 }
 
                 match response {
-                    Ok(response) => {
-                        let total_len = response.body.len();
+                    Ok((body, _, status, redirected)) => {
+                        let total_len = body.len();
 
                         // FIXME - the "open" event should be fired earlier, just before
                         // we start to fetch the data.
@@ -1240,7 +1346,7 @@ impl<'gc> Loader<'gc> {
                         let open_evt =
                             Avm2EventObject::bare_default_event(&mut activation.context, "open");
                         Avm2::dispatch_event(&mut activation.context, open_evt, target);
-                        set_data(response.body, &mut activation, target, data_format);
+                        set_data(body, &mut activation, target, data_format);
 
                         // FIXME - we should fire "progress" events as we receive data, not
                         // just at the end
@@ -1272,8 +1378,8 @@ impl<'gc> Loader<'gc> {
                                     "httpStatus".into(),
                                     false.into(),
                                     false.into(),
-                                    response.status.into(),
-                                    response.redirected.into(),
+                                    status.into(),
+                                    redirected.into(),
                                 ],
                             )
                             .map_err(|e| Error::Avm2Error(e.to_string()))?;
@@ -1362,7 +1468,7 @@ impl<'gc> Loader<'gc> {
 
         Box::pin(async move {
             let fetch = player.lock().unwrap().navigator().fetch(request);
-            let data = fetch.await;
+            let response = Self::wait_for_full_response(fetch).await;
 
             // Fire the load handler.
             player.lock().unwrap().update(|uc| {
@@ -1373,10 +1479,10 @@ impl<'gc> Loader<'gc> {
                     _ => return Err(Error::NotSoundLoader),
                 };
 
-                let success = data
+                let success = response
                     .map_err(|e| e.error)
-                    .and_then(|data| {
-                        let handle = uc.audio.register_mp3(&data.body)?;
+                    .and_then(|(body, _, _, _)| {
+                        let handle = uc.audio.register_mp3(&body)?;
                         sound_object.set_sound(uc.gc_context, Some(handle));
                         let duration = uc
                             .audio
@@ -1425,7 +1531,7 @@ impl<'gc> Loader<'gc> {
 
         Box::pin(async move {
             let fetch = player.lock().unwrap().navigator().fetch(request);
-            let response = fetch.await;
+            let response = Self::wait_for_full_response(fetch).await;
 
             player.lock().unwrap().update(|uc| {
                 let loader = uc.load_manager.get_loader(handle);
@@ -1436,8 +1542,8 @@ impl<'gc> Loader<'gc> {
                 };
 
                 match response {
-                    Ok(response) => {
-                        let handle = uc.audio.register_mp3(&response.body)?;
+                    Ok((body, _, _, _)) => {
+                        let handle = uc.audio.register_mp3(&body)?;
                         if let Err(e) = sound_object
                             .as_sound_object()
                             .expect("Not a sound object")
@@ -1446,7 +1552,7 @@ impl<'gc> Loader<'gc> {
                             tracing::error!("Encountered AVM2 error when setting sound: {}", e);
                         }
 
-                        let total_len = response.body.len();
+                        let total_len = body.len();
 
                         // FIXME - the "open" event should be fired earlier, and not fired in case of ioerror.
                         let mut activation = Avm2Activation::from_nothing(uc.reborrow());
@@ -1524,28 +1630,64 @@ impl<'gc> Loader<'gc> {
 
         Box::pin(async move {
             let fetch = player.lock().unwrap().navigator().fetch(request);
-            let response = fetch.await;
+            match fetch.await {
+                Ok(mut response) => {
+                    let expected_length = response.expected_length();
 
-            player.lock().unwrap().update(|uc| {
-                let loader = uc.load_manager.get_loader(handle);
-                let stream = match loader {
-                    Some(&Loader::NetStream { target_stream, .. }) => target_stream,
-                    None => return Err(Error::Cancelled),
-                    _ => return Err(Error::NotNetStreamLoader),
-                };
+                    player.lock().unwrap().update(|uc| {
+                        let loader = uc.load_manager.get_loader(handle);
+                        let stream = match loader {
+                            Some(&Loader::NetStream { target_stream, .. }) => target_stream,
+                            None => return Err(Error::Cancelled),
+                            _ => return Err(Error::NotNetStreamLoader),
+                        };
 
-                match response {
-                    Ok(mut response) => {
                         stream.reset_buffer(uc);
-                        stream.load_buffer(uc, &mut response.body);
-                    }
-                    Err(response) => {
-                        stream.report_error(response.error);
-                    }
-                }
+                        if let Ok(Some(len)) = expected_length {
+                            stream.set_expected_length(uc, len as usize);
+                        }
 
-                Ok(())
-            })
+                        Ok(())
+                    })?;
+
+                    loop {
+                        let chunk = response.next_chunk().await;
+                        let is_end = matches!(chunk, Ok(None));
+                        player.lock().unwrap().update(|uc| {
+                            let loader = uc.load_manager.get_loader(handle);
+                            let stream = match loader {
+                                Some(&Loader::NetStream { target_stream, .. }) => target_stream,
+                                None => return Err(Error::Cancelled),
+                                _ => return Err(Error::NotNetStreamLoader),
+                            };
+
+                            match chunk {
+                                Ok(Some(mut data)) => stream.load_buffer(uc, &mut data),
+                                Ok(None) => stream.finish_buffer(uc),
+                                Err(err) => stream.report_error(err),
+                            }
+                            Ok(())
+                        })?;
+
+                        if is_end {
+                            break;
+                        }
+                    }
+
+                    Ok(())
+                }
+                Err(response) => player.lock().unwrap().update(|uc| {
+                    let loader = uc.load_manager.get_loader(handle);
+                    let stream = match loader {
+                        Some(&Loader::NetStream { target_stream, .. }) => target_stream,
+                        None => return Err(Error::Cancelled),
+                        _ => return Err(Error::NotNetStreamLoader),
+                    };
+
+                    stream.report_error(response.error);
+                    Ok(())
+                }),
+            }
         })
     }
 
@@ -1593,7 +1735,7 @@ impl<'gc> Loader<'gc> {
     /// Load data into a movie loader.
     fn movie_loader_data(
         handle: Handle,
-        player: Arc<Mutex<Player>>,
+        uc: &mut UpdateContext<'_, 'gc>,
         data: &[u8],
         url: String,
         status: u16,
@@ -1606,143 +1748,165 @@ impl<'gc> Loader<'gc> {
         if sniffed_type == ContentType::Unknown {
             if let Ok(data) = extract_swz(data) {
                 return Self::movie_loader_data(
-                    handle, player, &data, url, status, redirected, loader_url,
+                    handle, uc, &data, url, status, redirected, loader_url,
                 );
             }
         }
-        player.lock().unwrap().update(|uc| {
-            let (clip, vm_data) = match uc.load_manager.get_loader(handle) {
-                Some(Loader::Movie {
-                    target_clip,
-                    vm_data,
-                    ..
-                }) => (*target_clip, *vm_data),
-                None => return Err(Error::Cancelled),
-                _ => unreachable!(),
-            };
-
-            let mut activation = Avm2Activation::from_nothing(uc.reborrow());
-
-            let domain = if let MovieLoaderVMData::Avm2 {
-                context,
-                default_domain,
+        let (clip, vm_data, from_bytes) = match uc.load_manager.get_loader(handle) {
+            Some(Loader::Movie {
+                target_clip,
+                vm_data,
+                from_bytes,
                 ..
-            } = vm_data
-            {
-                let domain = context
-                    .and_then(|o| {
-                        o.get_public_property("applicationDomain", &mut activation)
-                            .ok()
-                    })
-                    .and_then(|v| v.coerce_to_object(&mut activation).ok())
-                    .and_then(|o| o.as_application_domain())
-                    .unwrap_or_else(|| {
-                        let parent_domain = default_domain;
-                        Avm2Domain::movie_domain(&mut activation, parent_domain)
-                    });
-                domain
-            } else {
-                // This is necessary when the MovieLoaderData is AVM1,
-                // but loaded an AVM2 SWF (mixed AVM).
-                activation.context.avm2.stage_domain()
-            };
+            }) => (*target_clip, *vm_data, *from_bytes),
+            None => return Err(Error::Cancelled),
+            _ => unreachable!(),
+        };
 
-            let movie = match sniffed_type {
-                ContentType::Swf => Arc::new(SwfMovie::from_data(data, url.clone(), loader_url)?),
-                ContentType::Gif | ContentType::Jpeg | ContentType::Png => {
-                    Arc::new(SwfMovie::from_loaded_image(url.clone(), length))
-                }
-                ContentType::Unknown => Arc::new(SwfMovie::error_movie(url.clone())),
-            };
+        let mut activation = Avm2Activation::from_nothing(uc.reborrow());
 
-            match activation.context.load_manager.get_loader_mut(handle) {
-                Some(Loader::Movie {
-                    movie: old,
-                    loader_status,
-                    ..
-                }) => {
-                    *loader_status = LoaderStatus::Parsing;
-                    *old = Some(movie.clone())
-                }
-                _ => unreachable!(),
-            };
+        let domain = if let MovieLoaderVMData::Avm2 {
+            context,
+            default_domain,
+            ..
+        } = vm_data
+        {
+            let domain = context
+                .and_then(|o| {
+                    o.get_public_property("applicationDomain", &mut activation)
+                        .ok()
+                })
+                .and_then(|v| v.coerce_to_object(&mut activation).ok())
+                .and_then(|o| o.as_application_domain())
+                .unwrap_or_else(|| {
+                    let parent_domain = default_domain;
+                    Avm2Domain::movie_domain(&mut activation, parent_domain)
+                });
+            domain
+        } else {
+            // This is necessary when the MovieLoaderData is AVM1,
+            // but loaded an AVM2 SWF (mixed AVM).
+            activation.context.avm2.stage_domain()
+        };
 
-            if let MovieLoaderVMData::Avm2 { loader_info, .. } = vm_data {
-                loader_info
-                    .as_loader_info_object()
-                    .unwrap()
-                    .set_content_type(sniffed_type, activation.context.gc_context);
-                let fake_movie = Arc::new(SwfMovie::empty_fake_compressed_len(
-                    activation.context.swf.version(),
-                    length,
-                ));
-
-                // Expose 'bytesTotal' (via the fake movie) during the first 'progress' event,
-                // but nothing else (in particular, the `parameters` and `url` properties are not set
-                // to their real values)
-                loader_info
-                    .as_loader_info_object()
-                    .unwrap()
-                    .set_loader_stream(
-                        LoaderStream::NotYetLoaded(fake_movie, Some(clip), false),
-                        activation.context.gc_context,
-                    );
-
-                // Flash always fires an initial 'progress' event with
-                // bytesLoaded=0 and bytesTotal set to the proper value.
-                // This only seems to happen for an AVM2 event handler
-                Loader::movie_loader_progress(handle, &mut activation.context, 0, length)?;
-
-                // Update the LoaderStream - we now have a real SWF movie and a real target clip
-                // This is intentionally set *after* the first 'progress' event, to match Flash's behavior
-                // (`LoaderInfo.parameters` is always empty during the first 'progress' event)
-                loader_info
-                    .as_loader_info_object()
-                    .unwrap()
-                    .set_loader_stream(
-                        LoaderStream::NotYetLoaded(movie.clone(), Some(clip), false),
-                        activation.context.gc_context,
-                    );
+        let movie = match sniffed_type {
+            ContentType::Swf => {
+                Arc::new(SwfMovie::from_data(data, url.clone(), loader_url.clone())?)
             }
+            ContentType::Gif | ContentType::Jpeg | ContentType::Png => {
+                Arc::new(SwfMovie::from_loaded_image(url.clone(), length))
+            }
+            ContentType::Unknown => Arc::new(SwfMovie::error_movie(url.clone())),
+        };
 
-            match sniffed_type {
-                ContentType::Swf => {
-                    let library = activation
-                        .context
-                        .library
-                        .library_for_movie_mut(movie.clone());
+        match activation.context.load_manager.get_loader_mut(handle) {
+            Some(Loader::Movie {
+                movie: old,
+                loader_status,
+                ..
+            }) => {
+                *loader_status = LoaderStatus::Parsing;
+                *old = Some(movie.clone())
+            }
+            _ => unreachable!(),
+        };
 
-                    library.set_avm2_domain(domain);
+        if let MovieLoaderVMData::Avm2 { loader_info, .. } = vm_data {
+            loader_info
+                .as_loader_info_object()
+                .unwrap()
+                .set_content_type(sniffed_type, activation.context.gc_context);
+            let fake_movie = Arc::new(SwfMovie::fake_with_compressed_len(
+                activation.context.swf.version(),
+                data.len(),
+            ));
 
-                    if let Some(mc) = clip.as_movie_clip() {
-                        let loader_info =
-                            if let MovieLoaderVMData::Avm2 { loader_info, .. } = vm_data {
-                                Some(*loader_info.as_loader_info_object().unwrap())
-                            } else {
-                                None
-                            };
+            // Expose 'bytesTotal' (via the fake movie) during the first 'progress' event,
+            // but nothing else (in particular, the `parameters` and `url` properties are not set
+            // to their real values)
+            loader_info
+                .as_loader_info_object()
+                .unwrap()
+                .set_loader_stream(
+                    LoaderStream::NotYetLoaded(fake_movie, Some(clip), false),
+                    activation.context.gc_context,
+                );
 
-                        // Store our downloaded `SwfMovie` into our target `MovieClip`,
-                        // and initialize it.
+            // Flash always fires an initial 'progress' event with
+            // bytesLoaded=0 and bytesTotal set to the proper value.
+            // This only seems to happen for an AVM2 event handler
+            Loader::movie_loader_progress(handle, &mut activation.context, 0, length)?;
 
-                        mc.replace_with_movie(
-                            &mut activation.context,
-                            Some(movie.clone()),
-                            true,
-                            loader_info,
-                        );
+            // Update the LoaderStream - we now have a real SWF movie and a real target clip
+            // This is intentionally set *after* the first 'progress' event, to match Flash's behavior
+            // (`LoaderInfo.parameters` is always empty during the first 'progress' event)
+            loader_info
+                .as_loader_info_object()
+                .unwrap()
+                .set_loader_stream(
+                    LoaderStream::NotYetLoaded(movie.clone(), Some(clip), false),
+                    activation.context.gc_context,
+                );
+        }
 
-                        if matches!(vm_data, MovieLoaderVMData::Avm2 { .. })
-                            && !movie.is_action_script_3()
-                        {
-                            // When an AVM2 movie loads an AVM1 movie, we need to call `post_instantiation` here.
-                            mc.post_instantiation(uc, None, Instantiator::Movie, false);
+        match sniffed_type {
+            ContentType::Swf => {
+                let library = activation
+                    .context
+                    .library
+                    .library_for_movie_mut(movie.clone());
 
-                            mc.set_depth(uc.gc_context, LOADER_INSERTED_AVM1_DEPTH);
-                        }
+                library.set_avm2_domain(domain);
+
+                if let Some(mc) = clip.as_movie_clip() {
+                    let loader_info = if let MovieLoaderVMData::Avm2 { loader_info, .. } = vm_data {
+                        Some(*loader_info.as_loader_info_object().unwrap())
+                    } else {
+                        None
+                    };
+
+                    // Store our downloaded `SwfMovie` into our target `MovieClip`,
+                    // and initialize it.
+
+                    mc.replace_with_movie(
+                        &mut activation.context,
+                        Some(movie.clone()),
+                        true,
+                        loader_info,
+                    );
+
+                    if matches!(vm_data, MovieLoaderVMData::Avm2 { .. })
+                        && !movie.is_action_script_3()
+                    {
+                        // When an AVM2 movie loads an AVM1 movie, we need to call `post_instantiation` here.
+                        mc.post_instantiation(uc, None, Instantiator::Movie, false);
+
+                        mc.set_depth(uc.gc_context, LOADER_INSERTED_AVM1_DEPTH);
                     }
 
-                    // NOTE: Certain tests specifically expect small files to preload immediately
+                    if from_bytes {
+                        mc.preload(uc, &mut ExecutionLimit::none());
+                        Loader::movie_loader_progress(
+                            handle,
+                            uc,
+                            mc.compressed_loaded_bytes() as usize,
+                            mc.compressed_total_bytes() as usize,
+                        )?;
+                        uc.post_frame_callbacks.push(PostFrameCallback {
+                            callback: Box::new(move |uc, dobj: DisplayObject<'_>| {
+                                if let Err(e) =
+                                    Loader::movie_loader_complete(handle, uc, Some(dobj), 0, false)
+                                {
+                                    tracing::error!("Error finishing loading of Loader.loadBytes movie {dobj:?}: {e:?}");
+                                }
+                            }),
+                            data: clip,
+                        });
+                    }
+                }
+
+                // NOTE: Certain tests specifically expect small files to preload immediately
+                if !from_bytes {
                     Loader::preload_tick(
                         handle,
                         uc,
@@ -1750,103 +1914,166 @@ impl<'gc> Loader<'gc> {
                         status,
                         redirected,
                     )?;
+                };
 
-                    return Ok(());
-                }
-                ContentType::Gif | ContentType::Jpeg | ContentType::Png => {
-                    let library = activation.context.library.library_for_movie_mut(movie);
+                return Ok(());
+            }
+            ContentType::Gif | ContentType::Jpeg | ContentType::Png => {
+                let library = activation
+                    .context
+                    .library
+                    .library_for_movie_mut(movie.clone());
 
-                    library.set_avm2_domain(domain);
+                library.set_avm2_domain(domain);
 
-                    // This will construct AVM2-side objects even under AVM1, but it doesn't matter,
-                    // since Bitmap and BitmapData never have AVM1-side objects.
-                    let bitmap = ruffle_render::utils::decode_define_bits_jpeg(data, None)?;
+                // This will construct AVM2-side objects even under AVM1, but it doesn't matter,
+                // since Bitmap and BitmapData never have AVM1-side objects.
+                let bitmap = ruffle_render::utils::decode_define_bits_jpeg(data, None)?;
 
-                    let transparency = true;
-                    let bitmap_data = BitmapData::new_with_pixels(
-                        bitmap.width(),
-                        bitmap.height(),
-                        transparency,
-                        bitmap.as_colors().map(Color::from).collect(),
-                    );
-                    let bitmapdata_wrapper = BitmapDataWrapper::new(GcCell::new(
-                        activation.context.gc_context,
-                        bitmap_data,
-                    ));
-                    let bitmapdata_class = activation.context.avm2.classes().bitmapdata;
-                    let bitmapdata_avm2 = BitmapDataObject::from_bitmap_data_internal(
-                        &mut activation,
-                        bitmapdata_wrapper,
-                        bitmapdata_class,
-                    )
+                let transparency = true;
+                let bitmap_data = BitmapData::new_with_pixels(
+                    bitmap.width(),
+                    bitmap.height(),
+                    transparency,
+                    bitmap.as_colors().map(Color::from).collect(),
+                );
+                let bitmapdata_wrapper =
+                    BitmapDataWrapper::new(GcCell::new(activation.context.gc_context, bitmap_data));
+                let bitmapdata_class = activation.context.avm2.classes().bitmapdata;
+                let bitmapdata_avm2 = BitmapDataObject::from_bitmap_data_internal(
+                    &mut activation,
+                    bitmapdata_wrapper,
+                    bitmapdata_class,
+                )
+                .unwrap();
+
+                let bitmap_avm2 = activation
+                    .avm2()
+                    .classes()
+                    .bitmap
+                    .construct(&mut activation, &[bitmapdata_avm2.into()])
                     .unwrap();
+                let bitmap_dobj = bitmap_avm2.as_display_object().unwrap();
 
-                    let bitmap_avm2 = activation
-                        .avm2()
-                        .classes()
-                        .bitmap
-                        .construct(&mut activation, &[bitmapdata_avm2.into()])
-                        .unwrap();
-                    let bitmap_obj = bitmap_avm2.as_display_object().unwrap();
+                if let MovieLoaderVMData::Avm2 { loader_info, .. } = vm_data {
+                    let fake_movie = Arc::new(SwfMovie::fake_with_compressed_len(
+                        activation.context.swf.version(),
+                        data.len(),
+                    ));
 
-                    Loader::movie_loader_progress(handle, &mut activation.context, length, length)?;
+                    loader_info
+                        .as_loader_info_object()
+                        .unwrap()
+                        .set_loader_stream(
+                            LoaderStream::NotYetLoaded(fake_movie, Some(bitmap_dobj), false),
+                            activation.context.gc_context,
+                        );
+                }
+
+                Loader::movie_loader_progress(handle, &mut activation.context, length, length)?;
+
+                if let MovieLoaderVMData::Avm2 { loader_info, .. } = vm_data {
+                    let fake_movie = Arc::new(SwfMovie::fake_with_compressed_data(
+                        activation.context.swf.version(),
+                        data.to_vec(),
+                    ));
+                    let loader_info_obj = loader_info.as_loader_info_object().unwrap();
+
+                    loader_info_obj.set_loader_stream(
+                        LoaderStream::NotYetLoaded(fake_movie, Some(bitmap_dobj), false),
+                        activation.context.gc_context,
+                    );
+                }
+
+                if from_bytes {
+                    // Note - flash player seems to delay this for *two* frames for some reason
+                    uc.post_frame_callbacks.push(PostFrameCallback {
+                        callback: Box::new(move |uc, bitmap_obj| {
+                            uc.post_frame_callbacks.push(PostFrameCallback {
+                                callback: Box::new(move |uc, bitmap_obj| {
+                                    if let Err(e) = Loader::movie_loader_complete(
+                                        handle,
+                                        uc,
+                                        Some(bitmap_obj),
+                                        status,
+                                        redirected,
+                                    ) {
+                                        tracing::error!("Error finishing loading of Loader.loadBytes image {bitmap_obj:?}: {e:?}");
+                                    }
+                                }),
+                                data: bitmap_obj,
+                            })
+                        }),
+                        data: bitmap_dobj,
+                    });
+                } else {
                     Loader::movie_loader_complete(
                         handle,
                         &mut activation.context,
-                        Some(bitmap_obj),
+                        Some(bitmap_dobj),
                         status,
                         redirected,
                     )?;
                 }
-                ContentType::Unknown => {
-                    match vm_data {
-                        MovieLoaderVMData::Avm1 { .. } => {
-                            // If the file is no valid supported file, the MovieClip enters the error state
-                            if let Some(mut mc) = clip.as_movie_clip() {
-                                Loader::load_error_swf(
-                                    &mut mc,
-                                    &mut activation.context,
-                                    url.clone(),
-                                );
-                            }
+            }
+            ContentType::Unknown => {
+                match vm_data {
+                    MovieLoaderVMData::Avm1 { .. } => {
+                        // If the file is no valid supported file, the MovieClip enters the error state
+                        if let Some(mut mc) = clip.as_movie_clip() {
+                            Loader::load_error_swf(&mut mc, &mut activation.context, url.clone());
+                        }
 
-                            // AVM1 fires the event with the current and total length as 0
-                            Loader::movie_loader_progress(handle, &mut activation.context, 0, 0)?;
-                            Loader::movie_loader_complete(
-                                handle,
-                                &mut activation.context,
-                                None,
-                                status,
-                                redirected,
-                            )?;
+                        // AVM1 fires the event with the current and total length as 0
+                        Loader::movie_loader_progress(handle, &mut activation.context, 0, 0)?;
+                        Loader::movie_loader_complete(
+                            handle,
+                            &mut activation.context,
+                            None,
+                            status,
+                            redirected,
+                        )?;
+                    }
+                    MovieLoaderVMData::Avm2 { loader_info, .. } => {
+                        let fake_movie = Arc::new(SwfMovie::fake_with_compressed_len(
+                            activation.context.swf.version(),
+                            data.len(),
+                        ));
+
+                        let loader_info = loader_info.as_loader_info_object().unwrap();
+                        loader_info.set_errored(true, activation.context.gc_context);
+
+                        loader_info.set_loader_stream(
+                            LoaderStream::NotYetLoaded(fake_movie, None, false),
+                            activation.context.gc_context,
+                        );
+
+                        Loader::movie_loader_progress(
+                            handle,
+                            &mut activation.context,
+                            length,
+                            length,
+                        )?;
+                        let mut error = "Error #2124: Loaded file is an unknown type.".to_string();
+                        if !from_bytes {
+                            error += &format!(" URL: {url}");
                         }
-                        MovieLoaderVMData::Avm2 { .. } => {
-                            Loader::movie_loader_progress(
-                                handle,
-                                &mut activation.context,
-                                length,
-                                length,
-                            )?;
-                            Loader::movie_loader_error(
-                                handle,
-                                uc,
-                                AvmString::new_utf8(
-                                    uc.gc_context,
-                                    &format!(
-                                        "Error #2124: Loaded file is an unknown type. URL: {url}"
-                                    ),
-                                ),
-                                status,
-                                redirected,
-                                url,
-                            )?;
-                        }
+
+                        Loader::movie_loader_error(
+                            handle,
+                            uc,
+                            AvmString::new_utf8(uc.gc_context, error),
+                            status,
+                            redirected,
+                            url,
+                        )?;
                     }
                 }
             }
+        }
 
-            Ok(())
-        }) //TODO: content sniffing errors need to be reported somehow
+        //TODO: content sniffing errors need to be reported somehow
+        Ok(())
     }
 
     /// Report a movie loader progress event to script code.
@@ -2005,6 +2232,16 @@ impl<'gc> Loader<'gc> {
                 .as_container()
                 .unwrap();
 
+            // This isn't completely correct - the 'large_preload' test observes the child
+            // being set after an 'enterFrame' call. However, our current logic should
+            // hopefully be good enough.
+            avm2_stub_method!(
+                activation,
+                "flash.display.Loader",
+                "load",
+                "addChild at the correct time"
+            );
+
             // Note that we do *not* use the 'addChild' method here:
             // Per the flash docs, our implementation always throws
             // an 'unsupported' error. Also, the AVM2 side of our movie
@@ -2051,8 +2288,9 @@ impl<'gc> Loader<'gc> {
             // in `MovieClip.on_exit_frame`
             MovieLoaderVMData::Avm2 { loader_info, .. } => {
                 let loader_info_obj = loader_info.as_loader_info_object().unwrap();
+                let current_movie = { loader_info_obj.as_loader_stream().unwrap().movie().clone() };
                 loader_info_obj.set_loader_stream(
-                    LoaderStream::Swf(target_clip.as_movie_clip().unwrap().movie(), dobj.unwrap()),
+                    LoaderStream::Swf(current_movie, dobj.unwrap()),
                     uc.gc_context,
                 );
 
@@ -2287,7 +2525,7 @@ impl<'gc> Loader<'gc> {
         dialog: DialogResultFuture,
     ) -> OwnedFuture<(), Error> {
         let handle = match self {
-            Loader::FileDialog { self_handle, .. } => {
+            Loader::FileDialog { self_handle, .. } | Loader::FileDialogAvm2 { self_handle, .. } => {
                 self_handle.expect("Loader not self-introduced")
             }
             _ => return Box::pin(async { Err(Error::NotFileDialogLoader) }),
@@ -2306,46 +2544,194 @@ impl<'gc> Loader<'gc> {
             // Fire the load handler.
             player.lock().unwrap().update(|uc| -> Result<(), Error> {
                 let loader = uc.load_manager.get_loader(handle);
+                match loader {
+                    Some(&Loader::FileDialog { target_object, .. }) => {
+                        let file_ref = match target_object.native() {
+                            NativeObject::FileReference(fr) => fr,
+                            _ => panic!("NativeObject must be FileReference"),
+                        };
+
+                        let mut activation = Activation::from_stub(
+                            uc.reborrow(),
+                            ActivationIdentifier::root("[File Dialog]"),
+                        );
+
+                        match dialog_result {
+                            Ok(dialog_result) => {
+                                use crate::avm1::globals::as_broadcaster;
+
+                                if !dialog_result.is_cancelled() {
+                                    file_ref.init_from_dialog_result(
+                                        &mut activation,
+                                        dialog_result.borrow(),
+                                    );
+                                    as_broadcaster::broadcast_internal(
+                                        &mut activation,
+                                        target_object,
+                                        &[target_object.into()],
+                                        "onSelect".into(),
+                                    )?;
+                                } else {
+                                    as_broadcaster::broadcast_internal(
+                                        &mut activation,
+                                        target_object,
+                                        &[target_object.into()],
+                                        "onCancel".into(),
+                                    )?;
+                                }
+                            }
+                            Err(err) => {
+                                tracing::warn!("Error on file dialog: {:?}", err);
+                            }
+                        }
+                        Ok(())
+                    }
+                    Some(&Loader::FileDialogAvm2 { target_object, .. }) => {
+                        match dialog_result {
+                            Ok(dialog_result) => {
+                                if !dialog_result.is_cancelled() {
+                                    target_object.init_from_dialog_result(dialog_result);
+
+                                    let mut activation =
+                                        Avm2Activation::from_nothing(uc.reborrow());
+                                    let select_event = Avm2EventObject::bare_default_event(
+                                        &mut activation.context,
+                                        "select",
+                                    );
+                                    Avm2::dispatch_event(
+                                        &mut activation.context,
+                                        select_event,
+                                        target_object.into(),
+                                    );
+                                } else {
+                                    let mut activation =
+                                        Avm2Activation::from_nothing(uc.reborrow());
+                                    let cancel_event = Avm2EventObject::bare_default_event(
+                                        &mut activation.context,
+                                        "cancel",
+                                    );
+                                    Avm2::dispatch_event(
+                                        &mut activation.context,
+                                        cancel_event,
+                                        target_object.into(),
+                                    );
+                                }
+                            }
+                            Err(err) => {
+                                tracing::warn!("Error on file dialog: {:?}", err);
+                            }
+                        }
+
+                        Ok(())
+                    }
+                    None => Err(Error::Cancelled),
+                    _ => Err(Error::NotFileDialogLoader),
+                }
+            })
+        })
+    }
+
+    /// Loader to handle saving a file to disk.
+    pub fn file_save_dialog_loader(
+        &mut self,
+        player: Weak<Mutex<Player>>,
+        dialog: DialogResultFuture,
+        data: Vec<u8>,
+    ) -> OwnedFuture<(), Error> {
+        let handle = match self {
+            Loader::SaveFileDialog { self_handle, .. } => {
+                self_handle.expect("Loader not self-introduced")
+            }
+            _ => return Box::pin(async { Err(Error::NotFileSaveDialogLoader) }),
+        };
+
+        let player = player
+            .upgrade()
+            .expect("Could not upgrade weak reference to player");
+
+        Box::pin(async move {
+            let dialog_result = dialog.await;
+
+            // Dialog is done, allow opening new dialogs
+            player.lock().unwrap().ui_mut().close_file_dialog();
+
+            // Fire the load handler.
+            player.lock().unwrap().update(|uc| -> Result<(), Error> {
+                let loader = uc.load_manager.get_loader(handle);
                 let target_object = match loader {
-                    Some(&Loader::FileDialog { target_object, .. }) => target_object,
+                    Some(&Loader::SaveFileDialog { target_object, .. }) => target_object,
                     None => return Err(Error::Cancelled),
-                    _ => return Err(Error::NotFileDialogLoader),
+                    _ => return Err(Error::NotFileSaveDialogLoader),
                 };
-
-                let file_ref = match target_object.native() {
-                    NativeObject::FileReference(fr) => fr,
-                    _ => panic!("NativeObject must be FileReference"),
-                };
-
-                let mut activation = Activation::from_stub(
-                    uc.reborrow(),
-                    ActivationIdentifier::root("[File Dialog]"),
-                );
 
                 match dialog_result {
-                    Ok(dialog_result) => {
-                        use crate::avm1::globals::as_broadcaster;
-
+                    Ok(mut dialog_result) => {
                         if !dialog_result.is_cancelled() {
-                            file_ref
-                                .init_from_dialog_result(&mut activation, dialog_result.borrow());
-                            as_broadcaster::broadcast_internal(
+                            dialog_result.write(&data);
+                            dialog_result.refresh();
+                            target_object.init_from_dialog_result(dialog_result);
+
+                            let mut activation = Avm2Activation::from_nothing(uc.reborrow());
+
+                            let select_event = Avm2EventObject::bare_default_event(
+                                &mut activation.context,
+                                "select",
+                            );
+                            Avm2::dispatch_event(
+                                &mut activation.context,
+                                select_event,
+                                target_object.into(),
+                            );
+
+                            let open_event = Avm2EventObject::bare_default_event(
+                                &mut activation.context,
+                                "open",
+                            );
+                            Avm2::dispatch_event(
+                                &mut activation.context,
+                                open_event,
+                                target_object.into(),
+                            );
+
+                            let size = data.len() as u64;
+                            let progress_evt = Avm2EventObject::progress_event(
                                 &mut activation,
-                                target_object,
-                                &[target_object.into()],
-                                "onSelect".into(),
-                            )?;
+                                "progress",
+                                size,
+                                size,
+                                false,
+                                false,
+                            );
+                            Avm2::dispatch_event(
+                                &mut activation.context,
+                                progress_evt,
+                                target_object.into(),
+                            );
+
+                            let complete_event = Avm2EventObject::bare_default_event(
+                                &mut activation.context,
+                                "complete",
+                            );
+                            Avm2::dispatch_event(
+                                &mut activation.context,
+                                complete_event,
+                                target_object.into(),
+                            );
                         } else {
-                            as_broadcaster::broadcast_internal(
-                                &mut activation,
-                                target_object,
-                                &[target_object.into()],
-                                "onCancel".into(),
-                            )?;
+                            let mut activation = Avm2Activation::from_nothing(uc.reborrow());
+                            let cancel_event = Avm2EventObject::bare_default_event(
+                                &mut activation.context,
+                                "cancel",
+                            );
+                            Avm2::dispatch_event(
+                                &mut activation.context,
+                                cancel_event,
+                                target_object.into(),
+                            );
                         }
                     }
                     Err(err) => {
-                        tracing::warn!("Error on file dialog: {:?}", err);
+                        tracing::warn!("Save dialog had an error {:?}", err);
                     }
                 }
 
@@ -2384,7 +2770,7 @@ impl<'gc> Loader<'gc> {
             let req = Request::get(url.clone());
             // Doing this in two steps to prevent holding the player lock during fetch
             let future = player.lock().unwrap().navigator().fetch(req);
-            let download_res = future.await;
+            let download_res = Self::wait_for_full_response(future).await;
 
             // Fire the load handler.
             player.lock().unwrap().update(|uc| -> Result<(), Error> {
@@ -2422,7 +2808,7 @@ impl<'gc> Loader<'gc> {
                             )?;
 
                             match download_res {
-                                Ok(download_res) => {
+                                Ok((body, _, _, _)) => {
                                     as_broadcaster::broadcast_internal(
                                         &mut activation,
                                         target_object,
@@ -2435,14 +2821,14 @@ impl<'gc> Loader<'gc> {
                                     // perspective of AS, we want to refresh the file_ref internal data
                                     // before invoking the callbacks
 
-                                    dialog_result.write(&download_res.body);
+                                    dialog_result.write(&body);
                                     dialog_result.refresh();
                                     file_ref.init_from_dialog_result(
                                         &mut activation,
                                         dialog_result.borrow(),
                                     );
 
-                                    let total_bytes = download_res.body.len();
+                                    let total_bytes = body.len();
 
                                     as_broadcaster::broadcast_internal(
                                         &mut activation,

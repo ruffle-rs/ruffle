@@ -129,11 +129,14 @@ fn char_at<'gc>(
         }
 
         let index = if !n.is_nan() { n as usize } else { 0 };
-        let ret = s
-            .get(index)
-            .map(WString::from_unit)
-            .map(|s| AvmString::new(activation.context.gc_context, s))
-            .unwrap_or_default();
+        let ret = if let Some(c) = s.get(index) {
+            activation
+                .context
+                .interner
+                .get_char(activation.context.gc_context, c)
+        } else {
+            activation.context.interner.empty()
+        };
         return Ok(ret.into());
     }
 
@@ -445,8 +448,11 @@ fn slice<'gc>(
     };
 
     if start_index < end_index {
-        let ret = WString::from(&this[start_index..end_index]);
-        Ok(AvmString::new(activation.context.gc_context, ret).into())
+        Ok(activation
+            .context
+            .interner
+            .substring(activation.context.gc_context, this, start_index, end_index)
+            .into())
     } else {
         Ok("".into())
     }
@@ -483,10 +489,12 @@ fn split<'gc>(
         this.iter()
             .take(limit)
             .map(|c| {
-                Value::from(AvmString::new(
-                    activation.context.gc_context,
-                    WString::from_unit(c),
-                ))
+                Value::from(
+                    activation
+                        .context
+                        .interner
+                        .get_char(activation.context.gc_context, c),
+                )
             })
             .collect()
     } else {
@@ -548,8 +556,11 @@ fn substr<'gc>(
         this.len().min(start_index + len as usize)
     };
 
-    let ret = WString::from(&this[start_index..end_index]);
-    return Ok(AvmString::new(activation.context.gc_context, ret).into());
+    Ok(activation
+        .context
+        .interner
+        .substring(activation.context.gc_context, this, start_index, end_index)
+        .into())
 }
 
 /// Implements `String.substring`
@@ -583,8 +594,11 @@ fn substring<'gc>(
         std::mem::swap(&mut end_index, &mut start_index);
     }
 
-    let ret = WString::from(&this[start_index..end_index]);
-    return Ok(AvmString::new(activation.context.gc_context, ret).into());
+    Ok(activation
+        .context
+        .interner
+        .substring(activation.context.gc_context, this, start_index, end_index)
+        .into())
 }
 
 /// Implements `String.toLowerCase`

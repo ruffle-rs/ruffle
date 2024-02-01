@@ -28,17 +28,11 @@ These should be set for the whole render pass and be immutable during it.
 ## Group 1: Mesh transforms
 These should be set for the current mesh being rendered.
 
-| Index | Type    | Description       | Availability |
-|:-----:|---------|:------------------|--------------|
-|   0   | uniform | World matrix      | Vertex       |
+| Index | Type    | Description                       | Availability |
+|:-----:|---------|:----------------------------------|--------------|
+|   0   | uniform | World matrix and color transforms | Vertex       |
 
-# Bitmaps
-## Group 2: Color transforms
-| Index | Type       | Description                          | Availability |
-|:-----:|------------|:-------------------------------------|--------------|
-|   0   | uniform    | Color adjustments                    | Fragment     |
-
-## Group 3: Texture transforms
+## Group 2: Texture transforms
 | Index | Type       | Description                          | Availability |
 |:-----:|------------|:-------------------------------------|--------------|
 |   0   | uniform    | Transformation matrix of the texture | Vertex       |
@@ -46,12 +40,7 @@ These should be set for the current mesh being rendered.
 |   2   | sampler    | Sampler used for the texture         | Fragment     |
 
 # Gradient
-## Group 2: Color transforms
-| Index | Type       | Description                          | Availability |
-|:-----:|------------|:-------------------------------------|--------------|
-|   0   | uniform    | Color adjustments                    | Fragment     |
-
-## Group 3: Texture transforms
+## Group 2: Texture transforms
 Index 1 is a storage buffer when supported by the device, or a uniform buffer otherwise.
 Storage buffers are more efficient and waste less memory, but are not as widely supported (ie WebGL)
 
@@ -59,9 +48,3 @@ Storage buffers are more efficient and waste less memory, but are not as widely 
 |:-----:|--------------------|:--------------------------------------|--------------|
 |   0   | uniform            | Transformation matrix of the gradient | Vertex       |
 |   1   | uniform or storage | Gradient information, colors etc      | Fragment     |
-
-# Color
-## Group 2: Color transforms
-| Index | Type       | Description                          | Availability |
-|:-----:|------------|:-------------------------------------|--------------|
-|   0   | uniform    | Color adjustments                    | Fragment     |

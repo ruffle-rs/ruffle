@@ -20,7 +20,7 @@ use crate::display_object::interactive::{
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
 use crate::drawing::Drawing;
 use crate::events::{ClipEvent, ClipEventResult, TextControlCode};
-use crate::font::{round_down_to_pixel, Glyph, TextRenderSettings};
+use crate::font::{round_down_to_pixel, FontType, Glyph, TextRenderSettings};
 use crate::html::{
     BoxBounds, FormatSpans, LayoutBox, LayoutContent, LayoutMetrics, Position, TextFormat,
 };
@@ -28,6 +28,7 @@ use crate::prelude::*;
 use crate::string::{utils as string_utils, AvmString, SwfStrExt as _, WStr, WString};
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::{AvmObject, Instantiator};
+use chrono::DateTime;
 use chrono::Utc;
 use core::fmt;
 use gc_arena::{Collect, Gc, GcCell, Mutation};
@@ -251,7 +252,12 @@ impl<'gc> EditText<'gc> {
         let text = swf_tag.initial_text().unwrap_or_default().decode(encoding);
 
         let mut text_spans = if swf_tag.is_html() {
-            FormatSpans::from_html(&text, default_format, swf_tag.is_multiline())
+            FormatSpans::from_html(
+                &text,
+                default_format,
+                swf_tag.is_multiline(),
+                swf_movie.version(),
+            )
         } else {
             FormatSpans::from_text(text.into_owned(), default_format)
         };
@@ -266,13 +272,19 @@ impl<'gc> EditText<'gc> {
             AutoSizeMode::None
         };
 
+        let font_type = if swf_tag.use_outlines() {
+            FontType::Embedded
+        } else {
+            FontType::Device
+        };
+
         let (layout, intrinsic_bounds) = LayoutBox::lower_from_text_spans(
             &text_spans,
             context,
             swf_movie.clone(),
             swf_tag.bounds().width() - Twips::from_pixels(Self::INTERNAL_PADDING * 2.0),
             swf_tag.is_word_wrap(),
-            !swf_tag.use_outlines(),
+            font_type,
         );
         let line_data = get_line_data(&layout);
 
@@ -398,7 +410,6 @@ impl<'gc> EditText<'gc> {
         let text = Self::new(context, swf_movie, x, y, width, height);
         text.set_is_tlf(context.gc_context, true);
         text.set_selectable(false, context);
-        text.set_is_device_font(context, true);
 
         text
     }
@@ -433,6 +444,7 @@ impl<'gc> EditText<'gc> {
                 text,
                 default_format,
                 write.flags.contains(EditTextFlag::MULTILINE),
+                write.static_data.swf.version(),
             );
             drop(write);
 
@@ -796,13 +808,21 @@ impl<'gc> EditText<'gc> {
             edit_text.bounds.width() - padding
         };
 
+        let font_type = if !edit_text.flags.contains(EditTextFlag::USE_OUTLINES) {
+            FontType::Device
+        } else if edit_text.is_tlf {
+            FontType::EmbeddedCFF
+        } else {
+            FontType::Embedded
+        };
+
         let (new_layout, intrinsic_bounds) = LayoutBox::lower_from_text_spans(
             &edit_text.text_spans,
             context,
             movie,
             content_width,
             is_word_wrap,
-            !edit_text.flags.contains(EditTextFlag::USE_OUTLINES),
+            font_type,
         );
 
         edit_text.line_data = get_line_data(&new_layout);
@@ -946,7 +966,7 @@ impl<'gc> EditText<'gc> {
                     && !edit_text.flags.contains(EditTextFlag::READ_ONLY)
                     && visible_selection.start() >= *start
                     && visible_selection.end() <= *end
-                    && Utc::now().timestamp_subsec_millis() / 500 == 0
+                    && !visible_selection.blinks_now()
                 {
                     Some(visible_selection.start() - start)
                 } else {
@@ -1211,6 +1231,12 @@ impl<'gc> EditText<'gc> {
         }
     }
 
+    pub fn reset_selection_blinking(self, gc_context: &Mutation<'gc>) {
+        if let Some(selection) = self.0.write(gc_context).selection.as_mut() {
+            selection.reset_blinking();
+        }
+    }
+
     pub fn spans(&self) -> Ref<FormatSpans> {
         Ref::map(self.0.read(), |r| &r.text_spans)
     }
@@ -1258,9 +1284,7 @@ impl<'gc> EditText<'gc> {
 
     pub fn screen_position_to_index(self, position: Point<Twips>) -> Option<usize> {
         let text = self.0.read();
-        let Some(mut position) = self.global_to_local(position) else {
-            return None;
-        };
+        let mut position = self.global_to_local(position)?;
         position.x += Twips::from_pixels(Self::INTERNAL_PADDING) + Twips::from_pixels(text.hscroll);
         position.y += Twips::from_pixels(Self::INTERNAL_PADDING) + text.vertical_scroll_offset();
 
@@ -1483,7 +1507,8 @@ impl<'gc> EditText<'gc> {
                         let text = self.text();
                         let end = string_utils::next_char_boundary(&text, selection.start());
                         self.replace_text(selection.start(), end, WStr::empty(), context);
-                        // No need to change selection
+                        // No need to change selection, reset it to prevent caret from blinking
+                        self.reset_selection_blinking(context.gc_context);
                         changed = true;
                     }
                 }
@@ -2010,7 +2035,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             if let Some(visible_selection) = visible_selection {
                 if visible_selection.is_caret()
                     && visible_selection.start() == 0
-                    && Utc::now().timestamp_subsec_millis() / 500 == 0
+                    && !visible_selection.blinks_now()
                 {
                     let format = edit_text.text_spans.default_format();
                     let caret_height = format.size.map(Twips::from_pixels).unwrap_or_default();
@@ -2263,6 +2288,9 @@ struct EditTextStatic {
 pub struct TextSelection {
     from: usize,
     to: usize,
+
+    /// The time the caret should begin blinking
+    blink_epoch: DateTime<Utc>,
 }
 
 /// Information about the start and end y-coordinates of a given line of text
@@ -2276,15 +2304,22 @@ pub struct LineData {
 }
 
 impl TextSelection {
+    const BLINK_CYCLE_DURATION_MS: u32 = 1000;
+
     pub fn for_position(position: usize) -> Self {
         Self {
             from: position,
             to: position,
+            blink_epoch: Utc::now(),
         }
     }
 
     pub fn for_range(from: usize, to: usize) -> Self {
-        Self { from, to }
+        Self {
+            from,
+            to,
+            blink_epoch: Utc::now(),
+        }
     }
 
     /// The "from" part of the range is where the user started the selection.
@@ -2335,6 +2370,16 @@ impl TextSelection {
     /// If this is false, text is replaced at the positions.
     pub fn is_caret(&self) -> bool {
         self.to == self.from
+    }
+
+    pub fn reset_blinking(&mut self) {
+        self.blink_epoch = Utc::now();
+    }
+
+    /// Returns true if the caret should not be visible now due to blinking.
+    pub fn blinks_now(&self) -> bool {
+        let millis = (Utc::now() - self.blink_epoch).num_milliseconds() as u32;
+        2 * (millis % Self::BLINK_CYCLE_DURATION_MS) >= Self::BLINK_CYCLE_DURATION_MS
     }
 }
 

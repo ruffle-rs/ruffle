@@ -54,6 +54,18 @@ pub enum Stub {
     Other(Cow<'static, str>),
 }
 
+impl Stub {
+    pub fn avm2_class(&self) -> Option<Cow<'static, str>> {
+        match self {
+            Stub::Avm2Method { class, .. } => Some(class.clone()),
+            Stub::Avm2Getter { class, .. } => Some(class.clone()),
+            Stub::Avm2Setter { class, .. } => Some(class.clone()),
+            Stub::Avm2Constructor { class, .. } => Some(class.clone()),
+            _ => None,
+        }
+    }
+}
+
 impl Display for Stub {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {

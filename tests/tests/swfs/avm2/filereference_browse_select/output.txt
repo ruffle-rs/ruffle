@@ -1,0 +1,9 @@
+select event
+file['creationDate']: null
+file['creator']: null
+file['data']: null
+file['extension'] throw: ReferenceError: Error #1069: Property extension not found on flash.net.FileReference and there is no default value.
+file['modificationDate']: null
+file['name']: test.txt
+file['size']: 13
+file['type']: .txt

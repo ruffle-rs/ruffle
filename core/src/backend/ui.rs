@@ -22,6 +22,7 @@ pub enum FontDefinition<'a> {
         is_bold: bool,
         is_italic: bool,
         data: Vec<u8>,
+        index: u32,
     },
 }
 
@@ -81,7 +82,7 @@ pub trait UiBackend: Downcast {
     /// Displays a message about an error during root movie download.
     /// In particular, on web this can be a CORS error, which we can sidestep
     /// by providing a direct .swf link instead.
-    fn display_root_movie_download_failed_message(&self);
+    fn display_root_movie_download_failed_message(&self, _invalid_swf: bool);
 
     // Unused, but kept in case we need it later.
     fn message(&self, message: &str);
@@ -275,7 +276,7 @@ impl UiBackend for NullUiBackend {
         Ok(())
     }
 
-    fn display_root_movie_download_failed_message(&self) {}
+    fn display_root_movie_download_failed_message(&self, _invalid_swf: bool) {}
 
     fn message(&self, _message: &str) {}
 

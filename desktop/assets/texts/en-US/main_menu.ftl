@@ -30,5 +30,6 @@ debug-menu = Debug Tools
 debug-menu-open-stage = View Stage Info
 debug-menu-open-movie = View Movie
 debug-menu-open-movie-list = Show Known Movies
+debug-menu-open-domain-list = Show Domains
 debug-menu-search-display-objects = Search Display Objects...
 

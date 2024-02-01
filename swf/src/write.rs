@@ -1849,10 +1849,10 @@ impl<W: Write> Writer<W> {
     fn write_convolution_filter(&mut self, filter: &ConvolutionFilter) -> Result<()> {
         self.write_u8(filter.num_matrix_cols)?;
         self.write_u8(filter.num_matrix_rows)?;
-        self.write_fixed16(filter.divisor)?;
-        self.write_fixed16(filter.bias)?;
+        self.write_f32(filter.divisor)?;
+        self.write_f32(filter.bias)?;
         for val in &filter.matrix {
-            self.write_fixed16(*val)?;
+            self.write_f32(*val)?;
         }
         self.write_rgba(&filter.default_color)?;
         self.write_u8(filter.flags.bits())?;

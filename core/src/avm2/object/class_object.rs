@@ -402,7 +402,7 @@ impl<'gc> ClassObject<'gc> {
         mc: &Mutation<'gc>,
     ) -> Result<GcCell<'gc, Class<'gc>>, Error<'gc>> {
         domain
-            .get_class(class_name, mc)?
+            .get_class(class_name, mc)
             .ok_or_else(|| format!("Could not resolve class {class_name:?}").into())
     }
 
