@@ -1,0 +1,8 @@
+///
+hello world
+RangeError: Error #2006: The supplied index is out of bounds.
+///
+line 1
+line 2
+///
+a b i
