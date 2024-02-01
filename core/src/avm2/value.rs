@@ -1315,21 +1315,26 @@ impl<'gc> Value<'gc> {
         other: &Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Option<bool>, Error<'gc>> {
-        let prim_self = self.coerce_to_primitive(Some(Hint::Number), activation)?;
-        let prim_other = other.coerce_to_primitive(Some(Hint::Number), activation)?;
+        match (self, other) {
+            (Value::Integer(a), Value::Integer(b)) => Ok(Some(a < b)),
+            _ => {
+                let prim_self = self.coerce_to_primitive(Some(Hint::Number), activation)?;
+                let prim_other = other.coerce_to_primitive(Some(Hint::Number), activation)?;
 
-        if let (Value::String(s), Value::String(o)) = (&prim_self, &prim_other) {
-            return Ok(Some(s.to_string().bytes().lt(o.to_string().bytes())));
+                if let (Value::String(s), Value::String(o)) = (&prim_self, &prim_other) {
+                    return Ok(Some(s.to_string().bytes().lt(o.to_string().bytes())));
+                }
+
+                let num_self = prim_self.coerce_to_number(activation)?;
+                let num_other = prim_other.coerce_to_number(activation)?;
+
+                if num_self.is_nan() || num_other.is_nan() {
+                    return Ok(None);
+                }
+
+                Ok(Some(num_self < num_other))
+            }
         }
-
-        let num_self = prim_self.coerce_to_number(activation)?;
-        let num_other = prim_other.coerce_to_number(activation)?;
-
-        if num_self.is_nan() || num_other.is_nan() {
-            return Ok(None);
-        }
-
-        Ok(Some(num_self < num_other))
     }
 }
 
