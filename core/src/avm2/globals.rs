@@ -173,6 +173,7 @@ pub struct SystemClasses<'gc> {
     pub textline: ClassObject<'gc>,
     pub sampledataevent: ClassObject<'gc>,
     pub avm1movie: ClassObject<'gc>,
+    pub focusevent: ClassObject<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -304,6 +305,7 @@ impl<'gc> SystemClasses<'gc> {
             textline: object,
             sampledataevent: object,
             avm1movie: object,
+            focusevent: object,
         }
     }
 }
@@ -801,6 +803,7 @@ fn load_playerglobal<'gc>(
             ("flash.events", "NetStatusEvent", netstatusevent),
             ("flash.events", "StatusEvent", statusevent),
             ("flash.events", "ContextMenuEvent", contextmenuevent),
+            ("flash.events", "FocusEvent", focusevent),
             ("flash.geom", "Matrix", matrix),
             ("flash.geom", "Point", point),
             ("flash.geom", "Rectangle", rectangle),

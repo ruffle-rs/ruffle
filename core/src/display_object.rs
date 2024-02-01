@@ -1860,6 +1860,33 @@ pub trait TDisplayObject<'gc>:
                 &mut activation,
                 Avm1ExecutionReason::Special,
             );
+        } else if let Avm2Value::Object(object) = self.object2() {
+            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+            let event_name = if focused {
+                "focusIn".into()
+            } else {
+                // `focusOut` is not this simple in FP,
+                // firing it might break SWFs that rely
+                // on the specific behavior
+                return;
+            };
+            let event = activation
+                .avm2()
+                .classes()
+                .focusevent
+                .construct(
+                    &mut activation,
+                    &[
+                        event_name,
+                        true.into(),
+                        false.into(),
+                        other.map(|o| o.object2()).unwrap_or(Avm2Value::Null),
+                        // Rest of the properties are not yet implemented
+                    ],
+                )
+                .expect("Event should construct!");
+
+            Avm2::dispatch_event(&mut activation.context, event, object);
         }
     }
 
