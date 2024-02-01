@@ -46,7 +46,9 @@ fn strip_version_mark(url: &WStr, is_playerglobals: bool) -> Option<(&WStr, ApiV
                 // Always return None for non-playerglobals to fall back to root api version as avmplus does
                 // https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/AbcParser.cpp#L1510
                 // Warn just for non-playerglobals with version marks
-                tracing::warn!("Ignoring url {url:?} with version mark in non-playerglobals domain");
+                tracing::warn!(
+                    "Ignoring url {url:?} with version mark in non-playerglobals domain"
+                );
                 return None;
             }
 
