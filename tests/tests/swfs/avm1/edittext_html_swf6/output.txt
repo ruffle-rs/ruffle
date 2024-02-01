@@ -1629,6 +1629,151 @@ is multiline after enabling: true
     HTML get ml: <!-- the same -->
     Text get:    abcde
     ===============
+==== font sizes
+    HTML set:    <font size="+1">text</font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="7" COLOR="#000000" LETTERSPACING="0" KERNING="0">text</FONT></P>
+    Text get:    text
+    HTML get ml: <!-- the same -->
+    Text get:    text
+    ===============
+    HTML set:    <font size="-1">text</font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="5" COLOR="#000000" LETTERSPACING="0" KERNING="0">text</FONT></P>
+    Text get:    text
+    HTML get ml: <!-- the same -->
+    Text get:    text
+    ===============
+    HTML set:    <font size="12">text</font><font size="+1">text</font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">text<FONT SIZE="7">text</FONT></FONT></P>
+    Text get:    texttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    ===============
+    HTML set:    <font size="12">text</font><font size="-1">text</font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">text<FONT SIZE="5">text</FONT></FONT></P>
+    Text get:    texttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    ===============
+    HTML set:    <font size="12">text<font size="+1">text</font></font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">text<FONT SIZE="13">text</FONT></FONT></P>
+    Text get:    texttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    ===============
+    HTML set:    <font size="12">text<font size="-1">text</font></font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">text<FONT SIZE="11">text</FONT></FONT></P>
+    Text get:    texttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    ===============
+    HTML set:    <font size="12">text<font size="+1">text<font size="+1">text<font size="+1">text</font></font></font></font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">text<FONT SIZE="13">text<FONT SIZE="14">text<FONT SIZE="15">text</FONT></FONT></FONT></FONT></P>
+    Text get:    texttexttexttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttexttexttext
+    ===============
+    HTML set:    <font size="12">text<font size="-1">text<font size="+1">text<font size="-1">text</font></font></font></font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">text<FONT SIZE="11">text</FONT>text<FONT SIZE="11">text</FONT></FONT></P>
+    Text get:    texttexttexttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttexttexttext
+    ===============
+    HTML set:    <font size="1.2">text</font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="1" COLOR="#000000" LETTERSPACING="0" KERNING="0">text</FONT></P>
+    Text get:    text
+    HTML get ml: <!-- the same -->
+    Text get:    text
+    ===============
+    HTML set:    <font size="1.2">text<font size="+0.2">text</font></font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="1" COLOR="#000000" LETTERSPACING="0" KERNING="0">texttext</FONT></P>
+    Text get:    texttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    ===============
+    HTML set:    <font size="1.2">text<font size="-0.2">text</font></font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="1" COLOR="#000000" LETTERSPACING="0" KERNING="0">texttext</FONT></P>
+    Text get:    texttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    ===============
+    HTML set:    <font size="1.9">text<font size="+0.2">text</font></font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="1" COLOR="#000000" LETTERSPACING="0" KERNING="0">texttext</FONT></P>
+    Text get:    texttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    ===============
+    HTML set:    <font size="1.other text">text</font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="1" COLOR="#000000" LETTERSPACING="0" KERNING="0">text</FONT></P>
+    Text get:    text
+    HTML get ml: <!-- the same -->
+    Text get:    text
+    ===============
+    HTML set:    <font size="not a number">text</font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0">text</FONT></P>
+    Text get:    text
+    HTML get ml: <!-- the same -->
+    Text get:    text
+    ===============
+    HTML set:    <font size="13">text<font size="not a number">text</font></font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="13" COLOR="#000000" LETTERSPACING="0" KERNING="0">texttext</FONT></P>
+    Text get:    texttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    ===============
+    HTML set:    <font size="13">text<font size="+not a number">text</font></font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="13" COLOR="#000000" LETTERSPACING="0" KERNING="0">texttext</FONT></P>
+    Text get:    texttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    ===============
+    HTML set:    <font size="13">text<font size="-not a number">text</font></font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="13" COLOR="#000000" LETTERSPACING="0" KERNING="0">texttext</FONT></P>
+    Text get:    texttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    ===============
+    HTML set:    <font size="+not a number">text</font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0">text</FONT></P>
+    Text get:    text
+    HTML get ml: <!-- the same -->
+    Text get:    text
+    ===============
+    HTML set:    <font size="-not a number">text</font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0">text</FONT></P>
+    Text get:    text
+    HTML get ml: <!-- the same -->
+    Text get:    text
+    ===============
+    HTML set:    <font size="32">text</font><font size="64">text</font><font size="128">text</font><font size="256">text</font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="32" COLOR="#000000" LETTERSPACING="0" KERNING="0">text<FONT SIZE="64">text<FONT SIZE="127">texttext</FONT></FONT></FONT></P>
+    Text get:    texttexttexttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttexttexttext
+    ===============
+    HTML set:    <font size="126">text<font size="+1">text<font size="+1">text</font></font></font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="126" COLOR="#000000" LETTERSPACING="0" KERNING="0">text<FONT SIZE="127">texttext</FONT></FONT></P>
+    Text get:    texttexttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttexttext
+    ===============
+    HTML set:    <font size="1">text</font><font size="0">text<font size="-1">text</font></font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="1" COLOR="#000000" LETTERSPACING="0" KERNING="0">texttexttext</FONT></P>
+    Text get:    texttexttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttexttext
+    ===============
+    HTML set:    <font size="1+1">text</font><font size="1-1">text<font size="-1+1">text</font></font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="1" COLOR="#000000" LETTERSPACING="0" KERNING="0">texttexttext</FONT></P>
+    Text get:    texttexttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttexttext
+    ===============
+    HTML set:    <font size="+">text</font><font size="-">text</font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0">texttext</FONT></P>
+    Text get:    texttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    ===============
 ==== textColor
 is multiline: true
 is multiline after disabling: false
@@ -3257,6 +3402,151 @@ is multiline after enabling: true
     HTML get ml: <!-- the same -->
     Text get:    abcde
     ===============
+==== font sizes
+    HTML set:    <font size="+1">text</font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="13" COLOR="#CC00CC" LETTERSPACING="0" KERNING="0">text</FONT></P>
+    Text get:    text
+    HTML get ml: <!-- the same -->
+    Text get:    text
+    ===============
+    HTML set:    <font size="-1">text</font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="11" COLOR="#CC00CC" LETTERSPACING="0" KERNING="0">text</FONT></P>
+    Text get:    text
+    HTML get ml: <!-- the same -->
+    Text get:    text
+    ===============
+    HTML set:    <font size="12">text</font><font size="+1">text</font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="12" COLOR="#CC00CC" LETTERSPACING="0" KERNING="0">text<FONT SIZE="13">text</FONT></FONT></P>
+    Text get:    texttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    ===============
+    HTML set:    <font size="12">text</font><font size="-1">text</font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="12" COLOR="#CC00CC" LETTERSPACING="0" KERNING="0">text<FONT SIZE="11">text</FONT></FONT></P>
+    Text get:    texttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    ===============
+    HTML set:    <font size="12">text<font size="+1">text</font></font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="12" COLOR="#CC00CC" LETTERSPACING="0" KERNING="0">text<FONT SIZE="13">text</FONT></FONT></P>
+    Text get:    texttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    ===============
+    HTML set:    <font size="12">text<font size="-1">text</font></font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="12" COLOR="#CC00CC" LETTERSPACING="0" KERNING="0">text<FONT SIZE="11">text</FONT></FONT></P>
+    Text get:    texttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    ===============
+    HTML set:    <font size="12">text<font size="+1">text<font size="+1">text<font size="+1">text</font></font></font></font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="12" COLOR="#CC00CC" LETTERSPACING="0" KERNING="0">text<FONT SIZE="13">text<FONT SIZE="14">text<FONT SIZE="15">text</FONT></FONT></FONT></FONT></P>
+    Text get:    texttexttexttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttexttexttext
+    ===============
+    HTML set:    <font size="12">text<font size="-1">text<font size="+1">text<font size="-1">text</font></font></font></font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="12" COLOR="#CC00CC" LETTERSPACING="0" KERNING="0">text<FONT SIZE="11">text</FONT>text<FONT SIZE="11">text</FONT></FONT></P>
+    Text get:    texttexttexttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttexttexttext
+    ===============
+    HTML set:    <font size="1.2">text</font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="1" COLOR="#CC00CC" LETTERSPACING="0" KERNING="0">text</FONT></P>
+    Text get:    text
+    HTML get ml: <!-- the same -->
+    Text get:    text
+    ===============
+    HTML set:    <font size="1.2">text<font size="+0.2">text</font></font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="1" COLOR="#CC00CC" LETTERSPACING="0" KERNING="0">texttext</FONT></P>
+    Text get:    texttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    ===============
+    HTML set:    <font size="1.2">text<font size="-0.2">text</font></font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="1" COLOR="#CC00CC" LETTERSPACING="0" KERNING="0">texttext</FONT></P>
+    Text get:    texttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    ===============
+    HTML set:    <font size="1.9">text<font size="+0.2">text</font></font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="1" COLOR="#CC00CC" LETTERSPACING="0" KERNING="0">texttext</FONT></P>
+    Text get:    texttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    ===============
+    HTML set:    <font size="1.other text">text</font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="1" COLOR="#CC00CC" LETTERSPACING="0" KERNING="0">text</FONT></P>
+    Text get:    text
+    HTML get ml: <!-- the same -->
+    Text get:    text
+    ===============
+    HTML set:    <font size="not a number">text</font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="12" COLOR="#CC00CC" LETTERSPACING="0" KERNING="0">text</FONT></P>
+    Text get:    text
+    HTML get ml: <!-- the same -->
+    Text get:    text
+    ===============
+    HTML set:    <font size="13">text<font size="not a number">text</font></font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="13" COLOR="#CC00CC" LETTERSPACING="0" KERNING="0">texttext</FONT></P>
+    Text get:    texttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    ===============
+    HTML set:    <font size="13">text<font size="+not a number">text</font></font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="13" COLOR="#CC00CC" LETTERSPACING="0" KERNING="0">texttext</FONT></P>
+    Text get:    texttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    ===============
+    HTML set:    <font size="13">text<font size="-not a number">text</font></font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="13" COLOR="#CC00CC" LETTERSPACING="0" KERNING="0">texttext</FONT></P>
+    Text get:    texttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    ===============
+    HTML set:    <font size="+not a number">text</font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="12" COLOR="#CC00CC" LETTERSPACING="0" KERNING="0">text</FONT></P>
+    Text get:    text
+    HTML get ml: <!-- the same -->
+    Text get:    text
+    ===============
+    HTML set:    <font size="-not a number">text</font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="12" COLOR="#CC00CC" LETTERSPACING="0" KERNING="0">text</FONT></P>
+    Text get:    text
+    HTML get ml: <!-- the same -->
+    Text get:    text
+    ===============
+    HTML set:    <font size="32">text</font><font size="64">text</font><font size="128">text</font><font size="256">text</font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="32" COLOR="#CC00CC" LETTERSPACING="0" KERNING="0">text<FONT SIZE="64">text<FONT SIZE="127">texttext</FONT></FONT></FONT></P>
+    Text get:    texttexttexttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttexttexttext
+    ===============
+    HTML set:    <font size="126">text<font size="+1">text<font size="+1">text</font></font></font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="126" COLOR="#CC00CC" LETTERSPACING="0" KERNING="0">text<FONT SIZE="127">texttext</FONT></FONT></P>
+    Text get:    texttexttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttexttext
+    ===============
+    HTML set:    <font size="1">text</font><font size="0">text<font size="-1">text</font></font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="1" COLOR="#CC00CC" LETTERSPACING="0" KERNING="0">texttexttext</FONT></P>
+    Text get:    texttexttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttexttext
+    ===============
+    HTML set:    <font size="1+1">text</font><font size="1-1">text<font size="-1+1">text</font></font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="1" COLOR="#CC00CC" LETTERSPACING="0" KERNING="0">texttexttext</FONT></P>
+    Text get:    texttexttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttexttext
+    ===============
+    HTML set:    <font size="+">text</font><font size="-">text</font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="12" COLOR="#CC00CC" LETTERSPACING="0" KERNING="0">texttext</FONT></P>
+    Text get:    texttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    ===============
 ==== textLayout
 is multiline: true
 is multiline after disabling: false
@@ -4884,5 +5174,150 @@ is multiline after enabling: true
     Text get:    abcde
     HTML get ml: <!-- the same -->
     Text get:    abcde
+    ===============
+==== font sizes
+    HTML set:    <font size="+1">text</font>
+    HTML get:    <TEXTFORMAT RIGHTMARGIN="2" LEADING="2"><P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="13" COLOR="#000000" LETTERSPACING="0" KERNING="0">text</FONT></P></TEXTFORMAT>
+    Text get:    text
+    HTML get ml: <!-- the same -->
+    Text get:    text
+    ===============
+    HTML set:    <font size="-1">text</font>
+    HTML get:    <TEXTFORMAT RIGHTMARGIN="2" LEADING="2"><P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="11" COLOR="#000000" LETTERSPACING="0" KERNING="0">text</FONT></P></TEXTFORMAT>
+    Text get:    text
+    HTML get ml: <!-- the same -->
+    Text get:    text
+    ===============
+    HTML set:    <font size="12">text</font><font size="+1">text</font>
+    HTML get:    <TEXTFORMAT RIGHTMARGIN="2" LEADING="2"><P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">text<FONT SIZE="13">text</FONT></FONT></P></TEXTFORMAT>
+    Text get:    texttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    ===============
+    HTML set:    <font size="12">text</font><font size="-1">text</font>
+    HTML get:    <TEXTFORMAT RIGHTMARGIN="2" LEADING="2"><P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">text<FONT SIZE="11">text</FONT></FONT></P></TEXTFORMAT>
+    Text get:    texttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    ===============
+    HTML set:    <font size="12">text<font size="+1">text</font></font>
+    HTML get:    <TEXTFORMAT RIGHTMARGIN="2" LEADING="2"><P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">text<FONT SIZE="13">text</FONT></FONT></P></TEXTFORMAT>
+    Text get:    texttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    ===============
+    HTML set:    <font size="12">text<font size="-1">text</font></font>
+    HTML get:    <TEXTFORMAT RIGHTMARGIN="2" LEADING="2"><P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">text<FONT SIZE="11">text</FONT></FONT></P></TEXTFORMAT>
+    Text get:    texttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    ===============
+    HTML set:    <font size="12">text<font size="+1">text<font size="+1">text<font size="+1">text</font></font></font></font>
+    HTML get:    <TEXTFORMAT RIGHTMARGIN="2" LEADING="2"><P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">text<FONT SIZE="13">text<FONT SIZE="14">text<FONT SIZE="15">text</FONT></FONT></FONT></FONT></P></TEXTFORMAT>
+    Text get:    texttexttexttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttexttexttext
+    ===============
+    HTML set:    <font size="12">text<font size="-1">text<font size="+1">text<font size="-1">text</font></font></font></font>
+    HTML get:    <TEXTFORMAT RIGHTMARGIN="2" LEADING="2"><P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">text<FONT SIZE="11">text</FONT>text<FONT SIZE="11">text</FONT></FONT></P></TEXTFORMAT>
+    Text get:    texttexttexttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttexttexttext
+    ===============
+    HTML set:    <font size="1.2">text</font>
+    HTML get:    <TEXTFORMAT RIGHTMARGIN="2" LEADING="2"><P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="1" COLOR="#000000" LETTERSPACING="0" KERNING="0">text</FONT></P></TEXTFORMAT>
+    Text get:    text
+    HTML get ml: <!-- the same -->
+    Text get:    text
+    ===============
+    HTML set:    <font size="1.2">text<font size="+0.2">text</font></font>
+    HTML get:    <TEXTFORMAT RIGHTMARGIN="2" LEADING="2"><P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="1" COLOR="#000000" LETTERSPACING="0" KERNING="0">texttext</FONT></P></TEXTFORMAT>
+    Text get:    texttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    ===============
+    HTML set:    <font size="1.2">text<font size="-0.2">text</font></font>
+    HTML get:    <TEXTFORMAT RIGHTMARGIN="2" LEADING="2"><P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="1" COLOR="#000000" LETTERSPACING="0" KERNING="0">texttext</FONT></P></TEXTFORMAT>
+    Text get:    texttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    ===============
+    HTML set:    <font size="1.9">text<font size="+0.2">text</font></font>
+    HTML get:    <TEXTFORMAT RIGHTMARGIN="2" LEADING="2"><P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="1" COLOR="#000000" LETTERSPACING="0" KERNING="0">texttext</FONT></P></TEXTFORMAT>
+    Text get:    texttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    ===============
+    HTML set:    <font size="1.other text">text</font>
+    HTML get:    <TEXTFORMAT RIGHTMARGIN="2" LEADING="2"><P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="1" COLOR="#000000" LETTERSPACING="0" KERNING="0">text</FONT></P></TEXTFORMAT>
+    Text get:    text
+    HTML get ml: <!-- the same -->
+    Text get:    text
+    ===============
+    HTML set:    <font size="not a number">text</font>
+    HTML get:    <TEXTFORMAT RIGHTMARGIN="2" LEADING="2"><P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">text</FONT></P></TEXTFORMAT>
+    Text get:    text
+    HTML get ml: <!-- the same -->
+    Text get:    text
+    ===============
+    HTML set:    <font size="13">text<font size="not a number">text</font></font>
+    HTML get:    <TEXTFORMAT RIGHTMARGIN="2" LEADING="2"><P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="13" COLOR="#000000" LETTERSPACING="0" KERNING="0">texttext</FONT></P></TEXTFORMAT>
+    Text get:    texttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    ===============
+    HTML set:    <font size="13">text<font size="+not a number">text</font></font>
+    HTML get:    <TEXTFORMAT RIGHTMARGIN="2" LEADING="2"><P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="13" COLOR="#000000" LETTERSPACING="0" KERNING="0">texttext</FONT></P></TEXTFORMAT>
+    Text get:    texttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    ===============
+    HTML set:    <font size="13">text<font size="-not a number">text</font></font>
+    HTML get:    <TEXTFORMAT RIGHTMARGIN="2" LEADING="2"><P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="13" COLOR="#000000" LETTERSPACING="0" KERNING="0">texttext</FONT></P></TEXTFORMAT>
+    Text get:    texttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    ===============
+    HTML set:    <font size="+not a number">text</font>
+    HTML get:    <TEXTFORMAT RIGHTMARGIN="2" LEADING="2"><P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">text</FONT></P></TEXTFORMAT>
+    Text get:    text
+    HTML get ml: <!-- the same -->
+    Text get:    text
+    ===============
+    HTML set:    <font size="-not a number">text</font>
+    HTML get:    <TEXTFORMAT RIGHTMARGIN="2" LEADING="2"><P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">text</FONT></P></TEXTFORMAT>
+    Text get:    text
+    HTML get ml: <!-- the same -->
+    Text get:    text
+    ===============
+    HTML set:    <font size="32">text</font><font size="64">text</font><font size="128">text</font><font size="256">text</font>
+    HTML get:    <TEXTFORMAT RIGHTMARGIN="2" LEADING="2"><P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="32" COLOR="#000000" LETTERSPACING="0" KERNING="0">text<FONT SIZE="64">text<FONT SIZE="127">texttext</FONT></FONT></FONT></P></TEXTFORMAT>
+    Text get:    texttexttexttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttexttexttext
+    ===============
+    HTML set:    <font size="126">text<font size="+1">text<font size="+1">text</font></font></font>
+    HTML get:    <TEXTFORMAT RIGHTMARGIN="2" LEADING="2"><P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="126" COLOR="#000000" LETTERSPACING="0" KERNING="0">text<FONT SIZE="127">texttext</FONT></FONT></P></TEXTFORMAT>
+    Text get:    texttexttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttexttext
+    ===============
+    HTML set:    <font size="1">text</font><font size="0">text<font size="-1">text</font></font>
+    HTML get:    <TEXTFORMAT RIGHTMARGIN="2" LEADING="2"><P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="1" COLOR="#000000" LETTERSPACING="0" KERNING="0">texttexttext</FONT></P></TEXTFORMAT>
+    Text get:    texttexttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttexttext
+    ===============
+    HTML set:    <font size="1+1">text</font><font size="1-1">text<font size="-1+1">text</font></font>
+    HTML get:    <TEXTFORMAT RIGHTMARGIN="2" LEADING="2"><P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="1" COLOR="#000000" LETTERSPACING="0" KERNING="0">texttexttext</FONT></P></TEXTFORMAT>
+    Text get:    texttexttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttexttext
+    ===============
+    HTML set:    <font size="+">text</font><font size="-">text</font>
+    HTML get:    <TEXTFORMAT RIGHTMARGIN="2" LEADING="2"><P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">texttext</FONT></P></TEXTFORMAT>
+    Text get:    texttext
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
     ===============
 ==== Done

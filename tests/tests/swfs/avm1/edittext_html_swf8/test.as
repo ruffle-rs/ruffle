@@ -336,6 +336,34 @@ function runTests(text) {
     runTest(text, '<I>a<i>b</I>c</i>');
     runTest(text, '<b>a<i>b</b>c</i>');
     runTest(text, '<b>a<i>b</b>c</i>d</b>e');
+
+    trace('==== font sizes');
+    runTest(text, '<font size="+1">text</font>');
+    runTest(text, '<font size="-1">text</font>');
+    runTest(text, '<font size="12">text</font><font size="+1">text</font>');
+    runTest(text, '<font size="12">text</font><font size="-1">text</font>');
+    runTest(text, '<font size="12">text<font size="+1">text</font></font>');
+    runTest(text, '<font size="12">text<font size="-1">text</font></font>');
+    runTest(text, '<font size="12">text<font size="+1">text<font size="+1">text<font size="+1">text</font></font></font></font>');
+    runTest(text, '<font size="12">text<font size="-1">text<font size="+1">text<font size="-1">text</font></font></font></font>');
+    runTest(text, '<font size="1.2">text</font>');
+    runTest(text, '<font size="1.2">text<font size="+0.2">text</font></font>');
+    runTest(text, '<font size="1.2">text<font size="-0.2">text</font></font>');
+    runTest(text, '<font size="1.9">text<font size="+0.2">text</font></font>');
+    runTest(text, '<font size="1.other text">text</font>');
+    runTest(text, '<font size="not a number">text</font>');
+    runTest(text, '<font size="13">text<font size="not a number">text</font></font>');
+    runTest(text, '<font size="13">text<font size="+not a number">text</font></font>');
+    runTest(text, '<font size="13">text<font size="-not a number">text</font></font>');
+    runTest(text, '<font size="+not a number">text</font>');
+    runTest(text, '<font size="-not a number">text</font>');
+    // how high can we go?
+    runTest(text, '<font size="32">text</font><font size="64">text</font><font size="128">text</font><font size="256">text</font>');
+    runTest(text, '<font size="126">text<font size="+1">text<font size="+1">text</font></font></font>');
+    // how low can we go?
+    runTest(text, '<font size="1">text</font><font size="0">text<font size="-1">text</font></font>');
+    runTest(text, '<font size="1+1">text</font><font size="1-1">text<font size="-1+1">text</font></font>');
+    runTest(text, '<font size="+">text</font><font size="-">text</font>');
 }
 
 trace("==== textInitialValue");
