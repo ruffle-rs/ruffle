@@ -72,8 +72,12 @@ async function sign(
 We highly recommend using the Docker build workflow. You can invoke it using the following three commands:\n\
 \n\
 rm -rf web/docker/docker_builds/*\n\
+# Normally these commands:\n\
 docker build --tag ruffle-web-docker -f web/docker/Dockerfile .\n\
 docker cp $(docker create ruffle-web-docker:latest):/ruffle/web/packages web/docker/docker_builds/packages\n\
+# OR alternatively, if you have to use 'sudo docker', make sure to use $(sudo docker ...) for the second docker command:\n\
+sudo docker build --tag ruffle-web-docker -f web/docker/Dockerfile .\n\
+sudo docker cp $(sudo docker create ruffle-web-docker:latest):/ruffle/web/packages web/docker/docker_builds/packages\n\
 \n\
 These commands are run at the root of the project. The compiled XPI will be in web/docker/docker_builds/packages/extension/dist/firefox_unsigned.xpi. Please take care to use this file (and not the surrounding packages directory) when comparing against the extension submission.\n\
 \n\
