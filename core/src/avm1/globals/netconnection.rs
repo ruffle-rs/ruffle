@@ -1,9 +1,13 @@
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::Object;
+use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Activation, Error, ScriptObject, Value};
+use crate::avm1::{Activation, Error, ScriptObject, TObject, Value};
 use crate::avm1_stub;
 use crate::context::GcContext;
+
+/// We store the connection state internally as part of our functional stub.
+const ISCONNECTED_INTERNAL: &str = "_isConnected";
 
 pub fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -11,6 +15,12 @@ pub fn constructor<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm1_stub!(activation, "NetConnection");
+    this.define_value(
+        activation.context.gc_context,
+        ISCONNECTED_INTERNAL,
+        Value::Bool(false),
+        Attribute::DONT_ENUM | Attribute::DONT_DELETE,
+    );
     Ok(this.into())
 }
 
@@ -26,11 +36,11 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
 
 fn is_connected<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm1_stub!(activation, "NetConnection", "isConnected");
-    Ok(Value::Bool(false))
+    this.get(ISCONNECTED_INTERNAL, activation)
 }
 
 fn protocol<'gc>(
@@ -71,10 +81,12 @@ fn close<'gc>(
 
 fn connect<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm1_stub!(activation, "NetConnection", "connect");
+    this.set(ISCONNECTED_INTERNAL, Value::Bool(true), activation)?;
+
     Ok(Value::Undefined)
 }
 
