@@ -1,0 +1,10 @@
+# At the moment, we only use Docker to ease the perfect reproduction
+# of the submitted Firefox extension for the AMO reviewers.
+# These folders are not needed for that, but can get fairly large in
+# a development repo, which makes building the Docker image harder.
+.git
+target
+tests/tests/swf
+**/node_modules
+web/packages/*/dist
+web/docker/docker_builds/*
