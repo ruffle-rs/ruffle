@@ -9,9 +9,11 @@
 				trace("Code: " + e.info.code);
 				trace("Level: " + e.info.level);
 			});
+			trace("//isConnected:", connection.connected);
 			trace("Calling connect");
 			connection.connect(null);
 			trace("Called connect");
+			trace("//isConnected:", connection.connected);
 		}
 	}
 }
