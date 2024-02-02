@@ -322,7 +322,9 @@ jobs:
       - name: Produce reproducible source archive
         if: ${{ !matrix.demo }}
         shell: bash -l {0}
-        run: zip -r reproducible-source.zip . -x /web/node_modules/**/* -x /web/**/node_modules/**/* && cp reproducible-source.zip "${{ needs.create-nightly-release.outputs.package_prefix }}-reproducible-source.zip"
+        run: |
+          zip -r reproducible-source.zip . -x '/web/node_modules/*' -x '/web/*/node_modules/*' -x '/.git/*' -x '/tests/tests/swfs/*'
+          cp reproducible-source.zip "${{ needs.create-nightly-release.outputs.package_prefix }}-reproducible-source.zip"
 
       - name: Upload reproducible source archive
         if: ${{ !matrix.demo }}
