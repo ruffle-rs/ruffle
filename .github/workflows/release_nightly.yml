@@ -264,6 +264,28 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  build-stub-report:
+    name: Build AVM2 stub repository
+    needs: create-nightly-release
+    if: needs.create-nightly-release.outputs.is_active == 'true'
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Clone Ruffle repo
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: Generate report
+        run: ./stub-report/generate-report.sh
+
+      - name: Upload report
+        run: gh release upload "${{ needs.create-nightly-release.outputs.tag_name }}" avm2_report.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   build-web:
     name: Build web${{ matrix.demo && ' demo' || '' }}
     needs: create-nightly-release
