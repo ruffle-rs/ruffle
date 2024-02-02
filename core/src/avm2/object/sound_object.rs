@@ -29,6 +29,7 @@ pub fn sound_allocator<'gc>(
             sound_data: SoundData::NotLoaded {
                 queued_plays: Vec::new(),
             },
+            id3: None,
         },
     ))
     .into())
@@ -58,6 +59,9 @@ pub struct SoundObjectData<'gc> {
 
     /// The sound this object holds.
     sound_data: SoundData<'gc>,
+
+    /// ID3Info Object
+    id3: Option<Object<'gc>>,
 }
 
 #[derive(Collect)]
@@ -128,6 +132,16 @@ impl<'gc> SoundObject<'gc> {
             }
         }
         Ok(())
+    }
+
+    pub fn id3(self) -> Option<Object<'gc>> {
+        let this = self.0.read();
+        this.id3
+    }
+
+    pub fn set_id3(self, mc: &Mutation<'gc>, id3: Option<Object<'gc>>) {
+        let mut this = self.0.write(mc);
+        this.id3 = id3;
     }
 }
 

@@ -296,3 +296,16 @@ pub fn load_pcm_from_byte_array<'gc>(
     avm2_stub_method!(activation, "flash.media.Sound", "loadPCMFromByteArray");
     Ok(Value::Undefined)
 }
+
+/// Implements `Sound.id3`
+pub fn get_id3<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(id3) = this.as_sound_object().unwrap().id3() {
+        Ok(id3.into())
+    } else {
+        Ok(Value::Null)
+    }
+}
