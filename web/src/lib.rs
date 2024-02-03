@@ -1956,6 +1956,7 @@ pub fn web_to_ruffle_text_control(
         }
     } else {
         match key {
+            "Enter" => Some(TextControlCode::Enter),
             "Delete" if ctrl_key => Some(TextControlCode::DeleteWord),
             "Delete" => Some(TextControlCode::Delete),
             "Backspace" if ctrl_key => Some(TextControlCode::BackspaceWord),
