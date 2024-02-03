@@ -19,6 +19,7 @@ pub fn winit_to_ruffle_text_control(
     let ctrl_cmd = modifiers.state().control_key()
         || (modifiers.state().super_key() && cfg!(target_os = "macos"));
     match event.logical_key.as_ref() {
+        Key::Named(NamedKey::Enter) => Some(TextControlCode::Enter),
         Key::Character("a") if ctrl_cmd => Some(TextControlCode::SelectAll),
         Key::Character("c") if ctrl_cmd => Some(TextControlCode::Copy),
         Key::Character("v") if ctrl_cmd => Some(TextControlCode::Paste),

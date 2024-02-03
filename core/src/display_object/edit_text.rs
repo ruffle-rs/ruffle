@@ -243,6 +243,9 @@ fn get_line_data(layout: &[LayoutBox]) -> Vec<LineData> {
 }
 
 impl<'gc> EditText<'gc> {
+    // This seems to be OS-independent
+    const INPUT_NEWLINE: char = '\r';
+
     /// Creates a new `EditText` from an SWF `DefineEditText` tag.
     pub fn from_swf_tag(
         context: &mut UpdateContext<'_, 'gc>,
@@ -1370,6 +1373,9 @@ impl<'gc> EditText<'gc> {
             let mut changed = false;
             let is_selectable = self.is_selectable();
             match control_code {
+                TextControlCode::Enter => {
+                    self.text_input(Self::INPUT_NEWLINE, context);
+                }
                 TextControlCode::MoveLeft
                 | TextControlCode::MoveLeftWord
                 | TextControlCode::MoveLeftLine
@@ -1529,7 +1535,6 @@ impl<'gc> EditText<'gc> {
                         changed = true;
                     }
                 }
-                _ => {}
             }
             if changed {
                 let mut activation = Avm1Activation::from_nothing(
@@ -1645,9 +1650,13 @@ impl<'gc> EditText<'gc> {
 
     pub fn text_input(self, character: char, context: &mut UpdateContext<'_, 'gc>) {
         if self.0.read().flags.contains(EditTextFlag::READ_ONLY)
-            || character.is_control()
+            || (character.is_control() && character != Self::INPUT_NEWLINE)
             || self.available_chars() == 0
         {
+            return;
+        }
+
+        if !self.is_multiline() && character == Self::INPUT_NEWLINE {
             return;
         }
 
