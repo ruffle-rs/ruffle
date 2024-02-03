@@ -1085,8 +1085,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
     }
 
-    fn op_push_byte(&mut self, value: u8) -> Result<FrameControl<'gc>, Error<'gc>> {
-        self.push_stack(value as i8 as i32);
+    fn op_push_byte(&mut self, value: i8) -> Result<FrameControl<'gc>, Error<'gc>> {
+        self.push_stack(value as i32);
         Ok(FrameControl::Continue)
     }
 

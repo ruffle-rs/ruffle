@@ -250,7 +250,7 @@ pub enum Op {
     Pop,
     PopScope,
     PushByte {
-        value: u8,
+        value: i8,
     },
     PushDouble {
         value: f64,

@@ -1,7 +1,9 @@
+use crate::avm2::class::Class;
 use crate::avm2::error::{
     make_error_1025, make_error_1032, make_error_1054, make_error_1107, verify_error,
 };
 use crate::avm2::method::BytecodeMethod;
+use crate::avm2::object::ClassObject;
 use crate::avm2::op::Op;
 use crate::avm2::property::Property;
 use crate::avm2::script::TranslationUnit;
@@ -9,7 +11,9 @@ use crate::avm2::{Activation, Error};
 use gc_arena::GcCell;
 use std::collections::{HashMap, HashSet};
 use swf::avm2::read::Reader;
-use swf::avm2::types::{Index, MethodFlags as AbcMethodFlags, Multiname, Op as AbcOp};
+use swf::avm2::types::{
+    Index, MethodFlags as AbcMethodFlags, Multiname as AbcMultiname, Op as AbcOp,
+};
 use swf::error::Error as AbcReadError;
 
 pub struct VerifiedMethodInfo {
@@ -22,8 +26,8 @@ pub struct Exception {
     pub to_offset: u32,
     pub target_offset: u32,
 
-    pub variable_name: Index<Multiname>,
-    pub type_name: Index<Multiname>,
+    pub variable_name: Index<AbcMultiname>,
+    pub type_name: Index<AbcMultiname>,
 }
 
 pub fn verify_method<'gc>(
@@ -517,6 +521,140 @@ fn verify_code_starting_from<'gc>(
     Ok(())
 }
 
+#[derive(Clone, Copy, Debug)]
+enum ValueType<'gc> {
+    // Either a class, or null.
+    Class(ClassObject<'gc>),
+    Int,
+    Uint,
+    Number,
+    Boolean,
+    Null,
+    Any,
+}
+
+#[derive(Clone, Debug)]
+struct Locals<'gc>(Vec<ValueType<'gc>>);
+
+impl<'gc> Locals<'gc> {
+    fn new(size: usize) -> Self {
+        Self(vec![ValueType::Any; size])
+    }
+
+    fn set_class_object(&mut self, index: usize, class: ClassObject<'gc>) {
+        self.0[index] = ValueType::Class(class);
+    }
+
+    fn set_class(&mut self, index: usize, class: GcCell<'gc, Class<'gc>>) {
+        // FIXME: Getting the ClassObject this way should be unnecessary
+        // after the ClassObject refactor
+        self.0[index] = class
+            .read()
+            .class_objects()
+            .get(0)
+            .map(|c| ValueType::Class(*c))
+            .unwrap_or(ValueType::Any);
+    }
+
+    fn set_int(&mut self, index: usize) {
+        self.0[index] = ValueType::Int;
+    }
+
+    fn set_uint(&mut self, index: usize) {
+        self.0[index] = ValueType::Uint;
+    }
+
+    fn set_number(&mut self, index: usize) {
+        self.0[index] = ValueType::Number;
+    }
+
+    fn set_boolean(&mut self, index: usize) {
+        self.0[index] = ValueType::Boolean;
+    }
+
+    fn set_any(&mut self, index: usize) {
+        self.0[index] = ValueType::Any;
+    }
+
+    fn set_null(&mut self, index: usize) {
+        self.0[index] = ValueType::Null;
+    }
+
+    fn set(&mut self, index: usize, value: ValueType<'gc>) {
+        self.0[index] = value;
+    }
+
+    fn at(&self, index: usize) -> Option<ValueType<'gc>> {
+        self.0.get(index).copied()
+    }
+
+    fn len(&self) -> usize {
+        self.0.len()
+    }
+}
+
+#[derive(Clone, Debug)]
+struct Stack<'gc>(Vec<ValueType<'gc>>);
+
+impl<'gc> Stack<'gc> {
+    fn new() -> Self {
+        Self(Vec::new())
+    }
+
+    fn push_class_object(&mut self, class: ClassObject<'gc>) {
+        self.0.push(ValueType::Class(class));
+    }
+
+    fn push_class(&mut self, class: GcCell<'gc, Class<'gc>>) {
+        // FIXME: Getting the ClassObject this way should be unnecessary
+        // after the ClassObject refactor
+        self.0.push(
+            class
+                .read()
+                .class_objects()
+                .get(0)
+                .map(|c| ValueType::Class(*c))
+                .unwrap_or(ValueType::Any),
+        );
+    }
+
+    fn push_int(&mut self) {
+        self.0.push(ValueType::Int);
+    }
+
+    fn push_uint(&mut self) {
+        self.0.push(ValueType::Uint);
+    }
+
+    fn push_number(&mut self) {
+        self.0.push(ValueType::Number);
+    }
+
+    fn push_boolean(&mut self) {
+        self.0.push(ValueType::Boolean);
+    }
+
+    fn push_any(&mut self) {
+        self.0.push(ValueType::Any);
+    }
+
+    fn push_null(&mut self) {
+        self.0.push(ValueType::Null);
+    }
+
+    fn push(&mut self, value: ValueType<'gc>) {
+        self.0.push(value);
+    }
+
+    fn pop(&mut self) -> Option<ValueType<'gc>> {
+        self.0.pop()
+    }
+
+    fn clear(&mut self) {
+        self.0 = Vec::new();
+    }
+}
+
 fn optimize<'gc>(
     activation: &mut Activation<'_, 'gc>,
     method: &BytecodeMethod<'gc>,
@@ -526,6 +664,15 @@ fn optimize<'gc>(
     // These make the code less readable
     #![allow(clippy::manual_filter)]
     #![allow(clippy::single_match)]
+
+    let mut output = crate::string::WString::new();
+    activation
+        .avm2()
+        .call_stack()
+        .read()
+        .clone()
+        .display(&mut output);
+    println!("beginning optimizing, call stack: {}", output);
 
     let method_body = method
         .body()
@@ -546,8 +693,10 @@ fn optimize<'gc>(
     };
 
     // Initial set of local types
-    let mut local_types = vec![None; method_body.num_locals as usize];
-    local_types[0] = this_class;
+    let mut initial_local_types = Locals::new(method_body.num_locals as usize);
+    if let Some(this_class) = this_class {
+        initial_local_types.set_class_object(0, this_class);
+    }
 
     // Logic to only allow for type-based optimizations on types that
     // we're absolutely sure about- invalidate the local register's
@@ -561,280 +710,494 @@ fn optimize<'gc>(
             | Op::IncLocalI { index }
             | Op::DecLocal { index }
             | Op::DecLocalI { index } => {
-                if (*index as usize) < local_types.len() {
-                    local_types[*index as usize] = None;
+                if (*index as usize) < initial_local_types.len() {
+                    initial_local_types.set_any(*index as usize);
                 }
             }
             Op::HasNext2 {
                 object_register,
                 index_register,
             } => {
-                if (*object_register as usize) < local_types.len() {
-                    local_types[*object_register as usize] = None;
+                if (*object_register as usize) < initial_local_types.len() {
+                    initial_local_types.set_any(*object_register as usize);
                 }
-                if (*index_register as usize) < local_types.len() {
-                    local_types[*index_register as usize] = None;
+                if (*index_register as usize) < initial_local_types.len() {
+                    initial_local_types.set_any(*index_register as usize);
                 }
             }
             _ => {}
         }
     }
 
-    let mut previous_op = None;
+    let mut stack = Stack::new();
+    let mut local_types = initial_local_types.clone();
+
     for (i, op) in code.iter_mut().enumerate() {
-        if let Some(previous_op_some) = previous_op {
-            if !jump_targets.contains(&(i as i32)) {
-                match op {
-                    Op::CoerceB => match previous_op_some {
-                        Op::CoerceB
-                        | Op::Equals
-                        | Op::GreaterEquals
-                        | Op::GreaterThan
-                        | Op::LessEquals
-                        | Op::LessThan
-                        | Op::PushTrue
-                        | Op::PushFalse
-                        | Op::Not
-                        | Op::IsType { .. }
-                        | Op::IsTypeLate => {
-                            previous_op = Some(op.clone());
-                            *op = Op::Nop;
-                            continue;
-                        }
-                        _ => {}
-                    },
-                    Op::CoerceD => match previous_op_some {
-                        Op::CoerceD
-                        | Op::PushDouble { .. }
-                        | Op::Multiply
-                        | Op::Divide
-                        | Op::Modulo
-                        | Op::Increment
-                        | Op::Decrement
-                        | Op::Negate => {
-                            previous_op = Some(op.clone());
-                            *op = Op::Nop;
-                            continue;
-                        }
-                        _ => {}
-                    },
-                    Op::CoerceI => match previous_op_some {
-                        Op::CoerceI | Op::PushByte { .. } | Op::PushShort { .. } => {
-                            previous_op = Some(op.clone());
-                            *op = Op::Nop;
-                            continue;
-                        }
-                        Op::PushInt { value } => {
-                            if value >= -(1 << 28) && value < (1 << 28) {
-                                previous_op = Some(op.clone());
-                                *op = Op::Nop;
-                                continue;
-                            }
-                        }
-                        _ => {}
-                    },
-                    Op::CoerceU => match previous_op_some {
-                        Op::CoerceU => {
-                            previous_op = Some(op.clone());
-                            *op = Op::Nop;
-                            continue;
-                        }
-                        Op::PushByte { value } => {
-                            if (value as i8) >= 0 {
-                                previous_op = Some(op.clone());
-                                *op = Op::Nop;
-                                continue;
-                            }
-                        }
-                        Op::PushShort { value } => {
-                            if value >= 0 {
-                                previous_op = Some(op.clone());
-                                *op = Op::Nop;
-                                continue;
-                            }
-                        }
-                        Op::PushInt { value } => {
-                            if value >= 0 && value < (1 << 28) {
-                                previous_op = Some(op.clone());
-                                *op = Op::Nop;
-                                continue;
-                            }
-                        }
-                        _ => {}
-                    },
-                    Op::GetProperty { index: name_index } => match previous_op_some {
-                        Op::GetLocal { index: local_index } => {
-                            let class = local_types[local_index as usize];
-                            if let Some(class) = class {
-                                let multiname = method
-                                    .translation_unit()
-                                    .pool_maybe_uninitialized_multiname(
-                                        *name_index,
-                                        &mut activation.context,
-                                    );
-
-                                if let Ok(multiname) = multiname {
-                                    if !multiname.has_lazy_component() {
-                                        match class.instance_vtable().get_trait(&multiname) {
-                                            Some(Property::Slot { slot_id })
-                                            | Some(Property::ConstSlot { slot_id }) => {
-                                                previous_op = Some(op.clone());
-                                                *op = Op::GetSlot { index: slot_id };
-                                                continue;
-                                            }
-                                            Some(Property::Virtual { get: Some(get), .. }) => {
-                                                previous_op = Some(op.clone());
-                                                *op = Op::CallMethod {
-                                                    num_args: 0,
-                                                    index: Index::new(get),
-                                                };
-                                                continue;
-                                            }
-                                            _ => {}
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        _ => {}
-                    },
-                    Op::AsType {
-                        type_name: name_index,
-                    } => {
-                        let multiname = method
-                            .translation_unit()
-                            .pool_maybe_uninitialized_multiname(
-                                *name_index,
-                                &mut activation.context,
-                            );
-
-                        let resolved_type = if let Ok(multiname) = multiname {
-                            if !multiname.has_lazy_component() {
-                                activation
-                                    .domain()
-                                    .get_class(&multiname, activation.context.gc_context)
-                            } else {
-                                None
-                            }
-                        } else {
-                            None
-                        };
-
-                        if resolved_type.is_some() {
-                            match previous_op_some {
-                                Op::PushNull => {
-                                    previous_op = Some(op.clone());
-                                    *op = Op::Nop;
-                                    continue;
-                                }
-                                _ => {}
-                            }
-                        }
-                    }
-                    Op::Coerce { index: name_index } => {
-                        let multiname = method
-                            .translation_unit()
-                            .pool_maybe_uninitialized_multiname(
-                                *name_index,
-                                &mut activation.context,
-                            );
-
-                        let resolved_type = if let Ok(multiname) = multiname {
-                            if !multiname.has_lazy_component() {
-                                activation
-                                    .domain()
-                                    .get_class(&multiname, activation.context.gc_context)
-                            } else {
-                                None
-                            }
-                        } else {
-                            None
-                        };
-
-                        if let Some(class) = resolved_type {
-                            match previous_op_some {
-                                Op::PushNull => {
-                                    // As long as this Coerce isn't coercing to one
-                                    // of these special classes, we can remove it.
-                                    if !GcCell::ptr_eq(
-                                        class,
-                                        activation.avm2().classes().int.inner_class_definition(),
-                                    ) && !GcCell::ptr_eq(
-                                        class,
-                                        activation.avm2().classes().uint.inner_class_definition(),
-                                    ) && !GcCell::ptr_eq(
-                                        class,
-                                        activation.avm2().classes().number.inner_class_definition(),
-                                    ) && !GcCell::ptr_eq(
-                                        class,
-                                        activation
-                                            .avm2()
-                                            .classes()
-                                            .boolean
-                                            .inner_class_definition(),
-                                    ) && !GcCell::ptr_eq(
-                                        class,
-                                        activation.avm2().classes().void.inner_class_definition(),
-                                    ) {
-                                        previous_op = Some(op.clone());
-                                        *op = Op::Nop;
-                                        continue;
-                                    }
-                                }
-                                Op::PushString { .. } => {
-                                    if GcCell::ptr_eq(
-                                        class,
-                                        activation.avm2().classes().string.inner_class_definition(),
-                                    ) {
-                                        previous_op = Some(op.clone());
-                                        *op = Op::Nop;
-                                        continue;
-                                    }
-                                }
-                                Op::NewArray { .. } => {
-                                    if GcCell::ptr_eq(
-                                        class,
-                                        activation.avm2().classes().array.inner_class_definition(),
-                                    ) {
-                                        previous_op = Some(op.clone());
-                                        *op = Op::Nop;
-                                        continue;
-                                    }
-                                }
-                                Op::NewFunction { .. } => {
-                                    if GcCell::ptr_eq(
-                                        class,
-                                        activation
-                                            .avm2()
-                                            .classes()
-                                            .function
-                                            .inner_class_definition(),
-                                    ) {
-                                        previous_op = Some(op.clone());
-                                        *op = Op::Nop;
-                                        continue;
-                                    }
-                                }
-                                Op::Coerce {
-                                    index: previous_name_index,
-                                } => {
-                                    if name_index.as_u30() == previous_name_index.as_u30() {
-                                        previous_op = Some(op.clone());
-                                        *op = Op::Nop;
-                                        continue;
-                                    }
-                                }
-                                _ => {}
-                            }
-                        }
-                    }
-                    _ => {}
-                }
-            }
+        if jump_targets.contains(&(i as i32)) {
+            stack.clear();
+            local_types = initial_local_types.clone();
         }
 
-        previous_op = Some(op.clone());
+        match op {
+            Op::CoerceB => {
+                let stack_value = stack.pop();
+                if matches!(stack_value, Some(ValueType::Boolean)) {
+                    println!("    optimized a CoerceB to Nop - idx {}", i);
+                    *op = Op::Nop;
+                }
+                stack.push_boolean();
+            }
+            Op::CoerceD => {
+                let stack_value = stack.pop();
+                if matches!(stack_value, Some(ValueType::Number)) {
+                    println!("    optimized a CoerceD to Nop - idx {}", i);
+                    *op = Op::Nop;
+                }
+                stack.push_number();
+            }
+            Op::CoerceI => {
+                let stack_value = stack.pop();
+                if matches!(stack_value, Some(ValueType::Int))
+                    || matches!(stack_value, Some(ValueType::Uint))
+                {
+                    println!("    optimized a CoerceI to Nop - idx {}", i);
+                    *op = Op::Nop;
+                }
+                stack.push_int();
+            }
+            Op::CoerceU => {
+                let stack_value = stack.pop();
+                if matches!(stack_value, Some(ValueType::Uint)) {
+                    println!("    optimized a CoerceU to Nop - idx {}", i);
+                    *op = Op::Nop;
+                }
+                stack.push_uint();
+            }
+            Op::CoerceA => {
+                stack.pop();
+                stack.push_any();
+            }
+            Op::Equals | Op::LessEquals | Op::LessThan | Op::GreaterThan | Op::GreaterEquals => {
+                stack.pop();
+                stack.pop();
+                stack.push_boolean();
+            }
+            Op::Not => {
+                stack.pop();
+                stack.push_boolean();
+            }
+            Op::PushTrue | Op::PushFalse => {
+                stack.push_boolean();
+            }
+            Op::PushNull => {
+                stack.push_null();
+            }
+            Op::PushUndefined => {
+                stack.push_any();
+            }
+            Op::PushNaN => {
+                stack.push_number();
+            }
+            Op::PushByte { value } => {
+                if *value >= 0 {
+                    stack.push_uint();
+                } else {
+                    stack.push_int();
+                }
+            }
+            Op::PushShort { value } => {
+                if *value >= 0 {
+                    stack.push_uint();
+                } else {
+                    stack.push_int();
+                }
+            }
+            Op::DecrementI => {
+                // This doesn't give any Number-int guarantees
+                stack.pop();
+                stack.push_any();
+            }
+            Op::IncrementI => {
+                // This doesn't give any Number-int guarantees
+                stack.pop();
+                stack.push_any();
+            }
+            Op::DecLocalI { index } => {
+                if (*index as usize) < local_types.len() {
+                    // This doesn't give any Number-int guarantees
+                    local_types.set_any(*index as usize);
+                }
+            }
+            Op::IncLocalI { index } => {
+                if (*index as usize) < local_types.len() {
+                    // This doesn't give any Number-int guarantees
+                    local_types.set_any(*index as usize);
+                }
+            }
+            Op::Add => {
+                stack.pop();
+                stack.pop();
+                stack.push_any();
+            }
+            Op::Subtract => {
+                stack.pop();
+                stack.pop();
+                stack.push_any();
+            }
+            Op::Multiply => {
+                stack.pop();
+                stack.pop();
+                stack.push_any();
+            }
+            Op::BitNot => {
+                stack.pop();
+                stack.push_any();
+            }
+            Op::BitAnd => {
+                stack.pop();
+                stack.pop();
+                stack.push_any();
+            }
+            Op::PushDouble { .. } => {
+                stack.push_number();
+            }
+            Op::PushString { .. } => {
+                stack.push_class_object(activation.avm2().classes().string);
+            }
+            Op::NewArray { num_args } => {
+                for _ in 0..num_args {
+                    stack.pop();
+                }
+
+                stack.push_class_object(activation.avm2().classes().array);
+            }
+            Op::NewFunction { .. } => {
+                stack.push_class_object(activation.avm2().classes().function);
+            }
+            Op::IsType { .. } => {
+                stack.pop();
+                stack.push_boolean();
+            }
+            Op::IsTypeLate => {
+                stack.pop();
+                stack.pop();
+                stack.push_boolean();
+            }
+            Op::AsType {
+                type_name: name_index,
+            } => {
+                let multiname = method
+                    .translation_unit()
+                    .pool_maybe_uninitialized_multiname(*name_index, &mut activation.context);
+
+                let resolved_type = if let Ok(multiname) = multiname {
+                    if !multiname.has_lazy_component() {
+                        activation
+                            .domain()
+                            .get_class(&multiname, activation.context.gc_context)
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                };
+
+                let stack_value = stack.pop();
+                if resolved_type.is_some() {
+                    if matches!(stack_value, Some(ValueType::Null)) {
+                        println!("    optimized an AsType to Nop - idx {}", i);
+                        *op = Op::Nop;
+                    }
+                }
+
+                if let Some(resolved_type) = resolved_type {
+                    stack.push_class(resolved_type);
+                } else {
+                    stack.push_any();
+                }
+            }
+            Op::Coerce { index: name_index } => {
+                let multiname = method
+                    .translation_unit()
+                    .pool_maybe_uninitialized_multiname(*name_index, &mut activation.context);
+
+                let resolved_type = if let Ok(multiname) = multiname {
+                    if !multiname.has_lazy_component() {
+                        activation
+                            .domain()
+                            .get_class(&multiname, activation.context.gc_context)
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                };
+
+                let stack_value = stack.pop();
+                if let Some(resolved_type) = resolved_type {
+                    if matches!(stack_value, Some(ValueType::Null)) {
+                        // As long as this Coerce isn't coercing to one
+                        // of these special classes, we can remove it.
+                        if !GcCell::ptr_eq(
+                            resolved_type,
+                            activation.avm2().classes().int.inner_class_definition(),
+                        ) && !GcCell::ptr_eq(
+                            resolved_type,
+                            activation.avm2().classes().uint.inner_class_definition(),
+                        ) && !GcCell::ptr_eq(
+                            resolved_type,
+                            activation.avm2().classes().number.inner_class_definition(),
+                        ) && !GcCell::ptr_eq(
+                            resolved_type,
+                            activation.avm2().classes().boolean.inner_class_definition(),
+                        ) && !GcCell::ptr_eq(
+                            resolved_type,
+                            activation.avm2().classes().void.inner_class_definition(),
+                        ) {
+                            println!("    optimized a Coerce to Nop (Null case) - idx {}", i);
+                            *op = Op::Nop;
+                        }
+                    } else if let Some(ValueType::Class(class_object)) = stack_value {
+                        if GcCell::ptr_eq(resolved_type, class_object.inner_class_definition()) {
+                            println!(
+                                "    optimized a Coerce to Nop (type: {:?}) - idx {}",
+                                class_object, i
+                            );
+                            *op = Op::Nop;
+                        }
+                    }
+
+                    stack.push_class(resolved_type);
+                } else {
+                    stack.push_any();
+                }
+            }
+            Op::PushScope => {
+                stack.pop();
+            }
+            Op::Pop => {
+                stack.pop();
+            }
+            Op::Dup => {
+                let stack_value = stack.pop();
+                if let Some(stack_value) = stack_value {
+                    stack.push(stack_value);
+                    stack.push(stack_value);
+                }
+            }
+            Op::SetLocal { index } => {
+                let stack_value = stack.pop();
+                if (*index as usize) < local_types.len() {
+                    if let Some(stack_value) = stack_value {
+                        local_types.set(*index as usize, stack_value);
+                    } else {
+                        local_types.set_any(*index as usize);
+                    }
+                }
+            }
+            Op::GetLocal { index } => {
+                let local_type = local_types.at(*index as usize);
+                if let Some(local_type) = local_type {
+                    stack.push(local_type);
+                } else {
+                    stack.push_any();
+                }
+            }
+            Op::GetLex { .. } => {
+                stack.push_any();
+            }
+            Op::FindPropStrict { .. } => {
+                // Avoid handling for now
+                stack.clear();
+            }
+            Op::FindProperty { .. } => {
+                // Avoid handling for now
+                stack.clear();
+            }
+            Op::GetProperty { index: name_index } => {
+                let stack_value = stack.pop();
+                if let Some(ValueType::Class(class)) = stack_value {
+                    let multiname = method
+                        .translation_unit()
+                        .pool_maybe_uninitialized_multiname(*name_index, &mut activation.context);
+
+                    if let Ok(multiname) = multiname {
+                        if !multiname.has_lazy_component() {
+                            match class.instance_vtable().get_trait(&multiname) {
+                                Some(Property::Slot { slot_id })
+                                | Some(Property::ConstSlot { slot_id }) => {
+                                    println!("    optimized a GetProperty to GetSlot - idx {}", i);
+                                    *op = Op::GetSlot { index: slot_id };
+                                }
+                                Some(Property::Virtual { get: Some(get), .. }) => {
+                                    println!(
+                                        "    optimized a GetProperty to CallMethod - idx {}",
+                                        i
+                                    );
+                                    *op = Op::CallMethod {
+                                        num_args: 0,
+                                        index: Index::new(get),
+                                    };
+                                }
+                                _ => {}
+                            }
+                        } else {
+                            // Avoid handling lazy for now
+                            stack.clear();
+                        }
+                    }
+                }
+                stack.push_any();
+            }
+            Op::InitProperty { index: name_index } => {
+                stack.pop();
+                let stack_value = stack.pop();
+                if let Some(ValueType::Class(class)) = stack_value {
+                    let multiname = method
+                        .translation_unit()
+                        .pool_maybe_uninitialized_multiname(*name_index, &mut activation.context);
+
+                    if let Ok(multiname) = multiname {
+                        if !multiname.has_lazy_component() {
+                            match class.instance_vtable().get_trait(&multiname) {
+                                Some(Property::Slot { slot_id })
+                                | Some(Property::ConstSlot { slot_id }) => {
+                                    println!(
+                                        "    optimized an InitProperty to SetSlot - idx {}",
+                                        i
+                                    );
+                                    *op = Op::SetSlot { index: slot_id };
+                                }
+                                _ => {}
+                            }
+                        } else {
+                            // Avoid handling lazy for now
+                            stack.clear();
+                        }
+                    }
+                }
+            }
+            Op::SetProperty { index: name_index } => {
+                stack.pop();
+                let stack_value = stack.pop();
+                if let Some(ValueType::Class(class)) = stack_value {
+                    let multiname = method
+                        .translation_unit()
+                        .pool_maybe_uninitialized_multiname(*name_index, &mut activation.context);
+
+                    if let Ok(multiname) = multiname {
+                        if !multiname.has_lazy_component() {
+                            match class.instance_vtable().get_trait(&multiname) {
+                                Some(Property::Slot { slot_id }) => {
+                                    println!("    optimized a SetProperty to SetSlot - idx {}", i);
+                                    *op = Op::SetSlot { index: slot_id };
+                                }
+                                _ => {}
+                            }
+                        } else {
+                            // Avoid handling lazy for now
+                            stack.clear();
+                        }
+                    }
+                }
+            }
+            Op::CallProperty {
+                index: name_index,
+                num_args,
+            } => {
+                // Args...
+                for _ in 0..*num_args {
+                    stack.pop();
+                }
+
+                // Then receiver.
+                stack.pop();
+
+                let multiname = method
+                    .translation_unit()
+                    .pool_maybe_uninitialized_multiname(*name_index, &mut activation.context);
+                if let Ok(multiname) = multiname {
+                    if multiname.has_lazy_component() {
+                        // Avoid handling lazy for now
+                        stack.clear();
+                    }
+                }
+
+                // Avoid checking return value for now
+                stack.push_any();
+            }
+            Op::CallPropVoid { .. } => {
+                // Avoid handling for now
+                stack.clear();
+            }
+            Op::Nop => {}
+            Op::IfTrue { .. } | Op::IfFalse { .. } => {
+                stack.pop();
+            }
+            Op::IfStrictEq { .. }
+            | Op::IfStrictNe { .. }
+            | Op::IfEq { .. }
+            | Op::IfNe { .. }
+            | Op::IfGe { .. }
+            | Op::IfGt { .. }
+            | Op::IfLe { .. }
+            | Op::IfLt { .. }
+            | Op::IfNge { .. }
+            | Op::IfNgt { .. }
+            | Op::IfNle { .. }
+            | Op::IfNlt { .. } => {
+                stack.pop();
+                stack.pop();
+            }
+            _ => {
+                stack.clear();
+                local_types = initial_local_types.clone();
+            }
+        } /*
+
+          if let Some(previous_op_some) = previous_op {
+              if !jump_targets.contains(&(i as i32)) {
+                  match op {
+                      Op::CoerceD => match previous_op_some {
+                          Op::Multiply
+                          | Op::Divide
+                          | Op::Modulo
+                          | Op::Increment
+                          | Op::Decrement
+                          | Op::Negate => {
+                              previous_op = Some(op.clone());
+                              *op = Op::Nop;
+                              continue;
+                          }
+                          _ => {}
+                      },
+                      Op::CoerceI => match previous_op_some {
+                          Op::PushInt { value } => {
+                              if value >= -(1 << 28) && value < (1 << 28) {
+                                  previous_op = Some(op.clone());
+                                  *op = Op::Nop;
+                                  continue;
+                              }
+                          }
+                          _ => {}
+                      },
+                      Op::CoerceU => match previous_op_some {
+                          Op::PushInt { value } => {
+                              if value >= 0 && value < (1 << 28) {
+                                  previous_op = Some(op.clone());
+                                  *op = Op::Nop;
+                                  continue;
+                              }
+                          }
+                          _ => {}
+                      },
+                      _ => {}
+                  }
+              }
+          }*/
     }
+
+    println!();
 }
 
 fn ops_can_throw_error(ops: &[AbcOp]) -> bool {
@@ -944,7 +1307,7 @@ fn resolve_op<'gc>(
     op: AbcOp,
 ) -> Result<Op, Error<'gc>> {
     Ok(match op {
-        AbcOp::PushByte { value } => Op::PushByte { value },
+        AbcOp::PushByte { value } => Op::PushByte { value: value as i8 },
         AbcOp::PushDouble { value } => {
             let value = pool_double(activation, translation_unit, value)?;
 
