@@ -131,8 +131,9 @@ export class RuffleObject extends RufflePlayer {
         });
 
         Object.keys(this.attributes).forEach((key) => {
-            result += `Attribute ${key}: ${this.attributes.getNamedItem(key)
-                ?.value}\n`;
+            result += `Attribute ${key}: ${
+                this.attributes.getNamedItem(key)?.value
+            }\n`;
         });
 
         return result;
