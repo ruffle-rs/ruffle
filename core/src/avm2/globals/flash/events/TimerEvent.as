@@ -13,9 +13,9 @@ package flash.events {
 		}
 
 		// Returns a string that contains all the properties of the TimerEvent object.
-        override public function toString():String {
-            return this.formatToString("TimerEvent","type","bubbles","cancelable", "eventPhase");
-        }
+        	override public function toString():String {
+           		return this.formatToString("TimerEvent","type","bubbles","cancelable", "eventPhase");
+        	}
 
 		public native function updateAfterEvent():void;
 	}
