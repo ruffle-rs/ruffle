@@ -33,7 +33,7 @@ pub enum Property {
 /// Additionally, property class resolution uses special
 /// logic, different from normal "runtime" class resolution,
 /// that allows private types to be referenced.
-#[derive(Collect, Clone)]
+#[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
 pub enum PropertyClass<'gc> {
     /// The type `*` (Multiname::is_any()). This allows
@@ -97,6 +97,35 @@ impl<'gc> PropertyClass<'gc> {
             // We have a type of '*' ("any"), so don't
             // perform any coercions
             Ok((value, changed))
+        }
+    }
+
+    pub fn get_class(
+        &mut self,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Option<GcCell<'gc, Class<'gc>>>, Error<'gc>> {
+        match self {
+            PropertyClass::Class(class) => Ok(Some(*class)),
+            PropertyClass::Name(gc) => {
+                let (name, unit) = &**gc;
+                if name.is_any_name() {
+                    *self = PropertyClass::Any;
+                    Ok(None)
+                } else {
+                    let domain =
+                        unit.map_or(activation.avm2().playerglobals_domain, |u| u.domain());
+                    if let Some(class) = domain.get_class(name, activation.context.gc_context) {
+                        *self = PropertyClass::Class(class);
+                        Ok(Some(class))
+                    } else {
+                        Err(
+                            format!("Could not resolve class {name:?} for property class lookup")
+                                .into(),
+                        )
+                    }
+                }
+            }
+            PropertyClass::Any => Ok(None),
         }
     }
 
