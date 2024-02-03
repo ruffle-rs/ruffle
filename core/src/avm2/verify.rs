@@ -545,39 +545,8 @@ impl<'gc> Locals<'gc> {
         self.0[index] = ValueType::Class(class);
     }
 
-    fn set_class(&mut self, index: usize, class: GcCell<'gc, Class<'gc>>) {
-        // FIXME: Getting the ClassObject this way should be unnecessary
-        // after the ClassObject refactor
-        self.0[index] = class
-            .read()
-            .class_objects()
-            .get(0)
-            .map(|c| ValueType::Class(*c))
-            .unwrap_or(ValueType::Any);
-    }
-
-    fn set_int(&mut self, index: usize) {
-        self.0[index] = ValueType::Int;
-    }
-
-    fn set_uint(&mut self, index: usize) {
-        self.0[index] = ValueType::Uint;
-    }
-
-    fn set_number(&mut self, index: usize) {
-        self.0[index] = ValueType::Number;
-    }
-
-    fn set_boolean(&mut self, index: usize) {
-        self.0[index] = ValueType::Boolean;
-    }
-
     fn set_any(&mut self, index: usize) {
         self.0[index] = ValueType::Any;
-    }
-
-    fn set_null(&mut self, index: usize) {
-        self.0[index] = ValueType::Null;
     }
 
     fn set(&mut self, index: usize, value: ValueType<'gc>) {
@@ -664,15 +633,6 @@ fn optimize<'gc>(
     // These make the code less readable
     #![allow(clippy::manual_filter)]
     #![allow(clippy::single_match)]
-
-    let mut output = crate::string::WString::new();
-    activation
-        .avm2()
-        .call_stack()
-        .read()
-        .clone()
-        .display(&mut output);
-    println!("beginning optimizing, call stack: {}", output);
 
     let method_body = method
         .body()
