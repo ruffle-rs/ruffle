@@ -940,10 +940,8 @@ fn optimize<'gc>(
                 };
 
                 let stack_value = stack.pop();
-                if resolved_type.is_some() {
-                    if matches!(stack_value, Some(ValueType::Null)) {
-                        *op = Op::Nop;
-                    }
+                if resolved_type.is_some() && matches!(stack_value, Some(ValueType::Null)) {
+                    *op = Op::Nop;
                 }
 
                 if let Some(resolved_type) = resolved_type {

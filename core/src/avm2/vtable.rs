@@ -167,7 +167,7 @@ impl<'gc> VTable<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         // Drop the `write()` guard, as 'slot_class.coerce' may need to access this vtable.
-        let mut slot_class = { self.0.read().slot_classes[slot_id as usize].clone() };
+        let mut slot_class = { self.0.read().slot_classes[slot_id as usize] };
 
         let (value, changed) = slot_class.coerce(activation, value)?;
 
