@@ -834,6 +834,21 @@ fn optimize<'gc>(
                     local_types.set_any(*index as usize);
                 }
             }
+            Op::AddI => {
+                stack.pop();
+                stack.pop();
+                stack.push_any();
+            }
+            Op::SubtractI => {
+                stack.pop();
+                stack.pop();
+                stack.push_any();
+            }
+            Op::MultiplyI => {
+                stack.pop();
+                stack.pop();
+                stack.push_any();
+            }
             Op::Add => {
                 stack.pop();
                 stack.pop();
@@ -849,11 +864,26 @@ fn optimize<'gc>(
                 stack.pop();
                 stack.push_any();
             }
+            Op::Modulo => {
+                stack.pop();
+                stack.pop();
+                stack.push_any();
+            }
             Op::BitNot => {
                 stack.pop();
                 stack.push_any();
             }
             Op::BitAnd => {
+                stack.pop();
+                stack.pop();
+                stack.push_any();
+            }
+            Op::BitOr => {
+                stack.pop();
+                stack.pop();
+                stack.push_any();
+            }
+            Op::BitXor => {
                 stack.pop();
                 stack.pop();
                 stack.push_any();
@@ -882,6 +912,15 @@ fn optimize<'gc>(
                 stack.pop();
                 stack.pop();
                 stack.push_boolean();
+            }
+            Op::ApplyType { num_types } => {
+                for _ in 0..*num_types {
+                    stack.pop();
+                }
+
+                stack.pop();
+
+                stack.push_any();
             }
             Op::AsType {
                 type_name: name_index,
@@ -1006,9 +1045,19 @@ fn optimize<'gc>(
             Op::GetLex { .. } => {
                 stack.push_any();
             }
-            Op::FindPropStrict { .. } => {
-                // Avoid handling for now
-                stack.clear();
+            Op::FindPropStrict { index: name_index } => {
+                let multiname = method
+                    .translation_unit()
+                    .pool_maybe_uninitialized_multiname(*name_index, &mut activation.context);
+
+                if let Ok(multiname) = multiname {
+                    if !multiname.has_lazy_component() {
+                        stack.push_any();
+                    } else {
+                        // Avoid handling lazy for now
+                        stack.clear();
+                    }
+                }
             }
             Op::FindProperty { .. } => {
                 // Avoid handling for now
@@ -1023,23 +1072,28 @@ fn optimize<'gc>(
 
                     if let Ok(multiname) = multiname {
                         if !multiname.has_lazy_component() {
-                            match class.instance_vtable().get_trait(&multiname) {
-                                Some(Property::Slot { slot_id })
-                                | Some(Property::ConstSlot { slot_id }) => {
-                                    println!("    optimized a GetProperty to GetSlot - idx {}", i);
-                                    *op = Op::GetSlot { index: slot_id };
+                            if !class.inner_class_definition().read().is_interface() {
+                                match class.instance_vtable().get_trait(&multiname) {
+                                    Some(Property::Slot { slot_id })
+                                    | Some(Property::ConstSlot { slot_id }) => {
+                                        println!(
+                                            "    optimized a GetProperty to GetSlot - idx {}",
+                                            i
+                                        );
+                                        *op = Op::GetSlot { index: slot_id };
+                                    }
+                                    Some(Property::Virtual { get: Some(get), .. }) => {
+                                        println!(
+                                            "    optimized a GetProperty to CallMethod - idx {}",
+                                            i
+                                        );
+                                        *op = Op::CallMethod {
+                                            num_args: 0,
+                                            index: Index::new(get),
+                                        };
+                                    }
+                                    _ => {}
                                 }
-                                Some(Property::Virtual { get: Some(get), .. }) => {
-                                    println!(
-                                        "    optimized a GetProperty to CallMethod - idx {}",
-                                        i
-                                    );
-                                    *op = Op::CallMethod {
-                                        num_args: 0,
-                                        index: Index::new(get),
-                                    };
-                                }
-                                _ => {}
                             }
                         } else {
                             // Avoid handling lazy for now
@@ -1059,16 +1113,18 @@ fn optimize<'gc>(
 
                     if let Ok(multiname) = multiname {
                         if !multiname.has_lazy_component() {
-                            match class.instance_vtable().get_trait(&multiname) {
-                                Some(Property::Slot { slot_id })
-                                | Some(Property::ConstSlot { slot_id }) => {
-                                    println!(
-                                        "    optimized an InitProperty to SetSlot - idx {}",
-                                        i
-                                    );
-                                    *op = Op::SetSlot { index: slot_id };
+                            if !class.inner_class_definition().read().is_interface() {
+                                match class.instance_vtable().get_trait(&multiname) {
+                                    Some(Property::Slot { slot_id })
+                                    | Some(Property::ConstSlot { slot_id }) => {
+                                        println!(
+                                            "    optimized an InitProperty to SetSlot - idx {}",
+                                            i
+                                        );
+                                        *op = Op::SetSlot { index: slot_id };
+                                    }
+                                    _ => {}
                                 }
-                                _ => {}
                             }
                         } else {
                             // Avoid handling lazy for now
@@ -1087,12 +1143,17 @@ fn optimize<'gc>(
 
                     if let Ok(multiname) = multiname {
                         if !multiname.has_lazy_component() {
-                            match class.instance_vtable().get_trait(&multiname) {
-                                Some(Property::Slot { slot_id }) => {
-                                    println!("    optimized a SetProperty to SetSlot - idx {}", i);
-                                    *op = Op::SetSlot { index: slot_id };
+                            if !class.inner_class_definition().read().is_interface() {
+                                match class.instance_vtable().get_trait(&multiname) {
+                                    Some(Property::Slot { slot_id }) => {
+                                        println!(
+                                            "    optimized a SetProperty to SetSlot - idx {}",
+                                            i
+                                        );
+                                        *op = Op::SetSlot { index: slot_id };
+                                    }
+                                    _ => {}
                                 }
-                                _ => {}
                             }
                         } else {
                             // Avoid handling lazy for now
@@ -1101,11 +1162,57 @@ fn optimize<'gc>(
                     }
                 }
             }
+            Op::Construct { num_args } => {
+                // Arguments
+                for _ in 0..*num_args {
+                    stack.pop();
+                }
+
+                // Then receiver.
+                stack.pop();
+
+                // Avoid checking return value for now
+                stack.push_any();
+            }
+            Op::ConstructSuper { num_args } => {
+                // Arguments
+                for _ in 0..*num_args {
+                    stack.pop();
+                }
+
+                // Then receiver.
+                stack.pop();
+            }
+            Op::ConstructProp {
+                index: name_index,
+                num_args,
+            } => {
+                // Arguments
+                for _ in 0..*num_args {
+                    stack.pop();
+                }
+
+                // Then receiver.
+                stack.pop();
+
+                let multiname = method
+                    .translation_unit()
+                    .pool_maybe_uninitialized_multiname(*name_index, &mut activation.context);
+                if let Ok(multiname) = multiname {
+                    if multiname.has_lazy_component() {
+                        // Avoid handling lazy for now
+                        stack.clear();
+                    }
+                }
+
+                // Avoid checking return value for now
+                stack.push_any();
+            }
             Op::CallProperty {
                 index: name_index,
                 num_args,
             } => {
-                // Args...
+                // Arguments
                 for _ in 0..*num_args {
                     stack.pop();
                 }
@@ -1131,6 +1238,9 @@ fn optimize<'gc>(
                 stack.clear();
             }
             Op::Nop => {}
+            Op::DebugFile { .. } => {}
+            Op::DebugLine { .. } => {}
+            Op::Debug { .. } => {}
             Op::IfTrue { .. } | Op::IfFalse { .. } => {
                 stack.pop();
             }
@@ -1148,6 +1258,14 @@ fn optimize<'gc>(
             | Op::IfNlt { .. } => {
                 stack.pop();
                 stack.pop();
+            }
+            Op::Si8 => {
+                stack.pop();
+                stack.pop();
+            }
+            Op::Li8 => {
+                stack.pop();
+                stack.push_int();
             }
             _ => {
                 stack.clear();
