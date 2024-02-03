@@ -133,6 +133,8 @@ package flash.text {
         public native function replaceText(beginIndex:int, endIndex:int, newText:String):void;
         public native function setSelection(beginIndex:int, endIndex:int):void;
 
+        public native function get selectedText():String;
+
         public function insertXMLText(beginIndex:int, endIndex:int, text:String, paste:Boolean = false):void {
             stub_method("flash.text.TextField", "insertXMLText");
         }
