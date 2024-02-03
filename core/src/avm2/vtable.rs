@@ -204,6 +204,14 @@ impl<'gc> VTable<'gc> {
         Ref::map(self.0.read(), |v| &v.default_slots)
     }
 
+    pub fn slot_classes(&self) -> Ref<Vec<PropertyClass<'gc>>> {
+        Ref::map(self.0.read(), |v| &v.slot_classes)
+    }
+
+    pub fn set_slot_class(&self, mc: &Mutation<'gc>, index: usize, value: PropertyClass<'gc>) {
+        self.0.write(mc).slot_classes[index] = value;
+    }
+
     /// Calculate the flattened list of instance traits that this class
     /// maintains.
     ///
