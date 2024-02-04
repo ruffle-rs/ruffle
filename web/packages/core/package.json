@@ -30,7 +30,7 @@
         "mocha": "^10.2.0",
         "replace-in-file": "^7.1.0",
         "ts-node": "^10.9.2",
-        "typedoc": "^0.25.5",
+        "typedoc": "^0.25.7",
         "typescript": "^5.3.3"
     },
     "sideEffects": false
