@@ -365,6 +365,15 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         self.0.read().base.has_own_dynamic_property(name)
     }
 
+    fn has_property_via_in(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        name: &Multiname<'gc>,
+    ) -> Result<bool, Error<'gc>> {
+        let multiname = handle_input_multiname(name.clone(), activation);
+        Ok(self.has_property(&multiname))
+    }
+
     fn has_own_property_string(
         self,
         name: impl Into<AvmString<'gc>>,
