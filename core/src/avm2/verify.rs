@@ -545,6 +545,17 @@ impl<'gc> Locals<'gc> {
         self.0[index] = ValueType::Class(class);
     }
 
+    fn set_class(&mut self, index: usize, class: GcCell<'gc, Class<'gc>>) {
+        // FIXME: Getting the ClassObject this way should be unnecessary
+        // after the ClassObject refactor
+        self.0[index] = class
+            .read()
+            .class_objects()
+            .get(0)
+            .map(|c| ValueType::Class(*c))
+            .unwrap_or(ValueType::Any);
+    }
+
     fn set_any(&mut self, index: usize) {
         self.0[index] = ValueType::Any;
     }
@@ -652,10 +663,35 @@ fn optimize<'gc>(
         None
     };
 
+    // TODO: Store these argument types somewhere on the function so they don't
+    // have to be re-resolved every function call
+    let mut argument_types = Vec::new();
+    for argument in &method.signature {
+        let type_name = &argument.param_type_name;
+
+        let argument_type = if !type_name.has_lazy_component() {
+            activation
+                .domain()
+                .get_class(type_name, activation.context.gc_context)
+        } else {
+            None
+        };
+
+        argument_types.push(argument_type);
+    }
+
     // Initial set of local types
     let mut initial_local_types = Locals::new(method_body.num_locals as usize);
     if let Some(this_class) = this_class {
         initial_local_types.set_class_object(0, this_class);
+    }
+
+    let mut i = 1;
+    for argument_type in argument_types {
+        if let Some(argument_type) = argument_type {
+            initial_local_types.set_class(i, argument_type);
+        }
+        i += 1;
     }
 
     // Logic to only allow for type-based optimizations on types that
@@ -690,11 +726,13 @@ fn optimize<'gc>(
     }
 
     let mut stack = Stack::new();
+    let mut scope_stack = Stack::new();
     let mut local_types = initial_local_types.clone();
 
     for (i, op) in code.iter_mut().enumerate() {
         if jump_targets.contains(&(i as i32)) {
             stack.clear();
+            scope_stack.clear();
             local_types = initial_local_types.clone();
         }
 
@@ -740,7 +778,12 @@ fn optimize<'gc>(
                 }
                 stack.push_class_object(activation.avm2().classes().string);
             }
-            Op::Equals | Op::LessEquals | Op::LessThan | Op::GreaterThan | Op::GreaterEquals => {
+            Op::Equals
+            | Op::StrictEquals
+            | Op::LessEquals
+            | Op::LessThan
+            | Op::GreaterThan
+            | Op::GreaterEquals => {
                 stack.pop();
                 stack.pop();
                 stack.push_boolean();
@@ -886,6 +929,21 @@ fn optimize<'gc>(
                 stack.pop();
                 stack.push_any();
             }
+            Op::LShift => {
+                stack.pop();
+                stack.pop();
+                stack.push_any();
+            }
+            Op::RShift => {
+                stack.pop();
+                stack.pop();
+                stack.push_any();
+            }
+            Op::URShift => {
+                stack.pop();
+                stack.pop();
+                stack.push_any();
+            }
             Op::PushDouble { .. } => {
                 stack.push_number();
             }
@@ -893,14 +951,25 @@ fn optimize<'gc>(
                 stack.push_class_object(activation.avm2().classes().string);
             }
             Op::NewArray { num_args } => {
-                for _ in 0..num_args {
+                for _ in 0..*num_args {
                     stack.pop();
                 }
 
                 stack.push_class_object(activation.avm2().classes().array);
             }
+            Op::NewObject { num_args } => {
+                for _ in 0..*num_args {
+                    stack.pop();
+                    stack.pop();
+                }
+
+                stack.push_class_object(activation.avm2().classes().object);
+            }
             Op::NewFunction { .. } => {
                 stack.push_class_object(activation.avm2().classes().function);
+            }
+            Op::NewClass { .. } => {
+                stack.push_class_object(activation.avm2().classes().class);
             }
             Op::IsType { .. } => {
                 stack.pop();
@@ -918,6 +987,11 @@ fn optimize<'gc>(
 
                 stack.pop();
 
+                stack.push_any();
+            }
+            Op::AsTypeLate => {
+                stack.pop();
+                stack.pop();
                 stack.push_any();
             }
             Op::AsType {
@@ -1002,7 +1076,20 @@ fn optimize<'gc>(
                 }
             }
             Op::PushScope => {
-                stack.pop();
+                let stack_value = stack.pop();
+                if let Some(value) = stack_value {
+                    scope_stack.push(value);
+                }
+            }
+            Op::PushWith => {
+                // TODO: Some way to mark scopes as with-scope vs normal-scope?
+                let stack_value = stack.pop();
+                if let Some(value) = stack_value {
+                    scope_stack.push(value);
+                }
+            }
+            Op::PopScope => {
+                scope_stack.pop();
             }
             Op::Pop => {
                 stack.pop();
@@ -1012,6 +1099,11 @@ fn optimize<'gc>(
                 if let Some(stack_value) = stack_value {
                     stack.push(stack_value);
                     stack.push(stack_value);
+                }
+            }
+            Op::Kill { index } => {
+                if (*index as usize) < local_types.len() {
+                    local_types.set_any(*index as usize);
                 }
             }
             Op::SetLocal { index } => {
@@ -1110,6 +1202,12 @@ fn optimize<'gc>(
                     stack.push_any();
                 }
             }
+            Op::GetSlot { .. } => {
+                stack.pop();
+
+                // Avoid handling type for now
+                stack.push_any();
+            }
             Op::InitProperty { index: name_index } => {
                 stack.pop();
                 let stack_value = stack.pop();
@@ -1167,7 +1265,6 @@ fn optimize<'gc>(
                     stack.pop();
                 }
 
-                // Then receiver.
                 stack.pop();
 
                 // Avoid checking return value for now
@@ -1236,6 +1333,25 @@ fn optimize<'gc>(
                 // Avoid handling for now
                 stack.clear();
             }
+            Op::Call { num_args } => {
+                // Arguments
+                for _ in 0..*num_args {
+                    stack.pop();
+                }
+
+                stack.pop();
+
+                // Avoid checking return value for now
+                stack.push_any();
+            }
+            Op::GetGlobalScope => {
+                // Avoid handling for now
+                stack.push_any();
+            }
+            Op::NewActivation => {
+                // Avoid handling for now
+                stack.push_any();
+            }
             Op::Nop => {}
             Op::DebugFile { .. } => {}
             Op::DebugLine { .. } => {}
@@ -1266,8 +1382,14 @@ fn optimize<'gc>(
                 stack.pop();
                 stack.push_int();
             }
+            Op::ReturnVoid | Op::ReturnValue | Op::Jump { .. } | Op::LookupSwitch(_) => {
+                stack.clear();
+                scope_stack.clear();
+                local_types = initial_local_types.clone();
+            }
             _ => {
                 stack.clear();
+                scope_stack.clear();
                 local_types = initial_local_types.clone();
             }
         }
