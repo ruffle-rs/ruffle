@@ -647,7 +647,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         if self.has_own_property(name) {
             true
         } else if let Some(proto) = self.proto() {
-            proto.has_own_property(name)
+            proto.has_property(name)
         } else {
             false
         }
