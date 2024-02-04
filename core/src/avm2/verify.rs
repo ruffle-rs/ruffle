@@ -1314,13 +1314,27 @@ fn optimize<'gc>(
                 }
 
                 // Then receiver.
-                stack.pop();
+                let stack_value = stack.pop();
 
                 let multiname = method
                     .translation_unit()
                     .pool_maybe_uninitialized_multiname(*name_index, &mut activation.context);
                 if let Ok(multiname) = multiname {
-                    if multiname.has_lazy_component() {
+                    if !multiname.has_lazy_component() {
+                        if let Some(ValueType::Class(class)) = stack_value {
+                            if !class.inner_class_definition().read().is_interface() {
+                                match class.instance_vtable().get_trait(&multiname) {
+                                    Some(Property::Method { disp_id }) => {
+                                        *op = Op::CallMethod {
+                                            num_args: *num_args,
+                                            index: Index::new(disp_id),
+                                        };
+                                    }
+                                    _ => {}
+                                }
+                            }
+                        }
+                    } else {
                         // Avoid handling lazy for now
                         stack.clear();
                     }
