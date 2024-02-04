@@ -7,9 +7,6 @@
     "workspaces": [
         "./packages/*"
     ],
-    "engines": {
-        "npm": ">=10.4.0"
-    },
     "devDependencies": {
         "@typescript-eslint/eslint-plugin": "^6.20.0",
         "@typescript-eslint/parser": "^6.20.0",
