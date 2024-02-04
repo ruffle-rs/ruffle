@@ -1367,7 +1367,7 @@ pub fn get_raw_text<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        return Ok(AvmString::new(activation.context.gc_context,this.text()).into());
+        return Ok(AvmString::new(activation.context.gc_context, this.text()).into());
     }
     Ok("".into())
 }
