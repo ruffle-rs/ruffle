@@ -1390,7 +1390,7 @@ pub fn get_selected_text<'gc>(
         let start_index = selection.start();
         let end_index = selection.end();
 
-        return if this.text().len() >= end_index + 1 {
+        return if this.text().len() > end_index {
             Ok(AvmString::new(
                 activation.context.gc_context,
                 &this.text()[start_index..end_index],
