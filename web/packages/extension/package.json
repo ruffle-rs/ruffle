@@ -17,7 +17,7 @@
     "devDependencies": {
         "@tsconfig/strictest": "^2.0.2",
         "@types/archiver": "^5.3.4",
-        "@types/chrome": "^0.0.254",
+        "@types/chrome": "^0.0.260",
         "@types/common-tags": "^1.8.4",
         "@types/firefox-webext-browser": "^111.0.5",
         "@types/jsonwebtoken": "^9.0.5",
@@ -25,7 +25,7 @@
         "@types/request": "^2.48.12",
         "archiver": "^6.0.1",
         "json5": "^2.2.3",
-        "sign-addon": "^6.3.0",
+        "sign-addon": "^6.4.0",
         "temp-dir": "^3.0.0",
         "ts-loader": "^9.5.1",
         "typescript": "^5.3.3",
