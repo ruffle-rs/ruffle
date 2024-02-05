@@ -28,7 +28,7 @@ downcast-rs = "1.2.0"
 profiling = { version = "1.0", default-features = false, optional = true }
 lru = "0.12.2"
 naga = { workspace = true }
-indexmap = "2.2.1"
+indexmap = "2.2.2"
 
 # desktop
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
