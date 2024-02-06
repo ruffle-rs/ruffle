@@ -10,7 +10,6 @@ package flash.net {
 		// FIXME - this should be a getter/setter for consistency with Flash
 		public var url:String;
 		private var _contentType: String = "application/x-www-form-urlencoded"; // ignored
-
 		private var _requestHeaders: Array = []; 
 
 		public var digest:String;
@@ -25,9 +24,14 @@ package flash.net {
 			return this._method;
 		}
 
-		public function set method(newMethod:String):void {
-			// FIXME - perform validation here
-			this._method = newMethod;
+		public function set method(value: String):void {
+			// The method can apparently either be all upper or lower case, but not mixed.
+			if (value !== "GET" && value !== "get" && value !== "POST" && value !== "post") {
+				throw new ArgumentError("Error #2008: Parameter method must be one of the accepted values.", 2008);
+			}
+
+			// TODO: AIR is supposed to support other methods like PUT or DELETE.
+			this._method = value;
 		}
 
 		public function get data():Object {
