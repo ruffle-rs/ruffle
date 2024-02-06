@@ -158,9 +158,8 @@ pub fn request_from_url_request<'gc>(
         string_headers.insert(name, value);
     }
 
-    // TODO: URLRequest.method should not be able to have invalid types.
-    // We should throw an error there on set.
-    let method = NavigationMethod::from_method_str(&method).unwrap_or(NavigationMethod::Get);
+    let method =
+        NavigationMethod::from_method_str(&method).expect("URLRequest should have a valid method");
     let data = url_request.get_public_property("data", activation)?;
     let body = match (method, data) {
         (_, Value::Null | Value::Undefined) => None,
