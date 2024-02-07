@@ -622,6 +622,16 @@ impl<'gc> Avm2<'gc> {
         self.stack.push(value);
     }
 
+    /// Push a value onto the operand stack.
+    /// This is like `push`, but does not handle `PrimitiveObject`
+    /// and does not check for stack overflows.
+    #[inline(always)]
+    fn push_raw(&mut self, value: impl Into<Value<'gc>>) {
+        let value = value.into();
+        avm_debug!(self, "Stack push {}: {value:?}", self.stack.len());
+        self.stack.push(value);
+    }
+
     /// Retrieve the top-most value on the operand stack.
     #[allow(clippy::let_and_return)]
     #[inline(always)]
